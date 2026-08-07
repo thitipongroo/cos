@@ -12,26 +12,30 @@ separate deployables only for language-boundary services (Python AI, Go workers)
 ```text
 ┌─────────────────────────────────────────────────────────────┐
 │                  Construction OS Platform                   │
-├──────────────────────┬──────────────────┬───────────────────┤
-│  apps/web (Next.js + next-pwa)   │  apps/mobile (RN)        │
-├──────────────────────┴──────────────────┴───────────────────┤
+├──────────────────────────┬──────────────────────────────────┤
+│  apps/web (Next.js +     │  apps/mobile (React Native +     │
+│  Serwist PWA)            │  Expo, Drizzle/expo-sqlite)      │
+├──────────────────────────┴──────────────────────────────────┤
 │        Kong API Gateway (rate limiting, JWT, routing)       │
 ├─────────────────────────────────────────────────────────────┤
 │           backend/ — NestJS Modular Monolith                │
 │  identity │ tenant │ project │ boq │ procurement            │
 │  site-ops │ finance │ notification │ equipment │ workforce  │
-├──────────────┬──────────────────┬───────────────────────────┤
-│ services/    │ services/        │ services/                 │
-│ file-service │ ai-gateway       │ analytics-worker (Go)     │
-│ (Fastify)    │ ai-embedding-    │ kg-ingestion-worker (Go)  │
-│              │ worker, ai-ocr   │                           │
-│              │ (FastAPI Python) │                           │
-├──────────────┴──────────────────┴───────────────────────────┤
+├──────────────────┬──────────────────┬───────────────────────┤
+│ services/ (Node) │ services/ (Py)   │ services/ (Go)        │
+│ file-service     │ ai-gateway       │ analytics-worker      │
+│   (Fastify)      │ ai-embedding-    │ kg-ingestion-worker   │
+│ credential-      │   worker         │ iot-ingestion-worker  │
+│   service        │ ai-ocr-pipeline  │                       │
+│                  │ ai-transcription-│                       │
+│                  │   pipeline       │                       │
+│                  │ bim-import-worker│                       │
+├──────────────────┴──────────────────┴───────────────────────┤
 │           Apache Kafka (internal event bus)                 │
-├─--──────────┬─────────┬────────────┬───────────┬────────────┤
+├─────────────┬─────────┬────────────┬───────────┬────────────┤
 │  PostgreSQL │  Redis  │ ClickHouse │  Neo4j    │  MinIO     │
 │ +TimescaleDB│         │ (analytics)│ (KG)      │ (objects)  │
-└--───────────┴─────────┴────────────┴───────────┴────────────┘
+└─────────────┴─────────┴────────────┴───────────┴────────────┘
 ```
 
 ### Key Technology Decisions
@@ -41,14 +45,14 @@ separate deployables only for language-boundary services (Python AI, Go workers)
 | Backend                  | NestJS Modular Monolith — extract services only with team boundary + scaling evidence      |
 | Multi-tenant             | Shared DB + tenant_id + PostgreSQL RLS (`SET LOCAL app.current_tenant_id`) — ADR-008       |
 | API versioning           | `/api/v1/` prefix — `setGlobalPrefix('api/v1')` in `backend/src/main.ts`                   |
-| Event bus                | Apache Kafka 3.x + Confluent Schema Registry (Avro, `BACKWARD_TRANSITIVE` compat)          |
-| Mobile storage           | WatermelonDB 0.28.x + ExpoSQLiteAdapter (business entities); expo-sqlite (sync_queue only) |
-| Web offline (PWA)        | next-pwa (Workbox) + IndexedDB via `idb`; unified in apps/web/ (ADR-016)                   |
+| Event bus                | Apache Kafka 4.x (Confluent Platform 8.x) + Schema Registry (Avro, `BACKWARD_TRANSITIVE`)  |
+| Mobile storage           | Drizzle ORM on expo-sqlite (business entities); expo-sqlite (sync_queue only) — ADR-048    |
+| Web offline (PWA)        | Serwist (`@serwist/turbopack`) + IndexedDB via `idb`; unified in apps/web/ (ADR-047)       |
 | Financial precision      | `DECIMAL(19,4)` in DB; `decimal.js` (Node.js); Python `decimal` module — never `float`     |
 | Workflow engine          | Temporal (TypeScript SDK)                                                                  |
 | Auth — field workers     | Phone + SMS OTP via custom NestJS module + AWS SNS                                         |
 | Auth — office/management | Email + password via Keycloak OIDC (RS256 JWT)                                             |
-| AI services              | FastAPI Python: LLM Gateway, Embedding Worker, OCR Pipeline                                |
+| AI services              | FastAPI Python: LLM Gateway, Embedding Worker, OCR Pipeline, Transcription                 |
 | LLM                      | OpenAI GPT-4o via `LLMProvider` interface — never call OpenAI SDK directly                 |
 | Vector store             | pgvector + OpenSearch                                                                      |
 | Connection pooler        | PgBouncer (transaction mode) — application NEVER connects to PostgreSQL port 5432 directly |
@@ -66,7 +70,6 @@ separate deployables only for language-boundary services (Python AI, Go workers)
 - [pnpm](https://pnpm.io/) **11.x** (`engines.pnpm >=11.0.0`) — `corepack enable` picks up the exact
   build pinned in `packageManager`; only the major line is normative
 - [Docker](https://www.docker.com/) 24.x + Docker Compose v2
-- [buf](https://buf.build/docs/installation) CLI (for proto generation)
 
 ### Local Setup
 
@@ -81,8 +84,10 @@ make env-init                     # or: cp .env.example .env
 pnpm install
 
 # 3. Start all infrastructure (PostgreSQL+TimescaleDB, Kafka, ClickHouse, Neo4j, MinIO,
-#    Redis, Vault dev, Schema Registry, PgBouncer)
-docker compose up -d
+#    Redis, Vault dev, Schema Registry, PgBouncer).
+#    ClickHouse, Neo4j, Vault, Keycloak and Temporal sit behind the `full` Compose profile,
+#    so a bare `docker compose up -d` does NOT start them — use the full tier (see below).
+make docker-up-full
 
 # 4. Wait for services to be healthy, then run migrations
 make migrate
@@ -144,51 +149,50 @@ pnpm test:unit
 pnpm test:integration
 ```
 
-### Code Generation
-
-```bash
-# Generate gRPC stubs from proto files (TypeScript + Python output)
-make proto-gen
-```
-
 ---
 
 ## Monorepo Structure
 
 ```text
 apps/
-  web/                   — Next.js + next-pwa unified app (tablet/laptop, online + offline)
-  mobile/                — React Native + Expo (smartphone, online + offline)
+  web/                        — Next.js + Serwist unified app (tablet/laptop, online + offline)
+  mobile/                     — React Native + Expo (smartphone, online + offline)
 
-backend/                 — NestJS Modular Monolith (all domain modules)
-  src/modules/           — identity, tenant, project, boq, procurement,
-                           site-ops, finance, notification, equipment, workforce
-  prisma/                — Prisma schema + migrations
+backend/                      — NestJS Modular Monolith (all domain modules)
+  src/modules/                — identity, tenant, project, boq, procurement,
+                                site-ops, finance, notification, equipment, workforce
+  prisma/                     — Prisma schema + migrations
 
-services/                — Separate deployables (language/throughput boundary)
-  file-service/          — Fastify (multipart upload throughput)
-  ai-gateway/            — FastAPI Python (LLM routing, RAG)
-  ai-embedding-worker/   — FastAPI Python (vector embedding)
-  ai-ocr-pipeline/       — FastAPI Python (OCR processing)
-  analytics-worker/      — Go (ClickHouse aggregation)
-  kg-ingestion-worker/   — Go (Neo4j knowledge graph ingestion)
+services/                     — Separate deployables (language/throughput boundary)
+  ai-embedding-worker/        — FastAPI Python (vector embedding)
+  ai-gateway/                 — FastAPI Python (LLM routing, RAG)
+  ai-ocr-pipeline/            — FastAPI Python (OCR processing)
+  ai-transcription-pipeline/  — FastAPI Python (voice-note transcription — ADR-052)
+  analytics-worker/           — Go (ClickHouse aggregation)
+  bim-import-worker/          — Python (IFC4 parse → TwinEntity; ifcopenshell)
+  credential-service/         — Node (W3C DID/VC issuance + verification — ADR-019)
+  file-service/               — Fastify (multipart upload throughput)
+  iot-ingestion-worker/       — Go (EMQX MQTT 5.0 → Kafka)
+  kg-ingestion-worker/        — Go (Neo4j knowledge graph ingestion)
 
-packages/@cos/           — Shared packages (2+ consumers only)
-  shared/                — Kafka event interfaces + SDK
-  database/              — Prisma pagination, ID generation, retry helpers
-  rbac/                  — RBAC role definitions and guard utilities
-  validation/            — Shared DTO validators
-  logger/                — Structured logging (Pino-based)
-  tracing/               — OpenTelemetry setup
-  financial/             — Decimal.js monetary calculation utilities
-  types/                 — Shared TypeScript types and enums
-  config/                — Environment config loader
-  proto-contracts/       — gRPC proto files + generated stubs
+packages/@cos/                — Shared packages (2+ consumers only)
+  config/                     — Environment config loader
+  database/                   — Prisma pagination, ID generation, retry helpers
+  financial/                  — Decimal.js monetary calculation utilities
+  logger/                     — Structured logging (Pino-based)
+  rbac/                       — RBAC role definitions and guard utilities
+  schemas/                    — Shared client-side validation schemas
+  shared/                     — Kafka event interfaces + SDK
+  test-utils/                 — Testcontainers setup, DB reset, factories (spec §30.13)
+  tracing/                    — OpenTelemetry setup
+  types/                      — Shared TypeScript types and enums
+  ui-logic/                   — Cross-platform client logic, no runtime deps (ADR-068)
+  validation/                 — Shared DTO validators
 
-infrastructure/          — Kubernetes Helm charts, Terraform, Kafka topics, monitoring
-ai/                      — Prompt templates, LangChain chains, evaluation scripts
-docs/                    — ADRs, OpenAPI specs, runbooks, specifications
-scripts/                 — Setup, deploy, readiness, load test scripts
+infrastructure/               — Kubernetes Helm charts, Terraform, Kafka topics, monitoring
+ai/                           — Prompt templates, LangChain chains, evaluation scripts
+docs/                         — ADRs, OpenAPI specs, runbooks, specifications
+scripts/                      — Setup, deploy, readiness, load test scripts
 ```
 
 ---
