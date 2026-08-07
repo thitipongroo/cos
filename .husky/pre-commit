@@ -1,5 +1,10 @@
 pnpm exec lint-staged
 
+# Rule 28: a staged dependency change must carry pnpm-lock.yaml. The .claude/hooks/ version of this
+# rule only fires on agent edits, which is how 2840dd7 bumped package.json with no lockfile and
+# nothing objected. This one covers every author.
+bash scripts/ci/check-lockfile-staged.sh || exit 1
+
 # QM-4: pre-commit hook must block secret patterns (gitleaks) — see .gitleaks.toml
 if command -v gitleaks >/dev/null 2>&1; then
   gitleaks git --pre-commit --staged --config .gitleaks.toml --redact

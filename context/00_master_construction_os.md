@@ -5482,10 +5482,27 @@ ROOT CAUSE PREVENTION RULES (prevent recurring bugs):
     If the task is already covered by an existing turbo task, add a comment explaining why.
 
   Rule 28 — pnpm lock file (prevents Bug-class-C: CI frozen-lockfile failing):
-    After ANY package.json change (add/remove/update dependency), run `pnpm install`
-    locally to regenerate pnpm-lock.yaml and commit it in the same PR.
+    After changing anything that MOVES DEPENDENCY RESOLUTION, run `pnpm install` locally to
+    regenerate pnpm-lock.yaml and commit it in the SAME commit. That means:
+      - package.json: dependencies, devDependencies, peerDependencies, optionalDependencies,
+        resolutions, or the `pnpm` block
+      - pnpm-workspace.yaml: the `overrides:` block
     pnpm-lock.yaml must exist and be up-to-date before CI `--frozen-lockfile` will pass.
     If pnpm-lock.yaml does not exist: run `pnpm install` immediately before any other work.
+
+    NOT every package.json edit. Scripts, description, engines and `packageManager` do not affect
+    resolution, and `pnpm install` produces no lockfile diff for them — there is nothing to commit.
+    The rule used to say "ANY package.json change", which made commit 2840dd7 (2026-08-07) a
+    violation for bumping `packageManager` 11.18.0 -> 11.20.0 and nothing else: the lockfile records
+    lockfileVersion and resolutions, not the pnpm binary version, so no `pnpm install` could have
+    produced the file that rule demanded. Narrowed 2026-08-08 to the fields that carry the risk.
+
+    Enforced by `scripts/ci/check-lockfile-staged.sh`, wired into `.husky/pre-commit`. The older
+    `.claude/hooks/rule-28-check-lockfile.sh` stays, but it is a PostToolUse hook and therefore only
+    sees the agent's own edits — 2840dd7 did not come through the agent, which is why nothing
+    objected. The git hook covers every author and every tool. Escape hatch for a change that
+    genuinely yields no lockfile diff: `SKIP_LOCKFILE_CHECK=1 git commit`, with the reason in the
+    commit message.
 
   Rule 29 — ADR reference verification (prevents Bug-class-D: referencing non-existent ADRs):
     Before writing `(see ADR-NNN)` in ANY spec file or code comment, verify:
