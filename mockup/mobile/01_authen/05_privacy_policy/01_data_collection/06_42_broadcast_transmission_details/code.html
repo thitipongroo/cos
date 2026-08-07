@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TRANSMISSION DETAILS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed": "#acedff",
+                        "primary-fixed": "#dee1f9",
+                        "on-secondary-fixed": "#00174b",
+                        "primary": "#c1c5dc",
+                        "surface-container-high": "#1b2b3f",
+                        "on-tertiary-container": "#0088a0",
+                        "inverse-on-surface": "#213145",
+                        "surface-dim": "#031427",
+                        "background": "#031427",
+                        "error-container": "#93000a",
+                        "primary-fixed-dim": "#c1c5dc",
+                        "on-primary-fixed-variant": "#414658",
+                        "on-primary": "#2b3041",
+                        "mobile-primary": "#0066FF",
+                        "surface-tint": "#c1c5dc",
+                        "on-tertiary": "#003640",
+                        "success": "#10B981",
+                        "on-primary-fixed": "#161b2b",
+                        "on-surface": "#d3e4fe",
+                        "tertiary-fixed-dim": "#4cd7f6",
+                        "warning": "#F59E0B",
+                        "syncing": "#FFD60A",
+                        "outline": "#909097",
+                        "tertiary": "#4cd7f6",
+                        "secondary-fixed": "#dbe1ff",
+                        "secondary-fixed-dim": "#b4c5ff",
+                        "surface-container-low": "#0b1c30",
+                        "on-error-container": "#ffdad6",
+                        "outline-variant": "#46464c",
+                        "surface": "#031427",
+                        "tertiary-container": "#001318",
+                        "on-secondary": "#002a78",
+                        "on-error": "#690005",
+                        "surface-variant": "#26364a",
+                        "inverse-primary": "#595e71",
+                        "secondary": "#b4c5ff",
+                        "surface-container-highest": "#26364a",
+                        "surface-bright": "#2a3a4f",
+                        "on-background": "#d3e4fe",
+                        "offline": "#8E8E93",
+                        "surface-container": "#102034",
+                        "on-secondary-fixed-variant": "#003ea8",
+                        "secondary-container": "#0053db",
+                        "on-secondary-container": "#cdd7ff",
+                        "on-tertiary-fixed": "#001f26",
+                        "error": "#ffb4ab",
+                        "surface-container-lowest": "#000f21",
+                        "primary-container": "#0b1020",
+                        "concrete-white": "#F8FAFC",
+                        "on-primary-container": "#777c90",
+                        "on-surface-variant": "#c7c6cd",
+                        "danger": "#EF4444",
+                        "inverse-surface": "#d3e4fe",
+                        "on-tertiary-fixed-variant": "#004e5c"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "mobile-card-pad": "12px",
+                        "web-page-gap": "64px",
+                        "web-margin-component": "32px",
+                        "web-gap-tight": "4px",
+                        "touch-target-optimum": "52px",
+                        "mobile-section-pad": "16px",
+                        "web-base": "4px",
+                        "mobile-icon-pad": "8px",
+                        "mobile-base": "8px",
+                        "touch-target-min": "44px",
+                        "web-padding-card": "16px",
+                        "mobile-edge-margin": "24px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "label-tiny": ["Inter"],
+                        "mobile-title": ["Inter"],
+                        "headline-h3": ["Inter"],
+                        "headline-h1": ["Inter"],
+                        "headline-h2": ["Inter"],
+                        "mobile-hero": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "mobile-body": ["Inter"],
+                        "display-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-md": ["14px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "label-tiny": ["11px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "mobile-title": ["22px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "headline-h3": ["16px", { "lineHeight": "1.3", "fontWeight": "500" }],
+                        "headline-h1": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "headline-h2": ["20px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "mobile-hero": ["28px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "body-sm": ["12px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "mobile-body": ["17px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "display-lg": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen font-body-md text-body-md pt-touch-target-optimum pb-touch-target-optimum">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 border-b border-outline-variant bg-surface-dim dark:bg-surface-dim">
+<div class="flex items-center justify-between px-mobile-edge-margin h-touch-target-optimum">
+<button class="text-error dark:text-error hover:bg-surface-variant active:opacity-80 transition-opacity p-2 -ml-2 rounded-full flex items-center justify-center h-10 w-10">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-mobile-title text-mobile-title font-bold text-error uppercase tracking-tighter">TRANSMISSION DETAILS</h1>
+<div class="text-error dark:text-error flex items-center justify-center p-2 -mr-2 h-10 w-10">
+<span class="material-symbols-outlined" data-icon="warning">warning</span>
+</div>
+</div>
+</header>
+<main class="px-mobile-edge-margin py-mobile-section-pad flex flex-col gap-mobile-section-pad max-w-2xl mx-auto">
+<!-- Directive Hero -->
+<div class="bg-surface-container-high border border-outline-variant rounded-xl p-mobile-card-pad flex items-center justify-between shadow-sm">
+<div class="flex items-center gap-3">
+<div class="bg-error-container text-on-error h-12 w-12 rounded-full flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-2xl" data-icon="block" style="font-variation-settings: 'FILL' 1;">block</span>
+</div>
+<div>
+<h2 class="font-headline-h3 text-headline-h3 text-error uppercase tracking-wide">STOP WORK</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Directive ID: DIR-842-X</p>
+</div>
+</div>
+<div class="bg-success/20 border border-success/50 text-success px-3 py-1.5 rounded-full font-label-tiny text-label-tiny uppercase flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px]" data-icon="check_circle">check_circle</span>
+                VERIFIED
+            </div>
+</div>
+<!-- Full Broadcast Message -->
+<div class="bg-surface-container-highest border border-outline-variant rounded-xl p-web-padding-card shadow-sm active:scale-95 transition-transform duration-150 cursor-pointer group">
+<div class="flex justify-between items-start mb-2">
+<h3 class="font-label-tiny text-label-tiny text-tertiary uppercase flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]" data-icon="campaign">campaign</span>
+                    Broadcast Message
+                </h3>
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-on-surface transition-colors" data-icon="chevron_right">chevron_right</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface leading-relaxed mt-2 p-3 bg-surface-dim rounded-lg border-l-4 border-error">
+                IMMEDIATE STOP WORK ORDER. Clear Sector 04 immediately due to seismic vibration trigger. Relocate to Assembly Point Alpha.
+            </p>
+</div>
+<!-- Source & Identity -->
+<div class="bg-surface-container-high border border-outline-variant rounded-xl p-web-padding-card shadow-sm active:scale-95 transition-transform duration-150 cursor-pointer group">
+<div class="flex justify-between items-start mb-4">
+<h3 class="font-label-tiny text-label-tiny text-tertiary uppercase flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]" data-icon="badge">badge</span>
+                    Source &amp; Identity
+                </h3>
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-on-surface transition-colors" data-icon="chevron_right">chevron_right</span>
+</div>
+<div class="flex flex-col gap-3">
+<div class="flex items-center gap-3">
+<div class="bg-surface-dim h-10 w-10 rounded-full flex items-center justify-center border border-outline-variant">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="person">person</span>
+</div>
+<div>
+<p class="font-label-tiny text-label-tiny text-on-surface-variant">Initiated By</p>
+<p class="font-body-md text-body-md text-on-surface font-medium">S. Miller (Safety Supervisor)</p>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-3 mt-2 border-t border-outline-variant/50 pt-3">
+<div>
+<p class="font-label-tiny text-label-tiny text-on-surface-variant mb-1">Terminal</p>
+<p class="font-body-sm text-body-sm text-on-surface flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-tertiary" data-icon="terminal">terminal</span>
+                             Site HQ Terminal 02
+                         </p>
+</div>
+<div>
+<p class="font-label-tiny text-label-tiny text-on-surface-variant mb-1">Confirmation</p>
+<p class="font-body-sm text-body-sm text-on-surface flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-tertiary" data-icon="fingerprint">fingerprint</span>
+                             Bio + HW Key
+                         </p>
+</div>
+</div>
+</div>
+</div>
+<!-- Location & Time -->
+<div class="bg-surface-container-high border border-outline-variant rounded-xl p-web-padding-card shadow-sm">
+<h3 class="font-label-tiny text-label-tiny text-tertiary uppercase flex items-center gap-1.5 mb-4">
+<span class="material-symbols-outlined text-[16px]" data-icon="my_location">my_location</span>
+                Location &amp; Time
+            </h3>
+<div class="flex flex-col gap-4">
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-on-surface-variant mt-0.5" data-icon="map">map</span>
+<div>
+<p class="font-label-tiny text-label-tiny text-on-surface-variant">Target Zone</p>
+<p class="font-body-md text-body-md text-on-surface font-medium">Zone 04: North Sector</p>
+</div>
+</div>
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-on-surface-variant mt-0.5" data-icon="satellite_alt">satellite_alt</span>
+<div>
+<p class="font-label-tiny text-label-tiny text-on-surface-variant">Origin GPS</p>
+<p class="font-body-md text-body-md text-on-surface font-mono text-sm">13.7563° N, 100.5018° E</p>
+</div>
+</div>
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-on-surface-variant mt-0.5" data-icon="schedule">schedule</span>
+<div>
+<p class="font-label-tiny text-label-tiny text-on-surface-variant">Timestamp</p>
+<p class="font-body-md text-body-md text-on-surface font-mono text-sm">2023-10-27 15:20:10 UTC</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Technical Audit Metadata -->
+<div class="bg-[#020617] border border-outline-variant rounded-xl p-4 shadow-sm relative overflow-hidden group">
+<div class="absolute top-0 left-0 w-1 h-full bg-[#06B6D4]"></div>
+<h3 class="font-label-tiny text-label-tiny text-[#06B6D4] uppercase flex items-center gap-1.5 mb-3">
+<span class="material-symbols-outlined text-[16px]" data-icon="memory">memory</span>
+                Technical Audit
+            </h3>
+<div class="font-mono text-[11px] text-on-surface-variant flex flex-col gap-2">
+<div class="flex justify-between items-center border-b border-outline-variant/30 pb-2">
+<span class="opacity-70">Transmission Hash</span>
+<span class="text-on-surface bg-surface-dim px-2 py-0.5 rounded border border-outline-variant/50">7a92c...f20b</span>
+</div>
+<div class="flex justify-between items-center border-b border-outline-variant/30 pb-2">
+<span class="opacity-70">Channel Priority</span>
+<span class="text-error bg-error-container/20 px-2 py-0.5 rounded border border-error/30 font-bold">P0 (Override)</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="opacity-70">Network Integrity</span>
+<span class="text-success flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="shield_lock">shield_lock</span>
+                        PASSED
+                    </span>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 border-t border-outline-variant bg-surface-container-high dark:bg-surface-container-high pb-safe md:hidden">
+<div class="flex justify-around items-center h-touch-target-optimum">
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface active:scale-95 transition-transform duration-150 w-16 h-full gap-1">
+<span class="material-symbols-outlined text-2xl" data-icon="inventory_2">inventory_2</span>
+<span class="font-label-tiny text-label-tiny">Registry</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface active:scale-95 transition-transform duration-150 w-16 h-full gap-1">
+<span class="material-symbols-outlined text-2xl" data-icon="health_and_safety">health_and_safety</span>
+<span class="font-label-tiny text-label-tiny">Safety</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface active:scale-95 transition-transform duration-150 w-16 h-full gap-1">
+<span class="material-symbols-outlined text-2xl" data-icon="sync">sync</span>
+<span class="font-label-tiny text-label-tiny">Sync</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 active:scale-95 transition-transform duration-150 h-10 my-1 gap-0.5">
+<span class="material-symbols-outlined text-[20px]" data-icon="notifications_active" style="font-variation-settings: 'FILL' 1;">notifications_active</span>
+<span class="font-label-tiny text-[10px]">Alerts</span>
+</button>
+</div>
+</nav>
+</body></html>

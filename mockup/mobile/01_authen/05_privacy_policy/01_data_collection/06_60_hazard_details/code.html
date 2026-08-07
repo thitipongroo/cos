@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Hazard Details - FORGE SAFETY</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+        darkMode: "class",
+        theme: {
+            extend: {
+                "colors": {
+                    "primary-fixed": "#dee1f9",
+                    "on-error-container": "#ffdad6",
+                    "concrete-white": "#F8FAFC",
+                    "on-secondary-container": "#cdd7ff",
+                    "on-secondary-fixed": "#00174b",
+                    "error": "#ffb4ab",
+                    "surface-variant": "#26364a",
+                    "error-container": "#93000a",
+                    "surface-bright": "#2a3a4f",
+                    "surface-container-high": "#1b2b3f",
+                    "on-primary-container": "#777c90",
+                    "on-primary-fixed": "#161b2b",
+                    "on-tertiary-fixed-variant": "#004e5c",
+                    "secondary-fixed": "#dbe1ff",
+                    "danger": "#EF4444",
+                    "surface-container": "#102034",
+                    "primary-container": "#0b1020",
+                    "outline-variant": "#46464c",
+                    "inverse-primary": "#595e71",
+                    "background": "#031427",
+                    "on-secondary-fixed-variant": "#003ea8",
+                    "mobile-primary": "#0066FF",
+                    "on-surface": "#d3e4fe",
+                    "on-tertiary-container": "#0088a0",
+                    "on-primary": "#2b3041",
+                    "warning": "#F59E0B",
+                    "tertiary-fixed-dim": "#4cd7f6",
+                    "tertiary": "#4cd7f6",
+                    "surface-tint": "#c1c5dc",
+                    "surface-container-low": "#0b1c30",
+                    "inverse-surface": "#d3e4fe",
+                    "on-tertiary": "#003640",
+                    "on-surface-variant": "#c7c6cd",
+                    "success": "#10B981",
+                    "on-secondary": "#002a78",
+                    "tertiary-container": "#001318",
+                    "primary-fixed-dim": "#c1c5dc",
+                    "surface": "#031427",
+                    "secondary-fixed-dim": "#b4c5ff",
+                    "on-primary-fixed-variant": "#414658",
+                    "on-background": "#d3e4fe",
+                    "on-tertiary-fixed": "#001f26",
+                    "syncing": "#FFD60A",
+                    "offline": "#8E8E93",
+                    "surface-container-lowest": "#000f21",
+                    "primary": "#c1c5dc",
+                    "surface-dim": "#031427",
+                    "secondary": "#b4c5ff",
+                    "secondary-container": "#0053db",
+                    "tertiary-fixed": "#acedff",
+                    "outline": "#909097",
+                    "inverse-on-surface": "#213145",
+                    "surface-container-highest": "#26364a",
+                    "on-error": "#690005"
+                },
+                "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+                },
+                "spacing": {
+                    "web-base": "4px",
+                    "touch-target-optimum": "52px",
+                    "web-gap-tight": "4px",
+                    "mobile-section-pad": "16px",
+                    "mobile-base": "8px",
+                    "web-padding-card": "16px",
+                    "mobile-card-pad": "12px",
+                    "web-page-gap": "64px",
+                    "web-margin-component": "32px",
+                    "mobile-icon-pad": "8px",
+                    "mobile-edge-margin": "24px",
+                    "touch-target-min": "44px"
+                },
+                "fontFamily": {
+                    "body-sm": ["Inter"],
+                    "headline-h3": ["Inter"],
+                    "mobile-title": ["Inter"],
+                    "headline-h2": ["Inter"],
+                    "label-tiny": ["Inter"],
+                    "headline-h1": ["Inter"],
+                    "mobile-hero": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "mobile-body": ["Inter"],
+                    "body-md": ["Inter"]
+                },
+                "fontSize": {
+                    "body-sm": ["12px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                    "headline-h3": ["16px", { "lineHeight": "1.3", "fontWeight": "500" }],
+                    "mobile-title": ["22px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                    "headline-h2": ["20px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                    "label-tiny": ["11px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                    "headline-h1": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                    "mobile-hero": ["28px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                    "display-lg": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                    "mobile-body": ["17px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                    "body-md": ["14px", { "lineHeight": "1.6", "fontWeight": "400" }]
+                }
+            }
+        }
+    }
+    </script>
+<style>
+        body {
+            background-color: #031427; /* surface */
+            color: #d3e4fe; /* on-surface */
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        .ai-border {
+            position: relative;
+        }
+        
+        .ai-border::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            border-radius: inherit;
+            padding: 1px;
+            background: linear-gradient(to right, #06B6D4, transparent);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+
+        /* Checkbox styling */
+        input[type="checkbox"] {
+            appearance: none;
+            background-color: transparent;
+            margin: 0;
+            font: inherit;
+            color: currentColor;
+            width: 20px;
+            height: 20px;
+            border: 1px solid #64748B;
+            border-radius: 0.125rem;
+            display: grid;
+            place-content: center;
+            transition: all 0.2s ease-in-out;
+        }
+
+        input[type="checkbox"]::before {
+            content: "";
+            width: 12px;
+            height: 12px;
+            transform: scale(0);
+            transition: 120ms transform ease-in-out;
+            box-shadow: inset 1em 1em #2563EB;
+            background-color: #2563EB;
+            transform-origin: center;
+            clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+        }
+
+        input[type="checkbox"]:checked::before {
+            transform: scale(1);
+        }
+        
+        input[type="checkbox"]:checked {
+            border-color: #2563EB;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="flex flex-col min-h-screen bg-surface">
+<!-- Top App Bar -->
+<header class="bg-surface border-b border-outline-variant flex justify-between items-center px-mobile-edge-margin h-touch-target-optimum w-full sticky top-0 z-40 transition-colors duration-200">
+<button class="text-primary hover:bg-surface-variant p-2 -ml-2 rounded-full transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">arrow_back</span>
+</button>
+<h1 class="font-headline-h1 text-headline-h1 font-bold tracking-tighter text-primary">FORGE SAFETY</h1>
+<button class="text-primary hover:bg-surface-variant p-2 -mr-2 rounded-full transition-colors">
+<span class="material-symbols-outlined text-syncing" style="font-variation-settings: 'FILL' 1;">sync</span>
+</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 pb-32 px-mobile-edge-margin pt-mobile-section-pad flex flex-col gap-mobile-section-pad">
+<!-- Hazard Overview Card -->
+<section class="bg-[#0F172A] border border-[#64748B] p-web-padding-card rounded-lg flex flex-col gap-3 relative overflow-hidden">
+<div class="absolute top-0 left-0 w-1 h-full bg-danger"></div>
+<div class="flex justify-between items-start pl-2">
+<div>
+<h2 class="font-headline-h2 text-headline-h2 text-on-surface mb-1">Heavy Machinery Vibration</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">schedule</span> Detected 14:22 PST
+                    </p>
+</div>
+<div class="bg-error-container text-on-error-container font-label-tiny text-label-tiny px-2 py-1 rounded-sm border border-danger flex items-center gap-1 uppercase">
+<span class="material-symbols-outlined text-[12px]">warning</span> LEVEL 2 CRITICAL
+                </div>
+</div>
+</section>
+<!-- Location & Proximity -->
+<section class="bg-[#0F172A] border border-[#64748B] rounded-lg overflow-hidden flex flex-col">
+<div class="p-mobile-card-pad border-b border-outline-variant flex items-center justify-between">
+<div>
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface">Detection Zone</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Sector G - Retaining Wall</p>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">my_location</span>
+</div>
+<div class="h-32 bg-surface-container relative">
+<img class="w-full h-full object-cover opacity-60" data-alt="A dark, high-contrast, stylized satellite or blueprint map of an industrial construction site. A red critical zone is highlighted near a retaining wall structure. Professional, technical, engineering dashboard style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBfRW0eSOTl9gXxWyfsrbPexbaWhqMTkVu3IrQuR8_u1c-1HNaisjDhscr_AyGubeLB1tdf01Yqv7bQNIwmTyiem8DbSY_2gWi3B192qHBVHOEVnq07dd1NICvnO2qv8UPsZBSfZALgEmX6SD0hbbb4C3xYQ-WW_1UVq8E77Hltl1Y-QEUQq0xy_PirOxoqMb826p3K1lNIv8bneqg8roD344blCfoI1QKw6EMd6IsgSoaiy4WnUJP5Jg"/>
+<div class="absolute inset-0 bg-gradient-to-t from-[#0F172A] to-transparent"></div>
+<div class="absolute bottom-2 left-2 bg-surface-container/80 backdrop-blur-sm px-2 py-1 rounded border border-outline-variant font-label-tiny text-label-tiny font-mono">
+                    COORD: 34.0522° N, 118.2437° W
+                </div>
+</div>
+</section>
+<!-- Live Telemetry (Bento Grid) -->
+<section class="grid grid-cols-2 gap-web-gap-tight">
+<div class="bg-[#0F172A] border border-[#64748B] p-mobile-card-pad rounded-lg flex flex-col justify-between h-24">
+<div class="flex items-center gap-1 text-on-surface-variant font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[16px]">waves</span> Vib. Intensity
+                </div>
+<div class="font-display-lg text-display-lg text-danger">7.2<span class="text-headline-h3 ml-1 text-on-surface-variant">mm/s</span></div>
+</div>
+<div class="bg-[#0F172A] border border-[#64748B] p-mobile-card-pad rounded-lg flex flex-col justify-between h-24">
+<div class="flex items-center gap-1 text-on-surface-variant font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[16px]">bolt</span> Impact Score
+                </div>
+<div class="font-headline-h2 text-headline-h2 text-warning mt-auto">HIGH</div>
+</div>
+<div class="col-span-2 bg-[#0F172A] border border-[#64748B] p-mobile-card-pad rounded-lg flex justify-between items-center h-16">
+<div class="flex items-center gap-1 text-on-surface-variant font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[16px]">timer</span> Duration
+                </div>
+<div class="font-headline-h2 text-headline-h2 text-on-surface">42 <span class="text-headline-h3 font-normal text-on-surface-variant">mins</span></div>
+</div>
+</section>
+<!-- AI Analysis Summary -->
+<section class="bg-[#0F172A] ai-border p-mobile-card-pad rounded-lg flex gap-3 items-start">
+<div class="mt-1 flex-shrink-0">
+<span class="material-symbols-outlined text-tertiary">smart_toy</span>
+</div>
+<div>
+<h3 class="font-label-tiny text-label-tiny text-tertiary uppercase tracking-wider mb-1">AI Risk Analysis</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+                    Visual AI detected persistent oscillation patterns exceeding safety thresholds near structural supports. <strong class="text-on-surface">High risk of material displacement.</strong>
+</p>
+</div>
+</section>
+<!-- Required Control Measures -->
+<section class="flex flex-col gap-2">
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface mb-1">Required Control Measures</h3>
+<label class="flex items-start gap-3 bg-[#0F172A] border border-[#64748B] p-3 rounded-lg cursor-pointer hover:bg-surface-variant transition-colors">
+<input class="mt-0.5" type="checkbox"/>
+<span class="font-body-md text-body-md text-on-surface flex-1">Halt machinery in Sector G</span>
+</label>
+<label class="flex items-start gap-3 bg-[#0F172A] border border-[#64748B] p-3 rounded-lg cursor-pointer hover:bg-surface-variant transition-colors">
+<input class="mt-0.5" type="checkbox"/>
+<span class="font-body-md text-body-md text-on-surface flex-1">Notify structural engineer</span>
+</label>
+<label class="flex items-start gap-3 bg-[#0F172A] border border-[#64748B] p-3 rounded-lg cursor-pointer hover:bg-surface-variant transition-colors">
+<input class="mt-0.5" type="checkbox"/>
+<span class="font-body-md text-body-md text-on-surface flex-1">Perform manual support check</span>
+</label>
+<label class="flex items-start gap-3 bg-[#0F172A] border border-[#64748B] p-3 rounded-lg cursor-pointer hover:bg-surface-variant transition-colors">
+<input class="mt-0.5" type="checkbox"/>
+<span class="font-body-md text-body-md text-danger flex-1">Clear personnel within 10m radius</span>
+</label>
+</section>
+<!-- Evidence & Logs -->
+<section class="grid grid-cols-2 gap-2 mt-2">
+<button class="bg-[#0F172A] border border-outline-variant hover:bg-surface-variant transition-colors h-touch-target-min rounded flex items-center justify-center gap-2 font-body-sm text-body-sm text-on-surface">
+<span class="material-symbols-outlined text-[18px]">query_stats</span> Raw Data
+            </button>
+<button class="bg-[#0F172A] border border-outline-variant hover:bg-surface-variant transition-colors h-touch-target-min rounded flex items-center justify-center gap-2 font-body-sm text-body-sm text-on-surface">
+<span class="material-symbols-outlined text-[18px]">add_a_photo</span> Attach Photo
+            </button>
+</section>
+<!-- Bottom padding for FAB/Navbar -->
+<div class="h-16"></div>
+</main>
+<!-- Floating Action Area (Primary Action) -->
+<div class="fixed bottom-[80px] left-0 w-full px-mobile-edge-margin z-40 bg-gradient-to-t from-surface to-transparent pb-4 pt-8 pointer-events-none">
+<button class="w-full h-touch-target-optimum bg-mobile-primary text-white font-headline-h3 text-headline-h3 rounded flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(0,102,255,0.3)] pointer-events-auto active:scale-[0.98] transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">warning_amber</span>
+            ACKNOWLEDGE &amp; DEPLOY
+        </button>
+</div>
+<!-- Bottom Nav Bar -->
+<nav class="bg-surface-container border-t border-outline-variant fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-mobile-edge-margin py-mobile-base h-[72px]">
+<button class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined mb-1">construction</span>
+<span class="font-label-tiny text-label-tiny">Field</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-xl px-4 py-1 hover:text-on-surface transition-colors transform scale-95">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">safety_check</span>
+<span class="font-label-tiny text-label-tiny">Safety</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined mb-1">assignment</span>
+<span class="font-label-tiny text-label-tiny">Logs</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined mb-1">person</span>
+<span class="font-label-tiny text-label-tiny">Profile</span>
+</button>
+</nav>
+<script>
+        // Simple optimistic UI for checkboxes
+        document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', (e) => {
+                const label = e.target.closest('label');
+                if(e.target.checked) {
+                    label.style.borderColor = '#2563EB';
+                    label.style.backgroundColor = 'rgba(37, 99, 235, 0.1)';
+                } else {
+                    label.style.borderColor = '#64748B';
+                    label.style.backgroundColor = '#0F172A';
+                }
+            });
+        });
+    </script>
+</body></html>

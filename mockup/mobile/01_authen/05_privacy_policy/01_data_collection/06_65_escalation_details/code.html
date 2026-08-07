@@ -1,0 +1,224 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Escalation Details</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-highest": "#26364a",
+                        "tertiary-fixed-dim": "#4cd7f6",
+                        "outline": "#909097",
+                        "on-background": "#d3e4fe",
+                        "concrete-white": "#F8FAFC",
+                        "background": "#031427",
+                        "danger": "#EF4444",
+                        "offline": "#8E8E93",
+                        "on-error-container": "#ffdad6",
+                        "on-tertiary-fixed": "#001f26",
+                        "surface-dim": "#031427",
+                        "on-secondary-container": "#cdd7ff",
+                        "on-tertiary-container": "#0088a0",
+                        "secondary-container": "#0053db",
+                        "primary-fixed": "#dee1f9",
+                        "on-primary-container": "#777c90",
+                        "primary-container": "#0b1020",
+                        "surface-variant": "#26364a",
+                        "outline-variant": "#46464c",
+                        "secondary-fixed-dim": "#b4c5ff",
+                        "on-tertiary": "#003640",
+                        "tertiary": "#4cd7f6",
+                        "surface-container": "#102034",
+                        "on-surface": "#d3e4fe",
+                        "surface-container-lowest": "#000f21",
+                        "surface": "#031427",
+                        "inverse-primary": "#595e71",
+                        "on-primary": "#2b3041",
+                        "tertiary-fixed": "#acedff",
+                        "on-primary-fixed-variant": "#414658",
+                        "on-primary-fixed": "#161b2b",
+                        "error-container": "#93000a",
+                        "on-secondary": "#002a78",
+                        "on-tertiary-fixed-variant": "#004e5c",
+                        "surface-bright": "#2a3a4f",
+                        "tertiary-container": "#001318",
+                        "syncing": "#FFD60A",
+                        "surface-tint": "#c1c5dc",
+                        "surface-container-high": "#1b2b3f",
+                        "error": "#ffb4ab",
+                        "on-secondary-fixed": "#00174b",
+                        "on-secondary-fixed-variant": "#003ea8",
+                        "on-error": "#690005",
+                        "success": "#10B981",
+                        "secondary": "#b4c5ff",
+                        "primary-fixed-dim": "#c1c5dc",
+                        "on-surface-variant": "#c7c6cd",
+                        "primary": "#c1c5dc",
+                        "inverse-on-surface": "#213145",
+                        "mobile-primary": "#0066FF",
+                        "warning": "#F59E0B",
+                        "surface-container-low": "#0b1c30",
+                        "inverse-surface": "#d3e4fe",
+                        "secondary-fixed": "#dbe1ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "web-margin-component": "32px",
+                        "mobile-edge-margin": "24px",
+                        "web-padding-card": "16px",
+                        "mobile-base": "8px",
+                        "mobile-card-pad": "12px",
+                        "mobile-icon-pad": "8px",
+                        "touch-target-optimum": "52px",
+                        "web-base": "4px",
+                        "mobile-section-pad": "16px",
+                        "web-page-gap": "64px",
+                        "touch-target-min": "44px",
+                        "web-gap-tight": "4px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "headline-h1": ["Inter"],
+                        "mobile-title": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "label-tiny": ["Inter"],
+                        "headline-h2": ["Inter"],
+                        "mobile-hero": ["Inter"],
+                        "mobile-body": ["Inter"],
+                        "headline-h3": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-md": ["14px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "body-sm": ["12px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "headline-h1": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "mobile-title": ["22px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "display-lg": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-tiny": ["11px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-h2": ["20px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "mobile-hero": ["28px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "mobile-body": ["17px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "headline-h3": ["16px", { "lineHeight": "1.3", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.filled {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        
+        @keyframes pulse-amber {
+            0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+            70% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+        }
+        .animate-pulse-amber {
+            animation: pulse-amber 2s infinite;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md min-h-screen pb-24 selection:bg-mobile-primary selection:text-white">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full bg-surface-dim border-b border-outline-variant z-50">
+<div class="flex items-center justify-between px-mobile-edge-margin h-touch-target-optimum w-full max-w-full">
+<button aria-label="Go Back" class="h-10 w-10 flex items-center justify-center text-primary active:scale-95 transition-transform duration-150 hover:bg-surface-container-highest rounded-full">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="font-headline-h2 text-headline-h2 uppercase tracking-tighter text-on-surface truncate px-4">
+                ESCALATION: VIO-992-G
+            </h1>
+<button aria-label="Options" class="h-10 w-10 flex items-center justify-center text-primary active:scale-95 transition-transform duration-150 hover:bg-surface-container-highest rounded-full">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</header>
+<!-- Main Content -->
+<main class="pt-[calc(52px+16px)] px-mobile-edge-margin flex flex-col gap-4">
+<!-- Current Status Card -->
+<section class="bg-surface-container-high rounded-xl p-web-padding-card border border-outline flex flex-col gap-3">
+<div class="flex justify-between items-start">
+<div class="flex flex-col gap-1">
+<span class="font-label-tiny text-label-tiny text-on-surface-variant uppercase">Current Status</span>
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-warning animate-pulse-amber"></div>
+<span class="font-headline-h3 text-headline-h3 text-warning font-bold tracking-wide">IN REVIEW</span>
+</div>
+</div>
+<div class="text-right flex flex-col gap-1">
+<span class="font-label-tiny text-label-tiny text-on-surface-variant uppercase">Time Elapsed</span>
+<span class="font-headline-h3 text-headline-h3 font-mono text-tertiary">00:14:52</span>
+</div>
+</div>
+<div class="w-full bg-surface-container-lowest h-2 rounded-full overflow-hidden mt-2">
+<div class="bg-warning h-full w-[65%] rounded-full transition-all duration-1000"></div>
+</div>
+</section>
+<!-- Authority Response -->
+<section class="bg-[#0F172A] rounded-xl p-web-padding-card border border-tertiary/30 relative overflow-hidden">
+<div class="absolute top-0 left-0 w-1 h-full bg-tertiary"></div>
+<div class="flex items-center gap-3 mb-3">
+<div class="w-10 h-10 rounded-full bg-surface-bright flex items-center justify-center overflow-hidden shrink-0 border border-outline-variant">
+<img alt="Sarah Miller" class="w-full h-full object-cover" data-alt="A tightly cropped headshot of a stern female construction project manager wearing a white hardhat and high-visibility vest. Shot outdoors on an active construction site with dramatic, high-contrast lighting emphasizing mission-critical industrial themes. Cool color temperature with steel grays and deep navies." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCf50iIWr_3I39hlCqLHNt-_PxZeHkeG96wFe9ETKDBncoGF5zvtZ1bCY1cWOZXagaDtHRVLLrG4j1kPfrs4_ARqUlbuhW4zMmJEUiMftHnP2I2rwaQ3EmIFY8L5Ntn11QeKKPlLfMWUXCH2f_SL6qUBcerqimDUUnevqZ6Jz2x1j7utF-j9yxrvsnX3Zrnv_NVS4TBkOu-ralWKum1hn2rsDsCJfD7vIBL3_3i6rNiAsM5F0RzxEEoag">
+</div>
+<div class="flex flex-col">
+<span class="font-headline-h3 text-headline-h3 text-on-surface">Sarah Miller</span>
+<span class="font-body-sm text-body-sm text-tertiary uppercase tracking-wider">Project Manager</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-3 rounded-lg border border-outline-variant relative">
+<span class="material-symbols-outlined text-outline-variant absolute top-2 right-2 text-opacity-30 text-3xl">format_quote</span>
+<p class="font-body-md text-body-md text-on-surface relative z-10 leading-relaxed">
+                    Immediate stop-work order issued for Sector G. Perimeter sweep initiated. Keep all personnel at assembly point 4.
+                </p>
+</div>
+</section>
+<!-- Incident Recap (Collapsed) -->
+<section class="bg-surface-container rounded-xl p-3 border border-outline-variant flex items-center justify-between bg-surface-container-high active:scale-95 transition-all cursor-pointer">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 rounded bg-surface-container-lowest overflow-hidden border border-outline shrink-0 relative">
+<img alt="Evidence Photo" class="w-full h-full object-cover" data-alt="A low-angle, high-fidelity photo taken on a construction site. The subject is a construction worker from the shoulders up, explicitly NOT wearing a safety helmet. The environment is a concrete structure with exposed rebar. Harsh daylight, industrial grit aesthetic, documentary style photography." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCSAqaY1N6IZMzMzs3ZkBgfwFTan6seMGc_lfEzrGlpRxhKdQ6jJI6ZIpdhLVsM5cCPpUvtBxJilCMAm8C9OAyg0w9hquQBNvKhYaCoc81avSFfzC2ZvlqKZDt68rzFdgRPG4lA1gPRNqRl-Npx0jtcI5CzXmazeiT-a2D2FBUbdSPqf4erThYEZBYQ3OkB-1jLbA6a7THIeNaIxJglWmqtR8zHh1NtRGf9BFTdS3Ml0MuMJfuUTD22Jg">
+<div class="absolute bottom-0 right-0 bg-danger text-white text-[8px] font-bold px-1 rounded-tl-sm">AI</div>
+</div>
+<div class="flex flex-col">
+<span class="font-label-tiny text-label-tiny text-on-surface-variant uppercase">Original Violation</span>
+<span class="font-headline-h3 text-headline-h3 text-danger">PPE: HELMET MISSING</span>
+</div>
+</div>
+<button class="h-8 w-8 flex items-center justify-center text-primary rounded-full hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined">expand_more</span>
+</button>
+</section>
+<!-- Transmission Audit Log -->
+<section class="flex flex-col gap-4 mt-2">
+<h2 class="font-label-tiny text-label-tiny text-on-surface-variant uppercase tracking-widest pl-1 border-l-2 border-outline-variant">Transmission Audit Log</h2>
+<div class="relative pl-6 border-l border-outline-variant ml-2 flex flex-col gap-6 py-2">
+<!-- Log Item 1 -->
+<div class="relative active:bg-white/5 transition-all cursor-pointer rounded p-1 -ml-1"><div class="absolute -left-[29px] top-1 w-3 h-3 rounded-full bg-surface-container border-2 border-outline-variant z-10"></div><div class="flex items-center justify-between w-full"><div class="flex flex-col flex-grow"><div class="flex justify-between items-start mb-1"><span class="font-body-sm text-body-sm text-on-surface font-semibold">Escalation Dispatched</span><span class="font-body-sm text-body-sm font-mono text-on-surface-variant">14:32:05</span></div><div class="flex items-center gap-1 text-on-surface-variant"><span class="material-symbols-outlined text-[14px]">memory</span><span class="font-body-sm text-body-sm text-[11px] uppercase tracking-wider">System Auto-Trigger</span></div></div><span class="material-symbols-outlined text-primary ml-2">chevron_right</span></div></div>
+<!-- Log Item 2 -->
+<div class="relative active:bg-white/5 transition-all cursor-pointer rounded p-1 -ml-1"><div class="absolute -left-[29px] top-1 w-3 h-3 rounded-full bg-surface-container border-2 border-outline-variant z-10"></div><div class="flex items-center justify-between w-full"><div class="flex flex-col flex-grow"><div class="flex justify-between items-start mb-1"><span class="font-body-sm text-body-sm text-on-surface font-semibold">Push Notification Delivered</span><span class="font-body-sm text-body-sm font-mono text-on-surface-variant">14:32:10</span></div><div class="flex items-center gap-1 text-on-surface-variant"><span class="material-symbols-outlined text-[14px]">notifications</span><span class="font-body-sm text-body-sm text-[11px] uppercase tracking-wider">Device Push</span></div></div><span class="material-symbols-outlined text-primary ml-2">chevron_right</span></div></div>
+<!-- Log Item 3 -->
+<div class="relative active:bg-white/5 transition-all cursor-pointer rounded p-1 -ml-1"><div class="absolute -left-[29px] top-1 w-3 h-3 rounded-full bg-surface-container border-2 border-outline-variant z-10"></div><div class="flex items-center justify-between w-full"><div class="flex flex-col flex-grow"><div class="flex justify-between items-start mb-1"><span class="font-body-sm text-body-sm text-on-surface font-semibold">LINE Message Sent</span><span class="font-body-sm text-body-sm font-mono text-on-surface-variant">14:32:12</span></div><div class="flex items-center gap-1 text-on-surface-variant"><span class="material-symbols-outlined text-[14px]">chat</span><span class="font-body-sm text-body-sm text-[11px] uppercase tracking-wider">+66 81-XXX-XXXX</span></div></div><span class="material-symbols-outlined text-primary ml-2">chevron_right</span></div></div>
+<!-- Log Item 4 -->
+<div class="relative active:bg-white/5 transition-all cursor-pointer rounded p-1 -ml-1"><div class="absolute -left-[29px] top-1 w-3 h-3 rounded-full bg-tertiary border-2 border-surface z-10 shadow-[0_0_8px_rgba(76,215,246,0.5)]"></div><div class="flex items-center justify-between w-full"><div class="flex flex-col flex-grow"><div class="flex justify-between items-start mb-1"><span class="font-body-sm text-body-sm text-tertiary font-bold">Acknowledged by Authority</span><span class="font-body-sm text-body-sm font-mono text-tertiary">14:35:40</span></div><div class="flex items-center gap-1 text-tertiary/80"><span class="material-symbols-outlined text-[14px] filled">verified</span><span class="font-body-sm text-body-sm text-[11px] uppercase tracking-wider">S. Miller (Manual Ack)</span></div></div><span class="material-symbols-outlined text-tertiary ml-2">chevron_right</span></div></div>
+</div>
+</section>
+</main>
+
+
+</body></html>

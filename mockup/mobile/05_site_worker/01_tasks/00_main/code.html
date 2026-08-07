@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="th"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>รายการงานวันนี้ - CONSTRUCTION OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "surface-bright": "#2a3a4f",
+                "outline": "#8d90a0",
+                "tertiary-fixed": "#dee1f9",
+                "primary-fixed-dim": "#b4c5ff",
+                "inverse-surface": "#d3e4fe",
+                "secondary-fixed": "#acedff",
+                "mobile-primary": "#0066FF",
+                "on-tertiary": "#2b3041",
+                "surface-dim": "#031427",
+                "secondary-container": "#03b5d3",
+                "surface-container-highest": "#26364a",
+                "on-secondary-fixed": "#001f26",
+                "on-tertiary-fixed": "#161b2b",
+                "tertiary-container": "#686c80",
+                "dark-surface": "#0F172A",
+                "on-primary": "#002a78",
+                "on-primary-fixed": "#00174b",
+                "on-surface-variant": "#c3c6d7",
+                "tertiary": "#c1c5dc",
+                "mobile-warning": "#FF9500",
+                "on-tertiary-container": "#eeefff",
+                "surface-variant": "#26364a",
+                "on-error": "#690005",
+                "on-secondary-fixed-variant": "#004e5c",
+                "mobile-danger": "#FF3B30",
+                "surface-container-low": "#0b1c30",
+                "primary": "#b4c5ff",
+                "secondary-fixed-dim": "#4cd7f6",
+                "on-surface": "#d3e4fe",
+                "on-error-container": "#ffdad6",
+                "background": "#031427",
+                "error-container": "#93000a",
+                "on-tertiary-fixed-variant": "#414658",
+                "surface-tint": "#b4c5ff",
+                "on-secondary": "#003640",
+                "dark-bg": "#020617",
+                "on-primary-fixed-variant": "#003ea8",
+                "surface-container-high": "#1b2b3f",
+                "surface-container-lowest": "#000f21",
+                "on-secondary-container": "#00424e",
+                "secondary": "#4cd7f6",
+                "mobile-success": "#00C853",
+                "inverse-primary": "#0053db",
+                "surface-container": "#102034",
+                "tertiary-fixed-dim": "#c1c5dc",
+                "on-primary-container": "#eeefff",
+                "outline-variant": "#434655",
+                "primary-fixed": "#dbe1ff",
+                "sync-active": "#FFD60A",
+                "error": "#ffb4ab",
+                "primary-container": "#2563eb",
+                "surface": "#031427",
+                "sync-pending": "#94A3B8",
+                "on-background": "#d3e4fe",
+                "inverse-on-surface": "#213145"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+        },
+        "spacing": {
+                "space-2": "8px",
+                "base": "4px",
+                "space-3": "12px",
+                "touch-target": "52px",
+                "space-4": "16px",
+                "space-1": "4px",
+                "web-margin": "32px",
+                "edge-mobile": "24px"
+        },
+        "fontFamily": {
+                "display-web": [
+                        "Inter Tight"
+                ],
+                "tiny-web": [
+                        "Inter Tight"
+                ],
+                "h1-web": [
+                        "Inter Tight"
+                ],
+                "body-mobile": [
+                        "Inter Tight"
+                ],
+                "h2-web": [
+                        "Inter Tight"
+                ],
+                "hero-mobile": [
+                        "Inter Tight"
+                ],
+                "body-web": [
+                        "Inter Tight"
+                ],
+                "label-mobile": [
+                        "Inter Tight"
+                ]
+        },
+        "fontSize": {
+                "display-web": [
+                        "32px",
+                        {
+                                "lineHeight": "40px",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "700"
+                        }
+                ],
+                "tiny-web": [
+                        "11px",
+                        {
+                                "lineHeight": "12px",
+                                "letterSpacing": "0.05em",
+                                "fontWeight": "500"
+                        }
+                ],
+                "h1-web": [
+                        "24px",
+                        {
+                                "lineHeight": "32px",
+                                "fontWeight": "600"
+                        }
+                ],
+                "body-mobile": [
+                        "17px",
+                        {
+                                "lineHeight": "24px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "h2-web": [
+                        "20px",
+                        {
+                                "lineHeight": "28px",
+                                "fontWeight": "600"
+                        }
+                ],
+                "hero-mobile": [
+                        "28px",
+                        {
+                                "lineHeight": "34px",
+                                "fontWeight": "700"
+                        }
+                ],
+                "body-web": [
+                        "14px",
+                        {
+                                "lineHeight": "20px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "label-mobile": [
+                        "13px",
+                        {
+                                "lineHeight": "18px",
+                                "fontWeight": "600"
+                        }
+                ]
+        }
+},
+    },
+  }
+</script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #020617;
+            -webkit-tap-highlight-color: transparent;
+            font-family: 'Inter Tight', sans-serif;
+        }
+        .task-card-container {
+            touch-action: pan-y;
+            overflow: hidden;
+            position: relative;
+        }
+        .swipe-action-done {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            background-color: #00C853;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            padding-left: 24px;
+            color: white;
+            z-index: 0;
+        }
+        .task-card-content {
+            position: relative;
+            z-index: 10;
+            transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-dark-bg text-on-surface select-none overflow-x-hidden">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full bg-surface-container-low border-b border-surface-variant flex items-center justify-between px-edge-mobile h-touch-target z-50">
+<div class="flex items-center gap-3">
+<img alt="COS Icon" class="w-8 h-8 object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAiFVS2Rnd77Y4MJEG2GZ1LLaW_RvOhMtG66NrJXcYwES4R2p4DbJHleA7VvTr1O_Xh-G8r49mTJ23AVgyIt0EMN5DZQdHeOp3Fjvn8icWOa5Lrwap2sElPwzH_ifWZd65rpe8vmLK_ls3PsEEz38CqhHkaG8BRHR-LsJn8INMmkxSiSUgb14SuS-sS8WFFG3oh27_nAS9gm8r2toeE7AWZX5h60Tq3nLFbdFOR8a_ROePmYYEWfoyrIBsBYpyAxAQNGQ"/>
+<h1 class="font-display-web text-[16px] font-bold tracking-tight text-on-surface">CONSTRUCTION OS</h1>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-1.5 px-2 py-1 bg-surface-variant/50 rounded-full border border-outline-variant/30">
+<div class="w-2 h-2 rounded-full bg-mobile-success animate-pulse"></div>
+<span class="font-tiny-web text-tiny-web text-on-surface">SYNCED</span>
+</div>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline/30">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a site foreman in a dark blue utility jacket, sharp focus, industrial office background, cinematic lighting, corporate modern aesthetic with blue and gray tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD_douYcYdXo6vqfzbymnN403BhNsAwCxDwdapg7Mpf_uyc6HMJJ0Y4PqQDuVVbcfmfxni_zSfqzGU0lbG8E0oD6CYTcfvLVV_xk5qhOs7q-3gEy17YRVf1oEA-d51JfvO9wr4Chgrx0JaweS67L2UP73P8iohNnR9hqA5drQsMMxI6X9z61LkjSMxElUO4TfFTSonC5WJfrPD5Zj3nZIVgVaM9OonsiV_KWv6LbDSOlaDH9SQsLSSh7wY1CumKNvJtb0LHFK6nl4k"/>
+</div>
+</div>
+</header>
+<main class="pt-touch-target pb-32">
+<!-- OfflineBanner -->
+<div class="bg-mobile-warning/10 border-b border-mobile-warning/20 px-edge-mobile py-3 flex items-center gap-3">
+<span class="material-symbols-outlined text-mobile-warning text-[20px]" style="font-variation-settings: 'FILL' 1;">cloud_off</span>
+<span class="font-label-mobile text-label-mobile text-mobile-warning">กำลังทำงานแบบออฟไลน์ (3 รายการรอการซิงค์)</span>
+</div>
+<!-- Page Header & Filters -->
+<section class="px-edge-mobile pt-6 pb-4">
+<h2 class="font-hero-mobile text-hero-mobile text-on-surface mb-4">รายการงานวันนี้</h2>
+<div class="flex gap-2 overflow-x-auto hide-scrollbar pb-2">
+<button class="px-4 py-2 rounded-full bg-primary-container text-on-primary-container font-label-mobile text-label-mobile whitespace-nowrap">ทั้งหมด (12)</button>
+<button class="px-4 py-2 rounded-full bg-surface-container-high text-on-surface-variant font-label-mobile text-label-mobile border border-outline-variant/30 whitespace-nowrap">รอดำเนินการ</button>
+<button class="px-4 py-2 rounded-full bg-surface-container-high text-on-surface-variant font-label-mobile text-label-mobile border border-outline-variant/30 whitespace-nowrap">กำลังทำ</button>
+<button class="px-4 py-2 rounded-full bg-surface-container-high text-on-surface-variant font-label-mobile text-label-mobile border border-outline-variant/30 whitespace-nowrap">เสร็จสิ้น</button>
+</div>
+</section>
+<!-- Task List Content -->
+<section class="flex flex-col gap-px bg-outline-variant/10">
+<!-- Task Card 1 (High Priority) -->
+<div class="task-card-container group">
+<div class="swipe-action-done w-full">
+<span class="material-symbols-outlined">check_circle</span>
+<span class="ml-2 font-bold">Mark Done</span>
+</div>
+<div class="task-card-content bg-surface-container-low px-edge-mobile py-5 flex flex-col gap-3 active:scale-[0.98] transition-transform duration-150">
+<div class="flex items-start justify-between">
+<div class="flex flex-col gap-1">
+<span class="font-tiny-web text-tiny-web text-outline uppercase tracking-widest">ID: #C4-8820</span>
+<h3 class="font-body-mobile text-body-mobile font-semibold text-on-surface leading-tight">งานติดตั้งโครงสร้างเหล็กชั้น 4</h3>
+</div>
+<div class="flex items-center gap-1 bg-mobile-danger/10 text-mobile-danger px-2 py-0.5 rounded text-[11px] font-bold">
+<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">priority_high</span>
+                            HIGH
+                        </div>
+</div>
+<div class="flex items-center justify-between mt-1">
+<div class="flex gap-2">
+<span class="px-2 py-1 bg-surface-variant/40 rounded text-[12px] text-on-surface-variant flex items-center gap-1 border border-outline-variant/30">
+<span class="material-symbols-outlined text-[14px]">schedule</span>
+                                08:00 - 12:00
+                            </span>
+</div>
+<button class="px-4 h-9 bg-primary-container text-white rounded-lg font-label-mobile text-label-mobile active:bg-blue-700 transition-colors shadow-lg shadow-primary-container/10">
+                            Update Progress
+                        </button>
+</div>
+<!-- Progress Mini Indicator -->
+<div class="w-full h-1 bg-surface-variant rounded-full mt-1 overflow-hidden">
+<div class="h-full bg-primary-container w-1/3"></div>
+</div>
+</div>
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-mobile-danger"></div>
+</div>
+<!-- Task Card 2 (Medium Priority) -->
+<div class="task-card-container group">
+<div class="swipe-action-done w-full">
+<span class="material-symbols-outlined">check_circle</span>
+<span class="ml-2 font-bold">Mark Done</span>
+</div>
+<div class="task-card-content bg-surface-container-low px-edge-mobile py-5 flex flex-col gap-3 border-t border-outline-variant/10">
+<div class="flex items-start justify-between">
+<div class="flex flex-col gap-1">
+<span class="font-tiny-web text-tiny-web text-outline uppercase tracking-widest">ID: #E2-9012</span>
+<h3 class="font-body-mobile text-body-mobile font-semibold text-on-surface leading-tight">ตรวจสอบระบบไฟฟ้าฝั่งตะวันออก</h3>
+</div>
+<div class="flex items-center gap-1 bg-mobile-warning/10 text-mobile-warning px-2 py-0.5 rounded text-[11px] font-bold">
+<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">bolt</span>
+                            MEDIUM
+                        </div>
+</div>
+<div class="flex items-center justify-between mt-1">
+<div class="flex gap-2">
+<span class="px-2 py-1 bg-surface-variant/40 rounded text-[12px] text-on-surface-variant flex items-center gap-1 border border-outline-variant/30">
+<span class="material-symbols-outlined text-[14px]">history</span>
+                                Pending Sync
+                            </span>
+</div>
+<button class="px-4 h-9 border border-outline-variant bg-transparent text-on-surface rounded-lg font-label-mobile text-label-mobile active:bg-surface-variant/20 transition-colors">
+                            Update Progress
+                        </button>
+</div>
+</div>
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-mobile-warning"></div>
+</div>
+<!-- Task Card 3 (AI Insight Module) -->
+<div class="bg-secondary-container/5 border-l-4 border-secondary-container px-edge-mobile py-4 my-2 relative overflow-hidden">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-secondary-container text-[18px]">auto_awesome</span>
+<span class="font-tiny-web text-tiny-web text-secondary-container uppercase tracking-widest font-bold">AI Insight</span>
+</div>
+<p class="text-on-surface text-[14px] leading-relaxed">
+                    พบความล่าช้าสะสม 15 นาทีในเขต C4 แนะนำให้เริ่มงาน "ติดตั้งท่อน้ำ" เร็วกว่ากำหนดเพื่อเลี่ยงคอขวด
+                </p>
+<button class="mt-3 text-secondary-container font-label-mobile text-label-mobile flex items-center gap-1">
+                    ปรับตารางเวลาอัตโนมัติ <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</button>
+</div>
+<!-- Task Card 4 (Completed) -->
+<div class="task-card-container group opacity-60">
+<div class="task-card-content bg-surface-container px-edge-mobile py-5 flex flex-col gap-3 border-t border-outline-variant/10">
+<div class="flex items-start justify-between">
+<div class="flex flex-col gap-1">
+<span class="font-tiny-web text-tiny-web text-outline uppercase tracking-widest">ID: #A1-7742</span>
+<h3 class="font-body-mobile text-body-mobile font-semibold text-on-surface-variant leading-tight line-through">ตรวจเช็ควัสดุเข้าหน้างาน</h3>
+</div>
+<div class="flex items-center gap-1 bg-mobile-success/10 text-mobile-success px-2 py-0.5 rounded text-[11px] font-bold">
+<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">check</span>
+                            DONE
+                        </div>
+</div>
+</div>
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-mobile-success"></div>
+</div>
+</section>
+</main>
+<!-- Voice Note FAB -->
+<button class="fixed bottom-28 right-6 w-16 h-16 bg-mobile-primary rounded-full shadow-2xl flex items-center justify-center text-white z-40 active:scale-90 transition-transform duration-150" id="voice-record-btn">
+<span class="material-symbols-outlined text-[32px]" style="font-variation-settings: 'FILL' 1;">mic</span>
+<div class="absolute inset-0 rounded-full bg-mobile-primary animate-ping opacity-20 hidden" id="voice-ping"></div>
+</button>
+<!-- Voice Tooltip (Shown on hold) -->
+<div class="fixed inset-0 bg-dark-bg/90 z-50 flex-col items-center justify-center gap-8 hidden" id="voice-overlay">
+<div class="w-32 h-32 rounded-full bg-mobile-primary flex items-center justify-center animate-pulse">
+<span class="material-symbols-outlined text-[64px] text-white">mic</span>
+</div>
+<div class="text-center">
+<h4 class="text-white font-h1-web text-h1-web">Recording Voice Note...</h4>
+<p class="text-outline mt-2">Release to save to Task #C4-8820</p>
+</div>
+<div class="flex gap-4 mt-8">
+<div class="w-2 h-8 bg-mobile-primary/40 rounded-full"></div>
+<div class="w-2 h-12 bg-mobile-primary/60 rounded-full"></div>
+<div class="w-2 h-16 bg-mobile-primary rounded-full"></div>
+<div class="w-2 h-12 bg-mobile-primary/60 rounded-full"></div>
+<div class="w-2 h-8 bg-mobile-primary/40 rounded-full"></div>
+</div>
+</div>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-20 px-4 pb-safe bg-surface-container-high border-t border-surface-variant rounded-t-xl shadow-2xl">
+<a class="flex flex-col items-center justify-center text-primary-container bg-primary-container/10 rounded-xl px-3 py-1 active:scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">assignment</span>
+<span class="font-label-mobile text-label-mobile mt-1">Tasks</span>
+</a>
+<a class="flex flex-col items-center justify-center text-outline active:scale-95 transition-transform duration-150 hover:bg-surface-variant/20" href="#">
+<span class="material-symbols-outlined">report_problem</span>
+<span class="font-label-mobile text-label-mobile mt-1">Issues</span>
+</a>
+<a class="flex flex-col items-center justify-center text-outline active:scale-95 transition-transform duration-150 hover:bg-surface-variant/20" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-label-mobile text-label-mobile mt-1">Reports</span>
+</a>
+<a class="flex flex-col items-center justify-center text-outline active:scale-95 transition-transform duration-150 hover:bg-surface-variant/20" href="#">
+<span class="material-symbols-outlined">health_and_safety</span>
+<span class="font-label-mobile text-label-mobile mt-1">Safety</span>
+</a>
+</nav>
+<script>
+        // Simple Swipe and Voice Interactions
+        const cards = document.querySelectorAll('.task-card-content');
+        const voiceBtn = document.getElementById('voice-record-btn');
+        const voiceOverlay = document.getElementById('voice-overlay');
+        const voicePing = document.getElementById('voice-ping');
+
+        cards.forEach(card => {
+            let startX = 0;
+            let currentX = 0;
+
+            card.addEventListener('touchstart', e => {
+                startX = e.touches[0].clientX;
+            }, {passive: true});
+
+            card.addEventListener('touchmove', e => {
+                currentX = e.touches[0].clientX;
+                const diff = currentX - startX;
+                if (diff > 0 && diff < 150) {
+                    card.style.transform = `translateX(${diff}px)`;
+                }
+            }, {passive: true});
+
+            card.addEventListener('touchend', () => {
+                const diff = currentX - startX;
+                if (diff > 100) {
+                    card.style.transform = `translateX(100%)`;
+                    setTimeout(() => {
+                        card.parentElement.style.height = '0';
+                        card.parentElement.style.opacity = '0';
+                        card.parentElement.style.transition = 'all 0.5s ease';
+                        setTimeout(() => card.parentElement.remove(), 500);
+                    }, 200);
+                } else {
+                    card.style.transform = `translateX(0)`;
+                }
+                startX = 0;
+                currentX = 0;
+            });
+        });
+
+        // Voice Interaction Mockup
+        let timer;
+        voiceBtn.addEventListener('mousedown', startRecording);
+        voiceBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            startRecording();
+        });
+
+        window.addEventListener('mouseup', stopRecording);
+        window.addEventListener('touchend', stopRecording);
+
+        function startRecording() {
+            voicePing.classList.remove('hidden');
+            timer = setTimeout(() => {
+                voiceOverlay.classList.remove('hidden');
+                voiceOverlay.classList.add('flex');
+            }, 300);
+        }
+
+        function stopRecording() {
+            clearTimeout(timer);
+            voicePing.classList.add('hidden');
+            voiceOverlay.classList.add('hidden');
+            voiceOverlay.classList.remove('flex');
+        }
+    </script>
+</body></html>
