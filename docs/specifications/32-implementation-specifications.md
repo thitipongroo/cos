@@ -657,7 +657,7 @@ is pre-auth by construction, so the same "no project data on screen" rationale a
 scoped to the brand logo on that screen and nothing else.
 
 **Exception 2 — loading states** (product-owner decision 2026-07-17; ADR-055; reference
-`mockup/mobile/02_loading_component` + `mockup/desktop/imp_002_universal_loading_component_desktop_view`).
+`mockup/mobile/02_loading` + `mockup/desktop/imp_002_universal_loading_component_desktop_view`).
 `<LoadingState />` may use the same motif — a cyan glow, a scan-line gradient, and a waveform on
 the `ai` variant — **for the same reason the pre-auth exception exists: no project data is on
 screen yet**. A loading state is by definition the interval before data arrives, so the motif never
@@ -1013,12 +1013,18 @@ because the two surfaces are viewed at different distances. Do not "harmonise" t
 **Every status pill and badge takes `--mobile-radius-xl` (12px) — one token, no exceptions.**
 
 The mockups do not agree with each other, so this is a platform ruling rather than a reading.
-Counted 2026-08-06 across all 226 `mockup/mobile/**/code.html`:
+Recounted 2026-08-08 across all 321 `mockup/mobile/**/code.html` (was 226 on 2026-08-06 — the set has
+grown, so the earlier 153 / 52 no longer describe it):
 
 | `borderRadius.full` in the file's own `tailwind.config` | files   | families                                                                    |
 | ------------------------------------------------------- | ------- | --------------------------------------------------------------------------- |
-| `9999px` (Tailwind default — a true capsule)            | **153** | tenant admin, procurement, CRM, most dashboards                             |
-| `0.75rem` / `12px` (overridden)                         | **52**  | authen, privacy policy, loading, site-engineer issues/AI, executive, worker |
+| `9999px` — a true capsule                               | **155** | tenant admin, procurement, CRM, most dashboards                             |
+| `0.75rem` / `12px` (overridden)                         | **146** | authen, privacy policy, loading, site-engineer issues/AI, executive, worker |
+| no `borderRadius` config in the file at all             | **20**  | —                                                                           |
+
+Of the 155 capsules, 154 declare `9999px` explicitly and 1 omits `full` and inherits Tailwind's
+default. The 12px family has gone from roughly a fifth of the set to nearly half; the ruling is
+unchanged, and is now closer to what the mockups actually do than when it was written.
 
 Two earlier versions of this paragraph were each wrong in one direction: the first assumed every
 `rounded-full` was a capsule; the second (2026-08-06) read the override in the data-collection family

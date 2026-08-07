@@ -1062,8 +1062,11 @@ Dark theme tokens (source: brand_palette §6):
                                     value both modes — plus rounded-t-xl + top border, i.e. a raised
                                     sheet, while the header is flat against the page. The set had no
                                     token meaning "chrome sheet", which is why the nav sat on the card
-                                    colour. 217 of the mockup/mobile/** code.html files define
-                                    surface-container as #102034, 5 as #0F172A.
+                                    colour. Recounted 2026-08-08 over all 321 mockup/mobile/**
+                                    code.html: 312 define surface-container as #102034, 5 as
+                                    #0F172A, and four are one-offs (#12182b, #141d2b, #1a2238,
+                                    #1e293b). Previous figures (217 / 5) were counted on 2026-08-06
+                                    against 226 files and went stale as the mockup set grew.
   --cos-dark-elevated:    #111827   Elevated modal / dropdown surface
   --cos-dark-text:        #F8FAFC   Primary text
   --cos-dark-muted:       #94A3B8   Secondary text / inactive
@@ -1080,8 +1083,12 @@ Dark theme tokens (source: brand_palette §6):
                                     puts blue behind white text, so contrast is the button's.)
   --cos-dark-outline:     #46464C   Card / input border on dark surfaces (added 2026-08-06). This is
                                     the MINORITY mockup value and is kept on purpose (PO decision
-                                    2026-08-07): outline-variant is #434655 in 189 of the
-                                    mockup/mobile/** code.html files and #46464C in 28. The spec once
+                                    2026-08-07): recounted 2026-08-08 over all 321 mockup/mobile/**
+                                    code.html, outline-variant is #434655 in 186 files and #46464C in
+                                    126, with #334155 in 4 and four one-offs; 1 file declares none.
+                                    (Was 189 / 28 on 2026-08-06 against 226 files — the minority is
+                                    now much larger, but still the minority, so the ruling stands.)
+                                    The spec once
                                     justified it as "the value the mockups use" — untrue, and that
                                     sentence is gone. (70,70,76) vs (67,70,85): the neutral grey reads
                                     as an EDGE on a navy surface where the bluer one blends in, which
@@ -1179,9 +1186,11 @@ SPACING TOKENS (mobile — source: MOBILE_UX_GUIDELINES.md)
   --mobile-radius-xl:  12px   Hero / summary cards, emphasised panels
   --mobile-radius-2xl: 16px   Dashed closing panel (left at Tailwind's default in the mockups)
   EVERY status pill / badge takes xl 12px — one token, no exceptions. The mockups DISAGREE: counted
-  2026-08-06, 153 of 226 mockup/mobile/**/code.html keep rounded-full at 9999px (tenant admin,
-  procurement, CRM, dashboards) and 52 override it to 0.75rem = 12px (authen, privacy policy,
-  loading, site-engineer issues/AI, executive, worker). This is a platform ruling, not a reading, and
+  2026-08-08 over all 321 mockup/mobile/**/code.html, 155 keep rounded-full at 9999px (154 declare it,
+  1 omits `full` and inherits Tailwind's default) and 146 override it to 0.75rem = 12px; the remaining
+  20 ship no borderRadius config at all. (Was 153 / 52 of 226 on 2026-08-06 — the 12px family has
+  grown from a fifth of the set to nearly half as the mockups expanded, which strengthens rather than
+  weakens the ruling.) This is a platform ruling, not a reading, and
   it costs nothing: these badges are 18-26px tall, so 12px is at or within 1px of a capsule and the
   two families were never apart on screen. 999 stays for circles only (avatars, status dots, radio
   marks, round icon plates) where the radius is half the width, off this scale entirely.

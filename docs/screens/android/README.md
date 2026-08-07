@@ -134,7 +134,7 @@ committed by accident.
 
 The same dashboard while its data is still loading: the reusable [`LoadingState`](../../../apps/mobile/src/components/LoadingState.tsx)
 component (ADR-055 — the implementation of
-[`mockup/mobile/02_loading_component`](../../../mockup/mobile/02_loading_component))
+[`mockup/mobile/02_loading`](../../../mockup/mobile/02_loading))
 now stands in for the content instead of the "no data" empty states: a `micro` strip (spinner +
 "Loading…" + %) where the picker goes — so the picker's "no projects cached" message never reads as a
 failure during load — the `widget` variant (an analytics icon-plate + a "Loading…"
