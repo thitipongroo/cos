@@ -27,7 +27,7 @@ done
 
 # Skip type-only packages (no executable logic)
 PKG_NAME=$(basename "$PKG_ROOT")
-[[ "$PKG_NAME" == "types" || "$PKG_NAME" == "proto-contracts" ]] && exit 0
+[[ "$PKG_NAME" == "types" ]] && exit 0
 
 ERRORS=()
 

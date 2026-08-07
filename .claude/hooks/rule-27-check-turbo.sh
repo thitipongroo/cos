@@ -26,7 +26,7 @@ MISSING=()
 while IFS= read -r script; do
   if ! echo "$TURBO_TASKS" | grep -qxF "$script"; then
     # Only flag standard pipeline scripts (build, test, lint, dev, typecheck, etc.)
-    if [[ "$script" =~ ^(build|test|test:cov|test:integration|test:unit|lint|lint:fix|dev|typecheck|type-check|clean|proto-gen)$ ]]; then
+    if [[ "$script" =~ ^(build|test|test:cov|test:integration|test:unit|lint|lint:fix|dev|typecheck|type-check|clean)$ ]]; then
       MISSING+=("$script")
     fi
   fi

@@ -504,42 +504,41 @@ ARCHITECTURE DECISION (authoritative — from file 01):
   Exception:  AI services (Python ecosystem) and Go workers are ALWAYS separate —
               different language runtime, cannot run inside Node.js process.
 
-DEPLOYABLE UNITS — MIRROR ONLY. The CANONICAL runtime table is
-docs/specifications/32-implementation-specifications.md §32.2. Never edit a Runtime value here
-first: change §32.2, then propagate. scripts/readiness/check-service-runtimes.sh verifies both
-against the build files in services/<name>/ and fails CI on a mismatch.
-┌────────────────────────────────┬──────────────────┬────────────────────────────┐
-│ Deployable                     │ Runtime          │ Contents                   │
-├────────────────────────────────┼──────────────────┼────────────────────────────┤
-│ Main Application               │ NestJS (monolith)│ ALL domain modules:        │
-│ (backend/)                     │                  │ identity, tenant, project, │
-│                                │                  │ boq, procurement, site-ops,│
-│                                │                  │ finance, notification,     │
-│                                │                  │ equipment, workforce       │
-├────────────────────────────────┼──────────────────┼────────────────────────────┤
-│ File Service                   │ Fastify          │ Multipart upload I/O       │
-│ (services/file-service/)       │                  │ (extracted for throughput) │
-├────────────────────────────────┼──────────────────┼────────────────────────────┤
-│ AI Gateway                     │ FastAPI (Python)  │ LLM routing, RAG          │
-│ AI Embedding Worker            │ FastAPI (Python)  │ Embedding generation       │
-│ AI OCR Pipeline                │ FastAPI (Python)  │ OCR processing             │
-│ (services/ai-*)                │                  │                            │
-├────────────────────────────────┼──────────────────┼────────────────────────────┤
-│ AI Transcription Pipeline      │ FastAPI (Python) │ Voice-note transcription   │
-│ (services/ai-transcription-…)  │                  │ (ADR-052)                  │
-├────────────────────────────────┼──────────────────┼────────────────────────────┤
-│ Analytics Worker               │ Go               │ ClickHouse aggregation     │
-│ KG Ingestion Worker            │ Go               │ Neo4j ingestion            │
-│ IoT Ingestion Worker           │ Go               │ EMQX (MQTT) → Kafka        │
-│ BIM Import Worker              │ Python           │ IFC parse / quantities     │
-│ (services/*-worker/)           │                  │                            │
-├────────────────────────────────┼──────────────────┼────────────────────────────┤
-│ Credential Service             │ Node             │ W3C DID/VC issuance +      │
-│ (services/credential-service/) │                  │ verification (ADR-019/058) │
-├────────────────────────────────┼──────────────────┼────────────────────────────┤
-│ Web App (apps/web/)            │ Next.js+Serwist  │ Tablet/laptop online+offline│
-│ Mobile (apps/mobile/)          │ React Native     │ Smartphone native app      │
-└────────────────────────────────┴──────────────────┴────────────────────────────┘
+DEPLOYABLE UNITS — the Runtime column is DELIBERATELY ABSENT from this table.
+Runtime is declared in exactly ONE place: docs/specifications/32-implementation-specifications.md
+§32.2. Do not restore a Runtime column here — a second hand-maintained copy is what produced the
+2026-08-07 "BIM Import Worker = Go" error (the directory has never held a .go file).
+scripts/readiness/check-service-runtimes.sh fails CI if a runtime reappears in this table.
+┌────────────────────────────────┬───────────────────────────────────────────────┐
+│ Deployable                     │ Contents                                      │
+├────────────────────────────────┼───────────────────────────────────────────────┤
+│ Main Application               │ ALL domain modules: identity, tenant,         │
+│ (backend/)                     │ project, boq, procurement, site-ops,          │
+│                                │ finance, notification, equipment, workforce   │
+├────────────────────────────────┼───────────────────────────────────────────────┤
+│ File Service                   │ Multipart upload I/O                          │
+│ (services/file-service/)       │ (extracted for throughput)                    │
+├────────────────────────────────┼───────────────────────────────────────────────┤
+│ AI Gateway                     │ LLM routing, RAG                              │
+│ AI Embedding Worker            │ Embedding generation                          │
+│ AI OCR Pipeline                │ OCR processing                                │
+│ (services/ai-*)                │                                               │
+├────────────────────────────────┼───────────────────────────────────────────────┤
+│ AI Transcription Pipeline      │ Voice-note transcription (ADR-052)            │
+│ (services/ai-transcription-…)  │                                               │
+├────────────────────────────────┼───────────────────────────────────────────────┤
+│ Analytics Worker               │ ClickHouse aggregation                        │
+│ KG Ingestion Worker            │ Neo4j ingestion                               │
+│ IoT Ingestion Worker           │ EMQX (MQTT) → Kafka                           │
+│ BIM Import Worker              │ IFC parse / quantities                        │
+│ (services/*-worker/)           │                                               │
+├────────────────────────────────┼───────────────────────────────────────────────┤
+│ Credential Service             │ W3C DID/VC issuance +                         │
+│ (services/credential-service/) │ verification (ADR-019/058)                    │
+├────────────────────────────────┼───────────────────────────────────────────────┤
+│ Web App (apps/web/)            │ Tablet/laptop online+offline                  │
+│ Mobile (apps/mobile/)          │ Smartphone native app                         │
+└────────────────────────────────┴───────────────────────────────────────────────┘
 
 SERVICE EXTRACTION RULES (enforced — agents must NOT split prematurely):
   A module may be extracted from the monolith ONLY when BOTH conditions are true:
