@@ -58,21 +58,35 @@ const PM_ROWS = [
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function makeChClient(rows: unknown[]) {
-  const resultSet = { json: jest.fn().mockResolvedValue(rows) };
-  // close() is invoked by AnalyticsModule.onModuleDestroy on app shutdown (ADR-034 graceful
-  // shutdown); the mock must provide it or teardown throws "close is not a function".
-  return {
-    query: jest.fn().mockResolvedValue(resultSet),
-    close: jest.fn().mockResolvedValue(undefined),
-  };
-}
+// ONE ClickHouse mock and ONE cache mock, shared by the single application below and reprogrammed
+// per test. They are not rebuilt, because rebuilding the application is what hung this suite.
+//
+// WHY THIS SHAPE (2026-08-07). Six tests used to each build their own AppModule + Nest application
+// purely to swap these two providers. Every one of them was closed, yet the process would not exit:
+// on CI the run reached "Ran all test suites" at 162.9s and then sat for 70 more minutes until it
+// was cancelled, with @nestjs/schedule crons firing into a torn-down environment the whole time.
+// Measured locally: the whole file hangs 200s+ past the end of its tests, but running a single test
+// with `-t` — one application instead of seven — exits in 22s, and every other integration spec
+// (one application each) exits cleanly. `--detectOpenHandles` reports nothing, so whatever each
+// extra application leaks is invisible to Jest; the fix is to stop creating them.
+//
+// close() is invoked by AnalyticsModule.onModuleDestroy on app shutdown (ADR-034 graceful
+// shutdown); the mock must provide it or teardown throws "close is not a function".
+const chMock = {
+  query: jest.fn(),
+  close: jest.fn().mockResolvedValue(undefined),
+};
 
-const noopCache = {
-  get: jest.fn().mockResolvedValue(null),
+const cacheMock = {
+  get: jest.fn(),
   set: jest.fn().mockResolvedValue(undefined),
   del: jest.fn().mockResolvedValue(undefined),
 };
+
+/** Program the shared ClickHouse mock to return `rows` for the next query. */
+function chReturns(rows: unknown[]): void {
+  chMock.query.mockResolvedValue({ json: jest.fn().mockResolvedValue(rows) });
+}
 
 // ── Suite ─────────────────────────────────────────────────────────────────────
 
@@ -81,12 +95,11 @@ describe('Analytics API Integration (Phase 14)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
-    // AppModule's ThrottlerModule needs REDIS_URL + a reachable Redis at init; every test below
-    // builds its own AppModule, so start shared infra once and let all of them read the env.
+    // AppModule's ThrottlerModule needs REDIS_URL + a reachable Redis at init.
     infra = await startIntegrationInfra();
 
-    // Each test overrides ClickHouse with appropriate row fixtures below;
-    // this beforeAll sets up shared infrastructure.
+    // The ONLY application in this file. Tests reprogram chMock / cacheMock instead of rebuilding
+    // it — see the note above the mocks for what rebuilding cost.
     const module: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
@@ -103,9 +116,9 @@ describe('Analytics API Integration (Phase 14)', () => {
         },
       })
       .overrideProvider(CLICKHOUSE_CLIENT)
-      .useValue(makeChClient(EXECUTIVE_ROWS))
+      .useValue(chMock)
       .overrideProvider(CACHE_MANAGER)
-      .useValue(noopCache)
+      .useValue(cacheMock)
       .compile();
 
     app = module.createNestApplication();
@@ -119,13 +132,18 @@ describe('Analytics API Integration (Phase 14)', () => {
     await stopIntegrationInfra(infra);
   });
   beforeEach(() => {
+    // clearAllMocks wipes call history but keeps implementations, so the defaults are re-applied
+    // explicitly: cache misses, ClickHouse returns nothing. Each test overrides what it needs.
     jest.clearAllMocks();
+    cacheMock.get.mockResolvedValue(null);
+    chReturns([]);
   });
 
   // ── Executive dashboard ───────────────────────────────────────────────────
 
   describe('GET /api/v1/analytics/executive', () => {
     it('returns 200 with project rows when ClickHouse responds', async () => {
+      chReturns(EXECUTIVE_ROWS);
       const res = await request(app.getHttpServer())
         .get('/api/v1/analytics/executive')
         .set('Authorization', AUTH)
@@ -136,31 +154,13 @@ describe('Analytics API Integration (Phase 14)', () => {
     });
 
     it('returns 503 when ClickHouse is unavailable', async () => {
-      // override ClickHouse to throw
-      const failingCh = {
-        query: jest.fn().mockRejectedValue(new Error('connection refused')),
-        close: jest.fn().mockResolvedValue(undefined),
-      };
-      const mod: TestingModule = await Test.createTestingModule({ imports: [AppModule] })
-        .overrideGuard(JwtAuthGuard)
-        .useValue({ canActivate: () => true })
-        .overrideProvider(CLICKHOUSE_CLIENT)
-        .useValue(failingCh)
-        .overrideProvider(CACHE_MANAGER)
-        .useValue(noopCache)
-        .compile();
+      chMock.query.mockRejectedValue(new Error('connection refused'));
 
-      const failApp = mod.createNestApplication();
-      failApp.setGlobalPrefix('api/v1');
-      await failApp.init();
-
-      await request(failApp.getHttpServer())
+      await request(app.getHttpServer())
         .get('/api/v1/analytics/executive')
         .set('Authorization', AUTH)
         .query({ tenantId: TENANT, 'projectIds[]': PROJECT, dateRange: DATE_RANGE })
         .expect(503);
-
-      await failApp.close();
     });
   });
 
@@ -168,28 +168,15 @@ describe('Analytics API Integration (Phase 14)', () => {
 
   describe('GET /api/v1/analytics/pm/:projectId', () => {
     it('returns 200 with site activity rows', async () => {
-      const pmCh = makeChClient(PM_ROWS);
-      const mod: TestingModule = await Test.createTestingModule({ imports: [AppModule] })
-        .overrideGuard(JwtAuthGuard)
-        .useValue({ canActivate: () => true })
-        .overrideProvider(CLICKHOUSE_CLIENT)
-        .useValue(pmCh)
-        .overrideProvider(CACHE_MANAGER)
-        .useValue(noopCache)
-        .compile();
+      chReturns(PM_ROWS);
 
-      const pmApp = mod.createNestApplication();
-      pmApp.setGlobalPrefix('api/v1');
-      await pmApp.init();
-
-      const res = await request(pmApp.getHttpServer())
+      const res = await request(app.getHttpServer())
         .get(`/api/v1/analytics/pm/${PROJECT}`)
         .set('Authorization', AUTH)
         .query({ tenantId: TENANT, dateRange: DATE_RANGE })
         .expect(200);
 
       expect(Array.isArray(res.body)).toBe(true);
-      await pmApp.close();
     });
   });
 
@@ -197,82 +184,43 @@ describe('Analytics API Integration (Phase 14)', () => {
 
   describe('GET /api/v1/analytics/projects/:projectId/cost-trend', () => {
     it('returns 200 with cost trend rows', async () => {
-      const trendCh = makeChClient(COST_ROWS);
-      const mod: TestingModule = await Test.createTestingModule({ imports: [AppModule] })
-        .overrideGuard(JwtAuthGuard)
-        .useValue({ canActivate: () => true })
-        .overrideProvider(CLICKHOUSE_CLIENT)
-        .useValue(trendCh)
-        .overrideProvider(CACHE_MANAGER)
-        .useValue(noopCache)
-        .compile();
+      chReturns(COST_ROWS);
 
-      const trendApp = mod.createNestApplication();
-      trendApp.setGlobalPrefix('api/v1');
-      await trendApp.init();
-
-      const res = await request(trendApp.getHttpServer())
+      const res = await request(app.getHttpServer())
         .get(`/api/v1/analytics/projects/${PROJECT}/cost-trend`)
         .set('Authorization', AUTH)
         .query({ tenantId: TENANT, dateRange: DATE_RANGE })
         .expect(200);
 
       expect(Array.isArray(res.body)).toBe(true);
-      await trendApp.close();
     });
   });
 
   describe('GET /api/v1/analytics/projects/:projectId/procurement-trend', () => {
     it('returns 200 with procurement trend rows', async () => {
-      const trendCh = makeChClient(PROCUREMENT_ROWS);
-      const mod: TestingModule = await Test.createTestingModule({ imports: [AppModule] })
-        .overrideGuard(JwtAuthGuard)
-        .useValue({ canActivate: () => true })
-        .overrideProvider(CLICKHOUSE_CLIENT)
-        .useValue(trendCh)
-        .overrideProvider(CACHE_MANAGER)
-        .useValue(noopCache)
-        .compile();
+      chReturns(PROCUREMENT_ROWS);
 
-      const trendApp = mod.createNestApplication();
-      trendApp.setGlobalPrefix('api/v1');
-      await trendApp.init();
-
-      const res = await request(trendApp.getHttpServer())
+      const res = await request(app.getHttpServer())
         .get(`/api/v1/analytics/projects/${PROJECT}/procurement-trend`)
         .set('Authorization', AUTH)
         .query({ tenantId: TENANT, dateRange: DATE_RANGE })
         .expect(200);
 
       expect(Array.isArray(res.body)).toBe(true);
-      await trendApp.close();
     });
   });
 
   describe('GET /api/v1/analytics/projects/:projectId/site-trend', () => {
     it('returns 200 with site trend rows', async () => {
-      const trendCh = makeChClient(SITE_ROWS);
-      const mod: TestingModule = await Test.createTestingModule({ imports: [AppModule] })
-        .overrideGuard(JwtAuthGuard)
-        .useValue({ canActivate: () => true })
-        .overrideProvider(CLICKHOUSE_CLIENT)
-        .useValue(trendCh)
-        .overrideProvider(CACHE_MANAGER)
-        .useValue(noopCache)
-        .compile();
+      chReturns(SITE_ROWS);
 
-      const trendApp = mod.createNestApplication();
-      trendApp.setGlobalPrefix('api/v1');
-      await trendApp.init();
-
-      const res = await request(trendApp.getHttpServer())
+      const res = await request(app.getHttpServer())
         .get(`/api/v1/analytics/projects/${PROJECT}/site-trend`)
         .set('Authorization', AUTH)
         .query({ tenantId: TENANT, dateRange: DATE_RANGE })
         .expect(200);
 
       expect(Array.isArray(res.body)).toBe(true);
-      await trendApp.close();
     });
   });
 
@@ -281,34 +229,18 @@ describe('Analytics API Integration (Phase 14)', () => {
   describe('Cache hit — ClickHouse is not called', () => {
     it('returns cached data without hitting ClickHouse for cost-trend', async () => {
       const cachedRows = [{ eventDate: '2026-01-01', committed: '999', actual: '888' }];
-      const hittingCache = {
-        get: jest.fn().mockResolvedValue(cachedRows),
-        set: jest.fn().mockResolvedValue(undefined),
-        del: jest.fn().mockResolvedValue(undefined),
-      };
-      const chSpy = makeChClient([]);
-      const mod: TestingModule = await Test.createTestingModule({ imports: [AppModule] })
-        .overrideGuard(JwtAuthGuard)
-        .useValue({ canActivate: () => true })
-        .overrideProvider(CLICKHOUSE_CLIENT)
-        .useValue(chSpy)
-        .overrideProvider(CACHE_MANAGER)
-        .useValue(hittingCache)
-        .compile();
+      cacheMock.get.mockResolvedValue(cachedRows);
 
-      const cachedApp = mod.createNestApplication();
-      cachedApp.setGlobalPrefix('api/v1');
-      await cachedApp.init();
-
-      const res = await request(cachedApp.getHttpServer())
+      const res = await request(app.getHttpServer())
         .get(`/api/v1/analytics/projects/${PROJECT}/cost-trend`)
         .set('Authorization', AUTH)
         .query({ tenantId: TENANT, dateRange: DATE_RANGE })
         .expect(200);
 
       expect(res.body).toEqual(cachedRows);
-      expect(chSpy.query).not.toHaveBeenCalled();
-      await cachedApp.close();
+      // beforeEach cleared the call history, so this asserts the cache short-circuit for THIS
+      // request — the same guarantee the throwaway application used to provide.
+      expect(chMock.query).not.toHaveBeenCalled();
     });
   });
 });
