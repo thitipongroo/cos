@@ -21,17 +21,14 @@ set -euo pipefail
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo .)"
 CANON="$ROOT/docs/specifications/32-implementation-specifications.md"
 
-# Mirrors that must NOT name a runtime AT ALL. Their Runtime columns were deleted on 2026-08-07 so
-# that §32.2 is the only hand-maintained copy in the repository. If a runtime reappears in a row
-# naming a service, the second copy — and with it the drift — is back.
-STRICT_MIRRORS=(
+# Mirrors keep their own Runtime columns — they are VERIFIED against the repository, not forbidden.
+# Duplication is tolerated here precisely because this script makes it machine-checked: 00_master is
+# the agent execution view and §33 is read on its own, and stripping runtimes out of either would
+# push a reader to a second file for a one-word fact. What is NOT tolerated is a mirror disagreeing
+# with disk — that is the 8857bb1 failure.
+MIRRORS=(
   "$ROOT/context/00_master_construction_os.md"
   "$ROOT/docs/specifications/33-digital-twin-iot.md"
-)
-
-# Mirrors that MAY name a runtime descriptively (the README monorepo tour would be much less useful
-# without it) but must agree with the repository. Verified, not forbidden.
-VERIFIED_MIRRORS=(
   "$ROOT/README.md"
 )
 
@@ -111,23 +108,7 @@ for SERVICE_DIR in "$ROOT"/services/*/; do
   # reading "(services/ai-gateway/otel.py) or Node (@cos/tracing)". A fitness function that cries
   # wolf gets switched off, so the match is deliberately narrow.
   DISPLAY="${SERVICE//-/ }"
-
-  # (a) STRICT mirrors — a runtime of ANY kind in a service row is a violation, even a correct one.
-  for MIRROR in "${STRICT_MIRRORS[@]}"; do
-    [[ -f "$MIRROR" ]] || continue
-    ROWS="$(grep -E "^[|│]" "$MIRROR" | grep -iE "$SERVICE|$DISPLAY" || true)"
-    [[ -n "$ROWS" ]] || continue
-
-    FOUND="$(echo "$ROWS" | grep -oE '\b(Go|Python|Node|FastAPI|Fastify|NestJS)\b' | head -1 || true)"
-    if [[ -n "$FOUND" ]]; then
-      echo "    ✗ ${MIRROR#"$ROOT/"} names a runtime ('$FOUND') for $SERVICE — this table must not"
-      echo "      carry runtimes; §32.2 is the only place. Remove it."
-      FAIL=$((FAIL + 1))
-    fi
-  done
-
-  # (b) VERIFIED mirrors — a runtime is allowed but must match disk.
-  for MIRROR in "${VERIFIED_MIRRORS[@]}"; do
+  for MIRROR in "${MIRRORS[@]}"; do
     [[ -f "$MIRROR" ]] || continue
     ROWS="$(grep -E "^[|│]|^  $SERVICE/" "$MIRROR" | grep -iE "$SERVICE|$DISPLAY" || true)"
     [[ -n "$ROWS" ]] || continue

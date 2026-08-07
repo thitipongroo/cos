@@ -122,7 +122,7 @@ capability per the SaaS Maturity Model in 32-implementation-specifications secti
 IoT Devices / BIM Files
         │
         ▼
-[IoT Ingestion Worker]          [BIM Import Worker]
+[IoT Ingestion Worker (Go)]     [BIM Import Worker (Python)]
         │                               │
         └──────────► Kafka ◄────────────┘
                        │
@@ -172,19 +172,19 @@ bypass cache and query TimescaleDB directly.
 
 ### Service Assignment
 
-> **No Runtime column — by design.** Runtime is declared in exactly one place:
-> [`32-implementation-specifications`](32-implementation-specifications.md) §32.2. Do not restore one
-> here. A second hand-maintained copy is what produced the 2026-08-07 "BIM Import Worker = Go" error;
-> `scripts/readiness/check-service-runtimes.sh` fails CI if a runtime reappears in this table.
+> Runtime values below are a **mirror** — the canonical table is
+> [`32-implementation-specifications`](32-implementation-specifications.md) §32.2. Change §32.2
+> first, then propagate here. `scripts/readiness/check-service-runtimes.sh` verifies both against
+> `services/<name>/` and fails CI on a mismatch.
 
-| Component           | Service / Worker                               |
-| ------------------- | ---------------------------------------------- |
-| IoT ingestion       | `services/iot-ingestion-worker/`               |
-| BIM import          | `services/bim-import-worker/`                  |
-| Digital Twin API    | `services/ai-gateway/` (Phase 24 module)       |
-| State cache         | Redis (shared infrastructure)                  |
-| Time-series storage | TimescaleDB (new — Phase 24)                   |
-| Carbon aggregations | `services/analytics-worker/` (Phase 24 module) |
+| Component           | Service / Worker                               | Runtime          |
+| ------------------- | ---------------------------------------------- | ---------------- |
+| IoT ingestion       | `services/iot-ingestion-worker/`               | Go               |
+| BIM import          | `services/bim-import-worker/`                  | Python           |
+| Digital Twin API    | `services/ai-gateway/` (Phase 24 module)       | FastAPI (Python) |
+| State cache         | Redis (shared infrastructure)                  | —                |
+| Time-series storage | TimescaleDB (new — Phase 24)                   | —                |
+| Carbon aggregations | `services/analytics-worker/` (Phase 24 module) | Go → ClickHouse  |
 
 ---
 
@@ -409,12 +409,10 @@ queries TimescaleDB directly.
 The Digital Twin components deploy as separate Kubernetes workloads.
 The main NestJS monolith is NOT modified — all Phase 24 logic lives in:
 
-- `services/iot-ingestion-worker/` (new service)
-- `services/bim-import-worker/` (new service)
-- `services/ai-gateway/` (Phase 24 module added to the existing service)
-- `services/analytics-worker/` (carbon analytics module added to the existing service)
-
-Runtimes for all four are in §32.2 — see the note under § Service Assignment above.
+- `services/iot-ingestion-worker/` (new Go service)
+- `services/bim-import-worker/` (new Python service)
+- `services/ai-gateway/` (Phase 24 module added to existing FastAPI service)
+- `services/analytics-worker/` (carbon analytics module added to existing Go service)
 
 ---
 

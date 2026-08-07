@@ -61,6 +61,27 @@ other Python services with a ruff + pytest CI lane, so it adds no toolchain.
 `web-ifc` (C++ compiled to WASM, JS/TS bindings, That Open Company) runs in the same process as the
 BOQ and project modules that consume it.
 
+**`web-ifc` and IFC 4.3 — verified against source, not documentation.** An earlier draft of this ADR
+flagged `web-ifc` as possibly capped at `IFC4X3_RC4`, based on a secondary API-doc summary. That was
+wrong. `src/cpp/web-ifc/schema/schema-functions.cpp` registers three internal schemas — `IFC2X3`,
+`IFC4`, `IFC4X3` (enum in `ifc-schema.h`) — and maps the `FILE_SCHEMA` header tokens onto them,
+including:
+
+```cpp
+_schemaMap["IFC4X3_ADD2"]="IFC4X3";
+_schemaMap["IFC4X3_ADD1"]="IFC4X3";
+_schemaMap["IFC4X3_RC1".."RC4"]="IFC4X3";
+```
+
+So `IFC4X3_ADD2` files load. `RC4` is one alias in that map, not a ceiling. Corroborated downstream:
+ThatOpen `engine_components` v2.2.0 (2024-08-18) shipped the bug fix _"IfcPropertiesManager not
+working for IFC4X3_ADD2 schema"_ — a defect only reachable on a schema the parser can already read.
+
+The real difference is granularity, not capability: `web-ifc` treats every 4.3 variant as one schema,
+whereas `ifcopenshell` supports them as distinct schemas (IFC4x3 Add2 among them). This does not
+block either choice; it is recorded under Consequences because it changes what each path can assert
+about schema conformance.
+
 ## Consequences
 
 ### Positive
@@ -74,10 +95,11 @@ BOQ and project modules that consume it.
 - **INT-004 conformance now has two surfaces.** IFC 4.3 (ISO 16739-1:2023) is normative for ecosystem
   output; each parser must be validated against it independently, and a conformance gap can appear in
   one path while the other passes.
-- **`web-ifc`'s IFC4x3 support is unconfirmed at the final schema.** The evidence reviewed points to
-  `IFC4X3_RC4` (a release candidate), not Add2. This must be verified before the §13.4 stubs are
-  implemented; if `web-ifc` cannot reach the final schema, revisit this ADR rather than shipping a
-  non-conformant BOQ import.
+- **The two parsers model IFC 4.3 at different granularity.** Both accept `IFC4X3_ADD2` files, but
+  `web-ifc` collapses every 4.3 variant onto one internal schema while `ifcopenshell` enumerates them
+  separately (see the note below). Anything that must distinguish ADD2 from a release candidate — a
+  conformance report, a schema-version audit — can be answered on the Python path and not on the
+  TypeScript one. Do not assume symmetric behaviour when validating INT-004.
 
 ### Neutral
 
@@ -95,3 +117,7 @@ BOQ and project modules that consume it.
 - ADR-088 — canonical runtime declaration + `check-service-runtimes.sh` fitness function
 - [IfcOpenShell](https://ifcopenshell.org/) — C++/Python IFC toolkit; IFC4x3 Add2 parsing
 - [ThatOpen/engine_web-ifc](https://github.com/thatopen/engine_web-ifc) — IFC read/write for JS at native speed (WASM)
+- `ThatOpen/engine_web-ifc` → `src/cpp/web-ifc/schema/schema-functions.cpp` — the `_schemaMap`
+  registration quoted above (the authoritative answer on 4.3 support)
+- [ThatOpen/engine_components releases](https://github.com/ThatOpen/engine_components/releases) —
+  v2.2.0, `IFC4X3_ADD2` bug fix

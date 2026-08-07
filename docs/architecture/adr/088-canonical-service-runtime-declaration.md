@@ -29,19 +29,21 @@ places with no owner and no automated check drifts on the first inference anyone
 
 1. **§32.2 is the canonical declaration of every service runtime.** It is the only place a runtime is
    maintained by hand.
-2. **The Runtime column is deleted from `00_master_construction_os.md` §DEPLOYABLE UNITS and from
-   `33-digital-twin-iot.md` §Service Assignment**, along with the runtime labels in §33's topology
-   diagram and deployment list. Those documents name services; they no longer name languages.
-3. **The root `README.md` may describe a runtime** (the monorepo tour is much less useful without it),
-   but it is verified, not trusted.
+2. **The mirrors keep their Runtime columns.** `00_master_construction_os.md` §DEPLOYABLE UNITS,
+   `33-digital-twin-iot.md` §Service Assignment and the root `README.md` each keep showing a runtime,
+   and each carries a note naming §32.2 as canonical and stating that a runtime is never changed
+   there first.
+3. **The duplication is tolerated because it is machine-checked — not because it is harmless.**
+   Deleting the columns was implemented and then reverted (2026-08-07): the master document is the
+   agent execution view and §33 is read on its own, so sending a reader to a second file for a
+   one-word fact costs more than the copy does — _given_ that the copy can no longer silently
+   disagree. Without the check below, this decision would be wrong.
 4. **`scripts/readiness/check-service-runtimes.sh` runs in the CI lint job on every PR.** It derives
    each service's real runtime from the build file present — `go.mod` → Go, `requirements.txt` →
    Python, `package.json` → Node — and fails on:
    - a §32.2 row that disagrees with disk;
    - a service directory missing from §32.2 entirely;
-   - **any** runtime reappearing in a stripped table, even a correct one (that is the duplication
-     coming back);
-   - a README runtime that contradicts disk.
+   - a mirror row that names a different runtime than the repository.
 
 ## Rationale
 
@@ -59,8 +61,9 @@ literature is consistent on both halves of the fix:
 
 A full descriptor-and-generator system (a `service.yaml` per service, tables generated from it) was
 considered and rejected for a ten-service repository: it is more machinery than the problem needs and
-runs into R-06 (premature complexity). Stripping the duplicates and adding one comparison achieves the
-same guarantee.
+runs into R-06 (premature complexity). Deleting the duplicate columns outright was also implemented
+and then reverted — it traded a readability cost that every reader pays for a correctness benefit the
+check already provides. One comparison, run on every PR, achieves the guarantee that matters.
 
 The mirror scan is deliberately restricted to **structured table rows**. An earlier version matched
 any line naming a service and a language, which flagged a paragraph about OTel head-sampling reading
@@ -72,14 +75,17 @@ positives gets switched off, which is worse than not having one.
 ### Positive
 
 - The 2026-08-07 defect is now caught mechanically. Back-tested: reintroducing `Go` into §32.2 fails
-  the check, as does re-adding a Runtime column to the master table — even with the correct value.
+  the check, and so does a mirror drifting to `Go` while §32.2 stays correct.
 - A new service that is not listed in §32.2 fails CI, so the canonical table cannot silently fall
   behind the directory listing.
+- Every document keeps the runtime visible where a reader already is — no lookup hop.
 
 ### Negative
 
-- `00_master_construction_os.md` is the agent execution view, and an agent that needs a runtime must
-  now open §32.2. This is the intended cost of having one copy.
+- **Four copies of every runtime still exist.** Their consistency now depends entirely on the check
+  running. A documentation surface added later that is not in the script's `MIRRORS` list is
+  unguarded and can drift exactly as before — adding a new place that names a runtime means adding it
+  to `MIRRORS` in the same commit.
 - The check recognises exactly three runtimes (Go / Python / Node). A service introduced in a fourth
   language requires updating `detect_runtime` and `normalize_declared`.
 
