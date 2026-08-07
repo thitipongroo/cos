@@ -87,6 +87,14 @@ jobs:
           echo "Changed Markdown files:"; echo "$changed"
           echo "$changed" | xargs pnpm exec markdownlint-cli2
 
+      # Architectural fitness function: every runtime named in a docs table must match the build
+      # files actually in services/<name>/. Runs repo-wide (not changed-files-only) — the failure
+      # this guards against is a table edited in isolation from the directory it describes, so
+      # scoping it to changed files would miss exactly the case it exists for. Canonical table:
+      # docs/specifications/32-implementation-specifications.md §32.2.
+      - name: Service runtime declarations match the repository
+        run: ./scripts/readiness/check-service-runtimes.sh
+
   # ─── MLOps tests (Python / Airflow 3.x DAGs) ────────────────────────────────
   mlops-tests:
     name: MLOps Tests (Python)

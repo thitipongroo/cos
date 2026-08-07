@@ -11,18 +11,12 @@ From a clean checkout to a running backend with seeded data.
 
 Read from `package.json` and `context/00_master_construction_os.md` § Tooling on 2026-08-07:
 
-| Tool           | Required                     | Where it is pinned                                               |
-| -------------- | ---------------------------- | ------------------------------------------------------------------ |
-| Node.js        | **≥ 24.0.0**                 | root `package.json` → `engines.node`; Docker images use `node:24-alpine` |
-| pnpm           | **≥ 11.0.0** (11.x line)     | root `package.json` → `engines.pnpm`; `packageManager` pins the exact build via Corepack |
-| Docker         | 24.x + Compose v2            | `docker-compose.yml`                                              |
-| Python 3       | for `scripts/stitch-fullpage.py` and the Python services | `services/ai-*`                        |
-| buf CLI        | proto generation             | root `pnpm proto-gen`                                             |
-
-> ⚠️ **The root [`README.md`](../../README.md) § Prerequisites disagrees** — it says pnpm 9.x and
-> Node 20.x LTS. `package.json` is the authority (`engines.node >=24.0.0`, `engines.pnpm >=11.0.0`,
-> `packageManager: pnpm@11.18.0`) and 00_master § Tooling agrees with it. Install Node 24 / pnpm 11;
-> the root README's prerequisite block is stale.
+| Tool     | Required                                                 | Where it is pinned                                                                       |
+| -------- | -------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Node.js  | **≥ 24.0.0**                                             | root `package.json` → `engines.node`; Docker images use `node:24-alpine`                 |
+| pnpm     | **≥ 11.0.0** (11.x line)                                 | root `package.json` → `engines.pnpm`; `packageManager` pins the exact build via Corepack |
+| Docker   | 24.x + Compose v2                                        | `docker-compose.yml`                                                                     |
+| Python 3 | for `scripts/stitch-fullpage.py` and the Python services | `services/ai-*`                                                                          |
 
 Only the pnpm **major** line (11) is normative — a patch or minor bump is not a spec deviation.
 
@@ -36,9 +30,10 @@ cp .env.example .env
 # 2. Dependencies (repo root — this does NOT install apps/mobile, see below)
 pnpm install
 
-# 3. Infrastructure: PostgreSQL+TimescaleDB, PgBouncer, Kafka, Schema Registry, Redis,
-#    OpenSearch, Neo4j, ClickHouse, MinIO, ClamAV, Vault (dev), Keycloak, Temporal, EMQX
-make docker-up
+# 3. Infrastructure. `make docker-up` starts the ESSENTIAL tier only — PostgreSQL+TimescaleDB,
+#    PgBouncer, Redis, Kafka, Schema Registry, MinIO. OpenSearch, Neo4j, ClickHouse, ClamAV,
+#    Vault (dev), Keycloak, Temporal and EMQX sit behind the `full` Compose profile:
+make docker-up-full
 
 # 4. Migrations, then master data
 make migrate
@@ -50,15 +45,15 @@ make dev
 
 `make help` lists every target. The ones you will use most:
 
-| Target                                   | What it does                                                        |
-| ---------------------------------------- | --------------------------------------------------------------------- |
-| `make dev` / `dev-backend` / `dev-web`   | Turbo dev on the host (the day-to-day mode)                          |
-| `make docker-up` / `docker-up-full`      | Infrastructure only / plus the optional tier                         |
-| `make docker-apps-up-full`               | App services in containers too (ADR-036 `apps` profile)              |
-| `make migrate` / `migrate-dev` / `seed`  | Prisma deploy / dev migration / seed                                 |
-| `make test` / `test-unit` / `test-integration` / `test-coverage` | The test tiers                                |
-| `make lint` / `type-check` / `build`     | The three CI gates you can run locally                               |
-| `make ci-check`                          | Everything CI runs, in one target                                    |
+| Target                                                           | What it does                                            |
+| ---------------------------------------------------------------- | ------------------------------------------------------- |
+| `make dev` / `dev-backend` / `dev-web`                           | Turbo dev on the host (the day-to-day mode)             |
+| `make docker-up` / `docker-up-full`                              | Infrastructure only / plus the optional tier            |
+| `make docker-apps-up-full`                                       | App services in containers too (ADR-036 `apps` profile) |
+| `make migrate` / `migrate-dev` / `seed`                          | Prisma deploy / dev migration / seed                    |
+| `make test` / `test-unit` / `test-integration` / `test-coverage` | The test tiers                                          |
+| `make lint` / `type-check` / `build`                             | The three CI gates you can run locally                  |
+| `make ci-check`                                                  | Everything CI runs, in one target                       |
 
 ## Connect through PgBouncer, not PostgreSQL
 

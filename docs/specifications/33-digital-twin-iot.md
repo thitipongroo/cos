@@ -172,6 +172,11 @@ bypass cache and query TimescaleDB directly.
 
 ### Service Assignment
 
+> Runtime values below are a **mirror** — the canonical table is
+> [`32-implementation-specifications`](32-implementation-specifications.md) §32.2. Change §32.2
+> first, then propagate here. `scripts/readiness/check-service-runtimes.sh` verifies both against
+> `services/<name>/` and fails CI on a mismatch.
+
 | Component           | Service / Worker                               | Runtime          |
 | ------------------- | ---------------------------------------------- | ---------------- |
 | IoT ingestion       | `services/iot-ingestion-worker/`               | Go               |

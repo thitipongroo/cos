@@ -24,7 +24,6 @@
     "clean": "turbo run clean && rm -rf node_modules",
     "migrate": "turbo run migrate",
     "seed": "turbo run seed",
-    "proto-gen": "cd packages/@cos/proto-contracts && buf generate",
     "prepare": "husky"
   },
   "devDependencies": {

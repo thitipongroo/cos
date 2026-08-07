@@ -155,21 +155,34 @@ Never implement a Stage N+1 feature during Stage N work.
 
 The platform deploys as distinct units. Do **not** merge runtimes or split prematurely.
 
-| Deployable                                            | Runtime             | Contents                                                                                                                                   |
-| ----------------------------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| Main Application (`backend/`)                         | NestJS (monolith)   | identity, tenant, project, boq, procurement, site-ops, finance, notification, equipment, workforce                                         |
-| File Service (`services/file-service/`)               | Fastify             | Multipart upload I/O (extracted for I/O throughput)                                                                                        |
-| AI Gateway (`services/ai-gateway/`)                   | FastAPI (Python)    | LLM routing, RAG, token tracking                                                                                                           |
-| AI Embedding Worker (`services/ai-embedding-worker/`) | FastAPI (Python)    | Embedding generation                                                                                                                       |
-| AI OCR Pipeline (`services/ai-ocr-pipeline/`)         | FastAPI (Python)    | OCR processing                                                                                                                             |
-| Analytics Worker (`services/analytics-worker/`)       | Go                  | ClickHouse aggregation                                                                                                                     |
-| KG Ingestion Worker (`services/kg-ingestion-worker/`) | Go                  | Neo4j ingestion — Kafka client: `github.com/twmb/franz-go` via coskafka (`kgo.ConsumeRegex`; consumer group: `kg-ingestion-worker.shared`) |
-| IoT Ingestion Worker (`services/iot-ingestion-worker/`) | Go                | EMQX (MQTT) → Kafka telemetry forwarding. EMQX's native/Enterprise Kafka data-bridge is a paid feature and is **not** used — see `33-digital-twin-iot.md` §33.8 |
-| BIM Import Worker (`services/bim-import-worker/`)     | Go                  | IFC parsing / quantity extraction for the BIM extension point (§13.4)                                                                      |
-| AI Transcription Pipeline (`services/ai-transcription-pipeline/`) | FastAPI (Python) | Voice-note transcription — the server half of the mobile capture flow (ADR-052)                                                    |
-| Credential Service (`services/credential-service/`)   | Node                | W3C DID/VC issuance and verification — backs contract e-signature (ADR-019, ADR-058; §5.4)                                                 |
-| Web App (`apps/web/`)                                 | Next.js + Serwist   | Tablet/laptop browser — online + offline unified                                                                                           |
-| Mobile (`apps/mobile/`)                               | React Native + Expo | Smartphone native app                                                                                                                      |
+> **This table is the CANONICAL source for every service's runtime.** Any other table that shows a
+> runtime — `context/00_master_construction_os.md` §DEPLOYABLE UNITS, `33-digital-twin-iot.md`, the
+> root `README.md` — is a **mirror** and must never be edited independently: change this table first,
+> then propagate. `scripts/readiness/check-service-runtimes.sh` verifies every row here against the
+> build files actually present in `services/<name>/` (`go.mod` → Go, `requirements.txt` → Python,
+> `package.json` → Node) and fails CI on any mismatch.
+>
+> **Why the rule exists.** On 2026-08-07 commit `8857bb1` added a BIM Import Worker row reading
+> **Go**, inferred from the three `*-worker` rows above it rather than from the directory — which has
+> never contained a `.go` file. `33-digital-twin-iot.md` had said Python since 2026-05-29, but that
+> file was not open in the same commit. One fact stored in three hand-maintained places, with nothing
+> comparing any of them to the repo, is the condition that made a plausible guess survive review.
+
+| Deployable                                                        | Runtime             | Contents                                                                                                                                                        |
+| ----------------------------------------------------------------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Main Application (`backend/`)                                     | NestJS (monolith)   | identity, tenant, project, boq, procurement, site-ops, finance, notification, equipment, workforce                                                              |
+| File Service (`services/file-service/`)                           | Fastify             | Multipart upload I/O (extracted for I/O throughput)                                                                                                             |
+| AI Gateway (`services/ai-gateway/`)                               | FastAPI (Python)    | LLM routing, RAG, token tracking                                                                                                                                |
+| AI Embedding Worker (`services/ai-embedding-worker/`)             | FastAPI (Python)    | Embedding generation                                                                                                                                            |
+| AI OCR Pipeline (`services/ai-ocr-pipeline/`)                     | FastAPI (Python)    | OCR processing                                                                                                                                                  |
+| Analytics Worker (`services/analytics-worker/`)                   | Go                  | ClickHouse aggregation                                                                                                                                          |
+| KG Ingestion Worker (`services/kg-ingestion-worker/`)             | Go                  | Neo4j ingestion — Kafka client: `github.com/twmb/franz-go` via coskafka (`kgo.ConsumeRegex`; consumer group: `kg-ingestion-worker.shared`)                      |
+| IoT Ingestion Worker (`services/iot-ingestion-worker/`)           | Go                  | EMQX (MQTT) → Kafka telemetry forwarding. EMQX's native/Enterprise Kafka data-bridge is a paid feature and is **not** used — see `33-digital-twin-iot.md` §33.8 |
+| BIM Import Worker (`services/bim-import-worker/`)                 | Python              | IFC parsing / quantity extraction for the BIM extension point (§13.4)                                                                                           |
+| AI Transcription Pipeline (`services/ai-transcription-pipeline/`) | FastAPI (Python)    | Voice-note transcription — the server half of the mobile capture flow (ADR-052)                                                                                 |
+| Credential Service (`services/credential-service/`)               | Node                | W3C DID/VC issuance and verification — backs contract e-signature (ADR-019, ADR-058; §5.4)                                                                      |
+| Web App (`apps/web/`)                                             | Next.js + Serwist   | Tablet/laptop browser — online + offline unified                                                                                                                |
+| Mobile (`apps/mobile/`)                                           | React Native + Expo | Smartphone native app                                                                                                                                           |
 
 > The last four rows were added on 2026-08-07. All four already existed under `services/` and are
 > wired in `docker-compose.yml`; this table listed only the original five, so a reader counting

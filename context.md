@@ -975,6 +975,7 @@ scripts/readiness/check-openapi-freshness.sh        — Verify OpenAPI spec exis
 scripts/readiness/check-i18n-completeness.sh        — Verify all i18n keys are translated (Phase 18)
 scripts/readiness/check-security-headers.sh         — Verify all required HTTP security headers on ingress (HSTS, X-Content-Type-Options, X-Frame-Options, CSP, Referrer-Policy, Permissions-Policy) + TLS 1.3 (Phase 16)
 scripts/readiness/check-schema-registry.sh          — Verify Kafka Schema Registry connectivity, BACKWARD_TRANSITIVE compatibility mode, all critical v1 schemas registered per spec §32.4 event table, local .avsc files valid JSON (Phase 8)
+scripts/readiness/check-service-runtimes.sh         — Architectural fitness function: every runtime declared in a docs table matches the build files in services/<name>/ (go.mod→Go, requirements.txt→Python, package.json→Node). CANONICAL table = spec §32.2; 00_master §DEPLOYABLE UNITS, §33 Service Assignment and README are mirrors. Runs in the CI lint job on every PR
 scripts/loadtest/api-baseline.js                    — k6 load test: 100 VU × 5 min mixed-read baseline gate; P95 read < 300ms, P95 write < 500ms, error rate < 0.1% (QM-6; Phase 18)
 
 # Compliance & Governance

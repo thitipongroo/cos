@@ -504,7 +504,10 @@ ARCHITECTURE DECISION (authoritative — from file 01):
   Exception:  AI services (Python ecosystem) and Go workers are ALWAYS separate —
               different language runtime, cannot run inside Node.js process.
 
-DEPLOYABLE UNITS (derived from: docs/specifications/32-implementation-specifications.md §32.2):
+DEPLOYABLE UNITS — MIRROR ONLY. The CANONICAL runtime table is
+docs/specifications/32-implementation-specifications.md §32.2. Never edit a Runtime value here
+first: change §32.2, then propagate. scripts/readiness/check-service-runtimes.sh verifies both
+against the build files in services/<name>/ and fails CI on a mismatch.
 ┌────────────────────────────────┬──────────────────┬────────────────────────────┐
 │ Deployable                     │ Runtime          │ Contents                   │
 ├────────────────────────────────┼──────────────────┼────────────────────────────┤
@@ -528,7 +531,7 @@ DEPLOYABLE UNITS (derived from: docs/specifications/32-implementation-specificat
 │ Analytics Worker               │ Go               │ ClickHouse aggregation     │
 │ KG Ingestion Worker            │ Go               │ Neo4j ingestion            │
 │ IoT Ingestion Worker           │ Go               │ EMQX (MQTT) → Kafka        │
-│ BIM Import Worker              │ Go               │ IFC parse / quantities     │
+│ BIM Import Worker              │ Python           │ IFC parse / quantities     │
 │ (services/*-worker/)           │                  │                            │
 ├────────────────────────────────┼──────────────────┼────────────────────────────┤
 │ Credential Service             │ Node             │ W3C DID/VC issuance +      │
