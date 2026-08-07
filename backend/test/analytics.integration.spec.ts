@@ -111,7 +111,13 @@ describe('Analytics API Integration (Phase 14)', () => {
             .getRequest();
           req.tenantId = TENANT;
           req.tenantCode = 'test_tenant';
-          req.user = { cos_user_id: 'user-1', cos_role: 'PROJECT_MANAGER' };
+          // Must be the JwtPayload shape: RolesGuard reads `user.role` and throws
+          // ForbiddenException('Missing role claim in JWT') when it is absent. This mock used to set
+          // `cos_role` / `cos_user_id`, which exist on no payload in this codebase, so every request
+          // through an @Roles()-guarded route came back 403 — the /analytics/executive tests failed
+          // for that reason alone, not for anything they assert. Every other integration spec
+          // already uses { tenant_id, user_id, role }.
+          req.user = { tenant_id: TENANT, user_id: 'user-1', role: 'PROJECT_MANAGER' };
           return true;
         },
       })
