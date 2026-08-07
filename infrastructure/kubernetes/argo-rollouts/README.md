@@ -12,9 +12,9 @@ QM-16 requires two things this directory provides:
 - **Canary** — required for API endpoint changes, new background job types and AI model version
   upgrades; minimum 30 minutes at 5% traffic before full rollout.
 
-| File                                                                     | What it is                                                     |
-| ------------------------------------------------------------------------ | ---------------------------------------------------------------- |
-| [analysis-template-error-rate.yaml](analysis-template-error-rate.yaml)   | `AnalysisTemplate/error-rate` and `AnalysisTemplate/p99-latency` |
+| File                                                                   | What it is                                                       |
+| ---------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| [analysis-template-error-rate.yaml](analysis-template-error-rate.yaml) | `AnalysisTemplate/error-rate` and `AnalysisTemplate/p99-latency` |
 
 ## Status — not yet active
 
@@ -57,10 +57,10 @@ involved.
 
 The PromQL is lifted from `infrastructure/monitoring/prometheus/rules/cos-alerts.yml` on purpose:
 
-| Template       | Mirrors alert       | Threshold           |
-| -------------- | --------------------- | --------------------- |
-| `error-rate`   | `APIHighErrorRate`  | 5xx ratio ≥ 1%      |
-| `p99-latency`  | `APIHighLatency`    | p99 ≥ 5 s           |
+| Template      | Mirrors alert      | Threshold      |
+| ------------- | ------------------ | -------------- |
+| `error-rate`  | `APIHighErrorRate` | 5xx ratio ≥ 1% |
+| `p99-latency` | `APIHighLatency`   | p99 ≥ 5 s      |
 
 Same metric names, same selectors, same numbers — so "the alert fired" and "the rollout aborted"
 describe one event rather than two thresholds that drift apart.

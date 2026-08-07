@@ -55,10 +55,10 @@ prefix, not this field.
 
 ## Registries
 
-| File                                                   | What it is                                                                                                   |
-| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
-| [error-codes.md](error-codes.md)                       | Construction OS — API Error Code Registry (QM-10). Every `COS-{DOMAIN}-{NNN}` code an endpoint may return.    |
-| [deprecation-schedule.md](deprecation-schedule.md)     | Construction OS — API Deprecation Schedule. Sunset dates + the tenant notification log (≥ 90 days' notice).   |
+| File                                               | What it is                                                                                                  |
+| -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| [error-codes.md](error-codes.md)                   | Construction OS — API Error Code Registry (QM-10). Every `COS-{DOMAIN}-{NNN}` code an endpoint may return.  |
+| [deprecation-schedule.md](deprecation-schedule.md) | Construction OS — API Deprecation Schedule. Sunset dates + the tenant notification log (≥ 90 days' notice). |
 
 ## When you change an API
 

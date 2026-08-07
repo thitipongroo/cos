@@ -15,14 +15,14 @@ Every event, without exception:
 
 ```ts
 {
-  event_id:       string  // UUID v4
-  event_type:     string  // "{domain}.{entity}.{action}.v{N}"  e.g. construction.project.created.v1
-  event_version:  string  // semantic patch WITHIN the major, e.g. "1.0"
-  tenant_id:      string  // UUID
-  actor_id:       string  // UUID — the user who triggered it
-  occurred_at:    string  // ISO 8601 UTC
-  correlation_id: string  // UUID — tracing
-  payload:        object  // event-specific
+  event_id: string; // UUID v4
+  event_type: string; // "{domain}.{entity}.{action}.v{N}"  e.g. construction.project.created.v1
+  event_version: string; // semantic patch WITHIN the major, e.g. "1.0"
+  tenant_id: string; // UUID
+  actor_id: string; // UUID — the user who triggered it
+  occurred_at: string; // ISO 8601 UTC
+  correlation_id: string; // UUID — tracing
+  payload: object; // event-specific
 }
 ```
 
@@ -40,7 +40,7 @@ platform.events                                  platform.* events — shared, N
 **Topics are provisioned explicitly and lazily.** `allowAutoTopicCreation: false` on producers and
 `auto.create.topics.enable=false` on every real broker, so Kafka never creates one implicitly. A
 tenant's topic is created by `KafkaProducer` **on the first publish that needs it**, and its DLQ on
-the first failure. Do *not* provision the catalogue at onboarding — that made topic count scale with
+the first failure. Do _not_ provision the catalogue at onboarding — that made topic count scale with
 customer headcount (46 topics / 414 replicas per tenant at RF=3) instead of with usage. Enterprise
 tenants are the exception: they get a dedicated namespace and are provisioned eagerly by the Phase 25
 workflow.
@@ -53,18 +53,18 @@ and **validate the `tenant_id` header before processing**. The Go workers use `f
 ## Schema Registry
 
 Confluent Schema Registry, Avro, compatibility **`BACKWARD_TRANSITIVE`** — a new schema must be
-readable by *all* previous versions, not just the immediately preceding one.
+readable by _all_ previous versions, not just the immediately preceding one.
 
 Subject naming is **RecordNameStrategy**: the subject is the canonical event type, one schema shared
-across all tenants. *Not* `{topic_name}-value` — topics carry a `{tenant_id}.` prefix, so
+across all tenants. _Not_ `{topic_name}-value` — topics carry a `{tenant_id}.` prefix, so
 TopicNameStrategy would duplicate every schema per tenant.
 
-| Allowed                                   | Forbidden                  |
-| ----------------------------------------- | ---------------------------- |
-| Add an optional field **with a default**  | Rename a field             |
-| Add a new enum value **at the end**       | Remove a field             |
-|                                           | Change a field's type      |
-|                                           | Reorder enum values        |
+| Allowed                                  | Forbidden             |
+| ---------------------------------------- | --------------------- |
+| Add an optional field **with a default** | Rename a field        |
+| Add a new enum value **at the end**      | Remove a field        |
+|                                          | Change a field's type |
+|                                          | Reorder enum values   |
 
 Register the schema **before** the first producer deployment (QM-9). Generate both the TypeScript
 interface and the `.avsc` for every new event.
@@ -72,7 +72,7 @@ interface and the `.avsc` for every new event.
 ## Delivery — outbox, not fire-and-forget
 
 Path 1 (business events) is the **Outbox Pattern**: the service writes to `outbox_events` in the
-*same transaction* as the business entity; `OutboxPoller` polls every 500 ms, publishes, and marks
+_same transaction_ as the business entity; `OutboxPoller` polls every 500 ms, publishes, and marks
 `published=true`. Consumers check `event_id` in Redis (TTL 24 h) before processing — that is the
 idempotency gate.
 

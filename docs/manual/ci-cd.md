@@ -11,15 +11,15 @@ hits (ADR-012).
 
 ## Workflows — `.github/workflows/`
 
-| File                   | Runs                                                                 |
-| ---------------------- | ---------------------------------------------------------------------- |
-| `ci.yml`               | The main pipeline (jobs below)                                       |
-| `codeql.yml`           | CodeQL semantic/taint SAST over JS-TS, Python, Go                    |
-| `semgrep.yml`          | Semgrep CE — project policy rules (blocking) + registry rulesets     |
-| `dast.yml`             | OWASP ZAP against staging                                            |
-| `lighthouse.yml`       | Frontend gate — Core Web Vitals, bundle budget, accessibility = 1.0  |
-| `load-tests.yml`       | k6 — **weekly on staging**, advisory, never a per-PR gate            |
-| `mutation-tests.yml`   | Stryker / mutmut — financial, approval and permission logic (≥ 70%)  |
+| File                 | Runs                                                                |
+| -------------------- | ------------------------------------------------------------------- |
+| `ci.yml`             | The main pipeline (jobs below)                                      |
+| `codeql.yml`         | CodeQL semantic/taint SAST over JS-TS, Python, Go                   |
+| `semgrep.yml`        | Semgrep CE — project policy rules (blocking) + registry rulesets    |
+| `dast.yml`           | OWASP ZAP against staging                                           |
+| `lighthouse.yml`     | Frontend gate — Core Web Vitals, bundle budget, accessibility = 1.0 |
+| `load-tests.yml`     | k6 — **weekly on staging**, advisory, never a per-PR gate           |
+| `mutation-tests.yml` | Stryker / mutmut — financial, approval and permission logic (≥ 70%) |
 
 ## `ci.yml` jobs
 
@@ -29,7 +29,7 @@ hits (ADR-012).
 
 The ones that most often block a merge:
 
-- **`build`** — `turbo run build` on **every** PR. `tsc --noEmit` is *not* a build: only this gate
+- **`build`** — `turbo run build` on **every** PR. `tsc --noEmit` is _not_ a build: only this gate
   catches `nest build` / `next build` emit failures, including the Next.js
   `missing-suspense-with-csr-bailout` error (ADR-033).
 - **`unit-tests`** — 100% lines **and** 100% branches (QM-1). Temporal `*.workflow.spec.ts` run as a
@@ -43,7 +43,7 @@ The ones that most often block a merge:
 
 A repo-wide Markdown gate is not feasible (~101k pre-existing violations), so the job lints only
 files changed in the push/PR, excluding `context.md`, `context/**`, `docs/specifications/**` and
-`mockup/**`. **Everything else must be clean**, and markdownlint lints the *whole* changed file — so
+`mockup/**`. **Everything else must be clean**, and markdownlint lints the _whole_ changed file — so
 touching one line of a messy non-excluded doc means tidying that doc. Run it before pushing:
 
 ```bash
@@ -87,10 +87,10 @@ make ci-check    # lint + type-check + build + tests, the same gates CI runs
 
 Two checks that are **not** CI gates but catch review comments early:
 
-```bash
+````bash
 pnpm exec markdownlint-cli2 <changed .md>          # this one IS a gate — see above
 pnpm exec mmdc -i <file.md> -o /tmp/check.md       # renders every ```mermaid block; fails on bad syntax
-```
+````
 
 `mmdc` (`@mermaid-js/mermaid-cli`) is deliberately a local authoring tool only — it pulls puppeteer's
 Chromium, which would cost every CI run for a check that only matters when a diagram changes.

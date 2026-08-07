@@ -165,6 +165,15 @@ jobs:
   unit-tests:
     name: Unit Tests (coverage 100% lines / 100% branches)
     runs-on: ubuntu-latest
+    env:
+      # AppModule wiring resolves AuditInterceptor, whose field initialiser calls appDatabaseUrl()
+      # (backend/src/shared/prisma/app-database-url.ts). That helper THROWS when APP_DATABASE_URL is
+      # unset rather than falling back to the RLS-bypassing superuser DATABASE_URL (ADR-031, QM-18) —
+      # so `AppModule › resolves every provider in every module` failed at construction time, with no
+      # database involved. Dummy value: these are unit tests, nothing connects. Same pattern and
+      # intent as the repo-level DIRECT_DATABASE_URL above; the app_user role name mirrors
+      # .env.example, where this URL is the non-superuser connection RLS is enforced through.
+      APP_DATABASE_URL: postgresql://app_user:ci@localhost:5432/ci
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

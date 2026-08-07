@@ -15,14 +15,14 @@ Per-scenario disaster recovery procedures. The primary procedure is
 QM-12 names four DR runbooks that must exist: database failure, Kafka broker failure, complete region
 failure, and KMS key compromise.
 
-| Scenario                  | File                                                                | State |
-| ------------------------- | --------------------------------------------------------------------- | ----- |
-| Complete region failure   | [region-failure.md](region-failure.md)                              | ✅    |
-| Kafka broker failure      | [kafka-broker-failure.md](kafka-broker-failure.md)                  | ✅    |
-| KMS key compromise        | [kms-key-compromise.md](kms-key-compromise.md)                      | ✅    |
-| Database failure          | [`../db-failover.md`](../db-failover.md) — RDS Multi-AZ failover    | STUB  |
-| Keycloak realm recovery   | [`../keycloak-realm-recovery.md`](../keycloak-realm-recovery.md)    | STUB  |
-| Drill results             | [drill-log.md](drill-log.md)                                        | —     |
+| Scenario                | File                                                             | State |
+| ----------------------- | ---------------------------------------------------------------- | ----- |
+| Complete region failure | [region-failure.md](region-failure.md)                           | ✅    |
+| Kafka broker failure    | [kafka-broker-failure.md](kafka-broker-failure.md)               | ✅    |
+| KMS key compromise      | [kms-key-compromise.md](kms-key-compromise.md)                   | ✅    |
+| Database failure        | [`../db-failover.md`](../db-failover.md) — RDS Multi-AZ failover | STUB  |
+| Keycloak realm recovery | [`../keycloak-realm-recovery.md`](../keycloak-realm-recovery.md) | STUB  |
+| Drill results           | [drill-log.md](drill-log.md)                                     | —     |
 
 > **Corrected 2026-08-07.** This table previously listed `platform-region-failover.md (TBD)` and
 > `backup-restore.md (TBD)` — neither name exists — while omitting the three scenario runbooks that
@@ -37,7 +37,7 @@ conflict.
 a drill is signed off against:
 
 | Target | Staging  | Production     |
-| ------ | -------- | ---------------- |
+| ------ | -------- | -------------- |
 | RTO    | 4 hours  | **30 minutes** |
 | RPO    | 24 hours | **15 minutes** |
 
@@ -63,16 +63,16 @@ The internal target is deliberately stricter than the tightest contractual tier.
 
 Recovery order matters because some stores rebuild themselves and some do not:
 
-| Store                | Recovery                                                                  |
-| -------------------- | --------------------------------------------------------------------------- |
-| PostgreSQL           | **Authoritative.** PITR from continuous WAL archiving; nothing rebuilds it |
-| Keycloak             | **Authoritative** for identity. Realm export restore — see the recovery runbook |
-| MinIO / S3           | **Authoritative** for file content                                        |
-| Kafka                | Replay from retained topics; DLQ per tenant (`{tenant_id}.dlq`)           |
-| Neo4j                | **Derived** — rebuildable from the Kafka event stream (KG full-rebuild admin endpoint) |
-| ClickHouse           | **Derived** — re-ingestible from Kafka                                    |
-| Redis                | Cache + idempotency keys; AOF persistence, sub-second RPO, no rebuild need |
-| OpenSearch           | **Derived** — re-indexable from PostgreSQL                                |
+| Store      | Recovery                                                                               |
+| ---------- | -------------------------------------------------------------------------------------- |
+| PostgreSQL | **Authoritative.** PITR from continuous WAL archiving; nothing rebuilds it             |
+| Keycloak   | **Authoritative** for identity. Realm export restore — see the recovery runbook        |
+| MinIO / S3 | **Authoritative** for file content                                                     |
+| Kafka      | Replay from retained topics; DLQ per tenant (`{tenant_id}.dlq`)                        |
+| Neo4j      | **Derived** — rebuildable from the Kafka event stream (KG full-rebuild admin endpoint) |
+| ClickHouse | **Derived** — re-ingestible from Kafka                                                 |
+| Redis      | Cache + idempotency keys; AOF persistence, sub-second RPO, no rebuild need             |
+| OpenSearch | **Derived** — re-indexable from PostgreSQL                                             |
 
 Restore the authoritative stores first; let the derived ones rebuild.
 

@@ -16,7 +16,7 @@ transitive `expo-*` / `@react-native/*` packages, and pnpm cannot scope hoisting
 inside a workspace.
 
 So `apps/mobile` is its own workspace root with `nodeLinker: hoisted` set in
-**`apps/mobile/pnpm-workspace.yaml`** — pnpm 10/11 reads the linker setting from there, *not* from
+**`apps/mobile/pnpm-workspace.yaml`** — pnpm 10/11 reads the linker setting from there, _not_ from
 `.npmrc` (the `.npmrc` in that folder only documents it). It consumes `@cos/types` as a `file:`
 dependency.
 
@@ -48,11 +48,11 @@ Two prohibitions:
 
 ### What may be written offline
 
-| Mode                              | Entities                                                                                                       |
-| --------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| Offline **read/write**            | tasks, site reports, inspections, workforce attendance, material consumption, safety checklists + incidents, equipment usage |
-| **Online-required** (read-cache)  | POs, vendor invoices / AR / receipts / payments, budget-line mutations, vendor master, permissions/roles       |
-| Read-only stale-while-revalidate  | project master, BOQ lines, room/floor reference, drawings, vendor directory                                    |
+| Mode                             | Entities                                                                                                                     |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Offline **read/write**           | tasks, site reports, inspections, workforce attendance, material consumption, safety checklists + incidents, equipment usage |
+| **Online-required** (read-cache) | POs, vendor invoices / AR / receipts / payments, budget-line mutations, vendor master, permissions/roles                     |
+| Read-only stale-while-revalidate | project master, BOQ lines, room/floor reference, drawings, vendor directory                                                  |
 
 Financial entities are **never** offline-writable — the sync push endpoint has no financial
 `entity_type` case and rejects any such write with `BadRequestException`.
@@ -63,19 +63,18 @@ Flush order on reconnect is fixed (spec §17.6): **1** safety incidents → **2*
 inspections → **4** task progress → **5** site reports → **6** material → **7** equipment usage →
 **8** photo/media (deferred last).
 
-Limits (spec §17.7): local DB ≤ 500 MB · drawing cache ≤ 200 MB (LRU) · photo queue ≤ 100 (warn at
-80) · sync batch ≤ 500 records/cycle.
+Limits (spec §17.7): local DB ≤ 500 MB · drawing cache ≤ 200 MB (LRU) · photo queue ≤ 100 (warn at 80) · sync batch ≤ 500 records/cycle.
 
 Conflict resolution is **entity-specific and must be implemented exactly as specified** — never
 invent a strategy without an ADR:
 
-| Entity                | Strategy                                                                    |
-| --------------------- | ----------------------------------------------------------------------------- |
-| `site_reports`        | LAST_WRITE_WINS on `client_submitted_at`; flag `CONFLICT_FLAGGED` for review |
-| `issues`              | FIELD_LEVEL_MERGE — description/resolution last-writer; status server-wins; photos union |
-| photo annotation      | CONFLICT_FLAGGED — no auto-resolution (ADR-056)                              |
-| `safety_checklists`   | SERVER_WINS — client version rejected unconditionally                        |
-| `tasks.progress_percent` | MAX_WINS — progress is monotonic, resolves silently                       |
+| Entity                   | Strategy                                                                                 |
+| ------------------------ | ---------------------------------------------------------------------------------------- |
+| `site_reports`           | LAST_WRITE_WINS on `client_submitted_at`; flag `CONFLICT_FLAGGED` for review             |
+| `issues`                 | FIELD_LEVEL_MERGE — description/resolution last-writer; status server-wins; photos union |
+| photo annotation         | CONFLICT_FLAGGED — no auto-resolution (ADR-056)                                          |
+| `safety_checklists`      | SERVER_WINS — client version rejected unconditionally                                    |
+| `tasks.progress_percent` | MAX_WINS — progress is monotonic, resolves silently                                      |
 
 ## UI rules that fail review
 

@@ -20,10 +20,10 @@ from the YAML.
 
 ## Authentication — two paths, one Keycloak
 
-| Path                                    | Who                                             | Mechanism                                                                     |
-| --------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------- |
-| **A — SMS OTP**                         | Field roles (`SITE_WORKER`, `SITE_ENGINEER`)    | Custom NestJS OTP module verifies the code, then **Keycloak Direct Grant** issues the RS256 JWT |
-| **B — email + password**                | Office / management roles                       | Keycloak OIDC over OAuth2; MFA (TOTP) required for `TENANT_ADMIN` and `FINANCE` |
+| Path                     | Who                                          | Mechanism                                                                                       |
+| ------------------------ | -------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| **A — SMS OTP**          | Field roles (`SITE_WORKER`, `SITE_ENGINEER`) | Custom NestJS OTP module verifies the code, then **Keycloak Direct Grant** issues the RS256 JWT |
+| **B — email + password** | Office / management roles                    | Keycloak OIDC over OAuth2; MFA (TOTP) required for `TENANT_ADMIN` and `FINANCE`                 |
 
 Keycloak is the single source of truth for identity storage and JWT signing on **both** paths — there
 is no custom email/password auth anywhere. Access token 15 min, refresh token 7 days.
@@ -35,7 +35,7 @@ magic link (Tier 1) or a vendor session token (Tier 2), scoped by
 ## Tenant isolation
 
 `app.current_tenant_id` is set at request start and PostgreSQL **RLS** enforces isolation at the
-database level — that is the *primary* mechanism, not a backstop. An application-layer
+database level — that is the _primary_ mechanism, not a backstop. An application-layer
 `WHERE tenant_id = $1` is secondary defence-in-depth and never a replacement. The app role
 (`app_user`) is never granted `BYPASSRLS`.
 
@@ -59,17 +59,17 @@ bare table names — that is what keeps `search_path` from making isolation non-
 
 Register every new code in [`docs/api/error-codes.md`](../api/error-codes.md).
 
-| Status | Use for                                                            |
-| ------ | -------------------------------------------------------------------- |
-| `400`  | Input validation failed (include field-level detail)               |
-| `401`  | Unauthenticated                                                    |
-| `403`  | Authenticated but unauthorized (include the required permission)   |
-| `404`  | Not found                                                          |
-| `409`  | Conflict — optimistic lock, duplicate                              |
-| `422`  | Business rule violation (e.g. a task completion gate failed)       |
-| `429`  | Rate limited — must carry `Retry-After`                            |
-| `500`  | Server error — never leak a stack trace or an internal path        |
-| `503`  | Temporarily unavailable — maintenance, circuit breaker open        |
+| Status | Use for                                                          |
+| ------ | ---------------------------------------------------------------- |
+| `400`  | Input validation failed (include field-level detail)             |
+| `401`  | Unauthenticated                                                  |
+| `403`  | Authenticated but unauthorized (include the required permission) |
+| `404`  | Not found                                                        |
+| `409`  | Conflict — optimistic lock, duplicate                            |
+| `422`  | Business rule violation (e.g. a task completion gate failed)     |
+| `429`  | Rate limited — must carry `Retry-After`                          |
+| `500`  | Server error — never leak a stack trace or an internal path      |
+| `503`  | Temporarily unavailable — maintenance, circuit breaker open      |
 
 **Never return `200` with an error body. Never return `500` for a client error.**
 
@@ -78,12 +78,12 @@ Register every new code in [`docs/api/error-codes.md`](../api/error-codes.md).
 Enforced at **Kong** before a request reaches NestJS, with `@nestjs/throttler` behind it as
 defence-in-depth (Redis-backed, registered globally as an `APP_GUARD`).
 
-| Scope                          | Limit                    |
-| ------------------------------ | -------------------------- |
-| General API                    | 100 req/min per tenant   |
-| Auth endpoints                 | 10 req/min per IP        |
-| AI / LLM endpoints             | 20 req/min per tenant    |
-| File upload (`/api/v*/files/*`)| 20 req/min per user      |
+| Scope                           | Limit                  |
+| ------------------------------- | ---------------------- |
+| General API                     | 100 req/min per tenant |
+| Auth endpoints                  | 10 req/min per IP      |
+| AI / LLM endpoints              | 20 req/min per tenant  |
+| File upload (`/api/v*/files/*`) | 20 req/min per user    |
 
 Every response carries `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`.
 

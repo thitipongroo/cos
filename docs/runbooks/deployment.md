@@ -16,12 +16,12 @@ Service deployment and rolling rollout for the Construction OS monolith and supp
 GitOps via ArgoCD. **GitHub Actions never runs `kubectl apply` or `helm upgrade`** — a Phase 19
 readiness check greps `.github/workflows/` for exactly that and expects zero hits (ADR-012).
 
-| Layer               | Where                                                              |
-| ------------------- | -------------------------------------------------------------------- |
-| ArgoCD `AppProject` | `construction-os` (namespace `argocd`)                             |
-| ArgoCD Applications | 10, all in namespace `argocd`, all targeting namespace `cos`       |
-| Helm charts         | `infrastructure/helm/cos-*` — one per deployable                   |
-| Manifest            | `infrastructure/kubernetes/argocd/argocd-apps.yaml`                |
+| Layer               | Where                                                        |
+| ------------------- | ------------------------------------------------------------ |
+| ArgoCD `AppProject` | `construction-os` (namespace `argocd`)                       |
+| ArgoCD Applications | 10, all in namespace `argocd`, all targeting namespace `cos` |
+| Helm charts         | `infrastructure/helm/cos-*` — one per deployable             |
+| Manifest            | `infrastructure/kubernetes/argocd/argocd-apps.yaml`          |
 
 Applications: `cos-backend`, `cos-web`, `cos-file-service`, `cos-credential-service`,
 `cos-ai-gateway`, `cos-ai-embedding-worker`, `cos-ai-ocr-pipeline`, `cos-analytics-worker`,

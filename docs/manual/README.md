@@ -14,15 +14,15 @@ How to run, build, test and extend the platform. Written for someone with commit
 > at the date above; where it states a rule, it cites the spec that owns it. If the two disagree, the
 > spec wins and this page is the bug.
 
-| Page                                             | Covers                                                                                    |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------- |
-| [getting-started.md](getting-started.md)         | Prerequisites, first `pnpm install`, infrastructure up, migrate, seed, run                |
-| [tech-stack.md](tech-stack.md)                   | Runtimes, datastores, and which spec section owns each version                             |
-| [api-reference.md](api-reference.md)             | Endpoint conventions, auth, errors, rate limits, and where the OpenAPI contracts live      |
-| [kafka-events.md](kafka-events.md)               | Event envelope, topic naming, outbox, schema registry, DLQ, and the typed SDK              |
-| [mobile.md](mobile.md)                           | Why `apps/mobile` is a separate workspace, offline storage, running and capturing it       |
-| [ci-cd.md](ci-cd.md)                             | The GitHub Actions jobs, what gates a merge, and ArgoCD's role                             |
-| [extension-points.md](extension-points.md)       | The Integration Stub Pattern (§32.9) and where each extension point is resolved            |
+| Page                                       | Covers                                                                                |
+| ------------------------------------------ | ------------------------------------------------------------------------------------- |
+| [getting-started.md](getting-started.md)   | Prerequisites, first `pnpm install`, infrastructure up, migrate, seed, run            |
+| [tech-stack.md](tech-stack.md)             | Runtimes, datastores, and which spec section owns each version                        |
+| [api-reference.md](api-reference.md)       | Endpoint conventions, auth, errors, rate limits, and where the OpenAPI contracts live |
+| [kafka-events.md](kafka-events.md)         | Event envelope, topic naming, outbox, schema registry, DLQ, and the typed SDK         |
+| [mobile.md](mobile.md)                     | Why `apps/mobile` is a separate workspace, offline storage, running and capturing it  |
+| [ci-cd.md](ci-cd.md)                       | The GitHub Actions jobs, what gates a merge, and ArgoCD's role                        |
+| [extension-points.md](extension-points.md) | The Integration Stub Pattern (§32.9) and where each extension point is resolved       |
 
 ## The two rules that gate everything
 
@@ -38,14 +38,14 @@ ones most often skipped:
 
 ## Quality mandates you will hit immediately
 
-| Mandate   | What it means in practice                                                                             |
-| --------- | ------------------------------------------------------------------------------------------------------- |
-| **QM-1**  | 100% line **and** branch coverage on new modules. Tests ship in the same PR, never as a follow-up.     |
-| **QM-2**  | Every endpoint under `/api/v1/`. Breaking change → new version, old one lives ≥ 12 months.             |
-| **QM-3**  | Zero hardcoded user-facing strings — everything through i18n keys.                                     |
-| **QM-4**  | No secrets in code or git. RLS on every domain table. Security headers on every response.              |
-| **QM-10** | Errors are `COS-{DOMAIN}-{NNN}` with `traceId`; never `200` with an error body.                        |
-| **QM-18** | Connect through PgBouncer, never PostgreSQL `5432`. Close every long-lived handle on shutdown.         |
+| Mandate   | What it means in practice                                                                          |
+| --------- | -------------------------------------------------------------------------------------------------- |
+| **QM-1**  | 100% line **and** branch coverage on new modules. Tests ship in the same PR, never as a follow-up. |
+| **QM-2**  | Every endpoint under `/api/v1/`. Breaking change → new version, old one lives ≥ 12 months.         |
+| **QM-3**  | Zero hardcoded user-facing strings — everything through i18n keys.                                 |
+| **QM-4**  | No secrets in code or git. RLS on every domain table. Security headers on every response.          |
+| **QM-10** | Errors are `COS-{DOMAIN}-{NNN}` with `traceId`; never `200` with an error body.                    |
+| **QM-18** | Connect through PgBouncer, never PostgreSQL `5432`. Close every long-lived handle on shutdown.     |
 
 The full list is in [`context.md`](../../context.md) § QUALITY MANDATES.
 

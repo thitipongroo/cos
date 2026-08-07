@@ -1,0 +1,34 @@
+name: CI Coverage Guard
+
+# Detects the failure mode where a commit lands on a long-lived branch and GitHub creates NO
+# workflow run for it, so nothing ever verifies it.
+#
+# This happened on 2026-08-06: pushes 8857bb1 (21:29Z) and 094b6c7 (21:58Z) to `develop` produced
+# zero runs across every workflow, and the breakage 8857bb1 introduced (16 Markdown files failing
+# format:check) stayed invisible until an unrelated push a day later finally triggered a build.
+# The cause was never established — see scripts/ci/check-branch-has-ci-run.sh for what was ruled
+# out. This workflow does not prevent it; it bounds how long it can go unnoticed to one day.
+#
+# Deliberately on `schedule`, not `push`: a push-triggered guard cannot fire in exactly the
+# situation it exists to catch — the one where the push creates no run.
+
+on:
+  schedule:
+    # 02:00 UTC daily (09:00 ICT — start of the working day for this team).
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  guard:
+    name: Branch tips have CI runs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check develop and main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./scripts/ci/check-branch-has-ci-run.sh develop main

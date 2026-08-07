@@ -10,13 +10,13 @@
 
 Roll back **first, investigate after**. Triggers (QM-16, QM-14):
 
-| Signal                                              | Action                          |
-| --------------------------------------------------- | --------------------------------- |
-| Error rate > 1% within 10 min of deploy             | Automatic — the pipeline rolls back |
-| p95 read > 300 ms or p95 write > 500 ms for 5 min   | Manual rollback                 |
-| `ServiceDown` / `DBConnectionExhausted` firing      | Manual rollback                 |
-| `TenantIsolationBreach` firing                      | **Roll back immediately** and page the security lead — this is a P0 |
-| Data written incorrectly by the new version         | Roll back, then assess whether the migration also needs reverting |
+| Signal                                            | Action                                                              |
+| ------------------------------------------------- | ------------------------------------------------------------------- |
+| Error rate > 1% within 10 min of deploy           | Automatic — the pipeline rolls back                                 |
+| p95 read > 300 ms or p95 write > 500 ms for 5 min | Manual rollback                                                     |
+| `ServiceDown` / `DBConnectionExhausted` firing    | Manual rollback                                                     |
+| `TenantIsolationBreach` firing                    | **Roll back immediately** and page the security lead — this is a P0 |
+| Data written incorrectly by the new version       | Roll back, then assess whether the migration also needs reverting   |
 
 ## Application rollback — ArgoCD
 

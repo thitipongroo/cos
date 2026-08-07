@@ -28,11 +28,11 @@ This app is a standalone deployable — not a library. The building blocks below
 
 **Components** (`src/components/`):
 
-| Component           | Description                                                                          |
-| ------------------- | ------------------------------------------------------------------------------------ |
-| `<SyncPill />` | Top-bar glyph carrying every sync state. Offline is not separate — writes enqueue and it shows the pending count (§32.7, 2026-08-06) |
-| `<SyncStatusBar />` | Displays current sync state (syncing / synced / pending / error)                     |
-| `<ConflictBadge />` | Badge for unresolved sync conflicts; accepts `onPress` handler                       |
+| Component           | Description                                                                                                                          |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `<SyncPill />`      | Top-bar glyph carrying every sync state. Offline is not separate — writes enqueue and it shows the pending count (§32.7, 2026-08-06) |
+| `<SyncStatusBar />` | Displays current sync state (syncing / synced / pending / error)                                                                     |
+| `<ConflictBadge />` | Badge for unresolved sync conflicts; accepts `onPress` handler                                                                       |
 
 **Hooks** (`src/hooks/`):
 

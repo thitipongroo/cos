@@ -19,7 +19,7 @@ both.
 **Internal recovery target, per environment — QM-12.** What the platform team engineers for:
 
 | Target | Staging  | Production     |
-| ------ | -------- | ---------------- |
+| ------ | -------- | -------------- |
 | RTO    | 4 hours  | **30 minutes** |
 | RPO    | 24 hours | **15 minutes** |
 
@@ -46,7 +46,7 @@ human in the loop for every step.
 From `infrastructure/terraform/aws/modules/rds/main.tf`:
 
 | Setting                     | Value                                                              |
-| --------------------------- | -------------------------------------------------------------------- |
+| --------------------------- | ------------------------------------------------------------------ |
 | Instance identifier         | `cos-postgres-${var.environment}` → e.g. `cos-postgres-production` |
 | `multi_az`                  | `var.environment == "production"` — **true in production only**    |
 | `backup_retention_period`   | 30 days (production) / 7 days (other)                              |

@@ -27,23 +27,23 @@ categories as rows that navigate to a detail screen.
 
 The accordion's contents are the reason it exists, and none of those contents are real:
 
-| Accordion row in the mockup           | What this platform has                                       |
-| ------------------------------------- | ------------------------------------------------------------ |
-| `Biometric Hash — SHA-256: 0x9f86d0…` | No biometric hash exists anywhere in the schema               |
+| Accordion row in the mockup           | What this platform has                                           |
+| ------------------------------------- | ---------------------------------------------------------------- |
+| `Biometric Hash — SHA-256: 0x9f86d0…` | No biometric hash exists anywhere in the schema                  |
 | `Geofencing Radius — 500m`            | No geofence. A 100m radius does exist — a different thing, below |
-| `Employee ID — C-8922-X`              | This one is REAL — `workforce.workers.employee_code`, see below |
-| `Sync Frequency — Real-time`          | Writes queue offline and flush on reconnect                  |
+| `Employee ID — C-8922-X`              | This one is REAL — `workforce.workers.employee_code`, see below  |
+| `Sync Frequency — Real-time`          | Writes queue offline and flush on reconnect                      |
 
 **On the 100m radius**, because "no geofencing" on its own is too broad a statement and invites the
 obvious challenge. `STATIONARY_RADIUS_METRES = 100` exists (`backend/.../network-origin/stationary.ts`,
 ADR-080). It is not a geofence:
 
-|                  | The 100m the platform has                   | The 500m the mockup draws     |
-| ---------------- | ------------------------------------------- | ----------------------------- |
+|                  | The 100m the platform has                       | The 500m the mockup draws   |
+| ---------------- | ----------------------------------------------- | --------------------------- |
 | When it applies  | After the fact, over already-stored coordinates | Continuously, on entry/exit |
-| Scope            | One platform-wide constant                  | Configurable per site         |
-| What it controls | **Nothing** — it labels `STATIONARY`/`MOBILE` | Whether monitoring is on      |
-| Events           | None                                        | Entry / exit                  |
+| Scope            | One platform-wide constant                      | Configurable per site       |
+| What it controls | **Nothing** — it labels `STATIONARY`/`MOBILE`   | Whether monitoring is on    |
+| Events           | None                                            | Entry / exit                |
 
 It is a description of check-ins that already happened, not a boundary the platform enforces. The
 only `GEOFENCE_BREACH` in the codebase is an enum member in `equipment/iot-integration.stub.ts` — the

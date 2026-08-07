@@ -41,10 +41,10 @@ procedure — that is [`../deployment.md`](../deployment.md) — it records what
 
 ## Related
 
-| Document                                                 | Role                                               |
-| -------------------------------------------------------- | ---------------------------------------------------- |
-| [`../deployment.md`](../deployment.md)                   | The generic deployment procedure                   |
-| [`../rollback.md`](../rollback.md)                       | The generic rollback procedure                     |
-| [`../deployment-windows.md`](../deployment-windows.md)   | Approved production windows                        |
-| [`../production-readiness.md`](../production-readiness.md) | The readiness checklist gating go-live           |
-| `CHANGELOG.md` (repo root)                               | `BREAKING CHANGE:` entries — QM-11                 |
+| Document                                                   | Role                                   |
+| ---------------------------------------------------------- | -------------------------------------- |
+| [`../deployment.md`](../deployment.md)                     | The generic deployment procedure       |
+| [`../rollback.md`](../rollback.md)                         | The generic rollback procedure         |
+| [`../deployment-windows.md`](../deployment-windows.md)     | Approved production windows            |
+| [`../production-readiness.md`](../production-readiness.md) | The readiness checklist gating go-live |
+| `CHANGELOG.md` (repo root)                                 | `BREAKING CHANGE:` entries — QM-11     |
