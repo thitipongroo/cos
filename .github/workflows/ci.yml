@@ -92,8 +92,19 @@ jobs:
       # this guards against is a table edited in isolation from the directory it describes, so
       # scoping it to changed files would miss exactly the case it exists for. Canonical table:
       # docs/specifications/32-implementation-specifications.md §32.2.
+      # Invoked as `bash <script>`, not `./<script>`. This repository is developed on Windows with
+      # core.filemode=false, so a local `chmod +x` is NOT recorded in the index: both scripts below
+      # were committed 100644 while every sibling in scripts/readiness/ is 100755, and the first CI
+      # run that reached this step died with "Permission denied" (exit 126). `bash` does not care
+      # about the mode, so the gate cannot be silently disarmed by the same Windows quirk again.
       - name: Service runtime declarations match the repository
-        run: ./scripts/readiness/check-service-runtimes.sh
+        run: bash ./scripts/readiness/check-service-runtimes.sh
+
+      # Same class of failure as the runtime table, one layer down: a ConfigService.getOrThrow() in a
+      # module factory that CI has no value for takes the whole unit-test suite with it. Broke three
+      # times in a row, one key at a time, before this check existed.
+      - name: Unit-test env covers every getOrThrow key
+        run: bash ./scripts/ci/check-unit-test-env.sh
 
   # ─── MLOps tests (Python / Airflow 3.x DAGs) ────────────────────────────────
   mlops-tests:
@@ -182,12 +193,16 @@ jobs:
       #   appDatabaseUrl() — backend/src/shared/prisma/app-database-url.ts — throws instead of
       #   silently falling back to the RLS-bypassing superuser DATABASE_URL (ADR-031, QM-18).
       APP_DATABASE_URL: postgresql://app_user:ci@localhost:5432/ci
-      #   ThrottlerModule storage — backend/src/app.module.ts
+      #   ThrottlerModule storage — app.module.ts, analytics.module.ts
       REDIS_URL: redis://localhost:6379
-      #   ClickHouse client factory — analytics module
+      #   ClickHouse client factory — analytics.module.ts
       CLICKHOUSE_URL: http://localhost:8123
       CLICKHOUSE_USER: ci
       CLICKHOUSE_PASSWORD: ci
+      #   Neo4j driver factory — graph.module.ts
+      NEO4J_URI: bolt://localhost:7687
+      NEO4J_USERNAME: ci
+      NEO4J_PASSWORD: ci
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

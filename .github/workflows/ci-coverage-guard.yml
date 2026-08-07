@@ -53,4 +53,6 @@ jobs:
       - name: Check develop
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./scripts/ci/check-branch-has-ci-run.sh develop
+        # `bash <script>` — see the note in ci.yml: Windows checkouts with core.filemode=false do
+        # not record the exec bit, so `./<script>` fails with "Permission denied" on the runner.
+        run: bash ./scripts/ci/check-branch-has-ci-run.sh develop
