@@ -56,6 +56,12 @@ export interface InspectionRow {
   notes: string | null;
   // spec 11 §517 — nullable; populated when result is FAILED/conditional (optional for back-compat).
   issue_severity?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | null;
+  /**
+   * Drawn attestation mark — AnnotationStroke[] (migration 20260808000002), NULL when unsigned.
+   * Optional here for the same reason as the fields above: a database that has not run that
+   * migration returns a row without the key at all. RESTRICTED / PDPA — see the migration.
+   */
+  signature?: unknown[] | null;
 }
 
 export interface SafetyChecklistRow {

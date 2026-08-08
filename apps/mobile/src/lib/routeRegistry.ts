@@ -18,7 +18,9 @@ export const TAB_ROUTES = [
   'home',
   'dashboard',
   'projects',
-  'tasks',
+  // `tasks` is deliberately ABSENT: it stopped being a tab on 2026-08-08 when Home took the Site
+  // Worker's first slot. It is now a pushed child of Home (breadcrumb + back chevron), which is what
+  // `routeRegistry.spec.ts` asserts for every non-tab, non-terminal route.
   'issues',
   'inspections',
   'reports',

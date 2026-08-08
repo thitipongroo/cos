@@ -30,14 +30,13 @@ export type TabConfig = {
 // Tabs render in array order, and the FIRST entry a role matches is also where it lands after sign-in
 // (lib/landingRoute.ts), so order is behaviour, not presentation.
 export const ALL_TABS: TabConfig[] = [
-  // Every role EXCEPT SITE_WORKER, whose mockups give it four working tabs and no landing page
-  // (PO 2026-08-08). Derived from CosRole rather than listed, so a new role gets Home automatically.
-  {
-    name: 'home',
-    titleKey: 'nav.tabs.home',
-    icon: 'home',
-    roles: Object.values(CosRole).filter((r) => r !== CosRole.SITE_WORKER),
-  },
+  // EVERY role, SITE_WORKER included (PO decision 2026-08-08, reversing the same day's earlier
+  // "follow the mockups exactly" ruling). The mockups give the Site Worker four working tabs and no
+  // landing page, but Home is the first tab for all eleven other roles, and a bar that starts
+  // somewhere different for one role is a worse cost than the deviation from those four drawings.
+  // Its task list did NOT disappear: `tasks` is now a pushed child of Home, reached from the Tasks
+  // quick action that FieldHome already carried.
+  { name: 'home', titleKey: 'nav.tabs.home', icon: 'home', roles: Object.values(CosRole) },
   // TENANT_ADMIN bottom nav — Home | Users | Alerts | Settings (PO decision 2026-07-28, mockups
   // 04_tenant_admin/01_home,02_users,03_alerts,04_settings). "Alerts" is the sync-review queue
   // (04_tenant_admin/03_alerts — conflict records) and "Settings" is the system-settings route
@@ -55,10 +54,14 @@ export const ALL_TABS: TabConfig[] = [
     icon: 'settings',
     roles: [CosRole.TENANT_ADMIN],
   },
-  { name: 'tasks', titleKey: 'nav.tabs.tasks', icon: 'checklist', roles: [CosRole.SITE_WORKER] },
-  // `issues` sits BEFORE `report` so SITE_WORKER reads Tasks | Issues | Reports | Safety, the order
-  // its mockups draw. SITE_ENGINEER is unaffected: it has no `tasks`/`report` tab, so its own order
-  // (Home | Issues | Inspections | Reports) is unchanged by the move.
+  // `tasks` is NO LONGER A TAB for any role (PO 2026-08-08 — Home took its slot, since §32.7 allows
+  // exactly four). It stays a mounted route reached by `router.push` from Home's Tasks quick action,
+  // so it is declared `href: null` in MobileNav and carries a breadcrumb like every other pushed
+  // child screen.
+  //
+  // `issues` sits BEFORE `report` so SITE_WORKER reads Home | Issues | Reports | Safety, keeping the
+  // relative order of the three tabs its mockups draw. SITE_ENGINEER is unaffected: it has no
+  // `report` tab, so its own order (Home | Issues | Inspections | Reports) is unchanged.
   {
     name: 'issues',
     titleKey: 'nav.tabs.issues',

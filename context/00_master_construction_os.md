@@ -3268,7 +3268,15 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
 
   Role-based navigation (React Native — authoritative, ทุก role):
     SITE_WORKER:
-      Bottom nav: Home | Tasks | Report | Issues | Profile
+      Bottom nav: Home | Issues | Reports | Safety  (PO decision 2026-08-08; supersedes
+                  "Home | Tasks | Report | Issues | Profile" above-left)
+                  Profile left every role's nav on 2026-08-04 (top-bar avatar instead), and §32.7
+                  allows exactly four items — so Safety, a daily obligation with no entry point at
+                  all before, took the fourth slot and TASKS became a pushed child of Home, reached
+                  from the Tasks quick action FieldHome already carried. The role's four mockups
+                  (mockup/mobile/05_site_worker) draw Tasks | Issues | Reports | Safety with no
+                  Home; the product owner chose Home-first so the bar starts in the same place for
+                  all twelve roles.
       Workflows:  daily report, quick issue, task list, safety checklist
 
     SITE_ENGINEER:

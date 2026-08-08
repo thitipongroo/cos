@@ -1,12 +1,17 @@
 // Android SITE_WORKER screenshot capture — adb/uiautomator only, like every sibling script.
 //
-// Writes the role's four tab screens to docs/screens/android/SITE-WORKER/, one folder per bottom-nav
-// tab: 01-Tasks, 02-Issues, 03-Reports, 04-Safety. They implement
+// Writes the role's screens to docs/screens/android/SITE-WORKER/, one folder per bottom-nav tab:
+// 01-Home, 02-Issues, 03-Reports, 04-Safety. They implement
 // mockup/mobile/05_site_worker/{01_tasks,02_issues,03_reports,04_safety}.
 //
+// Tasks lives under 01-Home/ because that is where it is reached from: it was a tab until
+// 2026-08-08, when Home took the slot (§32.7 allows exactly four), and it is now pushed from Home's
+// Tasks quick action. The README's own rule is that a screen is filed under the tab it is reached
+// from.
+//
 // Signed in as Somsak Duangdee (+66811000010, seed-realistic.ts) — the seeded SITE_WORKER. Role
-// matters: this tab set exists ONLY for SITE_WORKER (MobileNav, PO decision 2026-08-08 — it is also
-// the only role with no Home tab), so any other account would render a different bar entirely.
+// matters: Issues/Reports/Safety are this role's tabs (MobileNav), so any other account renders a
+// different bar entirely.
 //
 // Shell is DARK — the product default for every role since 2026-08-04 (themeStore.ts).
 //
@@ -199,16 +204,28 @@ async function main() {
   await find(byId('drawer-menu-button'), 'signed-in top bar', 40);
   await dismissDevBanners();
 
-  // Tasks — the role's landing tab. Delta sync has to land first or the list is legitimately empty,
-  // so the task list is asserted to hold at least one card BEFORE the shot: an empty Tasks screen is
-  // a valid app state but a useless screenshot, and it must fail the run rather than be committed.
-  console.log('· 01-Tasks/01-tasks');
-  await tap(byId('tasks-tab'), 'tasks tab');
+  // Home — the role's landing tab since 2026-08-08: KPI cards, the project picker + check-in, and
+  // the quick actions. Asserted on the check-in button rather than just the screen, because that
+  // control is the reason Home is a tab at all for this role.
+  console.log('· 01-Home/01-home');
+  await tap(byId('home-tab'), 'home tab');
+  await find(byId('home-screen'), 'home-screen');
+  await find(byId('check-in-button'), 'check-in button');
+  await dismissDevBanners();
+  await delay(1200);
+  grabOne('01-Home/01-home');
+
+  // Tasks — pushed from Home's quick action, so it carries a breadcrumb (HOME › TASKS) and a back
+  // chevron like every other child screen. Delta sync has to land first or the list is legitimately
+  // empty, so at least one card is asserted BEFORE the shot: an empty Tasks screen is a valid app
+  // state but a useless screenshot, and it must fail the run rather than be committed.
+  console.log('· 01-Home/02-tasks');
+  await tap(byId('qa-tasks'), 'Tasks quick action');
   await find(byId('tasks-screen'), 'tasks-screen');
   await find((n) => /resource-id="task-[0-9a-f-]{36}"/.test(n), 'at least one task card', 40);
   await dismissDevBanners();
   await delay(1200);
-  grabOne('01-Tasks/01-tasks');
+  grabOne('01-Home/02-tasks');
 
   // Issues — camera-first, so it is taller than a viewport (viewfinder + 4 category chips + voice +
   // description + submit + the synced list). Stitched.

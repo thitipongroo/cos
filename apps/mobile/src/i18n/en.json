@@ -12,7 +12,8 @@
       "label": "Project",
       "empty": "No projects cached — connect once to load"
     },
-    "loadingLabel": "Loading…"
+    "loadingLabel": "Loading…",
+    "comingSoon": "Not available yet."
   },
   "nav": {
     "tabs": {
@@ -218,7 +219,6 @@
   },
   "tasks": {
     "list": {
-      "title": "Today's tasks",
       "empty": "No tasks synced yet"
     },
     "detail": {
@@ -241,13 +241,11 @@
   },
   "site": {
     "report": {
-      "title": "Daily activity log",
       "summaryPlaceholder": "Summary — manpower, progress, blockers",
       "save": "Save report",
       "saved": "Saved offline — will sync when online",
       "manpowerPlaceholder": "Manpower count",
       "blockersPlaceholder": "Blockers (if any)",
-      "newEntry": "New entry",
       "manpower": "Manpower",
       "manpowerTotal": "Total workers on site",
       "manpowerIncrement": "Add one worker",
@@ -264,7 +262,8 @@
         "FINISHING": "Finishing",
         "GENERAL": "General labour"
       },
-      "workerCount": "{count, plural, one {# worker} other {# workers}}",
+      "breakdownLocked": "Enter the total headcount first",
+      "aiSuggestion": "AI suggestion: at the current rate, the installation should finish by 18:00.",
       "progress": "Work progress",
       "blockers": "Blockers",
       "blockerCategories": {
@@ -298,6 +297,7 @@
       "categoryLabel": "Category",
       "titleLabel": "What is the issue?",
       "voiceLabel": "Voice note",
+      "voiceHint": "Hold to record a spoken description of the problem",
       "descriptionLabel": "Description",
       "descriptionPlaceholder": "Add any further detail (optional)…",
       "types": {
@@ -342,13 +342,19 @@
       "empty": "No incidents yet"
     },
     "checklist": {
-      "title": "Safety checklist",
       "required": "Required",
       "verification": "Daily safety verification — {done}/{total}",
-      "itemRequired": "Required check",
       "confirm": "Confirm safety",
       "submitted": "Checklist submitted — will sync when online",
-      "empty": "No safety checklist is available for your projects yet"
+      "empty": "No safety checklist is available for your projects yet",
+      "all": "All",
+      "authorization": "Digital authorization",
+      "signHere": "Sign here to confirm adherence",
+      "signer": "Site operator: {name}",
+      "clearPad": "Clear pad",
+      "aiScanTitle": "AI Safety Scan",
+      "aiScanBody": "Automated PPE detection. Verify your safety equipment using computer vision.",
+      "aiScanStart": "Start scan"
     }
   },
   "voiceNote": {
@@ -392,6 +398,11 @@
     "capture": {
       "enable": "Enable camera",
       "capture": "Capture photo",
+      "done": "Done",
+      "addPhoto": "Add photo",
+      "upload": "UPLOAD",
+      "live": "Live",
+      "shutterHint": "Tap the shutter to capture a photo",
       "queued": "{count, plural, one {# photo queued} other {# photos queued}}",
       "queueWarn": "Photo queue is filling up — upload soon (80+ pending)",
       "queueFull": "Photo queue is full (100). Connect to upload before capturing more."

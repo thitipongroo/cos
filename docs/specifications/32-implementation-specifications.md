@@ -1291,6 +1291,25 @@ card colour; `<MobileNav />` overrides `tabBarStyle` only on dark.
   the breadcrumb shows depth and can jump more than one level. "Is a child screen" has a single
   source of truth — `isChildRoute()` in `components/Breadcrumb.tsx`, backed by the breadcrumb map —
   so a route cannot get one affordance without the other. Top-level tab screens get neither.
+- **A screen is named ONCE, and a top-level tab screen is named by its TAB.** A tab screen must not
+  render an in-content page title: the active bottom-nav item already carries the name, and repeating
+  it inside the content states it twice — the same defect `headingStutter.spec.ts` guards between a
+  `<SectionLabel />` and the card beneath it, one level up. A pushed **child** screen is named by its
+  breadcrumb, not by an in-content title either. So no screen in the app draws its own `<h1>`.
+
+  > **This rule was undocumented until 2026-08-08 and cost a full screen set.** It had been applied
+  > consistently in code since the 2026-07-31 shell rework — all 25 tab routes comply — but it was
+  > written down only in `docs/screens/android/README.md`, a per-capture narrative, and never here.
+  > Three of the four Site Worker screens therefore shipped with a title, and the reason is worth
+  > keeping: the **mockups draw one** (`รายการงานวันนี้`, `บันทึกกิจกรรมประจำวัน`,
+  > `เช็คลิสต์ความปลอดภัย`), ADR-085 makes mockups authoritative for style, and the only nearby
+  > sentence in this section — "a role screen never renders its own header" — sits under **TopBar**
+  > and reads as being about the bar, not about page titles. Following the spec and the mockups
+  > faithfully produced the wrong screen. Held by `theme/__tests__/pageTitle.spec.ts`.
+  >
+  > A record's own name is NOT a page title and is unaffected: `inspections`, `portfolio`, `invoices`
+  > and `orders` each render the selected checklist / project / invoice number / PO number when the
+  > tab switches to a detail view, which names the RECORD rather than the screen.
 
 #### Bottom Navigation (`<MobileNav />`)
 

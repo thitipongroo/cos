@@ -187,6 +187,23 @@ paths:
                   format: date-time
                 notes:
                   type: string
+                signature:
+                  type: array
+                  maxItems: 200
+                  description: >-
+                    The confirming signature as strokes — `[{ d, color, width }]`, `d` an SVG path in
+                    NORMALISED 0..1 coordinates (the ADR-056 annotation shape). An ATTESTATION MARK
+                    only: no PKI and no non-repudiation; the authoritative attribution is the row's
+                    `inspected_by` / `inspected_at`. Contract e-signature is ADR-058's separate
+                    PKI/VC path. RESTRICTED / personal data — see migration 20260808000002. Omit for
+                    an unsigned submission.
+                  items:
+                    type: object
+                    required: [d, color, width]
+                    properties:
+                      d: { type: string, maxLength: 4000 }
+                      color: { type: string, maxLength: 32 }
+                      width: { type: number, minimum: 0, maximum: 1 }
       responses:
         '201':
           description: Checklist submitted

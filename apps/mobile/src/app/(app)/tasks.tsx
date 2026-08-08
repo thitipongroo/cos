@@ -147,8 +147,12 @@ export default function TasksScreen() {
 
   return (
     <View testID="tasks-screen" style={[styles.page, { backgroundColor: p.bg }]}>
+      {/* NO in-content page title, though the mockup draws "รายการงานวันนี้" (§32.7 Mobile App Shell:
+          a top-level tab screen is named by its active bottom-nav tab, and repeating the name inside
+          the content states it twice). This is the one place the mockup is deliberately not followed
+          on this screen — PO decision 2026-08-08, after all four Site Worker screens shipped with a
+          title that no other tab screen has. */}
       <View style={styles.header}>
-        <Text style={[styles.title, { color: p.text }]}>{t('tasks.list.title')}</Text>
         {/* Horizontal chip row (mockup). Counts are the real filtered lengths — never a fixed "12". */}
         <ScrollView
           horizontal
@@ -196,8 +200,7 @@ export default function TasksScreen() {
 
 const styles = StyleSheet.create({
   page: { flex: 1 },
-  header: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, gap: spacing.md },
-  title: { fontSize: typography.hero.fontSize, fontFamily: fontFamily.bold },
+  header: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, gap: spacing.md },
   chipRow: { gap: spacing.xs, paddingBottom: spacing.xs },
   chip: {
     minHeight: touchTarget.secondaryButton,

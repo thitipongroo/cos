@@ -36,7 +36,7 @@ gets its own full-page file (the Invite-user `email` method, the Alerts `diff`-e
 | [`SITE-ENGINEER/`](SITE-ENGINEER/)         | Tabs: **Home \| Issues \| Inspections \| Reports**. Captured so far: [`01-Home/`](SITE-ENGINEER/01-Home/) — the loading state (`00`) + dashboard (`01`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | [`TENANT-ADMIN/`](TENANT-ADMIN/)           | Tabs: **Home \| Users \| Alerts \| Settings**. [`01-Home/`](TENANT-ADMIN/01-Home/) — dashboard (`01`), Quick-Add (`02`) and the FAB flows: Invite-user (`03`), Role-permissions (`04`), Roles-selection (`05`), Invitation-success (`06`), System-integration (`07`), Apps-&-Services (`08`). [`02-Users/`](TENANT-ADMIN/02-Users/) — the users list (`01`), the per-user action sheet (`02`), the user profile (`03`), the multi-role permission editor (`04`) + the save-success screen (`05`), and the password-reset form (`06`) + its two done screens — temp-password (`07`) and email-link-sent (`08`). [`03-Alerts/`](TENANT-ADMIN/03-Alerts/) — the sync-review queue (`01`). [`04-Settings/`](TENANT-ADMIN/04-Settings/) — System Settings (`01`, one full-page). |
 | [`CRM-SALES-MANAGER/`](CRM-SALES-MANAGER/) | Tabs: **Home \| Leads \| Opportunities \| Customers** — the three pages §20.7.10 defines, built 2026-08-04. Leads (`01`), Opportunities (`02`), Customers (`03`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| [`SITE-WORKER/`](SITE-WORKER/)             | Tabs: **Tasks \| Issues \| Reports \| Safety** — the only role with **no Home tab** (PO decision 2026-08-08). One screen per tab: [`01-Tasks/`](SITE-WORKER/01-Tasks/) (`01`), [`02-Issues/`](SITE-WORKER/02-Issues/) (`01`), [`03-Reports/`](SITE-WORKER/03-Reports/) (`01`), [`04-Safety/`](SITE-WORKER/04-Safety/) (`01`).                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| [`SITE-WORKER/`](SITE-WORKER/)             | Tabs: **Home \| Issues \| Reports \| Safety**. [`01-Home/`](SITE-WORKER/01-Home/) — the field dashboard (`01`) and **Tasks** (`02`), which is pushed from Home's Tasks quick action rather than being a tab. [`02-Issues/`](SITE-WORKER/02-Issues/) (`01`), [`03-Reports/`](SITE-WORKER/03-Reports/) (`01`), [`04-Safety/`](SITE-WORKER/04-Safety/) (`01`).                                                                                                                                                                                                                                                                                                                                                                                                                 |
 
 The two adb dashboard scripts write straight into their role's menu subfolders —
 [`capture-android-home.mjs`](../../../apps/mobile/scripts/capture-android-home.mjs) → `SITE-ENGINEER/01-Home/`,
@@ -191,17 +191,37 @@ indicator in place of the dropped strip: a green check when synced, gold while s
 colour, no label, so it stays balanced beside the brand and never crowds it). It sits on the shared top
 bar, so it shows the same on every Tenant Admin screen.
 
-**Uniform top bar + breadcrumb + standard Help.** The shared bar shows the **CONSTRUCTION OS**
-wordmark on **every** screen, and the brand icon is the drawer trigger. Screens no longer draw their
-own in-content page heading (main screens dropped theirs too — the active bottom-nav tab names the
-screen). On a **child** screen (a pushed route such as Invite user, Notifications, System-settings
-detail, Profile-via-avatar) the screen is named by a clickable **breadcrumb** strip under the bar
+**Uniform top bar; a breadcrumb on CHILD screens only; standard Help.** The shared bar shows the
+**CONSTRUCTION OS** wordmark on **every** screen, and the brand icon is the drawer trigger.
+
+**How a screen is named — the authoritative rule is [§32.7 Mobile App Shell](../../specifications/32-implementation-specifications.md), not this file:**
+
+| Screen                      | Named by                  | Breadcrumb | Back chevron |
+| --------------------------- | ------------------------- | ---------- | ------------ |
+| Top-level **tab** screen    | its active bottom-nav tab | no         | no           |
+| Pushed **child** screen     | its breadcrumb            | yes        | yes          |
+| Terminal (`router.replace`) | nothing — wordmark only   | no         | no           |
+
+**No screen draws its own in-content page heading**, tab screens included — the tab already carries
+the name, and repeating it inside the content states it twice.
+
+On a **child** screen (a pushed route such as Invite user, Notifications, System-settings detail,
+Profile-via-avatar) the screen is named by a clickable **breadcrumb** strip under the bar
 ([`components/Breadcrumb.tsx`](../../../apps/mobile/src/components/Breadcrumb.tsx)), and the bar
 carries a leading bare chevron **`<`** back control (PO decision 2026-08-04). The two are
 complementary: the chevron is the one-tap gesture, the breadcrumb shows depth and can jump more than
 one level. `isChildRoute()` is the single source of "has a parent", so no route gets one without the
 other.
 
+> **This paragraph used to be the only place the naming rule was written down**, under the heading
+> "Uniform top bar + breadcrumb + standard Help" — which reads as though every screen carries a
+> breadcrumb, when only child screens do. Both halves of that ambiguity caused real defects on
+> 2026-08-08: the Site Worker screens shipped with in-content titles (the rule was invisible to
+> anyone reading §32.7), and the missing breadcrumbs on those same screens were then reported as a
+> bug when they were correct. The rule now lives in §32.7 and is held by
+> [`theme/__tests__/pageTitle.spec.ts`](../../../apps/mobile/src/theme/__tests__/pageTitle.spec.ts);
+> what is left here is a pointer.
+>
 > Supersedes the **2026-07-29** "title-aware bar" (screen name + Material back arrow **in** the bar,
 > wordmark on tabs only): the title moved to the breadcrumb on **2026-07-31**, which also removed the
 > back arrow entirely; **2026-08-04** brought a back control back as the `<` chevron.
@@ -878,23 +898,56 @@ The `SITE_WORKER` tab set, implementing [`mockup/mobile/05_site_worker/`](../../
 through a real Path A (SMS OTP) login as `+66811000010` — Somsak Duangdee, the seeded SITE_WORKER at
 Ekachai. The header avatar reads **"SD"** (his initials — no photo set), confirming the signed-in role.
 
-**This is the only role with no Home tab** (product-owner decision 2026-08-08). All four mockups draw
-the same bar — **Tasks | Issues | Reports | Safety** — and the product owner chose it over master
-§Phase 10's "Home | Tasks | Report | Issues": a field worker opens the app to _do_ one of four things,
-and the daily safety checklist had no entry point at all under the old set. Two consequences were
-handled rather than left to rot:
+**The bar is Home | Issues | Reports | Safety** — the same Home-first shape as the eleven other
+roles. This took two decisions on 2026-08-08, in order. The four mockups draw **Tasks | Issues |
+Reports | Safety** with no Home, and that shipped first; the product owner then replaced Tasks with
+Home so the bar starts in the same place for every role. §32.7 allows exactly four items, so Tasks
+gave up the slot rather than being added as a fifth.
 
-- **Landing.** `app/index.tsx` used to redirect every role to `/home`, which for this role is a screen
-  its own bottom bar cannot reach — it opened with nothing highlighted. The landing is now derived from
-  the role's own tab set ([`lib/landingRoute.ts`](../../../apps/mobile/src/lib/landingRoute.ts)), so the
-  two can never disagree again.
-- **Check-in.** The self check-in (offline-queued attendance) lived only on that Home screen. It moved
-  to the navigation drawer for this role, so removing a tab did not silently remove a daily field
-  action. `home` itself stays mounted.
+**Tasks did not disappear** — it became a pushed child of Home, reached from the Tasks quick action
+FieldHome already carried, and it now carries a breadcrumb (`HOME › TASKS`) and a back chevron like
+every other child screen. That is also why its capture lives under `01-Home/`.
 
-### Tasks — [`01-Tasks/01-tasks.png`](SITE-WORKER/01-Tasks/01-tasks.png)
+Two things the first arrangement broke, both fixed:
 
-Title, filter chips with **real counts** (`All (25) · Pending (5) · In progress (10) · Done`), and one
+- **Landing.** `app/index.tsx` redirected every role to `/home`, which under the Home-less bar was a
+  screen this role could not reach — it opened with nothing highlighted. The landing is now derived
+  from the role's own tab set ([`lib/landingRoute.ts`](../../../apps/mobile/src/lib/landingRoute.ts)),
+  so the two cannot disagree whichever way the tabs move.
+- **Check-in.** The self check-in (offline-queued attendance) lives only on Home. While Home was not a
+  tab it was reachable from the navigation drawer; that drawer entry is kept, since it costs nothing
+  and a worker who is already deep in another tab can reach check-in without going back to Home.
+
+**No screen here draws its own title, though all four mockups do.** §32.7 names a tab screen by its
+tab, so `รายการงานวันนี้` / `บันทึกกิจกรรมประจำวัน` / `เช็คลิสต์ความปลอดภัย` are not rendered. Those three
+screens shipped WITH a title on 2026-08-08 and were corrected the same day: the rule lived only in
+this README, so neither §32.7, nor the mockups, nor any test contradicted them. The Safety screen's
+**REQUIRED** badge went with them later the same day, on the product owner's reading that it stated
+nothing checkable — what was required, or by when? The per-row "Required check" caption went too: the
+seed sets `is_required` on every item, so it printed on all nine and distinguished none of them.
+
+### Home — [`01-Home/01-home.png`](SITE-WORKER/01-Home/01-home.png)
+
+The field dashboard and the role's landing screen: two KPI cards (**open issues**, **pending sync** —
+both counted from the local offline DB, so they are honest with no signal), the project picker, the
+**CHECK IN** button (offline-queued attendance), and quick actions for Tasks, Report and Issues.
+
+`15` open issues and `0` pending sync are the real local counts for this seeded worker; the Issues
+tile's red `15` badge is the same number. CHECK IN is disabled until a project is picked — an
+attendance row against no project would be unusable.
+
+> **This screen was the last one still pinned to the light token set.** It rendered a white page
+> under the dark top bar and dark bottom nav, and its three quick-action tiles were white too, which
+> went unnoticed while no role landed here by default. Making Home this role's first tab put it in
+> front of a field worker on every app open, so `home.tsx` moved to the themed palette and
+> `QuickActionCard`'s `variant` now DEFAULTS to the user's theme instead of to `'light'` — the tiles
+> were white because the caller passed nothing and the default said nothing about being a choice.
+> The four `<LoadingBoundary theme="light">` calls in the same file were fixed with it.
+
+### Tasks — [`01-Home/02-tasks.png`](SITE-WORKER/01-Home/02-tasks.png)
+
+A **child screen of Home**, so it opens with the `HOME › TASKS` breadcrumb and a back chevron.
+Filter chips with **real counts** (`All (25) · Pending (5) · In progress (10) · Done`), and one
 card per task: a coloured left accent, an `ID: #…` eyebrow, the trade badge, percent + sync chip, the
 planned window, and a progress bar. Swipe-right marks a task done (§17.5 Max-wins); the card taps
 through to the progress editor.
@@ -903,8 +956,11 @@ Everything is live, never fabricated. The IDs (`#80AD3112`, `#7E519143`) are the
 real `task_id`; the badges (`FOUNDATION`, `STRUCTURE`) are `projects.tasks.work_type`; the percentages
 are the stored `progress_percent`. Three mockup elements are **dropped for want of data**:
 
-- The **HIGH / MEDIUM priority badge** — `projects.tasks` has no priority column, in the database or in
-  the API. The badge slot is kept and filled with the trade, which the row actually carries.
+- The **HIGH / MEDIUM priority badge** — there is no priority anywhere: not in `projects.tasks`, not in
+  any migration, not in `schema.prisma`, not in spec 11, not in the API. The badge slot is kept and
+  filled with the trade, which the row actually carries. Re-checked and **reaffirmed by the product
+  owner on 2026-08-08** ("คงไว้แบบเดิม") after the option of adding a real `priority` column was put to
+  them — so this is a decision, not an omission waiting to be fixed.
 - **"08:00 - 12:00"** — `planned_start` / `planned_end` are DATEs; there is no time-of-day anywhere, so
   the chip shows the real planned window in days (rendered through `formatDate`, so Thai gets the
   Buddhist era — QM-3). The mockup's own second card puts "Pending Sync" in that same slot, so a status
@@ -919,7 +975,8 @@ are the stored `progress_percent`. Three mockup elements are **dropped for want 
 ### Issues — [`02-Issues/01-issue-capture.png`](SITE-WORKER/02-Issues/01-issue-capture.png)
 
 Camera-first, as the mockup draws it: the live viewfinder, then category, title, a hold-to-record voice
-note, a description, **REPORT ISSUE**, and the project's synced issues below.
+note, a description, and **REPORT ISSUE**. Nothing follows that button — the screen ends there, as the
+mockup does.
 
 - **The category chips are the four REAL values of `site_ops.issues.issue_type`** — Defect, Rework,
   Punch item, General — not the mockup's Safety / Material / Technical / Blocker, which match no column,
@@ -929,16 +986,39 @@ note, a description, **REPORT ISSUE**, and the project's synced issues below.
   for it, so every issue created through the API silently took the default `GENERAL`.
 - The mockup's in-frame **"AI Suggestion: Safety Issue detected in frame"** is dropped —
   SafetyVisionModel is Phase 23 and needs 10,000+ labelled site photos (§22.6).
-- The mockup has **no issue list** (it is capture-only). The list is kept (ADR-085 — implemented
-  structure stands where it has outgrown the drawing): it is the only place a worker can see whether
-  what they filed has synced. It is **scoped to the selected project**, because the local cache holds
-  every project's issues and nothing on a row says which site it belongs to.
+- **The photo zone and the voice zone are drawn the way the mockup draws them** (PO decision
+  2026-08-08). `<PhotoCapture layout="viewfinder" />` is a 4:3 preview with an inset guide, a LIVE
+  pill and a round shutter **on** the frame; the voice zone is a dashed panel with the mic centred in
+  it and the hold-to-record line beneath. The mic glyph is the same `MaterialIcons` `mic` the Site
+  Engineer Home FAB uses — the project standard since 2026-08-08, replacing a 🎙️ emoji that rendered in
+  the system font and could never take the button's tint.
+- **The issue list under REPORT ISSUE is gone for this role** (PO decision 2026-08-08 — "โซนด้านล่าง
+  ของปุ่ม REPORT ISSUE คืออะไร ตัดออก"), which restores the mockup's capture-only shape. It is
+  **not deleted**: `SITE_ENGINEER` shares this route, its own mockups draw the list
+  (`03_site_engineer/site_issues/issue_list`, `…/escalate_issue_to_manager`), and this screen is the
+  only place **G-M12** (escalate → PM) exists in the app — removing it outright would have taken a
+  deliverable out with the zone. So it is role-scoped, not dropped. A worker who needs sync state has
+  the global sync indicator and the Sync Queue screen.
 
 ### Daily report — [`03-Reports/01-daily-report.png`](SITE-WORKER/03-Reports/01-daily-report.png)
 
-The "NEW ENTRY / Daily activity log" form: manpower stepper, shift, the per-trade breakdown, work
-progress (typed or voice), blockers, photos, and **SAVE AS DRAFT / SUBMIT REPORT** — which are the row's
-real `status` values (`DRAFT` / `SUBMITTED`), not two styles of one action.
+The daily-entry form: the AI suggestion bar, manpower, shift, the per-trade breakdown, work progress
+(typed or voice), blockers, photos, and **SAVE AS DRAFT / SUBMIT REPORT** — which are the row's real
+`status` values (`DRAFT` / `SUBMITTED`), not two styles of one action.
+
+**Manpower is typed, not only tapped** (PO decision 2026-08-08). The total is a numeric field — a crew
+of 24 was 24 taps before — and each trade row puts its number **between** its − and + buttons, editable
+the same way. The unit word is gone: the section is headed Manpower and every row is a headcount, so
+"คน" repeated five times said nothing. The breakdown panel is **dimmed and inert until a total is
+entered** — there is nothing to apportion before that, and the empty rows invited a breakdown that
+contradicted a total nobody had given yet.
+
+**Photos follow the mockup's ภาพประกอบ strip**: `<PhotoCapture layout="strip" />` — a horizontal row of
+120px thumbnails ending in a dashed **UPLOAD** tile, with the camera opening only when that tile is
+tapped rather than sitting live on the form. The camera permission is requested at that tap, not on
+mount. The 3-column grid stays the default for the screens where the photos **are** the record
+(deliveries, inspections). The voice mic is now a round FAB floating **inside** the work-progress
+field, not a full-width bar under it — in the corner of the input it reads as "speak this field".
 
 **Three mockup fields had nowhere to land, and were given a backend rather than dropped** (PO decision
 2026-08-08):
@@ -955,15 +1035,24 @@ to `DAY` — no pre-existing report can be backfilled, because nothing anywhere 
 past report covered. The free-text `blockers` column is untouched: the category is a queryable axis
 over the operator's own words, not a replacement for them.
 
-Dropped: the mockup's **"AI แนะนำ: คาดว่างานติดตั้งจะเสร็จภายใน 18:00 น."** banner. Predicting a
-completion time is DelayForecastModel's job (Phase 23, untrained), and an invented estimate on a daily
-record is worse than no estimate.
+The mockup's **"AI แนะนำ: คาดว่างานติดตั้งจะเสร็จภายใน 18:00 น."** banner **is drawn**, copy and all
+(PO decision 2026-08-08, reversing the same day's earlier call to drop it). DelayForecastModel is
+Phase 23 and untrained (§22.6), so the line is the mockup's illustration of the feature rather than a
+computed forecast: it is static, nothing reads it, and no field of the report is derived from it.
 
 ### Safety checklist — [`04-Safety/01-safety-checklist.png`](SITE-WORKER/04-Safety/01-safety-checklist.png)
 
-The pre-shift daily verification: a **REQUIRED** badge, the project picker, the project's checklists,
-the items with checkboxes, and **CONFIRM SAFETY** — disabled until every item is ticked, because a
-partially completed safety attestation asserts something untrue.
+The pre-shift daily verification: the project picker, the checklist filter chips, the **AI Safety
+Scan** module, the items with checkboxes grouped under their checklist, **DIGITAL AUTHORIZATION**, and
+**CONFIRM SAFETY** — disabled until every item is ticked, because a partially completed safety
+attestation asserts something untrue.
+
+**The filter chips lead with `All (n)`** and carry each checklist's real item count — `All (9) ·
+Foundation (2) · Concrete Pour (2) · Safety Walkthrough (3) · MEP Rough-in (2)`. `All` is not a view
+filter but a working mode: every item from every checklist is ticked on one page and submitted in one
+action, which then writes **one inspection per checklist** (PO decision 2026-08-08 — a worker doing a
+pre-shift walk does it once, not four times). The trailing word "Inspection" is stripped at display
+time only; the stored `checklist_name` is untouched.
 
 - **The role could not submit this at all until 2026-08-08.** `POST /safety/checklists` was
   `@Roles(SITE_ENGINEER, SAFETY_OFFICER, TENANT_ADMIN)`, and `sync-authz.ts` recorded the reason as an
@@ -980,19 +1069,30 @@ partially completed safety attestation asserts something untrue.
 - **A checklist picker** appears when a project has more than one. The mockup shows a single checklist
   because it was drawn against a single-project fixture; a real worker on five projects gets four
   templates each, so the screen cannot silently pick one.
-- Dropped: the **"AI Safety Scan — automated PPE detection"** module (SafetyVisionModel, Phase 23 — a
-  button that starts nothing, on the screen a worker uses to attest they are safe) and the **digital
-  signature pad** (nothing stores a signature; `site_ops.inspections` records `inspected_by`, which is
-  what the signature stood in for).
+- **The AI Safety Scan module is drawn**, mockup copy included (PO decision 2026-08-08, reversing the
+  same day's earlier call). SafetyVisionModel is Phase 23 and needs 10,000+ labelled site photos
+  (§22.6), so **START SCAN** says so plainly rather than pretending to scan, and it gates nothing on
+  this screen.
+- **The signature pad is real and its strokes are stored.** Migration `20260808000002` adds
+  `site_ops.inspections.signature` (JSONB, nullable, with a rollback — QM-9); the pad reuses the
+  ADR-056 drawing machinery, so a mark is `[{ d, color, width }]` with `d` an SVG path in **normalised
+  0..1 coordinates** — a few hundred bytes on a sync batch that flushes over site 3G, and re-renderable
+  at any pad size. `POST /safety/checklists` accepts it (max 200 strokes) and attaches it to every
+  inspection the confirmation creates. It is an **attestation mark, not a qualified e-signature**: no
+  PKI, no non-repudiation, and the authoritative attribution stays the row's `inspected_by` /
+  `inspected_at`, set server-side from the session. Contract e-signature is ADR-058's separate PKI/VC
+  mechanism and must not be confused with this. The stored mark is RESTRICTED personal data (PDPA) —
+  see the migration's own comment.
 
-All four are captured by
+All five are captured by
 [`apps/mobile/scripts/capture-android-site-worker.mjs`](../../../apps/mobile/scripts/capture-android-site-worker.mjs)
 (`node scripts/capture-android-site-worker.mjs`) — adb/uiautomator only, same reasoning as its siblings.
 It grants `android.permission.CAMERA` after `pm clear` (the Issues screen is camera-first; without it
-the capture would document a permission prompt), picks a project where the screen needs one, and
-asserts real CONTENT before saving — at least one task card, and at least one checklist item — so an
-empty state cannot be committed as though it were the feature. Tasks is a single viewport; the other
-three are full-page stitches (`scripts/stitch-fullpage.py`).
+the capture would document a permission prompt), picks a project where the screen needs one, reaches
+Tasks the way a worker does (Home → the Tasks quick action, not a tab), and asserts real CONTENT
+before saving — the check-in button on Home, at least one task card, at least one checklist item — so
+an empty state cannot be committed as though it were the feature. Home and Tasks are single
+viewports; the other three are full-page stitches (`scripts/stitch-fullpage.py`).
 
 > **One Hermes bug was found and fixed while capturing this set.** The first daily-report capture read
 > `Structural{count, plural, one {# worker} other {# workers}}` — the raw ICU template. Hermes ships a

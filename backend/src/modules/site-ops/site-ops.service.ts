@@ -454,6 +454,9 @@ export class SiteOpsService {
       inspected_at: dto.inspected_at,
       notes: dto.notes ?? null,
       issue_severity: dto.issue_severity ?? null, // spec 11 §517 — set on FAILED/conditional
+      // Drawn attestation mark (migration 20260808000002). Absent → NULL, i.e. "not signed"; the
+      // authoritative attribution stays `inspected_by` + `inspected_at`, which are always set.
+      signature: dto.signature ?? null,
       latitude: dto.latitude ?? null,
       longitude: dto.longitude ?? null,
     });

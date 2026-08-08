@@ -139,7 +139,10 @@ export function VoiceNoteButton({
           // Round FAB (SITE_ENGINEER home) — the mockup's clean line mic, white on the blue button.
           <MaterialIcons name="mic" size={26} color={colors.bg} />
         ) : (
-          <Text style={styles.mic}>🎙️</Text>
+          // The SAME clean-line mic as the FAB, not an emoji (PO decision 2026-08-08 — the engineer
+          // Home's mic is the project standard). An emoji renders in the system font, so it changed
+          // shape and colour between Android versions and could never take the button's tint.
+          <MaterialIcons name="mic" size={22} color={colors.bg} />
         )}
         {shape === 'fab' ? null : <Text style={styles.label}>{label}</Text>}
       </Pressable>
@@ -175,7 +178,6 @@ const styles = StyleSheet.create({
   },
   recording: { backgroundColor: colors.danger },
   busy: { opacity: 0.7 },
-  mic: { fontSize: 22 },
   label: {
     color: colors.bg,
     fontSize: typography.body.fontSize,

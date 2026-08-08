@@ -60,7 +60,7 @@ describe('Intl.PluralRules polyfill (QM-3)', () => {
   it('still formats a plural message correctly where ICU is present', () => {
     // Not the real guard (see the file header) — this only proves the polyfill imports did not BREAK
     // formatting in an environment that already had PluralRules.
-    expect(translate('en', 'site.report.workerCount', { count: 1 })).toBe('1 worker');
-    expect(translate('en', 'site.report.workerCount', { count: 8 })).toBe('8 workers');
+    expect(translate('en', 'photos.capture.queued', { count: 1 })).toBe('1 photo queued');
+    expect(translate('en', 'photos.capture.queued', { count: 8 })).toBe('8 photos queued');
   });
 });

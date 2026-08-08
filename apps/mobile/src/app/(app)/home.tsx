@@ -12,7 +12,7 @@
 // procurement/portfolio) — no new endpoint is introduced. All fetches are offline-safe (cached
 // value kept on error), matching the read-only offline behaviour in master 3101/3115/3130.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { CosRole } from '@cos/types';
@@ -31,12 +31,31 @@ import { LoadingBoundary } from '../../components/LoadingBoundary';
 import SiteEngineerHome from '../../components/SiteEngineerHome';
 import TenantAdminHome from '../../components/TenantAdminHome';
 import { useT } from '../../i18n';
-import { colors, fontFamily, radius, spacing, typography } from '../../theme/tokens';
+import { fontFamily, radius, spacing, typography } from '../../theme/tokens';
 import { screen } from '../../theme/screenStyles';
+import { usePalette, useIsDark, type Palette } from '../../theme/usePalette';
 import { formatMoney } from '@cos/financial';
+
+/** The palette-resolved stylesheet. One hook so every home variant reads the same set. */
+function useHomeStyles() {
+  const p = usePalette();
+  return useMemo(() => makeStyles(p), [p]);
+}
+
+/**
+ * The skeleton palette for this screen's loaders.
+ *
+ * <LoadingState /> takes an explicit theme rather than reading the store, so a hardcoded "light"
+ * here would flash a white skeleton on a dark page before the real content arrives — the same defect
+ * as the stylesheet above, one component deeper.
+ */
+function useLoaderTheme(): 'dark' | 'light' {
+  return useIsDark() ? 'dark' : 'light';
+}
 
 // ── shared presentational bits ──────────────────────────────────────────────
 function KpiCard({ testID, value, label }: { testID: string; value: string; label: string }) {
+  const styles = useHomeStyles();
   return (
     <View testID={testID} style={styles.kpi}>
       <Text style={styles.kpiValue}>{value}</Text>
@@ -46,6 +65,7 @@ function KpiCard({ testID, value, label }: { testID: string; value: string; labe
 }
 
 function Screen({ testID, children }: { testID: string; children: React.ReactNode }) {
+  const styles = useHomeStyles();
   return (
     <View testID={testID} style={styles.container}>
       {children}
@@ -60,6 +80,7 @@ function asList<T>(res: { items?: T[] } | T[]): T[] {
 
 // ── SITE_WORKER — KPI + self check-in ────────────────────────────────────────
 function FieldHome() {
+  const styles = useHomeStyles();
   const issues = useCollection<Issue>('local_issues');
   const pending = usePendingCount();
   const router = useRouter();
@@ -159,6 +180,8 @@ interface ExecutiveDashboardRow {
 }
 
 function ExecHome() {
+  const styles = useHomeStyles();
+  const loaderTheme = useLoaderTheme();
   const projects = useCollection<Project>('local_projects');
   const t = useT();
   const [budget, setBudget] = useState<number | null>(null);
@@ -198,7 +221,12 @@ function ExecHome() {
 
   return (
     <Screen testID="home-screen">
-      <LoadingBoundary loading={loading} variant="widget" theme="light" style={styles.kpiRegion}>
+      <LoadingBoundary
+        loading={loading}
+        variant="widget"
+        theme={loaderTheme}
+        style={styles.kpiRegion}
+      >
         <View style={styles.kpiRow}>
           <KpiCard
             testID="kpi-active-projects"
@@ -222,6 +250,8 @@ function ExecHome() {
 
 // ── FINANCE — pending payment approvals · overdue invoices ────────────────────
 function FinanceHome() {
+  const styles = useHomeStyles();
+  const loaderTheme = useLoaderTheme();
   const t = useT();
   const [pendingPayments, setPendingPayments] = useState<number | null>(null);
   const [overdueInvoices, setOverdueInvoices] = useState<number | null>(null);
@@ -248,7 +278,12 @@ function FinanceHome() {
 
   return (
     <Screen testID="home-screen">
-      <LoadingBoundary loading={loading} variant="widget" theme="light" style={styles.kpiRegion}>
+      <LoadingBoundary
+        loading={loading}
+        variant="widget"
+        theme={loaderTheme}
+        style={styles.kpiRegion}
+      >
         <View style={styles.kpiRow}>
           <KpiCard
             testID="kpi-pending-payments"
@@ -268,6 +303,8 @@ function FinanceHome() {
 
 // ── PROCUREMENT — open RFQs · POs awaiting ack · deliveries ───────────────────
 function ProcurementHome() {
+  const styles = useHomeStyles();
+  const loaderTheme = useLoaderTheme();
   const t = useT();
   const [openRfqs, setOpenRfqs] = useState<number | null>(null);
   const [awaitingAck, setAwaitingAck] = useState<number | null>(null);
@@ -305,7 +342,12 @@ function ProcurementHome() {
 
   return (
     <Screen testID="home-screen">
-      <LoadingBoundary loading={loading} variant="widget" theme="light" style={styles.kpiRegion}>
+      <LoadingBoundary
+        loading={loading}
+        variant="widget"
+        theme={loaderTheme}
+        style={styles.kpiRegion}
+      >
         <View style={styles.kpiRow}>
           <KpiCard
             testID="kpi-open-rfqs"
@@ -334,6 +376,8 @@ function ProcurementHome() {
 // master 3202 says "home (triage)" without enumerating KPIs; derived from §20.2 PM needs
 // (site blockers / schedule attention) as active-projects + open-issues entry points.
 function PmHome() {
+  const styles = useHomeStyles();
+  const loaderTheme = useLoaderTheme();
   const projects = useCollection<Project>('local_projects');
   const t = useT();
   const [openIssues, setOpenIssues] = useState<number | null>(null);
@@ -357,7 +401,12 @@ function PmHome() {
 
   return (
     <Screen testID="home-screen">
-      <LoadingBoundary loading={loading} variant="widget" theme="light" style={styles.kpiRegion}>
+      <LoadingBoundary
+        loading={loading}
+        variant="widget"
+        theme={loaderTheme}
+        style={styles.kpiRegion}
+      >
         <View style={styles.kpiRow}>
           <KpiCard
             testID="kpi-active-projects"
@@ -377,6 +426,7 @@ function PmHome() {
 
 // ── minimal landing for roles whose Home is not enumerated in master ──────────
 function MinimalHome() {
+  const styles = useHomeStyles();
   const pending = usePendingCount();
   const t = useT();
   return (
@@ -416,42 +466,52 @@ export default function HomeScreen() {
   }
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: spacing.md, gap: spacing.md },
-  kpiRow: { flexDirection: 'row', gap: spacing.md },
-  // Wrapper the LoadingBoundary occupies — reproduces the Screen container's vertical gap so a
-  // multi-row KPI region keeps its spacing once the loader crossfades to the real cards.
-  kpiRegion: { gap: spacing.md },
-  quickRow: { flexDirection: 'row', gap: spacing.md },
-  kpi: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  kpiValue: {
-    fontSize: typography.hero.fontSize,
-    fontFamily: fontFamily.bold,
-    color: colors.primary,
-  },
-  kpiLabel: {
-    fontSize: typography.caption.fontSize,
-    fontFamily: fontFamily.regular,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  checkIn: {
-    minHeight: 52,
-    borderRadius: radius.lg,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  message: {
-    color: colors.textPrimary,
-    fontFamily: fontFamily.regular,
-    fontSize: typography.caption.fontSize,
-  },
-});
+// Palette-driven, like every other screen in the shell (PO decision 2026-08-08). This file was the
+// last one still pinned to the LIGHT token set — `colors.bg`, `colors.surface` — which rendered a
+// white page under a dark top bar and dark bottom nav. It went unnoticed while no role landed here
+// by default; the moment SITE_WORKER regained its Home tab it became the first screen a field worker
+// sees. Shapes are unchanged; only the colours now resolve from the user's mode.
+const makeStyles = (p: Palette) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: p.bg, padding: spacing.md, gap: spacing.md },
+    kpiRow: { flexDirection: 'row', gap: spacing.md },
+    // Wrapper the LoadingBoundary occupies — reproduces the Screen container's vertical gap so a
+    // multi-row KPI region keeps its spacing once the loader crossfades to the real cards.
+    kpiRegion: { gap: spacing.md },
+    quickRow: { flexDirection: 'row', gap: spacing.md },
+    kpi: {
+      flex: 1,
+      backgroundColor: p.surface,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: p.border,
+      padding: spacing.md,
+      alignItems: 'center',
+      gap: spacing.xs,
+    },
+    kpiValue: {
+      fontSize: typography.hero.fontSize,
+      fontFamily: fontFamily.bold,
+      // `accent`, not `primary`: on the dark page the field blue is 4.17:1, under the 4.5:1 AA text
+      // threshold §20.8 gates on. In light mode the two resolve to the same colour.
+      color: p.accent,
+    },
+    kpiLabel: {
+      fontSize: typography.caption.fontSize,
+      fontFamily: fontFamily.regular,
+      color: p.muted,
+      textAlign: 'center',
+    },
+    checkIn: {
+      minHeight: 52,
+      borderRadius: radius.lg,
+      backgroundColor: p.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    message: {
+      color: p.text,
+      fontFamily: fontFamily.regular,
+      fontSize: typography.caption.fontSize,
+    },
+  });

@@ -423,6 +423,12 @@ export class SiteOpsRepository {
     inspected_at: string;
     notes: string | null;
     issue_severity?: string | null;
+    /**
+     * Drawn attestation mark — AnnotationStroke[] (migration 20260808000002). Serialised here rather
+     * than in the service so the JSONB cast lives beside the query that needs it; `null` for an
+     * unsigned inspection, which is every row created before the pad existed.
+     */
+    signature?: unknown[] | null;
     latitude?: number | null;
     longitude?: number | null;
   }): Promise<InspectionRow> {
@@ -431,13 +437,14 @@ export class SiteOpsRepository {
         tx.$queryRaw<InspectionRow[]>`
         INSERT INTO site_ops.inspections
           (inspection_id, project_id, tenant_id, checklist_id, status,
-           inspected_by, inspected_at, notes, issue_severity, latitude, longitude)
+           inspected_by, inspected_at, notes, issue_severity, signature, latitude, longitude)
         VALUES
           (${params.inspection_id}::uuid, ${params.project_id}::uuid,
            ${this.tenantId}::uuid, ${params.checklist_id}::uuid,
            ${params.status}, ${params.inspected_by}::uuid,
            ${params.inspected_at}::timestamptz, ${params.notes},
            ${params.issue_severity ?? null},
+           ${params.signature ? JSON.stringify(params.signature) : null}::jsonb,
            ${params.latitude ?? null}::numeric, ${params.longitude ?? null}::numeric)
         RETURNING *
       `,

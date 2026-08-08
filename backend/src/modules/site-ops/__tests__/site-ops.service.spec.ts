@@ -772,6 +772,58 @@ describe('escalateIssue', () => {
 // ── submitInspection ──────────────────────────────────────────────────────
 
 describe('submitInspection', () => {
+  // Signature (migration 20260808000002). The drawn mark is stored as given; absent means unsigned,
+  // and the service must not substitute anything — `inspected_by` is the attribution that matters.
+  it('stores the drawn signature when one is supplied', async () => {
+    mockRepo.findChecklistById.mockResolvedValue(makeChecklist());
+    mockRepo.createInspection.mockResolvedValue({
+      inspection_id: 'insp-1',
+      project_id: 'project-1',
+      tenant_id: 'tenant-uuid-1',
+      checklist_id: 'checklist-1',
+      status: 'PASSED' as const,
+      inspected_by: 'user-uuid-1',
+      inspected_at: new Date(),
+      notes: null,
+    });
+    const signature = [{ d: 'M0.1,0.5 L0.4,0.3', color: '#F8FAFC', width: 0.01 }];
+
+    await service.submitInspection({
+      project_id: 'project-1',
+      checklist_id: 'checklist-1',
+      status: InspectionStatus.PASSED,
+      inspected_at: '2026-08-08T08:00:00Z',
+      signature,
+    });
+
+    expect(mockRepo.createInspection).toHaveBeenCalledWith(expect.objectContaining({ signature }));
+  });
+
+  it('records NULL when the checklist is confirmed without signing', async () => {
+    mockRepo.findChecklistById.mockResolvedValue(makeChecklist());
+    mockRepo.createInspection.mockResolvedValue({
+      inspection_id: 'insp-1',
+      project_id: 'project-1',
+      tenant_id: 'tenant-uuid-1',
+      checklist_id: 'checklist-1',
+      status: 'PASSED' as const,
+      inspected_by: 'user-uuid-1',
+      inspected_at: new Date(),
+      notes: null,
+    });
+
+    await service.submitInspection({
+      project_id: 'project-1',
+      checklist_id: 'checklist-1',
+      status: InspectionStatus.PASSED,
+      inspected_at: '2026-08-08T08:00:00Z',
+    });
+
+    expect(mockRepo.createInspection).toHaveBeenCalledWith(
+      expect.objectContaining({ signature: null }),
+    );
+  });
+
   it('throws NotFoundException when checklist not found', async () => {
     mockRepo.findChecklistById.mockResolvedValue(null);
     await expect(

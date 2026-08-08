@@ -49,6 +49,9 @@ const BREADCRUMB_MAP: Record<string, Crumb[]> = {
     { key: 'breadcrumb.userManagement', href: '/users' },
     { key: 'resetPassword.title' },
   ],
+  // Home quick actions (SITE_WORKER). `tasks` was a tab until 2026-08-08; Home took its slot, so it
+  // is now a pushed child and needs the crumb — which is also what gives it the TopBar back chevron.
+  '/tasks': [{ key: 'nav.tabs.home', href: '/home' }, { key: 'nav.tabs.tasks' }],
   // Home FAB / Quick-Add flows
   '/system-integration': [
     { key: 'nav.tabs.home', href: '/home' },

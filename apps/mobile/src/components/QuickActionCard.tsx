@@ -1,14 +1,17 @@
 // QuickActionCard (§32.7; G-M9) — 60px min-height tap target with an icon + label + optional count
 // badge, single tap. Used on the field Home for one-tap access to daily actions.
 //
-// `variant` selects the palette: 'light' is the default field-app surface (§32.7 Mobile Colour
-// Tokens); 'dark' is for the screens §32.7 "Mobile Dark Surfaces" lists, currently the Site
-// Engineer Home. `icon` takes either an emoji string or a rendered node (e.g. a MaterialIcons
-// glyph) — string callers predate the icon library and still work unchanged.
+// `variant` selects the palette. OMITTED, IT FOLLOWS THE USER'S THEME (2026-08-08) — it used to
+// default to 'light', which is why the Site Worker Home rendered three white tiles on a dark page:
+// the caller simply did not pass anything, and nothing about the default said it was a choice.
+// SiteEngineerHome still passes 'dark' explicitly and is unaffected; an explicit value always wins.
+// `icon` takes either an emoji string or a rendered node (e.g. a MaterialIcons glyph) — string
+// callers predate the icon library and still work unchanged.
 
 import type { ReactNode } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { colors, darkColors, fontFamily, radius, spacing, typography } from '../theme/tokens';
+import { useIsDark } from '../theme/usePalette';
 
 export type QuickActionVariant = 'light' | 'dark';
 
@@ -18,7 +21,7 @@ export function QuickActionCard({
   badge,
   onPress,
   testID,
-  variant = 'light',
+  variant,
 }: {
   icon?: string | ReactNode;
   label: string;
@@ -27,7 +30,9 @@ export function QuickActionCard({
   testID?: string;
   variant?: QuickActionVariant;
 }) {
-  const dark = variant === 'dark';
+  // The hook runs unconditionally (rules of hooks); the explicit prop still overrides it.
+  const themeIsDark = useIsDark();
+  const dark = variant === undefined ? themeIsDark : variant === 'dark';
   return (
     <TouchableOpacity
       testID={testID}

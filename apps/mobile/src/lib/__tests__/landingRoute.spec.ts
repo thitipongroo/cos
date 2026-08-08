@@ -21,11 +21,14 @@ describe('landingRouteFor', () => {
     expect(tab?.roles).toContain(role);
   });
 
-  it('sends SITE_WORKER to Tasks, not the Home it no longer has as a tab', () => {
-    expect(landingRouteFor(CosRole.SITE_WORKER)).toBe('/(app)/tasks');
+  // Every role now lands on Home (PO 2026-08-08 — SITE_WORKER regained the tab so the bar starts in
+  // the same place for everyone). The derivation is what matters and is asserted above for all
+  // roles; these three are named because they are the ones that moved, or could.
+  it('sends SITE_WORKER to Home, the tab that replaced its Tasks slot', () => {
+    expect(landingRouteFor(CosRole.SITE_WORKER)).toBe('/(app)/home');
   });
 
-  it('sends every other role to Home, which is still their first tab', () => {
+  it('sends every other role to Home too', () => {
     expect(landingRouteFor(CosRole.SITE_ENGINEER)).toBe('/(app)/home');
     expect(landingRouteFor(CosRole.TENANT_ADMIN)).toBe('/(app)/home');
   });

@@ -15,9 +15,13 @@
 //   - The mockup's in-frame "AI Suggestion: Safety Issue detected in frame" is dropped.
 //     SafetyVisionModel is Phase 23 and needs 10,000+ labelled site photos (§22.6); nothing in the
 //     product can look at a frame and say that today.
-//   - The mockup has no issue LIST — it is a capture-only screen. The list is KEPT (ADR-085: where
-//     the implemented structure has outgrown its mockup, the implementation stands), because it is
-//     also the only place a worker can see whether what they filed has synced.
+//   - The mockup has no issue LIST — it is a capture-only screen, and for SITE_WORKER that is now
+//     exactly what this renders (PO decision 2026-08-08: "โซนด้านล่างของปุ่ม REPORT ISSUE
+//     คืออะไร ตัดออก"). The list SURVIVES for SITE_ENGINEER, which shares this route and whose own
+//     mockup set draws it: 03_site_engineer/site_issues/issue_list and .../escalate_issue_to_manager.
+//     Deleting it outright would have taken G-M12 (escalate → PM) out of the app entirely, since this
+//     is its only screen — so the zone is role-scoped rather than removed.
+//     A worker who needs sync state still has the global sync indicator and the Sync Queue screen.
 //   - The mockup's own top bar (brand + close) is dropped in favour of the app's global TopBar, as
 //     on every other screen.
 
@@ -30,6 +34,8 @@ import type { Issue } from '../../db/database';
 import { localIssues } from '../../db/schema';
 import { enqueue } from '../../db/sync-queue';
 import { post } from '../../api/client';
+import { CosRole } from '@cos/types';
+import { useAuthStore } from '../../store/authStore';
 import { useCollection } from '../../hooks/useCollection';
 import { StatusChip } from '../../components/StatusChip';
 import { ProjectPicker } from '../../components/ProjectPicker';
@@ -60,6 +66,10 @@ const DEFAULT_SEVERITY = 'MEDIUM';
 
 export default function IssuesScreen() {
   const allIssues = useCollection<Issue>('local_issues');
+  const role = useAuthStore((s) => s.role);
+  // SITE_WORKER gets the capture-only screen its mockup draws; every other role that reaches this
+  // route (SITE_ENGINEER) keeps the list and the escalate action — see the header note.
+  const showList = role !== CosRole.SITE_WORKER;
   const [projectId, setProjectId] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -125,8 +135,10 @@ export default function IssuesScreen() {
       <ProjectPicker selectedId={projectId} onSelect={setProjectId} />
 
       {/* Camera first — the mockup opens straight on the viewfinder, because a site issue is
-          photographed before it is described. */}
-      <PhotoCapture entityType="issue" entityId={draftId} />
+          photographed before it is described. layout="viewfinder" is that mockup's framing: a 4:3
+          preview with an inset guide, a LIVE pill, and a round shutter ON the frame instead of a
+          rectangular button beneath it. */}
+      <PhotoCapture entityType="issue" entityId={draftId} layout="viewfinder" />
 
       <Text style={[styles.sectionLabel, { color: p.muted }]}>
         {t('site.issues.categoryLabel')}
@@ -170,10 +182,17 @@ export default function IssuesScreen() {
       />
 
       <Text style={[styles.sectionLabel, { color: p.muted }]}>{t('site.issues.voiceLabel')}</Text>
-      <VoiceNoteButton
-        testID="issue-voice-note"
-        onTranscript={(text) => setDescription((d) => (d.trim() ? `${d} ${text}` : text))}
-      />
+      {/* The mockup's voice zone: a dashed drop-zone panel with the mic centred in it and the
+          hold-to-record instruction underneath. The dashed border is doing real work here — it says
+          "optional, nothing recorded yet", which a solid filled bar did not. */}
+      <View style={[styles.voicePanel, { backgroundColor: p.surface, borderColor: p.border }]}>
+        <VoiceNoteButton
+          testID="issue-voice-note"
+          shape="fab"
+          onTranscript={(text) => setDescription((d) => (d.trim() ? `${d} ${text}` : text))}
+        />
+        <Text style={[styles.voiceHint, { color: p.text }]}>{t('site.issues.voiceHint')}</Text>
+      </View>
 
       <Text style={[styles.sectionLabel, { color: p.muted }]}>
         {t('site.issues.descriptionLabel')}
@@ -198,43 +217,45 @@ export default function IssuesScreen() {
         <Text style={screen.primaryButtonText}>{t('site.issues.submit')}</Text>
       </TouchableOpacity>
 
-      <View style={styles.list}>
-        <OptimisticList<Issue>
-          testID="issue-list"
-          data={issues}
-          keyExtractor={(item) => item.id}
-          isPending={(item) => item.offlineSyncStatus === 'PENDING'}
-          emptyText={t('site.issues.empty')}
-          renderItem={(item) => (
-            <View testID="issue-item" style={screen.item}>
-              <Text style={screen.itemTitle}>{item.title}</Text>
-              <View style={styles.chips}>
-                <StatusChip label={item.severity} />
-                <StatusChip label={item.offlineSyncStatus} />
-                {/* Escalate only a synced issue (has a server id) that isn't already escalated. */}
-                {item.issueId && item.offlineSyncStatus === 'SYNCED' ? (
-                  <TouchableOpacity
-                    testID={`escalate-${item.issueId}`}
-                    style={[
-                      styles.escalate,
-                      { borderColor: p.warning },
-                      escalated[item.issueId] && { backgroundColor: p.warning },
-                    ]}
-                    onPress={() => onEscalate(item.issueId)}
-                    disabled={escalated[item.issueId]}
-                  >
-                    <Text style={[styles.escalateText, { color: p.text }]}>
-                      {escalated[item.issueId]
-                        ? t('site.issues.escalated')
-                        : t('site.issues.escalate')}
-                    </Text>
-                  </TouchableOpacity>
-                ) : null}
+      {showList ? (
+        <View style={styles.list}>
+          <OptimisticList<Issue>
+            testID="issue-list"
+            data={issues}
+            keyExtractor={(item) => item.id}
+            isPending={(item) => item.offlineSyncStatus === 'PENDING'}
+            emptyText={t('site.issues.empty')}
+            renderItem={(item) => (
+              <View testID="issue-item" style={screen.item}>
+                <Text style={screen.itemTitle}>{item.title}</Text>
+                <View style={styles.chips}>
+                  <StatusChip label={item.severity} />
+                  <StatusChip label={item.offlineSyncStatus} />
+                  {/* Escalate only a synced issue (has a server id) that isn't already escalated. */}
+                  {item.issueId && item.offlineSyncStatus === 'SYNCED' ? (
+                    <TouchableOpacity
+                      testID={`escalate-${item.issueId}`}
+                      style={[
+                        styles.escalate,
+                        { borderColor: p.warning },
+                        escalated[item.issueId] && { backgroundColor: p.warning },
+                      ]}
+                      onPress={() => onEscalate(item.issueId)}
+                      disabled={escalated[item.issueId]}
+                    >
+                      <Text style={[styles.escalateText, { color: p.text }]}>
+                        {escalated[item.issueId]
+                          ? t('site.issues.escalated')
+                          : t('site.issues.escalate')}
+                      </Text>
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
               </View>
-            </View>
-          )}
-        />
-      </View>
+            )}
+          />
+        </View>
+      ) : null}
     </ScrollView>
   );
 }
@@ -261,6 +282,20 @@ const styles = StyleSheet.create({
   },
   typeChipText: { fontSize: typography.label.fontSize, fontFamily: fontFamily.medium },
   multiline: { minHeight: 96, textAlignVertical: 'top', paddingVertical: spacing.sm },
+  voicePanel: {
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+  },
+  voiceHint: {
+    textAlign: 'center',
+    fontSize: typography.body.fontSize,
+    fontFamily: fontFamily.regular,
+  },
   submit: { flexDirection: 'row', gap: spacing.xs, minHeight: touchTarget.primaryButton + 8 },
   list: { marginTop: spacing.md },
   chips: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexWrap: 'wrap' },

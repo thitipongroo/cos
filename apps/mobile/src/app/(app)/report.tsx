@@ -13,9 +13,10 @@
 //   - Blocker category           → site_ops.site_reports.blocker_category (same migration)
 //   - Per-trade manpower bars    → site_ops.manpower_logs, which existed since Phase 6 with no API;
 //                                  POST /site/reports now accepts `manpower_lines`.
-// DROPPED: the mockup's "AI แนะนำ: คาดว่างานติดตั้งจะเสร็จภายใน 18:00 น." banner. Predicting a
-// completion time is DelayForecastModel's job (Phase 23, untrained, §22.6) — the figure would be
-// invented, and an invented estimate on a daily record is worse than no estimate.
+// The mockup's "AI แนะนำ: คาดว่างานติดตั้งจะเสร็จภายใน 18:00 น." banner IS drawn, copy and all (PO decision
+// 2026-08-08, reversing an earlier call to drop it). DelayForecastModel is Phase 23 and untrained
+// (§22.6), so the line is the mockup's illustration of the feature, not a computed forecast — it
+// is static, nothing reads it, and no report field is derived from it.
 //
 // SAVE AS DRAFT vs SUBMIT REPORT are the row's real `status` values (DRAFT | SUBMITTED), not two
 // styles of the same action.
@@ -54,6 +55,16 @@ type BlockerCategory = (typeof BLOCKER_CATEGORIES)[number];
 const TRADES = ['STRUCTURAL', 'ELECTRICAL', 'PLUMBING', 'FINISHING', 'GENERAL'] as const;
 type Trade = (typeof TRADES)[number];
 
+/**
+ * A typed headcount → a number the DB can hold. `manpower_count` is INTEGER, and a numeric keypad
+ * still emits separators (and a sign) on some IMEs, so every non-digit is stripped rather than
+ * trusted; an empty field reads as 0, which is also what clears the column on save.
+ */
+function clampCount(text: string): number {
+  const digits = text.replace(/[^0-9]/g, '');
+  return digits === '' ? 0 : Math.min(9999, Number(digits));
+}
+
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -79,6 +90,12 @@ export default function ReportScreen() {
 
   const bumpTrade = (trade: Trade, delta: number): void =>
     setTrades((current) => ({ ...current, [trade]: Math.max(0, (current[trade] ?? 0) + delta) }));
+
+  const setTradeCount = (trade: Trade, count: number): void =>
+    setTrades((current) => ({ ...current, [trade]: count }));
+
+  // Nothing to break down until a headcount exists — see the panel below.
+  const breakdownEnabled = manpower > 0;
 
   const onSave = async (status: 'DRAFT' | 'SUBMITTED'): Promise<void> => {
     const clientId = draftId; // server idempotency key / report_id (ADR-051)
@@ -125,17 +142,25 @@ export default function ReportScreen() {
       contentContainerStyle={styles.page}
       keyboardShouldPersistTaps="handled"
     >
-      <View style={styles.headerBlock}>
-        <View style={styles.eyebrowRow}>
-          <MaterialIcons name="edit-note" size={18} color={p.accent} />
-          <Text style={[styles.eyebrow, { color: p.accent }]}>{t('site.report.newEntry')}</Text>
-        </View>
-        <Text style={[styles.title, { color: p.text }]}>{t('site.report.title')}</Text>
-      </View>
-
+      {/* The mockup's "NEW ENTRY / บันทึกกิจกรรมประจำวัน" heading block is NOT rendered (§32.7 Mobile
+          App Shell): a top-level tab screen is named by its active bottom-nav tab — "Reports" here —
+          and repeating it inside the content states the name twice. The eyebrow went with the title
+          rather than being left stranded above the project picker: it only ever qualified the
+          heading, and there is no "edit an existing entry" mode for it to distinguish this from.
+          PO decision 2026-08-08. */}
       <ProjectPicker selectedId={projectId} onSelect={setProjectId} />
 
-      {/* ── Manpower ─────────────────────────────────────────────────────── */}
+      {/* AI SUGGESTION — mockup 03_reports, drawn in full including its copy (PO decision
+          2026-08-08, the same ruling already applied to the Tenant Admin CORE_AI panels).
+          DelayForecastModel is Phase 23 and untrained (§22.6 needs 90+ days of production data), so
+          this states the mockup's example rather than a computed estimate — it is illustrative, and
+          nothing downstream reads it. */}
+      <View style={[styles.aiBar, { backgroundColor: p.elevated, borderLeftColor: p.accent }]}>
+        <MaterialIcons name="auto-awesome" size={20} color={p.accent} />
+        <Text style={[styles.aiBarText, { color: p.text }]}>{t('site.report.aiSuggestion')}</Text>
+      </View>
+
+      {/* ── Manpower ───────────────────────────────────────────── */}
       <Text style={[styles.sectionTitle, { color: p.text }]}>{t('site.report.manpower')}</Text>
       <View style={styles.row}>
         <View style={[styles.card, { backgroundColor: p.surface, borderColor: p.border }]}>
@@ -143,9 +168,17 @@ export default function ReportScreen() {
             {t('site.report.manpowerTotal')}
           </Text>
           <View style={styles.stepperRow}>
-            <Text testID="manpower-total" style={[styles.bigNumber, { color: p.accent }]}>
-              {manpower}
-            </Text>
+            {/* Typed directly, not only stepped (PO decision 2026-08-08): a crew of 24 is 24 taps
+                otherwise. The steppers stay for one-off corrections. */}
+            <TextInput
+              testID="manpower-total"
+              style={[styles.bigNumber, styles.bigNumberInput, { color: p.accent }]}
+              keyboardType="number-pad"
+              maxLength={4}
+              value={String(manpower)}
+              onChangeText={(text) => setManpower(clampCount(text))}
+              accessibilityLabel={t('site.report.manpowerTotal')}
+            />
             <View style={styles.stepperButtons}>
               <TouchableOpacity
                 testID="manpower-increment"
@@ -194,8 +227,23 @@ export default function ReportScreen() {
         </View>
       </View>
 
-      {/* Per-trade breakdown → manpower_logs. Bars are proportions of the entered breakdown. */}
-      <View style={[styles.panel, { backgroundColor: p.surface, borderColor: p.border }]}>
+      {/* Per-trade breakdown → manpower_logs. Bars are proportions of the entered breakdown.
+          The breakdown cannot precede the total it breaks down: with no headcount entered there is
+          nothing to apportion, so the panel is dimmed and its controls disabled until
+          `manpower > 0` (PO decision 2026-08-08). */}
+      <View
+        style={[
+          styles.panel,
+          { backgroundColor: p.surface, borderColor: p.border },
+          !breakdownEnabled && styles.panelDisabled,
+        ]}
+        pointerEvents={breakdownEnabled ? 'auto' : 'none'}
+      >
+        {!breakdownEnabled ? (
+          <Text style={[styles.panelHint, { color: p.muted }]}>
+            {t('site.report.breakdownLocked')}
+          </Text>
+        ) : null}
         {TRADES.map((trade) => {
           const count = trades[trade] ?? 0;
           const pct = tradeTotal > 0 ? Math.round((count / tradeTotal) * 100) : 0;
@@ -206,24 +254,33 @@ export default function ReportScreen() {
                   {t(`site.report.trades.${trade}`)}
                 </Text>
                 <View style={styles.tradeControls}>
-                  <Text
-                    testID={`trade-${trade}-count`}
-                    style={[styles.tradeCount, { color: p.text }]}
-                  >
-                    {t('site.report.workerCount', { count })}
-                  </Text>
+                  {/* − value + : the number sits BETWEEN its two steppers (PO decision 2026-08-08) and
+                      is typed directly. No unit word — the section is headed "Manpower" and every row
+                      is a headcount, so "คน"/"workers" repeated five times said nothing. */}
                   <TouchableOpacity
                     testID={`trade-${trade}-decrement`}
                     accessibilityLabel={t('site.report.manpowerDecrement')}
                     onPress={() => bumpTrade(trade, -1)}
+                    disabled={!breakdownEnabled}
                     style={styles.stepButton}
                   >
                     <MaterialIcons name="remove-circle-outline" size={22} color={p.muted} />
                   </TouchableOpacity>
+                  <TextInput
+                    testID={`trade-${trade}-count`}
+                    style={[styles.tradeCount, { color: p.text, borderColor: p.border }]}
+                    keyboardType="number-pad"
+                    maxLength={4}
+                    editable={breakdownEnabled}
+                    value={String(count)}
+                    onChangeText={(text) => setTradeCount(trade, clampCount(text))}
+                    accessibilityLabel={t(`site.report.trades.${trade}`)}
+                  />
                   <TouchableOpacity
                     testID={`trade-${trade}-increment`}
                     accessibilityLabel={t('site.report.manpowerIncrement')}
                     onPress={() => bumpTrade(trade, 1)}
+                    disabled={!breakdownEnabled}
                     style={styles.stepButton}
                   >
                     <MaterialIcons name="add-circle-outline" size={22} color={p.muted} />
@@ -240,19 +297,28 @@ export default function ReportScreen() {
 
       {/* ── Summary ──────────────────────────────────────────────────────── */}
       <Text style={[styles.sectionTitle, { color: p.text }]}>{t('site.report.progress')}</Text>
-      <TextInput
-        testID="report-summary-input"
-        style={[screen.input, styles.multiline]}
-        placeholder={t('site.report.summaryPlaceholder')}
-        placeholderTextColor={p.muted}
-        multiline
-        value={summary}
-        onChangeText={setSummary}
-      />
-      <VoiceNoteButton
-        testID="report-voice-note"
-        onTranscript={(text) => setSummary((s) => (s.trim() ? `${s} ${text}` : text))}
-      />
+      {/* The mic FLOATS INSIDE the field it dictates into (PO decision 2026-08-08, now the project
+          standard): the round FAB from the SITE_ENGINEER home, not a full-width bar under the box.
+          The bar read as a second, unrelated action; in the corner of the input it is unmistakably
+          "speak THIS field". The right padding keeps a long line clear of the button. */}
+      <View style={styles.inputWithMic}>
+        <TextInput
+          testID="report-summary-input"
+          style={[screen.input, styles.multiline, styles.multilineWithMic]}
+          placeholder={t('site.report.summaryPlaceholder')}
+          placeholderTextColor={p.muted}
+          multiline
+          value={summary}
+          onChangeText={setSummary}
+        />
+        <View style={styles.micSlot}>
+          <VoiceNoteButton
+            testID="report-voice-note"
+            shape="fab"
+            onTranscript={(text) => setSummary((s) => (s.trim() ? `${s} ${text}` : text))}
+          />
+        </View>
+      </View>
 
       {/* ── Blockers ─────────────────────────────────────────────────────── */}
       <Text style={[styles.sectionTitle, { color: p.text }]}>{t('site.report.blockers')}</Text>
@@ -292,7 +358,11 @@ export default function ReportScreen() {
 
       {/* ── Photos ───────────────────────────────────────────────────────── */}
       <Text style={[styles.sectionTitle, { color: p.text }]}>{t('site.report.photos')}</Text>
-      <PhotoCapture entityType="site_report" entityId={draftId} />
+      {/* layout="strip" is the mockup's ภาพประกอบ section: a horizontal row of square thumbnails
+          ending in a dashed UPLOAD tile, with the camera opening on demand instead of sitting live
+          on the page. A daily report attaches a couple of illustrative shots — unlike an inspection,
+          where the evidence IS the record and the 3-column grid earns its space. */}
+      <PhotoCapture entityType="site_report" entityId={draftId} layout="strip" />
 
       {/* ── Actions ──────────────────────────────────────────────────────── */}
       <View style={styles.actions}>
@@ -333,20 +403,21 @@ export default function ReportScreen() {
 
 const styles = StyleSheet.create({
   page: { padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xl },
-  headerBlock: { gap: 2 },
-  eyebrowRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  eyebrow: {
-    fontSize: 11,
-    fontFamily: fontFamily.semibold,
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
-  },
-  title: { fontSize: typography.hero.fontSize, fontFamily: fontFamily.bold },
   sectionTitle: {
     fontSize: typography.title.fontSize,
     fontFamily: fontFamily.semibold,
     marginTop: spacing.xs,
   },
+  aiBar: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    padding: spacing.sm,
+    borderLeftWidth: 4,
+    borderTopRightRadius: radius.md,
+    borderBottomRightRadius: radius.md,
+  },
+  aiBarText: { flex: 1, fontSize: typography.label.fontSize, fontFamily: fontFamily.regular },
   row: { flexDirection: 'row', gap: spacing.sm },
   card: { flex: 1, padding: spacing.sm, borderRadius: radius.lg, borderWidth: 1, gap: spacing.xs },
   cardLabel: {
@@ -357,6 +428,9 @@ const styles = StyleSheet.create({
   },
   stepperRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   bigNumber: { fontSize: 32, fontFamily: fontFamily.bold },
+  // A TextInput carries platform chrome a Text does not: zero it out so the typed total sits
+  // exactly where the read-only number did.
+  bigNumberInput: { flex: 1, padding: 0, margin: 0 },
   stepperButtons: { gap: 2 },
   // 44px tap target around a 22–24px glyph (§32.7 touchTarget.iconButton, WCAG AAA).
   stepButton: {
@@ -376,14 +450,27 @@ const styles = StyleSheet.create({
   },
   segmentText: { fontSize: typography.label.fontSize, fontFamily: fontFamily.semibold },
   panel: { padding: spacing.sm, borderRadius: radius.lg, borderWidth: 1, gap: spacing.sm },
+  panelDisabled: { opacity: 0.4 },
+  panelHint: { fontSize: typography.caption.fontSize, fontFamily: fontFamily.regular },
   tradeRow: { gap: spacing.xs },
   tradeHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   tradeName: { fontSize: typography.label.fontSize, fontFamily: fontFamily.regular },
   tradeControls: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  tradeCount: { fontSize: typography.label.fontSize, fontFamily: fontFamily.semibold },
+  tradeCount: {
+    minWidth: 48,
+    paddingVertical: 2,
+    borderBottomWidth: 1,
+    textAlign: 'center',
+    fontSize: typography.label.fontSize,
+    fontFamily: fontFamily.semibold,
+  },
   track: { height: 4, borderRadius: radius.sm, overflow: 'hidden' },
   fill: { height: '100%' },
   multiline: { minHeight: 96, textAlignVertical: 'top', paddingVertical: spacing.sm },
+  inputWithMic: { position: 'relative' },
+  // Room for the 56px FAB plus its inset, so a long line never runs under the button.
+  multilineWithMic: { minHeight: 120, paddingRight: 56 + spacing.md },
+  micSlot: { position: 'absolute', right: spacing.xs, bottom: spacing.xs },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   chip: {
     minHeight: touchTarget.secondaryButton,

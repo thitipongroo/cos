@@ -8,16 +8,14 @@
 // Role tab sets — FOUR tabs, no Profile (PO decision 2026-08-04). Profile is reached from the
 // top-bar avatar on every screen, which already routed there for all roles. This generalises what
 // SITE_ENGINEER (PO 2026-07-16) and TENANT_ADMIN (PO 2026-07-28) already did to the whole product.
-//   SITE_WORKER:            Tasks | Issues | Report | Safety  (PO decision 2026-08-08)
-//     The ONLY role with no Home tab. Its four mockups (mockup/mobile/05_site_worker/{01_tasks,
-//     02_issues,03_reports,04_safety}) each draw the same bar — Tasks | Issues | Reports | Safety —
-//     and the product owner chose it over master §Phase 10's "Home | Tasks | Report | Issues".
-//     Rationale on record: a field worker opens the app to DO one of four things, and a KPI landing
-//     page is not one of them; the safety checklist is a daily obligation and had no entry point at
-//     all under the old set.
-//     `home` stays MOUNTED (href:null) — router.push('/home') still works and nothing that links
-//     there breaks — but the SITE_WORKER check-in that used to live only on that screen moved to the
-//     navigation drawer, so removing the tab did not orphan it (see NavigationDrawer.tsx).
+//   SITE_WORKER:            Home | Issues | Reports | Safety  (PO decision 2026-08-08)
+//     Its four mockups (mockup/mobile/05_site_worker/{01_tasks,02_issues,03_reports,04_safety}) each
+//     draw Tasks | Issues | Reports | Safety with NO Home, and that shipped first. The product owner
+//     then put Home back so the bar starts in the same place for all twelve roles; since §32.7 allows
+//     exactly four, TASKS gave up the slot rather than becoming a fifth tab.
+//     `tasks` stays MOUNTED (href:null) and is pushed from Home's Tasks quick action, so it now
+//     carries a breadcrumb (HOME › TASKS) + back chevron like any other child screen. Safety keeps
+//     the fourth slot: it is a daily obligation that had no entry point at all before.
 //   SITE_ENGINEER:          Home | Issues | Inspections | Reports
 //   PROJECT_MANAGER:        Home | Projects | Procurement | Dashboard
 //   EXECUTIVE:              Home | Portfolio | Alerts | Reports
@@ -139,6 +137,10 @@ export function MobileNav() {
           (An earlier version of this comment claimed notifications + notification-preferences were
           declared in ALL_TABS instead; they are not, and both are listed below like every other
           pushed screen.) */}
+      {/* Tasks — a tab until 2026-08-08, now pushed from Home's Tasks quick action (PO decision:
+          Home took the Site Worker's first slot, and §32.7 allows exactly four). Mounted here so
+          router.push('/tasks') still resolves. */}
+      <Tabs.Screen name="tasks" options={{ href: null }} />
       <Tabs.Screen name="conflict-review" options={{ href: null }} />
       {/* Notification inbox — reached from the top-bar bell (router.push). No role lists it as a tab. */}
       <Tabs.Screen name="notifications" options={{ href: null }} />
