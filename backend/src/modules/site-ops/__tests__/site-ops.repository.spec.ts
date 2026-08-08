@@ -468,6 +468,46 @@ describe('SiteOpsRepository', () => {
     expect(result.issue_severity).toBe('HIGH');
   });
 
+  // The signature is SERIALISED in the repository (migration 20260808000002), so both sides of that
+  // decision belong here rather than in the service: strokes → a JSON string bound to a ::jsonb
+  // parameter, no strokes → a real SQL NULL. Binding the array itself would make Prisma send a
+  // Postgres array, not JSONB, and the insert would fail at runtime with no test to catch it.
+  it('createInspection serialises the signature strokes for the jsonb column', async () => {
+    const signature = [{ d: 'M0.1,0.2 L0.3,0.4', color: '#FFFFFF', width: 0.006 }];
+    mockPrisma.$queryRaw.mockResolvedValue([{ ...inspectionRow, signature }]);
+    const result = await repo.createInspection({
+      inspection_id: 'insp-uuid-003',
+      project_id: 'proj-uuid-001',
+      checklist_id: 'cl-uuid-001',
+      status: 'PASSED',
+      inspected_by: 'user-uuid-001',
+      inspected_at: '2026-08-08T08:00:00Z',
+      notes: null,
+      signature,
+    });
+    // The bound value is the JSON text, never the array object.
+    const bound = mockPrisma.$queryRaw.mock.calls.at(-1)!.slice(1) as unknown[];
+    expect(bound).toContain(JSON.stringify(signature));
+    expect(result.signature).toEqual(signature);
+  });
+
+  it('createInspection binds NULL when the inspection is unsigned', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([{ ...inspectionRow, signature: null }]);
+    await repo.createInspection({
+      inspection_id: 'insp-uuid-004',
+      project_id: 'proj-uuid-001',
+      checklist_id: 'cl-uuid-001',
+      status: 'PASSED',
+      inspected_by: 'user-uuid-001',
+      inspected_at: '2026-08-08T08:00:00Z',
+      notes: null,
+      signature: null,
+    });
+    const bound = mockPrisma.$queryRaw.mock.calls.at(-1)!.slice(1) as unknown[];
+    expect(bound).toContain(null);
+    expect(bound.some((v) => typeof v === 'string' && v.startsWith('['))).toBe(false);
+  });
+
   it('findChecklistById returns null when not found', async () => {
     mockPrisma.$queryRaw.mockResolvedValue([]);
     expect(await repo.findChecklistById('missing')).toBeNull();
