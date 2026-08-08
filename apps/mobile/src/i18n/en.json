@@ -169,6 +169,18 @@
       "checkedIn": "Checked in — will sync when online",
       "checkInError": "Check-in unavailable: no worker profile linked to your account."
     },
+    "field": {
+      "myTasks": "My tasks",
+      "ofDone": "/ {total} done",
+      "shiftHours": "Shift hours",
+      "hoursUnit": "h",
+      "insightLabel": "Workflow optimization",
+      "insightConfidence": "Conf: 94%",
+      "insightBody": "Temperature projected to reach 38°C at 14:00. Schedule heavy slab pouring before noon to avoid heat-stress delays.",
+      "insightAction": "Adjust schedule",
+      "priorityTasks": "Today's priority tasks",
+      "moreScheduled": "+ {count} more scheduled"
+    },
     "engineer": {
       "appName": "CONSTRUCTION OS",
       "notifications": "Notifications",
@@ -243,6 +255,32 @@
       "inProgress": "In progress",
       "done": "Done"
     }
+  },
+  "quickActions": {
+    "title": "Quick actions",
+    "reportIssue": {
+      "title": "Report an issue",
+      "body": "Log a problem or an obstruction on site right away"
+    },
+    "safetyChecklist": {
+      "title": "Safety checklist",
+      "body": "Run the safety check before starting work"
+    },
+    "logActivity": {
+      "title": "Log today's activity",
+      "body": "Summarise the work done and the manpower on site"
+    }
+  },
+  "directory": {
+    "title": "Team Directory",
+    "searchPlaceholder": "Search by name or job…",
+    "onSiteCount": "{onSite} of {total} on site",
+    "onSite": "On site",
+    "offSite": "Not on site",
+    "call": "Call {name}",
+    "pickProject": "Pick a project to see its crew",
+    "empty": "No one is allocated to this project yet",
+    "unavailable": "The directory needs a connection — who is on site right now cannot be answered offline."
   },
   "site": {
     "report": {
@@ -673,6 +711,7 @@
       "language": "Language",
       "thai": "ไทย",
       "english": "English",
+      "version": "Version",
       "logout": "Log out",
       "theme": "Appearance",
       "themeDark": "Dark",

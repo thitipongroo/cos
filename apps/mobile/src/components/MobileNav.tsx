@@ -9,7 +9,8 @@
 // top-bar avatar on every screen, which already routed there for all roles. This generalises what
 // SITE_ENGINEER (PO 2026-07-16) and TENANT_ADMIN (PO 2026-07-28) already did to the whole product.
 //   SITE_WORKER:            Home | Issues | Reports | Safety  (PO decision 2026-08-08)
-//     Its four mockups (mockup/mobile/05_site_worker/{01_tasks,02_issues,03_reports,04_safety}) each
+//     Its four mockups (mockup/mobile/05_site_worker/{02_tasks/01_daily_tasks,
+//     01_home/03_issue, 01_home/04_daily_report, 03_safety/01_checklist}) each
 //     draw Tasks | Issues | Reports | Safety with NO Home, and that shipped first. The product owner
 //     then put Home back so the bar starts in the same place for all twelve roles; since §32.7 allows
 //     exactly four, TASKS gave up the slot rather than becoming a fifth tab.
@@ -141,6 +142,12 @@ export function MobileNav() {
           Home took the Site Worker's first slot, and §32.7 allows exactly four). Mounted here so
           router.push('/tasks') still resolves. */}
       <Tabs.Screen name="tasks" options={{ href: null }} />
+      {/* Team directory — pushed from the navigation drawer. The 2026-08-08 mockups draw it as a
+          tab, but their five files disagree on the other three slots and §32.7 allows exactly
+          four, so the product owner kept the existing bar and this stays a pushed screen. */}
+      <Tabs.Screen name="directory" options={{ href: null }} />
+      {/* Quick actions — opened by the Site Worker Home's FAB (mockup 01_home/02_quick_actions). */}
+      <Tabs.Screen name="quick-actions" options={{ href: null }} />
       <Tabs.Screen name="conflict-review" options={{ href: null }} />
       {/* Notification inbox — reached from the top-bar bell (router.push). No role lists it as a tab. */}
       <Tabs.Screen name="notifications" options={{ href: null }} />

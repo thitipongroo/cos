@@ -12,7 +12,12 @@
 # if the number grows. Lower BASELINE in the same PR that fixes a file — that is what makes the
 # number fall instead of drift.
 #
-# 24 → 20 on 2026-08-08: SignaturePad.tsx (a new component that shipped with none — the pad now
+# 20 → 19 on 2026-08-08: profile.tsx, when the mockup restructure added its MFA row, version line
+# and privacy link — the logout button and theme chips were labelled in the same pass. The three
+# screens added that day (directory, quick-actions) shipped with accessibility props from the start,
+# which is why the number fell rather than held.
+#
+# 24 → 20 earlier the same day: SignaturePad.tsx (a new component that shipped with none — the pad now
 # announces as a named image with a signed/unsigned state, since TalkBack has no gesture that can
 # draw a signature, and the Clear button is a labelled button) and tasks.tsx (filter chips as a
 # radio group, plus the AI Insight action and the detail screen's save/back buttons).
@@ -25,7 +30,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 # Number of files with tappable elements but no accessibility prop, as of 2026-08-08.
 # This may only ever be lowered.
-BASELINE=20
+BASELINE=19
 
 python3 - "$ROOT" "$BASELINE" <<'PY'
 import pathlib

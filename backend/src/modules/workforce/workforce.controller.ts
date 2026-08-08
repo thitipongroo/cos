@@ -134,6 +134,17 @@ export class ProjectWorkforceController {
   summary(@Param('projectId', ParseUUIDPipe) projectId: string) {
     return this.service.getManpowerSummary(projectId);
   }
+
+  // Deliberately NO @Roles: like the two reads above, RolesGuard allows a route with no metadata,
+  // which is what lets a SITE_WORKER open their own crew's directory (mockup 04_directory). Writes
+  // on this controller stay behind WORKFORCE_WRITE_ROLES. The payload is name / trade / phone /
+  // on-site — contact details of colleagues on a project the caller's tenant owns, and tenant
+  // isolation is RLS (ADR-008); it carries no rate, no employment terms and no identity documents.
+  @Get('directory')
+  @ApiOperation({ summary: "Project crew as a contact list, with today's on-site state" })
+  directory(@Param('projectId', ParseUUIDPipe) projectId: string) {
+    return this.service.getProjectDirectory(projectId);
+  }
 }
 
 @ApiTags('Workforce')

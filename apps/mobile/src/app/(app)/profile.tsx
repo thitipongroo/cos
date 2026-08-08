@@ -2,7 +2,10 @@
 // Offline-safe: account info reads local auth state; notification preferences load online.
 
 import { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
+import { MaterialIcons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore, type ThemeMode } from '../../store/themeStore';
 import { useBiometricStore } from '../../store/biometricStore';
@@ -139,6 +142,12 @@ const LOCALES: Array<{ locale: Locale; labelKey: string }> = [
   { locale: 'en', labelKey: 'profile.main.english' },
 ];
 
+/**
+ * MFA enrolment is behind the same feature flag the navigation drawer reads, so the two entry
+ * points to one screen cannot disagree about whether it exists.
+ */
+const MFA_ENROLLMENT_ENABLED = process.env.EXPO_PUBLIC_FF_S1_AUTH_MFA_ENROLLMENT === '1';
+
 export default function ProfileScreen() {
   const userId = useAuthStore((s) => s.userId);
   const role = useAuthStore((s) => s.role);
@@ -146,9 +155,21 @@ export default function ProfileScreen() {
   const mode = useThemeStore((s) => s.mode);
   const setMode = useThemeStore((s) => s.setMode);
   const { t, locale, setLocale } = useI18n();
+  const router = useRouter();
+  // The REAL build version (app.json), read the same way the login footer reads it. The mockup
+  // prints "2.4.0-stable"; that is a drawing, and a version number a user might quote in a support
+  // request is the one thing on this screen that must never be decorative.
+  const appVersion = Constants.expoConfig?.version ?? '—';
 
   return (
-    <View testID="profile-screen" style={screen.container}>
+    // A ScrollView, not a View. The mockup restructure (05_profile) added the MFA row, the version
+    // line and the legal link on top of eleven existing rows, which overflows a 2400px viewport with
+    // nothing to scroll — the sign-out button and the rows above it became unreachable on a phone.
+    <ScrollView
+      testID="profile-screen"
+      style={styles.page}
+      contentContainerStyle={styles.pageContent}
+    >
       <View style={screen.kvRow}>
         <Text style={screen.kvKey}>{t('profile.main.userId')}</Text>
         <Text testID="profile-user-id" style={styles.value}>
@@ -211,14 +232,58 @@ export default function ProfileScreen() {
 
       <BiometricUnlockRow />
 
-      <TouchableOpacity testID="logout-button" style={styles.logout} onPress={() => logout()}>
+      {/* Security — the mockup's MFA row. Behind the same flag as the drawer's entry, so a build
+          without MFA does not offer a screen it cannot honour.
+          NOT BUILT: the mockup's "Change Secure PIN". This product has no PIN — device unlock is
+          biometric (the row above), and inventing a second credential here would be a security
+          feature with no backend, no recovery path and no spec. */}
+      {MFA_ENROLLMENT_ENABLED ? (
+        <TouchableOpacity
+          testID="profile-mfa-row"
+          style={screen.kvRow}
+          accessibilityRole="button"
+          accessibilityLabel={t('mfa.enroll.title')}
+          onPress={() => router.push('/mfa-enrollment')}
+        >
+          <Text style={screen.kvKey}>{t('mfa.enroll.title')}</Text>
+          <MaterialIcons name="chevron-right" size={20} color={colors.textSecondary} />
+        </TouchableOpacity>
+      ) : null}
+
+      {/* About — the mockup's version line and legal link. */}
+      <View style={screen.kvRow}>
+        <Text style={screen.kvKey}>{t('profile.main.version')}</Text>
+        <Text testID="profile-version" style={styles.value}>
+          {appVersion}
+        </Text>
+      </View>
+      <TouchableOpacity
+        testID="profile-privacy-link"
+        style={screen.kvRow}
+        accessibilityRole="link"
+        accessibilityLabel={t('privacy.policy.title')}
+        onPress={() => router.push('/privacy-policy')}
+      >
+        <Text style={screen.kvKey}>{t('privacy.policy.title')}</Text>
+        <MaterialIcons name="open-in-new" size={20} color={colors.textSecondary} />
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        testID="logout-button"
+        style={styles.logout}
+        accessibilityRole="button"
+        accessibilityLabel={t('profile.main.logout')}
+        onPress={() => logout()}
+      >
         <Text style={styles.logoutText}>{t('profile.main.logout')}</Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  page: { flex: 1, backgroundColor: colors.bg },
+  pageContent: { padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xl },
   value: {
     fontSize: typography.body.fontSize,
     fontFamily: fontFamily.medium,

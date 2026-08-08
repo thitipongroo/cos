@@ -1196,6 +1196,20 @@ async function seedProject(tx: Tx, p: SeedProject): Promise<void> {
       ON CONFLICT DO NOTHING`;
   }
 
+  // An OPEN shift for the first worker on each project — checked in this morning, no check-out.
+  //
+  // Every row above is a finished past day (08:00 → 17:00), which makes `on_site` false for the
+  // whole crew and leaves the team directory (GET /projects/:id/workforce/directory, mockup
+  // 04_directory) unable to show the state it exists for. `now()` rather than a fixed timestamp
+  // because "today" has to follow whenever the seed is run, and the derived flag reads the check-in's
+  // own calendar day.
+  const onSiteWorker = projWorkers[0];
+  if (onSiteWorker) {
+    await tx.$executeRaw`INSERT INTO workforce_telemetry.attendance_logs (log_id, recorded_at, worker_id, project_id, tenant_id, check_in_at, check_out_at, hours_worked, latitude, longitude)
+      VALUES (${uid(`att-open/${p.key}/${onSiteWorker.key}`)}::uuid, date_trunc('day', now()) + interval '7 hours', ${W(onSiteWorker.key)}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, date_trunc('day', now()) + interval '7 hours', NULL, NULL, ${p.lat}, ${p.lng})
+      ON CONFLICT DO NOTHING`;
+  }
+
   // Equipment assignment + utilization.
   const eqForProject = EQUIPMENT[PROJECTS.indexOf(p) % EQUIPMENT.length];
   await tx.$executeRaw`INSERT INTO equipment.equipment_assignments (assignment_id, equipment_id, project_id, tenant_id, assigned_by, assigned_at, notes)

@@ -25,7 +25,7 @@ export const TAB_ROUTES = [
   'inspections',
   'reports',
   'report',
-  // SITE_WORKER's fourth tab (PO 2026-08-08, mockup 05_site_worker/04_safety). A tab, not a pushed
+  // SITE_WORKER's fourth tab (PO 2026-08-08, mockup 05_site_worker/03_safety/01_checklist). A tab, not a pushed
   // child: the daily safety verification is one of the four things that role opens the app to do.
   'safety-checklist',
   'sync-queue',

@@ -30,6 +30,20 @@ export interface AllocationRow {
   currency_code: string | null;
 }
 
+/**
+ * One card of the Site Worker's team directory. NOT a table row — it is a projection over
+ * `project_workforce` + `workers` + today's attendance, so it has no id of its own beyond the
+ * worker's. `contact_phone` is nullable because the column is.
+ */
+export interface DirectoryRow {
+  worker_id: string;
+  full_name: string;
+  trade_type: string;
+  contact_phone: string | null;
+  role_on_project: string | null;
+  on_site: boolean;
+}
+
 export interface AttendanceRow {
   log_id: string;
   recorded_at: Date;
@@ -148,6 +162,52 @@ export class WorkforceRepository {
       SELECT * FROM workforce.project_workforce
       WHERE project_id = ${projectId}::uuid
       ORDER BY start_date DESC
+    `,
+    );
+  }
+
+  /**
+   * The project's crew as a CONTACT LIST — mockup 05_site_worker/04_directory/01_worker_list.
+   *
+   * One query rather than three round trips, because the screen renders one card per worker and a
+   * client-side join over `project_workforce` + `workers` + today's attendance would be N+1 on a
+   * device that is often on site 3G (§17.7).
+   *
+   * `on_site` is DERIVED, not stored: the worker's most recent attendance row for TODAY, on THIS
+   * project, checked in and not yet checked out. The LATERAL is per-worker, so a crew of 40 is still
+   * one index scan each rather than a sort over the whole hypertable. A worker with no row today is
+   * `false`, never null — "we have no record of them arriving" and "they left" are the same fact to
+   * someone looking for them on site.
+   *
+   * Scoped to the CURRENT allocation: `end_date` in the past means they have rotated off the project
+   * and do not belong in its directory. Tenant isolation is RLS via TenantPrismaService (ADR-008),
+   * the same as every other query here — no explicit tenant_id predicate.
+   */
+  async getProjectDirectory(projectId: string): Promise<DirectoryRow[]> {
+    return this.db.run(
+      (tx) => tx.$queryRaw<DirectoryRow[]>`
+      SELECT
+        w.worker_id,
+        w.full_name,
+        w.trade_type,
+        w.contact_phone,
+        pw.role_on_project,
+        (a.check_in_at IS NOT NULL AND a.check_out_at IS NULL) AS on_site
+      FROM workforce.project_workforce pw
+      JOIN workforce.workers w ON w.worker_id = pw.worker_id
+      LEFT JOIN LATERAL (
+        SELECT al.check_in_at, al.check_out_at
+        FROM workforce_telemetry.attendance_logs al
+        WHERE al.worker_id = pw.worker_id
+          AND al.project_id = pw.project_id
+          AND al.recorded_at >= date_trunc('day', now())
+        ORDER BY al.recorded_at DESC
+        LIMIT 1
+      ) a ON TRUE
+      WHERE pw.project_id = ${projectId}::uuid
+        AND w.is_active
+        AND (pw.end_date IS NULL OR pw.end_date >= CURRENT_DATE)
+      ORDER BY w.full_name ASC
     `,
     );
   }

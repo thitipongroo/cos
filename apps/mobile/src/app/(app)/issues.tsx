@@ -1,5 +1,5 @@
 // Issues screen — SITE_WORKER quick issue create (+ photo) & offline list; SITE_ENGINEER escalate.
-// Implements mockup/mobile/05_site_worker/02_issues/00_main.
+// Implements mockup/mobile/05_site_worker/01_home/03_issue.
 //
 // Create (G-M11): generates a client UUID (expo-crypto) used as BOTH the local/issue id AND the
 // PhotoCapture entity_id, then writes local_issues (PENDING) and enqueues an 'issue' sync item

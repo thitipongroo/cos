@@ -1,13 +1,21 @@
 // Android SITE_WORKER screenshot capture — adb/uiautomator only, like every sibling script.
 //
 // Writes the role's screens to docs/screens/android/SITE-WORKER/, one folder per bottom-nav tab:
-// 01-Home, 02-Issues, 03-Reports, 04-Safety. They implement
-// mockup/mobile/05_site_worker/{01_tasks,02_issues,03_reports,04_safety}.
+// 01-Home, 02-Issues, 03-Reports, 04-Safety, plus 05-Shared for the two screens reached from the
+// navigation drawer. They implement
+// mockup/mobile/05_site_worker/{02_tasks/01_daily_tasks, 01_home/03_issue,
+// 01_home/04_daily_report, 03_safety/01_checklist} — renamed from
+// {01_tasks,02_issues,03_reports,04_safety}/00_main in 527231f.
 //
 // Tasks lives under 01-Home/ because that is where it is reached from: it was a tab until
-// 2026-08-08, when Home took the slot (§32.7 allows exactly four), and it is now pushed from Home's
-// Tasks quick action. The README's own rule is that a screen is filed under the tab it is reached
-// from.
+// 2026-08-08, when Home took the slot (§32.7 allows exactly four), and it is now pushed from Home.
+// Quick Actions is filed there too — the Home FAB opens it. The README's own rule is that a screen
+// is filed under the tab it is reached from.
+//
+// Directory and Profile go to 05-Shared/: both are opened from the navigation drawer, which is not a
+// tab, so neither has a tab folder to belong to. Directory is a SITE_WORKER screen the 2026-08-08
+// mockup restructure added (04_directory); Profile predates it and gained the restructure's MFA
+// row, version line and legal link (05_profile).
 //
 // Signed in as Somsak Duangdee (+66811000010, seed-realistic.ts) — the seeded SITE_WORKER. Role
 // matters: Issues/Reports/Safety are this role's tabs (MobileNav), so any other account renders a
@@ -211,16 +219,23 @@ async function main() {
   await tap(byId('home-tab'), 'home tab');
   await find(byId('home-screen'), 'home-screen');
   await find(byId('check-in-button'), 'check-in button');
+  // The two bento tiles the 2026-08-08 rework put here. Asserted so a regression that drops them
+  // fails the run rather than committing a screenshot of the old KPI cards.
+  await find(byId('stat-my-tasks'), 'My Tasks stat tile');
+  await find(byId('stat-shift-hours'), 'Shift Hours stat tile');
   await dismissDevBanners();
   await delay(1200);
-  grabOne('01-Home/01-home');
+  // Taller than a viewport since the rework (tiles + AI insight + check-in + three task cards).
+  await stitchFull('01-Home/01-home', 180, NAV_TOP);
 
   // Tasks — pushed from Home's quick action, so it carries a breadcrumb (HOME › TASKS) and a back
   // chevron like every other child screen. Delta sync has to land first or the list is legitimately
   // empty, so at least one card is asserted BEFORE the shot: an empty Tasks screen is a valid app
   // state but a useless screenshot, and it must fail the run rather than be committed.
   console.log('· 01-Home/02-tasks');
-  await tap(byId('qa-tasks'), 'Tasks quick action');
+  // Reached from the priority-tasks heading. The Tasks QUICK-ACTION TILE no longer exists — the
+  // rework moved the quick actions behind the FAB, and that menu does not carry Tasks.
+  await tap(byId('home-tasks-link'), 'priority tasks heading');
   await find(byId('tasks-screen'), 'tasks-screen');
   await find((n) => /resource-id="task-[0-9a-f-]{36}"/.test(n), 'at least one task card', 40);
   await dismissDevBanners();
@@ -260,6 +275,43 @@ async function main() {
   await dismissDevBanners();
   await delay(1500);
   await stitchFull('04-Safety/01-safety-checklist', 180, NAV_TOP);
+
+  // Quick actions — the FAB menu (mockup 01_home/02_quick_actions). Three cards, each routing to a
+  // screen that already exists.
+  console.log('· 01-Home/03-quick-actions');
+  await tap(byId('home-tab'), 'home tab');
+  await find(byId('home-quick-action-fab'), 'quick action FAB');
+  await tap(byId('home-quick-action-fab'), 'quick action FAB');
+  await find(byId('quick-actions-screen'), 'quick-actions-screen');
+  await find(byId('quick-action-reportIssue'), 'report-issue card');
+  await dismissDevBanners();
+  await delay(1200);
+  grabOne('01-Home/03-quick-actions');
+
+  // Team directory (mockup 04_directory). Opened from the navigation drawer, and asserted on a real
+  // CARD: with no crew allocated the screen renders its honest empty state, which must fail the run
+  // rather than be committed as though it were the feature.
+  console.log('· 05-Shared/01-directory');
+  await tap(byId('drawer-menu-button'), 'drawer button');
+  await tap(byId('drawer-link-/directory'), 'directory drawer link');
+  await find(byId('directory-screen'), 'directory-screen');
+  await pickFirstProject(); // nothing is fetched until a project is chosen
+  await find((n) => /resource-id="directory-card-/.test(n), 'at least one crew card', 40);
+  await dismissDevBanners();
+  await delay(1500);
+  await stitchFull('05-Shared/01-directory', 180, NAV_TOP);
+
+  // Profile (mockup 05_profile). Reached from the top-bar avatar, as on every role.
+  console.log('· 05-Shared/02-profile');
+  await tap(byId('profile-avatar'), 'avatar');
+  await find(byId('profile-screen'), 'profile-screen');
+  // Asserted on a row that is ABOVE the fold: find() reads the current uiautomator dump and does not
+  // scroll, and the version line the restructure added sits past the bottom of a 2400px viewport.
+  // stitchFull below scrolls the rest into the saved image.
+  await find(byId('profile-user-id'), 'profile identity row');
+  await dismissDevBanners();
+  await delay(1200);
+  await stitchFull('05-Shared/02-profile', 180, NAV_TOP);
 
   console.log(`\nDone → ${OUT}`);
 }

@@ -1,5 +1,5 @@
 // Tasks screen — SITE_WORKER task list + detail + progress update (offline-first).
-// Implements mockup/mobile/05_site_worker/01_tasks/00_main.
+// Implements mockup/mobile/05_site_worker/02_tasks/01_daily_tasks.
 //
 // Reads local_tasks reactively (populated by delta sync). Updating progress writes locally (PENDING)
 // and PATCHes the server via mutate() — offline it is queued; on sync the server applies Max-wins

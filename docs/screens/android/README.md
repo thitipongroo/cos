@@ -36,7 +36,7 @@ gets its own full-page file (the Invite-user `email` method, the Alerts `diff`-e
 | [`SITE-ENGINEER/`](SITE-ENGINEER/)         | Tabs: **Home \| Issues \| Inspections \| Reports**. Captured so far: [`01-Home/`](SITE-ENGINEER/01-Home/) — the loading state (`00`) + dashboard (`01`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | [`TENANT-ADMIN/`](TENANT-ADMIN/)           | Tabs: **Home \| Users \| Alerts \| Settings**. [`01-Home/`](TENANT-ADMIN/01-Home/) — dashboard (`01`), Quick-Add (`02`) and the FAB flows: Invite-user (`03`), Role-permissions (`04`), Roles-selection (`05`), Invitation-success (`06`), System-integration (`07`), Apps-&-Services (`08`). [`02-Users/`](TENANT-ADMIN/02-Users/) — the users list (`01`), the per-user action sheet (`02`), the user profile (`03`), the multi-role permission editor (`04`) + the save-success screen (`05`), and the password-reset form (`06`) + its two done screens — temp-password (`07`) and email-link-sent (`08`). [`03-Alerts/`](TENANT-ADMIN/03-Alerts/) — the sync-review queue (`01`). [`04-Settings/`](TENANT-ADMIN/04-Settings/) — System Settings (`01`, one full-page). |
 | [`CRM-SALES-MANAGER/`](CRM-SALES-MANAGER/) | Tabs: **Home \| Leads \| Opportunities \| Customers** — the three pages §20.7.10 defines, built 2026-08-04. Leads (`01`), Opportunities (`02`), Customers (`03`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| [`SITE-WORKER/`](SITE-WORKER/)             | Tabs: **Home \| Issues \| Reports \| Safety**. [`01-Home/`](SITE-WORKER/01-Home/) — the field dashboard (`01`) and **Tasks** (`02`), which is pushed from Home's Tasks quick action rather than being a tab. [`02-Issues/`](SITE-WORKER/02-Issues/) (`01`), [`03-Reports/`](SITE-WORKER/03-Reports/) (`01`), [`04-Safety/`](SITE-WORKER/04-Safety/) (`01`).                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| [`SITE-WORKER/`](SITE-WORKER/)             | Tabs: **Home \| Issues \| Reports \| Safety**. [`01-Home/`](SITE-WORKER/01-Home/) — the field dashboard (`01`) and **Tasks** (`02`), which is pushed from Home's Tasks quick action rather than being a tab. [`02-Issues/`](SITE-WORKER/02-Issues/) (`01`), [`03-Reports/`](SITE-WORKER/03-Reports/) (`01`), [`04-Safety/`](SITE-WORKER/04-Safety/) (`01`). `01-Home/` also holds **Quick actions** (`03`), which the Home FAB opens. [`05-Shared/`](SITE-WORKER/05-Shared/) — **Team directory** (`01`) and **Profile** (`02`), both opened from the navigation drawer, so neither belongs under a tab.                                                                                                                                                                    |
 
 The two adb dashboard scripts write straight into their role's menu subfolders —
 [`capture-android-home.mjs`](../../../apps/mobile/scripts/capture-android-home.mjs) → `SITE-ENGINEER/01-Home/`,
@@ -891,12 +891,28 @@ different thing from the **committed** per-role captures here, which are grouped
   `docs/screens/ios/` and shells out to `xcrun simctl`, so as committed it only drives an iOS
   simulator. The Android equivalents are the two adb scripts referenced above.
 
-## Site Worker — the four tabs — [`SITE-WORKER/`](SITE-WORKER/)
+## Site Worker — four tabs, seven screens — [`SITE-WORKER/`](SITE-WORKER/)
 
 The `SITE_WORKER` tab set, implementing [`mockup/mobile/05_site_worker/`](../../../mockup/mobile/05_site_worker)
-(`01_tasks`, `02_issues`, `03_reports`, `04_safety`). Captured against the `seed-realistic.ts` dataset
+(`02_tasks/01_daily_tasks`, `01_home/03_issue`, `01_home/04_daily_report`, `03_safety/01_checklist`).
+Captured against the `seed-realistic.ts` dataset
 through a real Path A (SMS OTP) login as `+66811000010` — Somsak Duangdee, the seeded SITE_WORKER at
 Ekachai. The header avatar reads **"SD"** (his initials — no photo set), confirming the signed-in role.
+
+> **The mockup folders were restructured on 2026-08-08** (commit `527231f`), content unchanged —
+> git recorded every one as `R100`. The mapping, because two applied migrations still cite the old
+> paths in their header comments and cannot be edited (immutable after apply, QM-9 —
+> `backend/prisma/migrations/20260808000001…` and `…0002…`):
+>
+> | old                                 | new                                      |
+> | ----------------------------------- | ---------------------------------------- |
+> | `05_site_worker/01_tasks/00_main`   | `05_site_worker/02_tasks/01_daily_tasks` |
+> | `05_site_worker/02_issues/00_main`  | `05_site_worker/01_home/03_issue`        |
+> | `05_site_worker/03_reports/00_main` | `05_site_worker/01_home/04_daily_report` |
+> | `05_site_worker/04_safety/00_main`  | `05_site_worker/03_safety/01_checklist`  |
+>
+> The same commit added four drawings this role had none of before — `01_home/01_dashboard`,
+> `01_home/02_quick_actions`, `04_directory/01_worker_list` and `05_profile/01_account_settings`.
 
 **The bar is Home | Issues | Reports | Safety** — the same Home-first shape as the eleven other
 roles. This took two decisions on 2026-08-08, in order. The four mockups draw **Tasks | Issues |
@@ -928,13 +944,50 @@ seed sets `is_required` on every item, so it printed on all nine and distinguish
 
 ### Home — [`01-Home/01-home.png`](SITE-WORKER/01-Home/01-home.png)
 
-The field dashboard and the role's landing screen: two KPI cards (**open issues**, **pending sync** —
-both counted from the local offline DB, so they are honest with no signal), the project picker, the
-**CHECK IN** button (offline-queued attendance), and quick actions for Tasks, Report and Issues.
+The field dashboard and the role's landing screen. **Reworked on 2026-08-08** to mockup
+`01_home/01_dashboard`, which the restructure added — this role had no Home drawing before it. Now:
+two bento stat tiles, the AI Insight module, the project picker and **CHECK IN**, today's priority
+tasks, and the FAB.
 
-`15` open issues and `0` pending sync are the real local counts for this seeded worker; the Issues
-tile's red `15` badge is the same number. CHECK IN is disabled until a project is picked — an
-attendance row against no project would be unusable.
+- **`My tasks 10 / 25 done`** and its bar are counted from `local_tasks`, so they are honest with no
+  signal (§17.4).
+- **`Shift hours`** is elapsed time since today's check-in, from `local_attendance` — the row the
+  CHECK IN button on this same screen writes. It shows a dash, not `00:00`, when the worker has not
+  checked in: a zero would read as a shift that has just begun. The bar scales against an 8-hour
+  shift (mirroring the server's `DEFAULT_SHIFT_HOURS`) and caps at full, while the number beside it
+  is never clamped — ten hours into an eight-hour shift reads `10:00` against a full bar.
+  `lib/__tests__/shiftHours.spec.ts` pins the cases that matter: a checked-out shift, a night shift
+  left open yesterday, a duplicate check-in after a sync conflict, and clock skew.
+- **The AI Insight module** is drawn in full, mockup copy and the `Conf: 94%` figure included (the
+  same ruling applied to the report bar, the safety scan and the tasks insight). Nothing is behind
+  it: the temperature projection has no source in this product, and §22.3 puts schedule generation
+  behind Temporal with a human-in-the-loop step, so **ADJUST SCHEDULE** reports that it is
+  unavailable rather than acting. No field of any record is derived from it.
+- **Priority tasks** use the same `<TaskCard />` the Tasks screen renders — same swipe-to-complete,
+  so the card cannot behave differently depending on which screen it is on. The mockup's
+  `08:00 - 12:00` and `Sector B` are absent for the reason they are absent on Tasks: `planned_start`
+  / `planned_end` are DATEs and there is no location column at all.
+- **The heading is a link** (`Today's priority tasks ›`), not just a label. Moving the quick actions
+  behind the FAB took the Tasks tile off this screen, and the mockup's only other route to the full
+  list is `+ N more scheduled` — which does not render when there are no tasks, leaving `/tasks`
+  unreachable in exactly the state a new worker starts in.
+
+**Two things the mockup does not draw are still here, and one it draws is not.** CHECK IN stays: it
+is the role's daily attendance action, exists on no other screen, and feeds Shift Hours directly —
+dropping it to match a drawing would delete a feature. The project picker stays with it, since an
+attendance row against no project is unusable. The mockup's **`WORKER COMMAND` heading is not
+rendered**: §32.7 names a top-level tab screen by its active bottom-nav tab, all four of this role's
+screens had their in-content titles removed the same day, and `theme/__tests__/pageTitle.spec.ts`
+holds that line.
+
+The two KPI cards it replaced (**open issues**, **pending sync**) are not lost — the Issues tab
+carries its own list, and sync health is the TopBar indicator plus the Sync Queue screen.
+
+> **The FAB appears twice in this image.** It is `position: absolute`, so it stays put while the page
+> scrolls and lands in more than one of the shots `stitch-fullpage.py` joins. The same artifact is in
+> the Site Engineer Home, whose voice FAB is fixed for the same reason. On the device there is one.
+
+<!-- markdownlint-disable-next-line MD028 -->
 
 > **This screen was the last one still pinned to the light token set.** It rendered a white page
 > under the dark top bar and dark bottom nav, and its three quick-action tiles were white too, which
@@ -943,6 +996,63 @@ attendance row against no project would be unusable.
 > `QuickActionCard`'s `variant` now DEFAULTS to the user's theme instead of to `'light'` — the tiles
 > were white because the caller passed nothing and the default said nothing about being a choice.
 > The four `<LoadingBoundary theme="light">` calls in the same file were fixed with it.
+
+### Quick actions — [`01-Home/03-quick-actions.png`](SITE-WORKER/01-Home/03-quick-actions.png)
+
+The FAB menu (mockup `01_home/02_quick_actions`): three cards routing to **Issues**, **Safety** and
+**Reports** — all screens that already exist, so this adds no capability, it shortens the path to the
+three the role uses most. These are the same three Home used to carry as inline tiles; the mockup
+restructure moved them behind the FAB, which is why Home no longer renders `<QuickActionCard />`.
+
+A screen rather than a modal or bottom sheet: the mockup draws it as a full page with its own top
+bar, §32.7 keeps modals for things that interrupt, and being a route gives it a breadcrumb and a back
+chevron for free.
+
+### Team directory — [`05-Shared/01-directory.png`](SITE-WORKER/05-Shared/01-directory.png)
+
+The project crew as a contact list (mockup `04_directory/01_worker_list`), added by the 2026-08-08
+restructure. **Reached from the navigation drawer, not the bottom bar** — the restructure's five
+drawings carry four different bars between them (one with five items), §32.7 allows exactly four, and
+the product owner kept Home | Issues | Reports | Safety.
+
+Everything on the card is real. `GET /projects/{id}/workforce/directory` (added the same day) is one
+server-side join over `project_workforce` + `workers` + today's attendance — one request per project,
+not one per worker, because a card-by-card fetch would be N+1 on site 3G (§17.7). **No migration was
+needed**: `workforce.workers` already carried `full_name`, `trade_type` and `contact_phone`, and
+`attendance_logs` already carried `check_in_at` / `check_out_at`.
+
+- **`On site` is derived, never stored** — the worker's latest attendance row for TODAY, on THIS
+  project, checked in and not yet checked out. Both predicates are asserted in the repository spec
+  against the SQL text, because they live in the query: drop `date_trunc` and yesterday's check-in
+  marks someone present; drop the project match and someone on another site does. A worker with no
+  row today reads `false`, never null — "no record of them arriving" and "they have left" are the
+  same fact to somebody looking for them.
+- `1 of 4 on site` and the green left strip are the real counts for the seeded crew. The seed gained
+  one OPEN check-in per project on 2026-08-08; before that every seeded row was a finished past day,
+  which made the flag false for everyone and left this screen unable to show the state it exists for.
+- **Not offline-cached, deliberately.** §17.4 does not list a directory among the offline reads, and
+  the value this adds over a phone's own contacts is `on_site` — true only as of the fetch. A cached
+  copy would assert that someone is standing on site with no way for the reader to judge how stale
+  the claim is. Offline it says so.
+- The mockup's **chat button is not rendered**: the app has no chat route (the Site Engineer mockups
+  draw one; nothing is implemented). **Calling is real** — `tel:` via `Linking`, disabled when the
+  worker has no `contact_phone`, which the column allows.
+
+### Profile — [`05-Shared/02-profile.png`](SITE-WORKER/05-Shared/02-profile.png)
+
+Not a new screen — it predates the restructure and is reached from the top-bar avatar on every role.
+Mockup `05_profile/01_account_settings` added three rows to it: **MFA** (behind the same feature flag
+as the drawer's entry, so the two ways into one screen cannot disagree), the **app version** and the
+**legal link**.
+
+- The version is the REAL build number from `app.json`, read the way the login footer reads it. The
+  mockup prints `2.4.0-stable`; that is a drawing, and a version a user might quote in a support
+  request is the one thing here that must never be decorative.
+- **"Change Secure PIN" is not built.** This product has no PIN — device unlock is biometric (the row
+  above it), and inventing a second credential would be a security feature with no backend, no
+  recovery path and no spec.
+- The screen became a **ScrollView** in the same change: eleven existing rows plus three new ones
+  overflow a 2400px viewport, and sign-out was unreachable on a phone.
 
 ### Tasks — [`01-Home/02-tasks.png`](SITE-WORKER/01-Home/02-tasks.png)
 

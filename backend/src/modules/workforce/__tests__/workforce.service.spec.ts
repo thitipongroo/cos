@@ -23,6 +23,7 @@ const makeRepo = () => ({
   findWorkerByUserId: jest.fn(),
   allocateWorker: jest.fn(),
   getProjectWorkforce: jest.fn(),
+  getProjectDirectory: jest.fn(),
   recordAttendance: jest.fn(),
   getAttendanceHistory: jest.fn(),
   submitTimesheet: jest.fn(),
@@ -240,6 +241,15 @@ describe('WorkforceService', () => {
       repo.getProjectWorkforce.mockResolvedValue([{ allocation_id: 'a1' }]);
       const result = await service.getProjectWorkforce('proj-1');
       expect(result).toHaveLength(1);
+    });
+  });
+
+  describe('getProjectDirectory', () => {
+    it('returns the project crew with its on-site state', async () => {
+      repo.getProjectDirectory.mockResolvedValue([{ worker_id: 'w1', on_site: true }]);
+      const result = await service.getProjectDirectory('proj-1');
+      expect(result).toEqual([{ worker_id: 'w1', on_site: true }]);
+      expect(repo.getProjectDirectory).toHaveBeenCalledWith('proj-1');
     });
   });
 

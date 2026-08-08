@@ -3273,10 +3273,15 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
                   Profile left every role's nav on 2026-08-04 (top-bar avatar instead), and §32.7
                   allows exactly four items — so Safety, a daily obligation with no entry point at
                   all before, took the fourth slot and TASKS became a pushed child of Home, reached
-                  from the Tasks quick action FieldHome already carried. The role's four mockups
-                  (mockup/mobile/05_site_worker) draw Tasks | Issues | Reports | Safety with no
+                  from the Tasks quick action FieldHome already carried. The role's mockups
+                  (mockup/mobile/05_site_worker) drew Tasks | Issues | Reports | Safety with no
                   Home; the product owner chose Home-first so the bar starts in the same place for
-                  all twelve roles.
+                  all twelve roles. The 2026-08-08 mockup restructure (527231f) did NOT settle
+                  this: its five drawings carry four DIFFERENT bars between them — Projects |
+                  Tasks | Safety | Directory, the old Tasks | Issues | Reports | Safety, Projects |
+                  Daily Logs | Safety | Directory, and a FIVE-item one ending in Profile. The
+                  product owner kept Home | Issues | Reports | Safety on 2026-08-08 rather than
+                  pick between them; Directory and Profile are pushed screens off the drawer.
       Workflows:  daily report, quick issue, task list, safety checklist
 
     SITE_ENGINEER:

@@ -54,6 +54,27 @@ const FIELD_TOOLS: readonly NavLink[] = [
  */
 const CHECK_IN_LINK: NavLink = { route: '/home', labelKey: 'drawer.checkIn', icon: 'how-to-reg' };
 
+/**
+ * Team directory — the project crew as a contact list (mockup 04_directory).
+ *
+ * In the drawer rather than the bottom bar: §32.7 allows exactly four tabs and all four are
+ * spoken for, and the 2026-08-08 mockups that put Directory in the bar disagree with each other
+ * about what the other three are. Shown to the roles whose people are IN a project crew — the
+ * field roles and the manager who staffs them.
+ */
+const DIRECTORY_LINK: NavLink = {
+  route: '/directory',
+  labelKey: 'directory.title',
+  icon: 'groups',
+};
+
+const DIRECTORY_ROLES: CosRole[] = [
+  CosRole.SITE_WORKER,
+  CosRole.SITE_ENGINEER,
+  CosRole.SAFETY_OFFICER,
+  CosRole.PROJECT_MANAGER,
+];
+
 const SETTINGS_LINK: NavLink = {
   route: '/notification-preferences',
   labelKey: 'drawer.settings',
@@ -207,6 +228,7 @@ export function NavigationDrawer(): React.JSX.Element | null {
         <ScrollView style={styles.flex1} contentContainerStyle={styles.navList}>
           <Text style={styles.navSection}>{t('drawer.fieldTools')}</Text>
           {role === CosRole.SITE_WORKER ? renderLink(CHECK_IN_LINK) : null}
+          {role && DIRECTORY_ROLES.includes(role) ? renderLink(DIRECTORY_LINK) : null}
           {FIELD_TOOLS.map(renderLink)}
           <View style={styles.divider} />
           {MFA_ENROLLMENT_ENABLED ? renderLink(SECURITY_LINK) : null}

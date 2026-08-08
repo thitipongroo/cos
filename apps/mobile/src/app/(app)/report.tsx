@@ -1,5 +1,5 @@
 // Report screen — SITE_WORKER daily site report (offline-first) — G-M5a/G-M5b.
-// Implements mockup/mobile/05_site_worker/03_reports/00_main ("บันทึกกิจกรรมประจำวัน" / New Entry).
+// Implements mockup/mobile/05_site_worker/01_home/04_daily_report ("บันทึกกิจกรรมประจำวัน" / New Entry).
 //
 // Saving (1) writes a local_site_reports row (sync_status PENDING) for instant/offline display, and
 // (2) enqueues a 'site_report' sync item → SyncManager POSTs /sync/push → syncSiteReports. The

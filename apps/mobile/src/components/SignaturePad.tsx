@@ -1,5 +1,5 @@
 // <SignaturePad /> — the drawn confirmation on a safety checklist (mockup
-// mockup/mobile/05_site_worker/04_safety "DIGITAL AUTHORIZATION").
+// mockup/mobile/05_site_worker/03_safety/01_checklist "DIGITAL AUTHORIZATION").
 //
 // WHAT THIS SIGNATURE IS. An attestation MARK on an internal record: the worker draws it to close
 // their own daily verification. It is NOT a qualified electronic signature — no PKI, no certificate,

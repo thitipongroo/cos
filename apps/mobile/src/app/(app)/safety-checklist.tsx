@@ -1,5 +1,5 @@
 // Safety checklist — SITE_WORKER daily pre-shift verification (offline-first).
-// Implements mockup/mobile/05_site_worker/04_safety/00_main ("เช็คลิสต์ความปลอดภัย").
+// Implements mockup/mobile/05_site_worker/03_safety/01_checklist ("เช็คลิสต์ความปลอดภัย").
 //
 // The checklist TEMPLATE comes from GET /safety/checklists (a role the SITE_WORKER has always had);
 // the completed checklist is submitted to POST /safety/checklists, which the role gained on
