@@ -26,9 +26,38 @@ set -uo pipefail
 DEP_FIELDS='dependencies devDependencies peerDependencies optionalDependencies resolutions pnpm'
 
 STAGED="$(git diff --cached --name-only --diff-filter=ACM)"
-echo "$STAGED" | grep -qx 'pnpm-lock.yaml' && LOCK_STAGED=1 || LOCK_STAGED=0
 
 OFFENDERS=()
+
+# The lockfile that governs a package.json is the nearest one ABOVE it, not always the root one.
+#
+# `apps/mobile` is its own pnpm workspace — pnpm-workspace.yaml excludes it (`!apps/mobile`) because
+# Metro needs a hoisted node_modules — so its dependencies resolve into `apps/mobile/pnpm-lock.yaml`
+# and root `pnpm install` produces no diff for them. This hook originally accepted only a staged
+# `pnpm-lock.yaml` at the repo root (`grep -qx`), which made a mobile dependency change IMPOSSIBLE to
+# commit: the correct lockfile was staged and still rejected, and the only way through was the
+# SKIP escape hatch, which would have been a lie — the change does produce a lockfile diff, just not
+# in the root file. Walking up from each package.json fixes both workspaces with one rule.
+lockfile_for() {
+  local dir; dir="$(dirname "$1")"
+  while :; do
+    # `dirname` yields "." at the repo root, and git's own paths carry no "./" prefix — so the root
+    # candidate must be spelled "pnpm-lock.yaml", never "./pnpm-lock.yaml", or `is_staged` compares a
+    # path git never prints and every root-level dependency change fails the hook.
+    local candidate
+    if [[ "$dir" == "." ]]; then candidate='pnpm-lock.yaml'; else candidate="$dir/pnpm-lock.yaml"; fi
+
+    if [[ -f "$candidate" ]] || git cat-file -e "HEAD:$candidate" 2>/dev/null; then
+      echo "$candidate"
+      return
+    fi
+    [[ "$dir" == "." || "$dir" == "/" ]] && break
+    dir="$(dirname "$dir")"
+  done
+  echo 'pnpm-lock.yaml' # nothing found — hold it to the root lockfile
+}
+
+is_staged() { echo "$STAGED" | grep -qxF "$1"; }
 
 # ── package.json: compare the dependency-bearing fields, not the whole file ──────────────────────
 while IFS= read -r f; do
@@ -52,29 +81,36 @@ while IFS= read -r f; do
     process.stdout.write(a === null || b === null ? "" : (a === b ? "" : "yes"));
   ' 2>/dev/null)"
 
-  [[ -n "$CHANGED" ]] && OFFENDERS+=("$f (dependency fields)")
+  if [[ -n "$CHANGED" ]]; then
+    LOCK="$(lockfile_for "$f")"
+    is_staged "$LOCK" || OFFENDERS+=("$f (dependency fields) → stage $LOCK")
+  fi
 done <<<"$STAGED"
 
 # ── pnpm-workspace.yaml: only the overrides block moves resolution ───────────────────────────────
 # Line-based extraction, no YAML parser: take from `overrides:` to the next top-level key. Enough to
 # tell an overrides edit from a comment or an auditConfig edit, which is all this needs to decide.
-if echo "$STAGED" | grep -qx 'pnpm-workspace.yaml'; then
+if is_staged 'pnpm-workspace.yaml'; then
   extract_overrides() { awk '/^overrides:/{f=1;next} f&&/^[^[:space:]#]/{exit} f' ; }
   B="$(git show HEAD:pnpm-workspace.yaml 2>/dev/null | extract_overrides)"
   A="$(git show :pnpm-workspace.yaml 2>/dev/null | extract_overrides)"
-  [[ "$B" != "$A" ]] && OFFENDERS+=("pnpm-workspace.yaml (overrides)")
+  # `overrides:` is a ROOT-workspace concept, so this one is always held to the root lockfile.
+  if [[ "$B" != "$A" ]] && ! is_staged 'pnpm-lock.yaml'; then
+    OFFENDERS+=("pnpm-workspace.yaml (overrides) → stage pnpm-lock.yaml")
+  fi
 fi
 
-if [[ ${#OFFENDERS[@]} -eq 0 || $LOCK_STAGED -eq 1 ]]; then
+if [[ ${#OFFENDERS[@]} -eq 0 ]]; then
   exit 0
 fi
 
 echo ""
-echo "Rule 28: dependency resolution changed but pnpm-lock.yaml is not staged."
+echo "Rule 28: dependency resolution changed but its pnpm-lock.yaml is not staged."
 for o in "${OFFENDERS[@]}"; do echo "    $o"; done
 echo ""
 echo "  CI installs with --frozen-lockfile and will fail on a lockfile that does not match."
-echo "  Fix:  pnpm install && git add pnpm-lock.yaml"
+echo "  Fix:  run pnpm install in the package's own workspace, then stage the lockfile named above."
+echo "        (apps/mobile is its OWN workspace — cd apps/mobile && pnpm install)"
 echo ""
 echo "  If the change genuinely produces no lockfile diff:"
 echo "        SKIP_LOCKFILE_CHECK=1 git commit ...   (and say why in the message)"

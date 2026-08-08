@@ -5506,12 +5506,25 @@ ROOT CAUSE PREVENTION RULES (prevent recurring bugs):
     lockfileVersion and resolutions, not the pnpm binary version, so no `pnpm install` could have
     produced the file that rule demanded. Narrowed 2026-08-08 to the fields that carry the risk.
 
+    WHICH lockfile: the nearest one ABOVE the package.json, not always the root. `apps/mobile` is its
+    own pnpm workspace (pnpm-workspace.yaml excludes it — Metro needs a hoisted node_modules), so its
+    dependencies resolve into `apps/mobile/pnpm-lock.yaml` and a root `pnpm install` produces no diff
+    for them: run `cd apps/mobile && pnpm install` and commit THAT file. Every other package resolves
+    into the root lockfile.
+
     Enforced by `scripts/ci/check-lockfile-staged.sh`, wired into `.husky/pre-commit`. The older
     `.claude/hooks/rule-28-check-lockfile.sh` stays, but it is a PostToolUse hook and therefore only
     sees the agent's own edits — 2840dd7 did not come through the agent, which is why nothing
     objected. The git hook covers every author and every tool. Escape hatch for a change that
     genuinely yields no lockfile diff: `SKIP_LOCKFILE_CHECK=1 git commit`, with the reason in the
     commit message.
+
+    The git hook originally accepted ONLY a staged root `pnpm-lock.yaml` (`grep -qx`), which made a
+    mobile dependency change impossible to commit at all: the correct lockfile was staged and still
+    rejected, and the only way through was the escape hatch — which would have been a lie, since the
+    change does produce a lockfile diff, just not in the root file. Fixed 2026-08-08 (first mobile
+    dependency change after the hook landed the same day) to pair each package.json with its own
+    lockfile and name that file in the error.
 
   Rule 29 — ADR reference verification (prevents Bug-class-D: referencing non-existent ADRs):
     Before writing `(see ADR-NNN)` in ANY spec file or code comment, verify:

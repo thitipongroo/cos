@@ -799,9 +799,12 @@ If any check fails → list what needs to be fixed before re-running. Do not adv
   `overrides:` in `pnpm-workspace.yaml` — run `pnpm install` and commit `pnpm-lock.yaml` in the same
   commit; CI `--frozen-lockfile` fails without it. NOT every `package.json` edit: `scripts`,
   `engines` and `packageManager` produce no lockfile diff, so there is nothing to commit (narrowed
-  2026-08-08; full rationale in 00_master Rule 28). Enforced for every author by
-  `scripts/ci/check-lockfile-staged.sh` in `.husky/pre-commit` — the `.claude/hooks/` version only
-  sees agent edits. (prevents CI lockfile failure)
+  2026-08-08; full rationale in 00_master Rule 28). **Which lockfile: the nearest one ABOVE that
+  `package.json`** — `apps/mobile` is its own workspace, so a mobile dependency needs
+  `cd apps/mobile && pnpm install` and `apps/mobile/pnpm-lock.yaml`; everything else uses the root
+  one. Enforced for every author by `scripts/ci/check-lockfile-staged.sh` in `.husky/pre-commit`
+  (it names the expected lockfile) — the `.claude/hooks/` version only sees agent edits.
+  (prevents CI lockfile failure)
 - Rule 29 — Before writing `(see ADR-NNN)` in any spec or code comment, verify `docs/architecture/adr/NNN-*.md` exists. Create the ADR first if it does not. (prevents dangling ADR references)
 - Rule 30 — For async functions using `setTimeout` internally (retry, poller, backoff), use `jest.useFakeTimers()` in `beforeEach`, `jest.useRealTimers()` in `afterEach`, and `await jest.runAllTimersAsync()` — NOT `jest.runAllTimers()`. (prevents test hangs on multi-step retry chains)
 - Rule 31 — "Generate: complete directory structure with placeholder README per service" means EVERY directory in the spec, including all `services/` and `packages/@cos/*`. "Tooling: X" means fully initialized (e.g., Husky = `.husky/pre-commit` exists, not just declared in `package.json`). tsconfig exceptions must be documented inline. (prevents incomplete scope)
