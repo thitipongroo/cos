@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Account Settings - Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-highest": "#26364a",
+                        "sync-active": "#FFD60A",
+                        "tertiary": "#c1c5dc",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "error-container": "#93000a",
+                        "surface-container-high": "#1b2b3f",
+                        "on-surface": "#d3e4fe",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "dark-bg": "#020617",
+                        "on-primary": "#002a78",
+                        "on-background": "#d3e4fe",
+                        "on-tertiary-container": "#eeefff",
+                        "primary-fixed": "#dbe1ff",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "tertiary-container": "#686c80",
+                        "surface-tint": "#b4c5ff",
+                        "inverse-on-surface": "#213145",
+                        "mobile-warning": "#FF9500",
+                        "on-secondary-fixed": "#001f26",
+                        "mobile-primary": "#0066FF",
+                        "on-tertiary-fixed": "#161b2b",
+                        "surface-container-low": "#0b1c30",
+                        "on-tertiary": "#2b3041",
+                        "surface-container-lowest": "#000f21",
+                        "primary-container": "#2563eb",
+                        "on-secondary-container": "#00424e",
+                        "primary": "#b4c5ff",
+                        "outline": "#8d90a0",
+                        "secondary-container": "#03b5d3",
+                        "error": "#ffb4ab",
+                        "mobile-danger": "#FF3B30",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "dark-surface": "#0F172A",
+                        "outline-variant": "#434655",
+                        "tertiary-fixed": "#dee1f9",
+                        "on-error": "#690005",
+                        "inverse-surface": "#d3e4fe",
+                        "sync-pending": "#94A3B8",
+                        "inverse-primary": "#0053db",
+                        "background": "#031427",
+                        "on-primary-fixed": "#00174b",
+                        "mobile-success": "#00C853",
+                        "on-secondary": "#003640",
+                        "on-error-container": "#ffdad6",
+                        "secondary-fixed": "#acedff",
+                        "secondary": "#4cd7f6",
+                        "surface-container": "#102034",
+                        "surface-bright": "#2a3a4f",
+                        "on-surface-variant": "#c3c6d7",
+                        "surface-variant": "#26364a",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "surface-dim": "#031427",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "on-primary-container": "#eeefff",
+                        "surface": "#031427"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "web-margin": "32px",
+                        "base": "4px",
+                        "space-2": "8px",
+                        "space-1": "4px",
+                        "edge-mobile": "24px",
+                        "space-4": "16px",
+                        "touch-target": "52px",
+                        "space-3": "12px",
+                        "safe-bottom": "72px"
+                    },
+                    "fontFamily": {
+                        "tiny-web": ["Inter Tight"],
+                        "h2-web": ["Inter Tight"],
+                        "body-mobile": ["Inter Tight"],
+                        "label-mobile": ["Inter Tight"],
+                        "display-web": ["Inter Tight"],
+                        "h1-web": ["Inter Tight"],
+                        "hero-mobile": ["Inter Tight"],
+                        "body-web": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "tiny-web": ["11px", { "lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "h2-web": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "body-mobile": ["17px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-mobile": ["13px", { "lineHeight": "18px", "fontWeight": "600" }],
+                        "display-web": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "h1-web": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "hero-mobile": ["28px", { "lineHeight": "34px", "fontWeight": "700" }],
+                        "body-web": ["14px", { "lineHeight": "20px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter Tight', sans-serif; }
+        /* Toggles */
+        .toggle-checkbox:checked { right: 0; border-color: #0066FF; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #0066FF; }
+        .toggle-checkbox:checked + .toggle-label:after { transform: translateX(100%); }
+    </style>
+</head>
+<body class="bg-background text-on-background antialiased min-h-screen pb-safe-bottom">
+<!-- TopAppBar -->
+<header class="docked full-width top-0 bg-surface-dim dark:bg-surface-dim flat no shadows flex items-center justify-between px-web-space-4 w-full h-[64px] border-b border-white/5 sticky z-50 md:hidden">
+<button class="text-primary dark:text-primary hover:bg-surface-bright dark:hover:bg-surface-bright p-2 rounded-full transition-opacity active:opacity-80">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">arrow_back</span>
+</button>
+<h1 class="font-hero-mobile text-hero-mobile text-primary dark:text-primary tracking-tight">Account Settings</h1>
+<button class="text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-bright dark:hover:bg-surface-bright p-2 rounded-full transition-opacity active:opacity-80">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">more_vert</span>
+</button>
+</header>
+<main class="max-w-3xl mx-auto px-edge-mobile pt-6 pb-24 md:pt-12">
+<!-- Profile Header Section -->
+<section class="flex items-center gap-space-4 mb-8">
+<div class="relative w-20 h-20 rounded-full bg-surface-container overflow-hidden border border-outline/20">
+<img class="w-full h-full object-cover" data-alt="A rugged, professional headshot of a middle-aged Asian man wearing a high-visibility orange vest and a yellow hard hat, set against an industrial construction site background in dark mode, showcasing an authoritative but approachable senior safety officer role." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBEsqF3nRo9hQNSJLPkKqS_aa2J9hKjP2Q_cRi8q6e8KZr_VeFOJbEifdj2BZbkgAeTvQVnAs8uuc19515tvw97JRHnz9sEqlYlOHjfCNjiTpu5Ffe29ypDGzCUkBVQ_X9dX0ATnRRySgdqEOIBEwKqJoe8bbO8ebIZs5FmdDfoyDFOzqEEwqUdfXmvzSozYm4mc9YqalfBW7bnie424hboicJenlJHS4bJzGN3x1lDAEvgHee5GQee"/>
+</div>
+<div>
+<h2 class="font-h1-web text-h1-web text-on-surface">Anan Security</h2>
+<p class="font-body-web text-body-web text-on-surface-variant">Senior Safety Officer</p>
+<div class="flex items-center gap-2 mt-1">
+<span class="material-symbols-outlined text-[16px] text-mobile-primary">location_on</span>
+<span class="font-tiny-web text-tiny-web text-primary uppercase">Project North Star</span>
+</div>
+</div>
+</section>
+<!-- Stats Bento Grid -->
+<section class="grid grid-cols-2 gap-4 mb-8">
+<div class="bg-surface-container rounded-lg p-space-4 flex flex-col gap-2 border-l-4 border-mobile-success relative overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-tr from-mobile-success/5 to-transparent pointer-events-none"></div>
+<div class="flex justify-between items-start">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">Inspections</span>
+<span class="material-symbols-outlined text-mobile-success" style="font-variation-settings: 'FILL' 1;">fact_check</span>
+</div>
+<span class="font-display-web text-display-web text-on-surface">84</span>
+</div>
+<div class="bg-surface-container rounded-lg p-space-4 flex flex-col gap-2 border-l-4 border-mobile-warning relative overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-tr from-mobile-warning/5 to-transparent pointer-events-none"></div>
+<div class="flex justify-between items-start">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">Incidents</span>
+<span class="material-symbols-outlined text-mobile-warning" style="font-variation-settings: 'FILL' 1;">warning</span>
+</div>
+<span class="font-display-web text-display-web text-on-surface">12</span>
+</div>
+</section>
+<!-- Application Settings -->
+<section class="mb-8">
+<h3 class="font-label-mobile text-label-mobile text-primary uppercase tracking-widest mb-4">Application Settings</h3>
+<div class="bg-surface-container rounded-lg divide-y divide-white/5 border border-white/5">
+<!-- Language Toggle -->
+<div class="flex items-center justify-between p-space-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">language</span>
+<span class="font-body-web text-body-web text-on-surface">Language</span>
+</div>
+<div class="flex items-center bg-surface-dim rounded-full p-1 border border-white/10">
+<button class="font-tiny-web text-tiny-web px-3 py-1 rounded-full bg-surface-container text-on-surface">EN</button>
+<button class="font-tiny-web text-tiny-web px-3 py-1 rounded-full text-on-surface-variant">TH</button>
+</div>
+</div>
+<!-- Theme Toggle -->
+<div class="flex items-center justify-between p-space-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">dark_mode</span>
+<span class="font-body-web text-body-web text-on-surface">Dark Mode</span>
+</div>
+<div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" id="theme-toggle" name="toggle" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-surface-variant cursor-pointer" for="theme-toggle"></label>
+</div>
+</div>
+<!-- Notifications -->
+<div class="flex items-center justify-between p-space-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">notifications</span>
+<div>
+<span class="font-body-web text-body-web text-on-surface block">Notifications</span>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant">Push &amp; Email</span>
+</div>
+</div>
+<div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" id="notif-toggle" name="toggle" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-surface-variant cursor-pointer" for="notif-toggle"></label>
+</div>
+</div>
+</div>
+</section>
+<!-- Security & Access -->
+<section class="mb-8">
+<h3 class="font-label-mobile text-label-mobile text-primary uppercase tracking-widest mb-4">Security &amp; Access</h3>
+<div class="bg-surface-container rounded-lg divide-y divide-white/5 border border-white/5">
+<div class="flex items-center justify-between p-space-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">lock</span>
+<span class="font-body-web text-body-web text-on-surface">Password</span>
+</div>
+<button class="font-tiny-web text-tiny-web text-mobile-primary uppercase px-3 py-1 border border-mobile-primary/30 rounded hover:bg-mobile-primary/10 transition-colors">Change</button>
+</div>
+<div class="flex items-center justify-between p-space-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">security</span>
+<span class="font-body-web text-body-web text-on-surface">MFA Status</span>
+</div>
+<div class="flex items-center gap-1 text-mobile-success">
+<span class="font-tiny-web text-tiny-web uppercase">Active</span>
+<span class="material-symbols-outlined text-[18px]">check_circle</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Support -->
+<section class="mb-8">
+<h3 class="font-label-mobile text-label-mobile text-primary uppercase tracking-widest mb-4">Support</h3>
+<div class="bg-surface-container rounded-lg divide-y divide-white/5 border border-white/5">
+<button class="w-full flex items-center justify-between p-space-4 hover:bg-surface-bright transition-colors text-left">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">help_center</span>
+<span class="font-body-web text-body-web text-on-surface">Help Center</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</button>
+</div>
+</section>
+<!-- Logout Button -->
+<button class="w-full h-touch-target rounded-lg border border-mobile-danger text-mobile-danger font-label-mobile text-label-mobile uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-mobile-danger/10 transition-colors active:scale-95">
+<span class="material-symbols-outlined">logout</span>
+            Logout
+        </button>
+</main>
+<!-- BottomNavBar -->
+<nav class="docked full-width bottom-0 bg-surface-container-low dark:bg-surface-container-low flat no shadows fixed bottom-0 w-full z-50 flex justify-around items-center px-edge-mobile py-space-2 md:hidden">
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:bg-surface-container-high dark:hover:bg-surface-container-high rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">grid_view</span>
+<span class="font-tiny-web text-tiny-web mt-1">Dashboard</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:bg-surface-container-high dark:hover:bg-surface-container-high rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">foundation</span>
+<span class="font-tiny-web text-tiny-web mt-1">Projects</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:bg-surface-container-high dark:hover:bg-surface-container-high rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">sync</span>
+<span class="font-tiny-web text-tiny-web mt-1">Sync</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full p-2 scale-95 transition-transform duration-150 shadow-lg px-4" href="#">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">person</span>
+<span class="font-tiny-web text-tiny-web mt-1">Profile</span>
+</a>
+</nav>
+<!-- Web Header Nav (Hidden on Mobile) -->
+<header class="hidden md:flex items-center justify-between px-web-margin py-space-4 bg-surface-container border-b border-white/5 sticky top-0 z-50">
+<div class="flex items-center gap-4">
+<div class="w-8 h-8 rounded bg-mobile-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-[20px]">architecture</span>
+</div>
+<span class="font-h2-web text-h2-web text-on-surface tracking-tight">CONSTRUCTION OS</span>
+</div>
+<nav class="flex items-center gap-space-4">
+<a class="font-label-mobile text-label-mobile text-on-surface-variant hover:text-on-surface" href="#">Dashboard</a>
+<a class="font-label-mobile text-label-mobile text-on-surface-variant hover:text-on-surface" href="#">Projects</a>
+<a class="font-label-mobile text-label-mobile text-on-surface-variant hover:text-on-surface" href="#">Sync</a>
+<a class="font-label-mobile text-label-mobile text-primary border-b-2 border-primary pb-1" href="#">Profile</a>
+</nav>
+</header>
+</body></html>

@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Site Photo Gallery - Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-container": "#102034",
+                        "on-background": "#d3e4fe",
+                        "surface-container-highest": "#26364a",
+                        "primary": "#b4c5ff",
+                        "tertiary-container": "#686c80",
+                        "sync-active": "#FFD60A",
+                        "on-surface": "#d3e4fe",
+                        "surface-container-low": "#0b1c30",
+                        "background": "#031427",
+                        "sync-pending": "#94A3B8",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "secondary-container": "#03b5d3",
+                        "surface-bright": "#2a3a4f",
+                        "primary-container": "#2563eb",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "inverse-on-surface": "#213145",
+                        "inverse-surface": "#d3e4fe",
+                        "error": "#ffb4ab",
+                        "on-primary": "#002a78",
+                        "tertiary": "#c1c5dc",
+                        "surface-container-high": "#1b2b3f",
+                        "mobile-success": "#00C853",
+                        "surface": "#031427",
+                        "on-tertiary": "#2b3041",
+                        "on-primary-fixed": "#00174b",
+                        "on-secondary-container": "#00424e",
+                        "mobile-warning": "#FF9500",
+                        "surface-variant": "#26364a",
+                        "on-surface-variant": "#c3c6d7",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "outline": "#8d90a0",
+                        "on-secondary-fixed": "#001f26",
+                        "surface-container-lowest": "#000f21",
+                        "on-primary-container": "#eeefff",
+                        "dark-bg": "#020617",
+                        "on-tertiary-container": "#eeefff",
+                        "on-tertiary-fixed": "#161b2b",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "on-error-container": "#ffdad6",
+                        "on-secondary": "#003640",
+                        "error-container": "#93000a",
+                        "mobile-danger": "#FF3B30",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "secondary-fixed": "#acedff",
+                        "on-error": "#690005",
+                        "outline-variant": "#434655",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "secondary": "#4cd7f6",
+                        "surface-tint": "#b4c5ff",
+                        "dark-surface": "#0F172A",
+                        "inverse-primary": "#0053db",
+                        "primary-fixed": "#dbe1ff",
+                        "tertiary-fixed": "#dee1f9",
+                        "mobile-primary": "#0066FF",
+                        "surface-dim": "#031427"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "base": "4px",
+                        "space-4": "16px",
+                        "space-2": "8px",
+                        "touch-target": "52px",
+                        "space-3": "12px",
+                        "web-margin": "32px",
+                        "edge-mobile": "24px",
+                        "space-1": "4px"
+                    },
+                    fontFamily: {
+                        "h1-web": ["Inter Tight"],
+                        "display-web": ["Inter Tight"],
+                        "body-mobile": ["Inter Tight"],
+                        "h2-web": ["Inter Tight"],
+                        "label-mobile": ["Inter Tight"],
+                        "tiny-web": ["Inter Tight"],
+                        "hero-mobile": ["Inter Tight"],
+                        "body-web": ["Inter Tight"]
+                    },
+                    fontSize: {
+                        "h1-web": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "display-web": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-mobile": ["17px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "h2-web": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "label-mobile": ["13px", { "lineHeight": "18px", "fontWeight": "600" }],
+                        "tiny-web": ["11px", { "lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "hero-mobile": ["28px", { "lineHeight": "34px", "fontWeight": "700" }],
+                        "body-web": ["14px", { "lineHeight": "20px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter Tight', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface min-h-screen flex flex-col pb-24 selection:bg-primary-container selection:text-on-primary-container">
+<!-- Top App Bar - Contextual -->
+<header class="sticky top-0 z-50 bg-background/90 backdrop-blur-md border-b border-surface-container-highest px-edge-mobile h-[72px] flex items-center justify-between">
+<div class="flex items-center gap-space-3">
+<button aria-label="Go back" class="w-touch-target h-touch-target flex items-center justify-center -ml-space-2 text-on-surface hover:bg-surface-container rounded-full transition-colors">
+<span class="material-symbols-outlined text-2xl">arrow_back</span>
+</button>
+<h1 class="font-h2-web text-h2-web tracking-tight">Gallery</h1>
+</div>
+<div class="flex items-center gap-space-2">
+<div class="flex items-center gap-1.5 px-3 py-1.5 bg-surface-container rounded-full border border-surface-container-highest">
+<div class="w-2 h-2 rounded-full bg-sync-active animate-pulse"></div>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">SYNCED</span>
+</div>
+</div>
+</header>
+<main class="flex-1 px-edge-mobile pt-space-4 pb-space-4 flex flex-col gap-space-4">
+<!-- AI Evidence Scan Module -->
+<section class="bg-surface-container border-l-4 border-secondary rounded-lg p-space-4 relative overflow-hidden">
+<div class="absolute inset-0 bg-secondary/5 pointer-events-none"></div>
+<div class="flex justify-between items-start mb-space-3">
+<div class="flex items-center gap-2 text-secondary">
+<span class="material-symbols-outlined">memory</span>
+<h2 class="font-label-mobile text-label-mobile uppercase tracking-wider">AI Evidence Scan</h2>
+</div>
+<div class="flex items-center gap-1 bg-surface-container-highest px-2 py-1 rounded-full border border-outline-variant">
+<span class="material-symbols-outlined text-[14px] text-mobile-success">check_circle</span>
+<span class="font-tiny-web text-tiny-web text-on-surface">92% CONFIDENCE</span>
+</div>
+</div>
+<p class="font-body-mobile text-body-mobile text-on-surface-variant mb-space-2">
+                Scanning recent uploads for compliance verification.
+            </p>
+<div class="flex items-center gap-2 text-outline">
+<span class="material-symbols-outlined text-[16px]">pin_drop</span>
+<span class="font-tiny-web text-tiny-web">Verified via BIM Geolocation</span>
+</div>
+</section>
+<!-- Search & Filters -->
+<section class="flex flex-col gap-space-3">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-space-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full h-touch-target bg-surface-container border-outline-variant rounded-lg pl-12 pr-4 text-on-surface placeholder:text-outline focus:ring-1 focus:ring-primary focus:border-primary font-body-mobile text-body-mobile transition-all" placeholder="Search photos by ID, tag, or note..." type="text"/>
+</div>
+<div class="flex gap-space-2 overflow-x-auto scrollbar-hide pb-1">
+<button class="h-[40px] px-space-3 flex items-center gap-2 bg-surface-container border border-outline-variant rounded-full shrink-0 hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-[18px]">calendar_today</span>
+<span class="font-label-mobile text-label-mobile">Date</span>
+</button>
+<button class="h-[40px] px-space-3 flex items-center gap-2 bg-surface-container border border-outline-variant rounded-full shrink-0 hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-[18px]">folder</span>
+<span class="font-label-mobile text-label-mobile">Project</span>
+</button>
+<button class="h-[40px] px-space-3 flex items-center gap-2 bg-primary-container text-on-primary-container border border-primary-container rounded-full shrink-0">
+<span class="font-label-mobile text-label-mobile">Invoices</span>
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+<button class="h-[40px] px-space-3 flex items-center gap-2 bg-surface-container border border-outline-variant rounded-full shrink-0 hover:bg-surface-container-highest transition-colors">
+<span class="font-label-mobile text-label-mobile">Site Progress</span>
+</button>
+<button class="h-[40px] px-space-3 flex items-center gap-2 bg-surface-container border border-outline-variant rounded-full shrink-0 hover:bg-surface-container-highest transition-colors">
+<span class="font-label-mobile text-label-mobile">Disputes</span>
+</button>
+<button class="w-[40px] h-[40px] flex items-center justify-center bg-surface-container border border-outline-variant rounded-full shrink-0 hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-[18px]">tune</span>
+</button>
+</div>
+</section>
+<!-- Photo Grid -->
+<section class="grid grid-cols-2 gap-space-2 mt-space-2">
+<!-- Photo Item 1 -->
+<div class="group relative rounded-lg overflow-hidden bg-surface-container aspect-square cursor-pointer">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" data-alt="A detailed, high-resolution close-up photograph of a concrete foundation pour on a large industrial construction site. The scene is illuminated by harsh, direct sunlight casting strong shadows, typical of a mid-day work environment. The concrete texture is rough and wet, with rebar protruding visibly. The overall aesthetic is gritty, practical, and heavily industrial, captured in a stark, unpolished style suitable for technical documentation." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAq4QGbVq1FhkpltEHlCuOWVDBKp82HyGdinwogB5A-f-YJMIbLNI-U1B0vqXpo6hZ5WDyHoZUVTOiF7EuMu36sJoXQ1xti8FbVgWy7nYpuVVF5NCCqy0U1L3Kh8lDwPC6gocUmzkPb_6I59gH_DHS9tSRvitq5fxWN6mtO9q0cph6w-l2RPuWSa_znrV_MbPNqUZmfTxYvBGMVsxGt8Ytof9pmwuimiP3rKPv3r0zseNMAvx6g0LK2"/>
+<div class="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent flex flex-col justify-end p-space-2">
+<div class="flex justify-between items-end">
+<div class="flex flex-col gap-1">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant">10:42 AM • OCT 24</span>
+<span class="font-label-mobile text-label-mobile text-on-surface truncate">INV-2023-892</span>
+</div>
+<div class="w-6 h-6 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[14px]">receipt_long</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Photo Item 2 -->
+<div class="group relative rounded-lg overflow-hidden bg-surface-container aspect-square cursor-pointer">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" data-alt="A wide-angle, slightly distorted photograph of structural steel framing inside a massive warehouse under construction. The lighting is a mix of dim natural light filtering through incomplete roofing and bright, localized artificial work lights. Sparks from a welder are visible in the background, adding a dynamic element. The color palette is dominated by deep metallic greys, rusty oranges, and harsh white light, emphasizing the heavy-duty, industrial nature of the project." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAERZ0bqsRMWsK6U7NzKySwLQsc7A9M_ye2ASQtTW6As2-2Ek9oNKToCWEbC1VYY_N8-LHYzYcSxCIYbpjrof_keVpbq5ubariksdmuGU17dZg8GTU68IUHV_n-Fvr8LTyoYkMGaC_-c-sBjIRbjpvQajYDGh3nLGylYwg5EK-JAb0tALz_Qy3650SlB0hTLEHH0NNMh_-hmsSCn2Tkw_8k74aPqRQdj8PcrIX3R4mMsMApnrRPNuIB"/>
+<div class="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent flex flex-col justify-end p-space-2">
+<div class="flex justify-between items-end">
+<div class="flex flex-col gap-1">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant">09:15 AM • OCT 24</span>
+<span class="font-label-mobile text-label-mobile text-on-surface truncate">STR-L2-BEAM</span>
+</div>
+<div class="w-6 h-6 rounded-full bg-surface-container-highest text-outline flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[14px]">construction</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Photo Item 3 -->
+<div class="group relative rounded-lg overflow-hidden bg-surface-container aspect-square cursor-pointer border border-mobile-warning">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" data-alt="A clinical, starkly lit photograph documenting water damage on a piece of drywall in a commercial building. The image is hyper-focused on the stain, showing the texture of the ruined material clearly. The lighting is flat and objective, utilizing a camera flash, to ensure maximum detail for a dispute claim. The surrounding environment is sterile and unfinished, reinforcing the context of an ongoing, problematic construction phase." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA9TL5QKijoDiug6Q2p7Z_gQx28ow_v4jBghOoUQOGfiLyso8Kh_Ubtr1EWLZ3xrSNuejOYwtXJ-qeLFyVnV3wOn_x847dAtvfm22Kr1t1pLMcrweUzW73pwoi0va5T7BiQG9xwxAW10_FXzItB1B4BD4AkpXJTFUwTBhFBQyHWj-Fr2_dooihp3T458PwjuVFwbwTnuD2udWpX9a0orgaR-mWZAYUFZj0ui9wv9L2EDpcSXViEmRTL"/>
+<div class="absolute top-2 right-2 bg-mobile-warning text-surface-container-lowest px-2 py-0.5 rounded font-tiny-web text-tiny-web font-bold tracking-wide z-10 shadow-sm">DISPUTE</div>
+<div class="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent flex flex-col justify-end p-space-2">
+<div class="flex justify-between items-end">
+<div class="flex flex-col gap-1">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant">Yesterday</span>
+<span class="font-label-mobile text-label-mobile text-on-surface truncate">DMG-RPT-004</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Photo Item 4 -->
+<div class="group relative rounded-lg overflow-hidden bg-surface-container aspect-square cursor-pointer">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" data-alt="A clear, overhead shot of a sprawling construction site taken from a drone or crane, focusing on earthmoving equipment in operation. The ground is a mix of excavated dirt and gravel. The lighting is overcast, providing even illumination without harsh shadows, typical of a cloudy day in an industrial zone. The overall aesthetic emphasizes scale, logistics, and heavy machinery, rendered in muted earth tones and industrial yellows." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCPP5TAoQJiipFSGBwXNDuHsHFzZxobsre8m4tAj-PczOShVmPUxvOdeZiAM44jIv4IPk6p_rHoiknoj7qZVI1Kjg0gzab27aFTDojb2MdAYCvk2o2pv6HVf4SsN0pR6Zp7hdQG9I8gJDgjh1w5_5NJSS64FclAMinP97l1UEPM3PO3IuqRH3IRt0hrFsp7wu4gyxinuxr5f3ZYkJbFeojvdYK0qUwaGGpzUcnY2Zn1HouRJ3s2Unjz"/>
+<div class="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent flex flex-col justify-end p-space-2">
+<div class="flex justify-between items-end">
+<div class="flex flex-col gap-1">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant">Oct 22</span>
+<span class="font-label-mobile text-label-mobile text-on-surface truncate">SITE-OVR-W4</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<button class="w-full h-touch-target bg-surface-container-highest border border-outline-variant rounded-lg font-label-mobile text-label-mobile text-on-surface flex items-center justify-center gap-2 mt-space-2 hover:bg-surface-variant transition-colors active:scale-[0.98]">
+<span class="material-symbols-outlined">expand_more</span>
+            Load More Photos
+        </button>
+</main>
+<!-- Shared Bottom Nav - Manually implemented from JSON guidelines -->
+<nav class="fixed bottom-0 left-0 w-full z-50 bg-surface-container-high border-t border-outline-variant shadow-lg h-[72px] pb-safe md:hidden">
+<div class="flex justify-around items-center h-full px-edge-mobile">
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 w-[64px] scale-95 transition-transform duration-150 active:bg-surface-bright rounded-xl" href="#">
+<span class="material-symbols-outlined mb-1 text-[24px]">home</span>
+<span class="font-label-mobile text-label-mobile text-[10px]">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 w-[64px] scale-95 transition-transform duration-150 active:bg-surface-bright rounded-xl" href="#">
+<span class="material-symbols-outlined mb-1 text-[24px]">assignment</span>
+<span class="font-label-mobile text-label-mobile text-[10px]">Tasks</span>
+</a>
+<!-- Placeholder for FAB replacement if needed, keeping structure clean -->
+<a class="flex flex-col items-center justify-center bg-primary-container text-cos-white rounded-xl p-2 w-[64px] scale-95 transition-transform duration-150 shadow-sm relative -top-2" href="#">
+<span class="material-symbols-outlined mb-1 text-[24px] text-on-primary-container">photo_library</span>
+<span class="font-label-mobile text-label-mobile text-[10px] text-on-primary-container">Photos</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 w-[64px] scale-95 transition-transform duration-150 active:bg-surface-bright rounded-xl" href="#">
+<span class="material-symbols-outlined mb-1 text-[24px]">sync_alt</span>
+<span class="font-label-mobile text-label-mobile text-[10px]">Sync</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 w-[64px] scale-95 transition-transform duration-150 active:bg-surface-bright rounded-xl" href="#">
+<span class="material-symbols-outlined mb-1 text-[24px]">person</span>
+<span class="font-label-mobile text-label-mobile text-[10px]">Profile</span>
+</a>
+</div>
+</nav>
+</body></html>

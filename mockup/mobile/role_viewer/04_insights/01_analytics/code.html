@@ -1,0 +1,289 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport">
+<title>Construction OS - Project Insights</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-surface": "#d3e4fe",
+                        "on-error": "#690005",
+                        "outline": "#8d90a0",
+                        "surface-container": "#102034",
+                        "surface": "#031427",
+                        "mobile-warning": "#FF9500",
+                        "on-secondary": "#003640",
+                        "surface-dim": "#031427",
+                        "background": "#031427",
+                        "surface-container-low": "#0b1c30",
+                        "on-tertiary": "#2b3041",
+                        "on-primary": "#002a78",
+                        "secondary-container": "#03b5d3",
+                        "mobile-success": "#00C853",
+                        "on-secondary-container": "#00424e",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "sync-pending": "#94A3B8",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "error": "#ffb4ab",
+                        "surface-tint": "#b4c5ff",
+                        "surface-variant": "#26364a",
+                        "dark-surface": "#0F172A",
+                        "tertiary": "#c1c5dc",
+                        "on-background": "#d3e4fe",
+                        "dark-bg": "#020617",
+                        "surface-container-highest": "#26364a",
+                        "on-primary-fixed": "#00174b",
+                        "error-container": "#93000a",
+                        "surface-container-high": "#1b2b3f",
+                        "surface-container-lowest": "#000f21",
+                        "on-tertiary-container": "#eeefff",
+                        "on-primary-container": "#eeefff",
+                        "mobile-primary": "#0066FF",
+                        "primary": "#b4c5ff",
+                        "inverse-on-surface": "#213145",
+                        "on-surface-variant": "#c3c6d7",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "mobile-danger": "#FF3B30",
+                        "primary-container": "#2563eb",
+                        "on-secondary-fixed": "#001f26",
+                        "primary-fixed": "#dbe1ff",
+                        "outline-variant": "#434655",
+                        "surface-bright": "#2a3a4f",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "tertiary-container": "#686c80",
+                        "secondary-fixed": "#acedff",
+                        "tertiary-fixed": "#dee1f9",
+                        "inverse-primary": "#0053db",
+                        "inverse-surface": "#d3e4fe",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "secondary": "#4cd7f6",
+                        "on-error-container": "#ffdad6",
+                        "sync-active": "#FFD60A",
+                        "on-tertiary-fixed": "#161b2b",
+                        "tertiary-fixed-dim": "#c1c5dc"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "web-margin": "32px",
+                        "space-1": "4px",
+                        "base": "4px",
+                        "touch-target": "52px",
+                        "space-3": "12px",
+                        "space-2": "8px",
+                        "space-4": "16px",
+                        "edge-mobile": "24px"
+                    },
+                    fontFamily: {
+                        "label-mobile": ["Inter Tight"],
+                        "h2-web": ["Inter Tight"],
+                        "body-mobile": ["Inter Tight"],
+                        "body-web": ["Inter Tight"],
+                        "display-web": ["Inter Tight"],
+                        "hero-mobile": ["Inter Tight"],
+                        "tiny-web": ["Inter Tight"],
+                        "h1-web": ["Inter Tight"]
+                    },
+                    fontSize: {
+                        "label-mobile": ["13px", { lineHeight: "18px", fontWeight: "600" }],
+                        "h2-web": ["20px", { lineHeight: "28px", fontWeight: "600" }],
+                        "body-mobile": ["17px", { lineHeight: "24px", fontWeight: "400" }],
+                        "body-web": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+                        "display-web": ["32px", { lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "700" }],
+                        "hero-mobile": ["28px", { lineHeight: "34px", fontWeight: "700" }],
+                        "tiny-web": ["11px", { lineHeight: "12px", letterSpacing: "0.05em", fontWeight: "500" }],
+                        "h1-web": ["24px", { lineHeight: "32px", fontWeight: "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 24px); }
+        .h-touch-target { height: 52px; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .icon-filled { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        
+        /* Shimmer Loading Effect */
+        @keyframes shimmer {
+            0% { background-position: -1000px 0; }
+            100% { background-position: 1000px 0; }
+        }
+        .animate-shimmer {
+            background: linear-gradient(to right, rgba(255,255,255,0.05) 4%, rgba(255,255,255,0.1) 25%, rgba(255,255,255,0.05) 36%);
+            background-size: 1000px 100%;
+            animation: shimmer 2s infinite linear;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface antialiased flex flex-col min-h-screen">
+<!-- TopAppBar -->
+<header class="bg-background dark:bg-dark-bg text-primary dark:text-primary-fixed sticky full-width top-0 bg-surface-container-low flex justify-between items-center px-edge-mobile h-touch-target w-full z-50">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed" data-icon="analytics" data-weight="fill">analytics</span>
+<span class="font-display-web text-display-web-mobile font-bold text-primary tracking-tight">CONSTRUCTION OS</span>
+</div>
+<div class="flex items-center gap-space-2 text-sync-active bg-surface-container-low rounded px-2 py-1">
+<span class="font-tiny-web text-tiny-web uppercase">SYNCED</span>
+<div class="w-2 h-2 rounded-full bg-sync-active shadow-[0_0_8px_rgba(255,214,10,0.6)]"></div>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="flex-1 overflow-y-auto px-edge-mobile pt-space-4 pb-[96px]">
+<!-- Header Section -->
+<div class="mb-space-4">
+<h1 class="font-hero-mobile text-hero-mobile text-on-surface mb-space-1 tracking-tight">Project Insights</h1>
+
+</div>
+<div class="grid grid-cols-1 gap-space-4 md:grid-cols-2 lg:grid-cols-3">
+<!-- Overall Progress (S-Curve) -->
+<section class="bg-surface-container rounded-xl p-space-4 flex flex-col border border-surface-container-highest shadow-sm md:col-span-2 lg:col-span-2">
+<div class="flex justify-between items-start mb-space-4">
+<div>
+<h2 class="font-h2-web text-h2-web text-on-surface">Overall Progress</h2>
+<span class="font-label-mobile text-label-mobile text-on-surface-variant">Planned vs. Actual</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">monitoring</span>
+</div>
+<div class="h-48 w-full rounded bg-surface-container-low relative border border-surface-container-highest overflow-hidden p-4 flex flex-col justify-end">
+<!-- Faux S-Curve Lines for visual representation -->
+<svg class="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 100">
+<path d="M0,90 Q30,85 50,50 T100,10" fill="none" stroke="#2563eb" stroke-dasharray="4" stroke-width="2"></path>
+<path d="M0,95 Q25,90 45,60 T90,20" fill="none" stroke="#4cd7f6" stroke-width="2.5"></path>
+</svg>
+<div class="absolute bottom-2 left-2 flex gap-4 text-xs font-tiny-web">
+<div class="flex items-center gap-1"><div class="w-3 h-1 bg-primary-container"></div>Planned</div>
+<div class="flex items-center gap-1"><div class="w-3 h-1 bg-secondary"></div>Actual</div>
+</div>
+</div>
+</section>
+<!-- Safety Performance Card -->
+<section class="bg-surface-container rounded-xl p-space-4 flex flex-col border-l-4 border-l-mobile-success border border-y-surface-container-highest border-r-surface-container-highest shadow-sm">
+<div class="flex justify-between items-center mb-space-3">
+<h2 class="font-h2-web text-h2-web text-on-surface">Safety Performance</h2>
+<span class="material-symbols-outlined text-mobile-success">health_and_safety</span>
+</div>
+<div class="flex flex-col gap-space-3">
+<div class="flex justify-between items-end border-b border-surface-variant pb-space-2">
+<span class="font-body-mobile text-body-mobile text-on-surface-variant">Safe Work Hours</span>
+<span class="font-h1-web text-h1-web font-bold text-on-surface tracking-tight">42,500 <span class="font-tiny-web text-on-surface-variant text-sm font-normal">hrs</span></span>
+</div>
+<div class="flex justify-between items-end border-b border-surface-variant pb-space-2">
+<span class="font-body-mobile text-body-mobile text-on-surface-variant">Zero Incident Days</span>
+<span class="font-h1-web text-h1-web font-bold text-on-surface tracking-tight">128 <span class="font-tiny-web text-on-surface-variant text-sm font-normal">days</span></span>
+</div>
+<div class="flex justify-between items-center pt-space-1">
+<span class="font-label-mobile text-label-mobile text-on-surface-variant">System Status</span>
+<span class="font-label-mobile text-label-mobile text-mobile-success bg-mobile-success/10 px-2 py-1 rounded">OPTIMAL</span>
+</div>
+</div>
+</section>
+<!-- AI Risk Prediction Module -->
+<section class="bg-surface-container rounded-xl p-space-4 flex flex-col border-l-4 border-l-secondary shadow-sm relative overflow-hidden">
+<!-- AI Subtle Background Tint -->
+<div class="absolute inset-0 bg-secondary/5 pointer-events-none"></div>
+<div class="relative z-10">
+<div class="flex items-center gap-space-2 mb-space-3">
+<span class="material-symbols-outlined text-secondary">memory</span>
+<h2 class="font-h2-web text-h2-web text-secondary font-bold tracking-tight">Risk Forecast</h2>
+</div>
+<p class="font-body-mobile text-body-mobile text-on-surface mb-space-4 leading-relaxed">
+                        High probability of material supply bottleneck in Phase 4 due to regional logistics trend.
+                    </p>
+<div class="flex items-center gap-space-2 text-on-surface-variant border-t border-secondary/20 pt-space-3 mt-auto">
+<span class="material-symbols-outlined text-[16px]">verified</span>
+<span class="font-tiny-web text-tiny-web tracking-wider">92% Confidence Score | Data: Logistics Hub</span>
+</div>
+</div>
+</section>
+<!-- Issue Distribution -->
+<section class="bg-surface-container rounded-xl p-space-4 flex flex-col border border-surface-container-highest shadow-sm">
+<div class="flex justify-between items-center mb-space-4">
+<h2 class="font-h2-web text-h2-web text-on-surface">Issue Severity</h2>
+<span class="material-symbols-outlined text-on-surface-variant">bug_report</span>
+</div>
+<div class="flex flex-col gap-space-2">
+<!-- Critical -->
+<div class="flex items-center justify-between group">
+<div class="flex items-center gap-space-2">
+<div class="w-3 h-3 rounded-full bg-mobile-danger"></div>
+<span class="font-body-mobile text-body-mobile text-on-surface">Critical</span>
+</div>
+<span class="font-h2-web text-h2-web text-on-surface font-semibold">12</span>
+</div>
+<!-- High -->
+<div class="flex items-center justify-between group">
+<div class="flex items-center gap-space-2">
+<div class="w-3 h-3 rounded-full bg-mobile-warning"></div>
+<span class="font-body-mobile text-body-mobile text-on-surface">High</span>
+</div>
+<span class="font-h2-web text-h2-web text-on-surface font-semibold">34</span>
+</div>
+<!-- Medium -->
+<div class="flex items-center justify-between group">
+<div class="flex items-center gap-space-2">
+<div class="w-3 h-3 rounded-full bg-sync-active"></div>
+<span class="font-body-mobile text-body-mobile text-on-surface">Medium</span>
+</div>
+<span class="font-h2-web text-h2-web text-on-surface font-semibold">87</span>
+</div>
+<!-- Low -->
+<div class="flex items-center justify-between group">
+<div class="flex items-center gap-space-2">
+<div class="w-3 h-3 rounded-full bg-outline"></div>
+<span class="font-body-mobile text-body-mobile text-on-surface">Low</span>
+</div>
+<span class="font-h2-web text-h2-web text-on-surface font-semibold">142</span>
+</div>
+</div>
+<!-- Progress bar style visualization -->
+<div class="w-full h-2 rounded-full overflow-hidden flex mt-space-4 bg-surface-container-low">
+<div class="bg-mobile-danger" style="width: 5%"></div>
+<div class="bg-mobile-warning" style="width: 12%"></div>
+<div class="bg-sync-active" style="width: 31%"></div>
+<div class="bg-outline" style="width: 52%"></div>
+</div>
+</section>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="bg-surface-container dark:bg-surface-container text-primary-fixed font-label-mobile text-label-mobile docked full-width bottom-0 h-[72px] pb-safe fixed bottom-0 w-full z-50 flex justify-around items-center px-space-2 shadow-[0_-4px_24px_rgba(0,0,0,0.5)] md:hidden">
+<!-- Inactive: Projects -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors min-w-[64px] h-touch-target">
+<span class="material-symbols-outlined mb-1" data-icon="inventory_2">inventory_2</span>
+<span class="font-tiny-web text-[10px]">Projects</span>
+</button>
+<!-- Inactive: Daily Logs -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors min-w-[64px] h-touch-target">
+<span class="material-symbols-outlined mb-1" data-icon="history_edu">history_edu</span>
+<span class="font-tiny-web text-[10px]">Daily Logs</span>
+</button>
+<!-- Inactive: Safety -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors min-w-[64px] h-touch-target">
+<span class="material-symbols-outlined mb-1" data-icon="safety_check">safety_check</span>
+<span class="font-tiny-web text-[10px]">Safety</span>
+</button>
+<!-- Active: Insights (Mapped from Directory due to lack of explicit Insights tab in JSON, but acting as the active state for this screen intent) -->
+<button class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl px-space-4 py-space-1 min-w-[64px] h-touch-target scale-95 transition-all duration-200">
+<span class="material-symbols-outlined icon-filled mb-1" data-icon="insights" data-weight="fill">insights</span>
+<span class="font-tiny-web text-[10px] font-semibold">Insights</span>
+</button>
+</nav>
+
+
+</body></html>

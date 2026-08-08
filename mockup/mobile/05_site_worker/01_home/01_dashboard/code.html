@@ -1,0 +1,344 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Construction OS - Worker Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container": "#102034",
+                        "on-tertiary-fixed": "#161b2b",
+                        "secondary-fixed": "#acedff",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "surface-container-high": "#1b2b3f",
+                        "error": "#ffb4ab",
+                        "dark-surface": "#0F172A",
+                        "secondary-container": "#03b5d3",
+                        "inverse-primary": "#0053db",
+                        "sync-active": "#FFD60A",
+                        "on-surface": "#d3e4fe",
+                        "on-tertiary-container": "#eeefff",
+                        "on-error": "#690005",
+                        "background": "#031427",
+                        "on-background": "#d3e4fe",
+                        "on-tertiary": "#2b3041",
+                        "inverse-surface": "#d3e4fe",
+                        "outline": "#8d90a0",
+                        "dark-bg": "#020617",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "primary-fixed": "#dbe1ff",
+                        "on-primary-container": "#eeefff",
+                        "mobile-warning": "#FF9500",
+                        "on-error-container": "#ffdad6",
+                        "on-primary": "#002a78",
+                        "primary": "#b4c5ff",
+                        "surface-container-lowest": "#000f21",
+                        "surface-variant": "#26364a",
+                        "inverse-on-surface": "#213145",
+                        "surface-dim": "#031427",
+                        "mobile-danger": "#FF3B30",
+                        "on-secondary": "#003640",
+                        "on-secondary-container": "#00424e",
+                        "tertiary": "#c1c5dc",
+                        "surface-tint": "#b4c5ff",
+                        "surface-container-low": "#0b1c30",
+                        "mobile-primary": "#0066FF",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "on-secondary-fixed": "#001f26",
+                        "mobile-success": "#00C853",
+                        "outline-variant": "#434655",
+                        "secondary": "#4cd7f6",
+                        "surface-bright": "#2a3a4f",
+                        "error-container": "#93000a",
+                        "tertiary-container": "#686c80",
+                        "on-surface-variant": "#c3c6d7",
+                        "on-primary-fixed": "#00174b",
+                        "surface-container-highest": "#26364a",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "primary-container": "#2563eb",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "tertiary-fixed": "#dee1f9",
+                        "surface": "#031427",
+                        "sync-pending": "#94A3B8"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "space-1": "4px",
+                        "touch-target": "52px",
+                        "web-margin": "32px",
+                        "space-4": "16px",
+                        "base": "4px",
+                        "space-2": "8px",
+                        "edge-mobile": "24px",
+                        "space-3": "12px"
+                    },
+                    "fontFamily": {
+                        "h1-web": ["Inter Tight"],
+                        "display-web": ["Inter Tight"],
+                        "label-mobile": ["Inter Tight"],
+                        "h2-web": ["Inter Tight"],
+                        "hero-mobile": ["Inter Tight"],
+                        "body-mobile": ["Inter Tight"],
+                        "tiny-web": ["Inter Tight"],
+                        "body-web": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "h1-web": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "display-web": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-mobile": ["13px", { "lineHeight": "18px", "fontWeight": "600" }],
+                        "h2-web": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "hero-mobile": ["28px", { "lineHeight": "34px", "fontWeight": "700" }],
+                        "body-mobile": ["17px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "tiny-web": ["11px", { "lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "body-web": ["14px", { "lineHeight": "20px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+        }
+        .ai-shimmer {
+            background: linear-gradient(90deg, rgba(3, 181, 211, 0) 0%, rgba(3, 181, 211, 0.05) 50%, rgba(3, 181, 211, 0) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        /* Custom scrollbar for web */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #031427; }
+        ::-webkit-scrollbar-thumb { background: #26364a; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #434655; }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen pb-[96px] md:pb-0 overflow-x-hidden font-body-web antialiased selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopAppBar (From JSON) -->
+<header class="bg-background dark:bg-dark-bg flex justify-between items-center px-edge-mobile h-touch-target w-full z-50 sticky top-0 bg-surface-container-low border-b border-surface-container-highest md:border-none shadow-sm md:shadow-none">
+<div class="flex items-center gap-space-2 text-primary dark:text-primary-fixed">
+<span class="material-symbols-outlined text-[28px]" style="font-variation-settings: &quot;FILL&quot; 1;">analytics</span>
+<span class="font-display-web text-display-web-mobile font-bold text-primary tracking-tight md:font-display-web md:text-display-web">CONSTRUCTION OS</span>
+</div>
+<div class="flex items-center gap-space-3">
+<div class="hidden md:flex items-center gap-2 px-3 py-1 bg-surface-container-highest rounded-full">
+<div class="w-2 h-2 rounded-full bg-sync-active animate-pulse"></div>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase tracking-wider">SYNCED</span>
+</div>
+<div class="flex md:hidden items-center gap-1">
+<div class="w-2 h-2 rounded-full bg-sync-active"></div>
+</div>
+<!-- Profile Avatar Placeholder -->
+<div class="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center overflow-hidden border border-outline-variant hover:bg-surface-container-highest transition-colors cursor-pointer">
+<img alt="Profile" class="w-full h-full object-cover" data-alt="A close up, highly detailed, dramatic portrait of a rugged construction worker wearing a high-visibility orange vest and a yellow hard hat. The lighting is harsh and cinematic, emphasizing the texture of dirt on his face and the reflective materials of his safety gear. The background is a blurred, dark industrial construction site in dark mode aesthetic with deep navy blue tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuADWm81xlKTdGzEG6_of65T6wCK9zpxlJnH4xTIiXPSSzF8pkjkKk-m063wXQYDWPLRNrmxbFZigEvD_60FYevsQmpuAVisL-uLq6DqczQSx_tH6d2LbLwqydkr0k9dePZcyy-I5e0v3YtIrnFA_ngKpcBgqFlVWrs_MN8kZpmdas4fpOeafI3J2tOg7mPx4Idmpc0hA9L0UYM1MTiMvEsO6rudc84xY8CVNwioUJ_GzgGCAd-albTe">
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="w-full max-w-7xl mx-auto px-edge-mobile py-space-4 md:py-web-margin flex flex-col gap-space-4 md:gap-web-margin">
+<!-- Header Section -->
+<section class="flex flex-col gap-space-2">
+<h1 class="font-h1-web text-h1-web-mobile md:font-h1-web md:text-h1-web text-on-surface">WORKER COMMAND</h1>
+</section>
+<!-- Top Section: Stats (Bento Grid) -->
+<section class="bento-grid">
+<!-- Stat Tile: Tasks -->
+<div class="bg-surface-container rounded-xl p-space-4 border border-surface-container-highest flex flex-col justify-between min-h-[120px] relative overflow-hidden group hover:bg-surface-container-high transition-colors">
+<div class="flex justify-between items-start">
+<span class="font-label-mobile text-label-mobile text-on-surface-variant uppercase tracking-widest">My Tasks</span>
+<span class="material-symbols-outlined text-outline-variant group-hover:text-primary transition-colors">checklist</span>
+</div>
+<div class="flex items-baseline gap-2 mt-4">
+<span class="font-display-web text-display-web-mobile md:font-display-web md:text-display-web text-on-surface">04</span>
+<span class="font-h2-web text-h2-web text-on-surface-variant">/ 12 Done</span>
+</div>
+<!-- Progress Bar -->
+<div class="w-full bg-surface-variant h-1 rounded-full mt-3 overflow-hidden">
+<div class="bg-mobile-success h-full rounded-full w-1/3"></div>
+</div>
+</div>
+<!-- Stat Tile: Shift -->
+<div class="bg-surface-container rounded-xl p-space-4 border border-surface-container-highest flex flex-col justify-between min-h-[120px] relative overflow-hidden group hover:bg-surface-container-high transition-colors">
+<div class="flex justify-between items-start">
+<span class="font-label-mobile text-label-mobile text-on-surface-variant uppercase tracking-widest">Shift Hours</span>
+<span class="material-symbols-outlined text-outline-variant group-hover:text-primary transition-colors">schedule</span>
+</div>
+<div class="flex items-baseline gap-2 mt-4">
+<span class="font-display-web text-display-web-mobile md:font-display-web md:text-display-web text-on-surface">06:45<span class="font-h2-web text-h2-web text-on-surface-variant ml-1">h</span></span>
+</div>
+<div class="w-full bg-surface-variant h-1 rounded-full mt-3 overflow-hidden">
+<div class="bg-primary h-full rounded-full w-3/4"></div>
+</div>
+</div>
+</section>
+<!-- AI Insight Module -->
+<section class="bg-surface-container rounded-xl border-l-4 border-l-secondary-container relative overflow-hidden ai-shimmer">
+<div class="p-space-4 flex flex-col gap-space-3 relative z-10">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2 text-secondary-container">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: &quot;FILL&quot; 1;">psychology</span>
+<span class="font-tiny-web text-tiny-web uppercase tracking-widest font-bold">WORKFLOW OPTIMIZATION</span>
+</div>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant bg-surface-container-highest px-2 py-1 rounded-md">CONF: 94%</span>
+</div>
+<p class="font-body-mobile text-body-mobile md:font-body-web md:text-body-web text-on-surface">
+                    Temperature projected to reach <span class="text-mobile-warning font-semibold">38°C at 14:00</span>. Schedule heavy slab pouring before noon to avoid heat-stress delays.
+                </p>
+<button class="self-start mt-2 h-[40px] px-space-4 bg-transparent border border-secondary-container text-secondary-container font-label-mobile text-label-mobile rounded-lg hover:bg-secondary-container/10 transition-colors uppercase tracking-wider flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">tune</span>
+                    Adjust Schedule
+                </button>
+</div>
+</section>
+<!-- Main Section: Priority Tasks -->
+<section class="flex flex-col gap-space-3 mt-space-2">
+<h2 class="font-h2-web text-h2-web text-on-surface">TODAY'S PRIORITY TASKS</h2>
+<div class="flex flex-col gap-space-3">
+<!-- Task Card 1 -->
+<div class="bg-surface-container rounded-xl border border-surface-container-highest flex flex-col overflow-hidden group hover:border-outline-variant transition-colors">
+<div class="flex relative p-space-4">
+<!-- Left Status Strip -->
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-sync-active"></div>
+<div class="w-full flex flex-col gap-2 pl-2">
+<div class="flex justify-between items-start w-full">
+<h3 class="font-body-mobile text-body-mobile md:font-h2-web md:text-h2-web font-semibold text-on-surface">Reinforcement Steel - Level 4</h3>
+<div class="bg-surface-container-highest px-2 py-1 rounded text-sync-active font-tiny-web text-tiny-web uppercase tracking-wider whitespace-nowrap">
+                                    In Progress
+                                </div>
+</div>
+<div class="flex items-center gap-4 text-on-surface-variant font-body-web text-body-web mt-1">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">schedule</span>
+<span class="">08:00 - 12:00</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">location_on</span>
+<span class="">Sector B</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Sub-actions area -->
+<div class="border-t border-surface-container-highest/50 px-space-4 py-space-2 bg-surface-container-low flex justify-end gap-3">
+<button class="text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1 font-label-mobile text-label-mobile">
+<span class="material-symbols-outlined text-[18px]">attachment</span> Docs
+                        </button>
+<button class="text-primary hover:text-primary-fixed transition-colors flex items-center gap-1 font-label-mobile text-label-mobile">
+                             Update Status <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+</div>
+<!-- Task Card 2 -->
+<div class="bg-surface-container rounded-xl border border-surface-container-highest flex flex-col overflow-hidden group hover:border-outline-variant transition-colors">
+<div class="flex relative p-space-4">
+<!-- Left Status Strip -->
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-sync-pending"></div>
+<div class="w-full flex flex-col gap-2 pl-2">
+<div class="flex justify-between items-start w-full">
+<h3 class="font-body-mobile text-body-mobile md:font-h2-web md:text-h2-web font-semibold text-on-surface">Electrical Conduit Check</h3>
+<div class="bg-surface-container-highest px-2 py-1 rounded text-sync-pending font-tiny-web text-tiny-web uppercase tracking-wider whitespace-nowrap">
+                                    Pending
+                                </div>
+</div>
+<div class="flex items-center gap-4 text-on-surface-variant font-body-web text-body-web mt-1">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">schedule</span>
+<span class="">13:00 - 15:00</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">location_on</span>
+<span class="">Sector C</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Sub-actions area -->
+<div class="border-t border-surface-container-highest/50 px-space-4 py-space-2 bg-surface-container-low flex justify-end gap-3">
+<button class="text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1 font-label-mobile text-label-mobile">
+<span class="material-symbols-outlined text-[18px]">attachment</span> Docs
+                        </button>
+<button class="text-on-surface hover:text-primary-fixed transition-colors flex items-center gap-1 font-label-mobile text-label-mobile">
+                             Start Task <span class="material-symbols-outlined text-[18px]">play_arrow</span>
+</button>
+</div>
+</div>
+<!-- Task Card 3 (Placeholder for layout density) -->
+<div class="bg-surface-container/50 rounded-xl border border-surface-container-highest border-dashed flex flex-col overflow-hidden group hover:border-outline-variant transition-colors opacity-70">
+<div class="flex relative p-space-4 items-center justify-center min-h-[100px]">
+<span class="text-on-surface-variant font-label-mobile text-label-mobile">+ 2 More Scheduled</span>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Floating Action Button (FAB) -->
+<button aria-label="Quick Action" class="fixed bottom-[90px] md:bottom-8 right-edge-mobile md:right-web-margin w-[56px] h-[56px] bg-primary-container text-on-primary-container rounded-full shadow-lg flex items-center justify-center hover:scale-95 transition-transform duration-150 z-40 group focus:outline-none focus:ring-2 focus:ring-primary-fixed focus:ring-offset-2 focus:ring-offset-background">
+<span class="material-symbols-outlined text-[28px] group-hover:rotate-90 transition-transform duration-300">add</span>
+</button>
+<!-- BottomNavBar (From JSON) -->
+<!-- Visible only on mobile, hidden on md and up -->
+<nav class="md:hidden bg-surface-container dark:bg-surface-container fixed bottom-0 w-full z-50 flex justify-around items-center px-space-2 h-[72px] pb-safe no shadows">
+<!-- Active Tab: Projects (Mapped to Tasks for this dashboard context) -->
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl px-space-4 py-space-1 Active: scale-95 transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: &quot;FILL&quot; 1;">inventory_2</span>
+<span class="font-label-mobile text-label-mobile mt-1">Projects</span>
+</a>
+<!-- Inactive Tabs -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">history_edu</span>
+<span class="font-label-mobile text-label-mobile mt-1">Tasks</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">safety_check</span>
+<span class="font-label-mobile text-label-mobile mt-1">Safety</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">groups</span>
+<span class="font-label-mobile text-label-mobile mt-1">Directory</span>
+</a>
+</nav>
+<!-- Side Nav / Top Nav cluster for Desktop (Replacing Bottom Nav) -->
+<!-- This demonstrates responsive pivot rule, though hidden in prompt, it's good practice for a dashboard -->
+<div class="hidden md:flex fixed top-[52px] left-0 h-[calc(100vh-52px)] w-[80px] bg-surface-container-low border-r border-surface-container-highest flex-col items-center py-space-4 gap-space-4 z-40">
+<a class="flex flex-col items-center justify-center w-[52px] h-[52px] bg-primary-container text-on-primary-container rounded-xl hover:scale-95 transition-all duration-200" href="#" title="Projects/Tasks">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: &quot;FILL&quot; 1;">inventory_2</span>
+</a>
+<a class="flex flex-col items-center justify-center w-[52px] h-[52px] text-on-surface-variant hover:bg-surface-container-highest hover:text-primary rounded-xl transition-all duration-200" href="#" title="Daily Logs">
+<span class="material-symbols-outlined text-[24px]">history_edu</span>
+</a>
+<a class="flex flex-col items-center justify-center w-[52px] h-[52px] text-on-surface-variant hover:bg-surface-container-highest hover:text-primary rounded-xl transition-all duration-200" href="#" title="Safety">
+<span class="material-symbols-outlined text-[24px]">safety_check</span>
+</a>
+<a class="flex flex-col items-center justify-center w-[52px] h-[52px] text-on-surface-variant hover:bg-surface-container-highest hover:text-primary rounded-xl transition-all duration-200" href="#" title="Directory">
+<span class="material-symbols-outlined text-[24px]">groups</span>
+</a>
+</div>
+<!-- Adjust main content margin for desktop side nav -->
+<style>
+        @media (min-width: 768px) {
+            main {
+                margin-left: 80px;
+                max-width: calc(100% - 80px);
+            }
+        }
+    </style>
+
+
+</body></html>

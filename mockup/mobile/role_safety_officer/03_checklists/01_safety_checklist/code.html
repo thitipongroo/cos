@@ -1,0 +1,385 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>Safety Site Inspection | Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "surface-variant": "#26364a",
+                "outline": "#8d90a0",
+                "on-error-container": "#ffdad6",
+                "surface-tint": "#b4c5ff",
+                "surface-container-lowest": "#000f21",
+                "error": "#ffb4ab",
+                "outline-variant": "#434655",
+                "mobile-warning": "#FF9500",
+                "on-tertiary-container": "#eeefff",
+                "on-primary-fixed": "#00174b",
+                "surface": "#031427",
+                "on-error": "#690005",
+                "secondary-container": "#03b5d3",
+                "on-primary-container": "#eeefff",
+                "sync-active": "#FFD60A",
+                "on-primary-fixed-variant": "#003ea8",
+                "surface-container-low": "#0b1c30",
+                "on-secondary": "#003640",
+                "sync-pending": "#94A3B8",
+                "surface-dim": "#031427",
+                "error-container": "#93000a",
+                "on-surface-variant": "#c3c6d7",
+                "dark-bg": "#020617",
+                "tertiary-container": "#686c80",
+                "on-secondary-container": "#00424e",
+                "on-secondary-fixed-variant": "#004e5c",
+                "mobile-danger": "#FF3B30",
+                "on-primary": "#002a78",
+                "primary-fixed-dim": "#b4c5ff",
+                "tertiary-fixed": "#dee1f9",
+                "background": "#031427",
+                "primary-fixed": "#dbe1ff",
+                "on-tertiary-fixed": "#161b2b",
+                "primary-container": "#2563eb",
+                "mobile-success": "#00C853",
+                "primary": "#b4c5ff",
+                "surface-container": "#102034",
+                "tertiary": "#c1c5dc",
+                "inverse-primary": "#0053db",
+                "tertiary-fixed-dim": "#c1c5dc",
+                "surface-bright": "#2a3a4f",
+                "secondary-fixed": "#acedff",
+                "inverse-surface": "#d3e4fe",
+                "on-secondary-fixed": "#001f26",
+                "dark-surface": "#0F172A",
+                "surface-container-highest": "#26364a",
+                "on-tertiary": "#2b3041",
+                "on-tertiary-fixed-variant": "#414658",
+                "surface-container-high": "#1b2b3f",
+                "on-background": "#d3e4fe",
+                "secondary-fixed-dim": "#4cd7f6",
+                "mobile-primary": "#0066FF",
+                "inverse-on-surface": "#213145",
+                "on-surface": "#d3e4fe",
+                "secondary": "#4cd7f6",
+                "cos-cyan": "#06B6D4",
+                "cos-navy": "#0B1020"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+        },
+        "spacing": {
+                "space-2": "8px",
+                "space-3": "12px",
+                "space-1": "4px",
+                "touch-target": "52px",
+                "edge-mobile": "24px",
+                "space-4": "16px",
+                "web-margin": "32px",
+                "base": "4px"
+        },
+        "fontFamily": {
+                "hero-mobile": [
+                        "Inter Tight"
+                ],
+                "tiny-web": [
+                        "Inter Tight"
+                ],
+                "display-web": [
+                        "Inter Tight"
+                ],
+                "body-mobile": [
+                        "Inter Tight"
+                ],
+                "h2-web": [
+                        "Inter Tight"
+                ],
+                "label-mobile": [
+                        "Inter Tight"
+                ],
+                "h1-web": [
+                        "Inter Tight"
+                ],
+                "body-web": [
+                        "Inter Tight"
+                ]
+        },
+        "fontSize": {
+                "hero-mobile": [
+                        "28px",
+                        {
+                                "lineHeight": "34px",
+                                "fontWeight": "700"
+                        }
+                ],
+                "tiny-web": [
+                        "11px",
+                        {
+                                "lineHeight": "12px",
+                                "letterSpacing": "0.05em",
+                                "fontWeight": "500"
+                        }
+                ],
+                "display-web": [
+                        "32px",
+                        {
+                                "lineHeight": "40px",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "700"
+                        }
+                ],
+                "body-mobile": [
+                        "17px",
+                        {
+                                "lineHeight": "24px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "h2-web": [
+                        "20px",
+                        {
+                                "lineHeight": "28px",
+                                "fontWeight": "600"
+                        }
+                ],
+                "label-mobile": [
+                        "13px",
+                        {
+                                "lineHeight": "18px",
+                                "fontWeight": "600"
+                        }
+                ],
+                "h1-web": [
+                        "24px",
+                        {
+                                "lineHeight": "32px",
+                                "fontWeight": "600"
+                        }
+                ],
+                "body-web": [
+                        "14px",
+                        {
+                                "lineHeight": "20px",
+                                "fontWeight": "400"
+                        }
+                ]
+        }
+},
+    },
+  }
+</script>
+<style>
+        body { font-family: 'Inter Tight', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .safe-pb { padding-bottom: env(safe-area-inset-bottom); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Industrial Toggle Styling */
+        .toggle-switch:checked + .toggle-bg { background-color: #00C853; }
+        .toggle-switch:not(:checked) + .toggle-bg { background-color: #FF3B30; }
+        
+        .active-ring { outline: 2px solid #2563EB; outline-offset: 2px; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-cos-navy text-on-surface selection:bg-primary/30 no-scrollbar">
+<!-- Refined Construction OS Branding Header -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-edge-mobile h-touch-target bg-cos-navy border-b border-outline-variant flat no shadows">
+<div class="flex items-center gap-space-3">
+<button class="material-symbols-outlined text-on-surface active:scale-95 duration-100 p-1" data-icon="menu">menu</button>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-white text-[24px]" data-icon="hexagon" style="font-variation-settings: &quot;FILL&quot; 1;">hexagon</span>
+<h1 class="font-h1-web text-[20px] text-white tracking-tight whitespace-nowrap">CONSTRUCTION OS</h1>
+</div>
+</div>
+<div class="flex items-center gap-space-3 bg-surface-container-low px-3 py-1.5 rounded-full border border-outline-variant">
+<div class="w-2 h-2 rounded-full bg-mobile-success animate-pulse"></div>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase tracking-wider">SYNCED</span>
+<span class="material-symbols-outlined text-mobile-success text-[16px] ml-1" data-icon="check_circle">check_circle</span>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-24 px-edge-mobile max-w-3xl mx-auto pb-32">
+<!-- Header Section -->
+<div class="mb-space-4">
+<div class="flex items-baseline justify-between mb-space-1">
+<h2 class="font-hero-mobile text-hero-mobile text-white">Safety Checklist</h2>
+<span class="font-tiny-web text-tiny-web text-outline uppercase tracking-wider">Daily Inspection</span>
+</div>
+<p class="font-body-mobile text-body-mobile text-on-surface-variant">North Sector Site B-14 • Oct 24, 2023</p>
+</div>
+<!-- Refined AI Assistant Module -->
+<div class="mb-space-4 border border-outline-variant border-l-4 border-l-cos-cyan bg-surface-container p-space-4 rounded-lg">
+<div class="flex items-center justify-between mb-space-2">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-cos-cyan text-[20px]" data-icon="temp_preferences_custom">temp_preferences_custom</span>
+<span class="font-tiny-web text-tiny-web font-bold text-cos-cyan tracking-wider uppercase">AI HAZARD ALERT</span>
+</div>
+<div class="bg-cos-cyan/10 px-2 py-1 rounded text-cos-cyan font-tiny-web text-[10px] uppercase font-bold border border-cos-cyan/30">
+    94% CONFIDENCE
+  </div>
+</div>
+<p class="font-body-web text-body-web text-on-surface mb-space-2">Predicted high-wind conditions (24mph) for the afternoon. Prioritize <span class="font-bold border-b border-cos-cyan/50 text-white">Scaffolding Stability</span> and loose material containment.</p>
+<div class="flex items-center gap-1 text-outline font-tiny-web text-[10px] uppercase tracking-wider">
+<span class="material-symbols-outlined text-[12px]" data-icon="database">database</span>
+<span class="">Source: Weather Telemetry</span>
+</div>
+</div>
+<!-- Checklist Group: Personal Protection -->
+<section class="space-y-space-3 mb-space-4">
+<h3 class="font-tiny-web text-tiny-web text-outline uppercase tracking-widest border-b border-outline-variant pb-space-2 mt-8 mb-4">PPE &amp; Personnel</h3>
+<!-- Checklist Item 1 -->
+<div class="bg-surface-container border border-outline-variant rounded-lg p-space-4 transition-all active:scale-[0.99]">
+<div class="flex items-start justify-between gap-space-4">
+<div class="flex-1">
+<label class="font-body-mobile text-body-mobile block font-semibold mb-space-1 text-white">Workers wearing required PPE</label>
+<p class="text-body-web font-body-web text-on-surface-variant">Hard hats, hi-vis vests, and steel-toed boots mandatory for all zones.</p>
+</div>
+<div class="flex flex-col items-end gap-space-3">
+<!-- PASS/FAIL Toggle -->
+<div class="relative inline-flex items-center cursor-pointer h-[44px]">
+<input checked="" class="sr-only peer toggle-switch" type="checkbox" value="">
+<div class="w-16 h-8 bg-outline rounded-full peer-focus:ring-2 peer-focus:ring-mobile-primary toggle-bg transition-colors flex items-center justify-between px-2">
+
+
+</div>
+<div class="absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform peer-checked:translate-x-8 shadow-sm"></div>
+</div>
+</div>
+</div>
+<div class="mt-space-4 pt-space-3 border-t border-outline-variant flex gap-space-3">
+<button class="flex items-center justify-center gap-space-2 bg-surface-container-high h-[44px] px-space-4 rounded-DEFAULT text-on-surface border border-outline-variant hover:bg-surface-variant transition-colors flex-1">
+<span class="material-symbols-outlined text-[20px]" data-icon="add_a_photo">add_a_photo</span>
+<span class="font-label-mobile text-label-mobile uppercase">PHOTO</span>
+</button>
+<button class="flex items-center justify-center gap-space-2 bg-surface-container-high h-[44px] px-space-4 rounded-DEFAULT text-on-surface border border-outline-variant hover:bg-surface-variant transition-colors flex-1">
+<span class="material-symbols-outlined text-[20px]" data-icon="edit_note">edit_note</span>
+<span class="font-label-mobile text-label-mobile uppercase">NOTE</span>
+</button>
+</div>
+</div>
+<!-- Checklist Item 2 -->
+<div class="bg-surface-container border border-outline-variant rounded-lg p-space-4 border-l-4 border-l-mobile-danger">
+<div class="flex items-start justify-between gap-space-4">
+<div class="flex-1">
+<label class="font-body-mobile text-body-mobile block font-semibold mb-space-1 text-white">Safe Working Clearances</label>
+<p class="text-body-web font-body-web text-on-surface-variant">Min. 10ft clearance from overhead power lines maintained.</p>
+</div>
+<div class="flex flex-col items-end gap-space-3">
+<div class="relative inline-flex items-center cursor-pointer h-[44px]">
+<input class="sr-only peer toggle-switch" type="checkbox" value="">
+<div class="w-16 h-8 bg-outline rounded-full peer-focus:ring-2 peer-focus:ring-mobile-primary toggle-bg transition-colors flex items-center justify-between px-2">
+
+
+</div>
+<div class="absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform peer-checked:translate-x-8 shadow-sm"></div>
+</div>
+</div>
+</div>
+<!-- Issue reported area -->
+<div class="mt-space-4 bg-mobile-danger/10 p-space-3 rounded-DEFAULT border border-mobile-danger/30">
+<div class="flex items-start gap-space-2">
+<span class="material-symbols-outlined text-mobile-danger text-[20px]" data-icon="report_problem">report_problem</span>
+<div class="flex-1">
+<p class="font-body-web text-body-web text-white font-semibold mb-2">Flagged: Excavator near high-line zone.</p>
+<div class="rounded-DEFAULT overflow-hidden h-32 relative border border-outline-variant">
+<img class="w-full h-full object-cover grayscale brightness-75" data-alt="A gritty high-contrast smartphone photo of a yellow heavy excavator parked dangerously close to overhead power lines at a dusty construction site during the day. The scene is illuminated by harsh, direct sunlight and has a professional industrial safety documentation style with cool blue shadows and sharp details." src="https://lh3.googleusercontent.com/aida-public/AB6AXuApfKPl0BZfefa93KxDLlNKhbcvjwGgnvhKTWvU6XIvlBK_l2UNUkxspKa_CajtXXIGiCmR9ILDU0UcSAEunKScfcOt-bHfBLrmFEWnQn1-_bQe-YPEAqqNiWhnddooysSS4Vz1Aw6qlRlXcqfVQ8KWv14ZZUaSMNJXiLlCIkgr_B4icMdjz7kiEJBi4pGm7LntuBpgOLHTOa4Qr3gcF5xIxiv_B_YrDl-GcOAbCYraJmwuhc2RB3Jz4BAJVb2ywfH0HAFcR92pqJQ">
+<div class="absolute top-2 right-2 bg-mobile-danger px-2 py-1 rounded-DEFAULT font-tiny-web text-tiny-web uppercase font-bold text-white border border-white/20">ISSUE ATTACHED</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Checklist Group: Infrastructure -->
+<section class="space-y-space-3 mb-space-4">
+<h3 class="font-tiny-web text-tiny-web text-outline uppercase tracking-widest border-b border-outline-variant pb-space-2 mt-8 mb-4">Structure &amp; Equipment</h3>
+<!-- Checklist Item 3 (Large Tap Checkbox Style) -->
+<div class="flex items-center gap-space-4 bg-surface-container border border-outline-variant rounded-lg p-space-3 min-h-touch-target cursor-pointer hover:bg-surface-variant transition-colors" onclick="this.querySelector('.check-box').classList.toggle('bg-mobile-success'); this.querySelector('.check-box').classList.toggle('border-mobile-success'); this.querySelector('.check-box span').classList.toggle('hidden');">
+<div class="check-box w-10 h-10 rounded-DEFAULT border-2 border-outline-variant flex items-center justify-center transition-all bg-surface-container-low shrink-0">
+<span class="material-symbols-outlined text-white hidden" data-icon="check" data-weight="fill">check</span>
+</div>
+<div class="flex-1">
+<label class="font-body-mobile text-body-mobile block font-semibold text-white">Scaffolding Secured</label>
+<p class="text-body-web font-body-web text-on-surface-variant">Check base plates, guardrails, and locking pins.</p>
+</div>
+</div>
+<!-- Checklist Item 4 -->
+<div class="flex items-center gap-space-4 bg-surface-container border border-outline-variant rounded-lg p-space-3 min-h-touch-target cursor-pointer hover:bg-surface-variant transition-colors" onclick="this.querySelector('.check-box').classList.toggle('bg-mobile-success'); this.querySelector('.check-box').classList.toggle('border-mobile-success'); this.querySelector('.check-box span').classList.toggle('hidden');">
+<div class="check-box w-10 h-10 rounded-DEFAULT border-2 border-outline-variant flex items-center justify-center transition-all bg-surface-container-low shrink-0">
+<span class="material-symbols-outlined text-white hidden" data-icon="check" data-weight="fill">check</span>
+</div>
+<div class="flex-1">
+<label class="font-body-mobile text-body-mobile block font-semibold text-white">Heavy Equipment Clear</label>
+<p class="text-body-web font-body-web text-on-surface-variant">Walkways and exit paths free from obstruction.</p>
+</div>
+</div>
+</section>
+<!-- Signature Section -->
+<section class="mt-8 bg-surface-container border-2 border-dashed border-outline-variant p-space-4 rounded-lg flex flex-col items-center justify-center mb-8">
+<span class="material-symbols-outlined text-outline-variant text-[40px] mb-space-2" data-icon="signature">signature</span>
+<p class="font-body-web text-body-web text-outline mb-space-4">Tap to sign and complete inspection</p>
+<button class="w-full h-touch-target bg-mobile-primary text-white font-label-mobile text-label-mobile uppercase tracking-wider rounded-DEFAULT active:scale-[0.98] transition-transform">COMPLETE INSPECTION</button>
+</section>
+</main>
+<!-- Bottom Navigation (Injected from Shared Components) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-2 pb-safe h-[64px] bg-surface-container border-t border-outline-variant md:hidden">
+<div class="flex flex-col items-center justify-center text-on-surface-variant px-space-4 py-space-1 active:scale-90 transition-transform">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-tiny-web text-[10px] mt-1">Dashboard</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant px-space-4 py-space-1 active:scale-90 transition-transform">
+<span class="material-symbols-outlined" data-icon="warning">warning</span>
+<span class="font-tiny-web text-[10px] mt-1">Incidents</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-secondary/20 text-secondary rounded-lg px-space-4 py-space-1 active:scale-90 transition-transform">
+<span class="material-symbols-outlined" data-icon="assignment_turned_in" style="font-variation-settings: &quot;FILL&quot; 1;">assignment_turned_in</span>
+<span class="font-tiny-web text-[10px] mt-1">Checklists</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant px-space-4 py-space-1 active:scale-90 transition-transform">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-tiny-web text-[10px] mt-1">Profile</span>
+</div>
+</nav>
+<script>
+        // Micro-interaction for Voice Notes
+        const btn = document.getElementById('voice-trigger');
+        const pulse = document.getElementById('recording-pulse');
+        let timer;
+
+        btn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            pulse.classList.remove('opacity-0');
+            pulse.classList.add('opacity-40');
+            btn.classList.add('active-ring');
+        });
+
+        btn.addEventListener('touchend', (e) => {
+            pulse.classList.add('opacity-0');
+            pulse.classList.remove('opacity-40');
+            btn.classList.remove('active-ring');
+            alert('Voice log captured. Transcribing...');
+        });
+    </script>
+<div class="fixed right-edge-mobile z-40 bottom-[88px]">
+<button class="w-[52px] h-[52px] bg-mobile-primary rounded-full shadow-lg flex items-center justify-center text-white active:scale-90 transition-transform border border-mobile-primary/50" id="voice-trigger">
+<span class="material-symbols-outlined text-[24px]" data-icon="mic">mic</span>
+</button>
+<div class="absolute inset-0 bg-mobile-primary rounded-full animate-ping opacity-0" id="recording-pulse"></div>
+</div>
+
+</body></html>

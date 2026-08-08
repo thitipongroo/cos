@@ -1,0 +1,272 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport">
+<title>Construction OS - More Options</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "surface": "#0F172A",
+                "inverse-surface": "#d3e4fe",
+                "tertiary-container": "#686c80",
+                "secondary-container": "#03b5d3",
+                "mobile-success": "#00C853",
+                "outline-variant": "#434655",
+                "inverse-primary": "#0053db",
+                "on-background": "#f8fafc",
+                "primary": "#b4c5ff",
+                "mobile-danger": "#FF3B30",
+                "on-surface": "#f8fafc",
+                "secondary-fixed": "#acedff",
+                "surface-container-lowest": "#020617",
+                "surface-container": "#0F172A",
+                "on-secondary-fixed": "#001f26",
+                "surface-tint": "#b4c5ff",
+                "on-tertiary-container": "#eeefff",
+                "sync-pending": "#94A3B8",
+                "primary-container": "#2563eb",
+                "surface-container-low": "#0b1c30",
+                "on-error-container": "#ffdad6",
+                "secondary-fixed-dim": "#4cd7f6",
+                "on-surface-variant": "#94a3b8",
+                "error": "#ffb4ab",
+                "on-secondary-container": "#00424e",
+                "dark-surface": "#0F172A",
+                "error-container": "#93000a",
+                "inverse-on-surface": "#213145",
+                "surface-container-high": "#1e293b",
+                "tertiary": "#c1c5dc",
+                "primary-fixed": "#dbe1ff",
+                "on-tertiary": "#2b3041",
+                "mobile-primary": "#0066FF",
+                "on-tertiary-fixed-variant": "#414658",
+                "sync-active": "#FFD60A",
+                "primary-fixed-dim": "#b4c5ff",
+                "background": "#020617",
+                "tertiary-fixed": "#dee1f9",
+                "tertiary-fixed-dim": "#c1c5dc",
+                "surface-container-highest": "#334155",
+                "on-secondary-fixed-variant": "#004e5c",
+                "surface-bright": "#1e293b",
+                "surface-dim": "#0F172A",
+                "on-primary-container": "#eeefff",
+                "on-primary-fixed": "#00174b",
+                "surface-variant": "#1e293b",
+                "on-primary-fixed-variant": "#003ea8",
+                "on-secondary": "#003640",
+                "on-tertiary-fixed": "#161b2b",
+                "secondary": "#4cd7f6",
+                "outline": "#475569",
+                "mobile-warning": "#FF9500",
+                "on-error": "#690005",
+                "dark-bg": "#020617",
+                "on-primary": "#002a78",
+                "cos-navy": "#0B1020"
+            },
+            "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+            },
+            "spacing": {
+                "edge-mobile": "24px",
+                "base": "4px",
+                "space-3": "12px",
+                "touch-target": "52px",
+                "space-2": "8px",
+                "space-1": "4px",
+                "space-4": "16px",
+                "web-margin": "32px"
+            },
+            "fontFamily": {
+                "body-mobile": ["Inter Tight"],
+                "label-mobile": ["Inter Tight"],
+                "tiny-web": ["Inter Tight"],
+                "body-web": ["Inter Tight"],
+                "h2-web": ["Inter Tight"],
+                "display-web": ["Inter Tight"],
+                "hero-mobile": ["Inter Tight"],
+                "h1-web": ["Inter Tight"]
+            },
+            "fontSize": {
+                "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                "hero-mobile": ["24px", {"lineHeight": "28px", "fontWeight": "700"}],
+                "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        body {
+            -webkit-tap-highlight-color: transparent;
+            background-color: theme('colors.background');
+            color: theme('colors.on-background');
+        }
+        
+        /* Smooth scrolling */
+        html { scroll-behavior: smooth; }
+        
+        /* Hide scrollbar for clean UI */
+        ::-webkit-scrollbar { display: none; }
+        
+        /* Custom padding for bottom nav */
+        .pb-safe { padding-bottom: calc(72px + env(safe-area-inset-bottom, 20px)); }
+        
+        /* Shimmer loading effect */
+        @keyframes shimmer {
+            0% { background-position: -1000px 0; }
+            100% { background-position: 1000px 0; }
+        }
+        .animate-shimmer {
+            background: linear-gradient(to right, theme('colors.surface-container') 4%, theme('colors.surface-container-highest') 25%, theme('colors.surface-container') 36%);
+            background-size: 1000px 100%;
+            animation: shimmer 2s infinite linear;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col font-body-mobile bg-[#020617]">
+<!-- TopAppBar from JSON -->
+<header class="fixed top-0 left-0 right-0 z-50 bg-[#0F172A] flex justify-between items-center w-full h-16 px-edge-mobile transition-colors duration-200 border-b border-outline/20">
+<div class="flex items-center gap-space-3">
+<span class="material-symbols-outlined text-on-surface">construction</span>
+<span class="font-hero-mobile text-hero-mobile font-bold tracking-tight text-on-surface uppercase">CONSTRUCTION OS</span>
+</div>
+<div class="flex items-center">
+<span class="font-tiny-web text-tiny-web text-mobile-success uppercase flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-mobile-success animate-pulse"></span>
+                SYNCED
+            </span>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 w-full max-w-3xl mx-auto mt-16 px-edge-mobile pb-safe space-y-6 pt-6 mb-24">
+<!-- User Profile Card (Bento Style) -->
+<section class="bg-[#0F172A] rounded-lg p-space-4 relative overflow-hidden flex items-center gap-space-4 border-l-4 border-secondary-container border border-outline/20">
+<div class="w-14 h-14 rounded-full bg-surface-variant flex-shrink-0 flex items-center justify-center overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A highly detailed close-up portrait photo of a professional Asian male procurement officer in his 30s. He is wearing a crisp, dark navy button-up shirt suitable for a construction site office. Soft, cool-toned industrial office lighting illuminates his face from the side, creating a moody, professional atmosphere. High contrast, sharp focus, 85mm lens, realistic corporate headshot style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDZ3bg44Bg1Kh1ItvbG4qJ_dbGMIQl0sdTfuEBV01lUlVLqzXKdJ1HDrr93bgmcw6MfU5yBdF3ql9-dbfiy6CJWo_xXk20Cf12K5FFLc3Zo1_SKBNJXHA_cjv0sAUI72lE3Mjb9Ekyl11zl20JVxbAsivX4I_j8A1ksBoMDctMH7-6oni-4ucjDRFy-YcBO3y34qGSf-Pr78qKGJgcXYkBdlauWVaCctn8Dng0lkKLmFzq3tjmlBLjU">
+</div>
+<div class="flex-1 min-w-0 z-10">
+<h2 class="font-h2-web text-h2-web text-on-surface truncate">Procurement Lead</h2>
+<p class="font-body-web text-body-web text-on-surface-variant truncate">ID: PO-4921 • Site Beta</p>
+</div>
+<button aria-label="Edit Profile" class="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors z-10">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: &quot;FILL&quot; 0;">edit</span>
+</button>
+</section>
+<!-- Menu List (Glassmorphism / Bento Stacks) -->
+<section class="space-y-space-2">
+<h3 class="font-label-mobile text-label-mobile text-on-surface-variant uppercase tracking-wider pl-space-2 mb-2">Procurement Tools</h3>
+<!-- Item 1: Vendor Master -->
+<a class="block bg-[#0F172A] hover:bg-surface-variant transition-colors duration-150 rounded-lg overflow-hidden relative group border border-outline/20" href="#">
+<div class="flex items-center px-space-4 py-3 h-[56px]">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center mr-space-4 text-primary">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: &quot;FILL&quot; 1;">storefront</span>
+</div>
+<div class="flex-1">
+<span class="font-body-mobile text-body-mobile text-on-surface block">Vendor Master</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">chevron_right</span>
+</div>
+</a>
+<!-- Item 2: RFQ Evaluation -->
+<a class="block bg-[#0F172A] hover:bg-surface-variant transition-colors duration-150 rounded-lg overflow-hidden relative group border border-outline/20" href="#">
+<div class="flex items-center px-space-4 py-3 h-[56px]">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center mr-space-4 text-secondary">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: &quot;FILL&quot; 1;">compare_arrows</span>
+</div>
+<div class="flex-1">
+<span class="font-body-mobile text-body-mobile text-on-surface block">RFQ Evaluation</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">chevron_right</span>
+</div>
+</a>
+<!-- Item 3: Procurement Analytics -->
+<a class="block bg-[#0F172A] hover:bg-surface-variant transition-colors duration-150 rounded-lg overflow-hidden relative group border border-outline/20" href="#">
+<div class="flex items-center px-space-4 py-3 h-[56px]">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center mr-space-4 text-sync-active">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: &quot;FILL&quot; 1;">analytics</span>
+</div>
+<div class="flex-1">
+<span class="font-body-mobile text-body-mobile text-on-surface block">Procurement Analytics</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">chevron_right</span>
+</div>
+</a>
+</section>
+<!-- System & Support Section -->
+<section class="space-y-space-2 mt-6">
+<h3 class="font-label-mobile text-label-mobile text-on-surface-variant uppercase tracking-wider pl-space-2 mb-2">System &amp; Support</h3>
+<!-- Item 4: Notification Settings -->
+<a class="block bg-[#0F172A] hover:bg-surface-variant transition-colors duration-150 rounded-lg overflow-hidden relative group border border-outline/20" href="#">
+<div class="flex items-center px-space-4 py-3 h-[56px]">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center mr-space-4 text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: &quot;FILL&quot; 0;">notifications</span>
+</div>
+<div class="flex-1">
+<span class="font-body-mobile text-[16px] leading-[22px] text-on-surface block">Notification Settings</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">chevron_right</span>
+</div>
+</a>
+<!-- Item 5: Support Center -->
+<a class="block bg-[#0F172A] hover:bg-surface-variant transition-colors duration-150 rounded-lg overflow-hidden relative group border border-outline/20" href="#">
+<div class="flex items-center px-space-4 py-3 h-[56px]">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center mr-space-4 text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: &quot;FILL&quot; 0;">help</span>
+</div>
+<div class="flex-1">
+<span class="font-body-mobile text-[16px] leading-[22px] text-on-surface block">Support Center</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">chevron_right</span>
+</div>
+</a>
+</section>
+<!-- Footer Action -->
+<section class="mt-8 pb-8">
+<button class="w-full h-12 flex items-center justify-center gap-2 rounded-lg border border-mobile-danger text-mobile-danger font-label-mobile text-label-mobile uppercase tracking-wider hover:bg-mobile-danger/10 transition-colors duration-150 active:scale-95 bg-transparent">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: &quot;FILL&quot; 0;">logout</span>
+                Sign Out
+            </button>
+</section>
+</main>
+<!-- BottomNavBar from JSON -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex h-[72px] pb-safe bg-[#0F172A] border-t border-outline/20 items-end pb-2"><!-- Tab 1: Home -->
+<button class="flex flex-1 flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors duration-200 h-full">
+  <span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 0;">home</span>
+  <span class="font-label-mobile text-label-mobile mt-1">Home</span>
+</button>
+<!-- Tab 2: Tasks -->
+<button class="flex flex-1 flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors duration-200 h-full">
+  <span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 0;">assignment</span>
+  <span class="font-label-mobile text-label-mobile mt-1">Tasks</span>
+</button>
+<!-- Tab 3: Chat -->
+<button class="flex flex-1 flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors duration-200 h-full">
+  <span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 0;">chat</span>
+  <span class="font-label-mobile text-label-mobile mt-1">Chat</span>
+</button>
+<!-- Tab 4: More (Active) -->
+<button class="flex flex-1 flex-col items-center justify-center text-secondary transition-colors duration-200 h-full">
+  <span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">menu</span>
+  <span class="font-label-mobile text-label-mobile mt-1 font-bold">More</span>
+</button></nav>
+
+
+</body></html>

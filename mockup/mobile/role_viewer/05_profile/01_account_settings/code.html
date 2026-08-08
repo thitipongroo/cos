@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Account Settings - Construction OS</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-secondary-container": "#00424e",
+                      "secondary-fixed-dim": "#4cd7f6",
+                      "background": "#031427",
+                      "on-tertiary": "#2b3041",
+                      "secondary-fixed": "#acedff",
+                      "dark-bg": "#020617",
+                      "on-secondary": "#003640",
+                      "surface-container-low": "#0b1c30",
+                      "primary-fixed-dim": "#b4c5ff",
+                      "sync-active": "#FFD60A",
+                      "surface-container-highest": "#26364a",
+                      "secondary-container": "#03b5d3",
+                      "on-error": "#690005",
+                      "on-secondary-fixed-variant": "#004e5c",
+                      "mobile-success": "#00C853",
+                      "on-secondary-fixed": "#001f26",
+                      "outline-variant": "#434655",
+                      "secondary": "#4cd7f6",
+                      "on-tertiary-fixed": "#161b2b",
+                      "mobile-primary": "#0066FF",
+                      "on-background": "#d3e4fe",
+                      "surface-bright": "#2a3a4f",
+                      "surface-variant": "#26364a",
+                      "on-tertiary-container": "#eeefff",
+                      "inverse-on-surface": "#213145",
+                      "on-surface": "#d3e4fe",
+                      "primary-container": "#2563eb",
+                      "primary": "#b4c5ff",
+                      "surface-container": "#102034",
+                      "surface-tint": "#b4c5ff",
+                      "on-tertiary-fixed-variant": "#414658",
+                      "on-primary-fixed-variant": "#003ea8",
+                      "error-container": "#93000a",
+                      "tertiary-fixed-dim": "#c1c5dc",
+                      "tertiary-fixed": "#dee1f9",
+                      "on-error-container": "#ffdad6",
+                      "on-primary-container": "#eeefff",
+                      "outline": "#8d90a0",
+                      "primary-fixed": "#dbe1ff",
+                      "dark-surface": "#0F172A",
+                      "surface": "#031427",
+                      "tertiary": "#c1c5dc",
+                      "inverse-primary": "#0053db",
+                      "mobile-warning": "#FF9500",
+                      "on-primary-fixed": "#00174b",
+                      "surface-container-lowest": "#000f21",
+                      "on-surface-variant": "#c3c6d7",
+                      "tertiary-container": "#686c80",
+                      "error": "#ffb4ab",
+                      "inverse-surface": "#d3e4fe",
+                      "on-primary": "#002a78",
+                      "mobile-danger": "#FF3B30",
+                      "sync-pending": "#94A3B8",
+                      "surface-container-high": "#1b2b3f",
+                      "surface-dim": "#031427"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "web-margin": "32px",
+                      "space-3": "12px",
+                      "space-1": "4px",
+                      "edge-mobile": "24px",
+                      "touch-target": "52px",
+                      "base": "4px",
+                      "space-2": "8px",
+                      "space-4": "16px"
+              },
+              "fontFamily": {
+                      "h1-web": [
+                              "Inter Tight"
+                      ],
+                      "display-web": [
+                              "Inter Tight"
+                      ],
+                      "body-web": [
+                              "Inter Tight"
+                      ],
+                      "hero-mobile": [
+                              "Inter Tight"
+                      ],
+                      "label-mobile": [
+                              "Inter Tight"
+                      ],
+                      "tiny-web": [
+                              "Inter Tight"
+                      ],
+                      "h2-web": [
+                              "Inter Tight"
+                      ],
+                      "body-mobile": [
+                              "Inter Tight"
+                      ]
+              },
+              "fontSize": {
+                      "h1-web": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display-web": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-web": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "hero-mobile": [
+                              "28px",
+                              {
+                                      "lineHeight": "34px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-mobile": [
+                              "13px",
+                              {
+                                      "lineHeight": "18px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "tiny-web": [
+                              "11px",
+                              {
+                                      "lineHeight": "12px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "h2-web": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-mobile": [
+                              "17px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+            },
+          },
+        }
+      </script>
+<style>
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #26364a;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #434655;
+        }
+        
+        .ios-padding-top {
+            padding-top: env(safe-area-inset-top, 24px);
+        }
+        .ios-padding-bottom {
+            padding-bottom: env(safe-area-inset-bottom, 24px);
+        }
+        
+        /* Smooth interactions */
+        .interactive-scale:active {
+            transform: scale(0.95);
+            transition: transform 150ms ease-in-out;
+        }
+      </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background dark:bg-dark-bg text-on-surface font-body-mobile text-body-mobile min-h-screen flex flex-col antialiased selection:bg-primary-container selection:text-on-primary-container pb-[96px] md:pb-0">
+<!-- TopAppBar -->
+<header class="bg-background dark:bg-dark-bg sticky top-0 w-full z-50 bg-surface-container-low ios-padding-top border-b border-surface-container-highest/20 md:hidden flex flex-col">
+<div class="flex justify-between items-center px-edge-mobile h-touch-target w-full z-50">
+<div class="flex items-center gap-space-2 text-primary dark:text-primary-fixed interactive-scale">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">analytics</span>
+<span class="font-display-web text-display-web-mobile font-bold tracking-tight">CONSTRUCTION OS</span>
+</div>
+<div class="flex items-center gap-space-1 px-space-2 py-1 rounded-full bg-surface-container-highest text-sync-active font-tiny-web text-tiny-web interactive-scale">
+<span class="w-2 h-2 rounded-full bg-sync-active animate-pulse"></span>
+                SYNCED
+            </div>
+</div>
+</header>
+<main class="flex-1 flex flex-col md:flex-row w-full max-w-7xl mx-auto md:px-edge-mobile gap-edge-mobile md:py-edge-mobile">
+<!-- Canvas Content Area -->
+<div class="flex-1 flex flex-col gap-space-4 px-edge-mobile md:px-0 py-space-4 md:py-0 w-full max-w-3xl mx-auto">
+<!-- Profile Header Bento -->
+<div class="bg-surface-container rounded-xl p-space-4 flex items-center gap-space-4 shadow-sm border border-surface-container-highest/50">
+<div class="w-16 h-16 rounded-full bg-surface-container-highest flex items-center justify-center overflow-hidden shrink-0 border border-outline-variant/30">
+<img class="object-cover w-full h-full" data-alt="A striking portrait photography shot of a professional male construction engineer named Somsak Watcharawit. He is wearing modern, clean industrial safety gear including a subtle hard hat and high-visibility accents, set against a dark, dramatic industrial background with moody, high-contrast cinematic lighting highlighting his focused expression. The overall color palette features deep navy blues, pristine whites, and bright primary color accents. The aesthetic is highly polished and professional, fitting for a corporate modern industrial SaaS application profile avatar." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD7PK_Niiext6DyaJBAKiNwCQ6xclKdakkOlHiygnG9p0hDkayAT9PWuz0nexYwHxyN0g4kQ1Btvqv1N070IBoIZyfX2ucxW9QTmZDI6-14HQPvCA_PQxBG9o8iflHoiXAvpTqg1yvuCjoB0t8pmxycDdcnF6vCMQNnSTIZPYHSfGQXbqY0-XSnuTLc1lgirajGPYXUGc67FwbbrXYEhhX9wPoMBnA_9GqAOOKzPRLn9wm1X5n0rzZa"/>
+</div>
+<div class="flex-1 flex flex-col">
+<h2 class="font-h1-web text-h1-web-mobile text-inverse-surface truncate">Somsak Watcharawit</h2>
+<div class="flex items-center gap-space-2 mt-1">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider bg-secondary-container/20 text-secondary border border-secondary/30 uppercase">Viewer</span>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant truncate">ID: COS-8842-V</span>
+</div>
+</div>
+</div>
+<!-- Account Information Section -->
+<section class="flex flex-col gap-space-2">
+<h3 class="font-label-mobile text-label-mobile text-on-surface-variant uppercase tracking-widest pl-1">Account Information</h3>
+<div class="bg-surface-container rounded-xl border border-surface-container-highest/50 overflow-hidden">
+<div class="flex flex-col px-space-4 py-space-3 border-b border-surface-container-highest/50">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant mb-1">Email Address</span>
+<span class="font-body-mobile text-body-mobile text-inverse-surface">somsak.w@bangkokbuilders.com</span>
+</div>
+<div class="flex flex-col px-space-4 py-space-3 border-b border-surface-container-highest/50">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant mb-1">Phone Number</span>
+<span class="font-body-mobile text-body-mobile text-inverse-surface">+66 81 234 5678</span>
+</div>
+<div class="flex flex-col px-space-4 py-space-3">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant mb-1">Primary Organization</span>
+<span class="font-body-mobile text-body-mobile text-inverse-surface flex items-center gap-space-2">
+<span class="material-symbols-outlined text-outline text-[18px]">domain</span>
+                            Bangkok Builders Corp.
+                        </span>
+</div>
+</div>
+</section>
+<!-- System Permissions Module -->
+<section class="flex flex-col gap-space-2">
+<h3 class="font-label-mobile text-label-mobile text-on-surface-variant uppercase tracking-widest pl-1">System Permissions</h3>
+<div class="grid grid-cols-2 md:grid-cols-3 gap-space-3">
+<!-- Permission Item -->
+<div class="bg-surface-container rounded-lg p-space-3 border-l-4 border-l-outline border border-surface-container-highest/50 flex flex-col gap-space-2">
+<div class="flex justify-between items-start">
+<span class="material-symbols-outlined text-on-surface-variant" style="font-variation-settings: 'FILL' 1;">account_balance</span>
+<span class="text-[10px] font-bold bg-surface-container-highest text-on-surface-variant px-1.5 py-0.5 rounded">READ ONLY</span>
+</div>
+<span class="font-label-mobile text-label-mobile text-inverse-surface">Financials</span>
+</div>
+<!-- Permission Item -->
+<div class="bg-surface-container rounded-lg p-space-3 border-l-4 border-l-outline border border-surface-container-highest/50 flex flex-col gap-space-2">
+<div class="flex justify-between items-start">
+<span class="material-symbols-outlined text-on-surface-variant" style="font-variation-settings: 'FILL' 1;">architecture</span>
+<span class="text-[10px] font-bold bg-surface-container-highest text-on-surface-variant px-1.5 py-0.5 rounded">READ ONLY</span>
+</div>
+<span class="font-label-mobile text-label-mobile text-inverse-surface">BIM Models</span>
+</div>
+<!-- Permission Item -->
+<div class="bg-surface-container rounded-lg p-space-3 border-l-4 border-l-outline border border-surface-container-highest/50 flex flex-col gap-space-2">
+<div class="flex justify-between items-start">
+<span class="material-symbols-outlined text-on-surface-variant" style="font-variation-settings: 'FILL' 1;">assignment</span>
+<span class="text-[10px] font-bold bg-surface-container-highest text-on-surface-variant px-1.5 py-0.5 rounded">READ ONLY</span>
+</div>
+<span class="font-label-mobile text-label-mobile text-inverse-surface">Site Reports</span>
+</div>
+</div>
+<p class="font-tiny-web text-tiny-web text-outline px-1 mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">info</span>
+                    Your role restricts editing capabilities across modules. Contact admin for elevated access.
+                </p>
+</section>
+<!-- App Settings -->
+<section class="flex flex-col gap-space-2">
+<h3 class="font-label-mobile text-label-mobile text-on-surface-variant uppercase tracking-widest pl-1">App Settings</h3>
+<div class="bg-surface-container rounded-xl border border-surface-container-highest/50 overflow-hidden">
+<label class="flex justify-between items-center px-space-4 py-space-3 border-b border-surface-container-highest/50 interactive-scale cursor-pointer">
+<div class="flex items-center gap-space-3 text-inverse-surface">
+<span class="material-symbols-outlined text-outline">notifications</span>
+<span class="font-body-mobile text-body-mobile">Push Notifications</span>
+</div>
+<div class="relative inline-block w-10 h-6">
+<input checked="" class="peer sr-only" type="checkbox"/>
+<div class="w-10 h-6 bg-surface-container-highest rounded-full peer-checked:bg-primary transition-colors"></div>
+<div class="absolute left-1 top-1 bg-inverse-surface w-4 h-4 rounded-full transition-transform peer-checked:translate-x-4"></div>
+</div>
+</label>
+<label class="flex justify-between items-center px-space-4 py-space-3 border-b border-surface-container-highest/50 interactive-scale cursor-pointer">
+<div class="flex items-center gap-space-3 text-inverse-surface">
+<span class="material-symbols-outlined text-outline">dark_mode</span>
+<span class="font-body-mobile text-body-mobile">Dark Mode</span>
+</div>
+<div class="relative inline-block w-10 h-6">
+<input checked="" class="peer sr-only" disabled="" type="checkbox"/>
+<div class="w-10 h-6 bg-primary opacity-50 rounded-full transition-colors"></div>
+<div class="absolute left-1 top-1 bg-inverse-surface w-4 h-4 rounded-full translate-x-4"></div>
+</div>
+</label>
+<div class="px-space-4 py-1 pb-3 -mt-2">
+<span class="font-tiny-web text-tiny-web text-outline">Mandatory for field environments.</span>
+</div>
+<div class="flex justify-between items-center px-space-4 py-space-3 interactive-scale cursor-pointer hover:bg-surface-container-highest/50 transition-colors">
+<div class="flex items-center gap-space-3 text-inverse-surface">
+<span class="material-symbols-outlined text-outline">language</span>
+<span class="font-body-mobile text-body-mobile">Language</span>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant font-label-mobile text-label-mobile">
+<span>English</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Security Section -->
+<section class="flex flex-col gap-space-2 mb-space-4">
+<h3 class="font-label-mobile text-label-mobile text-on-surface-variant uppercase tracking-widest pl-1">Security &amp; Legal</h3>
+<div class="bg-surface-container rounded-xl border border-surface-container-highest/50 overflow-hidden">
+<a class="flex justify-between items-center px-space-4 py-space-3 border-b border-surface-container-highest/50 interactive-scale hover:bg-surface-container-highest/50 transition-colors" href="#">
+<span class="font-body-mobile text-body-mobile text-inverse-surface">Privacy Policy</span>
+<span class="material-symbols-outlined text-outline text-[20px]">open_in_new</span>
+</a>
+<a class="flex justify-between items-center px-space-4 py-space-3 interactive-scale hover:bg-surface-container-highest/50 transition-colors" href="#">
+<span class="font-body-mobile text-body-mobile text-inverse-surface">Terms of Service</span>
+<span class="material-symbols-outlined text-outline text-[20px]">open_in_new</span>
+</a>
+</div>
+</section>
+<!-- Logout Button -->
+<button class="w-full h-touch-target rounded-xl border border-error text-error font-label-mobile text-label-mobile flex items-center justify-center gap-space-2 interactive-scale tracking-widest uppercase hover:bg-error/10 transition-colors mt-auto mb-edge-mobile md:mb-0">
+<span class="material-symbols-outlined">logout</span>
+                LOGOUT
+            </button>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="md:hidden bg-surface-container dark:bg-surface-container docked full-width bottom-0 h-[72px] pb-safe bg-surface-container flat no shadows fixed bottom-0 w-full z-50 flex justify-around items-center px-space-2 border-t-0 shadow-[0_-4px_24px_rgba(0,0,0,0.5)]">
+<!-- Inactive -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors flex-1 h-full pt-2" href="#">
+<span class="material-symbols-outlined text-[24px] mb-1">home</span>
+<span class="font-tiny-web text-tiny-web tracking-normal">Home</span>
+</a>
+<!-- Inactive -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors flex-1 h-full pt-2" href="#">
+<span class="material-symbols-outlined text-[24px] mb-1">inventory_2</span>
+<span class="font-tiny-web text-tiny-web tracking-normal">Projects</span>
+</a>
+<!-- Inactive -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors flex-1 h-full pt-2" href="#">
+<span class="material-symbols-outlined text-[24px] mb-1">map</span>
+<span class="font-tiny-web text-tiny-web tracking-normal">Map</span>
+</a>
+<!-- Inactive -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors flex-1 h-full pt-2" href="#">
+<span class="material-symbols-outlined text-[24px] mb-1">insights</span>
+<span class="font-tiny-web text-tiny-web tracking-normal">Insights</span>
+</a>
+<!-- Active -->
+<a class="flex flex-col items-center justify-center flex-1 h-full pt-2 relative" href="#">
+<div class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl px-space-4 py-1 Active: scale-95 transition-all duration-200">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">person</span>
+<span class="font-tiny-web text-tiny-web tracking-normal mt-0.5">Profile</span>
+</div>
+</a>
+</nav>
+</body></html>

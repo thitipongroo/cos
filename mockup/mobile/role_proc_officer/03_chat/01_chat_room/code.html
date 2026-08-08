@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="th"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Construction OS - Chat List</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "infrastructure-navy": "#0B1020",
+                        "ai-cyan": "#06B6D4",
+                        "inverse-surface": "#d3e4fe",
+                        "surface": "#0B1020",
+                        "secondary": "#4cd7f6",
+                        "background": "#0B1020",
+                        "on-tertiary-container": "#eeefff",
+                        "on-secondary-container": "#00424e",
+                        "primary": "#b4c5ff",
+                        "on-error-container": "#ffdad6",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "surface-container": "#151F32",
+                        "tertiary-fixed": "#dee1f9",
+                        "surface-container-lowest": "#000f21",
+                        "surface-variant": "#1E2A40",
+                        "surface-dim": "#031427",
+                        "mobile-warning": "#FF9500",
+                        "on-tertiary-fixed": "#161b2b",
+                        "surface-container-highest": "#26364a",
+                        "mobile-danger": "#FF3B30",
+                        "surface-tint": "#b4c5ff",
+                        "dark-surface": "#0F172A",
+                        "tertiary": "#c1c5dc",
+                        "sync-pending": "#94A3B8",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "error": "#ffb4ab",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "surface-bright": "#2a3a4f",
+                        "on-error": "#690005",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "outline-variant": "#434655",
+                        "on-tertiary": "#2b3041",
+                        "on-background": "#d3e4fe",
+                        "on-primary-container": "#eeefff",
+                        "outline": "#8d90a0",
+                        "on-primary": "#002a78",
+                        "secondary-container": "#03b5d3",
+                        "primary-fixed": "#dbe1ff",
+                        "tertiary-container": "#686c80",
+                        "secondary-fixed": "#acedff",
+                        "mobile-primary": "#0066FF",
+                        "inverse-on-surface": "#213145",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "sync-active": "#FFD60A",
+                        "surface-container-high": "#1b2b3f",
+                        "primary-container": "#2563eb",
+                        "on-secondary-fixed": "#001f26",
+                        "on-surface": "#ffffff",
+                        "on-primary-fixed": "#00174b",
+                        "dark-bg": "#020617",
+                        "on-secondary": "#003640",
+                        "surface-container-low": "#0b1c30",
+                        "mobile-success": "#00C853",
+                        "error-container": "#93000a",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "on-surface-variant": "#94A3B8",
+                        "inverse-primary": "#0053db"
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.25rem",
+                        lg: "0.5rem",
+                        xl: "0.75rem",
+                        full: "9999px"
+                    },
+                    spacing: {
+                        "touch-target": "52px",
+                        "edge-mobile": "24px",
+                        "base": "4px",
+                        "space-3": "12px",
+                        "space-2": "8px",
+                        "web-margin": "32px",
+                        "space-4": "16px",
+                        "space-1": "4px"
+                    },
+                    fontFamily: {
+                        "display-web": ["Inter Tight"],
+                        "h1-web": ["Inter Tight"],
+                        "tiny-web": ["Inter Tight"],
+                        "hero-mobile": ["Inter Tight"],
+                        "body-web": ["Inter Tight"],
+                        "body-mobile": ["Inter Tight"],
+                        "label-mobile": ["Inter Tight"],
+                        "h2-web": ["Inter Tight"]
+                    },
+                    fontSize: {
+                        "display-web": ["32px", { lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "700" }],
+                        "h1-web": ["24px", { lineHeight: "32px", fontWeight: "600" }],
+                        "tiny-web": ["11px", { lineHeight: "12px", letterSpacing: "0.05em", fontWeight: "500" }],
+                        "hero-mobile": ["28px", { lineHeight: "34px", fontWeight: "700" }],
+                        "body-web": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+                        "body-mobile": ["17px", { lineHeight: "24px", fontWeight: "400" }],
+                        "label-mobile": ["13px", { lineHeight: "18px", fontWeight: "600" }],
+                        "h2-web": ["20px", { lineHeight: "28px", fontWeight: "600" }]
+                    }
+                }
+            }
+        };
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1;
+        }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-surface text-on-surface font-body-mobile min-h-screen flex flex-col antialiased">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-surface flex justify-between items-center px-edge-mobile h-touch-target w-full docked full-width top-0 sticky z-50">
+<div class="flex items-center gap-space-2 text-primary dark:text-primary">
+<span class="material-symbols-outlined text-[24px]">account_tree</span>
+<span class="font-display-web tracking-tighter text-on-surface dark:text-on-surface text-[20px] font-bold uppercase">CONSTRUCTION OS</span>
+</div>
+<div class="flex items-center gap-space-3">
+<div class="flex flex-col items-end">
+<span class="font-tiny-web text-tiny-web text-mobile-success flex items-center gap-1 font-bold">
+<span class="material-symbols-outlined text-[14px]">check_circle</span> SYNCED
+                </span>
+</div>
+<button aria-label="Profile" class="w-touch-target h-touch-target flex items-center justify-center rounded-full hover:bg-surface-variant dark:hover:bg-surface-variant transition-colors">
+<img class="w-8 h-8 rounded-full object-cover border border-outline-variant" data-alt="Close-up portrait of a Thai male construction procurement officer wearing a dark blue hard hat and high-visibility vest. Bright outdoor lighting, realistic industrial setting, confident expression." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAhA4OuxsxXdGTdKUBJ6SzGkH_ztQ4qMHGwOhCXEXFBlSru6CeTHRVVGavkzI4necAjonA3NfdsMXQUR6K8dmBWQaky6Oe3yxPLvQtCR1TY353Q149dRN7ua_fBmwy7ZSHPuEG2DP_Zw1cD4-0vXVBUAQpSi3koz6xmKtFaFvsF6FycezzFojBW9hH7qjlErvmA9B5mcmmHLiwpCgiRG9Wvpqda3ilOf9mufF7C7UQXrTx1Ok7Yyuxz"/>
+</button>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-1 overflow-y-auto pb-[90px]">
+<!-- Search Section -->
+<div class="px-edge-mobile py-space-4 bg-surface z-40">
+<h1 class="font-h1-web text-h1-web mb-space-3 text-on-surface">รายการแชท</h1>
+<div class="relative w-full h-touch-target group">
+<div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-on-surface-variant">
+<span class="material-symbols-outlined">search</span>
+</div>
+<input class="w-full h-full bg-surface-container border border-outline-variant rounded-md pl-12 pr-4 text-on-surface placeholder-on-surface-variant focus:outline-none focus:border-ai-cyan focus:ring-1 focus:ring-ai-cyan transition-all font-body-web text-body-web" placeholder="ค้นหาข้อความ, ชื่อผู้ติดต่อ..." type="text"/>
+</div>
+</div>
+<!-- Chat List -->
+<div class="flex flex-col px-edge-mobile gap-base pb-space-4">
+<!-- Chat Item 1: Unread + AI Summary -->
+<button class="w-full flex items-start p-space-3 bg-surface-container rounded-md text-left hover:bg-surface-variant transition-colors group min-h-[60px]">
+<div class="relative shrink-0">
+<div class="w-12 h-12 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container font-h2-web text-h2-web font-bold">
+                        S
+                    </div>
+<span class="absolute top-0 right-0 w-3.5 h-3.5 bg-mobile-danger border-2 border-surface-container rounded-full"></span>
+</div>
+<div class="ml-space-3 flex-1 min-w-0">
+<div class="flex justify-between items-baseline mb-1">
+<h2 class="font-label-mobile text-label-mobile text-on-surface truncate pr-2">Steel Supplier - Site A</h2>
+<span class="font-tiny-web text-tiny-web text-mobile-danger whitespace-nowrap">09:42</span>
+</div>
+<p class="font-body-web text-body-web text-on-surface-variant truncate mb-2">ส่งใบเสนอราคาเหล็กเส้นรอบใหม่แล้วครับ รบกวน...</p>
+<div class="inline-flex items-center gap-1 bg-[#06B6D4]/10 text-ai-cyan border border-ai-cyan/30 rounded-sm px-2 py-1 w-full">
+<span class="material-symbols-outlined text-[14px]">auto_awesome</span>
+<span class="font-tiny-web text-tiny-web flex-1">AI Summary: ใบเสนอราคาเหล็กเส้นลอตใหม่ รออนุมัติ</span>
+<span class="font-tiny-web text-[9px] opacity-80 whitespace-nowrap">94% Confidence</span>
+</div>
+</div>
+</button>
+<!-- Chat Item 2: Unread -->
+<button class="w-full flex items-start p-space-3 bg-surface-container rounded-md text-left hover:bg-surface-variant transition-colors group min-h-[60px]">
+<div class="relative shrink-0">
+<div class="w-12 h-12 rounded-full bg-tertiary-container flex items-center justify-center text-on-tertiary-container">
+<span class="material-symbols-outlined">local_shipping</span>
+</div>
+<span class="absolute -top-1 -right-1 bg-mobile-danger text-white font-tiny-web text-[10px] w-5 h-5 flex items-center justify-center rounded-full border-2 border-surface-container">2</span>
+</div>
+<div class="ml-space-3 flex-1 min-w-0">
+<div class="flex justify-between items-baseline mb-1">
+<h2 class="font-label-mobile text-label-mobile text-on-surface truncate pr-2 font-bold">Concrete Logistics</h2>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant whitespace-nowrap">เมื่อวาน</span>
+</div>
+<p class="font-body-web text-body-web text-on-surface font-medium truncate">รถปูนคันที่ 3 กำลังเข้าหน้างานครับ</p>
+</div>
+</button>
+<!-- Chat Item 3: Urgent PR -->
+<button class="w-full flex items-start p-space-3 bg-surface-container rounded-md text-left hover:bg-surface-variant transition-colors group border-l-4 border-mobile-warning min-h-[60px]">
+<div class="relative shrink-0">
+<img class="w-12 h-12 rounded-full object-cover border border-outline-variant" data-alt="Portrait of a female project manager on a construction site, wearing safety gear. Industrial background with scaffolding. Serious and focused expression. High resolution." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBQ4Y7dq3vTyTAcsi-ZaunkUwNZwBr46s5dbZRMXe92aZ37uiVCPoutaHng33LrK6-utuLclmTyCzJaaSB8rU1-7hwUy0iw1YIXC5PFGvYKePR_5Kg18FA_t7wuBZNXjRMU0AIrjQNjLojYgbuaD2OaLbWNv4DrhK3HY9_AU43VL0HIteBnszvt6Fx8Xvrotik1HMI7204cY9FbenWPF1gxZwn-OQsLouMBvEtUbGCN8ZReifEsaoZN"/>
+</div>
+<div class="ml-space-3 flex-1 min-w-0">
+<div class="flex justify-between items-baseline mb-1">
+<h2 class="font-label-mobile text-label-mobile text-on-surface truncate pr-2">Project Manager - Urgent PR</h2>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant whitespace-nowrap">เมื่อวาน</span>
+</div>
+<p class="font-body-web text-body-web text-on-surface-variant truncate">PR ของปั๊มน้ำด่วนถึงไหนแล้วคะ?</p>
+</div>
+</button>
+<!-- Chat Item 4 -->
+<button class="w-full flex items-start p-space-3 bg-surface-container rounded-md text-left hover:bg-surface-variant transition-colors group min-h-[60px]">
+<div class="relative shrink-0">
+<div class="w-12 h-12 rounded-full bg-surface-variant flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined">handyman</span>
+</div>
+</div>
+<div class="ml-space-3 flex-1 min-w-0">
+<div class="flex justify-between items-baseline mb-1">
+<h2 class="font-label-mobile text-label-mobile text-on-surface truncate pr-2">Vendor: Global Tools</h2>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant whitespace-nowrap">จันทร์</span>
+</div>
+<p class="font-body-web text-body-web text-on-surface-variant truncate">รับทราบครับ จะรีบจัดส่งให้ภายในวันพรุ่งนี้</p>
+</div>
+</button>
+<!-- Chat Item 5 -->
+<button class="w-full flex items-start p-space-3 bg-surface-container rounded-md text-left hover:bg-surface-variant transition-colors group min-h-[60px]">
+<div class="relative shrink-0">
+<div class="w-12 h-12 rounded-full bg-surface-variant flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined">groups</span>
+</div>
+</div>
+<div class="ml-space-3 flex-1 min-w-0">
+<div class="flex justify-between items-baseline mb-1">
+<h2 class="font-label-mobile text-label-mobile text-on-surface truncate pr-2">ทีมจัดซื้อ ส่วนกลาง</h2>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant whitespace-nowrap">อาทิตย์</span>
+</div>
+<p class="font-body-web text-body-web text-on-surface-variant truncate">อัปเดตราคาวัสดุประจำสัปดาห์</p>
+</div>
+</button>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="bg-surface-container dark:bg-surface-container fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-safe h-[72px] z-50 rounded-t-xl shadow-lg md:hidden">
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant p-2 w-touch-target h-touch-target hover:opacity-80">
+<span class="material-symbols-outlined text-[24px] mb-1">home</span>
+<span class="font-label-mobile text-label-mobile text-[10px]">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant p-2 w-touch-target h-touch-target hover:opacity-80">
+<span class="material-symbols-outlined text-[24px] mb-1">assignment</span>
+<span class="font-label-mobile text-label-mobile text-[10px]">Tasks</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-secondary-container dark:bg-secondary-container text-on-secondary-container dark:text-on-secondary-container rounded-full px-4 py-1 h-[48px] scale-95 transition-all duration-150 ease-in-out">
+<span class="material-symbols-outlined fill text-[24px] mb-0.5">chat</span>
+<span class="font-label-mobile text-label-mobile text-[11px] font-bold">Chat</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant p-2 w-touch-target h-touch-target hover:opacity-80">
+<span class="material-symbols-outlined text-[24px] mb-1">menu</span>
+<span class="font-label-mobile text-label-mobile text-[10px]">More</span>
+</button>
+</nav>
+</body></html>

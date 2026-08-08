@@ -1,0 +1,416 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+<title>Construction OS - Viewer Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "on-error-container": "#ffdad6",
+                "outline": "#8d90a0",
+                "on-tertiary-container": "#eeefff",
+                "on-primary-fixed-variant": "#003ea8",
+                "secondary-fixed": "#acedff",
+                "secondary-fixed-dim": "#4cd7f6",
+                "surface-bright": "#2a3a4f",
+                "inverse-on-surface": "#213145",
+                "secondary": "#06B6D4",
+                "on-tertiary-fixed": "#161b2b",
+                "surface-container-high": "#1b2b3f",
+                "primary": "#b4c5ff",
+                "tertiary-fixed-dim": "#c1c5dc",
+                "surface": "#031427",
+                "dark-bg": "#020617",
+                "inverse-surface": "#d3e4fe",
+                "background": "#031427",
+                "tertiary-container": "#686c80",
+                "surface-dim": "#031427",
+                "on-primary-fixed": "#00174b",
+                "surface-tint": "#b4c5ff",
+                "on-secondary-fixed-variant": "#004e5c",
+                "on-secondary": "#003640",
+                "secondary-container": "#03b5d3",
+                "on-secondary-container": "#00424e",
+                "surface-container": "#102034",
+                "error": "#ffb4ab",
+                "mobile-success": "#00C853",
+                "on-tertiary-fixed-variant": "#414658",
+                "error-container": "#93000a",
+                "mobile-primary": "#0066FF",
+                "on-background": "#d3e4fe",
+                "primary-fixed-dim": "#b4c5ff",
+                "surface-container-lowest": "#000f21",
+                "on-primary": "#002a78",
+                "sync-pending": "#94A3B8",
+                "on-primary-container": "#eeefff",
+                "dark-surface": "#0F172A",
+                "tertiary": "#c1c5dc",
+                "primary-fixed": "#dbe1ff",
+                "on-surface-variant": "#c3c6d7",
+                "on-secondary-fixed": "#001f26",
+                "surface-variant": "#26364a",
+                "mobile-danger": "#FF3B30",
+                "outline-variant": "#434655",
+                "inverse-primary": "#0053db",
+                "on-tertiary": "#2b3041",
+                "surface-container-highest": "#26364a",
+                "on-error": "#690005",
+                "on-surface": "#d3e4fe",
+                "tertiary-fixed": "#dee1f9",
+                "mobile-warning": "#FF9500",
+                "surface-container-low": "#0b1c30",
+                "sync-active": "#FFD60A",
+                "primary-container": "#2563eb"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+        },
+        "spacing": {
+                "space-1": "4px",
+                "web-margin": "32px",
+                "space-2": "8px",
+                "space-4": "16px",
+                "base": "4px",
+                "edge-mobile": "24px",
+                "space-3": "12px",
+                "touch-target": "52px"
+        },
+        "fontFamily": {
+                "body-web": [
+                        "Inter Tight"
+                ],
+                "h2-web": [
+                        "Inter Tight"
+                ],
+                "body-mobile": [
+                        "Inter Tight"
+                ],
+                "hero-mobile": [
+                        "Inter Tight"
+                ],
+                "label-mobile": [
+                        "Inter Tight"
+                ],
+                "display-web": [
+                        "Inter Tight"
+                ],
+                "tiny-web": [
+                        "Inter Tight"
+                ],
+                "h1-web": [
+                        "Inter Tight"
+                ]
+        },
+        "fontSize": {
+                "body-web": [
+                        "14px",
+                        {
+                                "lineHeight": "20px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "h2-web": [
+                        "20px",
+                        {
+                                "lineHeight": "28px",
+                                "fontWeight": "600"
+                        }
+                ],
+                "body-mobile": [
+                        "17px",
+                        {
+                                "lineHeight": "24px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "hero-mobile": [
+                        "28px",
+                        {
+                                "lineHeight": "34px",
+                                "fontWeight": "700"
+                        }
+                ],
+                "label-mobile": [
+                        "13px",
+                        {
+                                "lineHeight": "18px",
+                                "fontWeight": "600"
+                        }
+                ],
+                "display-web": [
+                        "32px",
+                        {
+                                "lineHeight": "40px",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "700"
+                        }
+                ],
+                "tiny-web": [
+                        "11px",
+                        {
+                                "lineHeight": "12px",
+                                "letterSpacing": "0.05em",
+                                "fontWeight": "500"
+                        }
+                ],
+                "h1-web": [
+                        "24px",
+                        {
+                                "lineHeight": "32px",
+                                "fontWeight": "600"
+                        }
+                ]
+        }
+},
+    },
+  }
+</script>
+<style>
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.on-background');
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .pb-safe {
+            padding-bottom: env(safe-area-inset-bottom, 20px);
+        }
+
+        /* Subtle Shimmer for AI/Insights */
+        @keyframes subtlePulse {
+            0% { opacity: 0.8; }
+            50% { opacity: 1; }
+            100% { opacity: 0.8; }
+        }
+        .ai-pulse {
+            animation: subtlePulse 3s infinite ease-in-out;
+        }
+
+        /* Hide scrollbar for bento grid horizontal scroll */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col font-body-mobile text-body-mobile bg-background">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky bg-surface-dim flat no shadows flex justify-between items-center px-edge-mobile h-touch-target z-50">
+<div class="flex items-center gap-space-3">
+<span class="material-symbols-outlined text-on-surface-variant text-[24px]">menu</span>
+<h1 class="font-display-web text-h1-web-mobile font-bold tracking-tight text-primary uppercase tracking-wider">CONSTRUCTION OS</h1>
+</div>
+<div class="flex items-center gap-space-3">
+<!-- Sync Status -->
+<div class="flex items-center gap-space-1 bg-surface-container-high rounded-full px-2 py-1 border border-outline-variant/30">
+<div class="w-2 h-2 rounded-full bg-mobile-success"></div>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">SYNCED</span>
+</div>
+<img alt="User profile avatar" class="w-8 h-8 rounded-full border-2 border-surface-container-high object-cover" data-alt="A professional headshot of an engineer wearing a hardhat and safety glasses, high-contrast dramatic lighting, dark industrial aesthetic, close up." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCecDeiYhU3kC3QLMwbR6iqbmEMOsSFoZ_ry8QFKv_xfbo4iX6q0tv6cD9bRviHEGSYDszqdVuC-kD1slCQO28zSRRt6Zxc6pOqvddYP9PNdOxUIiq064PLAsm4wDFnWfBrGZgk1O_9UGxo_Dro9ZpZ366zk90ueyWn6p8HcvFM0ayMih7-SHw7PpsODsF9d-7ab70fPVPl_wfCzpiBt_OGYYVu8d9oC1o3g0fdlT0ku-a2xr2-AAzx">
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="flex-1 overflow-y-auto px-edge-mobile pt-space-4 pb-[92px] space-y-edge-mobile">
+<!-- Welcome & Context -->
+<section class="space-y-space-1">
+
+<h2 class="font-hero-mobile text-hero-mobile text-on-surface">Portfolio Overview</h2>
+</section>
+<!-- KPI Bento Grid (Read-Only) -->
+<section class="grid grid-cols-2 gap-space-3">
+<!-- Active Projects Tile -->
+<div class="bg-surface-container rounded-xl p-space-4 border border-outline-variant/20 relative overflow-hidden group">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary-fixed"></div>
+<div class="flex justify-between items-start mb-space-3">
+<span class="material-symbols-outlined text-primary-fixed" style="font-variation-settings: &quot;FILL&quot; 1;">domain</span>
+</div>
+<p class="font-label-mobile text-label-mobile text-on-surface-variant uppercase tracking-wide">Active Projects</p>
+<p class="font-display-web text-display-web text-on-surface mt-1">12</p>
+</div>
+<!-- Open Issues Tile (Warning status) -->
+<div class="bg-surface-container rounded-xl p-space-4 border border-outline-variant/20 relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-mobile-warning"></div>
+<div class="flex justify-between items-start mb-space-3">
+<span class="material-symbols-outlined text-mobile-warning" style="font-variation-settings: &quot;FILL&quot; 1;">warning</span>
+</div>
+<p class="font-label-mobile text-label-mobile text-on-surface-variant uppercase tracking-wide">Open Issues</p>
+<p class="font-display-web text-display-web text-on-surface mt-1">47</p>
+</div>
+<!-- Total Budget Tile (Full Width) -->
+<div class="bg-surface-container rounded-xl p-space-4 border border-outline-variant/20 relative overflow-hidden col-span-2 flex items-center justify-between">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-mobile-success"></div>
+<div>
+<div class="flex items-center gap-space-2 mb-1">
+<span class="material-symbols-outlined text-mobile-success text-sm" style="font-variation-settings: &quot;FILL&quot; 1;">payments</span>
+<p class="font-label-mobile text-label-mobile text-on-surface-variant uppercase tracking-wide">Portfolio Budget</p>
+</div>
+<p class="font-hero-mobile text-hero-mobile text-on-surface">$142.5M</p>
+</div>
+<div class="text-right">
+<p class="font-tiny-web text-tiny-web text-mobile-success uppercase">+2.4% YTD</p>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant mt-1">Allocated</p>
+</div>
+</div>
+</section>
+<!-- AI Insights Module -->
+<section class="bg-surface-container-high/40 rounded-xl p-space-4 border-l-4 border-secondary relative overflow-hidden">
+<div class="absolute inset-0 bg-secondary/5 ai-pulse pointer-events-none"></div>
+<div class="flex items-start gap-space-3 relative z-10">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: &quot;FILL&quot; 1;">psychology</span>
+<div>
+<h3 class="font-label-mobile text-label-mobile text-secondary uppercase tracking-wider mb-1">System Insight</h3>
+<p class="font-body-mobile text-body-mobile text-on-surface-variant">Weather delays predicted for 'Sector 7G' tomorrow. Concrete pours may need rescheduling. Schedule variance currently at +2 days.</p>
+</div>
+</div>
+</section>
+<!-- Active Projects List (Read-Only) -->
+<section class="space-y-space-3">
+<div class="flex justify-between items-end mb-space-2">
+<h3 class="font-h2-web text-h2-web text-on-surface">Tracked Projects</h3>
+<span class="font-tiny-web text-tiny-web text-primary uppercase tracking-wide cursor-pointer hover:text-primary-fixed">View All</span>
+</div>
+<!-- Project Card 1 -->
+<div class="bg-surface-container rounded-xl border border-outline-variant/20 overflow-hidden flex flex-col">
+<div class="p-space-4 pb-space-3 border-b border-outline-variant/10">
+<div class="flex justify-between items-start mb-2">
+<div>
+<h4 class="font-h1-web text-[18px] font-semibold text-on-surface">Alpha Towers Phase 2</h4>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant uppercase mt-1">ID: PRJ-9942 • Commercial</p>
+</div>
+<div class="bg-mobile-success/10 text-mobile-success px-2 py-1 rounded font-tiny-web text-tiny-web uppercase tracking-wide border border-mobile-success/20">
+                            On Track
+                        </div>
+</div>
+<div class="mt-space-3">
+<div class="flex justify-between font-tiny-web text-tiny-web text-on-surface-variant mb-1 uppercase">
+<span class="">Completion</span>
+<span class="">68%</span>
+</div>
+<div class="h-2 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-primary-fixed rounded-full" style="width: 68%;"></div>
+</div>
+</div>
+</div>
+<!-- Read-only footer metrics -->
+<div class="bg-surface-container-low px-space-4 py-space-2 flex justify-between">
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">groups</span>
+<span class="font-tiny-web text-tiny-web uppercase">124 Workers</span>
+</div>
+<div class="flex items-center gap-1 text-mobile-warning">
+<span class="material-symbols-outlined text-[16px]">report</span>
+<span class="font-tiny-web text-tiny-web uppercase">3 Issues</span>
+</div>
+</div>
+</div>
+<!-- Project Card 2 -->
+<div class="bg-surface-container rounded-xl border border-outline-variant/20 overflow-hidden flex flex-col">
+<div class="p-space-4 pb-space-3 border-b border-outline-variant/10">
+<div class="flex justify-between items-start mb-2">
+<div>
+<h4 class="font-h1-web text-[18px] font-semibold text-on-surface">Metro Expansion Line C</h4>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant uppercase mt-1">ID: PRJ-8810 • Infrastructure</p>
+</div>
+<div class="bg-mobile-warning/10 text-mobile-warning px-2 py-1 rounded font-tiny-web text-tiny-web uppercase tracking-wide border border-mobile-warning/20">
+                            Delayed
+                        </div>
+</div>
+<div class="mt-space-3">
+<div class="flex justify-between font-tiny-web text-tiny-web text-on-surface-variant mb-1 uppercase">
+<span class="">Completion</span>
+<span class="">42%</span>
+</div>
+<div class="h-2 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-mobile-warning rounded-full" style="width: 42%;"></div>
+</div>
+</div>
+</div>
+<!-- Read-only footer metrics -->
+<div class="bg-surface-container-low px-space-4 py-space-2 flex justify-between">
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">groups</span>
+<span class="font-tiny-web text-tiny-web uppercase">89 Workers</span>
+</div>
+<div class="flex items-center gap-1 text-mobile-danger">
+<span class="material-symbols-outlined text-[16px]">report</span>
+<span class="font-tiny-web text-tiny-web uppercase">12 Issues</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Recent Activity (Read-Only Timeline) -->
+<section class="space-y-space-3">
+<h3 class="font-h2-web text-h2-web text-on-surface">Site Activity</h3>
+<div class="bg-surface-container rounded-xl p-space-4 border border-outline-variant/20">
+<!-- Timeline Item 1 -->
+<div class="relative pl-6 pb-6 border-l border-outline-variant/30 last:border-0 last:pb-0">
+<div class="absolute -left-[5px] top-1 w-2 h-2 rounded-full bg-primary-fixed outline outline-4 outline-surface-container"></div>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant uppercase mb-1">10:42 AM • Alpha Towers</p>
+<p class="font-body-mobile text-body-mobile text-on-surface">Daily Safety Report submitted by <span class="font-semibold text-primary">J. Smith</span>.</p>
+</div>
+<!-- Timeline Item 2 -->
+<div class="relative pl-6 pb-6 border-l border-outline-variant/30 last:border-0 last:pb-0">
+<div class="absolute -left-[5px] top-1 w-2 h-2 rounded-full bg-mobile-danger outline outline-4 outline-surface-container"></div>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant uppercase mb-1">09:15 AM • Metro Expansion</p>
+<p class="font-body-mobile text-body-mobile text-on-surface">Critical defect logged: <span class="text-on-surface-variant italic">"Rebar spacing fails spec in Section 4."</span></p>
+</div>
+<!-- Timeline Item 3 -->
+<div class="relative pl-6 last:border-0 last:pb-0">
+<div class="absolute -left-[5px] top-1 w-2 h-2 rounded-full bg-mobile-success outline outline-4 outline-surface-container"></div>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant uppercase mb-1">08:00 AM • System</p>
+<p class="font-body-mobile text-body-mobile text-on-surface">Morning sync completed successfully. All data current.</p>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar (Viewer Context) -->
+<nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface-container shadow-lg flex justify-around items-center h-[72px] px-base">
+<!-- Active Tab: Home -->
+<button class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl px-space-3 py-base active:scale-95 transition-transform duration-200">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">home</span>
+<span class="font-label-mobile text-label-mobile mt-1">Home</span>
+</button>
+<!-- Inactive Tab: Projects -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant px-space-3 py-base hover:bg-surface-container-high transition-all rounded-xl active:scale-95 duration-200">
+<span class="material-symbols-outlined">domain</span>
+<span class="font-label-mobile text-label-mobile mt-1">Projects</span>
+</button>
+<!-- Inactive Tab: Map (Replacing generic ones with domain specific, adhering to Viewer context) -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant px-space-3 py-base hover:bg-surface-container-high transition-all rounded-xl active:scale-95 duration-200">
+<span class="material-symbols-outlined">map</span>
+<span class="font-label-mobile text-label-mobile mt-1">Map</span>
+</button>
+<!-- Inactive Tab: AI Insights -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant px-space-3 py-base hover:bg-surface-container-high transition-all rounded-xl active:scale-95 duration-200">
+<span class="material-symbols-outlined">psychology</span>
+<span class="font-label-mobile text-label-mobile mt-1">Insights</span>
+</button>
+<!-- Inactive Tab: Profile -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant px-space-3 py-base hover:bg-surface-container-high transition-all rounded-xl active:scale-95 duration-200">
+<span class="material-symbols-outlined">person</span>
+<span class="font-label-mobile text-label-mobile mt-1">Profile</span>
+</button>
+</nav>
+
+
+</body></html>

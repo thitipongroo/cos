@@ -1,0 +1,388 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+<title>Construction OS - Project List (Viewer)</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "dark-bg": "#020617",
+                      "surface-container-lowest": "#000f21",
+                      "on-primary-container": "#eeefff",
+                      "mobile-success": "#00C853",
+                      "tertiary-fixed": "#dee1f9",
+                      "inverse-primary": "#0053db",
+                      "tertiary-container": "#686c80",
+                      "surface-container-high": "#1b2b3f",
+                      "background": "#031427",
+                      "surface-dim": "#031427",
+                      "primary-fixed": "#dbe1ff",
+                      "surface-container-highest": "#26364a",
+                      "on-tertiary-fixed-variant": "#414658",
+                      "on-secondary-fixed": "#001f26",
+                      "on-primary-fixed": "#00174b",
+                      "on-tertiary": "#2b3041",
+                      "on-primary": "#002a78",
+                      "dark-surface": "#0F172A",
+                      "surface-container-low": "#0b1c30",
+                      "on-tertiary-fixed": "#161b2b",
+                      "on-error-container": "#ffdad6",
+                      "surface-variant": "#26364a",
+                      "tertiary-fixed-dim": "#c1c5dc",
+                      "on-secondary-container": "#00424e",
+                      "primary": "#b4c5ff",
+                      "surface-bright": "#2a3a4f",
+                      "mobile-primary": "#0066FF",
+                      "secondary-fixed": "#acedff",
+                      "tertiary": "#c1c5dc",
+                      "error-container": "#93000a",
+                      "outline-variant": "#434655",
+                      "error": "#ffb4ab",
+                      "on-surface-variant": "#c3c6d7",
+                      "on-secondary": "#003640",
+                      "inverse-surface": "#d3e4fe",
+                      "mobile-warning": "#FF9500",
+                      "mobile-danger": "#FF3B30",
+                      "on-secondary-fixed-variant": "#004e5c",
+                      "on-primary-fixed-variant": "#003ea8",
+                      "surface-tint": "#b4c5ff",
+                      "on-background": "#d3e4fe",
+                      "secondary-container": "#03b5d3",
+                      "secondary-fixed-dim": "#4cd7f6",
+                      "inverse-on-surface": "#213145",
+                      "primary-fixed-dim": "#b4c5ff",
+                      "sync-active": "#FFD60A",
+                      "on-error": "#690005",
+                      "outline": "#8d90a0",
+                      "primary-container": "#2563eb",
+                      "surface-container": "#102034",
+                      "on-surface": "#d3e4fe",
+                      "on-tertiary-container": "#eeefff",
+                      "sync-pending": "#94A3B8",
+                      "secondary": "#4cd7f6",
+                      "surface": "#031427"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "space-4": "16px",
+                      "space-2": "8px",
+                      "space-1": "4px",
+                      "edge-mobile": "24px",
+                      "web-margin": "32px",
+                      "base": "4px",
+                      "space-3": "12px",
+                      "touch-target": "52px",
+                      "safe": "env(safe-area-inset-bottom)"
+              },
+              "fontFamily": {
+                      "h1-web": [
+                              "Inter Tight", "sans-serif"
+                      ],
+                      "label-mobile": [
+                              "Inter Tight", "sans-serif"
+                      ],
+                      "display-web": [
+                              "Inter Tight", "sans-serif"
+                      ],
+                      "body-mobile": [
+                              "Inter Tight", "sans-serif"
+                      ],
+                      "tiny-web": [
+                              "Inter Tight", "sans-serif"
+                      ],
+                      "body-web": [
+                              "Inter Tight", "sans-serif"
+                      ],
+                      "hero-mobile": [
+                              "Inter Tight", "sans-serif"
+                      ],
+                      "h2-web": [
+                              "Inter Tight", "sans-serif"
+                      ]
+              },
+              "fontSize": {
+                      "h1-web": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "h1-web-mobile": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-mobile": [
+                              "13px",
+                              {
+                                      "lineHeight": "18px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display-web": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "display-web-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-mobile": [
+                              "17px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "tiny-web": [
+                              "11px",
+                              {
+                                      "lineHeight": "12px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "body-web": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "hero-mobile": [
+                              "28px",
+                              {
+                                      "lineHeight": "34px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "h2-web": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.on-surface');
+            -webkit-tap-highlight-color: transparent;
+        }
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: theme('colors.surface-container-highest');
+            border-radius: 4px;
+        }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
+        .glass-effect {
+            background: rgba(16, 32, 52, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col pb-[92px] bg-background">
+<!-- TopAppBar -->
+<header class="bg-surface-container flex justify-between items-center px-edge-mobile h-[64px] w-full z-50 sticky top-0 border-b border-outline-variant/30">
+<div class="flex items-center gap-space-3 text-on-surface">
+<button class="hover:bg-surface-container-highest transition-colors w-[40px] h-[40px] flex items-center justify-center rounded-full active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 0;">arrow_back</span>
+</button>
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: &quot;FILL&quot; 1;">analytics</span>
+<h1 class="font-display-web text-display-web-mobile md:text-display-web font-bold text-primary tracking-tight">CONSTRUCTION...</h1>
+</div>
+</div>
+<div class="flex items-center gap-space-2">
+<div class="w-2 h-2 rounded-full bg-mobile-success animate-pulse"></div>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase tracking-wider">SYNCED</span>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-1 px-edge-mobile py-space-4 max-w-7xl mx-auto w-full">
+<!-- Filter Area -->
+<section class="mb-space-4 sticky top-[64px] bg-background z-40 py-space-2">
+<!-- Search -->
+<div class="relative w-full mb-space-3 group">
+<span class="material-symbols-outlined absolute left-space-3 top-1/2 -translate-y-1/2 text-on-surface-variant" style="font-variation-settings: &quot;FILL&quot; 0;">search</span>
+<input class="w-full bg-surface-container-high border border-outline-variant/50 rounded-lg py-space-3 pl-12 pr-space-3 text-body-mobile font-body-mobile text-on-surface focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all placeholder:text-on-surface-variant/50 cursor-default" placeholder="Search projects by ID, name, or location..." readonly="" type="text">
+</div>
+<!-- Chips -->
+<div class="flex gap-space-2 overflow-x-auto pb-2 scrollbar-hide -mx-edge-mobile px-edge-mobile md:mx-0 md:px-0">
+<div class="flex-shrink-0 bg-primary-container text-on-primary-container px-space-4 py-space-2 rounded-full font-label-mobile text-label-mobile whitespace-nowrap border border-primary/20">All Projects</div>
+<div class="flex-shrink-0 bg-surface-container-high text-on-surface-variant px-space-4 py-space-2 rounded-full font-label-mobile text-label-mobile whitespace-nowrap border border-outline-variant/50">Commercial</div>
+<div class="flex-shrink-0 bg-surface-container-high text-on-surface-variant px-space-4 py-space-2 rounded-full font-label-mobile text-label-mobile whitespace-nowrap border border-outline-variant/50">Infrastructure</div>
+<div class="flex-shrink-0 bg-surface-container-high text-on-surface-variant px-space-4 py-space-2 rounded-full font-label-mobile text-label-mobile whitespace-nowrap border border-outline-variant/50">Residential</div>
+</div>
+</section>
+<!-- Project Cards Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-space-4">
+<!-- Card 1 -->
+<article class="bg-surface-container rounded-xl overflow-hidden relative border border-outline-variant shadow-lg hover:bg-surface-container-high transition-colors">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-mobile-success"></div>
+<div class="p-space-4 pl-space-4 ml-1 flex flex-col h-full gap-space-3">
+<div class="flex justify-between items-start gap-space-2">
+<div>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant">ID: PRJ-9942 • COMMERCIAL</span>
+<h2 class="font-h2-web text-h2-web text-on-surface mt-1">Apex Tower Phase II</h2>
+</div>
+<div class="bg-mobile-success/10 text-mobile-success border border-mobile-success/20 px-2 py-1 rounded font-tiny-web text-tiny-web whitespace-nowrap">
+                            ON TRACK
+                        </div>
+</div>
+<div class="mt-auto pt-space-2">
+<div class="flex justify-between items-end mb-1">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant">PROGRESS</span>
+<span class="font-label-mobile text-label-mobile text-primary">68%</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full w-[68%]"></div>
+</div>
+</div>
+<div class="flex justify-between items-center pt-space-3 border-t border-outline-variant/30 mt-1">
+<div class="flex items-center gap-space-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: &quot;FILL&quot; 0;">group</span>
+<span class="font-tiny-web text-tiny-web">124 WORKERS</span>
+</div>
+<div class="flex items-center gap-space-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: &quot;FILL&quot; 0;">report</span>
+<span class="font-tiny-web text-tiny-web">3 ISSUES</span>
+</div>
+</div>
+</div>
+</article>
+<!-- Card 2 -->
+<article class="bg-surface-container rounded-xl overflow-hidden relative border border-outline-variant shadow-lg hover:bg-surface-container-high transition-colors">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-mobile-warning"></div>
+<div class="p-space-4 pl-space-4 ml-1 flex flex-col h-full gap-space-3">
+<div class="flex justify-between items-start gap-space-2">
+<div>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant">ID: PRJ-8810 • INFRASTRUCTURE</span>
+<h2 class="font-h2-web text-h2-web text-on-surface mt-1">Metro Line Extension</h2>
+</div>
+<div class="bg-mobile-warning/10 text-mobile-warning border border-mobile-warning/20 px-2 py-1 rounded font-tiny-web text-tiny-web whitespace-nowrap">
+                            DELAYED
+                        </div>
+</div>
+<div class="mt-auto pt-space-2">
+<div class="flex justify-between items-end mb-1">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant">PROGRESS</span>
+<span class="font-label-mobile text-label-mobile text-primary">42%</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-mobile-warning rounded-full w-[42%]"></div>
+</div>
+</div>
+<div class="flex justify-between items-center pt-space-3 border-t border-outline-variant/30 mt-1">
+<div class="flex items-center gap-space-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: &quot;FILL&quot; 0;">group</span>
+<span class="font-tiny-web text-tiny-web">450 WORKERS</span>
+</div>
+<div class="flex items-center gap-space-1 text-mobile-warning">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: &quot;FILL&quot; 1;">report</span>
+<span class="font-tiny-web text-tiny-web">12 ISSUES</span>
+</div>
+</div>
+</div>
+</article>
+<!-- Card 3 -->
+<article class="bg-surface-container rounded-xl overflow-hidden relative border border-outline-variant shadow-lg hover:bg-surface-container-high transition-colors">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-mobile-success"></div>
+<div class="p-space-4 pl-space-4 ml-1 flex flex-col h-full gap-space-3">
+<div class="flex justify-between items-start gap-space-2">
+<div>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant">ID: PRJ-7721 • COMMERCIAL</span>
+<h2 class="font-h2-web text-h2-web text-on-surface mt-1">Riverside Complex</h2>
+</div>
+<div class="bg-mobile-success/10 text-mobile-success border border-mobile-success/20 px-2 py-1 rounded font-tiny-web text-tiny-web whitespace-nowrap">
+                            ON TRACK
+                        </div>
+</div>
+<div class="mt-auto pt-space-2">
+<div class="flex justify-between items-end mb-1">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant">PROGRESS</span>
+<span class="font-label-mobile text-label-mobile text-primary">89%</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full w-[89%]"></div>
+</div>
+</div>
+<div class="flex justify-between items-center pt-space-3 border-t border-outline-variant/30 mt-1">
+<div class="flex items-center gap-space-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: &quot;FILL&quot; 0;">group</span>
+<span class="font-tiny-web text-tiny-web">85 WORKERS</span>
+</div>
+<div class="flex items-center gap-space-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: &quot;FILL&quot; 0;">report</span>
+<span class="font-tiny-web text-tiny-web">1 ISSUE</span>
+</div>
+</div>
+</div>
+</article>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="md:hidden bg-surface-container fixed bottom-0 w-full z-50 flex justify-around items-center px-space-2 h-[72px] pb-safe border-t border-outline-variant/30">
+<!-- Active Tab: Projects -->
+<button class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl px-space-4 py-space-1 hover:text-primary transition-colors active:scale-95 transition-all duration-200">
+<span class="material-symbols-outlined mb-[2px]" style="font-variation-settings: &quot;FILL&quot; 1;">inventory_2</span>
+<span class="font-label-mobile text-label-mobile">Projects</span>
+</button>
+<!-- Inactive Tab: Daily Logs -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors active:scale-95 transition-all duration-200 px-space-4 py-space-1">
+<span class="material-symbols-outlined mb-[2px]" style="font-variation-settings: &quot;FILL&quot; 0;">history_edu</span>
+<span class="font-label-mobile text-label-mobile">Daily Logs</span>
+</button>
+<!-- Inactive Tab: Safety -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors active:scale-95 transition-all duration-200 px-space-4 py-space-1">
+<span class="material-symbols-outlined mb-[2px]" style="font-variation-settings: &quot;FILL&quot; 0;">safety_check</span>
+<span class="font-label-mobile text-label-mobile">Safety</span>
+</button>
+<!-- Inactive Tab: Directory -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors active:scale-95 transition-all duration-200 px-space-4 py-space-1">
+<span class="material-symbols-outlined mb-[2px]" style="font-variation-settings: &quot;FILL&quot; 0;">groups</span>
+<span class="font-label-mobile text-label-mobile">Directory</span>
+</button>
+</nav>
+
+
+</body></html>

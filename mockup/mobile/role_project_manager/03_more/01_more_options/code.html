@@ -1,0 +1,266 @@
+<!DOCTYPE html><html class="dark" lang="th"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Construction OS - More Options</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "mobile-primary": "#0066FF",
+                        "tertiary-container": "#686c80",
+                        "surface-dim": "#031427",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "outline": "#8d90a0",
+                        "on-secondary": "#003640",
+                        "on-error-container": "#ffdad6",
+                        "on-tertiary-fixed": "#161b2b",
+                        "mobile-warning": "#FF9500",
+                        "inverse-surface": "#d3e4fe",
+                        "on-primary-fixed": "#00174b",
+                        "inverse-primary": "#0053db",
+                        "sync-pending": "#94A3B8",
+                        "error": "#ffb4ab",
+                        "on-primary-container": "#eeefff",
+                        "error-container": "#93000a",
+                        "surface": "#031427",
+                        "secondary-container": "#03b5d3",
+                        "on-tertiary": "#2b3041",
+                        "secondary": "#4cd7f6",
+                        "primary": "#b4c5ff",
+                        "inverse-on-surface": "#213145",
+                        "on-primary": "#002a78",
+                        "surface-variant": "#26364a",
+                        "secondary-fixed": "#acedff",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "surface-container-low": "#0b1c30",
+                        "on-tertiary-container": "#eeefff",
+                        "outline-variant": "#434655",
+                        "surface-container": "#102034",
+                        "on-error": "#690005",
+                        "surface-container-lowest": "#000f21",
+                        "mobile-danger": "#FF3B30",
+                        "surface-bright": "#2a3a4f",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "on-surface-variant": "#c3c6d7",
+                        "primary-container": "#2563eb",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "sync-active": "#FFD60A",
+                        "surface-container-highest": "#26364a",
+                        "tertiary-fixed": "#dee1f9",
+                        "mobile-success": "#00C853",
+                        "on-surface": "#d3e4fe",
+                        "on-secondary-fixed": "#001f26",
+                        "surface-tint": "#b4c5ff",
+                        "on-background": "#d3e4fe",
+                        "on-secondary-container": "#00424e",
+                        "primary-fixed": "#dbe1ff",
+                        "background": "#031427",
+                        "dark-bg": "#020617",
+                        "tertiary": "#c1c5dc",
+                        "dark-surface": "#0F172A",
+                        "surface-container-high": "#1b2b3f"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "space-2": "8px",
+                        "base": "4px",
+                        "edge-mobile": "24px",
+                        "space-1": "4px",
+                        "web-margin": "32px",
+                        "space-4": "16px",
+                        "touch-target": "52px",
+                        "space-3": "12px"
+                    },
+                    "fontFamily": {
+                        "h1-web": ["Inter Tight", "sans-serif"],
+                        "h2-web": ["Inter Tight", "sans-serif"],
+                        "display-web": ["Inter Tight", "sans-serif"],
+                        "tiny-web": ["Inter Tight", "sans-serif"],
+                        "body-mobile": ["Inter Tight", "sans-serif"],
+                        "body-web": ["Inter Tight", "sans-serif"],
+                        "label-mobile": ["Inter Tight", "sans-serif"],
+                        "hero-mobile": ["Inter Tight", "sans-serif"]
+                    },
+                    "fontSize": {
+                        "h1-web": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "h2-web": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "display-web": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "display-web-mobile": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "tiny-web": ["11px", { "lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "body-mobile": ["17px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "body-web": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "label-mobile": ["13px", { "lineHeight": "18px", "fontWeight": "600" }],
+                        "hero-mobile": ["28px", { "lineHeight": "34px", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+        body { font-family: 'Inter Tight', sans-serif; }
+    </style>
+</head>
+<body class="bg-dark-bg text-on-background min-h-screen pb-[90px] md:pb-0">
+<!-- TopAppBar (Mobile & Web) -->
+<header class="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-edge-mobile h-touch-target bg-surface-dim dark:bg-surface-container-lowest">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed-dim" data-icon="menu">menu</span>
+<span class="font-display-web-mobile font-bold text-primary">Construction OS</span>
+</div>
+<img alt="Brand Icon" class="w-8 h-8 rounded-full bg-surface-container" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBb8EtSlMIXqU8o4-_OQMZpyrT54ph9ULw45V9AN86hshbz1IRRaEctFBZ4AEi1UVrvu1FsO1_L7Z2qzE-nAdkGwY3Tb92_d0RgZ2s_viK_3LeUTZznP1-2HJ7Ie3xQDeFrzObD6SI7TTfBtiE6XsoeAjXLCRgnPV2OsXC7UTd1fmKaz2hWhCKDr9kJNjc6qbqbm3ZQck74yYYk_mVjkxfKiLMBD0XfAWINajp8mEZpvLvI4gDg9Eu7Q4jIlPwCd4lEzw">
+</header>
+<!-- Main Content Area -->
+<main class="pt-[68px] px-edge-mobile space-y-space-4 pb-edge-mobile max-w-3xl mx-auto">
+<!-- Profile Section -->
+<section class="bg-surface-container p-space-4 rounded-xl border border-surface-bright/20 flex items-center gap-space-4">
+<div class="w-16 h-16 rounded-full bg-primary-container flex items-center justify-center shrink-0 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Professional headshot of a Thai male project manager, serious expression, wearing a high-vis vest and hard hat, on a construction site, cinematic lighting, corporate industrial aesthetic, deep navy background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCzKfbkjZ0yUoGn4Y5VWbe7xAUCxmvo-9U-FRP0zWDapa_1ZtcbXCidG_4EWwiZzJEjCZfkY0DavYmh6q4iscs_7QVgdm1DIGk7Vv2osERKWhxHKidkpYSTixgZWYVdmAFjer4Ggxty9wjhluC3wNKf3GMjtlcVc0o-c_p3zQdEYoy-vqMGSTYNTevJgj0H-egAD3xNu_tBg9KZM3mZEuHNzjM6199IU1hPSK1PafUSviBjz8hH8Cf5">
+</div>
+<div>
+<h2 class="font-h2-web text-on-surface">วิชิต มั่นคง</h2>
+<p class="font-body-mobile text-on-surface-variant">Project Manager • Skybridge Central</p>
+<div class="mt-space-1 inline-flex items-center gap-1 px-2 py-1 rounded bg-surface-container-high border border-outline/30 text-tiny-web text-primary">
+<span class="material-symbols-outlined text-[14px]">check_circle</span> Active
+                </div>
+</div>
+</section>
+<!-- AI Intelligence Widget -->
+<section class="bg-surface-container rounded-xl border-l-4 border-secondary p-space-4 relative overflow-hidden group">
+<div class="absolute inset-0 bg-secondary/5 pointer-events-none"></div>
+<div class="flex justify-between items-start mb-space-2 relative z-10">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: &quot;FILL&quot; 1;">psychology</span>
+<h3 class="font-label-mobile text-secondary uppercase tracking-widest">Intelligence</h3>
+</div>
+<div class="bg-secondary-container text-on-secondary-container font-tiny-web px-2 py-1 rounded">98% Confidence</div>
+</div>
+<p class="font-body-mobile text-on-surface-variant relative z-10 leading-relaxed">
+<strong class="text-on-surface">Project Health:</strong> Skybridge Central is currently tracking 2.4% under budget. 
+                <br>
+<strong class="text-mobile-warning">Risk Alert:</strong> Concrete pouring for Sector B is on the critical path and vulnerable to forecasted heavy rain next week. Recommend expediting formwork.
+            </p>
+</section>
+<!-- Menu Options List (Bento Grid on larger screens) -->
+<section class="grid grid-cols-1 md:grid-cols-2 gap-space-3">
+<a class="bg-surface-container p-space-4 rounded-xl border border-surface-bright/10 hover:bg-surface-bright/20 transition-colors flex items-center gap-space-4 group" href="#">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high flex items-center justify-center text-primary group-hover:bg-primary-container group-hover:text-on-primary-container transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</div>
+<div class="flex-1">
+<h4 class="font-body-mobile font-semibold text-on-surface">การตั้งค่าโครงการ</h4>
+<p class="font-tiny-web text-on-surface-variant mt-1">Manage project details and milestones.</p>
+</div>
+<span class="material-symbols-outlined text-outline">chevron_right</span>
+</a>
+<a class="bg-surface-container p-space-4 rounded-xl border border-surface-bright/10 hover:bg-surface-bright/20 transition-colors flex items-center gap-space-4 group" href="#">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high flex items-center justify-center text-primary group-hover:bg-primary-container group-hover:text-on-primary-container transition-colors">
+<span class="material-symbols-outlined">group</span>
+</div>
+<div class="flex-1">
+<h4 class="font-body-mobile font-semibold text-on-surface">จัดการทีมงาน</h4>
+<p class="font-tiny-web text-on-surface-variant mt-1">Assign roles and permissions.</p>
+</div>
+<span class="material-symbols-outlined text-outline">chevron_right</span>
+</a>
+<a class="bg-surface-container p-space-4 rounded-xl border border-surface-bright/10 hover:bg-surface-bright/20 transition-colors flex items-center gap-space-4 group" href="#">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high flex items-center justify-center text-primary group-hover:bg-primary-container group-hover:text-on-primary-container transition-colors">
+<span class="material-symbols-outlined">folder_special</span>
+</div>
+<div class="flex-1">
+<h4 class="font-body-mobile font-semibold text-on-surface">คลังเอกสาร &amp; แบบแปลน</h4>
+<p class="font-tiny-web text-on-surface-variant mt-1">Access all technical files.</p>
+</div>
+<span class="material-symbols-outlined text-outline">chevron_right</span>
+</a>
+<a class="bg-surface-container p-space-4 rounded-xl border border-surface-bright/10 hover:bg-surface-bright/20 transition-colors flex items-center gap-space-4 group" href="#">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high flex items-center justify-center text-primary group-hover:bg-primary-container group-hover:text-on-primary-container transition-colors">
+<span class="material-symbols-outlined">analytics</span>
+</div>
+<div class="flex-1">
+<h4 class="font-body-mobile font-semibold text-on-surface">วิเคราะห์ต้นทุน &amp; BOQ</h4>
+<p class="font-tiny-web text-on-surface-variant mt-1">Deep dive into financial performance.</p>
+</div>
+<span class="material-symbols-outlined text-outline">chevron_right</span>
+</a>
+<a class="bg-surface-container p-space-4 rounded-xl border border-surface-bright/10 hover:bg-surface-bright/20 transition-colors flex items-center gap-space-4 group" href="#">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high flex items-center justify-center text-primary group-hover:bg-primary-container group-hover:text-on-primary-container transition-colors">
+<span class="material-symbols-outlined">handshake</span>
+</div>
+<div class="flex-1">
+<h4 class="font-body-mobile font-semibold text-on-surface">สรุปผลผู้รับเหมา</h4>
+<p class="font-tiny-web text-on-surface-variant mt-1">Trust scores and delivery reliability.</p>
+</div>
+<span class="material-symbols-outlined text-outline">chevron_right</span>
+</a>
+<a class="bg-surface-container p-space-4 rounded-xl border border-surface-bright/10 hover:bg-surface-bright/20 transition-colors flex items-center gap-space-4 group" href="#">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high flex items-center justify-center text-primary group-hover:bg-primary-container group-hover:text-on-primary-container transition-colors">
+<span class="material-symbols-outlined">map</span>
+</div>
+<div class="flex-1">
+<h4 class="font-body-mobile font-semibold text-on-surface">แผนที่ไซต์งานเชิงลึก</h4>
+<p class="font-tiny-web text-on-surface-variant mt-1">Full project map layers.</p>
+</div>
+<span class="material-symbols-outlined text-outline">chevron_right</span>
+</a>
+<a class="bg-surface-container p-space-4 rounded-xl border border-surface-bright/10 hover:bg-surface-bright/20 transition-colors flex items-center gap-space-4 group" href="#">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high flex items-center justify-center text-primary group-hover:bg-primary-container group-hover:text-on-primary-container transition-colors">
+<span class="material-symbols-outlined">toggle_on</span>
+</div>
+<div class="flex-1">
+<h4 class="font-body-mobile font-semibold text-on-surface">การตั้งค่าระบบ</h4>
+<p class="font-tiny-web text-on-surface-variant mt-1">General app preferences.</p>
+</div>
+<span class="material-symbols-outlined text-outline">chevron_right</span>
+</a>
+<a class="bg-surface-container p-space-4 rounded-xl border border-surface-bright/10 hover:bg-surface-bright/20 transition-colors flex items-center gap-space-4 group" href="#">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high flex items-center justify-center text-primary group-hover:bg-primary-container group-hover:text-on-primary-container transition-colors">
+<span class="material-symbols-outlined">support_agent</span>
+</div>
+<div class="flex-1">
+<h4 class="font-body-mobile font-semibold text-on-surface">ศูนย์ช่วยเหลือ</h4>
+<p class="font-tiny-web text-on-surface-variant mt-1">Access documentation and live support.</p>
+</div>
+<span class="material-symbols-outlined text-outline">chevron_right</span>
+</a>
+</section>
+<div class="h-10"></div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-base pb-safe h-[72px] bg-surface-container dark:bg-surface-container-high shadow-lg">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-bright/20 rounded-xl p-2 transition-all" href="#">
+<span class="material-symbols-outlined">assignment</span>
+<span class="font-label-mobile mt-1">Reports</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-bright/20 rounded-xl p-2 transition-all" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-label-mobile mt-1">Inventory</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-bright/20 rounded-xl p-2 transition-all" href="#">
+<span class="material-symbols-outlined">view_in_ar</span>
+<span class="font-label-mobile mt-1">BIM</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-bright/20 rounded-xl p-2 transition-all" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-mobile mt-1">Users</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-xl px-space-4 py-space-2 scale-95 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">settings</span>
+<span class="font-label-mobile mt-1">Settings</span>
+</a>
+</nav>
+
+
+</body></html>
