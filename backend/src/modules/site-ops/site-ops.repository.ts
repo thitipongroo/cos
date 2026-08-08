@@ -10,13 +10,13 @@ import { applyCap, capLimit } from '../../shared/pagination/list-cap';
 import { clsTenantId } from '../../shared/context/cls-context';
 
 // Row types live in ./site-ops.rows; imported here for the method signatures below and re-exported so
-// existing `from './site-ops.repository'` type imports (service, specs) keep resolving. ManpowerLogRow
-// is re-exported (via `export type *`) but not imported here — no method in this file references it.
+// existing `from './site-ops.repository'` type imports (service, specs) keep resolving.
 import type {
   SiteReportRow,
   IssueRow,
   InspectionRow,
   SafetyChecklistRow,
+  ManpowerLogRow,
   MaterialConsumptionRow,
   CarbonRecordRow,
   ConflictRecordRow,
@@ -50,8 +50,10 @@ export class SiteOpsRepository {
     report_date: string;
     summary: string | null;
     blockers?: string | null;
+    blocker_category?: string | null;
     weather: string | null;
     manpower_count: number | null;
+    shift?: string | null;
     client_submitted_at: string | null;
     latitude?: number | null;
     longitude?: number | null;
@@ -61,20 +63,24 @@ export class SiteOpsRepository {
         tx.$queryRaw<SiteReportRow[]>`
         INSERT INTO site_ops.site_reports
           (report_id, project_id, tenant_id, report_date, submitted_by,
-           summary, blockers, weather, manpower_count, client_submitted_at, latitude, longitude)
+           summary, blockers, blocker_category, weather, manpower_count, shift,
+           client_submitted_at, latitude, longitude)
         VALUES
           (${params.report_id}::uuid, ${params.project_id}::uuid,
            ${this.tenantId}::uuid, ${params.report_date}::date,
            ${params.submitted_by}::uuid,
-           ${params.summary}, ${params.blockers ?? null}, ${params.weather}, ${params.manpower_count},
+           ${params.summary}, ${params.blockers ?? null}, ${params.blocker_category ?? null},
+           ${params.weather}, ${params.manpower_count}, ${params.shift ?? null},
            ${params.client_submitted_at}::timestamptz,
            ${params.latitude ?? null}::numeric, ${params.longitude ?? null}::numeric)
         ON CONFLICT (project_id, report_date, submitted_by)
           DO UPDATE SET
             summary             = EXCLUDED.summary,
             blockers            = EXCLUDED.blockers,
+            blocker_category    = EXCLUDED.blocker_category,
             weather             = EXCLUDED.weather,
             manpower_count      = EXCLUDED.manpower_count,
+            shift               = EXCLUDED.shift,
             client_submitted_at = EXCLUDED.client_submitted_at,
             latitude            = EXCLUDED.latitude,
             longitude           = EXCLUDED.longitude,
@@ -83,6 +89,51 @@ export class SiteOpsRepository {
       `,
     );
     return rows[0]!;
+  }
+
+  /**
+   * Replace a report's per-trade manpower breakdown (site_ops.manpower_logs, master §Phase 6).
+   *
+   * DELETE-then-INSERT rather than upsert: the table has no natural key beyond its generated
+   * `log_id`, and a resubmitted report is the authoritative statement of who was on site — a trade
+   * the operator removed must disappear, which an insert-only path would never do. Both statements
+   * run inside ONE db.run transaction so a report is never briefly left with no breakdown at all.
+   *
+   * An empty `lines` array is meaningful and honoured: it clears the breakdown.
+   */
+  async replaceManpowerLogs(
+    reportId: string,
+    lines: Array<{ trade_type: string; worker_count: number; hours_worked: number }>,
+  ): Promise<void> {
+    await this.db.run(async (tx) => {
+      await tx.$executeRaw`
+        DELETE FROM site_ops.manpower_logs
+        WHERE report_id = ${reportId}::uuid
+          AND tenant_id = ${this.tenantId}::uuid
+      `;
+      for (const line of lines) {
+        await tx.$executeRaw`
+          INSERT INTO site_ops.manpower_logs
+            (report_id, tenant_id, trade_type, worker_count, hours_worked)
+          VALUES
+            (${reportId}::uuid, ${this.tenantId}::uuid,
+             ${line.trade_type}, ${line.worker_count}, ${line.hours_worked}::numeric)
+        `;
+      }
+    });
+  }
+
+  /** A report's per-trade breakdown, ordered by headcount so the biggest trade reads first. */
+  async listManpowerLogs(reportId: string): Promise<ManpowerLogRow[]> {
+    return this.db.run(
+      (tx) =>
+        tx.$queryRaw<ManpowerLogRow[]>`
+        SELECT * FROM site_ops.manpower_logs
+        WHERE report_id = ${reportId}::uuid
+          AND tenant_id = ${this.tenantId}::uuid
+        ORDER BY worker_count DESC, trade_type ASC
+      `,
+    );
   }
 
   async findReportById(reportId: string): Promise<SiteReportRow | null> {
@@ -242,6 +293,12 @@ export class SiteOpsRepository {
     title: string;
     description: string | null;
     severity: string;
+    /**
+     * DEFECT | REWORK | PUNCH | GENERAL. `null` lets the column's own DEFAULT 'GENERAL' apply, which
+     * is what every caller got before the field was exposed — COALESCE below, not a TS default, so
+     * the default lives in exactly one place (the schema).
+     */
+    issue_type?: string | null;
     assigned_to: string | null;
     /**
      * Who raised it. Passed in like `submitted_by` on a site report rather than read here, because
@@ -258,13 +315,14 @@ export class SiteOpsRepository {
         tx.$queryRaw<IssueRow[]>`
         INSERT INTO site_ops.issues
           (issue_id, issue_number, project_id, tenant_id, report_id, title, description,
-           severity, assigned_to, created_by, client_submitted_at, latitude, longitude)
+           severity, issue_type, assigned_to, created_by, client_submitted_at, latitude, longitude)
         VALUES
           (${params.issue_id}::uuid, ${params.issue_number}, ${params.project_id}::uuid,
            ${this.tenantId}::uuid,
            ${params.report_id}::uuid,
            ${params.title}, ${params.description},
-           ${params.severity}, ${params.assigned_to}::uuid, ${params.created_by}::uuid,
+           ${params.severity}, COALESCE(${params.issue_type ?? null}, 'GENERAL'),
+           ${params.assigned_to}::uuid, ${params.created_by}::uuid,
            ${params.client_submitted_at}::timestamptz,
            ${params.latitude ?? null}::numeric, ${params.longitude ?? null}::numeric)
         RETURNING *

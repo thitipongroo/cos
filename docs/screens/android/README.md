@@ -36,6 +36,7 @@ gets its own full-page file (the Invite-user `email` method, the Alerts `diff`-e
 | [`SITE-ENGINEER/`](SITE-ENGINEER/)         | Tabs: **Home \| Issues \| Inspections \| Reports**. Captured so far: [`01-Home/`](SITE-ENGINEER/01-Home/) — the loading state (`00`) + dashboard (`01`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | [`TENANT-ADMIN/`](TENANT-ADMIN/)           | Tabs: **Home \| Users \| Alerts \| Settings**. [`01-Home/`](TENANT-ADMIN/01-Home/) — dashboard (`01`), Quick-Add (`02`) and the FAB flows: Invite-user (`03`), Role-permissions (`04`), Roles-selection (`05`), Invitation-success (`06`), System-integration (`07`), Apps-&-Services (`08`). [`02-Users/`](TENANT-ADMIN/02-Users/) — the users list (`01`), the per-user action sheet (`02`), the user profile (`03`), the multi-role permission editor (`04`) + the save-success screen (`05`), and the password-reset form (`06`) + its two done screens — temp-password (`07`) and email-link-sent (`08`). [`03-Alerts/`](TENANT-ADMIN/03-Alerts/) — the sync-review queue (`01`). [`04-Settings/`](TENANT-ADMIN/04-Settings/) — System Settings (`01`, one full-page). |
 | [`CRM-SALES-MANAGER/`](CRM-SALES-MANAGER/) | Tabs: **Home \| Leads \| Opportunities \| Customers** — the three pages §20.7.10 defines, built 2026-08-04. Leads (`01`), Opportunities (`02`), Customers (`03`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| [`SITE-WORKER/`](SITE-WORKER/)             | Tabs: **Tasks \| Issues \| Reports \| Safety** — the only role with **no Home tab** (PO decision 2026-08-08). One screen per tab: [`01-Tasks/`](SITE-WORKER/01-Tasks/) (`01`), [`02-Issues/`](SITE-WORKER/02-Issues/) (`01`), [`03-Reports/`](SITE-WORKER/03-Reports/) (`01`), [`04-Safety/`](SITE-WORKER/04-Safety/) (`01`).                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 
 The two adb dashboard scripts write straight into their role's menu subfolders —
 [`capture-android-home.mjs`](../../../apps/mobile/scripts/capture-android-home.mjs) → `SITE-ENGINEER/01-Home/`,
@@ -869,3 +870,136 @@ different thing from the **committed** per-role captures here, which are grouped
   [`apps/mobile/e2e/capture.spec.ts`](../../../apps/mobile/e2e/capture.spec.ts) writes to
   `docs/screens/ios/` and shells out to `xcrun simctl`, so as committed it only drives an iOS
   simulator. The Android equivalents are the two adb scripts referenced above.
+
+## Site Worker — the four tabs — [`SITE-WORKER/`](SITE-WORKER/)
+
+The `SITE_WORKER` tab set, implementing [`mockup/mobile/05_site_worker/`](../../../mockup/mobile/05_site_worker)
+(`01_tasks`, `02_issues`, `03_reports`, `04_safety`). Captured against the `seed-realistic.ts` dataset
+through a real Path A (SMS OTP) login as `+66811000010` — Somsak Duangdee, the seeded SITE_WORKER at
+Ekachai. The header avatar reads **"SD"** (his initials — no photo set), confirming the signed-in role.
+
+**This is the only role with no Home tab** (product-owner decision 2026-08-08). All four mockups draw
+the same bar — **Tasks | Issues | Reports | Safety** — and the product owner chose it over master
+§Phase 10's "Home | Tasks | Report | Issues": a field worker opens the app to _do_ one of four things,
+and the daily safety checklist had no entry point at all under the old set. Two consequences were
+handled rather than left to rot:
+
+- **Landing.** `app/index.tsx` used to redirect every role to `/home`, which for this role is a screen
+  its own bottom bar cannot reach — it opened with nothing highlighted. The landing is now derived from
+  the role's own tab set ([`lib/landingRoute.ts`](../../../apps/mobile/src/lib/landingRoute.ts)), so the
+  two can never disagree again.
+- **Check-in.** The self check-in (offline-queued attendance) lived only on that Home screen. It moved
+  to the navigation drawer for this role, so removing a tab did not silently remove a daily field
+  action. `home` itself stays mounted.
+
+### Tasks — [`01-Tasks/01-tasks.png`](SITE-WORKER/01-Tasks/01-tasks.png)
+
+Title, filter chips with **real counts** (`All (25) · Pending (5) · In progress (10) · Done`), and one
+card per task: a coloured left accent, an `ID: #…` eyebrow, the trade badge, percent + sync chip, the
+planned window, and a progress bar. Swipe-right marks a task done (§17.5 Max-wins); the card taps
+through to the progress editor.
+
+Everything is live, never fabricated. The IDs (`#80AD3112`, `#7E519143`) are the last block of each
+real `task_id`; the badges (`FOUNDATION`, `STRUCTURE`) are `projects.tasks.work_type`; the percentages
+are the stored `progress_percent`. Three mockup elements are **dropped for want of data**:
+
+- The **HIGH / MEDIUM priority badge** — `projects.tasks` has no priority column, in the database or in
+  the API. The badge slot is kept and filled with the trade, which the row actually carries.
+- **"08:00 - 12:00"** — `planned_start` / `planned_end` are DATEs; there is no time-of-day anywhere, so
+  the chip shows the real planned window in days (rendered through `formatDate`, so Thai gets the
+  Buddhist era — QM-3). The mockup's own second card puts "Pending Sync" in that same slot, so a status
+  value there is its own idiom.
+- The **"AI Insight"** card (a predicted 15-minute delay plus "reschedule automatically") is dropped
+  outright: DelayForecastModel is Phase 23 and untrained, so every number in it would be invented, and
+  §22.3 forbids autonomous rescheduling.
+
+> `work_type`, `planned_start` and `planned_end` were already being sent by `/sync/delta` (it selects
+> the whole row) and simply discarded by the client. Local DDL v4 caches them.
+
+### Issues — [`02-Issues/01-issue-capture.png`](SITE-WORKER/02-Issues/01-issue-capture.png)
+
+Camera-first, as the mockup draws it: the live viewfinder, then category, title, a hold-to-record voice
+note, a description, **REPORT ISSUE**, and the project's synced issues below.
+
+- **The category chips are the four REAL values of `site_ops.issues.issue_type`** — Defect, Rework,
+  Punch item, General — not the mockup's Safety / Material / Technical / Blocker, which match no column,
+  no enum and no API field (PO decision 2026-08-08: use the real values). These are the same four the
+  task-completion gate reads (master §Phase 6 gate #2), so classifying here feeds the gate that blocks
+  the task. The column has existed since migration `20260619000002`; `POST /site/issues` had no field
+  for it, so every issue created through the API silently took the default `GENERAL`.
+- The mockup's in-frame **"AI Suggestion: Safety Issue detected in frame"** is dropped —
+  SafetyVisionModel is Phase 23 and needs 10,000+ labelled site photos (§22.6).
+- The mockup has **no issue list** (it is capture-only). The list is kept (ADR-085 — implemented
+  structure stands where it has outgrown the drawing): it is the only place a worker can see whether
+  what they filed has synced. It is **scoped to the selected project**, because the local cache holds
+  every project's issues and nothing on a row says which site it belongs to.
+
+### Daily report — [`03-Reports/01-daily-report.png`](SITE-WORKER/03-Reports/01-daily-report.png)
+
+The "NEW ENTRY / Daily activity log" form: manpower stepper, shift, the per-trade breakdown, work
+progress (typed or voice), blockers, photos, and **SAVE AS DRAFT / SUBMIT REPORT** — which are the row's
+real `status` values (`DRAFT` / `SUBMITTED`), not two styles of one action.
+
+**Three mockup fields had nowhere to land, and were given a backend rather than dropped** (PO decision
+2026-08-08):
+
+| Field               | Where it now lives                                                          |
+| ------------------- | --------------------------------------------------------------------------- |
+| Shift (Day / Night) | `site_ops.site_reports.shift` — migration `20260808000001`, nullable (QM-9) |
+| Blocker category    | `site_ops.site_reports.blocker_category` — same migration                   |
+| Per-trade manpower  | `site_ops.manpower_logs` — the table existed since Phase 6 with **no API**  |
+
+`POST /site/reports` now accepts `shift`, `blocker_category` and `manpower_lines[]`;
+`GET /site/reports/{id}` returns the breakdown back. NULL means "not recorded" and is never defaulted
+to `DAY` — no pre-existing report can be backfilled, because nothing anywhere records which shift a
+past report covered. The free-text `blockers` column is untouched: the category is a queryable axis
+over the operator's own words, not a replacement for them.
+
+Dropped: the mockup's **"AI แนะนำ: คาดว่างานติดตั้งจะเสร็จภายใน 18:00 น."** banner. Predicting a
+completion time is DelayForecastModel's job (Phase 23, untrained), and an invented estimate on a daily
+record is worse than no estimate.
+
+### Safety checklist — [`04-Safety/01-safety-checklist.png`](SITE-WORKER/04-Safety/01-safety-checklist.png)
+
+The pre-shift daily verification: a **REQUIRED** badge, the project picker, the project's checklists,
+the items with checkboxes, and **CONFIRM SAFETY** — disabled until every item is ticked, because a
+partially completed safety attestation asserts something untrue.
+
+- **The role could not submit this at all until 2026-08-08.** `POST /safety/checklists` was
+  `@Roles(SITE_ENGINEER, SAFETY_OFFICER, TENANT_ADMIN)`, and `sync-authz.ts` recorded the reason as an
+  explicit **unresolved spec conflict** — §6.8 grants SITE_WORKER `RW` on Safety, §14 lists neither
+  Safety route for it. [ADR-089](../../architecture/adr/089-site-worker-may-submit-safety-checklists.md)
+  resolves it by splitting the module: the worker may submit a **checklist** (their own pre-shift act),
+  but still may not file an **incident** (§14 unchanged). The offline path matches, so a checklist
+  filled with no signal syncs rather than failing at the end of a shift.
+- **The checklist templates were also missing from the seed.** `seed-realistic.ts` inserted inspections
+  against `uid('chk/…')` and commented that they ran "against seeded checklists", but never wrote a row
+  to `site_ops.safety_checklists` — so `GET /safety/checklists` returned `[]` on a fully seeded database
+  and this screen had nothing to render. Four templates per project are now seeded, including the
+  three-item Safety Walkthrough the mockup draws.
+- **A checklist picker** appears when a project has more than one. The mockup shows a single checklist
+  because it was drawn against a single-project fixture; a real worker on five projects gets four
+  templates each, so the screen cannot silently pick one.
+- Dropped: the **"AI Safety Scan — automated PPE detection"** module (SafetyVisionModel, Phase 23 — a
+  button that starts nothing, on the screen a worker uses to attest they are safe) and the **digital
+  signature pad** (nothing stores a signature; `site_ops.inspections` records `inspected_by`, which is
+  what the signature stood in for).
+
+All four are captured by
+[`apps/mobile/scripts/capture-android-site-worker.mjs`](../../../apps/mobile/scripts/capture-android-site-worker.mjs)
+(`node scripts/capture-android-site-worker.mjs`) — adb/uiautomator only, same reasoning as its siblings.
+It grants `android.permission.CAMERA` after `pm clear` (the Issues screen is camera-first; without it
+the capture would document a permission prompt), picks a project where the screen needs one, and
+asserts real CONTENT before saving — at least one task card, and at least one checklist item — so an
+empty state cannot be committed as though it were the feature. Tasks is a single viewport; the other
+three are full-page stitches (`scripts/stitch-fullpage.py`).
+
+> **One Hermes bug was found and fixed while capturing this set.** The first daily-report capture read
+> `Structural{count, plural, one {# worker} other {# workers}}` — the raw ICU template. Hermes ships a
+> partial `Intl` with **no `PluralRules` and no `Locale`**, so every `{count, plural, …}` message threw
+> inside `formatIcu()` and fell into its catch, which returns the template unformatted. Three older
+> strings (pending changes, unresolved conflicts, queued photos) had been doing this unnoticed; Node and
+> jest both have full ICU, so no unit test could see it. `translate.ts` now installs the `@formatjs`
+> polyfills in dependency order (getCanonicalLocales → Locale → PluralRules — PluralRules resolves its
+> locale through a matcher that constructs `new Intl.Locale`, so adding it alone only moved the throw),
+> and `i18n/__tests__/pluralPolyfill.spec.ts` reads the source to keep them imported and ordered.

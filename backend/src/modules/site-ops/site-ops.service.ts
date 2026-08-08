@@ -37,6 +37,13 @@ import type { CreateMaterialConsumptionDto } from './dto/create-material-consump
 const logger = createLogger('site-ops-service');
 const OS_REPORTS_INDEX = 'site-reports';
 const OS_ISSUES_INDEX = 'site-issues';
+/**
+ * Hours recorded for a manpower line whose caller sent none. site_ops.manpower_logs.hours_worked is
+ * NOT NULL with no default, and the daily-report form collects headcount per trade without hours, so
+ * omitting it must not fail the insert. A full shift is the honest stand-in for "the trade worked
+ * today"; a caller that knows better (a timesheet import) sends the real figure and overrides it.
+ */
+const DEFAULT_SHIFT_HOURS = 8;
 
 @Injectable({ scope: Scope.REQUEST })
 export class SiteOpsService {
@@ -77,12 +84,31 @@ export class SiteOpsService {
       report_date: dto.report_date,
       summary: dto.summary ?? null,
       blockers: dto.blockers ?? null,
+      blocker_category: dto.blocker_category ?? null,
       weather: dto.weather ?? null,
       manpower_count: dto.manpower_count ?? null,
+      shift: dto.shift ?? null,
       client_submitted_at: dto.client_submitted_at ?? null,
       latitude: dto.latitude ?? null,
       longitude: dto.longitude ?? null,
     });
+
+    // Per-trade breakdown → site_ops.manpower_logs. Written against the row's OWN report_id, not
+    // `reportId`: createSiteReport upserts on (project_id, report_date, submitted_by), so resubmitting
+    // the same day returns the EXISTING report and the freshly generated UUID is discarded. Keying the
+    // logs off the generated id would orphan every line on a resubmit.
+    if (dto.manpower_lines) {
+      await this.repo.replaceManpowerLogs(
+        report.report_id,
+        dto.manpower_lines.map((line) => ({
+          trade_type: line.trade_type,
+          worker_count: line.worker_count,
+          // The column is NOT NULL; the mockup's form collects headcount per trade and no hours, so a
+          // standard 8-hour shift stands in when the caller omits it (spec 11 manpower_logs).
+          hours_worked: line.hours_worked ?? DEFAULT_SHIFT_HOURS,
+        })),
+      );
+    }
 
     await this.emitEvent('site.report.created.v1', {
       report_id: report.report_id,
@@ -113,7 +139,12 @@ export class SiteOpsService {
         error: { code: 'COS-SITE-001', message: 'Site report not found' },
       });
     }
-    return report;
+    // The per-trade breakdown is returned with the detail, not the list: it is one query per report,
+    // and a list of 50 reports would issue 50 of them for data no list view shows. Additive field, so
+    // no version bump (QM-2) — clients that ignore it are unaffected. A report with no breakdown
+    // recorded gets `[]`, which is the truth, not an error.
+    const manpower_lines = await this.repo.listManpowerLogs(reportId);
+    return { ...report, manpower_lines };
   }
 
   async listSiteReports(params: {
@@ -273,6 +304,7 @@ export class SiteOpsService {
       title: dto.title,
       description: dto.description ?? null,
       severity: dto.severity,
+      issue_type: dto.issue_type ?? null, // null → the column DEFAULT 'GENERAL' (see repository)
       assigned_to: dto.assigned_to ?? null,
       // The same value the event below carries — now persisted on the row too, so a PDPA export can
       // find it. The event stream is a publish queue, not a queryable record of who raised what.

@@ -31,6 +31,18 @@ describe('sync-authz invariants', () => {
     },
   );
 
+  // ADR-089 split the Safety module by route: a SITE_WORKER may submit a safety CHECKLIST but not
+  // report an INCIDENT. `inspection` and `safety` used to share one role list, so the two halves
+  // could only move together — these two assertions are what keep them apart now that they must
+  // differ. Without them, restoring the alias would pass every other test in this file.
+  it('SITE_WORKER may push an inspection — the offline half of POST /safety/checklists', () => {
+    expect(roleSet(PUSH_ROLES['inspection']).has(CosRole.SITE_WORKER)).toBe(true);
+  });
+
+  it('SITE_WORKER may NOT push a safety incident (§14 keeps that with SE/Safety/Admin)', () => {
+    expect(roleSet(PUSH_ROLES['safety']).has(CosRole.SITE_WORKER)).toBe(false);
+  });
+
   it('every push entity is a plain own key — no prototype-chain entries', () => {
     for (const table of [PUSH_ROLES, DELTA_ROLES]) {
       expect(Object.hasOwn(table, 'constructor')).toBe(false);

@@ -1,11 +1,29 @@
 // Issues screen — SITE_WORKER quick issue create (+ photo) & offline list; SITE_ENGINEER escalate.
+// Implements mockup/mobile/05_site_worker/02_issues/00_main.
+//
 // Create (G-M11): generates a client UUID (expo-crypto) used as BOTH the local/issue id AND the
 // PhotoCapture entity_id, then writes local_issues (PENDING) and enqueues an 'issue' sync item
 // (client_id → server issue_id) so the issue actually pushes and the attached photo links on sync.
 // Escalate (G-M12): POST /site/issues/:id/escalate → notifies the PM (online-only).
+//
+// DEVIATIONS FROM THE MOCKUP, and why:
+//   - CATEGORY CHIPS carry the four REAL values of `site_ops.issues.issue_type` — DEFECT, REWORK,
+//     PUNCH, GENERAL — not the mockup's Safety / Material / Technical / Blocker, which match no
+//     column, no enum and no API field (product-owner decision 2026-08-08: use the real values).
+//     These are the same four the task-completion gate reads (master §Phase 6 gate #2), so a worker
+//     classifying an issue here is feeding the gate that blocks the task.
+//   - The mockup's in-frame "AI Suggestion: Safety Issue detected in frame" is dropped.
+//     SafetyVisionModel is Phase 23 and needs 10,000+ labelled site photos (§22.6); nothing in the
+//     product can look at a frame and say that today.
+//   - The mockup has no issue LIST — it is a capture-only screen. The list is KEPT (ADR-085: where
+//     the implemented structure has outgrown its mockup, the implementation stands), because it is
+//     also the only place a worker can see whether what they filed has synced.
+//   - The mockup's own top bar (brand + close) is dropped in favour of the app's global TopBar, as
+//     on every other screen.
 
-import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { useMemo, useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import * as Crypto from 'expo-crypto';
 import { db, newLocalId } from '../../db/database';
 import type { Issue } from '../../db/database';
@@ -16,18 +34,52 @@ import { useCollection } from '../../hooks/useCollection';
 import { StatusChip } from '../../components/StatusChip';
 import { ProjectPicker } from '../../components/ProjectPicker';
 import { PhotoCapture } from '../../components/PhotoCapture';
+import { VoiceNoteButton } from '../../components/VoiceNoteButton';
 import { OptimisticList } from '../../components/OptimisticList';
 import { useT } from '../../i18n';
-import { colors, fontFamily, radius, spacing, typography } from '../../theme/tokens';
-import { screen } from '../../theme/screenStyles';
+import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
+import { usePalette } from '../../theme/usePalette';
+import { makeScreenStyles } from '../../theme/screenStyles';
+
+type IconName = keyof typeof MaterialIcons.glyphMap;
+
+/**
+ * The real `issue_type` values (site_ops.issues, CHECK-constrained since migration 20260619000002),
+ * each with a glyph. Order is worst-first: a DEFECT and a REWORK block task completion, a PUNCH item
+ * is snagging, GENERAL blocks nothing.
+ */
+const ISSUE_TYPES: ReadonlyArray<{ value: string; icon: IconName }> = [
+  { value: 'DEFECT', icon: 'report-problem' },
+  { value: 'REWORK', icon: 'build' },
+  { value: 'PUNCH', icon: 'checklist' },
+  { value: 'GENERAL', icon: 'info' },
+];
+
+/** Severity is a separate real column; the mockup shows no severity control, so it stays MEDIUM. */
+const DEFAULT_SEVERITY = 'MEDIUM';
 
 export default function IssuesScreen() {
-  const issues = useCollection<Issue>('local_issues');
+  const allIssues = useCollection<Issue>('local_issues');
   const [projectId, setProjectId] = useState('');
   const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [issueType, setIssueType] = useState<string>('DEFECT');
   const [draftId, setDraftId] = useState(() => Crypto.randomUUID()); // id for the issue + its photo
   const [escalated, setEscalated] = useState<Record<string, boolean>>({});
   const t = useT();
+  const p = usePalette();
+  const screen = useMemo(() => makeScreenStyles(p), [p]);
+
+  const canSubmit = projectId.trim() !== '' && title.trim() !== '';
+
+  // The list below is scoped to the SELECTED project, not the whole local cache. A worker on five
+  // projects has every project's issues cached, and an unscoped list mixes them with nothing on the
+  // row to say which site each belongs to — the same reason the checklist screen scopes by project.
+  // With no project chosen yet it shows everything, which is the only honest thing to show.
+  const issues = useMemo(
+    () => (projectId ? allIssues.filter((i) => i.projectId === projectId) : allIssues),
+    [allIssues, projectId],
+  );
 
   const onCreate = async (): Promise<void> => {
     await db.insert(localIssues).values({
@@ -35,7 +87,8 @@ export default function IssuesScreen() {
       issueId: draftId, // client UUID becomes the server issue_id on sync (G-M11)
       projectId: projectId.trim(),
       title: title.trim(),
-      severity: 'MEDIUM',
+      description: description.trim() || null,
+      severity: DEFAULT_SEVERITY,
       status: 'OPEN',
       offlineSyncStatus: 'PENDING',
     });
@@ -43,9 +96,13 @@ export default function IssuesScreen() {
       client_id: draftId,
       project_id: projectId.trim(),
       title: title.trim(),
-      severity: 'MEDIUM',
+      description: description.trim() || undefined,
+      severity: DEFAULT_SEVERITY,
+      issue_type: issueType,
     });
     setTitle('');
+    setDescription('');
+    setIssueType('DEFECT');
     setDraftId(Crypto.randomUUID()); // fresh id (and photo scope) for the next issue
   };
 
@@ -59,26 +116,85 @@ export default function IssuesScreen() {
   };
 
   return (
-    <View testID="issues-screen" style={screen.container}>
+    <ScrollView
+      testID="issues-screen"
+      style={{ backgroundColor: p.bg }}
+      contentContainerStyle={styles.page}
+      keyboardShouldPersistTaps="handled"
+    >
       <ProjectPicker selectedId={projectId} onSelect={setProjectId} />
+
+      {/* Camera first — the mockup opens straight on the viewfinder, because a site issue is
+          photographed before it is described. */}
+      <PhotoCapture entityType="issue" entityId={draftId} />
+
+      <Text style={[styles.sectionLabel, { color: p.muted }]}>
+        {t('site.issues.categoryLabel')}
+      </Text>
+      <View style={styles.chipGrid}>
+        {ISSUE_TYPES.map(({ value, icon }) => {
+          const active = value === issueType;
+          return (
+            <TouchableOpacity
+              key={value}
+              testID={`issue-type-${value}`}
+              onPress={() => setIssueType(value)}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: active }}
+              style={[
+                styles.typeChip,
+                {
+                  backgroundColor: p.surface,
+                  borderColor: active ? p.primary : p.border,
+                  borderWidth: active ? 2 : 1,
+                },
+              ]}
+            >
+              <MaterialIcons name={icon} size={20} color={active ? p.accent : p.muted} />
+              <Text style={[styles.typeChipText, { color: p.text }]}>
+                {t(`site.issues.types.${value}`)}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      <Text style={[styles.sectionLabel, { color: p.muted }]}>{t('site.issues.titleLabel')}</Text>
       <TextInput
         testID="issue-title-input"
         style={screen.input}
         placeholder={t('site.issues.titlePlaceholder')}
-        placeholderTextColor={colors.textSecondary}
+        placeholderTextColor={p.muted}
         value={title}
         onChangeText={setTitle}
       />
-      <PhotoCapture entityType="issue" entityId={draftId} />
+
+      <Text style={[styles.sectionLabel, { color: p.muted }]}>{t('site.issues.voiceLabel')}</Text>
+      <VoiceNoteButton
+        testID="issue-voice-note"
+        onTranscript={(text) => setDescription((d) => (d.trim() ? `${d} ${text}` : text))}
+      />
+
+      <Text style={[styles.sectionLabel, { color: p.muted }]}>
+        {t('site.issues.descriptionLabel')}
+      </Text>
+      <TextInput
+        testID="issue-description-input"
+        style={[screen.input, styles.multiline]}
+        placeholder={t('site.issues.descriptionPlaceholder')}
+        placeholderTextColor={p.muted}
+        multiline
+        value={description}
+        onChangeText={setDescription}
+      />
+
       <TouchableOpacity
         testID="create-issue-button"
-        style={[
-          screen.primaryButton,
-          (!projectId.trim() || !title.trim()) && screen.buttonDisabled,
-        ]}
+        style={[screen.primaryButton, styles.submit, !canSubmit && screen.buttonDisabled]}
         onPress={onCreate}
-        disabled={!projectId.trim() || !title.trim()}
+        disabled={!canSubmit}
       >
+        <MaterialIcons name="send" size={20} color={p.onPrimary} />
         <Text style={screen.primaryButtonText}>{t('site.issues.submit')}</Text>
       </TouchableOpacity>
 
@@ -99,11 +215,15 @@ export default function IssuesScreen() {
                 {item.issueId && item.offlineSyncStatus === 'SYNCED' ? (
                   <TouchableOpacity
                     testID={`escalate-${item.issueId}`}
-                    style={[styles.escalate, escalated[item.issueId] && styles.escalateDone]}
+                    style={[
+                      styles.escalate,
+                      { borderColor: p.warning },
+                      escalated[item.issueId] && { backgroundColor: p.warning },
+                    ]}
                     onPress={() => onEscalate(item.issueId)}
                     disabled={escalated[item.issueId]}
                   >
-                    <Text style={styles.escalateText}>
+                    <Text style={[styles.escalateText, { color: p.text }]}>
                       {escalated[item.issueId]
                         ? t('site.issues.escalated')
                         : t('site.issues.escalate')}
@@ -115,24 +235,40 @@ export default function IssuesScreen() {
           )}
         />
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  list: { marginTop: spacing.sm },
+  page: { padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xl },
+  sectionLabel: {
+    fontSize: typography.label.fontSize,
+    fontFamily: fontFamily.semibold,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+  typeChip: {
+    // Two per row on a 360dp phone; 52px tall ≥ touchTarget.formInput.
+    flexBasis: '48%',
+    flexGrow: 1,
+    minHeight: touchTarget.formInput,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.lg,
+  },
+  typeChipText: { fontSize: typography.label.fontSize, fontFamily: fontFamily.medium },
+  multiline: { minHeight: 96, textAlignVertical: 'top', paddingVertical: spacing.sm },
+  submit: { flexDirection: 'row', gap: spacing.xs, minHeight: touchTarget.primaryButton + 8 },
+  list: { marginTop: spacing.md },
   chips: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexWrap: 'wrap' },
   escalate: {
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     borderWidth: 1,
-    borderColor: colors.warning,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
   },
-  escalateDone: { backgroundColor: colors.warning },
-  escalateText: {
-    fontSize: typography.caption.fontSize,
-    fontFamily: fontFamily.medium,
-    color: colors.textPrimary,
-  },
+  escalateText: { fontSize: typography.caption.fontSize, fontFamily: fontFamily.medium },
 });

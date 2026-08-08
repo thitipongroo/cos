@@ -16,6 +16,7 @@ import { View, Text, Pressable, Animated, StyleSheet, ScrollView, BackHandler } 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter, usePathname } from 'expo-router';
+import { CosRole } from '@cos/types';
 import { useUiStore } from '../store/uiStore';
 import { useAuthStore } from '../store/authStore';
 import { useI18n } from '../i18n';
@@ -40,6 +41,18 @@ const FIELD_TOOLS: readonly NavLink[] = [
   { route: '/material-request', labelKey: 'drawer.materials', icon: 'inventory-2' },
   { route: '/deliveries', labelKey: 'drawer.deliveries', icon: 'local-shipping' },
 ];
+
+/**
+ * Self check-in — SITE_WORKER only, and only because that role has no Home tab.
+ *
+ * The check-in control (attendance write, offline-queued) lives on the Home screen's SITE_WORKER
+ * variant. When the mockups replaced that role's Home tab with Safety (PO 2026-08-08), the control
+ * had no entry point left — the route stayed mounted but nothing linked to it. This is that link
+ * (PO decision 2026-08-08), so removing a tab did not silently remove a daily field action.
+ *
+ * Every other role still has Home as a tab and does not need it here.
+ */
+const CHECK_IN_LINK: NavLink = { route: '/home', labelKey: 'drawer.checkIn', icon: 'how-to-reg' };
 
 const SETTINGS_LINK: NavLink = {
   route: '/notification-preferences',
@@ -193,6 +206,7 @@ export function NavigationDrawer(): React.JSX.Element | null {
         {/* Field tools */}
         <ScrollView style={styles.flex1} contentContainerStyle={styles.navList}>
           <Text style={styles.navSection}>{t('drawer.fieldTools')}</Text>
+          {role === CosRole.SITE_WORKER ? renderLink(CHECK_IN_LINK) : null}
           {FIELD_TOOLS.map(renderLink)}
           <View style={styles.divider} />
           {MFA_ENROLLMENT_ENABLED ? renderLink(SECURITY_LINK) : null}

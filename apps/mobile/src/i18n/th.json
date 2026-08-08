@@ -39,7 +39,8 @@
       "settings": "ตั้งค่า",
       "leads": "ผู้มุ่งหวัง",
       "opportunities": "โอกาสขาย",
-      "customers": "ลูกค้า"
+      "customers": "ลูกค้า",
+      "safety": "ความปลอดภัย"
     }
   },
   "auth": {
@@ -217,7 +218,7 @@
   },
   "tasks": {
     "list": {
-      "title": "งาน",
+      "title": "รายการงานวันนี้",
       "empty": "ยังไม่มีงานที่ซิงค์มา"
     },
     "detail": {
@@ -226,17 +227,56 @@
       "back": "← กลับไปหน้างาน"
     },
     "card": {
-      "done": "ทำเสร็จ"
+      "done": "ทำเสร็จ",
+      "idPrefix": "รหัส: #{id}",
+      "updateProgress": "อัปเดตความคืบหน้า",
+      "plannedWindow": "{start} → {end}"
+    },
+    "filters": {
+      "all": "ทั้งหมด",
+      "pending": "รอดำเนินการ",
+      "inProgress": "กำลังทำ",
+      "done": "เสร็จสิ้น"
     }
   },
   "site": {
     "report": {
-      "title": "รายงานประจำวัน",
+      "title": "บันทึกกิจกรรมประจำวัน",
       "summaryPlaceholder": "สรุปงาน — จำนวนคนงาน ความคืบหน้า อุปสรรค",
       "save": "บันทึกรายงาน",
       "saved": "บันทึกออฟไลน์แล้ว — จะซิงค์เมื่อออนไลน์",
       "manpowerPlaceholder": "จำนวนคนงาน",
-      "blockersPlaceholder": "อุปสรรค/สิ่งกีดขวาง (ถ้ามี)"
+      "blockersPlaceholder": "อุปสรรค/สิ่งกีดขวาง (ถ้ามี)",
+      "newEntry": "บันทึกใหม่",
+      "manpower": "กำลังคน",
+      "manpowerTotal": "จำนวนคนงานทั้งหมด",
+      "manpowerIncrement": "เพิ่มคนงาน 1 คน",
+      "manpowerDecrement": "ลดคนงาน 1 คน",
+      "shift": "กะการทำงาน",
+      "shifts": {
+        "DAY": "กะกลางวัน",
+        "NIGHT": "กะกลางคืน"
+      },
+      "trades": {
+        "STRUCTURAL": "ช่างโครงสร้าง",
+        "ELECTRICAL": "ช่างไฟฟ้า",
+        "PLUMBING": "ช่างประปา",
+        "FINISHING": "ช่างตกแต่ง",
+        "GENERAL": "คนงานทั่วไป"
+      },
+      "workerCount": "{count, plural, other {# คน}}",
+      "progress": "ความคืบหน้างาน",
+      "blockers": "อุปสรรคการทำงาน",
+      "blockerCategories": {
+        "WEATHER": "สภาพอากาศ",
+        "MATERIAL": "ขาดแคลนวัสดุ",
+        "POWER": "ไฟฟ้า/พลังงานขัดข้อง",
+        "OTHER": "อื่นๆ"
+      },
+      "photos": "ภาพประกอบ",
+      "saveDraft": "บันทึกฉบับร่าง",
+      "submit": "ส่งรายงาน",
+      "savedDraft": "บันทึกฉบับร่างออฟไลน์แล้ว — จะซิงค์เมื่อออนไลน์"
     },
     "reports": {
       "title": "รายงานหน้างาน",
@@ -254,7 +294,18 @@
       "submit": "แจ้งปัญหา",
       "empty": "ยังไม่มีปัญหา",
       "escalate": "ยกระดับ",
-      "escalated": "ยกระดับแล้ว"
+      "escalated": "ยกระดับแล้ว",
+      "categoryLabel": "ประเภทปัญหา",
+      "titleLabel": "พบปัญหาอะไร",
+      "voiceLabel": "บันทึกเสียง",
+      "descriptionLabel": "รายละเอียด",
+      "descriptionPlaceholder": "ระบุรายละเอียดเพิ่มเติม (ไม่บังคับ)…",
+      "types": {
+        "DEFECT": "งานบกพร่อง",
+        "REWORK": "งานแก้ไข",
+        "PUNCH": "รายการเก็บงาน",
+        "GENERAL": "ทั่วไป"
+      }
     },
     "inspections": {
       "title": "การตรวจสอบ",
@@ -289,6 +340,15 @@
       "typePlaceholder": "ประเภทเหตุการณ์ (เช่น ตกจากที่สูง ไฟฟ้า)",
       "submit": "แจ้งอุบัติการณ์",
       "empty": "ยังไม่มีอุบัติการณ์"
+    },
+    "checklist": {
+      "title": "เช็คลิสต์ความปลอดภัย",
+      "required": "จำเป็น",
+      "verification": "ตรวจความปลอดภัยประจำวัน — {done}/{total}",
+      "itemRequired": "รายการที่ต้องตรวจ",
+      "confirm": "ยืนยันความปลอดภัย",
+      "submitted": "ส่งเช็คลิสต์แล้ว — จะซิงค์เมื่อออนไลน์",
+      "empty": "ยังไม่มีเช็คลิสต์ความปลอดภัยสำหรับโครงการของคุณ"
     }
   },
   "voiceNote": {
@@ -529,7 +589,8 @@
     "incidents": "บันทึกเหตุความปลอดภัย",
     "inspections": "การตรวจสอบ",
     "materials": "วัสดุ",
-    "deliveries": "การจัดส่ง"
+    "deliveries": "การจัดส่ง",
+    "checkIn": "ลงเวลาเข้า/ออกงาน"
   },
   "mfa": {
     "enroll": {

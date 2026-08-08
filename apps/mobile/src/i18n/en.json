@@ -39,7 +39,8 @@
       "settings": "Settings",
       "leads": "Leads",
       "opportunities": "Opportunities",
-      "customers": "Customers"
+      "customers": "Customers",
+      "safety": "Safety"
     }
   },
   "auth": {
@@ -217,7 +218,7 @@
   },
   "tasks": {
     "list": {
-      "title": "Tasks",
+      "title": "Today's tasks",
       "empty": "No tasks synced yet"
     },
     "detail": {
@@ -226,17 +227,56 @@
       "back": "← Back to tasks"
     },
     "card": {
+      "done": "Done",
+      "idPrefix": "ID: #{id}",
+      "updateProgress": "Update progress",
+      "plannedWindow": "{start} → {end}"
+    },
+    "filters": {
+      "all": "All",
+      "pending": "Pending",
+      "inProgress": "In progress",
       "done": "Done"
     }
   },
   "site": {
     "report": {
-      "title": "Daily Report",
+      "title": "Daily activity log",
       "summaryPlaceholder": "Summary — manpower, progress, blockers",
       "save": "Save report",
       "saved": "Saved offline — will sync when online",
       "manpowerPlaceholder": "Manpower count",
-      "blockersPlaceholder": "Blockers (if any)"
+      "blockersPlaceholder": "Blockers (if any)",
+      "newEntry": "New entry",
+      "manpower": "Manpower",
+      "manpowerTotal": "Total workers on site",
+      "manpowerIncrement": "Add one worker",
+      "manpowerDecrement": "Remove one worker",
+      "shift": "Shift",
+      "shifts": {
+        "DAY": "Day",
+        "NIGHT": "Night"
+      },
+      "trades": {
+        "STRUCTURAL": "Structural",
+        "ELECTRICAL": "Electrical",
+        "PLUMBING": "Plumbing",
+        "FINISHING": "Finishing",
+        "GENERAL": "General labour"
+      },
+      "workerCount": "{count, plural, one {# worker} other {# workers}}",
+      "progress": "Work progress",
+      "blockers": "Blockers",
+      "blockerCategories": {
+        "WEATHER": "Weather",
+        "MATERIAL": "Material",
+        "POWER": "Power",
+        "OTHER": "Other"
+      },
+      "photos": "Photos",
+      "saveDraft": "Save as draft",
+      "submit": "Submit report",
+      "savedDraft": "Draft saved offline — will sync when online"
     },
     "reports": {
       "title": "Site Reports",
@@ -254,7 +294,18 @@
       "submit": "Report issue",
       "empty": "No issues yet",
       "escalate": "Escalate",
-      "escalated": "Escalated"
+      "escalated": "Escalated",
+      "categoryLabel": "Category",
+      "titleLabel": "What is the issue?",
+      "voiceLabel": "Voice note",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Add any further detail (optional)…",
+      "types": {
+        "DEFECT": "Defect",
+        "REWORK": "Rework",
+        "PUNCH": "Punch item",
+        "GENERAL": "General"
+      }
     },
     "inspections": {
       "title": "Inspections",
@@ -289,6 +340,15 @@
       "typePlaceholder": "Incident type (e.g. fall, electrical)",
       "submit": "Report incident",
       "empty": "No incidents yet"
+    },
+    "checklist": {
+      "title": "Safety checklist",
+      "required": "Required",
+      "verification": "Daily safety verification — {done}/{total}",
+      "itemRequired": "Required check",
+      "confirm": "Confirm safety",
+      "submitted": "Checklist submitted — will sync when online",
+      "empty": "No safety checklist is available for your projects yet"
     }
   },
   "voiceNote": {
@@ -529,7 +589,8 @@
     "incidents": "Safety incident logs",
     "inspections": "Inspections",
     "materials": "Materials",
-    "deliveries": "Deliveries"
+    "deliveries": "Deliveries",
+    "checkIn": "Check in / out"
   },
   "mfa": {
     "enroll": {

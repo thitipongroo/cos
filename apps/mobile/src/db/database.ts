@@ -25,7 +25,7 @@ import {
 export const sqlite = openDatabaseSync('cos_offline_v2.db', { enableChangeListener: true });
 sqlite.execSync('PRAGMA journal_mode = WAL');
 
-const DDL_VERSION = 3;
+const DDL_VERSION = 4;
 
 // v2→v3 (ADR-056): the re-editable photo-annotation table. Idempotent (IF NOT EXISTS), so it is safe
 // to run both as an upgrade step and — via the fresh CREATE block below — on a first install.
@@ -33,6 +33,20 @@ const ANNOTATIONS_DDL = `
   CREATE TABLE IF NOT EXISTS local_photo_annotations (
     local_photo_id TEXT PRIMARY KEY NOT NULL, strokes TEXT NOT NULL,
     base_version INTEGER NOT NULL, dirty INTEGER NOT NULL, updated_at TEXT NOT NULL);
+`;
+
+// v3→v4: the task fields the Tasks screen shows on each card — trade (`work_type`) and the planned
+// window. The server has always sent them (`/sync/delta` runs `SELECT *` over projects.tasks); the
+// client simply dropped them on the floor, so a card could show nothing but a name and a percentage.
+// Nullable, because a task may genuinely have no planned dates, and because rows cached before this
+// upgrade have no values to backfill from until the next delta pull refreshes them.
+//
+// NOT idempotent — SQLite has no ADD COLUMN IF NOT EXISTS — so it runs on the v3 upgrade path only;
+// a fresh install gets these columns from the CREATE TABLE below.
+const TASK_DETAIL_DDL = `
+  ALTER TABLE local_tasks ADD COLUMN work_type TEXT;
+  ALTER TABLE local_tasks ADD COLUMN planned_start TEXT;
+  ALTER TABLE local_tasks ADD COLUMN planned_end TEXT;
 `;
 
 function ddl(): void {
@@ -57,6 +71,16 @@ function ddl(): void {
   if (current === 2) {
     sqlite.execSync(`
       ${ANNOTATIONS_DDL}
+      ${TASK_DETAIL_DDL}
+      PRAGMA user_version = ${DDL_VERSION};
+    `);
+    return;
+  }
+
+  // v3→v4: the task-detail columns only.
+  if (current === 3) {
+    sqlite.execSync(`
+      ${TASK_DETAIL_DDL}
       PRAGMA user_version = ${DDL_VERSION};
     `);
     return;
@@ -78,7 +102,8 @@ function ddl(): void {
     CREATE TABLE IF NOT EXISTS local_tasks (
       id TEXT PRIMARY KEY NOT NULL, task_id TEXT NOT NULL, project_id TEXT NOT NULL,
       task_name TEXT NOT NULL, status TEXT NOT NULL, progress_percent REAL NOT NULL,
-      assigned_to TEXT, sync_status TEXT NOT NULL);
+      assigned_to TEXT, work_type TEXT, planned_start TEXT, planned_end TEXT,
+      sync_status TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS local_attendance (
       id TEXT PRIMARY KEY NOT NULL, log_id TEXT NOT NULL, worker_id TEXT NOT NULL,
       project_id TEXT NOT NULL, check_in_at TEXT, check_out_at TEXT, hours_worked REAL,

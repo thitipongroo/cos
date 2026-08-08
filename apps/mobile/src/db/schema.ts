@@ -74,6 +74,11 @@ export const localTasks = sqliteTable('local_tasks', {
   status: text('status').notNull(), // NOT_STARTED | IN_PROGRESS | DONE | BLOCKED
   progressPercent: real('progress_percent').notNull(), // 0–100, monotonic (Max-wins)
   assignedTo: text('assigned_to'),
+  // Cached from projects.tasks via /sync/delta (DDL v4). Nullable: a task may have no planned dates,
+  // and rows cached before v4 stay empty until the next delta pull refreshes them.
+  workType: text('work_type'), // FOUNDATION | STRUCTURE | MEP | … (the trade, shown on the card)
+  plannedStart: text('planned_start'), // ISO date yyyy-MM-dd
+  plannedEnd: text('planned_end'), // ISO date yyyy-MM-dd
   offlineSyncStatus: text('sync_status').notNull().$type<SyncStatus>(),
 });
 

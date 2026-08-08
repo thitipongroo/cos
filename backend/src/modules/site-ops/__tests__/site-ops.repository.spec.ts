@@ -150,6 +150,70 @@ describe('SiteOpsRepository', () => {
     expect(result.blockers).toBe('crane down');
   });
 
+  it('createSiteReport persists shift and blocker_category (20260808000001)', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([
+      { ...reportRow, shift: 'NIGHT', blocker_category: 'WEATHER' },
+    ]);
+    const result = await repo.createSiteReport({
+      report_id: 'report-uuid-003',
+      project_id: 'proj-uuid-001',
+      submitted_by: 'user-uuid-001',
+      report_date: '2026-06-04',
+      summary: null,
+      blocker_category: 'WEATHER',
+      weather: null,
+      manpower_count: null,
+      shift: 'NIGHT',
+      client_submitted_at: null,
+    });
+    expect(result.shift).toBe('NIGHT');
+    expect(result.blocker_category).toBe('WEATHER');
+  });
+
+  // ── Manpower logs (master §Phase 6) ─────────────────────────────────────────
+
+  it('replaceManpowerLogs deletes the old breakdown then inserts each line', async () => {
+    mockPrisma.$executeRaw.mockResolvedValue(1);
+
+    await repo.replaceManpowerLogs('report-uuid-001', [
+      { trade_type: 'ELECTRICAL', worker_count: 8, hours_worked: 8 },
+      { trade_type: 'STRUCTURAL', worker_count: 16, hours_worked: 10 },
+    ]);
+
+    // One DELETE + one INSERT per line, and both inside a SINGLE db.run transaction — a report must
+    // never be observable with its old breakdown gone and the new one not yet written.
+    expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(3);
+    expect(mockTenantPrisma.run).toHaveBeenCalledTimes(1);
+  });
+
+  it('replaceManpowerLogs still clears the breakdown when given no lines', async () => {
+    mockPrisma.$executeRaw.mockResolvedValue(1);
+    await repo.replaceManpowerLogs('report-uuid-001', []);
+    // The DELETE alone — an empty array means "nobody on site", which is a statement, not a no-op.
+    expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+  });
+
+  it('listManpowerLogs returns the report breakdown', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([
+      {
+        log_id: 'log-uuid-001',
+        report_id: 'report-uuid-001',
+        tenant_id: 'tenant-uuid-001',
+        trade_type: 'STRUCTURAL',
+        worker_count: 16,
+        hours_worked: '8.00',
+      },
+    ]);
+    const rows = await repo.listManpowerLogs('report-uuid-001');
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.trade_type).toBe('STRUCTURAL');
+  });
+
+  it('listManpowerLogs returns an empty list for a report with no breakdown', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([]);
+    expect(await repo.listManpowerLogs('report-uuid-001')).toEqual([]);
+  });
+
   it('findReportById returns null when not found', async () => {
     mockPrisma.$queryRaw.mockResolvedValue([]);
     expect(await repo.findReportById('missing')).toBeNull();

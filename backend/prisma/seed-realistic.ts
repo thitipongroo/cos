@@ -684,13 +684,20 @@ async function seedProject(tx: Tx, p: SeedProject): Promise<void> {
     VALUES (${pid}::uuid, ${TENANT_ID}::uuid, ${p.code}, ${p.name}, ${p.type}::"ProjectType", 'ACTIVE'::"ProjectStatus", ${p.budget}, ${THB}, ${p.start}::date, ${p.end}::date, '07:00'::time, '18:00'::time, ${U(p.pm)}::uuid)
     ON CONFLICT (project_id) DO NOTHING`;
 
-  // Members: PM, site engineer, safety officer, finance, executive.
+  // Members: PM, site engineer, safety officer, finance, executive, site worker.
+  //
+  // `sw1` was missing until 2026-08-08 and its absence was not cosmetic: `GET /projects/mine` reads
+  // projects.project_members, so the seeded SITE_WORKER belonged to nothing and every screen the role
+  // owns — the project picker, tasks, the daily report, issue create — rendered an empty state on a
+  // fully seeded database. A crew member IS a member of the project they work on, so seeding it is
+  // the realistic fixture, not a convenience for screenshots (product-owner decision 2026-08-08).
   for (const [k, role] of [
     [p.pm, 'PROJECT_MANAGER'],
     [p.se, 'SITE_ENGINEER'],
     ['safety', 'SAFETY_OFFICER'],
     ['fin', 'FINANCE'],
     ['exec', 'EXECUTIVE'],
+    ['sw1', 'SITE_WORKER'],
   ] as const) {
     await tx.$executeRaw`INSERT INTO projects.project_members (membership_id, project_id, tenant_id, user_id, role, assigned_by)
       VALUES (${uid(`pm/${p.key}/${k}`)}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, ${U(k)}::uuid, ${role}::"ProjectMemberRole", ${U('admin')}::uuid)
@@ -1033,7 +1040,64 @@ async function seedProject(tx: Tx, p: SeedProject): Promise<void> {
       ON CONFLICT (issue_id) DO NOTHING`;
   }
 
-  // Inspections (against seeded checklists).
+  // Safety checklists — the TEMPLATES the inspections below are recorded against.
+  //
+  // This block was missing until 2026-08-08, and the omission was not cosmetic: the loop underneath
+  // has always inserted `checklist_id = uid('chk/…')` and its comment has always claimed the
+  // inspections ran "against seeded checklists", but nothing ever wrote a row to
+  // site_ops.safety_checklists — so every seeded inspection pointed at a checklist that did not
+  // exist, and `GET /safety/checklists` returned `[]` on a fully seeded database. That is also what
+  // the Site Worker safety screen reads, so the screen had nothing to render.
+  //
+  // Item shape is the one master §Phase 6 specifies for this column — { item_id, description,
+  // is_required } — not the { item, required } shape site_ops.inspection_types uses for its
+  // `checklist_template`. The two are different columns on different tables and are not interchanged.
+  const checklistDefs = [
+    [
+      'Foundation Inspection',
+      [
+        ['rebar', 'ตรวจการวางเหล็กเสริมตามแบบ', true],
+        ['cover', 'ระยะหุ้มคอนกรีตอยู่ในเกณฑ์', true],
+      ],
+    ],
+    [
+      'Concrete Pour Inspection',
+      [
+        ['slump', 'ทดสอบค่ายุบตัวผ่านเกณฑ์', true],
+        ['cubes', 'เก็บตัวอย่างลูกปูนครบ', true],
+      ],
+    ],
+    // The pre-shift verification the SITE_WORKER files — three items, matching what the safety
+    // mockup draws (PPE, live electrical hazards, exclusion-zone signage).
+    [
+      'Safety Walkthrough',
+      [
+        ['ppe', 'สวมใส่หมวกนิรภัยและรองเท้าเซฟตี้', true],
+        ['electrical', 'ตรวจสอบพื้นที่ทำงานไม่มีสายไฟรั่ว', true],
+        ['signage', 'ติดตั้งป้ายเตือนพื้นที่เขตก่อสร้าง', false],
+      ],
+    ],
+    [
+      'MEP Rough-In Inspection',
+      [
+        ['conduit', 'การเดินท่อร้อยสายตรงตามแบบ', true],
+        ['supports', 'ติดตั้งอุปกรณ์รองรับท่อครบถ้วน', true],
+      ],
+    ],
+  ] as const;
+  for (let ci = 0; ci < checklistDefs.length; ci++) {
+    const [name, items] = checklistDefs[ci]!;
+    const payload = items.map(([itemId, description, isRequired]) => ({
+      item_id: itemId,
+      description,
+      is_required: isRequired,
+    }));
+    await tx.$executeRaw`INSERT INTO site_ops.safety_checklists (checklist_id, project_id, tenant_id, checklist_name, version, items)
+      VALUES (${uid(`chk/${p.key}/${ci}`)}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, ${name}, 1, ${JSON.stringify(payload)}::jsonb)
+      ON CONFLICT (checklist_id) DO NOTHING`;
+  }
+
+  // Inspections (against the checklists seeded immediately above — same uid('chk/…') keys).
   const inspNames = [
     'Foundation Inspection',
     'Concrete Pour Inspection',

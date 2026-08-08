@@ -9,6 +9,19 @@ const config: Config = {
     '^.+\\.tsx?$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.test.json' }],
   },
   moduleNameMapper: {
+    // @formatjs ICU polyfills — NO-OP under jest, on purpose.
+    //
+    // They exist for Hermes, which ships a partial Intl without PluralRules or Locale. Node (and
+    // therefore jest) has full ICU, so they have nothing to do here — and their published files are
+    // ESM that this CommonJS ts-jest setup cannot parse, so importing them for real only breaks the
+    // run. Stubbing does not weaken any assertion: what guarantees the imports survive is
+    // `src/i18n/__tests__/pluralPolyfill.spec.ts`, which reads translate.ts as source precisely
+    // because no test process can reproduce the runtime that needs them.
+    // Scoped to the POLYFILL entry points only. A blanket `^@formatjs/.*` also stubbed
+    // icu-messageformat-parser / ecma402-abstract / fast-memoize — which intl-messageformat itself
+    // depends on — and silently broke every formatting test.
+    '^@formatjs/(intl-getcanonicallocales|intl-locale|intl-pluralrules)/(polyfill|locale-data).*$':
+      '<rootDir>/src/__mocks__/noop.ts',
     // Native module mocks
     '^expo-sqlite$': '<rootDir>/src/__mocks__/expo-sqlite.ts',
     // expo-file-system + its SDK-54+ `/legacy` subpath (uploadAsync / FileSystemUploadType) → same mock

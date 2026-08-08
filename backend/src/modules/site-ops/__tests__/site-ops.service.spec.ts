@@ -15,7 +15,8 @@ import type {
   SafetyChecklistRow,
   ConflictRecordRow,
 } from '../site-ops.repository';
-import { IssueSeverity } from '../dto/create-issue.dto';
+import { IssueSeverity, IssueType } from '../dto/create-issue.dto';
+import { ReportShift, BlockerCategory } from '../dto/create-site-report.dto';
 import { IssueStatus } from '../dto/update-issue.dto';
 import { InspectionStatus } from '../dto/submit-inspection.dto';
 
@@ -49,6 +50,10 @@ const mockRepo = {
   createSiteReport: jest.fn(),
   findReportById: jest.fn(),
   findReportsByIds: jest.fn().mockResolvedValue(new Map()),
+  replaceManpowerLogs: jest.fn(),
+  // Default to "no breakdown recorded" — the shape getSiteReport must tolerate on every pre-existing
+  // report. Tests that care override it per case.
+  listManpowerLogs: jest.fn().mockResolvedValue([]),
   listSiteReports: jest.fn(),
   updateSiteReport: jest.fn(),
   updateReportStatus: jest.fn(),
@@ -216,6 +221,86 @@ describe('createSiteReport', () => {
     expect(result.report_id).toBe('report-1');
   });
 
+  // 20260808000001 — shift + blocker_category. Both are optional and must reach the repository as
+  // given; the service never substitutes a value for either (NULL means "not recorded", and
+  // defaulting shift to DAY would assert a fact nobody entered).
+  it('passes shift and blocker_category through to the repository', async () => {
+    mockRepo.createSiteReport.mockResolvedValue(makeReport());
+
+    await service.createSiteReport({
+      project_id: 'project-1',
+      report_date: '2026-06-04',
+      shift: ReportShift.NIGHT,
+      blockers: 'heavy rain from 14:00',
+      blocker_category: BlockerCategory.WEATHER,
+    });
+
+    expect(mockRepo.createSiteReport).toHaveBeenCalledWith(
+      expect.objectContaining({ shift: 'NIGHT', blocker_category: 'WEATHER' }),
+    );
+  });
+
+  it('sends null for shift and blocker_category when the caller omits them', async () => {
+    mockRepo.createSiteReport.mockResolvedValue(makeReport());
+
+    await service.createSiteReport({ project_id: 'project-1', report_date: '2026-06-04' });
+
+    expect(mockRepo.createSiteReport).toHaveBeenCalledWith(
+      expect.objectContaining({ shift: null, blocker_category: null }),
+    );
+  });
+
+  // manpower_lines → site_ops.manpower_logs (master §Phase 6).
+  it('writes the per-trade breakdown, defaulting hours to a full shift', async () => {
+    mockRepo.createSiteReport.mockResolvedValue(makeReport());
+
+    await service.createSiteReport({
+      project_id: 'project-1',
+      report_date: '2026-06-04',
+      manpower_lines: [
+        { trade_type: 'ELECTRICAL', worker_count: 8 },
+        { trade_type: 'STRUCTURAL', worker_count: 16, hours_worked: 10 },
+      ],
+    });
+
+    expect(mockRepo.replaceManpowerLogs).toHaveBeenCalledWith('report-1', [
+      { trade_type: 'ELECTRICAL', worker_count: 8, hours_worked: 8 },
+      { trade_type: 'STRUCTURAL', worker_count: 16, hours_worked: 10 },
+    ]);
+  });
+
+  // Regression guard: createSiteReport UPSERTS on (project_id, report_date, submitted_by), so
+  // resubmitting a day returns the EXISTING row and the freshly generated UUID is thrown away.
+  // Keying the logs off the generated id instead of the returned row would orphan every line.
+  it('keys the breakdown off the RETURNED report id, not the generated one', async () => {
+    mockRepo.createSiteReport.mockResolvedValue(makeReport({ report_id: 'pre-existing-report' }));
+
+    await service.createSiteReport({
+      project_id: 'project-1',
+      report_date: '2026-06-04',
+      manpower_lines: [{ trade_type: 'ELECTRICAL', worker_count: 8 }],
+    });
+
+    expect(mockRepo.replaceManpowerLogs).toHaveBeenCalledWith(
+      'pre-existing-report',
+      expect.any(Array),
+    );
+  });
+
+  it('clears the breakdown when an empty array is sent, and leaves it alone when omitted', async () => {
+    mockRepo.createSiteReport.mockResolvedValue(makeReport());
+
+    await service.createSiteReport({ project_id: 'project-1', report_date: '2026-06-04' });
+    expect(mockRepo.replaceManpowerLogs).not.toHaveBeenCalled();
+
+    await service.createSiteReport({
+      project_id: 'project-1',
+      report_date: '2026-06-04',
+      manpower_lines: [],
+    });
+    expect(mockRepo.replaceManpowerLogs).toHaveBeenCalledWith('report-1', []);
+  });
+
   it('emits site.report.created.v1 Kafka event', async () => {
     mockRepo.createSiteReport.mockResolvedValue(makeReport());
     await service.createSiteReport({ project_id: 'project-1', report_date: '2026-06-04' });
@@ -237,6 +322,26 @@ describe('getSiteReport', () => {
     mockRepo.findReportById.mockResolvedValue(makeReport());
     const result = await service.getSiteReport('report-1');
     expect(result.report_id).toBe('report-1');
+  });
+
+  it('attaches the per-trade manpower breakdown', async () => {
+    mockRepo.findReportById.mockResolvedValue(makeReport());
+    mockRepo.listManpowerLogs.mockResolvedValueOnce([
+      { trade_type: 'STRUCTURAL', worker_count: 16 },
+      { trade_type: 'ELECTRICAL', worker_count: 8 },
+    ]);
+
+    const result = await service.getSiteReport('report-1');
+
+    expect(result.manpower_lines).toHaveLength(2);
+    expect(result.manpower_lines[0]).toEqual(expect.objectContaining({ trade_type: 'STRUCTURAL' }));
+  });
+
+  // A report filed before the breakdown existed has none. That is data, not an error.
+  it('returns an empty breakdown when none was recorded', async () => {
+    mockRepo.findReportById.mockResolvedValue(makeReport());
+    const result = await service.getSiteReport('report-1');
+    expect(result.manpower_lines).toEqual([]);
   });
 
   it('throws NotFoundException when not found', async () => {
@@ -512,6 +617,34 @@ describe('createIssue', () => {
     const instance = KafkaProducer.mock.results[0]?.value as { publish: jest.Mock };
     expect(instance.publish).toHaveBeenCalledWith(
       expect.objectContaining({ event_type: expect.stringContaining('site.issue.created.v1') }),
+    );
+  });
+
+  // issue_type — the field app classifies at source; the value must reach the row unchanged.
+  it('passes issue_type through to the repository', async () => {
+    mockRepo.createIssue.mockResolvedValue(makeIssue());
+    await service.createIssue({
+      project_id: 'project-1',
+      title: 'Rework on column formwork',
+      severity: IssueSeverity.MEDIUM,
+      issue_type: IssueType.REWORK,
+    });
+    expect(mockRepo.createIssue).toHaveBeenCalledWith(
+      expect.objectContaining({ issue_type: 'REWORK' }),
+    );
+  });
+
+  // Omitted → null, so the COLUMN default ('GENERAL') decides. The service must not substitute a
+  // default of its own, or the schema stops being the single place that value is defined.
+  it('sends null issue_type when the caller omits it, leaving the column default to apply', async () => {
+    mockRepo.createIssue.mockResolvedValue(makeIssue());
+    await service.createIssue({
+      project_id: 'project-1',
+      title: 'Unclassified',
+      severity: IssueSeverity.LOW,
+    });
+    expect(mockRepo.createIssue).toHaveBeenCalledWith(
+      expect.objectContaining({ issue_type: null }),
     );
   });
 

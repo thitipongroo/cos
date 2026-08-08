@@ -160,6 +160,11 @@ paths:
     post:
       tags: [safety]
       summary: Submit a completed safety checklist (recorded as an inspection)
+      description: >-
+        Roles: Site Worker, Site Engineer, Safety Officer, Tenant Admin. Site Worker was added
+        2026-08-08 (ADR-089) — the daily verification is the field worker's own pre-shift routine,
+        and §6.8 grants the role RW on Safety. Incident reporting is NOT widened by that decision:
+        POST /safety/incidents stays with Site Engineer / Safety Officer / Admin per §14.
       requestBody:
         required: true
         content:

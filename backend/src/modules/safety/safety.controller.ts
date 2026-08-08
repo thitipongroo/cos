@@ -171,8 +171,14 @@ export class SafetyController {
   }
 
   // POST /api/v1/safety/checklists  (submit a completed checklist = inspection)
+  //
+  // SITE_WORKER is included (product-owner decision 2026-08-08, ADR-089): the daily safety
+  // verification is the field worker's own pre-shift routine, and §6.8 grants the role RW on Safety.
+  // This resolves — for THIS route only — the §6.8-vs-§14 conflict that sync-authz.ts recorded as
+  // unresolved. Incident reporting (`POST /safety/incidents`) is deliberately NOT widened: §14 keeps
+  // that at Site Engineer / Safety Officer / Admin and the decision did not cover it.
   @Post('safety/checklists')
-  @Roles(CosRole.SITE_ENGINEER, CosRole.SAFETY_OFFICER, CosRole.TENANT_ADMIN)
+  @Roles(CosRole.SITE_WORKER, CosRole.SITE_ENGINEER, CosRole.SAFETY_OFFICER, CosRole.TENANT_ADMIN)
   @ApiOperation({ summary: 'Submit a completed safety checklist (recorded as an inspection)' })
   submitChecklist(@Body() dto: SubmitInspectionDto) {
     return this.siteOps.submitInspection(dto);

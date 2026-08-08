@@ -8,7 +8,16 @@
 // Role tab sets — FOUR tabs, no Profile (PO decision 2026-08-04). Profile is reached from the
 // top-bar avatar on every screen, which already routed there for all roles. This generalises what
 // SITE_ENGINEER (PO 2026-07-16) and TENANT_ADMIN (PO 2026-07-28) already did to the whole product.
-//   SITE_WORKER:            Home | Tasks | Report | Issues
+//   SITE_WORKER:            Tasks | Issues | Report | Safety  (PO decision 2026-08-08)
+//     The ONLY role with no Home tab. Its four mockups (mockup/mobile/05_site_worker/{01_tasks,
+//     02_issues,03_reports,04_safety}) each draw the same bar — Tasks | Issues | Reports | Safety —
+//     and the product owner chose it over master §Phase 10's "Home | Tasks | Report | Issues".
+//     Rationale on record: a field worker opens the app to DO one of four things, and a KPI landing
+//     page is not one of them; the safety checklist is a daily obligation and had no entry point at
+//     all under the old set.
+//     `home` stays MOUNTED (href:null) — router.push('/home') still works and nothing that links
+//     there breaks — but the SITE_WORKER check-in that used to live only on that screen moved to the
+//     navigation drawer, so removing the tab did not orphan it (see NavigationDrawer.tsx).
 //   SITE_ENGINEER:          Home | Issues | Inspections | Reports
 //   PROJECT_MANAGER:        Home | Projects | Procurement | Dashboard
 //   EXECUTIVE:              Home | Portfolio | Alerts | Reports
@@ -36,156 +45,18 @@
 import { Tabs } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CosRole } from '@cos/types';
+import { ALL_TABS as TAB_TABLE } from '../lib/roleTabs';
 import { useAuthStore } from '../store/authStore';
 import { useT } from '../i18n';
 import { colors, darkColors } from '../theme/tokens';
 import { useIsDark } from '../theme/usePalette';
 
-/** MaterialIcons glyph name — §32.7 names @expo/vector-icons' MaterialIcons as the icon set. */
-type IconName = keyof typeof MaterialIcons.glyphMap;
-
-type TabConfig = {
-  name: string;
-  titleKey: string;
-  /** §32.7 requires "icons + labels" on every bottom-nav item; without one the tab renders blank. */
-  icon: IconName;
-  roles: CosRole[];
-};
-
-// Authoritative per-role tab set (spec §Phase 10). Exported for reuse/testing.
-// Icons are MaterialIcons glyph names, type-checked against the set's glyphMap. None of them are
-// building / crane / hard-hat / blueprint / gear imagery — §32.7:622 prohibits those.
-// Tabs render in array order. SITE_ENGINEER's Home|Issues|Inspections|Reports (product-owner
-// decision 2026-07-16) is why `reports` sits after `inspections` rather than before `issues`:
-// moving it there does not disturb any other role — SITE_WORKER's issues stays after its report,
-// and EXECUTIVE's reports stays ahead of its portfolio.
-export const ALL_TABS: TabConfig[] = [
-  { name: 'home', titleKey: 'nav.tabs.home', icon: 'home', roles: Object.values(CosRole) },
-  // TENANT_ADMIN bottom nav — Home | Users | Alerts | Settings (PO decision 2026-07-28, mockups
-  // 04_tenant_admin/01_home,02_users,03_alerts,04_settings). "Alerts" is the sync-review queue
-  // (04_tenant_admin/03_alerts — conflict records) and "Settings" is the system-settings route
-  // (both dark, §32.7). For every other role these three stay href:null — mountable but never a tab.
-  { name: 'users', titleKey: 'nav.tabs.users', icon: 'group', roles: [CosRole.TENANT_ADMIN] },
-  {
-    name: 'sync-queue',
-    titleKey: 'nav.tabs.alerts',
-    icon: 'notification-important',
-    roles: [CosRole.TENANT_ADMIN],
-  },
-  {
-    name: 'system-settings',
-    titleKey: 'nav.tabs.settings',
-    icon: 'settings',
-    roles: [CosRole.TENANT_ADMIN],
-  },
-  { name: 'tasks', titleKey: 'nav.tabs.tasks', icon: 'checklist', roles: [CosRole.SITE_WORKER] },
-  { name: 'report', titleKey: 'nav.tabs.report', icon: 'edit-note', roles: [CosRole.SITE_WORKER] },
-  {
-    name: 'issues',
-    titleKey: 'nav.tabs.issues',
-    icon: 'report-problem',
-    roles: [CosRole.SITE_WORKER, CosRole.SITE_ENGINEER],
-  },
-  {
-    name: 'inspections',
-    titleKey: 'nav.tabs.inspections',
-    icon: 'fact-check',
-    roles: [CosRole.SITE_ENGINEER, CosRole.SAFETY_OFFICER],
-  },
-  {
-    name: 'reports',
-    titleKey: 'nav.tabs.reports',
-    icon: 'description',
-    roles: [CosRole.SITE_ENGINEER, CosRole.EXECUTIVE, CosRole.SAFETY_OFFICER],
-  },
-  {
-    name: 'projects',
-    titleKey: 'nav.tabs.projects',
-    icon: 'folder',
-    roles: [CosRole.PROJECT_MANAGER, CosRole.VIEWER],
-  },
-  {
-    name: 'procurement',
-    titleKey: 'nav.tabs.procurement',
-    icon: 'shopping-cart',
-    roles: [CosRole.PROJECT_MANAGER, CosRole.VIEWER],
-  },
-  {
-    name: 'dashboard',
-    titleKey: 'nav.tabs.dashboard',
-    icon: 'insights',
-    roles: [CosRole.PROJECT_MANAGER],
-  },
-  {
-    name: 'portfolio',
-    titleKey: 'nav.tabs.portfolio',
-    icon: 'pie-chart',
-    roles: [CosRole.EXECUTIVE],
-  },
-  {
-    name: 'alerts',
-    titleKey: 'nav.tabs.alerts',
-    icon: 'notification-important',
-    roles: [CosRole.EXECUTIVE],
-  },
-  { name: 'payments', titleKey: 'nav.tabs.payments', icon: 'payments', roles: [CosRole.FINANCE] },
-  {
-    name: 'budget',
-    titleKey: 'nav.tabs.budget',
-    icon: 'account-balance-wallet',
-    roles: [CosRole.FINANCE, CosRole.VIEWER],
-  },
-  {
-    name: 'invoices',
-    titleKey: 'nav.tabs.invoices',
-    icon: 'receipt-long',
-    roles: [CosRole.FINANCE],
-  },
-  {
-    name: 'rfqs',
-    titleKey: 'nav.tabs.rfqs',
-    icon: 'request-quote',
-    roles: [CosRole.PROCUREMENT_OFFICER, CosRole.PROC_MANAGER],
-  },
-  {
-    name: 'orders',
-    titleKey: 'nav.tabs.orders',
-    icon: 'inventory-2',
-    roles: [CosRole.PROCUREMENT_OFFICER, CosRole.PROC_MANAGER],
-  },
-  {
-    name: 'deliveries',
-    titleKey: 'nav.tabs.deliveries',
-    icon: 'local-shipping',
-    roles: [CosRole.PROCUREMENT_OFFICER, CosRole.PROC_MANAGER],
-  },
-  {
-    name: 'incidents',
-    titleKey: 'nav.tabs.incidents',
-    icon: 'health-and-safety',
-    roles: [CosRole.SAFETY_OFFICER],
-  },
-  // CRM — the three pages §20.7.10 defines for CRM_SALES_MANAGER, in lifecycle order
-  // (lead → opportunity → customer), which is also the order the work happens in.
-  {
-    name: 'leads',
-    titleKey: 'nav.tabs.leads',
-    icon: 'person-add',
-    roles: [CosRole.CRM_SALES_MANAGER],
-  },
-  {
-    name: 'opportunities',
-    titleKey: 'nav.tabs.opportunities',
-    icon: 'trending-up',
-    roles: [CosRole.CRM_SALES_MANAGER],
-  },
-  {
-    name: 'customers',
-    titleKey: 'nav.tabs.customers',
-    icon: 'business',
-    roles: [CosRole.CRM_SALES_MANAGER],
-  },
-];
+// The tab TABLE moved to lib/roleTabs.ts (2026-08-08) so `lib/landingRoute.ts` and its unit test can
+// read it: importing this file pulls in expo-router, which is ESM and cannot load under jest. Re-
+// exported here because callers (and the routeRegistry guard's sibling imports) already reference
+// `ALL_TABS` from this module.
+export { ALL_TABS } from '../lib/roleTabs';
+export type { TabConfig, IconName } from '../lib/roleTabs';
 
 /** Role-filtered bottom tab navigator. Reads the signed-in role from the auth store. */
 export function MobileNav() {
@@ -237,7 +108,7 @@ export function MobileNav() {
           : undefined,
       }}
     >
-      {ALL_TABS.map((tab) => {
+      {TAB_TABLE.map((tab) => {
         const visible = role != null && tab.roles.includes(role);
         return (
           <Tabs.Screen

@@ -36,10 +36,17 @@ const CIRCLES: Readonly<Record<string, string>> = {
  * Styles whose name matches the pattern but which are not badges. `formatChip` is a segmented
  * BUTTON (JSON / CSV) and takes the button radius; `sourceChip` is the inline provenance tag, which
  * the identity mockup draws with a bare `rounded` (2px) — `01_00_identity_contact_details:191`.
+ *
+ * `typeChip` is the issue-category SELECTOR on the Site Worker issue screen — a 48px-tall option
+ * card with an icon and a label, two per row, not a status pill. It is a CARD by size and by role,
+ * so it takes the card radius, which is also what its mockup draws
+ * (`05_site_worker/02_issues/00_main` → `rounded-lg`, and that file's own Tailwind config maps
+ * `lg` to 0.5rem = 8px = `radius.lg`). Reading it as a badge would round a 48px control to 12px.
  */
 const NOT_BADGES: Readonly<Record<string, number>> = {
   formatChip: radius.md,
   sourceChip: radius.sm,
+  typeChip: radius.lg,
 };
 
 function tsxFiles(dir: string): string[] {

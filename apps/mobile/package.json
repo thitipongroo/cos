@@ -19,7 +19,8 @@
     "capture:android:crm": "node scripts/capture-android-crm.mjs",
     "capture:android:privacy-policy": "node scripts/capture-android-privacy-policy.mjs",
     "capture:android:home": "node scripts/capture-android-home.mjs",
-    "capture:android:tenant-admin-home": "node scripts/capture-android-tenant-admin-home.mjs"
+    "capture:android:tenant-admin-home": "node scripts/capture-android-tenant-admin-home.mjs",
+    "capture:android:site-worker": "node scripts/capture-android-site-worker.mjs"
   },
   "dependencies": {
     "@cos/financial": "file:../../packages/@cos/financial",
@@ -30,6 +31,9 @@
     "@expo/app-integrity": "~56.0.3",
     "@expo/config-plugins": "~8.0.11",
     "@expo/vector-icons": "^15.1.1",
+    "@formatjs/intl-getcanonicallocales": "^3.2.11",
+    "@formatjs/intl-locale": "^5.3.10",
+    "@formatjs/intl-pluralrules": "^6.3.13",
     "@react-native-community/netinfo": "12.0.1",
     "@shopify/react-native-skia": "2.6.2",
     "@tanstack/react-query": "^5.35.0",

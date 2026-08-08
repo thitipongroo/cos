@@ -19,6 +19,23 @@ export enum IssueSeverity {
   CRITICAL = 'CRITICAL',
 }
 
+/**
+ * What KIND of issue this is — site_ops.issues.issue_type (master §Phase 6; the column and its CHECK
+ * constraint have existed since migration 20260619000002_tasks_permits, where it classifies the
+ * issues that block task completion: gate #2 blocks on an OPEN issue of type DEFECT/REWORK/PUNCH).
+ *
+ * The column was write-only from the API's point of view until now — no DTO carried it, so every
+ * issue created through `POST /site/issues` took the DB default GENERAL and the task-completion gate
+ * could never see a blocking one it did not get from a direct SQL insert. Exposing the real four
+ * values (product-owner decision 2026-08-08) is what lets the field app classify an issue at source.
+ */
+export enum IssueType {
+  DEFECT = 'DEFECT',
+  REWORK = 'REWORK',
+  PUNCH = 'PUNCH',
+  GENERAL = 'GENERAL',
+}
+
 export class CreateIssueDto {
   @ApiProperty({ format: 'uuid' })
   @IsUUID()
@@ -54,6 +71,13 @@ export class CreateIssueDto {
   @ApiProperty({ enum: IssueSeverity, default: IssueSeverity.LOW })
   @IsEnum(IssueSeverity)
   severity!: IssueSeverity;
+
+  // Optional so every existing caller keeps working unchanged: omitted → the column's own DEFAULT
+  // 'GENERAL' applies, which is exactly what those callers got before this field existed.
+  @ApiPropertyOptional({ enum: IssueType, default: IssueType.GENERAL })
+  @IsOptional()
+  @IsEnum(IssueType)
+  issue_type?: IssueType;
 
   @ApiPropertyOptional({ format: 'uuid' })
   @IsOptional()

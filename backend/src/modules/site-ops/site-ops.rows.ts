@@ -11,6 +11,10 @@ export interface SiteReportRow {
   status: 'DRAFT' | 'SUBMITTED' | 'ACKNOWLEDGED';
   summary: string | null;
   blockers?: string | null; // spec 11 §474 (optional for back-compat with pre-migration rows)
+  // 20260808000001 — optional for the same reason as `blockers`: a row read from a database that has
+  // not run that migration has no such key at all. NULL means "not recorded", never a DAY default.
+  blocker_category?: 'WEATHER' | 'MATERIAL' | 'POWER' | 'OTHER' | null;
+  shift?: 'DAY' | 'NIGHT' | null;
   weather: string | null;
   manpower_count: number | null;
   client_submitted_at: Date | null;
@@ -27,6 +31,9 @@ export interface IssueRow {
   title: string;
   description: string | null;
   severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  // 20260619000002 added the column with DEFAULT 'GENERAL' NOT NULL, so every row has a value;
+  // optional here only for back-compat with a database that has not run that migration.
+  issue_type?: 'DEFECT' | 'REWORK' | 'PUNCH' | 'GENERAL';
   status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
   assigned_to: string | null;
   // Who raised it (20260804000004). NULL for every issue created before that migration — audit_logs

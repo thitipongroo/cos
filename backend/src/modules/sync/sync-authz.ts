@@ -67,10 +67,14 @@ const TASK_WRITE_ROLES = FIELD_WRITE_ROLES;
 //   GET  /api/v1/safety/incidents  → "Exec, PM, SE, Safety, Admin"
 // Neither lists Site Worker. The controller implements §14 exactly.
 //
-// UNRESOLVED SPEC CONFLICT: 06-rbac-permission-matrix §6.8 grants SITE_WORKER `RW` on the "Safety
-// incidents" module, which contradicts both §14 rows above. This is a documentation conflict between
-// two specs, NOT code drifting from spec — so it is not resolved in code. If §6.8 is the intended
-// policy, the fix is to add SITE_WORKER to safety.controller.ts first; this file then follows.
+// PARTIALLY RESOLVED (product-owner decision 2026-08-08, ADR-089): 06-rbac-permission-matrix §6.8
+// grants SITE_WORKER `RW` on Safety, which contradicts the two §14 rows above. The decision split the
+// module in two rather than picking a winner for all of it:
+//   - safety CHECKLISTS  → SITE_WORKER may submit (§6.8 wins; the daily verification is the field
+//     worker's own routine). Applied to safety.controller.ts and to INSPECTION_WRITE_ROLES below.
+//   - safety INCIDENTS   → unchanged (§14 wins; SITE_WORKER still absent from the list below).
+// So `safety` here — which is the INCIDENT push path — is deliberately untouched. The fix order is
+// the one this file has always stated: the REST controller changed first, and this followed it.
 const SAFETY_READ_ROLES = [
   CosRole.EXECUTIVE,
   CosRole.PROJECT_MANAGER,
@@ -84,8 +88,24 @@ const SAFETY_WRITE_ROLES = [
   CosRole.TENANT_ADMIN,
 ] as const;
 
-// site-ops.controller.ts — POST /site/inspections
-const INSPECTION_WRITE_ROLES = SAFETY_WRITE_ROLES;
+// site-ops.controller.ts — POST /site/inspections, AND safety.controller.ts — POST /safety/checklists.
+//
+// ONE sync entity type (`inspection`) backs BOTH routes, because both call
+// SiteOpsService.submitInspection and a completed safety checklist IS an inspection row. The two
+// routes no longer carry the same role list — /safety/checklists gained SITE_WORKER (product-owner
+// decision 2026-08-08, ADR-089) — so the honest mirror of "what the REST surface allows" is their
+// UNION. Anything narrower would deny offline what the role can do online, which is precisely the
+// asymmetry this file exists to prevent.
+//
+// It is no longer an alias of SAFETY_WRITE_ROLES. That alias was correct only while the two lists
+// happened to coincide; keeping it would have widened INCIDENT reporting (`safety`) as a side effect
+// of a decision that covered checklists only.
+const INSPECTION_WRITE_ROLES = [
+  CosRole.SITE_WORKER,
+  CosRole.SITE_ENGINEER,
+  CosRole.SAFETY_OFFICER,
+  CosRole.TENANT_ADMIN,
+] as const;
 
 // workforce.controller.ts — POST /workers/{id}/attendance (14-api-architecture §Workforce APIs:
 // "PM, Site Engineer"; TENANT_ADMIN is FULL on Workforce attendance per the §6.4 matrix).

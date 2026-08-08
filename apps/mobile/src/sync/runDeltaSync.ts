@@ -31,6 +31,11 @@ const APPLY: Record<string, ApplySpec> = {
       status: 'status',
       progress_percent: 'progressPercent',
       assigned_to: 'assignedTo',
+      // Shown on the task card (DDL v4). The server already sent these — /sync/delta selects the
+      // whole row — and the client dropped them, so a card had only a name and a percentage.
+      work_type: 'workType',
+      planned_start: 'plannedStart',
+      planned_end: 'plannedEnd',
     },
   },
   site_report: {
