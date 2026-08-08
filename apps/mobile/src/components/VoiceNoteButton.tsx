@@ -168,6 +168,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
   },
   // Round icon-only FAB variant (mockup parity, SITE_ENGINEER home). 56×56 per the DESIGN.md FAB spec.
+  //
+  // A BLACK drop shadow, never a coloured one. The mockups put `shadow-2xl` under this button and it
+  // earns its keep on the Tasks list, where the FAB floats over cards whose "Update progress" button
+  // is the same blue — without separation the two read as one shape. A shadow tinted with the
+  // button's own colour would be the FAB glow §32.7 prohibits; plain Material elevation is not.
   fab: {
     minHeight: 0,
     width: 56,
@@ -175,6 +180,11 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     paddingHorizontal: 0,
     gap: 0,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.45,
+    shadowRadius: 12,
+    elevation: 8,
   },
   recording: { backgroundColor: colors.danger },
   busy: { opacity: 0.7 },

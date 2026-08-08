@@ -950,7 +950,8 @@ A **child screen of Home**, so it opens with the `HOME › TASKS` breadcrumb and
 Filter chips with **real counts** (`All (25) · Pending (5) · In progress (10) · Done`), and one
 card per task: a coloured left accent, an `ID: #…` eyebrow, the trade badge, percent + sync chip, the
 planned window, and a progress bar. Swipe-right marks a task done (§17.5 Max-wins); the card taps
-through to the progress editor.
+through to the progress editor. The mockup's **AI Insight** card sits between the cards and its
+**floating voice FAB** sits over them, both added 2026-08-08.
 
 Everything is live, never fabricated. The IDs (`#80AD3112`, `#7E519143`) are the last block of each
 real `task_id`; the badges (`FOUNDATION`, `STRUCTURE`) are `projects.tasks.work_type`; the percentages
@@ -965,9 +966,24 @@ are the stored `progress_percent`. Three mockup elements are **dropped for want 
   the chip shows the real planned window in days (rendered through `formatDate`, so Thai gets the
   Buddhist era — QM-3). The mockup's own second card puts "Pending Sync" in that same slot, so a status
   value there is its own idiom.
-- The **"AI Insight"** card (a predicted 15-minute delay plus "reschedule automatically") is dropped
-  outright: DelayForecastModel is Phase 23 and untrained, so every number in it would be invented, and
-  §22.3 forbids autonomous rescheduling.
+  The **"AI Insight"** card **is** drawn — copy, the 15-minute figure and all (PO decision 2026-08-08,
+  reversing an earlier call to drop it, and consistent with the report's AI bar and the safety screen's
+  AI Safety Scan). DelayForecastModel is Phase 23 and untrained (§22.6), so the card states the mockup's
+  example rather than a computed forecast: it is static, nothing reads it, and no task field is derived
+  from it. It sits **between** task cards — anchored to the second, or to the last one on a shorter
+  list — as the mockup slots it, and does not render at all when there are no tasks. Its **"Reschedule
+  automatically"** action does not reschedule anything: auto-schedule generation is post-MVP Layer B/C
+  and §22.3 requires it to run through Temporal **with a human-in-the-loop step**, so the button reports
+  that the feature is not available instead of acting.
+
+The mockup's **floating voice FAB** is
+[`<VoiceCommandFab />`](../../../apps/mobile/src/components/VoiceCommandFab.tsx) — the ADR-073
+component already built for the Site Engineer home, not a second voice behaviour invented for this
+screen: hold to record → transcribe → classify intent → route to a real screen, with a message rather
+than a guessed action when the intent is unsupported. It carries a ring of page background and a
+plain black drop shadow, because it floats over cards whose **Update progress** button is the same
+blue and the two otherwise read as one shape. The shadow is Material elevation, never a coloured
+glow — FAB glow stays §32.7-prohibited.
 
 > `work_type`, `planned_start` and `planned_end` were already being sent by `/sync/delta` (it selects
 > the whole row) and simply discarded by the client. Local DDL v4 caches them.

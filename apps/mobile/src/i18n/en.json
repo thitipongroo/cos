@@ -232,6 +232,11 @@
       "updateProgress": "Update progress",
       "plannedWindow": "{start} → {end}"
     },
+    "aiInsight": {
+      "label": "AI Insight",
+      "body": "A cumulative 15-minute delay has been detected in zone C4. Consider starting \"pipe installation\" ahead of schedule to avoid a bottleneck.",
+      "action": "Reschedule automatically"
+    },
     "filters": {
       "all": "All",
       "pending": "Pending",
