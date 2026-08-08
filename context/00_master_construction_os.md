@@ -3281,7 +3281,13 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
                   Tasks | Safety | Directory, the old Tasks | Issues | Reports | Safety, Projects |
                   Daily Logs | Safety | Directory, and a FIVE-item one ending in Profile. The
                   product owner kept Home | Issues | Reports | Safety on 2026-08-08 rather than
-                  pick between them; Directory and Profile are pushed screens off the drawer.
+                  pick between them, then settled it on 2026-08-09 as Home | Tasks | Safety |
+                  Directory — the 01_home/01_dashboard bar with Home in the Projects slot, since a
+                  field worker has no project-portfolio screen. Issues and the daily Report gave up
+                  their slots and are pushed from the Home FAB's quick-action menu, which carries
+                  exactly those two plus Safety. Self check-in moved to the navigation drawer the
+                  same day, taking its project picker with it: attendance is written against a
+                  project and there is no global current-project state.
       Workflows:  daily report, quick issue, task list, safety checklist
 
     SITE_ENGINEER:

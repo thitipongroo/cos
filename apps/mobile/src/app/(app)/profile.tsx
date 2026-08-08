@@ -1,19 +1,21 @@
 // Profile screen — account info, notification preferences + logout (all roles; master 3100).
 // Offline-safe: account info reads local auth state; notification preferences load online.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { useAuthStore } from '../../store/authStore';
+import { initialsOf } from '../../lib/initials';
 import { useThemeStore, type ThemeMode } from '../../store/themeStore';
 import { useBiometricStore } from '../../store/biometricStore';
 import { get, mutate } from '../../api/client';
 import { useI18n } from '../../i18n';
 import type { Locale } from '../../i18n';
-import { colors, fontFamily, radius, spacing, typography } from '../../theme/tokens';
-import { screen } from '../../theme/screenStyles';
+import { fontFamily, radius, spacing, typography } from '../../theme/tokens';
+import { usePalette, type Palette } from '../../theme/usePalette';
+import { makeScreenStyles } from '../../theme/screenStyles';
 
 interface Preference {
   event_type: string;
@@ -24,6 +26,10 @@ interface Preference {
 // Notification preferences (master 3100 / §19.6) — GET/PATCH /notifications/preferences.
 function NotificationPreferences() {
   const { t } = useI18n();
+  // Named `palette`, not `p`: this component already uses `p` for the preference row it is mapping
+  // over, and shadowing that with the theme would be a silent, confusing bug.
+  const palette = usePalette();
+  const styles = useMemo(() => makeStyles(palette), [palette]);
   const [prefs, setPrefs] = useState<Preference[]>([]);
 
   useEffect(() => {
@@ -86,6 +92,9 @@ function NotificationPreferences() {
  * act on — silently omitting the control tells them nothing and looks like a missing feature.
  */
 function BiometricUnlockRow() {
+  const p = usePalette();
+  const screen = useMemo(() => makeScreenStyles(p), [p]);
+  const styles = useMemo(() => makeStyles(p), [p]);
   const { t } = useI18n();
   const enabled = useBiometricStore((s) => s.enabled);
   const available = useBiometricStore((s) => s.available);
@@ -103,7 +112,9 @@ function BiometricUnlockRow() {
           : null;
 
   return (
-    <View style={screen.kvRow}>
+    // `kvRowStacked`, not `kvRow`: the unavailable-state message is a full sentence ("Set up Face ID
+    // or a fingerprint in your device Settings first"), and side-by-side it ran off the screen edge.
+    <View style={[screen.kvRow, styles.kvRowStacked]}>
       <Text style={screen.kvKey}>{t('profile.biometric.title')}</Text>
       {available ? (
         <TouchableOpacity
@@ -149,7 +160,11 @@ const LOCALES: Array<{ locale: Locale; labelKey: string }> = [
 const MFA_ENROLLMENT_ENABLED = process.env.EXPO_PUBLIC_FF_S1_AUTH_MFA_ENROLLMENT === '1';
 
 export default function ProfileScreen() {
+  const p = usePalette();
+  const screen = useMemo(() => makeScreenStyles(p), [p]);
+  const styles = useMemo(() => makeStyles(p), [p]);
   const userId = useAuthStore((s) => s.userId);
+  const displayName = useAuthStore((s) => s.displayName);
   const role = useAuthStore((s) => s.role);
   const logout = useAuthStore((s) => s.logout);
   const mode = useThemeStore((s) => s.mode);
@@ -170,18 +185,32 @@ export default function ProfileScreen() {
       style={styles.page}
       contentContainerStyle={styles.pageContent}
     >
-      <View style={screen.kvRow}>
-        <Text style={screen.kvKey}>{t('profile.main.userId')}</Text>
-        <Text testID="profile-user-id" style={styles.value}>
-          {userId ?? '—'}
-        </Text>
+      {/* Identity card (mockup 05_profile "Profile Bento Card") — avatar, display name, and the id
+          beneath it. It replaces two bare key/value rows: the mockup opens on who you are, and a
+          `userId` row wedged between settings read as one more setting. */}
+      <View style={styles.identityCard}>
+        <View style={styles.identityAvatar}>
+          <Text style={styles.identityInitials}>
+            {initialsOf(displayName) || String(role ?? '?').slice(0, 1)}
+          </Text>
+        </View>
+        <View style={styles.identityBody}>
+          <Text testID="profile-role" style={styles.identityName} numberOfLines={1}>
+            {displayName ?? t('drawer.member')}
+          </Text>
+          <Text style={styles.identityRole} numberOfLines={1}>
+            {role ?? '—'}
+          </Text>
+          <Text testID="profile-user-id" style={styles.identityId} numberOfLines={1}>
+            {t('profile.main.userId')}: {userId ?? '—'}
+          </Text>
+        </View>
       </View>
-      <View style={screen.kvRow}>
-        <Text style={screen.kvKey}>{t('profile.main.role')}</Text>
-        <Text testID="profile-role" style={styles.value}>
-          {role ?? '—'}
-        </Text>
-      </View>
+
+      <Text style={styles.sectionHeading}>{t('profile.main.securitySection')}</Text>
+      <BiometricUnlockRow />
+
+      <Text style={styles.sectionHeading}>{t('profile.main.preferencesSection')}</Text>
       <View style={screen.kvRow}>
         <Text style={screen.kvKey}>{t('profile.main.language')}</Text>
         <View style={styles.localeRow}>
@@ -230,13 +259,13 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      <BiometricUnlockRow />
-
       {/* Security — the mockup's MFA row. Behind the same flag as the drawer's entry, so a build
           without MFA does not offer a screen it cannot honour.
           NOT BUILT: the mockup's "Change Secure PIN". This product has no PIN — device unlock is
           biometric (the row above), and inventing a second credential here would be a security
           feature with no backend, no recovery path and no spec. */}
+      {/* Rendered here rather than beside <BiometricUnlockRow /> so the flag-gated row cannot leave
+          the Security heading with nothing under it in a build without MFA. */}
       {MFA_ENROLLMENT_ENABLED ? (
         <TouchableOpacity
           testID="profile-mfa-row"
@@ -246,11 +275,12 @@ export default function ProfileScreen() {
           onPress={() => router.push('/mfa-enrollment')}
         >
           <Text style={screen.kvKey}>{t('mfa.enroll.title')}</Text>
-          <MaterialIcons name="chevron-right" size={20} color={colors.textSecondary} />
+          <MaterialIcons name="chevron-right" size={20} color={p.muted} />
         </TouchableOpacity>
       ) : null}
 
-      {/* About — the mockup's version line and legal link. */}
+      {/* About — the mockup's version line and legal link, under its own heading. */}
+      <Text style={styles.sectionHeading}>{t('profile.main.aboutSection')}</Text>
       <View style={screen.kvRow}>
         <Text style={screen.kvKey}>{t('profile.main.version')}</Text>
         <Text testID="profile-version" style={styles.value}>
@@ -265,7 +295,7 @@ export default function ProfileScreen() {
         onPress={() => router.push('/privacy-policy')}
       >
         <Text style={screen.kvKey}>{t('privacy.policy.title')}</Text>
-        <MaterialIcons name="open-in-new" size={20} color={colors.textSecondary} />
+        <MaterialIcons name="open-in-new" size={20} color={p.muted} />
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -281,74 +311,127 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: colors.bg },
-  pageContent: { padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xl },
-  value: {
-    fontSize: typography.body.fontSize,
-    fontFamily: fontFamily.medium,
-    color: colors.textPrimary,
-  },
-  prefs: { marginTop: spacing.md, gap: spacing.xs },
-  prefsHeading: {
-    fontSize: typography.caption.fontSize,
-    fontFamily: fontFamily.semibold,
-    color: colors.textSecondary,
-  },
-  prefRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: spacing.xs,
-    gap: spacing.sm,
-  },
-  prefLabel: {
-    flex: 1,
-    fontSize: typography.caption.fontSize,
-    fontFamily: fontFamily.regular,
-    color: colors.textPrimary,
-  },
-  toggle: {
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.textSecondary,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 2,
-  },
-  toggleOn: { backgroundColor: colors.success, borderColor: colors.success },
-  toggleText: {
-    fontSize: typography.caption.fontSize,
-    fontFamily: fontFamily.medium,
-    color: colors.textSecondary,
-  },
-  toggleTextOn: { color: colors.bg },
-  localeRow: { flexDirection: 'row', gap: spacing.xs },
-  localeChip: {
-    borderWidth: 1,
-    borderColor: colors.textSecondary,
-    borderRadius: radius.xl,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-  },
-  localeChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  localeText: {
-    fontSize: typography.caption.fontSize,
-    fontFamily: fontFamily.medium,
-    color: colors.textPrimary,
-  },
-  localeTextActive: { color: colors.bg },
-  logout: {
-    marginTop: spacing.lg,
-    minHeight: 48,
-    borderRadius: radius.lg,
-    backgroundColor: colors.danger,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logoutText: {
-    color: colors.bg,
-    fontSize: typography.body.fontSize,
-    fontFamily: fontFamily.semibold,
-    textTransform: 'uppercase',
-  },
-});
+const makeStyles = (p: Palette) =>
+  StyleSheet.create({
+    page: { flex: 1, backgroundColor: p.bg },
+    pageContent: { padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xl },
+    kvRowStacked: { flexDirection: 'column', alignItems: 'flex-start', gap: spacing.xs },
+    identityCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      padding: spacing.md,
+      backgroundColor: p.surface,
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      borderColor: p.muted,
+    },
+    identityAvatar: {
+      width: 56,
+      height: 56,
+      borderRadius: 999, // circle — half the width (§32.7)
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: p.bg,
+      borderWidth: 1,
+      borderColor: p.muted,
+    },
+    identityInitials: {
+      fontSize: typography.title.fontSize,
+      fontFamily: fontFamily.semibold,
+      color: p.text,
+    },
+    identityBody: { flex: 1, gap: 2 },
+    identityName: {
+      fontSize: typography.title.fontSize,
+      fontFamily: fontFamily.semibold,
+      color: p.text,
+    },
+    identityRole: {
+      fontSize: typography.label.fontSize,
+      fontFamily: fontFamily.medium,
+      color: p.primary,
+    },
+    identityId: {
+      fontSize: typography.caption.fontSize,
+      fontFamily: fontFamily.regular,
+      color: p.muted,
+    },
+    // Section headings (mockup: Security / Preferences / About). Uppercase and tracked, the same
+    // treatment the drawer gives its own group labels.
+    sectionHeading: {
+      fontSize: 11,
+      fontFamily: fontFamily.semibold,
+      letterSpacing: 1,
+      textTransform: 'uppercase',
+      color: p.muted,
+      marginTop: spacing.sm,
+    },
+    value: {
+      fontSize: typography.body.fontSize,
+      fontFamily: fontFamily.medium,
+      color: p.text,
+    },
+    prefs: { marginTop: spacing.md, gap: spacing.xs },
+    prefsHeading: {
+      fontSize: typography.caption.fontSize,
+      fontFamily: fontFamily.semibold,
+      color: p.muted,
+    },
+    prefRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: spacing.xs,
+      gap: spacing.sm,
+    },
+    prefLabel: {
+      flex: 1,
+      fontSize: typography.caption.fontSize,
+      fontFamily: fontFamily.regular,
+      color: p.text,
+    },
+    toggle: {
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      borderColor: p.muted,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 2,
+    },
+    toggleOn: { backgroundColor: p.success, borderColor: p.success },
+    toggleText: {
+      fontSize: typography.caption.fontSize,
+      fontFamily: fontFamily.medium,
+      color: p.muted,
+    },
+    toggleTextOn: { color: p.bg },
+    localeRow: { flexDirection: 'row', gap: spacing.xs },
+    localeChip: {
+      borderWidth: 1,
+      borderColor: p.muted,
+      borderRadius: radius.xl,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
+    },
+    localeChipActive: { backgroundColor: p.primary, borderColor: p.primary },
+    localeText: {
+      fontSize: typography.caption.fontSize,
+      fontFamily: fontFamily.medium,
+      color: p.text,
+    },
+    localeTextActive: { color: p.bg },
+    logout: {
+      marginTop: spacing.lg,
+      minHeight: 48,
+      borderRadius: radius.lg,
+      backgroundColor: p.danger,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    logoutText: {
+      color: p.bg,
+      fontSize: typography.body.fontSize,
+      fontFamily: fontFamily.semibold,
+      textTransform: 'uppercase',
+    },
+  });

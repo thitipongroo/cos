@@ -41,6 +41,7 @@
       "leads": "ผู้มุ่งหวัง",
       "opportunities": "โอกาสขาย",
       "customers": "ลูกค้า",
+      "directory": "ทีมงาน",
       "safety": "ความปลอดภัย"
     }
   },
@@ -277,6 +278,8 @@
     "onSiteCount": "อยู่ในไซต์ {onSite} จาก {total} คน",
     "onSite": "อยู่ในไซต์",
     "offSite": "ไม่อยู่ในไซต์",
+    "chat": "แชท",
+    "chatWith": "ส่งข้อความหา {name}",
     "call": "โทรหา {name}",
     "pickProject": "เลือกโครงการเพื่อดูรายชื่อทีมงาน",
     "empty": "ยังไม่มีคนงานในโครงการนี้",
@@ -637,6 +640,7 @@
     "fieldTools": "เครื่องมือหน้างาน",
     "settings": "ตั้งค่าการแจ้งเตือน",
     "security": "ความปลอดภัย & MFA",
+    "profile": "โปรไฟล์",
     "privacyPolicy": "นโยบายความเป็นส่วนตัว",
     "logout": "ออกจากระบบ",
     "projects": "ภาพรวมโครงการ",
@@ -706,6 +710,9 @@
   "profile": {
     "main": {
       "title": "โปรไฟล์",
+      "securitySection": "ความปลอดภัย",
+      "preferencesSection": "การตั้งค่า",
+      "aboutSection": "เกี่ยวกับ",
       "userId": "รหัสผู้ใช้",
       "role": "บทบาท",
       "language": "ภาษา",

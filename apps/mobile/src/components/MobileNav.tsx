@@ -8,15 +8,16 @@
 // Role tab sets — FOUR tabs, no Profile (PO decision 2026-08-04). Profile is reached from the
 // top-bar avatar on every screen, which already routed there for all roles. This generalises what
 // SITE_ENGINEER (PO 2026-07-16) and TENANT_ADMIN (PO 2026-07-28) already did to the whole product.
-//   SITE_WORKER:            Home | Issues | Reports | Safety  (PO decision 2026-08-08)
-//     Its four mockups (mockup/mobile/05_site_worker/{02_tasks/01_daily_tasks,
-//     01_home/03_issue, 01_home/04_daily_report, 03_safety/01_checklist}) each
-//     draw Tasks | Issues | Reports | Safety with NO Home, and that shipped first. The product owner
-//     then put Home back so the bar starts in the same place for all twelve roles; since §32.7 allows
-//     exactly four, TASKS gave up the slot rather than becoming a fifth tab.
-//     `tasks` stays MOUNTED (href:null) and is pushed from Home's Tasks quick action, so it now
-//     carries a breadcrumb (HOME › TASKS) + back chevron like any other child screen. Safety keeps
-//     the fourth slot: it is a daily obligation that had no entry point at all before.
+//   SITE_WORKER:            Home | Tasks | Safety | Directory  (PO decision 2026-08-09)
+//     This bar has moved twice. The role's original four mockups drew Tasks | Issues | Reports |
+//     Safety with no Home; on 2026-08-08 Home replaced Tasks (Home is first for all twelve roles,
+//     and §32.7 allows exactly four). On 2026-08-09 the product owner settled it as Home | Tasks |
+//     Safety | Directory, close to the 01_home/01_dashboard mockup's own bar but with Home in the
+//     Projects slot, since a field worker has no project-portfolio screen.
+//     ISSUES and REPORT gave up their slots and are now pushed from the Home FAB's quick-action
+//     menu (mockup 01_home/02_quick_actions), which carries exactly those two plus Safety — so
+//     nothing lost its entry point. Both are `href: null` below with a breadcrumb, like any other
+//     child screen.
 //   SITE_ENGINEER:          Home | Issues | Inspections | Reports
 //   PROJECT_MANAGER:        Home | Projects | Procurement | Dashboard
 //   EXECUTIVE:              Home | Portfolio | Alerts | Reports
@@ -138,14 +139,10 @@ export function MobileNav() {
           (An earlier version of this comment claimed notifications + notification-preferences were
           declared in ALL_TABS instead; they are not, and both are listed below like every other
           pushed screen.) */}
-      {/* Tasks — a tab until 2026-08-08, now pushed from Home's Tasks quick action (PO decision:
-          Home took the Site Worker's first slot, and §32.7 allows exactly four). Mounted here so
-          router.push('/tasks') still resolves. */}
-      <Tabs.Screen name="tasks" options={{ href: null }} />
-      {/* Team directory — pushed from the navigation drawer. The 2026-08-08 mockups draw it as a
-          tab, but their five files disagree on the other three slots and §32.7 allows exactly
-          four, so the product owner kept the existing bar and this stays a pushed screen. */}
-      <Tabs.Screen name="directory" options={{ href: null }} />
+      {/* The daily-entry FORM. A SITE_WORKER tab until 2026-08-09, now pushed from the Home FAB's
+          quick-action menu. Mounted here so router.push('/report') still resolves. (`reports`, the
+          Site Engineer's review LIST, is a different route and still a tab.) */}
+      <Tabs.Screen name="report" options={{ href: null }} />
       {/* Quick actions — opened by the Site Worker Home's FAB (mockup 01_home/02_quick_actions). */}
       <Tabs.Screen name="quick-actions" options={{ href: null }} />
       <Tabs.Screen name="conflict-review" options={{ href: null }} />

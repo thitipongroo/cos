@@ -54,28 +54,39 @@ export const ALL_TABS: TabConfig[] = [
     icon: 'settings',
     roles: [CosRole.TENANT_ADMIN],
   },
-  // `tasks` is NO LONGER A TAB for any role (PO 2026-08-08 — Home took its slot, since §32.7 allows
-  // exactly four). It stays a mounted route reached by `router.push` from Home's Tasks quick action,
-  // so it is declared `href: null` in MobileNav and carries a breadcrumb like every other pushed
-  // child screen.
+  // SITE_WORKER's bar is Home | Tasks | Safety | Directory (PO decision 2026-08-09), which is the
+  // 01_home/01_dashboard mockup's bar with Home in the Projects slot — a field worker has no
+  // project-portfolio screen, and Home stays first for all twelve roles.
   //
-  // `issues` sits BEFORE `report` so SITE_WORKER reads Home | Issues | Reports | Safety, keeping the
-  // relative order of the three tabs its mockups draw. SITE_ENGINEER is unaffected: it has no
-  // `report` tab, so its own order (Home | Issues | Inspections | Reports) is unchanged.
+  // `tasks` is a tab AGAIN. It lost the slot on 2026-08-08 when Home took it and became a pushed
+  // child of Home; Issues and Reports have now given up their slots instead, and both are reached
+  // from the Home FAB's quick-action menu (mockup 01_home/02_quick_actions), which carries exactly
+  // those two plus Safety. So no screen lost its entry point in the swap.
+  { name: 'tasks', titleKey: 'nav.tabs.tasks', icon: 'assignment', roles: [CosRole.SITE_WORKER] },
+  // `issues` is no longer a SITE_WORKER tab — it stays SITE_ENGINEER's, whose own bar is unchanged
+  // (Home | Issues | Inspections | Reports).
   {
     name: 'issues',
     titleKey: 'nav.tabs.issues',
     icon: 'report-problem',
-    roles: [CosRole.SITE_WORKER, CosRole.SITE_ENGINEER],
+    roles: [CosRole.SITE_ENGINEER],
   },
-  // Labelled "Reports" (mockup wording) though the route is the singular daily-entry FORM: for a
-  // field worker "Reports" IS the act of filing today's one report. The SITE_ENGINEER `reports` tab
-  // below is a different route (the review list) that happens to share the word.
-  { name: 'report', titleKey: 'nav.tabs.reports', icon: 'edit-note', roles: [CosRole.SITE_WORKER] },
+  // `report` (the singular daily-entry FORM) is now a tab for NO role. It is declared `href: null`
+  // in MobileNav and pushed from the quick-action menu, like any other child screen. The
+  // SITE_ENGINEER `reports` tab below is a different route — the review list that shares the word.
   {
     name: 'safety-checklist',
     titleKey: 'nav.tabs.safety',
     icon: 'health-and-safety',
+    roles: [CosRole.SITE_WORKER],
+  },
+  // Team directory — a tab for SITE_WORKER only (PO 2026-08-09). Every other role that can read it
+  // still reaches it from the navigation drawer, which is why NavigationDrawer keeps its link for
+  // them and drops it for this role.
+  {
+    name: 'directory',
+    titleKey: 'nav.tabs.directory',
+    icon: 'groups',
     roles: [CosRole.SITE_WORKER],
   },
   {

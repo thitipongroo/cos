@@ -41,6 +41,7 @@
       "leads": "Leads",
       "opportunities": "Opportunities",
       "customers": "Customers",
+      "directory": "Directory",
       "safety": "Safety"
     }
   },
@@ -277,6 +278,8 @@
     "onSiteCount": "{onSite} of {total} on site",
     "onSite": "On site",
     "offSite": "Not on site",
+    "chat": "Chat",
+    "chatWith": "Message {name}",
     "call": "Call {name}",
     "pickProject": "Pick a project to see its crew",
     "empty": "No one is allocated to this project yet",
@@ -637,6 +640,7 @@
     "fieldTools": "Field tools",
     "settings": "Notification settings",
     "security": "Security & MFA",
+    "profile": "Profile",
     "privacyPolicy": "Privacy policy",
     "logout": "Log out",
     "projects": "Project overview",
@@ -706,6 +710,9 @@
   "profile": {
     "main": {
       "title": "Profile",
+      "securitySection": "Security",
+      "preferencesSection": "Preferences",
+      "aboutSection": "About",
       "userId": "User ID",
       "role": "Role",
       "language": "Language",

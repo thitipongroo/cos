@@ -17,10 +17,11 @@
 // true as of the moment it was fetched; a cached copy would state that someone is standing on the
 // site when the reader has no way to know how old the claim is. Offline it shows the error state.
 //
-// The mockup's chat_bubble button is NOT rendered: the mobile app has no chat route (the Site
-// Engineer mockups draw one, but nothing is implemented), and a button that opens nothing is worse
-// than its absence. Calling IS real — `tel:` through Linking, disabled when the worker has no
-// `contact_phone`, which the column allows.
+// TWO ACTIONS PER CARD, as the mockup draws. Calling is REAL — `tel:` through Linking, disabled
+// when the worker has no `contact_phone`, which the column allows. CHAT is drawn but reports that it
+// is unavailable (PO decision 2026-08-09, the treatment already used for START SCAN and ADJUST
+// SCHEDULE): the product has no chat — no route, no backend module, no API spec — so the button
+// says so rather than opening nothing or pretending to send.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -31,12 +32,13 @@ import {
   ScrollView,
   StyleSheet,
   Linking,
+  Alert,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { get } from '../../api/client';
 import { ProjectPicker } from '../../components/ProjectPicker';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
-import { initialsOf } from '../../lib/initials';
+import { initialsOf as initials } from '../../lib/initials';
 import { matchesDirectoryQuery } from '../../lib/directoryFilter';
 import { useT } from '../../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
@@ -152,10 +154,18 @@ export default function DirectoryScreen() {
               {/* Initials, not <Avatar /> — that component renders the SIGNED-IN user (it reads
                   displayName from the auth store), and `workforce.workers` has no photo column, so
                   there is no colleague photo to show even if it did. */}
-              <View style={[styles.avatar, { backgroundColor: p.elevated }]}>
-                <Text style={[styles.avatarText, { color: p.text }]}>
-                  {initialsOf(entry.full_name)}
-                </Text>
+              {/* The avatar is a filled, outlined disc — on the dark palette `elevated` sits so close
+                  to `surface` that an unbordered circle vanished and the initials read as loose
+                  letters beside the name (PO 2026-08-09). A person glyph stands in when the name
+                  yields no initials at all, so the shape is never empty. */}
+              <View style={[styles.avatar, { backgroundColor: p.elevated, borderColor: p.border }]}>
+                {initials(entry.full_name) === '' ? (
+                  <MaterialIcons name="person" size={24} color={p.muted} />
+                ) : (
+                  <Text style={[styles.avatarText, { color: p.text }]}>
+                    {initials(entry.full_name)}
+                  </Text>
+                )}
               </View>
               <View style={styles.cardBody}>
                 <Text style={[styles.name, { color: p.text }]} numberOfLines={1}>
@@ -173,6 +183,15 @@ export default function DirectoryScreen() {
                   {entry.on_site ? t('directory.onSite') : t('directory.offSite')}
                 </Text>
               </View>
+              <TouchableOpacity
+                testID={`directory-chat-${entry.worker_id}`}
+                onPress={() => Alert.alert(t('directory.chat'), t('common.comingSoon'))}
+                accessibilityRole="button"
+                accessibilityLabel={t('directory.chatWith', { name: entry.full_name })}
+                style={styles.callButton}
+              >
+                <MaterialIcons name="chat-bubble-outline" size={22} color={p.muted} />
+              </TouchableOpacity>
               <TouchableOpacity
                 testID={`directory-call-${entry.worker_id}`}
                 onPress={() => entry.contact_phone && call(entry.contact_phone)}
@@ -228,6 +247,7 @@ const makeStyles = () =>
       width: 48,
       height: 48,
       borderRadius: 999, // circle — half the width, not a step on the radius scale (§32.7)
+      borderWidth: 1,
       alignItems: 'center',
       justifyContent: 'center',
     },

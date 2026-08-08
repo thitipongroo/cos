@@ -18,13 +18,15 @@ export const TAB_ROUTES = [
   'home',
   'dashboard',
   'projects',
-  // `tasks` is deliberately ABSENT: it stopped being a tab on 2026-08-08 when Home took the Site
-  // Worker's first slot. It is now a pushed child of Home (breadcrumb + back chevron), which is what
-  // `routeRegistry.spec.ts` asserts for every non-tab, non-terminal route.
+  // `tasks` is a tab again (PO 2026-08-09) — SITE_WORKER's bar is Home | Tasks | Safety | Directory.
+  'tasks',
+  'directory',
   'issues',
   'inspections',
   'reports',
-  'report',
+  // `report` is deliberately ABSENT: the daily-entry form stopped being a tab on 2026-08-09 when
+  // Tasks and Directory took the Site Worker's last two slots. It is pushed from the Home FAB's
+  // quick-action menu, so it needs `href: null` + a breadcrumb like every other child screen.
   // SITE_WORKER's fourth tab (PO 2026-08-08, mockup 05_site_worker/03_safety/01_checklist). A tab, not a pushed
   // child: the daily safety verification is one of the four things that role opens the app to do.
   'safety-checklist',

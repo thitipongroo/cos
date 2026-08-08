@@ -16,9 +16,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { CosRole } from '@cos/types';
-import { db, newLocalId } from '../../db/database';
+import { db } from '../../db/database';
 import type { Project } from '../../db/database';
-import { localAttendance, localTasks } from '../../db/schema';
+import { localTasks } from '../../db/schema';
 import { eq } from 'drizzle-orm';
 import { mutate } from '../../api/client';
 import { useCollection } from '../../hooks/useCollection';
@@ -26,10 +26,8 @@ import type { Task, Attendance } from '../../db/database';
 import { shiftProgress } from '../../lib/shiftHours';
 import { usePendingCount } from '../../hooks/usePendingCount';
 import { get } from '../../api/client';
-import { getMyWorker, recordCheckIn } from '../../api/workforce';
 import { refreshProjectsCache } from '../../api/projects';
 import { useAuthStore } from '../../store/authStore';
-import { ProjectPicker } from '../../components/ProjectPicker';
 import { TaskCard } from '../../components/TaskCard';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Alert, ScrollView } from 'react-native';
@@ -38,7 +36,6 @@ import SiteEngineerHome from '../../components/SiteEngineerHome';
 import TenantAdminHome from '../../components/TenantAdminHome';
 import { useT } from '../../i18n';
 import { fontFamily, radius, spacing, typography } from '../../theme/tokens';
-import { screen } from '../../theme/screenStyles';
 import { usePalette, useIsDark, type Palette } from '../../theme/usePalette';
 import { formatMoney } from '@cos/financial';
 
@@ -149,9 +146,11 @@ function asList<T>(res: { items?: T[] } | T[]): T[] {
 //     sync health is the TopBar's global indicator plus the Sync Queue screen.
 //   - The three inline quick-action tiles moved behind the FAB, which is what the mockup's
 //     `aria-label="Quick Action"` button opens (see (app)/quick-actions.tsx).
-//   - CHECK IN STAYS, though the mockup does not draw it. It is the role's daily attendance action
-//     and exists on no other screen; dropping it to match a drawing would delete a feature. It also
-//     feeds Shift Hours directly — the tile is elapsed time since the row this button writes.
+//   - CHECK IN and its project picker MOVED TO THE NAVIGATION DRAWER on 2026-08-09 (product-owner
+//     decision) — see <CheckInControl />. The mockup never drew them here; the Shift Hours tile
+//     still reads the row that control writes, so the two remain connected without sharing a
+//     screen. The picker had to travel with the button: attendance is written against a project,
+//     and there is no global "current project" for a detached button to act on.
 //
 // NOT DRAWN: the mockup's "WORKER COMMAND" heading. §32.7 names a top-level tab screen by its
 // active bottom-nav tab, and all four of this role's screens had their in-content titles removed on
@@ -188,35 +187,6 @@ function FieldHome() {
       .set({ progressPercent: 100, offlineSyncStatus: 'PENDING' })
       .where(eq(localTasks.id, task.id));
     await mutate('PATCH', `/tasks/${task.taskId}`, { progress_percent: 100 }, 'task', task.taskId);
-  };
-
-  const [projectId, setProjectId] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-
-  const onCheckIn = async (): Promise<void> => {
-    setBusy(true);
-    setMessage(null);
-    try {
-      const worker = await getMyWorker(); // 404 if no worker linked to this user
-      const now = new Date().toISOString();
-      await recordCheckIn(worker.worker_id, projectId.trim(), now); // offline-queued via mutate()
-      await db.insert(localAttendance).values({
-        id: newLocalId(),
-        logId: '',
-        workerId: worker.worker_id,
-        projectId: projectId.trim(),
-        checkInAt: now,
-        checkOutAt: null,
-        hoursWorked: null,
-        offlineSyncStatus: 'PENDING',
-      });
-      setMessage(t('home.main.checkedIn'));
-    } catch {
-      setMessage(t('home.main.checkInError'));
-    } finally {
-      setBusy(false);
-    }
   };
 
   return (
@@ -277,25 +247,6 @@ function FieldHome() {
             </Text>
           </TouchableOpacity>
         </View>
-
-        <ProjectPicker selectedId={projectId} onSelect={setProjectId} />
-        <TouchableOpacity
-          testID="check-in-button"
-          style={[styles.checkIn, (busy || !projectId.trim()) && screen.buttonDisabled]}
-          onPress={onCheckIn}
-          accessibilityRole="button"
-          accessibilityLabel={t('home.main.checkIn')}
-          accessibilityState={{ disabled: busy || !projectId.trim() }}
-          disabled={busy || !projectId.trim()}
-        >
-          <Text style={screen.primaryButtonText}>{t('home.main.checkIn')}</Text>
-        </TouchableOpacity>
-
-        {message ? (
-          <Text testID="check-in-status" style={styles.message}>
-            {message}
-          </Text>
-        ) : null}
 
         {/* TODAY'S PRIORITY TASKS (mockup). The same <TaskCard /> the Tasks screen renders, so the
             two cannot drift apart, and the same swipe-to-complete behaviour. */}
@@ -744,6 +695,10 @@ const makeStyles = (p: Palette) =>
       fontSize: typography.title.fontSize,
       fontFamily: fontFamily.semibold,
       marginTop: spacing.xs,
+      // Uppercase (PO decision 2026-08-09), matching how the mockup sets its section headings.
+      // Applied as a STYLE, not by uppercasing the message: the Thai string has no case, and
+      // `toUpperCase()` in the component would be a no-op there while silently shouting in English.
+      textTransform: 'uppercase',
     },
     moreTasks: {
       flexDirection: 'row',

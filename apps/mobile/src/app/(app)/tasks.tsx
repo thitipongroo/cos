@@ -276,7 +276,9 @@ const styles = StyleSheet.create({
   // Deep enough that the floating voice FAB never covers the last card.
   list: { paddingBottom: spacing.xl * 3 },
   insight: {
-    marginHorizontal: spacing.lg,
+    // NO horizontal margin. <TaskCard /> is full-bleed, and an inset card between two full-bleed
+    // ones reads as a different kind of thing floating in the list rather than one more row of it
+    // (PO decision 2026-08-09). The left accent bar is the only edge treatment, as on the cards.
     marginVertical: spacing.xs,
     padding: spacing.md,
     borderLeftWidth: 4,

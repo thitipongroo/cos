@@ -21,6 +21,7 @@ import { useUiStore } from '../store/uiStore';
 import { useAuthStore } from '../store/authStore';
 import { useI18n } from '../i18n';
 import { Avatar } from './Avatar';
+import { CheckInControl } from './CheckInControl';
 import { BrandLogo } from './BrandLogo';
 import { darkColors, fontFamily, radius, spacing, touchTarget, typography } from '../theme/tokens';
 
@@ -43,18 +44,6 @@ const FIELD_TOOLS: readonly NavLink[] = [
 ];
 
 /**
- * Self check-in — SITE_WORKER only, and only because that role has no Home tab.
- *
- * The check-in control (attendance write, offline-queued) lives on the Home screen's SITE_WORKER
- * variant. When the mockups replaced that role's Home tab with Safety (PO 2026-08-08), the control
- * had no entry point left — the route stayed mounted but nothing linked to it. This is that link
- * (PO decision 2026-08-08), so removing a tab did not silently remove a daily field action.
- *
- * Every other role still has Home as a tab and does not need it here.
- */
-const CHECK_IN_LINK: NavLink = { route: '/home', labelKey: 'drawer.checkIn', icon: 'how-to-reg' };
-
-/**
  * Team directory — the project crew as a contact list (mockup 04_directory).
  *
  * In the drawer rather than the bottom bar: §32.7 allows exactly four tabs and all four are
@@ -68,8 +57,9 @@ const DIRECTORY_LINK: NavLink = {
   icon: 'groups',
 };
 
+// SITE_WORKER is deliberately ABSENT: the directory is that role's fourth TAB as of 2026-08-09, and
+// a drawer entry beside it would be a second door onto the same screen.
 const DIRECTORY_ROLES: CosRole[] = [
-  CosRole.SITE_WORKER,
   CosRole.SITE_ENGINEER,
   CosRole.SAFETY_OFFICER,
   CosRole.PROJECT_MANAGER,
@@ -205,8 +195,17 @@ export function NavigationDrawer(): React.JSX.Element | null {
           <BrandLogo variant="dark" height={26} />
         </View>
 
-        {/* Profile header */}
-        <View style={styles.profileCard}>
+        {/* Profile header — the WHOLE card opens the account screen, not just the avatar inside it
+            (PO decision 2026-08-09: profile is entered from the drawer). A separate "Profile" row
+            further down the list was tried and removed: two doors onto one screen, and the lower one
+            sat below the fold on a phone. */}
+        <Pressable
+          testID="drawer-profile-card"
+          onPress={() => go('/profile')}
+          accessibilityRole="button"
+          accessibilityLabel={t('drawer.profile')}
+          style={styles.profileCard}
+        >
           <View style={styles.profileRow}>
             <Avatar variant="dark" onPress={() => go('/profile')} />
             <View style={styles.flex1}>
@@ -222,12 +221,20 @@ export function NavigationDrawer(): React.JSX.Element | null {
             <MaterialIcons name="cloud-done" size={16} color={darkColors.success} />
             <Text style={styles.statusText}>{t('drawer.online')}</Text>
           </View>
-        </View>
+        </Pressable>
 
         {/* Field tools */}
         <ScrollView style={styles.flex1} contentContainerStyle={styles.navList}>
           <Text style={styles.navSection}>{t('drawer.fieldTools')}</Text>
-          {role === CosRole.SITE_WORKER ? renderLink(CHECK_IN_LINK) : null}
+          {/* Self check-in — the control ITSELF, not a link to it (PO decision 2026-08-09). It was a
+              link to Home until then, and the button lived on that screen. SITE_WORKER only: the
+              other roles have no self-attendance action. */}
+          {role === CosRole.SITE_WORKER ? (
+            <View style={styles.checkInBlock}>
+              <Text style={styles.navSection}>{t('drawer.checkIn')}</Text>
+              <CheckInControl onDone={closeDrawer} />
+            </View>
+          ) : null}
           {role && DIRECTORY_ROLES.includes(role) ? renderLink(DIRECTORY_LINK) : null}
           {FIELD_TOOLS.map(renderLink)}
           <View style={styles.divider} />
@@ -321,6 +328,9 @@ const styles = StyleSheet.create({
   },
   statusText: { fontFamily: fontFamily.medium, fontSize: 11, color: darkColors.muted },
   navList: { paddingBottom: spacing.md, gap: 2 },
+  // The check-in control sits in the drawer's nav list but is a FORM, not a link — it needs its own
+  // vertical rhythm and a separator from the links below it.
+  checkInBlock: { gap: spacing.xs, paddingBottom: spacing.sm },
   navSection: {
     fontFamily: fontFamily.bold,
     fontSize: 11,
