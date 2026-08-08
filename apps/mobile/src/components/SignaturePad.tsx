@@ -86,6 +86,14 @@ export function SignaturePad({ strokes, onChange, signerName, testID }: Signatur
       <GestureDetector gesture={pan}>
         <View
           style={styles.pad}
+          // The pad is a drawing surface, not a button — TalkBack has no gesture that can sign it,
+          // so it is announced as an image with a name and a state (signed / not yet) rather than
+          // offered as something to activate (§20.8, WCAG 2.2 AA). Leaving the checklist unsigned is
+          // valid: `signature` is optional on the submission, so a screen-reader user is never
+          // blocked by a mark they cannot draw.
+          accessibilityRole="image"
+          accessibilityLabel={t('safety.checklist.signHere')}
+          accessibilityValue={{ text: signed ? t('safety.checklist.signed') : '' }}
           onLayout={(e) =>
             setSize({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })
           }
@@ -139,6 +147,9 @@ export function SignaturePad({ strokes, onChange, signerName, testID }: Signatur
           testID="signature-clear"
           onPress={() => onChange([])}
           disabled={!signed}
+          accessibilityRole="button"
+          accessibilityLabel={t('safety.checklist.clearPad')}
+          accessibilityState={{ disabled: !signed }}
           style={[styles.clear, !signed && styles.clearDisabled]}
         >
           <Text style={styles.clearText}>{t('safety.checklist.clearPad')}</Text>

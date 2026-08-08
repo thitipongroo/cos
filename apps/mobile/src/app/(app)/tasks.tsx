@@ -144,6 +144,8 @@ export default function TasksScreen() {
         <TouchableOpacity
           testID="save-progress-button"
           style={screen.primaryButton}
+          accessibilityRole="button"
+          accessibilityLabel={t('tasks.detail.save')}
           onPress={onSave}
         >
           <Text style={screen.primaryButtonText}>{t('tasks.detail.save')}</Text>
@@ -153,7 +155,12 @@ export default function TasksScreen() {
             {savedValue}
           </Text>
         ) : null}
-        <TouchableOpacity testID="task-back-button" onPress={() => setSelected(null)}>
+        <TouchableOpacity
+          testID="task-back-button"
+          accessibilityRole="button"
+          accessibilityLabel={t('tasks.detail.back')}
+          onPress={() => setSelected(null)}
+        >
           <Text style={[styles.back, { color: p.accent }]}>{t('tasks.detail.back')}</Text>
         </TouchableOpacity>
       </View>
@@ -181,6 +188,9 @@ export default function TasksScreen() {
                 key={f}
                 testID={`task-filter-${f}`}
                 onPress={() => setFilter(f)}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: active }}
+                accessibilityLabel={`${t(`tasks.filters.${f}`)} (${counts[f]})`}
                 style={[
                   styles.chip,
                   { borderColor: p.border, backgroundColor: active ? p.primary : p.surface },
@@ -228,6 +238,8 @@ export default function TasksScreen() {
                 </Text>
                 <TouchableOpacity
                   testID="tasks-ai-insight-action"
+                  accessibilityRole="button"
+                  accessibilityLabel={t('tasks.aiInsight.action')}
                   onPress={() => Alert.alert(t('tasks.aiInsight.action'), t('common.comingSoon'))}
                   style={styles.insightAction}
                 >

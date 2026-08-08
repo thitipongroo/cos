@@ -355,6 +355,7 @@
       "all": "All",
       "authorization": "Digital authorization",
       "signHere": "Sign here to confirm adherence",
+      "signed": "Signed",
       "signer": "Site operator: {name}",
       "clearPad": "Clear pad",
       "aiScanTitle": "AI Safety Scan",

@@ -6,11 +6,16 @@
 # maintained React Native equivalent, so this script is the substitute: any file that renders a
 # tappable element must set at least one accessibility prop on something.
 #
-# RATCHET, NOT A CLEAN GATE. 24 of the 50 files with tappable elements have no accessibility props
-# at all (measured 2026-08-03). Failing on all 24 today would only mean disabling the check, so the
-# baseline below is the line: the existing 24 are reported as warnings, and the build fails only if
-# the number grows. Lower BASELINE in the same PR that fixes a file — that is what makes the number
-# fall instead of drift.
+# RATCHET, NOT A CLEAN GATE. 24 of the 50 files with tappable elements had no accessibility props
+# at all (measured 2026-08-03). Failing on all 24 then would only have meant disabling the check, so
+# the baseline below is the line: the remainder are reported as warnings, and the build fails only
+# if the number grows. Lower BASELINE in the same PR that fixes a file — that is what makes the
+# number fall instead of drift.
+#
+# 24 → 20 on 2026-08-08: SignaturePad.tsx (a new component that shipped with none — the pad now
+# announces as a named image with a signed/unsigned state, since TalkBack has no gesture that can
+# draw a signature, and the Clear button is a labelled button) and tasks.tsx (filter chips as a
+# radio group, plus the AI Insight action and the detail screen's save/back buttons).
 #
 # Usage: scripts/a11y/check-rn-a11y.sh
 
@@ -18,9 +23,9 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
-# Number of files with tappable elements but no accessibility prop, as of 2026-08-03.
+# Number of files with tappable elements but no accessibility prop, as of 2026-08-08.
 # This may only ever be lowered.
-BASELINE=24
+BASELINE=20
 
 python3 - "$ROOT" "$BASELINE" <<'PY'
 import pathlib
