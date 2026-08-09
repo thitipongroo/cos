@@ -21,7 +21,12 @@ export function Avatar({
   variant = 'dark',
 }: {
   testID?: string;
-  onPress: () => void;
+  /**
+   * Optional since 2026-08-09: inside the navigation drawer the avatar is DECORATION, not a
+   * control — the drawer IS the profile, so there is nowhere for it to navigate to. Everywhere
+   * else (the top bar) it still opens that drawer.
+   */
+  onPress?: () => void;
   /** 'dark' on the Site Engineer top bar; 'light' on every other role's top bar (§32.7). */
   variant?: 'light' | 'dark';
 }) {
@@ -43,12 +48,15 @@ export function Avatar({
   const dark = variant === 'dark';
 
   return (
+    // With no handler it announces as an IMAGE, not a button: a screen reader offering to activate
+    // something that does nothing is worse than a plain graphic (§20.8).
     <TouchableOpacity
       testID={testID}
-      accessibilityRole="button"
+      accessibilityRole={onPress ? 'button' : 'image'}
       accessibilityLabel={displayName ?? undefined}
       style={styles.tap}
       onPress={onPress}
+      disabled={onPress == null}
     >
       <View style={[styles.circle, dark ? styles.circleDark : styles.circleLight]}>
         {showPhoto ? (

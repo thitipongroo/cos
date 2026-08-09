@@ -1,22 +1,26 @@
 import { shortId } from '../shortId';
 
 describe('shortId', () => {
-  it('takes the first eight characters of a UUID, uppercased', () => {
-    expect(shortId('5db19bf3-4c2a-4f1e-9a7b-2c8d1e0f3a4b')).toBe('5DB19BF3');
-    expect(shortId('ec707b2f-0000-0000-0000-000000000000')).toBe('EC707B2F');
+  it('takes the last block of a UUID, upper-cased', () => {
+    expect(shortId('10b53dda-0afd-5cae-8b7a-1554e2a1f0cd')).toBe('E2A1F0CD');
   });
 
-  it('returns a short input unchanged apart from case', () => {
-    // Not padded. A caller with a non-UUID id gets what it has rather than a value that looks like a
-    // full short id but is not one.
-    expect(shortId('abc')).toBe('ABC');
-    expect(shortId('')).toBe('');
+  it('discriminates between ids that share a prefix', () => {
+    // The reason it is the LAST block: ids minted together often share their leading bytes.
+    const a = shortId('10b53dda-0afd-5cae-8b7a-aaaaaaaa00000001');
+    const b = shortId('10b53dda-0afd-5cae-8b7a-aaaaaaaa00000002');
+    expect(a).not.toBe(b);
   });
 
-  it('is stable — the same id always renders the same way on every screen', () => {
-    // The reason this function exists: five hand-rolled copies could have drifted in length.
-    const id = '5db19bf3-4c2a-4f1e-9a7b-2c8d1e0f3a4b';
-    expect(shortId(id)).toHaveLength(8);
-    expect(shortId(id)).toBe(shortId(id));
+  it('renders a dash when there is no id', () => {
+    expect(shortId(null)).toBe('—');
+    expect(shortId(undefined)).toBe('—');
+    expect(shortId('')).toBe('—');
+    expect(shortId('   ')).toBe('—');
+  });
+
+  it('trims a non-UUID to the same width rather than overflowing', () => {
+    expect(shortId('legacy-identifier-value')).toBe('VALUE');
+    expect(shortId('SHORT')).toBe('SHORT');
   });
 });

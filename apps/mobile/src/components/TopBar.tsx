@@ -122,7 +122,10 @@ export function TopBar({ variant = 'light' }: { variant?: 'light' | 'dark' }) {
             </View>
           ) : null}
         </TouchableOpacity>
-        <Avatar testID="profile-avatar" variant={variant} onPress={() => router.push('/profile')} />
+        {/* The avatar OPENS THE DRAWER, which is the profile as of 2026-08-09 — there is no
+            `/profile` route to push any more. It kept its testID: it is still "the way to your
+            account", and every capture script and test that reaches for it still means that. */}
+        <Avatar testID="profile-avatar" variant={variant} onPress={openDrawer} />
       </View>
     </View>
   );

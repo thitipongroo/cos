@@ -21,7 +21,7 @@ import { useUiStore } from '../store/uiStore';
 import { useAuthStore } from '../store/authStore';
 import { useI18n } from '../i18n';
 import { Avatar } from './Avatar';
-import { CheckInControl } from './CheckInControl';
+import { shortId } from '../lib/shortId';
 import { BrandLogo } from './BrandLogo';
 import { darkColors, fontFamily, radius, spacing, touchTarget, typography } from '../theme/tokens';
 
@@ -59,41 +59,28 @@ const DIRECTORY_LINK: NavLink = {
 
 // SITE_WORKER is deliberately ABSENT: the directory is that role's fourth TAB as of 2026-08-09, and
 // a drawer entry beside it would be a second door onto the same screen.
+/** Account settings — the signed-in user's own, on every role (mockup 05_profile). */
+const SETTINGS_LINK: NavLink = {
+  route: '/account-settings',
+  labelKey: 'drawer.settings',
+  icon: 'settings',
+};
+
 const DIRECTORY_ROLES: CosRole[] = [
   CosRole.SITE_ENGINEER,
   CosRole.SAFETY_OFFICER,
   CosRole.PROJECT_MANAGER,
 ];
 
-const SETTINGS_LINK: NavLink = {
-  route: '/notification-preferences',
-  labelKey: 'drawer.settings',
-  icon: 'settings',
-};
-
-const SECURITY_LINK: NavLink = {
-  route: '/mfa-enrollment',
-  labelKey: 'drawer.security',
-  icon: 'shield',
-};
-
 // PO decision 2026-08-04 — the post-auth entry to the Privacy Policy. Not in the drawer mockup: the
 // mockups only ever reach the policy from the login footer, which leaves a signed-in user with no
 // route to it at all. PDPA §23 makes the notice a standing disclosure, so it needs a permanent home
 // once the login footer is behind you. Grouped with Settings rather than Field tools — it is an
 // account-level document, not a site tool.
-const PRIVACY_LINK: NavLink = {
-  route: '/privacy-policy',
-  labelKey: 'drawer.privacyPolicy',
-  icon: 'privacy-tip',
-};
-
 // QM-15: the MFA-enrollment surface is a new auth flow and must be flag-gated. Mobile has no
 // server-evaluated flags client yet (ADR-049 is backend-only), so this is a build-time flag read
 // statically (Expo only inlines EXPO_PUBLIC_* on static access); a runtime client is a follow-up.
 // Fail closed — a security surface stays hidden unless the flag is explicitly on.
-const MFA_ENROLLMENT_ENABLED = process.env.EXPO_PUBLIC_FF_S1_AUTH_MFA_ENROLLMENT === '1';
-
 export function NavigationDrawer(): React.JSX.Element | null {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -103,6 +90,7 @@ export function NavigationDrawer(): React.JSX.Element | null {
   const closeDrawer = useUiStore((s) => s.closeDrawer);
   const displayName = useAuthStore((s) => s.displayName);
   const role = useAuthStore((s) => s.role);
+  const userId = useAuthStore((s) => s.userId);
   const logout = useAuthStore((s) => s.logout);
 
   // -DRAWER_WIDTH = off-screen left; 0 = open. Backdrop fades 0→1 in step.
@@ -195,19 +183,12 @@ export function NavigationDrawer(): React.JSX.Element | null {
           <BrandLogo variant="dark" height={26} />
         </View>
 
-        {/* Profile header — the WHOLE card opens the account screen, not just the avatar inside it
-            (PO decision 2026-08-09: profile is entered from the drawer). A separate "Profile" row
-            further down the list was tried and removed: two doors onto one screen, and the lower one
-            sat below the fold on a phone. */}
-        <Pressable
-          testID="drawer-profile-card"
-          onPress={() => go('/profile')}
-          accessibilityRole="button"
-          accessibilityLabel={t('drawer.profile')}
-          style={styles.profileCard}
-        >
+        {/* Profile header. It opens NOTHING — THIS PANEL IS THE PROFILE (product-owner decision
+            2026-08-09). The `/profile` route was deleted with that ruling; every account control it
+            held now renders below the navigation links as <AccountSettings />. */}
+        <View testID="drawer-profile-card" style={styles.profileCard}>
           <View style={styles.profileRow}>
-            <Avatar variant="dark" onPress={() => go('/profile')} />
+            <Avatar variant="dark" />
             <View style={styles.flex1}>
               <Text style={styles.profileName} numberOfLines={1}>
                 {displayName ?? t('drawer.member')}
@@ -215,32 +196,32 @@ export function NavigationDrawer(): React.JSX.Element | null {
               <Text style={styles.profileRole} numberOfLines={1}>
                 {role ?? ''}
               </Text>
+              {/* `ID: <SHORT>` in a monospaced face, as the mockup draws it. The mockup's own
+                  "SW-9281" is an employee-code scheme this product does not mint — `user_id` is a
+                  UUID — so shortId() renders the real one at a length a person can read out (PO
+                  2026-08-09: "use a short UUID for now"). It is a display aid, never a key. */}
+              <Text testID="drawer-user-id" style={styles.profileId} numberOfLines={1}>
+                {t('profile.main.userId')}: {shortId(userId)}
+              </Text>
             </View>
           </View>
           <View style={styles.statusRow}>
             <MaterialIcons name="cloud-done" size={16} color={darkColors.success} />
             <Text style={styles.statusText}>{t('drawer.online')}</Text>
           </View>
-        </Pressable>
+        </View>
 
         {/* Field tools */}
         <ScrollView style={styles.flex1} contentContainerStyle={styles.navList}>
           <Text style={styles.navSection}>{t('drawer.fieldTools')}</Text>
-          {/* Self check-in — the control ITSELF, not a link to it (PO decision 2026-08-09). It was a
-              link to Home until then, and the button lived on that screen. SITE_WORKER only: the
-              other roles have no self-attendance action. */}
-          {role === CosRole.SITE_WORKER ? (
-            <View style={styles.checkInBlock}>
-              <Text style={styles.navSection}>{t('drawer.checkIn')}</Text>
-              <CheckInControl onDone={closeDrawer} />
-            </View>
-          ) : null}
           {role && DIRECTORY_ROLES.includes(role) ? renderLink(DIRECTORY_LINK) : null}
           {FIELD_TOOLS.map(renderLink)}
+          {/* Account settings — ONE ROW, not the sections themselves (PO decision 2026-08-09). They
+              rendered inline here for one build and made the panel carry both navigation and
+              settings, with ~900px of a 2400px screen below the fold. The mockups split them the
+              same way: the tenant-admin drawer drawing is Field Tools + Settings + Logout. */}
           <View style={styles.divider} />
-          {MFA_ENROLLMENT_ENABLED ? renderLink(SECURITY_LINK) : null}
           {renderLink(SETTINGS_LINK)}
-          {renderLink(PRIVACY_LINK)}
         </ScrollView>
 
         {/* Logout */}
@@ -309,6 +290,13 @@ const styles = StyleSheet.create({
     fontSize: typography.body.fontSize,
     color: darkColors.text,
   },
+  profileId: {
+    fontSize: typography.caption.fontSize,
+    // Monospaced, as the mockup sets it: an id is read character by character, and a proportional
+    // face makes 0/O and 1/l ambiguous exactly where it matters.
+    fontFamily: 'monospace',
+    color: darkColors.muted,
+  },
   profileRole: {
     fontFamily: fontFamily.medium,
     fontSize: 11,
@@ -328,9 +316,6 @@ const styles = StyleSheet.create({
   },
   statusText: { fontFamily: fontFamily.medium, fontSize: 11, color: darkColors.muted },
   navList: { paddingBottom: spacing.md, gap: 2 },
-  // The check-in control sits in the drawer's nav list but is a FORM, not a link — it needs its own
-  // vertical rhythm and a separator from the links below it.
-  checkInBlock: { gap: spacing.xs, paddingBottom: spacing.sm },
   navSection: {
     fontFamily: fontFamily.bold,
     fontSize: 11,

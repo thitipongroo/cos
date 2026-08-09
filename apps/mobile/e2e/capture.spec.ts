@@ -40,7 +40,6 @@ const ROUTES = [
   'report',
   'alerts',
   'conflict-review',
-  'profile',
 ];
 
 function shot(name: string): void {

@@ -15,8 +15,8 @@
 //
 // Issues and the daily Report left the bar on 2026-08-09 and are now pushed from the Home FAB's
 // quick-action menu, so they moved under 01-Home/ with it — the README's rule is that a screen is
-// filed under the tab it is reached from. Profile stays in 05-Shared/: it is reached from the
-// top-bar avatar and the drawer, neither of which is a tab.
+// filed under the tab it is reached from. 05-Drawer/ holds the navigation drawer, which IS the
+// profile as of 2026-08-09 — it is not a tab and there is no longer a profile route.
 //
 // Signed in as Somsak Duangdee (+66811000010, seed-realistic.ts) — the seeded SITE_WORKER. Role
 // matters: Issues/Reports/Safety are this role's tabs (MobileNav), so any other account renders a
@@ -303,31 +303,28 @@ async function main() {
   await delay(1500);
   await stitchFull('04-Directory/01-directory', 180, NAV_TOP);
 
-  // Navigation drawer — it now HOSTS the check-in control (PO 2026-08-09), so the control is
-  // asserted here rather than on Home. Its own frame, because a daily field action that appears in
-  // no screenshot is a feature nobody can review.
-  console.log('· 05-Shared/03-drawer-check-in');
-  await tap(byId('drawer-menu-button'), 'drawer button');
-  await find(byId('check-in-control'), 'check-in control');
-  await find(byId('check-in-button'), 'check-in button');
+  // THE DRAWER IS THE PROFILE (PO 2026-08-09): there is no `/profile` route, and every account
+  // control renders inside this panel. Opened from the top-bar avatar, which is what the avatar
+  // does now instead of pushing a screen. Asserted on the account block as well as the panel, so a
+  // regression that drops <AccountSettings /> fails the run rather than saving a bare menu.
+  console.log('· 05-Drawer/01-drawer-profile');
+  await tap(byId('profile-avatar'), 'avatar');
+  await find(byId('drawer-profile-card'), 'drawer profile card');
+  await find(byId('drawer-link-/account-settings'), 'settings row');
   await dismissDevBanners();
   await delay(1200);
-  grabOne('05-Shared/03-drawer-check-in');
+  await stitchFull('05-Drawer/01-drawer-profile', 180, NAV_TOP);
 
-  // Profile (mockup 05_profile) — entered FROM THE DRAWER, which is the entry point the product
-  // owner asked for on 2026-08-09 and the one this frame should therefore document. (The top-bar
-  // avatar still routes here too, on every role.) The drawer is already open from the frame above,
-  // so this also avoids closing it just to reopen a different door onto the same screen.
-  console.log('· 05-Shared/02-profile');
-  await tap(byId('drawer-profile-card'), 'drawer profile card');
-  await find(byId('profile-screen'), 'profile-screen');
-  // Asserted on a row that is ABOVE the fold: find() reads the current uiautomator dump and does not
-  // scroll, and the version line the restructure added sits past the bottom of a 2400px viewport.
-  // stitchFull below scrolls the rest into the saved image.
-  await find(byId('profile-user-id'), 'profile identity row');
+  // Account settings — pushed from the drawer's Settings row (mockup 05_profile). Its own screen
+  // since 2026-08-09: inline in the drawer, these sections put ~900px of a 2400px panel below the
+  // fold and mixed navigation with settings.
+  console.log('· 05-Drawer/02-account-settings');
+  await tap(byId('drawer-link-/account-settings'), 'settings drawer row');
+  await find(byId('account-settings-screen'), 'account-settings-screen');
+  await find(byId('locale-row'), 'language row');
   await dismissDevBanners();
   await delay(1200);
-  await stitchFull('05-Shared/02-profile', 180, NAV_TOP);
+  await stitchFull('05-Drawer/02-account-settings', 180, NAV_TOP);
 
   console.log(`\nDone → ${OUT}`);
 }

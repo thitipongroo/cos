@@ -3298,9 +3298,12 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
       Extra:      ConflictBadge, conflict review screen
       Profile:    NOT a bottom-nav tab for this role — reached from the avatar in the Home
                   header, next to the notification bell (product-owner decision 2026-07-16,
-                  from mockup/mobile/03_site_engineer/01_dashboard/). The route stays mounted, so
-                  router.push('/profile') still works. Four tabs is within the 4–5 that
-                  spec §32.7 allows for <MobileNav />. Every other role keeps Profile as a tab.
+                  from mockup/mobile/03_site_engineer/01_dashboard/). Four tabs is within the 4–5
+                  that spec §32.7 allows for <MobileNav />.
+                  SUPERSEDED 2026-08-09 (product-owner): THE NAVIGATION DRAWER IS THE PROFILE, for
+                  every role. There is no /profile route any more — the screen was deleted and its
+                  content is <AccountSettings />, rendered inside the drawer the avatar opens. The
+                  avatar is still the way in; what it opens changed.
       Material requisition: SITE_ENGINEER raises purchase requests — 06-rbac-permission-matrix
                   gives the role RW on "Purchase requests", and a shortage is noticed on site.
 

@@ -1,7 +1,7 @@
 // Home screen — role-aware landing (G-M1; master §Phase 10 role Home specs).
 // The bottom-nav gives every role a "Home" tab (see (app)/_layout.tsx), and the spec defines a
 // DISTINCT Home per role:
-//   SITE_WORKER                 : bento stats + check-in + priority tasks       (master 3076/3202)
+//   SITE_WORKER                 : bento stats + priority tasks                  (master 3076/3202)
 //   SITE_ENGINEER               : dashboard — see components/SiteEngineerHome  (§32.12; PO 2026-07-16)
 //   EXECUTIVE                   : active projects · budget vs actual · open critical issues (3093)
 //   FINANCE                     : pending payment approvals · overdue invoices  (3107)
@@ -134,7 +134,7 @@ function asList<T>(res: { items?: T[] } | T[]): T[] {
   return Array.isArray(res) ? res : (res.items ?? []);
 }
 
-// ── SITE_WORKER — bento stats, check-in, priority tasks ──────────────────────
+// ── SITE_WORKER — bento stats, priority tasks ────────────────────────────────
 //
 // Implements mockup/mobile/05_site_worker/01_home/01_dashboard, added by the 2026-08-08 restructure
 // (527231f) — this role had no Home drawing before it. Product-owner decision the same day: rework
@@ -146,11 +146,11 @@ function asList<T>(res: { items?: T[] } | T[]): T[] {
 //     sync health is the TopBar's global indicator plus the Sync Queue screen.
 //   - The three inline quick-action tiles moved behind the FAB, which is what the mockup's
 //     `aria-label="Quick Action"` button opens (see (app)/quick-actions.tsx).
-//   - CHECK IN and its project picker MOVED TO THE NAVIGATION DRAWER on 2026-08-09 (product-owner
-//     decision) — see <CheckInControl />. The mockup never drew them here; the Shift Hours tile
-//     still reads the row that control writes, so the two remain connected without sharing a
-//     screen. The picker had to travel with the button: attendance is written against a project,
-//     and there is no global "current project" for a detached button to act on.
+//   - SELF CHECK-IN IS GONE from the product (product-owner decision 2026-08-09). It was on this
+//     screen, then briefly in the navigation drawer, and is now removed outright along with its
+//     project picker. The Shift Hours tile SURVIVES the removal: `attendance` is one of the six
+//     entity types /sync/delta streams down (runDeltaSync.ts), so the rows it reads are recorded
+//     elsewhere and synced — the button was never their only source.
 //
 // NOT DRAWN: the mockup's "WORKER COMMAND" heading. §32.7 names a top-level tab screen by its
 // active bottom-nav tab, and all four of this role's screens had their in-content titles removed on
@@ -751,13 +751,6 @@ const makeStyles = (p: Palette) =>
       fontFamily: fontFamily.regular,
       color: p.muted,
       textAlign: 'center',
-    },
-    checkIn: {
-      minHeight: 52,
-      borderRadius: radius.lg,
-      backgroundColor: p.primary,
-      alignItems: 'center',
-      justifyContent: 'center',
     },
     message: {
       color: p.text,

@@ -40,7 +40,7 @@
 //                           separate /admin panel (§20.4), a web route explicitly "not visible to
 //                           tenant users", so no mobile tabs are invented for it.
 //
-// The `profile` route stays mounted via `href: null`, so router.push('/profile') still works.
+// There is no `profile` route: the navigation drawer IS the profile (PO 2026-08-09).
 
 import { Tabs } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -143,6 +143,8 @@ export function MobileNav() {
           quick-action menu. Mounted here so router.push('/report') still resolves. (`reports`, the
           Site Engineer's review LIST, is a different route and still a tab.) */}
       <Tabs.Screen name="report" options={{ href: null }} />
+      {/* The signed-in user's own account settings — pushed from the drawer's Settings row. */}
+      <Tabs.Screen name="account-settings" options={{ href: null }} />
       {/* Quick actions — opened by the Site Worker Home's FAB (mockup 01_home/02_quick_actions). */}
       <Tabs.Screen name="quick-actions" options={{ href: null }} />
       <Tabs.Screen name="conflict-review" options={{ href: null }} />
@@ -183,7 +185,6 @@ export function MobileNav() {
           the bottom nav while leaving it routable. */}
       {/* Profile left the bottom nav (PO 2026-08-04) but must stay mounted — the top-bar avatar
           pushes here from every screen. */}
-      <Tabs.Screen name="profile" options={{ href: null }} />
       {/* Post-auth Privacy Policy — drawer entry (PO 2026-08-04); same document as the (auth) route. */}
       <Tabs.Screen name="privacy-policy" options={{ href: null }} />
       <Tabs.Screen name="transparency" options={{ href: null }} />

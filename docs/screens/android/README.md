@@ -36,7 +36,7 @@ gets its own full-page file (the Invite-user `email` method, the Alerts `diff`-e
 | [`SITE-ENGINEER/`](SITE-ENGINEER/)         | Tabs: **Home \| Issues \| Inspections \| Reports**. Captured so far: [`01-Home/`](SITE-ENGINEER/01-Home/) — the loading state (`00`) + dashboard (`01`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | [`TENANT-ADMIN/`](TENANT-ADMIN/)           | Tabs: **Home \| Users \| Alerts \| Settings**. [`01-Home/`](TENANT-ADMIN/01-Home/) — dashboard (`01`), Quick-Add (`02`) and the FAB flows: Invite-user (`03`), Role-permissions (`04`), Roles-selection (`05`), Invitation-success (`06`), System-integration (`07`), Apps-&-Services (`08`). [`02-Users/`](TENANT-ADMIN/02-Users/) — the users list (`01`), the per-user action sheet (`02`), the user profile (`03`), the multi-role permission editor (`04`) + the save-success screen (`05`), and the password-reset form (`06`) + its two done screens — temp-password (`07`) and email-link-sent (`08`). [`03-Alerts/`](TENANT-ADMIN/03-Alerts/) — the sync-review queue (`01`). [`04-Settings/`](TENANT-ADMIN/04-Settings/) — System Settings (`01`, one full-page). |
 | [`CRM-SALES-MANAGER/`](CRM-SALES-MANAGER/) | Tabs: **Home \| Leads \| Opportunities \| Customers** — the three pages §20.7.10 defines, built 2026-08-04. Leads (`01`), Opportunities (`02`), Customers (`03`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| [`SITE-WORKER/`](SITE-WORKER/)             | Tabs: **Home \| Issues \| Reports \| Safety**. [`01-Home/`](SITE-WORKER/01-Home/) — the field dashboard (`01`) and **Tasks** (`02`), which is pushed from Home's Tasks quick action rather than being a tab. [`02-Tasks/`](SITE-WORKER/02-Tasks/) (`01`), [`03-Safety/`](SITE-WORKER/03-Safety/) (`01`), [`04-Directory/`](SITE-WORKER/04-Directory/) (`01`). `01-Home/` also holds the three screens the Home FAB reaches — **Quick actions** (`03`), **Issue capture** (`04`) and **Daily report** (`05`). [`05-Shared/`](SITE-WORKER/05-Shared/) — **Profile** (`02`) and the **drawer's check-in** (`03`), neither of which sits under a tab.                                                                                                                           |
+| [`SITE-WORKER/`](SITE-WORKER/)             | Tabs: **Home \| Issues \| Reports \| Safety**. [`01-Home/`](SITE-WORKER/01-Home/) — the field dashboard (`01`) and **Tasks** (`02`), which is pushed from Home's Tasks quick action rather than being a tab. [`02-Tasks/`](SITE-WORKER/02-Tasks/) (`01`), [`03-Safety/`](SITE-WORKER/03-Safety/) (`01`), [`04-Directory/`](SITE-WORKER/04-Directory/) (`01`). `01-Home/` also holds the three screens the Home FAB reaches — **Quick actions** (`03`), **Issue capture** (`04`) and **Daily report** (`05`). [`05-Drawer/`](SITE-WORKER/05-Drawer/) — the **navigation drawer** (`01`), which IS the profile.                                                                                                                                                               |
 
 The two adb dashboard scripts write straight into their role's menu subfolders —
 [`capture-android-home.mjs`](../../../apps/mobile/scripts/capture-android-home.mjs) → `SITE-ENGINEER/01-Home/`,
@@ -891,7 +891,7 @@ different thing from the **committed** per-role captures here, which are grouped
   `docs/screens/ios/` and shells out to `xcrun simctl`, so as committed it only drives an iOS
   simulator. The Android equivalents are the two adb scripts referenced above.
 
-## Site Worker — four tabs, eight screens — [`SITE-WORKER/`](SITE-WORKER/)
+## Site Worker — four tabs, seven screens — [`SITE-WORKER/`](SITE-WORKER/)
 
 The `SITE_WORKER` tab set, implementing [`mockup/mobile/05_site_worker/`](../../../mockup/mobile/05_site_worker)
 (`02_tasks/01_daily_tasks`, `01_home/03_issue`, `01_home/04_daily_report`, `03_safety/01_checklist`).
@@ -934,14 +934,13 @@ Two things the first arrangement broke, both fixed:
   screen this role could not reach — it opened with nothing highlighted. The landing is now derived
   from the role's own tab set ([`lib/landingRoute.ts`](../../../apps/mobile/src/lib/landingRoute.ts)),
   so the two cannot disagree whichever way the tabs move.
-- **Check-in.** The self check-in (offline-queued attendance) **is now the drawer's**, not Home's
-  (product-owner decision 2026-08-09) — see `05-Shared/03-drawer-check-in.png`. The drawer used to
-  hold a LINK to Home, where the button lived; it now hosts the control itself, as
-  [`<CheckInControl />`](../../../apps/mobile/src/components/CheckInControl.tsx).
-  **The project picker had to travel with the button.** Attendance is written against a project, and
-  there is no global "current project": every screen holds its own `useState` selection, so a
-  detached drawer button would be acting on a choice it cannot see. Whichever surface carries the
-  button carries the choice.
+- **Check-in is REMOVED from the product** (product-owner decision 2026-08-09). It was on Home,
+  moved briefly into the navigation drawer, and was then cut outright along with its project picker,
+  its `POST /workers/:id/attendance` client (`api/workforce.ts`) and its strings.
+  **The Shift Hours tile survives the removal**, and this was checked rather than assumed:
+  `attendance` is one of the six entity types `/sync/delta` streams down
+  ([`sync/runDeltaSync.ts`](../../../apps/mobile/src/sync/runDeltaSync.ts)), so the rows that tile
+  reads are recorded elsewhere and synced to the device. The button was never their only source.
 
 **No screen here draws its own title, though all four mockups do.** §32.7 names a tab screen by its
 tab, so `รายการงานวันนี้` / `บันทึกกิจกรรมประจำวัน` / `เช็คลิสต์ความปลอดภัย` are not rendered. Those three
@@ -981,9 +980,8 @@ tasks, and the FAB.
   list is `+ N more scheduled` — which does not render when there are no tasks, leaving `/tasks`
   unreachable in exactly the state a new worker starts in.
 
-**CHECK IN and its project picker left this screen on 2026-08-09** for the navigation drawer (see
-above). Shift Hours still reads the row that control writes, so the two remain connected without
-sharing a screen. The mockup's **`WORKER COMMAND` heading is not rendered**: §32.7 names a top-level
+**CHECK IN and its project picker are gone** (see above). Shift Hours still reads `local_attendance`,
+which delta sync fills. The mockup's **`WORKER COMMAND` heading is not rendered**: §32.7 names a top-level
 tab screen by its active bottom-nav tab, all four of this role's screens had their in-content titles
 removed on 2026-08-08, and `theme/__tests__/pageTitle.spec.ts` holds that line. The section heading
 **`TODAY'S PRIORITY TASKS` is uppercased by style**, not by uppercasing the message: Thai has no
@@ -1052,12 +1050,29 @@ needed**: `workforce.workers` already carried `full_name`, `trade_type` and `con
   `surface` that an unbordered circle vanished and the initials read as loose letters beside the
   name. A person glyph stands in when a name yields no initials, so the shape is never empty.
 
-### Profile — [`05-Shared/02-profile.png`](SITE-WORKER/05-Shared/02-profile.png)
+### Navigation drawer — the profile — [`05-Drawer/01-drawer-profile.png`](SITE-WORKER/05-Drawer/01-drawer-profile.png)
 
-Not a new screen — it predates the restructure and is reached from the top-bar avatar on every role.
-Mockup `05_profile/01_account_settings` added three rows to it: **MFA** (behind the same feature flag
-as the drawer's entry, so the two ways into one screen cannot disagree), the **app version** and the
-**legal link**.
+**THE DRAWER IS THE PROFILE** (product-owner decision 2026-08-09). There is no `/profile` route: the
+screen was deleted, and identity now lives in the panel the top-bar avatar opens — avatar, name,
+role, user id — over the field-tool links, a **Settings** row, and LOG OUT.
+
+The account sections rendered INLINE here for one build, and that was the first shape of the ruling.
+It put ~900px of a 2400px panel below the fold and made one surface carry two different kinds of
+thing — navigation (go somewhere) and settings (change something) — with the fixed LOG OUT footer
+slicing the PREFERENCES card in half at rest. They moved to their own screen on the same day; the
+mockups split them the same way, the tenant-admin drawer drawing being Field Tools + Settings +
+Logout and `05_profile/01_account_settings` a full screen.
+
+### Account settings — [`05-Drawer/02-account-settings.png`](SITE-WORKER/05-Drawer/02-account-settings.png)
+
+[`app/(app)/account-settings.tsx`](<../../../apps/mobile/src/app/(app)/account-settings.tsx>), pushed
+from the drawer's Settings row. **Not `system-settings`** — that is the Tenant Admin tab for
+tenant-wide configuration; this is the signed-in user's own account, on every role.
+
+This supersedes the 2026-08-04 ruling that Profile is "reached from the top-bar avatar, not a fifth
+tab" — the avatar still opens it, but what opens is the drawer rather than a screen. The rows are
+mockup `05_profile/01_account_settings`: **MFA** (behind the same feature flag as before), biometric
+unlock, language, notifications, dark mode, the **app version** and the **legal link**.
 
 - The version is the REAL build number from `app.json`, read the way the login footer reads it. The
   mockup prints `2.4.0-stable`; that is a drawing, and a version a user might quote in a support
@@ -1065,18 +1080,32 @@ as the drawer's entry, so the two ways into one screen cannot disagree), the **a
 - **"Change Secure PIN" is not built.** This product has no PIN — device unlock is biometric (the row
   above it), and inventing a second credential would be a security feature with no backend, no
   recovery path and no spec.
-- The screen became a **ScrollView** in the same change: eleven existing rows plus three new ones
-  overflow a 2400px viewport, and sign-out was unreachable on a phone.
-- **Regrouped to the mockup on 2026-08-09**: an identity card (avatar, name, role, id) replacing two
-  bare key/value rows, then `SECURITY`, `PREFERENCES` and `ABOUT` headings over the rows that were
-  already there. Entered from the **navigation drawer's profile card**, which is now tappable as a
-  whole rather than only its avatar; the top-bar avatar still routes here too, on every role.
+- **Laid out to mockup `05_profile/01_account_settings`**: an uppercase section label over a bordered
+  card, and inside it hairline-separated rows that all share one anatomy — leading icon, label, then
+  a value, a value + chevron, or a switch. `<Row />` is the only row the file knows how to draw, so
+  the regularity that is the point of the drawing cannot drift.
+- The identity card the first drawer build drew was removed as a DUPLICATE: the header already shows
+  the avatar, name and role. Only the **user id** moved up into it, rendered `User ID: 39E837EB` in a
+  monospaced face — an id is read character by character, and a proportional face makes 0/O and 1/l
+  ambiguous exactly where it matters. The mockup's own `SW-9281` is an employee-code scheme this
+  product does not mint (`user_id` is a UUID), so
+  [`shortId()`](../../../apps/mobile/src/lib/shortId.ts) renders the real one at a readable length —
+  product-owner decision 2026-08-09, "use a short UUID for now". It is a display aid, never a key.
+- **Three drawer links became rows**: MFA, Notification alerts and Legal & Privacy Policy are where
+  the mockup puts them, and keeping the links too would have been three duplicate doors in one panel.
+- The biometric row's unavailable message is a **description under the label**, not a trailing value.
+  As a value it competed with the label for the same row and squeezed it out entirely — the row
+  rendered as the sentence alone, with no idea what it was about.
+- The **logout button was dropped from the account block** for the same reason — the drawer has one
+  in its footer, and two in one panel is one too many.
+- The former screen was also the **last one pinned to the light token set**, the same defect Home
+  had one screen earlier: a white page between a dark top bar and a dark nav, unnoticed while
+  nothing linked to it. It resolves its stylesheet through `usePalette()` now. The biometric row was
+  stacked in the same pass — its unavailable-state message is a full sentence, and side by side it
+  ran off the screen edge.
 
-> **This screen was the LAST one pinned to the light token set** — the same defect Home had, one
-> screen later. It rendered a white page under a dark top bar and dark bottom nav, which went
-> unnoticed while nothing linked to it from the drawer. `profile.tsx` now resolves its stylesheet
-> through `usePalette()` like every other screen. The biometric row was stacked in the same pass:
-> its unavailable-state message is a full sentence, and side-by-side it ran off the screen edge.
+> **`e2e/capture.spec.ts` lost its `profile` route with the screen**, so the flat app-screen set is
+> one shorter. Nothing else deep-linked `cos:///profile`.
 
 ### Tasks — [`02-Tasks/01-tasks.png`](SITE-WORKER/02-Tasks/01-tasks.png)
 

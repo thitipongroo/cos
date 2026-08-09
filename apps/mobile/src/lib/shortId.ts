@@ -1,20 +1,33 @@
-// The short form of a UUID the app shows to people.
+// A UUID shortened for display.
 //
-// Existed five times, byte-identical, in users, user-profile, reset-password and sync-queue. Five
-// copies is five chances for one to take a different number of characters, and the same record
-// showing as `5DB19BF3` on one screen and `5DB19B` on another is exactly the kind of difference that
-// makes someone doubt they are looking at the same thing.
+// The mockups print human ids that this product does not mint — `ID: SW-9281` on the account screen
+// (05_site_worker/05_profile), `ID: #C4-8820` on a task card. There is no such column: `user_id` and
+// `task_id` are UUIDs. Rather than invent an identifier scheme with no issuer, no uniqueness
+// guarantee and nothing to look it up by, the real UUID is shortened to something a person can read
+// aloud over a radio and an engineer can still grep for.
+//
+// In `src/lib/` so the screens, the drawer and the tests share ONE implementation — the task card
+// grew its own copy first, and two rules for "the short form of an id" is one too many.
 
 /**
- * `'5db19bf3-4c2a-...'` → `'5DB19BF3'`.
+ * The last EIGHT characters of a UUID's final block, upper-cased — `…-1554e2a1f0cd` → `E2A1F0CD`.
  *
- * A DISPLAY CONVENIENCE, NOT A KEY. Eight hex characters is 32 bits, so it is not guaranteed unique
- * across a large tenant and must never be used to look a record up — every call site passes the full
- * id and renders this beside it or in place of it, and the full id is what travels in requests.
+ * The LAST block, not the first: in a v5/v1 UUID the leading bytes are the most likely to repeat
+ * across rows minted together, so the tail discriminates better in a list. Eight characters is the
+ * same length the task cards have used since 2026-08-08, and 32 bits is ample to tell apart the
+ * handful of ids one person sees at once — it is a display aid, never a key.
  *
- * Uppercase because these are read aloud and copied by hand in support conversations, where
- * lowercase hex is easy to confuse with letters (`b`/`6`, `d`/`0`).
+ * A value that is not a UUID is returned upper-cased and trimmed to the same width, so a seeded or
+ * legacy id still renders as an id rather than overflowing the row.
  */
-export function shortId(id: string): string {
-  return id.slice(0, 8).toUpperCase();
+export function shortId(id: string | null | undefined): string {
+  if (id == null || id.trim() === '') return '—';
+  // `lastIndexOf` rather than `split('-').pop()`: pop() is typed `string | undefined` but can never
+  // BE undefined here (split always yields at least one element), so that form carries a fallback
+  // branch no test can reach. When there is no '-', lastIndexOf returns -1 and slice(0) is the whole
+  // string, which is exactly the non-UUID behaviour documented above.
+  return id
+    .slice(id.lastIndexOf('-') + 1)
+    .slice(-8)
+    .toUpperCase();
 }

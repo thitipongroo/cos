@@ -165,10 +165,7 @@
     "main": {
       "title": "Home",
       "openIssues": "Open issues",
-      "pendingSync": "Pending sync",
-      "checkIn": "Check in",
-      "checkedIn": "Checked in — will sync when online",
-      "checkInError": "Check-in unavailable: no worker profile linked to your account."
+      "pendingSync": "Pending sync"
     },
     "field": {
       "myTasks": "My tasks",
@@ -176,7 +173,7 @@
       "shiftHours": "Shift hours",
       "hoursUnit": "h",
       "insightLabel": "Workflow optimization",
-      "insightConfidence": "Conf: 94%",
+      "insightConfidence": "CONF: 94%",
       "insightBody": "Temperature projected to reach 38°C at 14:00. Schedule heavy slab pouring before noon to avoid heat-stress delays.",
       "insightAction": "Adjust schedule",
       "priorityTasks": "Today's priority tasks",
@@ -638,9 +635,7 @@
     "member": "Member",
     "online": "Online & synced",
     "fieldTools": "Field tools",
-    "settings": "Notification settings",
-    "security": "Security & MFA",
-    "profile": "Profile",
+    "settings": "Settings",
     "privacyPolicy": "Privacy policy",
     "logout": "Log out",
     "projects": "Project overview",
@@ -648,8 +643,7 @@
     "incidents": "Safety incident logs",
     "inspections": "Inspections",
     "materials": "Materials",
-    "deliveries": "Deliveries",
-    "checkIn": "Check in / out"
+    "deliveries": "Deliveries"
   },
   "mfa": {
     "enroll": {

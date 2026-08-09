@@ -59,6 +59,7 @@ const BREADCRUMB_MAP: Record<string, Crumb[]> = {
     { key: 'nav.tabs.reports' },
   ],
   '/quick-actions': [{ key: 'nav.tabs.home', href: '/home' }, { key: 'quickActions.title' }],
+  '/account-settings': [{ key: 'nav.tabs.home', href: '/home' }, { key: 'drawer.settings' }],
   // Home FAB / Quick-Add flows
   '/system-integration': [
     { key: 'nav.tabs.home', href: '/home' },
@@ -79,7 +80,6 @@ const BREADCRUMB_MAP: Record<string, Crumb[]> = {
     { key: 'sync.conflictReview.title' },
   ],
   // Account
-  '/profile': [{ key: 'nav.tabs.home', href: '/home' }, { key: 'profile.main.title' }],
   // Privacy Policy, post-auth. Entered from the drawer, which is reachable from any tab, so Home is
   // the parent crumb — the drawer itself has no route to name.
   '/privacy-policy': [{ key: 'nav.tabs.home', href: '/home' }, { key: 'privacy.policy.title' }],
