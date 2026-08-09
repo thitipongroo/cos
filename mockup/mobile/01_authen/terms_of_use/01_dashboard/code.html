@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Terms of Use | CONSTRUCTION OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Geist:wght@400;500;600&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=IBM+Plex+Sans:wght@100..900&display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, padding 0.3s ease;
+        }
+        .accordion-item.active .accordion-content {
+            max-height: 1000px;
+            padding-bottom: 1.5rem;
+        }
+        .accordion-item.active .chevron {
+            transform: rotate(180deg);
+        }
+        /* Custom scrollbar for high density data screens */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #11131b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #434655;
+            border-radius: 10px;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "outline-variant": "#434655",
+                      "on-tertiary-container": "#ffede6",
+                      "on-surface-variant": "#c3c6d7",
+                      "surface-bright": "#373942",
+                      "on-primary-fixed": "#00174b",
+                      "secondary-fixed": "#a2eeff",
+                      "on-tertiary-fixed": "#360f00",
+                      "on-tertiary-fixed-variant": "#7d2d00",
+                      "primary": "#b4c5ff",
+                      "on-primary-fixed-variant": "#003ea8",
+                      "on-background": "#e1e2ed",
+                      "tertiary": "#ffb596",
+                      "secondary": "#5de6ff",
+                      "error-container": "#93000a",
+                      "surface-container-lowest": "#0c0e16",
+                      "secondary-container": "#00cbe6",
+                      "surface-dim": "#11131b",
+                      "on-primary-container": "#eeefff",
+                      "inverse-surface": "#e1e2ed",
+                      "tertiary-container": "#bc4800",
+                      "background": "#11131b",
+                      "on-secondary-fixed-variant": "#004e5a",
+                      "surface": "#11131b",
+                      "surface-container-high": "#282a32",
+                      "on-surface": "#e1e2ed",
+                      "primary-fixed-dim": "#b4c5ff",
+                      "tertiary-fixed-dim": "#ffb596",
+                      "surface-variant": "#32343d",
+                      "outline": "#8d90a0",
+                      "on-tertiary": "#581e00",
+                      "surface-container-highest": "#32343d",
+                      "surface-container-low": "#191b23",
+                      "primary-fixed": "#dbe1ff",
+                      "on-secondary-fixed": "#001f25",
+                      "inverse-primary": "#0053db",
+                      "error": "#ffb4ab",
+                      "on-secondary-container": "#00515d",
+                      "inverse-on-surface": "#2e3039",
+                      "tertiary-fixed": "#ffdbcd",
+                      "on-primary": "#002a78",
+                      "primary-container": "#2563eb",
+                      "on-secondary": "#00363e",
+                      "on-error": "#690005",
+                      "surface-container": "#1d1f27",
+                      "on-error-container": "#ffdad6",
+                      "surface-tint": "#b4c5ff",
+                      "secondary-fixed-dim": "#2fd9f4"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "unit": "4px",
+                      "container-max": "1440px",
+                      "margin-mobile": "16px",
+                      "gutter": "16px",
+                      "margin-desktop": "32px"
+              },
+              "fontFamily": {
+                      "label-sm": ["Geist"],
+                      "headline-lg": ["IBM Plex Sans"],
+                      "body-lg": ["IBM Plex Sans"],
+                      "body-md": ["IBM Plex Sans"],
+                      "label-md": ["Geist"],
+                      "headline-md": ["IBM Plex Sans"],
+                      "headline-lg-mobile": ["IBM Plex Sans"]
+              },
+              "fontSize": {
+                      "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                      "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                      "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                      "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                      "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "500"}],
+                      "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body-md selection:bg-secondary-container selection:text-on-secondary-container">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface dark:bg-surface-container-low border-b border-outline-variant flex justify-between items-center px-4 h-[64px]">
+<div class="flex items-center gap-4">
+<button class="w-10 h-10 flex items-center justify-center hover:bg-surface-variant rounded-full transition-colors active:opacity-80">
+<span class="material-symbols-outlined text-on-surface">arrow_back</span>
+</button>
+<div class="flex items-center gap-2">
+<!-- Hexagonal Brand Icon -->
+<div class="w-8 h-8 flex items-center justify-center bg-primary-container rounded-lg rotate-12">
+<span class="material-symbols-outlined text-on-primary-container text-[20px] -rotate-12" style="font-variation-settings: 'FILL' 1;">hexagon</span>
+</div>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile font-bold tracking-tight text-primary">CONSTRUCTION OS</h1>
+</div>
+</div>
+<button class="w-10 h-10 flex items-center justify-center hover:bg-surface-variant rounded-full transition-colors active:opacity-80">
+<span class="material-symbols-outlined text-on-surface">sync</span>
+</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-[80px] pb-[120px] px-4 max-w-md mx-auto">
+<!-- Title Section -->
+<section class="mb-8">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface mb-2">Terms of Use</h2>
+<p class="font-body-md text-on-surface-variant">Please review the following legal requirements for operating within the Construction OS industrial ecosystem.</p>
+</section>
+<!-- Bento-style Summary Grid (High-end UI Pattern) -->
+<div class="grid grid-cols-2 gap-3 mb-8">
+<div class="bg-surface-container p-4 rounded-xl border-l-4 border-secondary-container">
+<span class="material-symbols-outlined text-secondary mb-2">verified_user</span>
+<p class="font-label-sm text-label-sm text-on-surface-variant uppercase">Status</p>
+<p class="font-label-md text-label-md text-on-surface font-bold">LEGALLY BINDING</p>
+</div>
+<div class="bg-surface-container p-4 rounded-xl border-l-4 border-tertiary-container">
+<span class="material-symbols-outlined text-tertiary mb-2">analytics</span>
+<p class="font-label-sm text-label-sm text-on-surface-variant uppercase">AI Usage</p>
+<p class="font-label-md text-label-md text-on-surface font-bold">ACTIVE MONITORING</p>
+</div>
+</div>
+<!-- Accordion Section -->
+<div class="space-y-4">
+<!-- Item 1 -->
+<div class="accordion-item bg-surface-container-high rounded-xl overflow-hidden transition-all duration-300">
+<button class="w-full flex items-center justify-between p-5 text-left focus:outline-none hover:bg-surface-variant" onclick="toggleAccordion(this)">
+<div class="flex items-center gap-4">
+<span class="font-headline-md text-headline-md text-primary opacity-50">01</span>
+<span class="font-label-md text-label-md text-on-surface font-bold">Acceptance of Terms</span>
+</div>
+<span class="material-symbols-outlined chevron transition-transform duration-300 text-on-surface-variant">expand_more</span>
+</button>
+<div class="accordion-content px-5 text-on-surface-variant font-body-md leading-relaxed">
+                    By accessing or using the Construction OS platform, including all field-service modules, real-time safety tracking, and automated reporting systems, you acknowledge that you have read, understood, and agreed to be bound by these Terms of Use and our Privacy Policy.
+                </div>
+</div>
+<!-- Item 2 -->
+<div class="accordion-item bg-surface-container-high rounded-xl overflow-hidden transition-all duration-300">
+<button class="w-full flex items-center justify-between p-5 text-left focus:outline-none hover:bg-surface-variant" onclick="toggleAccordion(this)">
+<div class="flex items-center gap-4">
+<span class="font-headline-md text-headline-md text-primary opacity-50">02</span>
+<span class="font-label-md text-label-md text-on-surface font-bold">Industrial Usage License</span>
+</div>
+<span class="material-symbols-outlined chevron transition-transform duration-300 text-on-surface-variant">expand_more</span>
+</button>
+<div class="accordion-content px-5 text-on-surface-variant font-body-md leading-relaxed">
+                    Construction OS grants you a non-exclusive, non-transferable, limited license to access and use the software solely for professional construction project management and site supervision. Use for benchmarking or competitive analysis is strictly prohibited.
+                </div>
+</div>
+<!-- Item 3 -->
+<div class="accordion-item bg-surface-container-high rounded-xl overflow-hidden border border-secondary-container/20 transition-all duration-300">
+<button class="w-full flex items-center justify-between p-5 text-left focus:outline-none hover:bg-surface-variant" onclick="toggleAccordion(this)">
+<div class="flex items-center gap-4">
+<span class="font-headline-md text-headline-md text-secondary opacity-50">03</span>
+<span class="font-label-md text-label-md text-on-surface font-bold">User Responsibilities (Site Safety)</span>
+</div>
+<span class="material-symbols-outlined chevron transition-transform duration-300 text-on-surface-variant">expand_more</span>
+</button>
+<div class="accordion-content px-5 text-on-surface-variant font-body-md leading-relaxed">
+                    Users must maintain active PPE compliance as logged within the Safety Module. Failure to report site incidents or intentional bypassing of the AI Safety Guardian will result in immediate platform restriction. You are responsible for ensuring all field data entered is accurate and representative of actual site conditions.
+                </div>
+</div>
+<!-- Item 4 -->
+<div class="accordion-item bg-surface-container-high rounded-xl overflow-hidden transition-all duration-300">
+<button class="w-full flex items-center justify-between p-5 text-left focus:outline-none hover:bg-surface-variant" onclick="toggleAccordion(this)">
+<div class="flex items-center gap-4">
+<span class="font-headline-md text-headline-md text-primary opacity-50">04</span>
+<span class="font-label-md text-label-md text-on-surface font-bold">Data Ownership & IP</span>
+</div>
+<span class="material-symbols-outlined chevron transition-transform duration-300 text-on-surface-variant">expand_more</span>
+</button>
+<div class="accordion-content px-5 text-on-surface-variant font-body-md leading-relaxed">
+                    Project-specific data remains the property of the contracting entity. However, Construction OS retains ownership of the underlying algorithms, interface designs, and aggregated, anonymized industrial performance metrics used for system optimization.
+                </div>
+</div>
+<!-- Item 5 -->
+<div class="accordion-item bg-surface-container-high rounded-xl overflow-hidden transition-all duration-300">
+<button class="w-full flex items-center justify-between p-5 text-left focus:outline-none hover:bg-surface-variant" onclick="toggleAccordion(this)">
+<div class="flex items-center gap-4">
+<span class="font-headline-md text-headline-md text-primary opacity-50">05</span>
+<span class="font-label-md text-label-md text-on-surface font-bold">Limitation of Liability</span>
+</div>
+<span class="material-symbols-outlined chevron transition-transform duration-300 text-on-surface-variant">expand_more</span>
+</button>
+<div class="accordion-content px-5 text-on-surface-variant font-body-md leading-relaxed">
+                    Construction OS is a management tool and does not replace professional structural engineering or legal safety oversight. Construction OS is not liable for structural failures, site accidents, or financial losses resulting from incorrect data interpretation or sensor failure in extreme environmental conditions.
+                </div>
+</div>
+<!-- Item 6 -->
+<div class="accordion-item bg-surface-container-high rounded-xl overflow-hidden transition-all duration-300">
+<button class="w-full flex items-center justify-between p-5 text-left focus:outline-none hover:bg-surface-variant" onclick="toggleAccordion(this)">
+<div class="flex items-center gap-4">
+<span class="font-headline-md text-headline-md text-primary opacity-50">06</span>
+<span class="font-label-md text-label-md text-on-surface font-bold">Termination of Access</span>
+</div>
+<span class="material-symbols-outlined chevron transition-transform duration-300 text-on-surface-variant">expand_more</span>
+</button>
+<div class="accordion-content px-5 text-on-surface-variant font-body-md leading-relaxed">
+                    We reserve the right to suspend or terminate access without notice if security protocols are breached or if payment for enterprise-tier services remains outstanding for more than 30 business days.
+                </div>
+</div>
+</div>
+<!-- Atmospheric Visual Element -->
+<div class="mt-12 rounded-2xl overflow-hidden h-40 relative group">
+<div class="absolute inset-0 bg-gradient-to-t from-background to-transparent z-10"></div>
+<img class="w-full h-full object-cover" data-alt="A cinematic, high-contrast industrial photograph of a modern construction site at dusk. Steel beams and cranes are silhouetted against a deep blue and cyan sky. Neon lights from safety equipment glow faintly. The style is technical and corporate, with a sharp focus on the architectural precision and massive scale of the structural project. Cold, authoritative color palette with deep navies and sharp whites." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDvXeJQAPnzV9FLobBfQC8xuv_3A7iKtmPg07BGunlOoUXxySegcRCakDDvk0akS2DD6seD4g_2K7q0dW1a_-J5zKl3gjFNsE8brac5R5DOAwaJMI9o_Zzl34DhlRAisawNZhZfVy70BwhDM8s-EWExbEAClfMgC0TqCtaGebOsWhKG-bVcWrxdQZmhbzui3muWmorX7CR9Venp6ZgXNv3mshcCw_KySpnCI_XiCCSe0FQ0P06vRhx-Xg"/>
+<div class="absolute bottom-4 left-4 z-20">
+<p class="font-label-sm text-label-sm text-secondary tracking-widest uppercase">Safety First</p>
+<p class="font-headline-md text-headline-md text-on-surface font-bold">ZERO INCIDENT POLICY</p>
+</div>
+</div>
+</main>
+<!-- Footer Action Bar -->
+<footer class="fixed bottom-0 w-full z-50 bg-surface-container-low dark:bg-surface-container-lowest border-t border-outline-variant p-4 pb-8 flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Version 4.2.0-STABLE</span>
+<span class="font-label-sm text-label-sm text-on-surface">Last Updated: June 2024</span>
+</div>
+<button class="flex items-center gap-2 bg-surface-variant hover:bg-surface-bright text-on-surface px-4 py-2 rounded-lg font-label-md transition-colors active:scale-95">
+<span class="material-symbols-outlined text-[18px]">download</span>
+                Download PDF
+            </button>
+</div>
+<!-- Primary Action -->
+<button class="w-full bg-primary-container text-on-primary-container py-4 rounded-xl font-label-md font-bold shadow-lg shadow-primary-container/20 active:scale-[0.98] transition-all">
+            I AGREE TO ALL TERMS
+        </button>
+</footer>
+<!-- Micro-interaction Script -->
+<script>
+        function toggleAccordion(element) {
+            const item = element.parentElement;
+            const isActive = item.classList.contains('active');
+            
+            // Close all items
+            document.querySelectorAll('.accordion-item').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // Toggle clicked item
+            if (!isActive) {
+                item.classList.add('active');
+                
+                // Haptic feedback simulation
+                if (window.navigator.vibrate) {
+                    window.navigator.vibrate(10);
+                }
+            }
+        }
+
+        // Initialize first item as open
+        window.addEventListener('DOMContentLoaded', () => {
+            const firstItem = document.querySelector('.accordion-item');
+            if (firstItem) firstItem.classList.add('active');
+        });
+    </script>
+</body></html>
