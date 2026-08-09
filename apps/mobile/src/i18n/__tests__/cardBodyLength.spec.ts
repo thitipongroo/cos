@@ -36,8 +36,24 @@ function flatten(tree: Tree, prefix = ''): Array<[string, string]> {
   return out;
 }
 
+/**
+ * Legal-document clause prose, which the rule above already excludes in words ("policy prose is not
+ * a card") but could not exclude by shape until a document keyed its clauses as `.body`.
+ *
+ * The Terms of Use accordion (app/(auth)/terms-of-use.tsx) is where that happened. Its bodies are
+ * not card bodies: an expanded clause is full-bleed prose with no icon tile and no chevron eating
+ * the line, and it is the thing the reader opened the screen to read — there is nothing to clamp it
+ * to, and shortening it would edit a binding document to fit a layout budget.
+ *
+ * The Privacy Policy's `sections.*.body` keys stay MEASURED. They are one-line lead-ins with the
+ * long prose in sibling keys (`items.*`, `note`, `processors`), so the budget costs them nothing and
+ * removing them from the guard would only weaken it.
+ */
+const PROSE_PREFIXES = ['terms.sections.'];
+
 function cardBodies(bundle: Tree): Array<[string, string]> {
   return flatten(bundle).filter(([path]) => {
+    if (PROSE_PREFIXES.some((prefix) => path.startsWith(prefix))) return false;
     const lower = path.toLowerCase();
     return lower.endsWith('body') || lower.endsWith('.desc');
   });

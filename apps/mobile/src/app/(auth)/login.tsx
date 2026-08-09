@@ -396,10 +396,17 @@ export default function LoginScreen() {
                   <Text style={styles.footerLink}>{t('auth.login.privacyPolicy')}</Text>
                 </TouchableOpacity>
                 <Text style={styles.footerDivider}>·</Text>
-                <View style={styles.footerLinkItem}>
+                <TouchableOpacity
+                  testID="terms-of-use-link"
+                  accessibilityRole="link"
+                  accessibilityLabel={t('auth.login.termsOfUse')}
+                  onPress={() => router.push('/(auth)/terms-of-use')}
+                  hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
+                  style={styles.footerLinkItem}
+                >
                   <MaterialIcons name="gavel" size={16} color={darkColors.muted} />
                   <Text style={styles.footerLink}>{t('auth.login.termsOfUse')}</Text>
-                </View>
+                </TouchableOpacity>
               </View>
               <Text style={styles.footerFine}>
                 {t('auth.login.copyright', { year: new Date().getFullYear() })}

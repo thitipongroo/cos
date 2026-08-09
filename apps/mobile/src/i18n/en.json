@@ -161,6 +161,56 @@
       "copyright": "© {year} CONSTRUCTION OS."
     }
   },
+  "terms": {
+    "title": "Terms of Use",
+    "back": "Back",
+    "intro": "Please review the following legal requirements for operating within the Construction OS industrial ecosystem.",
+    "summary": {
+      "status": {
+        "label": "Status",
+        "value": "Legally binding"
+      },
+      "aiUsage": {
+        "label": "AI usage",
+        "value": "Active monitoring"
+      }
+    },
+    "sections": {
+      "acceptance": {
+        "title": "Acceptance of Terms",
+        "body": "By accessing or using the Construction OS platform, including all field-service modules, real-time safety tracking, and automated reporting systems, you acknowledge that you have read, understood, and agreed to be bound by these Terms of Use and our Privacy Policy."
+      },
+      "license": {
+        "title": "Industrial Usage License",
+        "body": "Construction OS grants you a non-exclusive, non-transferable, limited license to access and use the software solely for professional construction project management and site supervision. Use for benchmarking or competitive analysis is strictly prohibited."
+      },
+      "responsibilities": {
+        "title": "User Responsibilities (Site Safety)",
+        "body": "Users must maintain active PPE compliance as logged within the Safety Module. Failure to report site incidents or intentional bypassing of the AI Safety Guardian will result in immediate platform restriction. You are responsible for ensuring all field data entered is accurate and representative of actual site conditions."
+      },
+      "ownership": {
+        "title": "Data Ownership & IP",
+        "body": "Project-specific data remains the property of the contracting entity. However, Construction OS retains ownership of the underlying algorithms, interface designs, and aggregated, anonymized industrial performance metrics used for system optimization."
+      },
+      "liability": {
+        "title": "Limitation of Liability",
+        "body": "Construction OS is a management tool and does not replace professional structural engineering or legal safety oversight. Construction OS is not liable for structural failures, site accidents, or financial losses resulting from incorrect data interpretation or sensor failure in extreme environmental conditions."
+      },
+      "termination": {
+        "title": "Termination of Access",
+        "body": "We reserve the right to suspend or terminate access without notice if security protocols are breached or if payment for enterprise-tier services remains outstanding for more than 30 business days."
+      }
+    },
+    "safety": {
+      "eyebrow": "Safety first",
+      "headline": "Zero incident policy"
+    },
+    "version": "Version {version}",
+    "lastUpdated": "Last updated: {date}",
+    "downloadPdf": "Download PDF",
+    "comingSoon": "Coming soon",
+    "agree": "I agree to all terms"
+  },
   "home": {
     "main": {
       "title": "Home",
