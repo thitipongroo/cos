@@ -1,6 +1,12 @@
 import { shiftProgress, STANDARD_SHIFT_HOURS, type ShiftAttendance } from '../shiftHours';
 
-const NOW = new Date('2026-08-08T15:00:00+07:00');
+// Built with the LOCAL Date constructor, not an ISO string with a fixed `+07:00` offset.
+// `shiftProgress` compares calendar days in DEVICE-LOCAL time — that is the behaviour under test —
+// so an anchor pinned to one offset only lines up on a machine in that zone. It did: `+07:00` 15:00
+// is 08:00Z, and the ten-hours-ago case landed at 22:00Z the PREVIOUS day, so the row was correctly
+// discarded as yesterday's and the assertion failed on CI (UTC) while passing here (UTC+7).
+// A local anchor at 15:00 keeps every offset in this file inside the same local day, in any zone.
+const NOW = new Date(2026, 7, 8, 15, 0, 0);
 
 /** `hoursAgo` before NOW, as the ISO string local_attendance stores. */
 const checkedInHoursAgo = (hours: number): ShiftAttendance => ({
@@ -43,7 +49,7 @@ describe('shiftProgress', () => {
   it("ignores a previous day's open row", () => {
     // A night shift left open yesterday must not read as 19 hours worked today.
     const yesterday: ShiftAttendance = {
-      checkInAt: new Date('2026-08-07T20:00:00+07:00').toISOString(),
+      checkInAt: new Date(2026, 7, 7, 20, 0, 0).toISOString(),
       checkOutAt: null,
     };
     expect(shiftProgress([yesterday], NOW)).toEqual({ elapsed: null, fraction: 0 });
