@@ -1,13 +1,11 @@
-<!DOCTYPE html>
-
-<html class="dark" lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
 <title>Account Settings - Construction OS</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
 <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
@@ -118,23 +116,28 @@
         .toggle-checkbox:checked + .toggle-label { background-color: #0066FF; }
         .toggle-checkbox:checked + .toggle-label:after { transform: translateX(100%); }
     </style>
-</head>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
 <body class="bg-background text-on-background antialiased min-h-screen pb-safe-bottom">
 <!-- TopAppBar -->
 <header class="docked full-width top-0 bg-surface-dim dark:bg-surface-dim flat no shadows flex items-center justify-between px-web-space-4 w-full h-[64px] border-b border-white/5 sticky z-50 md:hidden">
 <button class="text-primary dark:text-primary hover:bg-surface-bright dark:hover:bg-surface-bright p-2 rounded-full transition-opacity active:opacity-80">
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">arrow_back</span>
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 0;">arrow_back</span>
 </button>
 <h1 class="font-hero-mobile text-hero-mobile text-primary dark:text-primary tracking-tight">Account Settings</h1>
 <button class="text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-bright dark:hover:bg-surface-bright p-2 rounded-full transition-opacity active:opacity-80">
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">more_vert</span>
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 0;">more_vert</span>
 </button>
 </header>
 <main class="max-w-3xl mx-auto px-edge-mobile pt-6 pb-24 md:pt-12">
 <!-- Profile Header Section -->
 <section class="flex items-center gap-space-4 mb-8">
 <div class="relative w-20 h-20 rounded-full bg-surface-container overflow-hidden border border-outline/20">
-<img class="w-full h-full object-cover" data-alt="A rugged, professional headshot of a middle-aged Asian man wearing a high-visibility orange vest and a yellow hard hat, set against an industrial construction site background in dark mode, showcasing an authoritative but approachable senior safety officer role." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBEsqF3nRo9hQNSJLPkKqS_aa2J9hKjP2Q_cRi8q6e8KZr_VeFOJbEifdj2BZbkgAeTvQVnAs8uuc19515tvw97JRHnz9sEqlYlOHjfCNjiTpu5Ffe29ypDGzCUkBVQ_X9dX0ATnRRySgdqEOIBEwKqJoe8bbO8ebIZs5FmdDfoyDFOzqEEwqUdfXmvzSozYm4mc9YqalfBW7bnie424hboicJenlJHS4bJzGN3x1lDAEvgHee5GQee"/>
+<img class="w-full h-full object-cover" data-alt="A rugged, professional headshot of a middle-aged Asian man wearing a high-visibility orange vest and a yellow hard hat, set against an industrial construction site background in dark mode, showcasing an authoritative but approachable senior safety officer role." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBEsqF3nRo9hQNSJLPkKqS_aa2J9hKjP2Q_cRi8q6e8KZr_VeFOJbEifdj2BZbkgAeTvQVnAs8uuc19515tvw97JRHnz9sEqlYlOHjfCNjiTpu5Ffe29ypDGzCUkBVQ_X9dX0ATnRRySgdqEOIBEwKqJoe8bbO8ebIZs5FmdDfoyDFOzqEEwqUdfXmvzSozYm4mc9YqalfBW7bnie424hboicJenlJHS4bJzGN3x1lDAEvgHee5GQee">
 </div>
 <div>
 <h2 class="font-h1-web text-h1-web text-on-surface">Anan Security</h2>
@@ -151,7 +154,7 @@
 <div class="absolute inset-0 bg-gradient-to-tr from-mobile-success/5 to-transparent pointer-events-none"></div>
 <div class="flex justify-between items-start">
 <span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">Inspections</span>
-<span class="material-symbols-outlined text-mobile-success" style="font-variation-settings: 'FILL' 1;">fact_check</span>
+<span class="material-symbols-outlined text-mobile-success" style="font-variation-settings: &quot;FILL&quot; 1;">fact_check</span>
 </div>
 <span class="font-display-web text-display-web text-on-surface">84</span>
 </div>
@@ -159,7 +162,7 @@
 <div class="absolute inset-0 bg-gradient-to-tr from-mobile-warning/5 to-transparent pointer-events-none"></div>
 <div class="flex justify-between items-start">
 <span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">Incidents</span>
-<span class="material-symbols-outlined text-mobile-warning" style="font-variation-settings: 'FILL' 1;">warning</span>
+<span class="material-symbols-outlined text-mobile-warning" style="font-variation-settings: &quot;FILL&quot; 1;">warning</span>
 </div>
 <span class="font-display-web text-display-web text-on-surface">12</span>
 </div>
@@ -186,7 +189,7 @@
 <span class="font-body-web text-body-web text-on-surface">Dark Mode</span>
 </div>
 <div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
-<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" id="theme-toggle" name="toggle" type="checkbox"/>
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" id="theme-toggle" name="toggle" type="checkbox">
 <label class="toggle-label block overflow-hidden h-6 rounded-full bg-surface-variant cursor-pointer" for="theme-toggle"></label>
 </div>
 </div>
@@ -200,7 +203,7 @@
 </div>
 </div>
 <div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
-<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" id="notif-toggle" name="toggle" type="checkbox"/>
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" id="notif-toggle" name="toggle" type="checkbox">
 <label class="toggle-label block overflow-hidden h-6 rounded-full bg-surface-variant cursor-pointer" for="notif-toggle"></label>
 </div>
 </div>
@@ -216,6 +219,18 @@
 <span class="font-body-web text-body-web text-on-surface">Password</span>
 </div>
 <button class="font-tiny-web text-tiny-web text-mobile-primary uppercase px-3 py-1 border border-mobile-primary/30 rounded hover:bg-mobile-primary/10 transition-colors">Change</button>
+</div><div class="flex items-center justify-between p-space-4 min-h-[52px]">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">fingerprint</span>
+<div class="flex flex-col">
+<span class="font-body-web text-body-web text-on-surface">Biometric Login</span>
+
+</div>
+</div>
+<div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+<input class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" id="biometric-toggle" name="toggle" type="checkbox">
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-surface-variant cursor-pointer" for="biometric-toggle"></label>
+</div>
 </div>
 <div class="flex items-center justify-between p-space-4">
 <div class="flex items-center gap-3">
@@ -263,7 +278,7 @@
 <span class="font-tiny-web text-tiny-web mt-1">Sync</span>
 </a>
 <a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full p-2 scale-95 transition-transform duration-150 shadow-lg px-4" href="#">
-<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">person</span>
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: &quot;FILL&quot; 1;">person</span>
 <span class="font-tiny-web text-tiny-web mt-1">Profile</span>
 </a>
 </nav>
@@ -282,4 +297,6 @@
 <a class="font-label-mobile text-label-mobile text-primary border-b-2 border-primary pb-1" href="#">Profile</a>
 </nav>
 </header>
+
+
 </body></html>

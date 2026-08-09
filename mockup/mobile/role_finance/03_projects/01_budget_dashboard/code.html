@@ -1,0 +1,358 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+<title>Budget Dashboard - Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,100..900;1,100..900&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface-variant": "#c3c6d7",
+                        "surface-bright": "#2a3a4f",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "on-secondary-fixed": "#001f26",
+                        "surface-container-highest": "#26364a",
+                        "mobile-danger": "#FF3B30",
+                        "surface-dim": "#031427",
+                        "surface-container-lowest": "#000f21",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "on-primary": "#002a78",
+                        "sync-active": "#FFD60A",
+                        "secondary-container": "#03b5d3",
+                        "error-container": "#93000a",
+                        "secondary": "#4cd7f6",
+                        "secondary-fixed": "#acedff",
+                        "outline-variant": "#434655",
+                        "on-primary-container": "#eeefff",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "on-surface": "#d3e4fe",
+                        "surface-variant": "#26364a",
+                        "surface-container-high": "#1b2b3f",
+                        "on-tertiary-fixed": "#161b2b",
+                        "primary": "#b4c5ff",
+                        "dark-bg": "#020617",
+                        "on-secondary": "#003640",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "surface-tint": "#b4c5ff",
+                        "inverse-surface": "#d3e4fe",
+                        "mobile-primary": "#0066FF",
+                        "on-tertiary": "#2b3041",
+                        "tertiary-fixed": "#dee1f9",
+                        "on-background": "#d3e4fe",
+                        "sync-pending": "#94A3B8",
+                        "on-error": "#690005",
+                        "tertiary": "#c1c5dc",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "surface": "#031427",
+                        "on-secondary-container": "#00424e",
+                        "mobile-warning": "#FF9500",
+                        "surface-container-low": "#0b1c30",
+                        "dark-surface": "#0F172A",
+                        "on-primary-fixed": "#00174b",
+                        "error": "#ffb4ab",
+                        "inverse-primary": "#0053db",
+                        "tertiary-container": "#686c80",
+                        "background": "#031427",
+                        "on-error-container": "#ffdad6",
+                        "on-tertiary-container": "#eeefff",
+                        "primary-container": "#2563eb",
+                        "mobile-success": "#00C853",
+                        "outline": "#8d90a0",
+                        "primary-fixed": "#dbe1ff",
+                        "surface-container": "#102034",
+                        "inverse-on-surface": "#213145"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "space-1": "4px",
+                        "base": "4px",
+                        "touch-target": "52px",
+                        "web-margin": "32px",
+                        "edge-mobile": "24px",
+                        "space-2": "8px",
+                        "space-3": "12px",
+                        "space-4": "16px"
+                    },
+                    "fontFamily": {
+                        "label-mobile": ["Inter Tight"],
+                        "h2-web": ["Inter Tight"],
+                        "display-web": ["Inter Tight"],
+                        "body-mobile": ["Inter Tight"],
+                        "hero-mobile": ["Inter Tight"],
+                        "body-web": ["Inter Tight"],
+                        "tiny-web": ["Inter Tight"],
+                        "h1-web": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "label-mobile": ["13px", { "lineHeight": "18px", "fontWeight": "600" }],
+                        "h2-web": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "display-web": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-mobile": ["17px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "hero-mobile": ["28px", { "lineHeight": "34px", "fontWeight": "700" }],
+                        "body-web": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "tiny-web": ["11px", { "lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "h1-web": ["24px", { "lineHeight": "32px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            -webkit-tap-highlight-color: transparent;
+            font-family: 'Inter Tight', sans-serif;
+            background-color: #031427; /* Fallback */
+            color: #d3e4fe;
+        }
+        /* Mobile Safe Area Padding Utilities */
+        .pt-safe { padding-top: env(safe-area-inset-top); }
+        .pb-safe { padding-bottom: max(env(safe-area-inset-bottom), 16px); }
+        
+        /* Shimmer Animation for loading/active states */
+        @keyframes shimmer {
+            0% { background-position: -1000px 0; }
+            100% { background-position: 1000px 0; }
+        }
+        .animate-shimmer {
+            background: linear-gradient(to right, rgba(255,255,255,0.02) 4%, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.02) 36%);
+            background-size: 1000px 100%;
+            animation: shimmer 2.5s infinite linear;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface antialiased min-h-screen flex flex-col pt-safe pb-safe selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopAppBar Mobile ONLY -->
+<header class="md:hidden fixed top-0 w-full z-50 bg-surface dark:bg-dark-bg border-b border-outline-variant flex justify-between items-center px-edge-mobile h-touch-target pt-safe">
+<button aria-label="Open Menu" class="w-touch-target h-touch-target flex items-center justify-start text-on-surface hover:bg-surface-container-high transition-colors active:scale-95 duration-150 rounded-full">
+<span class="material-symbols-outlined" style="font-size: 24px;">menu</span>
+</button>
+<div class="flex flex-col items-center justify-center pointer-events-none">
+<h1 class="font-label-mobile text-label-mobile font-bold tracking-widest text-on-surface uppercase">CONSTRUCTION OS</h1>
+</div>
+<div class="w-touch-target h-touch-target flex items-center justify-end">
+<div class="flex items-center gap-1 bg-surface-container-high px-2 py-1 rounded-full border border-outline-variant">
+<div class="w-2 h-2 rounded-full bg-mobile-success animate-pulse"></div>
+<span class="font-tiny-web text-tiny-web text-mobile-success uppercase">Synced</span>
+</div>
+</div>
+</header>
+<!-- TopAppBar Web ONLY -->
+<header class="hidden md:flex fixed top-0 w-full z-50 bg-surface dark:bg-dark-bg border-b border-outline-variant justify-between items-center px-web-margin h-touch-target">
+<div class="flex items-center gap-space-4">
+<button aria-label="Open Menu" class="w-touch-target h-touch-target flex items-center justify-center text-primary dark:text-primary-fixed hover:bg-surface-container-high transition-colors active:scale-95 duration-150 rounded-full">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<h1 class="font-h1-web text-h1-web font-bold text-secondary">Finance Operations</h1>
+</div>
+<!-- Global Nav injected for Web context -->
+<nav class="flex gap-space-4 h-full items-center">
+<button class="px-space-3 h-full flex items-center text-on-surface-variant hover:text-on-surface font-body-web text-body-web transition-colors">Home</button>
+<button class="px-space-3 h-full flex items-center text-on-surface-variant hover:text-on-surface font-body-web text-body-web transition-colors">Payouts</button>
+<button class="px-space-3 h-full flex items-center text-secondary border-b-2 border-secondary font-body-web text-body-web font-bold">Projects</button>
+<button class="px-space-3 h-full flex items-center text-on-surface-variant hover:text-on-surface font-body-web text-body-web transition-colors">Search</button>
+</nav>
+<div class="flex items-center gap-space-3">
+<div class="text-right">
+<div class="font-body-web text-body-web font-semibold text-on-surface">Finance Controller Profile</div>
+<div class="font-tiny-web text-tiny-web text-on-surface-variant uppercase flex items-center justify-end gap-1"><div class="w-2 h-2 rounded-full bg-mobile-success"></div> Active</div>
+</div>
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center border border-outline-variant overflow-hidden">
+<img alt="User Avatar" class="w-full h-full object-cover" data-alt="A highly detailed close up portrait of an experienced finance professional in an industrial office setting. Low key dramatic lighting, corporate modern aesthetic. High contrast, sharp focus, cinematic grading. Professional business attire with a subtle hard hat on a desk in the blurred background. 8k resolution." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBMUk2-WqWMIqz5spBwr7v8MRGNVsuZWmCbsfsomD6lKlCSMdZFQrLvRldnXTChd73FfirXWEQsjai2S7ieARKhF7yv6XIV3XpNFbhNWpTYfQcvmjruG7FfnYYv9-dZTGAPQIaRD8Xuj9MAg4M88wuRRnlwHIaZ_zB9AcQiof9M_ONUS_wdNxwF6DmJZiWdFXr_LEBwEpjAa2sI4DYcFWkJVLyiTPZR3AkIseGTR4nEddUQWznccIJX">
+</div>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="flex-1 w-full max-w-7xl mx-auto md:px-web-margin pt-[calc(52px+env(safe-area-inset-top)+16px)] md:pt-[calc(72px+16px)] pb-[calc(72px+env(safe-area-inset-bottom)+24px)] md:pb-8 flex flex-col gap-edge-mobile">
+<!-- Header Section -->
+<section class="px-edge-mobile md:px-0 flex flex-col gap-1">
+<h2 class="font-hero-mobile text-hero-mobile md:font-display-web md:text-display-web text-on-surface">Budget Dashboard</h2>
+<p class="font-body-mobile text-body-mobile text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">domain</span>
+                Skybridge Central - Phase 2
+            </p>
+</section>
+<!-- KPI Summary Cards (Bento Layout) -->
+<section class="px-edge-mobile md:px-0 grid grid-cols-1 md:grid-cols-3 gap-space-3 md:gap-space-4">
+<!-- Total Budget Card -->
+<div class="bg-surface-container rounded-lg p-space-4 flex flex-col gap-space-2 relative overflow-hidden border border-outline-variant/30">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-on-surface-variant opacity-50"></div>
+<div class="flex justify-between items-start">
+<h3 class="font-label-mobile text-label-mobile text-on-surface-variant uppercase tracking-wider">Total Budget</h3>
+<span class="material-symbols-outlined text-on-surface-variant opacity-50">account_balance_wallet</span>
+</div>
+<div class="font-hero-mobile text-hero-mobile text-on-surface mt-1">฿124.5M</div>
+</div>
+<!-- Actual Spent Card -->
+<div class="bg-surface-container rounded-lg p-space-4 flex flex-col gap-space-2 relative overflow-hidden border border-outline-variant/30">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-mobile-warning"></div>
+<div class="flex justify-between items-start">
+<h3 class="font-label-mobile text-label-mobile text-on-surface-variant uppercase tracking-wider">Actual Spent</h3>
+<div class="flex items-center gap-1 bg-surface-container-high px-2 py-0.5 rounded text-mobile-warning font-tiny-web text-tiny-web">
+<span class="material-symbols-outlined text-[14px]">arrow_upward</span> 68%
+                    </div>
+</div>
+<div class="font-hero-mobile text-hero-mobile text-on-surface mt-1">฿84.2M</div>
+<!-- Progress Bar -->
+<div class="w-full bg-surface-container-highest rounded-full h-1.5 mt-2 overflow-hidden">
+<div class="bg-mobile-warning h-1.5 rounded-full" style="width: 68%"></div>
+</div>
+</div>
+<!-- Remaining Card -->
+<div class="bg-surface-container rounded-lg p-space-4 flex flex-col gap-space-2 relative overflow-hidden border border-outline-variant/30">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-mobile-success"></div>
+<div class="flex justify-between items-start">
+<h3 class="font-label-mobile text-label-mobile text-on-surface-variant uppercase tracking-wider">Remaining</h3>
+<span class="material-symbols-outlined text-mobile-success">savings</span>
+</div>
+<div class="font-hero-mobile text-hero-mobile text-on-surface mt-1">฿40.3M</div>
+</div>
+</section>
+<!-- AI Forecast Module -->
+<section class="px-edge-mobile md:px-0">
+<div class="relative rounded-xl border border-secondary/30 bg-surface-container overflow-hidden group">
+<!-- Cyan Glow Accent -->
+<div class="absolute left-0 top-0 bottom-0 w-1.5 bg-secondary shadow-[0_0_15px_rgba(76,215,246,0.6)]"></div>
+<!-- Ambient AI BG -->
+<div class="absolute inset-0 bg-secondary/5 pointer-events-none"></div>
+<div class="p-space-4 flex flex-col gap-space-3 relative z-10">
+<div class="flex items-center gap-2 text-secondary">
+<span class="material-symbols-outlined animate-pulse" style="font-variation-settings: &quot;FILL&quot; 1;">psychology</span>
+<h3 class="font-label-mobile text-label-mobile uppercase tracking-widest font-bold">Cash Flow Projection</h3>
+</div>
+<p class="font-body-mobile text-body-mobile text-on-surface leading-relaxed">
+                        Projected <span class="text-mobile-danger font-semibold">5.2% variance</span> in MEP services due to supply chain fluctuations over the next 45 days. Recommended action: Review Q3 vendor contracts.
+                    </p>
+<div class="flex items-center gap-4 mt-2 pt-space-3 border-t border-outline-variant/30">
+<div class="flex items-center gap-1.5 text-on-surface-variant font-tiny-web text-tiny-web uppercase">
+<span class="material-symbols-outlined text-[14px]">analytics</span>
+                            94% Confidence
+                        </div>
+<div class="flex items-center gap-1.5 text-on-surface-variant font-tiny-web text-tiny-web uppercase">
+<span class="material-symbols-outlined text-[14px]">database</span>
+                            Source: ERP &amp; Schedule
+                        </div>
+</div>
+</div>
+</div>
+</section>
+<!-- Category Drill-down -->
+<section class="px-edge-mobile md:px-0 flex flex-col gap-space-3">
+<h3 class="font-h2-web text-h2-web text-on-surface mt-space-2 mb-space-1">Category Breakdown</h3>
+<!-- Structural Phase Card -->
+<div class="bg-surface-container rounded-lg p-space-4 border border-outline-variant flex flex-col gap-space-3 shadow-sm hover:shadow-md transition-shadow">
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">foundation</span>
+</div>
+<div>
+<h4 class="font-label-mobile text-label-mobile text-on-surface">Structural Phase</h4>
+<div class="font-tiny-web text-tiny-web text-on-surface-variant">Code: 02-100</div>
+</div>
+</div>
+<div class="text-right">
+<div class="font-body-mobile text-body-mobile font-semibold text-on-surface">฿42.1M</div>
+<div class="font-tiny-web text-tiny-web text-on-surface-variant">of ฿45.0M (93%)</div>
+</div>
+</div>
+<div class="w-full bg-surface-container-highest rounded-full h-1 overflow-hidden mt-1">
+<div class="bg-primary h-1 rounded-full" style="width: 93%"></div>
+</div>
+<div class="pt-space-3 border-t border-outline-variant/50 mt-1">
+<button class="w-full h-touch-target flex items-center justify-center gap-2 text-primary font-label-mobile text-label-mobile uppercase tracking-wider hover:bg-surface-container-high rounded transition-colors active:scale-95 duration-150">
+                        View Details <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- MEP Services Card -->
+<div class="bg-surface-container rounded-lg p-space-4 border border-mobile-warning/30 flex flex-col gap-space-3 relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-mobile-warning"></div>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-3 pl-2">
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-mobile-warning">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">electrical_services</span>
+</div>
+<div>
+<h4 class="font-label-mobile text-label-mobile text-on-surface flex items-center gap-2">
+                                MEP Services
+                                <span class="material-symbols-outlined text-[16px] text-mobile-warning" title="Variance Alert">warning</span>
+</h4>
+<div class="font-tiny-web text-tiny-web text-mobile-warning">Proj. Variance +5.2%</div>
+</div>
+</div>
+<div class="text-right">
+<div class="font-body-mobile text-body-mobile font-semibold text-mobile-warning">฿31.5M</div>
+<div class="font-tiny-web text-tiny-web text-on-surface-variant">of ฿30.0M (105%)</div>
+</div>
+</div>
+<div class="w-full bg-surface-container-highest rounded-full h-1 overflow-hidden mt-1">
+<div class="bg-mobile-warning h-1 rounded-full" style="width: 100%"></div>
+</div>
+</div>
+<!-- Finishes Card -->
+<div class="bg-surface-container rounded-lg p-space-4 border border-outline-variant flex flex-col gap-space-3 shadow-sm hover:shadow-md transition-shadow opacity-80">
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">format_paint</span>
+</div>
+<div>
+<h4 class="font-label-mobile text-label-mobile text-on-surface">Finishes &amp; Arch.</h4>
+<div class="font-tiny-web text-tiny-web text-on-surface-variant">Code: 09-000</div>
+</div>
+</div>
+<div class="text-right">
+<div class="font-body-mobile text-body-mobile font-semibold text-on-surface">฿10.6M</div>
+<div class="font-tiny-web text-tiny-web text-on-surface-variant">of ฿49.5M (21%)</div>
+</div>
+</div>
+<div class="w-full bg-surface-container-highest rounded-full h-1 overflow-hidden mt-1">
+<div class="bg-on-surface-variant h-1 rounded-full" style="width: 21%"></div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar Mobile ONLY -->
+<nav class="md:hidden fixed bottom-0 w-full z-50 rounded-t-xl bg-surface dark:bg-dark-surface shadow-lg border-t border-outline-variant flex justify-around items-center h-touch-target px-edge-mobile pb-safe">
+<!-- Home (Inactive) -->
+<button aria-label="Home" class="flex flex-col items-center justify-center text-on-surface-variant active:bg-surface-container-high scale-90 duration-75 p-2 rounded-lg w-16">
+<span class="material-symbols-outlined mb-1">home</span>
+<span class="font-label-mobile text-[10px] leading-tight">Home</span>
+</button>
+<!-- Payouts (Inactive) -->
+<button aria-label="Payouts" class="flex flex-col items-center justify-center text-on-surface-variant active:bg-surface-container-high scale-90 duration-75 p-2 rounded-lg w-16">
+<span class="material-symbols-outlined mb-1">receipt_long</span>
+<span class="font-label-mobile text-[10px] leading-tight">Payouts</span>
+</button>
+<!-- Projects (Active) -->
+<button aria-label="Projects" class="flex flex-col items-center justify-center text-mobile-primary active:bg-surface-container-high scale-90 duration-75 p-2 rounded-lg w-16 bg-primary-container/20">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: &quot;FILL&quot; 1;">foundation</span>
+<span class="font-label-mobile text-[10px] leading-tight font-bold">Projects</span>
+</button>
+<!-- Search (Inactive) -->
+<button aria-label="Search" class="flex flex-col items-center justify-center text-on-surface-variant active:bg-surface-container-high scale-90 duration-75 p-2 rounded-lg w-16">
+<span class="material-symbols-outlined mb-1">search</span>
+<span class="font-label-mobile text-[10px] leading-tight">Search</span>
+</button>
+</nav>
+
+
+</body></html>

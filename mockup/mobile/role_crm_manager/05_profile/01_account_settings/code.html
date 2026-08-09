@@ -193,7 +193,19 @@
 </div>
 </div>
 <span class="material-symbols-outlined text-on-surface-variant" style="font-variation-settings: &quot;FILL&quot; 0;">chevron_right</span>
-</button>
+</button><div class="flex items-center justify-between p-space-3 bg-surface-container-high rounded-lg hover:bg-surface-container-highest transition-colors active:scale-95 duration-200 h-touch-target">
+    <div class="flex items-center gap-space-3">
+        <span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 0;">fingerprint</span>
+        <div class="flex flex-col items-start">
+            <span class="font-body-web text-body-web text-on-surface">Biometric Login</span>
+            <span class="font-tiny-web text-tiny-web text-on-surface-variant">เข้าใช้งานด้วยไบโอเมตริก</span>
+        </div>
+    </div>
+    <div class="relative inline-flex items-center cursor-pointer">
+        <div class="w-10 h-6 bg-primary-container rounded-full transition-colors"></div>
+        <div class="absolute left-5 top-1 bg-white w-4 h-4 rounded-full transition-transform"></div>
+    </div>
+</div>
 </div>
 </section>
 <!-- Preferences Group -->
@@ -274,6 +286,8 @@
 </nav>
 <!-- Desktop SideNav (Hidden on Mobile, Visible on md+) -->
 <!-- Not strictly required by prompt but good for robust responsive design, keeping it simple if added -->
+
+
 
 
 </body></html>

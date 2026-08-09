@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="th"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Construction OS - Global Search</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "outline-variant": "#3d494c",
+                    "inverse-surface": "#d3e4fe",
+                    "warning-amber": "#F59E0B",
+                    "on-primary-container": "#00424f",
+                    "surface-tint": "#4cd7f6",
+                    "surface-container-high": "#1b2b3f",
+                    "on-surface": "#d3e4fe",
+                    "steel-gray": "#64748B",
+                    "elevation-gray": "#111827",
+                    "surface-container-lowest": "#000f21",
+                    "surface-bright": "#2a3a4f",
+                    "on-primary": "#003640",
+                    "surface": "#031427",
+                    "on-error-container": "#ffdad6",
+                    "on-tertiary-container": "#00452e",
+                    "primary": "#4cd7f6",
+                    "surface-variant": "#26364a",
+                    "primary-fixed-dim": "#4cd7f6",
+                    "secondary-container": "#0053db",
+                    "outline": "#869397",
+                    "on-error": "#690005",
+                    "surface-container-highest": "#26364a",
+                    "inverse-primary": "#00687a",
+                    "primary-container": "#06b6d4",
+                    "surface-container-low": "#0b1c30",
+                    "on-tertiary": "#003824",
+                    "on-primary-fixed-variant": "#004e5c",
+                    "secondary-fixed": "#dbe1ff",
+                    "tertiary-fixed": "#6ffbbe",
+                    "tertiary-fixed-dim": "#4edea3",
+                    "on-tertiary-fixed": "#002113",
+                    "on-surface-variant": "#bcc9cd",
+                    "on-secondary-container": "#cdd7ff",
+                    "on-background": "#d3e4fe",
+                    "ai-cyan": "#06B6D4",
+                    "error-container": "#93000a",
+                    "infrastructure-navy": "#031427",
+                    "on-tertiary-fixed-variant": "#005236",
+                    "error": "#ffb4ab",
+                    "concrete-white": "#F8FAFC",
+                    "on-secondary": "#002a78",
+                    "danger-red": "#EF4444",
+                    "background": "#031427",
+                    "tertiary": "#4edea3",
+                    "tertiary-container": "#1bbd85",
+                    "surface-slate": "#0F172A",
+                    "surface-container": "#102034",
+                    "inverse-on-surface": "#213146",
+                    "secondary": "#b4c5ff",
+                    "on-primary-fixed": "#001f26",
+                    "on-secondary-fixed": "#00174b",
+                    "secondary-fixed-dim": "#b4c5ff",
+                    "surface-dim": "#031427",
+                    "primary-fixed": "#acedff",
+                    "on-secondary-fixed-variant": "#003ea8"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "margin-desktop": "32px",
+                    "container-max": "1440px",
+                    "gutter": "16px",
+                    "margin-mobile": "24px",
+                    "unit": "4px"
+            },
+            "fontFamily": {
+                    "headline-h3": ["Inter Tight"],
+                    "headline-h1": ["Inter Tight"],
+                    "display-hero-mobile": ["Inter Tight"],
+                    "headline-h2": ["Inter Tight"],
+                    "body-mobile": ["Inter Tight"],
+                    "body-md": ["Inter Tight"],
+                    "display-hero": ["Inter Tight"],
+                    "tagline-caps": ["Inter Tight"],
+                    "label-ui": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "headline-h3": ["16px", {"lineHeight": "24px", "fontWeight": "500"}],
+                    "headline-h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "display-hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "headline-h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "display-hero": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "tagline-caps": ["11px", {"lineHeight": "16px", "letterSpacing": "3.5px", "fontWeight": "700"}],
+                    "label-ui": ["12px", {"lineHeight": "16px", "fontWeight": "500"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        body { font-family: 'Inter Tight', sans-serif; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen pb-[90px] md:pb-0 flex flex-col">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky z-50 flex justify-between items-center px-margin-mobile h-16 w-full bg-infrastructure-navy border-b border-outline-variant">
+<button class="hover:bg-surface-container active:opacity-80 transition-opacity p-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">menu</span>
+</button>
+<h1 class="font-headline-h1 text-headline-h1 font-bold text-primary tracking-tight">CONSTRUCTION OS</h1>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A small, circular avatar portrait of a construction project manager. The individual looks professional and focused, lit by cool, industrial lighting reflecting off a subtle high-tech environment. The background is a dark, out-of-focus infrastructure setting to match the Modern Industrial dark mode theme. The image is clean, sharp, and corporate." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBiQbKz8PjXXbi-O6zFvhuw0px0vzHDH9xnq1ndMSoiV4Wmajr7uvN_u90kM-IT8KxHgKLTqnrS4wRBtFs4z_mR-kmQegprc2Hc0Ij27BQ1DS1ZvhJmp1HCTJuqtYL9oQzmPh0BlbFJ7E_j6BlYpqRrqID3idUAykNIRIWZko9izqpC912snx1SaqynqTY_k7GFwEwRGMjdDqCzp7AObAseSbDUNMYAay8eqdNmhpA6hxBif-mlhVWA"/>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow flex flex-col px-margin-mobile md:px-margin-desktop py-6 max-w-container-max mx-auto w-full gap-6">
+<!-- Search Input -->
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-on-surface-variant">search</span>
+<input autofocus="" class="w-full bg-elevation-gray border border-outline-variant text-on-background placeholder-on-surface-variant rounded-lg pl-12 pr-12 py-4 font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary transition-colors outline-none" placeholder="Search anything (ค้นหาข้อมูล)..." type="text"/>
+<button class="absolute right-4 top-1/2 transform -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined">filter_list</span>
+</button>
+</div>
+<!-- AI Search Assist -->
+<section class="w-full bg-surface-slate rounded-xl border-l-4 border-ai-cyan border-y border-r border-elevation-gray p-4 flex flex-col gap-3 relative overflow-hidden">
+<!-- Subtle AI glow -->
+<div class="absolute inset-0 bg-ai-cyan opacity-[0.02] pointer-events-none"></div>
+<div class="flex justify-between items-center z-10">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-ai-cyan" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<h2 class="font-headline-h3 text-headline-h3 text-ai-cyan">Smart Suggestions</h2>
+</div>
+<div class="bg-elevation-gray border border-ai-cyan/30 px-2 py-1 rounded text-ai-cyan font-tagline-caps text-tagline-caps flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">psychology</span>
+                    96% CONFIDENCE
+                </div>
+</div>
+<div class="flex flex-col gap-2 z-10">
+<button class="flex items-center gap-3 bg-elevation-gray/50 hover:bg-elevation-gray border border-outline-variant/50 hover:border-ai-cyan/50 rounded-lg p-3 text-left transition-all group">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-ai-cyan transition-colors">receipt_long</span>
+<div>
+<p class="font-body-md text-body-md text-on-background">Recent PO for Steel Rebar (ใบสั่งซื้อเหล็กเส้นล่าสุด)</p>
+<p class="font-label-ui text-label-ui text-on-surface-variant">Project: Alpha Tower • 2 hours ago</p>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant ml-auto group-hover:text-ai-cyan transition-colors">arrow_forward</span>
+</button>
+<button class="flex items-center gap-3 bg-elevation-gray/50 hover:bg-elevation-gray border border-outline-variant/50 hover:border-ai-cyan/50 rounded-lg p-3 text-left transition-all group">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-ai-cyan transition-colors">foundation</span>
+<div>
+<p class="font-body-md text-body-md text-on-background">Status of Slab Pour Level 4 (สถานะการเทพื้นชั้น 4)</p>
+<p class="font-label-ui text-label-ui text-on-surface-variant">Schedule: Today 14:00 • Delayed</p>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant ml-auto group-hover:text-ai-cyan transition-colors">arrow_forward</span>
+</button>
+</div>
+</section>
+<!-- Categorized Results: Projects -->
+<section class="flex flex-col gap-3">
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface-variant border-b border-outline-variant pb-1">Projects</h3>
+<div class="grid grid-cols-1 gap-3">
+<div class="bg-surface-slate rounded-xl border border-elevation-gray p-4 flex flex-col gap-2">
+<div class="flex justify-between items-start border-b border-outline-variant/50 pb-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">domain</span>
+<span class="font-headline-h3 text-headline-h3 text-on-background">Alpha Tower Phase 2</span>
+</div>
+<div class="flex items-center gap-1 text-tertiary-container font-label-ui text-label-ui">
+<span class="material-symbols-outlined text-[14px]">cloud_done</span>
+                            SYNCED
+                        </div>
+</div>
+<div class="flex flex-col gap-1">
+<p class="font-body-md text-body-md text-on-surface-variant">Location: Sukhumvit, Bangkok</p>
+<p class="font-label-ui text-label-ui text-primary">Active Structural Phase</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Categorized Results: Inventory -->
+<section class="flex flex-col gap-3">
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface-variant border-b border-outline-variant pb-1">Inventory</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+<div class="bg-surface-slate rounded-xl border border-elevation-gray p-4 flex flex-col gap-2 min-h-[52px]">
+<div class="flex justify-between items-start border-b border-outline-variant/50 pb-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary-fixed">inventory_2</span>
+<span class="font-headline-h3 text-headline-h3 text-on-background">Cement Type I (ปูนซีเมนต์)</span>
+</div>
+<div class="flex items-center gap-1 text-tertiary-container font-label-ui text-label-ui">
+<span class="material-symbols-outlined text-[14px]">cloud_done</span>
+                            SYNCED
+                        </div>
+</div>
+<div class="flex flex-col gap-1">
+<p class="font-body-md text-body-md text-on-surface-variant">Stock: 450 Bags (ถุง)</p>
+<p class="font-label-ui text-label-ui text-warning-amber">Low Stock Warning</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Categorized Results: Reports -->
+<section class="flex flex-col gap-3">
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface-variant border-b border-outline-variant pb-1">Reports</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+<div class="bg-surface-slate rounded-xl border border-elevation-gray p-4 flex flex-col gap-2 min-h-[52px]">
+<div class="flex justify-between items-start border-b border-outline-variant/50 pb-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container">description</span>
+<span class="font-headline-h3 text-headline-h3 text-on-background">Daily Site Log (รายงานประจำวัน)</span>
+</div>
+</div>
+<div class="flex flex-col gap-1">
+<p class="font-body-md text-body-md text-on-surface-variant">Date: 24 Oct 2023</p>
+<p class="font-label-ui text-label-ui text-on-surface-variant">Author: S. Prathan</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full flex justify-around items-center px-4 py-2 h-[72px] bg-surface-container z-50">
+<!-- Dashboard (Inactive) -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:text-on-surface scale-95 active:scale-90 transition-transform duration-150">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-ui text-label-ui mt-1">Dashboard</span>
+</button>
+<!-- Search (Active) -->
+<button class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-xl p-2 hover:text-on-surface scale-95 active:scale-90 transition-transform duration-150 w-16">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">search</span>
+<span class="font-label-ui text-label-ui mt-1">Search</span>
+</button>
+<!-- Inventory (Inactive) -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:text-on-surface scale-95 active:scale-90 transition-transform duration-150">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-label-ui text-label-ui mt-1">Inventory</span>
+</button>
+<!-- Reports (Inactive) -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:text-on-surface scale-95 active:scale-90 transition-transform duration-150">
+<span class="material-symbols-outlined">description</span>
+<span class="font-label-ui text-label-ui mt-1">Reports</span>
+</button>
+</nav>
+</body></html>
