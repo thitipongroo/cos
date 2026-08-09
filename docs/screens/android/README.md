@@ -30,7 +30,7 @@ gets its own full-page file (the Invite-user `email` method, the Alerts `diff`-e
 
 | Folder                                     | What it holds                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`01-public/`](01-public/)                 | Pre-auth — the native splash (`00`), app-launch loading (`01`), the login flow (`02`–`04`) and the two legal documents the login footer links to: the Privacy Policy (`05`) and the Terms of Use (`06`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| [`01-public/`](01-public/)                 | Pre-auth — the native splash (`00`), app-launch loading (`01`), the login flow (`02`–`04`), the two legal documents the login footer links to (Privacy Policy `05`, Terms of Use `06`) and the Support Centre (`07`), reached from the OTP step's GET SUPPORT.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | [`03-mfa/`](03-mfa/)                       | The office-role MFA enrolment flow through Keycloak (`01`–`07`), captured in the browser.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | [`02-shared/`](02-shared/)                 | Cross-role app-shell screens — notification preferences (`01`, two states), the navigation drawer (`02`), and [`privacy-policy/`](02-shared/privacy-policy/): the post-auth Privacy Policy (`00`) plus the Transparency Portal ([`01-data-collection/`](02-shared/privacy-policy/01-data-collection/), 14 screens `00`–`13`).                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | [`SITE-ENGINEER/`](SITE-ENGINEER/)         | Tabs: **Home \| Issues \| Inspections \| Reports**. Captured so far: [`01-Home/`](SITE-ENGINEER/01-Home/) — the loading state (`00`) + dashboard (`01`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
@@ -56,6 +56,11 @@ writes `01-public/`, as does
 [`capture-android-terms-of-use.mjs`](../../../apps/mobile/scripts/capture-android-terms-of-use.mjs)
 (the Terms of Use screen, `06`) — the two captures here that need **no backend**: neither screen makes
 an API call, so Metro alone is enough and no login is performed.
+[`capture-android-support.mjs`](../../../apps/mobile/scripts/capture-android-support.mjs)
+(the Support Centre, `07`) writes `01-public/` too, but it **does** need the backend — not because the
+screen needs one to render, but because the only entry the mockups draw for it is on the OTP step, so
+the script requests a real passcode to get there, and the screen's status banner then probes
+`GET /health/live`.
 [`capture-android-shared-mfa.mjs`](../../../apps/mobile/scripts/capture-android-shared-mfa.mjs) writes the
 three **in-app** cross-role shots — `02-shared/01-notification-preferences.png`,
 `02-shared/02-navigation-drawer.png` and `03-mfa/01-app-intro.png`. Everything else under `03-mfa/`
@@ -75,6 +80,7 @@ login header's language switcher is used to leave the th-TH default (QM-3).
 | 04  | [Securing session](01-public/04-login-loading.png)  | `VerifyingOverlay`, shown while the Path B code→token exchange runs                 |
 | 05  | [Privacy Policy](01-public/05-privacy-policy.png)   | Pre-auth policy screen, reached from the login footer link — all sections collapsed |
 | 06  | [Terms of Use](01-public/06-terms-of-use.png)       | Pre-auth terms, the footer's other link — clause `01` open, as the screen opens     |
+| 07  | [Support Centre](01-public/07-support.png)          | Pre-auth support, reached from the OTP step's GET SUPPORT — all topics collapsed    |
 
 Captured by [`apps/mobile/scripts/capture-android-login.mjs`](../../../apps/mobile/scripts/capture-android-login.mjs)
 (`cd apps/mobile && pnpm capture:android` — it installs standalone, see the root `pnpm-workspace.yaml`)
@@ -91,6 +97,25 @@ each frame, so a mis-tap fails the run instead of writing a screenshot of the wr
 > where it is the live route rather than a pre-auth stand-in.
 > [`capture-android-privacy-policy.mjs`](../../../apps/mobile/scripts/capture-android-privacy-policy.mjs)
 > no longer expands the sections, so re-running it cannot reintroduce them.
+>
+> **`07` shows both emergency controls DISABLED, and that is the honest default.** The priority line
+> and the IT hotline dial `EXPO_PUBLIC_SUPPORT_CENTER_PHONE` and `EXPO_PUBLIC_SUPPORT_IT_HOTLINE`
+> (product-owner decision 2026-08-09) — per-deployment config, because no support-desk,
+> emergency-contact or hotline column exists in the schema and this screen is reached before sign-in,
+> so there is no project to resolve one from. The priority line calls the **support centre**, not a
+> named person: the drawing's "Call Site Supervisor" was renamed on 2026-08-09, which is also why the
+> variable is not `…_SUPERVISOR_PHONE` — a desk number is a per-deployment fact, an on-duty supervisor
+> is not. Both are unset in the repo, so the capture shows the unconfigured state
+> rather than an invented number. Set them in `apps/mobile/.env` and re-run to capture the live state.
+>
+> Two other things on `07` deliberately differ from
+> [its mockup](../../../mockup/mobile/01_authen/07_get_help/01_support_center): there is **no bottom
+> nav** (the drawing has one, but this is a pre-auth route — and `Field | Tasks | Support | Profile` is
+> no role's tab set, while §32.7 fixes each role at four), and the assistant panel is labelled **FIELD
+> ASSISTANT**, not the drawn "AI FIELD ASSISTANT". Its text is derived from the connectivity state and
+> the health probe by plain rules; the same standard that forbids describing the rule-based device-trust
+> score as AI-derived (ADR-081) applies here. The drawn copy — "you're in Sector 7", a known cellular
+> outage — was dropped outright: there is no sector, zone or outage feed anywhere in the product.
 
 ## Site Engineer dashboard — [`SITE-ENGINEER/01-Home/01-home.png`](SITE-ENGINEER/01-Home/01-home.png)
 

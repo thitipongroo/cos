@@ -211,6 +211,56 @@
     "comingSoon": "Coming soon",
     "agree": "I agree to all terms"
   },
+  "support": {
+    "title": "Support",
+    "back": "Back",
+    "version": "v{version}",
+    "status": {
+      "operational": "System operational",
+      "unreachable": "System unreachable",
+      "checking": "Checking system status",
+      "lastChecked": "Last checked: {when}",
+      "justNow": "just now",
+      "minutesAgo": "{minutes} min ago"
+    },
+    "search": {
+      "placeholder": "Search help articles…"
+    },
+    "comingSoon": "Coming soon",
+    "emergency": {
+      "heading": "Emergency assistance",
+      "priorityLine": "Priority line",
+      "supportCenter": "Call Support Center",
+      "itHotline": "IT Hotline",
+      "quickChat": "Quick help chat",
+      "noNumber": "No number set for this site"
+    },
+    "troubleshooting": {
+      "heading": "Field troubleshooting",
+      "login": {
+        "title": "I can't log in",
+        "answer": "Check the number or email you are signing in with, and that the device has a connection — the status above says whether the platform is reachable. After five failed attempts the account locks for 15 minutes. If it stays locked, your supervisor or tenant admin can reset it for you."
+      },
+      "photos": {
+        "title": "Photos aren't syncing",
+        "answer": "Photos are held on the device and upload by themselves once you are back in range; the sync indicator in the top bar shows how many items are still waiting. The queue holds 100 photos and warns you at 80 — past that, get back in range before shooting more."
+      },
+      "gps": {
+        "title": "GPS is inaccurate",
+        "answer": "Move into the open, away from heavy machinery and steel structures, and turn on high-accuracy location in the device settings. Coordinates are optional on every record, so a poor fix never blocks you from saving one."
+      },
+      "permit": {
+        "title": "Safety permit issues",
+        "answer": "A permit needs current certification on file. Check your own record for anything expired, and raise it with the safety officer on site — they can clear the work while the paperwork is corrected."
+      }
+    },
+    "assistant": {
+      "label": "Field assistant",
+      "offline": "This device has no connection right now. Keep working — everything you record is saved on the device and uploads by itself once you are back in range.",
+      "unreachable": "The device is connected, but the platform did not answer the last check. Keep working: your records stay on the device and upload once the service responds again.",
+      "online": "The device is connected and the platform answered the last check. If something still fails, the topics above cover what field crews hit most."
+    }
+  },
   "home": {
     "main": {
       "title": "Home",

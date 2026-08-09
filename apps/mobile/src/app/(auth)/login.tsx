@@ -526,10 +526,17 @@ export default function LoginScreen() {
         {step === 'otp' ? (
           /* Footer (mockup 02) — icon + label links */
           <View style={styles.otpFooterLinks}>
-            <View style={styles.footerLinkItem}>
+            <TouchableOpacity
+              testID="get-support-link"
+              accessibilityRole="link"
+              accessibilityLabel={t('auth.login.getSupport')}
+              onPress={() => router.push('/(auth)/support')}
+              hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
+              style={styles.footerLinkItem}
+            >
               <MaterialIcons name="help-center" size={18} color={darkColors.muted} />
               <Text style={styles.footerLink}>{t('auth.login.getSupport')}</Text>
-            </View>
+            </TouchableOpacity>
             <TouchableOpacity
               testID="privacy-data-link"
               accessibilityRole="link"

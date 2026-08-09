@@ -1024,9 +1024,10 @@ Avoid in all visual work:
     1. Pre-auth entry screens (login, OTP verify, verification overlay, Privacy Policy) —
        rotating gear, `architecture` mark, cyan glow. PO decision 2026-07-16; Privacy Policy
        added by PO decision 2026-08-03 (reached from the login footer, so still pre-auth).
-       THIS LIST IS NOT "every pre-auth screen". The Terms of Use route (2026-08-09) is
-       pre-auth, is pinned dark like the rest, and ships with NO glow — it is a document
-       opened from an entry screen, not one. Adding a pre-auth screen does not add it here.
+       THIS LIST IS NOT "every pre-auth screen". The Terms of Use and Support Centre
+       routes (2026-08-09) are pre-auth, are pinned dark like the rest, and ship with NO
+       glow — they are opened FROM an entry screen rather than being one. Adding a
+       pre-auth screen does not add it here.
     2. <LoadingState /> `ai` variant only — cyan glow, scan-line, waveform; unmounts the
        moment data renders. PO decision 2026-07-17; ADR-055.
   Everywhere the signed-in app shows project data, the prohibition holds.

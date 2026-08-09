@@ -780,10 +780,10 @@ Optimised for outdoor sunlight visibility.
 >
 > Two surfaces remain **pinned** regardless of the preference, and both are deliberate:
 >
-> | Pinned surface                                                                              | Why                                                                                                                                           |
-> | ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-> | Pre-auth screens (login, OTP, overlay, the Privacy Policy and Terms of Use pre-auth routes) | The preference is per-user and there is no user yet. They are pushed from a dark login, so following a light preference would break mid-flow. |
-> | Navigation drawer                                                                           | An overlay panel, not a page. It reads as a raised dark sheet over either mode — the same way its mockup draws it.                            |
+> | Pinned surface                                                                                        | Why                                                                                                                                           |
+> | ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+> | Pre-auth screens (login, OTP, overlay, and the Privacy Policy / Terms of Use / Support Centre routes) | The preference is per-user and there is no user yet. They are pushed from a dark login, so following a light preference would break mid-flow. |
+> | Navigation drawer                                                                                     | An overlay panel, not a page. It reads as a raised dark sheet over either mode — the same way its mockup draws it.                            |
 >
 > `--cos-dark-cyan` stays scoped to the **auth entry screens** (see the accent note under Mobile
 > Colour Tokens). The post-auth Privacy Policy route therefore takes `primary` as its accent, not
@@ -802,6 +802,7 @@ Dark screens (the pre-2026-08-04 set — see the note above):
 | Session-securing overlay                | `mockup/mobile/01_authen/04_verification_loading_mobile/`                    |
 | Privacy Policy (pre-auth)               | `mockup/mobile/01_authen/05_privacy_policy/00_policy_data`                   |
 | Terms of Use (pre-auth)                 | `mockup/mobile/01_authen/06_terms_of_use/01_dashboard/`                      |
+| Support Centre (pre-auth)               | `mockup/mobile/01_authen/07_get_help/01_support_center/`                     |
 | Site Engineer Home                      | `mockup/mobile/03_site_engineer/01_dashboard/`                               |
 | Tenant Admin Home                       | `mockup/mobile/04_tenant_admin/01_home/01_home_dashboard/`                   |
 | Notification preferences (Tenant Admin) | `mockup/mobile/04_tenant_admin/06_notification/01_notification_preferences/` |
@@ -813,7 +814,11 @@ decision (2026-07-26); the **Tenant Admin Home** was added by product-owner deci
 footer and therefore continues the dark pre-auth surface it is pushed from, rather than dropping the
 user onto the light task palette mid-flow. The **Terms of Use** was added by product-owner decision
 (2026-08-09) for the same reason: it is the login footer's other link, and it is PRE-AUTH ONLY — the
-Privacy Policy's second, post-auth entry was a later decision that this document did not receive. All
+Privacy Policy's second, post-auth entry was a later decision that this document did not receive. The
+**Support Centre** followed on the same day and on the same terms — pre-auth only, entered from the
+OTP step's GET SUPPORT item, which is the only entry any mockup draws for it. Its drawing carries a
+`Field | Tasks | Support | Profile` bottom bar, which is **not** implemented: there is no tab bar
+before sign-in, and that is no role's tab set (see the four-tab rule above). All
 ship on the dark surface as their mockups define, continuing the signed-in dark identity rather than the
 light task palette. They are control / dashboard surfaces (configure / navigate / monitor), not all-day
 outdoor task screens, so the sunlight-visibility rationale for the light palette does not apply. A
