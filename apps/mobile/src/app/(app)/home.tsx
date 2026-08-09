@@ -146,7 +146,8 @@ function asList<T>(res: { items?: T[] } | T[]): T[] {
 //     Tasks and Shift Hours. Neither count is lost: the Issues tab still carries its own list, and
 //     sync health is the TopBar's global indicator plus the Sync Queue screen.
 //   - The three inline quick-action tiles moved behind the FAB, which is what the mockup's
-//     `aria-label="Quick Action"` button opens (see (app)/quick-actions.tsx).
+//     `aria-label="Quick Action"` button opens (see components/QuickActionsMenu.tsx — an
+//     overlay, not a route).
 //   - SELF CHECK-IN IS GONE from the product (product-owner decision 2026-08-09). It was on this
 //     screen, then briefly in the navigation drawer, and is now removed outright along with its
 //     project picker. The Shift Hours tile SURVIVES the removal: `attendance` is one of the six

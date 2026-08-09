@@ -36,7 +36,7 @@ gets its own full-page file (the Invite-user `email` method, the Alerts `diff`-e
 | [`SITE-ENGINEER/`](SITE-ENGINEER/)         | Tabs: **Home \| Issues \| Inspections \| Reports**. Captured so far: [`01-Home/`](SITE-ENGINEER/01-Home/) — the loading state (`00`) + dashboard (`01`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | [`TENANT-ADMIN/`](TENANT-ADMIN/)           | Tabs: **Home \| Users \| Alerts \| Settings**. [`01-Home/`](TENANT-ADMIN/01-Home/) — dashboard (`01`), Quick-Add (`02`) and the FAB flows: Invite-user (`03`), Role-permissions (`04`), Roles-selection (`05`), Invitation-success (`06`), System-integration (`07`), Apps-&-Services (`08`). [`02-Users/`](TENANT-ADMIN/02-Users/) — the users list (`01`), the per-user action sheet (`02`), the user profile (`03`), the multi-role permission editor (`04`) + the save-success screen (`05`), and the password-reset form (`06`) + its two done screens — temp-password (`07`) and email-link-sent (`08`). [`03-Alerts/`](TENANT-ADMIN/03-Alerts/) — the sync-review queue (`01`). [`04-Settings/`](TENANT-ADMIN/04-Settings/) — System Settings (`01`, one full-page). |
 | [`CRM-SALES-MANAGER/`](CRM-SALES-MANAGER/) | Tabs: **Home \| Leads \| Opportunities \| Customers** — the three pages §20.7.10 defines, built 2026-08-04. Leads (`01`), Opportunities (`02`), Customers (`03`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| [`SITE-WORKER/`](SITE-WORKER/)             | Tabs: **Home \| Issues \| Reports \| Safety**. [`01-Home/`](SITE-WORKER/01-Home/) — the field dashboard (`01`) and the three screens its FAB reaches: **Quick actions** (`02`), **Report issue** (`03`) and **Daily report** (`04`). Those four are named for the mockup folders they implement (`01_dashboard`, `02_quick_actions`, `03_issue`, `04_daily_report`). [`02-Tasks/`](SITE-WORKER/02-Tasks/) (`01`), [`03-Safety/`](SITE-WORKER/03-Safety/) (`01`), [`04-Directory/`](SITE-WORKER/04-Directory/) (`01`). [`05-Drawer/`](SITE-WORKER/05-Drawer/) — the **navigation drawer** (`01`), which IS the profile.                                                                                                                                                      |
+| [`SITE-WORKER/`](SITE-WORKER/)             | Tabs: **Home \| Tasks \| Safety \| Directory**. [`01-Home/`](SITE-WORKER/01-Home/) — the field dashboard (`01`), the FAB's **Quick actions** overlay (`02`), and the two screens that overlay opens: **Report issue** (`03`) and **Daily report** (`04`). Those four are named for the mockup folders they implement (`01_dashboard`, `02_quick_actions`, `03_issue`, `04_daily_report`). [`02-Tasks/`](SITE-WORKER/02-Tasks/) (`01`), [`03-Safety/`](SITE-WORKER/03-Safety/) (`01`), [`04-Directory/`](SITE-WORKER/04-Directory/) (`01`). [`05-Drawer/`](SITE-WORKER/05-Drawer/) — the **navigation drawer** (`01`), which IS the profile.                                                                                                                                 |
 
 The two adb dashboard scripts write straight into their role's menu subfolders —
 [`capture-android-home.mjs`](../../../apps/mobile/scripts/capture-android-home.mjs) → `SITE-ENGINEER/01-Home/`,
@@ -1013,6 +1013,18 @@ restructure moved them behind the FAB, which is why Home no longer renders `<Qui
 They are also the two screens (Issues, Report) that left the bottom bar on 2026-08-09, so this menu
 is now their entry point.
 
+**An OVERLAY, not a route** — [`<QuickActionsMenu />`](../../../apps/mobile/src/components/QuickActionsMenu.tsx),
+opened by Home's FAB (product-owner decision 2026-08-09). It shipped as a pushed screen first, and
+that was wrong for one concrete reason: the reference it is meant to match
+(`04_tenant_admin/01_home/02_quick_action_button/01_quick_action_menu`) heads the surface with **its
+own bar carrying a close X**, and a route gets the shared `<TopBar />`, whose leading control is a
+back chevron with no close affordance in it. The Site Worker's own mockup draws the same X. A modal
+is what carries a bar like that, so it is one — the `/quick-actions` route was deleted with the
+change, along with its `href: null` and its breadcrumb.
+
+The bar matches the reference piece for piece: brand left, then the sync pill and the close button
+right. It is dark on both themes, as the admin overlay is — an overlay is not the page beneath it.
+
 **The cards are [`<QuickActionRow />`](../../../apps/mobile/src/components/QuickActionRow.tsx), the
 project's quick-action button** (product-owner decision 2026-08-09: match the Tenant Admin menu,
 `TENANT-ADMIN/01-Home/02-quick-action.png`). One anatomy wherever a menu offers something to do — a
@@ -1026,11 +1038,20 @@ are alike (the admin menu tints identity blue, integrations cyan, sync amber; th
 urgent action red, the protective one green, the routine one accent). Callers pass a palette colour,
 never a hex, so §32.7's no-hex-at-the-call-site rule holds and the accents follow the theme.
 
-`variant="dark"` covers the difference between the two hosts: the admin menu is a modal that stays
-dark on both themes, while this is an ordinary screen that follows the user's. Same idiom as
-`<ProjectPicker />`, `<Avatar />` and `<LoadingBoundary />`. The overlay's **AI report card is
+`variant="dark"` exists for hosts that stay dark whatever the user's theme. Both quick-action menus
+are such hosts, so both pass it; the prop earns its keep the first time the row is used on an
+ordinary screen. Same idiom as
+`<ProjectPicker />`, `<Avatar />` and `<LoadingBoundary />`. The admin overlay's **AI report card is
 deliberately NOT one of these** — it carries a description and its own CTA — but it keeps the same
 48px plate, because the two sit in one list and a different size would read as a mistake.
+
+**The `SYNCED` pill is [`<OverlaySyncPill />`](../../../apps/mobile/src/components/OverlaySyncPill.tsx)**,
+extracted from the admin overlay in the same change for the same reason as the row: the second copy
+is where a screen's private detail becomes a component. It is NOT `<SyncPill />` — that one lives in
+the shared TopBar and is glyph-only, because a word would crowd a row that also holds the brand and
+two icon buttons (PO 2026-08-04). A full-screen overlay has its own bar with room to spare, and both
+quick-action mockups draw the word. Same four states, same precedence, same source: error > syncing >
+pending > synced, where offline is not a state but a producer of pending.
 
 A screen rather than a modal or bottom sheet: the mockup draws it as a full page with its own top
 bar, §32.7 keeps modals for things that interrupt, and being a route gives it a breadcrumb and a back
@@ -1336,7 +1357,8 @@ each screen the way a worker does — Tasks and Directory from their tabs, Issue
 from the Home FAB's quick-action menu, the drawer from the avatar — and asserts real CONTENT before
 saving: both Home stat tiles, at least one task card, at least one crew card, at least one checklist
 item. An empty state cannot be committed as though it were the feature. Quick actions is a single
-viewport; the rest are full-page stitches (`scripts/stitch-fullpage.py`).
+viewport — it is an overlay, so it never scrolls — and the rest are full-page stitches
+(`scripts/stitch-fullpage.py`).
 
 **`--only <substring>` narrows a run to the screens whose name matches**, repeatable, so a one-screen
 change costs one screen's worth of time rather than eight (product-owner request 2026-08-09):

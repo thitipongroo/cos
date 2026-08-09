@@ -49,15 +49,11 @@ const BREADCRUMB_MAP: Record<string, Crumb[]> = {
     { key: 'breadcrumb.userManagement', href: '/users' },
     { key: 'resetPassword.title' },
   ],
-  // Home quick actions (SITE_WORKER). `tasks` was a tab until 2026-08-08; Home took its slot, so it
-  // is now a pushed child and needs the crumb — which is also what gives it the TopBar back chevron.
-  // `report` is pushed from the Home FAB's quick-action menu (PO 2026-08-09), so its parent is
-  // that menu rather than Home — Back returns to where the worker actually came from.
-  '/report': [
-    { key: 'nav.tabs.home', href: '/home' },
-    { key: 'quickActions.title', href: '/quick-actions' },
-    { key: 'nav.tabs.reports' },
-  ],
+  // `report` is pushed from the Home FAB's quick-action menu (PO 2026-08-09). Its parent crumb is
+  // HOME, not that menu: the menu became an OVERLAY in the same change and has no route, so a crumb
+  // pointing at it would be a dead link. Back still returns to Home, which is where the overlay was
+  // opened from.
+  '/report': [{ key: 'nav.tabs.home', href: '/home' }, { key: 'nav.tabs.reports' }],
   '/account-settings': [{ key: 'nav.tabs.home', href: '/home' }, { key: 'drawer.settings' }],
   // Home FAB / Quick-Add flows
   '/system-integration': [

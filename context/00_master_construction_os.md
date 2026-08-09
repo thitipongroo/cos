@@ -1303,6 +1303,11 @@ Core components (React Native — implement in apps/mobile/):
                         user's theme. It began as that overlay's private ActionCard and was lifted
                         out when the Site Worker menu was told to match it: two menus drawing one
                         button two ways is a copy waiting to drift.
+  <OverlaySyncPill />   The LABELLED sync pill an overlay's own top bar carries (PO 2026-08-09).
+                        Distinct from <SyncPill />, which is glyph-only because the shared TopBar
+                        also holds the brand and two icon buttons; a full-screen overlay has room
+                        for the word, and the quick-action mockups draw it. Same four states and
+                        precedence as every other sync indicator.
   <PhotoCapture />      Camera + gallery grid, inline annotation, offline queue
   <VoiceNoteButton />   Hold-to-record, waveform animation, auto-transcription
   <SyncPill />          Top-bar glyph carrying EVERY sync state, offline included.
@@ -3305,6 +3310,9 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
                   /sync/delta streams down, so its rows are recorded elsewhere and synced — the
                   button was never their only source.
       Workflows:  daily report, quick issue, task list, safety checklist
+      Quick actions: an OVERLAY opened by the Home FAB, not a route (PO 2026-08-09) — the mockups
+                  head that surface with a close X, and a pushed route gets the shared TopBar's back
+                  chevron instead. Same shape as the Tenant Admin quick-command overlay.
       Forms:      The daily report has NO free-text summary and the issue capture has ONE text
                   field, both 2026-08-09 to match the mockups. `site_reports.summary` is nullable
                   and is sent null; `issues.title` is NOT NULL and capped at 255, so the issue's
