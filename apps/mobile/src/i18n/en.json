@@ -267,7 +267,8 @@
     "logActivity": {
       "title": "Log today's activity",
       "body": "Summarise the work done and the manpower on site"
-    }
+    },
+    "subtitle": "Choose an action"
   },
   "directory": {
     "title": "Team Directory",

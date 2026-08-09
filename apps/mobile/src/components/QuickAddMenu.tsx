@@ -3,6 +3,11 @@
 // bottom-sheet with the mockup's full-screen surface (top bar + close, header, action cards, a small
 // stats bento).
 //
+// The action cards are <QuickActionRow />, the project's quick-action button. It WAS this file's
+// private `ActionCard`; it moved out on 2026-08-09 when the Site Worker's menu was told to match
+// this one (PO decision), because two menus drawing the same button two ways is a copy waiting to
+// drift. `variant="dark"` because this surface is a modal that stays dark on both themes.
+//
 // Real vs honest-placeholder policy ("ถ้าไม่รู้ ห้ามเดา"):
 //   • Force System Sync   → REAL: runPushSync() then runDeltaSync() (§17.6 flush + pull).
 //   • SYNCED pill         → REAL: useSyncStatus() (same source as SyncPill / the SyncStatusBar).
@@ -22,7 +27,6 @@ import {
   Text,
   Pressable,
   ScrollView,
-  ActivityIndicator,
   StyleSheet,
   Alert,
   Image,
@@ -34,9 +38,9 @@ import { runPushSync } from '../sync/runPushSync';
 import { runDeltaSync } from '../sync/runDeltaSync';
 import { getMyProjects } from '../api/projects';
 import { checkBackendHealth } from '../api/health';
-import { useSyncStatus } from '../hooks/useSyncStatus';
-import { usePendingCount } from '../hooks/usePendingCount';
 import { BrandLogo } from './BrandLogo';
+import { QuickActionRow } from './QuickActionRow';
+import { OverlaySyncPill } from './OverlaySyncPill';
 // Bento-tile background photos (PO decision 2026-07-29).
 import activeProjectsBg from '../../assets/tenant-admin/digital_archectural_blueprint.jpg';
 import systemHealthBg from '../../assets/tenant-admin/micro_server.jpg';
@@ -50,34 +54,6 @@ import {
   touchTarget,
   typography,
 } from '../theme/tokens';
-
-type IconName = keyof typeof MaterialIcons.glyphMap;
-
-/** SYNCED status pill for the overlay top bar — real status, shown with a glyph + label (the mockup's
- *  chip). Colour is never the only signal (§32.7): the glyph shape carries the state too. */
-function StatusPill(): React.JSX.Element {
-  const status = useSyncStatus();
-  const pending = usePendingCount();
-  const t = useT();
-  const v: { icon: IconName; color: string; label: string } =
-    status === 'error'
-      ? { icon: 'sync-problem', color: darkColors.danger, label: t('sync.pill.error') }
-      : status === 'syncing'
-        ? { icon: 'sync', color: darkColors.syncing, label: t('sync.pill.syncing') }
-        : pending > 0
-          ? {
-              icon: 'cloud-upload',
-              color: darkColors.syncing,
-              label: t('sync.pill.pending', { count: pending }),
-            }
-          : { icon: 'check-circle', color: darkColors.success, label: t('sync.pill.synced') };
-  return (
-    <View style={[styles.pill, { backgroundColor: `${v.color}1A` }]} testID="quick-add-sync-pill">
-      <MaterialIcons name={v.icon} size={14} color={v.color} accessibilityLabel={v.label} />
-      <Text style={[styles.pillText, { color: v.color }]}>{v.label.toUpperCase()}</Text>
-    </View>
-  );
-}
 
 export function QuickAddMenu({
   visible,
@@ -152,7 +128,7 @@ export function QuickAddMenu({
             <BrandLogo variant="dark" height={26} />
           </View>
           <View style={styles.topRight}>
-            <StatusPill />
+            <OverlaySyncPill testID="quick-add-sync-pill" />
             <Pressable
               style={styles.closeBtn}
               onPress={onClose}
@@ -172,7 +148,8 @@ export function QuickAddMenu({
 
           {/* Action cards */}
           <View style={styles.cards}>
-            <ActionCard
+            <QuickActionRow
+              variant="dark"
               icon="person-add"
               accent={darkColors.primary}
               title={t('quickAdd.inviteTitle')}
@@ -180,7 +157,8 @@ export function QuickAddMenu({
               onPress={goInvite}
               testID="quick-add-invite"
             />
-            <ActionCard
+            <QuickActionRow
+              variant="dark"
               icon="hub"
               accent={darkColors.cyan}
               title={t('quickAdd.integrationTitle')}
@@ -188,7 +166,8 @@ export function QuickAddMenu({
               onPress={goIntegration}
               testID="quick-add-integration"
             />
-            <ActionCard
+            <QuickActionRow
+              variant="dark"
               icon="grid-view"
               accent={darkColors.success}
               title={t('quickAdd.appsTitle')}
@@ -205,11 +184,11 @@ export function QuickAddMenu({
               accessibilityRole="button"
             >
               <View style={styles.aiHead}>
-                <View style={[styles.iconPlate, { backgroundColor: `${darkColors.cyan}1A` }]}>
+                <View style={[styles.aiPlate, { backgroundColor: `${darkColors.cyan}1A` }]}>
                   <MaterialIcons name="auto-awesome" size={28} color={darkColors.cyan} />
                 </View>
-                <View style={styles.cardText}>
-                  <Text style={styles.cardTitle}>{t('quickAdd.reportTitle')}</Text>
+                <View style={styles.aiText}>
+                  <Text style={styles.aiTitle}>{t('quickAdd.reportTitle')}</Text>
                   <Text style={styles.aiLabel}>{t('quickAdd.reportSub')}</Text>
                 </View>
               </View>
@@ -220,7 +199,8 @@ export function QuickAddMenu({
               </View>
             </Pressable>
 
-            <ActionCard
+            <QuickActionRow
+              variant="dark"
               icon="sync"
               accent={darkColors.syncing}
               title={t('quickAdd.syncTitle')}
@@ -255,49 +235,6 @@ export function QuickAddMenu({
         </View>
       </View>
     </Modal>
-  );
-}
-
-function ActionCard({
-  icon,
-  accent,
-  title,
-  sub,
-  onPress,
-  busy,
-  trailing = 'chevron-right',
-  testID,
-}: {
-  icon: IconName;
-  accent: string;
-  title: string;
-  sub: string;
-  onPress: () => void;
-  busy?: boolean;
-  trailing?: IconName;
-  testID: string;
-}): React.JSX.Element {
-  return (
-    <Pressable
-      style={[styles.card, { borderLeftColor: accent }]}
-      onPress={onPress}
-      disabled={busy}
-      testID={testID}
-      accessibilityRole="button"
-    >
-      <View style={[styles.iconPlate, { backgroundColor: `${accent}1A` }]}>
-        {busy ? (
-          <ActivityIndicator color={accent} />
-        ) : (
-          <MaterialIcons name={icon} size={28} color={accent} />
-        )}
-      </View>
-      <View style={styles.cardText}>
-        <Text style={styles.cardTitle}>{title}</Text>
-        <Text style={styles.cardSub}>{sub}</Text>
-      </View>
-      <MaterialIcons name={trailing} size={22} color={darkColors.muted} />
-    </Pressable>
   );
 }
 
@@ -345,15 +282,6 @@ const styles = StyleSheet.create({
     color: darkColors.primary,
   },
   topRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: spacing.xs,
-    paddingVertical: 2,
-    borderRadius: radius.xl,
-  },
-  pillText: { fontFamily: fontFamily.bold, fontSize: 10, letterSpacing: 1 },
   closeBtn: {
     width: touchTarget.iconButton,
     height: touchTarget.iconButton,
@@ -372,37 +300,21 @@ const styles = StyleSheet.create({
   },
   cards: { gap: spacing.sm },
 
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: darkColors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: darkColors.border,
-    borderLeftWidth: 4,
-    padding: spacing.md,
-  },
-  iconPlate: {
+  // The AI report card is the one action here that is NOT a <QuickActionRow /> — it carries a
+  // description and its own CTA — so it keeps a private plate and text block. Same 48px plate as the
+  // shared row, deliberately: the two sit in one list and a different size would read as a mistake.
+  aiPlate: {
     width: 48,
     height: 48,
     borderRadius: plateRadius(48),
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cardText: { flex: 1, minWidth: 0 },
-  cardTitle: {
+  aiText: { flex: 1, minWidth: 0 },
+  aiTitle: {
     fontFamily: fontFamily.semibold,
     fontSize: typography.body.fontSize,
     color: darkColors.text,
-  },
-  cardSub: {
-    fontFamily: fontFamily.regular,
-    fontSize: 11,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-    color: darkColors.muted,
-    marginTop: 2,
   },
 
   // AI report card — taller, cyan accent, honest (no fabricated confidence/source).

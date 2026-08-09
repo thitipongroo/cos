@@ -145,8 +145,6 @@ export function MobileNav() {
       <Tabs.Screen name="report" options={{ href: null }} />
       {/* The signed-in user's own account settings — pushed from the drawer's Settings row. */}
       <Tabs.Screen name="account-settings" options={{ href: null }} />
-      {/* Quick actions — opened by the Site Worker Home's FAB (mockup 01_home/02_quick_actions). */}
-      <Tabs.Screen name="quick-actions" options={{ href: null }} />
       <Tabs.Screen name="conflict-review" options={{ href: null }} />
       {/* Notification inbox — reached from the top-bar bell (router.push). No role lists it as a tab. */}
       <Tabs.Screen name="notifications" options={{ href: null }} />

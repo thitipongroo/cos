@@ -1010,6 +1010,27 @@ The FAB menu (mockup `01_home/02_quick_actions`): three cards routing to **Issue
 **Reports** — all screens that already exist, so this adds no capability, it shortens the path to the
 three the role uses most. These are the same three Home used to carry as inline tiles; the mockup
 restructure moved them behind the FAB, which is why Home no longer renders `<QuickActionCard />`.
+They are also the two screens (Issues, Report) that left the bottom bar on 2026-08-09, so this menu
+is now their entry point.
+
+**The cards are [`<QuickActionRow />`](../../../apps/mobile/src/components/QuickActionRow.tsx), the
+project's quick-action button** (product-owner decision 2026-08-09: match the Tenant Admin menu,
+`TENANT-ADMIN/01-Home/02-quick-action.png`). One anatomy wherever a menu offers something to do — a
+coloured left accent strip, a tinted rounded-square icon plate, a title, an uppercase subtitle saying
+what the action does, and a trailing glyph.
+
+It was the admin overlay's private `ActionCard` until this change; two menus offering the same kind
+of thing were drawing it two different ways, which is what made it worth a component rather than a
+copy. **The accent is per-action, not decoration** — the caller's way of saying which of its actions
+are alike (the admin menu tints identity blue, integrations cyan, sync amber; this one tints the
+urgent action red, the protective one green, the routine one accent). Callers pass a palette colour,
+never a hex, so §32.7's no-hex-at-the-call-site rule holds and the accents follow the theme.
+
+`variant="dark"` covers the difference between the two hosts: the admin menu is a modal that stays
+dark on both themes, while this is an ordinary screen that follows the user's. Same idiom as
+`<ProjectPicker />`, `<Avatar />` and `<LoadingBoundary />`. The overlay's **AI report card is
+deliberately NOT one of these** — it carries a description and its own CTA — but it keeps the same
+48px plate, because the two sit in one list and a different size would read as a mistake.
 
 A screen rather than a modal or bottom sheet: the mockup draws it as a full page with its own top
 bar, §32.7 keeps modals for things that interrupt, and being a route gives it a breadcrumb and a back

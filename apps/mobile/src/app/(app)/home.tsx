@@ -29,6 +29,7 @@ import { get } from '../../api/client';
 import { refreshProjectsCache } from '../../api/projects';
 import { useAuthStore } from '../../store/authStore';
 import { TaskCard } from '../../components/TaskCard';
+import { QuickActionsMenu } from '../../components/QuickActionsMenu';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Alert, ScrollView } from 'react-native';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
@@ -166,6 +167,7 @@ function FieldHome() {
   const router = useRouter();
   const t = useT();
   const p = usePalette();
+  const [quickActionsOpen, setQuickActionsOpen] = useState(false);
 
   // Real counts off the local cache, so they are honest with no signal (§17.4).
   const doneTasks = tasks.filter(
@@ -297,16 +299,20 @@ function FieldHome() {
       </ScrollView>
 
       {/* The mockup's FAB — `aria-label="Quick Action"`, a + that rotates open. It opens the
-          quick-action menu the restructure drew as its own screen (02_quick_actions). */}
+          quick-action menu as an OVERLAY (2026-08-09): the reference that menu now follows
+          (04_tenant_admin/…/01_quick_action_menu) heads the surface with its own bar and a close
+          button, and a pushed route gets the shared TopBar's back chevron instead. */}
       <TouchableOpacity
         testID="home-quick-action-fab"
         accessibilityRole="button"
         accessibilityLabel={t('quickActions.title')}
-        onPress={() => router.push('/quick-actions')}
+        onPress={() => setQuickActionsOpen(true)}
         style={[styles.fab, { backgroundColor: p.primary }]}
       >
         <MaterialIcons name="add" size={28} color={p.onPrimary} />
       </TouchableOpacity>
+
+      <QuickActionsMenu visible={quickActionsOpen} onClose={() => setQuickActionsOpen(false)} />
     </View>
   );
 }

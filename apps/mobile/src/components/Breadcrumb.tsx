@@ -58,7 +58,6 @@ const BREADCRUMB_MAP: Record<string, Crumb[]> = {
     { key: 'quickActions.title', href: '/quick-actions' },
     { key: 'nav.tabs.reports' },
   ],
-  '/quick-actions': [{ key: 'nav.tabs.home', href: '/home' }, { key: 'quickActions.title' }],
   '/account-settings': [{ key: 'nav.tabs.home', href: '/home' }, { key: 'drawer.settings' }],
   // Home FAB / Quick-Add flows
   '/system-integration': [

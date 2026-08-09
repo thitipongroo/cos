@@ -1290,7 +1290,19 @@ MOBILE COMPONENT LIBRARY (source: MOBILE_UX_GUIDELINES.md)
 
 Core components (React Native — implement in apps/mobile/):
   <MobileNav />         Bottom navigation, exactly 4 items (PO 2026-08-04), icons + labels, no Profile tab
-  <QuickActionCard />   60px min height, icon + label + badge, single tap
+  <QuickActionCard />   60px min height, icon + label + badge, single tap. The TILE form, used on a
+                        home screen (SITE_ENGINEER's four shortcuts). Not the menu form below.
+  <QuickActionRow />    THE PROJECT'S QUICK-ACTION BUTTON (PO decision 2026-08-09). Every
+                        quick-action MENU draws its actions with this and no other shape:
+                        a coloured left accent strip, a tinted rounded-square icon plate, a title,
+                        an uppercase subtitle saying what the action does, and a trailing glyph.
+                        The accent is per-action and groups like with like — it is the caller's
+                        signal, not decoration, and callers pass a palette colour, never a hex.
+                        `variant="dark"` for modal hosts that stay dark on both themes (the Tenant
+                        Admin quick-command overlay); omit it on ordinary screens, which follow the
+                        user's theme. It began as that overlay's private ActionCard and was lifted
+                        out when the Site Worker menu was told to match it: two menus drawing one
+                        button two ways is a copy waiting to drift.
   <PhotoCapture />      Camera + gallery grid, inline annotation, offline queue
   <VoiceNoteButton />   Hold-to-record, waveform animation, auto-transcription
   <SyncPill />          Top-bar glyph carrying EVERY sync state, offline included.
