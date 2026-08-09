@@ -36,7 +36,7 @@ gets its own full-page file (the Invite-user `email` method, the Alerts `diff`-e
 | [`SITE-ENGINEER/`](SITE-ENGINEER/)         | Tabs: **Home \| Issues \| Inspections \| Reports**. Captured so far: [`01-Home/`](SITE-ENGINEER/01-Home/) — the loading state (`00`) + dashboard (`01`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | [`TENANT-ADMIN/`](TENANT-ADMIN/)           | Tabs: **Home \| Users \| Alerts \| Settings**. [`01-Home/`](TENANT-ADMIN/01-Home/) — dashboard (`01`), Quick-Add (`02`) and the FAB flows: Invite-user (`03`), Role-permissions (`04`), Roles-selection (`05`), Invitation-success (`06`), System-integration (`07`), Apps-&-Services (`08`). [`02-Users/`](TENANT-ADMIN/02-Users/) — the users list (`01`), the per-user action sheet (`02`), the user profile (`03`), the multi-role permission editor (`04`) + the save-success screen (`05`), and the password-reset form (`06`) + its two done screens — temp-password (`07`) and email-link-sent (`08`). [`03-Alerts/`](TENANT-ADMIN/03-Alerts/) — the sync-review queue (`01`). [`04-Settings/`](TENANT-ADMIN/04-Settings/) — System Settings (`01`, one full-page). |
 | [`CRM-SALES-MANAGER/`](CRM-SALES-MANAGER/) | Tabs: **Home \| Leads \| Opportunities \| Customers** — the three pages §20.7.10 defines, built 2026-08-04. Leads (`01`), Opportunities (`02`), Customers (`03`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| [`SITE-WORKER/`](SITE-WORKER/)             | Tabs: **Home \| Issues \| Reports \| Safety**. [`01-Home/`](SITE-WORKER/01-Home/) — the field dashboard (`01`) and **Tasks** (`02`), which is pushed from Home's Tasks quick action rather than being a tab. [`02-Tasks/`](SITE-WORKER/02-Tasks/) (`01`), [`03-Safety/`](SITE-WORKER/03-Safety/) (`01`), [`04-Directory/`](SITE-WORKER/04-Directory/) (`01`). `01-Home/` also holds the three screens the Home FAB reaches — **Quick actions** (`03`), **Issue capture** (`04`) and **Daily report** (`05`). [`05-Drawer/`](SITE-WORKER/05-Drawer/) — the **navigation drawer** (`01`), which IS the profile.                                                                                                                                                               |
+| [`SITE-WORKER/`](SITE-WORKER/)             | Tabs: **Home \| Issues \| Reports \| Safety**. [`01-Home/`](SITE-WORKER/01-Home/) — the field dashboard (`01`) and the three screens its FAB reaches: **Quick actions** (`02`), **Report issue** (`03`) and **Daily report** (`04`). Those four are named for the mockup folders they implement (`01_dashboard`, `02_quick_actions`, `03_issue`, `04_daily_report`). [`02-Tasks/`](SITE-WORKER/02-Tasks/) (`01`), [`03-Safety/`](SITE-WORKER/03-Safety/) (`01`), [`04-Directory/`](SITE-WORKER/04-Directory/) (`01`). [`05-Drawer/`](SITE-WORKER/05-Drawer/) — the **navigation drawer** (`01`), which IS the profile.                                                                                                                                                      |
 
 The two adb dashboard scripts write straight into their role's menu subfolders —
 [`capture-android-home.mjs`](../../../apps/mobile/scripts/capture-android-home.mjs) → `SITE-ENGINEER/01-Home/`,
@@ -156,7 +156,7 @@ the shimmer from defeating the stitch's overlap match, `LoadingState` **freezes 
 a mid-frame in capture builds** (`EXPO_PUBLIC_CAPTURE`, the same flag that mutes the LogBox toast);
 production and normal dev animate as usual.
 
-## Tenant Admin dashboard — [`TENANT-ADMIN/01-Home/01-home-dashboard.png`](TENANT-ADMIN/01-Home/01-home-dashboard.png)
+## Tenant Admin dashboard — [`TENANT-ADMIN/01-Home/01-dashboard.png`](TENANT-ADMIN/01-Home/01-dashboard.png)
 
 The `TENANT_ADMIN` Home ([`components/TenantAdminHome.tsx`](../../../apps/mobile/src/components/TenantAdminHome.tsx),
 implementing [`mockup/mobile/04_tenant_admin/01_home/01_home_dashboard`](../../../mockup/mobile/04_tenant_admin/01_home/01_home_dashboard)),
@@ -950,7 +950,7 @@ this README, so neither §32.7, nor the mockups, nor any test contradicted them.
 nothing checkable — what was required, or by when? The per-row "Required check" caption went too: the
 seed sets `is_required` on every item, so it printed on all nine and distinguished none of them.
 
-### Home — [`01-Home/01-home.png`](SITE-WORKER/01-Home/01-home.png)
+### Home — [`01-Home/01-dashboard.png`](SITE-WORKER/01-Home/01-dashboard.png)
 
 The field dashboard and the role's landing screen. **Reworked on 2026-08-08** to mockup
 `01_home/01_dashboard`, which the restructure added — this role had no Home drawing before it. Now:
@@ -1004,7 +1004,7 @@ carries its own list, and sync health is the TopBar indicator plus the Sync Queu
 > were white because the caller passed nothing and the default said nothing about being a choice.
 > The four `<LoadingBoundary theme="light">` calls in the same file were fixed with it.
 
-### Quick actions — [`01-Home/03-quick-actions.png`](SITE-WORKER/01-Home/03-quick-actions.png)
+### Quick actions — [`01-Home/02-quick-actions.png`](SITE-WORKER/01-Home/02-quick-actions.png)
 
 The FAB menu (mockup `01_home/02_quick_actions`): three cards routing to **Issues**, **Safety** and
 **Reports** — all screens that already exist, so this adds no capability, it shortens the path to the
@@ -1166,7 +1166,7 @@ read as a thick border the mockup does not draw, which sets `shadow-2xl` on a ba
 > `work_type`, `planned_start` and `planned_end` were already being sent by `/sync/delta` (it selects
 > the whole row) and simply discarded by the client. Local DDL v4 caches them.
 
-### Issues — [`01-Home/04-issue-capture.png`](SITE-WORKER/01-Home/04-issue-capture.png)
+### Issues — [`01-Home/03-report-issue.png`](SITE-WORKER/01-Home/03-report-issue.png)
 
 Camera-first, as the mockup draws it: the live viewfinder, then category, a hold-to-record voice note,
 ONE text field, and **REPORT ISSUE**. Nothing follows that button — the screen ends there, as the
@@ -1208,7 +1208,7 @@ passes any other diameter.
   deliverable out with the zone. So it is role-scoped, not dropped. A worker who needs sync state has
   the global sync indicator and the Sync Queue screen.
 
-### Daily report — [`01-Home/05-daily-report.png`](SITE-WORKER/01-Home/05-daily-report.png)
+### Daily report — [`01-Home/04-daily-report.png`](SITE-WORKER/01-Home/04-daily-report.png)
 
 The daily-entry form: the AI suggestion bar, manpower, shift, the per-trade breakdown, blockers,
 photos, and **SAVE AS DRAFT / SUBMIT REPORT** — which are the row's real `status` values

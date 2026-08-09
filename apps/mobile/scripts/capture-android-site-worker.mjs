@@ -1,26 +1,27 @@
 // Android SITE_WORKER screenshot capture — adb/uiautomator only, like every sibling script.
 //
 // Writes the role's screens to docs/screens/android/SITE-WORKER/, one folder per bottom-nav tab.
-// The bar is Home | Tasks | Safety | Directory (PO 2026-08-09), so the folders are 01-Home,
-// 02-Tasks, 03-Safety, 04-Directory, plus 05-Shared for what is reached from the drawer or the
-// Home FAB. They implement
-// mockup/mobile/05_site_worker/{02_tasks/01_daily_tasks, 01_home/03_issue,
-// 01_home/04_daily_report, 03_safety/01_checklist} — renamed from
+// The bar is Home | Tasks | Safety | Directory (PO 2026-08-09), so the tab folders are 01-Home,
+// 02-Tasks, 03-Safety and 04-Directory, plus 05-Drawer for the navigation drawer — which is not a
+// tab, and which IS the profile as of the same day (there is no profile route).
+//
+// Inside 01-Home the frames are numbered 01–04 and named for the mockup folders they implement:
+//   01-dashboard      ← mockup 05_site_worker/01_home/01_dashboard
+//   02-quick-actions  ← …/01_home/02_quick_actions   (opened by the Home FAB)
+//   03-report-issue   ← …/01_home/03_issue           (opened from that menu)
+//   04-daily-report   ← …/01_home/04_daily_report     (opened from that menu)
+// The other tabs implement …/02_tasks/01_daily_tasks, …/03_safety/01_checklist and
+// …/04_directory/01_worker_list. All of those were renamed from
 // {01_tasks,02_issues,03_reports,04_safety}/00_main in 527231f.
 //
-// Tasks lives under 01-Home/ because that is where it is reached from: it was a tab until
-// 2026-08-08, when Home took the slot (§32.7 allows exactly four), and it is now pushed from Home.
-// Quick Actions is filed there too — the Home FAB opens it. The README's own rule is that a screen
-// is filed under the tab it is reached from.
-//
-// Issues and the daily Report left the bar on 2026-08-09 and are now pushed from the Home FAB's
-// quick-action menu, so they moved under 01-Home/ with it — the README's rule is that a screen is
-// filed under the tab it is reached from. 05-Drawer/ holds the navigation drawer, which IS the
-// profile as of 2026-08-09 — it is not a tab and there is no longer a profile route.
+// ISSUES AND THE DAILY REPORT ARE FILED UNDER 01-Home/ because that is where they are reached from:
+// both left the bar on 2026-08-09 and are now pushed from the Home FAB's quick-action menu. The
+// README's rule is that a screen is filed under the tab it is reached from, which is also why
+// 02-Tasks and 04-Directory are their own folders again — they became tabs in the same change.
 //
 // Signed in as Somsak Duangdee (+66811000010, seed-realistic.ts) — the seeded SITE_WORKER. Role
-// matters: Issues/Reports/Safety are this role's tabs (MobileNav), so any other account renders a
-// different bar entirely.
+// matters: this bar belongs to SITE_WORKER alone (see lib/roleTabs.ts), so any other account
+// renders a different one entirely.
 //
 // Shell is DARK — the product default for every role since 2026-08-04 (themeStore.ts).
 //
@@ -228,8 +229,8 @@ async function main() {
   // Home — the role's landing tab since 2026-08-08: KPI cards, the project picker + check-in, and
   // the quick actions. Asserted on the check-in button rather than just the screen, because that
   // control is the reason Home is a tab at all for this role.
-  if (wanted('01-Home/01-home')) {
-    console.log('· 01-Home/01-home');
+  if (wanted('01-Home/01-dashboard')) {
+    console.log('· 01-Home/01-dashboard');
     await tap(byId('home-tab'), 'home tab');
     await find(byId('home-screen'), 'home-screen');
     // CHECK IN moved to the navigation drawer on 2026-08-09, so it is asserted there, not here.
@@ -240,7 +241,7 @@ async function main() {
     await dismissDevBanners();
     await delay(1200);
     // Taller than a viewport since the rework (tiles + AI insight + check-in + three task cards).
-    await stitchFull('01-Home/01-home', 180, NAV_TOP);
+    await stitchFull('01-Home/01-dashboard', 180, NAV_TOP);
     // Tasks — pushed from Home's quick action, so it carries a breadcrumb (HOME › TASKS) and a back
     // chevron like every other child screen. Delta sync has to land first or the list is legitimately
     // empty, so at least one card is asserted BEFORE the shot: an empty Tasks screen is a valid app
@@ -259,8 +260,8 @@ async function main() {
     // description + submit + the synced list). Stitched.
   }
 
-  if (wanted('01-Home/04-issue-capture')) {
-    console.log('· 01-Home/04-issue-capture');
+  if (wanted('01-Home/03-report-issue')) {
+    console.log('· 01-Home/03-report-issue');
     await tap(byId('home-tab'), 'home tab');
     await tap(byId('home-quick-action-fab'), 'quick action FAB');
     await tap(byId('quick-action-reportIssue'), 'report-issue card');
@@ -269,13 +270,13 @@ async function main() {
     await find(byId('issue-type-DEFECT'), 'issue category chips');
     await dismissDevBanners();
     await delay(1500);
-    await stitchFull('01-Home/04-issue-capture', 180, NAV_TOP);
+    await stitchFull('01-Home/03-report-issue', 180, NAV_TOP);
     // Daily report — the longest screen in the set (manpower + shift + per-trade bars + summary +
     // blockers + photos + the two actions).
   }
 
-  if (wanted('01-Home/05-daily-report')) {
-    console.log('· 01-Home/05-daily-report');
+  if (wanted('01-Home/04-daily-report')) {
+    console.log('· 01-Home/04-daily-report');
     await tap(byId('home-tab'), 'home tab');
     await tap(byId('home-quick-action-fab'), 'quick action FAB');
     await tap(byId('quick-action-logActivity'), 'log-activity card');
@@ -284,7 +285,7 @@ async function main() {
     await find(byId('manpower-total'), 'manpower stepper');
     await dismissDevBanners();
     await delay(1500);
-    await stitchFull('01-Home/05-daily-report', 180, NAV_TOP);
+    await stitchFull('01-Home/04-daily-report', 180, NAV_TOP);
     // Safety checklist. Asserted on a real checklist ITEM, not just the screen: with no checklists
     // seeded the screen renders its honest empty state, and that must fail the run instead of being
     // committed as though it were the feature.
@@ -303,8 +304,8 @@ async function main() {
     // screen that already exists.
   }
 
-  if (wanted('01-Home/03-quick-actions')) {
-    console.log('· 01-Home/03-quick-actions');
+  if (wanted('01-Home/02-quick-actions')) {
+    console.log('· 01-Home/02-quick-actions');
     await tap(byId('home-tab'), 'home tab');
     await find(byId('home-quick-action-fab'), 'quick action FAB');
     await tap(byId('home-quick-action-fab'), 'quick action FAB');
@@ -312,7 +313,7 @@ async function main() {
     await find(byId('quick-action-reportIssue'), 'report-issue card');
     await dismissDevBanners();
     await delay(1200);
-    grabOne('01-Home/03-quick-actions');
+    grabOne('01-Home/02-quick-actions');
     // Team directory (mockup 04_directory). Opened from the navigation drawer, and asserted on a real
     // CARD: with no crew allocated the screen renders its honest empty state, which must fail the run
     // rather than be committed as though it were the feature.

@@ -1,7 +1,7 @@
 // Tenant Admin Home screenshot capture — adb/uiautomator only, same approach as
 // capture-android-home.mjs (see capture-android-login.mjs for why Detox cannot drive these flows).
 //
-// Writes docs/screens/android/TENANT-ADMIN/01-Home/01-home-dashboard.png: the TENANT-ADMIN landing dashboard
+// Writes docs/screens/android/TENANT-ADMIN/01-Home/01-dashboard.png: the TENANT-ADMIN landing dashboard
 // (mockup/mobile/04_tenant_admin/01_home/01_home_dashboard/) with live data — system status, pending
 // approvals (payments + POs) and AI token usage — reached through a real Path A (SMS OTP) login as
 // the seeded TENANT-ADMIN (Suphaporn Rattanakul, +66811000002). Office roles enrol MFA in the
@@ -26,7 +26,7 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 // Grouped by main-menu tab: each capture's name carries its menu subfolder (Home / Alerts / Settings)
-// under TENANT-ADMIN/, so stitchFull() writes e.g. TENANT-ADMIN/01-Home/01-home-dashboard.png.
+// under TENANT-ADMIN/, so stitchFull() writes e.g. TENANT-ADMIN/01-Home/01-dashboard.png.
 // 02-Users/ is NOT written here — capture-android-users-actions.mjs owns that folder's list screen.
 // Every screen is captured as ONE full-page image (scrolling viewports stitched via stitch-fullpage.py).
 const OUT = resolve(HERE, '../../../docs/screens/android/TENANT-ADMIN');
@@ -169,7 +169,11 @@ async function stitchFull(name, top, bot) {
       await delay(1200);
     }
   }
-  process.stdout.write(execFileSync('python', [STITCH, dest, String(top), String(bot), ...shots], { encoding: 'utf-8' }));
+  process.stdout.write(
+    execFileSync('python', [STITCH, dest, String(top), String(bot), ...shots], {
+      encoding: 'utf-8',
+    }),
+  );
   console.log(`  stitched ${name}.png`);
 }
 
@@ -218,7 +222,7 @@ async function main() {
   // the bottom so it appears once: 1970 for the dashboard/list floating FABs, 2196 (bottom-nav top) for
   // screens whose only fixed element is the nav.
   console.log('· full-page Home dashboard');
-  await stitchFull('01-Home/01-home-dashboard', 180, 1970);
+  await stitchFull('01-Home/01-dashboard', 180, 1970);
 
   // Quick-Add menu — the FAB target (mockup 01_home/02_quick_action_button/01_quick_action_menu).
   // This script is the ONLY capturer of this screen: a standalone capture-android-quick-action.mjs
