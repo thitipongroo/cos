@@ -10,6 +10,7 @@ import { ProcurementController } from '../procurement.controller';
 const mockSvc = {
   createVendor: jest.fn(),
   listVendors: jest.fn(),
+  listVendorDirectory: jest.fn(),
   getVendor: jest.fn(),
   getVendorQuotations: jest.fn(),
   deactivateVendor: jest.fn(),
@@ -71,6 +72,16 @@ describe('ProcurementController', () => {
   it('listVendors delegates — active_only=true when query is "true"', () => {
     ctrl.listVendors('true');
     expect(mockSvc.listVendors).toHaveBeenCalledWith(true);
+  });
+
+  it('listVendorDirectory delegates with no category', () => {
+    ctrl.listVendorDirectory(undefined);
+    expect(mockSvc.listVendorDirectory).toHaveBeenCalledWith(undefined);
+  });
+
+  it('listVendorDirectory passes the category straight through — the service validates it', () => {
+    ctrl.listVendorDirectory('MATERIALS');
+    expect(mockSvc.listVendorDirectory).toHaveBeenCalledWith('MATERIALS');
   });
 
   it('getVendor delegates to svc.getVendor', () => {

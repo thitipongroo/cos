@@ -8,7 +8,7 @@
 // `alertLevel` is the authoritative §31.3 band (computed server-side); the widget localises the insight
 // message from it + `percentUsed` so Thai/English render correctly (no server-side English strings).
 
-import { get } from './client';
+import { get, post } from './client';
 
 export type AiAlertLevel = 'none' | 'warning' | 'critical';
 
@@ -27,4 +27,39 @@ export interface AiUsage {
 
 export async function getAiUsage(): Promise<AiUsage> {
   return get<AiUsage>('/ai/usage');
+}
+
+/**
+ * A procurement-summary report — the manager dashboard's Insights panel
+ * (mockup 06_project_manager/01_home).
+ *
+ * PER PROJECT, because the endpoint is: `ProjectReportRequest` requires `project_id`, so the screen
+ * asks which project first (PO decision 2026-08-10) rather than picking one and presenting its
+ * findings as if they covered the tenant.
+ *
+ * `tenant_id` is in the body because the request model requires it, but the gateway takes the tenant
+ * it TRUSTS from the verified token (`get_verified_tenant`), never from the body — so this value
+ * cannot be used to read another tenant's data. It is read from the access token's own claim for the
+ * same reason: it is the only tenant this client can honestly claim to be.
+ *
+ * `low_confidence` is REQUIRED on the response and is the server's own verdict on its output; the
+ * screen leads with it (see lib/aiConfidence.ts).
+ */
+export interface AiReport {
+  report_id: string | null;
+  report_type: string;
+  /** Structured body — free-form per report type. */
+  content: Record<string, unknown>;
+  confidence: number | null;
+  low_confidence: boolean;
+}
+
+export async function generateProcurementSummary(params: {
+  projectId: string;
+  tenantId: string;
+}): Promise<AiReport> {
+  return post<AiReport>('/ai/reports/procurement-summary', {
+    project_id: params.projectId,
+    tenant_id: params.tenantId,
+  });
 }

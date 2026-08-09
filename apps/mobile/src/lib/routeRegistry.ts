@@ -16,8 +16,18 @@
  */
 export const TAB_ROUTES = [
   'home',
-  'dashboard',
+  // `dashboard` IS NOT HERE. It stopped being any role's tab on 2026-08-10 (its content is Home for
+  // the two manager roles, mockup 06_project_manager/01_home) and so it left ALL_TABS — which means
+  // MobileNav no longer declares it from the tab table and expo-router auto-registers it as a VISIBLE
+  // tab unless something says otherwise. It was briefly left in this list with a comment claiming
+  // MobileNav still declared it; that claim was wrong, the guard passed on it, and the role's bar
+  // shipped with FIVE tabs (a lowercase "dashboard" beside Vendors) until a capture showed it.
+  // Anything that leaves ALL_TABS must leave this list too and gain an explicit `href: null`.
   'projects',
+  // The manager pair from mockup/mobile/06_project_manager (PO decision 2026-08-10): tabs for
+  // PROJECT_MANAGER and PROC_MANAGER.
+  'approvals',
+  'vendors',
   // `tasks` is a tab again (PO 2026-08-09) — SITE_WORKER's bar is Home | Tasks | Safety | Directory.
   'tasks',
   'directory',

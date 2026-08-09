@@ -107,17 +107,37 @@ export const ALL_TABS: TabConfig[] = [
     icon: 'folder',
     roles: [CosRole.PROJECT_MANAGER, CosRole.VIEWER],
   },
+  // `procurement` (the read-only PO list) is no longer a PROJECT_MANAGER tab — Approvals below shows
+  // the same orders at the moment the manager is actually being asked to do something about one. It
+  // stays VIEWER's, whose bar is unchanged and who has nothing to approve.
   {
     name: 'procurement',
     titleKey: 'nav.tabs.procurement',
     icon: 'shopping-cart',
-    roles: [CosRole.PROJECT_MANAGER, CosRole.VIEWER],
+    roles: [CosRole.VIEWER],
+  },
+  // `dashboard` is now a tab for NO role, like `report`: its content IS the Home screen for these two
+  // roles (mockup 06_project_manager/01_home draws the dashboard as the first tab), so a second tab
+  // showing it would be the same page twice. Declared `href: null` in MobileNav, still pushable.
+  //
+  // Approvals + Vendors — the manager pair from mockup/mobile/06_project_manager (PO decision
+  // 2026-08-10). The drawing's bar is Dashboard | Approvals | Vendors | Settings; Home takes the
+  // Dashboard slot (Home is the first tab for every role, PO 2026-08-08) and Settings is not a tab at
+  // all (it is reached from the navigation drawer, PO 2026-08-09), which frees the two slots these
+  // occupy. BOTH ROLES GET BOTH SCREENS; what differs is the actions they offer, which the screens
+  // decide from the RBAC matrix (§6.4 gives PROJECT_MANAGER PO-approve and read-only vendors; §6.8
+  // additionally gives PROC_MANAGER RFQ award and vendor management).
+  {
+    name: 'approvals',
+    titleKey: 'nav.tabs.approvals',
+    icon: 'fact-check',
+    roles: [CosRole.PROJECT_MANAGER, CosRole.PROC_MANAGER],
   },
   {
-    name: 'dashboard',
-    titleKey: 'nav.tabs.dashboard',
-    icon: 'insights',
-    roles: [CosRole.PROJECT_MANAGER],
+    name: 'vendors',
+    titleKey: 'nav.tabs.vendors',
+    icon: 'storefront',
+    roles: [CosRole.PROJECT_MANAGER, CosRole.PROC_MANAGER],
   },
   {
     name: 'portfolio',
@@ -144,11 +164,16 @@ export const ALL_TABS: TabConfig[] = [
     icon: 'receipt-long',
     roles: [CosRole.FINANCE],
   },
+  // PROC_MANAGER's bar became Home | Approvals | Vendors | Orders on 2026-08-10 (PO decision), so it
+  // gave up `rfqs` and `deliveries` to make room. Both stay PROCUREMENT_OFFICER tabs and both stay
+  // reachable for the manager from Home's quick actions — the same trade SITE_WORKER made on
+  // 2026-08-09 when Issues and Reports left its bar. `orders` is the one it kept: a purchase order is
+  // what its approval authority actually produces (§6.8 grants PO approve).
   {
     name: 'rfqs',
     titleKey: 'nav.tabs.rfqs',
     icon: 'request-quote',
-    roles: [CosRole.PROCUREMENT_OFFICER, CosRole.PROC_MANAGER],
+    roles: [CosRole.PROCUREMENT_OFFICER],
   },
   {
     name: 'orders',
@@ -160,7 +185,7 @@ export const ALL_TABS: TabConfig[] = [
     name: 'deliveries',
     titleKey: 'nav.tabs.deliveries',
     icon: 'local-shipping',
-    roles: [CosRole.PROCUREMENT_OFFICER, CosRole.PROC_MANAGER],
+    roles: [CosRole.PROCUREMENT_OFFICER],
   },
   {
     name: 'incidents',

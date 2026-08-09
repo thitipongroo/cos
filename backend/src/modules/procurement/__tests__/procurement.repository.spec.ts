@@ -29,6 +29,8 @@ const vendorRow = {
   contact_phone: null,
   address: null,
   is_active: true,
+  category: null,
+  verification_status: null,
   created_at: new Date(),
   updated_at: new Date(),
 };
@@ -163,6 +165,22 @@ describe('ProcurementRepository', () => {
     const result = await repo.createVendor({ vendor_code: 'V001', vendor_name: 'Test Vendor' });
     expect(result.vendor_id).toBe('vendor-uuid-001');
     expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(1);
+    // Omitted classification reaches the INSERT as NULL, not as `undefined` — Prisma would send the
+    // latter as a missing parameter and the statement would fail on parameter count.
+    const params = mockPrisma.$queryRaw.mock.calls[0].slice(1);
+    expect(params.slice(-2)).toEqual([null, null]);
+  });
+
+  it('createVendor carries category and verification_status when supplied', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([vendorRow]);
+    await repo.createVendor({
+      vendor_code: 'V002',
+      vendor_name: 'Classified Vendor',
+      category: 'EQUIPMENT',
+      verification_status: 'VERIFIED',
+    });
+    const params = mockPrisma.$queryRaw.mock.calls[0].slice(1);
+    expect(params.slice(-2)).toEqual(['EQUIPMENT', 'VERIFIED']);
   });
 
   it('findVendorById returns null when not found', async () => {
@@ -185,6 +203,35 @@ describe('ProcurementRepository', () => {
     mockPrisma.$queryRaw.mockResolvedValue([vendorRow]);
     const result = await repo.listVendors(false);
     expect(result).toHaveLength(1);
+  });
+
+  // The two directory branches are asserted against the SQL TEXT, not just the row count, because the
+  // predicates ARE the contract: which PO statuses count as live work, and the LATERAL that keeps a
+  // vendor with no orders in the list at 0 instead of dropping it. A GROUP BY join would pass a
+  // length check and silently lose every vendor the buyer has not ordered from yet.
+  const directoryRow = { ...vendorRow, active_project_count: 2 };
+  // $queryRaw is called as a TAGGED TEMPLATE, so calls[n][0] is the TemplateStringsArray itself —
+  // the literal chunks around each parameter. Joining them back with '?' reconstructs the statement.
+  const sqlOf = (call: unknown[]): string => (call[0] as readonly string[]).join('?');
+
+  it('listVendorDirectory (no category) counts open-PO projects via LATERAL', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([directoryRow]);
+    const result = await repo.listVendorDirectory(null);
+    expect(result[0]?.active_project_count).toBe(2);
+    const sql = sqlOf(mockPrisma.$queryRaw.mock.calls[0]);
+    expect(sql).toContain('LEFT JOIN LATERAL');
+    expect(sql).toContain("NOT IN ('DRAFT', 'PENDING_APPROVAL', 'PAID')");
+    expect(sql).toContain('is_active = true');
+    expect(sql).not.toContain('v.category =');
+  });
+
+  it('listVendorDirectory (category) adds the category predicate', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([directoryRow]);
+    const result = await repo.listVendorDirectory('LOGISTICS');
+    expect(result).toHaveLength(1);
+    const sql = sqlOf(mockPrisma.$queryRaw.mock.calls[0]);
+    expect(sql).toContain('v.category =');
+    expect(sql).toContain('LEFT JOIN LATERAL');
   });
 
   it('deactivateVendor calls $executeRaw', async () => {

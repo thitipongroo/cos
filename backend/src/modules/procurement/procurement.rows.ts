@@ -3,6 +3,13 @@
 // procurement.repository so existing `from './procurement.repository'` type imports keep resolving.
 // Financial fields are stored as DECIMAL(19,4) and returned as string by Prisma for precision.
 
+/** What a vendor supplies — directory browsing only, never a tax classification (see the column
+ *  comment on procurement.vendors.category). NULL on a row that nobody has categorised. */
+export type VendorCategory = 'MATERIALS' | 'LOGISTICS' | 'SERVICES' | 'EQUIPMENT';
+
+/** Document-check state. NOT a performance rating — that is the vendor score (vendor-scoring.ts). */
+export type VendorVerificationStatus = 'PENDING' | 'VERIFIED' | 'REJECTED';
+
 export interface VendorRow {
   vendor_id: string;
   tenant_id: string;
@@ -13,8 +20,22 @@ export interface VendorRow {
   contact_phone: string | null;
   address: string | null;
   is_active: boolean;
+  category: VendorCategory | null;
+  verification_status: VendorVerificationStatus | null;
   created_at: Date;
   updated_at: Date;
+}
+
+/**
+ * A vendor as the directory screen needs it: the row, plus the one aggregate the card shows.
+ *
+ * `active_project_count` is DISTINCT projects the vendor currently has an OPEN purchase order on —
+ * `status NOT IN ('DRAFT','PENDING_APPROVAL','PAID')`. Those three are the states that are not live
+ * work: the first two are not committed yet, and PAID is closed out. DISPUTED counts, because an
+ * unresolved dispute is very much still an engagement.
+ */
+export interface VendorDirectoryRow extends VendorRow {
+  active_project_count: number;
 }
 
 export interface PurchaseRequestRow {

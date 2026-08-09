@@ -9,6 +9,7 @@ import {
   Injectable,
   Scope,
   Inject,
+  BadRequestException,
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
@@ -22,8 +23,10 @@ import { createLogger } from '@cos/logger';
 import { ProcurementRepository } from './procurement.repository';
 import { VendorScoring } from './vendor-scoring';
 import type { ScoreCriteria, VendorGrade } from './vendor-scoring';
+import { VENDOR_CATEGORIES, isVendorCategory } from './vendor-classification';
 import type {
   VendorRow,
+  VendorDirectoryRow,
   PurchaseRequestRow,
   RfqRow,
   QuotationRow,
@@ -98,6 +101,8 @@ export class ProcurementService {
       contact_email: dto.contact_email,
       contact_phone: dto.contact_phone,
       address: dto.address,
+      category: dto.category,
+      verification_status: dto.verification_status,
     });
 
     logger.info(
@@ -109,6 +114,25 @@ export class ProcurementService {
 
   async listVendors(active_only = true): Promise<VendorRow[]> {
     return this.repo.listVendors(active_only);
+  }
+
+  /**
+   * The vendor directory — active vendors with their open-project count, optionally one category.
+   *
+   * A SEPARATE endpoint from `listVendors` rather than a flag on it: that one is the plain vendor
+   * master read (used when creating a PO, filling a picker), and adding a per-row aggregate to it
+   * would make every one of those callers pay for a count they do not display.
+   *
+   * An unknown `category` is rejected at the edge (400) instead of silently returning everything —
+   * a filter that quietly ignores its own argument is worse than one that says the word is wrong.
+   */
+  async listVendorDirectory(category?: string): Promise<VendorDirectoryRow[]> {
+    if (category !== undefined && !isVendorCategory(category)) {
+      throw new BadRequestException(
+        `Unknown vendor category '${category}'. Expected one of: ${VENDOR_CATEGORIES.join(', ')}`,
+      );
+    }
+    return this.repo.listVendorDirectory(category ?? null);
   }
 
   async getVendor(vendor_id: string): Promise<VendorRow> {

@@ -1307,6 +1307,13 @@ Core components (React Native — implement in apps/mobile/):
                         user's theme. It began as that overlay's private ActionCard and was lifted
                         out when the Site Worker menu was told to match it: two menus drawing one
                         button two ways is a copy waiting to drift.
+  <ProcurementInsight /> The manager dashboard's AI Insights panel (PO 2026-08-10). Renders ONLY
+                        what /ai/reports/procurement-summary returns: the model's own text, its
+                        `confidence`, and the required `low_confidence` verdict. Leads with a BAND
+                        (lib/aiConfidence.ts) rather than a bare percentage, per Google PAIR's
+                        guidance, using the band edges spec §33.8 already defines (0.9 / 0.7). The
+                        endpoint is per-project, so the dashboard carries a <ProjectPicker /> and
+                        the panel names the project its figures came from.
   <OverlaySyncPill />   The LABELLED sync pill an overlay's own top bar carries (PO 2026-08-09).
                         Distinct from <SyncPill />, which is glyph-only because the shared TopBar
                         also holds the brand and two icon buttons; a full-screen overlay has room

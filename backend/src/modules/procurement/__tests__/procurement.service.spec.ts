@@ -2,7 +2,11 @@
 // Focus: workflow state transitions, financial calculations (total validation),
 //        quotation comparison, RBAC-critical paths.
 
-import { NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import {
+  BadRequestException,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { REQUEST } from '@nestjs/core';
 import { ProcurementService } from '../procurement.service';
@@ -84,6 +88,7 @@ const mockRepo = {
   createVendor: jest.fn(),
   findVendorById: jest.fn(),
   listVendors: jest.fn(),
+  listVendorDirectory: jest.fn(),
   deactivateVendor: jest.fn(),
   createPurchaseRequest: jest.fn(),
   nextPrNumber: jest.fn(),
@@ -140,6 +145,10 @@ const vendorFixture: VendorRow = {
   contact_phone: null,
   address: null,
   is_active: true,
+  // NULL on both, which is what an uncategorised, never-reviewed vendor really looks like — the
+  // columns were added nullable (migration 20260810000001) precisely so existing rows say that.
+  category: null,
+  verification_status: null,
   created_at: new Date(),
   updated_at: new Date(),
 };
@@ -604,6 +613,31 @@ describe('listVendors', () => {
     mockRepo.listVendors.mockResolvedValue([vendorFixture]);
     const result = await service.listVendors();
     expect(result).toHaveLength(1);
+  });
+});
+
+describe('listVendorDirectory', () => {
+  const directoryFixture = { ...vendorFixture, active_project_count: 3 };
+
+  it('passes no category through when the caller sends none', async () => {
+    mockRepo.listVendorDirectory.mockResolvedValue([directoryFixture]);
+    const result = await service.listVendorDirectory();
+    // `null`, not `undefined` — the repository branches on it to pick the unfiltered query.
+    expect(mockRepo.listVendorDirectory).toHaveBeenCalledWith(null);
+    expect(result[0]?.active_project_count).toBe(3);
+  });
+
+  it('passes a known category through', async () => {
+    mockRepo.listVendorDirectory.mockResolvedValue([directoryFixture]);
+    await service.listVendorDirectory('LOGISTICS');
+    expect(mockRepo.listVendorDirectory).toHaveBeenCalledWith('LOGISTICS');
+  });
+
+  it('rejects an unknown category instead of silently listing everything', async () => {
+    await expect(service.listVendorDirectory('MATERIAL')).rejects.toThrow(BadRequestException);
+    // The repository must not be reached: a filter that quietly ignores its argument would return a
+    // full list the caller believes is filtered.
+    expect(mockRepo.listVendorDirectory).not.toHaveBeenCalled();
   });
 });
 

@@ -803,6 +803,7 @@ Dark screens (the pre-2026-08-04 set — see the note above):
 | Privacy Policy (pre-auth)               | `mockup/mobile/01_authen/05_privacy_policy/00_policy_data`                   |
 | Terms of Use (pre-auth)                 | `mockup/mobile/01_authen/06_terms_of_use/01_dashboard/`                      |
 | Support Centre (pre-auth)               | `mockup/mobile/01_authen/07_get_help/01_support_center/`                     |
+| Project Manager / Proc Manager screens  | `mockup/mobile/06_project_manager/`                                          |
 | Site Engineer Home                      | `mockup/mobile/03_site_engineer/01_dashboard/`                               |
 | Tenant Admin Home                       | `mockup/mobile/04_tenant_admin/01_home/01_home_dashboard/`                   |
 | Notification preferences (Tenant Admin) | `mockup/mobile/04_tenant_admin/06_notification/01_notification_preferences/` |

@@ -42,7 +42,9 @@
       "opportunities": "Opportunities",
       "customers": "Customers",
       "directory": "Directory",
-      "safety": "Safety"
+      "safety": "Safety",
+      "approvals": "Approvals",
+      "vendors": "Vendors"
     }
   },
   "auth": {
@@ -261,6 +263,58 @@
       "online": "The device is connected and the platform answered the last check. If something still fails, the topics above cover what field crews hit most."
     }
   },
+  "approvals": {
+    "title": "Approvals",
+    "empty": "Nothing is waiting on you.",
+    "failed": "Could not load the approvals queue.",
+    "filterAll": "All",
+    "filterRfq": "RFQ",
+    "filterPo": "PO",
+    "filterUrgent": "Urgent",
+    "vendorLabel": "Vendor",
+    "projectLabel": "Project",
+    "multiVendor": "Multiple bids",
+    "hoursRemaining": "{hours}h remaining",
+    "overdue": "Overdue",
+    "approve": "Approve",
+    "viewDetails": "View details",
+    "approved": "Approval sent",
+    "approveFailed": "Could not send the approval. It was not recorded.",
+    "awardOnly": "Awarding an RFQ is the Procurement Manager's decision",
+    "readOnly": "Your role can review this but not approve it"
+  },
+  "vendors": {
+    "title": "Vendors",
+    "searchPlaceholder": "Search vendors",
+    "empty": "No vendors in this category.",
+    "failed": "Could not load the vendor directory.",
+    "filterAll": "All",
+    "categoryMaterials": "Materials",
+    "categoryLogistics": "Logistics",
+    "categoryServices": "Services",
+    "categoryEquipment": "Equipment",
+    "trustScore": "Trust score",
+    "noScore": "No score yet",
+    "activeProjects": "{count} active projects",
+    "badgeVerified": "Verified",
+    "badgeUnderReview": "Under review",
+    "badgeRejected": "Rejected",
+    "badgeTopRated": "Top rated",
+    "viewProfile": "View profile",
+    "manage": "Manage vendor"
+  },
+  "insight": {
+    "title": "Insights",
+    "idle": "No report has been generated for this project yet.",
+    "failed": "The report was not produced. Nothing was recorded.",
+    "noSummary": "The report came back without a readable summary.",
+    "source": "Source: project {project}",
+    "action": "Generate report",
+    "bandHigh": "High confidence",
+    "bandMedium": "Medium confidence",
+    "bandLow": "Low confidence — check before acting",
+    "bandUnknown": "Confidence not reported"
+  },
   "home": {
     "main": {
       "title": "Home",
@@ -319,12 +373,16 @@
       "title": "Procurement",
       "openRfqs": "Open RFQs",
       "awaitingAck": "POs awaiting ack",
-      "deliveries": "Deliveries"
+      "deliveries": "Deliveries",
+      "committedSpend": "Total committed spend",
+      "urgentRfqs": "RFQs closing within 24h"
     },
     "pm": {
       "title": "Project Overview",
       "activeProjects": "Active projects",
-      "openIssues": "Open issues"
+      "openIssues": "Open issues",
+      "committedSpend": "Total committed spend",
+      "pendingApprovals": "Waiting on your approval"
     }
   },
   "tasks": {

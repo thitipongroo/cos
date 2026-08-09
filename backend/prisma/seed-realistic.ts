@@ -269,6 +269,16 @@ const PROJECTS: SeedProject[] = [
 ];
 
 // ─── Shared reference data ───────────────────────────────────────────────────
+// `category` and `verification_status` were added by migration 20260810000001 for the vendor
+// directory. Two rules held here:
+//
+//   1. CATEGORY IS THE TRUTH ABOUT THE FIRM. All six of these are real Thai suppliers and all six
+//      genuinely sell materials, so all six are MATERIALS — none is re-filed under LOGISTICS or
+//      EQUIPMENT to make the directory's other filter chips look populated. A screenshot that shows
+//      three empty chips is the honest state of this seed.
+//   2. NO REJECTED. Verification status is the tenant's own record of a document check; stamping
+//      REJECTED on a named real company would be a negative claim about a real firm, in a file that
+//      exists to demo a screen. VERIFIED and PENDING carry both badge states without doing that.
 const VENDORS = [
   {
     key: 'insee',
@@ -277,6 +287,8 @@ const VENDORS = [
     tax: '0107536000123',
     email: 'sales@siamcitycement.com',
     phone: '+6626676000',
+    category: 'MATERIALS',
+    verification: 'VERIFIED',
   },
   {
     key: 'tpi',
@@ -285,6 +297,8 @@ const VENDORS = [
     tax: '0107537001234',
     email: 'order@tpipolene.co.th',
     phone: '+6622139000',
+    category: 'MATERIALS',
+    verification: 'VERIFIED',
   },
   {
     key: 'millcon',
@@ -293,6 +307,8 @@ const VENDORS = [
     tax: '0107556002345',
     email: 'sales@millconsteel.com',
     phone: '+6627634000',
+    category: 'MATERIALS',
+    verification: 'VERIFIED',
   },
   {
     key: 'scg',
@@ -301,6 +317,8 @@ const VENDORS = [
     tax: '0105537003456',
     email: 'contact@scgbuildingmaterials.com',
     phone: '+6625860000',
+    category: 'MATERIALS',
+    verification: 'VERIFIED',
   },
   {
     key: 'crm',
@@ -309,6 +327,8 @@ const VENDORS = [
     tax: '0105537004567',
     email: 'rmc@cpac.co.th',
     phone: '+6625555000',
+    category: 'MATERIALS',
+    verification: 'VERIFIED',
   },
   {
     key: 'boon',
@@ -317,6 +337,8 @@ const VENDORS = [
     tax: '0105530005678',
     email: 'sales@boonthavorn.com',
     phone: '+6627213000',
+    category: 'MATERIALS',
+    verification: 'PENDING',
   },
 ];
 const V = (k: string): string => uid(`vendor/${k}`);
@@ -594,9 +616,10 @@ async function seedMasterData(tx: Tx): Promise<void> {
 
 async function seedVendorsMaterials(tx: Tx): Promise<void> {
   for (const v of VENDORS) {
-    await tx.$executeRaw`INSERT INTO procurement.vendors (vendor_id, tenant_id, vendor_code, vendor_name, tax_id, contact_email, contact_phone, is_active)
-      VALUES (${V(v.key)}::uuid, ${TENANT_ID}::uuid, ${v.code}, ${v.name}, ${v.tax}, ${v.email}, ${v.phone}, true)
-      ON CONFLICT (vendor_id) DO NOTHING`;
+    await tx.$executeRaw`INSERT INTO procurement.vendors (vendor_id, tenant_id, vendor_code, vendor_name, tax_id, contact_email, contact_phone, is_active, category, verification_status)
+      VALUES (${V(v.key)}::uuid, ${TENANT_ID}::uuid, ${v.code}, ${v.name}, ${v.tax}, ${v.email}, ${v.phone}, true, ${v.category}, ${v.verification})
+      ON CONFLICT (vendor_id) DO UPDATE
+        SET category = EXCLUDED.category, verification_status = EXCLUDED.verification_status`;
   }
   for (const m of MATERIALS) {
     await tx.$executeRaw`INSERT INTO procurement.materials (material_id, tenant_id, name, category, unit, is_active, created_by)

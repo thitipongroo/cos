@@ -24,6 +24,9 @@ interface Crumb {
 // route → parent chain (section → … → current). The last entry is the current screen (not tappable);
 // the section labels use `breadcrumb.*` (added to i18n) or reuse an existing tab/title key.
 const BREADCRUMB_MAP: Record<string, Crumb[]> = {
+  // The PM analytics dashboard — a tab until 2026-08-10, now a pushed child of Home (the manager
+  // Home carries the dashboard content itself, mockup 06_project_manager/01_home).
+  '/dashboard': [{ key: 'nav.tabs.home', href: '/home' }, { key: 'nav.tabs.dashboard' }],
   // User management (TENANT_ADMIN → the Users tab)
   '/invite-user': [
     { key: 'breadcrumb.userManagement', href: '/users' },

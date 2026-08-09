@@ -77,12 +77,40 @@ components:
           nullable: true
         is_active:
           type: boolean
+        category:
+          type: string
+          enum: [MATERIALS, LOGISTICS, SERVICES, EQUIPMENT]
+          nullable: true
+          description: >-
+            What the vendor supplies, for directory browsing. NULL = never categorised.
+            NOT a tax classification — withholding tax uses procurement.wht_rules.vendor_type,
+            a separate vocabulary (spec §13.3).
+        verification_status:
+          type: string
+          enum: [PENDING, VERIFIED, REJECTED]
+          nullable: true
+          description: >-
+            Document-check state only. NULL = never submitted for review. NOT a performance
+            rating — that is the vendor score (GET /procurement/vendors/{vendorId}/score).
         created_at:
           type: string
           format: date-time
         updated_at:
           type: string
           format: date-time
+    VendorDirectoryRow:
+      allOf:
+        - $ref: '#/components/schemas/VendorRow'
+        - type: object
+          properties:
+            active_project_count:
+              type: integer
+              minimum: 0
+              description: >-
+                DISTINCT projects the vendor currently has a purchase order on whose status is not
+                DRAFT, PENDING_APPROVAL or PAID — the three states that are not live work (the
+                first two are not committed yet, PAID is closed out). DISPUTED counts: an
+                unresolved dispute is still an engagement. 0 for a vendor with no open orders.
     CreateVendorDto:
       type: object
       required:
@@ -572,6 +600,39 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/VendorRow'
+  /procurement/vendors/directory:
+    get:
+      tags:
+        - Vendors
+      summary: Vendor directory — active vendors with their open-project count
+      description: >-
+        Serves the mobile vendor directory
+        (mockup/mobile/06_project_manager/03_vendors/01_vendor_directory). Each row is the vendor
+        plus `active_project_count`. Separate from GET /procurement/vendors, which is the plain
+        vendor master read and does not pay for the per-row aggregate. The trust score is NOT
+        included: it is a per-vendor computation, GET /procurement/vendors/{vendorId}/score.
+      operationId: listVendorDirectory
+      parameters:
+        - name: category
+          in: query
+          required: false
+          description: >-
+            Narrow to one category. An unknown value returns 400 — a filter that silently ignores
+            its own argument would return a full list the caller believes is filtered.
+          schema:
+            type: string
+            enum: [MATERIALS, LOGISTICS, SERVICES, EQUIPMENT]
+      responses:
+        '200':
+          description: Active vendors, alphabetical by name
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VendorDirectoryRow'
+        '400':
+          description: Unknown category
   /procurement/vendors/{vendorId}:
     get:
       tags:

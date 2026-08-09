@@ -16,6 +16,9 @@ import { clsTenantId } from '../../shared/context/cls-context';
 // so existing `from './procurement.repository'` type imports (service, specs) keep resolving.
 import type {
   VendorRow,
+  VendorCategory,
+  VendorVerificationStatus,
+  VendorDirectoryRow,
   PurchaseRequestRow,
   RfqRow,
   QuotationRow,
@@ -69,14 +72,17 @@ export class ProcurementRepository {
     contact_email?: string;
     contact_phone?: string;
     address?: string;
+    category?: VendorCategory;
+    verification_status?: VendorVerificationStatus;
   }): Promise<VendorRow> {
     const rows = await this.db.run(
       (prisma) =>
         prisma.$queryRaw<VendorRow[]>`
-        INSERT INTO procurement.vendors (tenant_id, vendor_code, vendor_name, tax_id, contact_email, contact_phone, address)
+        INSERT INTO procurement.vendors (tenant_id, vendor_code, vendor_name, tax_id, contact_email, contact_phone, address, category, verification_status)
         VALUES (${this.tenantId}::uuid, ${params.vendor_code}, ${params.vendor_name},
                 ${params.tax_id ?? null}, ${params.contact_email ?? null},
-                ${params.contact_phone ?? null}, ${params.address ?? null})
+                ${params.contact_phone ?? null}, ${params.address ?? null},
+                ${params.category ?? null}, ${params.verification_status ?? null})
         RETURNING *`,
     );
     return rows[0]!;
@@ -104,6 +110,52 @@ export class ProcurementRepository {
             SELECT * FROM procurement.vendors
             WHERE tenant_id = ${this.tenantId}::uuid
             ORDER BY vendor_name
+            LIMIT ${capLimit()}`,
+    );
+    return applyCap(rows, 'procurement.vendors');
+  }
+
+  /**
+   * The vendor directory (mockup 06_project_manager/03_vendors): active vendors, optionally narrowed
+   * to one category, each with the number of projects it currently has open work on.
+   *
+   * The count is a LATERAL sub-select rather than a GROUP BY join so a vendor with no purchase orders
+   * still comes back — with 0 — instead of dropping out of the directory. `status NOT IN (...)`
+   * encodes the definition documented on VendorDirectoryRow: DRAFT and PENDING_APPROVAL are not
+   * committed work yet, PAID is closed out, everything between them is live.
+   *
+   * Inactive vendors are excluded outright: this is a "who can I buy from" screen, and `is_active`
+   * false is the soft-delete the deactivate endpoint sets.
+   */
+  async listVendorDirectory(category: VendorCategory | null): Promise<VendorDirectoryRow[]> {
+    const rows = await this.db.run((prisma) =>
+      category === null
+        ? prisma.$queryRaw<VendorDirectoryRow[]>`
+            SELECT v.*, COALESCE(p.active_project_count, 0)::int AS active_project_count
+            FROM procurement.vendors v
+            LEFT JOIN LATERAL (
+              SELECT COUNT(DISTINCT po.project_id) AS active_project_count
+              FROM procurement.purchase_orders po
+              WHERE po.vendor_id = v.vendor_id
+                AND po.tenant_id = v.tenant_id
+                AND po.status NOT IN ('DRAFT', 'PENDING_APPROVAL', 'PAID')
+            ) p ON TRUE
+            WHERE v.tenant_id = ${this.tenantId}::uuid AND v.is_active = true
+            ORDER BY v.vendor_name
+            LIMIT ${capLimit()}`
+        : prisma.$queryRaw<VendorDirectoryRow[]>`
+            SELECT v.*, COALESCE(p.active_project_count, 0)::int AS active_project_count
+            FROM procurement.vendors v
+            LEFT JOIN LATERAL (
+              SELECT COUNT(DISTINCT po.project_id) AS active_project_count
+              FROM procurement.purchase_orders po
+              WHERE po.vendor_id = v.vendor_id
+                AND po.tenant_id = v.tenant_id
+                AND po.status NOT IN ('DRAFT', 'PENDING_APPROVAL', 'PAID')
+            ) p ON TRUE
+            WHERE v.tenant_id = ${this.tenantId}::uuid AND v.is_active = true
+              AND v.category = ${category}
+            ORDER BY v.vendor_name
             LIMIT ${capLimit()}`,
     );
     return applyCap(rows, 'procurement.vendors');

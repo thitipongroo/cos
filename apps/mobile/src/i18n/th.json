@@ -42,7 +42,9 @@
       "opportunities": "โอกาสขาย",
       "customers": "ลูกค้า",
       "directory": "ทีมงาน",
-      "safety": "ความปลอดภัย"
+      "safety": "ความปลอดภัย",
+      "approvals": "อนุมัติ",
+      "vendors": "ผู้ค้า"
     }
   },
   "auth": {
@@ -261,6 +263,58 @@
       "online": "เครื่องมีสัญญาณ และระบบตอบกลับในการตรวจครั้งล่าสุด หากยังติดปัญหา หัวข้อด้านบนครอบคลุมสิ่งที่ทีมหน้างานเจอบ่อยที่สุด"
     }
   },
+  "approvals": {
+    "title": "รออนุมัติ",
+    "empty": "ไม่มีรายการรอคุณอยู่",
+    "failed": "โหลดรายการรออนุมัติไม่สำเร็จ",
+    "filterAll": "ทั้งหมด",
+    "filterRfq": "RFQ",
+    "filterPo": "PO",
+    "filterUrgent": "ด่วน",
+    "vendorLabel": "ผู้ค้า",
+    "projectLabel": "โครงการ",
+    "multiVendor": "หลายใบเสนอราคา",
+    "hoursRemaining": "เหลือ {hours} ชม.",
+    "overdue": "เลยกำหนด",
+    "approve": "อนุมัติ",
+    "viewDetails": "ดูรายละเอียด",
+    "approved": "ส่งการอนุมัติแล้ว",
+    "approveFailed": "ส่งการอนุมัติไม่สำเร็จ ระบบยังไม่ได้บันทึก",
+    "awardOnly": "การตัดสิน RFQ เป็นสิทธิ์ของผู้จัดการจัดซื้อ",
+    "readOnly": "บทบาทของคุณดูได้ แต่อนุมัติรายการนี้ไม่ได้"
+  },
+  "vendors": {
+    "title": "ผู้ค้า",
+    "searchPlaceholder": "ค้นหาผู้ค้า",
+    "empty": "ไม่มีผู้ค้าในหมวดนี้",
+    "failed": "โหลดรายชื่อผู้ค้าไม่สำเร็จ",
+    "filterAll": "ทั้งหมด",
+    "categoryMaterials": "วัสดุ",
+    "categoryLogistics": "ขนส่ง",
+    "categoryServices": "บริการ",
+    "categoryEquipment": "เครื่องจักร",
+    "trustScore": "คะแนนความน่าเชื่อถือ",
+    "noScore": "ยังไม่มีคะแนน",
+    "activeProjects": "{count} โครงการที่ยังดำเนินอยู่",
+    "badgeVerified": "ตรวจสอบแล้ว",
+    "badgeUnderReview": "อยู่ระหว่างตรวจสอบ",
+    "badgeRejected": "ไม่ผ่าน",
+    "badgeTopRated": "คะแนนสูงสุด",
+    "viewProfile": "ดูข้อมูลผู้ค้า",
+    "manage": "จัดการผู้ค้า"
+  },
+  "insight": {
+    "title": "ข้อมูลเชิงลึก",
+    "idle": "ยังไม่มีรายงานสำหรับโครงการนี้",
+    "failed": "สร้างรายงานไม่สำเร็จ ระบบยังไม่ได้บันทึกอะไร",
+    "noSummary": "รายงานกลับมาโดยไม่มีเนื้อความที่อ่านได้",
+    "source": "ที่มา: โครงการ {project}",
+    "action": "สร้างรายงาน",
+    "bandHigh": "ความเชื่อมั่นสูง",
+    "bandMedium": "ความเชื่อมั่นปานกลาง",
+    "bandLow": "ความเชื่อมั่นต่ำ — ตรวจสอบก่อนตัดสินใจ",
+    "bandUnknown": "ไม่ได้รายงานค่าความเชื่อมั่น"
+  },
   "home": {
     "main": {
       "title": "หน้าหลัก",
@@ -319,12 +373,16 @@
       "title": "จัดซื้อ",
       "openRfqs": "ใบขอราคาที่เปิดอยู่",
       "awaitingAck": "PO รอตอบรับ",
-      "deliveries": "การส่งมอบ"
+      "deliveries": "การส่งมอบ",
+      "committedSpend": "มูลค่าที่ผูกพันแล้ว",
+      "urgentRfqs": "RFQ ที่ปิดรับใน 24 ชม."
     },
     "pm": {
       "title": "ภาพรวมโครงการ",
       "activeProjects": "โครงการที่ดำเนินอยู่",
-      "openIssues": "ปัญหาที่เปิดอยู่"
+      "openIssues": "ปัญหาที่เปิดอยู่",
+      "committedSpend": "มูลค่าที่ผูกพันแล้ว",
+      "pendingApprovals": "รอคุณอนุมัติ"
     }
   },
   "tasks": {

@@ -39,6 +39,15 @@ import { useT } from '../../i18n';
 import { fontFamily, radius, spacing, typography } from '../../theme/tokens';
 import { usePalette, useIsDark, type Palette } from '../../theme/usePalette';
 import { formatMoney } from '@cos/financial';
+import {
+  committedSpend,
+  openRfqCount,
+  urgentRfqCount,
+  type SpendRow,
+  type DeadlineRow,
+} from '../../lib/procurementKpi';
+import { ProjectPicker } from '../../components/ProjectPicker';
+import { ProcurementInsight } from '../../components/ProcurementInsight';
 
 /** The palette-resolved stylesheet. One hook so every home variant reads the same set. */
 function useHomeStyles() {
@@ -453,26 +462,38 @@ function ProcurementHome() {
   const loaderTheme = useLoaderTheme();
   const t = useT();
   const [openRfqs, setOpenRfqs] = useState<number | null>(null);
+  const [urgentRfqs, setUrgentRfqs] = useState<number | null>(null);
   const [awaitingAck, setAwaitingAck] = useState<number | null>(null);
+  const [spend, setSpend] = useState<string | null>(null);
   const [deliveries, setDeliveries] = useState<number | null>(null);
+  // The Insights panel's report endpoint is project-scoped, so the dashboard asks which project
+  // (PO decision 2026-08-10). Empty until chosen — the panel stays idle rather than picking one.
+  const [insightProject, setInsightProject] = useState('');
   // First-load flag: true until all three remote KPI fetches settle (offline failures included).
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // "RFQs closing soon" ≈ still-open (PUBLISHED) RFQs; exact deadline window is not defined in
-    // master 3120, so the open-RFQ count is used as the actionable proxy.
-    const rfqsFetch = get<{ items?: { status: string }[] } | { status: string }[]>(
-      '/procurement/rfqs',
-    )
-      .then((res) => setOpenRfqs(asList(res).filter((r) => r.status === 'PUBLISHED').length))
+    // The urgency window IS defined now — `lib/approvalUrgency.ts`, 24 hours — and RFQs carry a real
+    // `deadline` column, so "closing soon" is measured rather than approximated by the open count.
+    const now = new Date();
+    const rfqsFetch = get<{ items?: DeadlineRow[] } | DeadlineRow[]>('/procurement/rfqs')
+      .then((res) => {
+        const rows = asList(res);
+        setOpenRfqs(openRfqCount(rows));
+        setUrgentRfqs(urgentRfqCount(rows, now));
+      })
       .catch(() => {
         /* offline — keep last */
       });
     // "POs awaiting acknowledgment" = status SENT (sent to vendor, not yet ACKNOWLEDGED).
-    const posFetch = get<{ items?: { status: string }[] } | { status: string }[]>(
-      '/procurement/purchase-orders',
-    )
-      .then((res) => setAwaitingAck(asList(res).filter((p) => p.status === 'SENT').length))
+    // The same response also carries committed spend — summed with decimal.js, never `+` on numbers
+    // (lib/procurementKpi.ts), and from ONE request rather than a second round trip.
+    const posFetch = get<{ items?: SpendRow[] } | SpendRow[]>('/procurement/purchase-orders')
+      .then((res) => {
+        const rows = asList(res);
+        setAwaitingAck(rows.filter((p) => p.status === 'SENT').length);
+        setSpend(formatMoney(committedSpend(rows)));
+      })
       .catch(() => {
         /* offline — keep last */
       });
@@ -494,12 +515,28 @@ function ProcurementHome() {
         theme={loaderTheme}
         style={styles.kpiRegion}
       >
+        {/* The mockup's full-width spend tile. A dash until the request settles — never a 0, which
+            would read as "nothing is committed" rather than "not loaded". */}
+        <View style={styles.kpiRow}>
+          <KpiCard
+            testID="kpi-committed-spend"
+            value={spend ?? '—'}
+            label={t('home.procurement.committedSpend')}
+          />
+        </View>
         <View style={styles.kpiRow}>
           <KpiCard
             testID="kpi-open-rfqs"
             value={n(openRfqs)}
             label={t('home.procurement.openRfqs')}
           />
+          <KpiCard
+            testID="kpi-urgent-rfqs"
+            value={n(urgentRfqs)}
+            label={t('home.procurement.urgentRfqs')}
+          />
+        </View>
+        <View style={styles.kpiRow}>
           <KpiCard
             testID="kpi-awaiting-ack"
             value={n(awaitingAck)}
@@ -514,6 +551,8 @@ function ProcurementHome() {
           />
         </View>
       </LoadingBoundary>
+      <ProjectPicker selectedId={insightProject} onSelect={setInsightProject} />
+      <ProcurementInsight projectId={insightProject} />
     </Screen>
   );
 }
@@ -527,6 +566,9 @@ function PmHome() {
   const projects = useCollection<Project>('local_projects');
   const t = useT();
   const [openIssues, setOpenIssues] = useState<number | null>(null);
+  const [spend, setSpend] = useState<string | null>(null);
+  const [pendingApprovals, setPendingApprovals] = useState<number | null>(null);
+  const [insightProject, setInsightProject] = useState('');
   // First-load flag: true until the remote open-issues fetch settles (offline failure included).
   const [loading, setLoading] = useState(true);
   const activeCount = projects.filter((p) => p.status === 'ACTIVE').length;
@@ -542,7 +584,19 @@ function PmHome() {
       .catch(() => {
         /* offline — keep last */
       });
-    void Promise.allSettled([issuesFetch]).then(() => setLoading(false));
+    // The manager dashboard's money line (mockup 06_project_manager/01_home). PROJECT_MANAGER holds
+    // `A` on purchase orders (§6.4), so the count below is genuinely what is waiting on THIS person —
+    // it is the same PENDING_APPROVAL queue the Approvals tab opens on.
+    const posFetch = get<{ items?: SpendRow[] } | SpendRow[]>('/procurement/purchase-orders')
+      .then((res) => {
+        const rows = asList(res);
+        setSpend(formatMoney(committedSpend(rows)));
+        setPendingApprovals(rows.filter((p) => p.status === 'PENDING_APPROVAL').length);
+      })
+      .catch(() => {
+        /* offline — keep last */
+      });
+    void Promise.allSettled([issuesFetch, posFetch]).then(() => setLoading(false));
   }, []);
 
   return (
@@ -555,6 +609,13 @@ function PmHome() {
       >
         <View style={styles.kpiRow}>
           <KpiCard
+            testID="kpi-committed-spend"
+            value={spend ?? '—'}
+            label={t('home.pm.committedSpend')}
+          />
+        </View>
+        <View style={styles.kpiRow}>
+          <KpiCard
             testID="kpi-active-projects"
             value={String(activeCount)}
             label={t('home.pm.activeProjects')}
@@ -565,7 +626,16 @@ function PmHome() {
             label={t('home.pm.openIssues')}
           />
         </View>
+        <View style={styles.kpiRow}>
+          <KpiCard
+            testID="kpi-pending-approvals"
+            value={pendingApprovals === null ? '—' : String(pendingApprovals)}
+            label={t('home.pm.pendingApprovals')}
+          />
+        </View>
       </LoadingBoundary>
+      <ProjectPicker selectedId={insightProject} onSelect={setInsightProject} />
+      <ProcurementInsight projectId={insightProject} />
     </Screen>
   );
 }

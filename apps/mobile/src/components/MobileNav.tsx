@@ -143,6 +143,10 @@ export function MobileNav() {
           quick-action menu. Mounted here so router.push('/report') still resolves. (`reports`, the
           Site Engineer's review LIST, is a different route and still a tab.) */}
       <Tabs.Screen name="report" options={{ href: null }} />
+      {/* The PM analytics dashboard. A PROJECT_MANAGER tab until 2026-08-10, when Approvals and
+          Vendors took the role's last two slots and its content became the manager Home itself
+          (mockup 06_project_manager/01_home). Mounted so router.push('/dashboard') still resolves. */}
+      <Tabs.Screen name="dashboard" options={{ href: null }} />
       {/* The signed-in user's own account settings — pushed from the drawer's Settings row. */}
       <Tabs.Screen name="account-settings" options={{ href: null }} />
       <Tabs.Screen name="conflict-review" options={{ href: null }} />
