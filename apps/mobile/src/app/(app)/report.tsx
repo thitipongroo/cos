@@ -30,7 +30,6 @@ import { localSiteReports } from '../../db/schema';
 import { enqueue } from '../../db/sync-queue';
 import { ProjectPicker } from '../../components/ProjectPicker';
 import { PhotoCapture } from '../../components/PhotoCapture';
-import { VoiceNoteButton } from '../../components/VoiceNoteButton';
 import { useT } from '../../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
 import { usePalette } from '../../theme/usePalette';
@@ -71,7 +70,6 @@ function todayIso(): string {
 
 export default function ReportScreen() {
   const [projectId, setProjectId] = useState('');
-  const [summary, setSummary] = useState('');
   const [manpower, setManpower] = useState(0);
   const [shift, setShift] = useState<Shift>('DAY');
   const [trades, setTrades] = useState<Partial<Record<Trade, number>>>({});
@@ -83,7 +81,11 @@ export default function ReportScreen() {
   const p = usePalette();
   const screen = useMemo(() => makeScreenStyles(p), [p]);
 
-  const canSave = projectId.trim() !== '' && summary.trim() !== '';
+  // A project is the only thing a daily report cannot be filed without. The free-text SUMMARY field
+  // went on 2026-08-09 (PO) because the mockup has none — the report's content is the structured
+  // manpower, shift and blockers below — and `site_ops.site_reports.summary` is nullable, so nothing
+  // downstream needs it.
+  const canSave = projectId.trim() !== '';
   // The bars are proportions of the TOTAL BREAKDOWN, not of `manpower` — the two are entered
   // separately and a bar that could exceed its track would be a lie about the data.
   const tradeTotal = Object.values(trades).reduce<number>((sum, n) => sum + (n ?? 0), 0);
@@ -110,7 +112,7 @@ export default function ReportScreen() {
       reportId: clientId,
       projectId: projectId.trim(),
       reportDate,
-      summary: summary.trim(),
+      summary: null,
       blockers: blockers.trim() || null,
       manpowerCount: manpower > 0 ? manpower : null,
       status,
@@ -122,7 +124,6 @@ export default function ReportScreen() {
     enqueue('site_report', clientId, 'CREATE', {
       project_id: projectId.trim(),
       report_date: reportDate,
-      summary: summary.trim() || undefined,
       blockers: blockers.trim() || undefined,
       blocker_category: blockerCategory ?? undefined,
       manpower_count: manpower > 0 ? manpower : undefined,
@@ -296,30 +297,6 @@ export default function ReportScreen() {
       </View>
 
       {/* ── Summary ──────────────────────────────────────────────────────── */}
-      <Text style={[styles.sectionTitle, { color: p.text }]}>{t('site.report.progress')}</Text>
-      {/* The mic FLOATS INSIDE the field it dictates into (PO decision 2026-08-08, now the project
-          standard): the round FAB from the SITE_ENGINEER home, not a full-width bar under the box.
-          The bar read as a second, unrelated action; in the corner of the input it is unmistakably
-          "speak THIS field". The right padding keeps a long line clear of the button. */}
-      <View style={styles.inputWithMic}>
-        <TextInput
-          testID="report-summary-input"
-          style={[screen.input, styles.multiline, styles.multilineWithMic]}
-          placeholder={t('site.report.summaryPlaceholder')}
-          placeholderTextColor={p.muted}
-          multiline
-          value={summary}
-          onChangeText={setSummary}
-        />
-        <View style={styles.micSlot}>
-          <VoiceNoteButton
-            testID="report-voice-note"
-            shape="fab"
-            onTranscript={(text) => setSummary((s) => (s.trim() ? `${s} ${text}` : text))}
-          />
-        </View>
-      </View>
-
       {/* ── Blockers ─────────────────────────────────────────────────────── */}
       <Text style={[styles.sectionTitle, { color: p.text }]}>{t('site.report.blockers')}</Text>
       <View style={styles.chipRow}>
@@ -467,10 +444,6 @@ const styles = StyleSheet.create({
   track: { height: 4, borderRadius: radius.sm, overflow: 'hidden' },
   fill: { height: '100%' },
   multiline: { minHeight: 96, textAlignVertical: 'top', paddingVertical: spacing.sm },
-  inputWithMic: { position: 'relative' },
-  // Room for the 56px FAB plus its inset, so a long line never runs under the button.
-  multilineWithMic: { minHeight: 120, paddingRight: 56 + spacing.md },
-  micSlot: { position: 'absolute', right: spacing.xs, bottom: spacing.xs },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   chip: {
     minHeight: touchTarget.secondaryButton,

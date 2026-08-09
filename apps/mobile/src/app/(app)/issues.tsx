@@ -61,6 +61,9 @@ const ISSUE_TYPES: ReadonlyArray<{ value: string; icon: IconName }> = [
   { value: 'GENERAL', icon: 'info' },
 ];
 
+/** `site_ops.issues.title` is VARCHAR(255) and CreateIssueDto enforces it. */
+const ISSUE_TITLE_MAX = 255;
+
 /** Severity is a separate real column; the mockup shows no severity control, so it stays MEDIUM. */
 const DEFAULT_SEVERITY = 'MEDIUM';
 
@@ -71,7 +74,6 @@ export default function IssuesScreen() {
   // route (SITE_ENGINEER) keeps the list and the escalate action — see the header note.
   const showList = role !== CosRole.SITE_WORKER;
   const [projectId, setProjectId] = useState('');
-  const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [issueType, setIssueType] = useState<string>('DEFECT');
   const [draftId, setDraftId] = useState(() => Crypto.randomUUID()); // id for the issue + its photo
@@ -80,7 +82,11 @@ export default function IssuesScreen() {
   const p = usePalette();
   const screen = useMemo(() => makeScreenStyles(p), [p]);
 
-  const canSubmit = projectId.trim() !== '' && title.trim() !== '';
+  // ONE text field, as the mockup draws (PO 2026-08-09): the separate title input is gone, so the
+  // description IS the issue. `title` is NOT NULL and capped at 255 by CreateIssueDto, and every
+  // list and notification shows it — so it takes the first 255 characters, and anything past that
+  // stays in `description`, which is unbounded. Nothing is lost and nothing is truncated silently.
+  const canSubmit = projectId.trim() !== '' && description.trim() !== '';
 
   // The list below is scoped to the SELECTED project, not the whole local cache. A worker on five
   // projects has every project's issues cached, and an unscoped list mixes them with nothing on the
@@ -92,12 +98,15 @@ export default function IssuesScreen() {
   );
 
   const onCreate = async (): Promise<void> => {
+    const text = description.trim();
+    const title = text.slice(0, ISSUE_TITLE_MAX);
+
     await db.insert(localIssues).values({
       id: newLocalId(),
       issueId: draftId, // client UUID becomes the server issue_id on sync (G-M11)
       projectId: projectId.trim(),
-      title: title.trim(),
-      description: description.trim() || null,
+      title,
+      description: text.length > ISSUE_TITLE_MAX ? text : null,
       severity: DEFAULT_SEVERITY,
       status: 'OPEN',
       offlineSyncStatus: 'PENDING',
@@ -105,12 +114,11 @@ export default function IssuesScreen() {
     enqueue('issue', draftId, 'CREATE', {
       client_id: draftId,
       project_id: projectId.trim(),
-      title: title.trim(),
-      description: description.trim() || undefined,
+      title,
+      description: text.length > ISSUE_TITLE_MAX ? text : undefined,
       severity: DEFAULT_SEVERITY,
       issue_type: issueType,
     });
-    setTitle('');
     setDescription('');
     setIssueType('DEFECT');
     setDraftId(Crypto.randomUUID()); // fresh id (and photo scope) for the next issue
@@ -171,24 +179,18 @@ export default function IssuesScreen() {
         })}
       </View>
 
-      <Text style={[styles.sectionLabel, { color: p.muted }]}>{t('site.issues.titleLabel')}</Text>
-      <TextInput
-        testID="issue-title-input"
-        style={screen.input}
-        placeholder={t('site.issues.titlePlaceholder')}
-        placeholderTextColor={p.muted}
-        value={title}
-        onChangeText={setTitle}
-      />
-
       <Text style={[styles.sectionLabel, { color: p.muted }]}>{t('site.issues.voiceLabel')}</Text>
       {/* The mockup's voice zone: a dashed drop-zone panel with the mic centred in it and the
           hold-to-record instruction underneath. The dashed border is doing real work here — it says
           "optional, nothing recorded yet", which a solid filled bar did not. */}
       <View style={[styles.voicePanel, { backgroundColor: p.surface, borderColor: p.border }]}>
+        {/* 80px, the size its mockup draws (`w-20 h-20 rounded-full`). Bigger than the 56px project
+            standard because here the button IS the panel's purpose, not an accessory floating over
+            a list — PO decision 2026-08-09, "follow the mockup". */}
         <VoiceNoteButton
           testID="issue-voice-note"
           shape="fab"
+          fabSize={80}
           onTranscript={(text) => setDescription((d) => (d.trim() ? `${d} ${text}` : text))}
         />
         <Text style={[styles.voiceHint, { color: p.text }]}>{t('site.issues.voiceHint')}</Text>

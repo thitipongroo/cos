@@ -182,7 +182,19 @@ async function stitchFull(name, top, bot) {
 // The bottom-nav top edge on this AVD. Everything on these four tabs scrolls under it.
 const NAV_TOP = 2196;
 
+/**
+ * Which frames to capture. `--only <substring>` (repeatable) narrows the run to the screens whose
+ * name contains it, so a one-screen change costs one screen's worth of time instead of eight
+ * (PO request 2026-08-09). With no flag every frame is captured, which is what CI and a full
+ * refresh want.
+ *
+ * The login and app-shell steps always run: every frame is taken from one signed-in session.
+ */
+const ONLY = process.argv.slice(2).flatMap((a, i, all) => (a === '--only' ? [all[i + 1]] : []));
+const wanted = (name) => ONLY.length === 0 || ONLY.some((o) => name.includes(o));
+
 async function main() {
+  if (ONLY.length > 0) console.log(`· --only ${ONLY.join(', ')}`);
   mkdirSync(OUT, { recursive: true });
   for (const p of ['tcp:8081', 'tcp:3000', 'tcp:8090']) adb('reverse', p, p);
 
@@ -216,115 +228,136 @@ async function main() {
   // Home — the role's landing tab since 2026-08-08: KPI cards, the project picker + check-in, and
   // the quick actions. Asserted on the check-in button rather than just the screen, because that
   // control is the reason Home is a tab at all for this role.
-  console.log('· 01-Home/01-home');
-  await tap(byId('home-tab'), 'home tab');
-  await find(byId('home-screen'), 'home-screen');
-  // CHECK IN moved to the navigation drawer on 2026-08-09, so it is asserted there, not here.
-  // The two bento tiles the rework put on this screen. Asserted so a regression that drops them
-  // fails the run rather than committing a screenshot of the old KPI cards.
-  await find(byId('stat-my-tasks'), 'My Tasks stat tile');
-  await find(byId('stat-shift-hours'), 'Shift Hours stat tile');
-  await dismissDevBanners();
-  await delay(1200);
-  // Taller than a viewport since the rework (tiles + AI insight + check-in + three task cards).
-  await stitchFull('01-Home/01-home', 180, NAV_TOP);
+  if (wanted('01-Home/01-home')) {
+    console.log('· 01-Home/01-home');
+    await tap(byId('home-tab'), 'home tab');
+    await find(byId('home-screen'), 'home-screen');
+    // CHECK IN moved to the navigation drawer on 2026-08-09, so it is asserted there, not here.
+    // The two bento tiles the rework put on this screen. Asserted so a regression that drops them
+    // fails the run rather than committing a screenshot of the old KPI cards.
+    await find(byId('stat-my-tasks'), 'My Tasks stat tile');
+    await find(byId('stat-shift-hours'), 'Shift Hours stat tile');
+    await dismissDevBanners();
+    await delay(1200);
+    // Taller than a viewport since the rework (tiles + AI insight + check-in + three task cards).
+    await stitchFull('01-Home/01-home', 180, NAV_TOP);
+    // Tasks — pushed from Home's quick action, so it carries a breadcrumb (HOME › TASKS) and a back
+    // chevron like every other child screen. Delta sync has to land first or the list is legitimately
+    // empty, so at least one card is asserted BEFORE the shot: an empty Tasks screen is a valid app
+    // state but a useless screenshot, and it must fail the run rather than be committed.
+  }
 
-  // Tasks — pushed from Home's quick action, so it carries a breadcrumb (HOME › TASKS) and a back
-  // chevron like every other child screen. Delta sync has to land first or the list is legitimately
-  // empty, so at least one card is asserted BEFORE the shot: an empty Tasks screen is a valid app
-  // state but a useless screenshot, and it must fail the run rather than be committed.
-  console.log('· 02-Tasks/01-tasks');
-  await tap(byId('tasks-tab'), 'tasks tab');
-  await find(byId('tasks-screen'), 'tasks-screen');
-  await find((n) => /resource-id="task-[0-9a-f-]{36}"/.test(n), 'at least one task card', 40);
-  await dismissDevBanners();
-  await delay(1200);
-  grabOne('02-Tasks/01-tasks');
+  if (wanted('02-Tasks/01-tasks')) {
+    console.log('· 02-Tasks/01-tasks');
+    await tap(byId('tasks-tab'), 'tasks tab');
+    await find(byId('tasks-screen'), 'tasks-screen');
+    await find((n) => /resource-id="task-[0-9a-f-]{36}"/.test(n), 'at least one task card', 40);
+    await dismissDevBanners();
+    await delay(1200);
+    grabOne('02-Tasks/01-tasks');
+    // Issues — camera-first, so it is taller than a viewport (viewfinder + 4 category chips + voice +
+    // description + submit + the synced list). Stitched.
+  }
 
-  // Issues — camera-first, so it is taller than a viewport (viewfinder + 4 category chips + voice +
-  // description + submit + the synced list). Stitched.
-  console.log('· 01-Home/04-issue-capture');
-  await tap(byId('home-tab'), 'home tab');
-  await tap(byId('home-quick-action-fab'), 'quick action FAB');
-  await tap(byId('quick-action-reportIssue'), 'report-issue card');
-  await find(byId('issues-screen'), 'issues-screen');
-  await pickFirstProject();
-  await find(byId('issue-type-DEFECT'), 'issue category chips');
-  await dismissDevBanners();
-  await delay(1500);
-  await stitchFull('01-Home/04-issue-capture', 180, NAV_TOP);
+  if (wanted('01-Home/04-issue-capture')) {
+    console.log('· 01-Home/04-issue-capture');
+    await tap(byId('home-tab'), 'home tab');
+    await tap(byId('home-quick-action-fab'), 'quick action FAB');
+    await tap(byId('quick-action-reportIssue'), 'report-issue card');
+    await find(byId('issues-screen'), 'issues-screen');
+    await pickFirstProject();
+    await find(byId('issue-type-DEFECT'), 'issue category chips');
+    await dismissDevBanners();
+    await delay(1500);
+    await stitchFull('01-Home/04-issue-capture', 180, NAV_TOP);
+    // Daily report — the longest screen in the set (manpower + shift + per-trade bars + summary +
+    // blockers + photos + the two actions).
+  }
 
-  // Daily report — the longest screen in the set (manpower + shift + per-trade bars + summary +
-  // blockers + photos + the two actions).
-  console.log('· 01-Home/05-daily-report');
-  await tap(byId('home-tab'), 'home tab');
-  await tap(byId('home-quick-action-fab'), 'quick action FAB');
-  await tap(byId('quick-action-logActivity'), 'log-activity card');
-  await find(byId('report-screen'), 'report-screen');
-  await pickFirstProject();
-  await find(byId('manpower-total'), 'manpower stepper');
-  await dismissDevBanners();
-  await delay(1500);
-  await stitchFull('01-Home/05-daily-report', 180, NAV_TOP);
+  if (wanted('01-Home/05-daily-report')) {
+    console.log('· 01-Home/05-daily-report');
+    await tap(byId('home-tab'), 'home tab');
+    await tap(byId('home-quick-action-fab'), 'quick action FAB');
+    await tap(byId('quick-action-logActivity'), 'log-activity card');
+    await find(byId('report-screen'), 'report-screen');
+    await pickFirstProject();
+    await find(byId('manpower-total'), 'manpower stepper');
+    await dismissDevBanners();
+    await delay(1500);
+    await stitchFull('01-Home/05-daily-report', 180, NAV_TOP);
+    // Safety checklist. Asserted on a real checklist ITEM, not just the screen: with no checklists
+    // seeded the screen renders its honest empty state, and that must fail the run instead of being
+    // committed as though it were the feature.
+  }
 
-  // Safety checklist. Asserted on a real checklist ITEM, not just the screen: with no checklists
-  // seeded the screen renders its honest empty state, and that must fail the run instead of being
-  // committed as though it were the feature.
-  console.log('· 03-Safety/01-safety-checklist');
-  await tap(byId('safety-checklist-tab'), 'safety tab');
-  await find(byId('safety-checklist-screen'), 'safety-checklist-screen');
-  await pickFirstProject(); // nothing is fetched until a project is chosen (see the screen's comment)
-  await find((n) => /resource-id="safety-item-/.test(n), 'at least one checklist item', 40);
-  await dismissDevBanners();
-  await delay(1500);
-  await stitchFull('03-Safety/01-safety-checklist', 180, NAV_TOP);
+  if (wanted('03-Safety/01-safety-checklist')) {
+    console.log('· 03-Safety/01-safety-checklist');
+    await tap(byId('safety-checklist-tab'), 'safety tab');
+    await find(byId('safety-checklist-screen'), 'safety-checklist-screen');
+    await pickFirstProject(); // nothing is fetched until a project is chosen (see the screen's comment)
+    await find((n) => /resource-id="safety-item-/.test(n), 'at least one checklist item', 40);
+    await dismissDevBanners();
+    await delay(1500);
+    await stitchFull('03-Safety/01-safety-checklist', 180, NAV_TOP);
+    // Quick actions — the FAB menu (mockup 01_home/02_quick_actions). Three cards, each routing to a
+    // screen that already exists.
+  }
 
-  // Quick actions — the FAB menu (mockup 01_home/02_quick_actions). Three cards, each routing to a
-  // screen that already exists.
-  console.log('· 01-Home/03-quick-actions');
-  await tap(byId('home-tab'), 'home tab');
-  await find(byId('home-quick-action-fab'), 'quick action FAB');
-  await tap(byId('home-quick-action-fab'), 'quick action FAB');
-  await find(byId('quick-actions-screen'), 'quick-actions-screen');
-  await find(byId('quick-action-reportIssue'), 'report-issue card');
-  await dismissDevBanners();
-  await delay(1200);
-  grabOne('01-Home/03-quick-actions');
+  if (wanted('01-Home/03-quick-actions')) {
+    console.log('· 01-Home/03-quick-actions');
+    await tap(byId('home-tab'), 'home tab');
+    await find(byId('home-quick-action-fab'), 'quick action FAB');
+    await tap(byId('home-quick-action-fab'), 'quick action FAB');
+    await find(byId('quick-actions-screen'), 'quick-actions-screen');
+    await find(byId('quick-action-reportIssue'), 'report-issue card');
+    await dismissDevBanners();
+    await delay(1200);
+    grabOne('01-Home/03-quick-actions');
+    // Team directory (mockup 04_directory). Opened from the navigation drawer, and asserted on a real
+    // CARD: with no crew allocated the screen renders its honest empty state, which must fail the run
+    // rather than be committed as though it were the feature.
+  }
 
-  // Team directory (mockup 04_directory). Opened from the navigation drawer, and asserted on a real
-  // CARD: with no crew allocated the screen renders its honest empty state, which must fail the run
-  // rather than be committed as though it were the feature.
-  console.log('· 04-Directory/01-directory');
-  await tap(byId('directory-tab'), 'directory tab');
-  await find(byId('directory-screen'), 'directory-screen');
-  await pickFirstProject(); // nothing is fetched until a project is chosen
-  await find((n) => /resource-id="directory-card-/.test(n), 'at least one crew card', 40);
-  await dismissDevBanners();
-  await delay(1500);
-  await stitchFull('04-Directory/01-directory', 180, NAV_TOP);
+  if (wanted('04-Directory/01-directory')) {
+    console.log('· 04-Directory/01-directory');
+    await tap(byId('directory-tab'), 'directory tab');
+    await find(byId('directory-screen'), 'directory-screen');
+    await pickFirstProject(); // nothing is fetched until a project is chosen
+    await find((n) => /resource-id="directory-card-/.test(n), 'at least one crew card', 40);
+    await dismissDevBanners();
+    await delay(1500);
+    await stitchFull('04-Directory/01-directory', 180, NAV_TOP);
+    // THE DRAWER IS THE PROFILE (PO 2026-08-09): there is no `/profile` route, and every account
+    // control renders inside this panel. Opened from the top-bar avatar, which is what the avatar
+    // does now instead of pushing a screen. Asserted on the account block as well as the panel, so a
+    // regression that drops <AccountSettings /> fails the run rather than saving a bare menu.
+  }
 
-  // THE DRAWER IS THE PROFILE (PO 2026-08-09): there is no `/profile` route, and every account
-  // control renders inside this panel. Opened from the top-bar avatar, which is what the avatar
-  // does now instead of pushing a screen. Asserted on the account block as well as the panel, so a
-  // regression that drops <AccountSettings /> fails the run rather than saving a bare menu.
-  console.log('· 05-Drawer/01-drawer-profile');
-  await tap(byId('profile-avatar'), 'avatar');
-  await find(byId('drawer-profile-card'), 'drawer profile card');
-  await find(byId('drawer-link-/account-settings'), 'settings row');
-  await dismissDevBanners();
-  await delay(1200);
-  await stitchFull('05-Drawer/01-drawer-profile', 180, NAV_TOP);
+  if (wanted('05-Drawer/01-drawer-profile')) {
+    console.log('· 05-Drawer/01-drawer-profile');
+    await tap(byId('profile-avatar'), 'avatar');
+    await find(byId('drawer-profile-card'), 'drawer profile card');
+    await find(byId('drawer-link-/account-settings'), 'settings row');
+    await dismissDevBanners();
+    await delay(1200);
+    await stitchFull('05-Drawer/01-drawer-profile', 180, NAV_TOP);
+    // Account settings — pushed from the drawer's Settings row (mockup 05_profile). Its own screen
+    // since 2026-08-09: inline in the drawer, these sections put ~900px of a 2400px panel below the
+    // fold and mixed navigation with settings.
+  }
 
-  // Account settings — pushed from the drawer's Settings row (mockup 05_profile). Its own screen
-  // since 2026-08-09: inline in the drawer, these sections put ~900px of a 2400px panel below the
-  // fold and mixed navigation with settings.
-  console.log('· 05-Drawer/02-account-settings');
-  await tap(byId('drawer-link-/account-settings'), 'settings drawer row');
-  await find(byId('account-settings-screen'), 'account-settings-screen');
-  await find(byId('locale-row'), 'language row');
-  await dismissDevBanners();
-  await delay(1200);
-  await stitchFull('05-Drawer/02-account-settings', 180, NAV_TOP);
+  if (wanted('05-Drawer/02-account-settings')) {
+    console.log('· 05-Drawer/02-account-settings');
+    // Opens the drawer itself rather than inheriting it from the frame above — every step has to
+    // stand alone now that `--only` can run any one of them by itself.
+    await tap(byId('profile-avatar'), 'avatar');
+    await tap(byId('drawer-link-/account-settings'), 'settings drawer row');
+    await find(byId('account-settings-screen'), 'account-settings-screen');
+    await find(byId('locale-row'), 'language row');
+    await dismissDevBanners();
+    await delay(1200);
+    await stitchFull('05-Drawer/02-account-settings', 180, NAV_TOP);
+  }
 
   console.log(`\nDone → ${OUT}`);
 }

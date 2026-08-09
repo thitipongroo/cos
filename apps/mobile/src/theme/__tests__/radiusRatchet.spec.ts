@@ -23,8 +23,11 @@ import { join } from 'node:path';
 
 const SRC = join(__dirname, '..', '..');
 
-/** Measured 2026-08-06, after the sweep. Lower this when literals are removed; never raise it. */
-const CEILING = 28;
+/** Measured 2026-08-06, after the sweep; 28 → 27 on 2026-08-09 when the voice FAB's fixed 28
+ * became the 999 capsule marker — its diameter is a prop now, and a fixed radius stops being a
+ * circle as soon as a caller passes anything but 56. Lower this when literals are removed; never
+ * raise it. */
+const CEILING = 27;
 
 function sourceFiles(dir: string): string[] {
   const out: string[] = [];

@@ -137,78 +137,93 @@ export default function DirectoryScreen() {
             {projectId === '' ? t('directory.pickProject') : t('directory.empty')}
           </Text>
         ) : (
-          visible.map((entry) => (
-            <View
-              key={entry.worker_id}
-              testID={`directory-card-${entry.worker_id}`}
-              style={[
-                styles.card,
-                {
-                  backgroundColor: p.surface,
-                  borderColor: p.border,
-                  // The mockup's left strip: green while they are on site, neutral otherwise.
-                  borderLeftColor: entry.on_site ? p.success : p.border,
-                },
-              ]}
-            >
-              {/* Initials, not <Avatar /> — that component renders the SIGNED-IN user (it reads
+          // Wrapped so the gap applies BETWEEN cards: they are children of <LoadingBoundary />, not
+          // of the ScrollView, so the page's own `gap` never reached them and the cards sat flush
+          // against each other (PO 2026-08-09). `gap-4` is what the mockup sets.
+          <View style={styles.list}>
+            {visible.map((entry) => (
+              <View
+                key={entry.worker_id}
+                testID={`directory-card-${entry.worker_id}`}
+                style={[
+                  styles.card,
+                  {
+                    backgroundColor: p.surface,
+                    borderColor: p.border,
+                    // The mockup's left strip: green while they are on site, neutral otherwise.
+                    borderLeftColor: entry.on_site ? p.success : p.border,
+                  },
+                ]}
+              >
+                {/* Initials, not <Avatar /> — that component renders the SIGNED-IN user (it reads
                   displayName from the auth store), and `workforce.workers` has no photo column, so
                   there is no colleague photo to show even if it did. */}
-              {/* The avatar is a filled, outlined disc — on the dark palette `elevated` sits so close
+                {/* The avatar is a filled, outlined disc — on the dark palette `elevated` sits so close
                   to `surface` that an unbordered circle vanished and the initials read as loose
                   letters beside the name (PO 2026-08-09). A person glyph stands in when the name
                   yields no initials at all, so the shape is never empty. */}
-              <View style={[styles.avatar, { backgroundColor: p.elevated, borderColor: p.border }]}>
-                {initials(entry.full_name) === '' ? (
-                  <MaterialIcons name="person" size={24} color={p.muted} />
-                ) : (
-                  <Text style={[styles.avatarText, { color: p.text }]}>
-                    {initials(entry.full_name)}
-                  </Text>
-                )}
-              </View>
-              <View style={styles.cardBody}>
-                <Text style={[styles.name, { color: p.text }]} numberOfLines={1}>
-                  {entry.full_name}
-                </Text>
-                {/* The job on THIS project when the allocation names one, else the trade they were
-                    hired under — the same person can be a foreman here and a fitter elsewhere. */}
-                <Text style={[styles.role, { color: p.muted }]} numberOfLines={1}>
-                  {entry.role_on_project ?? entry.trade_type}
-                </Text>
-                <Text
-                  style={[styles.status, { color: entry.on_site ? p.success : p.muted }]}
-                  numberOfLines={1}
+                <View
+                  style={[styles.avatar, { backgroundColor: p.elevated, borderColor: p.border }]}
                 >
-                  {entry.on_site ? t('directory.onSite') : t('directory.offSite')}
-                </Text>
+                  {initials(entry.full_name) === '' ? (
+                    <MaterialIcons name="person" size={24} color={p.muted} />
+                  ) : (
+                    <Text style={[styles.avatarText, { color: p.text }]}>
+                      {initials(entry.full_name)}
+                    </Text>
+                  )}
+                </View>
+                <View style={styles.cardBody}>
+                  <Text style={[styles.name, { color: p.text }]} numberOfLines={1}>
+                    {entry.full_name}
+                  </Text>
+                  {/* The job on THIS project when the allocation names one, else the trade they were
+                    hired under — the same person can be a foreman here and a fitter elsewhere. */}
+                  <Text style={[styles.role, { color: p.muted }]} numberOfLines={1}>
+                    {entry.role_on_project ?? entry.trade_type}
+                  </Text>
+                  <Text
+                    style={[styles.status, { color: entry.on_site ? p.success : p.muted }]}
+                    numberOfLines={1}
+                  >
+                    {entry.on_site ? t('directory.onSite') : t('directory.offSite')}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  testID={`directory-chat-${entry.worker_id}`}
+                  onPress={() => Alert.alert(t('directory.chat'), t('common.comingSoon'))}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('directory.chatWith', { name: entry.full_name })}
+                  style={[styles.actionButton, { backgroundColor: p.primary }]}
+                >
+                  <MaterialIcons name="chat-bubble" size={20} color={p.onPrimary} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  testID={`directory-call-${entry.worker_id}`}
+                  onPress={() => entry.contact_phone && call(entry.contact_phone)}
+                  disabled={!entry.contact_phone}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('directory.call', { name: entry.full_name })}
+                  accessibilityState={{ disabled: !entry.contact_phone }}
+                  style={[
+                    styles.actionButton,
+                    // The mockup's call disc is `bg-surface-bright` — BRIGHTER than the card it sits
+                    // on. This palette has no such token and `elevated` is within a few points of
+                    // `surface`, so the disc vanished into the card. A hairline border gives it the
+                    // edge that brightness was providing.
+                    { backgroundColor: p.elevated, borderColor: p.border, borderWidth: 1 },
+                    !entry.contact_phone && styles.callDisabled,
+                  ]}
+                >
+                  <MaterialIcons
+                    name="call"
+                    size={20}
+                    color={entry.contact_phone ? p.accent : p.muted}
+                  />
+                </TouchableOpacity>
               </View>
-              <TouchableOpacity
-                testID={`directory-chat-${entry.worker_id}`}
-                onPress={() => Alert.alert(t('directory.chat'), t('common.comingSoon'))}
-                accessibilityRole="button"
-                accessibilityLabel={t('directory.chatWith', { name: entry.full_name })}
-                style={styles.callButton}
-              >
-                <MaterialIcons name="chat-bubble-outline" size={22} color={p.muted} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                testID={`directory-call-${entry.worker_id}`}
-                onPress={() => entry.contact_phone && call(entry.contact_phone)}
-                disabled={!entry.contact_phone}
-                accessibilityRole="button"
-                accessibilityLabel={t('directory.call', { name: entry.full_name })}
-                accessibilityState={{ disabled: !entry.contact_phone }}
-                style={[styles.callButton, !entry.contact_phone && styles.callDisabled]}
-              >
-                <MaterialIcons
-                  name="call"
-                  size={22}
-                  color={entry.contact_phone ? p.accent : p.muted}
-                />
-              </TouchableOpacity>
-            </View>
-          ))
+            ))}
+          </View>
         )}
       </LoadingBoundary>
     </ScrollView>
@@ -234,6 +249,7 @@ const makeStyles = () =>
       padding: 0,
     },
     count: { fontSize: typography.caption.fontSize, fontFamily: fontFamily.medium },
+    list: { gap: spacing.md },
     card: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -256,9 +272,13 @@ const makeStyles = () =>
     name: { fontSize: typography.body.fontSize, fontFamily: fontFamily.semibold },
     role: { fontSize: typography.label.fontSize, fontFamily: fontFamily.regular },
     status: { fontSize: typography.caption.fontSize, fontFamily: fontFamily.medium },
-    callButton: {
-      minWidth: touchTarget.iconButton,
-      minHeight: touchTarget.iconButton,
+    // 40px filled discs, as the mockup draws them: call on a raised surface, chat filled with the
+    // primary. Below the 44px tap minimum on their own, so each sits in a 44px hit slop instead of
+    // being drawn larger than the drawing (§20.8).
+    actionButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 999, // circle — half the width (§32.7)
       alignItems: 'center',
       justifyContent: 'center',
     },

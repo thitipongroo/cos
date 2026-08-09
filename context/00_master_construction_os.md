@@ -3285,10 +3285,19 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
                   Directory — the 01_home/01_dashboard bar with Home in the Projects slot, since a
                   field worker has no project-portfolio screen. Issues and the daily Report gave up
                   their slots and are pushed from the Home FAB's quick-action menu, which carries
-                  exactly those two plus Safety. Self check-in moved to the navigation drawer the
-                  same day, taking its project picker with it: attendance is written against a
-                  project and there is no global current-project state.
+                  exactly those two plus Safety.
+      Check-in:   REMOVED from the product on 2026-08-09 (product-owner). Self check-in was on the
+                  Home screen, moved briefly into the navigation drawer, and was then cut with its
+                  project picker, its POST /workers/:id/attendance client and its strings. The Home
+                  "Shift hours" tile survives it: `attendance` is one of the six entity types
+                  /sync/delta streams down, so its rows are recorded elsewhere and synced — the
+                  button was never their only source.
       Workflows:  daily report, quick issue, task list, safety checklist
+      Forms:      The daily report has NO free-text summary and the issue capture has ONE text
+                  field, both 2026-08-09 to match the mockups. `site_reports.summary` is nullable
+                  and is sent null; `issues.title` is NOT NULL and capped at 255, so the issue's
+                  single field supplies the first 255 characters as the title and anything beyond
+                  stays in the unbounded `description`.
 
     SITE_ENGINEER:
       Bottom nav: Home | Issues | Inspections | Reports  (dark tab bar — the role's landing is the

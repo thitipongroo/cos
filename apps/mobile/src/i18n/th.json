@@ -284,7 +284,6 @@
   },
   "site": {
     "report": {
-      "summaryPlaceholder": "สรุปงาน — จำนวนคนงาน ความคืบหน้า อุปสรรค",
       "save": "บันทึกรายงาน",
       "saved": "บันทึกออฟไลน์แล้ว — จะซิงค์เมื่อออนไลน์",
       "manpowerPlaceholder": "จำนวนคนงาน",
@@ -307,7 +306,6 @@
       },
       "breakdownLocked": "ระบุจำนวนคนงานทั้งหมดก่อน",
       "aiSuggestion": "AI แนะนำ: คาดว่างานติดตั้งจะเสร็จภายใน 18:00 น. จากอัตราการทำงานปัจจุบัน",
-      "progress": "ความคืบหน้างาน",
       "blockers": "อุปสรรคการทำงาน",
       "blockerCategories": {
         "WEATHER": "สภาพอากาศ",
@@ -332,17 +330,15 @@
     },
     "issues": {
       "title": "ปัญหา",
-      "titlePlaceholder": "อธิบายปัญหาที่พบ",
       "submit": "แจ้งปัญหา",
       "empty": "ยังไม่มีปัญหา",
       "escalate": "ยกระดับ",
       "escalated": "ยกระดับแล้ว",
       "categoryLabel": "ประเภทปัญหา",
-      "titleLabel": "พบปัญหาอะไร",
       "voiceLabel": "บันทึกเสียง",
       "voiceHint": "กดค้างเพื่อบันทึกเสียงอธิบายปัญหา",
       "descriptionLabel": "รายละเอียด",
-      "descriptionPlaceholder": "ระบุรายละเอียดเพิ่มเติม (ไม่บังคับ)…",
+      "descriptionPlaceholder": "อธิบายปัญหาที่พบ",
       "types": {
         "DEFECT": "งานบกพร่อง",
         "REWORK": "งานแก้ไข",
@@ -716,7 +712,8 @@
       "logout": "ออกจากระบบ",
       "theme": "ธีม",
       "themeDark": "มืด",
-      "themeLight": "สว่าง"
+      "themeLight": "สว่าง",
+      "changePin": "เปลี่ยนรหัส PIN"
     },
     "notifications": {
       "title": "การแจ้งเตือน",
@@ -724,14 +721,13 @@
       "off": "ปิด"
     },
     "biometric": {
-      "title": "ปลดล็อกด้วยไบโอเมตริก",
+      "title": "เข้าสู่ระบบด้วยชีวมิติ",
       "face": "สแกนใบหน้า",
       "fingerprint": "ลายนิ้วมือ",
       "iris": "สแกนม่านตา",
       "on": "เปิด",
       "off": "ปิด",
       "unavailable": "เครื่องนี้ไม่รองรับ",
-      "needsEnrolment": "ตั้งค่าสแกนใบหน้าหรือลายนิ้วมือในการตั้งค่าเครื่องก่อน",
       "lockPrompt": "ปลดล็อก Construction OS",
       "lockTitle": "แอปถูกล็อก",
       "lockBody": "ปลดล็อกเพื่อใช้งานต่อ",

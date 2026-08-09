@@ -284,7 +284,6 @@
   },
   "site": {
     "report": {
-      "summaryPlaceholder": "Summary — manpower, progress, blockers",
       "save": "Save report",
       "saved": "Saved offline — will sync when online",
       "manpowerPlaceholder": "Manpower count",
@@ -307,7 +306,6 @@
       },
       "breakdownLocked": "Enter the total headcount first",
       "aiSuggestion": "AI suggestion: at the current rate, the installation should finish by 18:00.",
-      "progress": "Work progress",
       "blockers": "Blockers",
       "blockerCategories": {
         "WEATHER": "Weather",
@@ -332,17 +330,15 @@
     },
     "issues": {
       "title": "Issues",
-      "titlePlaceholder": "Describe the issue",
       "submit": "Report issue",
       "empty": "No issues yet",
       "escalate": "Escalate",
       "escalated": "Escalated",
       "categoryLabel": "Category",
-      "titleLabel": "What is the issue?",
       "voiceLabel": "Voice note",
       "voiceHint": "Hold to record a spoken description of the problem",
       "descriptionLabel": "Description",
-      "descriptionPlaceholder": "Add any further detail (optional)…",
+      "descriptionPlaceholder": "Describe the issue",
       "types": {
         "DEFECT": "Defect",
         "REWORK": "Rework",
@@ -716,7 +712,8 @@
       "logout": "Log out",
       "theme": "Appearance",
       "themeDark": "Dark",
-      "themeLight": "Light"
+      "themeLight": "Light",
+      "changePin": "Change Secure PIN"
     },
     "notifications": {
       "title": "Notifications",
@@ -724,14 +721,13 @@
       "off": "Off"
     },
     "biometric": {
-      "title": "Biometric Unlock",
+      "title": "Biometric Login",
       "face": "Face ID",
       "fingerprint": "Fingerprint",
       "iris": "Iris",
       "on": "On",
       "off": "Off",
       "unavailable": "Not supported on this device",
-      "needsEnrolment": "Set up Face ID or a fingerprint in your device Settings first",
       "lockPrompt": "Unlock Construction OS",
       "lockTitle": "App locked",
       "lockBody": "Unlock to continue.",

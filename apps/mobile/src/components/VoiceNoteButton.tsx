@@ -28,6 +28,13 @@ interface VoiceNoteButtonProps {
    *   drops the label, same hold-to-record behaviour.
    */
   shape?: 'bar' | 'fab';
+  /**
+   * FAB diameter. Defaults to the 56px project standard (the Site Engineer home, the Tasks list).
+   * The issue screen's VOICE NOTE panel passes 80, which is what its mockup draws
+   * (05_site_worker/01_home/03_issue: `w-20 h-20 rounded-full`) — there the button is the whole
+   * point of a dedicated panel rather than an accessory floating over a list.
+   */
+  fabSize?: number;
 }
 
 export function VoiceNoteButton({
@@ -36,6 +43,7 @@ export function VoiceNoteButton({
   disabled,
   testID,
   shape = 'bar',
+  fabSize = 56,
 }: VoiceNoteButtonProps) {
   const t = useT();
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
@@ -123,6 +131,7 @@ export function VoiceNoteButton({
         style={[
           styles.button,
           shape === 'fab' ? styles.fab : null,
+          shape === 'fab' ? { width: fabSize, height: fabSize } : null,
           phase === 'recording' ? styles.recording : null,
           isBusy ? styles.busy : null,
         ]}
@@ -137,7 +146,7 @@ export function VoiceNoteButton({
           <ActivityIndicator color={colors.bg} />
         ) : shape === 'fab' ? (
           // Round FAB (SITE_ENGINEER home) — the mockup's clean line mic, white on the blue button.
-          <MaterialIcons name="mic" size={26} color={colors.bg} />
+          <MaterialIcons name="mic" size={Math.round(fabSize * 0.46)} color={colors.bg} />
         ) : (
           // The SAME clean-line mic as the FAB, not an emoji (PO decision 2026-08-08 — the engineer
           // Home's mic is the project standard). An emoji renders in the system font, so it changed
@@ -177,7 +186,9 @@ const styles = StyleSheet.create({
     minHeight: 0,
     width: 56,
     height: 56,
-    borderRadius: 28,
+    // 999, not half of 56: the diameter is a prop now, and a fixed radius stops being a circle the
+    // moment a caller passes anything else (the issue screen passes 80).
+    borderRadius: 999,
     paddingHorizontal: 0,
     gap: 0,
     shadowColor: '#000000',

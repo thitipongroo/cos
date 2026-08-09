@@ -15,7 +15,7 @@
 // Offline-safe: everything here is local state except the MFA row's target screen.
 
 import { useMemo, useState } from 'react';
-import { View, Text, Pressable, Switch, StyleSheet } from 'react-native';
+import { View, Text, Pressable, Switch, Alert, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
@@ -28,8 +28,12 @@ import { usePalette, type Palette } from '../theme/usePalette';
 type IconName = keyof typeof MaterialIcons.glyphMap;
 
 /**
- * MFA enrolment is behind the same feature flag the rest of the app reads, so a build without MFA
- * does not offer a screen it cannot honour.
+ * Whether the MFA ENROLMENT SCREEN exists in this build.
+ *
+ * The row is drawn either way (mockup 05_profile, PO 2026-08-09) — hiding it left the SECURITY
+ * section a single toggle and made a documented feature look absent. What the flag changes is where
+ * tapping it goes: to the enrolment screen when the build has one, or to a plain "not available yet"
+ * when it does not.
  */
 const MFA_ENROLLMENT_ENABLED = process.env.EXPO_PUBLIC_FF_S1_AUTH_MFA_ENROLLMENT === '1';
 
@@ -50,7 +54,6 @@ function Row({
   onPress,
   trailingIcon = 'chevron-right',
   toggle,
-  last,
 }: {
   testID?: string;
   icon: IconName;
@@ -63,7 +66,6 @@ function Row({
   onPress?: () => void;
   trailingIcon?: IconName;
   toggle?: { on: boolean; onChange: (next: boolean) => void; disabled?: boolean };
-  last?: boolean;
 }) {
   const p = usePalette();
   const styles = useMemo(() => makeStyles(p), [p]);
@@ -107,7 +109,10 @@ function Row({
     </>
   );
 
-  const style = [styles.row, !last && styles.rowDivider];
+  // No divider between rows (PO 2026-08-09). The mockup does draw one, but at
+  // `border-outline-variant/10` — ten percent opacity, which is invisible at this size; ours was a
+  // full-strength hairline and read as a table. The card's own border does the grouping.
+  const style = styles.row;
 
   return onPress ? (
     <Pressable
@@ -145,7 +150,6 @@ export function AccountSettings() {
   const mode = useThemeStore((s) => s.mode);
   const setMode = useThemeStore((s) => s.setMode);
   const available = useBiometricStore((s) => s.available);
-  const needsEnrolment = useBiometricStore((s) => s.needsEnrolment);
   const enabled = useBiometricStore((s) => s.enabled);
   const setEnabled = useBiometricStore((s) => s.setEnabled);
   const [busy, setBusy] = useState(false);
@@ -158,33 +162,25 @@ export function AccountSettings() {
   return (
     <View testID="account-settings" style={styles.root}>
       <Section label={t('profile.main.securitySection')}>
-        {MFA_ENROLLMENT_ENABLED ? (
-          <Row
-            testID="profile-mfa-row"
-            icon="shield"
-            label={t('mfa.enroll.title')}
-            onPress={() => router.push('/mfa-enrollment')}
-          />
-        ) : null}
-        {/* Biometric unlock. Disabled rather than hidden when the device has no enrolled biometric:
-            the mockup shows the row, and hiding it would leave a worker wondering where it went.
-            NOT BUILT: the mockup's "Change Secure PIN" — this product has no PIN. Device unlock is
-            biometric, and inventing a second credential would be a security feature with no
-            backend, no recovery path and no spec. */}
+        <Row
+          testID="profile-mfa-row"
+          icon="shield"
+          label={t('mfa.enroll.title')}
+          onPress={() =>
+            MFA_ENROLLMENT_ENABLED
+              ? router.push('/mfa-enrollment')
+              : Alert.alert(t('mfa.enroll.title'), t('common.comingSoon'))
+          }
+        />
+        {/* Biometric login. Disabled rather than hidden when the device has nothing enrolled: the
+            mockup shows the row, and hiding it would leave a worker wondering where it went. */}
         <Row
           testID="biometric-row"
           icon="fingerprint"
           label={t('profile.biometric.title')}
-          // Hardware present but nothing enrolled points at OS Settings rather than giving up;
-          // no hardware at all says so plainly. A DESCRIPTION, not a trailing value: these are full
-          // sentences, and in the tail they pushed the label out of the row entirely.
-          description={
-            available
-              ? undefined
-              : needsEnrolment
-                ? t('profile.biometric.needsEnrolment')
-                : t('profile.biometric.unavailable')
-          }
+          // No explanatory line — the mockup's row is a label and a switch, nothing else (PO
+          // 2026-08-09). When the device cannot do it the switch is simply disabled; the OS is where
+          // a biometric gets enrolled, and this row is not the place to teach that.
           toggle={{
             on: enabled,
             disabled: !available || busy,
@@ -193,7 +189,18 @@ export function AccountSettings() {
               void Promise.resolve(setEnabled(next)).finally(() => setBusy(false));
             },
           }}
-          last
+        />
+        {/* "Change Secure PIN" is drawn because the mockup draws it and the product owner asked for
+            it on 2026-08-09. It REPORTS BEING UNAVAILABLE rather than opening anything: this product
+            has no PIN — device unlock is the biometric row above, and there is no PIN column, no
+            set/verify endpoint and no recovery path. Shipping a credential dialog with nothing
+            behind it would be a security feature in name only, so this is the same treatment START
+            SCAN and the directory's chat button get. */}
+        <Row
+          testID="change-pin-row"
+          icon="dialpad"
+          label={t('profile.main.changePin')}
+          onPress={() => Alert.alert(t('profile.main.changePin'), t('common.comingSoon'))}
         />
       </Section>
 
@@ -225,7 +232,6 @@ export function AccountSettings() {
             on: mode === 'dark',
             onChange: (next) => void setMode(next ? 'dark' : 'light'),
           }}
-          last
         />
       </Section>
 
@@ -242,7 +248,6 @@ export function AccountSettings() {
           label={t('privacy.policy.title')}
           trailingIcon="open-in-new"
           onPress={() => router.push('/privacy-policy')}
-          last
         />
       </Section>
     </View>
@@ -277,7 +282,6 @@ const makeStyles = (p: Palette) =>
       paddingHorizontal: spacing.sm,
       paddingVertical: spacing.xs,
     },
-    rowDivider: { borderBottomWidth: 1, borderBottomColor: p.border },
     rowLead: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
     rowLabelBlock: { flex: 1, gap: 2 },
     rowLabel: {

@@ -238,7 +238,18 @@ export default function SafetyChecklistScreen() {
           distinguished nothing. The obligation is carried by content that states it: the
           verification counter below, and a confirm button disabled until every box is ticked.
           `is_required` is still read from the definition — it just does not get its own caption. */}
-      <ProjectPicker selectedId={projectId} onSelect={setProjectId} />
+      {/* The verification counter sits ABOVE the picker and replaces its "Project" heading (PO
+          decision 2026-08-09). It is this screen's status line — the mockup opens on one too
+          ("Site: … | Shift: Day") — and it was buried under the AI panel, though the thing it counts
+          is the whole point of the screen. The chips still name the selected project, so the heading
+          was labelling what they already show. Absent until a checklist has loaded: "0/0" before a
+          project is picked would be a count of nothing. */}
+      {rows.length > 0 ? (
+        <Text testID="safety-verification" style={[styles.verification, { color: p.text }]}>
+          {t('safety.checklist.verification', { done: doneCount, total: rows.length })}
+        </Text>
+      ) : null}
+      <ProjectPicker selectedId={projectId} onSelect={setProjectId} hideLabel />
 
       <LoadingBoundary loading={loading} variant="list" theme={isDark ? 'dark' : 'light'}>
         {rows.length > 0 ? (
@@ -327,10 +338,6 @@ export default function SafetyChecklistScreen() {
                 </Text>
               </TouchableOpacity>
             </View>
-
-            <Text style={[styles.sectionLabel, { color: p.muted }]}>
-              {t('safety.checklist.verification', { done: doneCount, total: rows.length })}
-            </Text>
 
             {rows.map((row, i) => {
               const isChecked = Boolean(checked[row.key]);
@@ -472,6 +479,13 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     marginTop: spacing.sm,
     marginBottom: spacing.xs,
+  },
+  verification: {
+    fontSize: typography.title.fontSize,
+    fontFamily: fontFamily.semibold,
+    // Uppercase by STYLE, not by uppercasing the message: Thai has no case, so `toUpperCase()` in
+    // the component would be a no-op there while shouting in English (PO 2026-08-09).
+    textTransform: 'uppercase',
   },
   sectionLabel: {
     fontSize: typography.label.fontSize,

@@ -1041,11 +1041,15 @@ needed**: `workforce.workers` already carried `full_name`, `trade_type` and `con
   the value this adds over a phone's own contacts is `on_site` — true only as of the fetch. A cached
   copy would assert that someone is standing on site with no way for the reader to judge how stale
   the claim is. Offline it says so.
-- **Both card actions are drawn** (product-owner decision 2026-08-09). **Calling is real** — `tel:`
-  via `Linking`, disabled when the worker has no `contact_phone`, which the column allows. **Chat
-  reports that it is unavailable**, the treatment already used for START SCAN and ADJUST SCHEDULE:
-  this product has no chat at all — no route, no backend module, no API spec — so the button says so
-  rather than opening nothing or appearing to send.
+- **Both card actions are drawn** as the mockup's 40px filled discs (product-owner decision
+  2026-08-09). **Calling is real** — `tel:` via `Linking`, disabled when the worker has no
+  `contact_phone`, which the column allows. **Chat reports that it is unavailable**, the treatment
+  already used for START SCAN and ADJUST SCHEDULE: this product has no chat at all — no route, no
+  backend module, no API spec — so the button says so rather than opening nothing or appearing to
+  send. The call disc carries a hairline border because the mockup's `bg-surface-bright` has no token
+  here and `elevated` sits within a few points of `surface`, so the disc was invisible on the card.
+- **The cards are spaced, not flush.** They render inside `<LoadingBoundary />`, so they are one
+  child of the page and the page's own `gap` never reached them — the gap moved onto a wrapper.
 - The avatar is a **filled, outlined disc**. On the dark palette `elevated` sits close enough to
   `surface` that an unbordered circle vanished and the initials read as loose letters beside the
   name. A person glyph stands in when a name yields no initials, so the shape is never empty.
@@ -1093,9 +1097,19 @@ unlock, language, notifications, dark mode, the **app version** and the **legal 
   product-owner decision 2026-08-09, "use a short UUID for now". It is a display aid, never a key.
 - **Three drawer links became rows**: MFA, Notification alerts and Legal & Privacy Policy are where
   the mockup puts them, and keeping the links too would have been three duplicate doors in one panel.
-- The biometric row's unavailable message is a **description under the label**, not a trailing value.
-  As a value it competed with the label for the same row and squeezed it out entirely — the row
-  rendered as the sentence alone, with no idea what it was about.
+- **SECURITY carries the mockup's three rows.** `Multi-Factor Auth` is now drawn whatever the
+  `EXPO_PUBLIC_FF_S1_AUTH_MFA_ENROLLMENT` flag says — hiding it left the section a single toggle and
+  made a documented feature look absent; the flag decides where tapping it goes, the enrolment screen
+  or a plain "not available yet". `Change Secure PIN` is drawn and reports the same, because **this
+  product has no PIN**: device unlock is the biometric row above it, and there is no PIN column, no
+  set/verify endpoint and no recovery path. A credential dialog with nothing behind it would be a
+  security feature in name only.
+- **`Biometric Login`**, the mockup's wording, and **no explanatory line under it** — the drawn row is
+  a label and a switch. When the device cannot do it the switch is simply disabled; the OS is where a
+  biometric gets enrolled, and this row is not the place to teach that.
+- **No dividers between rows.** The mockup does draw them, at `border-outline-variant/10` — ten
+  percent opacity, invisible at this size — while ours were full-strength hairlines that read as a
+  table. The card's own border does the grouping.
 - The **logout button was dropped from the account block** for the same reason — the drawer has one
   in its footer, and two in one panel is one too many.
 - The former screen was also the **last one pinned to the light token set**, the same defect Home
@@ -1143,19 +1157,34 @@ The mockup's **floating voice FAB** is
 [`<VoiceCommandFab />`](../../../apps/mobile/src/components/VoiceCommandFab.tsx) — the ADR-073
 component already built for the Site Engineer home, not a second voice behaviour invented for this
 screen: hold to record → transcribe → classify intent → route to a real screen, with a message rather
-than a guessed action when the intent is unsupported. It carries a ring of page background and a
-plain black drop shadow, because it floats over cards whose **Update progress** button is the same
-blue and the two otherwise read as one shape. The shadow is Material elevation, never a coloured
-glow — FAB glow stays §32.7-prohibited.
+than a guessed action when the intent is unsupported. A plain black drop shadow separates it from
+the cards it floats over — Material elevation, never a coloured glow, since FAB glow stays
+§32.7-prohibited. A ring of page background was added underneath it on 2026-08-08, to keep it apart
+from the **Update progress** buttons that share its blue; it was removed on 2026-08-09 because it
+read as a thick border the mockup does not draw, which sets `shadow-2xl` on a bare `rounded-full`.
 
 > `work_type`, `planned_start` and `planned_end` were already being sent by `/sync/delta` (it selects
 > the whole row) and simply discarded by the client. Local DDL v4 caches them.
 
 ### Issues — [`01-Home/04-issue-capture.png`](SITE-WORKER/01-Home/04-issue-capture.png)
 
-Camera-first, as the mockup draws it: the live viewfinder, then category, title, a hold-to-record voice
-note, a description, and **REPORT ISSUE**. Nothing follows that button — the screen ends there, as the
+Camera-first, as the mockup draws it: the live viewfinder, then category, a hold-to-record voice note,
+ONE text field, and **REPORT ISSUE**. Nothing follows that button — the screen ends there, as the
 mockup does.
+
+**One text field, not two** (product-owner decision 2026-08-09, matching the drawing). There was a
+title input above the description; both are now the single field the mockup shows. `title` is
+`NOT NULL` and capped at 255 by `CreateIssueDto`, and it is what every list, notification and
+escalation displays — so the field's first 255 characters become the title and anything past that
+stays in `description`, which is unbounded. Nothing is dropped and nothing is truncated silently.
+Its placeholder changed with its role: it read "(optional)" while being the one field REPORT ISSUE
+waits for.
+
+**The voice button is 80px here**, not the 56px project standard — `w-20 h-20 rounded-full` is what
+this mockup draws, and in a panel of its own the button IS the point rather than an accessory
+floating over a list. `<VoiceNoteButton />` took a `fabSize` prop for it, and its corner radius
+became the 999 capsule marker in the same change: a fixed 28 stops being a circle the moment a caller
+passes any other diameter.
 
 - **The category chips are the four REAL values of `site_ops.issues.issue_type`** — Defect, Rework,
   Punch item, General — not the mockup's Safety / Material / Technical / Blocker, which match no column,
@@ -1181,9 +1210,15 @@ mockup does.
 
 ### Daily report — [`01-Home/05-daily-report.png`](SITE-WORKER/01-Home/05-daily-report.png)
 
-The daily-entry form: the AI suggestion bar, manpower, shift, the per-trade breakdown, work progress
-(typed or voice), blockers, photos, and **SAVE AS DRAFT / SUBMIT REPORT** — which are the row's real
-`status` values (`DRAFT` / `SUBMITTED`), not two styles of one action.
+The daily-entry form: the AI suggestion bar, manpower, shift, the per-trade breakdown, blockers,
+photos, and **SAVE AS DRAFT / SUBMIT REPORT** — which are the row's real `status` values
+(`DRAFT` / `SUBMITTED`), not two styles of one action.
+
+**The free-text summary field is gone** (product-owner decision 2026-08-09): the mockup has none, and
+this report's content is the structured manpower, shift and blockers below it.
+`site_ops.site_reports.summary` is nullable, so nothing downstream needed it — it is sent as `null`,
+and a project is now the only thing SAVE/SUBMIT waits for. The voice button went with the field it
+dictated into; the blockers box is the screen's remaining free text.
 
 **Manpower is typed, not only tapped** (PO decision 2026-08-08). The total is a numeric field — a crew
 of 24 was 24 taps before — and each trade row puts its number **between** its − and + buttons, editable
@@ -1221,10 +1256,18 @@ computed forecast: it is static, nothing reads it, and no field of the report is
 
 ### Safety checklist — [`03-Safety/01-safety-checklist.png`](SITE-WORKER/03-Safety/01-safety-checklist.png)
 
-The pre-shift daily verification: the project picker, the checklist filter chips, the **AI Safety
-Scan** module, the items with checkboxes grouped under their checklist, **DIGITAL AUTHORIZATION**, and
-**CONFIRM SAFETY** — disabled until every item is ticked, because a partially completed safety
-attestation asserts something untrue.
+The pre-shift daily verification: the **DAILY SAFETY VERIFICATION — n/total** counter, the project
+picker, the checklist filter chips, the **AI Safety Scan** module, the items with checkboxes grouped
+under their checklist, **DIGITAL AUTHORIZATION**, and **CONFIRM SAFETY** — disabled until every item
+is ticked, because a partially completed safety attestation asserts something untrue.
+
+**The counter is the screen's status line** and took the project picker's "Project" heading on
+2026-08-09 (product-owner decision). It was buried under the AI panel, though the thing it counts is
+the whole point of the screen — and the mockup opens on a status line of its own
+("Site: … | Shift: Day"). The chips still name the selected project, so the heading was labelling
+what they already showed. It is uppercased by STYLE, not by `toUpperCase()`: Thai has no case, so
+that call would be a no-op there while shouting in English. It stays hidden until a checklist has
+loaded — `0/0` before a project is picked would be a count of nothing.
 
 **The filter chips lead with `All (n)`** and carry each checklist's real item count — `All (9) ·
 Foundation (2) · Concrete Pour (2) · Safety Walkthrough (3) · MEP Rough-in (2)`. `All` is not a view
@@ -1263,15 +1306,27 @@ time only; the stored `checklist_name` is untouched.
   mechanism and must not be confused with this. The stored mark is RESTRICTED personal data (PDPA) —
   see the migration's own comment.
 
-All five are captured by
+All seven are captured by
 [`apps/mobile/scripts/capture-android-site-worker.mjs`](../../../apps/mobile/scripts/capture-android-site-worker.mjs)
 (`node scripts/capture-android-site-worker.mjs`) — adb/uiautomator only, same reasoning as its siblings.
 It grants `android.permission.CAMERA` after `pm clear` (the Issues screen is camera-first; without it
 the capture would document a permission prompt), picks a project where the screen needs one, reaches
-Tasks the way a worker does (Home → the Tasks quick action, not a tab), and asserts real CONTENT
-before saving — the check-in button on Home, at least one task card, at least one checklist item — so
-an empty state cannot be committed as though it were the feature. Home and Tasks are single
-viewports; the other three are full-page stitches (`scripts/stitch-fullpage.py`).
+each screen the way a worker does — Tasks and Directory from their tabs, Issues and the daily Report
+from the Home FAB's quick-action menu, the drawer from the avatar — and asserts real CONTENT before
+saving: both Home stat tiles, at least one task card, at least one crew card, at least one checklist
+item. An empty state cannot be committed as though it were the feature. Quick actions is a single
+viewport; the rest are full-page stitches (`scripts/stitch-fullpage.py`).
+
+**`--only <substring>` narrows a run to the screens whose name matches**, repeatable, so a one-screen
+change costs one screen's worth of time rather than eight (product-owner request 2026-08-09):
+
+```bash
+node scripts/capture-android-site-worker.mjs --only 02-account-settings
+```
+
+Every step opens its own screen from the shell rather than inheriting state from the step before it,
+because `--only` can run any one of them alone. With no flag, all seven are captured — which is what
+a full refresh wants.
 
 > **One Hermes bug was found and fixed while capturing this set.** The first daily-report capture read
 > `Structural{count, plural, one {# worker} other {# workers}}` — the raw ICU template. Hermes ships a
