@@ -1,0 +1,278 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>PM Procurement Dashboard - Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "tertiary-fixed-dim": "#c1c5dc",
+                      "sync-active": "#FFD60A",
+                      "on-error-container": "#ffdad6",
+                      "surface": "#031427",
+                      "inverse-on-surface": "#213145",
+                      "secondary": "#4cd7f6",
+                      "primary-fixed-dim": "#b4c5ff",
+                      "on-primary-fixed": "#00174b",
+                      "tertiary-container": "#686c80",
+                      "on-error": "#690005",
+                      "surface-container": "#102034",
+                      "primary-fixed": "#dbe1ff",
+                      "outline-variant": "#434655",
+                      "on-tertiary-fixed-variant": "#414658",
+                      "secondary-fixed": "#acedff",
+                      "on-tertiary-fixed": "#161b2b",
+                      "primary-container": "#2563eb",
+                      "on-background": "#d3e4fe",
+                      "on-primary-fixed-variant": "#003ea8",
+                      "on-primary": "#002a78",
+                      "on-tertiary": "#2b3041",
+                      "inverse-surface": "#d3e4fe",
+                      "on-secondary": "#003640",
+                      "error-container": "#93000a",
+                      "on-secondary-fixed-variant": "#004e5c",
+                      "mobile-success": "#00C853",
+                      "surface-container-low": "#0b1c30",
+                      "tertiary-fixed": "#dee1f9",
+                      "outline": "#8d90a0",
+                      "mobile-danger": "#FF3B30",
+                      "secondary-fixed-dim": "#4cd7f6",
+                      "inverse-primary": "#0053db",
+                      "dark-bg": "#020617",
+                      "tertiary": "#c1c5dc",
+                      "primary": "#b4c5ff",
+                      "surface-container-high": "#1b2b3f",
+                      "surface-container-highest": "#26364a",
+                      "surface-tint": "#b4c5ff",
+                      "on-primary-container": "#eeefff",
+                      "surface-variant": "#26364a",
+                      "secondary-container": "#03b5d3",
+                      "surface-bright": "#2a3a4f",
+                      "sync-pending": "#94A3B8",
+                      "dark-surface": "#0F172A",
+                      "on-surface-variant": "#c3c6d7",
+                      "on-surface": "#d3e4fe",
+                      "error": "#ffb4ab",
+                      "mobile-primary": "#0066FF",
+                      "surface-container-lowest": "#000f21",
+                      "on-tertiary-container": "#eeefff",
+                      "on-secondary-container": "#00424e",
+                      "mobile-warning": "#FF9500",
+                      "surface-dim": "#031427",
+                      "background": "#031427",
+                      "on-secondary-fixed": "#001f26"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "edge-mobile": "24px",
+                      "space-3": "12px",
+                      "web-margin": "32px",
+                      "base": "4px",
+                      "space-1": "4px",
+                      "space-2": "8px",
+                      "touch-target": "52px",
+                      "space-4": "16px"
+              },
+              "fontFamily": {
+                      "hero-mobile": ["Inter Tight"],
+                      "h1-web": ["Inter Tight"],
+                      "h2-web": ["Inter Tight"],
+                      "tiny-web": ["Inter Tight"],
+                      "body-mobile": ["Inter Tight"],
+                      "body-web": ["Inter Tight"],
+                      "label-mobile": ["Inter Tight"],
+                      "display-web": ["Inter Tight"]
+              },
+              "fontSize": {
+                      "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                      "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                      "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                      "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+        .shimmer {
+            background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        
+        /* Padding safe for bottom nav */
+        .pb-safe {
+            padding-bottom: env(safe-area-inset-bottom, 24px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body-mobile md:font-body-web antialiased min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-surface fixed top-0 w-full z-50 bg-surface-container-low dark:bg-surface-container-low flat no shadows transition-transform duration-200 active:scale-95">
+<div class="flex items-center justify-between px-edge-mobile h-16 w-full">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary dark:text-primary cursor-pointer hover:bg-surface-variant p-2 rounded-full transition-colors" data-icon="menu">menu</span>
+<span class="font-display-web text-display-web-mobile text-primary font-bold tracking-tight uppercase">Procurement</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-1.5 px-2 py-1 rounded bg-surface-container border border-outline-variant">
+<span class="w-2 h-2 rounded-full bg-sync-active shadow-[0_0_8px_rgba(255,214,10,0.6)]"></span>
+<span class="font-tiny-web text-tiny-web text-sync-active uppercase">SYNCED</span>
+</div>
+<img alt="Project Manager Profile" class="w-8 h-8 rounded-full border border-outline object-cover" data-alt="A close-up, high-contrast portrait of a rugged, professional construction project manager wearing a white hardhat and high-visibility vest. The lighting is dramatic, highlighting the texture of the safety gear against a dark industrial background. The style is hyper-realistic and modern, fitting a high-end corporate dashboard in dark mode." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLzRqJ4Um0n_VEXlsSbwEwYMo8Ooey6snuIEwwmBPE2FL7cqkyTSbVfsArVHSysUpvqEpiRpB2OmibP3SKvD1fJ0Sc3ikseKXDR3v5PO7xvFMjKte_Q6SEedhV5_PjRWvwWqW3AENZWgqS41bDgf2BJFVP7vEieGTU_HSOSkM8F7VCNxNTuS0VwqLojc6zmCloUFh9-cpVf5QILbCrEmgofhkrserhxorFFXBlfPUIW7DcDoFyDEfY">
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 mt-16 mb-[calc(72px+env(safe-area-inset-bottom,24px))] px-edge-mobile md:px-web-margin py-6 overflow-y-auto">
+<!-- Statistics Row Bento Grid -->
+<section class="grid grid-cols-3 gap-3 md:gap-4 mb-6">
+<div class="bg-surface-container rounded-xl p-4 border border-surface-variant flex flex-col items-center justify-center relative overflow-hidden group hover:bg-surface-container-high cursor-pointer active:scale-95 transition-all">
+<div class="absolute top-0 left-0 w-1 h-full bg-mobile-warning"></div>
+<span class="material-symbols-outlined absolute top-2 right-2 text-on-surface-variant opacity-50 text-sm">chevron_right</span>
+<span class="font-hero-mobile text-hero-mobile text-mobile-warning mb-1 group-hover:scale-110 transition-transform">08</span>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant text-center uppercase">Pending Approvals</span>
+</div>
+<div class="bg-surface-container rounded-xl p-4 border border-surface-variant flex flex-col items-center justify-center relative overflow-hidden group hover:bg-surface-container-high cursor-pointer active:scale-95 transition-all">
+<div class="absolute top-0 left-0 w-1 h-full bg-primary"></div>
+<span class="material-symbols-outlined absolute top-2 right-2 text-on-surface-variant opacity-50 text-sm">chevron_right</span>
+<span class="font-hero-mobile text-hero-mobile text-primary mb-1 group-hover:scale-110 transition-transform">12</span>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant text-center uppercase">Active RFQs</span>
+</div>
+<div class="bg-surface-container rounded-xl p-4 border border-surface-variant flex flex-col items-center justify-center relative overflow-hidden group hover:bg-surface-container-high cursor-pointer active:scale-95 transition-all">
+<div class="absolute top-0 left-0 w-1 h-full bg-mobile-success"></div>
+<span class="material-symbols-outlined absolute top-2 right-2 text-on-surface-variant opacity-50 text-sm">chevron_right</span>
+<span class="font-hero-mobile text-hero-mobile text-mobile-success mb-1 group-hover:scale-110 transition-transform">04</span>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant text-center uppercase">Today's Deliveries</span>
+</div>
+
+
+
+
+
+
+</section>
+<!-- AI Intelligence Module -->
+<section class="mb-8 relative">
+<div class="bg-surface-container border border-surface-variant rounded-xl overflow-hidden relative">
+<!-- Cyan subtle tint -->
+<div class="absolute inset-0 bg-secondary opacity-5 pointer-events-none"></div>
+<!-- Left accent -->
+<div class="absolute top-0 left-0 w-1.5 h-full bg-secondary"></div>
+<div class="p-4 relative z-10">
+<div class="flex items-center justify-between mb-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-sm" style="font-variation-settings: &quot;FILL&quot; 1;">memory</span>
+<h3 class="font-label-mobile text-label-mobile text-secondary uppercase tracking-wider">Procurement Analysis</h3>
+</div>
+<div class="flex items-center gap-1 bg-surface border border-secondary/30 px-2 py-0.5 rounded text-secondary">
+<span class="font-tiny-web text-tiny-web">CONF: 95%</span>
+</div>
+</div>
+<p class="font-body-mobile text-body-mobile text-on-surface mb-3 leading-relaxed">
+<span class="text-mobile-danger font-semibold">12% potential cost overrun</span> detected in Skyline Tower concrete supply. 
+                    </p>
+<div class="bg-surface/50 border border-surface-variant rounded-lg p-3 flex items-start gap-3 cursor-pointer">
+<span class="material-symbols-outlined text-secondary mt-0.5">lightbulb</span>
+<div>
+<span class="font-label-mobile text-label-mobile text-on-surface block mb-1">Recommendation</span>
+<span class="font-body-web text-body-web text-on-surface-variant">Review alternative vendors in Marketplace to mitigate variance before next pour schedule.</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant self-center ml-auto">chevron_right</span></div>
+</div>
+</div>
+</section>
+<!-- Pending Approvals List -->
+<section class="mb-8">
+<div class="flex items-center justify-between mb-4">
+<h2 class="font-h2-web text-h2-web text-on-surface font-semibold uppercase tracking-wide flex items-center gap-2">
+<span class="material-symbols-outlined text-mobile-warning">fact_check</span>
+                    Pending Approvals
+                </h2>
+<button class="text-primary font-label-mobile text-label-mobile uppercase hover:text-primary-fixed transition-colors">View All</button>
+</div>
+<div class="flex flex-col gap-3">
+<!-- Card 1 -->
+<div class="bg-surface-container rounded-xl overflow-hidden border border-surface-variant relative shadow-lg hover:bg-surface-container-high transition-colors cursor-pointer">
+<div class="absolute top-0 left-0 w-1 h-full bg-mobile-warning"></div>
+<div class="p-4"><div class="flex justify-between items-start mb-2"><div><h3 class="font-label-mobile text-label-mobile text-on-surface mb-0.5">Ready-mix Concrete</h3><p class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">Skyline Tower • PR-8829</p></div><div class="flex items-center gap-2"><div class="text-right"><span class="font-label-mobile text-label-mobile text-on-surface block">฿450,000</span><span class="font-tiny-web text-tiny-web text-mobile-warning uppercase flex items-center justify-end gap-1"><span class="material-symbols-outlined text-[12px]">schedule</span> 2h ago</span></div><span class="material-symbols-outlined text-on-surface-variant opacity-40">chevron_right</span></div></div></div>
+<div class="bg-surface/30 border-t border-surface-variant/50 p-2 px-4 flex gap-2">
+<button class="flex-1 bg-surface border border-outline text-on-surface font-label-mobile text-label-mobile h-10 rounded uppercase tracking-wider hover:bg-surface-variant transition-colors">Review</button>
+<button class="flex-1 bg-primary text-on-primary font-label-mobile text-label-mobile h-10 rounded uppercase tracking-wider hover:bg-primary-container hover:text-on-primary-container transition-colors">Approve</button>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container rounded-xl overflow-hidden border border-surface-variant relative shadow-lg hover:bg-surface-container-high transition-colors cursor-pointer">
+<div class="absolute top-0 left-0 w-1 h-full bg-mobile-warning opacity-70"></div>
+<div class="p-4"><div class="flex justify-between items-start mb-2"><div><h3 class="font-label-mobile text-label-mobile text-on-surface mb-0.5">Structural Steel Rebar (Grade 60)</h3><p class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">Riverfront Mall • PR-8824</p></div><div class="flex items-center gap-2"><div class="text-right"><span class="font-label-mobile text-label-mobile text-on-surface block">฿1,200,000</span><span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase flex items-center justify-end gap-1"><span class="material-symbols-outlined text-[12px]">schedule</span> 1d ago</span></div><span class="material-symbols-outlined text-on-surface-variant opacity-40">chevron_right</span></div></div></div>
+<div class="bg-surface/30 border-t border-surface-variant/50 p-2 px-4 flex gap-2">
+<button class="flex-1 bg-surface border border-outline text-on-surface font-label-mobile text-label-mobile h-10 rounded uppercase tracking-wider hover:bg-surface-variant transition-colors">Review</button>
+<button class="flex-1 bg-primary text-on-primary font-label-mobile text-label-mobile h-10 rounded uppercase tracking-wider hover:bg-primary-container hover:text-on-primary-container transition-colors">Approve</button>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden bg-surface-container dark:bg-surface-container fixed bottom-0 w-full z-50 pb-safe bg-surface-container dark:bg-surface-container shadow-lg flex justify-around items-center h-[72px] px-2">
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-all duration-300 ease-in-out active:scale-95 w-16">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: &quot;FILL&quot; 0;">foundation</span>
+<span class="font-tiny-web text-tiny-web">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-xl px-4 py-1.5 transition-all duration-300 ease-in-out active:scale-95 w-20">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: &quot;FILL&quot; 1;">shopping_cart</span>
+<span class="font-tiny-web text-tiny-web font-bold">Procurement</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-all duration-300 ease-in-out active:scale-95 w-16">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: &quot;FILL&quot; 0;">payments</span>
+<span class="font-tiny-web text-tiny-web">Finance</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-all duration-300 ease-in-out active:scale-95 w-16">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: &quot;FILL&quot; 0;">more_horiz</span>
+<span class="font-tiny-web text-tiny-web">More</span>
+</button>
+</nav>
+<!-- Side Nav / Top Nav Links for Web (Hidden on mobile) -->
+<nav class="hidden md:flex fixed left-0 top-16 h-[calc(100vh-64px)] w-64 bg-surface-container-low border-r border-surface-variant flex-col py-6 px-4 z-40">
+<button class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container hover:text-on-surface rounded-lg transition-colors mb-2 text-left">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 0;">foundation</span>
+<span class="font-label-mobile text-label-mobile">Projects</span>
+</button>
+<button class="flex items-center gap-3 px-4 py-3 bg-secondary-container text-on-secondary-container rounded-lg transition-colors mb-2 text-left font-bold">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">shopping_cart</span>
+<span class="font-label-mobile text-label-mobile">Procurement</span>
+</button>
+<button class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container hover:text-on-surface rounded-lg transition-colors mb-2 text-left">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 0;">payments</span>
+<span class="font-label-mobile text-label-mobile">Finance</span>
+</button>
+</nav>
+
+
+
+
+</body></html>

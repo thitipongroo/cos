@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Navigation Drawer - Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,100..900;1,100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "dark-bg": "#020617",
+                      "primary-fixed": "#dbe1ff",
+                      "secondary": "#4cd7f6",
+                      "tertiary": "#c1c5dc",
+                      "mobile-warning": "#FF9500",
+                      "inverse-surface": "#d3e4fe",
+                      "outline": "#8d90a0",
+                      "surface-container-highest": "#26364a",
+                      "on-error": "#690005",
+                      "surface-bright": "#2a3a4f",
+                      "tertiary-fixed": "#dee1f9",
+                      "on-primary-fixed-variant": "#003ea8",
+                      "on-surface-variant": "#c3c6d7",
+                      "on-tertiary": "#2b3041",
+                      "sync-active": "#FFD60A",
+                      "on-secondary-fixed": "#001f26",
+                      "error": "#ffb4ab",
+                      "tertiary-container": "#686c80",
+                      "on-background": "#d3e4fe",
+                      "secondary-fixed": "#acedff",
+                      "on-secondary-fixed-variant": "#004e5c",
+                      "error-container": "#93000a",
+                      "tertiary-fixed-dim": "#c1c5dc",
+                      "mobile-success": "#00C853",
+                      "secondary-fixed-dim": "#4cd7f6",
+                      "mobile-danger": "#FF3B30",
+                      "on-primary-fixed": "#00174b",
+                      "mobile-primary": "#0066FF",
+                      "inverse-primary": "#0053db",
+                      "surface-container": "#102034",
+                      "on-tertiary-fixed-variant": "#414658",
+                      "outline-variant": "#434655",
+                      "primary-fixed-dim": "#b4c5ff",
+                      "inverse-on-surface": "#213145",
+                      "secondary-container": "#03b5d3",
+                      "surface": "#031427",
+                      "on-tertiary-container": "#eeefff",
+                      "surface-container-low": "#0b1c30",
+                      "on-surface": "#d3e4fe",
+                      "on-primary": "#002a78",
+                      "background": "#031427",
+                      "surface-container-lowest": "#000f21",
+                      "surface-tint": "#b4c5ff",
+                      "on-error-container": "#ffdad6",
+                      "sync-pending": "#94A3B8",
+                      "primary": "#b4c5ff",
+                      "dark-surface": "#0F172A",
+                      "on-tertiary-fixed": "#161b2b",
+                      "surface-container-high": "#1b2b3f",
+                      "on-secondary-container": "#00424e",
+                      "surface-dim": "#031427",
+                      "surface-variant": "#26364a",
+                      "on-primary-container": "#eeefff",
+                      "primary-container": "#2563eb",
+                      "on-secondary": "#003640"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "space-1": "4px",
+                      "space-3": "12px",
+                      "edge-mobile": "24px",
+                      "base": "4px",
+                      "web-margin": "32px",
+                      "touch-target": "52px",
+                      "space-2": "8px",
+                      "space-4": "16px"
+              },
+              "fontFamily": {
+                      "tiny-web": [
+                              "Inter Tight"
+                      ],
+                      "label-mobile": [
+                              "Inter Tight"
+                      ],
+                      "body-mobile": [
+                              "Inter Tight"
+                      ],
+                      "display-web": [
+                              "Inter Tight"
+                      ],
+                      "body-web": [
+                              "Inter Tight"
+                      ],
+                      "h2-web": [
+                              "Inter Tight"
+                      ],
+                      "hero-mobile": [
+                              "Inter Tight"
+                      ],
+                      "h1-web": [
+                              "Inter Tight"
+                      ]
+              },
+              "fontSize": {
+                      "tiny-web": [
+                              "11px",
+                              {
+                                      "lineHeight": "12px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "label-mobile": [
+                              "13px",
+                              {
+                                      "lineHeight": "18px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-mobile": [
+                              "17px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-web": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-web": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "h2-web": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "hero-mobile": [
+                              "28px",
+                              {
+                                      "lineHeight": "34px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "h1-web": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-[#0B1020] min-h-screen text-on-surface font-sans antialiased overflow-hidden selection:bg-primary-container selection:text-on-primary-container">
+<!-- Mock Background Content (to show overlay effect) -->
+<div class="fixed inset-0 z-0 flex flex-col p-edge-mobile opacity-30 pointer-events-none">
+<header class="flex justify-between items-center mb-8">
+<div class="w-8 h-8 bg-surface-container rounded-full"></div>
+<div class="w-24 h-6 bg-surface-container rounded"></div>
+<div class="w-8 h-8 bg-surface-container rounded-full"></div>
+</header>
+<div class="grid grid-cols-2 gap-space-4 mb-space-4">
+<div class="h-32 bg-surface-container rounded-xl"></div>
+<div class="h-32 bg-surface-container rounded-xl"></div>
+</div>
+<div class="flex-1 bg-surface-container rounded-xl"></div>
+</div>
+<!-- Overlay -->
+<div aria-hidden="true" class="fixed inset-0 bg-black/60 z-[50] transition-opacity duration-300"></div>
+<!-- Navigation Drawer -->
+<!-- Fixed NavigationDrawer layout mapped from JSON style_shell_layout & style_component_shape -->
+<aside class="fixed inset-y-0 left-0 z-[60] flex flex-col p-space-4 w-[85vw] max-w-[360px] h-full rounded-r-xl bg-surface-dim dark:bg-dark-bg shadow-xl transform translate-x-0 transition-transform duration-300 ease-in-out border-r border-surface-container-low/50">
+<!-- Header: User Profile -->
+<div class="flex flex-col gap-space-3 pb-space-4 mb-space-2 border-b border-surface-container-low dark:border-surface-container-lowest">
+<div class="flex items-center justify-between">
+<span class="font-display-web text-display-web-mobile font-bold text-primary tracking-tight">Construction OS</span>
+<button aria-label="Close menu" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-bright/10 text-on-surface-variant transition-colors">
+<span class="material-symbols-outlined" data-icon="close">close</span>
+</button>
+</div>
+<div class="flex items-center gap-space-3 mt-space-2 bg-surface-container-low p-space-3 rounded-xl">
+<img class="w-12 h-12 rounded-full object-cover border-2 border-primary-fixed-dim shrink-0" data-alt="A professional headshot portrait of a male construction project manager named วิชิต มั่นคง. He is wearing a high-visibility vest over a blue work shirt, wearing a white hard hat. The background is a slightly out of focus active construction site during daytime. High resolution, sharp focus, cinematic lighting. Corporate industrial style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAiKPeGdSB001UnAZ8_JGjppb2cG89XrIhJ8Yk3JE-6Te4DziJHvo_HnFxnzkG5aUv98rKoKQIHomeYfA7hnoMOx_3qQLJO9ghYUtvaFvvNFfzNyCqruxwXXqJgfNhj4fPkkWhsLIg8JbVilHrNjrLrEQ4PsenD9J2QY50GZfeqiUydXWMcQQwOhSEwrmFQaY4pz_9wTsWJT9Jpi8DuGqqLao44OdCKynFbMkF_WVrOPe4_HKyTAA22"/>
+<div class="flex flex-col flex-1 overflow-hidden">
+<h2 class="font-h2-web text-h2-web text-on-surface truncate">วิชิต มั่นคง</h2>
+<p class="font-body-mobile text-body-mobile text-on-surface-variant truncate">Project Manager • Skybridge Central</p>
+<div class="flex items-center gap-1.5 mt-1">
+<span class="w-2 h-2 rounded-full bg-mobile-success animate-pulse"></span>
+<span class="font-tiny-web text-tiny-web text-mobile-success uppercase tracking-wider">Synced</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Main Navigation Items -->
+<nav class="flex-1 overflow-y-auto py-space-2 space-y-1 custom-scrollbar">
+<!-- Active Item (Project Dashboard) mapped from style_active_navigation -->
+<a class="flex items-center gap-space-3 px-space-4 h-touch-target rounded-lg bg-primary-container text-on-primary-container font-bold transition-transform duration-150 active:scale-95 group" href="#">
+<span class="material-symbols-outlined shrink-0" data-icon="dashboard" data-weight="fill" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<div class="flex flex-col flex-1">
+<span class="font-body-mobile text-body-mobile leading-tight">Project Dashboard</span>
+<span class="font-tiny-web text-tiny-web opacity-80 uppercase tracking-wider">ภาพรวมโครงการ</span>
+</div>
+</a>
+<!-- Inactive Items mapped from style_inactive_navigation and style_universal_hover -->
+<a class="flex items-center gap-space-3 px-space-4 h-touch-target rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-bright/10 transition-colors group" href="#">
+<span class="material-symbols-outlined shrink-0 group-hover:text-primary-fixed-dim transition-colors" data-icon="description">description</span>
+<div class="flex flex-col flex-1">
+<span class="font-body-mobile text-body-mobile leading-tight">Daily Site Reports</span>
+<span class="font-tiny-web text-tiny-web opacity-70 uppercase tracking-wider">รายงานประจำวัน</span>
+</div>
+</a>
+<a class="flex items-center gap-space-3 px-space-4 h-touch-target rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-bright/10 transition-colors group" href="#">
+<span class="material-symbols-outlined shrink-0 group-hover:text-mobile-warning transition-colors" data-icon="warning">warning</span>
+<div class="flex flex-col flex-1">
+<span class="font-body-mobile text-body-mobile leading-tight">Issue Management</span>
+<span class="font-tiny-web text-tiny-web opacity-70 uppercase tracking-wider">จัดการปัญหา</span>
+</div>
+<span class="flex items-center justify-center min-w-[24px] h-6 px-1.5 rounded-full bg-mobile-warning/20 text-mobile-warning font-tiny-web text-tiny-web font-bold">3</span>
+</a>
+<a class="flex items-center gap-space-3 px-space-4 h-touch-target rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-bright/10 transition-colors group" href="#">
+<span class="material-symbols-outlined shrink-0 group-hover:text-primary-fixed-dim transition-colors" data-icon="inventory_2">inventory_2</span>
+<div class="flex flex-col flex-1">
+<span class="font-body-mobile text-body-mobile leading-tight">Material Inventory</span>
+<span class="font-tiny-web text-tiny-web opacity-70 uppercase tracking-wider">คลังวัสดุ</span>
+</div>
+</a>
+<a class="flex items-center gap-space-3 px-space-4 h-touch-target rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-bright/10 transition-colors group" href="#">
+<span class="material-symbols-outlined shrink-0 group-hover:text-secondary-fixed-dim transition-colors" data-icon="view_in_ar">view_in_ar</span>
+<div class="flex flex-col flex-1">
+<span class="font-body-mobile text-body-mobile leading-tight">BIM Progress Audit</span>
+<span class="font-tiny-web text-tiny-web opacity-70 uppercase tracking-wider">ตรวจสอบความคืบหน้า BIM</span>
+</div>
+</a>
+<a class="flex items-center gap-space-3 px-space-4 h-touch-target rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-bright/10 transition-colors group" href="#">
+<span class="material-symbols-outlined shrink-0 group-hover:text-mobile-success transition-colors" data-icon="verified_user">verified_user</span>
+<div class="flex flex-col flex-1">
+<span class="font-body-mobile text-body-mobile leading-tight">Safety Compliance</span>
+<span class="font-tiny-web text-tiny-web opacity-70 uppercase tracking-wider">ความปลอดภัย</span>
+</div>
+</a>
+</nav>
+<!-- Bottom Section -->
+<div class="mt-auto pt-space-4 border-t border-surface-container-low dark:border-surface-container-lowest space-y-1 pb-safe">
+<a class="flex items-center gap-space-3 px-space-4 h-touch-target rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-bright/10 transition-colors group" href="#">
+<span class="material-symbols-outlined shrink-0 group-hover:animate-spin" data-icon="settings" style="animation-duration: 3s;">settings</span>
+<span class="font-body-mobile text-body-mobile flex-1">System Settings</span>
+</a>
+<a class="flex items-center gap-space-3 px-space-4 h-touch-target rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-bright/10 transition-colors group" href="#">
+<span class="material-symbols-outlined shrink-0" data-icon="help">help</span>
+<span class="font-body-mobile text-body-mobile flex-1">Support &amp; Documentation</span>
+</a>
+<button class="w-full flex items-center gap-space-3 px-space-4 h-touch-target rounded-lg text-mobile-danger hover:bg-mobile-danger/10 transition-colors group active:scale-95 duration-150">
+<span class="material-symbols-outlined shrink-0" data-icon="logout">logout</span>
+<span class="font-body-mobile text-body-mobile font-semibold flex-1 text-left">Logout</span>
+</button>
+</div>
+</aside>
+<style>
+        /* Custom scrollbar for webkit */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: theme('colors.surface-container-highest');
+            border-radius: 20px;
+        }
+        .pb-safe {
+            padding-bottom: env(safe-area-inset-bottom, 20px);
+        }
+    </style>
+</body></html>
