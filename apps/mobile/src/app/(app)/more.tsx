@@ -14,21 +14,25 @@
 // Support Centre's search, the Directory's chat button and the Terms download already use. They are
 // not silently dropped: a tile that vanishes tells a reader the feature was never planned.
 //
-// NO AI WIDGET YET, and that is a question rather than an omission. The drawing's panel reports
-// PROJECT HEALTH and a weather-driven schedule risk at "CONF: 98%" — that is neither the procurement
-// summary (<ProcurementInsight />, wired on the dashboard) nor anything else already generated. The
-// gateway offers `/ai/reports/executive-summary` and `/ai/reports/delay-risk`, and which of the two
-// this panel is meant to call is a product decision, not a detail to guess at. Escalated 2026-08-10.
+// THE AI WIDGET CALLS EXECUTIVE_SUMMARY (PO decision 2026-08-10, after the question was escalated).
+// The drawing's panel reports "Project Health: …" and "Risk Alert: …" at CONF 98%, which is that
+// report type's own shape — `executive_summary` + `risk_flags` + `recommendations`. The alternative
+// considered was `/ai/reports/delay-risk`, and it was rejected on its schema: DelayRiskOutput's first
+// string field is `delay_risk_level`, so the shared panel would print the word "HIGH" where the
+// drawing shows a paragraph. It is the same <PortfolioInsight /> the Finance tab renders, under the
+// drawing's own heading.
 //
 // The identity block reads from the session rather than the drawing: the drawing shows a fixed name
 // and "Project Manager • Skybridge Central", so the project half comes from the picked project and is
 // absent — stated as absent — until one is chosen.
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Avatar } from '../../components/Avatar';
+import { ProjectPicker } from '../../components/ProjectPicker';
+import { PortfolioInsight } from '../../components/PortfolioInsight';
 import { useAuthStore } from '../../store/authStore';
 import { formatRole } from '../../lib/formatRole';
 import { useT } from '../../i18n';
@@ -64,6 +68,7 @@ export default function MoreScreen(): React.JSX.Element {
   const p = usePalette();
   const styles = useMemo(() => makeStyles(p), [p]);
   const router = useRouter();
+  const [insightProject, setInsightProject] = useState('');
   const isDark = useIsDark();
   const displayName = useAuthStore((s) => s.displayName);
   const role = useAuthStore((s) => s.role);
@@ -91,6 +96,14 @@ export default function MoreScreen(): React.JSX.Element {
           </View>
         </View>
       </View>
+
+      {/* The drawing's "Intelligence · CONF: 98%" widget. Its text is "Project Health: … Risk Alert:
+          …" — cross-domain health plus a risk, which is EXECUTIVE_SUMMARY's own shape
+          (`executive_summary` + `risk_flags` + `recommendations`), so it is the same panel the
+          Finance tab draws, under the drawing's own heading. Per project, because that endpoint is
+          — hence the picker. */}
+      <ProjectPicker selectedId={insightProject} onSelect={setInsightProject} />
+      <PortfolioInsight projectId={insightProject} titleKey="more.intelligence" />
 
       {TILES.map((tile) => (
         <Pressable

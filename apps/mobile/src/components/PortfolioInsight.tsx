@@ -12,15 +12,25 @@
 // model that did anyway could not put the number in front of a manager as fact.
 
 import { generateExecutiveSummary } from '../api/ai';
-import { InsightPanel } from './InsightPanel';
+import { InsightPanel, type InsightPanelProps } from './InsightPanel';
 
-export function PortfolioInsight({ projectId }: { projectId: string }): React.JSX.Element {
+export function PortfolioInsight({
+  projectId,
+  titleKey = 'pm.finance.insightTitle',
+  followUp,
+}: {
+  projectId: string;
+  /** The More screen's drawing calls the same panel "Intelligence"; Finance calls it what it is. */
+  titleKey?: string;
+  followUp?: InsightPanelProps['followUp'];
+}): React.JSX.Element {
   return (
     <InsightPanel
       testID="portfolio-insight"
       projectId={projectId}
       generate={generateExecutiveSummary}
-      titleKey="pm.finance.insightTitle"
+      titleKey={titleKey}
+      followUp={followUp}
     />
   );
 }

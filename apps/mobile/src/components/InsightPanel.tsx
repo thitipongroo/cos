@@ -24,6 +24,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import type { AiReport } from '../api/ai';
 import { decodeJwtPayload } from '../lib/jwt';
 import { confidenceBand, confidencePercent } from '../lib/aiConfidence';
+import { insightAdvice } from '../lib/insightAdvice';
 import { useAuthStore } from '../store/authStore';
 import { useT } from '../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../theme/tokens';
@@ -57,6 +58,11 @@ export interface InsightPanelProps {
   /** i18n key for the panel's eyebrow — each screen names the report it actually asks for. */
   titleKey: string;
   testID: string;
+  /**
+   * The drawing's follow-up button ("Review Adjustments ›" on the Finance panel). Optional: the
+   * panels whose mockup has no such button do not grow one.
+   */
+  followUp?: { labelKey: string; onPress: () => void };
 }
 
 export function InsightPanel({
@@ -64,6 +70,7 @@ export function InsightPanel({
   generate,
   titleKey,
   testID,
+  followUp,
 }: InsightPanelProps): React.JSX.Element {
   const t = useT();
   const p = usePalette();
@@ -94,6 +101,7 @@ export function InsightPanel({
   const band = report === null ? null : confidenceBand(report.confidence, report.low_confidence);
   const percent = report === null ? null : confidencePercent(report.confidence);
   const text = report === null ? null : summaryText(report.content);
+  const advice = report === null ? null : insightAdvice(report.content);
 
   return (
     <View testID={testID} style={styles.panel}>
@@ -127,6 +135,25 @@ export function InsightPanel({
         </Text>
       ) : null}
 
+      {/* The drawing's lightbulb block. It appears only once a report has carried something to put
+          in it, and it is LABELLED for what that something is — see lib/insightAdvice.ts for why a
+          procurement risk item must not be printed under the word "Recommendation". */}
+      {!loading && advice !== null ? (
+        <View testID={`insight-${advice.kind}`} style={styles.advice}>
+          <MaterialIcons
+            name={advice.kind === 'recommendation' ? 'lightbulb' : 'error-outline'}
+            size={16}
+            color={p.accent}
+          />
+          <View style={styles.adviceText}>
+            <Text style={styles.adviceLabel}>
+              {t(advice.kind === 'recommendation' ? 'insight.recommendation' : 'insight.risk')}
+            </Text>
+            <Text style={styles.body}>{advice.text}</Text>
+          </View>
+        </View>
+      ) : null}
+
       {/* The mockup's "Source:" line. It names the project the figures came from, which is the whole
           reason the host screen asks for one. */}
       <Text style={styles.source}>{t('insight.source', { project: projectId })}</Text>
@@ -142,6 +169,19 @@ export function InsightPanel({
       >
         <Text style={styles.actionText}>{t('insight.action')}</Text>
       </Pressable>
+
+      {followUp !== undefined ? (
+        <Pressable
+          testID="insight-follow-up"
+          accessibilityRole="button"
+          accessibilityLabel={t(followUp.labelKey)}
+          onPress={followUp.onPress}
+          style={styles.followUp}
+        >
+          <Text style={styles.followUpText}>{t(followUp.labelKey)}</Text>
+          <MaterialIcons name="chevron-right" size={18} color={p.text} />
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -199,6 +239,39 @@ const makeStyles = (p: Palette) =>
       backgroundColor: p.elevated,
       alignItems: 'center',
       justifyContent: 'center',
+    },
+    advice: {
+      flexDirection: 'row',
+      gap: spacing.xs,
+      padding: spacing.sm,
+      borderRadius: radius.md,
+      backgroundColor: p.bg,
+    },
+    adviceText: { flex: 1, gap: 2 },
+    adviceLabel: {
+      color: p.accent,
+      fontFamily: fontFamily.semibold,
+      fontSize: 10,
+      letterSpacing: 0.8,
+      textTransform: 'uppercase',
+    },
+    followUp: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.xs / 2,
+      minHeight: touchTarget.secondaryButton,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: p.border,
+      backgroundColor: p.bg,
+    },
+    followUpText: {
+      color: p.text,
+      fontFamily: fontFamily.semibold,
+      fontSize: typography.label.fontSize,
+      letterSpacing: 0.5,
+      textTransform: 'uppercase',
     },
     actionDisabled: { opacity: 0.6 },
     actionText: {

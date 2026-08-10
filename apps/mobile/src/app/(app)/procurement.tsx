@@ -33,6 +33,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { formatMoney } from '@cos/financial';
 import { get } from '../../api/client';
@@ -64,6 +65,7 @@ function asList<T>(res: { items?: T[] } | T[]): T[] {
 export default function ProcurementScreen(): React.JSX.Element {
   const t = useT();
   const p = usePalette();
+  const router = useRouter();
   const styles = useMemo(() => makeStyles(p), [p]);
 
   // The offline project cache, for turning an order's `project_id` into the name a manager knows.
@@ -160,20 +162,48 @@ export default function ProcurementScreen(): React.JSX.Element {
       style={{ backgroundColor: p.bg }}
       contentContainerStyle={styles.page}
     >
-      {/* The drawing's three counters, each with its own accent rule. */}
+      {/* The drawing's three counters, each with its own accent rule.
+          THE CHEVRON IS ON THE TWO THAT OPEN SOMETHING. Active RFQs and Deliveries today have list
+          screens this role may read (§6.4 gives PROJECT_MANAGER R on both); Pending approvals does
+          not need one — the queue it counts is drawn directly below it on this same screen, so a
+          chevron there would point at what the reader is already looking at. */}
       <View style={styles.statRow}>
         <View testID="stat-pending-approvals" style={[styles.stat, { borderLeftColor: p.warning }]}>
           <Text style={[styles.statValue, { color: p.warning }]}>{n(pos.length)}</Text>
           <Text style={styles.statLabel}>{t('pm.procurement.pendingApprovals')}</Text>
         </View>
-        <View testID="stat-active-rfqs" style={[styles.stat, { borderLeftColor: p.primary }]}>
+        <Pressable
+          testID="stat-active-rfqs"
+          accessibilityRole="button"
+          accessibilityLabel={t('pm.procurement.activeRfqs')}
+          onPress={() => router.push('/rfqs')}
+          style={[styles.stat, { borderLeftColor: p.primary }]}
+        >
+          <MaterialIcons
+            name="chevron-right"
+            size={16}
+            color={p.muted}
+            style={styles.statChevron}
+          />
           <Text style={[styles.statValue, { color: p.primary }]}>{n(activeRfqs)}</Text>
           <Text style={styles.statLabel}>{t('pm.procurement.activeRfqs')}</Text>
-        </View>
-        <View testID="stat-deliveries-today" style={[styles.stat, { borderLeftColor: p.success }]}>
+        </Pressable>
+        <Pressable
+          testID="stat-deliveries-today"
+          accessibilityRole="button"
+          accessibilityLabel={t('pm.procurement.todayDeliveries')}
+          onPress={() => router.push('/deliveries')}
+          style={[styles.stat, { borderLeftColor: p.success }]}
+        >
+          <MaterialIcons
+            name="chevron-right"
+            size={16}
+            color={p.muted}
+            style={styles.statChevron}
+          />
           <Text style={[styles.statValue, { color: p.success }]}>{n(deliveriesToday)}</Text>
           <Text style={styles.statLabel}>{t('pm.procurement.todayDeliveries')}</Text>
-        </View>
+        </Pressable>
       </View>
 
       <ProjectPicker selectedId={insightProject} onSelect={setInsightProject} />
@@ -184,6 +214,18 @@ export default function ProcurementScreen(): React.JSX.Element {
           <MaterialIcons name="fact-check" size={20} color={p.warning} />
           <Text style={styles.sectionTitle}>{t('pm.procurement.pendingApprovals')}</Text>
         </View>
+        {/* The drawing's "View All". It opens `/orders` — the purchase-order LIST, which is what
+            "all" means here: this section shows only the ones in PENDING_APPROVAL. */}
+        <Pressable
+          testID="approvals-view-all"
+          accessibilityRole="button"
+          accessibilityLabel={t('pm.procurement.viewAll')}
+          onPress={() => router.push('/orders')}
+          style={styles.viewAll}
+        >
+          <Text style={styles.viewAllText}>{t('pm.procurement.viewAll')}</Text>
+          <MaterialIcons name="chevron-right" size={16} color={p.primary} />
+        </Pressable>
       </View>
 
       {loading ? <ActivityIndicator testID="procurement-loading" color={p.primary} /> : null}
@@ -198,7 +240,13 @@ export default function ProcurementScreen(): React.JSX.Element {
         <View key={po.po_id} testID={`approval-${po.po_id}`} style={styles.card}>
           <View style={[styles.cardStrip, { backgroundColor: p.warning }]} />
           <View style={styles.cardBody}>
-            <View style={styles.cardHead}>
+            <Pressable
+              testID={`approval-open-${po.po_id}`}
+              accessibilityRole="button"
+              accessibilityLabel={`${t('approvals.viewDetails')} ${po.po_number}`}
+              onPress={() => Alert.alert(t('approvals.viewDetails'), t('more.comingSoon'))}
+              style={styles.cardHead}
+            >
               <View style={styles.cardTitleBlock}>
                 <Text style={styles.cardTitle}>{po.po_number}</Text>
                 <Text style={styles.cardSub} numberOfLines={1}>
@@ -211,7 +259,8 @@ export default function ProcurementScreen(): React.JSX.Element {
                 </Text>
                 {ageLabel(po) !== null ? <Text style={styles.cardAge}>{ageLabel(po)}</Text> : null}
               </View>
-            </View>
+              <MaterialIcons name="chevron-right" size={20} color={p.muted} />
+            </Pressable>
             <View style={styles.cardActions}>
               <Pressable
                 testID={`approval-review-${po.po_id}`}
@@ -272,7 +321,23 @@ const makeStyles = (p: Palette) =>
       textTransform: 'uppercase',
     },
 
-    sectionHead: { marginTop: spacing.sm },
+    sectionHead: {
+      marginTop: spacing.sm,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    // Absolutely positioned so it sits in the tile's top-right, as the drawing places it, without
+    // taking a row from the figure below.
+    statChevron: { position: 'absolute', top: spacing.xs, right: spacing.xs / 2 },
+    viewAll: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+    viewAllText: {
+      color: p.primary,
+      fontFamily: fontFamily.semibold,
+      fontSize: typography.label.fontSize,
+      letterSpacing: 0.5,
+      textTransform: 'uppercase',
+    },
     sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
     sectionTitle: {
       color: p.text,

@@ -21,18 +21,27 @@
 //     number, actually derived from the data (see `shareOfBudget`).
 //   - "FY 2024" under Total Budget. There is no fiscal-year field on a budget or a project. The
 //     slot says how many projects the total covers, which is the thing that qualifies the figure.
-//   - The chevron on each project card. There is no per-project finance screen this role can reach:
-//     `/budget` is a FINANCE / VIEWER tab, so pushing a PM into it would land them on a screen with
-//     no Back control and no tab of their own to leave by. A chevron that opens nothing is worse
-//     than no chevron, so the cards are not pressable and the affordance is absent.
+//   - A chevron on the three bento tiles. The drawing puts one on each; there is no per-figure
+//     screen to open — "Total Budget" is already the sum of the cards below it. The project cards
+//     DO have one, because they now open that project's analytics (PO decision 2026-08-10).
 //
-// The FAB is absent for the same kind of reason: creating a budget is `POST /finance/budget/:id`,
-// which is FINANCE / TENANT_ADMIN only (§6.4 gives this role R on Budget/Cost). A "+" here would be
-// a button whose only outcome is 403.
+// THE FAB CREATES A PURCHASE REQUEST, and that is the whole of what it can honestly do. The drawing
+// puts a "+" here; creating a BUDGET is `POST /finance/budget/:id`, which §6.4 gives FINANCE and
+// TENANT_ADMIN only, so a budget action would be a button whose one outcome is 403. Purchase
+// requests are the one thing this role may CREATE (§6.4: PM = RW) that starts the spend this
+// dashboard measures, and `/material-request` is a screen that already exists.
 
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  ActivityIndicator,
+  Pressable,
+  Alert,
+} from 'react-native';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { get } from '../../api/client';
 import { getMyProjects } from '../../api/projects';
@@ -42,7 +51,7 @@ import { portfolioTotals, shareOfBudget, type ProjectFinance } from '../../lib/p
 import { ProjectPicker } from '../../components/ProjectPicker';
 import { PortfolioInsight } from '../../components/PortfolioInsight';
 import { useT } from '../../i18n';
-import { fontFamily, radius, spacing, typography } from '../../theme/tokens';
+import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
 import { usePalette, type Palette } from '../../theme/usePalette';
 
 interface BudgetResponse {
@@ -72,6 +81,7 @@ const HEALTH_KEY: Record<BudgetHealth, string> = {
 export default function FinanceScreen(): React.JSX.Element {
   const t = useT();
   const p = usePalette();
+  const router = useRouter();
   const styles = useMemo(() => makeStyles(p), [p]);
 
   const [rows, setRows] = useState<ProjectFinance[]>([]);
@@ -224,7 +234,17 @@ export default function FinanceScreen(): React.JSX.Element {
       ) : null}
 
       <ProjectPicker selectedId={insightProject} onSelect={setInsightProject} />
-      <PortfolioInsight projectId={insightProject} />
+      <PortfolioInsight
+        projectId={insightProject}
+        followUp={{
+          labelKey: 'pm.finance.reviewAdjustments',
+          // The drawing's "Review Adjustments ›". There is no budget-adjustment screen: editing a
+          // budget is `POST /finance/budget/:id`, which §6.4 gives FINANCE and TENANT_ADMIN only, so
+          // this role could not act on one if it existed. Drawn and honest about it, the same way
+          // the Support Centre's search and the approval cards' detail view are.
+          onPress: () => Alert.alert(t('pm.finance.reviewAdjustments'), t('more.comingSoon')),
+        }}
+      />
 
       <Text style={styles.sectionTitle}>{t('pm.finance.activeProjectsHealth')}</Text>
 
@@ -244,9 +264,16 @@ export default function FinanceScreen(): React.JSX.Element {
         const health = budgetHealth(row.actual, row.totalBudget);
         const colour = healthColor(health);
         return (
-          <View
+          <Pressable
             key={row.projectId}
             testID={`finance-project-${row.projectId}`}
+            accessibilityRole="button"
+            accessibilityLabel={row.projectName}
+            // The manager analytics for THIS project — `/dashboard` now takes the id, so the card
+            // opens the project it names instead of a picker.
+            onPress={() =>
+              router.push({ pathname: '/dashboard', params: { projectId: row.projectId } })
+            }
             style={[styles.card, { borderLeftColor: colour }]}
           >
             <View style={styles.cardHead}>
@@ -259,6 +286,7 @@ export default function FinanceScreen(): React.JSX.Element {
               <View style={[styles.badge, { borderColor: colour }]}>
                 <Text style={[styles.badgeText, { color: colour }]}>{t(HEALTH_KEY[health])}</Text>
               </View>
+              <MaterialIcons name="chevron-right" size={20} color={p.muted} />
             </View>
 
             <View style={styles.figures}>
@@ -285,9 +313,20 @@ export default function FinanceScreen(): React.JSX.Element {
                 ]}
               />
             </View>
-          </View>
+          </Pressable>
         );
       })}
+
+      <Pressable
+        testID="finance-fab"
+        accessibilityRole="button"
+        accessibilityLabel={t('pm.finance.newRequest')}
+        onPress={() => router.push('/material-request')}
+        style={styles.fab}
+      >
+        <MaterialIcons name="add" size={26} color={p.onPrimary} />
+        <Text style={styles.fabText}>{t('pm.finance.newRequest')}</Text>
+      </Pressable>
 
       <View style={styles.footNote}>
         <MaterialIcons name="info-outline" size={14} color={p.muted} />
@@ -409,6 +448,24 @@ const makeStyles = (p: Palette) =>
     },
     fill: { height: '100%', borderRadius: 999 },
 
+    // Drawn INLINE at the end of the list, not floating over it. A floating FAB on a scrolling
+    // dashboard covers the last card's figures, and this screen's last rows are money.
+    fab: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.xs,
+      minHeight: touchTarget.primaryButton,
+      borderRadius: radius.xl,
+      backgroundColor: p.primary,
+    },
+    fabText: {
+      color: p.onPrimary,
+      fontFamily: fontFamily.semibold,
+      fontSize: typography.label.fontSize,
+      letterSpacing: 0.5,
+      textTransform: 'uppercase',
+    },
     footNote: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
     footNoteText: {
       flex: 1,

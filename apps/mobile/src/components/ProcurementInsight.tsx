@@ -19,7 +19,9 @@ export function ProcurementInsight({ projectId }: { projectId: string }): React.
       testID="procurement-insight"
       projectId={projectId}
       generate={generateProcurementSummary}
-      titleKey="insight.title"
+      // The drawing's own heading for this panel, which is more specific than "Insights" and matches
+      // the report it actually asks for.
+      titleKey="pm.procurement.analysisTitle"
     />
   );
 }

@@ -15,7 +15,7 @@
 // value kept on error), matching the read-only offline behaviour in master 3101/3115/3130.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Pressable, StyleSheet } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { CosRole } from '@cos/types';
 import { db } from '../../db/database';
@@ -801,22 +801,40 @@ function PmHome() {
         style={styles.kpiRegion}
       >
         <View style={styles.kpiRow}>
-          <View
+          {/* Both tiles open something, so both carry the drawing's chevron. In the mockup these two
+              are `opacity-0 group-hover:opacity-100` — hover-only, which on a touch screen means
+              never — so they are drawn always-on here: an affordance nobody can reveal is not an
+              affordance. */}
+          <Pressable
             testID="kpi-active-projects"
+            accessibilityRole="button"
+            accessibilityLabel={t('home.pm.activeProjects')}
+            onPress={() => router.push('/projects')}
             style={[styles.pmTile, { borderLeftColor: p.primary }]}
           >
-            <Text style={styles.pmTileLabel}>{t('home.pm.activeProjects')}</Text>
+            <View style={styles.pmTileHead}>
+              <Text style={styles.pmTileLabel}>{t('home.pm.activeProjects')}</Text>
+              <MaterialIcons name="chevron-right" size={16} color={p.muted} />
+            </View>
             <View style={styles.pmTileFoot}>
               <Text style={styles.pmTileValue}>{String(activeCount).padStart(2, '0')}</Text>
               <MaterialIcons name="corporate-fare" size={20} color={p.primary} />
             </View>
-          </View>
+          </Pressable>
 
-          <View
+          <Pressable
             testID="kpi-total-variance"
+            accessibilityRole="button"
+            accessibilityLabel={t('home.pm.totalVariance')}
+            // The figure is summed from the same per-project budgets the Finance tab breaks down,
+            // so that tab is where "why is it that number" is answered.
+            onPress={() => router.push('/finance')}
             style={[styles.pmTile, { borderLeftColor: varianceAlerting ? p.danger : p.success }]}
           >
-            <Text style={styles.pmTileLabel}>{t('home.pm.totalVariance')}</Text>
+            <View style={styles.pmTileHead}>
+              <Text style={styles.pmTileLabel}>{t('home.pm.totalVariance')}</Text>
+              <MaterialIcons name="chevron-right" size={16} color={p.muted} />
+            </View>
             <View style={styles.pmTileFoot}>
               <Text
                 style={[
@@ -842,22 +860,29 @@ function PmHome() {
                 color={varianceAlerting ? p.danger : p.success}
               />
             </View>
-          </View>
+          </Pressable>
         </View>
       </LoadingBoundary>
 
       {/* Critical blockers. The card is only drawn when something is actually blocked — an empty
           red-striped panel reads as an alert in its own right. */}
       {worst !== null && topBlocker !== null ? (
-        <View testID="pm-blockers" style={[styles.pmCard, { borderLeftColor: p.danger }]}>
+        <Pressable
+          testID="pm-blockers"
+          accessibilityRole="button"
+          accessibilityLabel={topBlocker.title}
+          onPress={() => router.push('/issues')}
+          style={[styles.pmCard, { borderLeftColor: p.danger }]}
+        >
           <View style={styles.pmCardHead}>
             <MaterialIcons name="warning" size={18} color={p.danger} />
-            <Text style={[styles.pmCardTitle, { color: p.danger }]}>
+            <Text style={[styles.pmCardTitle, styles.pmCardTitleGrow, { color: p.danger }]}>
               {t('home.pm.blockerCount', {
                 count: String(worst.count).padStart(2, '0'),
                 severity: worst.severity,
               })}
             </Text>
+            <MaterialIcons name="chevron-right" size={20} color={p.danger} />
           </View>
           <Text style={styles.pmCardBody} numberOfLines={2}>
             {topBlocker.title}
@@ -873,7 +898,7 @@ function PmHome() {
               {t('home.pm.manage')}
             </Text>
           </TouchableOpacity>
-        </View>
+        </Pressable>
       ) : null}
 
       {!loading && blockers.length === 0 ? (
@@ -900,9 +925,16 @@ function PmHome() {
       ) : null}
 
       {rows.map(({ project, percentComplete, phase }) => (
-        <View
+        <Pressable
           key={project.project_id}
           testID={`pm-project-${project.project_id}`}
+          accessibilityRole="button"
+          accessibilityLabel={project.project_name}
+          // That project's own analytics — `/dashboard` takes the id now, so the card opens the
+          // project it names instead of dropping the reader on a picker.
+          onPress={() =>
+            router.push({ pathname: '/dashboard', params: { projectId: project.project_id } })
+          }
           style={[styles.pmCard, { borderLeftColor: p.accent }]}
         >
           <View style={styles.pmProjectHead}>
@@ -917,6 +949,7 @@ function PmHome() {
             <View style={styles.pmStatusChip}>
               <Text style={styles.pmStatusText}>{project.status}</Text>
             </View>
+            <MaterialIcons name="chevron-right" size={20} color={p.muted} />
           </View>
 
           <View style={styles.pmProgressRow}>
@@ -941,7 +974,7 @@ function PmHome() {
               />
             </View>
           ) : null}
-        </View>
+        </Pressable>
       ))}
     </Screen>
   );
@@ -1025,6 +1058,7 @@ const makeStyles = (p: Palette) =>
       fontFamily: fontFamily.medium,
       fontSize: typography.label.fontSize,
     },
+    pmTileHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     pmTileFoot: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
     pmTileValue: {
       color: p.text,
@@ -1049,6 +1083,7 @@ const makeStyles = (p: Palette) =>
       backgroundColor: p.surface,
     },
     pmCardHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+    pmCardTitleGrow: { flex: 1 },
     pmCardTitle: {
       fontFamily: fontFamily.semibold,
       fontSize: typography.label.fontSize,

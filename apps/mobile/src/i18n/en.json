@@ -317,7 +317,9 @@
     "bandHigh": "High confidence",
     "bandMedium": "Medium confidence",
     "bandLow": "Low confidence — check before acting",
-    "bandUnknown": "Confidence not reported"
+    "bandUnknown": "Confidence not reported",
+    "recommendation": "Recommendation",
+    "risk": "Risk flagged"
   },
   "more": {
     "title": "More",
@@ -325,6 +327,7 @@
     "active": "Active",
     "noProject": "No project selected",
     "comingSoon": "This screen does not exist yet.",
+    "intelligence": "Intelligence",
     "soon": "Coming soon",
     "projectSettings": {
       "title": "Project settings",
@@ -698,6 +701,8 @@
       "loadFailed": "These figures could not be loaded. Nothing here is zero — it has not arrived.",
       "scaleMillion": "M",
       "scaleBillion": "B",
+      "reviewAdjustments": "Review adjustments",
+      "newRequest": "New purchase request",
       "sourceNote": "Figures come from each project's budget record. Projects without one are left out."
     },
     "procurement": {

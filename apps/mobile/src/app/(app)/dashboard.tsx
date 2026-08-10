@@ -1,8 +1,9 @@
 // Dashboard screen — PROJECT_MANAGER analytics. Pick a project → GET /analytics/pm/:projectId.
 // Response is PmDashboardRow[] (one row per event date); we render the labelled KPIs per day.
 
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
 import { get } from '../../api/client';
 import { ProjectPicker } from '../../components/ProjectPicker';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
@@ -26,25 +27,39 @@ const KPI_LABELS: Array<[keyof Omit<PmDashboardRow, 'eventDate'>, string]> = [
 ];
 
 export default function DashboardScreen() {
+  // `?projectId=` preselects, so a card that names a project can open THAT project's analytics
+  // instead of dropping the reader on a picker and asking them to find it again (the Home and
+  // Finance project cards both push here).
+  const params = useLocalSearchParams<{ projectId?: string }>();
   const [projectId, setProjectId] = useState('');
   const [rows, setRows] = useState<PmDashboardRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const { t, formatDate } = useI18n();
 
-  const onSelect = async (id: string): Promise<void> => {
-    setProjectId(id);
-    setError(null);
-    setLoading(true);
-    try {
-      setRows(await get<PmDashboardRow[]>(`/analytics/pm/${id}`));
-    } catch {
-      setError(t('pm.dashboard.loadError'));
-      setRows(null);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const onSelect = useCallback(
+    async (id: string): Promise<void> => {
+      setProjectId(id);
+      setError(null);
+      setLoading(true);
+      try {
+        setRows(await get<PmDashboardRow[]>(`/analytics/pm/${id}`));
+      } catch {
+        setError(t('pm.dashboard.loadError'));
+        setRows(null);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [t],
+  );
+
+  useEffect(() => {
+    const incoming = params.projectId;
+    if (typeof incoming === 'string' && incoming !== '') void onSelect(incoming);
+    // `params.projectId` only. `onSelect` is deliberately not a dependency: its identity changes
+    // with the active language, and a language change is not a route parameter arriving.
+  }, [params.projectId]);
 
   return (
     <ScrollView
