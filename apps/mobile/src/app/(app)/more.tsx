@@ -26,13 +26,13 @@
 // and "Project Manager • Skybridge Central", so the project half comes from the picked project and is
 // absent — stated as absent — until one is chosen.
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Avatar } from '../../components/Avatar';
-import { ProjectPicker } from '../../components/ProjectPicker';
 import { PortfolioInsight } from '../../components/PortfolioInsight';
+import { getMyProjects } from '../../api/projects';
 import { useAuthStore } from '../../store/authStore';
 import { formatRole } from '../../lib/formatRole';
 import { useT } from '../../i18n';
@@ -69,6 +69,23 @@ export default function MoreScreen(): React.JSX.Element {
   const styles = useMemo(() => makeStyles(p), [p]);
   const router = useRouter();
   const [insightProject, setInsightProject] = useState('');
+  const [insightProjectName, setInsightProjectName] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    let cancelled = false;
+    getMyProjects()
+      .then((mine) => {
+        if (cancelled) return;
+        setInsightProject(mine[0]?.project_id ?? '');
+        setInsightProjectName(mine[0]?.project_name);
+      })
+      .catch(() => {
+        /* offline — the panel stays on its idle line */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const isDark = useIsDark();
   const displayName = useAuthStore((s) => s.displayName);
   const role = useAuthStore((s) => s.role);
@@ -102,8 +119,16 @@ export default function MoreScreen(): React.JSX.Element {
           (`executive_summary` + `risk_flags` + `recommendations`), so it is the same panel the
           Finance tab draws, under the drawing's own heading. Per project, because that endpoint is
           — hence the picker. */}
-      <ProjectPicker selectedId={insightProject} onSelect={setInsightProject} />
-      <PortfolioInsight projectId={insightProject} titleKey="more.intelligence" />
+      {/* NO PROJECT PICKER (PO decision 2026-08-11, as on Home). The drawing has none, and a strip
+          of project codes above the panel made the screen ask which project before it would say
+          anything. The report endpoint still needs one, so the panel reports on the first of the
+          manager's own projects and NAMES it on its Source line — the picker existed to stop one
+          project's findings reading as a portfolio-wide statement, and being named does that. */}
+      <PortfolioInsight
+        projectId={insightProject}
+        projectLabel={insightProjectName}
+        titleKey="more.intelligence"
+      />
 
       {TILES.map((tile) => (
         <Pressable

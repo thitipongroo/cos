@@ -44,10 +44,9 @@ import {
 } from '../../api/procurement';
 import { useCollection } from '../../hooks/useCollection';
 import type { Project } from '../../db/database';
-import { refreshProjectsCache } from '../../api/projects';
-import { openRfqCount } from '../../lib/procurementKpi';
+import { getMyProjects, refreshProjectsCache } from '../../api/projects';
+import { openRfqCount, OPEN_RFQ_STATUS } from '../../lib/procurementKpi';
 import { waitingAge } from '../../lib/waitingAge';
-import { ProjectPicker } from '../../components/ProjectPicker';
 import { ProcurementInsight } from '../../components/ProcurementInsight';
 import { useT } from '../../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
@@ -55,6 +54,10 @@ import { usePalette, type Palette } from '../../theme/usePalette';
 
 interface DeliveryRow {
   delivered_at: string;
+}
+
+interface RfqRow {
+  status: string;
 }
 
 /** Normalise a list endpoint that may return `T[]` or `{ items: T[] }`. */
@@ -77,6 +80,7 @@ export default function ProcurementScreen(): React.JSX.Element {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [insightProject, setInsightProject] = useState('');
+  const [insightProjectName, setInsightProjectName] = useState<string | undefined>(undefined);
   // Where the Pending Approvals section starts, so the counter above can scroll to it.
   const [approvalsY, setApprovalsY] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
@@ -88,24 +92,60 @@ export default function ProcurementScreen(): React.JSX.Element {
     refreshProjectsCache().catch(() => {
       /* offline — the cached names, if any, still resolve */
     });
+    // The panel's project: the first of the manager's OWN projects (not the tenant-wide cache the
+    // order names come from), set once so a refresh cannot move the report under the reader.
+    getMyProjects()
+      .then((mine) => {
+        setInsightProject((current) => (current === '' ? (mine[0]?.project_id ?? '') : current));
+        setInsightProjectName((current) => current ?? mine[0]?.project_name);
+      })
+      .catch(() => {
+        /* offline — the panel stays on its idle line */
+      });
     const today = new Date().toDateString();
     const approvals = fetchPendingApprovals()
       .then(({ pos: rows }) => setPos(rows))
       .catch(() => setPos([]));
-    const rfqs = get<{ items?: { status: string }[] } | { status: string }[]>('/procurement/rfqs')
-      .then((res) => setActiveRfqs(openRfqCount(asList(res))))
-      .catch(() => {
-        /* offline — keep last */
-      });
-    const deliveries = get<{ items?: DeliveryRow[] } | DeliveryRow[]>('/procurement/deliveries')
+    // THESE TWO WERE COUNTING PAGE ONE, NOT COUNTING. Both endpoints paginate at 20 by default, the
+    // tenant has forty-odd rows in each, and the app asked for neither a filter nor a second page —
+    // so "Active RFQs" and "Deliveries today" read 0 while the database held three open RFQs and
+    // two of today's deliveries. A counter computed over the first page of N is not a count.
+    //
+    // RFQs are counted BY THE SERVER: the endpoint takes `status` and returns `total`, so the
+    // figure is the tenant's, not this page's.
+    const rfqs = get<{ items?: RfqRow[]; total?: number } | RfqRow[]>('/procurement/rfqs', {
+      status: OPEN_RFQ_STATUS,
+      limit: '100',
+    })
       .then((res) =>
-        setDeliveriesToday(
-          asList(res).filter((d) => new Date(d.delivered_at).toDateString() === today).length,
+        setActiveRfqs(
+          !Array.isArray(res) && typeof res.total === 'number'
+            ? res.total
+            : openRfqCount(asList(res)),
         ),
       )
       .catch(() => {
         /* offline — keep last */
       });
+    // Deliveries have no "today" filter on the server, so the rows come back and the date is applied
+    // here — but across every page, not just the first.
+    const deliveries = (async () => {
+      const rows: DeliveryRow[] = [];
+      for (let page = 1; page <= 10; page++) {
+        const res = await get<{ items?: DeliveryRow[] } | DeliveryRow[]>(
+          '/procurement/deliveries',
+          { page: String(page), limit: '100' },
+        );
+        const items = asList(res);
+        rows.push(...items);
+        if (items.length < 100) break;
+      }
+      setDeliveriesToday(
+        rows.filter((d) => new Date(d.delivered_at).toDateString() === today).length,
+      );
+    })().catch(() => {
+      /* offline — keep last */
+    });
     await Promise.allSettled([approvals, rfqs, deliveries]);
     setLoading(false);
   }, []);
@@ -227,8 +267,12 @@ export default function ProcurementScreen(): React.JSX.Element {
         </Pressable>
       </View>
 
-      <ProjectPicker selectedId={insightProject} onSelect={setInsightProject} />
-      <ProcurementInsight projectId={insightProject} />
+      {/* NO PROJECT PICKER (PO decision 2026-08-11, as on Home). The drawing has none, and a strip
+          of project codes above the panel made the screen ask which project before it would say
+          anything. The report endpoint still needs one, so the panel reports on the first of the
+          manager's own projects and NAMES it on its Source line — the picker existed to stop one
+          project's findings reading as a portfolio-wide statement, and being named does that. */}
+      <ProcurementInsight projectId={insightProject} projectLabel={insightProjectName} />
 
       <View style={styles.sectionHead} onLayout={(e) => setApprovalsY(e.nativeEvent.layout.y)}>
         <View style={styles.sectionTitleRow}>

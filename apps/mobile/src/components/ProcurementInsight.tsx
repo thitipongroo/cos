@@ -13,15 +13,24 @@ import { InsightPanel } from './InsightPanel';
 
 export { summaryText } from './InsightPanel';
 
-export function ProcurementInsight({ projectId }: { projectId: string }): React.JSX.Element {
+export function ProcurementInsight({
+  projectId,
+  projectLabel,
+}: {
+  projectId: string;
+  /** What to call the project on the "Source:" line; defaults to the id. */
+  projectLabel?: string;
+}): React.JSX.Element {
   return (
     <InsightPanel
       testID="procurement-insight"
       projectId={projectId}
+      projectLabel={projectLabel}
       generate={generateProcurementSummary}
       // The drawing's own heading for this panel, which is more specific than "Insights" and matches
       // the report it actually asks for.
       titleKey="pm.procurement.analysisTitle"
+      icon="memory"
     />
   );
 }

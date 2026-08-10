@@ -731,6 +731,11 @@ function PmHome() {
         }),
       );
 
+      // The panel's project, chosen once and never silently: the first of the manager's own, named
+      // on the panel's Source line. Only set while it is still empty, so a later refresh cannot
+      // move the report out from under someone reading it.
+      setInsightProject((current) => (current === '' ? (mine[0]?.project_id ?? '') : current));
+
       setFinance(
         mine.flatMap((project, i) => {
           const result = budgets[i];
@@ -793,7 +798,9 @@ function PmHome() {
 
   return (
     <Screen testID="home-screen" scroll>
-      <Text style={styles.eyebrow}>{t('home.pm.dashboardTitle')}</Text>
+      {/* NO ROLE HEADING (PO decision 2026-08-11). The drawing carries "PROJECT MANAGER DASHBOARD"
+          above the tiles; it is dropped here. It named the screen to someone who had just tapped
+          Home from this role's own bar and could read the answer off the tab bar underneath. */}
 
       <LoadingBoundary
         loading={loading}
@@ -907,8 +914,21 @@ function PmHome() {
         </Text>
       ) : null}
 
-      <ProjectPicker selectedId={insightProject} onSelect={setInsightProject} />
-      <PortfolioInsight projectId={insightProject} />
+      {/* NO PROJECT PICKER HERE (PO decision 2026-08-11). The drawing has none, and YOUR PROJECTS
+          below already lists this manager's projects — a second list of the same names, one to read
+          and one to choose from, made the screen ask the same question twice.
+          The report endpoint still needs A project, so the panel reports on the first of the
+          manager's own projects and SAYS SO on its Source line. That is the same rule the picker
+          was there to satisfy: never let one project's findings read as a portfolio-wide statement.
+          Which project is not a silent choice — it is named, in words, under the text. */}
+      <PortfolioInsight
+        projectId={insightProject}
+        titleKey="home.pm.analysisTitle"
+        icon="memory"
+        projectLabel={
+          rows.find((row) => row.project.project_id === insightProject)?.project.project_name
+        }
+      />
 
       <Text style={styles.eyebrow}>{t('home.pm.yourProjects')}</Text>
 

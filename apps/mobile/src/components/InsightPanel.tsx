@@ -11,6 +11,16 @@
 // required to return. Before the first successful call it shows the action that starts one, and on
 // failure it says the report was not produced.
 //
+// THE "GENERATE REPORT" BUTTON STAYS, THOUGH NO MOCKUP DRAWS ONE (PO decision 2026-08-11). The
+// drawings show a panel already full of prose, which implies a report produced somewhere out of
+// sight. This product has nowhere out of sight: `POST /ai/reports/*` is the only way to obtain a
+// report's text, and `GET /ai/reports/history` returns metadata only — report_id, confidence,
+// tokens_used, generated_at — with no `content` field and no endpoint that fetches a stored one.
+// Without the button the panel could only fill itself by generating on every screen open, and §26
+// meters AI per tenant against a monthly quota (§31.3 alerts at 80 %), so a dashboard that reports
+// on load would spend the tenant's allowance every time someone taps a tab. The button is the
+// difference between a report someone asked for and a bill nobody authorised.
+//
 // THE CONFIDENCE IS SHOWN AS A BAND WITH THE NUMBER BESIDE IT, not as a bare percentage — see
 // lib/aiConfidence.ts for the guidance and for why the band edges are the platform's own.
 //
@@ -57,7 +67,27 @@ export interface InsightPanelProps {
   generate: (params: { projectId: string; tenantId: string }) => Promise<AiReport>;
   /** i18n key for the panel's eyebrow — each screen names the report it actually asks for. */
   titleKey: string;
+  /**
+   * The drawing's glyph. Three of the four panels use `memory`; the More menu's uses `psychology`.
+   * It was hardcoded to `psychology` for all of them.
+   */
+  icon?: keyof typeof MaterialIcons.glyphMap;
   testID: string;
+  /**
+   * What to call the project on the "Source:" line. Defaults to the id, which is what the panel had
+   * before — and a UUID is thirty-six characters of noise in a sentence meant to tell the reader
+   * whose figures these are.
+   */
+  projectLabel?: string;
+  /**
+   * Which drawing this panel is following.
+   *
+   * The two mockups do not agree, so neither does this. `plain` is the procurement dashboard's
+   * panel — the ordinary card surface with a faint accent wash. `washed` is the finance dashboard's
+   * — a teal field, a filled confidence pill and a button that sits at its own width rather than
+   * spanning the card. Both keep the left accent strip; the finance one draws it at 4px.
+   */
+  variant?: 'plain' | 'washed';
   /**
    * The drawing's follow-up button ("Review Adjustments ›" on the Finance panel). Optional: the
    * panels whose mockup has no such button do not grow one.
@@ -69,12 +99,16 @@ export function InsightPanel({
   projectId,
   generate,
   titleKey,
+  icon = 'psychology',
   testID,
+  projectLabel,
+  variant = 'plain',
   followUp,
 }: InsightPanelProps): React.JSX.Element {
   const t = useT();
   const p = usePalette();
   const styles = useMemo(() => makeStyles(p), [p]);
+  const washed = variant === 'washed';
   const token = useAuthStore((s) => s.accessToken);
 
   const [report, setReport] = useState<AiReport | null>(null);
@@ -108,16 +142,19 @@ export function InsightPanel({
       {/* The drawing's card shape: the ordinary card border, a 6px accent strip down the left edge
           and a 5%-accent wash over the surface — not an accent-coloured border on all four sides,
           which is what this was and which made the panel shout louder than the money beside it. */}
-      <View style={styles.accentStrip} />
-      <View style={styles.tint} pointerEvents="none" />
+      <View style={[styles.accentStrip, washed && styles.accentStripWashed]} />
+      <View style={[styles.tint, washed && styles.tintWashed]} pointerEvents="none" />
       <View style={styles.head}>
         <View style={styles.eyebrowRow}>
-          <MaterialIcons name="psychology" size={18} color={p.accent} />
+          <MaterialIcons name={icon} size={18} color={p.accent} />
           <Text style={styles.eyebrow}>{t(titleKey)}</Text>
         </View>
         {band !== null ? (
-          <View testID="insight-confidence" style={styles.bandChip}>
-            <Text style={styles.bandText}>
+          <View
+            testID="insight-confidence"
+            style={[styles.bandChip, washed && styles.bandChipWashed]}
+          >
+            <Text style={[styles.bandText, washed && styles.bandTextWashed]}>
               {percent === null
                 ? t(BAND_LABEL[band])
                 : `${t(BAND_LABEL[band])} · ${String(percent)}%`}
@@ -161,7 +198,9 @@ export function InsightPanel({
 
       {/* The mockup's "Source:" line. It names the project the figures came from, which is the whole
           reason the host screen asks for one. */}
-      <Text style={styles.source}>{t('insight.source', { project: projectId })}</Text>
+      <Text style={styles.source}>
+        {t('insight.source', { project: projectLabel ?? projectId })}
+      </Text>
 
       <Pressable
         testID="insight-run"
@@ -170,7 +209,11 @@ export function InsightPanel({
         accessibilityState={{ disabled: loading || projectId === '' }}
         disabled={loading || projectId === ''}
         onPress={() => void run()}
-        style={[styles.action, (loading || projectId === '') && styles.actionDisabled]}
+        style={[
+          styles.action,
+          washed && styles.actionWashed,
+          (loading || projectId === '') && styles.actionDisabled,
+        ]}
       >
         <Text style={styles.actionText}>{t('insight.action')}</Text>
         <MaterialIcons name="chevron-right" size={18} color={p.primary} />
@@ -204,6 +247,13 @@ const makeStyles = (p: Palette) =>
       gap: spacing.sm,
       overflow: 'hidden',
     },
+    accentStripWashed: { width: 4 },
+    // The drawing's teal field: the accent laid over the card rather than beside it.
+    tintWashed: { backgroundColor: `${p.accent}1F` },
+    bandChipWashed: { backgroundColor: `${p.accent}33`, borderColor: 'transparent' },
+    bandTextWashed: { color: p.text },
+    // Sits at its own width, as the drawing places it — not spanning the panel.
+    actionWashed: { alignSelf: 'flex-start', paddingHorizontal: spacing.md },
     accentStrip: {
       position: 'absolute',
       top: 0,

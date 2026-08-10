@@ -1537,6 +1537,57 @@ async function seedPendingApprovals(tx: Tx): Promise<void> {
         ON CONFLICT (quotation_id) DO NOTHING`;
     }
   }
+
+  // RFQs STILL OUT TO VENDORS. The Procurement tab's "Active RFQs" counts `PUBLISHED` — the state
+  // where bids can still arrive (lib/procurementKpi.ts) — and the seed had none, so that counter
+  // read 0 on a dashboard whose whole subject is procurement in flight. An active site always has
+  // enquiries open; these are the next packages out to tender.
+  const openRfqs = [
+    { key: 'mep-riser', project: 'skv45', number: 'RFQ-SKV45-MEP-RISER', days: 6 },
+    { key: 'curtain-wall', project: 'r9ct', number: 'RFQ-R9CT-CURTAIN-WALL', days: 11 },
+    { key: 'lift-install', project: 'bnw2', number: 'RFQ-BNW2-LIFT', days: 3 },
+  ];
+  for (const rfq of openRfqs) {
+    await tx.$executeRaw`INSERT INTO procurement.rfqs (rfq_id, pr_id, project_id, tenant_id, rfq_number, status, deadline, created_by)
+      VALUES (${uid(`rfq-open/${rfq.key}`)}::uuid, NULL, ${uid(`project/${rfq.project}`)}::uuid, ${TENANT_ID}::uuid, ${rfq.number}, 'PUBLISHED',
+              now() + make_interval(days => ${rfq.days}), ${U('proc')}::uuid)
+      ON CONFLICT (rfq_id) DO UPDATE SET status = 'PUBLISHED', deadline = EXCLUDED.deadline`;
+  }
+
+  // MATERIAL ARRIVING TODAY. "Deliveries today" filters on the DEVICE's current date, and the
+  // seeded deliveries all sit weeks back with their purchase orders, so it read 0 as well. A site
+  // pouring foundations takes deliveries most working days; these are today's.
+  //
+  // ANCHORED TO BANGKOK, NOT TO UTC. The first version used Postgres' `CURRENT_DATE`, which is UTC,
+  // and the counter still read 0: at 18:00 UTC a phone in Bangkok is already on the next calendar
+  // day, so for seven hours out of every twenty-four the two disagree about what "today" is. The
+  // tenant is Thai and its sites take delivery on Thai dates.
+  //
+  // Attached to purchase orders that already exist and are already delivered — a delivery row needs
+  // a real `po_id`, and inventing one would leave a delivery against an order nobody raised.
+  const arrivals = [
+    {
+      key: 'concrete',
+      project: 'skv45',
+      code: 'SKV45',
+      at: '09:15',
+      note: 'เทคอนกรีตฐานราก โซน A',
+    },
+    {
+      key: 'rebar',
+      project: 'r9ct',
+      code: 'R9CT',
+      at: '11:40',
+      note: 'เหล็กเส้นเข้าไซต์ ล็อตที่ 2',
+    },
+  ];
+  for (const a of arrivals) {
+    await tx.$executeRaw`INSERT INTO procurement.deliveries (delivery_id, po_id, tenant_id, delivery_note, delivered_at, received_by, notes)
+      VALUES (${uid(`del-today/${a.key}`)}::uuid, ${uid(`po/${a.project}/${a.key}`)}::uuid, ${TENANT_ID}::uuid,
+              ${`DN-${a.code}-${a.key.toUpperCase()}-TODAY`}, (((now() AT TIME ZONE 'Asia/Bangkok')::date + ${a.at}::time) AT TIME ZONE 'Asia/Bangkok'),
+              ${U('se1')}::uuid, ${a.note})
+      ON CONFLICT (delivery_id) DO UPDATE SET delivered_at = EXCLUDED.delivered_at`;
+  }
 }
 
 async function seedCrm(tx: Tx): Promise<void> {

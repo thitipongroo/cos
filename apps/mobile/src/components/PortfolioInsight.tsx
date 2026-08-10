@@ -16,10 +16,17 @@ import { InsightPanel, type InsightPanelProps } from './InsightPanel';
 
 export function PortfolioInsight({
   projectId,
+  projectLabel,
   titleKey = 'pm.finance.insightTitle',
+  icon,
+  variant,
   followUp,
 }: {
   projectId: string;
+  /** What to call the project on the "Source:" line; defaults to the id. */
+  projectLabel?: string;
+  icon?: InsightPanelProps['icon'];
+  variant?: InsightPanelProps['variant'];
   /** The More screen's drawing calls the same panel "Intelligence"; Finance calls it what it is. */
   titleKey?: string;
   followUp?: InsightPanelProps['followUp'];
@@ -28,8 +35,11 @@ export function PortfolioInsight({
     <InsightPanel
       testID="portfolio-insight"
       projectId={projectId}
+      projectLabel={projectLabel}
       generate={generateExecutiveSummary}
       titleKey={titleKey}
+      icon={icon}
+      variant={variant}
       followUp={followUp}
     />
   );

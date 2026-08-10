@@ -41,7 +41,6 @@ import { compactMoney, type MoneyScale } from '../../lib/compactMoney';
 import { budgetHealth, budgetFraction, type BudgetHealth } from '../../lib/budgetHealth';
 import { portfolioTotals, type ProjectFinance } from '../../lib/portfolioFinance';
 import { spendTrend, type CostTransaction, type SpendTrend } from '../../lib/spendTrend';
-import { ProjectPicker } from '../../components/ProjectPicker';
 import { PortfolioInsight } from '../../components/PortfolioInsight';
 import { useT } from '../../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
@@ -137,6 +136,11 @@ export default function FinanceScreen(): React.JSX.Element {
           if (items.length < 100) break;
         }
         if (!cancelled) setCosts(ledger);
+        // The panel's project: the first of the manager's own, set once so a later refresh cannot
+        // move the report out from under someone reading it.
+        setInsightProject((current) =>
+          current === '' ? (projects[0]?.project_id ?? '') : current,
+        );
         loadedOnce.current = true;
       } catch {
         // `/projects/mine` did not answer. THIS IS NOT AN EMPTY PORTFOLIO and must not be drawn as
@@ -344,12 +348,22 @@ export default function FinanceScreen(): React.JSX.Element {
           </Text>
         ) : null}
 
-        <ProjectPicker selectedId={insightProject} onSelect={setInsightProject} />
-        {/* No "Review Adjustments" button (PO decision 2026-08-10, reversing the request that added
+        {/* NO PROJECT PICKER (PO decision 2026-08-11, as on Home). The drawing has none, and a strip
+            of project codes above the panel made the screen ask which project before it would say
+            anything. The report endpoint still needs one, so the panel reports on the first of the
+            manager's own projects and NAMES it on its Source line — the picker existed to stop one
+            project's findings reading as a portfolio-wide statement, and being named does that.
+
+            No "Review Adjustments" button (PO decision 2026-08-10, reversing the request that added
           it): there is no budget-adjustment screen, and editing a budget is `POST /finance/budget/
           :id`, which §6.4 gives FINANCE and TENANT_ADMIN only — this role could not act on one if it
           existed. The panel's own GENERATE REPORT carries the chevron instead. */}
-        <PortfolioInsight projectId={insightProject} />
+        <PortfolioInsight
+          projectId={insightProject}
+          projectLabel={rows.find((row) => row.projectId === insightProject)?.projectName}
+          icon="memory"
+          variant="washed"
+        />
 
         <Text style={styles.sectionTitle} onLayout={(e) => setHealthY(e.nativeEvent.layout.y)}>
           {t('pm.finance.activeProjectsHealth')}

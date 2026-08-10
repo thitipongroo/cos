@@ -45,9 +45,17 @@ export function committedSpend(rows: readonly SpendRow[]): Decimal {
   );
 }
 
-/** RFQs still out to vendors — `PUBLISHED` is the state where bids can still arrive. */
+/**
+ * The state where bids can still arrive.
+ *
+ * Exported so the screen can ask the SERVER for this status and read its `total`, instead of
+ * counting whatever fitted on the first page — see the note in (app)/procurement.tsx.
+ */
+export const OPEN_RFQ_STATUS = 'PUBLISHED';
+
+/** RFQs still out to vendors. */
 export function openRfqCount(rows: readonly { status: string }[]): number {
-  return rows.filter((r) => r.status === 'PUBLISHED').length;
+  return rows.filter((r) => r.status === OPEN_RFQ_STATUS).length;
 }
 
 /**
