@@ -1,0 +1,305 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+<title>Account Settings - Site Worker</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-container": "#686c80",
+                        "mobile-success": "#00C853",
+                        "dark-bg": "#020617",
+                        "on-primary-fixed": "#00174b",
+                        "on-background": "#d3e4fe",
+                        "on-surface": "#d3e4fe",
+                        "on-primary-container": "#eeefff",
+                        "outline": "#8d90a0",
+                        "on-primary": "#002a78",
+                        "secondary-fixed": "#acedff",
+                        "on-secondary-fixed": "#001f26",
+                        "secondary": "#4cd7f6",
+                        "surface-container-low": "#0b1c30",
+                        "inverse-primary": "#0053db",
+                        "surface-dim": "#031427",
+                        "dark-surface": "#0F172A",
+                        "primary-container": "#2563eb",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "secondary-container": "#03b5d3",
+                        "on-error": "#690005",
+                        "inverse-on-surface": "#213145",
+                        "on-secondary-container": "#00424e",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "sync-pending": "#94A3B8",
+                        "background": "#031427",
+                        "on-tertiary-container": "#eeefff",
+                        "error": "#ffb4ab",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "on-error-container": "#ffdad6",
+                        "mobile-primary": "#0066FF",
+                        "error-container": "#93000a",
+                        "surface-tint": "#b4c5ff",
+                        "surface": "#031427",
+                        "sync-active": "#FFD60A",
+                        "primary": "#b4c5ff",
+                        "on-tertiary-fixed": "#161b2b",
+                        "surface-container-highest": "#26364a",
+                        "surface-container-lowest": "#000f21",
+                        "on-surface-variant": "#c3c6d7",
+                        "on-secondary": "#003640",
+                        "tertiary-fixed": "#dee1f9",
+                        "primary-fixed": "#dbe1ff",
+                        "on-tertiary": "#2b3041",
+                        "surface-variant": "#26364a",
+                        "surface-container-high": "#1b2b3f",
+                        "surface-bright": "#2a3a4f",
+                        "surface-container": "#102034",
+                        "mobile-danger": "#FF3B30",
+                        "tertiary": "#c1c5dc",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "outline-variant": "#434655",
+                        "inverse-surface": "#d3e4fe",
+                        "mobile-warning": "#FF9500",
+                        "secondary-fixed-dim": "#4cd7f6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "web-margin": "32px",
+                        "base": "4px",
+                        "space-1": "4px",
+                        "edge-mobile": "24px",
+                        "space-2": "8px",
+                        "touch-target": "52px",
+                        "space-3": "12px",
+                        "space-4": "16px",
+                        "safe": "env(safe-area-inset-bottom)"
+                    },
+                    "fontFamily": {
+                        "h2-web": ["Inter Tight"],
+                        "body-web": ["Inter Tight"],
+                        "body-mobile": ["Inter Tight"],
+                        "label-mobile": ["Inter Tight"],
+                        "hero-mobile": ["Inter Tight"],
+                        "h1-web": ["Inter Tight"],
+                        "display-web": ["Inter Tight"],
+                        "tiny-web": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "h2-web": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "body-web": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "body-mobile": ["17px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-mobile": ["13px", { "lineHeight": "18px", "fontWeight": "600" }],
+                        "hero-mobile": ["28px", { "lineHeight": "34px", "fontWeight": "700" }],
+                        "h1-web": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "display-web": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "tiny-web": ["11px", { "lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { -webkit-tap-highlight-color: transparent; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Custom Toggle Switch Styles */
+        .toggle-checkbox:checked { right: 0; border-color: #2563eb; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #2563eb; }
+        .toggle-checkbox:checked + .toggle-label:after { transform: translateX(100%); border-color: white; }
+    </style>
+</head>
+<body class="bg-background text-on-surface antialiased font-body-mobile flex flex-col min-h-screen">
+<!-- TopAppBar -->
+<header class="bg-background dark:bg-background flex justify-between items-center w-full px-edge-mobile h-touch-target z-50 sticky top-0 full-width bg-surface-container-high dark:bg-surface-container-high flat no shadows border-b border-surface-container-highest/20">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-primary dark:text-primary" data-icon="architecture" data-weight="fill" style="font-variation-settings: &quot;FILL&quot; 1;">architecture</span>
+<span class="font-h1-web text-h1-web-mobile font-bold text-primary dark:text-primary tracking-tight">CONSTRUCTION OS</span>
+</div>
+<div class="flex items-center">
+<span class="font-tiny-web text-tiny-web text-mobile-success bg-mobile-success/10 px-2 py-1 rounded-full uppercase tracking-widest border border-mobile-success/30 flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-mobile-success animate-pulse"></span>
+                SYNCED
+            </span>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 overflow-y-auto hide-scrollbar pb-[100px] px-edge-mobile pt-6 space-y-6">
+<!-- Profile Bento Card -->
+<div class="bg-surface-container rounded-xl overflow-hidden relative border border-outline-variant/20">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-secondary"></div>
+<div class="p-5 flex items-center gap-4">
+<div class="w-20 h-20 rounded-full bg-surface-container-high border-2 border-primary-container overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="Close-up portrait of a male construction worker wearing a high-visibility vest and a safety helmet. He has a rugged look with a slight smile, standing against a blurred construction site background during daytime. The lighting is natural and bright, emphasizing industrial textures." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCYES3qKwr-ttqtlQgmU9bXpXvWrFjfYRoQS2cDELuzFgsUejv0_KB53Rh7NyrWs4mzUwFbLhaDGK3g48q1HPPX4dvPyXrfqet5qenbYrwzBAQGtNpSbcTZbNSchgmVgy9EoymOBQj3NuhxjN8fn9bk5JAqSJjFn8EnDrBdwEOliQamU1Gendo4WEmoljWDblU34cyr-JM-g-veSmiJSBnG34JBdz9Nya7-Eu5QEtbbjTSKyOTQVwlA">
+</div>
+<div class="flex-col">
+<h2 class="font-h2-web text-h2-web text-on-surface">Anan S.</h2>
+<p class="font-body-web text-body-web text-on-surface-variant font-mono mt-1">ID: SW-9281</p>
+<div class="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-surface-variant text-on-surface-variant border border-outline-variant/30">
+                        Site Worker
+                    </div>
+</div>
+</div>
+</div>
+<!-- Security Settings -->
+<section class="space-y-3">
+<h3 class="font-label-mobile text-label-mobile text-on-surface-variant uppercase tracking-widest ml-1">Project</h3>
+<button class="w-full h-touch-target bg-primary-container text-on-primary-container rounded-xl flex items-center justify-between px-4 active:scale-95 transition-transform duration-150 border border-primary-container">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined" data-icon="swap_horiz">swap_horiz</span>
+<span class="font-body-mobile text-body-mobile font-medium">Switch Project</span>
+</div>
+<span class="material-symbols-outlined" data-icon="chevron_right">chevron_right</span>
+</button>
+</section><section class="space-y-3">
+<h3 class="font-label-mobile text-label-mobile text-on-surface-variant uppercase tracking-widest ml-1">Security</h3>
+<div class="bg-surface-container rounded-xl border border-outline-variant/20 flex flex-col">
+<button class="flex items-center justify-between p-4 h-touch-target active:bg-surface-variant/50 transition-colors border-b border-outline-variant/10 w-full text-left">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary" data-icon="shield_person">shield_person</span>
+<div>
+<span class="font-body-mobile text-body-mobile text-on-surface block leading-tight">Multi-Factor Auth</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-tiny-web text-tiny-web text-mobile-success">ENABLED</span>
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="chevron_right">chevron_right</span>
+</div>
+</button><div class="flex items-center justify-between p-4 h-touch-target border-b border-outline-variant/10">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary" data-icon="fingerprint">fingerprint</span>
+<div>
+<span class="font-body-mobile text-body-mobile text-on-surface block leading-tight">Biometric Login</span>
+
+</div>
+</div>
+<div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer z-10 transition-transform duration-200 ease-in-out" id="toggle-biometric" name="toggle" style="transform: translateX(100%); top: 2px; border-color: transparent;" type="checkbox">
+<label class="toggle-label block overflow-hidden h-7 rounded-full bg-primary-container cursor-pointer" for="toggle-biometric"></label>
+</div>
+</div>
+<button class="flex items-center justify-between p-4 h-touch-target active:bg-surface-variant/50 transition-colors w-full text-left">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary" data-icon="dialpad">dialpad</span>
+<span class="font-body-mobile text-body-mobile text-on-surface">Change Secure PIN</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+</section>
+<!-- Preferences Settings -->
+<section class="space-y-3">
+<h3 class="font-label-mobile text-label-mobile text-on-surface-variant uppercase tracking-widest ml-1">Preferences</h3>
+<div class="bg-surface-container rounded-xl border border-outline-variant/20 flex flex-col">
+<button class="flex items-center justify-between p-4 h-touch-target active:bg-surface-variant/50 transition-colors border-b border-outline-variant/10 w-full text-left">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary" data-icon="language">language</span>
+<span class="font-body-mobile text-body-mobile text-on-surface">Language</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-body-web text-body-web text-on-surface-variant">ไทย</span>
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="chevron_right">chevron_right</span>
+</div>
+</button>
+<div class="flex items-center justify-between p-4 h-touch-target border-b border-outline-variant/10">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary" data-icon="notifications_active">notifications_active</span>
+<span class="font-body-mobile text-body-mobile text-on-surface">Notification Alerts</span>
+</div>
+<!-- Toggle -->
+<div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer z-10 transition-transform duration-200 ease-in-out" id="toggle-notifications" name="toggle" style="transform: translateX(100%); top: 2px; border-color: transparent;" type="checkbox">
+<label class="toggle-label block overflow-hidden h-7 rounded-full bg-primary-container cursor-pointer" for="toggle-notifications"></label>
+</div>
+</div>
+<div class="flex items-center justify-between p-4 h-touch-target">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary" data-icon="dark_mode">dark_mode</span>
+<span class="font-body-mobile text-body-mobile text-on-surface">Dark Mode</span>
+</div>
+<!-- Toggle -->
+<div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer z-10 transition-transform duration-200 ease-in-out" id="toggle-darkmode" name="toggle" style="transform: translateX(100%); top: 2px; border-color: transparent;" type="checkbox">
+<label class="toggle-label block overflow-hidden h-7 rounded-full bg-primary-container cursor-pointer" for="toggle-darkmode"></label>
+</div>
+</div>
+</div>
+</section>
+<!-- App Info -->
+<section class="space-y-3">
+<h3 class="font-label-mobile text-label-mobile text-on-surface-variant uppercase tracking-widest ml-1">About / เกี่ยวกับ</h3>
+<div class="bg-surface-container rounded-xl border border-outline-variant/20 flex flex-col">
+<div class="flex items-center justify-between p-4 h-touch-target border-b border-outline-variant/10">
+<span class="font-body-mobile text-body-mobile text-on-surface">Version</span>
+<span class="font-body-web text-body-web text-on-surface-variant font-mono">2.4.0-stable</span>
+</div>
+<button class="flex items-center justify-between p-4 h-touch-target active:bg-surface-variant/50 transition-colors w-full text-left">
+<span class="font-body-mobile text-body-mobile text-on-surface">Legal &amp; Privacy Policy</span>
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="open_in_new">open_in_new</span>
+</button>
+</div>
+</section>
+<!-- Sign Out Action -->
+<div class="pt-4 pb-8">
+<button class="w-full h-touch-target bg-surface-container border border-mobile-danger/30 text-mobile-danger font-h2-web text-h2-web-mobile uppercase tracking-wider rounded-lg flex items-center justify-center gap-2 active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+                SIGN OUT
+            </button>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center px-base pb-safe h-[72px] bg-surface-container dark:bg-surface-container docked full-width rounded-t-xl bg-surface-container-highest/10 shadow-lg border-t-0" style="padding-bottom: env(safe-area-inset-bottom);">
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors flex-1 h-full pt-2 pb-1">
+<span class="material-symbols-outlined mb-1 text-[24px]" data-icon="assignment">assignment</span>
+<span class="font-label-mobile text-label-mobile truncate w-full text-center">Projects</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors flex-1 h-full pt-2 pb-1">
+<span class="material-symbols-outlined mb-1 text-[24px]" data-icon="event_note">event_note</span>
+<span class="font-label-mobile text-label-mobile truncate w-full text-center">Daily Logs</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors flex-1 h-full pt-2 pb-1">
+<span class="material-symbols-outlined mb-1 text-[24px]" data-icon="security">security</span>
+<span class="font-label-mobile text-label-mobile truncate w-full text-center">Safety</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors flex-1 h-full pt-2 pb-1">
+<span class="material-symbols-outlined mb-1 text-[24px]" data-icon="contact_page">contact_page</span>
+<span class="font-label-mobile text-label-mobile truncate w-full text-center">Directory</span>
+</button>
+<!-- Active Tab: Profile -->
+<button class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-4 py-1 mx-1 flex-shrink-0 h-[48px] scale-95 duration-200 ease-in-out">
+<span class="material-symbols-outlined mb-0.5 text-[24px]" data-icon="account_circle" data-weight="fill" style="font-variation-settings: &quot;FILL&quot; 1;">account_circle</span>
+<span class="font-label-mobile text-[11px] leading-tight truncate font-bold">Profile</span>
+</button>
+</nav>
+<script>
+        // Simple toggle interactivity for demonstration
+        document.querySelectorAll('input[type="checkbox"]').forEach(toggle => {
+            toggle.addEventListener('change', function() {
+                if(this.checked) {
+                    this.style.transform = 'translateX(100%)';
+                    this.nextElementSibling.classList.replace('bg-surface-variant', 'bg-primary-container');
+                } else {
+                    this.style.transform = 'translateX(0)';
+                    this.nextElementSibling.classList.replace('bg-primary-container', 'bg-surface-variant');
+                }
+            });
+        });
+    </script>
+
+
+
+
+
+
+</body></html>

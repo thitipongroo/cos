@@ -1,0 +1,191 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Quick Action Menu</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "sync-pending": "#94A3B8",
+                        "outline": "#8d90a0",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "on-error": "#690005",
+                        "on-tertiary-container": "#eeefff",
+                        "surface-tint": "#b4c5ff",
+                        "dark-surface": "#0F172A",
+                        "tertiary-fixed": "#dee1f9",
+                        "surface": "#031427",
+                        "error-container": "#93000a",
+                        "secondary": "#4cd7f6",
+                        "surface-bright": "#2a3a4f",
+                        "surface-variant": "#26364a",
+                        "surface-dim": "#031427",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "tertiary": "#c1c5dc",
+                        "surface-container-lowest": "#000f21",
+                        "on-secondary": "#003640",
+                        "dark-bg": "#020617",
+                        "on-background": "#d3e4fe",
+                        "mobile-primary": "#0066FF",
+                        "on-tertiary": "#2b3041",
+                        "on-primary-container": "#eeefff",
+                        "surface-container-highest": "#26364a",
+                        "surface-container": "#102034",
+                        "primary-fixed": "#dbe1ff",
+                        "inverse-primary": "#0053db",
+                        "inverse-surface": "#d3e4fe",
+                        "primary": "#b4c5ff",
+                        "on-surface": "#d3e4fe",
+                        "on-tertiary-fixed": "#161b2b",
+                        "tertiary-container": "#686c80",
+                        "background": "#031427",
+                        "mobile-danger": "#FF3B30",
+                        "error": "#ffb4ab",
+                        "sync-active": "#FFD60A",
+                        "on-primary-fixed": "#00174b",
+                        "outline-variant": "#434655",
+                        "surface-container-low": "#0b1c30",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "secondary-container": "#03b5d3",
+                        "on-primary": "#002a78",
+                        "on-error-container": "#ffdad6",
+                        "secondary-fixed": "#acedff",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "primary-container": "#2563eb",
+                        "surface-container-high": "#1b2b3f",
+                        "mobile-success": "#00C853",
+                        "on-surface-variant": "#c3c6d7",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "inverse-on-surface": "#213145",
+                        "mobile-warning": "#FF9500",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "on-secondary-fixed": "#001f26",
+                        "on-secondary-container": "#00424e"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "touch-target": "52px",
+                        "web-margin": "32px",
+                        "space-1": "4px",
+                        "space-3": "12px",
+                        "space-4": "16px",
+                        "space-2": "8px",
+                        "base": "4px",
+                        "edge-mobile": "24px"
+                    },
+                    "fontFamily": {
+                        "tiny-web": ["Inter Tight", "sans-serif"],
+                        "label-mobile": ["Inter Tight", "sans-serif"],
+                        "body-mobile": ["Inter Tight", "sans-serif"],
+                        "body-web": ["Inter Tight", "sans-serif"],
+                        "h2-web": ["Inter Tight", "sans-serif"],
+                        "display-web": ["Inter Tight", "sans-serif"],
+                        "h1-web": ["Inter Tight", "sans-serif"],
+                        "hero-mobile": ["Inter Tight", "sans-serif"]
+                    },
+                    "fontSize": {
+                        "tiny-web": ["11px", { "lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "label-mobile": ["13px", { "lineHeight": "18px", "fontWeight": "600" }],
+                        "body-mobile": ["17px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "body-web": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "h2-web": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "display-web": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "h1-web": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "hero-mobile": ["28px", { "lineHeight": "34px", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+      font-family: 'Inter Tight', sans-serif;
+    }
+  </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col bg-background text-on-surface">
+<!-- TopAppBar -->
+<header class="w-full top-0 bg-surface flex items-center px-edge-mobile h-touch-target z-50 sticky border-b border-outline-variant/10">
+<button aria-label="Close" class="hover:bg-surface-bright scale-95 transition-transform p-space-2 rounded-full mr-space-4">
+<span class="material-symbols-outlined text-primary font-[300]" style="font-variation-settings: 'FILL' 0;">close</span>
+</button>
+<div class="flex-1">
+<h1 class="font-h1-web text-h1-web-mobile text-primary tracking-tight font-extrabold">Quick Actions</h1>
+<div class="flex items-center gap-space-1 mt-0.5">
+  <span class="text-tiny-web font-tiny-web text-on-surface-variant tracking-widest uppercase opacity-80">Project:</span>
+  <span class="text-tiny-web font-tiny-web text-primary font-extrabold tracking-wider uppercase">Skyline Tower A</span>
+</div></div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 flex flex-col px-edge-mobile py-space-4 gap-space-4 mb-[90px]">
+<div class="mb-space-4">
+<h2 class="font-h2-web text-h2-web text-on-surface mb-space-1">เมนูด่วน</h2>
+<p class="font-body-mobile text-body-mobile text-on-surface-variant">Select an action to proceed.</p>
+</div>
+<!-- Action Card 1: Report Issue -->
+<button class="w-full text-left bg-surface-container hover:bg-surface-variant transition-colors rounded-xl border border-outline-variant/20 p-space-4 flex items-start gap-space-4 shadow-lg active:scale-95 duration-200">
+<div class="w-12 h-12 rounded-full bg-mobile-warning/20 flex items-center justify-center shrink-0 border border-mobile-warning/20">
+<span class="material-symbols-outlined text-mobile-warning" style="font-variation-settings: 'FILL' 1;">warning</span>
+</div>
+<div class="flex-1 flex flex-col justify-center min-h-[48px]">
+<h3 class="font-label-mobile text-label-mobile text-on-surface mb-1">รายงานปัญหาด่วน</h3>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant normal-case tracking-normal">บันทึกปัญหาหรืออุปสรรคหน้างานทันที</p>
+</div>
+</button>
+<!-- Action Card 2: Safety Checklist -->
+<button class="w-full text-left bg-surface-container hover:bg-surface-variant transition-colors rounded-xl border border-outline-variant/20 p-space-4 flex items-start gap-space-4 shadow-lg active:scale-95 duration-200">
+<div class="w-12 h-12 rounded-full bg-mobile-success/20 flex items-center justify-center shrink-0 border border-mobile-success/20">
+<span class="material-symbols-outlined text-mobile-success" style="font-variation-settings: 'FILL' 1;">health_and_safety</span>
+</div>
+<div class="flex-1 flex flex-col justify-center min-h-[48px]">
+<h3 class="font-label-mobile text-label-mobile text-on-surface mb-1">เช็คลิสต์ความปลอดภัย</h3>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant normal-case tracking-normal">ตรวจสอบความปลอดภัยก่อนเริ่มงาน</p>
+</div>
+</button>
+<!-- Action Card 3: Log Activity -->
+<button class="w-full text-left bg-surface-container hover:bg-surface-variant transition-colors rounded-xl border border-outline-variant/20 p-space-4 flex items-start gap-space-4 shadow-lg active:scale-95 duration-200">
+<div class="w-12 h-12 rounded-full bg-mobile-primary/20 flex items-center justify-center shrink-0 border border-mobile-primary/20">
+<span class="material-symbols-outlined text-mobile-primary" style="font-variation-settings: 'FILL' 1;">edit_document</span>
+</div>
+<div class="flex-1 flex flex-col justify-center min-h-[48px]">
+<h3 class="font-label-mobile text-label-mobile text-on-surface mb-1">บันทึกกิจกรรมประจำวัน</h3>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant normal-case tracking-normal">สรุปผลงานและรายงานแรงงาน</p>
+</div>
+</button>
+</main>
+<!-- BottomNavBar -->
+<!-- Note: While Quick Actions is technically a transactional overlay in many apps, the prompt explicitly requested "The Bottom Navigation for Site Worker should be visible." -->
+<nav class="md:hidden fixed bottom-0 w-full z-50 pb-safe bg-surface-container-low border-t border-outline-variant/20 shadow-lg font-label-mobile text-label-mobile flex justify-around items-center px-4 h-[72px]">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-variant hover:text-on-surface scale-95 duration-200 p-2 rounded-lg" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">dashboard</span>
+<span class="">Dashboard</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-variant hover:text-on-surface scale-95 duration-200 p-2 rounded-lg" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">assignment</span>
+<span class="">Tasks</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-variant hover:text-on-surface scale-95 duration-200 p-2 rounded-lg" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">history</span>
+<span class="">Log</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-variant hover:text-on-surface scale-95 duration-200 p-2 rounded-lg" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">person</span>
+<span class="">Profile</span>
+</a>
+</nav>
+
+
+</body></html>
