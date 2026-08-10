@@ -27,6 +27,14 @@ export interface MyProject {
   status: string;
   start_date: string | null; // project start date (footer "START")
   end_date: string | null; // project end / contract-end date (footer "GOAL")
+  /**
+   * One building on the project, or null where none is recorded.
+   *
+   * The Site Worker's project picker draws it under the project name — the drawing's
+   * "Zone C - North Wing" line (PO decision 2026-08-11). There is no zone field on a project or a
+   * membership, and the building is the narrowest real location the data has.
+   */
+  building_name?: string | null;
 }
 
 /**

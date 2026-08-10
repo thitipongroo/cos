@@ -12,10 +12,10 @@
 //     This bar has moved twice. The role's original four mockups drew Tasks | Issues | Reports |
 //     Safety with no Home; on 2026-08-08 Home replaced Tasks (Home is first for all twelve roles,
 //     and §32.7 allows exactly four). On 2026-08-09 the product owner settled it as Home | Tasks |
-//     Safety | Directory, close to the 01_home/01_dashboard mockup's own bar but with Home in the
+//     Safety | Directory, close to the 01_home/01_sw_dashboard mockup's own bar but with Home in the
 //     Projects slot, since a field worker has no project-portfolio screen.
 //     ISSUES and REPORT gave up their slots and are now pushed from the Home FAB's quick-action
-//     menu (mockup 01_home/02_quick_actions), which carries exactly those two plus Safety — so
+//     menu (mockup 01_home/02_sw_quick_actions), which carries exactly those two plus Safety — so
 //     nothing lost its entry point. Both are `href: null` below with a breadcrumb, like any other
 //     child screen.
 //   SITE_ENGINEER:          Home | Issues | Inspections | Reports
@@ -161,6 +161,10 @@ export function MobileNav() {
           now the pushed child behind More's vendor tile (mockup 06_project_manager/04_more_option).
           Without this line expo-router would auto-register it as a visible tab for every role. */}
       <Tabs.Screen name="vendors" options={{ href: null }} />
+      {/* Which site am I on today — the Site Worker's first screen (mockup
+          05_site_worker/01_home/00_sw_project_selection). Pushed from the project context bar and
+          entered automatically when no project has been chosen; never a tab. */}
+      <Tabs.Screen name="select-project" options={{ href: null }} />
       {/* The signed-in user's own account settings — pushed from the drawer's Settings row. */}
       <Tabs.Screen name="account-settings" options={{ href: null }} />
       <Tabs.Screen name="conflict-review" options={{ href: null }} />

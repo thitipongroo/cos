@@ -1,5 +1,5 @@
 // Report screen — SITE_WORKER daily site report (offline-first) — G-M5a/G-M5b.
-// Implements mockup/mobile/05_site_worker/01_home/04_daily_report ("บันทึกกิจกรรมประจำวัน" / New Entry).
+// Implements mockup/mobile/05_site_worker/01_home/04_sw_daily_report ("บันทึกกิจกรรมประจำวัน" / New Entry).
 //
 // Saving (1) writes a local_site_reports row (sync_status PENDING) for instant/offline display, and
 // (2) enqueues a 'site_report' sync item → SyncManager POSTs /sync/push → syncSiteReports. The
@@ -30,6 +30,7 @@ import { localSiteReports } from '../../db/schema';
 import { enqueue } from '../../db/sync-queue';
 import { ProjectPicker } from '../../components/ProjectPicker';
 import { PhotoCapture } from '../../components/PhotoCapture';
+import { ProjectContextBar } from '../../components/ProjectContextBar';
 import { useT } from '../../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
 import { usePalette } from '../../theme/usePalette';
@@ -143,6 +144,7 @@ export default function ReportScreen() {
       contentContainerStyle={styles.page}
       keyboardShouldPersistTaps="handled"
     >
+      <ProjectContextBar />
       {/* The mockup's "NEW ENTRY / บันทึกกิจกรรมประจำวัน" heading block is NOT rendered (§32.7 Mobile
           App Shell): a top-level tab screen is named by its active bottom-nav tab — "Reports" here —
           and repeating it inside the content states the name twice. The eyebrow went with the title

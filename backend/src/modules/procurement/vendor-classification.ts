@@ -10,7 +10,9 @@
 
 /**
  * What a vendor supplies. Source: the directory's filter chips
- * (mockup/mobile/06_project_manager/03_vendors/01_vendor_directory).
+ * (drawn in the `mockup/mobile/06_project_manager` set the product owner replaced on 2026-08-10 —
+ * that drawing is withdrawn, and the vendor directory now hangs off the More menu instead. The
+ * classification below outlived the drawing because it describes vendor DATA, not a screen.)
  *
  * NOT the withholding-tax classification — `procurement.wht_rules.vendor_type` is a different
  * vocabulary serving a different purpose (spec §13.3), and conflating them would make a tax rate move

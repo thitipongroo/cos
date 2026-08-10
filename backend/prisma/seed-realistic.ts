@@ -557,6 +557,7 @@ async function run(): Promise<void> {
       await seedVendorsMaterials(tx);
       await seedWorkersEquipment(tx);
       for (const p of PROJECTS) await seedProject(tx, p);
+      await seedOnHoldProject(tx);
       await seedPendingApprovals(tx);
       await seedCrm(tx);
       await seedNotifications(tx);
@@ -1490,6 +1491,40 @@ async function wipeTenant(tx: Tx): Promise<void> {
  * (lib/procurementKpi.ts), because money nobody has approved is not committed — so adding them does
  * not move the dashboard's total.
  */
+/**
+ * A sixth project, paused.
+ *
+ * The Site Worker's project picker draws a status on every card and the drawing shows two of them —
+ * Active and On Hold — while every seeded project was ACTIVE, so the picker could only ever show one
+ * state (PO decision 2026-08-11). A paused site is also an ordinary thing for a contractor to have.
+ *
+ * DELIBERATELY THIN. It carries a building (the picker's location line), one site-worker membership
+ * so it appears in `GET /projects/mine`, and nothing else — no budget, no BOQ, no purchase orders.
+ * That is what ON_HOLD means: work stopped, and inventing a month of activity on a paused site would
+ * make the seed less true, not more complete. The screens that read those tables already handle a
+ * project that has none (the Finance list drops it; the manager Home shows no progress figure).
+ */
+async function seedOnHoldProject(tx: Tx): Promise<void> {
+  const pid = uid('project/tlpk');
+  await tx.$executeRaw`INSERT INTO projects.projects (project_id, tenant_id, project_code, project_name, project_type, status, budget_amount, budget_currency, start_date, end_date, work_hours_start, work_hours_end, created_by)
+    VALUES (${pid}::uuid, ${TENANT_ID}::uuid, 'TLPK', 'Thonglor Park Residences', 'RESIDENTIAL'::"ProjectType", 'ON_HOLD'::"ProjectStatus", 165000000, ${THB},
+            ${addDays(TODAY, -120)}::date, ${addDays(TODAY, 400)}::date, '07:00'::time, '18:00'::time, ${U('pm1')}::uuid)
+    ON CONFLICT (project_id) DO UPDATE SET status = 'ON_HOLD'::"ProjectStatus"`;
+  await tx.$executeRaw`INSERT INTO projects.buildings (building_id, project_id, tenant_id, building_name, building_type, total_floors, location, status, created_by)
+    VALUES (${uid('bld/tlpk')}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, 'Tower B', 'RESIDENTIAL', 24, 'Thonglor Park Residences', 'ON_HOLD', ${U('pm1')}::uuid)
+    ON CONFLICT (building_id) DO NOTHING`;
+  // The site worker and the manager only — the picker reads `GET /projects/mine`, which is scoped to
+  // membership, so without this row the paused site would exist and never be seen.
+  for (const [k, role] of [
+    ['pm1', 'PROJECT_MANAGER'],
+    ['sw1', 'SITE_WORKER'],
+  ] as const) {
+    await tx.$executeRaw`INSERT INTO projects.project_members (membership_id, project_id, tenant_id, user_id, role, assigned_by)
+      VALUES (${uid(`pm/tlpk/${k}`)}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, ${U(k)}::uuid, ${role}::"ProjectMemberRole", ${U('admin')}::uuid)
+      ON CONFLICT (membership_id) DO NOTHING`;
+  }
+}
+
 async function seedPendingApprovals(tx: Tx): Promise<void> {
   const items = [
     {

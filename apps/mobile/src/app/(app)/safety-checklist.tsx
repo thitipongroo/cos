@@ -1,5 +1,5 @@
 // Safety checklist — SITE_WORKER daily pre-shift verification (offline-first).
-// Implements mockup/mobile/05_site_worker/03_safety/01_checklist ("เช็คลิสต์ความปลอดภัย").
+// Implements mockup/mobile/05_site_worker/03_safety/01_sw_checklist ("เช็คลิสต์ความปลอดภัย").
 //
 // The checklist TEMPLATE comes from GET /safety/checklists (a role the SITE_WORKER has always had);
 // the completed checklist is submitted to POST /safety/checklists, which the role gained on
@@ -34,6 +34,7 @@ import { SignaturePad } from '../../components/SignaturePad';
 import type { AnnotationStroke } from '../../components/PhotoAnnotation';
 import { useAuthStore } from '../../store/authStore';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
+import { ProjectContextBar } from '../../components/ProjectContextBar';
 import { useT } from '../../i18n';
 import {
   fontFamily,
@@ -231,6 +232,7 @@ export default function SafetyChecklistScreen() {
       style={{ backgroundColor: p.bg }}
       contentContainerStyle={styles.page}
     >
+      <ProjectContextBar />
       {/* No page title (§32.7 — the "Safety" tab names this screen), and the word REQUIRED appears
           nowhere: neither the header badge nor the per-row "Required check" line survived
           2026-08-08. Both read as decoration — nothing on screen said what was required or by when,

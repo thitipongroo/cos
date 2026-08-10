@@ -40,7 +40,7 @@ export const TAB_ROUTES = [
   // `report` is deliberately ABSENT: the daily-entry form stopped being a tab on 2026-08-09 when
   // Tasks and Directory took the Site Worker's last two slots. It is pushed from the Home FAB's
   // quick-action menu, so it needs `href: null` + a breadcrumb like every other child screen.
-  // SITE_WORKER's fourth tab (PO 2026-08-08, mockup 05_site_worker/03_safety/01_checklist). A tab, not a pushed
+  // SITE_WORKER's fourth tab (PO 2026-08-08, mockup 05_site_worker/03_safety/01_sw_checklist). A tab, not a pushed
   // child: the daily safety verification is one of the four things that role opens the app to do.
   'safety-checklist',
   'sync-queue',

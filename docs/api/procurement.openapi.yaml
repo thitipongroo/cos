@@ -607,7 +607,8 @@ paths:
       summary: Vendor directory — active vendors with their open-project count
       description: >-
         Serves the mobile vendor directory
-        (mockup/mobile/06_project_manager/03_vendors/01_vendor_directory). Each row is the vendor
+        (drawn in the `mockup/mobile/06_project_manager` set withdrawn on 2026-08-10; the vendor
+        directory now hangs off the More menu). Each row is the vendor
         plus `active_project_count`. Separate from GET /procurement/vendors, which is the plain
         vendor master read and does not pay for the per-row aggregate. The trust score is NOT
         included: it is a per-vendor computation, GET /procurement/vendors/{vendorId}/score.

@@ -675,6 +675,22 @@
       "deleteConfirmOk": "Delete"
     }
   },
+  "project": {
+    "select": {
+      "title": "Select the site you are working on",
+      "subtitle": "Select active project",
+      "searchPlaceholder": "Search projects…",
+      "current": "Current",
+      "status": "Status",
+      "none": "You are not assigned to any site yet.",
+      "noMatch": "No site matches “{query}”.",
+      "loadFailed": "Your sites could not be loaded. Nothing here is missing — it has not arrived."
+    },
+    "context": {
+      "change": "Working on {project}. Change site.",
+      "on": "Project: {project}"
+    }
+  },
   "pm": {
     "projects": {
       "title": "Projects",
@@ -1005,6 +1021,10 @@
     "CONFLICT": "Conflict",
     "HIGH": "High",
     "NOT_STARTED": "Not started",
+    "ACTIVE": "Active",
+    "ON_HOLD": "On hold",
+    "COMPLETED": "Completed",
+    "CANCELLED": "Cancelled",
     "DRAFT": "Draft",
     "LOW": "Low",
     "MEDIUM": "Medium"

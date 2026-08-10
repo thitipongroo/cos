@@ -1,11 +1,11 @@
 // QuickActionsMenu — the Site Worker Home FAB's target.
-// Implements mockup/mobile/05_site_worker/01_home/02_quick_actions ("Quick Action Menu").
+// Implements mockup/mobile/05_site_worker/01_home/02_sw_quick_actions ("Quick Action Menu").
 //
 // A MODAL with its own top bar, mirroring the Tenant Admin quick-command overlay
 // (<QuickAddMenu />) — product-owner decision 2026-08-09, "make it like the Tenant Admin one,
 // which has a close button". It was a route for one build; a route gets the app's shared TopBar,
 // whose leading control is a BACK CHEVRON for child screens, and there is no close affordance in it.
-// Both mockups draw this surface with an X of its own: 05_site_worker/01_home/02_quick_actions puts
+// Both mockups draw this surface with an X of its own: 05_site_worker/01_home/02_sw_quick_actions puts
 // `Close` at the head of its own header, and 04_tenant_admin/…/01_quick_action_menu does the same.
 // A modal is what carries a bar like that, so this is one.
 //
@@ -21,6 +21,7 @@
 
 import { Modal, View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useProjectStore } from '../store/projectStore';
 import { MaterialIcons } from '@expo/vector-icons';
 import { BrandLogo } from './BrandLogo';
 import { QuickActionRow } from './QuickActionRow';
@@ -59,6 +60,8 @@ export function QuickActionsMenu({ visible, onClose }: { visible: boolean; onClo
 
   // Close BEFORE navigating: a modal left mounted over the screen it just opened swallows the first
   // tap on it, and `onRequestClose` would then pop the wrong thing.
+  const activeProject = useProjectStore((s) => s.active);
+
   const go = (route: (typeof ACTIONS)[number]['route']): void => {
     onClose();
     router.push(route);
@@ -87,6 +90,15 @@ export function QuickActionsMenu({ visible, onClose }: { visible: boolean; onClo
         </View>
 
         <ScrollView contentContainerStyle={styles.content}>
+          {/* WHICH SITE these actions will be filed against (mockup
+              05_site_worker/01_home/02_sw_quick_actions). Not a link here — this sheet is an
+              overlay, and sending someone to change site from inside it would leave them somewhere
+              else with the sheet gone. It is drawn only once a site is chosen. */}
+          {activeProject !== null ? (
+            <Text testID="quick-actions-project" style={styles.projectLine}>
+              {t('project.context.on', { project: activeProject.projectName })}
+            </Text>
+          ) : null}
           <Text style={styles.subtitle}>{t('quickActions.subtitle')}</Text>
           {ACTIONS.map(({ key, route, icon, tone }) => (
             <QuickActionRow
@@ -120,6 +132,14 @@ const styles = StyleSheet.create({
   topRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   closeBtn: { padding: spacing.xs },
   content: { padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xl },
+  projectLine: {
+    color: darkColors.accent,
+    fontFamily: fontFamily.semibold,
+    fontSize: 11,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginBottom: spacing.xs,
+  },
   subtitle: {
     fontFamily: fontFamily.regular,
     fontSize: typography.body.fontSize,

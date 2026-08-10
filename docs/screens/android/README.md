@@ -37,7 +37,7 @@ gets its own full-page file (the Invite-user `email` method, the Alerts `diff`-e
 | [`TENANT-ADMIN/`](TENANT-ADMIN/)           | Tabs: **Home \| Users \| Alerts \| Settings**. [`01-Home/`](TENANT-ADMIN/01-Home/) — dashboard (`01`), Quick-Add (`02`) and the FAB flows: Invite-user (`03`), Role-permissions (`04`), Roles-selection (`05`), Invitation-success (`06`), System-integration (`07`), Apps-&-Services (`08`). [`02-Users/`](TENANT-ADMIN/02-Users/) — the users list (`01`), the per-user action sheet (`02`), the user profile (`03`), the multi-role permission editor (`04`) + the save-success screen (`05`), and the password-reset form (`06`) + its two done screens — temp-password (`07`) and email-link-sent (`08`). [`03-Alerts/`](TENANT-ADMIN/03-Alerts/) — the sync-review queue (`01`). [`04-Settings/`](TENANT-ADMIN/04-Settings/) — System Settings (`01`, one full-page).                                     |
 | [`PROJECT-MANAGER/`](PROJECT-MANAGER/)     | Tabs: **Home \| Procurement \| Finance \| More** — the bar from the CORRECTED [`mockup/mobile/06_project_manager`](../../../mockup/mobile/06_project_manager) set (2026-08-10). [`01-Home/`](PROJECT-MANAGER/01-Home/) — the manager dashboard (`01`): two KPI tiles, the critical-blockers card, the AI panel and YOUR PROJECTS. [`02-Procurement/`](PROJECT-MANAGER/02-Procurement/) — three counters, the AI panel and the approvals queue (`01`). [`03-Finance/`](PROJECT-MANAGER/03-Finance/) — portfolio financial summary, AI panel, per-project budget health (`01`). [`04-More/`](PROJECT-MANAGER/04-More/) — the More menu (`01`) and the vendor directory it pushes to (`02`). [`05-Drawer/`](PROJECT-MANAGER/05-Drawer/) — the navigation drawer (`01`), which from 2026-08-10 is PER ROLE: only **Settings** and **Support Center** are shared, and the section above them comes from [`lib/drawerLinks.ts`](../../../apps/mobile/src/lib/drawerLinks.ts). Two roles have a drawer DRAWING (`04_tenant_admin/` and `06_project_manager/05_navigation_drawer`) and get it verbatim; every other role's list is DERIVED from spec §6.4's permission matrix, so no drawer row can lead to a 403. The list every role used to share was not neutral — it was the TENANT_ADMIN drawing plus two extra rows. The earlier `03-Approvals/` and `04-Vendors/` folders were removed with the bar they were numbered for. `PROC_MANAGER` does not share these screens: the corrected mockup set is a PROJECT_MANAGER app end to end, and master 3490 keeps that role on Home \| RFQs \| Orders \| Deliveries. |
 | [`CRM-SALES-MANAGER/`](CRM-SALES-MANAGER/) | Tabs: **Home \| Leads \| Opportunities \| Customers** — the three pages §20.7.10 defines, built 2026-08-04. Leads (`01`), Opportunities (`02`), Customers (`03`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| [`SITE-WORKER/`](SITE-WORKER/)             | Tabs: **Home \| Tasks \| Safety \| Directory**. [`01-Home/`](SITE-WORKER/01-Home/) — the field dashboard (`01`), the FAB's **Quick actions** overlay (`02`), and the two screens that overlay opens: **Report issue** (`03`) and **Daily report** (`04`). Those four are named for the mockup folders they implement (`01_dashboard`, `02_quick_actions`, `03_issue`, `04_daily_report`). [`02-Tasks/`](SITE-WORKER/02-Tasks/) (`01`), [`03-Safety/`](SITE-WORKER/03-Safety/) (`01`), [`04-Directory/`](SITE-WORKER/04-Directory/) (`01`). [`05-Drawer/`](SITE-WORKER/05-Drawer/) — the **navigation drawer** (`01`), which IS the profile.                                                                                                                                                                     |
+| [`SITE-WORKER/`](SITE-WORKER/)             | Tabs: **Home \| Tasks \| Safety \| Directory**. [`01-Home/`](SITE-WORKER/01-Home/) — the **site picker** (`00`, the role's first screen since 2026-08-10), the field dashboard (`01`), the FAB's **Quick actions** overlay (`02`), and the two screens that overlay opens: **Report issue** (`03`) and **Daily report** (`04`). Those four are named for the mockup folders they implement (`01_dashboard`, `02_quick_actions`, `03_issue`, `04_daily_report`). [`02-Tasks/`](SITE-WORKER/02-Tasks/) (`01`), [`03-Safety/`](SITE-WORKER/03-Safety/) (`01`), [`04-Directory/`](SITE-WORKER/04-Directory/) (`01`). [`05-Drawer/`](SITE-WORKER/05-Drawer/) — the **navigation drawer** (`01`), which IS the profile.                                                                                                                                                                     |
 
 The two adb dashboard scripts write straight into their role's menu subfolders —
 [`capture-android-home.mjs`](../../../apps/mobile/scripts/capture-android-home.mjs) → `SITE-ENGINEER/01-Home/`,
@@ -956,10 +956,21 @@ different thing from the **committed** per-role captures here, which are grouped
   `docs/screens/ios/` and shells out to `xcrun simctl`, so as committed it only drives an iOS
   simulator. The Android equivalents are the two adb scripts referenced above.
 
-## Site Worker — four tabs, seven screens — [`SITE-WORKER/`](SITE-WORKER/)
+## Site Worker — four tabs, eight screens — [`SITE-WORKER/`](SITE-WORKER/)
+
+> **THE ROLE NOW PICKS A SITE FIRST** (mockup `01_home/00_sw_project_selection`, added 2026-08-10).
+> The corrected set puts a project picker in front of the dashboard and then prints the chosen site
+> on every screen after it, so `00-select-project` is not a screen the capture script navigates to —
+> it is where the app already is after `pm clear`, because the shell routes a Site Worker with no
+> site chosen straight there. Choosing one is what unlocks the rest of the run.
+>
+> Two of those sites are worth noticing in the shot: **TLPK is `On hold`** (the sixth project, seeded
+> paused so the picker can show more than one status) and **CWRD shows its code where the others show
+> a building** — the location line is the project's building name, and that one has none recorded.
 
 The `SITE_WORKER` tab set, implementing [`mockup/mobile/05_site_worker/`](../../../mockup/mobile/05_site_worker)
-(`02_tasks/01_daily_tasks`, `01_home/03_issue`, `01_home/04_daily_report`, `03_safety/01_checklist`).
+(`01_home/00_sw_project_selection`, `02_tasks/01_sw_daily_tasks`, `01_home/03_sw_issue`,
+`01_home/04_sw_daily_report`, `03_safety/01_sw_checklist`).
 Captured against the `seed-realistic.ts` dataset
 through a real Path A (SMS OTP) login as `+66811000010` — Somsak Duangdee, the seeded SITE_WORKER at
 Ekachai. The header avatar reads **"SD"** (his initials — no photo set), confirming the signed-in role.
@@ -971,16 +982,16 @@ Ekachai. The header avatar reads **"SD"** (his initials — no photo set), confi
 >
 > | old                                 | new                                      |
 > | ----------------------------------- | ---------------------------------------- |
-> | `05_site_worker/01_tasks/00_main`   | `05_site_worker/02_tasks/01_daily_tasks` |
-> | `05_site_worker/02_issues/00_main`  | `05_site_worker/01_home/03_issue`        |
-> | `05_site_worker/03_reports/00_main` | `05_site_worker/01_home/04_daily_report` |
-> | `05_site_worker/04_safety/00_main`  | `05_site_worker/03_safety/01_checklist`  |
+> | `05_site_worker/01_tasks/00_main`   | `05_site_worker/02_tasks/01_sw_daily_tasks` |
+> | `05_site_worker/02_issues/00_main`  | `05_site_worker/01_home/03_sw_issue`        |
+> | `05_site_worker/03_reports/00_main` | `05_site_worker/01_home/04_sw_daily_report` |
+> | `05_site_worker/04_safety/00_main`  | `05_site_worker/03_safety/01_sw_checklist`  |
 >
-> The same commit added four drawings this role had none of before — `01_home/01_dashboard`,
-> `01_home/02_quick_actions`, `04_directory/01_worker_list` and `05_profile/01_account_settings`.
+> The same commit added four drawings this role had none of before — `01_home/01_sw_dashboard`,
+> `01_home/02_sw_quick_actions`, `04_directory/01_sw_worker_list` and `05_profile/01_sw_account_settings`.
 
 **The bar is Home | Tasks | Safety | Directory** (product-owner decision 2026-08-09) — close to the
-`01_home/01_dashboard` mockup's own bar, but with Home in the Projects slot, since a field worker has
+`01_home/01_sw_dashboard` mockup's own bar, but with Home in the Projects slot, since a field worker has
 no project-portfolio screen and Home is first for all twelve roles.
 
 It moved twice to get here. The role's original four mockups drew **Tasks | Issues | Reports |
@@ -1018,7 +1029,7 @@ seed sets `is_required` on every item, so it printed on all nine and distinguish
 ### Home — [`01-Home/01-dashboard.png`](SITE-WORKER/01-Home/01-dashboard.png)
 
 The field dashboard and the role's landing screen. **Reworked on 2026-08-08** to mockup
-`01_home/01_dashboard`, which the restructure added — this role had no Home drawing before it. Now:
+`01_home/01_sw_dashboard`, which the restructure added — this role had no Home drawing before it. Now:
 two bento stat tiles, the AI Insight module, the project picker and **CHECK IN**, today's priority
 tasks, and the FAB.
 
@@ -1071,7 +1082,7 @@ carries its own list, and sync health is the TopBar indicator plus the Sync Queu
 
 ### Quick actions — [`01-Home/02-quick-actions.png`](SITE-WORKER/01-Home/02-quick-actions.png)
 
-The FAB menu (mockup `01_home/02_quick_actions`): three cards routing to **Issues**, **Safety** and
+The FAB menu (mockup `01_home/02_sw_quick_actions`): three cards routing to **Issues**, **Safety** and
 **Reports** — all screens that already exist, so this adds no capability, it shortens the path to the
 three the role uses most. These are the same three Home used to carry as inline tiles; the mockup
 restructure moved them behind the FAB, which is why Home no longer renders `<QuickActionCard />`.
@@ -1124,7 +1135,7 @@ chevron for free.
 
 ### Team directory — [`04-Directory/01-directory.png`](SITE-WORKER/04-Directory/01-directory.png)
 
-The project crew as a contact list (mockup `04_directory/01_worker_list`), added by the 2026-08-08
+The project crew as a contact list (mockup `04_directory/01_sw_worker_list`), added by the 2026-08-08
 restructure. **The role's fourth tab** as of 2026-08-09. Every other role that can read it still
 reaches it from the navigation drawer, which is why `NavigationDrawer` keeps the link for them and
 drops it here — a drawer entry beside a tab is a second door onto one screen.
@@ -1172,7 +1183,7 @@ It put ~900px of a 2400px panel below the fold and made one surface carry two di
 thing — navigation (go somewhere) and settings (change something) — with the fixed LOG OUT footer
 slicing the PREFERENCES card in half at rest. They moved to their own screen on the same day; the
 mockups split them the same way, the tenant-admin drawer drawing being Field Tools + Settings +
-Logout and `05_profile/01_account_settings` a full screen.
+Logout and `05_profile/01_sw_account_settings` a full screen.
 
 ### Account settings — [`05-Drawer/02-account-settings.png`](SITE-WORKER/05-Drawer/02-account-settings.png)
 
@@ -1182,7 +1193,7 @@ tenant-wide configuration; this is the signed-in user's own account, on every ro
 
 This supersedes the 2026-08-04 ruling that Profile is "reached from the top-bar avatar, not a fifth
 tab" — the avatar still opens it, but what opens is the drawer rather than a screen. The rows are
-mockup `05_profile/01_account_settings`: **MFA** (behind the same feature flag as before), biometric
+mockup `05_profile/01_sw_account_settings`: **MFA** (behind the same feature flag as before), biometric
 unlock, language, notifications, dark mode, the **app version** and the **legal link**.
 
 - The version is the REAL build number from `app.json`, read the way the login footer reads it. The
@@ -1191,7 +1202,7 @@ unlock, language, notifications, dark mode, the **app version** and the **legal 
 - **"Change Secure PIN" is not built.** This product has no PIN — device unlock is biometric (the row
   above it), and inventing a second credential would be a security feature with no backend, no
   recovery path and no spec.
-- **Laid out to mockup `05_profile/01_account_settings`**: an uppercase section label over a bordered
+- **Laid out to mockup `05_profile/01_sw_account_settings`**: an uppercase section label over a bordered
   card, and inside it hairline-separated rows that all share one anatomy — leading icon, label, then
   a value, a value + chevron, or a switch. `<Row />` is the only row the file knows how to draw, so
   the regularity that is the point of the drawing cannot drift.

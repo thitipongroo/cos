@@ -8,7 +8,7 @@
 - **Related:** `docs/specifications/06-rbac-permission-matrix.md` §6.8,
   `docs/specifications/14-api-architecture.md` §Safety APIs,
   `context/00_master_construction_os.md` §Phase 10 (SITE_WORKER workflows),
-  `mockup/mobile/05_site_worker/03_safety/01_checklist`
+  `mockup/mobile/05_site_worker/03_safety/01_sw_checklist`
 
 ## Context
 
@@ -25,7 +25,7 @@ grounds that a documentation conflict is not code drift and that widening a role
 inventing policy.
 
 It became blocking when the Site Worker safety screen
-(`mockup/mobile/05_site_worker/03_safety/01_checklist`) was implemented: the screen's whole purpose is the
+(`mockup/mobile/05_site_worker/03_safety/01_sw_checklist`) was implemented: the screen's whole purpose is the
 pre-shift **daily safety verification**, ending in a CONFIRM SAFETY action. Every path to persisting
 that — `POST /safety/checklists` online, entity `inspection` through `/sync/push` offline — rejected
 the one role the screen is drawn for. The screen could be built, but its primary action could only

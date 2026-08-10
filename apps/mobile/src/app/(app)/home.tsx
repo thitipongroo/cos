@@ -51,6 +51,7 @@ import {
 import { ProjectPicker } from '../../components/ProjectPicker';
 import { ProcurementInsight } from '../../components/ProcurementInsight';
 import { PortfolioInsight } from '../../components/PortfolioInsight';
+import { ProjectContextBar } from '../../components/ProjectContextBar';
 import {
   getMyProjects,
   getProjectPhases,
@@ -223,7 +224,7 @@ function asList<T>(res: { items?: T[] } | T[]): T[] {
 
 // ── SITE_WORKER — bento stats, priority tasks ────────────────────────────────
 //
-// Implements mockup/mobile/05_site_worker/01_home/01_dashboard, added by the 2026-08-08 restructure
+// Implements mockup/mobile/05_site_worker/01_home/01_sw_dashboard, added by the 2026-08-08 restructure
 // (527231f) — this role had no Home drawing before it. Product-owner decision the same day: rework
 // the screen to the mockup.
 //
@@ -281,6 +282,11 @@ function FieldHome() {
   return (
     <View testID="home-screen" style={styles.fieldRoot}>
       <ScrollView contentContainerStyle={styles.fieldPage}>
+        {/* WHICH SITE, first thing. The corrected mockup set replaced this screen's "WORKER COMMAND"
+            title with the project the worker is on (05_site_worker/01_home/01_sw_dashboard), which is
+            the more useful of the two: the tab bar already says this is Home, and nothing else on the
+            screen says which site its figures belong to. */}
+        <ProjectContextBar />
         {/* Bento stats (mockup). Both figures are counted from the local DB, never fetched. */}
         <View style={styles.kpiRow}>
           <StatTile
@@ -1184,7 +1190,7 @@ const makeStyles = (p: Palette) =>
       fontFamily: fontFamily.regular,
       fontSize: typography.label.fontSize,
     },
-    // ── Site Worker Home (mockup 01_home/01_dashboard) ──────────────────────────────────────
+    // ── Site Worker Home (mockup 01_home/01_sw_dashboard) ──────────────────────────────────────
     fieldRoot: { flex: 1, backgroundColor: p.bg },
     fieldPage: { padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xl * 3 },
     statTile: {

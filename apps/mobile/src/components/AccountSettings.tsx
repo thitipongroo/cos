@@ -5,7 +5,7 @@
 // profile" ruling — until the panel was carrying both navigation and settings with ~900px below the
 // fold. There is still no `/profile` route: identity lives in the drawer, this is reached from it.
 //
-// LAYOUT IS mockup/mobile/05_site_worker/05_profile/01_account_settings: an uppercase section label
+// LAYOUT IS mockup/mobile/05_site_worker/05_profile/01_sw_account_settings: an uppercase section label
 // over a bordered card, and inside it hairline-separated rows that all share one anatomy —
 // leading icon, label, then either a value, a value + chevron, or a switch. That regularity is the
 // point of the drawing, so <Row /> below is the only row this file knows how to draw.

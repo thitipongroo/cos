@@ -84,12 +84,12 @@ export const ALL_TABS: TabConfig[] = [
     roles: [CosRole.TENANT_ADMIN],
   },
   // SITE_WORKER's bar is Home | Tasks | Safety | Directory (PO decision 2026-08-09), which is the
-  // 01_home/01_dashboard mockup's bar with Home in the Projects slot — a field worker has no
+  // 01_home/01_sw_dashboard mockup's bar with Home in the Projects slot — a field worker has no
   // project-portfolio screen, and Home stays first for all twelve roles.
   //
   // `tasks` is a tab AGAIN. It lost the slot on 2026-08-08 when Home took it and became a pushed
   // child of Home; Issues and Reports have now given up their slots instead, and both are reached
-  // from the Home FAB's quick-action menu (mockup 01_home/02_quick_actions), which carries exactly
+  // from the Home FAB's quick-action menu (mockup 01_home/02_sw_quick_actions), which carries exactly
   // those two plus Safety. So no screen lost its entry point in the swap.
   { name: 'tasks', titleKey: 'nav.tabs.tasks', icon: 'assignment', roles: [CosRole.SITE_WORKER] },
   // `issues` is no longer a SITE_WORKER tab — it stays SITE_ENGINEER's, whose own bar is unchanged

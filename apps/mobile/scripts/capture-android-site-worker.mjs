@@ -6,12 +6,12 @@
 // tab, and which IS the profile as of the same day (there is no profile route).
 //
 // Inside 01-Home the frames are numbered 01–04 and named for the mockup folders they implement:
-//   01-dashboard      ← mockup 05_site_worker/01_home/01_dashboard
-//   02-quick-actions  ← …/01_home/02_quick_actions   (opened by the Home FAB)
-//   03-report-issue   ← …/01_home/03_issue           (opened from that menu)
-//   04-daily-report   ← …/01_home/04_daily_report     (opened from that menu)
-// The other tabs implement …/02_tasks/01_daily_tasks, …/03_safety/01_checklist and
-// …/04_directory/01_worker_list. All of those were renamed from
+//   01-dashboard      ← mockup 05_site_worker/01_home/01_sw_dashboard
+//   02-quick-actions  ← …/01_home/02_sw_quick_actions   (opened by the Home FAB)
+//   03-report-issue   ← …/01_home/03_sw_issue           (opened from that menu)
+//   04-daily-report   ← …/01_home/04_sw_daily_report     (opened from that menu)
+// The other tabs implement …/02_tasks/01_sw_daily_tasks, …/03_safety/01_sw_checklist and
+// …/04_directory/01_sw_worker_list. All of those were renamed from
 // {01_tasks,02_issues,03_reports,04_safety}/00_main in 527231f.
 //
 // ISSUES AND THE DAILY REPORT ARE FILED UNDER 01-Home/ because that is where they are reached from:
@@ -226,6 +226,23 @@ async function main() {
   await find(byId('drawer-menu-button'), 'signed-in top bar', 40);
   await dismissDevBanners();
 
+  // WHICH SITE — the first screen this role now sees (mockup
+  // 05_site_worker/01_home/00_sw_project_selection, added 2026-08-10). The shell routes a Site
+  // Worker here whenever no site is chosen, and `pm clear` above guarantees that on every run, so
+  // this is not a screen the script has to navigate to: it is where the app already is.
+  await find(byId('select-project-screen'), 'project picker', 40);
+  await dismissDevBanners();
+  await delay(1200);
+  if (wanted('01-Home/00-select-project')) {
+    console.log('· 01-Home/00-select-project');
+    await stitchFull('01-Home/00-select-project', 180, NAV_TOP);
+  }
+  // Choosing one is what unlocks every screen below — they all print the site they belong to.
+  console.log('· choosing the active site');
+  await tap((n) => n.includes('text="The Sukhumvit 45 Residences"'), 'Sukhumvit 45 card');
+  await find(byId('home-screen'), 'home after choosing', 40);
+  await dismissDevBanners();
+
   // Home — the role's landing tab since 2026-08-08: KPI cards, the project picker + check-in, and
   // the quick actions. Asserted on the check-in button rather than just the screen, because that
   // control is the reason Home is a tab at all for this role.
@@ -300,7 +317,7 @@ async function main() {
     await dismissDevBanners();
     await delay(1500);
     await stitchFull('03-Safety/01-safety-checklist', 180, NAV_TOP);
-    // Quick actions — the FAB menu (mockup 01_home/02_quick_actions). Three cards, each routing to a
+    // Quick actions — the FAB menu (mockup 01_home/02_sw_quick_actions). Three cards, each routing to a
     // screen that already exists.
   }
 
@@ -314,6 +331,11 @@ async function main() {
     await dismissDevBanners();
     await delay(1200);
     grabOne('01-Home/02-quick-actions');
+    // CLOSE IT. This step is the only one that leaves a MODAL on screen, and the sheet covers the
+    // bottom bar — the Directory step below then looked for a tab that was behind it and failed the
+    // whole run with "directory tab never appeared". A step that opens an overlay owns closing it.
+    await tap(byId('quick-actions-close'), 'quick-actions close');
+    await find(byId('home-screen'), 'home after closing the quick actions');
     // Team directory (mockup 04_directory). Opened from the navigation drawer, and asserted on a real
     // CARD: with no crew allocated the screen renders its honest empty state, which must fail the run
     // rather than be committed as though it were the feature.
@@ -342,6 +364,12 @@ async function main() {
     await dismissDevBanners();
     await delay(1200);
     await stitchFull('05-Drawer/01-drawer-profile', 180, NAV_TOP);
+    // CLOSE IT, for the same reason the quick-actions sheet is closed above: the drawer is left
+    // open otherwise, and the next step's tap on the avatar lands on the drawer's BACKDROP — which
+    // closes the panel instead of opening it, so the Settings row it then looks for is genuinely
+    // gone. Hardware BACK is what the panel itself listens for.
+    adb('shell', 'input', 'keyevent', '4');
+    await find(byId('directory-screen'), 'the screen behind the drawer');
     // Account settings — pushed from the drawer's Settings row (mockup 05_profile). Its own screen
     // since 2026-08-09: inline in the drawer, these sections put ~900px of a 2400px panel below the
     // fold and mixed navigation with settings.

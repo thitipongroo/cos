@@ -167,7 +167,7 @@ export class WorkforceRepository {
   }
 
   /**
-   * The project's crew as a CONTACT LIST — mockup 05_site_worker/04_directory/01_worker_list.
+   * The project's crew as a CONTACT LIST — mockup 05_site_worker/04_directory/01_sw_worker_list.
    *
    * One query rather than three round trips, because the screen renders one card per worker and a
    * client-side join over `project_workforce` + `workers` + today's attendance would be N+1 on a

@@ -4,7 +4,8 @@
 
 import { useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { usePathname } from 'expo-router';
+import { usePathname, useRouter } from 'expo-router';
+import { CosRole } from '@cos/types';
 import { runDeltaSync } from '../../sync/runDeltaSync';
 import { runPushSync } from '../../sync/runPushSync';
 import { checkLocalDbLimit } from '../../db/database';
@@ -14,9 +15,42 @@ import { MobileNav } from '../../components/MobileNav';
 import { NavigationDrawer } from '../../components/NavigationDrawer';
 import { useIsDark } from '../../theme/usePalette';
 import { setLastAppPath } from '../../lib/e2e/lastRoute';
+import { useAuthStore } from '../../store/authStore';
+import { useProjectStore } from '../../store/projectStore';
 
 export default function AppLayout() {
   const pathname = usePathname();
+  const router = useRouter();
+  const role = useAuthStore((s) => s.role);
+  const activeProject = useProjectStore((s) => s.active);
+  const hydrateProject = useProjectStore((s) => s.hydrate);
+
+  // The remembered site, read back once per launch. Until it has been read, `active` is null and the
+  // guard below must not fire — otherwise every cold start would bounce a worker who had already
+  // chosen, into the picker.
+  useEffect(() => {
+    void hydrateProject();
+  }, [hydrateProject]);
+
+  /**
+   * A Site Worker with no site chosen is sent to choose one.
+   *
+   * The corrected `mockup/mobile/05_site_worker` set puts `00_sw_project_selection` in front of the
+   * dashboard and then prints the chosen site on every screen after it, so the rest of the role's
+   * app has nothing true to say until the question is answered. The guard lives in the shell rather
+   * than on Home because those screens are all reachable directly — from a tab, a notification, or
+   * the E2E deep link — and a rule enforced on one entrance is not enforced.
+   *
+   * ONLY THIS ROLE. Every other role picks a project per screen where it needs one (the managers'
+   * panels, the engineer's dashboard); making them all answer up front would be inventing a flow no
+   * drawing asks for.
+   */
+  useEffect(() => {
+    if (role !== CosRole.SITE_WORKER) return;
+    if (activeProject !== null) return;
+    if (pathname === '/select-project') return;
+    router.replace('/select-project');
+  }, [role, activeProject, pathname, router]);
 
   // Remember the current in-app route so the E2E network-toggle deep link can return here (see
   // lib/e2e/lastRoute). No-op effect in production beyond bookkeeping.

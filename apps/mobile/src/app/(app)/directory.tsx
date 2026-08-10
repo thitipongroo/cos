@@ -1,5 +1,5 @@
 // Team directory — the project's crew as a contact list.
-// Implements mockup/mobile/05_site_worker/04_directory/01_worker_list ("Team Directory").
+// Implements mockup/mobile/05_site_worker/04_directory/01_sw_worker_list ("Team Directory").
 //
 // A pushed child of Home (breadcrumb + back chevron), NOT a bottom tab: the 2026-08-08 mockup
 // restructure drew Directory in the bar, but its five drawings carry four different bars between

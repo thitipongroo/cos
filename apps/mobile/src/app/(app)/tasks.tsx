@@ -1,5 +1,5 @@
 // Tasks screen — SITE_WORKER task list + detail + progress update (offline-first).
-// Implements mockup/mobile/05_site_worker/02_tasks/01_daily_tasks.
+// Implements mockup/mobile/05_site_worker/02_tasks/01_sw_daily_tasks.
 //
 // Reads local_tasks reactively (populated by delta sync). Updating progress writes locally (PENDING)
 // and PATCHes the server via mutate() — offline it is queued; on sync the server applies Max-wins
@@ -46,6 +46,7 @@ import { eq } from 'drizzle-orm';
 import { useCollection } from '../../hooks/useCollection';
 import { TaskCard } from '../../components/TaskCard';
 import { VoiceCommandFab } from '../../components/VoiceCommandFab';
+import { ProjectContextBar } from '../../components/ProjectContextBar';
 import { mutate } from '../../api/client';
 import { useT } from '../../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
@@ -169,6 +170,7 @@ export default function TasksScreen() {
 
   return (
     <View testID="tasks-screen" style={[styles.page, { backgroundColor: p.bg }]}>
+      <ProjectContextBar />
       {/* NO in-content page title, though the mockup draws "รายการงานวันนี้" (§32.7 Mobile App Shell:
           a top-level tab screen is named by its active bottom-nav tab, and repeating the name inside
           the content states it twice). This is the one place the mockup is deliberately not followed

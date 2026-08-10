@@ -31,7 +31,7 @@ interface VoiceNoteButtonProps {
   /**
    * FAB diameter. Defaults to the 56px project standard (the Site Engineer home, the Tasks list).
    * The issue screen's VOICE NOTE panel passes 80, which is what its mockup draws
-   * (05_site_worker/01_home/03_issue: `w-20 h-20 rounded-full`) — there the button is the whole
+   * (05_site_worker/01_home/03_sw_issue: `w-20 h-20 rounded-full`) — there the button is the whole
    * point of a dedicated panel rather than an accessory floating over a list.
    */
   fabSize?: number;

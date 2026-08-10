@@ -2,7 +2,7 @@
 // badge and progress. Tap opens the progress-detail view (the accessible single-tap alternative to the
 // swipe, WCAG 2.5.7 / §20.8). Uses react-native-gesture-handler Swipeable (ADR-053).
 //
-// Card anatomy from mockup/mobile/05_site_worker/02_tasks/01_daily_tasks: a coloured accent bar down the
+// Card anatomy from mockup/mobile/05_site_worker/02_tasks/01_sw_daily_tasks: a coloured accent bar down the
 // left edge, an ID eyebrow over the task name, a badge top-right, a status chip and an action button
 // on the second row, and a thin progress bar underneath. A completed task is dimmed with its name
 // struck through.

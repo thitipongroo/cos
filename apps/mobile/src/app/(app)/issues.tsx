@@ -1,5 +1,5 @@
 // Issues screen — SITE_WORKER quick issue create (+ photo) & offline list; SITE_ENGINEER escalate.
-// Implements mockup/mobile/05_site_worker/01_home/03_issue.
+// Implements mockup/mobile/05_site_worker/01_home/03_sw_issue.
 //
 // Create (G-M11): generates a client UUID (expo-crypto) used as BOTH the local/issue id AND the
 // PhotoCapture entity_id, then writes local_issues (PENDING) and enqueues an 'issue' sync item
@@ -42,6 +42,7 @@ import { ProjectPicker } from '../../components/ProjectPicker';
 import { PhotoCapture } from '../../components/PhotoCapture';
 import { VoiceNoteButton } from '../../components/VoiceNoteButton';
 import { OptimisticList } from '../../components/OptimisticList';
+import { ProjectContextBar } from '../../components/ProjectContextBar';
 import { useT } from '../../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
 import { usePalette } from '../../theme/usePalette';
@@ -140,6 +141,7 @@ export default function IssuesScreen() {
       contentContainerStyle={styles.page}
       keyboardShouldPersistTaps="handled"
     >
+      <ProjectContextBar />
       <ProjectPicker selectedId={projectId} onSelect={setProjectId} />
 
       {/* Camera first — the mockup opens straight on the viewfinder, because a site issue is

@@ -234,13 +234,33 @@ export class ProjectRepository {
    * home's project picker to that engineer's own projects rather than the whole tenant. A user belongs
    * to only a handful of projects, so this is unpaginated — capped at 100 as a guard.
    */
+  /**
+   * The projects a user is a member of, each carrying ONE building name.
+   *
+   * The building is here because the Site Worker's project picker draws it under the project name
+   * (mockup 05_site_worker/01_home/00_sw_project_selection, PO decision 2026-08-11: the drawing's
+   * "Zone C - North Wing" line is the building, since no zone field exists on a project or a
+   * membership). Adding it to this query rather than to a new endpoint keeps the picker at one round
+   * trip instead of one per project.
+   *
+   * LEFT JOIN LATERAL, so a project with no building still appears — with `building_name` NULL. A
+   * site the office has not modelled yet is still a site someone works on.
+   */
   async listByMember(userId: string): Promise<ProjectRow[]> {
     return this.tenantPrisma.run(
       async (tx): Promise<ProjectRow[]> =>
         await tx.$queryRaw<ProjectRow[]>`
-          SELECT p.* FROM projects.projects p
+          SELECT p.*, b.building_name
+          FROM projects.projects p
           JOIN projects.project_members m
             ON m.project_id = p.project_id AND m.tenant_id = p.tenant_id
+          LEFT JOIN LATERAL (
+            SELECT bb.building_name
+            FROM projects.buildings bb
+            WHERE bb.project_id = p.project_id AND bb.tenant_id = p.tenant_id
+            ORDER BY bb.created_at, bb.building_id
+            LIMIT 1
+          ) b ON TRUE
           WHERE p.tenant_id = ${this.tenantId}::uuid
             AND m.user_id = ${userId}::uuid
           ORDER BY p.created_at DESC, p.project_id DESC

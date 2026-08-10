@@ -3310,7 +3310,7 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
                   Daily Logs | Safety | Directory, and a FIVE-item one ending in Profile. The
                   product owner kept Home | Issues | Reports | Safety on 2026-08-08 rather than
                   pick between them, then settled it on 2026-08-09 as Home | Tasks | Safety |
-                  Directory — the 01_home/01_dashboard bar with Home in the Projects slot, since a
+                  Directory — the 01_home/01_sw_dashboard bar with Home in the Projects slot, since a
                   field worker has no project-portfolio screen. Issues and the daily Report gave up
                   their slots and are pushed from the Home FAB's quick-action menu, which carries
                   exactly those two plus Safety.

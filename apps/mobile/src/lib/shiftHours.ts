@@ -1,4 +1,4 @@
-// The Site Worker Home's "Shift Hours" tile (mockup 05_site_worker/01_home/01_dashboard).
+// The Site Worker Home's "Shift Hours" tile (mockup 05_site_worker/01_home/01_sw_dashboard).
 //
 // Pure, and in `src/lib/` rather than in the screen, for the reason `roleTabs.ts` and
 // `landingRoute.ts` are: importing a screen drags in expo-router, which is ESM and dies under this

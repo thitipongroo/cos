@@ -228,7 +228,7 @@ paths:
       operationId: getProjectDirectory
       summary: Project crew as a contact list, with today's on-site state
       description: >-
-        Backs the Site Worker's team directory (mockup 05_site_worker/04_directory/01_worker_list),
+        Backs the Site Worker's team directory (mockup 05_site_worker/04_directory/01_sw_worker_list),
         added 2026-08-08. A projection over project_workforce + workers + today's attendance, served
         as ONE query because the screen is one card per worker and a client-side join would be N+1
         on site 3G (§17.7). Any authenticated member of the tenant may read it — a field worker needs
