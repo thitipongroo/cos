@@ -10,13 +10,17 @@
 //
 // Only real, mounted routes are linked. The mockup's "Equipment Logs" and "Drawing Viewer" have no
 // route in this app, so they are omitted rather than linking to a dead path (no guessing).
+//
+// WHAT IS IN THE LIST IS NOW PER ROLE (PO decision 2026-08-10): Settings and the Support Centre are
+// the only two rows every role gets, and the section above them is that role's own. The table lives
+// in `lib/drawerLinks.ts` — this component renders it and decides nothing about its contents.
 
 import { useEffect, useRef } from 'react';
 import { View, Text, Pressable, Animated, StyleSheet, ScrollView, BackHandler } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter, usePathname } from 'expo-router';
-import { CosRole } from '@cos/types';
+import { drawerLinksFor, SHARED_LINKS, type DrawerLink } from '../lib/drawerLinks';
 import { useUiStore } from '../store/uiStore';
 import { useAuthStore } from '../store/authStore';
 import { useI18n } from '../i18n';
@@ -26,51 +30,6 @@ import { BrandLogo } from './BrandLogo';
 import { darkColors, fontFamily, radius, spacing, touchTarget, typography } from '../theme/tokens';
 
 const DRAWER_WIDTH = 310;
-
-interface NavLink {
-  route: string;
-  labelKey: string;
-  icon: keyof typeof MaterialIcons.glyphMap;
-}
-
-// Field tools — every entry maps to a real (app)/ route.
-const FIELD_TOOLS: readonly NavLink[] = [
-  { route: '/projects', labelKey: 'drawer.projects', icon: 'dashboard' },
-  { route: '/reports', labelKey: 'drawer.reports', icon: 'description' },
-  { route: '/incidents', labelKey: 'drawer.incidents', icon: 'health-and-safety' },
-  { route: '/inspections', labelKey: 'drawer.inspections', icon: 'fact-check' },
-  { route: '/material-request', labelKey: 'drawer.materials', icon: 'inventory-2' },
-  { route: '/deliveries', labelKey: 'drawer.deliveries', icon: 'local-shipping' },
-];
-
-/**
- * Team directory — the project crew as a contact list (mockup 04_directory).
- *
- * In the drawer rather than the bottom bar: §32.7 allows exactly four tabs and all four are
- * spoken for, and the 2026-08-08 mockups that put Directory in the bar disagree with each other
- * about what the other three are. Shown to the roles whose people are IN a project crew — the
- * field roles and the manager who staffs them.
- */
-const DIRECTORY_LINK: NavLink = {
-  route: '/directory',
-  labelKey: 'directory.title',
-  icon: 'groups',
-};
-
-// SITE_WORKER is deliberately ABSENT: the directory is that role's fourth TAB as of 2026-08-09, and
-// a drawer entry beside it would be a second door onto the same screen.
-/** Account settings — the signed-in user's own, on every role (mockup 05_profile). */
-const SETTINGS_LINK: NavLink = {
-  route: '/account-settings',
-  labelKey: 'drawer.settings',
-  icon: 'settings',
-};
-
-const DIRECTORY_ROLES: CosRole[] = [
-  CosRole.SITE_ENGINEER,
-  CosRole.SAFETY_OFFICER,
-  CosRole.PROJECT_MANAGER,
-];
 
 // PO decision 2026-08-04 — the post-auth entry to the Privacy Policy. Not in the drawer mockup: the
 // mockups only ever reach the policy from the login footer, which leaves a signed-in user with no
@@ -92,6 +51,7 @@ export function NavigationDrawer(): React.JSX.Element | null {
   const role = useAuthStore((s) => s.role);
   const userId = useAuthStore((s) => s.userId);
   const logout = useAuthStore((s) => s.logout);
+  const roleLinks = drawerLinksFor(role);
 
   // -DRAWER_WIDTH = off-screen left; 0 = open. Backdrop fades 0→1 in step.
   const slide = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
@@ -131,7 +91,7 @@ export function NavigationDrawer(): React.JSX.Element | null {
     void logout();
   };
 
-  const renderLink = (link: NavLink): React.JSX.Element => {
+  const renderLink = (link: DrawerLink): React.JSX.Element => {
     const active = pathname === link.route;
     return (
       <Pressable
@@ -211,17 +171,20 @@ export function NavigationDrawer(): React.JSX.Element | null {
           </View>
         </View>
 
-        {/* Field tools */}
         <ScrollView style={styles.flex1} contentContainerStyle={styles.navList}>
-          <Text style={styles.navSection}>{t('drawer.fieldTools')}</Text>
-          {role && DIRECTORY_ROLES.includes(role) ? renderLink(DIRECTORY_LINK) : null}
-          {FIELD_TOOLS.map(renderLink)}
-          {/* Account settings — ONE ROW, not the sections themselves (PO decision 2026-08-09). They
-              rendered inline here for one build and made the panel carry both navigation and
-              settings, with ~900px of a 2400px screen below the fold. The mockups split them the
-              same way: the tenant-admin drawer drawing is Field Tools + Settings + Logout. */}
+          {/* The role's own section. Empty for a session with no role, in which case the heading
+              would label nothing and is not drawn either. */}
+          {roleLinks.length > 0 ? (
+            <>
+              <Text style={styles.navSection}>{t('drawer.fieldTools')}</Text>
+              {roleLinks.map(renderLink)}
+            </>
+          ) : null}
+          {/* Settings and Support — ONE ROW EACH, not the settings sections themselves (PO decision
+              2026-08-09). They rendered inline here for one build and made the panel carry both
+              navigation and settings, with ~900px of a 2400px screen below the fold. */}
           <View style={styles.divider} />
-          {renderLink(SETTINGS_LINK)}
+          {SHARED_LINKS.map(renderLink)}
         </ScrollView>
 
         {/* Logout */}

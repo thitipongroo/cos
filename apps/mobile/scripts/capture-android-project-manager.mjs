@@ -212,6 +212,20 @@ async function main() {
   await delay(4000);
   await stitchFull('04-More/02-vendors');
 
+  console.log('· Navigation drawer');
+  await tap(byId('more-tab'), 'More tab');
+  await find(byId('more-screen'), 'more-screen', 20);
+  await tap(byId('drawer-menu-button'), 'top-bar hamburger');
+  await find(byId('drawer-profile-card'), 'drawer profile card');
+  // Asserts the two rows the product owner made shared (2026-08-10) — if either stops rendering,
+  // this run fails instead of photographing a drawer that quietly lost them.
+  await find(byId('drawer-link-/account-settings'), 'Settings row');
+  await find(byId('drawer-link-/support'), 'Support Centre row');
+  await delay(1200);
+  await stitchFull('05-Drawer/01-drawer');
+  adb('shell', 'input', 'keyevent', '4'); // hardware BACK closes the drawer
+  await delay(1200);
+
   console.log('· Home tab (last — see the note above)');
   await tap(byId('home-tab'), 'Home tab');
   await find(byId('home-screen'), 'manager Home', 20);

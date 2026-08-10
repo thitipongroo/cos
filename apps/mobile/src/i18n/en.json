@@ -325,6 +325,7 @@
     "active": "Active",
     "noProject": "No project selected",
     "comingSoon": "This screen does not exist yet.",
+    "soon": "Coming soon",
     "projectSettings": {
       "title": "Project settings",
       "body": "Project details and milestones"
@@ -875,6 +876,7 @@
     "online": "Online & synced",
     "fieldTools": "Field tools",
     "settings": "Settings",
+    "support": "Support Centre",
     "privacyPolicy": "Privacy policy",
     "logout": "Log out",
     "projects": "Project overview",

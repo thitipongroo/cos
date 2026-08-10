@@ -109,10 +109,25 @@ export default function MoreScreen(): React.JSX.Element {
             <MaterialIcons name={tile.icon} size={24} color={p.primary} />
           </View>
           <View style={styles.tileText}>
-            <Text style={styles.tileTitle}>{t(`more.${tile.id}.title`)}</Text>
+            <View style={styles.tileTitleRow}>
+              <Text style={styles.tileTitle}>{t(`more.${tile.id}.title`)}</Text>
+              {/* SAID BEFORE THE TAP, not after it (PO decision 2026-08-10). A tile that looks
+                  identical to a working one and only admits on tap that it opens nothing spends the
+                  reader's attention to tell them no. The tiles stay — the drawing has six — but the
+                  four with no screen behind them say so where the eye already is. */}
+              {tile.route === null ? (
+                <View testID={`more-${tile.id}-soon`} style={styles.soonChip}>
+                  <Text style={styles.soonText}>{t('more.soon')}</Text>
+                </View>
+              ) : null}
+            </View>
             <Text style={styles.tileBody}>{t(`more.${tile.id}.body`)}</Text>
           </View>
-          <MaterialIcons name="chevron-right" size={22} color={p.muted} />
+          <MaterialIcons
+            name="chevron-right"
+            size={22}
+            color={tile.route === null ? p.border : p.muted}
+          />
         </Pressable>
       ))}
     </ScrollView>
@@ -186,6 +201,23 @@ const makeStyles = (p: Palette) =>
       justifyContent: 'center',
     },
     tileText: { flex: 1, gap: spacing.xs / 4 },
+    tileTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexWrap: 'wrap' },
+    soonChip: {
+      paddingHorizontal: spacing.xs,
+      paddingVertical: 1,
+      // §32.7's badge radius, enforced by theme/__tests__/badgeRadius.spec.ts.
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      borderColor: p.border,
+      backgroundColor: p.elevated,
+    },
+    soonText: {
+      color: p.muted,
+      fontFamily: fontFamily.medium,
+      fontSize: 9,
+      letterSpacing: 0.5,
+      textTransform: 'uppercase',
+    },
     tileTitle: {
       color: p.text,
       fontFamily: fontFamily.semibold,
