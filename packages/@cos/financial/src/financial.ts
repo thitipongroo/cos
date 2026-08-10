@@ -64,6 +64,20 @@ const CURRENCY_SYMBOL: Readonly<Record<string, string>> = {
 };
 
 /**
+ * The symbol `formatMoney` would print in front of an amount in this currency.
+ *
+ * Exported because a compact figure ("฿1.24B" on a dashboard tile) cannot be produced by
+ * `formatMoney` — that function always prints the full grouped amount to two decimals, which is
+ * correct for an invoice and far too wide for a KPI tile. The alternative was a second symbol table
+ * in the mobile app, i.e. two places that would have to agree about ฿ forever.
+ *
+ * Unknown codes return `"<CODE> "` exactly as `formatMoney` does, so both render the same fallback.
+ */
+export function currencySymbol(currency: string): string {
+  return CURRENCY_SYMBOL[currency.toUpperCase()] ?? `${currency.toUpperCase()} `;
+}
+
+/**
  * Group the integer part in threes with commas. Written out rather than delegated to
  * `toLocaleString` / `Intl.NumberFormat` on purpose:
  *
@@ -101,7 +115,7 @@ export function formatMoney(amount: Decimal | string | number, currency = 'THB')
   // pair that used to sit here (`= '0'`, `= '00'`) was permanently unreachable and held this package
   // at 81.81% branch coverage, below the QM-1 100% gate.
   const [intPart, fracPart] = fixed.split('.');
-  const symbol = CURRENCY_SYMBOL[currency.toUpperCase()] ?? `${currency.toUpperCase()} `;
+  const symbol = currencySymbol(currency);
   const sign = rounded.isNegative() && !rounded.isZero() ? '-' : '';
   return `${sign}${symbol}${groupThousands(intPart)}.${fracPart}`;
 }

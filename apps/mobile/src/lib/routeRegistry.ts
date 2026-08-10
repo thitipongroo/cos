@@ -24,10 +24,13 @@ export const TAB_ROUTES = [
   // shipped with FIVE tabs (a lowercase "dashboard" beside Vendors) until a capture showed it.
   // Anything that leaves ALL_TABS must leave this list too and gain an explicit `href: null`.
   'projects',
-  // The manager pair from mockup/mobile/06_project_manager (PO decision 2026-08-10): tabs for
-  // PROJECT_MANAGER and PROC_MANAGER.
-  'approvals',
-  'vendors',
+  // `approvals` IS GONE — its route file was deleted on 2026-08-10 when the corrected mockup set put
+  // the approvals queue inside the Procurement tab instead of on a tab of its own.
+  //
+  // `vendors` IS NOT HERE EITHER, since 2026-08-10. It left ALL_TABS when the Project Manager's bar
+  // became Home | Procurement | Finance | More, and its screen is now the pushed child behind More's
+  // vendor tile. That is exactly the move that leaked a fifth tab when `dashboard` made it (see
+  // above), so it left this list in the same commit and gained `href: null` + a breadcrumb.
   // `tasks` is a tab again (PO 2026-08-09) — SITE_WORKER's bar is Home | Tasks | Safety | Directory.
   'tasks',
   'directory',
@@ -50,6 +53,9 @@ export const TAB_ROUTES = [
   'invoices',
   'payments',
   'budget',
+  // The Project Manager's third and fourth tabs (corrected mockup set, 2026-08-10).
+  'finance',
+  'more',
   'portfolio',
   'customers',
   'leads',

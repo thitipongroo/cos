@@ -44,7 +44,9 @@
       "directory": "Directory",
       "safety": "Safety",
       "approvals": "Approvals",
-      "vendors": "Vendors"
+      "vendors": "Vendors",
+      "finance": "Finance",
+      "more": "More"
     }
   },
   "auth": {
@@ -301,7 +303,9 @@
     "badgeRejected": "Rejected",
     "badgeTopRated": "Top rated",
     "viewProfile": "View profile",
-    "manage": "Manage vendor"
+    "manage": "Manage vendor",
+    "viewProfileUnavailable": "There is no vendor profile screen yet.",
+    "manageViewOnly": "Your role can view vendors but not manage them."
   },
   "insight": {
     "title": "Insights",
@@ -314,6 +318,37 @@
     "bandMedium": "Medium confidence",
     "bandLow": "Low confidence — check before acting",
     "bandUnknown": "Confidence not reported"
+  },
+  "more": {
+    "title": "More",
+    "roleLine": "{role} • {project}",
+    "active": "Active",
+    "noProject": "No project selected",
+    "comingSoon": "This screen does not exist yet.",
+    "projectSettings": {
+      "title": "Project settings",
+      "body": "Project details and milestones"
+    },
+    "team": {
+      "title": "Team management",
+      "body": "Roles and permissions"
+    },
+    "documents": {
+      "title": "Documents & drawings",
+      "body": "Technical files"
+    },
+    "cost": {
+      "title": "Budget analysis",
+      "body": "Budget against actual spend"
+    },
+    "contractors": {
+      "title": "Contractor performance",
+      "body": "Trust scores and delivery reliability"
+    },
+    "siteMap": {
+      "title": "Site map",
+      "body": "Project map layers"
+    }
   },
   "home": {
     "main": {
@@ -625,9 +660,41 @@
       "title": "Projects",
       "empty": "No projects cached"
     },
+    "finance": {
+      "title": "Finance",
+      "portfolioSummary": "Portfolio financial summary",
+      "totalBudget": "Total budget",
+      "commitCosts": "Commit costs",
+      "actualSpent": "Actual spent",
+      "acrossProjects": "Across {count} projects",
+      "shareOfBudget": "{percent}% of budget",
+      "otherCurrencies": "{count} project(s) budgeted in another currency are not in these totals.",
+      "insightTitle": "Project health summary",
+      "activeProjectsHealth": "Active projects health",
+      "healthy": "Healthy",
+      "warning": "Warning",
+      "overrun": "Overrun",
+      "healthUnknown": "Not budgeted",
+      "actualFigure": "Actual: {value}",
+      "budgetFigure": "Budget: {value}",
+      "noBudgets": "None of your projects has a budget recorded yet.",
+      "scaleMillion": "M",
+      "scaleBillion": "B",
+      "sourceNote": "Figures come from each project's budget record. Projects without one are left out."
+    },
     "procurement": {
       "title": "Procurement",
-      "empty": "No purchase orders"
+      "empty": "No purchase orders",
+      "pendingApprovals": "Pending approvals",
+      "activeRfqs": "Active RFQs",
+      "todayDeliveries": "Deliveries today",
+      "viewAll": "View all",
+      "waiting": "Waiting {age}",
+      "hoursAgo": "{hours}h",
+      "daysAgo": "{days}d",
+      "justNow": "just now",
+      "analysisTitle": "Procurement analysis",
+      "noneWaiting": "Nothing is waiting on approval."
     },
     "dashboard": {
       "title": "Dashboard",

@@ -44,7 +44,9 @@
       "directory": "ทีมงาน",
       "safety": "ความปลอดภัย",
       "approvals": "อนุมัติ",
-      "vendors": "ผู้ค้า"
+      "vendors": "ผู้ค้า",
+      "finance": "การเงิน",
+      "more": "เพิ่มเติม"
     }
   },
   "auth": {
@@ -301,7 +303,9 @@
     "badgeRejected": "ไม่ผ่าน",
     "badgeTopRated": "คะแนนสูงสุด",
     "viewProfile": "ดูข้อมูลผู้ค้า",
-    "manage": "จัดการผู้ค้า"
+    "manage": "จัดการผู้ค้า",
+    "viewProfileUnavailable": "ยังไม่มีหน้าข้อมูลผู้ค้า",
+    "manageViewOnly": "บทบาทของคุณดูรายชื่อผู้ค้าได้ แต่แก้ไขไม่ได้"
   },
   "insight": {
     "title": "ข้อมูลเชิงลึก",
@@ -314,6 +318,37 @@
     "bandMedium": "ความเชื่อมั่นปานกลาง",
     "bandLow": "ความเชื่อมั่นต่ำ — ตรวจสอบก่อนตัดสินใจ",
     "bandUnknown": "ไม่ได้รายงานค่าความเชื่อมั่น"
+  },
+  "more": {
+    "title": "เพิ่มเติม",
+    "roleLine": "{role} • {project}",
+    "active": "ใช้งานอยู่",
+    "noProject": "ยังไม่ได้เลือกโครงการ",
+    "comingSoon": "ยังไม่มีหน้าจอนี้",
+    "projectSettings": {
+      "title": "การตั้งค่าโครงการ",
+      "body": "รายละเอียดและหมุดหมายของโครงการ"
+    },
+    "team": {
+      "title": "จัดการทีมงาน",
+      "body": "บทบาทและสิทธิ์การใช้งาน"
+    },
+    "documents": {
+      "title": "คลังเอกสารและแบบแปลน",
+      "body": "ไฟล์ทางเทคนิคทั้งหมด"
+    },
+    "cost": {
+      "title": "วิเคราะห์งบประมาณ",
+      "body": "งบประมาณเทียบกับที่ใช้จริง"
+    },
+    "contractors": {
+      "title": "สรุปผลผู้รับเหมา",
+      "body": "คะแนนความน่าเชื่อถือและการส่งมอบ"
+    },
+    "siteMap": {
+      "title": "แผนที่ไซต์งาน",
+      "body": "ชั้นข้อมูลแผนที่โครงการ"
+    }
   },
   "home": {
     "main": {
@@ -625,9 +660,41 @@
       "title": "โครงการ",
       "empty": "ยังไม่มีโครงการในเครื่อง"
     },
+    "finance": {
+      "title": "การเงิน",
+      "portfolioSummary": "สรุปการเงินรวมทุกโครงการ",
+      "totalBudget": "งบประมาณรวม",
+      "commitCosts": "ต้นทุนผูกพัน",
+      "actualSpent": "ใช้จ่ายจริง",
+      "acrossProjects": "จาก {count} โครงการ",
+      "shareOfBudget": "{percent}% ของงบ",
+      "otherCurrencies": "มี {count} โครงการที่ตั้งงบเป็นสกุลเงินอื่น จึงไม่ได้รวมอยู่ในยอดนี้",
+      "insightTitle": "สรุปสุขภาพโครงการ",
+      "activeProjectsHealth": "สุขภาพการเงินรายโครงการ",
+      "healthy": "ปกติ",
+      "warning": "เฝ้าระวัง",
+      "overrun": "เกินงบ",
+      "healthUnknown": "ยังไม่ตั้งงบ",
+      "actualFigure": "ใช้จริง: {value}",
+      "budgetFigure": "งบ: {value}",
+      "noBudgets": "ยังไม่มีโครงการใดของคุณที่บันทึกงบประมาณไว้",
+      "scaleMillion": " ล้าน",
+      "scaleBillion": " พันล้าน",
+      "sourceNote": "ตัวเลขมาจากงบประมาณที่บันทึกไว้ของแต่ละโครงการ โครงการที่ยังไม่ตั้งงบจะไม่ถูกนับ"
+    },
     "procurement": {
       "title": "จัดซื้อ",
-      "empty": "ไม่มีใบสั่งซื้อ"
+      "empty": "ไม่มีใบสั่งซื้อ",
+      "pendingApprovals": "รออนุมัติ",
+      "activeRfqs": "RFQ ที่เปิดอยู่",
+      "todayDeliveries": "ส่งมอบวันนี้",
+      "viewAll": "ดูทั้งหมด",
+      "waiting": "รอมาแล้ว {age}",
+      "hoursAgo": "{hours} ชม.",
+      "daysAgo": "{days} วัน",
+      "justNow": "เมื่อครู่นี้",
+      "analysisTitle": "วิเคราะห์การจัดซื้อ",
+      "noneWaiting": "ไม่มีรายการรออนุมัติ"
     },
     "dashboard": {
       "title": "แดชบอร์ด",

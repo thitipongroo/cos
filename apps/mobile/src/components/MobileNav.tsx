@@ -147,6 +147,13 @@ export function MobileNav() {
           Vendors took the role's last two slots and its content became the manager Home itself
           (mockup 06_project_manager/01_home). Mounted so router.push('/dashboard') still resolves. */}
       <Tabs.Screen name="dashboard" options={{ href: null }} />
+      {/* `more` is NOT here any more — it became the Project Manager's fourth tab on 2026-08-10, once
+          finance.tsx existed and the bar could be switched to Home | Procurement | Finance | More.
+          It is declared from ALL_TABS with every other tab.
+          The vendor directory took its place in this list: it left ALL_TABS in the same change and is
+          now the pushed child behind More's vendor tile (mockup 06_project_manager/04_more_option).
+          Without this line expo-router would auto-register it as a visible tab for every role. */}
+      <Tabs.Screen name="vendors" options={{ href: null }} />
       {/* The signed-in user's own account settings — pushed from the drawer's Settings row. */}
       <Tabs.Screen name="account-settings" options={{ href: null }} />
       <Tabs.Screen name="conflict-review" options={{ href: null }} />

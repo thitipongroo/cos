@@ -63,3 +63,34 @@ export async function generateProcurementSummary(params: {
     tenant_id: params.tenantId,
   });
 }
+
+/**
+ * An executive-summary report — the Finance dashboard's insight panel
+ * (mockup 06_project_manager/03_finance).
+ *
+ * WHY THIS REPORT TYPE AND NOT A BUDGET ONE. The gateway serves exactly four:
+ * SITE_SUMMARY, PROCUREMENT_SUMMARY, EXECUTIVE_SUMMARY, DELAY_RISK (`reports/models.py`
+ * REPORT_TYPE_MAP). There is NO budget report. The mockup draws a "Budget Insight" panel, so one of
+ * the four has to stand behind it or the panel has to be left out; this is the one whose prompt
+ * (`ai/prompts/report-executive-v1.j2`) asks for "aggregated project health … suitable for C-level
+ * or project owner", which is what a manager reads a finance dashboard for. Its content is
+ * `executive_summary` + `risk_flags` + `recommendations`.
+ *
+ * The panel is therefore labelled for what this actually returns — a project health summary — and
+ * not as a budget analysis the model was never asked to produce. That prompt also carries the line
+ * "Do NOT fabricate budget figures, percentages, or dates not present in the context", which is the
+ * reason the figures on this screen come from the finance API and never from the report text.
+ *
+ * Project-scoped for the same reason as the procurement summary: `ExecutiveSummaryRequest` requires
+ * `project_id`, so the screen asks which project rather than presenting one project's findings as a
+ * portfolio-wide statement.
+ */
+export async function generateExecutiveSummary(params: {
+  projectId: string;
+  tenantId: string;
+}): Promise<AiReport> {
+  return post<AiReport>('/ai/reports/executive-summary', {
+    project_id: params.projectId,
+    tenant_id: params.tenantId,
+  });
+}

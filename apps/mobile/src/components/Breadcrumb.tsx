@@ -27,6 +27,13 @@ const BREADCRUMB_MAP: Record<string, Crumb[]> = {
   // The PM analytics dashboard — a tab until 2026-08-10, now a pushed child of Home (the manager
   // Home carries the dashboard content itself, mockup 06_project_manager/01_home).
   '/dashboard': [{ key: 'nav.tabs.home', href: '/home' }, { key: 'nav.tabs.dashboard' }],
+  // `/more` has NO entry: it became the Project Manager's fourth tab on 2026-08-10. A breadcrumb here
+  // would also give it a TopBar Back control (isChildRoute reads this map), and a tab with a Back
+  // button offers to leave a screen the user selected rather than arrived at.
+  //
+  // The vendor directory swapped places with it in the same change — it left the tab bar and is now
+  // pushed from More's vendor tile, so More is its parent crumb.
+  '/vendors': [{ key: 'nav.tabs.more', href: '/more' }, { key: 'nav.tabs.vendors' }],
   // User management (TENANT_ADMIN → the Users tab)
   '/invite-user': [
     { key: 'breadcrumb.userManagement', href: '/users' },

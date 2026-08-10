@@ -101,44 +101,50 @@ export const ALL_TABS: TabConfig[] = [
     icon: 'description',
     roles: [CosRole.SITE_ENGINEER, CosRole.EXECUTIVE, CosRole.SAFETY_OFFICER],
   },
+  // `projects` is VIEWER's only. It stopped being a PROJECT_MANAGER tab on 2026-08-10: the corrected
+  // mockup set gives that role Home | Procurement | Finance | More and no Projects tab, and the
+  // manager's project list is on Home (mockup 06_project_manager/01_home draws "YOUR PROJECTS").
   {
     name: 'projects',
     titleKey: 'nav.tabs.projects',
     icon: 'folder',
-    roles: [CosRole.PROJECT_MANAGER, CosRole.VIEWER],
+    roles: [CosRole.VIEWER],
   },
-  // `procurement` (the read-only PO list) is no longer a PROJECT_MANAGER tab — Approvals below shows
-  // the same orders at the moment the manager is actually being asked to do something about one. It
-  // stays VIEWER's, whose bar is unchanged and who has nothing to approve.
+  // `procurement` is the PROJECT_MANAGER's second tab again (corrected mockup 2026-08-10,
+  // 06_project_manager/02_procurement). The screen behind it is no longer the read-only PO list it
+  // was: it is the role's procurement dashboard, and it absorbed the approvals queue that briefly
+  // lived at its own route. VIEWER keeps it too — that role sees the same screen with nothing to
+  // approve, which is what §20.7.9's read-only rule asks for.
   {
     name: 'procurement',
     titleKey: 'nav.tabs.procurement',
     icon: 'shopping-cart',
-    roles: [CosRole.VIEWER],
+    roles: [CosRole.PROJECT_MANAGER, CosRole.VIEWER],
   },
+  // The Project Manager's third and fourth tabs, completing the corrected mockup's bar:
+  // Home | Procurement | Finance | More (06_project_manager/03_finance, /04_more_option).
+  //
+  // ORDER IS BEHAVIOUR, NOT PRESENTATION. Tabs render in this array's order, so these two must sit
+  // after `procurement` and before nothing this role matches — and `home` staying first is what
+  // keeps landingRoute.ts sending the manager to Home after sign-in.
+  {
+    name: 'finance',
+    titleKey: 'nav.tabs.finance',
+    icon: 'payments',
+    roles: [CosRole.PROJECT_MANAGER],
+  },
+  { name: 'more', titleKey: 'nav.tabs.more', icon: 'more-horiz', roles: [CosRole.PROJECT_MANAGER] },
   // `dashboard` is now a tab for NO role, like `report`: its content IS the Home screen for these two
   // roles (mockup 06_project_manager/01_home draws the dashboard as the first tab), so a second tab
   // showing it would be the same page twice. Declared `href: null` in MobileNav, still pushable.
   //
-  // Approvals + Vendors — the manager pair from mockup/mobile/06_project_manager (PO decision
-  // 2026-08-10). The drawing's bar is Dashboard | Approvals | Vendors | Settings; Home takes the
-  // Dashboard slot (Home is the first tab for every role, PO 2026-08-08) and Settings is not a tab at
-  // all (it is reached from the navigation drawer, PO 2026-08-09), which frees the two slots these
-  // occupy. BOTH ROLES GET BOTH SCREENS; what differs is the actions they offer, which the screens
-  // decide from the RBAC matrix (§6.4 gives PROJECT_MANAGER PO-approve and read-only vendors; §6.8
-  // additionally gives PROC_MANAGER RFQ award and vendor management).
-  {
-    name: 'approvals',
-    titleKey: 'nav.tabs.approvals',
-    icon: 'fact-check',
-    roles: [CosRole.PROJECT_MANAGER, CosRole.PROC_MANAGER],
-  },
-  {
-    name: 'vendors',
-    titleKey: 'nav.tabs.vendors',
-    icon: 'storefront',
-    roles: [CosRole.PROJECT_MANAGER, CosRole.PROC_MANAGER],
-  },
+  // `vendors` IS GONE FROM THIS TABLE for the same reason, on 2026-08-10. It and `approvals` were
+  // built from a `mockup/mobile/06_project_manager` set the product owner replaced; the corrected set
+  // has no tab for either. Their CONTENT survived the correction and moved rather than being deleted
+  // (PO decision 2026-08-10): the approvals list is drawn inside the Procurement tab, and the vendor
+  // directory is now the pushed child behind More's "สรุปผลผู้รับเหมา" tile. Leaving this table means
+  // `vendors` needs an explicit `href: null` in MobileNav and a breadcrumb — see routeRegistry.ts for
+  // what happened the last time a route left ALL_TABS without both.
   {
     name: 'portfolio',
     titleKey: 'nav.tabs.portfolio',
@@ -164,16 +170,17 @@ export const ALL_TABS: TabConfig[] = [
     icon: 'receipt-long',
     roles: [CosRole.FINANCE],
   },
-  // PROC_MANAGER's bar became Home | Approvals | Vendors | Orders on 2026-08-10 (PO decision), so it
-  // gave up `rfqs` and `deliveries` to make room. Both stay PROCUREMENT_OFFICER tabs and both stay
-  // reachable for the manager from Home's quick actions — the same trade SITE_WORKER made on
-  // 2026-08-09 when Issues and Reports left its bar. `orders` is the one it kept: a purchase order is
-  // what its approval authority actually produces (§6.8 grants PO approve).
+  // PROC_MANAGER KEEPS ITS ORIGINAL BAR — Home | RFQs | Orders | Deliveries. It briefly took
+  // Approvals and Vendors on 2026-08-10, which was built from a mockup set the product owner then
+  // replaced: the corrected `mockup/mobile/06_project_manager` is a PROJECT_MANAGER app end to end
+  // and contains no screen for this role at all. With no drawing to follow, the honest move is to
+  // leave the role's navigation where it was rather than keep a change whose only justification has
+  // been withdrawn (PO decision 2026-08-10).
   {
     name: 'rfqs',
     titleKey: 'nav.tabs.rfqs',
     icon: 'request-quote',
-    roles: [CosRole.PROCUREMENT_OFFICER],
+    roles: [CosRole.PROCUREMENT_OFFICER, CosRole.PROC_MANAGER],
   },
   {
     name: 'orders',
@@ -185,7 +192,7 @@ export const ALL_TABS: TabConfig[] = [
     name: 'deliveries',
     titleKey: 'nav.tabs.deliveries',
     icon: 'local-shipping',
-    roles: [CosRole.PROCUREMENT_OFFICER],
+    roles: [CosRole.PROCUREMENT_OFFICER, CosRole.PROC_MANAGER],
   },
   {
     name: 'incidents',

@@ -8,6 +8,7 @@ import {
   sumDecimals,
   formatForDisplay,
   formatMoney,
+  currencySymbol,
   toDecimal,
 } from '../index';
 
@@ -173,5 +174,24 @@ describe('formatMoney', () => {
     // An unrecognised currency is shown unambiguously. Guessing a symbol would put the wrong
     // currency in front of a real number.
     expect(formatMoney(toDecimal('1234.5'), 'XAF')).toBe('XAF 1,234.50');
+  });
+});
+
+describe('currencySymbol', () => {
+  it('is the same symbol formatMoney prints, for the codes the platform handles', () => {
+    // The point of exporting it is that a compact dashboard figure and a full invoice amount cannot
+    // disagree about ฿ — so the assertion is against formatMoney's own output, not a second literal.
+    for (const code of ['THB', 'USD', 'EUR', 'GBP', 'JPY', 'SGD', 'VND', 'MYR', 'IDR']) {
+      expect(formatMoney(toDecimal('1'), code).startsWith(currencySymbol(code))).toBe(true);
+    }
+    expect(currencySymbol('THB')).toBe('฿');
+  });
+
+  it('is case-insensitive, like formatMoney', () => {
+    expect(currencySymbol('sgd')).toBe('S$');
+  });
+
+  it('falls back to the code itself rather than inventing a glyph', () => {
+    expect(currencySymbol('XAF')).toBe('XAF ');
   });
 });

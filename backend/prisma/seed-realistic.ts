@@ -525,6 +525,7 @@ async function run(): Promise<void> {
       await seedVendorsMaterials(tx);
       await seedWorkersEquipment(tx);
       for (const p of PROJECTS) await seedProject(tx, p);
+      await seedPendingApprovals(tx);
       await seedCrm(tx);
       await seedNotifications(tx);
       await seedAiReports(tx);
@@ -1373,6 +1374,71 @@ async function wipeTenant(tx: Tx): Promise<void> {
 }
 
 // CRM pipeline (sales) — leads → opportunities → contacts. Thai company/contact details.
+/**
+ * Purchase orders and RFQs that are WAITING ON A DECISION.
+ *
+ * Everything seedProject() creates is already settled — its POs land on ACKNOWLEDGED or INVOICED and
+ * its RFQs on AWARDED — so the manager Approvals queue (mockup 06_project_manager/02_approvals) came
+ * up empty on a fresh database and the screen could not be shown doing its job. These are the rows it
+ * exists to act on.
+ *
+ * WHY THE DEADLINES ARE RELATIVE TO now(). One RFQ closes in four hours so the urgency chip and the
+ * "Nh remaining" countdown have something real to measure, and one closes in five days so the Urgent
+ * filter actually filters. A fixed date would be in the past by the time anyone ran this.
+ *
+ * The two POs stay OUT of committed spend on purpose — `committedSpend` excludes PENDING_APPROVAL
+ * (lib/procurementKpi.ts), because money nobody has approved is not committed — so adding them does
+ * not move the dashboard's total.
+ */
+async function seedPendingApprovals(tx: Tx): Promise<void> {
+  const items = [
+    {
+      key: 'rebar-q3',
+      project: 'r9ct',
+      vendor: 'millcon',
+      number: 'PO-R9CT-REBAR-Q3',
+      amount: 1_240_000,
+      days: 9,
+    },
+    {
+      key: 'safety-bulk',
+      project: 'lpgh',
+      vendor: 'scg',
+      number: 'PO-LPGH-SAFETY',
+      amount: 85_000,
+      days: 6,
+    },
+  ];
+  for (const po of items) {
+    await tx.$executeRaw`INSERT INTO procurement.purchase_orders (po_id, rfq_id, vendor_id, project_id, tenant_id, po_number, status, total_amount, currency_code, delivery_date, created_by)
+      VALUES (${uid(`po-pending/${po.key}`)}::uuid, NULL, ${V(po.vendor)}::uuid, ${uid(`project/${po.project}`)}::uuid, ${TENANT_ID}::uuid,
+              ${po.number}, 'PENDING_APPROVAL', ${po.amount}, ${THB}, (now() + make_interval(days => ${po.days}))::date, ${U('procmgr')}::uuid)
+      ON CONFLICT (po_id) DO UPDATE SET status = 'PENDING_APPROVAL', total_amount = EXCLUDED.total_amount`;
+  }
+
+  // RFQs sitting in EVALUATED — quotations compared, awaiting the award decision. Each carries three
+  // bids, which is what makes "Multiple bids" on the card true rather than a label.
+  const rfqs = [
+    { key: 'machinery', project: 'skv45', number: 'RFQ-SKV45-MACHINERY', hours: 4 },
+    { key: 'finishes', project: 'bnw2', number: 'RFQ-BNW2-FINISHES', hours: 120 },
+  ];
+  // Vendor KEYS, not codes: V-CPAC is keyed 'crm' in VENDORS above.
+  const bidders = ['insee', 'tpi', 'crm'] as const;
+  for (const rfq of rfqs) {
+    const rfqId = uid(`rfq-evaluated/${rfq.key}`);
+    await tx.$executeRaw`INSERT INTO procurement.rfqs (rfq_id, pr_id, project_id, tenant_id, rfq_number, status, deadline, created_by)
+      VALUES (${rfqId}::uuid, NULL, ${uid(`project/${rfq.project}`)}::uuid, ${TENANT_ID}::uuid, ${rfq.number}, 'EVALUATED',
+              now() + make_interval(hours => ${rfq.hours}), ${U('proc')}::uuid)
+      ON CONFLICT (rfq_id) DO UPDATE SET status = 'EVALUATED', deadline = EXCLUDED.deadline`;
+    for (let i = 0; i < bidders.length; i++) {
+      await tx.$executeRaw`INSERT INTO procurement.quotations (quotation_id, rfq_id, vendor_id, tenant_id, total_amount, currency_code, validity_days, submitted_at, is_selected)
+        VALUES (${uid(`quo-evaluated/${rfq.key}/${bidders[i]}`)}::uuid, ${rfqId}::uuid, ${V(bidders[i]!)}::uuid, ${TENANT_ID}::uuid,
+                ${450_000 + i * 18_000}, ${THB}, 30, now() - make_interval(days => 2), false)
+        ON CONFLICT (quotation_id) DO NOTHING`;
+    }
+  }
+}
+
 async function seedCrm(tx: Tx): Promise<void> {
   const leads = [
     {
