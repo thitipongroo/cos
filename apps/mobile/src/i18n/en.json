@@ -414,10 +414,24 @@
     },
     "pm": {
       "title": "Project Overview",
+      "dashboardTitle": "Project manager dashboard",
       "activeProjects": "Active projects",
       "openIssues": "Open issues",
       "committedSpend": "Total committed spend",
-      "pendingApprovals": "Waiting on your approval"
+      "pendingApprovals": "Waiting on your approval",
+      "totalVariance": "Total variance",
+      "varianceUnavailable": "No allocation",
+      "blockers": "Critical blockers",
+      "blockerCount": "{count} {severity} issues",
+      "noBlockers": "No open issues on your projects.",
+      "manage": "Manage",
+      "portfolioAnalysis": "Portfolio analysis",
+      "yourProjects": "Your projects",
+      "phase": "Phase: {phase}",
+      "noPhase": "No phase recorded",
+      "progress": "Progress",
+      "progressUnavailable": "Progress not computable",
+      "noProjects": "You are not a member of any project yet."
     }
   },
   "tasks": {

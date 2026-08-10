@@ -1,5 +1,12 @@
 import { toDecimal } from '@cos/financial';
-import { portfolioTotals, shareOfBudget, type ProjectFinance } from '../portfolioFinance';
+import {
+  portfolioTotals,
+  portfolioVariance,
+  shareOfBudget,
+  varianceExceedsThreshold,
+  VARIANCE_ALERT_THRESHOLD,
+  type ProjectFinance,
+} from '../portfolioFinance';
 
 const row = (over: Partial<ProjectFinance>): ProjectFinance => ({
   projectId: 'p1',
@@ -7,6 +14,7 @@ const row = (over: Partial<ProjectFinance>): ProjectFinance => ({
   projectCode: 'PRJ-4092',
   currency: 'THB',
   totalBudget: '0.0000',
+  allocated: '0.0000',
   committed: '0.0000',
   actual: '0.0000',
   ...over,
@@ -97,5 +105,51 @@ describe('shareOfBudget', () => {
 
   it('can exceed 100 — an overrun is a real answer, not a clamped one', () => {
     expect(shareOfBudget('150', '100')).toBe(150);
+  });
+});
+
+describe('portfolioVariance', () => {
+  it('is the server’s own formula: (actual + committed − allocated) / allocated', () => {
+    // 55 + 50 − 100 = 5 over an allocation of 100 → +5%. Matches FinanceService.getBudgetSummary,
+    // so the tile and the per-project figure can never disagree about what "variance" means.
+    const totals = portfolioTotals([row({ allocated: '100', committed: '50', actual: '55' })]);
+    expect(portfolioVariance(totals)).toBe(5);
+  });
+
+  it('is negative when the portfolio is running under its allocation', () => {
+    const totals = portfolioTotals([row({ allocated: '100', committed: '20', actual: '30' })]);
+    expect(portfolioVariance(totals)).toBe(-50);
+  });
+
+  it('is null when nothing has been allocated — there is no denominator', () => {
+    expect(portfolioVariance(portfolioTotals([]))).toBeNull();
+    expect(portfolioVariance(portfolioTotals([row({ allocated: '0', actual: '10' })]))).toBeNull();
+  });
+
+  it('sums allocations across the portfolio before dividing, not per project', () => {
+    const totals = portfolioTotals([
+      row({ projectId: 'a', allocated: '100', actual: '110' }),
+      row({ projectId: 'b', allocated: '300', actual: '290' }),
+    ]);
+    // 400 spent against 400 allocated is level overall, even though one project is 10% over.
+    expect(portfolioVariance(totals)).toBe(0);
+  });
+});
+
+describe('varianceExceedsThreshold', () => {
+  it('uses the platform’s own default alert threshold', () => {
+    // DEFAULT_VARIANCE_THRESHOLD in finance.service.ts — the value stored on every budget row and
+    // reported as `threshold_exceeded` on finance.variance.alert.v1.
+    expect(VARIANCE_ALERT_THRESHOLD).toBe(10);
+    expect(varianceExceedsThreshold(10)).toBe(false); // the server alerts ABOVE it, not at it
+    expect(varianceExceedsThreshold(10.1)).toBe(true);
+  });
+
+  it('never alerts on an underspend, however large', () => {
+    expect(varianceExceedsThreshold(-40)).toBe(false);
+  });
+
+  it('does not alert on a figure that could not be computed', () => {
+    expect(varianceExceedsThreshold(null)).toBe(false);
   });
 });

@@ -414,10 +414,24 @@
     },
     "pm": {
       "title": "ภาพรวมโครงการ",
+      "dashboardTitle": "แดชบอร์ดผู้จัดการโครงการ",
       "activeProjects": "โครงการที่ดำเนินอยู่",
       "openIssues": "ปัญหาที่เปิดอยู่",
       "committedSpend": "มูลค่าที่ผูกพันแล้ว",
-      "pendingApprovals": "รอคุณอนุมัติ"
+      "pendingApprovals": "รอคุณอนุมัติ",
+      "totalVariance": "ส่วนต่างงบรวม",
+      "varianceUnavailable": "ยังไม่จัดสรรงบ",
+      "blockers": "อุปสรรคสำคัญ",
+      "blockerCount": "ปัญหาระดับ {severity} {count} รายการ",
+      "noBlockers": "ไม่มีปัญหาค้างในโครงการของคุณ",
+      "manage": "จัดการ",
+      "portfolioAnalysis": "วิเคราะห์ภาพรวมพอร์ต",
+      "yourProjects": "โครงการของคุณ",
+      "phase": "ระยะ: {phase}",
+      "noPhase": "ยังไม่ได้บันทึกระยะงาน",
+      "progress": "ความคืบหน้า",
+      "progressUnavailable": "คำนวณความคืบหน้าไม่ได้",
+      "noProjects": "คุณยังไม่ได้เป็นสมาชิกโครงการใด"
     }
   },
   "tasks": {

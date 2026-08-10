@@ -102,6 +102,7 @@ export default function FinanceScreen(): React.JSX.Element {
                 projectCode: project.project_code,
                 currency: b.total_budget_currency,
                 totalBudget: b.total_budget_amount,
+                allocated: b.allocated_amount,
                 committed: b.committed_amount,
                 actual: b.actual_amount,
               },

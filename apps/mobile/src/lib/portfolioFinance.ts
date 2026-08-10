@@ -29,6 +29,12 @@ export interface ProjectFinance {
   currency: string;
   /** DECIMAL strings, exactly as the API returned them. */
   totalBudget: string;
+  /**
+   * `allocated_amount` — the sum of the budget LINES, which is a different figure from
+   * `total_budget_amount` and is the one the server divides by when it computes variance. Carried
+   * separately so `portfolioVariance` can use the server's own denominator rather than a lookalike.
+   */
+  allocated: string;
   committed: string;
   actual: string;
 }
@@ -37,6 +43,7 @@ export interface PortfolioTotals {
   /** The currency the totals are in; null when there was nothing to total. */
   currency: string | null;
   totalBudget: Decimal;
+  allocated: Decimal;
   committed: Decimal;
   actual: Decimal;
   /** Projects counted in the totals. */
@@ -78,6 +85,7 @@ export function portfolioTotals(rows: ProjectFinance[]): PortfolioTotals {
     return {
       currency: null,
       totalBudget: ZERO,
+      allocated: ZERO,
       committed: ZERO,
       actual: ZERO,
       included: 0,
@@ -89,11 +97,60 @@ export function portfolioTotals(rows: ProjectFinance[]): PortfolioTotals {
   return {
     currency,
     totalBudget: sumDecimals(counted.map((row) => toDecimal(row.totalBudget))),
+    allocated: sumDecimals(counted.map((row) => toDecimal(row.allocated))),
     committed: sumDecimals(counted.map((row) => toDecimal(row.committed))),
     actual: sumDecimals(counted.map((row) => toDecimal(row.actual))),
     included: counted.length,
     excluded: rows.length - counted.length,
   };
+}
+
+/**
+ * The manager Home's "Total Variance" tile (mockup 06_project_manager/01_home).
+ *
+ * THE FORMULA IS THE SERVER'S, COPIED EXACTLY — `(actual + committed − allocated) / allocated × 100`,
+ * the same expression `FinanceService.getBudgetSummary` returns per project as `variance_percentage`.
+ * Anything else here would put a second definition of "variance" in front of a manager who also sees
+ * the server's, and the two would eventually disagree.
+ *
+ * POSITIVE MEANS OVER. Spend plus commitments above what was allocated is an overrun; a negative
+ * figure means the portfolio is running under. The mockup prints "+1.2%" in green with an upward
+ * arrow, which reads the wrong way round for cost — this returns the number and lets the screen
+ * colour it by what it means (see `varianceExceedsThreshold`).
+ *
+ * Null when nothing has been allocated: there is no denominator, and the server answers the same way
+ * (it substitutes '0.0000' per project rather than dividing).
+ */
+export function portfolioVariance(totals: PortfolioTotals): number | null {
+  if (totals.allocated.lessThanOrEqualTo(0)) return null;
+  return totals.actual
+    .plus(totals.committed)
+    .minus(totals.allocated)
+    .dividedBy(totals.allocated)
+    .times(100)
+    .toDecimalPlaces(1)
+    .toNumber();
+}
+
+/**
+ * The variance percentage above which this platform raises an alert.
+ *
+ * NOT CHOSEN HERE: it is `DEFAULT_VARIANCE_THRESHOLD` in `finance.service.ts`, the value stored on
+ * every budget row as `variance_alert_threshold` and the one `finance.variance.alert.v1` reports as
+ * `threshold_exceeded`. A tenant may configure its own per budget; this is the default the platform
+ * ships, and the portfolio figure has no single row's threshold to read.
+ */
+export const VARIANCE_ALERT_THRESHOLD = 10;
+
+/**
+ * Whether the portfolio variance is at the level the server would alert on.
+ *
+ * Deliberately two states and not three. The server distinguishes exactly these two — over the
+ * threshold it emits an alert event, under it says nothing — and inventing a middle "watch" band
+ * would be this screen making up a severity the product does not have.
+ */
+export function varianceExceedsThreshold(percent: number | null): boolean {
+  return percent !== null && percent > VARIANCE_ALERT_THRESHOLD;
 }
 
 /**

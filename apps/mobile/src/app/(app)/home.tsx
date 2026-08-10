@@ -6,7 +6,9 @@
 //   EXECUTIVE                   : active projects · budget vs actual · open critical issues (3093)
 //   FINANCE                     : pending payment approvals · overdue invoices  (3107)
 //   PROCUREMENT_OFFICER/MANAGER : open RFQs · POs awaiting ack · deliveries     (3120)
-//   PROJECT_MANAGER             : triage — active projects · open issues        (3202 + §20.2)
+//   PROJECT_MANAGER             : manager dashboard — KPI tiles · blockers · AI · project list
+//                                 (mockup 06_project_manager/01_home, which SUPERSEDES master
+//                                  3202's one-line "home (triage)" as of 2026-08-10)
 //   others (SAFETY/ADMIN/VIEWER): minimal landing (Home content not enumerated in master)
 // Each variant reads from endpoints already proven in the sibling screens (alerts/payments/
 // procurement/portfolio) — no new endpoint is introduced. All fetches are offline-safe (cached
@@ -36,7 +38,7 @@ import { LoadingBoundary } from '../../components/LoadingBoundary';
 import SiteEngineerHome from '../../components/SiteEngineerHome';
 import TenantAdminHome from '../../components/TenantAdminHome';
 import { useT } from '../../i18n';
-import { fontFamily, radius, spacing, typography } from '../../theme/tokens';
+import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
 import { usePalette, useIsDark, type Palette } from '../../theme/usePalette';
 import { formatMoney } from '@cos/financial';
 import {
@@ -48,6 +50,46 @@ import {
 } from '../../lib/procurementKpi';
 import { ProjectPicker } from '../../components/ProjectPicker';
 import { ProcurementInsight } from '../../components/ProcurementInsight';
+import { PortfolioInsight } from '../../components/PortfolioInsight';
+import {
+  getMyProjects,
+  getProjectPhases,
+  getProjectProgress,
+  type MyProject,
+} from '../../api/projects';
+import {
+  currentPhase,
+  hasProgressFigure,
+  progressBarWidth,
+  sortIssuesBySeverity,
+  topSeverityCount,
+  type ActiveIssue,
+  type ProjectPhase,
+} from '../../lib/siteEngineerHome';
+import {
+  portfolioTotals,
+  portfolioVariance,
+  varianceExceedsThreshold,
+  type ProjectFinance,
+} from '../../lib/portfolioFinance';
+
+/** `GET /finance/budget/:projectId` — only the aggregate block the manager Home reads. */
+interface PmBudget {
+  budget: {
+    total_budget_amount: string;
+    total_budget_currency: string;
+    allocated_amount: string;
+    committed_amount: string;
+    actual_amount: string;
+  };
+}
+
+/** One row of the manager Home's YOUR PROJECTS list. Both extras are nullable — see §32.12. */
+interface PmProjectRow {
+  project: MyProject;
+  percentComplete: number | null;
+  phase: ProjectPhase | null;
+}
 
 /** The palette-resolved stylesheet. One hook so every home variant reads the same set. */
 function useHomeStyles() {
@@ -130,8 +172,34 @@ function StatTile({
   );
 }
 
-function Screen({ testID, children }: { testID: string; children: React.ReactNode }) {
+/**
+ * A role Home's page frame.
+ *
+ * `scroll` is opt-in rather than the default: most role Homes are a screenful of KPI cards, and a
+ * ScrollView around content that never overflows changes nothing except how the E2E suite finds it.
+ * The Project Manager's Home lists every project it is a member of and does overflow.
+ */
+function Screen({
+  testID,
+  scroll = false,
+  children,
+}: {
+  testID: string;
+  scroll?: boolean;
+  children: React.ReactNode;
+}) {
   const styles = useHomeStyles();
+  if (scroll) {
+    return (
+      <ScrollView
+        testID={testID}
+        style={styles.scrollRoot}
+        contentContainerStyle={styles.scrollPage}
+      >
+        {children}
+      </ScrollView>
+    );
+  }
   return (
     <View testID={testID} style={styles.container}>
       {children}
@@ -557,50 +625,140 @@ function ProcurementHome() {
   );
 }
 
-// ── PROJECT_MANAGER — triage (active projects · open issues) ──────────────────
-// master 3202 says "home (triage)" without enumerating KPIs; derived from §20.2 PM needs
-// (site blockers / schedule attention) as active-projects + open-issues entry points.
+// ── PROJECT_MANAGER — the manager dashboard (mockup 06_project_manager/01_home) ────────────────
+//
+// Rebuilt on 2026-08-10 from the corrected mockup set. It was four stacked KPI cards derived from
+// master 3202's one-line "home (triage)"; the drawing gives the role two KPI tiles, a blockers card,
+// the AI panel and its project list, and this follows it.
+//
+// COMMITTED SPEND AND PENDING APPROVALS LEFT THIS SCREEN, they were not deleted: the approvals queue
+// is drawn on the Procurement tab, which counts the same PENDING_APPROVAL rows, and the money
+// figures are the Finance tab's three tiles. Repeating them here would be the same query answered in
+// three places.
+//
+// WHAT EACH TILE ACTUALLY COUNTS:
+//   - Active Projects — cached `local_projects` in status ACTIVE, so it survives offline.
+//   - Total Variance  — the SERVER'S variance formula over the manager's whole portfolio
+//     (lib/portfolioFinance.ts), summed from the same per-project budgets the Finance tab reads.
+//     The mockup prints "+1.2%" in green with an upward arrow; positive variance means spend and
+//     commitments are ABOVE what was allocated, so the colour here follows the platform's own alert
+//     rule instead of the drawing's.
+//   - Critical Blockers — open issues at the WORST severity actually present, not a hardcoded
+//     "CRITICAL": `topSeverityCount` exists for exactly this, so a portfolio whose worst open issue
+//     is HIGH says HIGH rather than claiming a critical one.
+//
+// THE PER-PROJECT SYNC CHIP IN THE DRAWING IS NOT DRAWN. This app tracks sync state for the device
+// (SyncPill / OverlaySyncPill), not per project — there is no per-project sync record to read, so
+// the chip shows the project's real STATUS instead, which is what the drawing's third card does.
+//
+// THIS SCREEN MAKES THREE REQUESTS PER PROJECT (budget · progress · phases) plus one issues query,
+// all in parallel and all individually optional — every one of them fails to a placeholder rather
+// than to a wrong number. That is the cost of a portfolio view for a role with no portfolio
+// endpoint it may call; see finance.tsx for why there is none.
 function PmHome() {
   const styles = useHomeStyles();
+  const p = usePalette();
   const loaderTheme = useLoaderTheme();
-  const projects = useCollection<Project>('local_projects');
+  const cached = useCollection<Project>('local_projects');
+  const router = useRouter();
   const t = useT();
-  const [openIssues, setOpenIssues] = useState<number | null>(null);
-  const [spend, setSpend] = useState<string | null>(null);
-  const [pendingApprovals, setPendingApprovals] = useState<number | null>(null);
+
+  const [rows, setRows] = useState<PmProjectRow[]>([]);
+  const [finance, setFinance] = useState<ProjectFinance[]>([]);
+  const [blockers, setBlockers] = useState<ActiveIssue[]>([]);
   const [insightProject, setInsightProject] = useState('');
-  // First-load flag: true until the remote open-issues fetch settles (offline failure included).
   const [loading, setLoading] = useState(true);
-  const activeCount = projects.filter((p) => p.status === 'ACTIVE').length;
+  const activeCount = cached.filter((project) => project.status === 'ACTIVE').length;
 
   useEffect(() => {
+    let cancelled = false;
     refreshProjectsCache().catch(() => {
       /* offline — show cached */
     });
-    const issuesFetch = get<{ items?: unknown[]; total?: number }>('/site/issues', {
+
+    const issuesFetch = get<{ items?: ActiveIssue[] } | ActiveIssue[]>('/site/issues', {
       status: 'OPEN',
     })
-      .then((res) => setOpenIssues(res.total ?? asList(res as { items?: unknown[] }).length))
-      .catch(() => {
-        /* offline — keep last */
-      });
-    // The manager dashboard's money line (mockup 06_project_manager/01_home). PROJECT_MANAGER holds
-    // `A` on purchase orders (§6.4), so the count below is genuinely what is waiting on THIS person —
-    // it is the same PENDING_APPROVAL queue the Approvals tab opens on.
-    const posFetch = get<{ items?: SpendRow[] } | SpendRow[]>('/procurement/purchase-orders')
       .then((res) => {
-        const rows = asList(res);
-        setSpend(formatMoney(committedSpend(rows)));
-        setPendingApprovals(rows.filter((p) => p.status === 'PENDING_APPROVAL').length);
+        if (!cancelled) setBlockers(asList(res));
       })
       .catch(() => {
         /* offline — keep last */
       });
-    void Promise.allSettled([issuesFetch, posFetch]).then(() => setLoading(false));
+
+    const projectsFetch = (async () => {
+      const mine = await getMyProjects();
+      const [budgets, progress, phases] = await Promise.all([
+        Promise.allSettled(
+          mine.map((project) => get<PmBudget>(`/finance/budget/${project.project_id}`)),
+        ),
+        Promise.allSettled(mine.map((project) => getProjectProgress(project.project_id))),
+        Promise.allSettled(mine.map((project) => getProjectPhases(project.project_id))),
+      ]);
+      if (cancelled) return;
+
+      setRows(
+        mine.map((project, i) => {
+          const progressResult = progress[i];
+          const phaseResult = phases[i];
+          return {
+            project,
+            // §32.12: null means "not computable", never zero — a 0% bar would read as "no work
+            // done" on a project that simply has no BOQ-linked task.
+            percentComplete:
+              progressResult !== undefined && progressResult.status === 'fulfilled'
+                ? progressResult.value.percentComplete
+                : null,
+            phase:
+              phaseResult !== undefined && phaseResult.status === 'fulfilled'
+                ? currentPhase(phaseResult.value)
+                : null,
+          };
+        }),
+      );
+
+      setFinance(
+        mine.flatMap((project, i) => {
+          const result = budgets[i];
+          // Rejected = 404 (never budgeted) or offline. A zero row would drag the portfolio
+          // variance towards a number nobody's data supports.
+          if (result === undefined || result.status !== 'fulfilled') return [];
+          const b = result.value.budget;
+          return [
+            {
+              projectId: project.project_id,
+              projectName: project.project_name,
+              projectCode: project.project_code,
+              currency: b.total_budget_currency,
+              totalBudget: b.total_budget_amount,
+              allocated: b.allocated_amount,
+              committed: b.committed_amount,
+              actual: b.actual_amount,
+            },
+          ];
+        }),
+      );
+    })().catch(() => {
+      /* offline — the cached KPI still renders, the list stays empty */
+    });
+
+    void Promise.allSettled([issuesFetch, projectsFetch]).then(() => {
+      if (!cancelled) setLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
+  const variance = useMemo(() => portfolioVariance(portfolioTotals(finance)), [finance]);
+  const varianceAlerting = varianceExceedsThreshold(variance);
+  const worst = useMemo(() => topSeverityCount(blockers), [blockers]);
+  const topBlocker = useMemo(() => sortIssuesBySeverity(blockers)[0] ?? null, [blockers]);
+
   return (
-    <Screen testID="home-screen">
+    <Screen testID="home-screen" scroll>
+      <Text style={styles.eyebrow}>{t('home.pm.dashboardTitle')}</Text>
+
       <LoadingBoundary
         loading={loading}
         variant="widget"
@@ -608,34 +766,137 @@ function PmHome() {
         style={styles.kpiRegion}
       >
         <View style={styles.kpiRow}>
-          <KpiCard
-            testID="kpi-committed-spend"
-            value={spend ?? '—'}
-            label={t('home.pm.committedSpend')}
-          />
-        </View>
-        <View style={styles.kpiRow}>
-          <KpiCard
+          <View
             testID="kpi-active-projects"
-            value={String(activeCount)}
-            label={t('home.pm.activeProjects')}
-          />
-          <KpiCard
-            testID="kpi-open-issues"
-            value={openIssues === null ? '—' : String(openIssues)}
-            label={t('home.pm.openIssues')}
-          />
-        </View>
-        <View style={styles.kpiRow}>
-          <KpiCard
-            testID="kpi-pending-approvals"
-            value={pendingApprovals === null ? '—' : String(pendingApprovals)}
-            label={t('home.pm.pendingApprovals')}
-          />
+            style={[styles.pmTile, { borderLeftColor: p.primary }]}
+          >
+            <Text style={styles.pmTileLabel}>{t('home.pm.activeProjects')}</Text>
+            <View style={styles.pmTileFoot}>
+              <Text style={styles.pmTileValue}>{String(activeCount).padStart(2, '0')}</Text>
+              <MaterialIcons name="corporate-fare" size={20} color={p.primary} />
+            </View>
+          </View>
+
+          <View
+            testID="kpi-total-variance"
+            style={[styles.pmTile, { borderLeftColor: varianceAlerting ? p.danger : p.success }]}
+          >
+            <Text style={styles.pmTileLabel}>{t('home.pm.totalVariance')}</Text>
+            <View style={styles.pmTileFoot}>
+              <Text
+                style={[
+                  styles.pmTileValue,
+                  { color: varianceAlerting ? p.danger : p.success },
+                  // No allocation to divide by: the label says so instead of the figure shrinking
+                  // to fit a percentage that was never computed.
+                  variance === null && styles.pmTilePlaceholder,
+                ]}
+              >
+                {variance === null
+                  ? t('home.pm.varianceUnavailable')
+                  : `${variance > 0 ? '+' : ''}${String(variance)}%`}
+              </Text>
+              <MaterialIcons
+                name={varianceAlerting ? 'trending-up' : 'trending-down'}
+                size={20}
+                color={varianceAlerting ? p.danger : p.success}
+              />
+            </View>
+          </View>
         </View>
       </LoadingBoundary>
+
+      {/* Critical blockers. The card is only drawn when something is actually blocked — an empty
+          red-striped panel reads as an alert in its own right. */}
+      {worst !== null && topBlocker !== null ? (
+        <View testID="pm-blockers" style={[styles.pmCard, { borderLeftColor: p.danger }]}>
+          <View style={styles.pmCardHead}>
+            <MaterialIcons name="warning" size={18} color={p.danger} />
+            <Text style={[styles.pmCardTitle, { color: p.danger }]}>
+              {t('home.pm.blockerCount', {
+                count: String(worst.count).padStart(2, '0'),
+                severity: worst.severity,
+              })}
+            </Text>
+          </View>
+          <Text style={styles.pmCardBody} numberOfLines={2}>
+            {topBlocker.title}
+          </Text>
+          <TouchableOpacity
+            testID="pm-blockers-manage"
+            accessibilityRole="button"
+            accessibilityLabel={t('home.pm.manage')}
+            onPress={() => router.push('/issues')}
+            style={[styles.pmGhostButton, { borderColor: p.danger }]}
+          >
+            <Text style={[styles.pmGhostButtonText, { color: p.danger }]}>
+              {t('home.pm.manage')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
+
+      {!loading && blockers.length === 0 ? (
+        <Text testID="pm-no-blockers" style={styles.pmNotice}>
+          {t('home.pm.noBlockers')}
+        </Text>
+      ) : null}
+
       <ProjectPicker selectedId={insightProject} onSelect={setInsightProject} />
-      <ProcurementInsight projectId={insightProject} />
+      <PortfolioInsight projectId={insightProject} />
+
+      <Text style={styles.eyebrow}>{t('home.pm.yourProjects')}</Text>
+
+      {!loading && rows.length === 0 ? (
+        <Text testID="pm-no-projects" style={styles.pmNotice}>
+          {t('home.pm.noProjects')}
+        </Text>
+      ) : null}
+
+      {rows.map(({ project, percentComplete, phase }) => (
+        <View
+          key={project.project_id}
+          testID={`pm-project-${project.project_id}`}
+          style={[styles.pmCard, { borderLeftColor: p.accent }]}
+        >
+          <View style={styles.pmProjectHead}>
+            <View style={styles.pmProjectTitleBlock}>
+              <Text style={styles.pmProjectName} numberOfLines={1}>
+                {project.project_name}
+              </Text>
+              <Text style={styles.pmProjectPhase}>
+                {phase === null ? t('home.pm.noPhase') : t('home.pm.phase', { phase: phase.name })}
+              </Text>
+            </View>
+            <View style={styles.pmStatusChip}>
+              <Text style={styles.pmStatusText}>{project.status}</Text>
+            </View>
+          </View>
+
+          <View style={styles.pmProgressRow}>
+            <Text style={styles.pmProgressLabel}>{t('home.pm.progress')}</Text>
+            <Text style={styles.pmProgressLabel}>
+              {hasProgressFigure(percentComplete)
+                ? `${String(Math.round(percentComplete))}%`
+                : t('home.pm.progressUnavailable')}
+            </Text>
+          </View>
+          {hasProgressFigure(percentComplete) ? (
+            <View style={[styles.statTrack, { backgroundColor: p.border }]}>
+              <View
+                testID={`pm-progress-${project.project_id}`}
+                style={[
+                  styles.statFill,
+                  {
+                    width: `${progressBarWidth(percentComplete)}%`,
+                    backgroundColor: p.accent,
+                  },
+                ]}
+              />
+            </View>
+          ) : null}
+        </View>
+      ))}
     </Screen>
   );
 }
@@ -690,7 +951,121 @@ export default function HomeScreen() {
 const makeStyles = (p: Palette) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: p.bg, padding: spacing.md, gap: spacing.md },
+    scrollRoot: { flex: 1, backgroundColor: p.bg },
+    scrollPage: { padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xl * 3 },
     kpiRow: { flexDirection: 'row', gap: spacing.md },
+
+    // ── Project Manager Home (mockup 06_project_manager/01_home) ────────────────────────────
+    eyebrow: {
+      color: p.muted,
+      fontFamily: fontFamily.semibold,
+      fontSize: typography.label.fontSize,
+      letterSpacing: 1,
+      textTransform: 'uppercase',
+    },
+    pmTile: {
+      flex: 1,
+      justifyContent: 'space-between',
+      gap: spacing.sm,
+      padding: spacing.md,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: p.border,
+      borderLeftWidth: 4,
+      backgroundColor: p.surface,
+    },
+    pmTileLabel: {
+      color: p.muted,
+      fontFamily: fontFamily.medium,
+      fontSize: typography.label.fontSize,
+    },
+    pmTileFoot: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
+    pmTileValue: {
+      color: p.text,
+      fontFamily: fontFamily.bold,
+      fontSize: typography.hero.fontSize,
+      lineHeight: typography.hero.lineHeight,
+    },
+    // A placeholder is a sentence, not a figure — it must not be set at hero size.
+    pmTilePlaceholder: {
+      color: p.muted,
+      fontFamily: fontFamily.medium,
+      fontSize: typography.label.fontSize,
+      lineHeight: typography.label.lineHeight,
+    },
+    pmCard: {
+      gap: spacing.sm,
+      padding: spacing.md,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: p.border,
+      borderLeftWidth: 4,
+      backgroundColor: p.surface,
+    },
+    pmCardHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+    pmCardTitle: {
+      fontFamily: fontFamily.semibold,
+      fontSize: typography.label.fontSize,
+      letterSpacing: 0.5,
+      textTransform: 'uppercase',
+    },
+    pmCardBody: {
+      color: p.text,
+      fontFamily: fontFamily.regular,
+      fontSize: typography.caption.fontSize,
+      lineHeight: typography.caption.lineHeight,
+    },
+    pmGhostButton: {
+      alignSelf: 'flex-start',
+      minHeight: touchTarget.secondaryButton,
+      justifyContent: 'center',
+      paddingHorizontal: spacing.md,
+      borderRadius: radius.md,
+      borderWidth: 1,
+    },
+    pmGhostButtonText: {
+      fontFamily: fontFamily.semibold,
+      fontSize: typography.label.fontSize,
+      letterSpacing: 0.8,
+      textTransform: 'uppercase',
+    },
+    pmNotice: {
+      color: p.muted,
+      fontFamily: fontFamily.regular,
+      fontSize: typography.caption.fontSize,
+    },
+    pmProjectHead: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
+    pmProjectTitleBlock: { flex: 1, gap: spacing.xs / 4 },
+    pmProjectName: {
+      color: p.text,
+      fontFamily: fontFamily.semibold,
+      fontSize: typography.body.fontSize,
+    },
+    pmProjectPhase: {
+      color: p.muted,
+      fontFamily: fontFamily.regular,
+      fontSize: typography.label.fontSize,
+    },
+    pmStatusChip: {
+      paddingHorizontal: spacing.xs,
+      paddingVertical: 2,
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      borderColor: p.border,
+      backgroundColor: p.elevated,
+    },
+    pmStatusText: {
+      color: p.muted,
+      fontFamily: fontFamily.medium,
+      fontSize: 10,
+      letterSpacing: 0.5,
+    },
+    pmProgressRow: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm },
+    pmProgressLabel: {
+      color: p.muted,
+      fontFamily: fontFamily.regular,
+      fontSize: typography.label.fontSize,
+    },
     // ── Site Worker Home (mockup 01_home/01_dashboard) ──────────────────────────────────────
     fieldRoot: { flex: 1, backgroundColor: p.bg },
     fieldPage: { padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xl * 3 },
