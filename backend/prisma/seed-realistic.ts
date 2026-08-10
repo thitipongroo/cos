@@ -32,6 +32,23 @@ function addDays(iso: string, n: number): string {
   d.setUTCDate(d.getUTCDate() + n);
   return d.toISOString().slice(0, 10);
 }
+/**
+ * The real current date, for the handful of rows that must be RECENT rather than stable.
+ *
+ * Everything else in this file is pinned to fixed calendar dates so a reseed produces the same
+ * history twice. The progress-claim ledger cannot be: the Finance tiles compare the last 30 days
+ * against the 30 before them, and a fixed anchor drifts out of both windows the moment the wall
+ * clock moves past it — the arrows would go blank a month after the seed was written.
+ */
+const TODAY: string = new Date().toISOString().slice(0, 10);
+
+/** Whole days from `from` to `to`, both ISO dates. */
+function daysBetween(from: string, to: string): number {
+  return Math.round(
+    (new Date(`${to}T00:00:00Z`).getTime() - new Date(`${from}T00:00:00Z`).getTime()) / 86_400_000,
+  );
+}
+
 function isWeekend(iso: string): boolean {
   const day = new Date(`${iso}T00:00:00Z`).getUTCDay();
   return day === 0 || day === 6;
@@ -936,12 +953,33 @@ async function seedProject(tx: Tx, p: SeedProject): Promise<void> {
       paid: false,
     },
   ];
-  for (const po of poDefs) {
+  // HOW FAR BACK THIS PROJECT'S HISTORY GOES. Every date below is measured from the project's own
+  // start, never from a fixed calendar anchor: these projects begin 2026-06-01..06-10, so a ledger
+  // spread over "the last eight months" would put purchase orders and progress claims on projects
+  // that did not exist yet.
+  const spanDays = daysBetween(p.start, TODAY);
+
+  for (const [poIndex, po] of poDefs.entries()) {
     const prId = uid(`pr/${p.key}/${po.key}`);
     const rfqId = uid(`rfq/${p.key}/${po.key}`);
     const poId = uid(`po/${p.key}/${po.key}`);
     const total = po.qty * po.price;
-    const orderedAt = addDays(p.start, po.days);
+    // ORDERS ARE SPREAD ACROSS THE PROJECT'S LIFE, not bunched into its first fortnight. They used
+    // to be `p.start + po.days` with `days` running 3..16, which put every purchase order in one
+    // calendar month — and the Finance tiles, which compare the last 30 days with the 30 before
+    // them, then read a −78% collapse that was an artefact of the seed's shape rather than anything
+    // a project did. `po.days` survives as the WITHIN-STEP jitter so two orders never share a date.
+    //
+    // The lag keeps the whole chain in the past: an order is followed by its delivery (+12), its
+    // invoice (+14) and its payment (+20), and a delivery dated tomorrow would be counted by the
+    // Procurement tab's "deliveries today".
+    const lag = po.paid ? 24 : po.delivered ? 16 : 14;
+    const lastSafeDay = Math.max(2, spanDays - lag);
+    const step = poDefs.length === 1 ? 1 : poIndex / (poDefs.length - 1);
+    const orderedAt = addDays(
+      p.start,
+      Math.min(lastSafeDay, Math.round(step * lastSafeDay) + (po.days % 5)),
+    );
     await tx.$executeRaw`INSERT INTO procurement.purchase_requests (pr_id, project_id, tenant_id, pr_number, status, requested_by, required_date)
       VALUES (${prId}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, ${`PR-${p.code}-${po.key.toUpperCase()}`}, 'PO_CREATED', ${U('proc')}::uuid, ${addDays(orderedAt, 10)}::date)
       ON CONFLICT (pr_id) DO NOTHING`;
@@ -992,9 +1030,43 @@ async function seedProject(tx: Tx, p: SeedProject): Promise<void> {
   const spentToDate = Math.round(p.budget * p.spendRatio);
   const progressClaims = Math.max(0, spentToDate - actual);
   if (progressClaims > 0) {
-    await tx.$executeRaw`INSERT INTO finance.cost_transactions (transaction_id, project_id, tenant_id, source_type, source_id, amount, currency_code, transaction_date, description, recorded_by)
-      VALUES (${uid(`ct-claim/${p.key}`)}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, 'INVOICE'::finance."CostSourceType", ${uid(`claim/${p.key}`)}::uuid, ${progressClaims}, ${THB}, ${p.start}::date, 'งวดงานที่รับรองแล้วสะสม (progress claims to date)', ${U('fin')}::uuid)
-      ON CONFLICT (transaction_id) DO NOTHING`;
+    // SPREAD OVER MONTHS, NOT DUMPED ON THE START DATE. The Finance tiles compare the last 30 days
+    // of cost transactions with the 30 before them (lib/spendTrend.ts), so a single row dated at
+    // project start gives both windows nothing and the arrow has no baseline to report. Monthly
+    // claims are also what actually happens: งวดงาน are certified and invoiced month by month.
+    //
+    // The instalments rise slightly month over month, the way a project's burn does once it is out
+    // of the ground, so the two most recent windows differ and the comparison has something to say.
+    // As many monthly instalments as this project has months. Two is the floor — with one the
+    // trend has no baseline and the tiles show a placeholder instead of an arrow.
+    const CLAIM_MONTHS = Math.max(2, Math.min(8, Math.floor((spanDays - 2) / 30)));
+    const weights = Array.from({ length: CLAIM_MONTHS }, (_, i) => 1 + i * 0.12);
+    const weightSum = weights.reduce((a, b) => a + b, 0);
+    let claimed = 0;
+    for (let i = 0; i < CLAIM_MONTHS; i++) {
+      // i = 0 is the oldest; the last instalment lands inside the current month.
+      const monthsAgo = CLAIM_MONTHS - 1 - i;
+      const when = addDays(TODAY, -monthsAgo * 30 - 2);
+      const amount =
+        i === CLAIM_MONTHS - 1
+          ? progressClaims - claimed // the remainder, so the instalments sum EXACTLY to the total
+          : Math.round((progressClaims * weights[i]!) / weightSum);
+      claimed += amount;
+      if (amount <= 0) continue;
+      await tx.$executeRaw`INSERT INTO finance.cost_transactions (transaction_id, project_id, tenant_id, source_type, source_id, amount, currency_code, transaction_date, description, recorded_by)
+        VALUES (${uid(`ct-claim/${p.key}/${i}`)}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, 'INVOICE'::finance."CostSourceType", ${uid(`claim/${p.key}/${i}`)}::uuid, ${amount}, ${THB}, ${when}::date, ${`งวดงานที่รับรองแล้ว งวดที่ ${i + 1}`}, ${U('fin')}::uuid)
+        ON CONFLICT (transaction_id) DO NOTHING`;
+    }
+    // The commitment side of the same months — purchase orders raised but not yet invoiced. Without
+    // these the Commit Costs tile has no ledger of its own and its arrow stays blank.
+    for (let i = 0; i < CLAIM_MONTHS; i++) {
+      const when = addDays(TODAY, -(CLAIM_MONTHS - 1 - i) * 30 - 9);
+      const amount = Math.round((committed * weights[i]!) / weightSum);
+      if (amount <= 0) continue;
+      await tx.$executeRaw`INSERT INTO finance.cost_transactions (transaction_id, project_id, tenant_id, source_type, source_id, amount, currency_code, transaction_date, description, recorded_by)
+        VALUES (${uid(`ct-commit/${p.key}/${i}`)}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, 'PURCHASE_ORDER'::finance."CostSourceType", ${uid(`commit/${p.key}/${i}`)}::uuid, ${amount}, ${THB}, ${when}::date, ${`ผูกพันตามใบสั่งซื้อ งวดที่ ${i + 1}`}, ${U('fin')}::uuid)
+        ON CONFLICT (transaction_id) DO NOTHING`;
+    }
   }
   await tx.$executeRaw`UPDATE finance.project_budgets SET committed_amount=${committed}, actual_amount=${spentToDate} WHERE budget_id=${bid}::uuid`;
 

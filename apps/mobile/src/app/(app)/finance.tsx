@@ -39,7 +39,8 @@ import { get } from '../../api/client';
 import { getMyProjects } from '../../api/projects';
 import { compactMoney, type MoneyScale } from '../../lib/compactMoney';
 import { budgetHealth, budgetFraction, type BudgetHealth } from '../../lib/budgetHealth';
-import { portfolioTotals, shareOfBudget, type ProjectFinance } from '../../lib/portfolioFinance';
+import { portfolioTotals, type ProjectFinance } from '../../lib/portfolioFinance';
+import { spendTrend, type CostTransaction, type SpendTrend } from '../../lib/spendTrend';
 import { ProjectPicker } from '../../components/ProjectPicker';
 import { PortfolioInsight } from '../../components/PortfolioInsight';
 import { useT } from '../../i18n';
@@ -80,6 +81,7 @@ export default function FinanceScreen(): React.JSX.Element {
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [insightProject, setInsightProject] = useState('');
+  const [costs, setCosts] = useState<CostTransaction[]>([]);
   // Where the Active Projects Health section starts, so the Total Budget tile can scroll to the
   // breakdown of its own figure.
   const [healthY, setHealthY] = useState(0);
@@ -122,6 +124,19 @@ export default function FinanceScreen(): React.JSX.Element {
             ];
           }),
         );
+        // The dated ledger behind the two trend arrows. Paged: the endpoint caps `limit` at 100, and
+        // two 30-day windows across five projects run past that.
+        const ledger: CostTransaction[] = [];
+        for (let page = 1; page <= 10; page++) {
+          const res = await get<{ items?: CostTransaction[] } | CostTransaction[]>(
+            '/finance/cost-transactions',
+            { page: String(page), limit: '100' },
+          );
+          const items = Array.isArray(res) ? res : (res.items ?? []);
+          ledger.push(...items);
+          if (items.length < 100) break;
+        }
+        if (!cancelled) setCosts(ledger);
         loadedOnce.current = true;
       } catch {
         // `/projects/mine` did not answer. THIS IS NOT AN EMPTY PORTFOLIO and must not be drawn as
@@ -169,39 +184,63 @@ export default function FinanceScreen(): React.JSX.Element {
     [currency, t],
   );
 
-  /**
-   * The small figure beside each tile's amount: "6.4%", a gap, then a 14px glyph.
-   *
-   * FIGURE FIRST, GLYPH RIGHT — the order the Home tiles already use (PO decision 2026-08-10). The
-   * drawing puts the glyph first here and the figure first there; one product should not read both
-   * ways, and the number is what the eye is looking for.
-   *
-   * THE GLYPH IS A PROPORTION MARK, NOT THE DRAWING'S ARROW. The mockup pairs this slot with
-   * `trending_up` / `trending_down` because it is showing a change against a previous period —
-   * which this product cannot compute (`project_budgets` keeps no history, see `shareOfBudget`).
-   * An arrow beside a share of budget would state a direction nothing measured. `donut-small` is
-   * the part-of-a-whole glyph, which is what the number actually is.
-   */
-  const share = useCallback(
-    (part: Parameters<typeof shareOfBudget>[0]): { text: string; a11y: string } | null => {
-      const pct = shareOfBudget(part, totals.totalBudget);
-      if (pct === null) return null;
-      return {
-        text: t('pm.finance.shareOfBudget', { percent: String(pct) }),
-        // The words the tile no longer prints still reach a screen reader.
-        a11y: t('pm.finance.shareOfBudgetLong', { percent: String(pct) }),
-      };
-    },
-    [totals.totalBudget, t],
-  );
+  // One clock per render, so the two tiles cannot land in different windows.
+  const now = useMemo(() => new Date(), [costs]);
+  const committedTrend = useMemo(() => spendTrend(costs, ['PURCHASE_ORDER'], now), [costs, now]);
+  const actualTrend = useMemo(() => spendTrend(costs, ['INVOICE'], now), [costs, now]);
 
-  const shareRow = (part: Parameters<typeof shareOfBudget>[0], tone: string): React.JSX.Element => {
-    const value = share(part);
-    if (value === null) return <Text style={[styles.tileShare, { color: tone }]}>—</Text>;
+  /**
+   * The drawing's arrow: "4.2%", a gap, then `trending_up` / `trending_down` at 14px.
+   *
+   * IT IS A REAL PERIOD-OVER-PERIOD CHANGE. An earlier version of this screen put a share-of-budget
+   * figure here and argued a trend "is not computable" — true of `project_budgets`, which keeps no
+   * history, and false of the product: `cost_transactions` is dated and typed, and §14 grants this
+   * role read on it. See lib/spendTrend.ts.
+   *
+   * RISING SPEND IS THE WARNING DIRECTION, whichever tile it sits on. The mockup happens to draw
+   * Commit Costs up/orange and Actual Spent down/green, but those are its sample figures — the
+   * colour here follows what the arrow says, so it cannot tell a manager that a jump in spending is
+   * the good news.
+   */
+  /** The colour a trend reads in — and, with it, the colour of its tile's accent stripe. */
+  const trendTone = (trend: SpendTrend | null): string =>
+    trend === null
+      ? p.muted
+      : trend.direction === 'up'
+        ? p.warning
+        : trend.direction === 'down'
+          ? p.success
+          : p.muted;
+
+  const trendRow = (trend: SpendTrend | null): React.JSX.Element => {
+    if (trend === null) {
+      return (
+        <Text
+          style={[styles.tileShare, { color: p.muted }]}
+          accessibilityLabel={t('pm.finance.noBaseline')}
+        >
+          —
+        </Text>
+      );
+    }
+    const tone = trendTone(trend);
+    const percent = `${trend.percent > 0 ? '+' : ''}${String(trend.percent)}`;
     return (
-      <View style={styles.shareRow} accessibilityLabel={value.a11y}>
-        <Text style={[styles.tileShare, { color: tone }]}>{value.text}</Text>
-        <MaterialIcons name="donut-small" size={14} color={tone} />
+      <View style={styles.shareRow} accessibilityLabel={t('pm.finance.trendLong', { percent })}>
+        <Text style={[styles.tileShare, { color: tone }]}>
+          {t('pm.finance.trend', { percent })}
+        </Text>
+        <MaterialIcons
+          name={
+            trend.direction === 'up'
+              ? 'trending-up'
+              : trend.direction === 'down'
+                ? 'trending-down'
+                : 'trending-flat'
+          }
+          size={14}
+          color={tone}
+        />
       </View>
     );
   };
@@ -257,7 +296,10 @@ export default function FinanceScreen(): React.JSX.Element {
               accessibilityRole="button"
               accessibilityLabel={t('pm.finance.commitCosts')}
               onPress={() => router.push('/orders')}
-              style={[styles.tile, { borderLeftColor: p.warning }]}
+              // The stripe is the same colour as the figure it belongs to (PO decision
+              // 2026-08-10). A card striped orange with a green number inside states two different
+              // verdicts about one measurement.
+              style={[styles.tile, { borderLeftColor: trendTone(committedTrend) }]}
             >
               <MaterialIcons
                 name="chevron-right"
@@ -268,7 +310,7 @@ export default function FinanceScreen(): React.JSX.Element {
               <Text style={styles.tileLabel}>{t('pm.finance.commitCosts')}</Text>
               <View style={styles.tileRow}>
                 <Text style={styles.tileValue}>{money(totals.committed)}</Text>
-                {shareRow(totals.committed, p.warning)}
+                {trendRow(committedTrend)}
               </View>
             </Pressable>
             <Pressable
@@ -276,7 +318,7 @@ export default function FinanceScreen(): React.JSX.Element {
               accessibilityRole="button"
               accessibilityLabel={t('pm.finance.actualSpent')}
               onPress={() => router.push('/invoices')}
-              style={[styles.tile, { borderLeftColor: p.success }]}
+              style={[styles.tile, { borderLeftColor: trendTone(actualTrend) }]}
             >
               <MaterialIcons
                 name="chevron-right"
@@ -287,7 +329,7 @@ export default function FinanceScreen(): React.JSX.Element {
               <Text style={styles.tileLabel}>{t('pm.finance.actualSpent')}</Text>
               <View style={styles.tileRow}>
                 <Text style={styles.tileValue}>{money(totals.actual)}</Text>
-                {shareRow(totals.actual, p.success)}
+                {trendRow(actualTrend)}
               </View>
             </Pressable>
           </View>
