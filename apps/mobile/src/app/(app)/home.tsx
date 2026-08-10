@@ -14,9 +14,9 @@
 // procurement/portfolio) — no new endpoint is introduced. All fetches are offline-safe (cached
 // value kept on error), matching the read-only offline behaviour in master 3101/3115/3130.
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { CosRole } from '@cos/types';
 import { db } from '../../db/database';
 import type { Project } from '../../db/database';
@@ -83,6 +83,14 @@ interface PmBudget {
     actual_amount: string;
   };
 }
+
+/**
+ * How the manager Home's project load ended.
+ *
+ * `failed` exists so an unanswered request and an empty portfolio cannot render the same sentence —
+ * see the catch in `load` for the capture that made the difference visible.
+ */
+type PmLoadState = 'loading' | 'ready' | 'failed';
 
 /** One row of the manager Home's YOUR PROJECTS list. Both extras are nullable — see §32.12. */
 interface PmProjectRow {
@@ -668,9 +676,14 @@ function PmHome() {
   const [blockers, setBlockers] = useState<ActiveIssue[]>([]);
   const [insightProject, setInsightProject] = useState('');
   const [loading, setLoading] = useState(true);
+  const [projectsState, setProjectsState] = useState<PmLoadState>('loading');
   const activeCount = cached.filter((project) => project.status === 'ACTIVE').length;
 
-  useEffect(() => {
+  // Cheap ref, not state: it only decides whether the focus hook refetches, and writing it must not
+  // re-render the screen it is measuring.
+  const loadedOnce = useRef(false);
+
+  const load = useCallback(() => {
     let cancelled = false;
     refreshProjectsCache().catch(() => {
       /* offline — show cached */
@@ -738,8 +751,16 @@ function PmHome() {
           ];
         }),
       );
+      loadedOnce.current = true;
+      setProjectsState('ready');
     })().catch(() => {
-      /* offline — the cached KPI still renders, the list stays empty */
+      // THE FIRST VERSION OF THIS SWALLOWED THE FAILURE AND LEFT `rows` EMPTY, which the list below
+      // then captioned "You are not a member of any project yet." — a claim about the manager's
+      // memberships made from a request that never answered. The very first capture of this screen
+      // photographed exactly that: an empty dashboard for a manager who has three projects, while
+      // the Finance tab (same call, mounted a minute later) showed all three. A failed load and an
+      // empty portfolio must not read the same, and this screen must be able to recover from one.
+      if (!cancelled) setProjectsState('failed');
     });
 
     void Promise.allSettled([issuesFetch, projectsFetch]).then(() => {
@@ -749,6 +770,20 @@ function PmHome() {
       cancelled = true;
     };
   }, []);
+
+  // ON FOCUS, NOT ON MOUNT. The mount version ran once, immediately after sign-in, and a request
+  // that lost that race left the dashboard permanently empty with no way to retry but killing the
+  // app. Returning to the tab now retries.
+  //
+  // It refetches only until the first success: this screen costs three requests per project, and
+  // re-running all of them every time the manager taps Home would be paying that repeatedly to fix
+  // a case that has already been fixed. A stale-data refresh is a separate question from this bug.
+  useFocusEffect(
+    useCallback(() => {
+      if (loadedOnce.current) return;
+      return load();
+    }, [load]),
+  );
 
   const variance = useMemo(() => portfolioVariance(portfolioTotals(finance)), [finance]);
   const varianceAlerting = varianceExceedsThreshold(variance);
@@ -787,14 +822,19 @@ function PmHome() {
                 style={[
                   styles.pmTileValue,
                   { color: varianceAlerting ? p.danger : p.success },
-                  // No allocation to divide by: the label says so instead of the figure shrinking
-                  // to fit a percentage that was never computed.
+                  // No figure to print: the label says WHICH kind of nothing it is, instead of the
+                  // figure shrinking to fit a percentage that was never computed.
                   variance === null && styles.pmTilePlaceholder,
                 ]}
               >
-                {variance === null
-                  ? t('home.pm.varianceUnavailable')
-                  : `${variance > 0 ? '+' : ''}${String(variance)}%`}
+                {/* Three different states, three different sentences. A failed load must not say
+                    "No allocation" — that is a statement about the manager's budgets, and a request
+                    that did not answer supports no statement at all. */}
+                {projectsState === 'failed'
+                  ? t('home.pm.varianceUnknown')
+                  : variance === null
+                    ? t('home.pm.varianceUnavailable')
+                    : `${variance > 0 ? '+' : ''}${String(variance)}%`}
               </Text>
               <MaterialIcons
                 name={varianceAlerting ? 'trending-up' : 'trending-down'}
@@ -847,7 +887,13 @@ function PmHome() {
 
       <Text style={styles.eyebrow}>{t('home.pm.yourProjects')}</Text>
 
-      {!loading && rows.length === 0 ? (
+      {projectsState === 'failed' ? (
+        <Text testID="pm-projects-failed" style={styles.pmNotice}>
+          {t('home.pm.projectsUnavailable')}
+        </Text>
+      ) : null}
+
+      {projectsState === 'ready' && rows.length === 0 ? (
         <Text testID="pm-no-projects" style={styles.pmNotice}>
           {t('home.pm.noProjects')}
         </Text>

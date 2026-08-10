@@ -44,12 +44,17 @@ type IconName = keyof typeof MaterialIcons.glyphMap;
 const TILES: readonly {
   id: string;
   icon: IconName;
-  route: '/vendors' | '/budget' | null;
+  route: '/vendors' | '/finance' | null;
 }[] = [
   { id: 'projectSettings', icon: 'settings', route: null },
   { id: 'team', icon: 'group', route: null },
   { id: 'documents', icon: 'folder-special', route: null },
-  { id: 'cost', icon: 'analytics', route: '/budget' },
+  // Cost analysis goes to THIS role's Finance screen, not to `/budget`. It pointed at `/budget`
+  // while the Project Manager had no finance screen of its own — and `/budget` is a FINANCE / VIEWER
+  // TAB, so a manager pushed into it arrived on a screen with no breadcrumb (therefore no TopBar
+  // Back) and no tab of their own to leave by. `/finance` became this role's third tab on
+  // 2026-08-10; tapping the tile now selects it.
+  { id: 'cost', icon: 'analytics', route: '/finance' },
   { id: 'contractors', icon: 'handshake', route: '/vendors' },
   { id: 'siteMap', icon: 'map', route: null },
 ];

@@ -421,6 +421,8 @@
       "pendingApprovals": "Waiting on your approval",
       "totalVariance": "Total variance",
       "varianceUnavailable": "No allocation",
+      "varianceUnknown": "Not loaded",
+      "projectsUnavailable": "Your projects could not be loaded. Nothing here is missing — it has not arrived.",
       "blockers": "Critical blockers",
       "blockerCount": "{count} {severity} issues",
       "noBlockers": "No open issues on your projects.",
@@ -692,6 +694,7 @@
       "actualFigure": "Actual: {value}",
       "budgetFigure": "Budget: {value}",
       "noBudgets": "None of your projects has a budget recorded yet.",
+      "loadFailed": "These figures could not be loaded. Nothing here is zero — it has not arrived.",
       "scaleMillion": "M",
       "scaleBillion": "B",
       "sourceNote": "Figures come from each project's budget record. Projects without one are left out."

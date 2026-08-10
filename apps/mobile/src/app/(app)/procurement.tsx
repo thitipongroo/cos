@@ -41,6 +41,9 @@ import {
   approvePurchaseOrder,
   type PurchaseOrderRow,
 } from '../../api/procurement';
+import { useCollection } from '../../hooks/useCollection';
+import type { Project } from '../../db/database';
+import { refreshProjectsCache } from '../../api/projects';
 import { openRfqCount } from '../../lib/procurementKpi';
 import { waitingAge } from '../../lib/waitingAge';
 import { ProjectPicker } from '../../components/ProjectPicker';
@@ -63,6 +66,9 @@ export default function ProcurementScreen(): React.JSX.Element {
   const p = usePalette();
   const styles = useMemo(() => makeStyles(p), [p]);
 
+  // The offline project cache, for turning an order's `project_id` into the name a manager knows.
+  const projects = useCollection<Project>('local_projects');
+
   const [pos, setPos] = useState<PurchaseOrderRow[]>([]);
   const [activeRfqs, setActiveRfqs] = useState<number | null>(null);
   const [deliveriesToday, setDeliveriesToday] = useState<number | null>(null);
@@ -72,6 +78,11 @@ export default function ProcurementScreen(): React.JSX.Element {
 
   const load = useCallback(async () => {
     setLoading(true);
+    // Refreshed here too, not only on Home: this tab names each order's project from that cache, and
+    // a manager who opens Procurement first would otherwise read UUIDs until they visited Home.
+    refreshProjectsCache().catch(() => {
+      /* offline — the cached names, if any, still resolve */
+    });
     const today = new Date().toDateString();
     const approvals = fetchPendingApprovals()
       .then(({ pos: rows }) => setPos(rows))
@@ -118,6 +129,18 @@ export default function ProcurementScreen(): React.JSX.Element {
   );
 
   const n = (v: number | null): string => (v === null ? '—' : String(v).padStart(2, '0'));
+
+  /**
+   * The project an order belongs to, by name.
+   *
+   * A purchase order carries only `project_id`, and the first capture of this screen photographed
+   * that raw UUID under each PO number — thirty-six characters of noise in the slot the mockup uses
+   * for the project. The offline project cache already holds the names, so this reads them from
+   * there. An id the cache has not seen falls back to the id itself rather than to an empty line:
+   * an unfamiliar identifier is still more than nothing when someone is deciding on money.
+   */
+  const projectName = (projectId: string): string =>
+    projects.find((project) => project.projectId === projectId)?.projectName ?? projectId;
 
   const ageLabel = (po: PurchaseOrderRow): string | null => {
     const age = waitingAge(po.updated_at, now);
@@ -179,7 +202,7 @@ export default function ProcurementScreen(): React.JSX.Element {
               <View style={styles.cardTitleBlock}>
                 <Text style={styles.cardTitle}>{po.po_number}</Text>
                 <Text style={styles.cardSub} numberOfLines={1}>
-                  {po.project_id}
+                  {projectName(po.project_id)}
                 </Text>
               </View>
               <View style={styles.cardAmountBlock}>

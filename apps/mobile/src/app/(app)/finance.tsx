@@ -30,8 +30,9 @@
 // which is FINANCE / TENANT_ADMIN only (§6.4 gives this role R on Budget/Cost). A "+" here would be
 // a button whose only outcome is 403.
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { get } from '../../api/client';
 import { getMyProjects } from '../../api/projects';
@@ -75,12 +76,18 @@ export default function FinanceScreen(): React.JSX.Element {
 
   const [rows, setRows] = useState<ProjectFinance[]>([]);
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
   const [insightProject, setInsightProject] = useState('');
 
-  useEffect(() => {
+  // Cheap ref, not state: it only decides whether the focus hook refetches, and writing it must not
+  // re-render the screen it is measuring.
+  const loadedOnce = useRef(false);
+
+  const load = useCallback(() => {
     let cancelled = false;
     void (async () => {
       try {
+        setFailed(false);
         const projects = await getMyProjects();
         // Budgets are fetched together rather than in sequence — a manager with eight projects would
         // otherwise wait eight round trips for a screen that is read at a glance.
@@ -109,9 +116,16 @@ export default function FinanceScreen(): React.JSX.Element {
             ];
           }),
         );
+        loadedOnce.current = true;
       } catch {
-        // `/projects/mine` failed — offline. An empty portfolio is what the screen can honestly show.
-        if (!cancelled) setRows([]);
+        // `/projects/mine` did not answer. THIS IS NOT AN EMPTY PORTFOLIO and must not be drawn as
+        // one: an earlier version set `rows` to [] here, and the manager Home — which loads the same
+        // way — was captured showing "you are not a member of any project" to a manager with three.
+        // Zeroed tiles are a claim about someone's money; a request that failed supports no claim.
+        if (!cancelled) {
+          setRows([]);
+          setFailed(true);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -120,6 +134,16 @@ export default function FinanceScreen(): React.JSX.Element {
       cancelled = true;
     };
   }, []);
+
+  // ON FOCUS, NOT ON MOUNT — so a load that lost the race with sign-in is retried when the manager
+  // opens the tab again, rather than leaving the screen permanently blank. Only until the first
+  // success: this screen costs one budget request per project.
+  useFocusEffect(
+    useCallback(() => {
+      if (loadedOnce.current) return;
+      return load();
+    }, [load]),
+  );
 
   const totals = useMemo(() => portfolioTotals(rows), [rows]);
   const currency = totals.currency ?? 'THB';
@@ -204,7 +228,13 @@ export default function FinanceScreen(): React.JSX.Element {
 
       <Text style={styles.sectionTitle}>{t('pm.finance.activeProjectsHealth')}</Text>
 
-      {!loading && rows.length === 0 ? (
+      {!loading && failed ? (
+        <Text testID="finance-failed" style={styles.notice}>
+          {t('pm.finance.loadFailed')}
+        </Text>
+      ) : null}
+
+      {!loading && !failed && rows.length === 0 ? (
         <Text testID="finance-empty" style={styles.notice}>
           {t('pm.finance.noBudgets')}
         </Text>

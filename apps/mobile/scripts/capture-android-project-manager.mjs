@@ -1,14 +1,19 @@
 // Android PROJECT_MANAGER screenshot capture — adb/uiautomator only, like every sibling script.
 //
-// Writes the three screens built from mockup/mobile/06_project_manager on 2026-08-10, into that
-// role's folders under docs/screens/android/PROJECT-MANAGER/:
-//   01-Home/01-dashboard   the manager dashboard — committed spend, projects, issues, approvals,
-//                          then the project picker and the Insights panel
-//   03-Approvals/01-approvals  the PO/RFQ decision queue
-//   04-Vendors/01-vendors      the supplier directory with trust scores
+// Writes the screens built from the CORRECTED mockup/mobile/06_project_manager set, into that role's
+// folders under docs/screens/android/PROJECT-MANAGER/:
+//   01-Home/01-dashboard        KPI tiles · critical blockers · portfolio analysis · YOUR PROJECTS
+//   02-Procurement/01-procurement  three counters · the AI panel · the approvals queue
+//   03-Finance/01-finance       portfolio financial summary · AI panel · per-project health
+//   04-More/01-more             profile card + the six tiles
+//   04-More/02-vendors          the supplier directory, now a pushed child of the More menu
 //
-// Numbered for the role's own bottom bar — Home | Projects | Approvals | Vendors — so `02-Projects`
-// is simply a folder this script does not write (that screen predates this work and is unchanged).
+// Numbered for the role's bottom bar as it now is — Home | Procurement | Finance | More. The earlier
+// run of this script numbered for a bar that no longer exists (Home | Projects | Approvals |
+// Vendors), which is why `03-Approvals/` and `04-Vendors/` may still be on disk: that Approvals
+// SCREEN was deleted when its queue moved into the Procurement tab, and the vendor directory moved
+// under More. Both stale folders are left for the product owner to remove — this script does not
+// delete anyone's screenshots.
 //
 // LOGS IN AS THE SEEDED PROJECT MANAGER (`+66811000003`, Thanawat Boonmee — seed-realistic.ts), not
 // as the procurement manager: PROJECT_MANAGER is the role whose bar these screens were added to
@@ -170,22 +175,49 @@ async function main() {
   // Assert the destination rather than sleeping: a mis-tap then fails the run instead of being
   // photographed as if it were the dashboard.
   await find(byId('home-screen'), 'manager Home', 40);
-  await delay(3000); // let the KPI fetches settle so the tiles are not photographed mid-dash
-  await stitchFull('01-Home/01-dashboard');
 
-  console.log('· Approvals tab');
-  await tap(byId('approvals-tab'), 'Approvals tab');
-  await find(byId('approvals-screen'), 'approvals-screen', 20);
+  // HOME IS SHOT LAST, at the end of this run, and that is a deliberate change.
+  //
+  // The first version of this script photographed Home three seconds after sign-in and produced an
+  // empty dashboard — "You are not a member of any project yet" for a manager with three projects,
+  // while the Finance tab a minute later showed all three. The screen's load had lost a race with
+  // the session and never retried. The SCREEN was fixed for that (it now says a load failed instead
+  // of claiming an empty portfolio, and retries when the tab is focused again); this ordering is
+  // what makes the screenshot document the dashboard rather than that race.
+  console.log('· Procurement tab');
+  await tap(byId('procurement-tab'), 'Procurement tab');
+  await find(byId('procurement-screen'), 'procurement-screen', 20);
   await delay(2500);
-  await stitchFull('03-Approvals/01-approvals');
+  await stitchFull('02-Procurement/01-procurement');
 
-  console.log('· Vendors tab');
-  await tap(byId('vendors-tab'), 'Vendors tab');
+  console.log('· Finance tab');
+  await tap(byId('finance-tab'), 'Finance tab');
+  await find(byId('finance-screen'), 'finance-screen', 20);
+  // One budget request per project, all in flight at once — wait for the slowest before shooting,
+  // or the portfolio tiles are photographed showing fewer projects than the manager has.
+  await delay(4000);
+  await stitchFull('03-Finance/01-finance');
+
+  console.log('· More tab');
+  await tap(byId('more-tab'), 'More tab');
+  await find(byId('more-screen'), 'more-screen', 20);
+  await delay(1500);
+  await stitchFull('04-More/01-more');
+
+  console.log('· Vendors (pushed from the More menu)');
+  await tap(byId('more-contractors'), 'contractors tile');
   await find(byId('vendors-screen'), 'vendors-screen', 20);
   // The per-vendor scorecards arrive after the list; wait for them so the cards are not captured
   // with their score slot still empty.
   await delay(4000);
-  await stitchFull('04-Vendors/01-vendors');
+  await stitchFull('04-More/02-vendors');
+
+  console.log('· Home tab (last — see the note above)');
+  await tap(byId('home-tab'), 'Home tab');
+  await find(byId('home-screen'), 'manager Home', 20);
+  // Three requests per project, all in flight at once, plus the issues query.
+  await delay(6000);
+  await stitchFull('01-Home/01-dashboard');
 
   console.log(`\nDone → ${OUT}`);
 }
