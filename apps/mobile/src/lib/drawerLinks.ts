@@ -31,7 +31,7 @@
 
 import type { MaterialIcons } from '@expo/vector-icons';
 import { CosRole } from '@cos/types';
-import { ALL_TABS } from './roleTabs';
+import { overflowTabsFor, visibleTabsFor } from './roleTabs';
 
 export interface DrawerLink {
   route: string;
@@ -368,12 +368,30 @@ export const SHARED_LINKS: readonly DrawerLink[] = [
 ];
 
 /** The routes that are bottom tabs for `role` — a drawer row onto one of them would be a duplicate. */
-function tabRoutesFor(role: CosRole): Set<string> {
-  return new Set(ALL_TABS.filter((tab) => tab.roles.includes(role)).map((tab) => `/${tab.name}`));
+function visibleTabRoutes(role: CosRole): Set<string> {
+  return new Set(visibleTabsFor(role).map((tab) => `/${tab.name}`));
+}
+
+/**
+ * A tab pushed off the bar, as a drawer row. Same label and glyph, so it is recognisably itself.
+ *
+ * EXPORTED ONLY SO IT CAN BE TESTED. Every role matches exactly four tabs today, so `drawerLinksFor`
+ * never calls it — which leaves the QM-1 gate with an uncovered function and, worse, leaves the rule
+ * that catches a fifth tab unexercised until the day it matters. Its own test is the exercise.
+ */
+export function tabAsDrawerLink(tab: {
+  name: string;
+  titleKey: string;
+  icon: DrawerLink['icon'];
+}): DrawerLink {
+  return { route: `/${tab.name}`, labelKey: tab.titleKey, icon: tab.icon };
 }
 
 /**
  * The role's own drawer section, above the shared rows.
+ *
+ * Overflow tabs come FIRST: a screen the tab table thought worth a bar slot is that role's primary
+ * work, and burying it under the derived list would rank it below screens it outranks.
  *
  * A signed-out or unknown role gets nothing role-specific — the drawer then shows only the two
  * shared rows, which is what a session with no role can honestly offer.
@@ -381,10 +399,55 @@ function tabRoutesFor(role: CosRole): Set<string> {
 export function drawerLinksFor(role: CosRole | null | undefined): readonly DrawerLink[] {
   if (role == null) return [];
   const drawn = DRAWN[role];
-  const base = drawn ?? [
-    ...DERIVED.filter((entry) => entry.roles.includes(role)).map((entry) => entry.link),
-    ...(DIRECTORY_ROLES.includes(role) ? [DIRECTORY] : []),
+  const base = [
+    ...overflowTabsFor(role).map(tabAsDrawerLink),
+    ...(drawn ?? [
+      ...DERIVED.filter((entry) => entry.roles.includes(role)).map((entry) => entry.link),
+      ...(DIRECTORY_ROLES.includes(role) ? [DIRECTORY] : []),
+    ]),
   ];
-  const tabs = tabRoutesFor(role);
-  return base.filter((link) => !tabs.has(link.route));
+  const tabs = visibleTabRoutes(role);
+  // An overflow tab can also appear in the derived list (a role may both have it as a fifth tab and
+  // hold the permission behind it); the first occurrence wins so it is not offered twice.
+  const seen = new Set<string>();
+  return base.filter((link) => {
+    if (tabs.has(link.route) || seen.has(link.route)) return false;
+    seen.add(link.route);
+    return true;
+  });
+}
+
+/**
+ * How many rows the drawer shows before it folds the rest away (PO decision 2026-08-10).
+ *
+ * Counts the role's own rows only — Settings and the Support Centre sit below the divider and are
+ * never folded, because "where do I get help" must not itself be two taps deep.
+ */
+export const DRAWER_MAX_ROWS = 7;
+
+export interface DrawerSection {
+  /** Rows drawn directly. */
+  visible: readonly DrawerLink[];
+  /** Rows behind the "More" row. Empty when the whole list fits. */
+  overflow: readonly DrawerLink[];
+}
+
+/**
+ * The role's section, split at the point where it stops fitting.
+ *
+ * EXACTLY SEVEN STILL SHOWS SEVEN. Folding at seven-of-seven would replace one row with a "More"
+ * that reveals one row — a tap that buys nothing. The split happens only when there is genuinely
+ * more than fits, and then row seven becomes "More" and carries everything from seven on, so eight
+ * rows render as six + More rather than seven + More.
+ *
+ * Three roles need it today: EXECUTIVE (17 rows — it may read almost every module), FINANCE (10) and
+ * VIEWER (9, whose §6.8 grant is "Procurement (all) R" and "Finance (all) R").
+ */
+export function drawerSectionFor(role: CosRole | null | undefined): DrawerSection {
+  const links = drawerLinksFor(role);
+  if (links.length <= DRAWER_MAX_ROWS) return { visible: links, overflow: [] };
+  return {
+    visible: links.slice(0, DRAWER_MAX_ROWS - 1),
+    overflow: links.slice(DRAWER_MAX_ROWS - 1),
+  };
 }

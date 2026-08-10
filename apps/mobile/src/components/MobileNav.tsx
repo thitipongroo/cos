@@ -45,7 +45,7 @@
 import { Tabs } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CosRole } from '@cos/types';
-import { ALL_TABS as TAB_TABLE } from '../lib/roleTabs';
+import { ALL_TABS as TAB_TABLE, visibleTabsFor } from '../lib/roleTabs';
 import { useAuthStore } from '../store/authStore';
 import { useT } from '../i18n';
 import { colors, darkColors } from '../theme/tokens';
@@ -61,6 +61,8 @@ export type { TabConfig, IconName } from '../lib/roleTabs';
 /** Role-filtered bottom tab navigator. Reads the signed-in role from the auth store. */
 export function MobileNav() {
   const role = useAuthStore((s) => s.role) as CosRole | null;
+  // The names that actually get a button, capped at MAX_TABS.
+  const onBar = new Set(role == null ? [] : visibleTabsFor(role).map((tab) => tab.name));
   const t = useT();
 
   // Tab-bar colour follows the USER'S theme (PO decision 2026-08-04: dark is the product default for
@@ -108,8 +110,13 @@ export function MobileNav() {
           : undefined,
       }}
     >
+      {/* The bar is four wide and no wider (§32.7, `MAX_TABS`). A role matching a fifth entry does
+          NOT get a fifth button — `visibleTabsFor` cuts the list at four and `drawerLinksFor` puts
+          the remainder at the top of that role's drawer section, so the screen is still one tap from
+          anywhere and the bar keeps its shape. Every role matches exactly four today; this is what
+          happens the day one does not. */}
       {TAB_TABLE.map((tab) => {
-        const visible = role != null && tab.roles.includes(role);
+        const visible = onBar.has(tab.name);
         return (
           <Tabs.Screen
             key={tab.name}

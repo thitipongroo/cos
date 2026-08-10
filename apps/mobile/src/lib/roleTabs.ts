@@ -24,6 +24,35 @@ export type TabConfig = {
   roles: CosRole[];
 };
 
+/**
+ * §32.7: "MobileNav: exactly 4 items". The bar is four wide and no wider.
+ *
+ * Every role in the table below happens to match exactly four today, so nothing overflows — but a
+ * fifth has leaked onto a bar three times already (mfa-enrollment, notification-preferences, and the
+ * lowercase `dashboard` that shipped beside Vendors until a capture caught it). This constant plus
+ * `overflowTabsFor` turns that class of accident into DEFINED behaviour: a fifth entry does not
+ * appear on the bar, it appears in the drawer (PO decision 2026-08-10).
+ */
+export const MAX_TABS = 4;
+
+/** Every tab this role matches, in table order. Order is behaviour — see the note above ALL_TABS. */
+export function tabsFor(role: CosRole): TabConfig[] {
+  return ALL_TABS.filter((tab) => tab.roles.includes(role));
+}
+
+/** The ones that actually render on the bar — the first `MAX_TABS`, in order. */
+export function visibleTabsFor(role: CosRole): TabConfig[] {
+  return tabsFor(role).slice(0, MAX_TABS);
+}
+
+/**
+ * The ones beyond the fourth. They are NOT dropped — `drawerLinksFor` puts them at the top of that
+ * role's drawer section, because a screen that was worth a bar slot is that role's primary work.
+ */
+export function overflowTabsFor(role: CosRole): TabConfig[] {
+  return tabsFor(role).slice(MAX_TABS);
+}
+
 // Authoritative per-role tab set (spec §Phase 10).
 // Icons are MaterialIcons glyph names, type-checked against the set's glyphMap. None of them are
 // building / crane / hard-hat / blueprint / gear imagery — §32.7:622 prohibits those.

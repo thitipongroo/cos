@@ -15,12 +15,12 @@
 // the only two rows every role gets, and the section above them is that role's own. The table lives
 // in `lib/drawerLinks.ts` — this component renders it and decides nothing about its contents.
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View, Text, Pressable, Animated, StyleSheet, ScrollView, BackHandler } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter, usePathname } from 'expo-router';
-import { drawerLinksFor, SHARED_LINKS, type DrawerLink } from '../lib/drawerLinks';
+import { drawerSectionFor, SHARED_LINKS, type DrawerLink } from '../lib/drawerLinks';
 import { useUiStore } from '../store/uiStore';
 import { useAuthStore } from '../store/authStore';
 import { useI18n } from '../i18n';
@@ -51,7 +51,9 @@ export function NavigationDrawer(): React.JSX.Element | null {
   const role = useAuthStore((s) => s.role);
   const userId = useAuthStore((s) => s.userId);
   const logout = useAuthStore((s) => s.logout);
-  const roleLinks = drawerLinksFor(role);
+  const { visible, overflow } = drawerSectionFor(role);
+  // Collapsed on open, every time: the drawer is a fresh glance, not a place with remembered state.
+  const [expanded, setExpanded] = useState(false);
 
   // -DRAWER_WIDTH = off-screen left; 0 = open. Backdrop fades 0→1 in step.
   const slide = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
@@ -174,10 +176,36 @@ export function NavigationDrawer(): React.JSX.Element | null {
         <ScrollView style={styles.flex1} contentContainerStyle={styles.navList}>
           {/* The role's own section. Empty for a session with no role, in which case the heading
               would label nothing and is not drawn either. */}
-          {roleLinks.length > 0 ? (
+          {visible.length > 0 ? (
             <>
               <Text style={styles.navSection}>{t('drawer.fieldTools')}</Text>
-              {roleLinks.map(renderLink)}
+              {visible.map(renderLink)}
+              {/* Row seven, when there is more than a seventh row's worth left (PO decision
+                  2026-08-10). It expands IN PLACE rather than pushing a screen: the rest of this
+                  role's menu is still the drawer's own content, and sending someone to another page
+                  to read a menu is one navigation more than the menu is worth. */}
+              {overflow.length > 0 ? (
+                <>
+                  <Pressable
+                    testID="drawer-more"
+                    onPress={() => setExpanded((was) => !was)}
+                    style={styles.navItem}
+                    accessibilityRole="button"
+                    accessibilityState={{ expanded }}
+                    accessibilityLabel={t('drawer.more', { count: String(overflow.length) })}
+                  >
+                    <MaterialIcons
+                      name={expanded ? 'expand-less' : 'expand-more'}
+                      size={24}
+                      color={darkColors.muted}
+                    />
+                    <Text style={styles.navLabel}>
+                      {t('drawer.more', { count: String(overflow.length) })}
+                    </Text>
+                  </Pressable>
+                  {expanded ? overflow.map(renderLink) : null}
+                </>
+              ) : null}
             </>
           ) : null}
           {/* Settings and Support — ONE ROW EACH, not the settings sections themselves (PO decision
