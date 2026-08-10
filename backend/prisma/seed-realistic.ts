@@ -182,6 +182,16 @@ type SeedProject = {
   name: string;
   type: string;
   budget: number;
+  /**
+   * Actual spend to date as a fraction of `budget`, used to seed a realistic mix of budget health.
+   *
+   * The purchase orders below add up to a few million against budgets of hundreds of millions, which
+   * left every project on the Finance dashboard reading HEALTHY with a bar too short to see — a
+   * demo that shows one of three states is not a demo of the screen. These ratios put the portfolio
+   * where a real one sits partway through: mostly under, one close to the line, one over.
+   * lib/budgetHealth.ts bands them: < 0.8 HEALTHY · 0.8–0.99 WARNING · >= 1.0 OVERRUN.
+   */
+  spendRatio: number;
   start: string;
   end: string;
   pm: string;
@@ -198,6 +208,7 @@ const PROJECTS: SeedProject[] = [
     name: 'The Sukhumvit 45 Residences',
     type: 'RESIDENTIAL',
     budget: 450_000_000,
+    spendRatio: 0.46, // well inside its budget
     start: D('2026-06-02'),
     end: D('2028-05-31'),
     pm: 'pm1',
@@ -213,6 +224,7 @@ const PROJECTS: SeedProject[] = [
     name: 'Rama IX Corporate Tower',
     type: 'COMMERCIAL',
     budget: 320_000_000,
+    spendRatio: 0.62, // inside
     start: D('2026-06-05'),
     end: D('2028-02-28'),
     pm: 'pm2',
@@ -228,6 +240,7 @@ const PROJECTS: SeedProject[] = [
     name: 'Bangna Logistics Warehouse Phase 2',
     type: 'INDUSTRIAL',
     budget: 145_000_000,
+    spendRatio: 1.07, // OVERRUN — excavation hit rock, the case the dashboard must be able to show
     start: D('2026-06-08'),
     end: D('2027-04-30'),
     pm: 'pm1',
@@ -243,6 +256,7 @@ const PROJECTS: SeedProject[] = [
     name: 'Chaeng Watthana Access Road Upgrade',
     type: 'INFRASTRUCTURE',
     budget: 88_000_000,
+    spendRatio: 0.33, // early, barely spent
     start: D('2026-06-01'),
     end: D('2027-01-31'),
     pm: 'pm2',
@@ -257,6 +271,7 @@ const PROJECTS: SeedProject[] = [
     name: 'Ladprao Garden Townhomes',
     type: 'RESIDENTIAL',
     budget: 210_000_000,
+    spendRatio: 0.88, // WARNING — inside the budget but past the 80% line
     start: D('2026-06-10'),
     end: D('2027-09-30'),
     pm: 'pm1',
@@ -968,7 +983,20 @@ async function seedProject(tx: Tx, p: SeedProject): Promise<void> {
       }
     }
   }
-  await tx.$executeRaw`UPDATE finance.project_budgets SET committed_amount=${committed}, actual_amount=${actual} WHERE budget_id=${bid}::uuid`;
+  // Progress claims — งวดงาน, what a project of this size has actually certified and paid to date
+  // beyond the handful of material orders above. Typed `INVOICE`, which is what a certified progress
+  // claim is: money owed for work done. (`CostSourceType` has exactly PURCHASE_ORDER · INVOICE ·
+  // ADJUSTMENT — ADJUSTMENT would be wrong, that is a correction to a figure, not a cost.) Without this the dashboards read a few million against
+  // hundreds of millions and every project looks identically healthy. One row, so the figure has a
+  // cost transaction behind it rather than being written straight onto the aggregate.
+  const spentToDate = Math.round(p.budget * p.spendRatio);
+  const progressClaims = Math.max(0, spentToDate - actual);
+  if (progressClaims > 0) {
+    await tx.$executeRaw`INSERT INTO finance.cost_transactions (transaction_id, project_id, tenant_id, source_type, source_id, amount, currency_code, transaction_date, description, recorded_by)
+      VALUES (${uid(`ct-claim/${p.key}`)}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, 'INVOICE'::finance."CostSourceType", ${uid(`claim/${p.key}`)}::uuid, ${progressClaims}, ${THB}, ${p.start}::date, 'งวดงานที่รับรองแล้วสะสม (progress claims to date)', ${U('fin')}::uuid)
+      ON CONFLICT (transaction_id) DO NOTHING`;
+  }
+  await tx.$executeRaw`UPDATE finance.project_budgets SET committed_amount=${committed}, actual_amount=${spentToDate} WHERE budget_id=${bid}::uuid`;
 
   // Tasks (a handful with progress).
   //

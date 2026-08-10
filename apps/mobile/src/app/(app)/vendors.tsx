@@ -126,7 +126,7 @@ export default function VendorsScreen(): React.JSX.Element {
 
   // Drawn for the role that holds the right (§6.8 vendor management RWD), but there is no vendor
   // editor in the app yet — no route, no form — so it says so, the treatment the Directory's chat
-  // button and the Support Centre's search already use.
+  // button and the Support Center's search already use.
   const manage = useCallback(() => {
     Alert.alert(t('vendors.manage'), t('common.comingSoon'));
   }, [t]);

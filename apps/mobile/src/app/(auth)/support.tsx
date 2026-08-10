@@ -1,4 +1,4 @@
-// Support Centre — pre-auth route (mockup/mobile/01_authen/07_get_help/01_support_center).
+// Support Center — pre-auth route (mockup/mobile/01_authen/07_get_help/01_support_center).
 //
 // Route placement: the (auth) group, like the Privacy Policy and the Terms of Use before it. It is
 // reached from the OTP step's "GET SUPPORT" footer item, which had been inert text — and that item is

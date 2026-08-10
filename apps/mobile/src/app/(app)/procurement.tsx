@@ -17,13 +17,13 @@
 // online-required (§17.4), so a failure means nothing was recorded and the screen says so.
 //
 // REVIEW is drawn and reports that there is no detail screen yet: `/procurement/purchase-orders/{id}`
-// exists on the server, but no route in this app renders it. Same treatment as the Support Centre's
+// exists on the server, but no route in this app renders it. Same treatment as the Support Center's
 // search and the Directory's chat button.
 //
 // The AI panel is <ProcurementInsight />, which is per-project because its endpoint is — hence the
 // picker above it (PO decision 2026-08-10).
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -77,6 +77,9 @@ export default function ProcurementScreen(): React.JSX.Element {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [insightProject, setInsightProject] = useState('');
+  // Where the Pending Approvals section starts, so the counter above can scroll to it.
+  const [approvalsY, setApprovalsY] = useState(0);
+  const scrollRef = useRef<ScrollView>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -130,7 +133,9 @@ export default function ProcurementScreen(): React.JSX.Element {
     [t, load],
   );
 
-  const n = (v: number | null): string => (v === null ? '—' : String(v).padStart(2, '0'));
+  // Plain counting numbers — 0, 1, 2 (PO decision 2026-08-10). The drawing zero-pads ("08", "12"),
+  // which reads as a code rather than a quantity when the real figures are single digits.
+  const n = (v: number | null): string => (v === null ? '—' : String(v));
 
   /**
    * The project an order belongs to, by name.
@@ -158,6 +163,7 @@ export default function ProcurementScreen(): React.JSX.Element {
 
   return (
     <ScrollView
+      ref={scrollRef}
       testID="procurement-screen"
       style={{ backgroundColor: p.bg }}
       contentContainerStyle={styles.page}
@@ -168,10 +174,25 @@ export default function ProcurementScreen(): React.JSX.Element {
           not need one — the queue it counts is drawn directly below it on this same screen, so a
           chevron there would point at what the reader is already looking at. */}
       <View style={styles.statRow}>
-        <View testID="stat-pending-approvals" style={[styles.stat, { borderLeftColor: p.warning }]}>
+        <Pressable
+          testID="stat-pending-approvals"
+          accessibilityRole="button"
+          accessibilityLabel={t('pm.procurement.pendingApprovals')}
+          // The queue it counts is on THIS screen, so the chevron takes the reader to it rather than
+          // to a filtered list that does not exist. Measured, not guessed at: `approvalsY` is the
+          // section's own onLayout position.
+          onPress={() => scrollRef.current?.scrollTo({ y: approvalsY, animated: true })}
+          style={[styles.stat, { borderLeftColor: p.warning }]}
+        >
+          <MaterialIcons
+            name="chevron-right"
+            size={16}
+            color={p.muted}
+            style={styles.statChevron}
+          />
           <Text style={[styles.statValue, { color: p.warning }]}>{n(pos.length)}</Text>
           <Text style={styles.statLabel}>{t('pm.procurement.pendingApprovals')}</Text>
-        </View>
+        </Pressable>
         <Pressable
           testID="stat-active-rfqs"
           accessibilityRole="button"
@@ -209,7 +230,7 @@ export default function ProcurementScreen(): React.JSX.Element {
       <ProjectPicker selectedId={insightProject} onSelect={setInsightProject} />
       <ProcurementInsight projectId={insightProject} />
 
-      <View style={styles.sectionHead}>
+      <View style={styles.sectionHead} onLayout={(e) => setApprovalsY(e.nativeEvent.layout.y)}>
         <View style={styles.sectionTitleRow}>
           <MaterialIcons name="fact-check" size={20} color={p.warning} />
           <Text style={styles.sectionTitle}>{t('pm.procurement.pendingApprovals')}</Text>
@@ -224,7 +245,6 @@ export default function ProcurementScreen(): React.JSX.Element {
           style={styles.viewAll}
         >
           <Text style={styles.viewAllText}>{t('pm.procurement.viewAll')}</Text>
-          <MaterialIcons name="chevron-right" size={16} color={p.primary} />
         </Pressable>
       </View>
 

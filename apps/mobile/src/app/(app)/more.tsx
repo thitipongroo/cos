@@ -11,7 +11,7 @@
 //     what the tile opens. §6.4 does grant PROJECT_MANAGER `RW` on BOQ — the right exists, the
 //     screen does not, and naming a destination the app cannot reach would be the worse of the two.
 // The other four are drawn and say plainly that the screen does not exist yet — the treatment the
-// Support Centre's search, the Directory's chat button and the Terms download already use. They are
+// Support Center's search, the Directory's chat button and the Terms download already use. They are
 // not silently dropped: a tile that vanishes tells a reader the feature was never planned.
 //
 // THE AI WIDGET CALLS EXECUTIVE_SUMMARY (PO decision 2026-08-10, after the question was escalated).

@@ -11,7 +11,7 @@ import { ALL_TABS, MAX_TABS, overflowTabsFor, visibleTabsFor } from '../roleTabs
 const routes = (role: CosRole): string[] => drawerLinksFor(role).map((link) => link.route);
 
 describe('SHARED_LINKS', () => {
-  it('is exactly Settings and the Support Centre', () => {
+  it('is exactly Settings and the Support Center', () => {
     // PO decision 2026-08-10: those two, and nothing else, are the same for every role.
     expect(SHARED_LINKS.map((link) => link.route)).toEqual(['/account-settings', '/support']);
   });
@@ -231,7 +231,7 @@ describe('drawerSectionFor — row seven becomes More', () => {
     expect(drawerSectionFor(null)).toEqual({ visible: [], overflow: [] });
   });
 
-  it('leaves Settings and the Support Centre out of the count — help is never folded away', () => {
+  it('leaves Settings and the Support Center out of the count — help is never folded away', () => {
     // They render below the divider, so the seven-row rule cannot bury "where do I get help".
     const exec = drawerSectionFor(CosRole.EXECUTIVE);
     const folded = [...exec.visible, ...exec.overflow].map((link) => link.route);

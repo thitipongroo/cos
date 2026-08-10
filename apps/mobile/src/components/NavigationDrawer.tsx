@@ -11,7 +11,7 @@
 // Only real, mounted routes are linked. The mockup's "Equipment Logs" and "Drawing Viewer" have no
 // route in this app, so they are omitted rather than linking to a dead path (no guessing).
 //
-// WHAT IS IN THE LIST IS NOW PER ROLE (PO decision 2026-08-10): Settings and the Support Centre are
+// WHAT IS IN THE LIST IS NOW PER ROLE (PO decision 2026-08-10): Settings and the Support Center are
 // the only two rows every role gets, and the section above them is that role's own. The table lives
 // in `lib/drawerLinks.ts` — this component renders it and decides nothing about its contents.
 

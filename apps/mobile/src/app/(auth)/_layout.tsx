@@ -1,5 +1,5 @@
 // Auth stack layout — wraps login, OTP verification, the two pre-auth legal documents, and the
-// pre-auth Support Centre.
+// pre-auth Support Center.
 //
 // privacy-policy, terms-of-use and support live in this group because the root AuthGate redirects
 // every non-(auth) route to login while unauthenticated, and all three are reached from a login

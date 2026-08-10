@@ -357,7 +357,7 @@ const DRAWN: Partial<Record<CosRole, readonly DrawerLink[]>> = {
 /**
  * The two rows every role gets (PO 2026-08-10).
  *
- * Settings is the signed-in user's own account. The Support Centre lives at `/support` — a route in
+ * Settings is the signed-in user's own account. The Support Center lives at `/support` — a route in
  * the `(auth)` group, which costs nothing here: expo-router groups add no path segment, and that
  * screen carries its own Back control, so it returns the user where they came from. It was reachable
  * only from the login footer before this, which left a signed-in user with no way to ask for help.
@@ -420,7 +420,7 @@ export function drawerLinksFor(role: CosRole | null | undefined): readonly Drawe
 /**
  * How many rows the drawer shows before it folds the rest away (PO decision 2026-08-10).
  *
- * Counts the role's own rows only — Settings and the Support Centre sit below the divider and are
+ * Counts the role's own rows only — Settings and the Support Center sit below the divider and are
  * never folded, because "where do I get help" must not itself be two taps deep.
  */
 export const DRAWER_MAX_ROWS = 7;

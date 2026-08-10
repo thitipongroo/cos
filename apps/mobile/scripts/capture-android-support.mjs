@@ -1,7 +1,7 @@
-// Android Support Centre screenshot capture — adb/uiautomator only, same approach as the sibling
+// Android Support Center screenshot capture — adb/uiautomator only, same approach as the sibling
 // capture-android-*.mjs scripts (deliberately NOT Detox; see capture-android-login.mjs for why).
 //
-// Writes the pre-auth Support Centre to docs/screens/android/01-public/. It is a PUBLIC screen — it
+// Writes the pre-auth Support Center to docs/screens/android/01-public/. It is a PUBLIC screen — it
 // lives in the (auth) route group and is reached from the OTP step's GET SUPPORT footer item — so it
 // sits with the other pre-auth captures (00-native-splash … 06-terms-of-use):
 //   07-support  default state — all four troubleshooting topics collapsed, as the screen opens

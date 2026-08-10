@@ -32,15 +32,7 @@
 // dashboard measures, and `/material-request` is a screen that already exists.
 
 import { useCallback, useMemo, useRef, useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  StyleSheet,
-  ActivityIndicator,
-  Pressable,
-  Alert,
-} from 'react-native';
+import { View, Text, ScrollView, StyleSheet, ActivityIndicator, Pressable } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { get } from '../../api/client';
@@ -88,6 +80,10 @@ export default function FinanceScreen(): React.JSX.Element {
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [insightProject, setInsightProject] = useState('');
+  // Where the Active Projects Health section starts, so the Total Budget tile can scroll to the
+  // breakdown of its own figure.
+  const [healthY, setHealthY] = useState(0);
+  const scrollRef = useRef<ScrollView>(null);
 
   // Cheap ref, not state: it only decides whether the focus hook refetches, and writing it must not
   // re-render the screen it is measuring.
@@ -186,137 +182,179 @@ export default function FinanceScreen(): React.JSX.Element {
           : p.muted;
 
   return (
-    <ScrollView
-      testID="finance-screen"
-      style={{ backgroundColor: p.bg }}
-      contentContainerStyle={styles.page}
-    >
-      <Text style={styles.sectionTitle}>{t('pm.finance.portfolioSummary')}</Text>
+    <View style={styles.root}>
+      <ScrollView
+        ref={scrollRef}
+        testID="finance-screen"
+        style={{ backgroundColor: p.bg }}
+        contentContainerStyle={styles.page}
+      >
+        <Text style={styles.sectionTitle}>{t('pm.finance.portfolioSummary')}</Text>
 
-      {loading ? <ActivityIndicator testID="finance-loading" color={p.primary} /> : null}
+        {loading ? <ActivityIndicator testID="finance-loading" color={p.primary} /> : null}
 
-      <View style={styles.bento}>
-        <View testID="tile-total-budget" style={[styles.tile, { borderLeftColor: p.primary }]}>
-          <Text style={styles.tileLabel}>{t('pm.finance.totalBudget')}</Text>
-          <Text style={styles.tileHero}>{money(totals.totalBudget)}</Text>
-          <Text style={styles.tileFoot}>
-            {t('pm.finance.acrossProjects', { count: String(totals.included) })}
-          </Text>
+        <View style={styles.bento}>
+          {/* Each tile opens where its own figure comes from: the budget total is broken down by the
+            health list on this screen, commitments are purchase orders, actual spend is the
+            invoices behind them. Nothing here opens a screen this role may not read (§6.4). */}
+          <Pressable
+            testID="tile-total-budget"
+            accessibilityRole="button"
+            accessibilityLabel={t('pm.finance.totalBudget')}
+            onPress={() => scrollRef.current?.scrollTo({ y: healthY, animated: true })}
+            style={[styles.tile, { borderLeftColor: p.primary }]}
+          >
+            <MaterialIcons
+              name="chevron-right"
+              size={16}
+              color={p.muted}
+              style={styles.tileChevron}
+            />
+            <Text style={styles.tileLabel}>{t('pm.finance.totalBudget')}</Text>
+            <Text style={styles.tileHero}>{money(totals.totalBudget)}</Text>
+            <Text style={styles.tileFoot}>
+              {t('pm.finance.acrossProjects', { count: String(totals.included) })}
+            </Text>
+          </Pressable>
+
+          <View style={styles.bentoColumn}>
+            <Pressable
+              testID="tile-committed"
+              accessibilityRole="button"
+              accessibilityLabel={t('pm.finance.commitCosts')}
+              onPress={() => router.push('/orders')}
+              style={[styles.tile, { borderLeftColor: p.warning }]}
+            >
+              <MaterialIcons
+                name="chevron-right"
+                size={16}
+                color={p.muted}
+                style={styles.tileChevron}
+              />
+              <Text style={styles.tileLabel}>{t('pm.finance.commitCosts')}</Text>
+              <View style={styles.tileRow}>
+                <Text style={styles.tileValue}>{money(totals.committed)}</Text>
+                <Text style={[styles.tileShare, { color: p.warning }]}>
+                  {share(totals.committed)}
+                </Text>
+              </View>
+            </Pressable>
+            <Pressable
+              testID="tile-actual"
+              accessibilityRole="button"
+              accessibilityLabel={t('pm.finance.actualSpent')}
+              onPress={() => router.push('/invoices')}
+              style={[styles.tile, { borderLeftColor: p.success }]}
+            >
+              <MaterialIcons
+                name="chevron-right"
+                size={16}
+                color={p.muted}
+                style={styles.tileChevron}
+              />
+              <Text style={styles.tileLabel}>{t('pm.finance.actualSpent')}</Text>
+              <View style={styles.tileRow}>
+                <Text style={styles.tileValue}>{money(totals.actual)}</Text>
+                <Text style={[styles.tileShare, { color: p.success }]}>{share(totals.actual)}</Text>
+              </View>
+            </Pressable>
+          </View>
         </View>
 
-        <View style={styles.bentoColumn}>
-          <View testID="tile-committed" style={[styles.tile, { borderLeftColor: p.warning }]}>
-            <Text style={styles.tileLabel}>{t('pm.finance.commitCosts')}</Text>
-            <View style={styles.tileRow}>
-              <Text style={styles.tileValue}>{money(totals.committed)}</Text>
-              <Text style={[styles.tileShare, { color: p.warning }]}>
-                {share(totals.committed)}
-              </Text>
-            </View>
-          </View>
-          <View testID="tile-actual" style={[styles.tile, { borderLeftColor: p.success }]}>
-            <Text style={styles.tileLabel}>{t('pm.finance.actualSpent')}</Text>
-            <View style={styles.tileRow}>
-              <Text style={styles.tileValue}>{money(totals.actual)}</Text>
-              <Text style={[styles.tileShare, { color: p.success }]}>{share(totals.actual)}</Text>
-            </View>
-          </View>
-        </View>
-      </View>
-
-      {/* Only shown when it is true: some project is budgeted in another currency and is therefore
+        {/* Only shown when it is true: some project is budgeted in another currency and is therefore
           NOT in the figures above. Silence here would let three tiles stand for a portfolio they do
           not cover. */}
-      {totals.excluded > 0 ? (
-        <Text testID="finance-mixed-currency" style={styles.notice}>
-          {t('pm.finance.otherCurrencies', { count: String(totals.excluded) })}
+        {totals.excluded > 0 ? (
+          <Text testID="finance-mixed-currency" style={styles.notice}>
+            {t('pm.finance.otherCurrencies', { count: String(totals.excluded) })}
+          </Text>
+        ) : null}
+
+        <ProjectPicker selectedId={insightProject} onSelect={setInsightProject} />
+        {/* No "Review Adjustments" button (PO decision 2026-08-10, reversing the request that added
+          it): there is no budget-adjustment screen, and editing a budget is `POST /finance/budget/
+          :id`, which §6.4 gives FINANCE and TENANT_ADMIN only — this role could not act on one if it
+          existed. The panel's own GENERATE REPORT carries the chevron instead. */}
+        <PortfolioInsight projectId={insightProject} />
+
+        <Text style={styles.sectionTitle} onLayout={(e) => setHealthY(e.nativeEvent.layout.y)}>
+          {t('pm.finance.activeProjectsHealth')}
         </Text>
-      ) : null}
 
-      <ProjectPicker selectedId={insightProject} onSelect={setInsightProject} />
-      <PortfolioInsight
-        projectId={insightProject}
-        followUp={{
-          labelKey: 'pm.finance.reviewAdjustments',
-          // The drawing's "Review Adjustments ›". There is no budget-adjustment screen: editing a
-          // budget is `POST /finance/budget/:id`, which §6.4 gives FINANCE and TENANT_ADMIN only, so
-          // this role could not act on one if it existed. Drawn and honest about it, the same way
-          // the Support Centre's search and the approval cards' detail view are.
-          onPress: () => Alert.alert(t('pm.finance.reviewAdjustments'), t('more.comingSoon')),
-        }}
-      />
+        {!loading && failed ? (
+          <Text testID="finance-failed" style={styles.notice}>
+            {t('pm.finance.loadFailed')}
+          </Text>
+        ) : null}
 
-      <Text style={styles.sectionTitle}>{t('pm.finance.activeProjectsHealth')}</Text>
+        {!loading && !failed && rows.length === 0 ? (
+          <Text testID="finance-empty" style={styles.notice}>
+            {t('pm.finance.noBudgets')}
+          </Text>
+        ) : null}
 
-      {!loading && failed ? (
-        <Text testID="finance-failed" style={styles.notice}>
-          {t('pm.finance.loadFailed')}
-        </Text>
-      ) : null}
+        {rows.map((row) => {
+          const health = budgetHealth(row.actual, row.totalBudget);
+          const colour = healthColor(health);
+          return (
+            <Pressable
+              key={row.projectId}
+              testID={`finance-project-${row.projectId}`}
+              accessibilityRole="button"
+              accessibilityLabel={row.projectName}
+              // The manager analytics for THIS project — `/dashboard` now takes the id, so the card
+              // opens the project it names instead of a picker.
+              onPress={() =>
+                router.push({ pathname: '/dashboard', params: { projectId: row.projectId } })
+              }
+              style={[styles.card, { borderLeftColor: colour }]}
+            >
+              <View style={styles.cardHead}>
+                <View style={styles.cardTitleBlock}>
+                  <Text style={styles.cardTitle} numberOfLines={1}>
+                    {row.projectName}
+                  </Text>
+                  <Text style={styles.cardCode}>{row.projectCode}</Text>
+                </View>
+                <View style={[styles.badge, { borderColor: colour }]}>
+                  <Text style={[styles.badgeText, { color: colour }]}>{t(HEALTH_KEY[health])}</Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={20} color={p.muted} />
+              </View>
 
-      {!loading && !failed && rows.length === 0 ? (
-        <Text testID="finance-empty" style={styles.notice}>
-          {t('pm.finance.noBudgets')}
-        </Text>
-      ) : null}
-
-      {rows.map((row) => {
-        const health = budgetHealth(row.actual, row.totalBudget);
-        const colour = healthColor(health);
-        return (
-          <Pressable
-            key={row.projectId}
-            testID={`finance-project-${row.projectId}`}
-            accessibilityRole="button"
-            accessibilityLabel={row.projectName}
-            // The manager analytics for THIS project — `/dashboard` now takes the id, so the card
-            // opens the project it names instead of a picker.
-            onPress={() =>
-              router.push({ pathname: '/dashboard', params: { projectId: row.projectId } })
-            }
-            style={[styles.card, { borderLeftColor: colour }]}
-          >
-            <View style={styles.cardHead}>
-              <View style={styles.cardTitleBlock}>
-                <Text style={styles.cardTitle} numberOfLines={1}>
-                  {row.projectName}
+              <View style={styles.figures}>
+                <Text style={styles.figure}>
+                  {t('pm.finance.actualFigure', { value: money(row.actual) })}
                 </Text>
-                <Text style={styles.cardCode}>{row.projectCode}</Text>
+                <Text style={styles.figure}>
+                  {t('pm.finance.budgetFigure', { value: money(row.totalBudget) })}
+                </Text>
               </View>
-              <View style={[styles.badge, { borderColor: colour }]}>
-                <Text style={[styles.badgeText, { color: colour }]}>{t(HEALTH_KEY[health])}</Text>
+
+              <View style={styles.track}>
+                <View
+                  testID={`finance-bar-${row.projectId}`}
+                  style={[
+                    styles.fill,
+                    {
+                      backgroundColor: colour,
+                      // `999` is the documented full-width marker used across this app's bars; the
+                      // fraction is clamped at 1 in budgetFraction so an overrun cannot draw past the
+                      // track — the badge already says it is over.
+                      width: `${budgetFraction(row.actual, row.totalBudget) * 100}%`,
+                    },
+                  ]}
+                />
               </View>
-              <MaterialIcons name="chevron-right" size={20} color={p.muted} />
-            </View>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
 
-            <View style={styles.figures}>
-              <Text style={styles.figure}>
-                {t('pm.finance.actualFigure', { value: money(row.actual) })}
-              </Text>
-              <Text style={styles.figure}>
-                {t('pm.finance.budgetFigure', { value: money(row.totalBudget) })}
-              </Text>
-            </View>
-
-            <View style={styles.track}>
-              <View
-                testID={`finance-bar-${row.projectId}`}
-                style={[
-                  styles.fill,
-                  {
-                    backgroundColor: colour,
-                    // `999` is the documented full-width marker used across this app's bars; the
-                    // fraction is clamped at 1 in budgetFraction so an overrun cannot draw past the
-                    // track — the badge already says it is over.
-                    width: `${budgetFraction(row.actual, row.totalBudget) * 100}%`,
-                  },
-                ]}
-              />
-            </View>
-          </Pressable>
-        );
-      })}
-
+      {/* The drawing's round floating action button. It creates a PURCHASE REQUEST — §6.4 gives
+          PROJECT_MANAGER `RW` there and it is the one thing this role may create that starts the
+          spend this dashboard measures. A budget action would be `POST /finance/budget/:id`, which
+          the role does not hold, so a "+" wired to that would have one outcome: 403. */}
       <Pressable
         testID="finance-fab"
         accessibilityRole="button"
@@ -324,21 +362,17 @@ export default function FinanceScreen(): React.JSX.Element {
         onPress={() => router.push('/material-request')}
         style={styles.fab}
       >
-        <MaterialIcons name="add" size={26} color={p.onPrimary} />
-        <Text style={styles.fabText}>{t('pm.finance.newRequest')}</Text>
+        <MaterialIcons name="add" size={28} color={p.onPrimary} />
       </Pressable>
-
-      <View style={styles.footNote}>
-        <MaterialIcons name="info-outline" size={14} color={p.muted} />
-        <Text style={styles.footNoteText}>{t('pm.finance.sourceNote')}</Text>
-      </View>
-    </ScrollView>
+    </View>
   );
 }
 
 const makeStyles = (p: Palette) =>
   StyleSheet.create({
-    page: { padding: spacing.md, gap: spacing.md },
+    root: { flex: 1, backgroundColor: p.bg },
+    // The list scrolls under the FAB, so the last card needs room or the button sits on its figures.
+    page: { padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xl * 3 },
 
     sectionTitle: {
       color: p.muted,
@@ -350,6 +384,7 @@ const makeStyles = (p: Palette) =>
 
     bento: { flexDirection: 'row', gap: spacing.sm },
     bentoColumn: { flex: 1, gap: spacing.sm },
+    tileChevron: { position: 'absolute', top: spacing.xs, right: spacing.xs },
     tile: {
       flex: 1,
       justifyContent: 'center',
@@ -448,29 +483,21 @@ const makeStyles = (p: Palette) =>
     },
     fill: { height: '100%', borderRadius: 999 },
 
-    // Drawn INLINE at the end of the list, not floating over it. A floating FAB on a scrolling
-    // dashboard covers the last card's figures, and this screen's last rows are money.
     fab: {
-      flexDirection: 'row',
+      position: 'absolute',
+      right: spacing.md,
+      bottom: spacing.lg,
+      width: touchTarget.primaryButton,
+      height: touchTarget.primaryButton,
+      borderRadius: 999,
       alignItems: 'center',
       justifyContent: 'center',
-      gap: spacing.xs,
-      minHeight: touchTarget.primaryButton,
-      borderRadius: radius.xl,
       backgroundColor: p.primary,
-    },
-    fabText: {
-      color: p.onPrimary,
-      fontFamily: fontFamily.semibold,
-      fontSize: typography.label.fontSize,
-      letterSpacing: 0.5,
-      textTransform: 'uppercase',
-    },
-    footNote: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-    footNoteText: {
-      flex: 1,
-      color: p.muted,
-      fontFamily: fontFamily.regular,
-      fontSize: typography.label.fontSize,
+      // Android draws shadows from elevation only; iOS from the shadow props.
+      elevation: 6,
+      shadowColor: '#000',
+      shadowOpacity: 0.3,
+      shadowRadius: 6,
+      shadowOffset: { width: 0, height: 3 },
     },
   });

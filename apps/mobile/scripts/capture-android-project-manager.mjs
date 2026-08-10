@@ -220,7 +220,7 @@ async function main() {
   // Asserts the two rows the product owner made shared (2026-08-10) — if either stops rendering,
   // this run fails instead of photographing a drawer that quietly lost them.
   await find(byId('drawer-link-/account-settings'), 'Settings row');
-  await find(byId('drawer-link-/support'), 'Support Centre row');
+  await find(byId('drawer-link-/support'), 'Support Center row');
   await delay(1200);
   await stitchFull('05-Drawer/01-drawer');
   adb('shell', 'input', 'keyevent', '4'); // hardware BACK closes the drawer

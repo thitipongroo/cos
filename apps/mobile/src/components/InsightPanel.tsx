@@ -105,6 +105,11 @@ export function InsightPanel({
 
   return (
     <View testID={testID} style={styles.panel}>
+      {/* The drawing's card shape: the ordinary card border, a 6px accent strip down the left edge
+          and a 5%-accent wash over the surface — not an accent-coloured border on all four sides,
+          which is what this was and which made the panel shout louder than the money beside it. */}
+      <View style={styles.accentStrip} />
+      <View style={styles.tint} pointerEvents="none" />
       <View style={styles.head}>
         <View style={styles.eyebrowRow}>
           <MaterialIcons name="psychology" size={18} color={p.accent} />
@@ -168,6 +173,7 @@ export function InsightPanel({
         style={[styles.action, (loading || projectId === '') && styles.actionDisabled]}
       >
         <Text style={styles.actionText}>{t('insight.action')}</Text>
+        <MaterialIcons name="chevron-right" size={18} color={p.primary} />
       </Pressable>
 
       {followUp !== undefined ? (
@@ -190,11 +196,29 @@ const makeStyles = (p: Palette) =>
   StyleSheet.create({
     panel: {
       borderWidth: 1,
-      borderColor: p.accent,
+      borderColor: p.border,
       borderRadius: radius.lg,
       backgroundColor: p.surface,
       padding: spacing.md,
+      paddingLeft: spacing.md + 6,
       gap: spacing.sm,
+      overflow: 'hidden',
+    },
+    accentStrip: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      bottom: 0,
+      width: 6,
+      backgroundColor: p.accent,
+    },
+    tint: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: `${p.accent}0D`,
     },
     head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     eyebrowRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
@@ -232,6 +256,8 @@ const makeStyles = (p: Palette) =>
       fontSize: typography.label.fontSize,
     },
     action: {
+      flexDirection: 'row',
+      gap: spacing.xs / 2,
       minHeight: touchTarget.secondaryButton,
       borderRadius: radius.md,
       borderWidth: 1,
