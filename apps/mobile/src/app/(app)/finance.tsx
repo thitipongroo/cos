@@ -159,18 +159,52 @@ export default function FinanceScreen(): React.JSX.Element {
     (amount: Parameters<typeof compactMoney>[0]): string => {
       const { text, scale } = compactMoney(amount, currency);
       const key = SCALE_KEY[scale];
-      return key === null ? text : `${text}${t(key)}`;
+      // `฿ 805` + a gap + the localised magnitude — `฿ 805 M`, the project standard (PO
+      // 2026-08-10). Thai's suffixes already carry their own leading space in the message file, so
+      // the gap is added only where the key has none.
+      if (key === null) return text;
+      const suffix = t(key);
+      return `${text}${suffix.startsWith(' ') ? '' : ' '}${suffix}`;
     },
     [currency, t],
   );
 
+  /**
+   * The small figure beside each tile's amount: "6.4%", a gap, then a 14px glyph.
+   *
+   * FIGURE FIRST, GLYPH RIGHT — the order the Home tiles already use (PO decision 2026-08-10). The
+   * drawing puts the glyph first here and the figure first there; one product should not read both
+   * ways, and the number is what the eye is looking for.
+   *
+   * THE GLYPH IS A PROPORTION MARK, NOT THE DRAWING'S ARROW. The mockup pairs this slot with
+   * `trending_up` / `trending_down` because it is showing a change against a previous period —
+   * which this product cannot compute (`project_budgets` keeps no history, see `shareOfBudget`).
+   * An arrow beside a share of budget would state a direction nothing measured. `donut-small` is
+   * the part-of-a-whole glyph, which is what the number actually is.
+   */
   const share = useCallback(
-    (part: Parameters<typeof shareOfBudget>[0]): string => {
+    (part: Parameters<typeof shareOfBudget>[0]): { text: string; a11y: string } | null => {
       const pct = shareOfBudget(part, totals.totalBudget);
-      return pct === null ? '—' : t('pm.finance.shareOfBudget', { percent: String(pct) });
+      if (pct === null) return null;
+      return {
+        text: t('pm.finance.shareOfBudget', { percent: String(pct) }),
+        // The words the tile no longer prints still reach a screen reader.
+        a11y: t('pm.finance.shareOfBudgetLong', { percent: String(pct) }),
+      };
     },
     [totals.totalBudget, t],
   );
+
+  const shareRow = (part: Parameters<typeof shareOfBudget>[0], tone: string): React.JSX.Element => {
+    const value = share(part);
+    if (value === null) return <Text style={[styles.tileShare, { color: tone }]}>—</Text>;
+    return (
+      <View style={styles.shareRow} accessibilityLabel={value.a11y}>
+        <Text style={[styles.tileShare, { color: tone }]}>{value.text}</Text>
+        <MaterialIcons name="donut-small" size={14} color={tone} />
+      </View>
+    );
+  };
 
   const healthColor = (health: BudgetHealth): string =>
     health === 'OVERRUN'
@@ -234,9 +268,7 @@ export default function FinanceScreen(): React.JSX.Element {
               <Text style={styles.tileLabel}>{t('pm.finance.commitCosts')}</Text>
               <View style={styles.tileRow}>
                 <Text style={styles.tileValue}>{money(totals.committed)}</Text>
-                <Text style={[styles.tileShare, { color: p.warning }]}>
-                  {share(totals.committed)}
-                </Text>
+                {shareRow(totals.committed, p.warning)}
               </View>
             </Pressable>
             <Pressable
@@ -255,7 +287,7 @@ export default function FinanceScreen(): React.JSX.Element {
               <Text style={styles.tileLabel}>{t('pm.finance.actualSpent')}</Text>
               <View style={styles.tileRow}>
                 <Text style={styles.tileValue}>{money(totals.actual)}</Text>
-                <Text style={[styles.tileShare, { color: p.success }]}>{share(totals.actual)}</Text>
+                {shareRow(totals.actual, p.success)}
               </View>
             </Pressable>
           </View>
@@ -425,7 +457,9 @@ const makeStyles = (p: Palette) =>
       fontFamily: fontFamily.semibold,
       fontSize: typography.caption.fontSize,
     },
-    tileShare: { fontFamily: fontFamily.medium, fontSize: 10 },
+    // The drawing's `font-tiny-web`: 11px, medium, slight tracking.
+    shareRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+    tileShare: { fontFamily: fontFamily.medium, fontSize: 11, letterSpacing: 0.3 },
 
     notice: {
       color: p.muted,

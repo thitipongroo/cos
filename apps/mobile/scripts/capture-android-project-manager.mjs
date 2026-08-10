@@ -46,8 +46,12 @@ const OTP_PHONE = process.env['E2E_OTP_PHONE'] ?? '0811000003';
 const OTP_CODE = process.env['E2E_TEST_OTP'] ?? '123456';
 
 // Fixed bands on the Medium_Phone AVD (1080×2400), the values the sibling scripts document: rows
-// 0..199 are the status bar + TopBar, and 2196 is the top of the bottom nav. These screens pin
-// nothing else — no FAB on a manager Home — so everything between the two scrolls.
+// 0..199 are the status bar + TopBar, and 2196 is the top of the bottom nav.
+//
+// The Finance tab additionally pins a FAB, which those two bands do not cover — it floats INSIDE
+// the scrolling region, so it lands in every shot and the first stitch of that page came out with
+// three "+" buttons. Its bounds are measured from the view hierarchy and passed to the stitcher's
+// `--fab`, which erases it from the content and draws it once.
 const TOP = 200;
 const BOT = 2196;
 
@@ -83,6 +87,14 @@ async function find(pred, what, tries = 30) {
     await delay(1000);
   }
   throw new Error(`capture: ${what} never appeared`);
+}
+
+/** A node's exact rectangle, for handing a floating overlay's bounds to the stitcher. */
+async function boundsOf(pred, what) {
+  const node = (await dump()).find((n) => pred(n) && n.includes('bounds='));
+  if (!node) throw new Error(`capture: ${what} never appeared`);
+  const m = /bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/.exec(node);
+  return [+m[1], +m[2], +m[3], +m[4]];
 }
 
 const byId = (id) => (n) => n.includes(`resource-id="${id}"`);
@@ -125,7 +137,7 @@ function grab(path) {
 }
 
 /** Rewind, shoot descending viewports, stitch ONE full-page PNG (docs/screens/android/README.md). */
-async function stitchFull(name) {
+async function stitchFull(name, fab) {
   const dest = join(OUT, `${name}.png`);
   mkdirSync(dirname(dest), { recursive: true });
   for (let i = 0; i < 6; i++) {
@@ -143,13 +155,22 @@ async function stitchFull(name) {
       await delay(1200);
     }
   }
+  // A FAB is fixed to the viewport but sits inside the scrolling band, so it lands in every shot.
+  // Its measured bounds go to the stitcher, which erases it from the content and draws it once.
+  const fabArgs = fab === undefined ? [] : ['--fab', fab.join(',')];
   process.stdout.write(
-    execFileSync('python', [STITCH, dest, String(TOP), String(BOT), ...shots], {
+    execFileSync('python', [STITCH, dest, String(TOP), String(BOT), ...fabArgs, ...shots], {
       encoding: 'utf-8',
     }),
   );
   console.log(`  stitched ${name}.png`);
 }
+
+// Which screens to shoot. `node scripts/capture-android-project-manager.mjs finance home` re-shoots
+// just those two — a re-capture after a change should touch only the pages that changed, so the
+// others keep the timestamp of the run that actually produced them.
+const ONLY = new Set(process.argv.slice(2));
+const wanted = (key) => ONLY.size === 0 || ONLY.has(key);
 
 async function main() {
   mkdirSync(OUT, { recursive: true });
@@ -184,54 +205,67 @@ async function main() {
   // the session and never retried. The SCREEN was fixed for that (it now says a load failed instead
   // of claiming an empty portfolio, and retries when the tab is focused again); this ordering is
   // what makes the screenshot document the dashboard rather than that race.
-  console.log('· Procurement tab');
-  await tap(byId('procurement-tab'), 'Procurement tab');
-  await find(byId('procurement-screen'), 'procurement-screen', 20);
-  await delay(2500);
-  await stitchFull('02-Procurement/01-procurement');
+  if (wanted('procurement')) {
+    console.log('· Procurement tab');
+    await tap(byId('procurement-tab'), 'Procurement tab');
+    await find(byId('procurement-screen'), 'procurement-screen', 20);
+    await delay(2500);
+    await stitchFull('02-Procurement/01-procurement');
+  }
 
-  console.log('· Finance tab');
-  await tap(byId('finance-tab'), 'Finance tab');
-  await find(byId('finance-screen'), 'finance-screen', 20);
-  // One budget request per project, all in flight at once — wait for the slowest before shooting,
-  // or the portfolio tiles are photographed showing fewer projects than the manager has.
-  await delay(4000);
-  await stitchFull('03-Finance/01-finance');
+  if (wanted('finance')) {
+    console.log('· Finance tab');
+    await tap(byId('finance-tab'), 'Finance tab');
+    await find(byId('finance-screen'), 'finance-screen', 20);
+    // One budget request per project, all in flight at once — wait for the slowest before shooting,
+    // or the portfolio tiles are photographed showing fewer projects than the manager has.
+    await delay(4000);
+    // Measured, not hardcoded: the button's own bounds from the live view hierarchy.
+    await stitchFull('03-Finance/01-finance', await boundsOf(byId('finance-fab'), 'Finance FAB'));
+  }
 
-  console.log('· More tab');
-  await tap(byId('more-tab'), 'More tab');
-  await find(byId('more-screen'), 'more-screen', 20);
-  await delay(1500);
-  await stitchFull('04-More/01-more');
+  if (wanted('more')) {
+    console.log('· More tab');
+    await tap(byId('more-tab'), 'More tab');
+    await find(byId('more-screen'), 'more-screen', 20);
+    await delay(1500);
+    await stitchFull('04-More/01-more');
+  }
 
-  console.log('· Vendors (pushed from the More menu)');
-  await tap(byId('more-contractors'), 'contractors tile');
-  await find(byId('vendors-screen'), 'vendors-screen', 20);
-  // The per-vendor scorecards arrive after the list; wait for them so the cards are not captured
-  // with their score slot still empty.
-  await delay(4000);
-  await stitchFull('04-More/02-vendors');
+  if (wanted('vendors')) {
+    console.log('· Vendors (pushed from the More menu)');
+    await tap(byId('more-contractors'), 'contractors tile');
+    await find(byId('vendors-screen'), 'vendors-screen', 20);
+    // The per-vendor scorecards arrive after the list; wait for them so the cards are not captured
+    // with their score slot still empty.
+    await delay(4000);
+    await stitchFull('04-More/02-vendors');
+  }
 
-  console.log('· Navigation drawer');
-  await tap(byId('more-tab'), 'More tab');
-  await find(byId('more-screen'), 'more-screen', 20);
-  await tap(byId('drawer-menu-button'), 'top-bar hamburger');
-  await find(byId('drawer-profile-card'), 'drawer profile card');
-  // Asserts the two rows the product owner made shared (2026-08-10) — if either stops rendering,
-  // this run fails instead of photographing a drawer that quietly lost them.
-  await find(byId('drawer-link-/account-settings'), 'Settings row');
-  await find(byId('drawer-link-/support'), 'Support Center row');
-  await delay(1200);
-  await stitchFull('05-Drawer/01-drawer');
-  adb('shell', 'input', 'keyevent', '4'); // hardware BACK closes the drawer
-  await delay(1200);
+  if (wanted('drawer')) {
+    console.log('· Navigation drawer');
+    await tap(byId('more-tab'), 'More tab');
+    await find(byId('more-screen'), 'more-screen', 20);
+    await tap(byId('drawer-menu-button'), 'top-bar hamburger');
+    await find(byId('drawer-profile-card'), 'drawer profile card');
+    // Asserts the two rows the product owner made shared (2026-08-10) — if either stops rendering,
+    // this run fails instead of photographing a drawer that quietly lost them.
+    await find(byId('drawer-link-/account-settings'), 'Settings row');
+    await find(byId('drawer-link-/support'), 'Support Center row');
+    await delay(1200);
+    await stitchFull('05-Drawer/01-drawer');
+    adb('shell', 'input', 'keyevent', '4'); // hardware BACK closes the drawer
+    await delay(1200);
+  }
 
-  console.log('· Home tab (last — see the note above)');
-  await tap(byId('home-tab'), 'Home tab');
-  await find(byId('home-screen'), 'manager Home', 20);
-  // Three requests per project, all in flight at once, plus the issues query.
-  await delay(6000);
-  await stitchFull('01-Home/01-dashboard');
+  if (wanted('home')) {
+    console.log('· Home tab (last — see the note above)');
+    await tap(byId('home-tab'), 'Home tab');
+    await find(byId('home-screen'), 'manager Home', 20);
+    // Three requests per project, all in flight at once, plus the issues query.
+    await delay(6000);
+    await stitchFull('01-Home/01-dashboard');
+  }
 
   console.log(`\nDone → ${OUT}`);
 }

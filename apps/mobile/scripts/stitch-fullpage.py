@@ -4,15 +4,33 @@
 # (rows TOP:BOT) is de-duplicated PAIRWISE: for each next shot, find how far the content scrolled vs the
 # previous shot by matching a large fixed top window (robust against the repeating grid/cards), then
 # append only the newly revealed rows.
-# Usage: python stitch-fullpage.py OUT.png TOP BOT shot0.png shot1.png ...
+#
+# A FLOATING OVERLAY (a FAB) is fixed to the viewport but sits INSIDE the scrolling band, so it is
+# not covered by the TOP/BOT rule and it lands in every shot — the Finance dashboard's first stitch
+# came out with three "+" buttons down the page. Pass `--fab X0,Y0,X1,Y1` (viewport pixels, from
+# uiautomator) and it is treated the same way the nav is: erased from the scrolling content and
+# drawn ONCE over the finished page.
+#
+# Erased, not painted over: the page behind the button is genuinely visible in the NEXT shot, at
+# `y - scroll`, because the button is fixed and the content moved. So the repair copies real pixels
+# from a real screenshot rather than inventing background.
+#
+# Usage: python stitch-fullpage.py OUT.png TOP BOT [--fab X0,Y0,X1,Y1] shot0.png shot1.png ...
 import sys
 import numpy as np
 from PIL import Image
 
-out_path = sys.argv[1]
-TOP = int(sys.argv[2])
-BOT = int(sys.argv[3])
-shot_paths = sys.argv[4:]
+argv = sys.argv[1:]
+fab = None
+if '--fab' in argv:
+    i = argv.index('--fab')
+    fab = tuple(int(v) for v in argv[i + 1].split(','))
+    del argv[i:i + 2]
+
+out_path = argv[0]
+TOP = int(argv[1])
+BOT = int(argv[2])
+shot_paths = argv[3:]
 
 shots = [np.asarray(Image.open(p).convert('RGB')) for p in shot_paths]
 H, W = shots[0].shape[:2]
@@ -28,14 +46,9 @@ WIN = content_h - MAX_SCROLL          # fixed comparison window (rows), large �
 def cont(s): return s[TOP:BOT]
 def gray_ds(a): return a.mean(axis=2)[::3, ::4]
 
-prev = cont(shots[0])
-base = prev.copy()
-prev_g = gray_ds(prev)
-win_rows = WIN // 3                    # window height in downsampled rows
-for idx, s in enumerate(shots[1:], 1):
-    c = cont(s)
-    c_g = gray_ds(c)
-    top_win = c_g[:win_rows]           # top WIN rows of the new shot (downsampled)
+def measure(prev_g, c_g):
+    """How far the page scrolled between two shots, in pixels (0 = did not move)."""
+    top_win = c_g[:win_rows]
     best_scroll, best_sad = 0, None
     for scroll in range(0, MAX_SCROLL + 1, 3):
         sr = scroll // 3
@@ -45,6 +58,58 @@ for idx, s in enumerate(shots[1:], 1):
         sad = np.abs(seg - top_win).mean()
         if best_sad is None or sad < best_sad:
             best_sad, best_scroll = sad, scroll
+    return best_scroll, best_sad
+
+
+win_rows = WIN // 3                    # window height in downsampled rows
+
+if fab is not None:
+    x0, y0, x1, y1 = fab
+    grays = [gray_ds(cont(s)) for s in shots]
+    scrolls = [0] + [measure(grays[i - 1], grays[i])[0] for i in range(1, len(shots))]
+    # The LAST shot that actually contributes rows keeps its button — that is the one that ends up
+    # at the bottom of the stitched page, which is where a floating button belongs. Every earlier
+    # contributor is repaired from its successor.
+    #
+    # Not the other way round (repair everything, then paste the button back): the page behind the
+    # button in that last shot is genuinely never photographed. The view is already at the bottom,
+    # so no scroll ever moves that content out from under it, and no screenshot contains those
+    # pixels. Repairing there would mean inventing them.
+    fab_h = y1 - y0
+    repaired = 0
+    for i in range(len(shots)):
+        # ROW BY ROW, and from ANY later shot — not just the next one. A trailing scroll step can be
+        # SHORTER than the button (75px against a 115px button), in which case the immediate
+        # successor's own button still covers part of the same band; the rows it cannot supply are
+        # taken from the shot after that, and so on. Skipping the whole rectangle when the next step
+        # was short is what left a crescent of a second button under the first.
+        shot = shots[i].copy()
+        fixed_rows = 0
+        for row in range(y0, y1):
+            total = 0
+            for j in range(i + 1, len(shots)):
+                total += scrolls[j]
+                src = row - total
+                # The row must be on-screen in shot j and not behind shot j's own button.
+                if src < TOP:
+                    break
+                if y0 <= src < y1:
+                    continue
+                shot[row, x0:x1] = shots[j][src, x0:x1]
+                fixed_rows += 1
+                break
+        shots[i] = shot
+        if fixed_rows:
+            repaired += 1
+    print(f"  fab: erased from {repaired} shot(s); drawn once from the bottom-of-page shot")
+
+prev = cont(shots[0])
+base = prev.copy()
+prev_g = gray_ds(prev)
+for idx, s in enumerate(shots[1:], 1):
+    c = cont(s)
+    c_g = gray_ds(c)
+    best_scroll, best_sad = measure(prev_g, c_g)
     if best_scroll < 8:
         print(f"  shot {idx}: bottom reached (scroll~{best_scroll}, sad={best_sad:.1f}) — skip")
         prev, prev_g = c, c_g
@@ -66,5 +131,21 @@ for idx, s in enumerate(shots[1:], 1):
     prev, prev_g = c, c_g
 
 final = np.vstack([top_bar, base, bottom_nav])
+
+# The button, drawn ONCE, from the bottom-of-page shot — with the band directly above it, which in
+# that shot is plain page background.
+#
+# The band is why this is a paste and not just an erase. The last scroll step can be SHORTER than the
+# button (87px against 115px on this page), so a few of its rows are behind a button in every single
+# screenshot and exist nowhere to be copied from. Painting the real background from above the button
+# over that band covers the leftover crescent with pixels that were genuinely photographed.
+if fab is not None:
+    x0, y0, x1, y1 = fab
+    pad = min(fab_h, y0 - TOP)
+    patch = shots[-1][y0 - pad:y1, x0:x1]
+    gap = BOT - y1                      # the button's clearance above the nav, as on the device
+    fy1 = final.shape[0] - (H - BOT) - gap
+    final[fy1 - patch.shape[0]:fy1, x0:x1] = patch
+    print(f"  fab: composited at rows {fy1 - patch.shape[0]}:{fy1}")
 Image.fromarray(final).save(out_path)
 print(f"stitched {len(shots)} shots -> {out_path}  {final.shape[1]}x{final.shape[0]}")

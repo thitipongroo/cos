@@ -21,7 +21,14 @@ import { Decimal, currencySymbol, formatMoney, toDecimal } from '@cos/financial'
 export type MoneyScale = 'none' | 'million' | 'billion';
 
 export interface CompactMoney {
-  /** Currency symbol + the scaled figure, e.g. `฿1.24`. No suffix — see `scale`. */
+  /**
+   * Currency symbol, a thin gap, then the scaled figure — `฿ 1.24`.
+   *
+   * THE SPACE IS THE PROJECT STANDARD (PO decision 2026-08-10): `฿ 805 M`, not `฿805M`. Three
+   * glyph classes run together — a currency mark, digits and a magnitude letter — and jammed up
+   * they read as one token; spaced, the eye takes the amount in one jump. The screen adds the
+   * second gap before the localised suffix.
+   */
   text: string;
   scale: MoneyScale;
 }
@@ -45,6 +52,8 @@ export function compactMoney(amount: Decimal | string | number, currency = 'THB'
   const magnitude = value.abs();
 
   if (magnitude.lessThan(MILLION)) {
+    // Unscaled amounts keep `formatMoney`'s exact output — that is the invoice format, and an
+    // amount someone acts on must read the same everywhere it appears.
     return { text: formatMoney(value, currency), scale: 'none' };
   }
 
@@ -61,5 +70,9 @@ export function compactMoney(amount: Decimal | string | number, currency = 'THB'
 
   // Sign in front of the symbol, matching `formatMoney` — that is how a credit reads in accounting.
   const sign = scaled.isNegative() ? '-' : '';
-  return { text: `${sign}${currencySymbol(currency)}${scaled.abs().toString()}`, scale };
+  // An unrecognised code already ends in a space (`formatMoney` prints "XAF 1,234.50"), so it must
+  // not gain a second one.
+  const symbol = currencySymbol(currency);
+  const gap = symbol.endsWith(' ') ? '' : ' ';
+  return { text: `${sign}${symbol}${gap}${scaled.abs().toString()}`, scale };
 }

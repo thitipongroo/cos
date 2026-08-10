@@ -171,5 +171,7 @@ export function shareOfBudget(
   const denominator = budget instanceof Decimal ? budget : toDecimal(budget);
   if (!denominator.isFinite() || denominator.lessThanOrEqualTo(0)) return null;
   if (!numerator.isFinite()) return null;
-  return numerator.dividedBy(denominator).times(100).toDecimalPlaces(0).toNumber();
+  // ONE DECIMAL, the drawing's own format for this slot ("4.2%", "1.1%") — PO 2026-08-10. A whole
+  // percent hides movement on a portfolio this size: one point of ฿805M is ฿8M.
+  return numerator.dividedBy(denominator).times(100).toDecimalPlaces(1).toNumber();
 }

@@ -22,6 +22,13 @@ const STATUS_COLOR: Record<string, string> = {
   CRITICAL: colors.danger,
   CONFLICT: colors.danger,
   HIGH: colors.danger,
+  // project lifecycle (`ProjectStatus`) — ADDITIVE: every one of these fell through to the neutral
+  // default before, so `/portfolio` showed a running project the same grey as a cancelled one. The
+  // tones come from lib/projectStatusTone.ts, which the manager Home reads for the same chips.
+  ACTIVE: colors.success,
+  COMPLETED: colors.success,
+  ON_HOLD: colors.warning,
+  CANCELLED: colors.textSecondary,
   // neutral
   NOT_STARTED: colors.textSecondary,
   DRAFT: colors.textSecondary,

@@ -66,6 +66,7 @@ import {
   type ActiveIssue,
   type ProjectPhase,
 } from '../../lib/siteEngineerHome';
+import { projectStatusTone } from '../../lib/projectStatusTone';
 import {
   portfolioTotals,
   portfolioVariance,
@@ -817,23 +818,20 @@ function PmHome() {
               <MaterialIcons name="chevron-right" size={16} color={p.muted} />
             </View>
             <View style={styles.pmTileFoot}>
-              <Text style={styles.pmTileValue}>{String(activeCount).padStart(2, '0')}</Text>
+              <Text style={styles.pmTileValue}>{String(activeCount)}</Text>
               <MaterialIcons name="corporate-fare" size={20} color={p.primary} />
             </View>
           </Pressable>
 
-          <Pressable
+          {/* NO chevron here, and therefore no press (PO decision 2026-08-10). The two go together:
+              the rule this screen follows is that a chevron marks a card that opens something, so a
+              card that navigates without one is the same defect read from the other side. */}
+          <View
             testID="kpi-total-variance"
-            accessibilityRole="button"
-            accessibilityLabel={t('home.pm.totalVariance')}
-            // The figure is summed from the same per-project budgets the Finance tab breaks down,
-            // so that tab is where "why is it that number" is answered.
-            onPress={() => router.push('/finance')}
             style={[styles.pmTile, { borderLeftColor: varianceAlerting ? p.danger : p.success }]}
           >
             <View style={styles.pmTileHead}>
               <Text style={styles.pmTileLabel}>{t('home.pm.totalVariance')}</Text>
-              <MaterialIcons name="chevron-right" size={16} color={p.muted} />
             </View>
             <View style={styles.pmTileFoot}>
               <Text
@@ -860,7 +858,7 @@ function PmHome() {
                 color={varianceAlerting ? p.danger : p.success}
               />
             </View>
-          </Pressable>
+          </View>
         </View>
       </LoadingBoundary>
 
@@ -878,7 +876,9 @@ function PmHome() {
             <MaterialIcons name="warning" size={18} color={p.danger} />
             <Text style={[styles.pmCardTitle, styles.pmCardTitleGrow, { color: p.danger }]}>
               {t('home.pm.blockerCount', {
-                count: String(worst.count).padStart(2, '0'),
+                // Counting numbers, no leading zero — the same rule the PO set for the procurement
+                // counters (2026-08-10). "05 HIGH ISSUES" reads as a code; "5" is a quantity.
+                count: String(worst.count),
                 severity: worst.severity,
               })}
             </Text>
@@ -946,8 +946,25 @@ function PmHome() {
                 {phase === null ? t('home.pm.noPhase') : t('home.pm.phase', { phase: phase.name })}
               </Text>
             </View>
-            <View style={styles.pmStatusChip}>
-              <Text style={styles.pmStatusText}>{project.status}</Text>
+            {/* ACTIVE is green (PO question, answered 2026-08-10). The drawing colours the good
+                state green and leaves DRAFT grey, and this app's own StatusChip map already puts
+                DRAFT on the neutral token — so green here agrees with both rather than inventing a
+                third convention. `projectStatusTone` holds the mapping so the two surfaces cannot
+                drift. */}
+            <View
+              style={[
+                styles.pmStatusChip,
+                projectStatusTone(project.status) === 'success' && { borderColor: p.success },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.pmStatusText,
+                  projectStatusTone(project.status) === 'success' && { color: p.success },
+                ]}
+              >
+                {project.status}
+              </Text>
             </View>
             <MaterialIcons name="chevron-right" size={20} color={p.muted} />
           </View>

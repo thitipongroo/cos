@@ -88,8 +88,9 @@ describe('portfolioTotals', () => {
 
 describe('shareOfBudget', () => {
   it('is a whole percentage of the budget', () => {
-    expect(shareOfBudget('842000000', '1240000000')).toBe(68);
-    expect(shareOfBudget(toDecimal('610000000'), toDecimal('1240000000'))).toBe(49);
+    // One decimal — the drawing's format for this slot, and a whole percent of ฿1.24B is ฿12M.
+    expect(shareOfBudget('842000000', '1240000000')).toBe(67.9);
+    expect(shareOfBudget(toDecimal('610000000'), toDecimal('1240000000'))).toBe(49.2);
   });
 
   it('is null when there is no budget to divide by', () => {
