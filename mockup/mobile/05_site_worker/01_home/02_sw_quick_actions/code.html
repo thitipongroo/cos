@@ -1,4 +1,4 @@
-<!DOCTYPE html><html class="dark" lang="en"><head>
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
 <meta charset="utf-8">
 <meta content="width=device-width, initial-scale=1.0" name="viewport">
 <title>Quick Action Menu</title>
@@ -120,7 +120,7 @@
 <!-- TopAppBar -->
 <header class="w-full top-0 bg-surface flex items-center px-edge-mobile h-touch-target z-50 sticky border-b border-outline-variant/10">
 <button aria-label="Close" class="hover:bg-surface-bright scale-95 transition-transform p-space-2 rounded-full mr-space-4">
-<span class="material-symbols-outlined text-primary font-[300]" style="font-variation-settings: 'FILL' 0;">close</span>
+<span class="material-symbols-outlined text-primary font-[300]" style="font-variation-settings: &quot;FILL&quot; 0;">close</span>
 </button>
 <div class="flex-1">
 <h1 class="font-h1-web text-h1-web-mobile text-primary tracking-tight font-extrabold">Quick Actions</h1>
@@ -131,14 +131,11 @@
 </header>
 <!-- Main Content Canvas -->
 <main class="flex-1 flex flex-col px-edge-mobile py-space-4 gap-space-4 mb-[90px]">
-<div class="mb-space-4">
-<h2 class="font-h2-web text-h2-web text-on-surface mb-space-1">เมนูด่วน</h2>
-<p class="font-body-mobile text-body-mobile text-on-surface-variant">Select an action to proceed.</p>
-</div>
+
 <!-- Action Card 1: Report Issue -->
 <button class="w-full text-left bg-surface-container hover:bg-surface-variant transition-colors rounded-xl border border-outline-variant/20 p-space-4 flex items-start gap-space-4 shadow-lg active:scale-95 duration-200">
 <div class="w-12 h-12 rounded-full bg-mobile-warning/20 flex items-center justify-center shrink-0 border border-mobile-warning/20">
-<span class="material-symbols-outlined text-mobile-warning" style="font-variation-settings: 'FILL' 1;">warning</span>
+<span class="material-symbols-outlined text-mobile-warning" style="font-variation-settings: &quot;FILL&quot; 1;">warning</span>
 </div>
 <div class="flex-1 flex flex-col justify-center min-h-[48px]">
 <h3 class="font-label-mobile text-label-mobile text-on-surface mb-1">รายงานปัญหาด่วน</h3>
@@ -148,7 +145,7 @@
 <!-- Action Card 2: Safety Checklist -->
 <button class="w-full text-left bg-surface-container hover:bg-surface-variant transition-colors rounded-xl border border-outline-variant/20 p-space-4 flex items-start gap-space-4 shadow-lg active:scale-95 duration-200">
 <div class="w-12 h-12 rounded-full bg-mobile-success/20 flex items-center justify-center shrink-0 border border-mobile-success/20">
-<span class="material-symbols-outlined text-mobile-success" style="font-variation-settings: 'FILL' 1;">health_and_safety</span>
+<span class="material-symbols-outlined text-mobile-success" style="font-variation-settings: &quot;FILL&quot; 1;">health_and_safety</span>
 </div>
 <div class="flex-1 flex flex-col justify-center min-h-[48px]">
 <h3 class="font-label-mobile text-label-mobile text-on-surface mb-1">เช็คลิสต์ความปลอดภัย</h3>
@@ -158,7 +155,7 @@
 <!-- Action Card 3: Log Activity -->
 <button class="w-full text-left bg-surface-container hover:bg-surface-variant transition-colors rounded-xl border border-outline-variant/20 p-space-4 flex items-start gap-space-4 shadow-lg active:scale-95 duration-200">
 <div class="w-12 h-12 rounded-full bg-mobile-primary/20 flex items-center justify-center shrink-0 border border-mobile-primary/20">
-<span class="material-symbols-outlined text-mobile-primary" style="font-variation-settings: 'FILL' 1;">edit_document</span>
+<span class="material-symbols-outlined text-mobile-primary" style="font-variation-settings: &quot;FILL&quot; 1;">edit_document</span>
 </div>
 <div class="flex-1 flex flex-col justify-center min-h-[48px]">
 <h3 class="font-label-mobile text-label-mobile text-on-surface mb-1">บันทึกกิจกรรมประจำวัน</h3>
@@ -170,22 +167,24 @@
 <!-- Note: While Quick Actions is technically a transactional overlay in many apps, the prompt explicitly requested "The Bottom Navigation for Site Worker should be visible." -->
 <nav class="md:hidden fixed bottom-0 w-full z-50 pb-safe bg-surface-container-low border-t border-outline-variant/20 shadow-lg font-label-mobile text-label-mobile flex justify-around items-center px-4 h-[72px]">
 <a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-variant hover:text-on-surface scale-95 duration-200 p-2 rounded-lg" href="#">
-<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">dashboard</span>
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: &quot;FILL&quot; 0;">dashboard</span>
 <span class="">Dashboard</span>
 </a>
 <a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-variant hover:text-on-surface scale-95 duration-200 p-2 rounded-lg" href="#">
-<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">assignment</span>
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: &quot;FILL&quot; 0;">assignment</span>
 <span class="">Tasks</span>
 </a>
 <a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-variant hover:text-on-surface scale-95 duration-200 p-2 rounded-lg" href="#">
-<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">history</span>
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: &quot;FILL&quot; 0;">history</span>
 <span class="">Log</span>
 </a>
 <a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-variant hover:text-on-surface scale-95 duration-200 p-2 rounded-lg" href="#">
-<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">person</span>
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: &quot;FILL&quot; 0;">person</span>
 <span class="">Profile</span>
 </a>
 </nav>
+
+
 
 
 </body></html>
