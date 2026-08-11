@@ -27,6 +27,7 @@ import { StatusChip } from '../../components/StatusChip';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { ConflictBadge } from '../../components/ConflictBadge';
 import { ProjectPicker } from '../../components/ProjectPicker';
+import { ProjectContextBar } from '../../components/ProjectContextBar';
 import { useI18n } from '../../i18n';
 import { colors, fontFamily, radius, spacing, typography } from '../../theme/tokens';
 import { screen } from '../../theme/screenStyles';
@@ -89,6 +90,12 @@ function SiteEngineerReports() {
 
   return (
     <View testID="reports-screen" style={screen.container}>
+      {/* The Active Project bar the mockups open every working screen with — added here 2026-08-12
+          when it became the project standard (PO decision). `03_site_engineer/04_reports/
+          04_se_reports` draws it above the search row, and this list was the one screen carrying
+          the drawing that still had no way to see or change the project it was listing for. It
+          renders nothing when no project is selected, so no role gains an empty strip. */}
+      <ProjectContextBar />
       <View style={styles.headerRow}>
         <ConflictBadge onPress={() => router.push('/conflict-review')} />
       </View>

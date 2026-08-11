@@ -1314,6 +1314,26 @@ Core components (React Native — implement in apps/mobile/):
                         guidance, using the band edges spec §33.8 already defines (0.9 / 0.7). The
                         endpoint is per-project, so the dashboard carries a <ProjectPicker /> and
                         the panel names the project its figures came from.
+  <ProjectContextBar /> THE PROJECT'S "ACTIVE PROJECT" BAR (PO decision 2026-08-12). Every working
+                        screen that belongs to one project opens with it, for EVERY role: a 6px
+                        leading accent, a tinted `apartment` plate, an "ACTIVE PROJECT" eyebrow over
+                        the project name and its building, and a 44pt switch button at the trailing
+                        edge. Tapping anywhere on it opens <SelectProjectSheet />; the button is a
+                        target, not a second action. Renders NOTHING when no project is chosen —
+                        that state means the picker has not been answered yet, and the picker is
+                        already over the user.
+                        The shape is the restructured SITE_ENGINEER set's, which draws the same bar
+                        on all four of its screens (01_home/01_se_home_dashboard · 03_tasks/
+                        01_se_tasks · 04_reports/04_se_reports); it replaced the Site Worker
+                        drawing's location-pin line so that one question is not answered two ways in
+                        one product. EYEBROW AND PLATE GLYPH TAKE --cos-dark-accent, NOT the
+                        drawings' --mobile-primary: unfilled text and icons on a dark surface must
+                        clear 4.5:1 themselves and #0066FF is 4.17:1 there (§20.8). The 6px strip
+                        keeps primary — nobody reads a bar of colour.
+  <SelectProjectSheet /> The project picker OVERLAY, and the project's one project-selection shape
+                        (PO decision 2026-08-12): a centred card on a dimmed backdrop, always
+                        closeable, never a route. Source drawings: 05_site_worker/01_home/
+                        00_sw_project_selection and 03_site_engineer/01_home/00_project_selection.
   <OverlaySyncPill />   The LABELLED sync pill an overlay's own top bar carries (PO 2026-08-09).
                         Distinct from <SyncPill />, which is glyph-only because the shared TopBar
                         also holds the brand and two icon buttons; a full-screen overlay has room
@@ -3331,14 +3351,27 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
                   stays in the unbounded `description`.
 
     SITE_ENGINEER:
-      Bottom nav: Home | Issues | Inspections | Reports  (dark tab bar — the role's landing is the
-                  dark dashboard; order per mockup, product-owner decision 2026-07-16)
+      Bottom nav: Home | Issues | Tasks | Reports  (PO decision 2026-08-12; dark tab bar — the
+                  role's landing is the dark dashboard; order per mockup, PO decision 2026-07-16)
+                  TASKS REPLACED INSPECTIONS on 2026-08-12. The role's mockup set was restructured
+                  that day (mockup/mobile/03_site_engineer/ went from ~120 files to 5 screens:
+                  01_home/00_project_selection · 01_home/01_se_home_dashboard ·
+                  02_issues/02_se_issue_dashboard · 03_tasks/01_se_tasks · 04_reports/04_se_reports)
+                  and all four bar-bearing screens draw Home | Issues | Tasks | Reports. Unlike the
+                  SITE_WORKER case above — where a mockup restructure produced four DIFFERENT bars
+                  between five drawings and therefore settled nothing — this set is unanimous, and
+                  the product owner took it as the bar.
+                  Inspections is NOT dropped: `/inspections` is a derived drawer row for this role
+                  (module "Inspections / QC"), suppressed only while it was a tab, so it reappears
+                  in the drawer the moment it leaves the bar. `/tasks` makes the opposite move.
+                  SAFETY_OFFICER keeps Inspections on its own bar.
       Workflows:  review reports, conflict resolution, inspection approval,
                   manpower overview, issue escalation, material requisition
       Extra:      ConflictBadge, conflict review screen
       Profile:    NOT a bottom-nav tab for this role — reached from the avatar in the Home
                   header, next to the notification bell (product-owner decision 2026-07-16,
-                  from mockup/mobile/03_site_engineer/01_dashboard/). Four tabs is within the 4–5
+                  from mockup/mobile/03_site_engineer/01_home/01_se_home_dashboard/, renamed from
+                  01_dashboard/ in the 2026-08-11 restructure). Four tabs is within the 4–5
                   that spec §32.7 allows for <MobileNav />.
                   SUPERSEDED 2026-08-09 (product-owner): THE NAVIGATION DRAWER IS THE PROFILE, for
                   every role. There is no /profile route any more — the screen was deleted and its

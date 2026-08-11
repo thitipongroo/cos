@@ -1427,9 +1427,11 @@ passes any other diameter.
 - **The issue list under REPORT ISSUE is gone for this role** (PO decision 2026-08-08 — "โซนด้านล่าง
   ของปุ่ม REPORT ISSUE คืออะไร ตัดออก"), which restores the mockup's capture-only shape. It is
   **not deleted**: `SITE_ENGINEER` shares this route, its own mockups draw the list
-  (`03_site_engineer/site_issues/issue_list`, `…/escalate_issue_to_manager`), and this screen is the
-  only place **G-M12** (escalate → PM) exists in the app — removing it outright would have taken a
-  deliverable out with the zone. So it is role-scoped, not dropped. A worker who needs sync state has
+  (`03_site_engineer/02_issues/02_se_issue_dashboard` — renamed from `site_issues/issue_list` in the
+  2026-08-12 restructure; its companion `…/escalate_issue_to_manager` was deleted there with no
+  successor drawing, which per ADR-085 withdraws a drawing, not the capability), and this screen is
+  the only place **G-M12** (escalate → PM) exists in the app — removing it outright would have taken
+  a deliverable out with the zone. So it is role-scoped, not dropped. A worker who needs sync state has
   the global sync indicator and the Sync Queue screen.
 
 ### Daily report — [`01-Home/04-sw-daily-report.png`](05-site-worker/01-Home/04-sw-daily-report.png)

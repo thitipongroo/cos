@@ -93,6 +93,31 @@ export interface InsightPanelProps {
    * panels whose mockup has no such button do not grow one.
    */
   followUp?: { labelKey: string; onPress: () => void };
+  /**
+   * How to read this report's prose, when `summaryText`'s first-string default is wrong for it.
+   *
+   * DELAY_RISK is the case that forced this prop and is still the only user (PO decision
+   * 2026-08-12). `DelayRiskOutput` has NO prose field: its fields are `delay_risk_level`,
+   * `risk_factors`, `confidence`, `data_points_used` and a constant `disclaimer` — so the default
+   * takes the first string it finds and prints the word "HIGH" as the panel's paragraph. That
+   * mismatch is on record: app/(app)/more.tsx documents it being escalated in August and answered
+   * then by choosing a different report type for that panel. Here the report type is not
+   * substitutable — DELAY_RISK is the only schedule report the gateway serves — so the panel learns
+   * to read it instead.
+   */
+  bodyFrom?: (content: Record<string, unknown>) => string | null;
+  /**
+   * A short status word to show as a chip beside the confidence band — DELAY_RISK's
+   * `delay_risk_level`. Rendered as the model returned it, in the panel's ordinary chip: mapping
+   * LOW/MEDIUM/HIGH/CRITICAL onto colours would be this component inventing a severity scale that
+   * the report does not define.
+   */
+  levelFrom?: (content: Record<string, unknown>) => string | null;
+  /**
+   * Set false when `bodyFrom` already prints the array the advice block would draw from, so the
+   * panel does not say the same thing twice — `insightAdvice` reads `risk_factors` too.
+   */
+  showAdvice?: boolean;
 }
 
 export function InsightPanel({
@@ -104,6 +129,9 @@ export function InsightPanel({
   projectLabel,
   variant = 'plain',
   followUp,
+  bodyFrom,
+  levelFrom,
+  showAdvice = true,
 }: InsightPanelProps): React.JSX.Element {
   const t = useT();
   const p = usePalette();
@@ -134,8 +162,9 @@ export function InsightPanel({
 
   const band = report === null ? null : confidenceBand(report.confidence, report.low_confidence);
   const percent = report === null ? null : confidencePercent(report.confidence);
-  const text = report === null ? null : summaryText(report.content);
-  const advice = report === null ? null : insightAdvice(report.content);
+  const text = report === null ? null : (bodyFrom ?? summaryText)(report.content);
+  const level = report === null || levelFrom === undefined ? null : levelFrom(report.content);
+  const advice = report === null || !showAdvice ? null : insightAdvice(report.content);
 
   return (
     <View testID={testID} style={styles.panel}>
@@ -149,18 +178,27 @@ export function InsightPanel({
           <MaterialIcons name={icon} size={18} color={p.accent} />
           <Text style={styles.eyebrow}>{t(titleKey)}</Text>
         </View>
-        {band !== null ? (
-          <View
-            testID="insight-confidence"
-            style={[styles.bandChip, washed && styles.bandChipWashed]}
-          >
-            <Text style={[styles.bandText, washed && styles.bandTextWashed]}>
-              {percent === null
-                ? t(BAND_LABEL[band])
-                : `${t(BAND_LABEL[band])} · ${String(percent)}%`}
-            </Text>
-          </View>
-        ) : null}
+        <View style={styles.headChips}>
+          {/* The report's own level word, where it has one. Beside the confidence, not instead of
+              it: they answer different questions — how bad, and how sure. */}
+          {level !== null && level !== '' ? (
+            <View testID="insight-level" style={[styles.bandChip, washed && styles.bandChipWashed]}>
+              <Text style={[styles.bandText, washed && styles.bandTextWashed]}>{level}</Text>
+            </View>
+          ) : null}
+          {band !== null ? (
+            <View
+              testID="insight-confidence"
+              style={[styles.bandChip, washed && styles.bandChipWashed]}
+            >
+              <Text style={[styles.bandText, washed && styles.bandTextWashed]}>
+                {percent === null
+                  ? t(BAND_LABEL[band])
+                  : `${t(BAND_LABEL[band])} · ${String(percent)}%`}
+              </Text>
+            </View>
+          ) : null}
+        </View>
       </View>
 
       {loading ? <ActivityIndicator testID="insight-loading" color={p.primary} /> : null}
@@ -272,6 +310,9 @@ const makeStyles = (p: Palette) =>
     },
     head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     eyebrowRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+    // Two chips can now sit here (a level and a confidence), so they need their own row to space
+    // themselves in rather than both being pushed against the panel's right edge.
+    headChips: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
     eyebrow: {
       color: p.accent,
       fontFamily: fontFamily.semibold,

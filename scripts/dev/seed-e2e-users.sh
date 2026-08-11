@@ -66,8 +66,13 @@ done
 echo "Done: 8 e2e role users seeded."
 
 # ── SITE_ENGINEER phone/OTP user for the offline-inspection Detox spec ────────
-# The inspections tab is SITE_ENGINEER-only, but the seeded phone users are SITE_WORKER/PM, so the
-# spec logs in as this dedicated SITE_ENGINEER (OTP path). Created via the Admin API (phone username).
+# The spec needs a SITE_ENGINEER on the OTP path and the other seeded phone users are SITE_WORKER/PM,
+# so it logs in as this dedicated one. Created via the Admin API (phone username).
+# This role is the POINT of the fixture, not an accident of navigation: spec §30.5's "Inspector fills
+# checklist offline" is a SITE_ENGINEER scenario. Inspections stopped being that role's TAB on
+# 2026-08-12 (its bar is now Home | Issues | Tasks | Reports) and moved to the navigation drawer — the
+# Detox spec follows it there rather than re-seeding this user as SAFETY_OFFICER, which would change
+# which role the mandated scenario covers.
 SE_PHONE='+66800000004'; SE_USERID='00000000-0000-4000-8000-000000000014'
 SE_KCID=$(curl -s "$KC/admin/realms/$REALM/users?username=%2B66800000004&exact=true" -H "Authorization: Bearer $TOKEN" | python3 -c "import sys,json;u=json.load(sys.stdin);print(u[0]['id'] if u else '')")
 if [ -z "$SE_KCID" ]; then

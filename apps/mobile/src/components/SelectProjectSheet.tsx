@@ -1,5 +1,33 @@
-// Which site am I on today — an OVERLAY, not a page
-// (mockup 05_site_worker/01_home/00_sw_project_selection).
+// Which site am I on today — an OVERLAY, not a page.
+//
+// THIS IS THE PROJECT'S ONE PROJECT-SELECTION SHAPE (PO decision 2026-08-12). Two drawings define
+// it — 05_site_worker/01_home/00_sw_project_selection and 03_site_engineer/01_home/
+// 00_project_selection — and the second one, added in that role's 2026-08-11 restructure, is the
+// one the styling now follows. Every role that has to answer "which site am I on" gets this
+// component; a second picker drawn a second way is how two roles end up in two different apps.
+//
+// A CENTRED CARD ON A DIMMED BACKDROP, not a full-bleed dark page. That is the visible change the
+// SITE_ENGINEER drawing makes and the reason it was adopted as the standard: `fixed inset-0 …
+// bg-black/60 backdrop-blur-sm` behind, and a `max-w-lg rounded-xl border shadow-2xl max-h-[90vh]`
+// container in front. The page underneath stays legible around the edges, which is what tells the
+// user this is a question about the app rather than a new place inside it. It rendered full-screen
+// until 2026-08-12 and read as a route — the exact confusion the overlay decision below was making.
+//
+// TWO THINGS THE DRAWING SHOWS THAT THIS DOES NOT RENDER, and why (ADR-085 — style is the mockup's,
+// composition and truth are not):
+//   - THE "RECOMMENDED" CARD with "CRITICAL PATH RISK DETECTED · Conf: 98% · SOURCE: REAL-TIME
+//     TELEMETRY". Nothing in the product can produce any of it. Critical-path risk would come from
+//     a model that does not exist; the closest, DelayForecastModel, is Phase 23 and needs 90+ days
+//     of production data (§22.6), and real-time telemetry is IoT, Phase 24. Drawing a confidence
+//     figure the platform cannot compute is the one thing §22.3 is most explicit about — a surface
+//     must not be described as AI-derived while a placeholder is serving it.
+//   - THE PER-CARD PROGRESS BAR. `GET /projects/mine` carries no progress field; the figure comes
+//     from `GET /projects/:id/progress`, a server-side aggregate over the whole task list that is
+//     deliberately NOT cached offline and THROWS when offline (api/projects.ts). One request per
+//     row would make this list N requests on open and an error state on a plane — and this picker
+//     is the first thing a worker with no site selected sees, offline included.
+// The status chip, the left accent strip, the location line and the search are all real, and are
+// what this renders.
 //
 // IT WAS A ROUTE FOR ONE BUILD, AND THAT WAS THE WRONG SHAPE (PO decision 2026-08-11: "ต้องการให้
 // เป็น overlay แบบเดียวกับ quick action"). A route gets the app's shared TopBar, whose leading
@@ -169,137 +197,173 @@ export function SelectProjectSheet(): React.JSX.Element {
     <Modal
       visible={visible}
       transparent
-      animationType="slide"
+      // `fade`, not `slide`: a centred dialog that slides up from the bottom edge reads as a sheet,
+      // which is the shape this deliberately stopped being on 2026-08-12.
+      animationType="fade"
       // Android's back gesture closes it, the same as the X — the two are the same intent.
       onRequestClose={closePicker}
     >
-      <View style={styles.root} testID="select-project-screen">
-        <View style={styles.topbar}>
-          <BrandLogo variant="dark" height={26} />
-          <View style={styles.topRight}>
-            <OverlaySyncPill testID="select-project-sync-pill" />
-            <Pressable
-              testID="select-project-close"
-              onPress={closePicker}
-              accessibilityRole="button"
-              accessibilityLabel={t('quickAdd.close')}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              style={styles.closeBtn}
-            >
-              <MaterialIcons name="close" size={24} color={darkColors.primary} />
-            </Pressable>
-          </View>
-        </View>
-
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <View style={styles.search}>
-            <MaterialIcons name="search" size={20} color={darkColors.muted} />
-            <TextInput
-              testID="select-project-search"
-              value={query}
-              onChangeText={setQuery}
-              placeholder={t('project.select.searchPlaceholder')}
-              placeholderTextColor={darkColors.muted}
-              style={styles.searchInput}
-              accessibilityLabel={t('project.select.searchPlaceholder')}
-            />
-          </View>
-
-          {loading ? (
-            <ActivityIndicator testID="select-project-loading" color={darkColors.primary} />
-          ) : null}
-
-          {!loading && failed ? (
-            <Text testID="select-project-failed" style={styles.notice}>
-              {t('project.select.loadFailed')}
-            </Text>
-          ) : null}
-
-          {!loading && !failed && projects.length === 0 ? (
-            <Text testID="select-project-empty" style={styles.notice}>
-              {t('project.select.none')}
-            </Text>
-          ) : null}
-
-          {!loading && !failed && projects.length > 0 && shown.length === 0 ? (
-            <Text testID="select-project-no-match" style={styles.notice}>
-              {t('project.select.noMatch', { query: query.trim() })}
-            </Text>
-          ) : null}
-
-          {shown.map((row) => {
-            const current = active?.projectId === row.project_id;
-            return (
+      {/* Backdrop. Pressing it closes, like the X and the Android back gesture — the drawing dims
+          the dashboard rather than replacing it, so the page behind is a visible way out. */}
+      <Pressable
+        style={styles.backdrop}
+        testID="select-project-backdrop"
+        accessibilityRole="button"
+        accessibilityLabel={t('quickAdd.close')}
+        onPress={closePicker}
+      >
+        {/* The card swallows taps so a press inside it never reaches the backdrop behind. */}
+        <Pressable style={styles.dialog} testID="select-project-screen" onPress={() => {}}>
+          <View style={styles.topbar}>
+            <BrandLogo variant="dark" height={26} />
+            <View style={styles.topRight}>
+              <OverlaySyncPill testID="select-project-sync-pill" />
               <Pressable
-                key={row.project_id}
-                testID={`select-project-${row.project_id}`}
+                testID="select-project-close"
+                onPress={closePicker}
                 accessibilityRole="button"
-                accessibilityLabel={row.project_name}
-                disabled={!selectable(row.status)}
-                accessibilityState={{ disabled: !selectable(row.status) }}
-                onPress={() => choose(row)}
-                style={[
-                  styles.card,
-                  { borderLeftColor: current ? darkColors.accent : darkColors.border },
-                  !selectable(row.status) && styles.cardDisabled,
-                ]}
+                accessibilityLabel={t('quickAdd.close')}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                style={styles.closeBtn}
               >
-                <View style={styles.cardBody}>
-                  <View style={styles.cardHead}>
-                    {current ? (
-                      <View style={styles.currentChip}>
-                        <Text style={styles.currentText}>{t('project.select.current')}</Text>
-                      </View>
-                    ) : null}
-                    <Text style={styles.code}>{row.project_code}</Text>
-                  </View>
-                  <Text style={styles.name} numberOfLines={1}>
-                    {row.project_name}
-                  </Text>
-                  <View style={styles.locationRow}>
-                    <MaterialIcons name="location-on" size={14} color={darkColors.muted} />
-                    <Text style={styles.location} numberOfLines={1}>
-                      {row.building_name ?? row.project_code}
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={styles.statusBlock}>
-                  <Text style={styles.statusLabel}>{t('project.select.status')}</Text>
-                  {/* The drawing's status glyph: a tick for a running site, a clock for a paused one. */}
-                  <View style={styles.statusRow}>
-                    <MaterialIcons
-                      name={selectable(row.status) ? 'check-circle' : 'schedule'}
-                      size={14}
-                      color={toneColor(row.status)}
-                    />
-                    <Text style={[styles.status, { color: toneColor(row.status) }]}>
-                      {statusLabel(row.status)}
-                    </Text>
-                  </View>
-                </View>
-                {/* NO ARROW on a paused site (PO decision 2026-08-11). The card cannot be entered,
-                    and an arrow is a promise that it can — a dimmed one still points somewhere. */}
-                {selectable(row.status) ? (
-                  <MaterialIcons name="arrow-forward" size={20} color={darkColors.muted} />
-                ) : null}
+                <MaterialIcons name="close" size={24} color={darkColors.primary} />
               </Pressable>
-            );
-          })}
-        </ScrollView>
-      </View>
+            </View>
+          </View>
+
+          <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+            <View style={styles.search}>
+              <MaterialIcons name="search" size={20} color={darkColors.muted} />
+              <TextInput
+                testID="select-project-search"
+                value={query}
+                onChangeText={setQuery}
+                placeholder={t('project.select.searchPlaceholder')}
+                placeholderTextColor={darkColors.muted}
+                style={styles.searchInput}
+                accessibilityLabel={t('project.select.searchPlaceholder')}
+              />
+            </View>
+
+            {loading ? (
+              <ActivityIndicator testID="select-project-loading" color={darkColors.primary} />
+            ) : null}
+
+            {!loading && failed ? (
+              <Text testID="select-project-failed" style={styles.notice}>
+                {t('project.select.loadFailed')}
+              </Text>
+            ) : null}
+
+            {!loading && !failed && projects.length === 0 ? (
+              <Text testID="select-project-empty" style={styles.notice}>
+                {t('project.select.none')}
+              </Text>
+            ) : null}
+
+            {!loading && !failed && projects.length > 0 && shown.length === 0 ? (
+              <Text testID="select-project-no-match" style={styles.notice}>
+                {t('project.select.noMatch', { query: query.trim() })}
+              </Text>
+            ) : null}
+
+            {shown.map((row) => {
+              const current = active?.projectId === row.project_id;
+              return (
+                <Pressable
+                  key={row.project_id}
+                  testID={`select-project-${row.project_id}`}
+                  accessibilityRole="button"
+                  accessibilityLabel={row.project_name}
+                  disabled={!selectable(row.status)}
+                  accessibilityState={{ disabled: !selectable(row.status) }}
+                  onPress={() => choose(row)}
+                  style={[
+                    styles.card,
+                    { borderLeftColor: current ? darkColors.accent : darkColors.border },
+                    !selectable(row.status) && styles.cardDisabled,
+                  ]}
+                >
+                  <View style={styles.cardBody}>
+                    <View style={styles.cardHead}>
+                      {current ? (
+                        <View style={styles.currentChip}>
+                          <Text style={styles.currentText}>{t('project.select.current')}</Text>
+                        </View>
+                      ) : null}
+                      <Text style={styles.code}>{row.project_code}</Text>
+                    </View>
+                    <Text style={styles.name} numberOfLines={1}>
+                      {row.project_name}
+                    </Text>
+                    <View style={styles.locationRow}>
+                      <MaterialIcons name="location-on" size={14} color={darkColors.muted} />
+                      <Text style={styles.location} numberOfLines={1}>
+                        {row.building_name ?? row.project_code}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.statusBlock}>
+                    <Text style={styles.statusLabel}>{t('project.select.status')}</Text>
+                    {/* The drawing's status glyph: a tick for a running site, a clock for a paused one. */}
+                    <View style={styles.statusRow}>
+                      <MaterialIcons
+                        name={selectable(row.status) ? 'check-circle' : 'schedule'}
+                        size={14}
+                        color={toneColor(row.status)}
+                      />
+                      <Text style={[styles.status, { color: toneColor(row.status) }]}>
+                        {statusLabel(row.status)}
+                      </Text>
+                    </View>
+                  </View>
+                  {/* NO ARROW on a paused site (PO decision 2026-08-11). The card cannot be entered,
+                    and an arrow is a promise that it can — a dimmed one still points somewhere. */}
+                  {selectable(row.status) ? (
+                    <MaterialIcons name="arrow-forward" size={20} color={darkColors.muted} />
+                  ) : null}
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: darkColors.bg },
+  // `bg-black/60` from the drawing. RN has no backdrop-filter, so the blur the mockup pairs with it
+  // is not reproducible — the dim alone carries the same job, which is to hold the page behind
+  // visible but plainly inactive.
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.md,
+  },
+  // `max-w-lg … rounded-xl border shadow-2xl max-h-[90vh]`. The height cap is what keeps the dimmed
+  // page showing above and below on a long list instead of the card growing into a full screen.
+  dialog: {
+    width: '100%',
+    maxWidth: 512,
+    maxHeight: '90%',
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: darkColors.border,
+    backgroundColor: darkColors.surface,
+    overflow: 'hidden',
+  },
   topbar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.xl,
+    // Was `spacing.xl` to clear the status bar back when this was a full-bleed page. Inside a
+    // centred card there is no status bar to clear, and the extra 32pt read as a dead band.
+    paddingTop: spacing.md,
     paddingBottom: spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: darkColors.border,
@@ -318,7 +382,10 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: darkColors.border,
-    backgroundColor: darkColors.surface,
+    // `elevated`, not `surface`: the card around this is `surface` now, and a field the same colour
+    // as the panel it sits on has no edge left but its border. The drawing separates them too
+    // (container `bg-surface-container`, field `bg-surface-container-high`).
+    backgroundColor: darkColors.elevated,
   },
   searchInput: {
     flex: 1,
@@ -343,7 +410,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: darkColors.border,
     borderLeftWidth: 4,
-    backgroundColor: darkColors.surface,
+    // Same reason as the search field: the rows are plates ON the card, so they take `elevated`
+    // (the drawing's `bg-surface-container-high`). On `surface` they were the card's own colour and
+    // the list read as one undivided block.
+    backgroundColor: darkColors.elevated,
   },
   cardBody: { flex: 1, gap: spacing.xs / 2 },
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },

@@ -8,6 +8,29 @@ import { isVisible, setNetworkConnected, resetSession } from './helpers';
 
 const INSPECTOR_PHONE = process.env['E2E_INSPECTOR_PHONE'] || '+66800000004';
 
+/**
+ * Open the inspections list from wherever the app currently is.
+ *
+ * IT USED TO TAP `inspection-tab`, AND THERE IS NO SUCH TAB FOR THIS ROLE ANY MORE. The seeded
+ * inspector (+66800000004, scripts/dev/seed-e2e-users.sh) is a SITE_ENGINEER, and on 2026-08-12 that
+ * role's bar became Home | Issues | Tasks | Reports — Inspections moved to the navigation drawer,
+ * where `drawerLinksFor` had always kept a row for it, suppressed only while it was a tab.
+ *
+ * The role is deliberately UNCHANGED. Re-seeding the inspector as SAFETY_OFFICER (which still has the
+ * tab) would have been the smaller diff and the wrong one: it would quietly swap which role spec
+ * §30.5's "Inspector fills checklist offline" scenario actually exercises. Only the route in is
+ * different, so only the route in changed here.
+ */
+async function openInspections(): Promise<void> {
+  const menu = element(by.id('drawer-menu-button')).atIndex(0);
+  await waitFor(menu).toExist().withTimeout(5_000);
+  await menu.tap();
+
+  const row = element(by.id('drawer-link-/inspections')).atIndex(0);
+  await waitFor(row).toExist().withTimeout(5_000);
+  await row.tap();
+}
+
 describe('Offline Inspection — Inspector', () => {
   beforeAll(async () => {
     // reloadReactNative() crashes the RN bridge on this RN/Detox version (see capture.spec.ts) and is
@@ -57,11 +80,7 @@ describe('Offline Inspection — Inspector', () => {
       .toExist()
       .withTimeout(10_000);
 
-    const inspectionTab = element(by.id('inspection-tab')).atIndex(0);
-    // Tab-bar buttons are wrappers whose own pixels are covered by their label/icon, so Detox's
-    // toBeVisible() false-negatives on them — assert existence and tap (the tap hit-tests fine).
-    await waitFor(inspectionTab).toExist().withTimeout(5_000);
-    await inspectionTab.tap();
+    await openInspections();
 
     await waitFor(element(by.id('inspection-list')))
       .toExist()
@@ -73,9 +92,7 @@ describe('Offline Inspection — Inspector', () => {
       .toExist()
       .withTimeout(10_000);
 
-    const inspectionTab = element(by.id('inspection-tab')).atIndex(0);
-    await waitFor(inspectionTab).toExist().withTimeout(5_000);
-    await inspectionTab.tap();
+    await openInspections();
 
     await setNetworkConnected(false);
 
@@ -107,10 +124,7 @@ describe('Offline Inspection — Inspector', () => {
       .toExist()
       .withTimeout(10_000);
 
-    const inspectionTab = element(by.id('inspection-tab')).atIndex(0);
-    if (await isVisible(inspectionTab)) {
-      await inspectionTab.tap();
-    }
+    await openInspections();
 
     await setNetworkConnected(false);
 

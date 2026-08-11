@@ -18,9 +18,14 @@
 //   - The mockup has no issue LIST — it is a capture-only screen, and for SITE_WORKER that is now
 //     exactly what this renders (PO decision 2026-08-08: "โซนด้านล่างของปุ่ม REPORT ISSUE
 //     คืออะไร ตัดออก"). The list SURVIVES for SITE_ENGINEER, which shares this route and whose own
-//     mockup set draws it: 03_site_engineer/site_issues/issue_list and .../escalate_issue_to_manager.
-//     Deleting it outright would have taken G-M12 (escalate → PM) out of the app entirely, since this
-//     is its only screen — so the zone is role-scoped rather than removed.
+//     mockup set draws it: 03_site_engineer/02_issues/02_se_issue_dashboard (renamed from
+//     site_issues/issue_list in the 2026-08-12 restructure — git records it as a rename, so the
+//     drawing survived the reorganisation). Its companion escalate_issue_to_manager was DELETED in
+//     that same commit with no successor drawing; the capability is unaffected — ADR-085 makes the
+//     mockups authoritative for style, not composition, and a drawing that is withdrawn does not
+//     withdraw reviewed working capability.
+//     Deleting the zone outright would have taken G-M12 (escalate → PM) out of the app entirely,
+//     since this is its only screen — so the zone is role-scoped rather than removed.
 //     A worker who needs sync state still has the global sync indicator and the Sync Queue screen.
 //   - The mockup's own top bar (brand + close) is dropped in favour of the app's global TopBar, as
 //     on every other screen.
@@ -43,6 +48,7 @@ import { PhotoCapture } from '../../components/PhotoCapture';
 import { VoiceNoteButton } from '../../components/VoiceNoteButton';
 import { OptimisticList } from '../../components/OptimisticList';
 import { ProjectContextBar } from '../../components/ProjectContextBar';
+import { SiteInsight } from '../../components/SiteInsight';
 import { useT } from '../../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
 import { usePalette } from '../../theme/usePalette';
@@ -226,6 +232,17 @@ export default function IssuesScreen() {
 
       {showList ? (
         <View style={styles.list}>
+          {/* The Insight card the restructured drawing opens this list with
+              (03_site_engineer/02_issues/02_se_issue_dashboard). It rides with the LIST, not with
+              the capture form above it, for two reasons: the drawing puts it over the list, and the
+              Site Worker's screen is capture-only by an explicit ruling (PO 2026-08-08, "โซนด้านล่าง
+              ของปุ่ม REPORT ISSUE คืออะไร ตัดออก") — re-adding a zone there under a later general
+              instruction would undo a specific one. It also needs a project, and a report costs the
+              tenant's metered AI quota (§26.1), which is not something a field worker's capture flow
+              should spend on open.
+              Backed by SITE_SUMMARY, the Phase 12 report whose declared input IS open issues +
+              recent site reports — no new report type was invented; see api/ai.ts. */}
+          {projectId ? <SiteInsight projectId={projectId} /> : null}
           <OptimisticList<Issue>
             testID="issue-list"
             data={issues}

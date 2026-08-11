@@ -94,3 +94,66 @@ export async function generateExecutiveSummary(params: {
     tenant_id: params.tenantId,
   });
 }
+
+/**
+ * A site-summary report — the Site Engineer issue dashboard's Insight card
+ * (mockup 03_site_engineer/02_issues/02_se_issue_dashboard).
+ *
+ * NO NEW ENDPOINT WAS BUILT FOR THIS PANEL, AND NONE SHOULD BE. The drawing's card talks about open
+ * issues and site conditions, and SITE_SUMMARY is the Phase 12 report whose declared input is exactly
+ * that — "site_reports (last 7 days), issues (open), manpower_logs" (master §Phase 12 capability 1)
+ * — returning `summary` + `key_issues` + `manpower_trend`. The gateway serves exactly four report
+ * types and `ai_generated_reports.report_type` is a locked ENUM over the same four, so a fifth
+ * "issue insight" type would be a new enum value, a new migration and an AI capability the spec does
+ * not define. Rule 20 and §Never "invent business logic not specified" both land on that.
+ *
+ * `summary` is the first string field on SiteSummaryOutput, so `<InsightPanel />`'s `summaryText`
+ * picks up prose rather than an enum word — unlike DELAY_RISK, whose first string is
+ * `delay_risk_level` (see the note in app/(app)/more.tsx for where that was ruled on before).
+ *
+ * WHAT THE DRAWING CLAIMS THAT THIS DOES NOT. The mockup's card cites "Data Source: BIM & Sensor
+ * Telemetry" at 94% confidence. There is no sensor feed behind it — IoT ingestion is Phase 24 — and
+ * the confidence rendered here is always the model's own, via the band in lib/aiConfidence.ts.
+ *
+ * `date_range` is the endpoint's own default ("last 7 days", SiteSummaryVars) and is left to the
+ * server rather than restated here, so the window cannot drift between client and prompt.
+ */
+export async function generateSiteSummary(params: {
+  projectId: string;
+  tenantId: string;
+}): Promise<AiReport> {
+  return post<AiReport>('/ai/reports/site-summary', {
+    project_id: params.projectId,
+    tenant_id: params.tenantId,
+  });
+}
+
+/**
+ * A delay-risk report — the Site Engineer task list's Insight card
+ * (mockup 03_site_engineer/03_tasks/01_se_tasks).
+ *
+ * THE ONLY SCHEDULE REPORT THE GATEWAY SERVES, and the drawing's card is about schedule: it argues
+ * for pulling a pour forward to save days off a phase. DELAY_RISK's declared inputs are the project
+ * end date, the PM's estimated completion date, procurement delivery dates and open critical issues
+ * (master §Phase 12 capability 4), and the gateway assembles real context for it — workforce,
+ * procurement and manpower signals plus site weather (services/ai-gateway/risk/context.py, ADR-072).
+ *
+ * ITS SHAPE IS NOT THE OTHER THREE REPORTS' SHAPE, which is why the panel had to grow to read it.
+ * `DelayRiskOutput` carries NO prose: `delay_risk_level` + `risk_factors` + `confidence` +
+ * `data_points_used` + a constant `disclaimer`. The panel therefore takes the level as a chip and
+ * the risk factors as the body (see ScheduleInsight.tsx). Product-owner decision 2026-08-12, taken
+ * over the alternative of pointing this card at EXECUTIVE_SUMMARY for the sake of a paragraph — that
+ * would have answered a schedule question with a project-health report.
+ *
+ * The `disclaimer` field is deliberately NOT rendered as the body: it is a constant the model never
+ * chose, so printing it as the report's text would present boilerplate as a finding.
+ */
+export async function generateDelayRisk(params: {
+  projectId: string;
+  tenantId: string;
+}): Promise<AiReport> {
+  return post<AiReport>('/ai/reports/delay-risk', {
+    project_id: params.projectId,
+    tenant_id: params.tenantId,
+  });
+}

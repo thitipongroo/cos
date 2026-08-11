@@ -441,6 +441,7 @@
     }
   },
   "tasks": {
+    "insightTitle": "Schedule insight",
     "list": {
       "empty": "No tasks synced yet"
     },
@@ -497,6 +498,9 @@
     "unavailable": "The directory needs a connection — who is on site right now cannot be answered offline."
   },
   "site": {
+    "insight": {
+      "title": "Site insight"
+    },
     "report": {
       "save": "Save report",
       "saved": "Saved offline — will sync when online",
@@ -688,7 +692,8 @@
     },
     "context": {
       "change": "Working on {project}. Change site.",
-      "on": "Project: {project}"
+      "on": "Project: {project}",
+      "eyebrow": "Active project"
     }
   },
   "pm": {

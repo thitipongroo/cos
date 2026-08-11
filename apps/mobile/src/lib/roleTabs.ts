@@ -91,14 +91,24 @@ export const ALL_TABS: TabConfig[] = [
   // child of Home; Issues and Reports have now given up their slots instead, and both are reached
   // from the Home FAB's quick-action menu (mockup 01_home/02_sw_quick_actions), which carries exactly
   // those two plus Safety. So no screen lost its entry point in the swap.
-  { name: 'tasks', titleKey: 'nav.tabs.tasks', icon: 'assignment', roles: [CosRole.SITE_WORKER] },
-  // `issues` is no longer a SITE_WORKER tab — it stays SITE_ENGINEER's, whose own bar is unchanged
-  // (Home | Issues | Inspections | Reports).
+  // `issues` is no longer a SITE_WORKER tab — it stays SITE_ENGINEER's.
   {
     name: 'issues',
     titleKey: 'nav.tabs.issues',
     icon: 'report-problem',
     roles: [CosRole.SITE_ENGINEER],
+  },
+  // `tasks` SITS AFTER `issues`, and that placement is the whole point (PO decision 2026-08-12).
+  // It is SITE_ENGINEER's third tab now as well as SITE_WORKER's second, and this table's ORDER IS
+  // THE BAR'S ORDER — left where it was (before `issues`) the engineer's bar would have read
+  // Home | Tasks | Issues | Reports, which is not what the role's mockups draw. Moving it costs
+  // SITE_WORKER nothing: that role matches neither `issues` nor anything else between here and
+  // `safety-checklist`, so its bar is still Home | Tasks | Safety | Directory.
+  {
+    name: 'tasks',
+    titleKey: 'nav.tabs.tasks',
+    icon: 'assignment',
+    roles: [CosRole.SITE_WORKER, CosRole.SITE_ENGINEER],
   },
   // `report` (the singular daily-entry FORM) is now a tab for NO role. It is declared `href: null`
   // in MobileNav and pushed from the quick-action menu, like any other child screen. The
@@ -118,11 +128,18 @@ export const ALL_TABS: TabConfig[] = [
     icon: 'groups',
     roles: [CosRole.SITE_WORKER],
   },
+  // `inspections` LEFT SITE_ENGINEER's bar on 2026-08-12 (PO decision), where `tasks` took its slot:
+  // the role's restructured mockup set draws Home | Issues | Tasks | Reports on all four of its
+  // screens, and the product owner took that as the bar rather than a drawing to deviate from.
+  // The screen is NOT dropped — /inspections is a derived drawer row for this role (drawerLinks.ts,
+  // module "Inspections / QC"), and that row was only ever suppressed BECAUSE it was a tab, so it
+  // reappears in the drawer the moment it stops being one. `tasks` makes the opposite move and
+  // leaves the drawer. SAFETY_OFFICER keeps inspections on its own bar, untouched.
   {
     name: 'inspections',
     titleKey: 'nav.tabs.inspections',
     icon: 'fact-check',
-    roles: [CosRole.SITE_ENGINEER, CosRole.SAFETY_OFFICER],
+    roles: [CosRole.SAFETY_OFFICER],
   },
   {
     name: 'reports',

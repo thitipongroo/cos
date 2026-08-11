@@ -1,6 +1,17 @@
-// Which project the site worker is on — the line the corrected mockup set puts at the top of every
-// one of that role's screens (05_site_worker: the dashboard's title, the issue form, the safety
-// checklist, the task list, the quick-action sheet).
+// Which project the user is on — the bar the mockup sets put at the top of a role's working screens
+// (05_site_worker: dashboard title, issue form, safety checklist, task list, quick-action sheet).
+//
+// THE "ACTIVE PROJECT" BAR IS THE PROJECT STANDARD (PO decision 2026-08-12). The restructured
+// SITE_ENGINEER set draws the same bar on all four of its screens — 01_home/01_se_home_dashboard,
+// 03_tasks/01_se_tasks and 04_reports/04_se_reports each open with an `apartment` plate, an
+// "ACTIVE PROJECT" eyebrow over the project name, and a 44pt switch button (`swap_horiz` /
+// `sync_alt`) at the trailing edge. That shape is now this component's, for EVERY role that renders
+// it, rather than a second bar existing beside the Site Worker's original location-pin line: two
+// roles drawing one answer two ways is how a product stops looking like one product.
+//
+// The switch button is a BUTTON, not just a hint glyph. The whole bar still opens the picker (it did
+// before and that gesture is learned), but the drawings give the action its own 44pt target, and
+// §32.7's minimum applies to it like any other control.
 //
 // IT IS THE WAY BACK TO THE PICKER (PO decision 2026-08-11). The drawings add
 // `00_sw_project_selection` in front of the dashboard but draw no route out of the app once a
@@ -16,8 +27,11 @@ import { Pressable, Text, View, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useProjectStore } from '../store/projectStore';
 import { useT } from '../i18n';
-import { fontFamily, radius, spacing, touchTarget, typography } from '../theme/tokens';
+import { fontFamily, plateRadius, radius, spacing, touchTarget, typography } from '../theme/tokens';
 import { usePalette, type Palette } from '../theme/usePalette';
+
+/** The drawings' icon-plate side. Named so the plate and its radius cannot drift apart. */
+const PLATE = 40;
 
 export function ProjectContextBar(): React.JSX.Element | null {
   const active = useProjectStore((s) => s.active);
@@ -39,8 +53,15 @@ export function ProjectContextBar(): React.JSX.Element | null {
       onPress={openPicker}
       style={styles.bar}
     >
-      <MaterialIcons name="location-on" size={18} color={p.accent} />
+      {/* The drawings' tinted square plate. `plateRadius` is the §32.7 rule for a square icon tile:
+          side/4, so the corner scales with the plate rather than becoming a circle. */}
+      <View style={styles.plate}>
+        <MaterialIcons name="apartment" size={22} color={p.accent} />
+      </View>
       <View style={styles.text}>
+        <Text style={styles.eyebrow} numberOfLines={1}>
+          {t('project.context.eyebrow')}
+        </Text>
         <Text style={styles.name} numberOfLines={1}>
           {active.projectName}
         </Text>
@@ -50,7 +71,11 @@ export function ProjectContextBar(): React.JSX.Element | null {
           {active.buildingName ?? active.projectCode}
         </Text>
       </View>
-      <MaterialIcons name="unfold-more" size={18} color={p.muted} />
+      {/* Its own 44pt target, per the drawings. `pointerEvents="none"` so the press falls through to
+          the bar — one handler, so the button and the bar can never disagree about what they do. */}
+      <View style={styles.switchBtn} pointerEvents="none">
+        <MaterialIcons name="swap-horiz" size={20} color={p.muted} />
+      </View>
     </Pressable>
   );
 }
@@ -67,9 +92,36 @@ const makeStyles = (p: Palette) =>
       borderRadius: radius.lg,
       borderWidth: 1,
       borderColor: p.border,
+      // The drawings' 6px leading accent in the primary blue — the one thing that makes this read as
+      // the screen's subject line rather than as the first row of the list under it.
+      borderLeftWidth: 6,
+      borderLeftColor: p.primary,
       backgroundColor: p.surface,
     },
+    plate: {
+      width: PLATE,
+      height: PLATE,
+      // §32.7 square-plate rule via `plateRadius` — a quarter of the side, as a RULE rather than a
+      // hand-picked number, so the corner scales with the plate. `radiusRatchet.spec.ts` counts raw
+      // radius literals and only lets that count fall; a bare `10` here is exactly what it fails on.
+      borderRadius: plateRadius(PLATE),
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: `${p.accent}1A`, // the drawings' primary/10 tint, on the accent hue below
+    },
     text: { flex: 1 },
+    // ACCENT, NOT THE DRAWING'S PRIMARY BLUE — accessibility, not preference. The eyebrow and the
+    // plate glyph are the case `--cos-dark-accent` was added for (master, 2026-08-06): unfilled text
+    // and icons on a dark surface must clear 4.5:1 themselves, and `--mobile-primary` #0066FF is
+    // 4.17:1 there, under the AA gate §20.8 enforces. #4CD7F6 is 11.87:1. The 6px strip below KEEPS
+    // primary: it is a bar of colour, not something anyone reads.
+    eyebrow: {
+      color: p.accent,
+      fontFamily: fontFamily.bold,
+      fontSize: 10,
+      letterSpacing: 1.5,
+      textTransform: 'uppercase',
+    },
     name: {
       color: p.text,
       fontFamily: fontFamily.semibold,
@@ -79,5 +131,14 @@ const makeStyles = (p: Palette) =>
       color: p.muted,
       fontFamily: fontFamily.regular,
       fontSize: typography.label.fontSize,
+    },
+    switchBtn: {
+      minWidth: touchTarget.iconButton,
+      minHeight: touchTarget.iconButton,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: p.border,
     },
   });

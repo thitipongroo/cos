@@ -18,7 +18,10 @@
 //     menu (mockup 01_home/02_sw_quick_actions), which carries exactly those two plus Safety — so
 //     nothing lost its entry point. Both are `href: null` below with a breadcrumb, like any other
 //     child screen.
-//   SITE_ENGINEER:          Home | Issues | Inspections | Reports
+//   SITE_ENGINEER:          Home | Issues | Tasks | Reports  (PO decision 2026-08-12)
+//     Tasks replaced Inspections when the role's mockup set was restructured — all four of its
+//     screens draw this bar. Inspections is not gone: it returns to the role's drawer as the
+//     derived "Inspections / QC" row, which had been suppressed only because it was a tab.
 //   PROJECT_MANAGER:        Home | Projects | Procurement | Dashboard
 //   EXECUTIVE:              Home | Portfolio | Alerts | Reports
 //   FINANCE:                Home | Payments | Budget | Invoices
@@ -130,7 +133,9 @@ export function MobileNav() {
               tabBarIcon: ({ color, size }) => (
                 <MaterialIcons name={tab.icon} size={size} color={color} />
               ),
-              // E2E navigation hook. The inspection suite taps by.id('inspection-tab').
+              // E2E navigation hook. `inspection-tab` survives for SAFETY_OFFICER, the one role that
+              // still carries Inspections on its bar; the offline-inspection suite runs as
+              // SITE_ENGINEER and reaches the screen through the drawer since 2026-08-12.
               // React Navigation 7 (expo-router 56) renamed tabBarTestID → tabBarButtonTestID.
               tabBarButtonTestID: tab.name === 'inspections' ? 'inspection-tab' : `${tab.name}-tab`,
             }}

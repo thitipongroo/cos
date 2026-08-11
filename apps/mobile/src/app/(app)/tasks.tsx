@@ -48,6 +48,8 @@ import { useCollection } from '../../hooks/useCollection';
 import { TaskCard } from '../../components/TaskCard';
 import { VoiceCommandFab } from '../../components/VoiceCommandFab';
 import { ProjectContextBar } from '../../components/ProjectContextBar';
+import { ScheduleInsight } from '../../components/ScheduleInsight';
+import { useProjectStore } from '../../store/projectStore';
 import { mutate } from '../../api/client';
 import { useT } from '../../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
@@ -78,6 +80,9 @@ function matches(task: Task, filter: Filter): boolean {
 
 export default function TasksScreen() {
   const tasks = useCollection<Task>('local_tasks');
+  // The same site the bar above the list names — read from the store rather than a second chooser,
+  // so the Insight card can never report on a different project than the screen says it is on.
+  const insightProjectId = useProjectStore((s) => s.active?.projectId ?? '');
   const t = useT();
   const p = usePalette();
   const screen = useMemo(() => makeScreenStyles(p), [p]);
@@ -172,6 +177,12 @@ export default function TasksScreen() {
   return (
     <View testID="tasks-screen" style={[styles.page, { backgroundColor: p.bg }]}>
       <ProjectContextBar />
+      {/* The Insight card the restructured drawing opens this list with
+          (03_site_engineer/03_tasks/01_se_tasks). Backed by DELAY_RISK — the only schedule report
+          the gateway serves — and reading its level and risk factors rather than its first string
+          field; see components/ScheduleInsight.tsx. Rendered only once a project is chosen, because
+          every report endpoint is project-scoped and the bar above is where that is answered. */}
+      {insightProjectId !== '' ? <ScheduleInsight projectId={insightProjectId} /> : null}
       {/* NO in-content page title, though the mockup draws "รายการงานวันนี้" (§32.7 Mobile App Shell:
           a top-level tab screen is named by its active bottom-nav tab, and repeating the name inside
           the content states it twice). This is the one place the mockup is deliberately not followed

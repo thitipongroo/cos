@@ -40,6 +40,28 @@ describe('the bar is four wide, and the fifth entry goes to the drawer', () => {
     }
   });
 
+  it('gives SITE_ENGINEER the bar its mockups draw, in that order', () => {
+    // PO decision 2026-08-12. ORDER IS THE ASSERTION, not just membership: `tasks` had to be moved
+    // BELOW `issues` in ALL_TABS to produce it, because the bar renders in table order and the row
+    // was previously above (where it serves SITE_WORKER). Left alone it would have read
+    // Home | Tasks | Issues | Reports.
+    expect(visibleTabsFor(CosRole.SITE_ENGINEER).map((tab) => tab.name)).toEqual([
+      'home',
+      'issues',
+      'tasks',
+      'reports',
+    ]);
+    // The move must not have disturbed the role the row already belonged to.
+    expect(visibleTabsFor(CosRole.SITE_WORKER).map((tab) => tab.name)).toEqual([
+      'home',
+      'tasks',
+      'safety-checklist',
+      'directory',
+    ]);
+    // …nor the role that kept Inspections.
+    expect(visibleTabsFor(CosRole.SAFETY_OFFICER).map((tab) => tab.name)).toContain('inspections');
+  });
+
   it('turns a tab pushed off the bar into a drawer row that is recognisably itself', () => {
     // No role exercises this yet, so it is exercised directly — the rule that catches a fifth tab
     // must not be first tried out on the day someone adds one.
@@ -180,10 +202,14 @@ describe('drawerLinksFor — derived from §6.4 / §6.8', () => {
   });
 
   it('drops each role’s own tabs from its derived set', () => {
-    // SITE_ENGINEER's bar is Home | Issues | Inspections | Reports, so two derived rows go.
+    // SITE_ENGINEER's bar is Home | Issues | Tasks | Reports, so two derived rows go.
     expect(routes(CosRole.SITE_ENGINEER)).not.toContain('/reports');
-    expect(routes(CosRole.SITE_ENGINEER)).not.toContain('/inspections');
+    expect(routes(CosRole.SITE_ENGINEER)).not.toContain('/tasks');
     expect(routes(CosRole.SITE_ENGINEER)).toContain('/incidents');
+    // …and the one the 2026-08-12 bar change handed BACK to the drawer. Asserted because this is
+    // the whole reason dropping Inspections from the bar did not drop it from the app: the derived
+    // row exists for this role and was suppressed only while it was a tab.
+    expect(routes(CosRole.SITE_ENGINEER)).toContain('/inspections');
   });
 
   it('gives no role an empty drawer by accident', () => {

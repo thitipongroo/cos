@@ -2,7 +2,7 @@
 // capture-android-login.mjs (see that file for why Detox cannot drive these flows).
 //
 // Writes docs/screens/android/03-site-engineer/01-Home/01-se-home-dashboard.png: the SITE_ENGINEER landing dashboard
-// (mockup/mobile/03_site_engineer/01_dashboard/) with live data — BOQ-value-weighted project progress
+// (mockup/mobile/03_site_engineer/01_home/01_se_home_dashboard/) with live data — BOQ-value-weighted project progress
 // (§32.12), open issues, and upcoming tasks — reached through a real Path A (SMS OTP) login.
 //
 // Prerequisites (all must already be running):

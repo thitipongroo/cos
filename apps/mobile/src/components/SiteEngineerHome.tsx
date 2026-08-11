@@ -1,5 +1,7 @@
 // Site Engineer Home — the role's landing "command view".
-// Reference mockup: mockup/mobile/03_site_engineer/01_dashboard/ (screen.png + code.html).
+// Reference mockup: mockup/mobile/03_site_engineer/01_home/01_se_home_dashboard/ (screen.png +
+// code.html). The path moved in the 2026-08-11 restructure (`01_dashboard/` → `01_home/
+// 01_se_home_dashboard/`, git rename); the drawing itself was also revised in the same commit.
 //
 // Rendered by (app)/home.tsx for CosRole.SITE_ENGINEER; it lives here rather than under app/ because
 // everything in app/ is a route, and this is the Home tab's content, not a route of its own. It is a
@@ -18,6 +20,20 @@
 //   - Background is a solid tiered dark surface per the design tokens — the ADR-071 blueprint GRID was
 //     removed (the tokens specify no grid; §32.7 prohibits blueprint imagery). The progress-bar GLOW
 //     (the other half of ADR-071) is kept, by product-owner decision 2026-07-26.
+//
+// THE 2026-08-11 MOCKUP REVISION, and what of it landed here. That commit changed four things in
+// the drawing. One is a restyle and is applied: the severity count moved from the far right of the
+// "Active Issues" heading to sit beside the title. The other three are ADDITIONS to the screen, not
+// restyles of it, and ADR-085 makes the mockups authoritative for style rather than composition —
+// so they are recorded here and not built on a drawing alone:
+//   - an "Active Project" bar (accent strip · apartment plate · ACTIVE PROJECT eyebrow · name ·
+//     44pt sync_alt switch) in place of the project picker. Swapping the picker for it is a
+//     behaviour change, not a paint job: this screen keeps its own local `projectId`, while the
+//     switch control in the drawing is the shared picker overlay backed by `projectStore`.
+//   - "SEE ALL" links on the Active Issues and Upcoming Tasks headings — new navigation.
+//   - a `filter_list` glyph beside each — a filter with no facet defined anywhere in the spec.
+// The revised header (10px tracking-widest wordmark, smaller bell and avatar) belongs to the shared
+// TopBar, which every role renders; it is not this component's to change.
 //
 // Driven by REAL data, never mockup placeholders (ห้ามเดา): the schedule word/colour come from spi
 // (behind → red, not the mockup's "Ahead of Schedule"), the phase is the derived current phase, and
@@ -595,7 +611,17 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
-  sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  // The count badge sits NEXT TO the title, not at the far edge (2026-08-11 mockup revision, which
+  // moved `2 CRITICAL` inside the heading group with an `ml-2`). Pushed to the right margin it read
+  // as a separate control rather than as part of the heading it counts. The drawing's right edge
+  // carries a SEE ALL link and a filter glyph instead — neither is rendered here; see the header
+  // note on why those are additions to the screen rather than a restyle of it.
+  sectionHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    gap: spacing.xs,
+  },
   sectionTitle: {
     fontSize: typography.label.fontSize,
     fontFamily: fontFamily.semibold,
