@@ -35,6 +35,12 @@
 // The revised header (10px tracking-widest wordmark, smaller bell and avatar) belongs to the shared
 // TopBar, which every role renders; it is not this component's to change.
 //
+// SEE ALL IS BUILT; THE FILTER GLYPH BESIDE IT IS NOT (2026-08-12). The revision draws both on each
+// section heading. SEE ALL has a real destination — the Issues and Tasks tabs, which this role now
+// carries — so it is a link to a screen that exists. The `filter_list` glyph next to it has no
+// facet: neither screen defines a filter, `issues` has no severity or status control at all (its
+// severity is fixed on create), and a control that opens nothing is worse than an absent one.
+//
 // Driven by REAL data, never mockup placeholders (ห้ามเดา): the schedule word/colour come from spi
 // (behind → red, not the mockup's "Ahead of Schedule"), the phase is the derived current phase, and
 // the issue rows carry no "AI: 94% • BIM SYNC" chip — no such field exists on issues.
@@ -127,6 +133,24 @@ function CountBadge({
       <Text style={[styles.badgeNumber, { color: colour }]}>{count}</Text>
       <Text style={[styles.badgeLabel, { color: colour }]}> {label}</Text>
     </Text>
+  );
+}
+
+/** The revision's "SEE ALL ›" link on a section heading. Accent, per the §20.8 note on the eyebrow. */
+function SeeAll({ testID, onPress }: { testID: string; onPress: () => void }): React.JSX.Element {
+  const { t } = useI18n();
+  return (
+    <TouchableOpacity
+      testID={testID}
+      onPress={onPress}
+      accessibilityRole="link"
+      accessibilityLabel={t('home.engineer.seeAll')}
+      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      style={styles.seeAll}
+    >
+      <Text style={styles.seeAllText}>{t('home.engineer.seeAll')}</Text>
+      <MaterialIcons name="chevron-right" size={16} color={darkColors.accent} />
+    </TouchableOpacity>
   );
 }
 
@@ -379,15 +403,18 @@ export default function SiteEngineerHome() {
         </View>
 
         <View style={styles.sectionHead}>
-          <Text style={styles.sectionTitle}>{t('home.engineer.activeIssues')}</Text>
-          {topSev ? (
-            <CountBadge
-              testID="severity-count"
-              label={topSev.severity}
-              count={topSev.count}
-              colour={SEVERITY_COLOR[topSev.severity] ?? darkColors.muted}
-            />
-          ) : null}
+          <View style={styles.sectionHeadLeft}>
+            <Text style={styles.sectionTitle}>{t('home.engineer.activeIssues')}</Text>
+            {topSev ? (
+              <CountBadge
+                testID="severity-count"
+                label={topSev.severity}
+                count={topSev.count}
+                colour={SEVERITY_COLOR[topSev.severity] ?? darkColors.muted}
+              />
+            ) : null}
+          </View>
+          <SeeAll testID="issues-see-all" onPress={() => router.push('/issues')} />
         </View>
         <LoadingBoundary
           loading={loading}
@@ -440,25 +467,28 @@ export default function SiteEngineerHome() {
         </LoadingBoundary>
 
         <View style={styles.sectionHead}>
-          <Text style={styles.sectionTitle}>{t('home.engineer.upcomingTasks')}</Text>
-          <View style={styles.urgencyRow}>
-            {urgency.overdue > 0 ? (
-              <CountBadge
-                testID="overdue-count"
-                label={t('home.engineer.overdueLabel')}
-                count={urgency.overdue}
-                colour={darkColors.danger}
-              />
-            ) : null}
-            {urgency.dueSoon > 0 ? (
-              <CountBadge
-                testID="due-soon-count"
-                label={t('home.engineer.dueSoonLabel')}
-                count={urgency.dueSoon}
-                colour={darkColors.warning}
-              />
-            ) : null}
+          <View style={styles.sectionHeadLeft}>
+            <Text style={styles.sectionTitle}>{t('home.engineer.upcomingTasks')}</Text>
+            <View style={styles.urgencyRow}>
+              {urgency.overdue > 0 ? (
+                <CountBadge
+                  testID="overdue-count"
+                  label={t('home.engineer.overdueLabel')}
+                  count={urgency.overdue}
+                  colour={darkColors.danger}
+                />
+              ) : null}
+              {urgency.dueSoon > 0 ? (
+                <CountBadge
+                  testID="due-soon-count"
+                  label={t('home.engineer.dueSoonLabel')}
+                  count={urgency.dueSoon}
+                  colour={darkColors.warning}
+                />
+              ) : null}
+            </View>
           </View>
+          <SeeAll testID="tasks-see-all" onPress={() => router.push('/tasks')} />
         </View>
         <LoadingBoundary
           loading={loading}
@@ -619,8 +649,25 @@ const styles = StyleSheet.create({
   sectionHead: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-start',
+    justifyContent: 'space-between',
     gap: spacing.xs,
+  },
+  // Title + its count badges, grouped so they read as one heading and the SEE ALL link keeps the
+  // right edge to itself.
+  sectionHeadLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexShrink: 1 },
+  seeAll: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    minHeight: touchTarget.iconButton,
+    paddingLeft: spacing.xs,
+  },
+  seeAllText: {
+    color: darkColors.accent,
+    fontFamily: fontFamily.bold,
+    fontSize: 11,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
   },
   sectionTitle: {
     fontSize: typography.label.fontSize,

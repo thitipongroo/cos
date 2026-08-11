@@ -373,6 +373,7 @@
       "moreScheduled": "+ อีก {count} งานที่วางไว้"
     },
     "engineer": {
+      "seeAll": "ดูทั้งหมด",
       "appName": "CONSTRUCTION OS",
       "notifications": "การแจ้งเตือน",
       "progressTitle": "ความคืบหน้าโครงการ",
@@ -539,6 +540,8 @@
     "reports": {
       "title": "รายงานหน้างาน",
       "empty": "ไม่มีรายงาน",
+      "loadMore": "โหลดประวัติเพิ่ม",
+      "newReport": "สร้างรายงานใหม่",
       "materialTitle": "บันทึกวัสดุที่ใช้",
       "materialPlaceholder": "วัสดุ (เช่น ปูนซีเมนต์ปอร์ตแลนด์ 50 กก.)",
       "qtyPlaceholder": "จำนวน (เช่น 12.5)",

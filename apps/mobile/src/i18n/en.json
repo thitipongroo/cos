@@ -373,6 +373,7 @@
       "moreScheduled": "+ {count} more scheduled"
     },
     "engineer": {
+      "seeAll": "See all",
       "appName": "CONSTRUCTION OS",
       "notifications": "Notifications",
       "progressTitle": "Project progress",
@@ -539,6 +540,8 @@
     "reports": {
       "title": "Site Reports",
       "empty": "No reports",
+      "loadMore": "Load more history",
+      "newReport": "New report",
       "materialTitle": "Record material used",
       "materialPlaceholder": "Material (e.g. Portland Cement 50kg)",
       "qtyPlaceholder": "Qty (e.g. 12.5)",

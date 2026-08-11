@@ -29,7 +29,8 @@ import { ConflictBadge } from '../../components/ConflictBadge';
 import { ProjectPicker } from '../../components/ProjectPicker';
 import { ProjectContextBar } from '../../components/ProjectContextBar';
 import { useI18n } from '../../i18n';
-import { colors, fontFamily, radius, spacing, typography } from '../../theme/tokens';
+import { MaterialIcons } from '@expo/vector-icons';
+import { colors, fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
 import { screen } from '../../theme/screenStyles';
 
 interface ReportRow {
@@ -49,13 +50,34 @@ function SiteEngineerReports() {
   const [qty, setQty] = useState('');
   const [unit, setUnit] = useState('');
   const [savedFor, setSavedFor] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
   const { t, formatDate } = useI18n();
 
-  const load = async (): Promise<void> => {
+  /**
+   * `GET /site/reports` is page/limit paginated server-side (site-ops.controller: page ≥ 1, limit
+   * capped at 100, default 20). The screen asked for page 1 and stopped, so the list was silently
+   * the newest 20 reports with no way to reach the rest — which is what the drawing's "Load More
+   * History" button is for (mockup 03_site_engineer/04_reports/04_se_reports).
+   *
+   * THERE IS NO TOTAL IN THE RESPONSE, so "is there more" is inferred the only honest way available:
+   * a full page came back, so another page may exist. A short page means the end. That can cost one
+   * empty request when the count divides exactly by the page size, which is cheaper than inventing a
+   * `total` field the endpoint does not return.
+   */
+  const PAGE_SIZE = 20;
+
+  const load = async (nextPage = 1): Promise<void> => {
     setLoading(true);
     try {
-      const res = await get<{ items?: ReportRow[] } | ReportRow[]>('/site/reports');
-      setReports(Array.isArray(res) ? res : (res.items ?? []));
+      const res = await get<{ items?: ReportRow[] } | ReportRow[]>(
+        `/site/reports?page=${String(nextPage)}&limit=${String(PAGE_SIZE)}`,
+      );
+      const rows = Array.isArray(res) ? res : (res.items ?? []);
+      // Page 1 REPLACES (it is also what pull-to-refresh calls); later pages append.
+      setReports((prev) => (nextPage === 1 ? rows : [...prev, ...rows]));
+      setPage(nextPage);
+      setHasMore(rows.length === PAGE_SIZE);
     } catch {
       // offline / error — keep the last list
     } finally {
@@ -104,8 +126,25 @@ function SiteEngineerReports() {
           testID="reports-list"
           data={reports}
           keyExtractor={(r) => r.report_id}
-          refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
+          refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void load(1)} />}
           ListEmptyComponent={<Text style={screen.empty}>{t('site.reports.empty')}</Text>}
+          // The drawing's "Load More History". Rendered only while a full page came back, so the
+          // button never offers a page that is known not to exist.
+          ListFooterComponent={
+            hasMore ? (
+              <TouchableOpacity
+                testID="reports-load-more"
+                accessibilityRole="button"
+                accessibilityLabel={t('site.reports.loadMore')}
+                disabled={loading}
+                onPress={() => void load(page + 1)}
+                style={styles.loadMore}
+              >
+                <MaterialIcons name="history" size={18} color={colors.primary} />
+                <Text style={styles.loadMoreText}>{t('site.reports.loadMore')}</Text>
+              </TouchableOpacity>
+            ) : null
+          }
           renderItem={({ item }) => {
             const open = selectedReportId === item.report_id;
             return (
@@ -168,6 +207,20 @@ function SiteEngineerReports() {
           }}
         />
       </LoadingBoundary>
+
+      {/* The drawing's floating "+" (mockup 04_se_reports). It pushes the daily-report FORM, which
+          is the singular `/report` route — a different screen from this plural review list that
+          shares the word. That form is a tab for no role since 2026-08-08 and is reached from
+          quick-action menus, so this list previously had no way to start the thing it lists. */}
+      <TouchableOpacity
+        testID="reports-fab"
+        accessibilityRole="button"
+        accessibilityLabel={t('site.reports.newReport')}
+        onPress={() => router.push('/report')}
+        style={styles.fab}
+      >
+        <MaterialIcons name="add" size={28} color={colors.bg} />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -257,6 +310,30 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   // The boundary occupies the list's space so the FlatList still fills the screen once revealed.
   listRegion: { flex: 1 },
+  loadMore: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    minHeight: touchTarget.secondaryButton,
+    marginTop: spacing.sm,
+  },
+  loadMoreText: {
+    color: colors.primary,
+    fontFamily: fontFamily.semibold,
+    fontSize: typography.caption.fontSize,
+  },
+  fab: {
+    position: 'absolute',
+    right: spacing.md,
+    bottom: spacing.md,
+    width: touchTarget.listItem,
+    height: touchTarget.listItem,
+    borderRadius: touchTarget.listItem / 2, // a circle: half the width, off the radius scale (§32.7)
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+  },
   sub: {
     fontSize: typography.caption.fontSize,
     fontFamily: fontFamily.regular,
