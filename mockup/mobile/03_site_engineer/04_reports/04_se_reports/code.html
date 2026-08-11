@@ -1,0 +1,274 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Site Reports List - Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "dark-surface": "#0F172A",
+                      "secondary-container": "#03b5d3",
+                      "error": "#ffb4ab",
+                      "on-secondary": "#003640",
+                      "on-surface": "#d3e4fe",
+                      "on-tertiary-fixed-variant": "#414658",
+                      "on-secondary-fixed-variant": "#004e5c",
+                      "on-background": "#d3e4fe",
+                      "on-primary-container": "#eeefff",
+                      "surface-variant": "#26364a",
+                      "primary-container": "#2563eb",
+                      "sync-active": "#FFD60A",
+                      "tertiary-fixed": "#dee1f9",
+                      "on-surface-variant": "#c3c6d7",
+                      "tertiary-fixed-dim": "#c1c5dc",
+                      "on-secondary-fixed": "#001f26",
+                      "inverse-surface": "#d3e4fe",
+                      "primary-fixed": "#dbe1ff",
+                      "inverse-on-surface": "#213145",
+                      "on-primary-fixed": "#00174b",
+                      "secondary-fixed": "#acedff",
+                      "on-tertiary-container": "#eeefff",
+                      "primary-fixed-dim": "#b4c5ff",
+                      "tertiary-container": "#686c80",
+                      "background": "#031427",
+                      "surface-container-lowest": "#000f21",
+                      "surface-bright": "#2a3a4f",
+                      "surface-tint": "#b4c5ff",
+                      "surface-dim": "#031427",
+                      "error-container": "#93000a",
+                      "on-primary-fixed-variant": "#003ea8",
+                      "outline-variant": "#434655",
+                      "surface-container": "#102034",
+                      "mobile-primary": "#0066FF",
+                      "outline": "#8d90a0",
+                      "surface-container-low": "#0b1c30",
+                      "mobile-success": "#00C853",
+                      "surface-container-highest": "#26364a",
+                      "dark-bg": "#020617",
+                      "tertiary": "#c1c5dc",
+                      "on-secondary-container": "#00424e",
+                      "on-tertiary": "#2b3041",
+                      "mobile-warning": "#FF9500",
+                      "mobile-danger": "#FF3B30",
+                      "on-error": "#690005",
+                      "on-error-container": "#ffdad6",
+                      "sync-pending": "#94A3B8",
+                      "surface-container-high": "#1b2b3f",
+                      "surface": "#031427",
+                      "secondary-fixed-dim": "#4cd7f6",
+                      "inverse-primary": "#0053db",
+                      "primary": "#b4c5ff",
+                      "on-primary": "#002a78",
+                      "on-tertiary-fixed": "#161b2b",
+                      "secondary": "#4cd7f6"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "base": "4px",
+                      "space-3": "12px",
+                      "space-4": "16px",
+                      "web-margin": "32px",
+                      "edge-mobile": "24px",
+                      "space-2": "8px",
+                      "space-1": "4px",
+                      "touch-target": "52px"
+              },
+              "fontFamily": {
+                      "display-web": ["Inter Tight"],
+                      "hero-mobile": ["Inter Tight"],
+                      "body-web": ["Inter Tight"],
+                      "h1-web": ["Inter Tight"],
+                      "label-mobile": ["Inter Tight"],
+                      "h2-web": ["Inter Tight"],
+                      "body-mobile": ["Inter Tight"],
+                      "tiny-web": ["Inter Tight"]
+              },
+              "fontSize": {
+                      "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                      "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                      "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 24px); }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-mobile min-h-screen pb-[96px]">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky bg-surface dark:bg-dark-bg border-b border-outline-variant dark:border-surface-container-highest z-40">
+<div class="flex justify-between items-center px-edge-mobile h-[64px] w-full">
+<div class="flex items-center gap-space-3 active:scale-95 duration-100 transition-transform cursor-pointer">
+<div class="w-10 h-10 rounded-full bg-surface-container-high overflow-hidden border border-outline-variant">
+<img alt="Site Engineer Profile" class="w-full h-full object-cover" data-alt="A portrait of a male construction site engineer wearing a yellow hard hat and a high-visibility safety vest over a blue plaid shirt. He is outdoors on a construction site with blurred scaffolding in the background. The lighting is bright and sunny, conveying a professional and industrious mood. Shot in high resolution with sharp focus on the face." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBnYFQ1ulhVnSP0QVTLiWBdAOBpSb_gIYl210IojW9F0YALVY9v17FpWg2X2Z2kE_9cCn-a2pWbkG-AWq836KT7ST1YZ_CNXSPlqU6fYNwNxz1u5Bb36cHQg7yfQlQ0bW2tjmEni46s1T-QYKX_UN3hvq24h6XCyQUjhLphZWdNpHrZlIiTEgZqeV6_Q_VIfF55nLr4Cogxn6XR2U21G9pRHdW5OGEf2UJiF80HClMWKlIZYFiOPq0Q">
+</div>
+<div>
+<h1 class="font-h1-web text-h1-web font-bold tracking-tight text-primary dark:text-primary-fixed">CONSTRUCTION OS</h1>
+</div>
+</div>
+<button class="w-touch-target h-touch-target flex items-center justify-center text-primary dark:text-primary-fixed hover:bg-surface-container-low dark:hover:bg-surface-container transition-colors rounded-full active:scale-95 duration-100">
+<span class="material-symbols-outlined text-[24px]">sync</span>
+</button>
+</div>
+</header>
+<!-- Active Project Bar -->
+<div class="px-edge-mobile py-space-4">
+    <div class="bg-surface-container-high rounded-xl p-space-4 border border-surface-container-highest shadow-lg flex items-center justify-between">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                <span class="material-symbols-outlined text-[28px]">apartment</span>
+            </div>
+            <div>
+                <p class="font-tiny-web text-tiny-web text-on-surface-variant uppercase tracking-wider mb-0.5">ACTIVE PROJECT</p>
+                <h2 class="font-h2-web text-h2-web text-on-surface font-bold tracking-tight">SKYLINE TOWER A</h2>
+            </div>
+        </div>
+        <button class="h-10 px-4 rounded-lg bg-surface-container-low border border-outline-variant text-on-surface font-label-mobile text-label-mobile hover:bg-surface-bright transition-colors active:scale-95 flex items-center gap-2">
+            <span class="material-symbols-outlined text-[18px]">sync_alt</span>
+            
+        </button>
+    </div>
+</div>
+<main class="px-edge-mobile py-space-4 space-y-space-4">
+<!-- Search & Filter -->
+<div class="flex gap-space-3">
+<div class="flex-1 relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full h-touch-target bg-surface-container-low border border-outline-variant rounded-lg pl-12 pr-4 text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="Search reports..." type="text">
+</div>
+<button class="w-touch-target h-touch-target bg-surface-container-low border border-outline-variant rounded-lg flex items-center justify-center text-on-surface active:scale-95 transition-transform">
+<span class="material-symbols-outlined">tune</span>
+</button>
+</div>
+<!-- AI Insight Card -->
+<div class="bg-surface-container rounded-xl p-space-4 border-l-4 border-secondary-container shadow-lg relative overflow-hidden">
+<div class="absolute top-0 right-0 w-32 h-32 bg-secondary-container/5 rounded-bl-full pointer-events-none"></div>
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-secondary-container text-[20px]" style="font-variation-settings: &quot;FILL&quot; 1;">smart_toy</span>
+<span class="font-tiny-web text-tiny-web text-secondary-container uppercase tracking-wider">Insight</span>
+</div>
+<p class="font-body-mobile text-body-mobile text-on-surface mb-3 leading-relaxed">
+                3 reports pending submission. AI suggests focusing on the MEP Rough-in blockers.
+            </p>
+<div class="flex items-center gap-4 border-t border-outline-variant/30 pt-3">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-mobile-success text-[16px]">check_circle</span>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant">CONFIDENCE: 92%</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-on-surface-variant text-[16px]">database</span>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant">Source: Daily Logs</span>
+</div>
+</div>
+</div>
+<!-- Report List -->
+<div class="space-y-space-3">
+<div class="flex justify-between items-end mb-2">
+<h3 class="font-h2-web text-h2-web text-on-surface">Recent Reports</h3>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant">42 TOTAL</span>
+</div>
+<!-- Report Card 1 -->
+<div class="bg-surface-container rounded-lg p-space-4 border border-surface-container-highest hover:bg-surface-bright transition-colors active:scale-[0.98] cursor-pointer flex items-center gap-4 relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-sync-active"></div>
+<div class="flex-1">
+<div class="flex items-center gap-2 mb-1">
+<span class="px-2 py-0.5 rounded-full bg-sync-active/10 text-sync-active font-tiny-web text-tiny-web border border-sync-active/20">DRAFT</span>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant">Oct 24 • 14:30</span>
+</div>
+<h4 class="font-h2-web text-h2-web text-on-surface mb-1">Daily Site Report</h4>
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px]">cloud_sync</span>
+<span class="font-tiny-web text-tiny-web">PENDING</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</div>
+<!-- Report Card 2 -->
+<div class="bg-surface-container rounded-lg p-space-4 border border-surface-container-highest hover:bg-surface-bright transition-colors active:scale-[0.98] cursor-pointer flex items-center gap-4 relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-mobile-danger"></div>
+<div class="flex-1">
+<div class="flex items-center gap-2 mb-1">
+<span class="px-2 py-0.5 rounded-full bg-mobile-success/10 text-mobile-success font-tiny-web text-tiny-web border border-mobile-success/20">SUBMITTED</span>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant">Oct 23 • 09:15</span>
+</div>
+<h4 class="font-h2-web text-h2-web text-on-surface mb-1">Safety Incident Report</h4>
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px] text-mobile-success">cloud_done</span>
+<span class="font-tiny-web text-tiny-web">SYNCED</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</div>
+<!-- Report Card 3 -->
+<div class="bg-surface-container rounded-lg p-space-4 border border-surface-container-highest hover:bg-surface-bright transition-colors active:scale-[0.98] cursor-pointer flex items-center gap-4 relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-mobile-success"></div>
+<div class="flex-1">
+<div class="flex items-center gap-2 mb-1">
+<span class="px-2 py-0.5 rounded-full bg-mobile-success/10 text-mobile-success font-tiny-web text-tiny-web border border-mobile-success/20">SUBMITTED</span>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant">Oct 22 • 16:45</span>
+</div>
+<h4 class="font-h2-web text-h2-web text-on-surface mb-1">Material Delivery Log</h4>
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px] text-mobile-success">cloud_done</span>
+<span class="font-tiny-web text-tiny-web">SYNCED</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</div>
+<button class="w-full h-touch-target rounded-lg border border-dashed border-outline-variant text-on-surface-variant font-label-mobile text-label-mobile hover:bg-surface-container-low transition-colors flex items-center justify-center gap-2 mt-4">
+<span class="material-symbols-outlined">history</span>
+                Load More History
+            </button>
+</div>
+</main>
+<!-- Floating Action Button -->
+<button class="fixed bottom-[96px] right-edge-mobile w-14 h-14 bg-mobile-primary text-white rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-transform z-50 border border-white/10">
+<span class="material-symbols-outlined text-[28px]" style="font-variation-settings: &quot;wght&quot; 600;">add</span>
+</button>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-safe h-[72px] bg-surface-container dark:bg-surface-container-low border-t border-outline-variant dark:border-surface-container-highest">
+<!-- Dashboard (Inactive) -->
+<div class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline w-16 h-12 hover:bg-surface-bright transition-all active:scale-90 duration-150 cursor-pointer rounded-lg">
+<span class="material-symbols-outlined mb-1">dashboard</span>
+<span class="font-mobile-text-label text-mobile-text-label text-[10px]">Home</span>
+</div>
+<!-- Issues (Inactive) -->
+<div class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline w-16 h-12 hover:bg-surface-bright transition-all active:scale-90 duration-150 cursor-pointer rounded-lg">
+<span class="material-symbols-outlined mb-1">report_problem</span>
+<span class="font-mobile-text-label text-mobile-text-label text-[10px]">Issues</span>
+</div>
+<!-- Tasks (Inactive) -->
+<div class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline w-16 h-12 hover:bg-surface-bright transition-all active:scale-90 duration-150 cursor-pointer rounded-lg">
+<span class="material-symbols-outlined mb-1">assignment</span>
+<span class="font-mobile-text-label text-mobile-text-label text-[10px]">Tasks</span>
+</div>
+<!-- Reports (Active) -->
+<div class="flex flex-col items-center justify-center text-primary dark:text-primary-fixed bg-primary/10 rounded-xl px-4 py-1 hover:bg-surface-bright transition-all active:scale-90 duration-150 cursor-pointer">
+<span class="material-symbols-outlined mb-0.5" style="font-variation-settings: &quot;FILL&quot; 1;">description</span>
+<span class="font-mobile-text-label text-mobile-text-label text-[10px] font-bold">Reports</span>
+</div>
+</nav>
+
+
+</body></html>
