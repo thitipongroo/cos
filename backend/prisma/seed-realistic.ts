@@ -1014,12 +1014,23 @@ async function seedProject(tx: Tx, p: SeedProject): Promise<void> {
       await tx.$executeRaw`INSERT INTO finance.cost_transactions (transaction_id, project_id, tenant_id, source_type, source_id, amount, currency_code, transaction_date, description, recorded_by)
         VALUES (${uid(`ct-inv/${p.key}/${po.key}`)}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, 'INVOICE'::finance."CostSourceType", ${invId}::uuid, ${total}, ${THB}, ${addDays(orderedAt, 14)}::date, ${`Actual: ${po.key} delivered`}, ${U('fin')}::uuid)
         ON CONFLICT (transaction_id) DO NOTHING`;
-      // Payment recorded for the paid invoices (rest remain outstanding / AP queue).
-      if (po.paid) {
-        await tx.$executeRaw`INSERT INTO finance.payments (payment_id, invoice_id, project_id, tenant_id, amount, currency_code, payment_date, payment_reference, status, recorded_by)
-          VALUES (${uid(`pay/${p.key}/${po.key}`)}::uuid, ${invId}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, ${total}, ${THB}, ${addDays(orderedAt, 20)}::date, ${`TT-${p.code}-${po.key.toUpperCase()}`}, 'PROCESSED'::finance."PaymentStatus", ${U('fin')}::uuid)
-          ON CONFLICT (payment_id) DO NOTHING`;
-      }
+      // EVERY DELIVERED + INVOICED ORDER GETS A PAYMENT ROW; `po.paid` decides its STATUS, not
+      // whether the row exists. A delivered order whose invoice is APPROVED has money owed on it, and
+      // the way this platform records that is a `finance.payments` row awaiting the FINANCE approval
+      // (`PATCH /finance/payments/:id/approve`, PENDING → PROCESSED). Seeding only the settled half
+      // left the AP queue permanently empty: the Tenant-Admin dashboard's "Payments awaiting
+      // approval" read 0 on a fully seeded database, and the Finance Payments screen had nothing to
+      // approve — neither could be photographed doing its job.
+      //
+      // Four of the eight orders per project are `paid`, two more are `delivered` but not paid, so
+      // this yields TWO pending payments per project — ten across the five active ones. The date rule
+      // is deliberately the SAME (+20 days from the order): only the status differs between a
+      // settled payment and one still waiting, and inventing a second date rule would be inventing a
+      // fact about when finance records things.
+      await tx.$executeRaw`INSERT INTO finance.payments (payment_id, invoice_id, project_id, tenant_id, amount, currency_code, payment_date, payment_reference, status, recorded_by)
+        VALUES (${uid(`pay/${p.key}/${po.key}`)}::uuid, ${invId}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, ${total}, ${THB}, ${addDays(orderedAt, 20)}::date, ${`TT-${p.code}-${po.key.toUpperCase()}`},
+                ${po.paid ? 'PROCESSED' : 'PENDING'}::finance."PaymentStatus", ${U('fin')}::uuid)
+        ON CONFLICT (payment_id) DO UPDATE SET status = EXCLUDED.status`;
     }
   }
   // Progress claims — งวดงาน, what a project of this size has actually certified and paid to date

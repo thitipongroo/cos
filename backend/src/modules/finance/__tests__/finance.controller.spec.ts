@@ -102,14 +102,20 @@ describe('FinanceController', () => {
   });
 
   it('listPayments parses params and delegates (tenant-wide AP queue)', () => {
-    ctrl.listPayments('p-001', '2', '50');
-    expect(mockSvc.listPayments).toHaveBeenCalledWith({ project_id: 'p-001', page: 2, limit: 50 });
+    ctrl.listPayments('p-001', 'PENDING', '2', '50');
+    expect(mockSvc.listPayments).toHaveBeenCalledWith({
+      project_id: 'p-001',
+      status: 'PENDING',
+      page: 2,
+      limit: 50,
+    });
   });
 
-  it('listPayments uses query defaults when page/limit omitted', () => {
+  it('listPayments uses query defaults when status/page/limit omitted', () => {
     ctrl.listPayments();
     expect(mockSvc.listPayments).toHaveBeenCalledWith({
       project_id: undefined,
+      status: undefined,
       page: 1,
       limit: 20,
     });

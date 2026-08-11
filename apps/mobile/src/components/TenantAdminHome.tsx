@@ -12,9 +12,10 @@
 //   - System Status  → GET /health/live liveness (checkBackendHealth). The mockup's "OPTIMAL" tier is
 //     not derivable from a liveness ping, so we show Operational / Unavailable — the truth we have.
 //   - Pending Approvals → the proven sibling endpoints (home.tsx principle: no new endpoint): payments
-//     awaiting approval (/finance/payments PENDING) + POs awaiting approval (/procurement/
-//     purchase-orders PENDING_APPROVAL). The mockup's "#SYNC-4920 / 12 new users" are not real records,
-//     so we show the tenant's real approval queues instead.
+//     awaiting approval (/finance/payments?status=PENDING) + POs awaiting approval (/procurement/
+//     purchase-orders?status=PENDING_APPROVAL). Both counts come from the server's `total`, never from
+//     the page this screen happened to receive — see countByStatus(). The mockup's "#SYNC-4920 / 12 new
+//     users" are not real records, so we show the tenant's real approval queues instead.
 //   - AI Token Usage / AI Insights → GET /ai/usage (§26 metering, §31.3 >80% signal). Until the LLM
 //     gateway records real consumption the figure is genuinely 0 %, never the mockup's 78 %.
 //
@@ -42,8 +43,30 @@ import {
   typography,
 } from '../theme/tokens';
 
-function asList<T>(res: { items?: T[] } | T[]): T[] {
-  return Array.isArray(res) ? res : (res.items ?? []);
+/**
+ * How many rows the tenant has in `status`, ASKED OF THE SERVER.
+ *
+ * THESE TILES WERE COUNTING PAGE ONE, NOT COUNTING — the same defect the manager dashboard had
+ * (see the note in (app)/procurement.tsx). Both endpoints paginate at 20 by default; the seeded
+ * tenant holds forty-odd purchase orders and thirty-odd payments, and this screen asked for neither
+ * a filter nor a second page, then filtered the page it got. "Purchase orders awaiting approval"
+ * could therefore read 0 while the database held two — and, worse, read differently between runs:
+ * the seed inserts every PO in ONE transaction, so `created_at DEFAULT now()` is the same
+ * timestamp on all of them and the `ORDER BY created_at DESC` that decides page one has no
+ * tiebreaker.
+ *
+ * Both endpoints take `status` and return `total`, so the figure is the tenant's. `limit: '1'` is
+ * deliberate: nothing here reads the rows, only the count, so there is no reason to ship 20 of them
+ * over site 3G. The array fallback is for a server that answers a bare list — then the length is
+ * all there is, and it is at least a filtered one.
+ */
+async function countByStatus(path: string, status: string): Promise<number> {
+  const res = await get<{ items?: unknown[]; total?: number } | unknown[]>(path, {
+    status,
+    limit: '1',
+  });
+  if (!Array.isArray(res) && typeof res.total === 'number') return res.total;
+  return (Array.isArray(res) ? res : (res.items ?? [])).length;
 }
 
 export default function TenantAdminHome(): React.JSX.Element {
@@ -66,19 +89,13 @@ export default function TenantAdminHome(): React.JSX.Element {
     const healthP = checkBackendHealth()
       .then(setHealthy)
       .catch(() => setHealthy(false));
-    const paymentsP = get<{ items?: { status: string }[] } | { status: string }[]>(
-      '/finance/payments',
-    )
-      .then((res) => setPendingPayments(asList(res).filter((p) => p.status === 'PENDING').length))
+    const paymentsP = countByStatus('/finance/payments', 'PENDING')
+      .then(setPendingPayments)
       .catch(() => {
         /* offline — keep last */
       });
-    const posP = get<{ items?: { status: string }[] } | { status: string }[]>(
-      '/procurement/purchase-orders',
-    )
-      .then((res) =>
-        setPendingPos(asList(res).filter((p) => p.status === 'PENDING_APPROVAL').length),
-      )
+    const posP = countByStatus('/procurement/purchase-orders', 'PENDING_APPROVAL')
+      .then(setPendingPos)
       .catch(() => {
         /* offline — keep last */
       });

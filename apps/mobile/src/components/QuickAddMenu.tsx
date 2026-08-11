@@ -142,9 +142,12 @@ export function QuickAddMenu({
         </View>
 
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          {/* Header (the "Quick Commands" title was removed per PO 2026-07-31 — the wordmark above
-              already identifies the overlay; the subtitle carries the instruction). */}
-          <Text style={styles.subtitle}>{t('quickAdd.subtitle')}</Text>
+          {/* NO HEADER LINE AT ALL. The "Quick Commands" title went on 2026-07-31 (the wordmark
+              above already identifies the overlay) and the "Choose an action to create or update"
+              subtitle that inherited its job went on 2026-08-11 (PO decision), for the reason the
+              sibling <QuickActionsMenu /> already records: five labelled cards under a sheet the
+              user opened deliberately do not need to be told what they are. The `quickAdd.subtitle`
+              key was deleted with it in both locales rather than left orphaned. */}
 
           {/* Action cards */}
           <View style={styles.cards}>
@@ -291,13 +294,6 @@ const styles = StyleSheet.create({
   },
 
   content: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.xl },
-  subtitle: {
-    fontFamily: fontFamily.regular,
-    fontSize: typography.body.fontSize,
-    color: darkColors.muted,
-    marginTop: 4,
-    marginBottom: spacing.lg,
-  },
   cards: { gap: spacing.sm },
 
   // The AI report card is the one action here that is NOT a <QuickActionRow /> — it carries a

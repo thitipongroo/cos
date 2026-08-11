@@ -281,9 +281,20 @@ export class FinanceRepository {
     return rows[0] ?? null;
   }
 
-  // Tenant-wide payments (AIP-132 AP queue); optional project_id filter (spec §14).
+  // Tenant-wide payments (AIP-132 AP queue); optional project_id + status filters (spec §14).
+  //
+  // `status` is filtered SERVER-SIDE for the same reason `/procurement/purchase-orders` and
+  // `/finance/billing` already do it: a caller that wants a count of one status cannot get it by
+  // filtering the page it happened to receive. This list paginates at 20 and the tenant holds
+  // thirty-odd payments, so a client-side filter over page one is not a count — the defect the
+  // Tenant-Admin dashboard's "Payments awaiting approval" tile hit. `total` is what a counter reads.
+  //
+  // Cast through the enum, not `::text`, mirroring the billing filter below: `status` is
+  // `finance."PaymentStatus"`, so comparing it to a bare parameter has no operator. An unknown value
+  // is rejected by Postgres as an invalid enum input rather than silently matching nothing.
   async findPayments(params: {
     project_id?: string;
+    status?: string;
     page: number;
     limit: number;
   }): Promise<{ rows: PaymentRow[]; total: number }> {
@@ -294,6 +305,7 @@ export class FinanceRepository {
         SELECT * FROM finance.payments
         WHERE tenant_id = ${this.tenantId}::uuid
           AND (${params.project_id ?? null}::uuid IS NULL OR project_id = ${params.project_id ?? null}::uuid)
+          AND (${params.status ?? null}::text IS NULL OR status = (${params.status ?? null})::finance."PaymentStatus")
         ORDER BY payment_date DESC
         LIMIT ${params.limit} OFFSET ${offset}
       `,
@@ -304,6 +316,7 @@ export class FinanceRepository {
         SELECT COUNT(*)::bigint AS count FROM finance.payments
         WHERE tenant_id = ${this.tenantId}::uuid
           AND (${params.project_id ?? null}::uuid IS NULL OR project_id = ${params.project_id ?? null}::uuid)
+          AND (${params.status ?? null}::text IS NULL OR status = (${params.status ?? null})::finance."PaymentStatus")
       `,
     );
     return { rows, total: Number(countRows[0]?.count ?? 0) };

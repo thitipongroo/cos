@@ -278,6 +278,7 @@ export class FinanceService {
 
   async listPayments(params: {
     project_id?: string;
+    status?: string;
     page: number;
     limit: number;
   }): Promise<{ items: PaymentRow[]; total: number; page: number; limit: number }> {

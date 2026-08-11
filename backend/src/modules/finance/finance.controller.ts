@@ -150,20 +150,29 @@ export class FinanceController {
     return this.svc.recordPayment(dto);
   }
 
-  // GET /api/v1/finance/payments  (tenant-wide AP payment queue, AIP-132; ?project_id= to scope)
+  // GET /api/v1/finance/payments  (tenant-wide AP payment queue, AIP-132; ?project_id= / ?status= to scope)
+  //
+  // `status` added 2026-08-11 — an OPTIONAL query param, so no version bump (QM-2: additive, not
+  // breaking). It brings this list level with `/finance/billing` and
+  // `/procurement/purchase-orders`, which already take one: without it a caller wanting "how many
+  // payments await approval" had to page the whole list or count the first page, and the
+  // Tenant-Admin dashboard did the latter.
   @Get('finance/payments')
   @Roles(...READ_ROLES)
-  @ApiOperation({ summary: 'List payments across the tenant (filterable by project)' })
+  @ApiOperation({ summary: 'List payments across the tenant (filterable by project and status)' })
   @ApiQuery({ name: 'project_id', required: false, type: String })
+  @ApiQuery({ name: 'status', required: false, type: String })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   listPayments(
     @Query('project_id') project_id?: string,
+    @Query('status') status?: string,
     @Query('page') page = '1',
     @Query('limit') limit = '20',
   ) {
     return this.svc.listPayments({
       project_id,
+      status,
       page: parsePage(page),
       limit: parseLimit(limit),
     });

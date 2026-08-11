@@ -17,7 +17,8 @@ import {
   type ConflictType,
 } from '../../api/conflicts';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
-import { useT } from '../../i18n';
+import { useI18n } from '../../i18n';
+import type { Locale } from '../../i18n';
 import { shortId } from '../../lib/shortId';
 import {
   darkColors,
@@ -57,10 +58,36 @@ function formatEntity(t: string): string {
     .join(' ');
 }
 
-function failureTime(iso: string): string {
+/**
+ * FAILED AT — `HH:mm · DD/MM/YYYY`.
+ *
+ * THE YEAR IS PART OF IT (product-owner decision 2026-08-11, "e.g. 08/07/2026"). Without it a queue
+ * that has been left alone over a new year reads as if the failure happened days ago: `01/44 · 28/07`
+ * is the same nine characters whether it failed last week or last July.
+ *
+ * THE DATE GOES THROUGH `Intl`, THE WAY QM-3 REQUIRES — this used to be `getDate()/getMonth()+1`
+ * with no year, and simply appending `getFullYear()` would have printed a GREGORIAN year to a Thai
+ * reader, which QM-3 names explicitly ("never hardcode Gregorian year arithmetic for Thai display").
+ * `th-TH-u-ca-buddhist` renders 2569 where English renders 2026.
+ *
+ * `en-GB`, not the app's `en-US` tag, for one reason: this screen has always printed day-first and
+ * the requested example is day-first. `en-US` with 2-digit day/month would silently reorder it to
+ * `07/08/2026` — the same characters meaning a different day.
+ *
+ * The TIME is left hand-rolled at 24h on purpose: `formatTime()` uses the app's `en-US` tag and
+ * would turn `01:44` into `01:44 AM`, a change to the frame nobody asked for. (It is a time, not a
+ * date, so no calendar question arises.)
+ */
+function failureTime(iso: string, locale: Locale): string {
   const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
   const p = (n: number): string => String(n).padStart(2, '0');
-  return `${p(d.getHours())}:${p(d.getMinutes())} · ${p(d.getDate())}/${p(d.getMonth() + 1)}`;
+  const date = new Intl.DateTimeFormat(locale === 'th' ? 'th-TH-u-ca-buddhist' : 'en-GB', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(d);
+  return `${p(d.getHours())}:${p(d.getMinutes())} · ${date}`;
 }
 
 function toText(v: unknown): string {
@@ -87,7 +114,9 @@ function buildDiff(
 }
 
 export default function SyncQueueScreen(): React.JSX.Element {
-  const t = useT();
+  // `locale` as well as `t`: FAILED AT renders its date through Intl, so the Thai reader gets the
+  // Buddhist year rather than a hand-rolled Gregorian one (QM-3). See failureTime().
+  const { t, locale } = useI18n();
   const [records, setRecords] = useState<ConflictRecord[] | null>(null);
   const [error, setError] = useState(false);
   const [filter, setFilter] = useState<'ALL' | ConflictType>('ALL');
@@ -190,7 +219,7 @@ export default function SyncQueueScreen(): React.JSX.Element {
                       </View>
                       <View style={styles.metaCol}>
                         <Text style={styles.metaLabel}>{t('syncQueue.failedAt')}</Text>
-                        <Text style={styles.metaValue}>{failureTime(r.created_at)}</Text>
+                        <Text style={styles.metaValue}>{failureTime(r.created_at, locale)}</Text>
                       </View>
                     </View>
 
@@ -333,11 +362,22 @@ const styles = StyleSheet.create({
     fontSize: typography.body.fontSize,
     color: darkColors.text,
   },
+  // ERROR REASON — the mockup's panel, piece for piece (ADR-085: mockups are authoritative for
+  // STYLE, and this zone had drifted from it in three ways).
+  //   mockup: `bg-dark-bg/50 p-3 rounded-lg border border-outline-variant/20`
+  //   label:  `text-tiny-web text-mobile-danger font-bold uppercase mb-1`
+  //   body:   `font-body-web text-on-surface italic` + the message inside "quotes"
+  // What was wrong: the panel sat on `elevated` (#111827), which is LIGHTER than the card it sits
+  // on, so it read as a raised chip where the drawing recesses it; it had no border at all; and the
+  // message was `muted` at label size, which made the one sentence explaining the failure the
+  // faintest text on the card. `bg` at 50% over `surface` is the recess the mockup draws.
   reasonBox: {
-    backgroundColor: darkColors.elevated,
+    backgroundColor: `${darkColors.bg}80`,
     borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: `${darkColors.border}33`,
     padding: spacing.sm,
-    gap: 2,
+    gap: 4,
   },
   reasonLabel: {
     fontFamily: fontFamily.bold,
@@ -348,8 +388,9 @@ const styles = StyleSheet.create({
   },
   reasonText: {
     fontFamily: fontFamily.regular,
-    fontSize: typography.label.fontSize,
-    color: darkColors.muted,
+    fontSize: typography.body.fontSize,
+    lineHeight: typography.body.lineHeight,
+    color: darkColors.text,
     fontStyle: 'italic',
   },
   diff: { gap: 2 },

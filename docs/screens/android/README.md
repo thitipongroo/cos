@@ -258,13 +258,39 @@ captured against the `seed-realistic.ts` dataset through a real Path A (SMS OTP)
 Suphaporn Rattanakul, the TENANT_ADMIN at Ekachai. The header avatar reads **"SR"** (her initials — no
 photo set), confirming the signed-in role.
 
-Everything is live, never fabricated: **System Status** is `Operational` (green) from the backend health
-probe; **AI Token Usage** shows a dash because this tenant has logged no AI usage yet (`ai.ai_usage_logs`
-is empty for it), and **AI System Insights** correspondingly reads "AI usage is within budget — no alerts"
-(the `alertLevel: none` state from `GET /ai/usage`); **Pending Approvals** is `0 items` — Payments awaiting
-approval `0` and Purchase orders awaiting approval `0` — because `seed-realistic.ts` seeds no `PENDING`
-payments or `PENDING_APPROVAL` POs for this tenant. These zeros are the real data, not placeholders; the
-screen renders its empty states truthfully rather than inventing figures.
+Everything is live, never fabricated. **System Status** is `Operational` (green) from the backend health
+probe. **Pending Approvals** is the tenant's two real approval queues — **Payments awaiting approval**
+(`/finance/payments?status=PENDING`) and **Purchase orders awaiting approval**
+(`/procurement/purchase-orders?status=PENDING_APPROVAL`), both counted by the SERVER's `total`.
+
+> **Both figures were wrong before 2026-08-11, in two different ways, and both are worth knowing.**
+>
+> **The payment queue did not exist.** `seed-realistic.ts` wrote a `finance.payments` row only for the
+> orders it marked `paid`, all `PROCESSED` — so a fully seeded database had an empty AP queue and this
+> tile read `0` truthfully but uselessly. Every delivered + invoiced order now gets a payment row and
+> `paid` decides its STATUS: four settled and two `PENDING` per project, ten pending across the five
+> active ones. A delivered order with an APPROVED invoice has money owed on it, and a `PENDING`
+> payment is how this platform records that (`PATCH /finance/payments/:id/approve` settles it).
+>
+> **The PO tile was counting page one, not counting.** `seedPendingApprovals()` has created two
+> `PENDING_APPROVAL` POs since 2026-08-10 — this README claimed otherwise until now — but the screen
+> fetched `/procurement/purchase-orders` unfiltered and filtered the result itself. The endpoint
+> paginates at 20, the tenant holds 42 POs, and because the seed inserts them all in ONE transaction
+> their `created_at DEFAULT now()` is the SAME timestamp, so the `ORDER BY created_at DESC` deciding
+> page one has no tiebreaker: the tile could read 0 or 2 on identical data. Both tiles now ask the
+> server for the status and read its `total` — the same fix `c75879dd` applied to the manager
+> dashboard. `/finance/payments` gained an optional `?status=` for it (additive, no version bump per
+> QM-2), bringing it level with `/finance/billing` and `/procurement/purchase-orders`.
+
+**AI Token Usage shows a dash, and seeding cannot change that.** `GET /ai/usage` is served by the
+**ai-gateway** ([`usage.py`](../../../services/ai-gateway/usage.py)) — Kong routes `/api/v1/ai` there,
+and the NestJS backend has no `ai` controller at all. These captures run against the backend on
+`:3000` with no Kong and no ai-gateway (it sits behind the compose `apps` profile), so the call cannot
+resolve however many rows `ai.ai_usage_logs` holds. **AI System Insights** reads "AI usage is within
+budget — no alerts" for the same reason: it is derived from the `alertLevel` that request would have
+returned. The dash is the honest rendering of "not measured here", which is why the widget shows one
+instead of a number (product-owner decision 2026-08-11 — leave the card as it is rather than add the
+gateway to the capture stack).
 
 > **On the office role logging in via Path A:** `TENANT_ADMIN` normally signs in through the browser
 > (Path B OIDC, where Keycloak enforces MFA). `provision-keycloak-demo.ts` gives every seeded phone-holder
@@ -512,7 +538,17 @@ The FAB's full-screen **Quick Commands** overlay
 bar (brand + SYNCED pill + close), **five action cards** (Invite · New System Integration · Apps &
 Services · Generate Usage Report · Force System Sync), and a small stats bento. Left-accent colour
 follows the action. With the fifth card the overlay now scrolls, so `02` is captured as **one full-page
-stitch** (`scripts/stitch-fullpage.py`). Real vs honest placeholder:
+stitch** (`scripts/stitch-fullpage.py`).
+
+> **The overlay now opens straight onto its cards — it has no heading line of any kind** (PO decision
+> 2026-08-11). The "Quick Commands" title went on 2026-07-31 because the wordmark above already
+> identifies the surface, and the "Choose an action to create or update" subtitle that inherited its
+> job went now, for the reason the sibling [`<QuickActionsMenu />`](../../../apps/mobile/src/components/QuickActionsMenu.tsx)
+> already records for the Site Worker: five labelled cards under a sheet the user opened deliberately
+> do not need to be told what they are. The `quickAdd.subtitle` key was deleted from **both** locales
+> with it, rather than left orphaned for a later reader to wonder about.
+
+Real vs honest placeholder:
 
 - **Force System Sync** — real (`runPushSync()` then `runDeltaSync()`, §17.6 flush + pull); tapping it
   spins the icon and the sub-label reads **SYNCING…** while it runs.
@@ -676,6 +712,26 @@ from `entity_id`, `FAILED AT` from `created_at`, and the **error reason** is a l
 each `conflict_type` (not a fabricated per-record message). `01-ta-alerts-dashboard` shows the populated
 list as one full-page image. **Mark resolved** is the single real action (the
 mockup's retry / merge / edit are all one `resolve` on the backend).
+
+> **`FAILED AT` carries the year** (product-owner decision 2026-08-11): `01:44 · 28/07/2026`, not the
+> `28/07` it printed before. A queue left alone across a new year read as though the failure had
+> happened days ago. The date now goes through `Intl` rather than the `getDate()/getMonth()+1`
+> arithmetic it used: appending `getFullYear()` would have printed a **Gregorian** year to a Thai
+> reader, which QM-3 names explicitly, so `th-TH-u-ca-buddhist` renders **2569** where English renders
+> 2026. The English tag is `en-GB`, not the app's `en-US`: this screen has always printed day-first,
+> and `en-US` with 2-digit day/month would silently reorder `08/07/2026` into `07/08/2026` — the same
+> characters meaning a different day. The **time** is deliberately left as hand-rolled 24h; it is a
+> time, not a date, and `formatTime()` would have turned `01:44` into `01:44 AM`.
+>
+> **`ERROR REASON` is the mockup's panel now** (ADR-085 — mockups are authoritative for style). The
+> drawing is `bg-dark-bg/50 p-3 rounded-lg border border-outline-variant/20` around a tiny bold red
+> label and an **italic message in "quotes"** at body size in `on-surface`. Ours had drifted in three
+> ways at once: the panel sat on `elevated` `#111827`, which is **lighter** than the card it sits on,
+> so it read as a raised chip where the drawing **recesses** it; it carried no border at all; and the
+> message was `muted` at label size, which made the one sentence explaining the failure the faintest
+> text on the card. The quotation marks live in the **i18n values**, one per locale, rather than being
+> concatenated at the call site — they are punctuation a locale owns, and these three keys are used
+> on no other screen.
 
 The five conflicts are demo rows seeded by
 [`seed-realistic.ts`](../../../backend/prisma/seed-realistic.ts) (a realistic tenant accumulates field-sync

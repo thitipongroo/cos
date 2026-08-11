@@ -256,14 +256,19 @@ describe('FinanceRepository', () => {
     expect(result.payment_id).toBe('pay-uuid-001');
   });
 
-  it('findPayments returns rows and total (with project filter)', async () => {
+  it('findPayments returns rows and total (with project + status filter)', async () => {
     mockPrisma.$queryRaw.mockResolvedValueOnce([paymentRow]).mockResolvedValueOnce([{ count: 1n }]);
-    const result = await repo.findPayments({ project_id: 'proj-uuid-001', page: 1, limit: 20 });
+    const result = await repo.findPayments({
+      project_id: 'proj-uuid-001',
+      status: 'PENDING',
+      page: 1,
+      limit: 20,
+    });
     expect(result.rows).toHaveLength(1);
     expect(result.total).toBe(1);
   });
 
-  it('findPayments returns total=0 when count empty (no project filter)', async () => {
+  it('findPayments returns total=0 when count empty (no project/status filter)', async () => {
     mockPrisma.$queryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
     const result = await repo.findPayments({ page: 1, limit: 20 });
     expect(result.total).toBe(0);
