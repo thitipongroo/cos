@@ -1,4 +1,4 @@
-<!DOCTYPE html><html class="dark" lang="en"><head>
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
 <meta charset="utf-8">
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
 <title>SiteOps Dashboard - Dark</title>
@@ -83,24 +83,44 @@
 </head>
 <body class="bg-background text-on-surface min-h-screen pb-28 blueprint-bg">
 <!-- TopAppBar -->
-<header class="fixed top-0 left-0 w-full z-50 bg-[#020617]/80 backdrop-blur-md border-b border-outline flex justify-between items-center px-edge-mobile h-16">
-<div class="flex items-center gap-2">
-<img alt="Logo" class="w-7 h-7 object-contain brightness-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAVG-rP1aWvqIcP_yhvZEzZzNTyMx2VNxKChVdbLoldgMoSB-i59NKvcCK1cySyf-vw790lyWtg67MRsQfOrsuWP6-X8WAmjqzQEDyTtVifeWfyuR_1d_JYyJji1uhvXyUf_r-dz2fWzyMm_Ssjmus-CZauOBAxV5oP_b1UCPVySbZHyJvbKAiopr-A2UODzb7XV1E98enckehddT-DdhXyiGZeg1duTjWr4M0T3-MafCR6tShlowNGy2f-eUlMRbav6ErSg_3DZzM">
-<span class="text-mobile-primary font-bold tracking-tighter text-lg uppercase">Construction OS</span>
+<header class="fixed top-0 left-0 w-full z-50 bg-[#020617]/80 backdrop-blur-md border-b border-outline flex justify-between items-center px-edge-mobile h-16"><div class="flex items-center gap-2 min-w-0 flex-1">
+  <img alt="Logo" class="w-6 h-6 object-contain brightness-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAVG-rP1aWvqIcP_yhvZEzZzNTyMx2VNxKChVdbLoldgMoSB-i59NKvcCK1cySyf-vw790lyWtg67MRsQfOrsuWP6-X8WAmjqzQEDyTtVifeWfyuR_1d_JYyJji1uhvXyUf_r-dz2fWzyMm_Ssjmus-CZauOBAxV5oP_b1UCPVySbZHyJvbKAiopr-A2UODzb7XV1E98enckehddT-DdhXyiGZeg1duTjWr4M0T3-MafCR6tShlowNGy2f-eUlMRbav6ErSg_3DZzM">
+  <span class="text-on-surface-variant font-bold tracking-widest text-[10px] uppercase whitespace-nowrap">Construction OS</span>
 </div>
-<div class="flex items-center gap-3">
-<button class="text-on-surface-variant relative p-2">
-<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
-<span class="absolute top-1 right-1 w-2 h-2 bg-mobile-danger rounded-full border-2 border-background"></span>
-</button>
-<div class="w-9 h-9 rounded-full overflow-hidden border border-outline">
-<img alt="Profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC8_ZrD4dxKi4BkofcHHpoHlv2NsQSemxYpcShqO5sxAD8QccQEuuAtdc7vObjA_SqavgK2f6nHUpB5r_-s6sLC5z3Pi6Em1bS4w0EhIeRS5bDkGyOpQ1JebEGItQHJSwE4ixhqvPK4JW-5KUvVVSJKCYjgvADPfZmAfbo6DxPuQSSvGzaj7v4YLBovebYPQM7frEpzW8ex6-rBRMzI2sAF1yoB43A6zfATj5G9ie8ko0m549BXfqXnGS8B-0GTYDdRt6gLD1OHfXE">
-</div>
-</div>
-</header>
+
+
+
+<div class="flex items-center gap-4 flex-1 justify-end">
+  <div class="hidden md:flex items-center gap-1.5 bg-mobile-primary/10 border border-mobile-primary/20 px-2 py-0.5 rounded">
+    <span class="material-symbols-outlined text-mobile-primary text-[14px]" style="font-variation-settings: 'FILL' 1;">sync</span>
+    <span class="text-[9px] font-black text-mobile-primary uppercase tracking-widest">Synced</span>
+  </div>
+  <div class="flex items-center gap-2">
+    <button class="text-on-surface-variant relative p-1.5 active:scale-95 transition-transform">
+      <span class="material-symbols-outlined text-[22px]" data-icon="notifications">notifications</span>
+      <span class="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-mobile-danger rounded-full border border-background"></span>
+    </button>
+    <div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant">
+      <img alt="Profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC8_ZrD4dxKi4BkofcHHpoHlv2NsQSemxYpcShqO5sxAD8QccQEuuAtdc7vObjA_SqavgK2f6nHUpB5r_-s6sLC5z3Pi6Em1bS4w0EhIeRS5bDkGyOpQ1JebEGItQHJSwE4ixhqvPK4JW-5KUvVVSJKCYjgvADPfZmAfbo6DxPuQSSvGzaj7v4YLBovebYPQM7frEpzW8ex6-rBRMzI2sAF1yoB43A6zfATj5G9ie8ko0m549BXfqXnGS8B-0GTYDdRt6gLD1OHfXE">
+    </div>
+  </div>
+</div></header>
 <main class="pt-20 px-edge-mobile space-y-6">
 <!-- Today's Progress Card -->
-<section class="bg-surface-container p-5 rounded-xl border border-outline shadow-xl">
+<div class="bg-surface-container border-l-[6px] border-l-mobile-primary p-5 rounded-xl mb-4 flex items-center justify-between shadow-lg shadow-mobile-primary/10">
+  <div class="flex items-center gap-4 min-w-0">
+    <div class="w-10 h-10 rounded-lg bg-mobile-primary/10 flex items-center justify-center">
+      <span class="material-symbols-outlined text-mobile-primary text-[24px]">apartment</span>
+    </div>
+    <div class="flex flex-col">
+      <span class="text-[10px] font-black text-mobile-primary uppercase tracking-[0.15em] mb-0.5">Active Project</span>
+      <h2 class="text-on-surface font-bold tracking-wider uppercase text-[15px] truncate">Skyline Tower A</h2>
+    </div>
+  </div>
+  <button class="flex items-center justify-center min-w-[44px] min-h-[44px] rounded-lg border border-outline-variant bg-surface-variant/50 text-on-surface-variant active:scale-95 transition-transform">
+    <span class="material-symbols-outlined text-[20px]">sync_alt</span>
+  </button>
+</div><section class="bg-surface-container p-5 rounded-xl border border-outline shadow-xl">
 <div class="flex justify-between items-start mb-4">
 <div>
 <p class="text-label-mobile text-on-surface-variant uppercase tracking-wider mb-1">Today's Progress</p>
@@ -140,10 +160,14 @@
 </section>
 <!-- Active Issues -->
 <section class="space-y-3">
-<div class="flex justify-between items-center px-1">
-<h3 class="text-label-mobile uppercase tracking-widest text-on-surface-variant">Active Issues</h3>
-<span class="text-[11px] text-mobile-danger font-bold">2 CRITICAL</span>
+<div class="flex justify-between items-center px-1"><div class="flex items-center">
+  <h3 class="text-label-mobile uppercase tracking-widest text-on-surface-variant">Active Issues</h3>
+  <span class="text-[11px] text-mobile-danger font-bold ml-2">2 CRITICAL</span>
 </div>
+<div class="flex items-center gap-1.5">
+  <a href="#" class="text-[11px] font-bold text-mobile-primary uppercase tracking-wider">SEE ALL</a>
+  <span class="material-symbols-outlined text-mobile-primary text-[16px]">filter_list</span>
+</div></div>
 <!-- Issue Card 1 -->
 <div class="flex items-center gap-4 bg-surface-container p-4 rounded-xl border border-outline border-l-[4px] border-l-mobile-danger shadow-sm active:bg-surface-variant transition-colors">
 <div class="flex-1 min-w-0">
@@ -171,9 +195,11 @@
 </section>
 <!-- Upcoming Tasks -->
 <section class="space-y-3">
-<div class="flex justify-between items-center px-1">
-<h3 class="text-label-mobile uppercase tracking-widest text-on-surface-variant">Upcoming Tasks</h3>
-</div>
+<div class="flex justify-between items-center px-1"><h3 class="text-label-mobile uppercase tracking-widest text-on-surface-variant">Upcoming Tasks</h3>
+<div class="flex items-center gap-1.5">
+  <a href="#" class="text-[11px] font-bold text-mobile-primary uppercase tracking-wider">SEE ALL</a>
+  <span class="material-symbols-outlined text-mobile-primary text-[16px]">filter_list</span>
+</div></div>
 <!-- Task Item 1 -->
 <div class="flex items-center gap-4 bg-surface-container p-4 rounded-xl border border-outline border-l-[4px] border-l-mobile-primary shadow-sm active:bg-surface-variant transition-colors">
 <div class="flex-1 min-w-0">
@@ -202,12 +228,12 @@
 </main>
 <!-- FAB -->
 <button class="fixed bottom-24 right-5 w-14 h-14 bg-mobile-primary text-white rounded-full shadow-lg shadow-mobile-primary/20 flex items-center justify-center active:scale-95 transition-transform z-50">
-<span class="material-symbols-outlined" data-icon="mic" style="font-variation-settings: 'FILL' 1;">mic</span>
+<span class="material-symbols-outlined" data-icon="mic" style="font-variation-settings: &quot;FILL&quot; 1;">mic</span>
 </button>
 <!-- Bottom Navigation -->
 <nav class="fixed bottom-0 left-0 w-full z-50 bg-[#020617]/95 backdrop-blur-lg border-t border-outline flex justify-around items-center px-2 min-h-[72px] h-20"><a class="flex flex-col items-center justify-center gap-1 text-mobile-primary min-h-[52px] min-w-[64px]" href="#">
 <div class="px-5 py-1.5 rounded-full mb-0.5 bg-mobile-primary"><span class="material-symbols-outlined text-white" data-icon="grid_view" style="font-variation-settings: &quot;FILL&quot; 1; opacity: 0;">grid_view</span></div>
-<span class="text-[11px] font-bold">Dashboard</span>
+<span class="text-[11px] font-bold">Home</span>
 </a>
 <a class="flex flex-col items-center justify-center gap-1 text-on-surface-variant min-h-[52px] min-w-[64px]" href="#">
 <span class="material-symbols-outlined" data-icon="warning">warning</span>
@@ -236,6 +262,8 @@
         });
     });
 </script>
+
+
 
 
 </body></html>
