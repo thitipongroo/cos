@@ -79,6 +79,10 @@ export const localTasks = sqliteTable('local_tasks', {
   workType: text('work_type'), // FOUNDATION | STRUCTURE | MEP | … (the trade, shown on the card)
   plannedStart: text('planned_start'), // ISO date yyyy-MM-dd
   plannedEnd: text('planned_end'), // ISO date yyyy-MM-dd
+  // The planned working window within those days (DDL v5), from the TIME columns migration
+  // 20260811000001 added. "HH:MM:SS" as Postgres renders a TIME. Null where none was recorded.
+  plannedStartTime: text('planned_start_time'),
+  plannedEndTime: text('planned_end_time'),
   offlineSyncStatus: text('sync_status').notNull().$type<SyncStatus>(),
 });
 

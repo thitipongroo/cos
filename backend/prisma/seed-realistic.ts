@@ -1080,21 +1080,63 @@ async function seedProject(tx: Tx, p: SeedProject): Promise<void> {
   //
   // Waterproofing maps to null on purpose — BOQ_TEMPLATE has no waterproofing line, and inventing a
   // link to an unrelated item would silently mis-weight the figure. It is real, unmeasured scope.
+  // The last number is `planned_end` IN DAYS PAST TODAY (negative = still to come), before the
+  // per-project shift below.
+  //
+  // ANCHORED TO TODAY, NOT TO THE PROJECT START (PO decision 2026-08-11). These windows used to be
+  // `start + ti*3 … +20`, which put every deadline months behind whatever day the demo was run —
+  // so lib/delaySeverity.ts, doing its job correctly, banded all 25 tasks CRITICAL. A chip whose
+  // every card reads the same carries no information: the screen showed a wall of red and could not
+  // demonstrate the four bands DESIGN.md §15.4 defines. Seeding relative to TODAY is what makes the
+  // severity mean something, and it keeps meaning it however long after the seed the demo is run.
+  //
+  // The two COMPLETED tasks sit comfortably in the past: finished work is never late (whatever its
+  // date), and a completed task with next week's deadline would read as a mistake.
+  //
+  // The last pair is the PLANNED WORKING WINDOW (migration 20260811000001) — the "08:00 - 12:00" the
+  // dashboard card is headed by. Real Thai site hours: the morning pour before the heat, the
+  // afternoon block, and the electrical work that runs the full day.
   const taskDefs = [
-    ['งานเสาเข็ม โซน A', 'FOUNDATION', 'COMPLETED', 100, 'B/0'], // Bored pile ø600mm
-    ['ฐานรากและคานคอดิน', 'FOUNDATION', 'IN_PROGRESS', 65, 'B/1'], // Pile cap concrete 240ksc
-    ['เสาคอนกรีตชั้นล่าง', 'STRUCTURE', 'IN_PROGRESS', 40, 'C/0'], // Reinforced concrete columns
-    ['งานกันซึมชั้นใต้ดิน', 'STRUCTURE', 'NOT_STARTED', 0, null], // no BOQ line for waterproofing
-    ['ระบบไฟฟ้าชั่วคราวหน้างาน', 'MEP', 'COMPLETED', 100, 'E/0'], // Electrical conduit & wiring
+    ['งานเสาเข็ม โซน A', 'FOUNDATION', 'COMPLETED', 100, 'B/0', 30, '08:00', '12:00'], // Bored pile ø600mm
+    ['ฐานรากและคานคอดิน', 'FOUNDATION', 'IN_PROGRESS', 65, 'B/1', 16, '08:00', '12:00'], // Pile cap concrete 240ksc
+    ['เสาคอนกรีตชั้นล่าง', 'STRUCTURE', 'IN_PROGRESS', 40, 'C/0', 9, '13:00', '17:00'], // RC columns
+    ['งานกันซึมชั้นใต้ดิน', 'STRUCTURE', 'NOT_STARTED', 0, null, 2, '13:00', '15:00'], // no BOQ line for waterproofing
+    ['ระบบไฟฟ้าชั่วคราวหน้างาน', 'MEP', 'COMPLETED', 100, 'E/0', 34, '08:00', '17:00'], // Electrical conduit & wiring
   ] as const;
+
+  /**
+   * Days to pull THIS project's deadlines forward, so the bands vary DOWN THE LIST as well as
+   * across each project.
+   *
+   * The site worker's task list is every project's tasks in one scroll — five names repeating — so
+   * without this the same three bands would repeat five times over. The numbers are not a ramp: a
+   * ramp would sort the list into "the late ones, then the fine ones", which is tidier than any real
+   * site. Across the six they yield roughly 2 CRITICAL · 4 HIGH · 2 MEDIUM · 2 LOW and the rest not
+   * late at all — those last fall back to the status badge, which is the point of having both.
+   */
+  const DUE_SHIFT = [0, 2, 11, 5, 18, 8];
+  const shift =
+    DUE_SHIFT[
+      Math.max(
+        0,
+        PROJECTS.findIndex((x) => x.key === p.key),
+      ) % DUE_SHIFT.length
+    ]!;
   for (let ti = 0; ti < taskDefs.length; ti++) {
-    const [tname, wt, status, prog, boqKey] = taskDefs[ti];
+    const [tname, wt, status, prog, boqKey, lateDays, startTime, endTime] = taskDefs[ti];
+    // A 20-day window ending on the seeded deadline — the same span the fixed dates used, so the
+    // cards still read as three-week packages of work rather than open-ended ones.
+    const dueEnd = addDays(TODAY, -(lateDays - shift));
+    const dueStart = addDays(dueEnd, -20);
     const boqItemId = boqKey === null ? null : uid(`boqi/${p.key}/${boqKey}`);
-    // DO UPDATE on boq_item_id, not DO NOTHING: these tasks predate the link, so a plain
-    // insert-or-skip would leave every existing database with the metric still unusable.
-    await tx.$executeRaw`INSERT INTO projects.tasks (task_id, tenant_id, project_id, task_name, work_type, status, assigned_to, planned_start, planned_end, progress_percent, qc_status, boq_item_id)
-      VALUES (${uid(`task/${p.key}/${ti}`)}::uuid, ${TENANT_ID}::uuid, ${pid}::uuid, ${tname}, ${wt}, ${status}, ${U(p.se)}::uuid, ${addDays(p.start, ti * 3)}::date, ${addDays(p.start, ti * 3 + 20)}::date, ${prog}, ${prog === 100 ? 'QC_PASSED' : 'NONE'}, ${boqItemId}::uuid)
-      ON CONFLICT (task_id) DO UPDATE SET boq_item_id = EXCLUDED.boq_item_id`;
+    // DO UPDATE, not DO NOTHING: these tasks predate both the BOQ link and the today-relative
+    // dates, so a plain insert-or-skip would leave every existing database with the metric unusable
+    // and every deadline still months in the past — the exact wall of CRITICAL this change fixes.
+    // The dates are re-stamped on every seed run for the same reason they are relative at all: a
+    // demo run a month from now must still show the four bands.
+    await tx.$executeRaw`INSERT INTO projects.tasks (task_id, tenant_id, project_id, task_name, work_type, status, assigned_to, planned_start, planned_end, planned_start_time, planned_end_time, progress_percent, qc_status, boq_item_id)
+      VALUES (${uid(`task/${p.key}/${ti}`)}::uuid, ${TENANT_ID}::uuid, ${pid}::uuid, ${tname}, ${wt}, ${status}, ${U(p.se)}::uuid, ${dueStart}::date, ${dueEnd}::date, ${startTime}::time, ${endTime}::time, ${prog}, ${prog === 100 ? 'QC_PASSED' : 'NONE'}, ${boqItemId}::uuid)
+      ON CONFLICT (task_id) DO UPDATE SET boq_item_id = EXCLUDED.boq_item_id, planned_start = EXCLUDED.planned_start, planned_end = EXCLUDED.planned_end, planned_start_time = EXCLUDED.planned_start_time, planned_end_time = EXCLUDED.planned_end_time`;
   }
 
   // Project phases (ADR-070) — the construction execution stages the SITE_ENGINEER dashboard's phase

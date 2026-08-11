@@ -245,9 +245,14 @@ function asList<T>(res: { items?: T[] } | T[]): T[] {
 // active bottom-nav tab, and all four of this role's screens had their in-content titles removed on
 // 2026-08-08; `theme/__tests__/pageTitle.spec.ts` holds that line.
 //
-// The mockup's task cards show "08:00 - 12:00" and "Sector B". Tasks carry `planned_start` /
-// `planned_end` as DATEs and no location column at all, so <TaskCard /> renders what the row really
-// has — the same component and the same honesty as the Tasks screen.
+// The mockup's task cards are headed by a working window, "08:00 - 12:00", and by "Sector B".
+// The WINDOW is real now: migration 20260811000001 added `planned_start_time` / `planned_end_time`
+// to projects.tasks after the product owner asked for it (2026-08-11), and <TaskCard /> shows it on
+// this screen — a card under TODAY'S PRIORITY TASKS is read by someone standing on site now, and a
+// date range cannot tell them whether this is the morning job.
+//
+// The ZONE is still not. `projects.tasks` has `floor_id` and `room_id` with real FKs, but the seed
+// populates neither, so there is nothing to draw — the card renders what the row really has.
 function FieldHome() {
   const styles = useHomeStyles();
   const tasks = useCollection<Task>('local_tasks');

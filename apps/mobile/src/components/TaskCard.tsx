@@ -16,6 +16,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import type { Task } from '../db/database';
 import { MaterialIcons } from '@expo/vector-icons';
+import { taskWindow } from '../lib/taskWindow';
 import { delaySeverity } from '../lib/delaySeverity';
 import { useI18n } from '../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../theme/tokens';
@@ -59,13 +60,13 @@ export function TaskCard({
   // it is (PO decision 2026-08-11, following DESIGN.md §15.4's delay-severity bands). One component,
   // because everything else about the card is identical and two copies would drift.
   const severity = delaySeverity(task.plannedEnd, task.status, new Date());
+  const timeWindow = taskWindow(task.plannedStartTime, task.plannedEndTime);
   const showSeverity = badge === 'severity' && severity !== 'none';
-  const severityTone =
-    severity === 'CRITICAL' || severity === 'HIGH'
-      ? p.danger
-      : severity === 'MEDIUM'
-        ? p.warning
-        : p.muted;
+  // FOUR BANDS, TWO TONES. §15.4 names four, the palette carries two that mean "act": HIGH and
+  // CRITICAL are far enough past the date to be a problem now (danger), MEDIUM and LOW are drifting
+  // (warning). LOW used to take `muted` — which is the same grey a task nobody has touched wears, so
+  // a task one day late was drawn as a task with nothing wrong with it.
+  const severityTone = severity === 'CRITICAL' || severity === 'HIGH' ? p.danger : p.warning;
   // Accent bar and badge, one colour: done → success, UNDER WAY → WARNING, untouched → muted.
   //
   // In progress is YELLOW, as the drawing has it (PO decision 2026-08-11) — and it earns the colour:
@@ -73,10 +74,15 @@ export function TaskCard({
   // the app's blue, which made every running task look like a button. (This edit was reported as
   // done once before while the line still said `p.primary`; nothing tests a colour, so nothing
   // caught it. Verified in the file this time.)
-  const accent = done ? p.success : started ? p.warning : p.muted;
+  const stateAccent = done ? p.success : started ? p.warning : p.muted;
   // The badge takes the SAME colour as the accent bar, so the strip down the edge and the word at
   // the top-right are one statement about the row rather than two (PO decision 2026-08-11).
-  const stateTone = accent;
+  const stateTone = stateAccent;
+  // THE WHOLE CARD SAYS ONE THING. Where the badge reads CRITICAL the edge and the progress bar are
+  // red with it; where it reads a softer band they are yellow (PO decision 2026-08-11). They used to
+  // disagree — a card could carry a red CRITICAL badge above a yellow bar, which reads as two
+  // verdicts on one row. The rule is the badge's, so it holds wherever the badge changes.
+  const accent = showSeverity ? severityTone : stateAccent;
 
   const renderLeftActions = () => (
     <View style={[styles.doneAction, { backgroundColor: p.success }]}>
@@ -163,8 +169,20 @@ export function TaskCard({
             )}
           </View>
 
-          {/* Planned window — real DATE columns, so it reads as days. Hidden when the task has none. */}
-          {task.plannedStart && task.plannedEnd ? (
+          {/* THE WORKING WINDOW WHERE THE SCREEN IS ABOUT TODAY, THE DATES WHERE IT IS ABOUT WEEKS
+              (PO decision 2026-08-11).
+
+              On the dashboard the heading is TODAY'S PRIORITY TASKS and the drawing puts
+              "08:00 - 12:00" here: the reader is standing on site now, and what they need is
+              whether this is the morning job. On the task list the badge is a delay severity and the
+              cards span weeks, so the DATES are what make "CRITICAL" mean anything — a red chip over
+              a time of day says nothing about how late the work is.
+
+              Falls back to the dates when no window was recorded. Nothing backfilled the times
+              (migration 20260811000001), and an assumed 08:00–17:00 would be a fact nobody entered. */}
+          {timeWindow !== null && badge === 'status' ? (
+            <Text style={[styles.window, { color: p.muted }]}>{timeWindow}</Text>
+          ) : task.plannedStart && task.plannedEnd ? (
             <Text style={[styles.window, { color: p.muted }]}>
               {t('tasks.card.plannedWindow', {
                 start: formatDate(task.plannedStart),

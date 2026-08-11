@@ -3,16 +3,19 @@
 //
 // IT WAS A ROUTE FOR ONE BUILD, AND THAT WAS THE WRONG SHAPE (PO decision 2026-08-11: "ต้องการให้
 // เป็น overlay แบบเดียวกับ quick action"). A route gets the app's shared TopBar, whose leading
-// control is a back chevron — so the one case that must NOT be escapable, a worker who has not yet
-// said where they are, was shipped with a back button on it. The shell papered over that by
-// redirecting them straight back, which is a loop the user can see and feel. An overlay has no back
-// chevron to answer for, and so the two cases can differ honestly:
+// control is a back chevron, and the shell had to keep redirecting the worker back into it — a loop
+// they can see and feel. An overlay has no chevron to answer for.
 //
-//   FORCED (no site chosen yet)  → no close control at all, and the hardware back does nothing
-//   DELIBERATE (changing site)   → an X that closes it and LEAVES THE CURRENT SITE AS IT WAS
+// ALWAYS CLOSEABLE (PO decision 2026-08-11, revising the same day's first cut). It shipped with no
+// close control until a site was chosen, on the reasoning that the question has to be answered. The
+// product owner's call is that it does not: closing with nothing chosen leaves the app on Home with
+// nothing to show, which is an honest empty screen and a state the worker can get themselves out of
+// by tapping the bar. A modal with no way out is worse than an empty page — it is the only screen in
+// the app you cannot leave, and it would trap anyone who opened the app to check something else.
 //
-// The second half of that is the point of `dismissible`: closing is not "choose nothing", it is
-// "never mind" — the site the worker was already on stays selected, because it was never unset.
+// So closing means "never mind", in both directions:
+//   a site already chosen → it stays chosen; the screens behind carry on showing it
+//   no site chosen yet    → nothing is selected, and Home shows its empty state
 //
 // Chrome copied from <QuickActionsMenu />, deliberately: these are the same surface to the person
 // using them, opened from the same bar, and two overlays in one role that draw their headers
@@ -31,7 +34,7 @@
 // There is no zone field on a project or a membership; the building is the narrowest real location
 // the data has, and a project without one shows its code instead of an invented place.
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Modal,
   View,
@@ -68,13 +71,21 @@ export function SelectProjectSheet(): React.JSX.Element {
   const select = useProjectStore((s) => s.select);
   const pickerOpen = useProjectStore((s) => s.pickerOpen);
   const closePicker = useProjectStore((s) => s.closePicker);
+  const openPicker = useProjectStore((s) => s.openPicker);
 
-  // FORCED WHENEVER NO SITE IS CHOSEN. The rule lives here rather than in a shell effect because
-  // every Site Worker screen is reachable directly — from a tab, a notification, or the E2E deep
-  // link — and a rule enforced on one entrance is not enforced.
-  const forced = active === null;
-  const visible = forced || pickerOpen;
-  const dismissible = !forced;
+  // OFFERED ONCE, NOT HELD OPEN. A worker with no site chosen is shown the picker the first time
+  // this mounts — every Site Worker screen is reachable directly, from a tab, a notification or the
+  // E2E deep link, so the offer is made in the shell rather than on Home. After that it is theirs to
+  // open: re-raising it on every render would make the close button do nothing, which is the
+  // no-way-out modal by another name.
+  const offered = useRef(false);
+  useEffect(() => {
+    if (offered.current) return;
+    offered.current = true;
+    if (active === null) openPicker();
+  }, [active, openPicker]);
+
+  const visible = pickerOpen;
 
   const [projects, setProjects] = useState<MyProject[]>([]);
   const [loading, setLoading] = useState(true);
@@ -159,30 +170,24 @@ export function SelectProjectSheet(): React.JSX.Element {
       visible={visible}
       transparent
       animationType="slide"
-      // Android's back gesture routes here. When the sheet is forced there is nothing to go back to
-      // — no site is chosen, so every screen behind it is unanswerable — and swallowing the press is
-      // the honest response.
-      onRequestClose={dismissible ? closePicker : () => undefined}
+      // Android's back gesture closes it, the same as the X — the two are the same intent.
+      onRequestClose={closePicker}
     >
       <View style={styles.root} testID="select-project-screen">
         <View style={styles.topbar}>
           <BrandLogo variant="dark" height={26} />
           <View style={styles.topRight}>
             <OverlaySyncPill testID="select-project-sync-pill" />
-            {/* NO CLOSE CONTROL UNTIL A SITE IS CHOSEN. An X that cannot be honoured is worse than
-                no X: it offers a way out of a question that has to be answered. */}
-            {dismissible ? (
-              <Pressable
-                testID="select-project-close"
-                onPress={closePicker}
-                accessibilityRole="button"
-                accessibilityLabel={t('quickAdd.close')}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                style={styles.closeBtn}
-              >
-                <MaterialIcons name="close" size={24} color={darkColors.primary} />
-              </Pressable>
-            ) : null}
+            <Pressable
+              testID="select-project-close"
+              onPress={closePicker}
+              accessibilityRole="button"
+              accessibilityLabel={t('quickAdd.close')}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={styles.closeBtn}
+            >
+              <MaterialIcons name="close" size={24} color={darkColors.primary} />
+            </Pressable>
           </View>
         </View>
 

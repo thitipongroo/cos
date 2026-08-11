@@ -25,7 +25,7 @@ import {
 export const sqlite = openDatabaseSync('cos_offline_v2.db', { enableChangeListener: true });
 sqlite.execSync('PRAGMA journal_mode = WAL');
 
-const DDL_VERSION = 4;
+const DDL_VERSION = 5;
 
 // v2→v3 (ADR-056): the re-editable photo-annotation table. Idempotent (IF NOT EXISTS), so it is safe
 // to run both as an upgrade step and — via the fresh CREATE block below — on a first install.
@@ -49,6 +49,18 @@ const TASK_DETAIL_DDL = `
   ALTER TABLE local_tasks ADD COLUMN planned_end TEXT;
 `;
 
+// v4→v5: the PLANNED WORKING WINDOW ("08:00 - 12:00"), cached from the two TIME columns migration
+// 20260811000001 added to projects.tasks. The dashboard's priority cards are headed by it — a
+// worker looking at a card at 09:00 wants to know whether this is the morning job, which the date
+// range they used to show cannot tell them.
+//
+// Nullable, and NOT backfilled: nothing records what time a past task was planned for, and a card
+// with no window falls back to its dates rather than to an assumed shift.
+const TASK_TIME_DDL = `
+  ALTER TABLE local_tasks ADD COLUMN planned_start_time TEXT;
+  ALTER TABLE local_tasks ADD COLUMN planned_end_time TEXT;
+`;
+
 function ddl(): void {
   const row = sqlite.getFirstSync<{ user_version: number }>('PRAGMA user_version');
   const current = row?.user_version ?? 0;
@@ -62,6 +74,8 @@ function ddl(): void {
       ALTER TABLE local_site_reports ADD COLUMN blockers TEXT;
       ALTER TABLE local_site_reports ADD COLUMN manpower_count INTEGER;
       ${ANNOTATIONS_DDL}
+      ${TASK_DETAIL_DDL}
+      ${TASK_TIME_DDL}
       PRAGMA user_version = ${DDL_VERSION};
     `);
     return;
@@ -72,15 +86,26 @@ function ddl(): void {
     sqlite.execSync(`
       ${ANNOTATIONS_DDL}
       ${TASK_DETAIL_DDL}
+      ${TASK_TIME_DDL}
       PRAGMA user_version = ${DDL_VERSION};
     `);
     return;
   }
 
-  // v3→v4: the task-detail columns only.
+  // v3→v4: the task-detail columns, plus v5's times on the way past.
   if (current === 3) {
     sqlite.execSync(`
       ${TASK_DETAIL_DDL}
+      ${TASK_TIME_DDL}
+      PRAGMA user_version = ${DDL_VERSION};
+    `);
+    return;
+  }
+
+  // v4→v5: the planned working window only.
+  if (current === 4) {
+    sqlite.execSync(`
+      ${TASK_TIME_DDL}
       PRAGMA user_version = ${DDL_VERSION};
     `);
     return;
@@ -103,6 +128,7 @@ function ddl(): void {
       id TEXT PRIMARY KEY NOT NULL, task_id TEXT NOT NULL, project_id TEXT NOT NULL,
       task_name TEXT NOT NULL, status TEXT NOT NULL, progress_percent REAL NOT NULL,
       assigned_to TEXT, work_type TEXT, planned_start TEXT, planned_end TEXT,
+      planned_start_time TEXT, planned_end_time TEXT,
       sync_status TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS local_attendance (
       id TEXT PRIMARY KEY NOT NULL, log_id TEXT NOT NULL, worker_id TEXT NOT NULL,

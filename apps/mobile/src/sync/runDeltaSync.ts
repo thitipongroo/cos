@@ -36,6 +36,9 @@ const APPLY: Record<string, ApplySpec> = {
       work_type: 'workType',
       planned_start: 'plannedStart',
       planned_end: 'plannedEnd',
+      // The working window the dashboard card is headed by (DDL v5).
+      planned_start_time: 'plannedStartTime',
+      planned_end_time: 'plannedEndTime',
     },
   },
   site_report: {

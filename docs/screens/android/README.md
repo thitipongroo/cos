@@ -1252,6 +1252,21 @@ unlock, language, notifications, dark mode, the **app version** and the **legal 
 
 ### Tasks — [`02-Tasks/01-tasks.png`](SITE-WORKER/02-Tasks/01-tasks.png)
 
+> **THE WHOLE CARD CARRIES THE VERDICT** (PO 2026-08-11): where the badge reads `! CRITICAL` the
+> left accent and the progress bar are red with it, where it reads a softer band they are yellow.
+> They used to disagree — a red badge above a yellow bar is two verdicts on one row. §15.4's four
+> bands collapse onto the palette's two act-now tones: HIGH and CRITICAL are danger, MEDIUM and LOW
+> are warning. LOW previously took `muted`, the same grey an untouched task wears, so a task one day
+> late was drawn as a task with nothing wrong with it.
+>
+> **THE SEEDED DEADLINES MOVED WITH IT.** They used to hang off each project's start date, months
+> behind whatever day the demo ran, so `delaySeverity` — working correctly — banded all 25 tasks
+> CRITICAL and the screen was a wall of red that could not demonstrate the bands it was showing.
+> `seed-realistic.ts` now anchors `planned_end` to TODAY and shifts it per project, giving roughly
+> 2 CRITICAL · 3 HIGH · 2 MEDIUM · 1 LOW and seven not late at all — the last of those fall back to
+> the status badge, which is why the card has both. The dates are re-stamped on every seed run, so a
+> demo a month from now still shows the spread.
+>
 > **THE ONLY SCREEN IN THE SET WITH A STICKY HEADER**, and it broke the stitcher twice over. The
 > project bar and the filter chips are pinned above a `FlatList`, and the scroll measurement — which
 > matches the top of each shot against the one before it — locked onto those unmoving rows, reported

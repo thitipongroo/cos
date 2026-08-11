@@ -10,9 +10,10 @@
 //   - A HIGH / MEDIUM priority badge. `projects.tasks` has no priority column, in the database or in
 //     the API. The badge SLOT is kept and filled with the task's real `work_type` (the trade:
 //     FOUNDATION / STRUCTURE / MEP …), which is the honest classification the row actually carries.
-//   - "08:00 - 12:00". Tasks carry `planned_start` / `planned_end` as DATEs — there is no
-//     time-of-day anywhere — so the chip shows the real planned window in days. The mockup's own
-//     second card puts "Pending Sync" in that same chip, so a status value there is its own idiom.
+//   - "08:00 - 12:00". The times exist now (migration 20260811000001), but THIS screen keeps the
+//     DATES: its badge is a delay severity and its cards span weeks, so the dates are what make
+//     "CRITICAL" mean anything — a red chip over a time of day says nothing about how late the work
+//     is. The dashboard, which is about today, shows the window instead (PO decision 2026-08-11).
 //
 // The "AI Insight" card IS drawn, copy and numbers included (PO decision 2026-08-08, reversing an
 // earlier call to drop it — the same ruling already applied to the report's AI bar and the safety
