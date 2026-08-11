@@ -1,7 +1,7 @@
 // Site Engineer Home screenshot capture — adb/uiautomator only, same approach as
 // capture-android-login.mjs (see that file for why Detox cannot drive these flows).
 //
-// Writes docs/screens/android/SITE-ENGINEER/01-Home/01-home.png: the SITE_ENGINEER landing dashboard
+// Writes docs/screens/android/03-site-engineer/01-Home/01-se-home-dashboard.png: the SITE_ENGINEER landing dashboard
 // (mockup/mobile/03_site_engineer/01_dashboard/) with live data — BOQ-value-weighted project progress
 // (§32.12), open issues, and upcoming tasks — reached through a real Path A (SMS OTP) login.
 //
@@ -22,8 +22,8 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-// Grouped by main-menu tab: SITE_ENGINEER's loading + landing shots are its Home tab → SITE-ENGINEER/01-Home/.
-const OUT = resolve(HERE, '../../../docs/screens/android/SITE-ENGINEER/01-Home');
+// Grouped by main-menu tab: SITE_ENGINEER's loading + landing shots are its Home tab → 03-site-engineer/01-Home/.
+const OUT = resolve(HERE, '../../../docs/screens/android/03-site-engineer/01-Home');
 const TMP = process.env['TEMP'] ?? process.env['TMP'] ?? HERE; // scratch for the intermediate viewports
 const STITCH = join(HERE, 'stitch-fullpage.py');
 const PKG = 'com.constructionos.cos';
@@ -239,11 +239,11 @@ async function main() {
           await delay(1300);
         }
       }
-      const loadOut = join(OUT, '00-loading.png');
+      const loadOut = join(OUT, '00-se-home-loading.png');
       process.stdout.write(
         execFileSync('python', [STITCH, loadOut, '180', '1970', ...loadShots], { encoding: 'utf-8' }),
       );
-      console.log('  stitched 00-loading.png');
+      console.log('  stitched 00-se-home-loading.png');
     } finally {
       docker('unpause', 'cos-postgres');
     }
@@ -270,7 +270,7 @@ async function main() {
 
   // One full-page: progress card → quick-action tiles → Active Issues → Upcoming Tasks.
   console.log('· full-page site-engineer home');
-  await stitchFull('01-home');
+  await stitchFull('01-se-home-dashboard');
   console.log('done.');
 }
 

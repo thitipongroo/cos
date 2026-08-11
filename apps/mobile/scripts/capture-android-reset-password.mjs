@@ -1,8 +1,8 @@
 // Reset-password capture — adb/uiautomator only. Logs in as TENANT-ADMIN and captures BOTH reset paths
 // (mockup 04_tenant_admin/02_users/02_user_management/05_reset_password + 06/07 success screens):
-//   06-reset-password.png       — the form for a user WITH an email (email reset-link recommended)
-//   08-reset-link-sent.png      — email path: standards-compliant Keycloak action-token link sent
-//   07-temp-password-create.png — temp-password fallback for a phone-only (no-email) user, MASKED
+//   06-ta-reset-password.png       — the form for a user WITH an email (email reset-link recommended)
+//   08-ta-reset-link-sent.png      — email path: standards-compliant Keycloak action-token link sent
+//   07-ta-temp-password.png — temp-password fallback for a phone-only (no-email) user, MASKED
 // The temp success is captured with the password MASKED (default state) so no live credential is written
 // into the committed screenshot. Both paths add a Keycloak UPDATE_PASSWORD required action to the target;
 // the caller clears it afterwards (phone-only users also self-heal at their next OTP login).
@@ -14,7 +14,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const OUT = resolve(HERE, '../../../docs/screens/android/TENANT-ADMIN/02-Users');
+const OUT = resolve(HERE, '../../../docs/screens/android/04-tenant-admin/02-Users');
 const TMP = process.env['TEMP'] ?? process.env['TMP'] ?? HERE;
 const STITCH = join(HERE, 'stitch-fullpage.py');
 const PKG = 'com.constructionos.cos';
@@ -173,14 +173,14 @@ async function main() {
   await delay(1500);
 
   console.log('· full-page reset password form (email method recommended)');
-  await stitchFull('06-reset-password', 180, 1680);
+  await stitchFull('06-ta-reset-password', 180, 1680);
 
   console.log('· CONFIRM RESET (email link) → reset-link-sent');
   await tap(byId('reset-confirm'), 'Confirm reset');
   await find(byId('reset-password-email-success'), 'reset-password-email-success', 25);
   await dismissDevBanners();
   await delay(1500);
-  await stitchFull('08-reset-link-sent', 180, 1780);
+  await stitchFull('08-ta-reset-link-sent', 180, 1780);
 
   // ── Temp-password fallback: a phone-only user (no email) → temporary password ──
   console.log(`· back to Users → ${TEMP_TARGET} (no email) → Reset password → temp`);
@@ -201,7 +201,7 @@ async function main() {
   await find(byId('reset-password-success'), 'reset-password-success', 25);
   await dismissDevBanners();
   await delay(1500);
-  await stitchFull('07-temp-password-create', 180, 1780);
+  await stitchFull('07-ta-temp-password', 180, 1780);
 
   console.log('done.');
 }

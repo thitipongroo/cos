@@ -1268,8 +1268,8 @@ raised sheet, which is why it does not follow the header onto the page colour.
 
 The original rule assumed chrome must differ from the content. On the dark default what matters is
 that `--cos-dark-surface` `#0F172A` is the **card** colour, so chrome drawn in it reads as a card
-welded to the edge of the screen. `TENANT-ADMIN/01-Home/02-quick-action.png` shows the intended top
-bar already, because `QuickAddMenu` draws its own header on `bg`.
+welded to the edge of the screen. `04-tenant-admin/01-Home/02-ta-quick-action.png` shows the intended
+top bar already, because `QuickAddMenu` draws its own header on `bg`.
 
 Light is unaffected. There the mobile palette inverts — `bg` is the grey `#F5F5F5` page and `surface`
 the white card — so chrome on `surface` is already distinct from the content without borrowing the

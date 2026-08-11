@@ -1,7 +1,7 @@
 // Tenant Admin Home screenshot capture — adb/uiautomator only, same approach as
 // capture-android-home.mjs (see capture-android-login.mjs for why Detox cannot drive these flows).
 //
-// Writes docs/screens/android/TENANT-ADMIN/01-Home/01-dashboard.png: the TENANT-ADMIN landing dashboard
+// Writes docs/screens/android/04-tenant-admin/01-Home/01-ta-home-dashboard.png: the TENANT-ADMIN landing dashboard
 // (mockup/mobile/04_tenant_admin/01_home/01_home_dashboard/) with live data — system status, pending
 // approvals (payments + POs) and AI token usage — reached through a real Path A (SMS OTP) login as
 // the seeded TENANT-ADMIN (Suphaporn Rattanakul, +66811000002). Office roles enrol MFA in the
@@ -26,10 +26,10 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 // Grouped by main-menu tab: each capture's name carries its menu subfolder (Home / Alerts / Settings)
-// under TENANT-ADMIN/, so stitchFull() writes e.g. TENANT-ADMIN/01-Home/01-dashboard.png.
+// under 04-tenant-admin/, so stitchFull() writes e.g. 04-tenant-admin/01-Home/01-ta-home-dashboard.png.
 // 02-Users/ is NOT written here — capture-android-users-actions.mjs owns that folder's list screen.
 // Every screen is captured as ONE full-page image (scrolling viewports stitched via stitch-fullpage.py).
-const OUT = resolve(HERE, '../../../docs/screens/android/TENANT-ADMIN');
+const OUT = resolve(HERE, '../../../docs/screens/android/04-tenant-admin');
 const TMP = process.env['TEMP'] ?? process.env['TMP'] ?? HERE; // scratch for the intermediate viewports
 const STITCH = join(HERE, 'stitch-fullpage.py');
 const PKG = 'com.constructionos.cos';
@@ -222,7 +222,7 @@ async function main() {
   // the bottom so it appears once: 1970 for the dashboard/list floating FABs, 2196 (bottom-nav top) for
   // screens whose only fixed element is the nav.
   console.log('· full-page Home dashboard');
-  await stitchFull('01-Home/01-dashboard', 180, 1970);
+  await stitchFull('01-Home/01-ta-home-dashboard', 180, 1970);
 
   // Quick-Add menu — the FAB target (mockup 01_home/02_quick_action_button/01_quick_action_menu).
   // This script is the ONLY capturer of this screen: a standalone capture-android-quick-action.mjs
@@ -233,7 +233,7 @@ async function main() {
   await tap(byId('quick-add-fab'), 'quick-add FAB');
   await find(byId('quick-add-menu'), 'quick-add-menu', 15);
   await delay(1500);
-  await stitchFull('01-Home/02-quick-action', 150, 2300);
+  await stitchFull('01-Home/02-ta-quick-action', 150, 2300);
   for (let i = 0; i < 4; i++) {
     adb('shell', 'input', 'swipe', '540', '700', '540', '1700', '300');
     await delay(400);
@@ -242,7 +242,7 @@ async function main() {
   await delay(1000);
 
   // NOTE: the Users tab is deliberately NOT captured here. This script used to stitch it as a second
-  // copy of 02-Users/01-users-dashboard.png, which capture-android-users-actions.mjs already owns (as a
+  // copy of 02-Users/01-ta-users-dashboard.png, which capture-android-users-actions.mjs already owns (as a
   // single top viewport, not a full-page stitch). Two scripts writing one file meant the committed frame
   // depended on whichever ran last. Removed 2026-08-07 (product-owner decision) — capture the Users
   // screen with `node scripts/capture-android-users-actions.mjs`.
@@ -253,7 +253,7 @@ async function main() {
   await tap(byId('sync-queue-tab'), 'Alerts tab');
   await find(byId('tenant-admin-sync-queue'), 'tenant-admin-sync-queue', 20);
   await delay(2500);
-  await stitchFull('03-Alerts/01-alerts-dashboard', 180, 2196);
+  await stitchFull('03-Alerts/01-ta-alerts-dashboard', 180, 2196);
 
   // Settings tab — System Settings (mockup 04_settings), ONE full-page (Org Info + Brand + External
   // Integrations + Others + AI). Org Info (GET /tenant) + LINE toggle/token (GET /tenant/settings) are real.
@@ -262,7 +262,7 @@ async function main() {
   await find(byId('tenant-admin-settings'), 'tenant-admin-settings', 20);
   await delay(2500);
   await dismissDevBanners();
-  await stitchFull('04-Settings/01-system-settings', 180, 2196);
+  await stitchFull('04-Settings/01-ta-system-settings', 180, 2196);
 
   console.log('done.');
 }

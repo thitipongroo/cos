@@ -1,10 +1,11 @@
 // Android login-flow screenshot capture — adb/uiautomator only, deliberately NOT Detox.
 //
-// Writes the four public login screens to docs/screens/android/01-public/ — the same flow as the web set
-// (docs/screens/web/01-public/00-login.png … 03-login-loading.png). Android's 01-public/ also holds the
-// native splash (00) and app-launch loading (01), so the login screens sit at 02–04 here:
-//   02-login             landing (Path A phone form + Path B "Login with Email" secondary action)
-//   03-login-otp-verify  OTP-verify step, reached by requesting a passcode from the landing
+// Writes the four public login screens to docs/screens/android/01-authen/01-login/ — the same flow as
+// the web set (docs/screens/web/01-public/00-login.png … 03-login-loading.png). The native splash and
+// the app-launch loading state are NOT here: they moved to docs/screens/android/00-loading/, which is
+// why the login screens now number from 01:
+//   01-login             landing (Path A phone form + Path B "Login with Email" secondary action)
+//   02-login-otp-verify  OTP-verify step, reached by requesting a passcode from the landing
 //   03-login-password    Keycloak's hosted email/password page (Path B, §20.6.1 / QM-4)
 //   04-login-loading     VerifyingOverlay, shown while the Path B code→token exchange is in flight
 //
@@ -30,7 +31,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const OUT = resolve(HERE, '../../../docs/screens/android/01-public');
+const OUT = resolve(HERE, '../../../docs/screens/android/01-authen/01-login');
 const PKG = 'com.constructionos.cos';
 
 // Path B demo account — seeded by backend/prisma/seed-realistic.ts, given this password by
@@ -318,12 +319,12 @@ async function main() {
     adb('reverse', port, port); // Metro, backend, Keycloak — all reached as localhost on-device
   }
 
-  console.log('02-login — landing');
+  console.log('01-login — landing');
   await freshApp();
   await dismissDevBanners();
-  shot('02-login');
+  shot('01-login');
 
-  console.log('03-login-otp-verify — passcode step');
+  console.log('02-login-otp-verify — passcode step');
   await tap(byId('country-picker'), 'country picker');
   await tap(byId('country-option-th'), 'Thailand option');
   await tap(byId('phone-input'), 'phone input');
@@ -333,7 +334,7 @@ async function main() {
   await find(byId('otp-input'), 'OTP input'); // proves the step actually rendered
   await hideKeyboard();
   await dismissDevBanners();
-  shot('03-login-otp-verify');
+  shot('02-login-otp-verify');
 
   console.log('03-login-password — Keycloak hosted page');
   // Route the app's Keycloak traffic through the stall proxy for the rest of the run, so the token

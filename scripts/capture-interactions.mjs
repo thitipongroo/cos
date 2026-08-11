@@ -2,7 +2,8 @@
 // popover (the app's real in-page interactions — it uses dedicated /new form pages + detail
 // routes rather than modals). Saves to docs/screens/web/<ROLE>/_interactions/, where <ROLE> is the
 // canonical CosRole spelling in UPPER_SNAKE (TENANT_ADMIN) — the convention the committed web tree
-// uses, deliberately unlike docs/screens/android/'s UPPER-KEBAB (product-owner decision 2026-08-07).
+// uses, deliberately unlike docs/screens/android/'s numbered lower-kebab role folders
+// (04-tenant-admin/, UPPER-KEBAB until the 2026-08-11 restructure; PO decision 2026-08-07).
 // The subfolder is _interactions (leading underscore), which is what is committed.
 import { chromium } from '@playwright/test';
 import fs from 'node:fs';

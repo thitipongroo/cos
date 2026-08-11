@@ -1,10 +1,10 @@
 // Android Support Center screenshot capture — adb/uiautomator only, same approach as the sibling
 // capture-android-*.mjs scripts (deliberately NOT Detox; see capture-android-login.mjs for why).
 //
-// Writes the pre-auth Support Center to docs/screens/android/01-public/. It is a PUBLIC screen — it
-// lives in the (auth) route group and is reached from the OTP step's GET SUPPORT footer item — so it
-// sits with the other pre-auth captures (00-native-splash … 06-terms-of-use):
-//   07-support  default state — all four troubleshooting topics collapsed, as the screen opens
+// Writes the pre-auth Support Center to docs/screens/android/01-authen/05-get-support/. It is a PUBLIC
+// screen — it lives in the (auth) route group and is reached from the OTP step's GET SUPPORT footer
+// item — so it sits with the other 01-authen/ captures, in its own numbered subfolder:
+//   01-get-support  default state — all four troubleshooting topics collapsed, as the screen opens
 //
 // BACKEND REQUIRED, unlike the Privacy Policy and Terms of Use captures next door. Not because the
 // screen needs it — it needs it to be REACHED. The only entry the mockups draw for this screen is on
@@ -31,7 +31,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const OUT = resolve(HERE, '../../../docs/screens/android/01-public');
+const OUT = resolve(HERE, '../../../docs/screens/android/01-authen/05-get-support');
 const TMP = process.env['TEMP'] ?? process.env['TMP'] ?? HERE;
 const STITCH = join(HERE, 'stitch-fullpage.py');
 const PKG = 'com.constructionos.cos';
@@ -196,7 +196,7 @@ async function main() {
 
   await tapUntil('get-support-link', 'support', 'GET SUPPORT footer link');
   await delay(900); // let the health probe answer, so the banner is not captured mid-check
-  await stitchFull('07-support');
+  await stitchFull('01-get-support');
 
   console.log(`\nDone → ${OUT}`);
 }

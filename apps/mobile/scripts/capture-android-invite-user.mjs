@@ -3,8 +3,8 @@
 // and captures the invite form (mockup 04_tenant_admin/01_home/02_quick_action_button/02_invite_user/
 // 02_invite_user_via_phone) as ONE full-page image per method (each stitched from scrolling viewports
 // via scripts/stitch-fullpage.py):
-//   docs/screens/android/TENANT-ADMIN/01-Home/03-invite-user-phone.png  — phone method, complete filled form
-//   docs/screens/android/TENANT-ADMIN/01-Home/03-invite-user-email.png  — the EMAIL method, complete form
+//   docs/screens/android/04-tenant-admin/01-Home/03-ta-invite-user-phone.png  — phone method, complete filled form
+//   docs/screens/android/04-tenant-admin/01-Home/03-ta-invite-user-email.png  — the EMAIL method, complete form
 // Prereqs are the same as capture-android-home.mjs, plus Metro started with EXPO_PUBLIC_CAPTURE=1 so the
 // dev LogBox toast is suppressed, plus Python (Pillow/numpy) for the stitch. Run:
 //   node scripts/capture-android-invite-user.mjs
@@ -15,7 +15,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const OUT = resolve(HERE, '../../../docs/screens/android/TENANT-ADMIN/01-Home');
+const OUT = resolve(HERE, '../../../docs/screens/android/04-tenant-admin/01-Home');
 const TMP = process.env['TEMP'] ?? process.env['TMP'] ?? HERE; // scratch for the intermediate viewports
 const STITCH = join(HERE, 'stitch-fullpage.py');
 const PKG = 'com.constructionos.cos';
@@ -165,7 +165,7 @@ async function main() {
 
   // Full page: the complete phone-method form (header → role cards → AI panel → footer) in one image.
   console.log('· full-page phone method');
-  await stitchFull('03-invite-user-phone', 310);
+  await stitchFull('03-ta-invite-user-phone', 310);
 
   // Switch to the EMAIL method and capture that state full-page too (the contact field clears on
   // switch; type a sample address so the field is shown filled).
@@ -179,7 +179,7 @@ async function main() {
   await tap(byId('invite-contact'), 'contact');
   await type('somchai@example.com');
   await hideKeyboard();
-  await stitchFull('03-invite-user-email', 310);
+  await stitchFull('03-ta-invite-user-email', 310);
 
   console.log('done.');
 }

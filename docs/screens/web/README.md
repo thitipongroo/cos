@@ -35,8 +35,10 @@ files are **not** in the repo. The earlier per-role captures were deleted by `7d
 
 Numbered folders for cross-role flows, `UPPER_SNAKE` for role folders (`TENANT_ADMIN`) — the canonical
 CosRole spelling, used verbatim. **This differs from [`../android/`](../android/README.md) on purpose:**
-that tree uses `UPPER-KEBAB` (`TENANT-ADMIN`). The two conventions are not being harmonised; each
-matches the tree that is actually committed under it (product-owner decision 2026-08-07).
+that tree numbers its role folders in flow order and spells them lower-kebab (`04-tenant-admin/`), so
+its folders sort into the order a user meets them. It used `UPPER-KEBAB` (`TENANT-ADMIN/`) until the
+2026-08-11 restructure. The two conventions are not being harmonised; each matches the tree that is
+actually committed under it (product-owner decision 2026-08-07).
 
 | Folder                  | Written by                                                 |
 | ----------------------- | ---------------------------------------------------------- |

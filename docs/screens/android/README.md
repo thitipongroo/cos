@@ -22,58 +22,80 @@ Like [`../web/`](../web), the committed Android captures are grouped into role /
 flat numbered dump). **Within each role folder the screens are grouped again by the role's main-menu
 tab** (its bottom-nav destinations) — a screen lives under the tab it is reached from, and screens
 opened from the Home FAB's Quick Commands (Invite user, System integration, Apps & Services, …) sit
-under `Home/`. Each menu subfolder is numbered from its own start — `SITE-ENGINEER/01-Home/` begins at
-`00` (a loading state precedes the dashboard), the `TENANT-ADMIN/` subfolders at `01`. **Every committed screen is ONE full-page
+under `Home/`. Each menu subfolder is numbered from its own start — `03-site-engineer/01-Home/` begins
+at `00` (a loading state precedes the dashboard), the `04-tenant-admin/` subfolders at `01`.
+**Every committed screen is ONE full-page
 image** — where a screen is taller than the phone it is stitched from scrolling viewports
 (`scripts/stitch-fullpage.py`) — except where a screen has a genuinely distinct alternate state, which
 gets its own full-page file (the Invite-user `email` method, the Alerts `diff`-expanded view).
 
+> **The tree was restructured on 2026-08-11**, content unchanged — git recorded every move as `R100`.
+> Two things changed together, and both are worth knowing before following an old link:
+>
+> 1. **Every folder is numbered in the order a user meets it**, and role folders are lower-kebab, not
+>    `UPPER-KEBAB`: `SITE-ENGINEER/` → `03-site-engineer/`, `TENANT-ADMIN/` → `04-tenant-admin/`,
+>    `SITE-WORKER/` → `05-site-worker/`, `PROJECT-MANAGER/` → `06-project-manager/`. The old flat
+>    `01-public/` split into [`00-loading/`](00-loading/) (splash + app-launch) and
+>    [`01-authen/`](01-authen/) (one subfolder per pre-auth flow); `03-mfa/` and
+>    `02-shared/privacy-policy/` moved under `01-authen/` too, since both are part of getting in.
+> 2. **Every frame in a role folder names its role**: `01-dashboard.png` became
+>    `01-ta-home-dashboard.png` / `01-sw-home-dashboard.png` / `01-pm-home-dashboard.png`, so a file
+>    stays identifiable once it is out of its folder. Cross-role folders (`00-loading/`, `01-authen/`,
+>    `02-shared/`) take no prefix — they belong to no role.
+>
+> Two sets left the committed tree in the same change (product-owner decision): the PROJECT_MANAGER
+> **vendor directory** (`04-More/02-vendors.png`) and the whole **CRM Sales Manager** folder
+> (leads / opportunities / customers). Both capture paths were retired with them — the vendors step
+> was removed from `capture-android-project-manager.mjs`, and `capture-android-crm.mjs` and its
+> `capture:android:crm` script were deleted. **Neither SCREEN was removed from the app**; only their
+> screenshots left this set.
+
 | Folder                                     | What it holds                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`01-public/`](01-public/)                 | Pre-auth — the native splash (`00`), app-launch loading (`01`), the login flow (`02`–`04`), the two legal documents the login footer links to (Privacy Policy `05`, Terms of Use `06`) and the Support Center (`07`), reached from the OTP step's GET SUPPORT.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| [`03-mfa/`](03-mfa/)                       | The office-role MFA enrolment flow through Keycloak (`01`–`07`), captured in the browser.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| [`02-shared/`](02-shared/)                 | Cross-role app-shell screens — notification preferences (`01`, two states), the navigation drawer (`02`), and [`privacy-policy/`](02-shared/privacy-policy/): the post-auth Privacy Policy (`00`) plus the Transparency Portal ([`01-data-collection/`](02-shared/privacy-policy/01-data-collection/), 14 screens `00`–`13`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| [`SITE-ENGINEER/`](SITE-ENGINEER/)         | Tabs: **Home \| Issues \| Inspections \| Reports**. Captured so far: [`01-Home/`](SITE-ENGINEER/01-Home/) — the loading state (`00`) + dashboard (`01`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| [`TENANT-ADMIN/`](TENANT-ADMIN/)           | Tabs: **Home \| Users \| Alerts \| Settings**. [`01-Home/`](TENANT-ADMIN/01-Home/) — dashboard (`01`), Quick-Add (`02`) and the FAB flows: Invite-user (`03`), Role-permissions (`04`), Roles-selection (`05`), Invitation-success (`06`), System-integration (`07`), Apps-&-Services (`08`). [`02-Users/`](TENANT-ADMIN/02-Users/) — the users list (`01`), the per-user action sheet (`02`), the user profile (`03`), the multi-role permission editor (`04`) + the save-success screen (`05`), and the password-reset form (`06`) + its two done screens — temp-password (`07`) and email-link-sent (`08`). [`03-Alerts/`](TENANT-ADMIN/03-Alerts/) — the sync-review queue (`01`). [`04-Settings/`](TENANT-ADMIN/04-Settings/) — System Settings (`01`, one full-page).                                     |
-| [`PROJECT-MANAGER/`](PROJECT-MANAGER/)     | Tabs: **Home \| Procurement \| Finance \| More** — the bar from the CORRECTED [`mockup/mobile/06_project_manager`](../../../mockup/mobile/06_project_manager) set (2026-08-10). [`01-Home/`](PROJECT-MANAGER/01-Home/) — the manager dashboard (`01`): two KPI tiles, the critical-blockers card, the AI panel and YOUR PROJECTS. [`02-Procurement/`](PROJECT-MANAGER/02-Procurement/) — three counters, the AI panel and the approvals queue (`01`). [`03-Finance/`](PROJECT-MANAGER/03-Finance/) — portfolio financial summary, AI panel, per-project budget health (`01`). [`04-More/`](PROJECT-MANAGER/04-More/) — the More menu (`01`) and the vendor directory it pushes to (`02`). [`05-Drawer/`](PROJECT-MANAGER/05-Drawer/) — the navigation drawer (`01`), which from 2026-08-10 is PER ROLE: only **Settings** and **Support Center** are shared, and the section above them comes from [`lib/drawerLinks.ts`](../../../apps/mobile/src/lib/drawerLinks.ts). Two roles have a drawer DRAWING (`04_tenant_admin/` and `06_project_manager/05_navigation_drawer`) and get it verbatim; every other role's list is DERIVED from spec §6.4's permission matrix, so no drawer row can lead to a 403. The list every role used to share was not neutral — it was the TENANT_ADMIN drawing plus two extra rows. The earlier `03-Approvals/` and `04-Vendors/` folders were removed with the bar they were numbered for. `PROC_MANAGER` does not share these screens: the corrected mockup set is a PROJECT_MANAGER app end to end, and master 3490 keeps that role on Home \| RFQs \| Orders \| Deliveries. |
-| [`CRM-SALES-MANAGER/`](CRM-SALES-MANAGER/) | Tabs: **Home \| Leads \| Opportunities \| Customers** — the three pages §20.7.10 defines, built 2026-08-04. Leads (`01`), Opportunities (`02`), Customers (`03`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| [`SITE-WORKER/`](SITE-WORKER/)             | Tabs: **Home \| Tasks \| Safety \| Directory**. [`01-Home/`](SITE-WORKER/01-Home/) — the **site picker** overlay in both its states (`00` forced, `00b` dismissible), the field dashboard (`01`), the FAB's **Quick actions** overlay (`02`), and the two screens that overlay opens: **Report issue** (`03`) and **Daily report** (`04`). Those four are named for the mockup folders they implement (`01_dashboard`, `02_quick_actions`, `03_issue`, `04_daily_report`). [`02-Tasks/`](SITE-WORKER/02-Tasks/) (`01`), [`03-Safety/`](SITE-WORKER/03-Safety/) (`01`), [`04-Directory/`](SITE-WORKER/04-Directory/) (`01`). [`05-Drawer/`](SITE-WORKER/05-Drawer/) — the **navigation drawer** (`01`), which IS the profile.                                                                                                                                                                     |
+| [`00-loading/`](00-loading/)               | The two frames before the app has a screen — the Android 12+ native splash (`00`) and the app-launch loading state (`01`) the JS layer holds while the session hydrates.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| [`01-authen/`](01-authen/)                 | Getting in, one subfolder per flow: [`01-login/`](01-authen/01-login/) the login flow (`01`–`04`); [`02-mfa/`](01-authen/02-mfa/) the office-role MFA enrolment through Keycloak (`01`–`07`), captured in the browser; [`03-privacy-policy/`](01-authen/03-privacy-policy/) the Privacy Policy in **both** entry states (`00-…-preauth` from the login footer, `00-…-postauth` from the drawer) plus the Transparency Portal ([`01-data-collection/`](01-authen/03-privacy-policy/01-data-collection/), 14 screens `00`–`13`); [`04-terms-of-use/`](01-authen/04-terms-of-use/) (`01`); [`05-get-support/`](01-authen/05-get-support/) (`01`), reached from the OTP step's GET SUPPORT.                                                                                                                             |
+| [`02-shared/`](02-shared/)                 | Cross-role app-shell screens — notification preferences (`01`) and the state after saving it (`02`), and the navigation drawer (`03`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| [`03-site-engineer/`](03-site-engineer/)         | Tabs: **Home \| Issues \| Inspections \| Reports**. Captured so far: [`01-Home/`](03-site-engineer/01-Home/) — the loading state (`00`) + dashboard (`01`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| [`04-tenant-admin/`](04-tenant-admin/)           | Tabs: **Home \| Users \| Alerts \| Settings**. [`01-Home/`](04-tenant-admin/01-Home/) — dashboard (`01`), Quick-Add (`02`) and the FAB flows: Invite-user (`03`), Role-permissions (`04`), Roles-selection (`05`), Invitation-success (`06`), System-integration (`07`), Apps-&-Services (`08`). [`02-Users/`](04-tenant-admin/02-Users/) — the users list (`01`), the per-user action sheet (`02`), the user profile (`03`), the multi-role permission editor (`04`) + the save-success screen (`05`), and the password-reset form (`06`) + its two done screens — temp-password (`07`) and email-link-sent (`08`). [`03-Alerts/`](04-tenant-admin/03-Alerts/) — the sync-review queue (`01`). [`04-Settings/`](04-tenant-admin/04-Settings/) — System Settings (`01`, one full-page).                                     |
+| [`05-site-worker/`](05-site-worker/)             | Tabs: **Home \| Tasks \| Safety \| Directory**. [`01-Home/`](05-site-worker/01-Home/) — the **site picker** overlay in both its states (`00-sw-select-project` forced, `00-sw-change-project` dismissible), the field dashboard (`01`), the FAB's **Quick actions** overlay (`02`), and the two screens that overlay opens: **Report issue** (`03`) and **Daily report** (`04`). Those four are named for the mockup folders they implement (`01_dashboard`, `02_quick_actions`, `03_issue`, `04_daily_report`). [`02-Tasks/`](05-site-worker/02-Tasks/) (`01`), [`03-Safety/`](05-site-worker/03-Safety/) (`01`), [`04-Directory/`](05-site-worker/04-Directory/) (`01`). [`05-Drawer/`](05-site-worker/05-Drawer/) — the **navigation drawer** (`01`), which IS the profile.                                                                                                                                                                     |
+| [`06-project-manager/`](06-project-manager/)     | Tabs: **Home \| Procurement \| Finance \| More** — the bar from the CORRECTED [`mockup/mobile/06_project_manager`](../../../mockup/mobile/06_project_manager) set (2026-08-10). [`01-Home/`](06-project-manager/01-Home/) — the manager dashboard (`01`): two KPI tiles, the critical-blockers card, the AI panel and YOUR PROJECTS. [`02-Procurement/`](06-project-manager/02-Procurement/) — three counters, the AI panel and the approvals queue (`01`). [`03-Finance/`](06-project-manager/03-Finance/) — portfolio financial summary, AI panel, per-project budget health (`01`). [`04-More/`](06-project-manager/04-More/) — the More menu (`01`); the vendor directory it pushes to was `02` until 2026-08-11, when it left the committed set (see the restructure note above) — the screen itself is unchanged. [`05-Drawer/`](06-project-manager/05-Drawer/) — the navigation drawer (`01`), which from 2026-08-10 is PER ROLE: only **Settings** and **Support Center** are shared, and the section above them comes from [`lib/drawerLinks.ts`](../../../apps/mobile/src/lib/drawerLinks.ts). Two roles have a drawer DRAWING (`04_tenant_admin/` and `06_project_manager/05_navigation_drawer`) and get it verbatim; every other role's list is DERIVED from spec §6.4's permission matrix, so no drawer row can lead to a 403. The list every role used to share was not neutral — it was the TENANT_ADMIN drawing plus two extra rows. The earlier `03-Approvals/` and `04-Vendors/` folders were removed with the bar they were numbered for. `PROC_MANAGER` does not share these screens: the corrected mockup set is a PROJECT_MANAGER app end to end, and master 3490 keeps that role on Home \| RFQs \| Orders \| Deliveries. |
 
 The two adb dashboard scripts write straight into their role's menu subfolders —
-[`capture-android-home.mjs`](../../../apps/mobile/scripts/capture-android-home.mjs) → `SITE-ENGINEER/01-Home/`,
+[`capture-android-home.mjs`](../../../apps/mobile/scripts/capture-android-home.mjs) → `03-site-engineer/01-Home/`,
 [`capture-android-tenant-admin-home.mjs`](../../../apps/mobile/scripts/capture-android-tenant-admin-home.mjs)
-→ `TENANT-ADMIN/{01-Home,03-Alerts,04-Settings}/` — and the FAB-flow scripts (`capture-android-invite-user.mjs`,
+→ `04-tenant-admin/{01-Home,03-Alerts,04-Settings}/` — and the FAB-flow scripts (`capture-android-invite-user.mjs`,
 `…-role-permissions.mjs`, `…-roles-selection.mjs`, `…-invitation-success.mjs`, `…-system-integration.mjs`)
-each write into `TENANT-ADMIN/01-Home/`. `TENANT-ADMIN/02-Users/` has its own writers —
+each write into `04-tenant-admin/01-Home/`. `04-tenant-admin/02-Users/` has its own writers —
 [`capture-android-users-actions.mjs`](../../../apps/mobile/scripts/capture-android-users-actions.mjs)
 (the list `01` + the action sheet `02`), `…-user-profile.mjs`, `…-edit-permission.mjs`,
 `…-permission-success.mjs` and `…-reset-password.mjs`. **Exactly one script writes each committed
 frame**: the tenant-admin-home script used to stitch a second copy of the users list, and that step was
 removed on 2026-08-07 so the file cannot depend on which script ran last.
 [`capture-android-login.mjs`](../../../apps/mobile/scripts/capture-android-login.mjs)
-writes `01-public/`, as does
+writes `01-authen/01-login/`;
 [`capture-android-privacy-policy.mjs`](../../../apps/mobile/scripts/capture-android-privacy-policy.mjs)
-(the Privacy Policy screen, `05`) and
+writes `01-authen/03-privacy-policy/00-privacy-policy-preauth.png` and
 [`capture-android-terms-of-use.mjs`](../../../apps/mobile/scripts/capture-android-terms-of-use.mjs)
-(the Terms of Use screen, `06`) — the two captures here that need **no backend**: neither screen makes
-an API call, so Metro alone is enough and no login is performed.
+writes `01-authen/04-terms-of-use/` — the two captures here that need **no backend**: neither screen
+makes an API call, so Metro alone is enough and no login is performed.
 [`capture-android-support.mjs`](../../../apps/mobile/scripts/capture-android-support.mjs)
 
-(the Support Center, `07`) writes `01-public/` too, but it **does** need the backend — not because the
+writes `01-authen/05-get-support/`, and it **does** need the backend — not because the
 screen needs one to render, but because the only entry the mockups draw for it is on the OTP step, so
 the script requests a real passcode to get there, and the screen's status banner then probes
 `GET /health/live`.
 [`capture-android-shared-mfa.mjs`](../../../apps/mobile/scripts/capture-android-shared-mfa.mjs) writes the
 three **in-app** cross-role shots — `02-shared/01-notification-preferences.png`,
-`02-shared/02-navigation-drawer.png` and `03-mfa/01-app-intro.png`. Everything else under `03-mfa/`
+`02-shared/03-navigation-drawer.png` and `01-authen/02-mfa/01-app-intro.png`. Everything else under `01-authen/02-mfa/`
 (`02`–`07`) is the **Keycloak hosted browser** flow and is captured by hand, because it runs outside the
 app where adb/uiautomator cannot drive it.
 
-> **`PROJECT-MANAGER/` is captured by
+> **`06-project-manager/` is captured by
 > [`capture-android-project-manager.mjs`](../../../apps/mobile/scripts/capture-android-project-manager.mjs)**,
 > which logs in as the seeded project manager (`+66811000003`) and walks Procurement → Finance → More
-> → Vendors → **Home** in one run. Several things in those frames are the honest state rather than a
-> staged one:
+> → Drawer → **Home** in one run. It also walked More → **Vendors** until 2026-08-11, when that frame
+> left the committed set and the step was removed with it. Several things in these frames are the
+> honest state rather than a staged one:
 >
 > - **HOME IS SHOT LAST, on purpose.** Photographed three seconds after sign-in it came out empty —
 >   "You are not a member of any project yet" for a manager with three — because its load lost a race
@@ -99,25 +121,30 @@ app where adb/uiautomator cannot drive it.
 >   `00-glossary.md` states "Full BIM integration is post-MVP", so there is no screen to link and it
 >   is left out rather than stubbed.
 >
-> The vendor cards exercise the classification added the same day: TOP RATED is DERIVED from the
-> score's grade-A threshold (never stored), UNDER REVIEW is `verification_status = PENDING`, VERIFIED
-> without TOP RATED is a checked vendor with no score yet, and the vendor carrying no badge at all is
-> the pre-existing seed row whose two columns are still NULL.
+> The retired vendor frame exercised the classification added the same day, and the rule outlives the
+> screenshot: TOP RATED is DERIVED from the score's grade-A threshold (never stored), UNDER REVIEW is
+> `verification_status = PENDING`, VERIFIED without TOP RATED is a checked vendor with no score yet,
+> and a vendor carrying no badge at all is a seed row whose two columns are still NULL.
 
-## Login flow — [`01-public/`](01-public/)
+## Login flow — [`01-authen/`](01-authen/)
 
 English UI (matching [`mockup/mobile/01_authen/`](../../../mockup/mobile/01_authen)); the
 login header's language switcher is used to leave the th-TH default (QM-3).
 
-| #   | Screen                                              | What it shows                                                                       |
-| --- | --------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| 02  | [Login](01-public/02-login.png)                     | Landing — Path A phone form, Path B "Login with Email" as the secondary action      |
-| 03  | [OTP verify](01-public/03-login-otp-verify.png)     | Passcode step for `+66 •••• 0010`, requested from the landing                       |
-| 03  | [Email + password](01-public/03-login-password.png) | Keycloak's hosted page in a Chrome Custom Tab, `cos` theme (§20.6.1 / QM-4)         |
-| 04  | [Securing session](01-public/04-login-loading.png)  | `VerifyingOverlay`, shown while the Path B code→token exchange runs                 |
-| 05  | [Privacy Policy](01-public/05-privacy-policy.png)   | Pre-auth policy screen, reached from the login footer link — all sections collapsed |
-| 06  | [Terms of Use](01-public/06-terms-of-use.png)       | Pre-auth terms, the footer's other link — clause `01` open, as the screen opens     |
-| 07  | [Support Center](01-public/07-support.png)          | Pre-auth support, reached from the OTP step's GET SUPPORT — all topics collapsed    |
+**Each pre-auth flow is its own numbered subfolder and numbers from its own start**, which is why the
+Terms of Use and the Support Center are both `01`. They were `06` and `07` in one flat `01-public/`
+until the 2026-08-11 restructure; the splash and app-launch loading left that folder in the same
+change, for [`00-loading/`](00-loading/).
+
+| Folder               | Screen                                                                      | What it shows                                                                       |
+| -------------------- | --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `01-login/`          | [Login](01-authen/01-login/01-login.png)                                    | Landing — Path A phone form, Path B "Login with Email" as the secondary action      |
+| `01-login/`          | [OTP verify](01-authen/01-login/02-login-otp-verify.png)                    | Passcode step for `+66 •••• 0010`, requested from the landing                       |
+| `01-login/`          | [Email + password](01-authen/01-login/03-login-password.png)                | Keycloak's hosted page in a Chrome Custom Tab, `cos` theme (§20.6.1 / QM-4)         |
+| `01-login/`          | [Securing session](01-authen/01-login/04-login-loading.png)                 | `VerifyingOverlay`, shown while the Path B code→token exchange runs                 |
+| `03-privacy-policy/` | [Privacy Policy](01-authen/03-privacy-policy/00-privacy-policy-preauth.png) | Pre-auth policy screen, reached from the login footer link — all sections collapsed |
+| `04-terms-of-use/`   | [Terms of Use](01-authen/04-terms-of-use/01-terms-of-use.png)               | Pre-auth terms, the footer's other link — clause `01` open, as the screen opens     |
+| `05-get-support/`    | [Support Center](01-authen/05-get-support/01-get-support.png)               | Pre-auth support, reached from the OTP step's GET SUPPORT — all topics collapsed    |
 
 Captured by [`apps/mobile/scripts/capture-android-login.mjs`](../../../apps/mobile/scripts/capture-android-login.mjs)
 (`cd apps/mobile && pnpm capture:android` — it installs standalone, see the root `pnpm-workspace.yaml`)
@@ -127,15 +154,17 @@ connection a `uiautomator dump` only ever returns the instrumented app's own win
 browser undrivable. The script asserts the screen it expects (e.g. `verifying-overlay`) before saving
 each frame, so a mis-tap fails the run instead of writing a screenshot of the wrong thing.
 
-> **`05` is one frame, and only the collapsed state.** Until 2026-08-07 this folder also carried
+> **The pre-auth Privacy Policy is one frame, and only the collapsed state.** Until 2026-08-07 the
+> then-`01-public/` folder also carried
 > `05-privacy-policy-{data-collection,usage,compliance,security,rights}.png` — the same screen with each
 > accordion section expanded. All five were removed as duplicates (product-owner decision): the identical
-> policy document is captured post-auth under [`02-shared/privacy-policy/`](02-shared/privacy-policy/),
-> where it is the live route rather than a pre-auth stand-in.
+> policy document is captured post-auth as
+> [`00-privacy-policy-postauth.png`](01-authen/03-privacy-policy/00-privacy-policy-postauth.png) in the
+> same folder, where it is the live route rather than a pre-auth stand-in.
 > [`capture-android-privacy-policy.mjs`](../../../apps/mobile/scripts/capture-android-privacy-policy.mjs)
 > no longer expands the sections, so re-running it cannot reintroduce them.
 >
-> **`07` shows both emergency controls DISABLED, and that is the honest default.** The priority line
+> **The Support Center shows both emergency controls DISABLED, and that is the honest default.** The priority line
 > and the IT hotline dial `EXPO_PUBLIC_SUPPORT_CENTER_PHONE` and `EXPO_PUBLIC_SUPPORT_IT_HOTLINE`
 > (product-owner decision 2026-08-09) — per-deployment config, because no support-desk,
 > emergency-contact or hotline column exists in the schema and this screen is reached before sign-in,
@@ -145,7 +174,7 @@ each frame, so a mis-tap fails the run instead of writing a screenshot of the wr
 > is not. Both are unset in the repo, so the capture shows the unconfigured state
 > rather than an invented number. Set them in `apps/mobile/.env` and re-run to capture the live state.
 >
-> Two other things on `07` deliberately differ from
+> Two other things on that screen deliberately differ from
 > [its mockup](../../../mockup/mobile/01_authen/07_get_help/01_support_center): there is **no bottom
 > nav** (the drawing has one, but this is a pre-auth route — and `Field | Tasks | Support | Profile` is
 > no role's tab set, while §32.7 fixes each role at four), and the assistant panel is labelled **FIELD
@@ -154,7 +183,7 @@ each frame, so a mis-tap fails the run instead of writing a screenshot of the wr
 > score as AI-derived (ADR-081) applies here. The drawn copy — "you're in Sector 7", a known cellular
 > outage — was dropped outright: there is no sector, zone or outage feed anywhere in the product.
 
-## Site Engineer dashboard — [`SITE-ENGINEER/01-Home/01-home.png`](SITE-ENGINEER/01-Home/01-home.png)
+## Site Engineer dashboard — [`03-site-engineer/01-Home/01-se-home-dashboard.png`](03-site-engineer/01-Home/01-se-home-dashboard.png)
 
 The `SITE_ENGINEER` Home (`components/SiteEngineerHome.tsx`), captured against the `seed-realistic.ts`
 dataset through a real Path A (SMS OTP) login as `+66811000009` — Waraporn Klinhom, a SITE_ENGINEER at
@@ -196,7 +225,7 @@ below. It asserts the `site-engineer-home` testID before saving, and fails outri
 card is showing its "no BOQ-linked task" placeholder, so a screenshot of an empty card cannot be
 committed by accident.
 
-## Site Engineer dashboard — loading state — [`SITE-ENGINEER/01-Home/00-loading.png`](SITE-ENGINEER/01-Home/00-loading.png)
+## Site Engineer dashboard — loading state — [`03-site-engineer/01-Home/00-se-home-loading.png`](03-site-engineer/01-Home/00-se-home-loading.png)
 
 The same dashboard while its data is still loading: the reusable [`LoadingState`](../../../apps/mobile/src/components/LoadingState.tsx)
 component (ADR-055 — the implementation of
@@ -221,7 +250,7 @@ the shimmer from defeating the stitch's overlap match, `LoadingState` **freezes 
 a mid-frame in capture builds** (`EXPO_PUBLIC_CAPTURE`, the same flag that mutes the LogBox toast);
 production and normal dev animate as usual.
 
-## Tenant Admin dashboard — [`TENANT-ADMIN/01-Home/01-dashboard.png`](TENANT-ADMIN/01-Home/01-dashboard.png)
+## Tenant Admin dashboard — [`04-tenant-admin/01-Home/01-ta-home-dashboard.png`](04-tenant-admin/01-Home/01-ta-home-dashboard.png)
 
 The `TENANT_ADMIN` Home ([`components/TenantAdminHome.tsx`](../../../apps/mobile/src/components/TenantAdminHome.tsx),
 implementing [`mockup/mobile/04_tenant_admin/01_home/01_home_dashboard`](../../../mockup/mobile/04_tenant_admin/01_home/01_home_dashboard)),
@@ -299,12 +328,12 @@ Captured by [`apps/mobile/scripts/capture-android-tenant-admin-home.mjs`](../../
 (`node scripts/capture-android-tenant-admin-home.mjs`) — adb/uiautomator only. It asserts the
 `tenant-admin-home` landing testID and then the `admin-system-status` card before saving, so a mis-tap or
 an unrendered dashboard fails the run instead of writing the wrong screenshot; it then opens the FAB's
-Quick-Add menu (`TENANT-ADMIN/01-Home/02-quick-action.png`) and goes on to the Alerts and Settings tabs.
+Quick-Add menu (`04-tenant-admin/01-Home/02-ta-quick-action.png`) and goes on to the Alerts and Settings tabs.
 It does **not** capture the Users tab: that is
 [`capture-android-users-actions.mjs`](../../../apps/mobile/scripts/capture-android-users-actions.mjs)'s
 screen, and having both write it made the committed frame depend on which script ran last.
 
-## Tenant Admin — Users — [`01`](TENANT-ADMIN/02-Users/01-users-dashboard.png) · [`actions`](TENANT-ADMIN/02-Users/02-users-more.png) · [`profile`](TENANT-ADMIN/02-Users/03-user-profile.png) · [`edit`](TENANT-ADMIN/02-Users/04-edit-permission.png) · [`success`](TENANT-ADMIN/02-Users/05-success-permission.png) · [`reset`](TENANT-ADMIN/02-Users/06-reset-password.png) · [`temp-done`](TENANT-ADMIN/02-Users/07-temp-password-create.png) · [`link-sent`](TENANT-ADMIN/02-Users/08-reset-link-sent.png)
+## Tenant Admin — Users — [`01`](04-tenant-admin/02-Users/01-ta-users-dashboard.png) · [`actions`](04-tenant-admin/02-Users/02-ta-users-more.png) · [`profile`](04-tenant-admin/02-Users/03-ta-user-profile.png) · [`edit`](04-tenant-admin/02-Users/04-ta-edit-permission.png) · [`success`](04-tenant-admin/02-Users/05-ta-success-permission.png) · [`reset`](04-tenant-admin/02-Users/06-ta-reset-password.png) · [`temp-done`](04-tenant-admin/02-Users/07-ta-temp-password.png) · [`link-sent`](04-tenant-admin/02-Users/08-ta-reset-link-sent.png)
 
 The `TENANT_ADMIN` "Users" tab ([`app/(app)/users.tsx`](<../../../apps/mobile/src/app/(app)/users.tsx>)),
 implementing the
@@ -328,7 +357,7 @@ reads **"all clear"** here because every seeded user was just seen (the badge sh
 **N FLAGGED** once dormant accounts accrue — a real count, not the mockup's invented "95 % confidence") (the column
 backfills to `now()` at migration; the signal grows meaningful as real dormancy accrues). **Invite user** (FAB) is a
 first-pass placeholder (create exists on the web console). The per-user
-**`⋮` opens the action sheet** (mockup `02_user_management/01_management`, `02-users-more.png`): a bottom
+**`⋮` opens the action sheet** (mockup `02_user_management/01_management`, `02-ta-users-more.png`): a bottom
 sheet headed by the selected user, with **Edit permissions · Reset password · View activity · Deactivate
 account** (the last in red). Each targets a sub-flow not built on mobile yet (mockups `03_edit_permission`
 / `05_reset_password` / `07_user_activity` / `08_user_deactivation`), so it opens an honest "not available
@@ -340,9 +369,9 @@ Both frames are captured by
 (`node scripts/capture-android-users-actions.mjs`) — single top viewports, not full-page stitches: the
 list frame is deliberately the header + AI audit card + the first ~2 user cards rather than the whole
 scrolled list, and the action sheet fits one viewport. This script is the **only** writer of
-`02-Users/01-users-dashboard.png`.
+`02-Users/01-ta-users-dashboard.png`.
 
-## Tenant Admin — User profile — [`03`](TENANT-ADMIN/02-Users/03-user-profile.png)
+## Tenant Admin — User profile — [`03`](04-tenant-admin/02-Users/03-ta-user-profile.png)
 
 The per-user detail ([`app/(app)/user-profile.tsx`](<../../../apps/mobile/src/app/(app)/user-profile.tsx>)),
 implementing [`02_users/02_user_management/02_user_profile`](../../../mockup/mobile/04_tenant_admin/02_users/02_user_management/02_user_profile).
@@ -365,7 +394,7 @@ Everything is real, never the mockup's placeholders:
 - **Edit permissions** opens the multi-role permission editor (below). **Reset password** targets a
   sub-flow not built on mobile yet, so it opens an honest "not available on mobile yet" note.
 
-## Tenant Admin — Edit permissions — [`04`](TENANT-ADMIN/02-Users/04-edit-permission.png)
+## Tenant Admin — Edit permissions — [`04`](04-tenant-admin/02-Users/04-ta-edit-permission.png)
 
 The permission editor ([`app/(app)/edit-permission.tsx`](<../../../apps/mobile/src/app/(app)/edit-permission.tsx>)),
 implementing [`02_users/02_user_management/03_edit_permission`](../../../mockup/mobile/04_tenant_admin/02_users/02_user_management/03_edit_permission).
@@ -390,7 +419,7 @@ screen instead lets a TENANT_ADMIN give a user a **primary role plus additional 
 - The mockup's fabricated **"92 % confidence"** AI recommendation is dropped for an honest shell that
   simply states the effective access is the union of N roles. **Save** persists via `PUT /users/:id/roles`.
 
-## Tenant Admin — Permission saved — [`05`](TENANT-ADMIN/02-Users/05-success-permission.png)
+## Tenant Admin — Permission saved — [`05`](04-tenant-admin/02-Users/05-ta-success-permission.png)
 
 The terminal confirmation shown after the editor's SAVE succeeds
 ([`app/(app)/permission-success.tsx`](<../../../apps/mobile/src/app/(app)/permission-success.tsx>),
@@ -408,7 +437,7 @@ name. No top bar of its own — the global TopBar shows the CONSTRUCTION OS word
 - **Back to user management** → `router.replace('/users')`. **View user profile** → the user's profile
   (which fetches the row by id when it is opened with only an id, so it still shows real data).
 
-## Tenant Admin — Reset password — [`06`](TENANT-ADMIN/02-Users/06-reset-password.png)
+## Tenant Admin — Reset password — [`06`](04-tenant-admin/02-Users/06-ta-reset-password.png)
 
 The admin-triggered password-reset form
 ([`app/(app)/reset-password.tsx`](<../../../apps/mobile/src/app/(app)/reset-password.tsx>), mockup
@@ -440,7 +469,7 @@ MANAGER` in the capture).
   (reset-link-sent), the temp path to `07`. **Cancel** → `router.back()`. Both emit
   `identity.user.password_reset.v1` (with `method` = `email_link` / `temporary_password`).
 
-## Tenant Admin — Password reset done (temp) — [`07`](TENANT-ADMIN/02-Users/07-temp-password-create.png)
+## Tenant Admin — Password reset done (temp) — [`07`](04-tenant-admin/02-Users/07-ta-temp-password.png)
 
 The terminal confirmation shown after **Confirm reset** succeeds with the **temporary-password** fallback
 ([`app/(app)/reset-password-success.tsx`](<../../../apps/mobile/src/app/(app)/reset-password-success.tsx>),
@@ -462,7 +491,7 @@ Reached via `router.replace` — no top bar of its own (global TopBar shows the 
   login. This becomes universally meaningful once the planned **unified login** (any user signs in via OTP
   _or_ email+password) lands.
 
-## Tenant Admin — Reset link sent (email) — [`08`](TENANT-ADMIN/02-Users/08-reset-link-sent.png)
+## Tenant Admin — Reset link sent (email) — [`08`](04-tenant-admin/02-Users/08-ta-reset-link-sent.png)
 
 The terminal confirmation for the **standards-compliant email path**
 ([`app/(app)/reset-password-email-success.tsx`](<../../../apps/mobile/src/app/(app)/reset-password-email-success.tsx>),
@@ -475,7 +504,7 @@ Reached via `router.replace` — terminal, wordmark TopBar, no Back.
   truthful audit fact (`identity.user.password_reset.v1`, `method: email_link`).
 - **Return to user list** → `router.replace('/users')`.
 
-## Tenant Admin — Quick-Add menu — [`TENANT-ADMIN/01-Home/02-quick-action.png`](TENANT-ADMIN/01-Home/02-quick-action.png)
+## Tenant Admin — Quick-Add menu — [`04-tenant-admin/01-Home/02-ta-quick-action.png`](04-tenant-admin/01-Home/02-ta-quick-action.png)
 
 The FAB's full-screen **Quick Commands** overlay
 ([`components/QuickAddMenu.tsx`](../../../apps/mobile/src/components/QuickAddMenu.tsx), mockup
@@ -500,7 +529,7 @@ stitch** (`scripts/stitch-fullpage.py`). Real vs honest placeholder:
   honest placeholder (no AI-report screen yet) — the AI-report card keeps the mockup's richer layout but
   **drops the fabricated "94 % CONFIDENCE / Source"** (no such signal exists).
 
-## Tenant Admin — Invite user — [`phone`](TENANT-ADMIN/01-Home/03-invite-user-phone.png) · [`email`](TENANT-ADMIN/01-Home/03-invite-user-email.png)
+## Tenant Admin — Invite user — [`phone`](04-tenant-admin/01-Home/03-ta-invite-user-phone.png) · [`email`](04-tenant-admin/01-Home/03-ta-invite-user-email.png)
 
 The Quick Commands "Invite New User" target
 ([`app/(app)/invite-user.tsx`](<../../../apps/mobile/src/app/(app)/invite-user.tsx>), mockups
@@ -529,7 +558,7 @@ default `+66` prefix) or **Path B email** — the selected role, and the recipie
   ("…pre-applied for the _Project Manager_ role") but **drops the mockup's fabricated permission
   specifics** ("approval rights for Payouts and Daily Reports") — PO decision 2026-07-29.
 
-## Tenant Admin — Role permissions — [`04`](TENANT-ADMIN/01-Home/04-role-permissions.png)
+## Tenant Admin — Role permissions — [`04`](04-tenant-admin/01-Home/04-ta-role-permissions.png)
 
 Reached from Invite-user's **"View permissions"** link
 ([`app/(app)/role-permissions.tsx`](<../../../apps/mobile/src/app/(app)/role-permissions.tsx>), mockup
@@ -551,7 +580,7 @@ breakdown for the role being invited.
   of its own: the global TopBar shows "Role permissions" + a Back arrow; the footer **"Back to
   invitation"** and that arrow both `router.back()`.
 
-## Tenant Admin — Roles selection — [`05`](TENANT-ADMIN/01-Home/05-roles-selection.png)
+## Tenant Admin — Roles selection — [`05`](04-tenant-admin/01-Home/05-ta-roles-selection.png)
 
 The full-screen role picker opened from Invite-user's **"Show more roles"**
 ([`app/(app)/roles-selection.tsx`](<../../../apps/mobile/src/app/(app)/roles-selection.tsx>), mockup
@@ -573,7 +602,7 @@ single-select (createUser takes one role).
   hidden `Tabs.Screen` siblings, and the React Navigation default (`firstRoute`) would send Back to Home
   instead of the screen that opened the picker — this also fixes Role-permissions' "Back to invitation".
 
-## Tenant Admin — Invitation success — [`06`](TENANT-ADMIN/01-Home/06-invitation-success.png)
+## Tenant Admin — Invitation success — [`06`](04-tenant-admin/01-Home/06-ta-invitation-success.png)
 
 The terminal confirmation shown after Invite-user's **SEND INVITATION** succeeds
 ([`app/(app)/invitation-success.tsx`](<../../../apps/mobile/src/app/(app)/invitation-success.tsx>), mockup
@@ -595,7 +624,7 @@ old success `Alert`**; Invite-user `router.replace`s here on `createUser` 201.
   Qualified to `::platform."CosRoleEnum"` in both `createUser` and `changeRole`; `POST /users` now returns
   **201** and the real SEND → success flow is reachable.
 
-## Tenant Admin — System integration — [`07`](TENANT-ADMIN/01-Home/07-system-integration.png)
+## Tenant Admin — System integration — [`07`](04-tenant-admin/01-Home/07-ta-system-integration.png)
 
 The connector picker opened from Quick Commands → **New System Integration**
 ([`app/(app)/system-integration.tsx`](<../../../apps/mobile/src/app/(app)/system-integration.tsx>), mockup
@@ -616,7 +645,7 @@ The connector picker opened from Quick Commands → **New System Integration**
   **brand icon in the TopBar is now a rounded-square tile** (`brandIcon` `borderRadius`, Linear/Palantir
   aesthetic) — a global TopBar change, so every screen's header picks it up.
 
-## Tenant Admin — Apps & Services — [`08`](TENANT-ADMIN/01-Home/08-apps-services.png)
+## Tenant Admin — Apps & Services — [`08`](04-tenant-admin/01-Home/08-ta-apps-services.png)
 
 The module / tools / extensions hub, opened from Quick Commands → **Apps & Services** (a new action card
 there — `router.push`)
@@ -633,7 +662,7 @@ there — `router.push`)
   Connect**. `08` is one full-page stitch; no top bar of its own (global TopBar shows the title + Back
   arrow).
 
-## Tenant Admin — Sync Review Queue (Alerts) — [`01`](TENANT-ADMIN/03-Alerts/01-alerts-dashboard.png)
+## Tenant Admin — Sync Review Queue (Alerts) — [`01`](04-tenant-admin/03-Alerts/01-ta-alerts-dashboard.png)
 
 The `TENANT_ADMIN` "Alerts" tab
 ([`app/(app)/sync-queue.tsx`](<../../../apps/mobile/src/app/(app)/sync-queue.tsx>)), implementing
@@ -644,7 +673,7 @@ Engineer's ConflictBadge uses; spec §17.5 lets `TENANT_ADMIN` view/resolve), re
 actual `conflict_type` enum (**REJECTED / STATUS_CONFLICT / FIELD_CONFLICT**, colour-coded) — the
 mockup's Critical/Medium/Low "severity" is not a field on the record, so it is not invented. `REF` comes
 from `entity_id`, `FAILED AT` from `created_at`, and the **error reason** is a localised description of
-each `conflict_type` (not a fabricated per-record message). `01-alerts-dashboard` shows the populated
+each `conflict_type` (not a fabricated per-record message). `01-ta-alerts-dashboard` shows the populated
 list as one full-page image. **Mark resolved** is the single real action (the
 mockup's retry / merge / edit are all one `resolve` on the backend).
 
@@ -652,7 +681,7 @@ The five conflicts are demo rows seeded by
 [`seed-realistic.ts`](../../../backend/prisma/seed-realistic.ts) (a realistic tenant accumulates field-sync
 conflicts, like it accumulates issues and reports); the screen renders that real (seed) data.
 
-## Tenant Admin — System Settings — [`01`](TENANT-ADMIN/04-Settings/01-system-settings.png)
+## Tenant Admin — System Settings — [`01`](04-tenant-admin/04-Settings/01-ta-system-settings.png)
 
 The `TENANT_ADMIN` "Settings" tab
 ([`app/(app)/system-settings.tsx`](<../../../apps/mobile/src/app/(app)/system-settings.tsx>)), implementing
@@ -675,7 +704,7 @@ upload + primary-colour picker, Autodesk BIM 360 sync, Security policy, and Dele
 "LINE token expires in 3 days / 98 % confidence" — there is no such signal, so the card renders its shell
 with an honest empty state (**"No AI insights available yet."**), never the fabricated prediction.
 
-## Shared — Notification settings — [`01`](02-shared/01-notification-preferences.png) · [`saved`](02-shared/01-notification-preferences-saved.png)
+## Shared — Notification settings — [`01`](02-shared/01-notification-preferences.png) · [`saved`](02-shared/02-notification-preferences-saved.png)
 
 The cross-role notification-preferences route, reached from the navigation drawer (below) rather than
 from a tab. **Two files: the page, and the state you reach after saving it.**
@@ -699,7 +728,7 @@ alerts are never quieted."_ — and the **SAVE CHANGES** button.
 > the extra routes were hidden. `capture-android-shared-mfa.mjs` now stitches this route instead of
 > taking a single `screencap`, so the page cannot disagree with itself.
 
-**`01-notification-preferences-saved.png`** — a **different screen**, not part of the page above:
+**`02-notification-preferences-saved.png`** — a **different screen**, not part of the page above:
 the `if (saved)` branch in `notification-preferences.tsx` (mockup `06_notification/02_success_state`).
 _Changes saved_, with `STATUS Active` and `LAST SYNC Just now`, and a **Back** button.
 
@@ -709,39 +738,25 @@ _Changes saved_, with `STATUS Active` and `LAST SYNC Just now`, and a **Back** b
 > screen. Before this it was hand-made and had gone stale by two chrome changes, with a
 > `Uncaught (in promise): Error: fetch failed` toast in frame.
 
-## CRM Sales Manager — [`CRM-SALES-MANAGER/`](CRM-SALES-MANAGER/)
+## CRM Sales Manager — not captured (retired 2026-08-11)
 
-The three CRM pages §20.7.10 defines, built 2026-08-04 after the product owner approved the Rule 38
-list. Backend endpoints already existed (`crm.controller.ts`) and `apps/web` already had all three
-pages, so nothing here is speculative — the mobile screens call the same role-gated routes.
+**The three CRM pages are no longer part of this set** (product-owner decision 2026-08-11). The
+frames — Leads, Opportunities and Customers, the three pages §20.7.10 defines — were deleted, and the
+capture path was retired with them: `apps/mobile/scripts/capture-android-crm.mjs` and its
+`capture:android:crm` script are gone, so nothing writes a `CRM-SALES-MANAGER/` or `09-crm-manager/`
+folder any more.
 
-Captured signed in as **Chalermsak Nithat — CRM_SALES_MANAGER** (`+66811000012`, seed-realistic.ts),
-the only seeded account with the role. Every CRM endpoint is gated to `CRM_READ_ROLES` /
-`CRM_WRITE_ROLES`, so no other account can populate these tabs.
+**The SCREENS are untouched.** `CRM_SALES_MANAGER` still has its four tabs in the app, still backed by
+`crm.controller.ts` and the same role-gated routes `apps/web` uses; only their screenshots left this
+folder. Two behaviours the retired frames documented are worth keeping in writing, because they are
+easy to re-break: a **WON** opportunity deliberately renders **no** convert button (the server rejects
+a second convert with `COS-CRM-003`, so the state is the affordance), and `value` is displayed as the
+DECIMAL **string** the API returns — never parsed into a JS number (§14). The lead picker is a
+**wrapping** row of chips, not a horizontal scroller: a horizontal `ScrollView` in that column
+container laid nothing out, and since choosing a lead is mandatory before an opportunity can be
+created, that made the screen unusable.
 
-| #   | Screen                                                  | What it shows                                                                |
-| --- | ------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| 01  | [Leads](CRM-SALES-MANAGER/01-leads.png)                 | Capture form (contact / company) + the lead list with NEW / QUALIFIED status |
-| 02  | [Opportunities](CRM-SALES-MANAGER/02-opportunities.png) | Lead picker + title/value form; per-row **Convert to customer** on OPEN rows |
-| 03  | [Customers](CRM-SALES-MANAGER/03-customers.png)         | Read-only `finance.customers` list — no create action, per the spec row      |
-
-Two behaviours worth reading off frame `02`: the **WON** row deliberately renders **no** convert
-button (the server rejects a second convert with `COS-CRM-003`, so the state is the affordance), and
-`value` is displayed as the DECIMAL **string** the API returns — never parsed into a JS number (§14).
-
-> The lead picker on `02` is a **wrapping** row of chips, not a horizontal scroller. The first device
-> capture showed the picker completely blank; a probe confirmed four leads were in state, but a
-> horizontal `ScrollView` in that column container would not lay them out, and forcing an explicit
-> height only reserved empty space. Since choosing a lead is mandatory before an opportunity can be
-> created, that bug made the screen unusable. The wrapping row also shows every candidate at once.
-
-Captured by
-[`apps/mobile/scripts/capture-android-crm.mjs`](../../../apps/mobile/scripts/capture-android-crm.mjs)
-(`cd apps/mobile && pnpm capture:android:crm`). Plain single-viewport grabs, not stitched: each screen
-fits one viewport, and these are top-level **tab** screens so they carry no breadcrumb strip — running
-the full-page stitcher would mean re-deriving its fixed chrome band for a layout that does not need it.
-
-## Shared — Privacy Policy + Data Collection — [`02-shared/privacy-policy/`](02-shared/privacy-policy/)
+## Shared — Privacy Policy + Data Collection — [`01-authen/03-privacy-policy/`](01-authen/03-privacy-policy/)
 
 The post-auth Privacy Policy and the PDPA data-collection portal beneath it, reached from **drawer →
 PRIVACY POLICY → Data Collection card** (PO decision 2026-08-04). Under `02-shared/` because every
@@ -769,26 +784,26 @@ screen carries the `<` back control restored to the top bar on 2026-08-04, along
 
 | #   | Screen                                                                                          | What it shows                                                                   |
 | --- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| 00  | [Privacy Policy (post-auth)](02-shared/privacy-policy/00-privacy-policy-postauth.png)           | The drawer's policy route — same document as the pre-auth one, in the app shell |
-| 00  | [Data Collection](02-shared/privacy-policy/01-data-collection/00-data-collection.png)           | Category count, what is collected, how it arrives, retention and rights         |
-| 01  | [Identity & contact](02-shared/privacy-policy/01-data-collection/01-identity.png)               | The signed-in account's real name / email / phone / photo / role                |
-| 02  | [Site & location](02-shared/privacy-policy/01-data-collection/02-location.png)                  | The five record types that carry a coordinate; geofencing marked Planned        |
-| 03  | [Technical logs](02-shared/privacy-policy/01-data-collection/03-technical-logs.png)             | Audit-log fields, the path an entry travels, retention tiers                    |
-| 04  | [What you enter](02-shared/privacy-policy/01-data-collection/04-manual-input.png)               | The forms that create records and how entries are handled                       |
-| 05  | [Equipment sensors](02-shared/privacy-policy/01-data-collection/05-equipment-sensors.png)       | Every row Planned — IoT ingestion is Phase 21/24 and collects nothing today     |
-| 06  | [Automated processing](02-shared/privacy-policy/01-data-collection/06-automated-processing.png) | OCR + report drafting in use; PPE detection and photo-vs-design Planned         |
-| 07  | [Erasing your data](02-shared/privacy-policy/01-data-collection/07-erasure.png)                 | What is erased vs anonymised-and-kept, and why; request control inactive        |
+| 00  | [Privacy Policy (post-auth)](01-authen/03-privacy-policy/00-privacy-policy-postauth.png)           | The drawer's policy route — same document as the pre-auth one, in the app shell |
+| 00  | [Data Collection](01-authen/03-privacy-policy/01-data-collection/00-data-collection.png)           | Category count, what is collected, how it arrives, retention and rights         |
+| 01  | [Identity & contact](01-authen/03-privacy-policy/01-data-collection/01-identity.png)               | The signed-in account's real name / email / phone / photo / role                |
+| 02  | [Site & location](01-authen/03-privacy-policy/01-data-collection/02-location.png)                  | The five record types that carry a coordinate; geofencing marked Planned        |
+| 03  | [Technical logs](01-authen/03-privacy-policy/01-data-collection/03-technical-logs.png)             | Audit-log fields, the path an entry travels, retention tiers                    |
+| 04  | [What you enter](01-authen/03-privacy-policy/01-data-collection/04-manual-input.png)               | The forms that create records and how entries are handled                       |
+| 05  | [Equipment sensors](01-authen/03-privacy-policy/01-data-collection/05-equipment-sensors.png)       | Every row Planned — IoT ingestion is Phase 21/24 and collects nothing today     |
+| 06  | [Automated processing](01-authen/03-privacy-policy/01-data-collection/06-automated-processing.png) | OCR + report drafting in use; PPE detection and photo-vs-design Planned         |
+| 07  | [Erasing your data](01-authen/03-privacy-policy/01-data-collection/07-erasure.png)                 | What is erased vs anonymised-and-kept, and why; request control inactive        |
 
 ### The D-series (`08`–`13`) — ADR-078 / ADR-080 / ADR-081 / ADR-084
 
 | #   | Screen                                                                                  | What it shows                                                                        |
 | --- | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| 08  | [Data export](02-shared/privacy-policy/01-data-collection/08-data-export.png)           | The five real @pdpa categories, JSON/CSV, and the step-up before an archive is built |
-| 09  | [Network origin](02-shared/privacy-policy/01-data-collection/09-network-origin.png)     | What the ingress address resolves to, latency measured on the device, and the rule   |
-| 10  | [Device details](02-shared/privacy-policy/01-data-collection/10-device-details.png)     | Installation id (not a hardware serial), how sign-in is bound, platform integrity    |
-| 11  | [Account security](02-shared/privacy-policy/01-data-collection/11-account-security.png) | Registered devices, revocation with a reason, and the biometric unlock switch        |
-| 12  | [Session details](02-shared/privacy-policy/01-data-collection/12-session.png)           | Real token lifetimes and transport — not the mockup's invented parameters (ADR-084)  |
-| 13  | [Timestamps](02-shared/privacy-policy/01-data-collection/13-timestamps.png)             | UTC, storage precision, append-only audit, and the real retention tiers              |
+| 08  | [Data export](01-authen/03-privacy-policy/01-data-collection/08-data-export.png)           | The five real @pdpa categories, JSON/CSV, and the step-up before an archive is built |
+| 09  | [Network origin](01-authen/03-privacy-policy/01-data-collection/09-network-origin.png)     | What the ingress address resolves to, latency measured on the device, and the rule   |
+| 10  | [Device details](01-authen/03-privacy-policy/01-data-collection/10-device-details.png)     | Installation id (not a hardware serial), how sign-in is bound, platform integrity    |
+| 11  | [Account security](01-authen/03-privacy-policy/01-data-collection/11-account-security.png) | Registered devices, revocation with a reason, and the biometric unlock switch        |
+| 12  | [Session details](01-authen/03-privacy-policy/01-data-collection/12-session.png)           | Real token lifetimes and transport — not the mockup's invented parameters (ADR-084)  |
+| 13  | [Timestamps](01-authen/03-privacy-policy/01-data-collection/13-timestamps.png)             | UTC, storage precision, append-only audit, and the real retention tiers              |
 
 **Two flag-dependent states are visible in these frames, and both are the correct rendering rather
 than a defect:**
@@ -816,7 +831,7 @@ tapped via a scroll-until-found helper, because React Native does not report off
 > Measure the BOTTOM band by walking **up** from the last row, never down: the content cards use the
 > same `#0F172A` surface as the bottom nav, so a downward scan stops in the middle of the page.
 
-## Shared — Navigation drawer — [`02-shared/02-navigation-drawer.png`](02-shared/02-navigation-drawer.png)
+## Shared — Navigation drawer — [`02-shared/03-navigation-drawer.png`](02-shared/03-navigation-drawer.png)
 
 The drawer opened from the top bar, captured as Somsak Duangdee (`SITE_WORKER`) — the identity card
 shows the initials avatar, the role, and an **Online & synced** pill. **FIELD TOOLS** lists Project
@@ -826,7 +841,7 @@ NOT bottom-tabs live — `MobileNav.tsx` sets `href: null` on the notification-p
 mfa-enrollment routes so they stay reachable without spending one of the 4–5 tab slots spec §32.7
 allows.
 
-## MFA enrolment — [`01`](03-mfa/01-app-intro.png) · [`02`](03-mfa/02-keycloak-login.png) · [`03`](03-mfa/03-keycloak-totp-setup.png) · [`04`](03-mfa/04-keycloak-totp-verify.png) · [`05`](03-mfa/05-app-enrollment-success.png) · [`06`](03-mfa/06-keycloak-recovery-codes.png) · [`07`](03-mfa/07-keycloak-backup-codes-copied.png)
+## MFA enrolment — [`01`](01-authen/02-mfa/01-app-intro.png) · [`02`](01-authen/02-mfa/02-keycloak-login.png) · [`03`](01-authen/02-mfa/03-keycloak-totp-setup.png) · [`04`](01-authen/02-mfa/04-keycloak-totp-verify.png) · [`05`](01-authen/02-mfa/05-app-enrollment-success.png) · [`06`](01-authen/02-mfa/06-keycloak-recovery-codes.png) · [`07`](01-authen/02-mfa/07-keycloak-backup-codes-copied.png)
 
 TOTP enrolment for the office roles (QM-4 makes MFA mandatory for `TENANT_ADMIN` and `FINANCE`). The
 flow deliberately leaves the app: per [ADR-050](../../architecture/adr/050-mobile-path-b-login.md)
@@ -856,7 +871,7 @@ secret, so the app only bookends the flow.
 > The secret keys and backup codes visible in `03`, `04`, `06` and `07` belong to a throwaway account
 > on the **local dev realm** (`localhost:8090`) — they authenticate nothing outside that machine.
 
-## App launch — loading state — [`01-public/01-app-launch-loading.png`](01-public/01-app-launch-loading.png)
+## App launch — loading state — [`00-loading/01-app-launch-loading.png`](00-loading/01-app-launch-loading.png)
 
 Opening the app now shows the same [`LoadingState`](../../../apps/mobile/src/components/LoadingState.tsx)
 `widget` ("loading A", ADR-055) on a dark ground while the persisted session hydrates and the brand
@@ -864,7 +879,7 @@ font resolves ([`src/app/_layout.tsx`](../../../apps/mobile/src/app/_layout.tsx)
 **app favicon** (the hexagon mark) in place of the icon-plate skeleton, the **brand tagline** ("AI-NATIVE
 / Construction Platform") in place of the top skeleton bar, then a two-step (hydration + font) percentage
 and a matching bar (`50%` here: session hydrated, font still loading). This mirrors the login hero, and
-continues the native splash's identity into the JS layer so `01-public/00-native-splash.png` → this state is one
+continues the native splash's identity into the JS layer so `00-loading/00-native-splash.png` → this state is one
 continuous branded dark hold (same `#020617` ground, same mark + wordmark), not a colour or content jump.
 The favicon + tagline are passed by the caller through the new opt-in `iconSource` / `heading` props
 (ADR-055 — the component bakes no brand asset or copy; the dashboard's `widget` skeleton, which passes
@@ -876,7 +891,7 @@ cache, widening the font-load window) and screencapping the framebuffer. The dev
 `EXPO_PUBLIC_CAPTURE=1` runs `LogBox.ignoreAllLogs()` in [`_layout.tsx`](../../../apps/mobile/src/app/_layout.tsx),
 so it never lands in a documentation screenshot; normal `expo start` is unaffected.
 
-## Native splash — [`01-public/00-native-splash.png`](01-public/00-native-splash.png)
+## Native splash — [`00-loading/00-native-splash.png`](00-loading/00-native-splash.png)
 
 The Android 12+ system splash (`android/app/src/main/res/values/styles.xml`, `Theme.App.SplashScreen`)
 shown for the ~1 s before the JS bundle mounts. Two changes from the original:
@@ -918,7 +933,7 @@ that dump by construction. It documents routes as one user sees them, matching t
 different thing from the **committed** per-role captures here, which are grouped into role folders
 (see [Structure](#structure--grouped-by-role) above), like [`../web/`](../web).
 
-`00-login.png` from that dump predated the login redesign — `01-public/02-login.png` is the current landing.
+`00-login.png` from that dump predated the login redesign — `01-authen/01-login/01-login.png` is the current landing.
 
 ## Known gaps
 
@@ -928,25 +943,25 @@ different thing from the **committed** per-role captures here, which are grouped
   and [`provision-keycloak-demo.ts`](../../../backend/prisma/provision-keycloak-demo.ts) used to
   provision every demo user with the email as username, so no seeded role could complete an OTP login.
   It now uses the phone number as the username whenever the account has one; Path B still works
-  because the realm sets `loginWithEmailAllowed`. `SITE-ENGINEER/01-Home/01-home.png` is the first
+  because the realm sets `loginWithEmailAllowed`. `03-site-engineer/01-Home/01-se-home-dashboard.png` is the first
   screen captured through a real per-role OTP login.
   - Accounts provisioned before this change cannot simply be renamed — the realm sets
     `editUsernameAllowed: false`, and Keycloak rejects a username change with
     `400 error-user-attribute-read-only` — so the script deletes and recreates them, then re-links
     `platform.users.keycloak_user_id`. Re-run it once against an existing realm to migrate.
 - **One hand-made shot predates the tab-bar fix and needs recapturing.**
-  `03-mfa/05-app-enrollment-success.png` still shows a **seven**-tab bottom bar ending in truncated
+  `01-authen/02-mfa/05-app-enrollment-success.png` still shows a **seven**-tab bottom bar ending in truncated
   `mfa-en…` / `notific…` entries, plus a dev LogBox toast. That is exactly what
   [`capture-android-shared-mfa.mjs`](../../../apps/mobile/scripts/capture-android-shared-mfa.mjs)
   exists to avoid — `MobileNav.tsx` now sets `href: null` on those two routes, and Metro must be
   started with `EXPO_PUBLIC_CAPTURE=1` to suppress the toast. The screens that script drives
-  (`01-notification-preferences.png`, `-saved`, `02-navigation-drawer.png`, `03-mfa/01-app-intro.png`)
+  (`01-notification-preferences.png`, `-saved`, `03-navigation-drawer.png`, `01-authen/02-mfa/01-app-intro.png`)
   show the correct four-tab bar with no toast. This one cannot be scripted without completing a real
   TOTP enrolment against Keycloak's own pages.
   - Two entries left this list on 2026-08-06. `01-notification-preferences-quiet.png` is gone — it
     held the lower half of `01-notification-preferences.png`, now captured as one stitched page.
-    `01-notification-preferences-saved.png` is now scripted, by pressing SAVE CHANGES for real.
-- **`03-mfa/04-keycloak-totp-verify.png` does not show what its name claims.** It is the TOTP _setup_
+    `02-notification-preferences-saved.png` is now scripted, by pressing SAVE CHANGES for real.
+- **`01-authen/02-mfa/04-keycloak-totp-verify.png` does not show what its name claims.** It is the TOTP _setup_
   page again, with Chrome's "Save password?" prompt covering the header and the Android keyboard
   toolbar covering the left edge; the six verification boxes are still empty. A genuine "code
   entered, about to submit" frame is still missing. Being a Keycloak browser page, it can only be
@@ -956,19 +971,19 @@ different thing from the **committed** per-role captures here, which are grouped
   `docs/screens/ios/` and shells out to `xcrun simctl`, so as committed it only drives an iOS
   simulator. The Android equivalents are the two adb scripts referenced above.
 
-## Site Worker — four tabs, eight screens — [`SITE-WORKER/`](SITE-WORKER/)
+## Site Worker — four tabs, eight screens — [`05-site-worker/`](05-site-worker/)
 
 > **THE ROLE NOW PICKS A SITE FIRST** (mockup `01_home/00_sw_project_selection`, added 2026-08-10).
 > The corrected set puts a project picker in front of the dashboard and then prints the chosen site
-> on every screen after it, so `00-select-project` is not a screen the capture script navigates to —
+> on every screen after it, so `00-sw-select-project` is not a screen the capture script navigates to —
 > it is where the app already is after `pm clear`. Choosing one is what unlocks the rest of the run.
 >
 > **IT IS AN OVERLAY, NOT A ROUTE** (PO decision 2026-08-11), and the set carries BOTH of its states:
 >
 > | | | |
 > |---|---|---|
-> | [`00-select-project`](SITE-WORKER/01-Home/00-select-project.png) | **forced** — no site chosen yet | **no close control**, and the hardware back does nothing |
-> | [`00b-change-project`](SITE-WORKER/01-Home/00b-change-project.png) | **deliberate** — opened from the project bar mid-session | an **X**, and closing keeps the site already chosen (marked `CURRENT`) |
+> | [`00-sw-select-project`](05-site-worker/01-Home/00-sw-select-project.png) | **forced** — no site chosen yet | **no close control**, and the hardware back does nothing |
+> | [`00-sw-change-project`](05-site-worker/01-Home/00-sw-change-project.png) | **deliberate** — opened from the project bar mid-session | an **X**, and closing keeps the site already chosen (marked `CURRENT`) |
 >
 > It was a route for one build, which put a back chevron on the one case that must not be escapable;
 > the shell had to keep redirecting the worker back into it. An overlay has no chevron to answer for,
@@ -1037,7 +1052,7 @@ this README, so neither §32.7, nor the mockups, nor any test contradicted them.
 nothing checkable — what was required, or by when? The per-row "Required check" caption went too: the
 seed sets `is_required` on every item, so it printed on all nine and distinguished none of them.
 
-### Home — [`01-Home/01-dashboard.png`](SITE-WORKER/01-Home/01-dashboard.png)
+### Home — [`01-Home/01-sw-home-dashboard.png`](05-site-worker/01-Home/01-sw-home-dashboard.png)
 
 The field dashboard and the role's landing screen. **Reworked on 2026-08-08** to mockup
 `01_home/01_sw_dashboard`, which the restructure added — this role had no Home drawing before it. Now:
@@ -1091,7 +1106,7 @@ carries its own list, and sync health is the TopBar indicator plus the Sync Queu
 > were white because the caller passed nothing and the default said nothing about being a choice.
 > The four `<LoadingBoundary theme="light">` calls in the same file were fixed with it.
 
-### Quick actions — [`01-Home/02-quick-actions.png`](SITE-WORKER/01-Home/02-quick-actions.png)
+### Quick actions — [`01-Home/02-sw-quick-actions.png`](05-site-worker/01-Home/02-sw-quick-actions.png)
 
 The FAB menu (mockup `01_home/02_sw_quick_actions`): three cards routing to **Issues**, **Safety** and
 **Reports** — all screens that already exist, so this adds no capability, it shortens the path to the
@@ -1114,7 +1129,7 @@ right. It is dark on both themes, as the admin overlay is — an overlay is not 
 
 **The cards are [`<QuickActionRow />`](../../../apps/mobile/src/components/QuickActionRow.tsx), the
 project's quick-action button** (product-owner decision 2026-08-09: match the Tenant Admin menu,
-`TENANT-ADMIN/01-Home/02-quick-action.png`). One anatomy wherever a menu offers something to do — a
+`04-tenant-admin/01-Home/02-ta-quick-action.png`). One anatomy wherever a menu offers something to do — a
 coloured left accent strip, a tinted rounded-square icon plate, a title, an uppercase subtitle saying
 what the action does, and a trailing glyph.
 
@@ -1144,7 +1159,7 @@ A screen rather than a modal or bottom sheet: the mockup draws it as a full page
 bar, §32.7 keeps modals for things that interrupt, and being a route gives it a breadcrumb and a back
 chevron for free.
 
-### Team directory — [`04-Directory/01-directory.png`](SITE-WORKER/04-Directory/01-directory.png)
+### Team directory — [`04-Directory/01-sw-directory.png`](05-site-worker/04-Directory/01-sw-directory.png)
 
 The project crew as a contact list (mockup `04_directory/01_sw_worker_list`), added by the 2026-08-08
 restructure. **The role's fourth tab** as of 2026-08-09. Every other role that can read it still
@@ -1183,7 +1198,7 @@ needed**: `workforce.workers` already carried `full_name`, `trade_type` and `con
   `surface` that an unbordered circle vanished and the initials read as loose letters beside the
   name. A person glyph stands in when a name yields no initials, so the shape is never empty.
 
-### Navigation drawer — the profile — [`05-Drawer/01-drawer-profile.png`](SITE-WORKER/05-Drawer/01-drawer-profile.png)
+### Navigation drawer — the profile — [`05-Drawer/01-sw-drawer-profile.png`](05-site-worker/05-Drawer/01-sw-drawer-profile.png)
 
 **THE DRAWER IS THE PROFILE** (product-owner decision 2026-08-09). There is no `/profile` route: the
 screen was deleted, and identity now lives in the panel the top-bar avatar opens — avatar, name,
@@ -1196,7 +1211,7 @@ slicing the PREFERENCES card in half at rest. They moved to their own screen on 
 mockups split them the same way, the tenant-admin drawer drawing being Field Tools + Settings +
 Logout and `05_profile/01_sw_account_settings` a full screen.
 
-### Account settings — [`05-Drawer/02-account-settings.png`](SITE-WORKER/05-Drawer/02-account-settings.png)
+### Account settings — [`05-Drawer/02-sw-account-settings.png`](05-site-worker/05-Drawer/02-sw-account-settings.png)
 
 [`app/(app)/account-settings.tsx`](<../../../apps/mobile/src/app/(app)/account-settings.tsx>), pushed
 from the drawer's Settings row. **Not `system-settings`** — that is the Tenant Admin tab for
@@ -1250,7 +1265,7 @@ unlock, language, notifications, dark mode, the **app version** and the **legal 
 > **`e2e/capture.spec.ts` lost its `profile` route with the screen**, so the flat app-screen set is
 > one shorter. Nothing else deep-linked `cos:///profile`.
 
-### Tasks — [`02-Tasks/01-tasks.png`](SITE-WORKER/02-Tasks/01-tasks.png)
+### Tasks — [`02-Tasks/01-sw-tasks.png`](05-site-worker/02-Tasks/01-sw-tasks.png)
 
 > **THE WHOLE CARD CARRIES THE VERDICT** (PO 2026-08-11): where the badge reads `! CRITICAL` the
 > left accent and the progress bar are red with it, where it reads a softer band they are yellow.
@@ -1319,7 +1334,7 @@ read as a thick border the mockup does not draw, which sets `shadow-2xl` on a ba
 > `work_type`, `planned_start` and `planned_end` were already being sent by `/sync/delta` (it selects
 > the whole row) and simply discarded by the client. Local DDL v4 caches them.
 
-### Issues — [`01-Home/03-report-issue.png`](SITE-WORKER/01-Home/03-report-issue.png)
+### Issues — [`01-Home/03-sw-report-issue.png`](05-site-worker/01-Home/03-sw-report-issue.png)
 
 Camera-first, as the mockup draws it: the live viewfinder, then category, a hold-to-record voice note,
 ONE text field, and **REPORT ISSUE**. Nothing follows that button — the screen ends there, as the
@@ -1361,7 +1376,7 @@ passes any other diameter.
   deliverable out with the zone. So it is role-scoped, not dropped. A worker who needs sync state has
   the global sync indicator and the Sync Queue screen.
 
-### Daily report — [`01-Home/04-daily-report.png`](SITE-WORKER/01-Home/04-daily-report.png)
+### Daily report — [`01-Home/04-sw-daily-report.png`](05-site-worker/01-Home/04-sw-daily-report.png)
 
 The daily-entry form: the AI suggestion bar, manpower, shift, the per-trade breakdown, blockers,
 photos, and **SAVE AS DRAFT / SUBMIT REPORT** — which are the row's real `status` values
@@ -1407,7 +1422,7 @@ The mockup's **"AI แนะนำ: คาดว่างานติดตั�
 Phase 23 and untrained (§22.6), so the line is the mockup's illustration of the feature rather than a
 computed forecast: it is static, nothing reads it, and no field of the report is derived from it.
 
-### Safety checklist — [`03-Safety/01-safety-checklist.png`](SITE-WORKER/03-Safety/01-safety-checklist.png)
+### Safety checklist — [`03-Safety/01-sw-safety-checklist.png`](05-site-worker/03-Safety/01-sw-safety-checklist.png)
 
 The pre-shift daily verification: the **DAILY SAFETY VERIFICATION — n/total** counter, the project
 picker, the checklist filter chips, the **AI Safety Scan** module, the items with checkboxes grouped
@@ -1475,7 +1490,7 @@ viewport — it is an overlay, so it never scrolls — and the rest are full-pag
 change costs one screen's worth of time rather than eight (product-owner request 2026-08-09):
 
 ```bash
-node scripts/capture-android-site-worker.mjs --only 02-account-settings
+node scripts/capture-android-site-worker.mjs --only 02-sw-account-settings
 ```
 
 Every step opens its own screen from the shell rather than inheriting state from the step before it,

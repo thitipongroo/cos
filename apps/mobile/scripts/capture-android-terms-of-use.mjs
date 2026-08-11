@@ -1,10 +1,10 @@
 // Android Terms of Use screenshot capture — adb/uiautomator only, same approach as the sibling
 // capture-android-*.mjs scripts (deliberately NOT Detox; see capture-android-login.mjs for why).
 //
-// Writes the pre-auth Terms of Use screen to docs/screens/android/01-public/. It is a PUBLIC screen:
-// it is reached from the login footer and lives in the (auth) route group, so it sits with the other
-// pre-auth captures (00-native-splash … 05-privacy-policy):
-//   06-terms-of-use  default state — clause 01 open, as the screen opens (the mockup's own initial
+// Writes the pre-auth Terms of Use screen to docs/screens/android/01-authen/04-terms-of-use/. It is a
+// PUBLIC screen: it is reached from the login footer and lives in the (auth) route group, so it sits
+// with the other 01-authen/ captures, in its own numbered subfolder:
+//   01-terms-of-use  default state — clause 01 open, as the screen opens (the mockup's own initial
 //                    state); the remaining five collapsed
 //
 // ONE file, matching the Privacy Policy's rule next door: the accordion is not walked and no page is
@@ -31,7 +31,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const OUT = resolve(HERE, '../../../docs/screens/android/01-public');
+const OUT = resolve(HERE, '../../../docs/screens/android/01-authen/04-terms-of-use');
 const TMP = process.env['TEMP'] ?? process.env['TMP'] ?? HERE;
 const STITCH = join(HERE, 'stitch-fullpage.py');
 const PKG = 'com.constructionos.cos';
@@ -175,7 +175,7 @@ async function main() {
 
   await tapUntil('terms-of-use-link', 'terms-of-use', 'Terms of Use footer link');
   await delay(600);
-  await stitchFull('06-terms-of-use');
+  await stitchFull('01-terms-of-use');
 
   console.log(`\nDone → ${OUT}`);
 }

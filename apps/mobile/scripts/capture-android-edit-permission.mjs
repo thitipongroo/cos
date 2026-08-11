@@ -2,7 +2,7 @@
 // the profile of a MULTI-ROLE user (Thanawat Boonmee — primary PROJECT_MANAGER + additional
 // SAFETY_OFFICER), taps "Edit permissions" and captures the multi-role editor as ONE full-page image
 // (mockup 04_tenant_admin/02_users/02_user_management/03_edit_permission):
-//   docs/screens/android/TENANT-ADMIN/02-Users/04-edit-permission.png
+//   docs/screens/android/04-tenant-admin/02-Users/04-ta-edit-permission.png
 // Prereqs: emulator + Metro (EXPO_PUBLIC_CAPTURE=1) + backend with E2E_AUTH_BYPASS=true + Python +
 // seed-realistic (Thanawat's additional SAFETY_OFFICER role).
 
@@ -12,7 +12,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const OUT = resolve(HERE, '../../../docs/screens/android/TENANT-ADMIN/02-Users');
+const OUT = resolve(HERE, '../../../docs/screens/android/04-tenant-admin/02-Users');
 const TMP = process.env['TEMP'] ?? process.env['TMP'] ?? HERE;
 const STITCH = join(HERE, 'stitch-fullpage.py');
 const PKG = 'com.constructionos.cos';
@@ -170,7 +170,7 @@ async function main() {
   await delay(2000); // let role permissions load + the union matrix render
 
   console.log('· full-page edit permission');
-  await stitchFull('04-edit-permission', 310);
+  await stitchFull('04-ta-edit-permission', 310);
 
   console.log('done.');
 }

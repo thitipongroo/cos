@@ -1,15 +1,19 @@
 // Android SITE_WORKER screenshot capture — adb/uiautomator only, like every sibling script.
 //
-// Writes the role's screens to docs/screens/android/SITE-WORKER/, one folder per bottom-nav tab.
+// Writes the role's screens to docs/screens/android/05-site-worker/, one folder per bottom-nav tab.
 // The bar is Home | Tasks | Safety | Directory (PO 2026-08-09), so the tab folders are 01-Home,
 // 02-Tasks, 03-Safety and 04-Directory, plus 05-Drawer for the navigation drawer — which is not a
 // tab, and which IS the profile as of the same day (there is no profile route).
 //
-// Inside 01-Home the frames are numbered 01–04 and named for the mockup folders they implement:
-//   01-dashboard      ← mockup 05_site_worker/01_home/01_sw_dashboard
-//   02-quick-actions  ← …/01_home/02_sw_quick_actions   (opened by the Home FAB)
-//   03-report-issue   ← …/01_home/03_sw_issue           (opened from that menu)
-//   04-daily-report   ← …/01_home/04_sw_daily_report     (opened from that menu)
+// Every filename carries the role's `sw-` prefix (the tree-wide convention since 56b03d0f — a role
+// folder's frames name their role, so a file is identifiable once it is out of its folder). Inside
+// 01-Home the frames are numbered 00–04 and named for the mockup folders they implement:
+//   00-sw-select-project    ← mockup 05_site_worker/01_home/00_sw_project_selection (forced state)
+//   00-sw-change-project    ← the same overlay reopened mid-session (dismissible state)
+//   01-sw-home-dashboard    ← …/01_home/01_sw_dashboard
+//   02-sw-quick-actions     ← …/01_home/02_sw_quick_actions   (opened by the Home FAB)
+//   03-sw-report-issue      ← …/01_home/03_sw_issue           (opened from that menu)
+//   04-sw-daily-report      ← …/01_home/04_sw_daily_report    (opened from that menu)
 // The other tabs implement …/02_tasks/01_sw_daily_tasks, …/03_safety/01_sw_checklist and
 // …/04_directory/01_sw_worker_list. All of those were renamed from
 // {01_tasks,02_issues,03_reports,04_safety}/00_main in 527231f.
@@ -42,7 +46,7 @@ import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const OUT = resolve(HERE, '../../../docs/screens/android/SITE-WORKER');
+const OUT = resolve(HERE, '../../../docs/screens/android/05-site-worker');
 const STITCH = join(HERE, 'stitch-fullpage.py');
 const TMP = tmpdir();
 const PKG = 'com.constructionos.cos';
@@ -302,13 +306,13 @@ async function main() {
   );
   await dismissDevBanners();
   await delay(1200);
-  if (wanted('01-Home/00-select-project')) {
-    console.log('· 01-Home/00-select-project');
+  if (wanted('01-Home/00-sw-select-project')) {
+    console.log('· 01-Home/00-sw-select-project');
     // ONE FRAME, like its sibling overlay. This is a full-screen modal with its own top bar and no
     // tab bar under it, so the stitcher's crop bands — which assume the app chrome — would paste a
-    // navigation bar that is not on screen. `grabOne` is what 02-quick-actions uses, for the same
+    // navigation bar that is not on screen. `grabOne` is what 02-sw-quick-actions uses, for the same
     // reason. THE FORCED CASE: no close control, because no site has been chosen yet.
-    grabOne('01-Home/00-select-project');
+    grabOne('01-Home/00-sw-select-project');
   }
   // Choosing one is what unlocks every screen below — they all print the site they belong to.
   console.log('· choosing the active site');
@@ -320,12 +324,12 @@ async function main() {
   // decision. It is one screenshot away from the one above and differs by exactly one control: an X
   // in the top bar, because there is now a site to go back to. Captured so the two cases can be
   // compared rather than taken on trust.
-  if (wanted('01-Home/00b-change-project')) {
-    console.log('· 01-Home/00b-change-project');
+  if (wanted('01-Home/00-sw-change-project')) {
+    console.log('· 01-Home/00-sw-change-project');
     await tap(byId('project-context-bar'), 'project context bar');
     await find(byId('select-project-close'), 'close control (dismissible case)', 20);
     await delay(900);
-    grabOne('01-Home/00b-change-project');
+    grabOne('01-Home/00-sw-change-project');
     // A step that opens an overlay owns closing it: the sheet covers the tab bar, and the steps
     // below look for tabs.
     await tap(byId('select-project-close'), 'close the picker');
@@ -335,8 +339,8 @@ async function main() {
   // Home — the role's landing tab since 2026-08-08: KPI cards, the project picker + check-in, and
   // the quick actions. Asserted on the check-in button rather than just the screen, because that
   // control is the reason Home is a tab at all for this role.
-  if (wanted('01-Home/01-dashboard')) {
-    console.log('· 01-Home/01-dashboard');
+  if (wanted('01-Home/01-sw-home-dashboard')) {
+    console.log('· 01-Home/01-sw-home-dashboard');
     await tap(byId('home-tab'), 'home tab');
     await find(byId('home-screen'), 'home-screen');
     // CHECK IN moved to the navigation drawer on 2026-08-09, so it is asserted there, not here.
@@ -349,7 +353,7 @@ async function main() {
     // Taller than a viewport since the rework (tiles + AI insight + check-in + three task cards).
     // Measured, not hardcoded: the button's own bounds from the live view hierarchy.
     await stitchFull(
-      '01-Home/01-dashboard',
+      '01-Home/01-sw-home-dashboard',
       180,
       NAV_TOP,
       await boundsOf(byId('home-quick-action-fab'), 'Home quick-action FAB'),
@@ -360,8 +364,8 @@ async function main() {
     // state but a useless screenshot, and it must fail the run rather than be committed.
   }
 
-  if (wanted('02-Tasks/01-tasks')) {
-    console.log('· 02-Tasks/01-tasks');
+  if (wanted('02-Tasks/01-sw-tasks')) {
+    console.log('· 02-Tasks/01-sw-tasks');
     await tap(byId('tasks-tab'), 'tasks tab');
     await find(byId('tasks-screen'), 'tasks-screen');
     await find((n) => /resource-id="task-[0-9a-f-]{36}"/.test(n), 'at least one task card', 40);
@@ -375,7 +379,7 @@ async function main() {
     // the device rather than hard-coded — the bar's height changes with a two-line project name.
     const listTop = (await boundsOf(byId('task-list'), 'task list'))[1];
     await stitchFull(
-      '02-Tasks/01-tasks',
+      '02-Tasks/01-sw-tasks',
       180,
       NAV_TOP,
       await boundsOf(byId('voice-command-fab'), 'voice FAB'),
@@ -385,8 +389,8 @@ async function main() {
     // description + submit + the synced list). Stitched.
   }
 
-  if (wanted('01-Home/03-report-issue')) {
-    console.log('· 01-Home/03-report-issue');
+  if (wanted('01-Home/03-sw-report-issue')) {
+    console.log('· 01-Home/03-sw-report-issue');
     await tap(byId('home-tab'), 'home tab');
     await tap(byId('home-quick-action-fab'), 'quick action FAB');
     await tap(byId('quick-action-reportIssue'), 'report-issue card');
@@ -394,13 +398,13 @@ async function main() {
     await find(byId('issue-type-DEFECT'), 'issue category chips');
     await dismissDevBanners();
     await delay(1500);
-    await stitchFull('01-Home/03-report-issue', 180, NAV_TOP);
+    await stitchFull('01-Home/03-sw-report-issue', 180, NAV_TOP);
     // Daily report — the longest screen in the set (manpower + shift + per-trade bars + summary +
     // blockers + photos + the two actions).
   }
 
-  if (wanted('01-Home/04-daily-report')) {
-    console.log('· 01-Home/04-daily-report');
+  if (wanted('01-Home/04-sw-daily-report')) {
+    console.log('· 01-Home/04-sw-daily-report');
     await tap(byId('home-tab'), 'home tab');
     await tap(byId('home-quick-action-fab'), 'quick action FAB');
     await tap(byId('quick-action-logActivity'), 'log-activity card');
@@ -408,26 +412,26 @@ async function main() {
     await find(byId('manpower-total'), 'manpower stepper');
     await dismissDevBanners();
     await delay(1500);
-    await stitchFull('01-Home/04-daily-report', 180, NAV_TOP);
+    await stitchFull('01-Home/04-sw-daily-report', 180, NAV_TOP);
     // Safety checklist. Asserted on a real checklist ITEM, not just the screen: with no checklists
     // seeded the screen renders its honest empty state, and that must fail the run instead of being
     // committed as though it were the feature.
   }
 
-  if (wanted('03-Safety/01-safety-checklist')) {
-    console.log('· 03-Safety/01-safety-checklist');
+  if (wanted('03-Safety/01-sw-safety-checklist')) {
+    console.log('· 03-Safety/01-sw-safety-checklist');
     await tap(byId('safety-checklist-tab'), 'safety tab');
     await find(byId('safety-checklist-screen'), 'safety-checklist-screen');
     await find((n) => /resource-id="safety-item-/.test(n), 'at least one checklist item', 40);
     await dismissDevBanners();
     await delay(1500);
-    await stitchFull('03-Safety/01-safety-checklist', 180, NAV_TOP);
+    await stitchFull('03-Safety/01-sw-safety-checklist', 180, NAV_TOP);
     // Quick actions — the FAB menu (mockup 01_home/02_sw_quick_actions). Three cards, each routing to a
     // screen that already exists.
   }
 
-  if (wanted('01-Home/02-quick-actions')) {
-    console.log('· 01-Home/02-quick-actions');
+  if (wanted('01-Home/02-sw-quick-actions')) {
+    console.log('· 01-Home/02-sw-quick-actions');
     await tap(byId('home-tab'), 'home tab');
     await find(byId('home-quick-action-fab'), 'quick action FAB');
     await tap(byId('home-quick-action-fab'), 'quick action FAB');
@@ -435,7 +439,7 @@ async function main() {
     await find(byId('quick-action-reportIssue'), 'report-issue card');
     await dismissDevBanners();
     await delay(1200);
-    grabOne('01-Home/02-quick-actions');
+    grabOne('01-Home/02-sw-quick-actions');
     // CLOSE IT. This step is the only one that leaves a MODAL on screen, and the sheet covers the
     // bottom bar — the Directory step below then looked for a tab that was behind it and failed the
     // whole run with "directory tab never appeared". A step that opens an overlay owns closing it.
@@ -446,28 +450,28 @@ async function main() {
     // rather than be committed as though it were the feature.
   }
 
-  if (wanted('04-Directory/01-directory')) {
-    console.log('· 04-Directory/01-directory');
+  if (wanted('04-Directory/01-sw-directory')) {
+    console.log('· 04-Directory/01-sw-directory');
     await tap(byId('directory-tab'), 'directory tab');
     await find(byId('directory-screen'), 'directory-screen');
     await find((n) => /resource-id="directory-card-/.test(n), 'at least one crew card', 40);
     await dismissDevBanners();
     await delay(1500);
-    await stitchFull('04-Directory/01-directory', 180, NAV_TOP);
+    await stitchFull('04-Directory/01-sw-directory', 180, NAV_TOP);
     // THE DRAWER IS THE PROFILE (PO 2026-08-09): there is no `/profile` route, and every account
     // control renders inside this panel. Opened from the top-bar avatar, which is what the avatar
     // does now instead of pushing a screen. Asserted on the account block as well as the panel, so a
     // regression that drops <AccountSettings /> fails the run rather than saving a bare menu.
   }
 
-  if (wanted('05-Drawer/01-drawer-profile')) {
-    console.log('· 05-Drawer/01-drawer-profile');
+  if (wanted('05-Drawer/01-sw-drawer-profile')) {
+    console.log('· 05-Drawer/01-sw-drawer-profile');
     await tap(byId('profile-avatar'), 'avatar');
     await find(byId('drawer-profile-card'), 'drawer profile card');
     await find(byId('drawer-link-/account-settings'), 'settings row');
     await dismissDevBanners();
     await delay(1200);
-    await stitchFull('05-Drawer/01-drawer-profile', 180, NAV_TOP);
+    await stitchFull('05-Drawer/01-sw-drawer-profile', 180, NAV_TOP);
     // CLOSE IT, for the same reason the quick-actions sheet is closed above: the drawer is left
     // open otherwise, and the next step's tap on the avatar lands on the drawer's BACKDROP — which
     // closes the panel instead of opening it, so the Settings row it then looks for is genuinely
@@ -479,8 +483,8 @@ async function main() {
     // fold and mixed navigation with settings.
   }
 
-  if (wanted('05-Drawer/02-account-settings')) {
-    console.log('· 05-Drawer/02-account-settings');
+  if (wanted('05-Drawer/02-sw-account-settings')) {
+    console.log('· 05-Drawer/02-sw-account-settings');
     // Opens the drawer itself rather than inheriting it from the frame above — every step has to
     // stand alone now that `--only` can run any one of them by itself.
     await tap(byId('profile-avatar'), 'avatar');
@@ -489,7 +493,7 @@ async function main() {
     await find(byId('locale-row'), 'language row');
     await dismissDevBanners();
     await delay(1200);
-    await stitchFull('05-Drawer/02-account-settings', 180, NAV_TOP);
+    await stitchFull('05-Drawer/02-sw-account-settings', 180, NAV_TOP);
   }
 
   console.log(`\nDone → ${OUT}`);

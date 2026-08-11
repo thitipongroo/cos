@@ -2,7 +2,8 @@
 // role's demo user via the Keycloak hosted login (Path B), then screenshots every route that role
 // can reach (from apps/web/src/lib/nav.ts) into docs/screens/web/<ROLE>/, where <ROLE> is the
 // canonical CosRole spelling in UPPER_SNAKE (TENANT_ADMIN). This deliberately DIFFERS from
-// docs/screens/android/, which uses UPPER-KEBAB (TENANT-ADMIN): the web tree was committed as
+// docs/screens/android/, which numbers its role folders in flow order and spells them lower-kebab
+// (04-tenant-admin/, UPPER-KEBAB until the 2026-08-11 restructure): the web tree was committed as
 // UPPER_SNAKE and that is the convention it keeps (product-owner decision 2026-08-07).
 // Pre-auth screens go to docs/screens/web/01-public/.
 //

@@ -13,8 +13,9 @@ const PW = process.env.DEMO_USER_PASSWORD || 'Ekachai@2026';
 const EMAIL = 'thanawat.b@ekachai.co.th'; // PROJECT_MANAGER
 const PID = process.env.PID || '88803908-e4b5-57bd-8e6b-ed4662b5d67d';
 // UPPER_SNAKE folder name — the canonical CosRole spelling, matching the committed web tree and the
-// other web capture scripts. docs/screens/android/ uses UPPER-KEBAB (SITE-ENGINEER, TENANT-ADMIN);
-// the two trees deliberately differ (product-owner decision 2026-08-07). This wrote PROJECT-MANAGER/
+// other web capture scripts. docs/screens/android/ numbers its role folders in flow order and spells
+// them lower-kebab (03-site-engineer/, 04-tenant-admin/ — UPPER-KEBAB until the 2026-08-11
+// restructure); the two trees deliberately differ (PO decision 2026-08-07). This wrote PROJECT-MANAGER/
 // until then, i.e. a second folder beside the committed PROJECT_MANAGER/.
 const OUT = path.resolve(__dirname, '../docs/screens/web/PROJECT_MANAGER');
 

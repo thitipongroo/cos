@@ -1,12 +1,17 @@
 // Android PROJECT_MANAGER screenshot capture — adb/uiautomator only, like every sibling script.
 //
 // Writes the screens built from the CORRECTED mockup/mobile/06_project_manager set, into that role's
-// folders under docs/screens/android/PROJECT-MANAGER/:
-//   01-Home/01-dashboard        KPI tiles · critical blockers · portfolio analysis · YOUR PROJECTS
-//   02-Procurement/01-procurement  three counters · the AI panel · the approvals queue
-//   03-Finance/01-finance       portfolio financial summary · AI panel · per-project health
-//   04-More/01-more             profile card + the six tiles
-//   04-More/02-vendors          the supplier directory, now a pushed child of the More menu
+// folders under docs/screens/android/06-project-manager/:
+//   01-Home/01-pm-home-dashboard        KPI tiles · critical blockers · portfolio analysis · YOUR PROJECTS
+//   02-Procurement/01-pm-procurement-dashboard  three counters · the AI panel · the approvals queue
+//   03-Finance/01-pm-finance-dashboard       portfolio financial summary · AI panel · per-project health
+//   04-More/01-pm-more-settings             profile card + the six tiles
+//   05-Drawer/01-pm-drawer                  the per-role navigation drawer
+//
+// THE VENDOR DIRECTORY IS NO LONGER CAPTURED (product-owner decision 2026-08-11). Its frame,
+// `04-More/02-vendors.png`, was deleted from the committed set, so the More → Vendors walk was
+// removed with it rather than left writing a file nothing indexes. The SCREEN is untouched — it is
+// still reachable from the More menu in the app; only its screenshot left the set.
 //
 // Numbered for the role's bottom bar as it now is — Home | Procurement | Finance | More. The earlier
 // run of this script numbered for a bar that no longer exists (Home | Projects | Approvals |
@@ -37,7 +42,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const OUT = resolve(HERE, '../../../docs/screens/android/PROJECT-MANAGER');
+const OUT = resolve(HERE, '../../../docs/screens/android/06-project-manager');
 const TMP = process.env['TEMP'] ?? process.env['TMP'] ?? HERE;
 const STITCH = join(HERE, 'stitch-fullpage.py');
 const PKG = 'com.constructionos.cos';
@@ -210,7 +215,7 @@ async function main() {
     await tap(byId('procurement-tab'), 'Procurement tab');
     await find(byId('procurement-screen'), 'procurement-screen', 20);
     await delay(2500);
-    await stitchFull('02-Procurement/01-procurement');
+    await stitchFull('02-Procurement/01-pm-procurement-dashboard');
   }
 
   if (wanted('finance')) {
@@ -221,7 +226,7 @@ async function main() {
     // or the portfolio tiles are photographed showing fewer projects than the manager has.
     await delay(4000);
     // Measured, not hardcoded: the button's own bounds from the live view hierarchy.
-    await stitchFull('03-Finance/01-finance', await boundsOf(byId('finance-fab'), 'Finance FAB'));
+    await stitchFull('03-Finance/01-pm-finance-dashboard', await boundsOf(byId('finance-fab'), 'Finance FAB'));
   }
 
   if (wanted('more')) {
@@ -229,18 +234,12 @@ async function main() {
     await tap(byId('more-tab'), 'More tab');
     await find(byId('more-screen'), 'more-screen', 20);
     await delay(1500);
-    await stitchFull('04-More/01-more');
+    await stitchFull('04-More/01-pm-more-settings');
   }
 
-  if (wanted('vendors')) {
-    console.log('· Vendors (pushed from the More menu)');
-    await tap(byId('more-contractors'), 'contractors tile');
-    await find(byId('vendors-screen'), 'vendors-screen', 20);
-    // The per-vendor scorecards arrive after the list; wait for them so the cards are not captured
-    // with their score slot still empty.
-    await delay(4000);
-    await stitchFull('04-More/02-vendors');
-  }
+  // The Vendors step was here. It walked More → contractors tile and stitched
+  // `04-More/02-vendors.png`, which is no longer part of the committed set (PO 2026-08-11) — see the
+  // header. Removed rather than left running: a step whose output nothing indexes goes stale unseen.
 
   if (wanted('drawer')) {
     console.log('· Navigation drawer');
@@ -253,7 +252,7 @@ async function main() {
     await find(byId('drawer-link-/account-settings'), 'Settings row');
     await find(byId('drawer-link-/support'), 'Support Center row');
     await delay(1200);
-    await stitchFull('05-Drawer/01-drawer');
+    await stitchFull('05-Drawer/01-pm-drawer');
     adb('shell', 'input', 'keyevent', '4'); // hardware BACK closes the drawer
     await delay(1200);
   }
@@ -264,7 +263,7 @@ async function main() {
     await find(byId('home-screen'), 'manager Home', 20);
     // Three requests per project, all in flight at once, plus the issues query.
     await delay(6000);
-    await stitchFull('01-Home/01-dashboard');
+    await stitchFull('01-Home/01-pm-home-dashboard');
   }
 
   console.log(`\nDone → ${OUT}`);

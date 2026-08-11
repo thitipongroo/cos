@@ -2,7 +2,7 @@
 // Logs in as the TENANTขADMIN (+66811000002), opens the FAB's Quick Commands → Invite New User, selects a
 // role (Project Manager), then taps "View permissions" to open the role-permissions breakdown (mockup
 // 04_tenant_admin/01_home/02_quick_action_button/02_invite_user/02_role_permissions). Captures:
-//   docs/screens/android/TENANT-ADMIN/01-Home/04-role-permissions.png — ONE full-page (hero → CORE_AI
+//   docs/screens/android/04-tenant-admin/01-Home/04-ta-role-permissions.png — ONE full-page (hero → CORE_AI
 //   banner → all module rows → Back-to-invitation), stitched from scrolling viewports via stitch-fullpage.py.
 // Prereqs: emulator + Metro (EXPO_PUBLIC_CAPTURE=1) + backend with E2E_AUTH_BYPASS=true + Python. Run:
 //   node scripts/capture-android-role-permissions.mjs
@@ -13,7 +13,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const OUT = resolve(HERE, '../../../docs/screens/android/TENANT-ADMIN/01-Home');
+const OUT = resolve(HERE, '../../../docs/screens/android/04-tenant-admin/01-Home');
 const TMP = process.env['TEMP'] ?? process.env['TMP'] ?? HERE; // scratch for the intermediate viewports
 const STITCH = join(HERE, 'stitch-fullpage.py');
 const PKG = 'com.constructionos.cos';
@@ -155,7 +155,7 @@ async function main() {
 
   // One full-page: hero → CORE_AI banner → every module row → Back-to-invitation.
   console.log('· full-page role-permissions');
-  await stitchFull('04-role-permissions', 310);
+  await stitchFull('04-ta-role-permissions', 310);
 
   console.log('done.');
 }

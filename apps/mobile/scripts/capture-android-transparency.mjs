@@ -1,11 +1,15 @@
 // Android Transparency Portal screenshot capture — adb/uiautomator only, like every sibling script.
 //
-// Writes to docs/screens/android/02-shared/privacy-policy/ — the post-auth policy screen at the top
-// level and the eight portal screens under 01-data-collection/, mirroring the mockup tree
-// (05_privacy_policy/00_policy_data + 05_privacy_policy/01_data_collection). They live under
-// 02-shared because the policy and portal are reachable by EVERY role, not by one role's tab set. The entry
-// point is the Data Collection card on the post-auth Privacy Policy (PO decision 2026-08-04), which
-// is itself reached from the drawer's PRIVACY POLICY item — not from Profile, as it was at first.
+// Writes to docs/screens/android/01-authen/03-privacy-policy/ — the post-auth policy screen at the top
+// level and the portal screens under 01-data-collection/, mirroring the mockup tree
+// (05_privacy_policy/00_policy_data + 05_privacy_policy/01_data_collection). The folder sits under
+// 01-authen/ beside the pre-auth entry state of the SAME document (00-privacy-policy-preauth.png,
+// written by capture-android-privacy-policy.mjs); the two are told apart by the pre/post-auth
+// suffix. It was under 02-shared/privacy-policy/ until the tree was restructured — the policy and
+// portal are reachable by EVERY role rather than from one role's tab set, which is why they were
+// filed there, and grouping them with the other legal/auth documents is what replaced that. The
+// entry point is the Data Collection card on the post-auth Privacy Policy (PO decision 2026-08-04),
+// which is itself reached from the drawer's PRIVACY POLICY item — not from Profile, as it was at first.
 //
 // Signed in as a PROJECT_MANAGER (Thanawat Boonmee, seed-realistic.ts), because the identity screen
 // shows that account's real stored values.
@@ -29,7 +33,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const OUT_POLICY = resolve(HERE, '../../../docs/screens/android/02-shared/privacy-policy');
+const OUT_POLICY = resolve(HERE, '../../../docs/screens/android/01-authen/03-privacy-policy');
 const OUT = join(OUT_POLICY, '01-data-collection');
 const TMP = process.env['TEMP'] ?? process.env['TMP'] ?? HERE;
 const STITCH = join(HERE, 'stitch-fullpage.py');

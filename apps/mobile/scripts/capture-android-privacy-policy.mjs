@@ -1,16 +1,21 @@
 // Android Privacy Policy screenshot capture — adb/uiautomator only, same approach as the sibling
 // capture-android-*.mjs scripts (deliberately NOT Detox; see capture-android-login.mjs for why).
 //
-// Writes the pre-auth Privacy Policy screen to docs/screens/android/01-public/. It is a PUBLIC screen:
-// it is reached from the login footer and lives in the (auth) route group, so it sits with the other
-// pre-auth captures (00-native-splash … 04-login-loading):
-//   05-privacy-policy  default state — all five sections collapsed, as the screen opens
+// Writes the pre-auth Privacy Policy screen to docs/screens/android/01-authen/03-privacy-policy/. It
+// is a PUBLIC screen: it is reached from the login footer and lives in the (auth) route group, so it
+// sits with the other 01-authen/ captures (login, MFA, terms of use, support):
+//   00-privacy-policy-preauth  default state — all five sections collapsed, as the screen opens
+//
+// It shares that folder with 00-privacy-policy-postauth.png and 01-data-collection/, written by
+// capture-android-transparency.mjs — the SAME document seen from inside the app shell. The two
+// entry states were filed together when the tree was restructured; the pre/post-auth suffix is what
+// tells them apart.
 //
 // ONE file, deliberately. The script used to also expand each accordion section and commit a page per
 // section (05-privacy-policy-{data-collection,usage,compliance,security,rights}). Those five frames were
 // removed as duplicates on 2026-08-07 (product-owner decision): the same policy document is already
-// captured post-auth under 02-shared/privacy-policy/, where it is the live route rather than a pre-auth
-// stand-in. Only the collapsed pre-auth entry state is documentation this folder needs.
+// captured post-auth as 00-privacy-policy-postauth.png, where it is the live route rather than a
+// pre-auth stand-in. Only the collapsed pre-auth entry state is documentation this folder needs.
 //
 // NO BACKEND REQUIRED. Unlike every other capture script here, this screen makes no API call — it
 // renders from the i18n bundle and the app icon only — so Keycloak/NestJS/Postgres do not need to be
@@ -32,7 +37,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const OUT = resolve(HERE, '../../../docs/screens/android/01-public');
+const OUT = resolve(HERE, '../../../docs/screens/android/01-authen/03-privacy-policy');
 const TMP = process.env['TEMP'] ?? process.env['TMP'] ?? HERE;
 const STITCH = join(HERE, 'stitch-fullpage.py');
 const PKG = 'com.constructionos.cos';
@@ -176,11 +181,11 @@ async function main() {
 
   await tapUntil('privacy-policy-link', 'privacy-policy', 'Privacy Policy footer link');
   await delay(600);
-  await stitchFull('05-privacy-policy');
+  await stitchFull('00-privacy-policy-preauth');
 
   // The accordion sections are deliberately left collapsed — see the header note. Expanding each one
-  // and committing a page per section produced five frames that duplicated the post-auth capture in
-  // 02-shared/privacy-policy/, so that step was removed on 2026-08-07 (product-owner decision).
+  // and committing a page per section produced five frames that duplicated the post-auth capture
+  // (00-privacy-policy-postauth.png), so that step was removed on 2026-08-07 (product-owner decision).
   console.log(`\nDone → ${OUT}`);
 }
 

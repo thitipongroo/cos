@@ -63,7 +63,8 @@ Flush order on reconnect is fixed (spec §17.6): **1** safety incidents → **2*
 inspections → **4** task progress → **5** site reports → **6** material → **7** equipment usage →
 **8** photo/media (deferred last).
 
-Limits (spec §17.7): local DB ≤ 500 MB · drawing cache ≤ 200 MB (LRU) · photo queue ≤ 100 (warn at 80) · sync batch ≤ 500 records/cycle.
+Limits (spec §17.7): local DB ≤ 500 MB · drawing cache ≤ 200 MB (LRU) · photo queue ≤ 100
+(warn at 80) · sync batch ≤ 500 records/cycle.
 
 Conflict resolution is **entity-specific and must be implemented exactly as specified** — never
 invent a strategy without an ADR:
@@ -97,11 +98,11 @@ stands and the reason goes in the screen's header comment (ADR-085).
 ```bash
 cd apps/mobile
 EXPO_PUBLIC_CAPTURE=1 npx expo start     # CAPTURE mutes the LogBox toast and freezes animations
-pnpm capture:android                      # login flow → docs/screens/android/01-public/
+pnpm capture:android                      # login flow → docs/screens/android/01-authen/01-login/
 pnpm capture:android:home                 # SITE_ENGINEER dashboard
 pnpm capture:android:tenant-admin-home    # TENANT_ADMIN home / alerts / settings
+pnpm capture:android:site-worker          # the SITE_WORKER tab set
 pnpm capture:android:transparency         # the PDPA transparency portal
-pnpm capture:android:crm                  # CRM Sales Manager tabs
 pnpm capture:android:privacy-policy       # pre-auth Privacy Policy (needs NO backend)
 ```
 
