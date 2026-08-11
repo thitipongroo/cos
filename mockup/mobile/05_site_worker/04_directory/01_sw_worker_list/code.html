@@ -1,13 +1,11 @@
-<!DOCTYPE html>
-
-<html class="dark" lang="th"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<!DOCTYPE html><html class="dark" lang="th"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
 <title>Team Directory - Construction OS</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
 <script id="tailwind-config">
         tailwind.config = {
           darkMode: "class",
@@ -129,18 +127,24 @@
 </div>
 </header>
 <!-- Main Canvas -->
-<main class="flex-1 w-full pt-[80px] pb-[96px] px-edge-mobile flex flex-col gap-6">
+<main class="flex-1 w-full pt-[80px] pb-[96px] px-edge-mobile flex flex-col gap-6"><div class="flex flex-col gap-1 bg-surface-container-low p-4 rounded-xl border border-outline-variant shadow-sm">
+  <span class="font-tiny-web text-tiny-web uppercase tracking-widest text-on-surface-variant">Active Project:</span>
+  <div class="flex items-center gap-2">
+    <span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">apartment</span>
+    <span class="font-h2-web text-h2-web-mobile font-bold text-on-surface">SKYLINE TOWER A</span>
+  </div>
+</div>
 <!-- Search Module -->
 <div class="relative w-full">
 <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
-<input class="w-full h-touch-target bg-surface-container dark:bg-surface-container-highest border-none rounded-xl pl-12 pr-4 text-on-surface placeholder:text-on-surface-variant focus:ring-1 focus:ring-primary font-body-mobile text-body-mobile transition-all" placeholder="ค้นหาชื่อหรือตำแหน่ง..." type="text"/>
+<input class="w-full h-touch-target bg-surface-container dark:bg-surface-container-highest border-none rounded-xl pl-12 pr-4 text-on-surface placeholder:text-on-surface-variant focus:ring-1 focus:ring-primary font-body-mobile text-body-mobile transition-all" placeholder="ค้นหาชื่อหรือตำแหน่ง..." type="text">
 </div>
 <!-- Directory List (Bento-style list) -->
 <div class="flex flex-col gap-4">
 <!-- Contact Card 1 -->
 <div class="bg-surface-container dark:bg-surface-container flex items-center justify-between p-4 rounded-xl border-l-4 border-mobile-success relative overflow-hidden group hover:bg-surface-variant transition-colors">
 <div class="flex items-center gap-4">
-<img class="w-12 h-12 rounded-full object-cover shadow-sm bg-surface-variant" data-alt="A hyper-realistic, industrial-style portrait photograph of a Thai construction worker wearing a yellow hard hat and a high-visibility vest. The lighting is dramatic, high-contrast, echoing a dark mode aesthetic with deep shadows and crisp details. The background is a blurred construction site at twilight." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCymKT9lns_FIwjWXHW9MC0ORgiv3VSAEecK4DURpe7srqeOuZ0vcrFLjV8TLHr0PEf07nesk8c7JymYABgcSHa6SPqfYlIMipz_-ooloHZwxHFkmrnvqkDuMcjBF4I8_Sq4VhRlIdhxYH5r4cMnzA4SPA5OEl02w0fHhPtyEFmyV_Ue2u5l5gY2x-Zb9a06rec67fAFZ1GVOeH8_RoQwooH3yLyk9e5aaapXgNc36tNhC6TVX8fhOt"/>
+<img class="w-12 h-12 rounded-full object-cover shadow-sm bg-surface-variant" data-alt="A hyper-realistic, industrial-style portrait photograph of a Thai construction worker wearing a yellow hard hat and a high-visibility vest. The lighting is dramatic, high-contrast, echoing a dark mode aesthetic with deep shadows and crisp details. The background is a blurred construction site at twilight." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCymKT9lns_FIwjWXHW9MC0ORgiv3VSAEecK4DURpe7srqeOuZ0vcrFLjV8TLHr0PEf07nesk8c7JymYABgcSHa6SPqfYlIMipz_-ooloHZwxHFkmrnvqkDuMcjBF4I8_Sq4VhRlIdhxYH5r4cMnzA4SPA5OEl02w0fHhPtyEFmyV_Ue2u5l5gY2x-Zb9a06rec67fAFZ1GVOeH8_RoQwooH3yLyk9e5aaapXgNc36tNhC6TVX8fhOt">
 <div class="flex flex-col">
 <span class="font-h2-web text-h2-web-mobile text-on-surface">อนันต์ ส. (Anan S.)</span>
 <span class="font-body-web text-body-web text-on-surface-variant">ผู้คุมงาน (Site Foreman)</span>
@@ -184,7 +188,7 @@
 <!-- Contact Card 3 -->
 <div class="bg-surface-container dark:bg-surface-container flex items-center justify-between p-4 rounded-xl border-l-4 border-surface-variant relative overflow-hidden group hover:bg-surface-variant transition-colors opacity-75">
 <div class="flex items-center gap-4">
-<img class="w-12 h-12 rounded-full object-cover shadow-sm bg-surface-variant filter grayscale" data-alt="A portrait of a Thai female safety officer on a construction site. She wears a white safety helmet and a neon vest. The image has a cinematic dark-mode feel, with cool blue undertones and sharp focus on her face, communicating professionalism and alertness." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAPIVmGSrSKsxpL23Gt1Nb_ADCX7IJQDbj-9SpkRf3TzvOJZBIQs8dmw7H06Q64PuuASqhZHv0y6pRDo7xGdYCIImBf2Q1VIsF_0KBQCyfh6yT8SuIdWv6sRIESPwtjONzeexeZ66AC7xAJNMa4KMVIqYmiYpZtMv0_hEogTiMINw2cHLH_FnrIFB8l3I1d415_HfWi8JXCh65VVsWOIilZkNSBNBoxs5YD2q3TDL5Ee9Dfe1tzczN3"/>
+<img class="w-12 h-12 rounded-full object-cover shadow-sm bg-surface-variant filter grayscale" data-alt="A portrait of a Thai female safety officer on a construction site. She wears a white safety helmet and a neon vest. The image has a cinematic dark-mode feel, with cool blue undertones and sharp focus on her face, communicating professionalism and alertness." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAPIVmGSrSKsxpL23Gt1Nb_ADCX7IJQDbj-9SpkRf3TzvOJZBIQs8dmw7H06Q64PuuASqhZHv0y6pRDo7xGdYCIImBf2Q1VIsF_0KBQCyfh6yT8SuIdWv6sRIESPwtjONzeexeZ66AC7xAJNMa4KMVIqYmiYpZtMv0_hEogTiMINw2cHLH_FnrIFB8l3I1d415_HfWi8JXCh65VVsWOIilZkNSBNBoxs5YD2q3TDL5Ee9Dfe1tzczN3">
 <div class="flex flex-col">
 <span class="font-h2-web text-h2-web-mobile text-on-surface">วิไล ช. (Wilai C.)</span>
 <span class="font-body-web text-body-web text-on-surface-variant">เจ้าหน้าที่ความปลอดภัย (Safety Officer)</span>
@@ -224,4 +228,6 @@
 <span class="font-label-mobile text-label-mobile">Directory</span>
 </button>
 </nav>
+
+
 </body></html>
