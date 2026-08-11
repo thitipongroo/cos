@@ -36,10 +36,11 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { get } from '../../api/client';
-import { ProjectPicker } from '../../components/ProjectPicker';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
+import { ProjectContextBar } from '../../components/ProjectContextBar';
 import { initialsOf as initials } from '../../lib/initials';
 import { matchesDirectoryQuery } from '../../lib/directoryFilter';
+import { useProjectStore } from '../../store/projectStore';
 import { useT } from '../../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
 import { usePalette, useIsDark } from '../../theme/usePalette';
@@ -55,7 +56,10 @@ interface DirectoryEntry {
 }
 
 export default function DirectoryScreen() {
-  const [projectId, setProjectId] = useState('');
+  // The site comes from the store, not from a picker on this screen (PO decision 2026-08-11). The
+  // Site Worker chooses it once in `00_sw_project_selection` and every screen after it works on that
+  // site — a second chooser here would let one screen disagree with the bar above it.
+  const projectId = useProjectStore((s) => s.active?.projectId ?? '');
   const [entries, setEntries] = useState<DirectoryEntry[]>([]);
   const [query, setQuery] = useState('');
   // Starts false: nothing is fetched before a project is chosen, and a loader shown first would
@@ -104,7 +108,7 @@ export default function DirectoryScreen() {
       contentContainerStyle={styles.page}
       keyboardShouldPersistTaps="handled"
     >
-      <ProjectPicker selectedId={projectId} onSelect={setProjectId} />
+      <ProjectContextBar />
 
       {/* Search — the mockup's rounded field with a leading glyph. */}
       <View style={[styles.search, { backgroundColor: p.surface, borderColor: p.border }]}>
@@ -182,12 +186,22 @@ export default function DirectoryScreen() {
                   <Text style={[styles.role, { color: p.muted }]} numberOfLines={1}>
                     {entry.role_on_project ?? entry.trade_type}
                   </Text>
-                  <Text
-                    style={[styles.status, { color: entry.on_site ? p.success : p.muted }]}
-                    numberOfLines={1}
-                  >
-                    {entry.on_site ? t('directory.onSite') : t('directory.offSite')}
-                  </Text>
+                  {/* The drawing puts a glyph beside the words, and it earns its place: a green dot
+                      and a grey one are the same shape at arm's length, while a tick and a clock are
+                      not — a foreman scanning a crew list reads the shape before the colour. */}
+                  <View style={styles.statusRow}>
+                    <MaterialIcons
+                      name={entry.on_site ? 'check-circle' : 'schedule'}
+                      size={14}
+                      color={entry.on_site ? p.success : p.muted}
+                    />
+                    <Text
+                      style={[styles.status, { color: entry.on_site ? p.success : p.muted }]}
+                      numberOfLines={1}
+                    >
+                      {entry.on_site ? t('directory.onSite') : t('directory.offSite')}
+                    </Text>
+                  </View>
                 </View>
                 <TouchableOpacity
                   testID={`directory-chat-${entry.worker_id}`}
@@ -271,6 +285,7 @@ const makeStyles = () =>
     cardBody: { flex: 1, gap: 2 },
     name: { fontSize: typography.body.fontSize, fontFamily: fontFamily.semibold },
     role: { fontSize: typography.label.fontSize, fontFamily: fontFamily.regular },
+    statusRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
     status: { fontSize: typography.caption.fontSize, fontFamily: fontFamily.medium },
     // 40px filled discs, as the mockup draws them: call on a raised surface, chat filled with the
     // primary. Below the 44px tap minimum on their own, so each sits in a 44px hit slop instead of

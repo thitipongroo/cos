@@ -164,7 +164,6 @@ export function MobileNav() {
       {/* Which site am I on today — the Site Worker's first screen (mockup
           05_site_worker/01_home/00_sw_project_selection). Pushed from the project context bar and
           entered automatically when no project has been chosen; never a tab. */}
-      <Tabs.Screen name="select-project" options={{ href: null }} />
       {/* The signed-in user's own account settings — pushed from the drawer's Settings row. */}
       <Tabs.Screen name="account-settings" options={{ href: null }} />
       <Tabs.Screen name="conflict-review" options={{ href: null }} />

@@ -27,7 +27,7 @@ import { BrandLogo } from './BrandLogo';
 import { QuickActionRow } from './QuickActionRow';
 import { OverlaySyncPill } from './OverlaySyncPill';
 import { useT } from '../i18n';
-import { darkColors, fontFamily, spacing, touchTarget, typography } from '../theme/tokens';
+import { darkColors, fontFamily, radius, spacing, touchTarget, typography } from '../theme/tokens';
 
 type IconName = keyof typeof MaterialIcons.glyphMap;
 
@@ -61,6 +61,7 @@ export function QuickActionsMenu({ visible, onClose }: { visible: boolean; onClo
   // Close BEFORE navigating: a modal left mounted over the screen it just opened swallows the first
   // tap on it, and `onRequestClose` would then pop the wrong thing.
   const activeProject = useProjectStore((s) => s.active);
+  const openPicker = useProjectStore((s) => s.openPicker);
 
   const go = (route: (typeof ACTIONS)[number]['route']): void => {
     onClose();
@@ -94,12 +95,41 @@ export function QuickActionsMenu({ visible, onClose }: { visible: boolean; onClo
               05_site_worker/01_home/02_sw_quick_actions). Not a link here — this sheet is an
               overlay, and sending someone to change site from inside it would leave them somewhere
               else with the sheet gone. It is drawn only once a site is chosen. */}
+          {/* The site, in the same shape the dashboard's bar uses — pin, name, building — so the
+              two read as one thing seen twice rather than two different labels (PO 2026-08-11).
+              NOT pressable here: this is an overlay, and changing site from inside it would leave
+              the reader somewhere else with the sheet gone.
+              The "Choose an action" line is dropped: three labelled cards under a sheet the user
+              opened deliberately do not need to be told what they are. */}
           {activeProject !== null ? (
-            <Text testID="quick-actions-project" style={styles.projectLine}>
-              {t('project.context.on', { project: activeProject.projectName })}
-            </Text>
+            <Pressable
+              testID="quick-actions-project"
+              accessibilityRole="button"
+              accessibilityLabel={t('project.context.change', {
+                project: activeProject.projectName,
+              })}
+              // It DOES change the site (PO decision 2026-08-11). The bar carries the same arrow
+              // here as on every other screen, so it has to keep the same promise — it closes the
+              // sheet first, because leaving a modal mounted over the screen it just opened swallows
+              // the next tap.
+              onPress={() => {
+                onClose();
+                openPicker();
+              }}
+              style={styles.projectBar}
+            >
+              <MaterialIcons name="location-on" size={18} color={darkColors.accent} />
+              <View style={styles.projectText}>
+                <Text style={styles.projectName} numberOfLines={1}>
+                  {activeProject.projectName}
+                </Text>
+                <Text style={styles.projectSub} numberOfLines={1}>
+                  {activeProject.buildingName ?? activeProject.projectCode}
+                </Text>
+              </View>
+              <MaterialIcons name="unfold-more" size={18} color={darkColors.muted} />
+            </Pressable>
           ) : null}
-          <Text style={styles.subtitle}>{t('quickActions.subtitle')}</Text>
           {ACTIONS.map(({ key, route, icon, tone }) => (
             <QuickActionRow
               key={key}
@@ -132,13 +162,29 @@ const styles = StyleSheet.create({
   topRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   closeBtn: { padding: spacing.xs },
   content: { padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xl },
-  projectLine: {
-    color: darkColors.accent,
+  projectBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    minHeight: touchTarget.listItem,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: darkColors.border,
+    backgroundColor: darkColors.surface,
+    marginBottom: spacing.md,
+  },
+  projectText: { flex: 1 },
+  projectName: {
+    color: darkColors.text,
     fontFamily: fontFamily.semibold,
-    fontSize: 11,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-    marginBottom: spacing.xs,
+    fontSize: typography.caption.fontSize,
+  },
+  projectSub: {
+    color: darkColors.muted,
+    fontFamily: fontFamily.regular,
+    fontSize: typography.label.fontSize,
   },
   subtitle: {
     fontFamily: fontFamily.regular,

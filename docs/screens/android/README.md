@@ -37,7 +37,7 @@ gets its own full-page file (the Invite-user `email` method, the Alerts `diff`-e
 | [`TENANT-ADMIN/`](TENANT-ADMIN/)           | Tabs: **Home \| Users \| Alerts \| Settings**. [`01-Home/`](TENANT-ADMIN/01-Home/) — dashboard (`01`), Quick-Add (`02`) and the FAB flows: Invite-user (`03`), Role-permissions (`04`), Roles-selection (`05`), Invitation-success (`06`), System-integration (`07`), Apps-&-Services (`08`). [`02-Users/`](TENANT-ADMIN/02-Users/) — the users list (`01`), the per-user action sheet (`02`), the user profile (`03`), the multi-role permission editor (`04`) + the save-success screen (`05`), and the password-reset form (`06`) + its two done screens — temp-password (`07`) and email-link-sent (`08`). [`03-Alerts/`](TENANT-ADMIN/03-Alerts/) — the sync-review queue (`01`). [`04-Settings/`](TENANT-ADMIN/04-Settings/) — System Settings (`01`, one full-page).                                     |
 | [`PROJECT-MANAGER/`](PROJECT-MANAGER/)     | Tabs: **Home \| Procurement \| Finance \| More** — the bar from the CORRECTED [`mockup/mobile/06_project_manager`](../../../mockup/mobile/06_project_manager) set (2026-08-10). [`01-Home/`](PROJECT-MANAGER/01-Home/) — the manager dashboard (`01`): two KPI tiles, the critical-blockers card, the AI panel and YOUR PROJECTS. [`02-Procurement/`](PROJECT-MANAGER/02-Procurement/) — three counters, the AI panel and the approvals queue (`01`). [`03-Finance/`](PROJECT-MANAGER/03-Finance/) — portfolio financial summary, AI panel, per-project budget health (`01`). [`04-More/`](PROJECT-MANAGER/04-More/) — the More menu (`01`) and the vendor directory it pushes to (`02`). [`05-Drawer/`](PROJECT-MANAGER/05-Drawer/) — the navigation drawer (`01`), which from 2026-08-10 is PER ROLE: only **Settings** and **Support Center** are shared, and the section above them comes from [`lib/drawerLinks.ts`](../../../apps/mobile/src/lib/drawerLinks.ts). Two roles have a drawer DRAWING (`04_tenant_admin/` and `06_project_manager/05_navigation_drawer`) and get it verbatim; every other role's list is DERIVED from spec §6.4's permission matrix, so no drawer row can lead to a 403. The list every role used to share was not neutral — it was the TENANT_ADMIN drawing plus two extra rows. The earlier `03-Approvals/` and `04-Vendors/` folders were removed with the bar they were numbered for. `PROC_MANAGER` does not share these screens: the corrected mockup set is a PROJECT_MANAGER app end to end, and master 3490 keeps that role on Home \| RFQs \| Orders \| Deliveries. |
 | [`CRM-SALES-MANAGER/`](CRM-SALES-MANAGER/) | Tabs: **Home \| Leads \| Opportunities \| Customers** — the three pages §20.7.10 defines, built 2026-08-04. Leads (`01`), Opportunities (`02`), Customers (`03`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| [`SITE-WORKER/`](SITE-WORKER/)             | Tabs: **Home \| Tasks \| Safety \| Directory**. [`01-Home/`](SITE-WORKER/01-Home/) — the **site picker** (`00`, the role's first screen since 2026-08-10), the field dashboard (`01`), the FAB's **Quick actions** overlay (`02`), and the two screens that overlay opens: **Report issue** (`03`) and **Daily report** (`04`). Those four are named for the mockup folders they implement (`01_dashboard`, `02_quick_actions`, `03_issue`, `04_daily_report`). [`02-Tasks/`](SITE-WORKER/02-Tasks/) (`01`), [`03-Safety/`](SITE-WORKER/03-Safety/) (`01`), [`04-Directory/`](SITE-WORKER/04-Directory/) (`01`). [`05-Drawer/`](SITE-WORKER/05-Drawer/) — the **navigation drawer** (`01`), which IS the profile.                                                                                                                                                                     |
+| [`SITE-WORKER/`](SITE-WORKER/)             | Tabs: **Home \| Tasks \| Safety \| Directory**. [`01-Home/`](SITE-WORKER/01-Home/) — the **site picker** overlay in both its states (`00` forced, `00b` dismissible), the field dashboard (`01`), the FAB's **Quick actions** overlay (`02`), and the two screens that overlay opens: **Report issue** (`03`) and **Daily report** (`04`). Those four are named for the mockup folders they implement (`01_dashboard`, `02_quick_actions`, `03_issue`, `04_daily_report`). [`02-Tasks/`](SITE-WORKER/02-Tasks/) (`01`), [`03-Safety/`](SITE-WORKER/03-Safety/) (`01`), [`04-Directory/`](SITE-WORKER/04-Directory/) (`01`). [`05-Drawer/`](SITE-WORKER/05-Drawer/) — the **navigation drawer** (`01`), which IS the profile.                                                                                                                                                                     |
 
 The two adb dashboard scripts write straight into their role's menu subfolders —
 [`capture-android-home.mjs`](../../../apps/mobile/scripts/capture-android-home.mjs) → `SITE-ENGINEER/01-Home/`,
@@ -961,8 +961,19 @@ different thing from the **committed** per-role captures here, which are grouped
 > **THE ROLE NOW PICKS A SITE FIRST** (mockup `01_home/00_sw_project_selection`, added 2026-08-10).
 > The corrected set puts a project picker in front of the dashboard and then prints the chosen site
 > on every screen after it, so `00-select-project` is not a screen the capture script navigates to —
-> it is where the app already is after `pm clear`, because the shell routes a Site Worker with no
-> site chosen straight there. Choosing one is what unlocks the rest of the run.
+> it is where the app already is after `pm clear`. Choosing one is what unlocks the rest of the run.
+>
+> **IT IS AN OVERLAY, NOT A ROUTE** (PO decision 2026-08-11), and the set carries BOTH of its states:
+>
+> | | | |
+> |---|---|---|
+> | [`00-select-project`](SITE-WORKER/01-Home/00-select-project.png) | **forced** — no site chosen yet | **no close control**, and the hardware back does nothing |
+> | [`00b-change-project`](SITE-WORKER/01-Home/00b-change-project.png) | **deliberate** — opened from the project bar mid-session | an **X**, and closing keeps the site already chosen (marked `CURRENT`) |
+>
+> It was a route for one build, which put a back chevron on the one case that must not be escapable;
+> the shell had to keep redirecting the worker back into it. An overlay has no chevron to answer for,
+> so the two cases can differ honestly. Note in both shots that **no tab bar is visible** — the sheet
+> covers the shell, which is also why the capture script waits on the sheet rather than the top bar.
 >
 > Two of those sites are worth noticing in the shot: **TLPK is `On hold`** (the sixth project, seeded
 > paused so the picker can show more than one status) and **CWRD shows its code where the others show
@@ -1240,6 +1251,15 @@ unlock, language, notifications, dark mode, the **app version** and the **legal 
 > one shorter. Nothing else deep-linked `cos:///profile`.
 
 ### Tasks — [`02-Tasks/01-tasks.png`](SITE-WORKER/02-Tasks/01-tasks.png)
+
+> **THE ONLY SCREEN IN THE SET WITH A STICKY HEADER**, and it broke the stitcher twice over. The
+> project bar and the filter chips are pinned above a `FlatList`, and the scroll measurement — which
+> matches the top of each shot against the one before it — locked onto those unmoving rows, reported
+> `scroll~0` six times, and wrote **a single viewport out as though it were the whole page**. Two
+> committed captures said "แสดงไม่เต็มหน้าจอ" for that reason and neither was a rendering fault.
+> `stitch-fullpage.py` takes `--sticky N` now; the capture script measures `N` from the list's own
+> top edge on the device rather than hard-coding it, because the bar grows with a two-line name.
+> The stitched page is ~6,950px — all 25 tasks, not the three above the fold.
 
 A **child screen of Home**, so it opens with the `HOME › TASKS` breadcrumb and a back chevron.
 Filter chips with **real counts** (`All (25) · Pending (5) · In progress (10) · Done`), and one

@@ -29,12 +29,12 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { get, mutate } from '../../api/client';
 import type { SafetyChecklist } from '../../db/database';
 import { useCollection } from '../../hooks/useCollection';
-import { ProjectPicker } from '../../components/ProjectPicker';
 import { SignaturePad } from '../../components/SignaturePad';
 import type { AnnotationStroke } from '../../components/PhotoAnnotation';
 import { useAuthStore } from '../../store/authStore';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { ProjectContextBar } from '../../components/ProjectContextBar';
+import { useProjectStore } from '../../store/projectStore';
 import { useT } from '../../i18n';
 import {
   fontFamily,
@@ -101,7 +101,10 @@ function labelOf(item: ChecklistItem, index: number): string {
 
 export default function SafetyChecklistScreen() {
   const cached = useCollection<SafetyChecklist>('local_safety_checklists');
-  const [projectId, setProjectId] = useState('');
+  // The site comes from the store, not from a picker on this screen (PO decision 2026-08-11). The
+  // Site Worker chooses it once in `00_sw_project_selection` and every screen after it works on that
+  // site — a second chooser here would let one screen disagree with the bar above it.
+  const projectId = useProjectStore((s) => s.active?.projectId ?? '');
   const [remote, setRemote] = useState<ChecklistRow[]>([]);
   // Starts FALSE: nothing is fetched until a project is chosen, and a loader shown before the first
   // request would sit there forever on a device whose project cache is still empty.
@@ -251,7 +254,6 @@ export default function SafetyChecklistScreen() {
           {t('safety.checklist.verification', { done: doneCount, total: rows.length })}
         </Text>
       ) : null}
-      <ProjectPicker selectedId={projectId} onSelect={setProjectId} hideLabel />
 
       <LoadingBoundary loading={loading} variant="list" theme={isDark ? 'dark' : 'light'}>
         {rows.length > 0 ? (

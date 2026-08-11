@@ -28,6 +28,8 @@ interface VoiceNoteButtonProps {
    *   drops the label, same hold-to-record behaviour.
    */
   shape?: 'bar' | 'fab';
+  /** `round` for a button that floats over content; `square` where it IS the panel. */
+  fabShape?: 'round' | 'square';
   /**
    * FAB diameter. Defaults to the 56px project standard (the Site Engineer home, the Tasks list).
    * The issue screen's VOICE NOTE panel passes 80, which is what its mockup draws
@@ -43,6 +45,7 @@ export function VoiceNoteButton({
   disabled,
   testID,
   shape = 'bar',
+  fabShape = 'round',
   fabSize = 56,
 }: VoiceNoteButtonProps) {
   const t = useT();
@@ -132,6 +135,12 @@ export function VoiceNoteButton({
           styles.button,
           shape === 'fab' ? styles.fab : null,
           shape === 'fab' ? { width: fabSize, height: fabSize } : null,
+          // ROUND WHERE IT FLOATS, SQUARE WHERE IT IS THE SUBJECT (PO decision 2026-08-11). On the
+          // task list it hovers over rows and reads as an action you can start from anywhere — the
+          // universal shape for that. Inside the issue form's VOICE NOTE panel it is the panel's
+          // whole point, sitting in a column of rounded plates, and a lone circle there read as a
+          // floating action button, which it is not.
+          shape === 'fab' && fabShape === 'square' ? { borderRadius: radius.xl } : null,
           phase === 'recording' ? styles.recording : null,
           isBusy ? styles.busy : null,
         ]}
@@ -186,8 +195,7 @@ const styles = StyleSheet.create({
     minHeight: 0,
     width: 56,
     height: 56,
-    // 999, not half of 56: the diameter is a prop now, and a fixed radius stops being a circle the
-    // moment a caller passes anything else (the issue screen passes 80).
+    // A circle by default; `fabShape="square"` overrides it above.
     borderRadius: 999,
     paddingHorizontal: 0,
     gap: 0,

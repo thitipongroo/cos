@@ -17,7 +17,7 @@ const SKYLINE: ActiveProject = {
 describe('projectStore (the site worker’s active project)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    useProjectStore.setState({ active: null });
+    useProjectStore.setState({ active: null, pickerOpen: false });
   });
 
   it('starts with nothing chosen, which is what sends the worker to the picker', () => {
@@ -82,6 +82,42 @@ describe('projectStore (the site worker’s active project)', () => {
     (SecureStore.getItemAsync as jest.Mock).mockResolvedValueOnce(null);
     await useProjectStore.getState().hydrate();
     expect(useProjectStore.getState().active).toEqual(SKYLINE);
+  });
+
+  describe('the picker overlay', () => {
+    // The sheet is opened from the context bar on every screen AND from inside the quick-actions
+    // overlay, and is forced open by the shell when no site is chosen. Those three share no parent
+    // but this store, which is why the flag lives here rather than in a screen.
+    it('starts closed — the shell forces it open from `active` being null, not from this', () => {
+      expect(useProjectStore.getState().pickerOpen).toBe(false);
+    });
+
+    it('openPicker() raises it and closePicker() drops it', () => {
+      useProjectStore.getState().openPicker();
+      expect(useProjectStore.getState().pickerOpen).toBe(true);
+      useProjectStore.getState().closePicker();
+      expect(useProjectStore.getState().pickerOpen).toBe(false);
+    });
+
+    it('closing mid-session KEEPS the site already chosen', async () => {
+      // The whole point of the dismissible case: closing is "never mind", not "choose nothing".
+      await useProjectStore.getState().select(SKYLINE);
+      useProjectStore.getState().openPicker();
+      useProjectStore.getState().closePicker();
+      expect(useProjectStore.getState().active).toEqual(SKYLINE);
+    });
+
+    it('choosing closes it — the sheet asked one question and has its answer', async () => {
+      useProjectStore.getState().openPicker();
+      await useProjectStore.getState().select(SKYLINE);
+      expect(useProjectStore.getState().pickerOpen).toBe(false);
+    });
+
+    it('clear() closes it too, so signing out does not leave a sheet over the login', async () => {
+      useProjectStore.setState({ active: SKYLINE, pickerOpen: true });
+      await useProjectStore.getState().clear();
+      expect(useProjectStore.getState().pickerOpen).toBe(false);
+    });
   });
 
   it('clear() forgets it, so the next person on the handset picks their own', async () => {

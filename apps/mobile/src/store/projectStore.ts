@@ -48,6 +48,23 @@ interface ProjectState {
 
   /** Forget it — used on sign-out, so the next person on this handset picks their own. */
   clear: () => Promise<void>;
+
+  /**
+   * Is the picker sheet up?
+   *
+   * IT LIVES HERE BECAUSE IT IS NOT ONE SCREEN'S BUSINESS. The sheet is opened from the context bar
+   * on every Site Worker screen and from inside the quick-actions overlay, and it is FORCED OPEN by
+   * the shell when no site has been chosen. Those three have no parent in common but this store, and
+   * routing was what carried it before — which is exactly what the product owner asked to stop:
+   * a route makes the forced case a page you can press Back out of.
+   */
+  pickerOpen: boolean;
+
+  /** Open it deliberately, mid-session — the dismissible case. */
+  openPicker: () => void;
+
+  /** Close it. Harmless when no site is chosen: the shell holds it open regardless. */
+  closePicker: () => void;
 }
 
 /** Reject anything that is not a complete `ActiveProject`, whatever was in storage. */
@@ -80,6 +97,7 @@ function parse(stored: string | null): ActiveProject | null {
 
 export const useProjectStore = create<ProjectState>((set) => ({
   active: null,
+  pickerOpen: false,
 
   hydrate: async () => {
     const parsed = parse(await SecureStore.getItemAsync(PROJECT_KEY));
@@ -87,12 +105,15 @@ export const useProjectStore = create<ProjectState>((set) => ({
   },
 
   select: async (project) => {
-    set({ active: project });
+    // Choosing closes it — the sheet asked one question and now has its answer.
+    set({ active: project, pickerOpen: false });
     await SecureStore.setItemAsync(PROJECT_KEY, JSON.stringify(project));
   },
 
   clear: async () => {
-    set({ active: null });
+    set({ active: null, pickerOpen: false });
     await SecureStore.deleteItemAsync(PROJECT_KEY);
   },
+  openPicker: () => set({ pickerOpen: true }),
+  closePicker: () => set({ pickerOpen: false }),
 }));

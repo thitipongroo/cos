@@ -35,10 +35,10 @@ import { localIssues } from '../../db/schema';
 import { enqueue } from '../../db/sync-queue';
 import { post } from '../../api/client';
 import { CosRole } from '@cos/types';
+import { useProjectStore } from '../../store/projectStore';
 import { useAuthStore } from '../../store/authStore';
 import { useCollection } from '../../hooks/useCollection';
 import { StatusChip } from '../../components/StatusChip';
-import { ProjectPicker } from '../../components/ProjectPicker';
 import { PhotoCapture } from '../../components/PhotoCapture';
 import { VoiceNoteButton } from '../../components/VoiceNoteButton';
 import { OptimisticList } from '../../components/OptimisticList';
@@ -74,7 +74,10 @@ export default function IssuesScreen() {
   // SITE_WORKER gets the capture-only screen its mockup draws; every other role that reaches this
   // route (SITE_ENGINEER) keeps the list and the escalate action — see the header note.
   const showList = role !== CosRole.SITE_WORKER;
-  const [projectId, setProjectId] = useState('');
+  // The site comes from the store, not from a picker on this screen (PO decision 2026-08-11). The
+  // Site Worker chooses it once in `00_sw_project_selection` and every screen after it works on that
+  // site — a second chooser here would let one screen disagree with the bar above it.
+  const projectId = useProjectStore((s) => s.active?.projectId ?? '');
   const [description, setDescription] = useState('');
   const [issueType, setIssueType] = useState<string>('DEFECT');
   const [draftId, setDraftId] = useState(() => Crypto.randomUUID()); // id for the issue + its photo
@@ -142,7 +145,6 @@ export default function IssuesScreen() {
       keyboardShouldPersistTaps="handled"
     >
       <ProjectContextBar />
-      <ProjectPicker selectedId={projectId} onSelect={setProjectId} />
 
       {/* Camera first — the mockup opens straight on the viewfinder, because a site issue is
           photographed before it is described. layout="viewfinder" is that mockup's framing: a 4:3
@@ -192,6 +194,7 @@ export default function IssuesScreen() {
         <VoiceNoteButton
           testID="issue-voice-note"
           shape="fab"
+          fabShape="square"
           fabSize={80}
           onTranscript={(text) => setDescription((d) => (d.trim() ? `${d} ${text}` : text))}
         />

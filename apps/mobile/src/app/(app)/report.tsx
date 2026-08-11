@@ -28,9 +28,9 @@ import * as Crypto from 'expo-crypto';
 import { db, newLocalId } from '../../db/database';
 import { localSiteReports } from '../../db/schema';
 import { enqueue } from '../../db/sync-queue';
-import { ProjectPicker } from '../../components/ProjectPicker';
 import { PhotoCapture } from '../../components/PhotoCapture';
 import { ProjectContextBar } from '../../components/ProjectContextBar';
+import { useProjectStore } from '../../store/projectStore';
 import { useT } from '../../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
 import { usePalette } from '../../theme/usePalette';
@@ -70,7 +70,10 @@ function todayIso(): string {
 }
 
 export default function ReportScreen() {
-  const [projectId, setProjectId] = useState('');
+  // The site comes from the store, not from a picker on this screen (PO decision 2026-08-11). The
+  // Site Worker chooses it once in `00_sw_project_selection` and every screen after it works on that
+  // site — a second chooser here would let one screen disagree with the bar above it.
+  const projectId = useProjectStore((s) => s.active?.projectId ?? '');
   const [manpower, setManpower] = useState(0);
   const [shift, setShift] = useState<Shift>('DAY');
   const [trades, setTrades] = useState<Partial<Record<Trade, number>>>({});
@@ -151,7 +154,6 @@ export default function ReportScreen() {
           rather than being left stranded above the project picker: it only ever qualified the
           heading, and there is no "edit an existing entry" mode for it to distinguish this from.
           PO decision 2026-08-08. */}
-      <ProjectPicker selectedId={projectId} onSelect={setProjectId} />
 
       {/* AI SUGGESTION — mockup 03_reports, drawn in full including its copy (PO decision
           2026-08-08, the same ruling already applied to the Tenant Admin CORE_AI panels).
@@ -232,14 +234,14 @@ export default function ReportScreen() {
 
       {/* Per-trade breakdown → manpower_logs. Bars are proportions of the entered breakdown.
           The breakdown cannot precede the total it breaks down: with no headcount entered there is
-          nothing to apportion, so the panel is dimmed and its controls disabled until
-          `manpower > 0` (PO decision 2026-08-08). */}
+          nothing to apportion, so it is locked until `manpower > 0` (PO decision 2026-08-08).
+          THE LOCKED STATE IS THE HINT ALONE, NOT FIVE GHOSTED ROWS (PO 2026-08-11: "โซน man power
+          เหมือนเป็นภาพซ้อน"). It used to draw the whole trade list at 0.55 opacity with the hint
+          laid over it, and that reads as a rendering fault — a faded duplicate layer showing
+          through — rather than as "not yet". Five rows of zeroes nobody can touch also say nothing
+          the one line does not. */}
       <View
-        style={[
-          styles.panel,
-          { backgroundColor: p.surface, borderColor: p.border },
-          !breakdownEnabled && styles.panelDisabled,
-        ]}
+        style={[styles.panel, { backgroundColor: p.surface, borderColor: p.border }]}
         pointerEvents={breakdownEnabled ? 'auto' : 'none'}
       >
         {!breakdownEnabled ? (
@@ -247,7 +249,7 @@ export default function ReportScreen() {
             {t('site.report.breakdownLocked')}
           </Text>
         ) : null}
-        {TRADES.map((trade) => {
+        {(breakdownEnabled ? TRADES : []).map((trade) => {
           const count = trades[trade] ?? 0;
           const pct = tradeTotal > 0 ? Math.round((count / tradeTotal) * 100) : 0;
           return (
@@ -381,7 +383,10 @@ export default function ReportScreen() {
 }
 
 const styles = StyleSheet.create({
-  page: { padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xl },
+  // ROOM FOR THE LAST ROW TO CLEAR THE TAB BAR. SAVE AS DRAFT / SUBMIT REPORT were sliced in half
+  // by it: they are the final element, and one `xl` of padding is shorter than the bar that sits
+  // over the bottom of the scroll area. Same clearance finance.tsx already uses for the same reason.
+  page: { padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xl * 3 },
   sectionTitle: {
     fontSize: typography.title.fontSize,
     fontFamily: fontFamily.semibold,
@@ -429,7 +434,6 @@ const styles = StyleSheet.create({
   },
   segmentText: { fontSize: typography.label.fontSize, fontFamily: fontFamily.semibold },
   panel: { padding: spacing.sm, borderRadius: radius.lg, borderWidth: 1, gap: spacing.sm },
-  panelDisabled: { opacity: 0.4 },
   panelHint: { fontSize: typography.caption.fontSize, fontFamily: fontFamily.regular },
   tradeRow: { gap: spacing.xs },
   tradeHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

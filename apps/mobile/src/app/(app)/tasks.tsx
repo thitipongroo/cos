@@ -216,6 +216,7 @@ export default function TasksScreen() {
         renderItem={({ item, index }) => (
           <>
             <TaskCard
+              badge="severity"
               task={item}
               onPress={() => openTask(item)}
               onComplete={() => void completeTask(item)}

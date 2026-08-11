@@ -15,13 +15,27 @@
 # `y - scroll`, because the button is fixed and the content moved. So the repair copies real pixels
 # from a real screenshot rather than inventing background.
 #
-# Usage: python stitch-fullpage.py OUT.png TOP BOT [--fab X0,Y0,X1,Y1] shot0.png shot1.png ...
+# A STICKY HEADER inside the page is the same problem seen from the other end: rows that look like
+# content but never move. The Site Worker's task list pins a project bar and a filter row above a
+# FlatList, and the scroll measurement — which matches the TOP of the current shot against the
+# previous one — locked onto those unmoving rows and reported scroll≈0 for every shot. The run then
+# declared "bottom reached" six times and wrote a single viewport out as though it were the whole
+# page. Pass `--sticky N` (pixels, measured from TOP) and those rows join the fixed top bar: kept
+# once, and excluded from both the comparison and the appended content.
+#
+# Usage: python stitch-fullpage.py OUT.png TOP BOT [--fab X0,Y0,X1,Y1] [--sticky N] shot0.png ...
 import sys
 import numpy as np
 from PIL import Image
 
 argv = sys.argv[1:]
 fab = None
+sticky = 0
+if '--sticky' in argv:
+    i = argv.index('--sticky')
+    sticky = int(argv[i + 1])
+    del argv[i:i + 2]
+
 if '--fab' in argv:
     i = argv.index('--fab')
     fab = tuple(int(v) for v in argv[i + 1].split(','))
@@ -34,16 +48,18 @@ shot_paths = argv[3:]
 
 shots = [np.asarray(Image.open(p).convert('RGB')) for p in shot_paths]
 H, W = shots[0].shape[:2]
-top_bar = shots[0][:TOP]
+# Everything that does not scroll, kept once: the app's top bar plus any sticky header below it.
+CTOP = TOP + sticky
+top_bar = shots[0][:CTOP]
 # Bottom nav (fixed) is taken from the LAST, fully-scrolled shot: there the rows just above the nav are
 # empty page background, so the nav's elevation shadow falls on nothing and no dark "seam" band appears
 # (on a mid-scroll shot that same shadow would darken a card and bleed into the stitch).
 bottom_nav = shots[-1][BOT:]
-content_h = BOT - TOP
+content_h = BOT - CTOP
 
 MAX_SCROLL = 1400
 WIN = content_h - MAX_SCROLL          # fixed comparison window (rows), large → no periodic false match
-def cont(s): return s[TOP:BOT]
+def cont(s): return s[CTOP:BOT]
 def gray_ds(a): return a.mean(axis=2)[::3, ::4]
 
 def measure(prev_g, c_g):
@@ -91,7 +107,7 @@ if fab is not None:
                 total += scrolls[j]
                 src = row - total
                 # The row must be on-screen in shot j and not behind shot j's own button.
-                if src < TOP:
+                if src < CTOP:
                     break
                 if y0 <= src < y1:
                     continue
@@ -141,7 +157,7 @@ final = np.vstack([top_bar, base, bottom_nav])
 # over that band covers the leftover crescent with pixels that were genuinely photographed.
 if fab is not None:
     x0, y0, x1, y1 = fab
-    pad = min(fab_h, y0 - TOP)
+    pad = min(fab_h, y0 - CTOP)
     patch = shots[-1][y0 - pad:y1, x0:x1]
     gap = BOT - y1                      # the button's clearance above the nav, as on the device
     fy1 = final.shape[0] - (H - BOT) - gap

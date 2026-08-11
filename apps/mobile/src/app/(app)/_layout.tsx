@@ -4,7 +4,8 @@
 
 import { useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { usePathname, useRouter } from 'expo-router';
+import { usePathname } from 'expo-router';
+import { SelectProjectSheet } from '../../components/SelectProjectSheet';
 import { CosRole } from '@cos/types';
 import { runDeltaSync } from '../../sync/runDeltaSync';
 import { runPushSync } from '../../sync/runPushSync';
@@ -20,9 +21,7 @@ import { useProjectStore } from '../../store/projectStore';
 
 export default function AppLayout() {
   const pathname = usePathname();
-  const router = useRouter();
   const role = useAuthStore((s) => s.role);
-  const activeProject = useProjectStore((s) => s.active);
   const hydrateProject = useProjectStore((s) => s.hydrate);
 
   // The remembered site, read back once per launch. Until it has been read, `active` is null and the
@@ -31,26 +30,6 @@ export default function AppLayout() {
   useEffect(() => {
     void hydrateProject();
   }, [hydrateProject]);
-
-  /**
-   * A Site Worker with no site chosen is sent to choose one.
-   *
-   * The corrected `mockup/mobile/05_site_worker` set puts `00_sw_project_selection` in front of the
-   * dashboard and then prints the chosen site on every screen after it, so the rest of the role's
-   * app has nothing true to say until the question is answered. The guard lives in the shell rather
-   * than on Home because those screens are all reachable directly — from a tab, a notification, or
-   * the E2E deep link — and a rule enforced on one entrance is not enforced.
-   *
-   * ONLY THIS ROLE. Every other role picks a project per screen where it needs one (the managers'
-   * panels, the engineer's dashboard); making them all answer up front would be inventing a flow no
-   * drawing asks for.
-   */
-  useEffect(() => {
-    if (role !== CosRole.SITE_WORKER) return;
-    if (activeProject !== null) return;
-    if (pathname === '/select-project') return;
-    router.replace('/select-project');
-  }, [role, activeProject, pathname, router]);
 
   // Remember the current in-app route so the E2E network-toggle deep link can return here (see
   // lib/e2e/lastRoute). No-op effect in production beyond bookkeeping.
@@ -98,6 +77,14 @@ export default function AppLayout() {
       {/* Side drawer (mockup 04) — overlays the tabs, opened from the TopBar hamburger. Renders null
           while closed, so it never intercepts touches until opened. */}
       <NavigationDrawer />
+      {/* WHICH SITE AM I ON — mounted for the Site Worker only, and it holds ITSELF open until the
+          question is answered (see the component). It replaces a redirect that used to bounce the
+          worker to a route: a route carries a back chevron, so the one case that must not be
+          escapable had a way out of it, and the shell had to keep pushing them back in.
+          ONLY THIS ROLE. Every other role picks a project per screen where it needs one (the
+          managers' panels, the engineer's dashboard); making them all answer up front would be
+          inventing a flow no drawing asks for. */}
+      {role === CosRole.SITE_WORKER ? <SelectProjectSheet /> : null}
     </View>
   );
 }

@@ -9,10 +9,10 @@
 // changes, and nothing new appears on screen.
 //
 // It renders NOTHING when no project is chosen. That state is not a blank bar to fill: it means the
-// worker has not been through the picker yet, and the screens that care route them there instead.
+// worker has not been through the picker yet — and the picker is already over them, held open by
+// <SelectProjectSheet /> until they answer.
 
 import { Pressable, Text, View, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useProjectStore } from '../store/projectStore';
 import { useT } from '../i18n';
@@ -21,7 +21,7 @@ import { usePalette, type Palette } from '../theme/usePalette';
 
 export function ProjectContextBar(): React.JSX.Element | null {
   const active = useProjectStore((s) => s.active);
-  const router = useRouter();
+  const openPicker = useProjectStore((s) => s.openPicker);
   const p = usePalette();
   const t = useT();
   const styles = makeStyles(p);
@@ -33,7 +33,10 @@ export function ProjectContextBar(): React.JSX.Element | null {
       testID="project-context-bar"
       accessibilityRole="button"
       accessibilityLabel={t('project.context.change', { project: active.projectName })}
-      onPress={() => router.push('/select-project')}
+      // Opens the picker OVERLAY (PO decision 2026-08-11). It used to push a route, which took the
+      // worker off whatever screen they were on to answer a one-line question and then dropped them
+      // on Home; the sheet answers it in place and leaves them where they were.
+      onPress={openPicker}
       style={styles.bar}
     >
       <MaterialIcons name="location-on" size={18} color={p.accent} />

@@ -34,8 +34,9 @@ const BREADCRUMB_MAP: Record<string, Crumb[]> = {
   // The vendor directory swapped places with it in the same change — it left the tab bar and is now
   // pushed from More's vendor tile, so More is its parent crumb.
   '/vendors': [{ key: 'nav.tabs.more', href: '/more' }, { key: 'nav.tabs.vendors' }],
-  // Reached from the project context bar, which sits on Home and on every other Site Worker screen.
-  '/select-project': [{ key: 'nav.tabs.home', href: '/home' }, { key: 'project.select.title' }],
+  // `/select-project` has NO entry: it stopped being a route on 2026-08-11 and became an overlay
+  // (<SelectProjectSheet />). A breadcrumb would also give it a TopBar Back control, and the case
+  // that matters most — no site chosen yet — must not be escapable.
   // User management (TENANT_ADMIN → the Users tab)
   '/invite-user': [
     { key: 'breadcrumb.userManagement', href: '/users' },
