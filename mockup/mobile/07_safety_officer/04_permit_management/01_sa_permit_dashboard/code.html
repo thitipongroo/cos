@@ -1,0 +1,319 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Construction OS - Permit Management</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-primary": "#002a78",
+            "mobile-danger": "#FF3B30",
+            "outline-variant": "#434655",
+            "cos-cyan": "#06B6D4",
+            "on-tertiary-container": "#eeefff",
+            "on-secondary": "#003640",
+            "on-surface": "#d3e4fe",
+            "surface-tint": "#b4c5ff",
+            "surface-container": "#102034",
+            "secondary-fixed-dim": "#4cd7f6",
+            "on-primary-fixed": "#00174b",
+            "secondary": "#4cd7f6",
+            "cos-blue": "#2563EB",
+            "dark-bg": "#020617",
+            "surface-bright": "#2a3a4f",
+            "dark-surface": "#0F172A",
+            "on-surface-variant": "#c3c6d7",
+            "on-tertiary": "#2b3041",
+            "inverse-on-surface": "#213145",
+            "inverse-primary": "#0053db",
+            "tertiary-fixed-dim": "#c1c5dc",
+            "outline": "#8d90a0",
+            "error": "#ffb4ab",
+            "on-error-container": "#ffdad6",
+            "on-tertiary-fixed": "#161b2b",
+            "on-secondary-fixed": "#001f26",
+            "tertiary": "#c1c5dc",
+            "surface-container-highest": "#26364a",
+            "secondary-container": "#03b5d3",
+            "mobile-primary": "#0066FF",
+            "error-container": "#93000a",
+            "cos-navy": "#0B1020",
+            "on-secondary-container": "#00424e",
+            "primary-container": "#2563eb",
+            "surface-dim": "#031427",
+            "surface-container-low": "#0b1c30",
+            "surface": "#031427",
+            "sync-active": "#FFD60A",
+            "primary": "#b4c5ff",
+            "surface-variant": "#26364a",
+            "on-primary-fixed-variant": "#003ea8",
+            "primary-fixed": "#dbe1ff",
+            "mobile-warning": "#FF9500",
+            "on-tertiary-fixed-variant": "#414658",
+            "tertiary-fixed": "#dee1f9",
+            "cos-white": "#F8FAFC",
+            "surface-container-high": "#1b2b3f",
+            "on-background": "#d3e4fe",
+            "inverse-surface": "#d3e4fe",
+            "on-primary-container": "#eeefff",
+            "mobile-success": "#00C853",
+            "surface-container-lowest": "#000f21",
+            "secondary-fixed": "#acedff",
+            "on-secondary-fixed-variant": "#004e5c",
+            "on-error": "#690005",
+            "background": "#031427",
+            "tertiary-container": "#686c80",
+            "primary-fixed-dim": "#b4c5ff",
+            "sync-pending": "#94A3B8"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "web-space-1": "4px",
+            "web-space-2": "8px",
+            "mobile-edge": "24px",
+            "web-space-3": "12px",
+            "mobile-touch-target": "52px",
+            "web-space-8": "32px",
+            "web-space-4": "16px",
+            "web-base": "4px"
+          },
+          "fontFamily": {
+            "web-text-small": ["Inter Tight"],
+            "mobile-text-hero": ["Inter Tight"],
+            "web-text-h2": ["Inter Tight"],
+            "mobile-text-label": ["Inter Tight"],
+            "web-text-tiny": ["Inter Tight"],
+            "mobile-text-body": ["Inter Tight"],
+            "web-text-display": ["Inter Tight"],
+            "web-text-h1": ["Inter Tight"],
+            "web-text-body": ["Inter Tight"]
+          },
+          "fontSize": {
+            "web-text-small": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+            "mobile-text-hero": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+            "web-text-h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+            "mobile-text-label": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+            "web-text-tiny": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+            "mobile-text-body": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+            "web-text-display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+            "web-text-h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+            "web-text-body": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    body {
+      background-color: #031427;
+      color: #d3e4fe;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .scrollbar-hide::-webkit-scrollbar {
+      display: none;
+    }
+    .scrollbar-hide {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    .shimmer {
+      background: linear-gradient(90deg, rgba(6, 182, 212, 0.05) 25%, rgba(6, 182, 212, 0.15) 50%, rgba(6, 182, 212, 0.05) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 2s infinite;
+    }
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="flex flex-col min-h-screen">
+<!-- Top AppBar Shell -->
+<header class="bg-surface-dim dark:bg-surface-dim border-b border-outline-variant docked full-width top-0 sticky z-40 py-4">
+<div class="flex justify-between items-center px-mobile-edge">
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-primary dark:text-primary active:opacity-80 transition-opacity">menu</button>
+<div class="flex items-center">
+<span class="font-mobile-text-hero text-[22px] leading-none font-bold text-cos-white uppercase whitespace-nowrap tracking-tight">CONSTRUCTION OS</span>
+</div>
+</div>
+<div class="w-9 h-9 rounded-full bg-surface-variant overflow-hidden border border-outline shrink-0">
+<img class="w-full h-full object-cover" data-alt="Professional headshot of a site engineer wearing a modern high-visibility vest and a smart safety helmet, set against a blurred background of a complex urban infrastructure project at dusk with technical blue and amber lighting. High-end professional photography style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA2gIdP2rOhi3VJe5xvsLnflHp6quYWYStCPOWVYiGm0l507bJaLQ-DBL2r6_cM8OiD1kLAwHpW8WfE12zbFzWzHTdo4eO5feuWOZMLM1q5abor3IEzlaNtmaNyH63EmtXRQYSUoIztK-mvFvzEQcRGi5kjq69oETvjuR2y-_Lz1iE3-klhuDdJf790fY_kbudL-fWLejS4zZRYecuHtvxthBtMjHcGygt0fj07gnziXOHWw7eMVLj02-LO_KBQKMt_eIrCE8dEpTo">
+</div>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="flex-1 pb-24 overflow-y-auto">
+<!-- AI Predictive Banner -->
+<section class="mt-6 px-mobile-edge">
+<div class="bg-cos-cyan/5 border-l-2 border-cos-cyan p-4 flex gap-4 items-start relative overflow-hidden rounded-lg">
+<div class="shimmer absolute inset-0 opacity-10 pointer-events-none"></div>
+<span class="material-symbols-outlined text-cos-cyan" style="font-variation-settings: &quot;FILL&quot; 1;">psychology</span>
+<div class="flex-1">
+<p class="font-mobile-text-label text-mobile-text-label text-cos-cyan mb-1">Safety Analysis</p>
+<p class="font-mobile-text-body text-[14px] leading-tight text-on-surface-variant">High risk of thermal overlap in Sector B. 4 pending safety permits require immediate secondary review before 14:00.</p><div class="mt-3 flex flex-wrap gap-3 border-t border-cos-cyan/20 pt-2"><div class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px] text-cos-cyan">analytics</span><span class="text-web-text-tiny text-cos-cyan uppercase">Confidence: 94%</span></div><div class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px] text-cos-cyan">database</span><span class="text-web-text-tiny text-cos-cyan uppercase">Sources: Site Telemetry, BIM Sche...</span></div></div>
+<div class="mt-3 flex justify-end"><button class="flex items-center gap-1 text-cos-cyan font-mobile-text-label text-mobile-text-label active:opacity-70"><span class="">VIEW DETAILS</span><span class="material-symbols-outlined text-[18px]">chevron_right</span></button></div></div>
+</div>
+</section>
+<!-- Navigation Tabs -->
+<nav class="mt-6 px-mobile-edge">
+<div class="flex space-x-2 overflow-x-auto scrollbar-hide"><button class="flex-shrink-0 px-4 py-2 bg-cos-blue text-cos-white font-mobile-text-label text-mobile-text-label rounded shadow-lg border border-cos-cyan/30 active:scale-95 transition-transform">Work Permits</button><button class="flex-shrink-0 px-4 py-2 bg-surface-container text-on-surface-variant font-mobile-text-label text-mobile-text-label rounded border border-outline-variant/30 active:bg-surface-variant active:scale-95 transition-transform">Safety Permits</button><button class="flex-shrink-0 px-4 py-2 bg-surface-container text-on-surface-variant font-mobile-text-label text-mobile-text-label rounded border border-outline-variant/30 active:bg-surface-variant active:scale-95 transition-transform">Drawing Approvals</button></div>
+</nav>
+<!-- Permit List -->
+<div class="mt-8 px-mobile-edge space-y-4">
+<!-- Permit Card 1: Active -->
+<div class="bg-surface-container rounded-lg overflow-hidden border border-outline-variant/30 active:scale-[0.98] transition-transform">
+<div class="h-1 bg-mobile-success w-full"></div>
+<div class="p-4">
+<div class="flex justify-between items-start mb-3">
+<div>
+<span class="font-web-text-tiny text-web-text-tiny text-outline uppercase">ID: CW-20491-X</span>
+<h3 class="font-web-text-h2 text-[16px] text-cos-white mt-0.5">Heavy Crane Operation - North T...</h3>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-mobile-success/10 text-mobile-success text-[11px] font-bold uppercase tracking-wider">Active</span>
+<span class="material-symbols-outlined text-outline self-center ml-2">chevron_right</span></div>
+<div class="grid grid-cols-2 gap-4 mb-4">
+<div>
+<p class="text-web-text-tiny font-web-text-tiny text-outline">CONTRACTOR</p>
+<p class="text-mobile-text-label font-mobile-text-label text-on-surface">Skyline Structural</p>
+</div>
+<div class="text-right">
+<p class="text-web-text-tiny font-web-text-tiny text-outline">EXPIRY</p>
+<p class="text-mobile-text-label font-mobile-text-label text-mobile-success">04h 22m</p>
+</div>
+</div>
+<div class="flex items-center gap-2 pt-3 border-t border-outline-variant/30 text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">sync</span>
+<span class="text-web-text-small font-web-text-small">Synced 2m ago</span>
+</div>
+</div>
+</div>
+<!-- Permit Card 2: Pending AI Flag -->
+<div class="bg-surface-container rounded-xl overflow-hidden border border-outline-variant/30 active:scale-[0.98] transition-transform">
+<div class="h-1 bg-mobile-warning w-full"></div>
+<div class="p-4">
+<div class="flex justify-between items-start mb-3">
+<div>
+<span class="font-web-text-tiny text-web-text-tiny text-outline uppercase">ID: PS-88210-B</span>
+<h3 class="font-web-text-h2 text-[16px] text-cos-white mt-0.5">Electrical High-Voltage Grid Tie</h3>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-mobile-warning/10 text-mobile-warning text-[11px] font-bold uppercase tracking-wider">Pending</span>
+<span class="material-symbols-outlined text-outline self-center ml-2">chevron_right</span></div>
+<div class="grid grid-cols-2 gap-4 mb-4">
+<div>
+<p class="text-web-text-tiny font-web-text-tiny text-outline">CONTRACTOR</p>
+<p class="text-mobile-text-label font-mobile-text-label text-on-surface">VoltMaster Solutions</p>
+</div>
+<div class="text-right">
+<p class="text-web-text-tiny font-web-text-tiny text-outline">AUTO-REJECT</p>
+<p class="text-mobile-text-label font-mobile-text-label text-mobile-warning">12h 15m</p>
+</div>
+</div>
+<div class="flex items-center gap-2 pt-3 border-t border-outline-variant/30 bg-cos-cyan/5 -mx-4 -mb-4 px-4 py-2">
+<span class="material-symbols-outlined text-[18px] text-cos-cyan" style="font-variation-settings: &quot;FILL&quot; 1;">verified_user</span>
+<span class="text-web-text-small font-web-text-small text-cos-cyan">AI Check: Safety conflict detected in zone 4</span>
+</div>
+</div>
+</div>
+<!-- Permit Card 3: Revoked -->
+<div class="bg-surface-container rounded-xl overflow-hidden border border-outline-variant/30 opacity-70 active:scale-[0.98] transition-transform">
+<div class="h-1 bg-mobile-danger w-full"></div>
+<div class="p-4">
+<div class="flex justify-between items-start mb-3">
+<div>
+<span class="font-web-text-tiny text-web-text-tiny text-outline uppercase">ID: CW-19822-M</span>
+<h3 class="font-web-text-h2 text-[16px] text-cos-white mt-0.5">Sub-basement Water Sealing</h3>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-mobile-danger/10 text-mobile-danger text-[11px] font-bold uppercase tracking-wider">Revoked</span>
+<span class="material-symbols-outlined text-outline self-center ml-2">chevron_right</span></div>
+<div class="grid grid-cols-2 gap-4">
+<div>
+<p class="text-web-text-tiny font-web-text-tiny text-outline">CONTRACTOR</p>
+<p class="text-mobile-text-label font-mobile-text-label text-on-surface">HydroStop Inc.</p>
+</div>
+<div class="text-right">
+<p class="text-web-text-tiny font-web-text-tiny text-outline">REASON</p>
+<p class="text-mobile-text-label font-mobile-text-label text-mobile-danger">Safety Violation</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Permit Card 4: Expired -->
+<div class="bg-surface-container rounded-xl overflow-hidden border border-outline-variant/30 grayscale active:scale-[0.98] transition-transform">
+<div class="h-1 bg-outline w-full"></div>
+<div class="p-4">
+<div class="flex justify-between items-start mb-3">
+<div>
+<span class="font-web-text-tiny text-web-text-tiny text-outline uppercase">ID: CW-19001-A</span>
+<h3 class="font-web-text-h2 text-[16px] text-cos-white mt-0.5">Scaffold Erection Zone F</h3>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-surface-variant text-on-surface-variant text-[11px] font-bold uppercase tracking-wider">Expired</span>
+<span class="material-symbols-outlined text-outline self-center ml-2">chevron_right</span></div>
+<div class="grid grid-cols-2 gap-4">
+<div>
+<p class="text-web-text-tiny font-web-text-tiny text-outline">CONTRACTOR</p>
+<p class="text-mobile-text-label font-mobile-text-label text-on-surface">BaseBuild Group</p>
+</div>
+<div class="text-right">
+<p class="text-web-text-tiny font-web-text-tiny text-outline">ENDED</p>
+<p class="text-mobile-text-label font-mobile-text-label text-on-surface-variant">24h ago</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- FAB Primary Action -->
+<button class="fixed bottom-24 right-6 w-14 h-14 bg-mobile-primary text-cos-white rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-transform z-50 border-2 border-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.4)]">
+<span class="material-symbols-outlined text-[28px]">add</span>
+</button>
+<!-- Bottom Navigation Shell -->
+<nav class="bg-surface-container dark:bg-surface-container border-t border-outline-variant fixed bottom-0 w-full z-50">
+<div class="flex justify-around items-center h-mobile-touch-target px-web-space-4"><div class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-variant active:scale-95 transition-transform duration-100 h-full">
+  <span class="material-symbols-outlined text-[24px]">dashboard</span>
+  <span class="font-mobile-text-label text-[10px]">HOME</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-variant active:scale-95 transition-transform duration-100 h-full">
+  <span class="material-symbols-outlined text-[24px]">warning</span>
+  <span class="font-mobile-text-label text-[10px]">INCIDENTS</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-variant active:scale-95 transition-transform duration-100 h-full">
+  <span class="material-symbols-outlined text-[24px]">assignment_turned_in</span>
+  <span class="font-mobile-text-label text-[10px]">CHECKLISTS</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl px-4 py-1 active:scale-95 transition-transform duration-100 h-full shadow-inner border border-white/20">
+  <span class="material-symbols-outlined text-[24px]">description</span>
+  <span class="font-mobile-text-label text-[10px]">PERMITS</span>
+</div></div>
+</nav>
+<!-- Atmospheric Background Interaction -->
+<script>
+    document.querySelectorAll('.active\\:scale-\\[0\\.98\\]').forEach(card => {
+      card.addEventListener('touchstart', () => {
+        card.classList.add('scale-[0.98]', 'bg-surface-container-high');
+      });
+      card.addEventListener('touchend', () => {
+        card.classList.remove('scale-[0.98]', 'bg-surface-container-high');
+      });
+    });
+  </script>
+
+
+
+
+</body></html>
