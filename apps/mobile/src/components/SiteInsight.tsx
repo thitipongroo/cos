@@ -11,10 +11,20 @@ import { InsightPanel } from './InsightPanel';
 export function SiteInsight({
   projectId,
   projectLabel,
+  titleKey = 'site.insight.title',
+  icon = 'auto-awesome',
 }: {
   projectId: string;
   /** What to call the project on the "Source:" line; defaults to the id. */
   projectLabel?: string;
+  /**
+   * The panel's own heading. Two screens carry this same SITE_SUMMARY report and their drawings name
+   * it differently — the issue board's says INSIGHT over a list of issues, the reports screen's says
+   * INSIGHT over a list of reports (PO decision 2026-08-12) — so the caller names it rather than one
+   * word being stretched to cover both.
+   */
+  titleKey?: string;
+  icon?: React.ComponentProps<typeof InsightPanel>['icon'];
 }): React.JSX.Element {
   return (
     <InsightPanel
@@ -22,11 +32,12 @@ export function SiteInsight({
       projectId={projectId}
       projectLabel={projectLabel}
       generate={generateSiteSummary}
-      titleKey="site.insight.title"
-      // `memory`, as on three of the four existing panels — the drawing's `smart_toy` is not in the
-      // MaterialIcons set this project standardised on (§32.7), and inventing a fifth glyph for a
-      // fourth identical panel would make the same thing look like a different thing.
-      icon="memory"
+      titleKey={titleKey}
+      // `auto_awesome`, which IS what both drawings put on this panel and which the MaterialIcons
+      // set does carry (PO decision 2026-08-12: "ใช้ไอคอนเหมือนใน mockup"). It replaced `memory`,
+      // chosen earlier only because the reports drawing's `smart_toy` has no MaterialIcons
+      // equivalent — the issue board's drawing settles it with a glyph that does.
+      icon={icon}
     />
   );
 }

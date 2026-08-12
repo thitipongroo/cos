@@ -89,7 +89,20 @@ export default function ReportScreen() {
   // went on 2026-08-09 (PO) because the mockup has none — the report's content is the structured
   // manpower, shift and blockers below — and `site_ops.site_reports.summary` is nullable, so nothing
   // downstream needs it.
-  const canSave = projectId.trim() !== '';
+  /**
+   * A BLOCKER CATEGORY IS NOW REQUIRED ON EVERY SAVE (PO decision 2026-08-12: "ให้ต้องใส่ Blocker
+   * category ทุกครั้งในการบันทึกข้อมูล"), on both the draft and the submit path.
+   *
+   * `site_ops.site_reports.blocker_category` is nullable in the database and stays that way — this
+   * is a rule about what this FORM will file, not a schema change, so the thousands of rows written
+   * before it are still readable and the API still accepts a report without one.
+   *
+   * WHAT IT MEANS FOR A CLEAR DAY: nothing went wrong is filed as OTHER, which is what that value
+   * is for here. The cost is one tap on a good day; the gain is that "no category" stops meaning
+   * two different things at once — "nothing blocked us" and "nobody said" — which is exactly what
+   * made the reports list unreadable, since a card could not tell them apart.
+   */
+  const canSave = projectId.trim() !== '' && blockerCategory !== null;
   // The bars are proportions of the TOTAL BREAKDOWN, not of `manpower` — the two are entered
   // separately and a bar that could exceed its track would be a lie about the data.
   const tradeTotal = Object.values(trades).reduce<number>((sum, n) => sum + (n ?? 0), 0);
@@ -302,7 +315,16 @@ export default function ReportScreen() {
 
       {/* ── Summary ──────────────────────────────────────────────────────── */}
       {/* ── Blockers ─────────────────────────────────────────────────────── */}
-      <Text style={[styles.sectionTitle, { color: p.text }]}>{t('site.report.blockers')}</Text>
+      <Text style={[styles.sectionTitle, { color: p.text }]}>
+        {t('site.report.blockersRequired')}
+      </Text>
+      {/* Says WHY the form is holding, rather than leaving a disabled button unexplained. Shown only
+          while nothing is chosen, so it is guidance and not a standing scold. */}
+      {blockerCategory === null ? (
+        <Text testID="blocker-category-hint" style={[styles.hint, { color: p.warning }]}>
+          {t('site.report.blockerCategoryHint')}
+        </Text>
+      ) : null}
       <View style={styles.chipRow}>
         {BLOCKER_CATEGORIES.map((c) => {
           const active = c === blockerCategory;
@@ -387,6 +409,7 @@ const styles = StyleSheet.create({
   // by it: they are the final element, and one `xl` of padding is shorter than the bar that sits
   // over the bottom of the scroll area. Same clearance finance.tsx already uses for the same reason.
   page: { padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xl * 3 },
+  hint: { fontFamily: fontFamily.regular, fontSize: typography.label.fontSize },
   sectionTitle: {
     fontSize: typography.title.fontSize,
     fontFamily: fontFamily.semibold,

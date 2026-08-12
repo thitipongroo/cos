@@ -35,6 +35,23 @@ export interface MyProject {
    * membership, and the building is the narrowest real location the data has.
    */
   building_name?: string | null;
+  /**
+   * BOQ-value-weighted completion, 0..100 — the per-card progress bar both project-selection
+   * drawings put under the project name (PO decision 2026-08-12, "1d. เพิ่ม field progress").
+   *
+   * NULL MEANS "NOT COMPUTABLE", NEVER ZERO. It is the same §32.12 figure as
+   * `ProjectProgress.percentComplete` below — computed by the same Σ(progress × BOQ value) ÷
+   * Σ(BOQ value), in the same query that returns the list, so a project with no BOQ-linked task
+   * comes back null and the card must draw a placeholder rather than an empty bar.
+   *
+   * It is here, on the list row, precisely so the picker does not have to call
+   * `getProjectProgress()` once per site: that endpoint is not cached offline and throws on a
+   * plane, and this list is the first thing a worker with no site chosen sees.
+   *
+   * Optional on the type because the field is newer than the screens that read the endpoint — an
+   * app built before the server change still parses the response.
+   */
+  progress_percent?: number | null;
 }
 
 /**

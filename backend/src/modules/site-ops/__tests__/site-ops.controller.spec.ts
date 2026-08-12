@@ -54,6 +54,18 @@ describe('SiteOpsController', () => {
     );
   });
 
+  // The search field the reports mockup draws. The service branch already existed; before 2026-08-12
+  // no controller parameter could reach it.
+  it('listSiteReports passes a search term through', () => {
+    ctrl.listSiteReports(undefined, undefined, undefined, '1', '20', undefined, 'rebar');
+    expect(mockSvc.listSiteReports).toHaveBeenCalledWith(expect.objectContaining({ q: 'rebar' }));
+  });
+
+  it('listSiteReports treats a blank search term as no search', () => {
+    ctrl.listSiteReports(undefined, undefined, undefined, '1', '20', undefined, '   ');
+    expect(mockSvc.listSiteReports).toHaveBeenCalledWith(expect.objectContaining({ q: undefined }));
+  });
+
   it('listSiteReports clamps limit to 100 max', () => {
     ctrl.listSiteReports(undefined, undefined, undefined, '1', '999', undefined);
     expect(mockSvc.listSiteReports).toHaveBeenCalledWith(expect.objectContaining({ limit: 100 }));

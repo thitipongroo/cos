@@ -65,11 +65,16 @@ export function ProjectContextBar(): React.JSX.Element | null {
         <Text style={styles.name} numberOfLines={1}>
           {active.projectName}
         </Text>
-        {/* The building, where the office has recorded one. No placeholder when it has not: an empty
-            location line reads like a place. */}
-        <Text style={styles.sub} numberOfLines={1}>
-          {active.buildingName ?? active.projectCode}
-        </Text>
+        {/* The building, where the office has recorded one — and NOTHING AT ALL when it has not
+            (PO decision 2026-08-12). It used to render an empty <Text>, which still occupies a line
+            box: the eyebrow and the name were then pushed above centre on every project without a
+            building, which is most of them. Omitting the element is what lets the two lines sit
+            centred between the card's edges. */}
+        {active.buildingName ? (
+          <Text style={styles.sub} numberOfLines={1}>
+            {active.buildingName}
+          </Text>
+        ) : null}
       </View>
       {/* Its own 44pt target, per the drawings. `pointerEvents="none"` so the press falls through to
           the bar — one handler, so the button and the bar can never disagree about what they do. */}
@@ -109,7 +114,10 @@ const makeStyles = (p: Palette) =>
       justifyContent: 'center',
       backgroundColor: `${p.accent}1A`, // the drawings' primary/10 tint, on the accent hue below
     },
-    text: { flex: 1 },
+    // Centred between the card's top and bottom edges (PO decision 2026-08-12). The block is one
+    // or two lines depending on whether the project has a building, so anchoring it to the top made
+    // the bar look differently balanced from one project to the next.
+    text: { flex: 1, justifyContent: 'center' },
     // ACCENT, NOT THE DRAWING'S PRIMARY BLUE — accessibility, not preference. The eyebrow and the
     // plate glyph are the case `--cos-dark-accent` was added for (master, 2026-08-06): unfilled text
     // and icons on a dark surface must clear 4.5:1 themselves, and `--mobile-primary` #0066FF is

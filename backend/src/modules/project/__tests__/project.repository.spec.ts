@@ -87,6 +87,26 @@ describe('ProjectRepository', () => {
       expect(result).toHaveLength(1);
       expect(result[0]!.project_id).toBe(PROJECT_ID);
     });
+
+    // The two LATERAL columns the mobile project pickers draw beside the name. The building has been
+    // here since 2026-08-11; the progress bar is the 2026-08-12 addition (PO: "1d. เพิ่ม field
+    // progress"), and it is aggregated in THIS query rather than fetched per card so the picker
+    // stays one round trip — see the method's own note.
+    it('carries the building and the BOQ-weighted progress through', async () => {
+      const repo = makeRepo([{ ...baseRow, building_name: 'Tower A', progress_percent: 62.5 }]);
+      const result = await repo.listByMember(USER_ID);
+      expect(result[0]!.building_name).toBe('Tower A');
+      expect(result[0]!.progress_percent).toBe(62.5);
+    });
+
+    // NULL is the §32.12 "not computable" case (no BOQ-linked task), and it must survive as NULL.
+    // Coercing it to 0 anywhere along the way would draw an empty bar on a site whose progress is
+    // simply unknown — the one thing that metric's null semantics exist to prevent.
+    it('leaves an unmeasurable project’s progress null rather than zero', async () => {
+      const repo = makeRepo([{ ...baseRow, building_name: null, progress_percent: null }]);
+      const result = await repo.listByMember(USER_ID);
+      expect(result[0]!.progress_percent).toBeNull();
+    });
   });
 
   describe('create()', () => {

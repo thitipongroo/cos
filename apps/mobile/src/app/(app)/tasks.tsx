@@ -15,29 +15,36 @@
 //     "CRITICAL" mean anything — a red chip over a time of day says nothing about how late the work
 //     is. The dashboard, which is about today, shows the window instead (PO decision 2026-08-11).
 //
-// The "AI Insight" card IS drawn, copy and numbers included (PO decision 2026-08-08, reversing an
-// earlier call to drop it — the same ruling already applied to the report's AI bar and the safety
-// screen's AI Safety Scan). DelayForecastModel is Phase 23 and untrained (§22.6), so the card states
-// the mockup's example rather than a computed forecast: it is static, nothing reads it, and no task
-// field is derived from it. Its "ปรับตารางเวลาอัตโนมัติ" action does NOT reschedule anything — auto-schedule
-// generation is post-MVP Layer B/C, and §22.3 requires it to run through Temporal WITH a
-// human-in-the-loop step, so the button says the feature is not available rather than acting.
+// THE STATIC "AI Insight" CARD IS GONE (PO decision 2026-08-12), and <ScheduleInsight /> above the
+// list is what replaced it.
+//
+// That card was drawn here by a PO decision of 2026-08-08 — itself a reversal of an earlier call to
+// drop it — on the reasoning that DelayForecastModel is Phase 23 and untrained (§22.6), so the
+// screen could state the mockup's example instead of a computed forecast. What changed is that a
+// forecast is now obtainable: `POST /ai/reports/delay-risk` is built and serving (ai-gateway
+// main.py), it assembles real workforce, procurement, manpower and weather context (risk/context.py,
+// ADR-072), and the panel renders only what that call returns with the model's own confidence band.
+// With a real one on the screen the static one stopped being a placeholder for something absent and
+// became a second, invented insight sitting beside a true one — which is the case §22.3 is most
+// explicit about. Its "ปรับตารางเวลาอัตโนมัติ" action went with it: it never rescheduled anything
+// (auto-schedule generation is post-MVP Layer B/C and §22.3 requires a human-in-the-loop step
+// through Temporal), so it was a button that only ever said the feature was unavailable.
 //
 // The mockup's floating voice FAB is <VoiceCommandFab /> — the ADR-073 component already built for
 // the Site Engineer home: hold to record → transcribe → classify intent → route to a real screen,
 // and a message rather than a guessed action when the intent is unsupported. No second voice
 // behaviour was invented for this screen.
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   FlatList,
-  ScrollView,
+  Modal,
+  Pressable,
   StyleSheet,
-  Alert,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { db } from '../../db/database';
@@ -46,19 +53,29 @@ import { localTasks } from '../../db/schema';
 import { eq } from 'drizzle-orm';
 import { useCollection } from '../../hooks/useCollection';
 import { TaskCard } from '../../components/TaskCard';
-import { VoiceCommandFab } from '../../components/VoiceCommandFab';
 import { ProjectContextBar } from '../../components/ProjectContextBar';
 import { ScheduleInsight } from '../../components/ScheduleInsight';
 import { useProjectStore } from '../../store/projectStore';
+import { getProjectPhases } from '../../api/projects';
+import { currentPhase, type ProjectPhase } from '../../lib/siteEngineerHome';
+import { phaseName } from '../../lib/phaseName';
 import { mutate } from '../../api/client';
-import { useT } from '../../i18n';
+import { useI18n } from '../../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
 import { usePalette } from '../../theme/usePalette';
 import { makeScreenStyles } from '../../theme/screenStyles';
 
-/** The filter chips across the top. `all` is first and selected on entry, as the mockup draws it. */
+/** The filter set. `all` is first and selected on entry. */
 const FILTERS = ['all', 'pending', 'inProgress', 'done'] as const;
 type Filter = (typeof FILTERS)[number];
+
+/**
+ * How many cards the list opens with (PO decision 2026-08-12).
+ *
+ * The list is every task on the site — 25 on the seeded project — and a screen that drops the reader
+ * into all of them is a scroll, not a view. Ten is what the section shows before "show more".
+ */
+const DEFAULT_LIMIT = 10;
 
 /** A task counts as done from either side — the server status or a progress bar at 100 (§17.5). */
 function isDone(t: Task): boolean {
@@ -83,7 +100,10 @@ export default function TasksScreen() {
   // The same site the bar above the list names — read from the store rather than a second chooser,
   // so the Insight card can never report on a different project than the screen says it is on.
   const insightProjectId = useProjectStore((s) => s.active?.projectId ?? '');
-  const t = useT();
+  const [phases, setPhases] = useState<ProjectPhase[]>([]);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [limit, setLimit] = useState(DEFAULT_LIMIT);
+  const { t, locale } = useI18n();
   const p = usePalette();
   const screen = useMemo(() => makeScreenStyles(p), [p]);
   const [selected, setSelected] = useState<Task | null>(null);
@@ -91,16 +111,57 @@ export default function TasksScreen() {
   const [savedValue, setSavedValue] = useState<number | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
 
+  /**
+   * The project's phases (ADR-070), for the heading the drawing puts over the list — "เฟส 2: งาน
+   * โครงสร้าง" (PO decision 2026-08-12). Derived, never a stored flag: `currentPhase` takes the
+   * lowest-seq phase that is IN_PROGRESS, or the next one not yet COMPLETED. Not cached offline, so
+   * a failure leaves the last value rather than a wrong one — and with no phase the heading falls
+   * back to naming the list itself instead of inventing a phase.
+   */
+  useEffect(() => {
+    if (insightProjectId === '') return;
+    let cancelled = false;
+    getProjectPhases(insightProjectId)
+      .then((rows) => {
+        if (!cancelled) setPhases(rows);
+      })
+      .catch(() => {
+        /* offline — keep the last phases */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [insightProjectId]);
+
+  const phase = currentPhase(phases);
+
+  // SCOPED TO THE SITE THE BAR ABOVE NAMES. The heading counts this project's outstanding work, so
+  // the list under it has to be the same project's — a header about one site over a list of five
+  // would be two different answers on one screen. With nothing chosen yet it shows everything,
+  // which is the only honest thing to show.
+  const projectTasks = useMemo(
+    () =>
+      insightProjectId === '' ? tasks : tasks.filter((task) => task.projectId === insightProjectId),
+    [tasks, insightProjectId],
+  );
+
   const counts = useMemo(
     () =>
       Object.fromEntries(
-        FILTERS.map((f) => [f, tasks.filter((task) => matches(task, f)).length]),
+        FILTERS.map((f) => [f, projectTasks.filter((task) => matches(task, f)).length]),
       ) as Record<Filter, number>,
-    [tasks],
+    [projectTasks],
   );
-  const visible = useMemo(() => tasks.filter((task) => matches(task, filter)), [tasks, filter]);
-  // Index the AI Insight card follows — the mockup's third slot, or the end of a shorter list.
-  const insightAfter = Math.min(1, visible.length - 1);
+  const matching = useMemo(
+    () => projectTasks.filter((task) => matches(task, filter)),
+    [projectTasks, filter],
+  );
+  const visible = useMemo(() => matching.slice(0, limit), [matching, limit]);
+  /** The drawing's "3 งาน" beside the phase — what is still outstanding, not the list length. */
+  const outstanding = useMemo(
+    () => projectTasks.filter((task) => !isDone(task)).length,
+    [projectTasks],
+  );
 
   const openTask = (task: Task): void => {
     setSelected(task);
@@ -176,146 +237,253 @@ export default function TasksScreen() {
 
   return (
     <View testID="tasks-screen" style={[styles.page, { backgroundColor: p.bg }]}>
-      <ProjectContextBar />
+      {/* THE BAR, THE PANEL AND THE CARDS ARE ALL ONE WIDTH (PO decision 2026-08-12). <TaskCard />
+          insets itself from both edges, so these two ran edge to edge above a list of narrower
+          cards — three different left margins down one screen. This inset is the cards' own. */}
+      <View style={styles.headerInset}>
+        <ProjectContextBar />
+      </View>
       {/* The Insight card the restructured drawing opens this list with
           (03_site_engineer/03_tasks/01_se_tasks). Backed by DELAY_RISK — the only schedule report
           the gateway serves — and reading its level and risk factors rather than its first string
           field; see components/ScheduleInsight.tsx. Rendered only once a project is chosen, because
           every report endpoint is project-scoped and the bar above is where that is answered. */}
-      {insightProjectId !== '' ? <ScheduleInsight projectId={insightProjectId} /> : null}
+      {insightProjectId !== '' ? (
+        // Its own breathing room: the panel sat flush against the Active Project bar above it, so the
+        // two read as one stacked block instead of as the bar and a separate insight (PO 2026-08-12).
+        <View style={[styles.insightSlot, styles.headerInset]}>
+          <ScheduleInsight projectId={insightProjectId} />
+        </View>
+      ) : null}
       {/* NO in-content page title, though the mockup draws "รายการงานวันนี้" (§32.7 Mobile App Shell:
           a top-level tab screen is named by its active bottom-nav tab, and repeating the name inside
           the content states it twice). This is the one place the mockup is deliberately not followed
           on this screen — PO decision 2026-08-08, after all four Site Worker screens shipped with a
           title that no other tab screen has. */}
+      {/* THE DRAWING'S SECTION HEADING, NOT A CHIP ROW (PO decision 2026-08-12). 01_se_tasks heads
+          its list with the project's current PHASE and how much work is still outstanding — "เฟส 2:
+          งานโครงสร้าง · 3 งาน" — and puts the filtering behind an icon. The chips were four
+          always-on buttons taking a whole row to say what one glyph and a sheet can, and they
+          pushed the first card off the fold.
+          The phase is derived (ADR-070); with none known the heading names the list instead of
+          inventing a phase. The count is what is NOT done — the number a foreman is asking for —
+          not the length of whatever filter happens to be on. */}
       <View style={styles.header}>
-        {/* Horizontal chip row (mockup). Counts are the real filtered lengths — never a fixed "12". */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.chipRow}
+        {/* ONE LINE, IN THE DASHBOARD'S SECTION-HEADING FORM (PO decision 2026-08-12): the same
+            uppercase, letter-spaced, muted label that heads "PROJECT PROGRESS" and "ACTIVE ISSUES"
+            on the Site Engineer home (SiteEngineerHome's `cardLabel`/`sectionTitle`), so a heading
+            reads the same wherever this role meets one. The count sits beside it rather than under
+            it, as the drawing has it.
+            THE COUNT IS REAL and is not the list length: it is how many of THIS project's tasks are
+            not done — `!isDone`, which is `status === 'COMPLETED' || progress >= 100` (§17.5), the
+            same test the Done filter uses. On the captured project that is 3 of 5. */}
+        <View style={styles.headText}>
+          {/* "Phase 1: งานฐานราก (Foundation)" — the drawing's "เฟส 2: งานโครงสร้าง" (PO decision
+              2026-08-12). `seq` is the phase's own 1-based order from `projects.project_phases`,
+              checked against the database rather than assumed: CWRD's five phases run 1..5, so the
+              number shown is the column's value and not an index the screen invented. */}
+          <Text style={[styles.phase, { color: p.muted }]} numberOfLines={1}>
+            {phase === null
+              ? t('tasks.list.heading')
+              : t('tasks.list.phase', {
+                  seq: String(phase.seq),
+                  // ONE LANGUAGE, the reader's (PO decision 2026-08-12). The column holds both —
+                  // "งานฐานราก (Foundation)" — and the bracket is the translation, not part of the
+                  // name; see lib/phaseName.ts.
+                  name: phaseName(phase.name, locale),
+                })}
+          </Text>
+          <Text style={[styles.outstanding, { color: p.accent }]}>
+            {t('tasks.list.outstanding', { count: outstanding })}
+          </Text>
+        </View>
+        {/* The same `filter_list` control the project picker's search row carries, so one glyph
+            means one thing across the app. This one is WIRED: it opens the sheet below. */}
+        <TouchableOpacity
+          testID="task-filter-button"
+          accessibilityRole="button"
+          accessibilityLabel={t('tasks.filters.open')}
+          onPress={() => setFilterOpen(true)}
+          style={[styles.filterBtn, { borderColor: p.border, backgroundColor: p.surface }]}
         >
-          {FILTERS.map((f) => {
-            const active = f === filter;
-            return (
-              <TouchableOpacity
-                key={f}
-                testID={`task-filter-${f}`}
-                onPress={() => setFilter(f)}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: active }}
-                accessibilityLabel={`${t(`tasks.filters.${f}`)} (${counts[f]})`}
-                style={[
-                  styles.chip,
-                  { borderColor: p.border, backgroundColor: active ? p.primary : p.surface },
-                ]}
-              >
-                <Text
-                  style={[styles.chipText, { color: active ? p.onPrimary : p.muted }]}
-                >{`${t(`tasks.filters.${f}`)} (${counts[f]})`}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+          <MaterialIcons name="filter-list" size={20} color={p.accent} />
+        </TouchableOpacity>
       </View>
+
+      {/* The filter conditions that used to sit on the page. Same four, same real counts. */}
+      <Modal
+        visible={filterOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setFilterOpen(false)}
+      >
+        <Pressable
+          testID="task-filter-backdrop"
+          style={styles.backdrop}
+          accessibilityRole="button"
+          accessibilityLabel={t('tasks.filters.close')}
+          onPress={() => setFilterOpen(false)}
+        >
+          <Pressable
+            testID="task-filter-sheet"
+            style={[styles.sheet, { backgroundColor: p.surface, borderColor: p.border }]}
+            onPress={() => {}}
+          >
+            <Text style={[styles.sheetTitle, { color: p.text }]}>{t('tasks.filters.open')}</Text>
+            {FILTERS.map((f) => {
+              const active = f === filter;
+              return (
+                <TouchableOpacity
+                  key={f}
+                  testID={`task-filter-${f}`}
+                  onPress={() => {
+                    setFilter(f);
+                    // Back to the top of the new selection: keeping a "show more" expansion from
+                    // the previous filter would open the next one part-way down for no reason.
+                    setLimit(DEFAULT_LIMIT);
+                    setFilterOpen(false);
+                  }}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: active }}
+                  style={[
+                    styles.sheetRow,
+                    { borderColor: active ? p.primary : p.border },
+                    active && { backgroundColor: p.elevated },
+                  ]}
+                >
+                  <Text style={[styles.sheetRowText, { color: active ? p.accent : p.text }]}>
+                    {`${t(`tasks.filters.${f}`)} (${String(counts[f])})`}
+                  </Text>
+                  {active ? <MaterialIcons name="check" size={18} color={p.accent} /> : null}
+                </TouchableOpacity>
+              );
+            })}
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <FlatList
         testID="task-list"
         data={visible}
         keyExtractor={(item) => item.id}
+        // `flex: 1` — the same fix, and the same bug, as the reports list (2026-08-12). Without it
+        // the list sizes to its content inside the flex:1 page, so it has no overflow to scroll and
+        // simply draws past the bottom of the window. On a 25-task day that is most of the day's
+        // work silently unreachable, and it worsened as things were added above the list.
+        style={styles.listFill}
         contentContainerStyle={styles.list}
         ListEmptyComponent={<Text style={screen.empty}>{t('tasks.list.empty')}</Text>}
-        renderItem={({ item, index }) => (
-          <>
-            <TaskCard
-              badge="severity"
-              task={item}
-              onPress={() => openTask(item)}
-              onComplete={() => void completeTask(item)}
-            />
-            {/* The mockup slots the insight BETWEEN task cards, third in the run — not pinned to the
-                top — so it reads as one more thing on the list rather than a banner over it. Anchored
-                to the second card, or to the last one when the list is shorter than that. With no
-                tasks at all it does not render: an insight about a list that is not there is noise. */}
-            {index === insightAfter ? (
-              <View
-                testID="tasks-ai-insight"
-                style={[styles.insight, { backgroundColor: p.elevated, borderLeftColor: p.accent }]}
-              >
-                <View style={styles.insightHead}>
-                  <MaterialIcons name="auto-awesome" size={18} color={p.accent} />
-                  <Text style={[styles.insightLabel, { color: p.accent }]}>
-                    {t('tasks.aiInsight.label')}
-                  </Text>
-                </View>
-                <Text style={[styles.insightBody, { color: p.text }]}>
-                  {t('tasks.aiInsight.body')}
-                </Text>
-                <TouchableOpacity
-                  testID="tasks-ai-insight-action"
-                  accessibilityRole="button"
-                  accessibilityLabel={t('tasks.aiInsight.action')}
-                  onPress={() => Alert.alert(t('tasks.aiInsight.action'), t('common.comingSoon'))}
-                  style={styles.insightAction}
-                >
-                  <Text style={[styles.insightActionText, { color: p.accent }]}>
-                    {t('tasks.aiInsight.action')}
-                  </Text>
-                  <MaterialIcons name="chevron-right" size={16} color={p.accent} />
-                </TouchableOpacity>
-              </View>
-            ) : null}
-          </>
+        // Ten cards to open with; the rest on request — see DEFAULT_LIMIT.
+        ListFooterComponent={
+          matching.length > visible.length ? (
+            <TouchableOpacity
+              testID="task-show-more"
+              accessibilityRole="button"
+              accessibilityLabel={t('tasks.list.showMore')}
+              onPress={() => setLimit((n) => n + DEFAULT_LIMIT)}
+              style={[styles.showMore, { borderColor: p.border }]}
+            >
+              <Text style={[styles.showMoreText, { color: p.accent }]}>
+                {t('tasks.list.showMore')}
+              </Text>
+            </TouchableOpacity>
+          ) : null
+        }
+        renderItem={({ item }) => (
+          <TaskCard
+            badge="severity"
+            task={item}
+            onPress={() => openTask(item)}
+            onComplete={() => void completeTask(item)}
+          />
         )}
       />
 
-      {/* Floating voice FAB (mockup). Sits over the list, clear of the last card via the list's own
-          bottom padding. */}
-      <VoiceCommandFab />
+      {/* NO VOICE FAB ON THIS SCREEN (PO decision 2026-08-12: "ตัดปุ่มไมโครโฟนออก"). The Site
+          Worker's task drawing has one and this screen inherited it; the Site Engineer's
+          (03_site_engineer/03_tasks/01_se_tasks) does not, and on a list of cards that each carry
+          their own action the floating mic sat over the last card without belonging to any of them.
+          <VoiceCommandFab /> (ADR-073) is unchanged and still on the Site Engineer home, which is
+          where its own drawing puts it. */}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   page: { flex: 1 },
-  header: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, gap: spacing.md },
-  chipRow: { gap: spacing.xs, paddingBottom: spacing.xs },
-  chip: {
-    minHeight: touchTarget.secondaryButton,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-  },
-  chipText: { fontSize: typography.label.fontSize, fontFamily: fontFamily.medium },
-  // Deep enough that the floating voice FAB never covers the last card.
-  list: { paddingBottom: spacing.xl * 3 },
-  insight: {
-    // NO horizontal margin. <TaskCard /> is full-bleed, and an inset card between two full-bleed
-    // ones reads as a different kind of thing floating in the list rather than one more row of it
-    // (PO decision 2026-08-09). The left accent bar is the only edge treatment, as on the cards.
-    marginVertical: spacing.xs,
-    padding: spacing.md,
-    borderLeftWidth: 4,
-    borderTopRightRadius: radius.md,
-    borderBottomRightRadius: radius.md,
-    gap: spacing.xs,
-  },
-  insightHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  insightLabel: {
-    fontSize: 11,
-    fontFamily: fontFamily.bold,
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
-  },
-  insightBody: { fontSize: typography.body.fontSize, fontFamily: fontFamily.regular },
-  insightAction: {
+  insightSlot: { marginTop: spacing.sm, marginBottom: spacing.xs },
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
-    minHeight: touchTarget.iconButton,
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xs,
   },
-  insightActionText: { fontSize: typography.label.fontSize, fontFamily: fontFamily.semibold },
+  headerInset: {
+    paddingHorizontal: spacing.md,
+    // Air under the app's TopBar (PO decision 2026-08-12), the same gap the issue board uses. This
+    // screen is a full-height list with no page padding of its own, so the Active Project card sat
+    // flush against the bar above it and the two read as one block.
+    paddingTop: spacing.sm,
+  },
+  headText: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  phase: {
+    flexShrink: 1,
+    fontSize: typography.label.fontSize,
+    fontFamily: fontFamily.medium,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  outstanding: { fontFamily: fontFamily.semibold, fontSize: typography.label.fontSize },
+  filterBtn: {
+    width: touchTarget.formInput,
+    height: touchTarget.formInput,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.lg,
+    borderWidth: 1,
+  },
+  backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.6)' },
+  sheet: {
+    gap: spacing.xs,
+    padding: spacing.md,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    borderWidth: 1,
+  },
+  sheetTitle: {
+    fontFamily: fontFamily.semibold,
+    fontSize: typography.body.fontSize,
+    marginBottom: spacing.xs,
+  },
+  sheetRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: touchTarget.secondaryButton,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+  },
+  sheetRowText: { fontFamily: fontFamily.medium, fontSize: typography.body.fontSize },
+  showMore: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: touchTarget.secondaryButton,
+    marginTop: spacing.sm,
+    marginHorizontal: spacing.md,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+  },
+  showMoreText: { fontFamily: fontFamily.semibold, fontSize: typography.caption.fontSize },
+  // Deep enough that the floating voice FAB never covers the last card.
+  // `gap` puts air BETWEEN the task cards (PO decision 2026-08-12). <TaskCard /> is full-bleed with a
+  // bottom hairline, so consecutive cards met edge to edge and the list read as one banded slab
+  // rather than as the separated cards the mockup draws.
+  listFill: { flex: 1 },
+  list: { paddingBottom: spacing.xl * 3, gap: spacing.xs },
   label: { fontSize: typography.body.fontSize, fontFamily: fontFamily.regular },
   saved: { fontSize: typography.title.fontSize, fontFamily: fontFamily.bold },
   back: { fontFamily: fontFamily.medium, marginTop: spacing.md },

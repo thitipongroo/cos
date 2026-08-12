@@ -18,7 +18,7 @@ import { KafkaProducer } from '@cos/shared';
 import { createLogger } from '@cos/logger';
 import type { CosRole } from '@cos/types';
 import { ProjectRepository } from './project.repository';
-import type { ProjectRow } from './project.repository';
+import type { MemberProjectRow, ProjectRow } from './project.repository';
 import { validateTransition } from './project.state-machine';
 import type { ProjectStatus } from './project.state-machine';
 import type { CreateProjectDto } from './dto/create-project.dto';
@@ -122,7 +122,7 @@ export class ProjectService {
    * The signed-in user's own projects (projects they are a member of). Scoped by the JWT user_id, so
    * a caller only ever sees their own projects — used by the SITE_ENGINEER home picker.
    */
-  async listMine(): Promise<{ items: ProjectRow[] }> {
+  async listMine(): Promise<{ items: MemberProjectRow[] }> {
     return { items: await this.repo.listByMember(this.userId) };
   }
 
@@ -130,7 +130,7 @@ export class ProjectService {
    * A specific user's projects — used by the TENANT_ADMIN user-profile screen. The repository scopes
    * `WHERE tenant_id = <caller's tenant>`, so an admin only ever sees projects inside their own tenant.
    */
-  async listForUser(userId: string): Promise<{ items: ProjectRow[] }> {
+  async listForUser(userId: string): Promise<{ items: MemberProjectRow[] }> {
     return { items: await this.repo.listByMember(userId) };
   }
 

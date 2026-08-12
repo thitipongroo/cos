@@ -81,10 +81,19 @@ export default function AppLayout() {
           question is answered (see the component). It replaces a redirect that used to bounce the
           worker to a route: a route carries a back chevron, so the one case that must not be
           escapable had a way out of it, and the shell had to keep pushing them back in.
-          ONLY THIS ROLE. Every other role picks a project per screen where it needs one (the
-          managers' panels, the engineer's dashboard); making them all answer up front would be
-          inventing a flow no drawing asks for. */}
-      {role === CosRole.SITE_WORKER ? <SelectProjectSheet /> : null}
+          SITE_ENGINEER JOINED IT ON 2026-08-12 (PO decision), amending the "only this role" rule
+          that stood here. That rule cited "the engineer's dashboard" as a screen that picks its own
+          project — and it did, from a local chip row, which is exactly why nothing store-backed
+          worked for the role: the Active Project bar and the Issues and Schedule insight cards all
+          read `projectStore`, and only the worker ever wrote to it, so on the engineer's screens
+          they rendered nothing at all. It took a device capture to see that. The restructured
+          mockups draw the Active Project bar on all four of the role's screens, which is the same
+          answer from the other direction.
+          Every OTHER role still picks per screen (the managers' panels), and making them all answer
+          up front would still be inventing a flow no drawing asks for. */}
+      {role === CosRole.SITE_WORKER || role === CosRole.SITE_ENGINEER ? (
+        <SelectProjectSheet />
+      ) : null}
     </View>
   );
 }

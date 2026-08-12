@@ -9,6 +9,12 @@ export interface UpcomingTask {
   task_name: string;
   status: string;
   planned_start: string | null;
+  /**
+   * `projects.tasks.progress_percent`, 0..100 — the figure the dashboard card shows beside the task.
+   * The API has always returned it and this screen dropped it; optional here so a cached response
+   * from before that still parses.
+   */
+  progress_percent?: number;
 }
 
 export interface ActiveIssue {

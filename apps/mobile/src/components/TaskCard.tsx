@@ -16,7 +16,6 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import type { Task } from '../db/database';
 import { MaterialIcons } from '@expo/vector-icons';
-import { taskWindow } from '../lib/taskWindow';
 import { delaySeverity } from '../lib/delaySeverity';
 import { useI18n } from '../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../theme/tokens';
@@ -47,10 +46,7 @@ export function TaskCard({
   /** `status` on the dashboard, `severity` on the task list — see the note beside `showSeverity`. */
   badge?: 'status' | 'severity';
 }) {
-  // formatDate, not the raw column: /sync/delta sends a DATE as a full ISO timestamp, so printing it
-  // verbatim gives "2026-06-02T00:00:00.000Z" on a field worker's card. QM-3 requires display through
-  // Intl.DateTimeFormat in the user's locale, which is also what puts Thai into the Buddhist era.
-  const { t, formatDate, statusLabel } = useI18n();
+  const { t, statusLabel } = useI18n();
   const p = usePalette();
   const done = task.status === 'COMPLETED' || task.progressPercent >= 100;
   const started = !done && task.progressPercent > 0;
@@ -60,8 +56,10 @@ export function TaskCard({
   // it is (PO decision 2026-08-11, following DESIGN.md §15.4's delay-severity bands). One component,
   // because everything else about the card is identical and two copies would drift.
   const severity = delaySeverity(task.plannedEnd, task.status, new Date());
-  const timeWindow = taskWindow(task.plannedStartTime, task.plannedEndTime);
   const showSeverity = badge === 'severity' && severity !== 'none';
+  // The card is critically overdue AND is showing that band — see the warning panel and the action
+  // below, which are two halves of one decision and must never disagree about which case this is.
+  const criticalWarning = showSeverity && severity === 'CRITICAL' && !done;
   // FOUR BANDS, TWO TONES. §15.4 names four, the palette carries two that mean "act": HIGH and
   // CRITICAL are far enough past the date to be a problem now (danger), MEDIUM and LOW are drifting
   // (warning). LOW used to take `muted` — which is the same grey a task nobody has touched wears, so
@@ -99,7 +97,7 @@ export function TaskCard({
         swipeable.close();
       }}
     >
-      <View style={[styles.card, { backgroundColor: p.surface, borderBottomColor: p.border }]}>
+      <View style={[styles.card, { backgroundColor: p.surface, borderColor: p.border }]}>
         <View style={[styles.accent, { backgroundColor: accent }]} />
         <TouchableOpacity
           testID={task.taskId ? `task-${task.taskId}` : 'task-item'}
@@ -107,6 +105,13 @@ export function TaskCard({
           onPress={onPress}
           accessibilityRole="button"
         >
+          {/* THE MOCKUP'S ORDER, since 2026-08-12 (PO decision: "จัดรูปแบบการวางตำแหน่งในการ์ดให้
+              เหมือนกับใน mockup"). 03_site_engineer/03_tasks/01_se_tasks lays a card out as
+              chips → name → progress bar with its figure → a full-width action, with one chevron
+              centred at the trailing edge. This card had grown a different order: the name sharing
+              the top row with the badge, the figure and the action side by side in the middle, and
+              the bar alone at the very bottom, so the number and the bar it belongs to were three
+              rows apart and the action floated mid-card. Nothing was removed to reorder it. */}
           <View style={styles.topRow}>
             <View style={styles.identity}>
               {task.taskId ? (
@@ -114,11 +119,6 @@ export function TaskCard({
                   {t('tasks.card.idPrefix', { id: shortTaskId(task.taskId) })}
                 </Text>
               ) : null}
-              <Text
-                style={[styles.title, { color: done ? p.muted : p.text }, done && styles.struck]}
-              >
-                {task.taskName}
-              </Text>
             </View>
             {/* THE BADGE IS THE TASK'S STATE (PO decision 2026-08-11): the two chips traded places,
                 so the state a foreman is scanning for sits top-right where the eye lands, and the
@@ -128,7 +128,7 @@ export function TaskCard({
                 stands in its place. Its colour is the state's own, from lib/projectStatusTone.ts. */}
             <View
               style={[
-                styles.badge,
+                styles.stateTag,
                 {
                   borderColor: showSeverity ? severityTone : stateTone,
                   backgroundColor: p.elevated,
@@ -138,78 +138,99 @@ export function TaskCard({
               {showSeverity ? (
                 <MaterialIcons name="priority-high" size={12} color={severityTone} />
               ) : null}
-              <Text style={[styles.badgeText, { color: showSeverity ? severityTone : stateTone }]}>
+              <Text
+                style={[styles.stateTagText, { color: showSeverity ? severityTone : stateTone }]}
+              >
                 {showSeverity ? severity : statusLabel(task.status)}
               </Text>
             </View>
           </View>
 
-          <View style={styles.metaRow}>
-            <View style={styles.chips}>
-              <Text style={[styles.pct, { color: p.text }]}>{task.progressPercent}%</Text>
-              {/* The trade, where the sync chip used to be. "Synced" was the least useful word on a
-                  card in an offline-first app — it is the normal state of every row — and the trade
-                  is what tells a worker whether the task is theirs. A task with no work_type shows
-                  nothing here rather than a placeholder. */}
-              {task.workType ? (
-                <View style={[styles.tradeChip, { borderColor: p.border }]}>
-                  <Text style={[styles.tradeText, { color: p.accent }]}>{task.workType}</Text>
-                </View>
-              ) : null}
+          {/* NO STRIKE-THROUGH ON A FINISHED TASK (PO decision 2026-08-12: "การ์ดไหนที่ complete
+              ไม่ต้องขีด และยังสามารถกดได้เหมือนเดิม"). Struck text reads as cancelled or withdrawn,
+              which a completed task is the opposite of — and it made the one card whose record is
+              worth opening the hardest to read. The badge, the green edge and the full bar already
+              say it is done. The card stays pressable; only swipe-to-complete is withheld, because
+              there is nothing left to complete. */}
+          <Text style={[styles.title, { color: done ? p.muted : p.text }]}>{task.taskName}</Text>
+
+          {/* NO TRADE CHIP AND NO DATES HERE any more (PO decision 2026-08-12: "ตัดประเภท (เช่น
+              FOUNDATION) กับ วันที่ ออก"). The drawing's card is a status chip, a name, a bar and an
+              action — the trade and the planned window were this card's own additions, and four
+              stacked facts above a bar is what made it read as a form rather than a row. Both remain
+              on the task DETAIL view, which is what the card opens. */}
+
+          {/* THE DRAWING'S RED WARNING BOX (PO decision 2026-08-12). 01_se_tasks puts one under its
+              blocked card — an outlined red panel with a `warning` glyph naming the cause. The cause
+              it names ("ขาดแคลนวัสดุ") would be a per-task blocker field, and `projects.tasks` has no
+              such column; what this card CAN say, and what its own badge already computes, is that
+              the task is CRITICALLY late by the §15.4 delay bands (lib/delaySeverity.ts). So the box
+              carries that, worded as the overdue fact it is rather than as an invented cause. Shown
+              only where the badge reads CRITICAL, so it never fires on a card that looks calm. */}
+          {criticalWarning ? (
+            <View style={[styles.warnBox, { borderColor: p.danger }]}>
+              <MaterialIcons name="warning" size={16} color={p.danger} />
+              <Text style={[styles.warnText, { color: p.danger }]}>
+                {t('tasks.card.criticalWarning')}
+              </Text>
             </View>
-            {/* NOTHING where the action was, on a finished card (PO decision 2026-08-11). A tick and
-                the word DONE were added here and then removed: the badge top-right already reads
-                "Completed", and the two together stated the same fact twice on one card. */}
-            {done ? null : (
-              <View style={[styles.action, { backgroundColor: p.primary }]}>
-                <Text style={[styles.actionText, { color: p.onPrimary }]}>
-                  {t('tasks.card.updateProgress')}
-                </Text>
-              </View>
-            )}
-          </View>
-
-          {/* THE WORKING WINDOW WHERE THE SCREEN IS ABOUT TODAY, THE DATES WHERE IT IS ABOUT WEEKS
-              (PO decision 2026-08-11).
-
-              On the dashboard the heading is TODAY'S PRIORITY TASKS and the drawing puts
-              "08:00 - 12:00" here: the reader is standing on site now, and what they need is
-              whether this is the morning job. On the task list the badge is a delay severity and the
-              cards span weeks, so the DATES are what make "CRITICAL" mean anything — a red chip over
-              a time of day says nothing about how late the work is.
-
-              Falls back to the dates when no window was recorded. Nothing backfilled the times
-              (migration 20260811000001), and an assumed 08:00–17:00 would be a fact nobody entered. */}
-          {timeWindow !== null && badge === 'status' ? (
-            <Text style={[styles.window, { color: p.muted }]}>{timeWindow}</Text>
-          ) : task.plannedStart && task.plannedEnd ? (
-            <Text style={[styles.window, { color: p.muted }]}>
-              {t('tasks.card.plannedWindow', {
-                start: formatDate(task.plannedStart),
-                end: formatDate(task.plannedEnd),
-              })}
-            </Text>
           ) : null}
 
-          <View style={[styles.track, { backgroundColor: p.elevated }]}>
-            <View
-              style={[
-                styles.fill,
-                {
-                  backgroundColor: accent,
-                  width: `${Math.min(100, Math.max(0, task.progressPercent))}%`,
-                },
-              ]}
-            />
+          {/* The bar and its figure on ONE row, as the drawing has them — a percentage three rows
+              above the bar it describes made the reader join them up themselves. */}
+          <View style={styles.progressRow}>
+            <View style={[styles.track, { backgroundColor: p.bg }]}>
+              <View
+                style={[
+                  styles.fill,
+                  {
+                    backgroundColor: accent,
+                    width: `${Math.min(100, Math.max(0, task.progressPercent))}%`,
+                  },
+                ]}
+              />
+            </View>
+            <Text style={[styles.pct, { color: p.muted }]}>{task.progressPercent}%</Text>
           </View>
+
+          {/* FULL WIDTH, under the bar (the drawing's `h-[44px] w-full`). It sat inline beside the
+              percentage, which made the card's one action look like a chip.
+              NOTHING here on a finished card (PO decision 2026-08-11): the badge already reads
+              "Completed", and the two together stated the same fact twice.
+              AND NOTHING ON A CRITICAL CARD either (PO decision 2026-08-12) — the drawing's blocked
+              card carries the red warning panel INSTEAD of the action, not as well as it. A task
+              this far past its date is not moved on by nudging a percentage, and offering that as
+              the card's one button points the reader at the smallest thing they could do. */}
+          {done || criticalWarning ? null : (
+            <View style={[styles.action, { backgroundColor: p.elevated, borderColor: p.border }]}>
+              <MaterialIcons name="update" size={16} color={p.accent} />
+              <Text style={[styles.actionText, { color: p.accent }]}>
+                {t('tasks.card.updateProgress')}
+              </Text>
+            </View>
+          )}
         </TouchableOpacity>
+        {/* One chevron, centred against the whole card (the drawing's trailing column). */}
+        <View style={styles.chevron}>
+          <MaterialIcons name="chevron-right" size={24} color={p.muted} />
+        </View>
       </View>
     </Swipeable>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { flexDirection: 'row', borderBottomWidth: 1 },
+  // A SEPARATE PLATE, not a full-bleed band (PO decision 2026-08-12: "การ์ดแต่ละอันไม่ได้ขยายเต็ม
+  // หน้าจอแบบนั้น"). The drawing's cards are inset from both edges with rounded corners and their
+  // own border; this was edge-to-edge with a bottom hairline, so consecutive rows read as one long
+  // striped table rather than as the individual cards the mockup draws.
+  card: {
+    flexDirection: 'row',
+    marginHorizontal: spacing.md,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
   accent: { width: 4 },
   body: { flex: 1, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, gap: spacing.xs },
   bodyDone: { opacity: 0.6 },
@@ -219,7 +240,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.xs,
   },
-  identity: { flex: 1, gap: 2 },
+  identity: { flex: 1 },
   eyebrow: {
     fontSize: 11,
     fontFamily: fontFamily.medium,
@@ -227,11 +248,15 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: typography.body.fontSize, fontFamily: fontFamily.semibold },
   struck: { textDecorationLine: 'line-through' },
-  badge: {
+  // SQUARE, like the drawing's BLOCKED / COMPLETED chips (PO decision 2026-08-12) — `rounded` in
+  // its Tailwind config is the 0.125rem DEFAULT, which is `radius.sm`. Named `stateTag` rather than
+  // `badge` so the exemption in theme/__tests__/badgeRadius.spec.ts applies to THIS chip only; that
+  // list is keyed by style name across the whole app, and `badge` is a name several screens use.
+  stateTag: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 2,
-    borderRadius: radius.xl,
+    borderRadius: radius.sm,
     borderWidth: 1,
     paddingHorizontal: spacing.xs,
     paddingVertical: 2,
@@ -243,7 +268,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   tradeText: { fontFamily: fontFamily.medium, fontSize: 10, letterSpacing: 0.5 },
-  badgeText: { fontSize: 11, fontFamily: fontFamily.semibold, letterSpacing: 0.5 },
+  stateTagText: { fontSize: 11, fontFamily: fontFamily.semibold, letterSpacing: 0.5 },
+  warnBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    padding: spacing.xs,
+    borderRadius: radius.md,
+    borderWidth: 1,
+  },
+  warnText: { flex: 1, fontFamily: fontFamily.medium, fontSize: typography.label.fontSize },
+  progressRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  chevron: { justifyContent: 'center', paddingRight: spacing.sm },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -255,14 +291,25 @@ const styles = StyleSheet.create({
   // Visual affordance only — the whole card is the tap target, so this is not a nested button (which
   // would put a control inside a control for a screen reader). Height matches the card's own row.
   action: {
-    minHeight: touchTarget.secondaryButton - 8,
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.md,
+    gap: spacing.xs,
+    minHeight: touchTarget.secondaryButton,
+    marginTop: spacing.xs,
+    borderRadius: radius.lg,
+    borderWidth: 1,
   },
   actionText: { fontSize: typography.label.fontSize, fontFamily: fontFamily.semibold },
   window: { fontSize: typography.label.fontSize, fontFamily: fontFamily.regular },
-  track: { height: 4, borderRadius: radius.sm, overflow: 'hidden' },
+  // `flex: 1` — the bar shares a row with its figure, and without it the track collapses to zero
+  // width and the card shows a percentage with nothing behind it. `h-2` in the drawing.
+  //
+  // THE EMPTY PART OF THE TUBE HAS TO BE VISIBLE (PO decision 2026-08-12). The track was painted
+  // `elevated`, which on the dark palette is all but the card's own surface — so a task at 40% drew
+  // a short coloured stub floating on nothing, and the reader could not see how much was left. The
+  // drawing uses `bg-dark-bg`, the page colour BEHIND the card, which is exactly what `p.bg` is.
+  track: { flex: 1, height: 8, borderRadius: radius.sm, overflow: 'hidden' },
   fill: { height: '100%' },
   doneAction: { justifyContent: 'center', paddingHorizontal: spacing.lg },
   doneText: { fontFamily: fontFamily.semibold, fontSize: typography.body.fontSize },

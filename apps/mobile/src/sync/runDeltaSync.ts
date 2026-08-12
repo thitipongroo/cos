@@ -63,6 +63,11 @@ const APPLY: Record<string, ApplySpec> = {
       description: 'description',
       severity: 'severity',
       status: 'status',
+      // Kept from the delta since DDL v6. The server has always sent both — /sync/delta selects the
+      // whole site_ops.issues row — and the client dropped them, so the issue board could say
+      // neither what kind of issue a card was nor how old it is.
+      issue_type: 'issueType',
+      created_at: 'createdAt',
     },
   },
   attendance: {

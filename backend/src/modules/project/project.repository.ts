@@ -38,6 +38,22 @@ export interface ProjectRow {
   updated_at: Date;
 }
 
+/**
+ * A row of `listByMember` — a project plus the two fields the mobile project pickers draw beside its
+ * name. Both are LEFT JOIN LATERAL columns, so a project missing either still appears in the list.
+ */
+export interface MemberProjectRow extends ProjectRow {
+  /** The project's first building, or null where none is modelled (PO decision 2026-08-11). */
+  building_name: string | null;
+  /**
+   * BOQ-value-weighted completion 0..100, or NULL when nothing is measurable (§32.12).
+   *
+   * NULL means "not computable", never zero — a project with no BOQ-linked task must render a
+   * placeholder, not a 0% bar that reads as "no work done".
+   */
+  progress_percent: number | null;
+}
+
 export interface ProjectMemberRow {
   membership_id: string;
   project_id: string;
@@ -245,12 +261,28 @@ export class ProjectRepository {
    *
    * LEFT JOIN LATERAL, so a project with no building still appears — with `building_name` NULL. A
    * site the office has not modelled yet is still a site someone works on.
+   *
+   * AND ONE PROGRESS FIGURE PER PROJECT, for the same reason and by the same means (PO decision
+   * 2026-08-12: "1d. เพิ่ม field progress"). Both project-selection drawings put a completion bar on
+   * every card — 03_site_engineer/01_home/00_project_selection and its Site Worker twin — and the
+   * picker had no way to draw one: the figure lived only in `GET /projects/:id/progress`, so a list
+   * of N sites meant N extra requests on open, and that endpoint is deliberately not cached offline
+   * and throws on a plane. A second LATERAL costs this one query nothing like that.
+   *
+   * THE FORMULA IS §32.12's, NOT A SECOND DEFINITION OF PROGRESS: Σ(progress_percent × BOQ value) ÷
+   * Σ(BOQ value) over every BOQ-linked, non-cancelled task — character for character the numerator
+   * and denominator `findProgressSums` feeds into `deriveProgress().percentComplete`. Two places
+   * computing "how far along is this project" must not be able to disagree.
+   *
+   * NULLIF keeps the null semantics of that metric intact: no BOQ-linked task → NULL, never 0. The
+   * mobile card renders a dash for NULL, because "not measurable" and "nothing done" are different
+   * facts and a 0% bar states the wrong one.
    */
-  async listByMember(userId: string): Promise<ProjectRow[]> {
+  async listByMember(userId: string): Promise<MemberProjectRow[]> {
     return this.tenantPrisma.run(
-      async (tx): Promise<ProjectRow[]> =>
-        await tx.$queryRaw<ProjectRow[]>`
-          SELECT p.*, b.building_name
+      async (tx): Promise<MemberProjectRow[]> =>
+        await tx.$queryRaw<MemberProjectRow[]>`
+          SELECT p.*, b.building_name, g.progress_percent
           FROM projects.projects p
           JOIN projects.project_members m
             ON m.project_id = p.project_id AND m.tenant_id = p.tenant_id
@@ -261,6 +293,17 @@ export class ProjectRepository {
             ORDER BY bb.created_at, bb.building_id
             LIMIT 1
           ) b ON TRUE
+          LEFT JOIN LATERAL (
+            SELECT
+              SUM(t.progress_percent * i.estimated_total)::float8
+                / NULLIF(SUM(i.estimated_total)::float8, 0) AS progress_percent
+            FROM projects.tasks t
+            JOIN boq.boq_items i
+              ON i.item_id = t.boq_item_id AND i.tenant_id = t.tenant_id
+            WHERE t.tenant_id = p.tenant_id
+              AND t.project_id = p.project_id
+              AND t.status <> 'CANCELLED'
+          ) g ON TRUE
           WHERE p.tenant_id = ${this.tenantId}::uuid
             AND m.user_id = ${userId}::uuid
           ORDER BY p.created_at DESC, p.project_id DESC

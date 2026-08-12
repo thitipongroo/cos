@@ -59,8 +59,10 @@ import {
 } from '../api/projects';
 import { VoiceCommandFab } from './VoiceCommandFab';
 import { QuickActionCard } from './QuickActionCard';
-import { ProjectPicker } from './ProjectPicker';
+import { ProjectContextBar } from './ProjectContextBar';
+import { useProjectStore } from '../store/projectStore';
 import { LoadingBoundary } from './LoadingBoundary';
+import { phaseName } from '../lib/phaseName';
 import { useI18n } from '../i18n';
 import {
   currentPhase,
@@ -136,17 +138,39 @@ function CountBadge({
   );
 }
 
-/** The revision's "SEE ALL ›" link on a section heading. Accent, per the §20.8 note on the eyebrow. */
-function SeeAll({ testID, onPress }: { testID: string; onPress: () => void }): React.JSX.Element {
+/**
+ * How many rows each dashboard section shows before "SEE ALL" is the way to the rest (PO decision
+ * 2026-08-12). The dashboard is a summary; five issues was already most of a list.
+ */
+const SECTION_LIMIT = 3;
+
+/**
+ * The revision's "SEE ALL ›" link on a section heading. Accent, per the §20.8 note on the eyebrow.
+ *
+ * DISABLED WHEN THERE IS NOTHING MORE TO SEE (PO decision 2026-08-12). With three or fewer rows the
+ * section already shows everything, so the link would open a list the reader has just finished
+ * reading. Dimmed AND `accessibilityState.disabled`, so the fact reaches a screen reader too.
+ */
+function SeeAll({
+  testID,
+  onPress,
+  enabled,
+}: {
+  testID: string;
+  onPress: () => void;
+  enabled: boolean;
+}): React.JSX.Element {
   const { t } = useI18n();
   return (
     <TouchableOpacity
       testID={testID}
       onPress={onPress}
+      disabled={!enabled}
       accessibilityRole="link"
       accessibilityLabel={t('home.engineer.seeAll')}
+      accessibilityState={{ disabled: !enabled }}
       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-      style={styles.seeAll}
+      style={[styles.seeAll, !enabled && styles.seeAllDisabled]}
     >
       <Text style={styles.seeAllText}>{t('home.engineer.seeAll')}</Text>
       <MaterialIcons name="chevron-right" size={16} color={darkColors.accent} />
@@ -156,9 +180,14 @@ function SeeAll({ testID, onPress }: { testID: string; onPress: () => void }): R
 
 export default function SiteEngineerHome() {
   const router = useRouter();
-  const { t, formatDate } = useI18n();
+  const { t, formatDate, locale } = useI18n();
 
-  const [projectId, setProjectId] = useState('');
+  // THE SELECTED PROJECT IS THE STORE'S, not this screen's own state (PO decision 2026-08-12). It was
+  // local, chosen from a chip-row picker, which is why every store-backed control on the engineer's
+  // other screens — the Active Project bar and both Insight cards — rendered nothing for this role:
+  // they read `projectStore` and only the Site Worker ever wrote to it. One source, so the bar on
+  // Tasks cannot name a different site than the dashboard is reporting on.
+  const projectId = useProjectStore((s) => s.active?.projectId ?? '');
   const [myProjects, setMyProjects] = useState<MyProject[]>([]);
   const [progress, setProgress] = useState<ProjectProgress | null>(null);
   const [issues, setIssues] = useState<IssueRow[]>([]);
@@ -182,11 +211,11 @@ export default function SiteEngineerHome() {
       })
       .finally(() => setProjectsLoaded(true));
   }, []);
-  useEffect(() => {
-    if (projectId || myProjects.length === 0) return;
-    const active = myProjects.find((p) => p.status === 'ACTIVE') ?? myProjects[0];
-    setProjectId(active.project_id);
-  }, [myProjects, projectId]);
+  // NO AUTO-SELECT ANY MORE. It used to pick the first ACTIVE project silently; with selection in
+  // the store that job belongs to <SelectProjectSheet />, which the shell now raises for this role
+  // the first time it mounts with nothing chosen — the same way the Site Worker has always answered
+  // this question. Seeding the store from here instead would race that offer and leave the overlay
+  // open over a project it had already chosen.
 
   const loadProject = useCallback((id: string) => {
     if (!id) return;
@@ -298,27 +327,11 @@ export default function SiteEngineerHome() {
         style={styles.screen}
         contentContainerStyle={styles.content}
       >
-        {/* Project picker, scoped to this engineer's own projects (project_members). While the
-          projects are still loading, show a loading strip rather than the picker's "no projects
-          cached" empty message, which would read as a failure (PO 2026-07-26). */}
-        <LoadingBoundary
-          loading={loading}
-          variant="micro"
-          theme="dark"
-          label={t('common.loadingLabel')}
-          progress={loadProgress}
-        >
-          <ProjectPicker
-            selectedId={projectId}
-            onSelect={setProjectId}
-            variant="dark"
-            projects={myProjects.map((p) => ({
-              projectId: p.project_id,
-              projectCode: p.project_code,
-            }))}
-            hideLabel
-          />
-        </LoadingBoundary>
+        {/* The Active Project bar, which is what the restructured mockups draw here (PO decision
+          2026-08-12). It replaced a chip-row ProjectPicker: the drawings show the project NAMED with
+          a switch control, not a row of codes to choose between, and the same bar now opens every
+          working screen for every role. Selection lives in `projectStore` — see the header note. */}
+        <ProjectContextBar />
 
         {/* While the first project's data loads, a widget skeleton stands in for the command card
           (ADR-055); once loaded, the real consolidated card renders. */}
@@ -335,12 +348,10 @@ export default function SiteEngineerHome() {
               <Text style={styles.cardLabel}>{t('home.engineer.progressTitle')}</Text>
               {schedulePill}
             </View>
-            {/* Which project these figures belong to. */}
-            {selectedProject ? (
-              <Text testID="project-name" style={styles.projectName} numberOfLines={1}>
-                {selectedProject.project_name}
-              </Text>
-            ) : null}
+            {/* THE PROJECT NAME IS NOT REPEATED HERE (PO decision 2026-08-12). It used to caption
+                these figures, from before the screen had an Active Project bar; the bar above now
+                names the project in larger type a few pixels away, and stating it twice on one
+                screen is the same stutter `headingStutter.spec.ts` guards against elsewhere. */}
 
             {!hasProgressFigure(pct) ? (
               <Text testID="progress-empty" style={styles.muted}>
@@ -414,7 +425,11 @@ export default function SiteEngineerHome() {
               />
             ) : null}
           </View>
-          <SeeAll testID="issues-see-all" onPress={() => router.push('/issues')} />
+          <SeeAll
+            testID="issues-see-all"
+            onPress={() => router.push('/issues')}
+            enabled={sortedIssues.length > SECTION_LIMIT}
+          />
         </View>
         <LoadingBoundary
           loading={loading}
@@ -428,7 +443,7 @@ export default function SiteEngineerHome() {
               {t('home.engineer.noIssues')}
             </Text>
           ) : (
-            sortedIssues.slice(0, 5).map((issue) => (
+            sortedIssues.slice(0, SECTION_LIMIT).map((issue) => (
               <TouchableOpacity
                 key={issue.issue_id}
                 testID={`issue-${issue.issue_id}`}
@@ -445,14 +460,25 @@ export default function SiteEngineerHome() {
                         {issue.issue_number}
                       </Text>
                     ) : null}
-                    <Text
+                    {/* THE DRAWING OUTLINES THIS CHIP (PO decision 2026-08-12). It was bare
+                        coloured text, so on a card that already colours its left edge by the same
+                        severity the word read as a label rather than as the badge the mockup
+                        draws. Border in the severity's own tone, like the issue board's tags. */}
+                    <View
                       style={[
-                        styles.chip,
-                        { color: SEVERITY_COLOR[issue.severity] ?? darkColors.muted },
+                        styles.chipBox,
+                        { borderColor: SEVERITY_COLOR[issue.severity] ?? darkColors.muted },
                       ]}
                     >
-                      {issue.severity}
-                    </Text>
+                      <Text
+                        style={[
+                          styles.chip,
+                          { color: SEVERITY_COLOR[issue.severity] ?? darkColors.muted },
+                        ]}
+                      >
+                        {issue.severity}
+                      </Text>
+                    </View>
                   </View>
                   <Text style={styles.rowTitle} numberOfLines={2}>
                     {issue.title}
@@ -488,7 +514,11 @@ export default function SiteEngineerHome() {
               ) : null}
             </View>
           </View>
-          <SeeAll testID="tasks-see-all" onPress={() => router.push('/tasks')} />
+          <SeeAll
+            testID="tasks-see-all"
+            onPress={() => router.push('/tasks')}
+            enabled={upcoming.length > SECTION_LIMIT}
+          />
         </View>
         <LoadingBoundary
           loading={loading}
@@ -502,7 +532,7 @@ export default function SiteEngineerHome() {
               {t('home.engineer.noTasks')}
             </Text>
           ) : (
-            upcoming.map((task) => {
+            upcoming.slice(0, SECTION_LIMIT).map((task) => {
               const taskUrgency = task.planned_start
                 ? taskStartUrgency(task.planned_start, now)
                 : 'normal';
@@ -510,10 +540,46 @@ export default function SiteEngineerHome() {
                 <TouchableOpacity
                   key={task.task_id}
                   testID={`task-${task.task_id}`}
-                  style={styles.row}
+                  // THE LEFT ACCENT CARRIES HOW URGENT THE TASK IS (PO decision 2026-08-12). It was
+                  // the same dead hairline on every row, so the section said nothing until each
+                  // line was read. `taskStartUrgency` is already computed here for the date's
+                  // colour — the strip now states the same verdict where the eye lands first, and
+                  // the two can never disagree because they come from one value.
+                  style={[styles.row, { borderLeftColor: URGENCY_COLOR[taskUrgency] }]}
                   onPress={() => router.push('/tasks')}
                 >
                   <View style={styles.rowBody}>
+                    {/* THE PROJECT'S CURRENT PHASE, and it is the project's — not the task's. There
+                        is no phase link on a task: `projects.tasks` has task/project/floor/room/BOQ
+                        columns and no phase_id, so every card in this section carries the same
+                        phase, which is the honest thing it can say (PO decision 2026-08-12). Hidden
+                        entirely when no phase is known rather than showing an empty line. */}
+                    {/* PHASE AND PROGRESS ON ONE EYEBROW LINE (PO decision 2026-08-12): the phase,
+                        then the figure with the word PROGRESS after it. The percentage sat under
+                        the task name, three lines from the phase it belongs beside, and a bare
+                        number with nothing naming it could be read as anything on the card.
+                        The task's own progress: the API has always returned it and this screen
+                        dropped it until today. A row without the field shows no figure rather than
+                        0%, which would state that nothing has been done. */}
+                    {phase === null && typeof task.progress_percent !== 'number' ? null : (
+                      <View style={styles.rowEyebrow}>
+                        {phase === null ? null : (
+                          <Text style={styles.rowPhase} numberOfLines={1}>
+                            {t('tasks.list.phase', {
+                              seq: String(phase.seq),
+                              name: phaseName(phase.name, locale),
+                            })}
+                          </Text>
+                        )}
+                        {typeof task.progress_percent === 'number' ? (
+                          <Text testID={`task-${task.task_id}-progress`} style={styles.rowProgress}>
+                            {t('home.engineer.taskProgress', {
+                              pct: String(Math.round(task.progress_percent)),
+                            })}
+                          </Text>
+                        ) : null}
+                      </View>
+                    )}
                     <Text style={styles.rowTitle} numberOfLines={2}>
                       {task.task_name}
                     </Text>
@@ -655,6 +721,28 @@ const styles = StyleSheet.create({
   // Title + its count badges, grouped so they read as one heading and the SEE ALL link keeps the
   // right edge to itself.
   sectionHeadLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexShrink: 1 },
+  chipBox: {
+    borderWidth: 1,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: 1,
+  },
+  rowEyebrow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexWrap: 'wrap' },
+  rowPhase: {
+    fontSize: 10,
+    fontFamily: fontFamily.medium,
+    color: darkColors.muted,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  rowProgress: {
+    fontSize: 10,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    fontFamily: fontFamily.semibold,
+    color: darkColors.accent,
+  },
+  seeAllDisabled: { opacity: 0.4 },
   seeAll: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -690,9 +778,16 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: darkColors.border,
+    // Wide enough to read as an accent, per the issue cards on the next screen. Its colour is set
+    // per row from the task's urgency.
     borderLeftWidth: 4,
     borderLeftColor: darkColors.border,
     padding: spacing.sm,
+    // Rows are SEPARATE CARDS, so they need air between them (PO decision 2026-08-12). The list's
+    // own container gap does not reach here — each row is rendered directly, not inside a gapped
+    // wrapper — so consecutive rows sat edge to edge and read as one banded block rather than as the
+    // individually tappable cards the mockup draws.
+    marginBottom: spacing.xs,
   },
   rowBody: { flex: 1, gap: 2 },
   issueHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },

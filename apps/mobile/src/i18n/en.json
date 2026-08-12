@@ -395,7 +395,8 @@
       "noTasks": "No upcoming tasks",
       "starts": "Starts {date}",
       "overdueLabel": "Overdue",
-      "dueSoonLabel": "Due soon"
+      "dueSoonLabel": "Due soon",
+      "taskProgress": "{pct}% progress"
     },
     "exec": {
       "title": "Executive Overview",
@@ -436,6 +437,7 @@
       "yourProjects": "Your projects",
       "phase": "Phase: {phase}",
       "noPhase": "No phase recorded",
+      "retry": "Try again",
       "progress": "Progress",
       "progressUnavailable": "Progress not computable",
       "noProjects": "You are not a member of any project yet."
@@ -444,7 +446,11 @@
   "tasks": {
     "insightTitle": "Schedule insight",
     "list": {
-      "empty": "No tasks synced yet"
+      "empty": "No tasks synced yet",
+      "heading": "Tasks",
+      "outstanding": "{count} outstanding",
+      "showMore": "Show more tasks",
+      "phase": "Phase {seq} : {name}"
     },
     "detail": {
       "progressLabel": "Progress %",
@@ -455,18 +461,16 @@
       "done": "Done",
       "idPrefix": "ID: #{id}",
       "updateProgress": "Update progress",
+      "criticalWarning": "Critically overdue — this task is holding up the work after it",
       "plannedWindow": "{start} → {end}"
-    },
-    "aiInsight": {
-      "label": "AI Insight",
-      "body": "A cumulative 15-minute delay has been detected in zone C4. Consider starting \"pipe installation\" ahead of schedule to avoid a bottleneck.",
-      "action": "Reschedule automatically"
     },
     "filters": {
       "all": "All",
       "pending": "Pending",
       "inProgress": "In progress",
-      "done": "Done"
+      "done": "Done",
+      "open": "Filter tasks",
+      "close": "Close"
     }
   },
   "quickActions": {
@@ -535,11 +539,20 @@
       "photos": "Photos",
       "saveDraft": "Save as draft",
       "submit": "Submit report",
-      "savedDraft": "Draft saved offline — will sync when online"
+      "savedDraft": "Draft saved offline — will sync when online",
+      "blockersRequired": "Blockers (required)",
+      "blockerCategoryHint": "Choose a blocker category — pick “Other” when nothing held the work up."
     },
     "reports": {
       "title": "Site Reports",
       "empty": "No reports",
+      "recent": "Recent reports",
+      "total": "{count} total",
+      "untitled": "Daily site report",
+      "searchPlaceholder": "Search reports…",
+      "searchClear": "Clear search",
+      "filter": "Filter reports (coming soon)",
+      "insightTitle": "Insight",
       "loadMore": "Load more history",
       "newReport": "New report",
       "materialTitle": "Record material used",
@@ -552,7 +565,9 @@
     "issues": {
       "title": "Issues",
       "submit": "Report issue",
+      "backToBoard": "Back to issues",
       "empty": "No issues yet",
+      "insightTitle": "Issue insight",
       "escalate": "Escalate",
       "escalated": "Escalated",
       "categoryLabel": "Category",
@@ -565,6 +580,18 @@
         "REWORK": "Rework",
         "PUNCH": "Punch item",
         "GENERAL": "General"
+      },
+      "age": {
+        "now": "just now",
+        "hours": "{hours}h ago",
+        "days": "{days}d ago"
+      },
+      "filters": {
+        "all": "All",
+        "critical": "Critical",
+        "high": "High",
+        "open": "Open",
+        "resolved": "Resolved"
       }
     },
     "inspections": {
@@ -686,9 +713,19 @@
     "select": {
       "title": "Select the site you are working on",
       "subtitle": "Select active project",
+      "recommendedLabel": "Recommended",
+      "recommendedConf": "Conf: 98%",
+      "recommendedProgress": "Current progress",
+      "recommendedBadge": "Priority action",
+      "recommendedRisk": "Critical-path risk detection",
+      "recommendedSource": "Source: site telemetry",
+      "sectionTitle": "Projects in progress",
       "searchPlaceholder": "Search projects…",
       "current": "Current",
       "status": "Status",
+      "progress": "Progress",
+      "progressUnknown": "No data",
+      "filter": "Filter projects (coming soon)",
       "none": "You are not assigned to any site yet.",
       "noMatch": "No site matches “{query}”.",
       "loadFailed": "Your sites could not be loaded. Nothing here is missing — it has not arrived."

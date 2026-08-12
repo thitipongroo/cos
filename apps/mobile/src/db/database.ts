@@ -25,7 +25,7 @@ import {
 export const sqlite = openDatabaseSync('cos_offline_v2.db', { enableChangeListener: true });
 sqlite.execSync('PRAGMA journal_mode = WAL');
 
-const DDL_VERSION = 5;
+const DDL_VERSION = 6;
 
 // v2→v3 (ADR-056): the re-editable photo-annotation table. Idempotent (IF NOT EXISTS), so it is safe
 // to run both as an upgrade step and — via the fresh CREATE block below — on a first install.
@@ -61,6 +61,22 @@ const TASK_TIME_DDL = `
   ALTER TABLE local_tasks ADD COLUMN planned_end_time TEXT;
 `;
 
+// v5→v6: the two issue columns the Site Engineer's issue board reads — what KIND of issue it is and
+// when it was raised. Both have existed on `site_ops.issues` all along (`issue_type` since migration
+// 20260619000002, `created_at` since the table was created) and `/sync/delta` runs SELECT * over it,
+// so the server has been sending them and the client dropping them.
+//
+// They replace the two things the drawing puts on a card that nothing could fill: its location line
+// is now the issue's CATEGORY (PO decision 2026-08-12, after `site_ops.issues` was confirmed to
+// carry no floor or room link at all), and its "2h ago" is now a real age.
+//
+// Nullable and NOT backfilled: a row already cached has no value for either until the next delta
+// pull refreshes it, and a card with no age shows none rather than an invented one.
+const ISSUE_DETAIL_DDL = `
+  ALTER TABLE local_issues ADD COLUMN issue_type TEXT;
+  ALTER TABLE local_issues ADD COLUMN created_at TEXT;
+`;
+
 function ddl(): void {
   const row = sqlite.getFirstSync<{ user_version: number }>('PRAGMA user_version');
   const current = row?.user_version ?? 0;
@@ -76,6 +92,7 @@ function ddl(): void {
       ${ANNOTATIONS_DDL}
       ${TASK_DETAIL_DDL}
       ${TASK_TIME_DDL}
+      ${ISSUE_DETAIL_DDL}
       PRAGMA user_version = ${DDL_VERSION};
     `);
     return;
@@ -87,6 +104,7 @@ function ddl(): void {
       ${ANNOTATIONS_DDL}
       ${TASK_DETAIL_DDL}
       ${TASK_TIME_DDL}
+      ${ISSUE_DETAIL_DDL}
       PRAGMA user_version = ${DDL_VERSION};
     `);
     return;
@@ -97,6 +115,7 @@ function ddl(): void {
     sqlite.execSync(`
       ${TASK_DETAIL_DDL}
       ${TASK_TIME_DDL}
+      ${ISSUE_DETAIL_DDL}
       PRAGMA user_version = ${DDL_VERSION};
     `);
     return;
@@ -106,6 +125,7 @@ function ddl(): void {
   if (current === 4) {
     sqlite.execSync(`
       ${TASK_TIME_DDL}
+      ${ISSUE_DETAIL_DDL}
       PRAGMA user_version = ${DDL_VERSION};
     `);
     return;
@@ -119,7 +139,7 @@ function ddl(): void {
     CREATE TABLE IF NOT EXISTS local_issues (
       id TEXT PRIMARY KEY NOT NULL, issue_id TEXT NOT NULL, project_id TEXT NOT NULL,
       report_id TEXT, title TEXT NOT NULL, description TEXT, severity TEXT NOT NULL,
-      status TEXT NOT NULL, sync_status TEXT NOT NULL);
+      status TEXT NOT NULL, issue_type TEXT, created_at TEXT, sync_status TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS local_photos (
       id TEXT PRIMARY KEY NOT NULL, photo_id TEXT NOT NULL, entity_type TEXT NOT NULL,
       entity_id TEXT NOT NULL, local_path TEXT NOT NULL, upload_status TEXT NOT NULL,

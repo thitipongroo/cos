@@ -32,8 +32,9 @@ const PKG = 'com.constructionos.cos';
 // assigned to. National format: the login screen prefixes +66 from the country picker.
 const OTP_PHONE = process.env['E2E_OTP_PHONE'] ?? '0811000009';
 const OTP_CODE = process.env['E2E_TEST_OTP'] ?? '123456';
-// The dashboard now matches its mockup (PO 2026-07-25 full parity), which has no project picker — the
-// screen auto-selects the active project from the offline cache, so there is no chip to tap.
+// The dashboard shows the Active Project BAR, not a picker (PO 2026-08-12): the project is chosen
+// once in <SelectProjectSheet />, which the shell now raises for this role, and the bar names it.
+// The run below answers that overlay when it appears — see the note at the call site.
 
 const SDK = process.env['ANDROID_HOME'] ?? process.env['ANDROID_SDK_ROOT'] ?? '';
 const ADB = SDK
@@ -199,6 +200,73 @@ async function main() {
   await type(OTP_CODE);
   await hideKeyboard();
   await tap(byId('verify-otp-button'), 'verify OTP button');
+
+  // ANSWER THE PROJECT PICKER FIRST (2026-08-12). The engineer used to land straight on the
+  // dashboard, which silently auto-selected the first ACTIVE project. Selection now lives in
+  // `projectStore` and <SelectProjectSheet /> is mounted for this role too, so the first launch after
+  // a login opens the picker OVER the dashboard — and `site-engineer-home` is behind it. Waiting for
+  // that testID without answering the overlay is what made this script fail with
+  // "site-engineer-home never appeared" against a perfectly healthy app.
+  //
+  // Optional, not assumed: a session that already has a project chosen goes straight to the
+  // dashboard and no overlay appears, so this is skipped rather than waited for.
+  //
+  // POLLED, NOT PROBED ONCE. A single dump here is a race the script loses more often than not: the
+  // shell mounts the dashboard first and raises the overlay a beat later, and uiautomator refuses to
+  // dump at all mid-transition ("could not get idle state"). The first successful dump therefore
+  // lands on the dashboard, the check reads false, the picker is never answered — and the run dies
+  // 40 seconds later on "site-engineer-home never appeared", pointing at the wrong thing entirely.
+  // Polling for EITHER surface ends the moment one of them is really there.
+  let pickerUp = false;
+  for (let i = 0; i < 20 && !pickerUp; i++) {
+    if (await present(byId('select-project-screen'))) {
+      pickerUp = true;
+      break;
+    }
+    if (await present(byId('site-engineer-home'))) break; // already chosen — no overlay to answer
+    await delay(1000);
+  }
+
+  if (pickerUp) {
+    await dismissDevBanners();
+    // The picker is worth documenting in its own right — it is the first screen an engineer with no
+    // site chosen sees, and it carries the progress bar and the Recommended panel. ONE viewport, not
+    // a stitch: it is a centred dialog capped at 90% of the screen, so the whole of it is on screen
+    // at once, and stitching a modal whose header stays put while its body scrolls would repeat the
+    // header down the page.
+    await delay(2500); // let GET /projects/mine land, so the cards show real names and progress
+    mkdirSync(OUT, { recursive: true });
+    // SHRINK THE SCREEN FOR THE SHOT, the same way capture-android-site-engineer-tabs.mjs does and
+    // for the same reason: the sheet is a scrolling dialog, and its recommendation panel plus the
+    // project list no longer fit one viewport at the device's own density. A lower density puts the
+    // whole sheet in one frame — real output at a real density, not a montage. Restored in the
+    // `finally` so the emulator is never left changed.
+    adb('shell', 'wm', 'density', '260');
+    try {
+      // WAIT FOR THE SHEET TO COME BACK, do not just sleep. A density change makes Android recreate
+      // the activity, so the React Native app REMOUNTS — it returns to its launch splash and takes
+      // however long the bundle needs to come up again. A fixed 4s delay here photographed
+      // "Loading… 50%" and filed it as the project picker. Asserting the testID waits exactly as
+      // long as it needs to and fails loudly if the sheet never returns, instead of quietly saving
+      // whatever happens to be on screen.
+      await find(byId('select-project-screen'), 'select-project-screen after resize', 40);
+      await dismissDevBanners();
+      await delay(2500); // GET /projects/mine again, so the cards show names and progress
+      grab(join(OUT, '00-se-project-selection.png'));
+      console.log('  saved 00-se-project-selection.png');
+    } finally {
+      adb('shell', 'wm', 'density', 'reset');
+      await delay(3000);
+    }
+
+    console.log('· answering the project picker');
+    // The FIRST project row. Its testID carries the project's own uuid (`select-project-<id>`), which
+    // no fixture pins, so it is matched by prefix rather than by a hardcoded id.
+    await tap(
+      (n) => /resource-id="select-project-[0-9a-f-]{36}"/.test(n),
+      'first project in the picker',
+    );
+  }
 
   console.log('· waiting for the Site Engineer Home');
   // Asserting the testID (not a fixed sleep) is what stops a mis-tap from being photographed: if the

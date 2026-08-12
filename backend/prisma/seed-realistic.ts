@@ -1126,15 +1126,34 @@ async function seedProject(tx: Tx, p: SeedProject): Promise<void> {
    * late at all — those last fall back to the status badge, which is the point of having both.
    */
   const DUE_SHIFT = [0, 2, 11, 5, 18, 8];
-  const shift =
-    DUE_SHIFT[
-      Math.max(
-        0,
-        PROJECTS.findIndex((x) => x.key === p.key),
-      ) % DUE_SHIFT.length
-    ]!;
+  const projectIndex = Math.max(
+    0,
+    PROJECTS.findIndex((x) => x.key === p.key),
+  );
+  const shift = DUE_SHIFT[projectIndex % DUE_SHIFT.length]!;
+
+  /**
+   * Days of progress to add or remove from THIS project's in-flight tasks.
+   *
+   * Every project is seeded from the same five-task template, so before this they all computed the
+   * SAME §32.12 figure — the project picker showed five sites at an identical 76%, which is the one
+   * thing a portfolio view must never do: a bar that reads the same everywhere carries no
+   * information, and a reviewer cannot tell a working metric from a hardcoded one (PO decision
+   * 2026-08-12, "seed realistic data เพื่อให้ข้อมูลมีความหลากหลาย").
+   *
+   * Applied to IN_PROGRESS tasks ONLY. A COMPLETED task is 100 by definition and its QC gate is
+   * keyed on that; a NOT_STARTED one is 0 for the same kind of reason. Nudging either would make the
+   * seed contradict itself.
+   */
+  const PROGRESS_SHIFT = [0, -28, 17, -14, 24, -8];
+  const progressShift = PROGRESS_SHIFT[projectIndex % PROGRESS_SHIFT.length]!;
   for (let ti = 0; ti < taskDefs.length; ti++) {
-    const [tname, wt, status, prog, boqKey, lateDays, startTime, endTime] = taskDefs[ti];
+    const [tname, wt, status, baseProg, boqKey, lateDays, startTime, endTime] = taskDefs[ti];
+    // Spread the in-flight figures per project — see PROGRESS_SHIFT. Clamped to 1..99 so a shift can
+    // never turn an IN_PROGRESS task into a silent 0 or a 100 that the QC gate would then disagree
+    // with (`qc_status` below is keyed on exactly 100).
+    const prog =
+      status === 'IN_PROGRESS' ? Math.max(1, Math.min(99, baseProg + progressShift)) : baseProg;
     // A 20-day window ending on the seeded deadline — the same span the fixed dates used, so the
     // cards still read as three-week packages of work rather than open-ended ones.
     const dueEnd = addDays(TODAY, -(lateDays - shift));
@@ -1177,6 +1196,15 @@ async function seedProject(tx: Tx, p: SeedProject): Promise<void> {
 
   // Daily site reports across the ~1-month window (weekdays).
   const days = workdays(addDays(p.start, 1), SEED_END);
+  // Backfill for rows written before the rule above. The insert below is ON CONFLICT DO NOTHING, so
+  // re-running the seed cannot fix an existing row on its own — and the product owner's instruction
+  // was explicitly about what is already in the database ("ถ้าการ์ดไหนในฐานข้อมูลไม่มี blocker
+  // category ให้ใส่ Other เข้าไป"). Idempotent: it only touches NULLs.
+  await tx.$executeRaw`
+    UPDATE site_ops.site_reports
+    SET blocker_category = 'OTHER'
+    WHERE tenant_id = ${TENANT_ID}::uuid AND blocker_category IS NULL`;
+
   const summaries = [
     'ขุดดินโซน A ต่อเนื่อง เครื่องเจาะเสาเข็มทำงานตามแผน',
     'ผูกเหล็กฐานรากเสร็จ เตรียมเทคอนกรีตวันพรุ่งนี้',
@@ -1190,9 +1218,46 @@ async function seedProject(tx: Tx, p: SeedProject): Promise<void> {
     const day = days[di];
     const rid = uid(`report/${p.key}/${day}`);
     const manpower = 32 + ((di * 7) % 28);
-    const blockers = di % 9 === 4 ? 'คอนกรีตผสมเสร็จส่งล่าช้า 2 ชั่วโมง เนื่องจากการจราจร' : null;
-    await tx.$executeRaw`INSERT INTO site_ops.site_reports (report_id, project_id, tenant_id, report_date, submitted_by, status, summary, weather, manpower_count, client_submitted_at, latitude, longitude, blockers)
-      VALUES (${rid}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, ${day}::date, ${U(p.se)}::uuid, 'SUBMITTED', ${summaries[di % summaries.length]}, ${WEATHER[di % WEATHER.length]}, ${manpower}, ${ts(day, '17:30')}::timestamptz, ${p.lat}, ${p.lng}, ${blockers})
+    // BLOCKERS, AND THE CATEGORY THAT NAMES THEM. One report in nine carried a blocker and none
+    // carried a `blocker_category` at all, so the reports list — whose card headline IS the blocker
+    // text and whose left accent is decided by that category — had almost nothing to show and every
+    // card came out the same green (PO decision 2026-08-12, "การ์ดขาด Blockers").
+    // The categories are the column's own CHECK values (migration 20260808000001): WEATHER,
+    // MATERIAL, POWER, OTHER. Each line is a real Thai site cause matched to its own category, so a
+    // reader can check the accent against the words rather than taking the colour on trust.
+    const BLOCKED: ReadonlyArray<readonly [string, string]> = [
+      ['คอนกรีตผสมเสร็จส่งล่าช้า 2 ชั่วโมง เนื่องจากการจราจร', 'MATERIAL'],
+      ['ฝนตกหนักช่วงบ่าย งานเทพื้นหยุด 3 ชั่วโมง', 'WEATHER'],
+      ['ไฟฟ้าชั่วคราวดับ ปั๊มน้ำและเครื่องเชื่อมหยุดทำงาน', 'POWER'],
+      ['เหล็กเส้น 12 มม. ขาดสต็อก รอส่งรอบถัดไป', 'MATERIAL'],
+      ['ทางเข้าไซต์ปิดชั่วคราวจากงานสาธารณูปโภคของเขต', 'OTHER'],
+    ];
+    // Roughly one report in three, and rotating through the five above so consecutive days do not
+    // repeat a cause. `di % 3 === 1` rather than `=== 0` keeps the newest report — the top card —
+    // from always being a blocked one.
+    const blocked = di % 3 === 1 ? BLOCKED[Math.floor(di / 3) % BLOCKED.length]! : null;
+    const blockers = blocked === null ? null : blocked[0];
+    // EVERY REPORT CARRIES A CATEGORY (PO decision 2026-08-12). A day with nothing blocking it is
+    // filed as OTHER, which is what the daily-report form now requires of a real submitter too
+    // (app/(app)/report.tsx). The column stays nullable in the database — this is what the SEED
+    // writes, not a schema change — but no seeded row is left without one, so the reports list
+    // never has a card whose category row is simply absent.
+    const blockerCategory = blocked === null ? 'OTHER' : blocked[1];
+    /**
+     * THE TWO NEWEST REPORTS ON EACH PROJECT ARE STILL DRAFTS (PO decision 2026-08-12).
+     *
+     * Every seeded report was SUBMITTED, so the reports list drew the same green chip on every card
+     * and the screen could not show its DRAFT state at all — the amber chip and the yellow left
+     * accent were unreachable code as far as any reviewer could tell.
+     *
+     * The NEWEST, not a scattering: a draft is work the engineer has not finished writing up, and
+     * that is what today's and yesterday's report are. A three-week-old draft would be a different
+     * story — a report someone abandoned — and nothing in the seed means to tell that one.
+     * `days` runs oldest → newest, so the tail is the recent end.
+     */
+    const isDraft = di >= days.length - 2;
+    await tx.$executeRaw`INSERT INTO site_ops.site_reports (report_id, project_id, tenant_id, report_date, submitted_by, status, summary, weather, manpower_count, client_submitted_at, latitude, longitude, blockers, blocker_category)
+      VALUES (${rid}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, ${day}::date, ${U(p.se)}::uuid, ${isDraft ? 'DRAFT' : 'SUBMITTED'}, ${summaries[di % summaries.length]}, ${WEATHER[di % WEATHER.length]}, ${manpower}, ${isDraft ? null : ts(day, '17:30')}::timestamptz, ${p.lat}, ${p.lng}, ${blockers}, ${blockerCategory})
       ON CONFLICT (report_id) DO NOTHING`;
     // manpower breakdown (2 trades per report)
     for (let mi = 0; mi < 2; mi++) {
@@ -1571,6 +1636,13 @@ async function seedOnHoldProject(tx: Tx): Promise<void> {
   for (const [k, role] of [
     ['pm1', 'PROJECT_MANAGER'],
     ['sw1', 'SITE_WORKER'],
+    // BOTH site engineers too (2026-08-12). Without these rows every project in that role's picker
+    // was ACTIVE and the status chip was the same green on every card — the paused site existed and
+    // the one role whose drawing shows a paused card could not see one. Both, not one: the five
+    // active projects split between se1 and se2, so seeding only se1 would have left the other
+    // engineer with exactly the uniform list this is fixing.
+    ['se1', 'SITE_ENGINEER'],
+    ['se2', 'SITE_ENGINEER'],
   ] as const) {
     await tx.$executeRaw`INSERT INTO projects.project_members (membership_id, project_id, tenant_id, user_id, role, assigned_by)
       VALUES (${uid(`pm/tlpk/${k}`)}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, ${U(k)}::uuid, ${role}::"ProjectMemberRole", ${U('admin')}::uuid)

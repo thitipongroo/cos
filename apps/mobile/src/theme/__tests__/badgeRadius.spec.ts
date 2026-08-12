@@ -47,6 +47,22 @@ const NOT_BADGES: Readonly<Record<string, number>> = {
   formatChip: radius.md,
   sourceChip: radius.sm,
   typeChip: radius.lg,
+  // The issue card's inline severity/status TAGS. Squared to the card's own corner rather than
+  // capsuled, so they read as marks on the card instead of as the app's status pills (PO decision
+  // 2026-08-12) — components/IssueCard.tsx carries the reasoning.
+  metaChip: radius.sm,
+  // The dashboard's ACTIVE ISSUES severity badge — the outline the drawing gives it, squared to the
+  // same 2px as the issue board's tags so one severity mark reads one way across both screens
+  // (PO decision 2026-08-12); components/SiteEngineerHome.tsx carries the reasoning.
+  chipBox: radius.sm,
+  // The task card's state/severity chip — the drawing's squared BLOCKED / COMPLETED (PO decision
+  // 2026-08-12); components/TaskCard.tsx carries the reasoning.
+  stateTag: radius.sm,
+  // The project picker's ACTIVE / ON HOLD tag — squared to the card's corner for the same reason
+  // (PO decision 2026-08-12); components/SelectProjectSheet.tsx carries the reasoning. Named `Tag`
+  // rather than `Chip` so it cannot be confused with the reports screen's `statusChip`, which is a
+  // real status pill and stays at radius.xl.
+  statusTag: radius.sm,
 };
 
 function tsxFiles(dir: string): string[] {

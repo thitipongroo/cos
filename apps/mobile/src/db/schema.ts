@@ -36,6 +36,14 @@ export const localIssues = sqliteTable('local_issues', {
   description: text('description'),
   severity: text('severity').notNull(), // LOW | MEDIUM | HIGH | CRITICAL
   status: text('status').notNull(), // OPEN | IN_PROGRESS | RESOLVED | CLOSED
+  // DEFECT | REWORK | PUNCH | GENERAL — site_ops.issues.issue_type, CHECK-constrained since
+  // migration 20260619000002. The app has always SENT it on create (it is what the Phase 6
+  // task-completion gate reads) and never kept it, so the issue board could not say what kind of
+  // issue a card was. Nullable: rows cached before DDL v6 have no value until the next delta pull.
+  issueType: text('issue_type'),
+  // site_ops.issues.created_at (TIMESTAMPTZ NOT NULL) — when the issue was RAISED. The board prints
+  // its age from this; nullable here for the same pre-v6 reason as `issueType`.
+  createdAt: text('created_at'),
   offlineSyncStatus: text('sync_status').notNull().$type<SyncStatus>(),
 });
 
