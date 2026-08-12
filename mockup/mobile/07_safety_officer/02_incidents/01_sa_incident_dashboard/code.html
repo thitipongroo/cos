@@ -1,4 +1,4 @@
-<!DOCTYPE html><html class="dark" lang="en"><head>
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
 <meta charset="utf-8">
 <meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
 <title>Safety Incidents | Project North Star</title>
@@ -138,9 +138,18 @@
 </head>
 <body class="font-web-text-body text-on-surface dark:bg-dark-bg">
 <!-- TopAppBar -->
-<header class="fixed top-0 w-full z-50 flex justify-between items-center px-mobile-edge h-web-space-8 bg-surface dark:bg-surface-dim border-b border-outline-variant dark:border-outline h-16"><div class="flex items-center gap-2 flex-shrink-0"><img alt="COS Logo" class="w-8 h-8 object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAeBTLIo1YGnLUy0vEVUiEt27boCzbTioO2c_fVVWySLzPY_WnUHYJIkGplNYeOhWfyGitD_RMt06aaRLe-uru2fL1xc7JN6YaQy1bOoaBHUPmXGQ4RWBKBJfKvpftNuasjcUBUjxL-zPMmlBhU4uBM-MHyKOJeIy57owrXKNbutLhGXOxBoD3TlfydOLA25T98WNn2EPSccRcW9Eho4rLb4QgQ5cagK9jRkaHpO_fLvpxXW-BwDCxmh-uet1evTOZh2w"><h1 class="font-web-text-h1 text-[16px] font-bold uppercase tracking-wider text-on-surface whitespace-nowrap">Construction OS</h1></div><div class="flex items-center gap-4"><div class="flex items-center gap-1 px-2 py-1 rounded bg-mobile-success/10 text-mobile-success border border-mobile-success/20"><span class="material-symbols-outlined text-[14px]">check_circle</span><span class="font-web-text-tiny text-[10px] font-bold">SYNCED</span></div><span class="material-symbols-outlined text-on-surface-variant">notifications</span></div></header>
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-mobile-edge h-web-space-8 bg-surface dark:bg-surface-dim border-b border-outline-variant dark:border-outline h-16"><div class="flex items-center gap-2 flex-shrink-0"><img alt="COS Logo" class="w-8 h-8 object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAeBTLIo1YGnLUy0vEVUiEt27boCzbTioO2c_fVVWySLzPY_WnUHYJIkGplNYeOhWfyGitD_RMt06aaRLe-uru2fL1xc7JN6YaQy1bOoaBHUPmXGQ4RWBKBJfKvpftNuasjcUBUjxL-zPMmlBhU4uBM-MHyKOJeIy57owrXKNbutLhGXOxBoD3TlfydOLA25T98WNn2EPSccRcW9Eho4rLb4QgQ5cagK9jRkaHpO_fLvpxXW-BwDCxmh-uet1evTOZh2w"><h1 class="font-web-text-h1 text-[16px] font-bold uppercase tracking-wider text-on-surface whitespace-nowrap">Construction OS</h1></div><div class="flex items-center gap-4"><div class="flex items-center gap-1 px-2 py-1 rounded bg-mobile-success/10 text-mobile-success border border-mobile-success/20"><span class="material-symbols-outlined text-[14px]">check_circle</span><span class="font-web-text-tiny text-[10px] font-bold">SYNCED</span></div><span class="material-symbols-outlined text-on-surface-variant">notifications</span></div></header><div class="fixed top-16 left-0 w-full z-40 bg-surface-container-high border-b border-outline-variant px-mobile-edge py-2 flex justify-between items-center">
+  <div class="flex items-center gap-2">
+    <span class="font-web-text-tiny text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Active Project:</span>
+    <span class="font-web-text-tiny text-[10px] font-bold text-on-surface uppercase tracking-wider">Skyline Tower A</span>
+  </div>
+  <button class="flex items-center gap-1 px-2 py-1 rounded bg-surface-container-highest text-cos-cyan border border-cos-cyan/20 active:scale-95 transition-transform">
+    <span class="material-symbols-outlined text-[14px]">sync_alt</span>
+    <span class="font-web-text-tiny text-[10px] font-bold">SWITCH</span>
+  </button>
+</div>
 <!-- Main Canvas -->
-<main class="mt-web-space-8 px-mobile-edge pt-web-space-4 scrolling-content">
+<main class="px-mobile-edge pt-web-space-4 scrolling-content mt-28">
 <!-- Quick Filter Pills (AI Distinguishable) -->
 <div class="flex gap-web-space-2 overflow-x-auto pb-web-space-4 no-scrollbar"><button class="whitespace-nowrap px-4 py-2 rounded bg-mobile-primary text-cos-white font-mobile-text-label">All Active</button><button class="whitespace-nowrap px-4 py-2 rounded bg-surface-container-high text-on-surface-variant border border-outline-variant font-mobile-text-label">Critical</button><button class="whitespace-nowrap px-4 py-2 rounded bg-surface-container-high text-on-surface-variant border border-outline-variant font-mobile-text-label">Near Miss</button><button class="whitespace-nowrap px-4 py-2 rounded bg-surface-container-high text-on-surface-variant border border-outline-variant font-mobile-text-label">PPE Violation</button></div>
 <!-- Incident Feed -->
@@ -245,7 +254,7 @@
 <div class="flex justify-between items-start">
 <div class="flex flex-col gap-1">
 <div class="flex items-center gap-2">
-<span class="material-symbols-outlined text-cos-cyan text-[14px]" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<span class="material-symbols-outlined text-cos-cyan text-[14px]" style="font-variation-settings: &quot;FILL&quot; 1;">auto_awesome</span>
 <span class="font-web-text-tiny text-web-text-tiny uppercase tracking-wider text-cos-cyan">AI Predicted Risk</span>
 </div>
 <h3 class="font-web-text-h2 text-web-text-h2 text-on-surface">Hot Work Hazard</h3>
@@ -265,10 +274,10 @@
 <nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-2 pb-safe h-mobile-touch-target bg-surface dark:bg-surface-dim border-t border-outline-variant dark:border-outline rounded-t-xl">
 <button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-web-space-4 py-web-space-1 hover:bg-surface-container-low transition-all active:scale-90">
 <span class="material-symbols-outlined">dashboard</span>
-<span class="font-mobile-text-label text-mobile-text-label">Dashboard</span>
+<span class="font-mobile-text-label text-mobile-text-label">Home</span>
 </button>
 <button class="flex flex-col items-center justify-center bg-secondary-container dark:bg-secondary text-on-secondary-container dark:text-on-secondary rounded-full px-web-space-4 py-web-space-1 active:scale-90 transition-transform">
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">warning</span>
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">warning</span>
 <span class="font-mobile-text-label text-mobile-text-label">Incidents</span>
 </button>
 <button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-web-space-4 py-web-space-1 hover:bg-surface-container-low active:scale-90 transition-transform">
@@ -312,6 +321,8 @@
             lastScroll = currentScroll;
         });
     </script>
+
+
 
 
 </body></html>
