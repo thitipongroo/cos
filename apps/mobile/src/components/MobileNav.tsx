@@ -26,9 +26,17 @@
 //   EXECUTIVE:              Home | Portfolio | Alerts | Reports
 //   FINANCE:                Home | Payments | Budget | Invoices
 //   PROCUREMENT_OFFICER/PROC_MANAGER: Home | RFQs | Orders | Deliveries
-//   SAFETY_OFFICER:         Home | Incidents | Inspections | Reports  (PO 2026-08-04 — the two extra
-//                           tabs are existing mounted routes and match §20.7.7, which gives the role
-//                           safety checklists and compliance review)
+//   SAFETY_OFFICER:         Home | Incidents | Checklists | Permits  (PO decision 2026-08-13)
+//     THIS LINE USED TO READ `Home | Incidents | Inspections | Reports` AND WAS NEVER TRUE. It was
+//     written in the same commit as the tab table (bf9c4603, 2026-08-04) and disagreed with it from
+//     that day: the table's order rendered Home | Inspections | Reports | Incidents. Nothing else
+//     defined the bar — master §Phase 10 enumerates no Safety Officer nav (`20 §20.7.7` says so),
+//     §32.7's per-role table covers only CRM_SALES_MANAGER / VIEWER / SYSTEM_ADMIN, no test asserted
+//     the order, and the role had never been captured, so the drift survived nine days unseen.
+//     The bar now follows `mockup/mobile/07_safety_officer/`, whose three drawings agree on
+//     Home | Incidents | Checklists | Profile; Profile is no role's tab (below), so Permits takes
+//     the slot — §20.7.7's fourth page and the approval step master §9 gives this role alone.
+//     "Checklists" is the `inspections` ROUTE relabelled, not a new screen.
 //   TENANT_ADMIN:           Home | Users | Alerts | Settings
 //   CRM_SALES_MANAGER:      Home | Leads | Opportunities | Customers  (§20.7.10)
 //   VIEWER:                 Home | Projects | Procurement | Budget  (PO decision 2026-08-04)

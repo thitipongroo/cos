@@ -511,6 +511,23 @@ mobile nav; the functions are specified in §20.2 + §21.2 + master §9 (safety 
 | `/safety/permits`    | Work permits      | Permit approval (Safety Officer approves; PM final) | master §9 approval chain |
 | `/safety/compliance` | Compliance        | Compliance status + violation alerts                | §20.2 Safety Officer     |
 
+**Mobile (added 2026-08-13).** The sentence above — "master Phase 10 does not enumerate a Safety
+Officer mobile nav" — still holds, and the gap it describes is now closed by the mockups rather than
+by derivation. `mockup/mobile/07_safety_officer/` draws three screens, all carrying the same bottom
+bar, and the product owner settled the role's tab set from them: **Home · Incidents · Checklists ·
+Permits** (§32.7 records it and the reasoning). Three of the four routes above are on that bar;
+`/safety/compliance` is not, because the counts it returns are what the Home dashboard's
+open-incidents tile already reads — it would be the same query answered twice.
+
+**What those screens can and cannot show.** The drawings include a compliance **percentage**, a
+"safe hours since last LTI" figure, an AI-predicted risk score on an incident and an AI hazard alert
+sourced from "weather telemetry". None of the four has a source anywhere in this platform:
+`GET /safety/compliance` returns four COUNTS and no score, no table records hours against a
+lost-time injury, `/ai/reports/*` has no safety surface (SafetyVisionModel is Phase 23 and untrained
+per §22.6), and nothing ingests weather. Per the product owner's 2026-08-13 ruling each zone is
+DRAWN and states plainly that it is not available yet — the treatment §22.3 requires, since a
+surface must not read as AI-derived while a placeholder serves it.
+
 ### 20.7.8 Tenant Admin (`TENANT_ADMIN`)
 
 Source: master Phase 2 User Management API (§14.3) + tenant settings. Full access to all

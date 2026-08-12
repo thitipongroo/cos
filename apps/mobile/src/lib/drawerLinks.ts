@@ -61,6 +61,11 @@ const INCIDENTS: DrawerLink = {
   labelKey: 'drawer.incidents',
   icon: 'health-and-safety',
 };
+const PERMITS: DrawerLink = {
+  route: '/permits',
+  labelKey: 'nav.tabs.permits',
+  icon: 'assignment-turned-in',
+};
 const MATERIALS: DrawerLink = {
   route: '/material-request',
   labelKey: 'drawer.materials',
@@ -204,6 +209,15 @@ const DERIVED: readonly { link: DrawerLink; module: string; roles: readonly CosR
     link: INCIDENTS,
     module: 'Safety incidents',
     roles: [EXECUTIVE, PROJECT_MANAGER, SITE_ENGINEER, SAFETY_OFFICER, TENANT_ADMIN, SITE_WORKER],
+  },
+  // §6.4 "Permits" — Executive R, PM RW, Site Engineer R, Safety RW, Tenant Admin FULL (ADR-064 also
+  // folds building permits and company licences into this row). Added 2026-08-13 with the screen:
+  // the route existed nowhere before, so no role could reach a permit outside SAFETY_OFFICER's new
+  // tab — and this row is what gives the other four a way in without inventing a mapping.
+  {
+    link: PERMITS,
+    module: 'Permits',
+    roles: [EXECUTIVE, PROJECT_MANAGER, SITE_ENGINEER, SAFETY_OFFICER, TENANT_ADMIN],
   },
   {
     link: MATERIALS,

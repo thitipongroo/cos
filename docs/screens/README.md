@@ -14,7 +14,7 @@ platforms; only Android has been fully recaptured since.
 
 | Platform | Folder                          | Status                                                                                         |
 | -------- | ------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Android  | [`android/`](android/README.md) | ✅ 71 screens — Medium_Phone AVD, live backend + seeded data. Grouped by role / flow.          |
+| Android  | [`android/`](android/README.md) | ✅ Medium_Phone AVD, live backend + seeded data. Grouped by role / flow. The Safety Officer's five frames were added 2026-08-13; the count is not restated here because it went stale the last two times it was. |
 | Web      | [`web/`](web/README.md)         | ⚠️ 4 screens — the pre-auth login flow only (`01-public/`). The 24-route set is not committed. |
 | iOS      | [`ios/`](ios/README.md)         | ❌ 0 screens — all removed by `7d2ba1b`; not recaptured. Its README still indexes the old set. |
 

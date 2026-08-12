@@ -89,9 +89,16 @@ export default function AppLayout() {
           they rendered nothing at all. It took a device capture to see that. The restructured
           mockups draw the Active Project bar on all four of the role's screens, which is the same
           answer from the other direction.
+          SAFETY_OFFICER JOINED ON 2026-08-13, for exactly the reason SITE_ENGINEER did. All three
+          `mockup/mobile/07_safety_officer/` drawings open with the Active Project bar, and
+          <ProjectContextBar /> renders NOTHING when nothing is chosen — so without this the bar the
+          drawings put at the top of every one of the role's screens would simply be absent, and the
+          Incidents/Checklists/Permits screens would have no project to scope their queries to.
           Every OTHER role still picks per screen (the managers' panels), and making them all answer
           up front would still be inventing a flow no drawing asks for. */}
-      {role === CosRole.SITE_WORKER || role === CosRole.SITE_ENGINEER ? (
+      {role === CosRole.SITE_WORKER ||
+      role === CosRole.SITE_ENGINEER ||
+      role === CosRole.SAFETY_OFFICER ? (
         <SelectProjectSheet />
       ) : null}
     </View>

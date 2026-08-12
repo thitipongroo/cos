@@ -62,6 +62,37 @@ describe('the bar is four wide, and the fifth entry goes to the drawer', () => {
     expect(visibleTabsFor(CosRole.SAFETY_OFFICER).map((tab) => tab.name)).toContain('inspections');
   });
 
+  it('gives SAFETY_OFFICER the bar its mockups draw, in that order', () => {
+    // PO decision 2026-08-13, and ORDER IS THE ASSERTION for the same reason as SITE_ENGINEER above:
+    // the bar renders in ALL_TABS order, and `incidents` had to be MOVED UP beside `inspections` to
+    // produce this. Left where it was (below the procurement rows) the bar read
+    // Home | Inspections | Reports | Incidents — which is what actually shipped from 2026-08-04 to
+    // 2026-08-13, while MobileNav's comment claimed Home | Incidents | Inspections | Reports. Both
+    // lines were written in the same commit and disagreed from that day; nothing asserted either,
+    // which is why the drift survived. This test is the assertion that was missing.
+    //
+    // The three drawings under mockup/mobile/07_safety_officer/ agree on
+    // Home | Incidents | Checklists | Profile; Profile is no role's tab (§32.7), so Permits takes
+    // the slot — §20.7.7's fourth page for this role.
+    expect(visibleTabsFor(CosRole.SAFETY_OFFICER).map((tab) => tab.name)).toEqual([
+      'home',
+      'incidents',
+      'inspections',
+      'permits',
+    ]);
+    // "Checklists" is the `inspections` ROUTE relabelled, not a new screen.
+    expect(
+      visibleTabsFor(CosRole.SAFETY_OFFICER).find((tab) => tab.name === 'inspections')?.titleKey,
+    ).toBe('nav.tabs.checklists');
+    // Moving the row must not have disturbed the two roles that share the ones around it.
+    expect(visibleTabsFor(CosRole.EXECUTIVE).map((tab) => tab.name)).toEqual([
+      'home',
+      'reports',
+      'portfolio',
+      'alerts',
+    ]);
+  });
+
   it('turns a tab pushed off the bar into a drawer row that is recognisably itself', () => {
     // No role exercises this yet, so it is exercised directly — the rule that catches a fifth tab
     // must not be first tried out on the day someone adds one.
@@ -176,6 +207,21 @@ describe('drawerLinksFor — derived from §6.4 / §6.8', () => {
     expect(routes(CosRole.PROC_MANAGER)).toContain('/budget'); // §6.8 Budget (view): R
     expect(routes(CosRole.SITE_WORKER)).toContain('/reports'); // §6.8 Site reports: RW
     expect(routes(CosRole.SAFETY_OFFICER)).toContain('/safety-checklist'); // Safety checklists: RWD
+    // §6.4 Permits: Safety RW, PM RW, Site Engineer R — the row added with the screen on 2026-08-13.
+    // SAFETY_OFFICER is absent from this list because /permits is now its TAB, which is the same
+    // rule /inspections follows for it.
+    expect(routes(CosRole.SITE_ENGINEER)).toContain('/permits');
+    expect(routes(CosRole.SAFETY_OFFICER)).not.toContain('/permits');
+    expect(routes(CosRole.FINANCE)).not.toContain('/permits'); // §6.4 Permits: —
+  });
+
+  it('hands /reports back to the Safety Officer’s drawer now that it left the bar', () => {
+    // The 2026-08-13 bar change gave the slot to Permits. §6.4 grants this role R on "Site reports",
+    // so the derived row reappears the moment it stops being a tab — the same move /inspections made
+    // for SITE_ENGINEER on 2026-08-12, and the reason neither screen was lost in a swap.
+    expect(routes(CosRole.SAFETY_OFFICER)).toContain('/reports');
+    expect(routes(CosRole.SAFETY_OFFICER)).not.toContain('/incidents'); // its own tab
+    expect(routes(CosRole.SAFETY_OFFICER)).not.toContain('/inspections'); // its own tab
   });
 
   it('gives the read-only Viewer the finance and procurement modules §6.8 grants it', () => {
@@ -231,7 +277,9 @@ describe('drawerSectionFor — row seven becomes More', () => {
   });
 
   it('folds at six-plus-More once there is genuinely more than fits', () => {
-    // 17 rows for the Executive: six drawn, eleven behind More, seven rows on screen.
+    // The Executive may read almost every module, so its derived list is far past seven: six rows
+    // drawn, the rest behind More. The count is read from `drawerLinksFor` rather than written down,
+    // because adding a §6.4 row (Permits did, 2026-08-13) legitimately changes it.
     const exec = drawerSectionFor(CosRole.EXECUTIVE);
     expect(exec.visible).toHaveLength(DRAWER_MAX_ROWS - 1);
     expect(exec.overflow).toHaveLength(drawerLinksFor(CosRole.EXECUTIVE).length - 6);

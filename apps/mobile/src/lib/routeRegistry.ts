@@ -36,6 +36,9 @@ export const TAB_ROUTES = [
   'directory',
   'issues',
   'inspections',
+  // The Safety Officer's fourth tab (PO decision 2026-08-13). §20.7.7 `/safety/permits`; §6.4's
+  // "Permits" row gives the role RW, and master §9 ends the permit approval chain at it.
+  'permits',
   'reports',
   // `report` is deliberately ABSENT: the daily-entry form stopped being a tab on 2026-08-09 when
   // Tasks and Directory took the Site Worker's last two slots. It is pushed from the Home FAB's

@@ -1344,7 +1344,25 @@ one, and that is the correct answer for it rather than an outstanding gap:
 | ------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | `CRM_SALES_MANAGER` | Home · Leads · Opportunities · Customers | Built 2026-08-04 — exactly the three pages §20.7.10 defines                                                               |
 | `VIEWER`            | Home · Projects · Procurement · Budget   | See the read-only constraint below                                                                                        |
+| `SAFETY_OFFICER`    | Home · Incidents · Checklists · Permits  | Settled 2026-08-13 — see below; "Checklists" is the `/inspections` route relabelled                                       |
 | `SYSTEM_ADMIN`      | Home                                     | **Not a gap.** §20.7.11 puts its work in the `/admin` panel (§20.4), a web route explicitly "not visible to tenant users" |
+
+**`SAFETY_OFFICER`'s bar was never actually decided until 2026-08-13, and this table is where that
+is now recorded.** From 2026-08-04 the role rendered `Home | Inspections | Reports | Incidents` — not
+by decision but as a by-product of the order of the tab table in code, while the comment above that
+table claimed `Home | Incidents | Inspections | Reports`. Both lines were written in the same commit
+and disagreed from that day. Nothing caught it: master §Phase 10 enumerates no Safety Officer mobile
+nav (§20.7.7 says so in those words), this table listed only the three roles resolved on 2026-08-04,
+no test asserted the order, and the role has never appeared in `docs/screens/android/`.
+
+The bar now follows `mockup/mobile/07_safety_officer/`, whose three drawings agree on
+`Home | Incidents | Checklists | Profile`. Profile is no role's tab (the rule above), so the freed
+slot takes **Permits** — §20.7.7's fourth page for this role, and the step master §9 assigns to it
+alone (initiator → Safety Officer → PM final). Every slot but Home is therefore a §20.7.7 page,
+which neither `reports` nor `inspections` could claim under the old bar. `reports` returns to the
+role's drawer, derived from §6.4's "Site reports" R cell, exactly as `/inspections` did for
+`SITE_ENGINEER` on 2026-08-12. Held by `apps/mobile/src/lib/__tests__/drawerLinks.spec.ts`, which
+asserts the ORDER — the assertion that was missing for nine days.
 
 **VIEWER's tab set is constrained, not chosen freely.** §6.8 grants read on seven modules (Project,
 BOQ, Tasks, Site reports, Issues, Procurement, Finance), but §20.7.9 also requires that **no

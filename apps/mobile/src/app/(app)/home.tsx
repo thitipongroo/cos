@@ -9,7 +9,11 @@
 //   PROJECT_MANAGER             : manager dashboard — KPI tiles · blockers · AI · project list
 //                                 (mockup 06_project_manager/01_home, which SUPERSEDES master
 //                                  3202's one-line "home (triage)" as of 2026-08-10)
-//   others (SAFETY/ADMIN/VIEWER): minimal landing (Home content not enumerated in master)
+//   SAFETY_OFFICER              : safety dashboard — see components/SafetyOfficerHome (mockup
+//                                 07_safety_officer/01_home; added 2026-08-13. Master enumerates no
+//                                 Home for this role — `20 §20.7.7` states that outright — so the
+//                                 drawing is what it is built from)
+//   others (ADMIN/VIEWER/…)     : minimal landing (Home content not enumerated in master)
 // Each variant reads from endpoints already proven in the sibling screens (alerts/payments/
 // procurement/portfolio) — no new endpoint is introduced. All fetches are offline-safe (cached
 // value kept on error), matching the read-only offline behaviour in master 3101/3115/3130.
@@ -37,6 +41,7 @@ import { Alert, ScrollView } from 'react-native';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
 import SiteEngineerHome from '../../components/SiteEngineerHome';
 import TenantAdminHome from '../../components/TenantAdminHome';
+import SafetyOfficerHome from '../../components/SafetyOfficerHome';
 import { useT } from '../../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
 import { usePalette, useIsDark, type Palette } from '../../theme/usePalette';
@@ -1065,6 +1070,11 @@ export default function HomeScreen() {
       return <TenantAdminHome />;
     case CosRole.SITE_WORKER:
       return <FieldHome />;
+    // Added 2026-08-13 — this role used to fall through to <MinimalHome /> because master §Phase 10
+    // enumerates no Home for it. `mockup/mobile/07_safety_officer/01_home/01_sa_home_dashboard` is
+    // the drawing it is built from; see components/SafetyOfficerHome.tsx.
+    case CosRole.SAFETY_OFFICER:
+      return <SafetyOfficerHome />;
     default:
       return <MinimalHome />;
   }

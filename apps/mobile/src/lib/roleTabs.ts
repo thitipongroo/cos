@@ -128,24 +128,71 @@ export const ALL_TABS: TabConfig[] = [
     icon: 'groups',
     roles: [CosRole.SITE_WORKER],
   },
+  // ── SAFETY_OFFICER: Home | Incidents | Checklists | Permits (PO decision 2026-08-13) ──────────
+  //
+  // THE PREVIOUS BAR WAS NOT A DECISION, it was this array's order. Until today the role matched
+  // `inspections`, `reports` and `incidents` in table order and therefore rendered
+  // Home | Inspections | Reports | Incidents, while MobileNav's own comment claimed
+  // Home | Incidents | Inspections | Reports — both lines were written in the same commit
+  // (bf9c4603, 2026-08-04) and disagreed from that day. Nothing else defined it: master §Phase 10
+  // enumerates no Safety Officer nav (spec `20 §20.7.7` says so in those words), §32.7's per-role
+  // table resolves only CRM_SALES_MANAGER / VIEWER / SYSTEM_ADMIN, no test asserted the order, and
+  // the role has never been captured.
+  //
+  // The three drawings under `mockup/mobile/07_safety_officer/` all draw
+  // Home | Incidents | Checklists | Profile. Profile is no role's tab (§32.7 "No Profile tab" — the
+  // drawer is the profile), so the freed slot takes PERMITS: §20.7.7's fourth page for this role,
+  // and the one duty master §9 gives it alone (SAFETY_OFFICER approves → PM final). That makes every
+  // slot but Home a §20.7.7 page, which the old bar could not claim for `reports` or `inspections`.
+  //
+  // `incidents` MOVED UP HERE from further down the table — order is the bar's order, and it is the
+  // mockups' second tab. Moving it changes no other role's bar: it is this role's tab and no other's.
+  {
+    name: 'incidents',
+    titleKey: 'nav.tabs.incidents',
+    icon: 'health-and-safety',
+    roles: [CosRole.SAFETY_OFFICER],
+  },
   // `inspections` LEFT SITE_ENGINEER's bar on 2026-08-12 (PO decision), where `tasks` took its slot:
   // the role's restructured mockup set draws Home | Issues | Tasks | Reports on all four of its
   // screens, and the product owner took that as the bar rather than a drawing to deviate from.
   // The screen is NOT dropped — /inspections is a derived drawer row for this role (drawerLinks.ts,
   // module "Inspections / QC"), and that row was only ever suppressed BECAUSE it was a tab, so it
   // reappears in the drawer the moment it stops being one. `tasks` makes the opposite move and
-  // leaves the drawer. SAFETY_OFFICER keeps inspections on its own bar, untouched.
+  // leaves the drawer.
+  //
+  // LABELLED "Checklists" FOR SAFETY_OFFICER, and it is the same route. The mockups' third tab is
+  // Checklists and the screen behind it IS the checklist workflow (`03_checklists/
+  // 01_sa_safety_checklist` — fill a template, PASS/FAIL each item, sign, submit); §20.7.7 calls the
+  // page "Safety checklists" too. Renaming the tab rather than adding a route keeps one screen with
+  // one name. This role is the only one carrying it on a bar, so no other label changes — the
+  // drawer row keeps `drawer.inspections` ("Inspections") for the roles that reach it from there.
   {
     name: 'inspections',
-    titleKey: 'nav.tabs.inspections',
+    titleKey: 'nav.tabs.checklists',
     icon: 'fact-check',
     roles: [CosRole.SAFETY_OFFICER],
   },
+  // Work permits — §20.7.7 `/safety/permits`, and §6.4's "Permits" row gives this role RW. The
+  // approval chain in master §9 ends here: SITE_WORKER/SITE_ENGINEER initiates → SAFETY_OFFICER
+  // approves → PM final, and until now the role had no mobile surface for the step it owns.
+  // NO MOCKUP DRAWS THIS SCREEN. It is built in the house style of the role's other three (PO
+  // decision 2026-08-13, which chose this bar knowing the drawing would follow later).
+  {
+    name: 'permits',
+    titleKey: 'nav.tabs.permits',
+    icon: 'assignment-turned-in',
+    roles: [CosRole.SAFETY_OFFICER],
+  },
+  // SAFETY_OFFICER LEFT THIS ROW on 2026-08-13. `reports` was never in §20.7.7's inventory for the
+  // role — it was matched only because this table listed it — and Permits took the slot. The screen
+  // is not lost: §6.4 grants the role R on "Site reports", so drawerLinks.ts derives /reports into
+  // its drawer the moment it stops being a tab, exactly as /inspections does for SITE_ENGINEER.
   {
     name: 'reports',
     titleKey: 'nav.tabs.reports',
     icon: 'description',
-    roles: [CosRole.SITE_ENGINEER, CosRole.EXECUTIVE, CosRole.SAFETY_OFFICER],
+    roles: [CosRole.SITE_ENGINEER, CosRole.EXECUTIVE],
   },
   // `projects` is VIEWER's only. It stopped being a PROJECT_MANAGER tab on 2026-08-10: the corrected
   // mockup set gives that role Home | Procurement | Finance | More and no Projects tab, and the
@@ -240,12 +287,9 @@ export const ALL_TABS: TabConfig[] = [
     icon: 'local-shipping',
     roles: [CosRole.PROCUREMENT_OFFICER, CosRole.PROC_MANAGER],
   },
-  {
-    name: 'incidents',
-    titleKey: 'nav.tabs.incidents',
-    icon: 'health-and-safety',
-    roles: [CosRole.SAFETY_OFFICER],
-  },
+  // `incidents` USED TO SIT HERE. It moved up beside `inspections` on 2026-08-13 so the
+  // SAFETY_OFFICER bar reads Home | Incidents | Checklists | Permits — see the block up there for
+  // why the order had to change rather than the comment describing it.
   // CRM — the three pages §20.7.10 defines for CRM_SALES_MANAGER, in lifecycle order
   // (lead → opportunity → customer), which is also the order the work happens in.
   {

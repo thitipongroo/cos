@@ -3364,7 +3364,8 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
                   Inspections is NOT dropped: `/inspections` is a derived drawer row for this role
                   (module "Inspections / QC"), suppressed only while it was a tab, so it reappears
                   in the drawer the moment it leaves the bar. `/tasks` makes the opposite move.
-                  SAFETY_OFFICER keeps Inspections on its own bar.
+                  SAFETY_OFFICER keeps the same ROUTE on its own bar, labelled "Checklists" there
+                  (PO decision 2026-08-13) — one screen, one name per surface; see that role below.
       Workflows:  review reports, conflict resolution, inspection approval,
                   manpower overview, issue escalation, material requisition
       Extra:      ConflictBadge, conflict review screen
@@ -3513,8 +3514,19 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
         * SITE_ENGINEER: reports (review + record material consumption per report — enqueues 'material'
           with report_id → /sync/push, PO ruling M1/M2) · issues (escalation) · inspections (list →
           checklist → pass/fail + photo) · conflict-review screen · profile
-        * SAFETY_OFFICER: home · incidents (report safety incident offline — local_incidents PENDING +
-          enqueue 'safety' → /sync/push → createIncident, PO ruling D1/D2) · profile
+        * SAFETY_OFFICER: home (safety dashboard — open-incident count from GET /safety/compliance,
+          daily-checklist card, recent incidents) · incidents (report safety incident offline —
+          local_incidents PENDING + enqueue 'safety' → /sync/push → createIncident, PO ruling D1/D2;
+          feed + filter pills + acknowledge) · checklists (the /inspections route, relabelled —
+          fill a template, PASS/FAIL per item, sign, submit) · permits (register + approve/reject,
+          §20.7.7 + §6.4 "Permits" RW; a SAFETY_PERMIT is PM-final per §9, so this role is not
+          offered that control) · profile
+          Bar (PO decision 2026-08-13, mockup/mobile/07_safety_officer): Home | Incidents |
+          Checklists | Permits. Master enumerates no nav for this role — see spec 20 §20.7.7, which
+          says so outright — so the drawings settled it; §32.7's per-role table now records it.
+          THE DRAWINGS SHOW FOUR THINGS THIS PLATFORM CANNOT COMPUTE — a compliance percentage,
+          safe-hours-since-last-LTI, an AI risk score per incident, and a weather-sourced hazard
+          alert. Each is DRAWN and states that it is not available yet; none is given a number.
         * PROJECT_MANAGER: home (triage) · projects · procurement (status) · dashboard · profile
         * EXECUTIVE: home (KPI) · portfolio (health cards) · alerts (risk feed) · reports
           (AI summary) — read-only/offline-cached · profile
