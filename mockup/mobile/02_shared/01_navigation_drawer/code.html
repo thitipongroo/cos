@@ -150,7 +150,7 @@
 <h1 class="font-hero-mobile text-hero-mobile font-extrabold tracking-tight text-cos-blue dark:text-primary">CONSTRUCTION</h1>
 </div>
 <!-- Profile Header (JSON header_type: profile, header_layout: left_align) -->
-<div class="mb-8 p-4 bg-surface-container-highest rounded-xl border border-outline-variant/20">
+<div class="mb-8 p-4 bg-surface-container-highest rounded-xl border hover:bg-surface-variant active:scale-95 transition-all cursor-pointer border-outline-variant/30">
 <div class="flex items-center gap-4">
 <div class="relative">
 <img class="w-14 h-14 rounded-full object-cover border-2 border-primary/30" data-alt="A high-resolution portrait of a professional Site Engineer named Alex Rivers, wearing a clean white hard hat and a high-visibility orange safety vest. The background is a blurred architectural construction site with steel beams and a clear blue sky. The lighting is bright and natural, emphasizing a high-utility, mission-critical professional aesthetic consistent with a modern SaaS platform." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC8wIJCRaeb7wsJGRuUuTyEex8Cnf7KDKAU7VVItkaGTBifS5m-t0WOkYn6tnOaZDJMXzRDSIbVgdvnA1iuZOSV7WtivpR_FIdF6gYZPLFpxRtkIfbGmHfZD6bsKRKP_ZBYqmIcPNgPZ5iHQ1RKVStOnwy28B_hVweVwA6GzH5ucWqudZkAQJtU0LSwSua2NrbpaQb-v3sFcHM_o8UrnAsSyLhs8b4GBbJN4qwMkRJg3MRWhobiL4V2zrrux2RBY2wyjJG3PFxMHYE">
@@ -159,56 +159,63 @@
 <div class="flex-1">
 <h2 class="font-h2-web text-h2-web text-on-surface truncate">Alex Rivers</h2>
 <p class="text-tiny-web uppercase tracking-wider text-outline">Supervisor - Site A</p>
-</div>
+</div><span class="material-symbols-outlined text-outline opacity-50 ml-auto">chevron_right</span>
 </div>
 
 </div>
 <!-- Navigation Items (Predicted Shared Component: NavigationDrawer label_texts & icons) -->
-<nav class="flex-1 space-y-1 overflow-y-auto">
-<div class="text-tiny-web font-bold text-outline-variant uppercase mb-2 tracking-widest px-3">Field Tools</div>
+<nav class="flex-1 space-y-1 overflow-y-auto"><div class="text-tiny-web font-bold text-outline-variant uppercase mb-2 tracking-widest px-3">Field Tools</div>
 <!-- Project Overview -->
-<a class="flex items-center gap-4 px-3 py-3 rounded-lg text-on-surface-variant hover:bg-surface-variant transition-colors duration-150" href="#">
+<a class="flex items-center gap-4 px-3 py-4 rounded-lg text-on-surface-variant hover:bg-surface-variant border border-transparent hover:border-outline-variant/30 transition-all duration-150 mb-2" href="#">
 <span class="material-symbols-outlined">dashboard</span>
 <span class="font-medium">Project Overview</span>
+<span class="ml-auto material-symbols-outlined text-sm opacity-50">chevron_right</span>
 </a>
 <!-- Daily Site Reports -->
-<a class="flex items-center gap-4 px-3 py-3 rounded-lg text-on-surface-variant hover:bg-surface-variant transition-colors duration-150" href="#">
+<a class="flex items-center gap-4 px-3 py-4 rounded-lg text-on-surface-variant hover:bg-surface-variant border border-transparent hover:border-outline-variant/30 transition-all duration-150 mb-2" href="#">
 <span class="material-symbols-outlined">description</span>
 <span class="font-medium">Daily Site Reports</span>
+<span class="ml-auto material-symbols-outlined text-sm opacity-50">chevron_right</span>
 </a>
 <!-- Safety Incident Logs -->
-<a class="flex items-center gap-4 px-3 py-3 rounded-lg text-on-surface-variant hover:bg-surface-variant transition-colors duration-150" href="#">
+<a class="flex items-center gap-4 px-3 py-4 rounded-lg text-on-surface-variant hover:bg-surface-variant border border-transparent hover:border-outline-variant/30 transition-all duration-150 mb-2" href="#">
 <span class="material-symbols-outlined">health_and_safety</span>
 <span class="font-medium">Safety Incident Logs</span>
+<span class="ml-auto material-symbols-outlined text-sm opacity-50">chevron_right</span>
 </a>
 <!-- Material Inventory -->
-<a class="flex items-center gap-4 px-3 py-3 rounded-lg text-on-surface-variant hover:bg-surface-variant transition-colors duration-150" href="#">
+<a class="flex items-center gap-4 px-3 py-4 rounded-lg text-on-surface-variant hover:bg-surface-variant border border-transparent hover:border-outline-variant/30 transition-all duration-150 mb-2" href="#">
 <span class="material-symbols-outlined">inventory_2</span>
 <span class="font-medium">Material Inventory</span>
+<span class="ml-auto material-symbols-outlined text-sm opacity-50">chevron_right</span>
 </a>
 <!-- Equipment Logs -->
-<a class="flex items-center gap-4 px-3 py-3 rounded-lg text-on-surface-variant hover:bg-surface-variant transition-colors duration-150" href="#">
+<a class="flex items-center gap-4 px-3 py-4 rounded-lg text-on-surface-variant hover:bg-surface-variant border border-transparent hover:border-outline-variant/30 transition-all duration-150 mb-2" href="#">
 <span class="material-symbols-outlined">engineering</span>
 <span class="font-medium">Equipment Logs</span>
+<span class="ml-auto material-symbols-outlined text-sm opacity-50">chevron_right</span>
 </a>
 <!-- Drawing Viewer -->
-<a class="flex items-center gap-4 px-3 py-3 rounded-lg text-on-surface-variant hover:bg-surface-variant transition-colors duration-150" href="#">
+<a class="flex items-center gap-4 px-3 py-4 rounded-lg text-on-surface-variant hover:bg-surface-variant border border-transparent hover:border-outline-variant/30 transition-all duration-150 mb-2" href="#">
 <span class="material-symbols-outlined">architecture</span>
 <span class="font-medium">Drawing Viewer</span>
+<span class="ml-auto material-symbols-outlined text-sm opacity-50">chevron_right</span>
 </a>
 <div class="pt-4 pb-2">
 <div class="border-t border-outline-variant/20 w-full mb-4"></div>
 </div>
-<!-- Settings (ACTIVE STATE LOGIC applied) -->
-<!-- style_active_navigation: text-primary font-bold bg-primary/10 -->
-<a class="flex items-center gap-4 px-3 py-3 rounded-lg text-primary font-bold bg-primary/10 active-pill transition-colors duration-150" href="#">
-<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">settings</span>
+<!-- Settings (ACTIVE) -->
+<a class="flex items-center gap-4 px-3 py-4 rounded-lg text-primary font-bold bg-primary/10 active-pill border border-primary/20 transition-all duration-150 mb-2" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">settings</span>
 <span class="font-bold">Settings</span>
-</a><a class="flex items-center gap-4 px-3 py-3 rounded-lg text-on-surface-variant hover:bg-surface-variant transition-colors duration-150" href="#">
+<span class="ml-auto material-symbols-outlined text-sm">chevron_right</span>
+</a>
+<!-- Privacy Policy -->
+<a class="flex items-center gap-4 px-3 py-4 rounded-lg text-on-surface-variant hover:bg-surface-variant border border-transparent hover:border-outline-variant/30 transition-all duration-150" href="#">
 <span class="material-symbols-outlined">policy</span>
 <span class="font-medium">Privacy Policy</span>
-</a>
-</nav>
+<span class="ml-auto material-symbols-outlined text-sm opacity-50">chevron_right</span>
+</a></nav>
 <!-- Footer (Logout) -->
 <div class="mt-auto pt-6">
 <button class="w-full flex items-center gap-4 px-3 py-4 rounded-xl bg-error-container/20 text-error hover:bg-error-container/30 transition-all duration-200 active:scale-95">
@@ -278,6 +285,8 @@
             });
         });
     </script>
+
+
 
 
 
