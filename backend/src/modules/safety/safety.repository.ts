@@ -39,6 +39,11 @@ export interface PermitRow {
   linked_task_id: string | null;
   created_by: string | null;
   created_at: Date;
+  /** Firm performing the work. Free text, NOT an FK to procurement.vendors — see the migration. */
+  contractor_name: string | null;
+  description: string | null;
+  /** Why status became REVOKED. NULL = never revoked, or revoked without a reason given. */
+  revoke_reason: string | null;
 }
 
 export interface ComplianceSummaryRow {
@@ -158,6 +163,8 @@ export class SafetyRepository {
     linked_task_id?: string | null;
     valid_from?: string | null;
     valid_until?: string | null;
+    contractor_name?: string | null;
+    description?: string | null;
     created_by: string;
   }): Promise<PermitRow> {
     const rows = await this.db.run(
@@ -165,11 +172,12 @@ export class SafetyRepository {
         tx.$queryRaw<PermitRow[]>`
         INSERT INTO site_ops.permits
           (tenant_id, project_id, permit_type, permit_number, linked_task_id,
-           valid_from, valid_until, created_by)
+           valid_from, valid_until, contractor_name, description, created_by)
         VALUES
           (${this.tenantId}::uuid, ${params.project_id}::uuid, ${params.permit_type},
            ${params.permit_number}, ${params.linked_task_id ?? null}::uuid,
            ${params.valid_from ?? null}::date, ${params.valid_until ?? null}::date,
+           ${params.contractor_name ?? null}, ${params.description ?? null},
            ${params.created_by}::uuid)
         RETURNING *
       `,
@@ -218,11 +226,27 @@ export class SafetyRepository {
     return rows[0] ?? null;
   }
 
-  async updatePermitStatus(permitId: string, status: 'ACTIVE' | 'REVOKED'): Promise<PermitRow> {
+  /**
+   * PENDING → ACTIVE or PENDING → REVOKED.
+   *
+   * `revokeReason` is written ONLY on the REVOKED branch. The CASE is not decoration: writing the
+   * parameter unconditionally would let a later approve-after-revoke path erase the reason the
+   * permit was revoked for. No such transition exists today (§15.5 only leaves PENDING), which is
+   * exactly why the guard belongs in the statement rather than in a caller's memory.
+   */
+  async updatePermitStatus(
+    permitId: string,
+    status: 'ACTIVE' | 'REVOKED',
+    revokeReason?: string | null,
+  ): Promise<PermitRow> {
     const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<PermitRow[]>`
-        UPDATE site_ops.permits SET status = ${status}
+        UPDATE site_ops.permits
+        SET status = ${status},
+            revoke_reason = CASE WHEN ${status} = 'REVOKED'
+                                 THEN ${revokeReason ?? null}
+                                 ELSE revoke_reason END
         WHERE permit_id = ${permitId}::uuid AND tenant_id = ${this.tenantId}::uuid
         RETURNING *
       `,

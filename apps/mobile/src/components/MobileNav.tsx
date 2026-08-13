@@ -211,6 +211,12 @@ export function MobileNav() {
       <Tabs.Screen name="reset-password-success" options={{ href: null }} />
       <Tabs.Screen name="reset-password-email-success" options={{ href: null }} />
       <Tabs.Screen name="material-request" options={{ href: null }} />
+      {/* The permit request form and its confirmation (mockup 07_safety_officer/04_permit_management,
+          2026-08-13). Pushed from the Permits tab's FAB; `permit-submitted` is TERMINAL — reached
+          with router.replace, so it has no breadcrumb and therefore no Back (a success screen must
+          not offer the way back into the form that already succeeded). */}
+      <Tabs.Screen name="permit-request" options={{ href: null }} />
+      <Tabs.Screen name="permit-submitted" options={{ href: null }} />
       <Tabs.Screen name="mfa-enrollment" options={{ href: null }} />
       {/* Transparency Portal (PO 2026-08-04) — reached from Profile, not a tab for any role. Hidden
           here for the same reason as every other pushed child screen: `href: null` keeps it out of

@@ -187,6 +187,56 @@ describe('permits', () => {
       UnprocessableEntityException,
     );
   });
+
+  // The `reason ?? null` branch, both ways. A rejection with no reason must store NULL rather than
+  // an empty string: "nobody gave a reason" is the fact, and '' would read as one that was blank.
+  it('rejectPermit passes the reason through to the repository', async () => {
+    mockRepo.findPermitById.mockResolvedValueOnce(pendingWork);
+    mockRepo.updatePermitStatus.mockResolvedValue({ ...pendingWork, status: 'REVOKED' });
+    await service.rejectPermit('perm-1', 'Scaffold not tagged');
+    expect(mockRepo.updatePermitStatus).toHaveBeenCalledWith(
+      'perm-1',
+      'REVOKED',
+      'Scaffold not tagged',
+    );
+  });
+
+  it('rejectPermit stores NULL when no reason is given', async () => {
+    mockRepo.findPermitById.mockResolvedValueOnce(pendingWork);
+    mockRepo.updatePermitStatus.mockResolvedValue({ ...pendingWork, status: 'REVOKED' });
+    await service.rejectPermit('perm-1');
+    expect(mockRepo.updatePermitStatus).toHaveBeenCalledWith('perm-1', 'REVOKED', null);
+  });
+
+  // The two `?? null` branches added with the 2026-08-13 columns, both ways.
+  it('createPermit forwards contractor_name and description when supplied', async () => {
+    mockRepo.createPermit.mockResolvedValue(pendingWork);
+    await service.createPermit({
+      project_id: 'p1',
+      permit_type: 'WORK_PERMIT',
+      permit_number: 'WP-1',
+      contractor_name: 'Skyline Structural',
+      description: 'Hot work, level 4',
+    } as never);
+    expect(mockRepo.createPermit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        contractor_name: 'Skyline Structural',
+        description: 'Hot work, level 4',
+      }),
+    );
+  });
+
+  it('createPermit sends NULL for contractor_name and description when omitted', async () => {
+    mockRepo.createPermit.mockResolvedValue(pendingWork);
+    await service.createPermit({
+      project_id: 'p1',
+      permit_type: 'WORK_PERMIT',
+      permit_number: 'WP-1',
+    } as never);
+    expect(mockRepo.createPermit).toHaveBeenCalledWith(
+      expect.objectContaining({ contractor_name: null, description: null }),
+    );
+  });
 });
 
 it('getCompliance delegates to repo', async () => {

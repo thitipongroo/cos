@@ -16,6 +16,9 @@ import {
   severityTone,
   sortIncidents,
   sortPermits,
+  applyPermitFilters,
+  permitExpiry,
+  PERMIT_TYPE_FILTERS,
 } from '../safetyOfficer';
 
 const NOW = new Date('2026-08-13T12:00:00.000Z');
@@ -49,6 +52,9 @@ function permit(over: Partial<PermitRow> = {}): PermitRow {
     linked_task_id: null,
     created_by: null,
     created_at: '2026-08-13T10:00:00.000Z',
+    contractor_name: null,
+    description: null,
+    revoke_reason: null,
     ...over,
   };
 }
@@ -299,5 +305,118 @@ describe('sortPermits', () => {
     const rows = [permit({ permit_id: 'a', status: 'ACTIVE' }), permit({ permit_id: 'b' })];
     sortPermits(rows);
     expect(rows.map((r) => r.permit_id)).toEqual(['a', 'b']);
+  });
+});
+
+describe('PERMIT_TYPE_FILTERS', () => {
+  it('offers ALL plus every value of the permit_type enum', () => {
+    // The drawing tabs three types. The enum has four (20260619000002_tasks_permits CHECK, and
+    // CreatePermitDto), and a type with no tab is a permit the screen can never show — which is why
+    // this list is longer than the mockup. If the enum ever grows, this assertion is what fails.
+    expect(PERMIT_TYPE_FILTERS.map((f) => f.id)).toEqual([
+      'all',
+      'WORK_PERMIT',
+      'SAFETY_PERMIT',
+      'DRAWING_APPROVAL',
+      'ENTRY_PERMIT',
+    ]);
+  });
+
+  it('gives every tab a translation key — no literal label reaches the screen (QM-3)', () => {
+    for (const filter of PERMIT_TYPE_FILTERS) {
+      expect(filter.labelKey).toMatch(/^safety\.permits\./);
+    }
+  });
+});
+
+describe('applyPermitFilters', () => {
+  const rows = [
+    permit({ permit_id: 'work-pending', permit_type: 'WORK_PERMIT', status: 'PENDING' }),
+    permit({ permit_id: 'work-active', permit_type: 'WORK_PERMIT', status: 'ACTIVE' }),
+    permit({ permit_id: 'entry-pending', permit_type: 'ENTRY_PERMIT', status: 'PENDING' }),
+    permit({ permit_id: 'safety-revoked', permit_type: 'SAFETY_PERMIT', status: 'REVOKED' }),
+  ];
+
+  it('all + everything: returns the whole set, pending first', () => {
+    const ids = applyPermitFilters(rows, { type: 'all', pendingOnly: false }).map(
+      (r) => r.permit_id,
+    );
+    expect(ids).toHaveLength(4);
+    expect(ids.slice(0, 2).sort()).toEqual(['entry-pending', 'work-pending']);
+  });
+
+  it('narrows by type', () => {
+    expect(
+      applyPermitFilters(rows, { type: 'WORK_PERMIT', pendingOnly: false }).map((r) => r.permit_id),
+    ).toEqual(['work-pending', 'work-active']);
+  });
+
+  it('narrows by pending', () => {
+    const ids = applyPermitFilters(rows, { type: 'all', pendingOnly: true }).map(
+      (r) => r.permit_id,
+    );
+    expect(ids.sort()).toEqual(['entry-pending', 'work-pending']);
+  });
+
+  it('applies both together', () => {
+    expect(
+      applyPermitFilters(rows, { type: 'WORK_PERMIT', pendingOnly: true }).map((r) => r.permit_id),
+    ).toEqual(['work-pending']);
+  });
+
+  it('reaches ENTRY_PERMIT — the type the drawing has no tab for', () => {
+    expect(
+      applyPermitFilters(rows, { type: 'ENTRY_PERMIT', pendingOnly: false }).map(
+        (r) => r.permit_id,
+      ),
+    ).toEqual(['entry-pending']);
+  });
+
+  it('does not mutate its input', () => {
+    const before = rows.map((r) => r.permit_id);
+    applyPermitFilters(rows, { type: 'all', pendingOnly: true });
+    expect(rows.map((r) => r.permit_id)).toEqual(before);
+  });
+});
+
+describe('permitExpiry', () => {
+  // Local noon, so the assertions cannot be flipped by the runner's timezone.
+  const now = new Date(2026, 7, 13, 12, 0);
+
+  it('returns null when no validity window is recorded', () => {
+    expect(permitExpiry(null, now)).toBeNull();
+    expect(permitExpiry(undefined, now)).toBeNull();
+    expect(permitExpiry('', now)).toBeNull();
+  });
+
+  it('returns null for a value that is not a date', () => {
+    expect(permitExpiry('next Tuesday', now)).toBeNull();
+  });
+
+  it('counts a permit valid until today as today, not overdue', () => {
+    // The column is a DATE: validity runs to the END of the day it names.
+    expect(permitExpiry('2026-08-13', now)).toEqual({ state: 'today' });
+  });
+
+  it('counts days remaining', () => {
+    expect(permitExpiry('2026-08-14', now)).toEqual({ state: 'remaining', days: 1 });
+    expect(permitExpiry('2026-09-12', now)).toEqual({ state: 'remaining', days: 30 });
+  });
+
+  it('counts days overdue as a positive number', () => {
+    expect(permitExpiry('2026-08-12', now)).toEqual({ state: 'overdue', days: 1 });
+    expect(permitExpiry('2026-07-14', now)).toEqual({ state: 'overdue', days: 30 });
+  });
+
+  it('accepts a full ISO datetime, taking the leading date', () => {
+    expect(permitExpiry('2026-08-14T23:59:59.000Z', now)).toEqual({ state: 'remaining', days: 1 });
+  });
+
+  it('is unaffected by the time of day on either side', () => {
+    const justBeforeMidnight = new Date(2026, 7, 13, 23, 59);
+    expect(permitExpiry('2026-08-14', justBeforeMidnight)).toEqual({
+      state: 'remaining',
+      days: 1,
+    });
   });
 });

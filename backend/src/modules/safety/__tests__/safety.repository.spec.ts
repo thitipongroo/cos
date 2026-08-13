@@ -108,6 +108,8 @@ describe('SafetyRepository', () => {
           linked_task_id: 't1',
           valid_from: '2026-07-01',
           valid_until: '2026-07-31',
+          contractor_name: 'Skyline Structural',
+          description: 'Hot work, level 4',
         })
       ).permit_id,
     ).toBe('perm-1');
@@ -142,6 +144,23 @@ describe('SafetyRepository', () => {
   it('updatePermitStatus returns updated row', async () => {
     mockPrisma.$queryRaw.mockResolvedValue([{ ...permitRow, status: 'ACTIVE' }]);
     expect((await repo.updatePermitStatus('perm-1', 'ACTIVE')).status).toBe('ACTIVE');
+  });
+
+  // Both sides of `revokeReason ?? null`. The statement's CASE keeps the reason off the ACTIVE path;
+  // that guard is SQL, so only an integration test can observe it — what is asserted here is that
+  // the parameter reaches the query either way.
+  it('updatePermitStatus carries a revoke reason, and NULL when none is given', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([
+      { ...permitRow, status: 'REVOKED', revoke_reason: 'Scaffold not tagged' },
+    ]);
+    expect(
+      (await repo.updatePermitStatus('perm-1', 'REVOKED', 'Scaffold not tagged')).revoke_reason,
+    ).toBe('Scaffold not tagged');
+
+    mockPrisma.$queryRaw.mockResolvedValue([
+      { ...permitRow, status: 'REVOKED', revoke_reason: null },
+    ]);
+    expect((await repo.updatePermitStatus('perm-1', 'REVOKED')).revoke_reason).toBeNull();
   });
 
   it('getComplianceSummary returns counts (with and without project filter)', async () => {

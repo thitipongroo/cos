@@ -99,6 +99,17 @@ paths:
                 valid_until:
                   type: string
                   format: date
+                contractor_name:
+                  type: string
+                  maxLength: 255
+                  description: >-
+                    Firm performing the permitted work. Free text, NOT a vendor reference — a
+                    subcontractor crew often has no procurement.vendors record. Added 2026-08-13;
+                    optional, so a client that omits it is unaffected.
+                description:
+                  type: string
+                  maxLength: 4000
+                  description: Scope of work and safety measures. Added 2026-08-13; optional.
       responses:
         '201':
           description: Permit created (PENDING)
@@ -143,6 +154,22 @@ paths:
       summary: Reject a permit (PENDING → REVOKED)
       parameters:
         - { name: permitId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        # NOT required — this endpoint took no body at all before 2026-08-13 and deployed clients
+        # still call it with none (or with `{}`). Adding an optional body is a non-breaking
+        # addition (QM-2), so no version bump.
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  maxLength: 500
+                  description: >-
+                    Why the permit was rejected. Stored on the permit as revoke_reason. Omitted →
+                    NULL, which records that no reason was given rather than a blank one.
       responses:
         '200':
           description: Permit rejected (REVOKED)

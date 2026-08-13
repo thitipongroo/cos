@@ -92,9 +92,16 @@ describe('SafetyController', () => {
     expect(mockSvc.approvePermit).toHaveBeenCalledWith('perm-1', 'PROJECT_MANAGER');
   });
 
-  it('rejectPermit delegates', () => {
+  // Both call shapes are asserted because the endpoint gained an OPTIONAL body on 2026-08-13 and the
+  // no-body form has to keep working (QM-2) — the mobile app still sends `{}`.
+  it('rejectPermit delegates with no reason when called without a body', () => {
     ctrl.rejectPermit('perm-1');
-    expect(mockSvc.rejectPermit).toHaveBeenCalledWith('perm-1');
+    expect(mockSvc.rejectPermit).toHaveBeenCalledWith('perm-1', undefined);
+  });
+
+  it('rejectPermit passes the reason through when one is given', () => {
+    ctrl.rejectPermit('perm-1', { reason: 'Scaffold not tagged' });
+    expect(mockSvc.rejectPermit).toHaveBeenCalledWith('perm-1', 'Scaffold not tagged');
   });
 
   it('listChecklists delegates to siteOps', () => {

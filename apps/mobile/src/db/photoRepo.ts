@@ -72,3 +72,26 @@ export async function deletePhotoLocal(localPhotoId: string): Promise<void> {
     .where(eq(localPhotoAnnotations.localPhotoId, localPhotoId));
   await db.delete(localPhotos).where(eq(localPhotos.id, localPhotoId));
 }
+
+/**
+ * Move every queued photo from one entity id to another.
+ *
+ * WHY THIS EXISTS. <PhotoCapture /> writes a `local_photos` row the moment the shutter is pressed,
+ * keyed by the entity the photo belongs to — and for the three original entity types the client
+ * already knows that id (it generates the UUID for an offline create, ADR-051). A PERMIT does not
+ * work that way: `site_ops.permits.permit_id` is `DEFAULT gen_random_uuid()` and `CreatePermitDto`
+ * has no id field, so the id only exists once the server answers.
+ *
+ * The permit request form therefore captures against a throwaway draft id and calls this once the
+ * POST returns, before the upload queue runs. If the POST fails the photos keep the draft id and the
+ * form stays open, so a retry re-keys the same rows rather than orphaning them.
+ *
+ * Only the entity link changes: upload status, local file and annotations are untouched, so a photo
+ * already uploading is not restarted.
+ */
+export async function reassignPhotoEntity(fromEntityId: string, toEntityId: string): Promise<void> {
+  await db
+    .update(localPhotos)
+    .set({ entityId: toEntityId })
+    .where(eq(localPhotos.entityId, fromEntityId));
+}

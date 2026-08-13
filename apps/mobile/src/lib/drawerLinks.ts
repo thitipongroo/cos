@@ -15,6 +15,24 @@
 //     three sub-roles): a row appears if that role's cell is anything other than `—`. So the drawer
 //     offers a role exactly the screens it may actually open, and no row can lead to a 403.
 //
+// SAFETY_OFFICER NOW HAS A DRAWER DRAWING AND IT IS DELIBERATELY NOT ADOPTED (PO decision
+// 2026-08-13). `mockup/mobile/07_safety_officer/05_profile/01_sa_drawer` arrived on a parallel branch
+// (82ad50c7, merged at 377c361a) and heads a "Site Operations" section with four rows. Not one of
+// them can be built as drawn:
+//
+//   Safety Protocols     — appears nowhere in §6.4, §20, §21 or master. UNSPECIFIED.
+//   Equipment Certs      — §6.4 "Equipment" gives Safety `—`. The row would 403.
+//   Workforce Compliance — §6.4 "Workforce attendance" gives Safety `—`. The row would 403.
+//   Incident History     — `/incidents` is one of this role's four TABS, and a drawer row onto a tab
+//                          is the second door onto one room that the rule below forbids.
+//
+// Its System section (Offline Sync → /sync-queue, Help Center → /support, Settings →
+// /account-settings) is what SHARED_LINKS and the sync-queue row already provide. So the drawing adds
+// nothing this app can honour, and ADR-085 is the reason that is allowed: a mockup is authoritative
+// for STYLE, not for COMPOSITION. This is recorded here rather than left silent because an
+// unexplained gap between a drawing and the code cannot be told apart from an oversight — which is
+// exactly how the transparency hub's rows were once flagged as a defect when they were correct.
+//
 // THE ROUTE → MODULE MAP IS THE HONEST PART, and it is deliberately incomplete. A route is derived
 // only where §6.4 names the module it reads. `/directory`, `/dashboard` and `/issues` are NOT
 // derived — see the note above each — because no row in that matrix governs them, and inventing a

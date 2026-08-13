@@ -22,7 +22,12 @@ import { Roles } from '@cos/rbac';
 import { CosRole } from '@cos/types';
 import { SafetyService } from './safety.service';
 import { SiteOpsService } from '../site-ops/site-ops.service';
-import { CreateIncidentDto, CreatePermitDto, ApprovePermitDto } from './dto/safety.dto';
+import {
+  CreateIncidentDto,
+  CreatePermitDto,
+  ApprovePermitDto,
+  RejectPermitDto,
+} from './dto/safety.dto';
 import { SubmitInspectionDto } from '../site-ops/dto/submit-inspection.dto';
 
 const SAFETY_READ_ROLES = [
@@ -148,8 +153,10 @@ export class SafetyController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Reject a permit (PENDING → REVOKED)' })
   @ApiParam({ name: 'permitId', type: 'string', format: 'uuid' })
-  rejectPermit(@Param('permitId', ParseUUIDPipe) permitId: string) {
-    return this.svc.rejectPermit(permitId);
+  // `dto` is optional and so is its one field: this endpoint accepted NO body before 2026-08-13,
+  // and the mobile app still sends `{}`. Defaulting keeps a body-less call valid (QM-2).
+  rejectPermit(@Param('permitId', ParseUUIDPipe) permitId: string, @Body() dto?: RejectPermitDto) {
+    return this.svc.rejectPermit(permitId, dto?.reason);
   }
 
   // ── Checklists (delegated to SiteOps — ADR-027) ─────────────────────────────

@@ -82,6 +82,11 @@ export const TERMINAL_ROUTES = [
   'permission-success',
   'reset-password-success',
   'reset-password-email-success',
+  // The permit confirmation (mockup 07_safety_officer/04_permit_management/03_permit_request_submitted).
+  // Reached with router.replace once the POST succeeds: going "back" would be the form that already
+  // raised the permit, and pressing submit again would raise a second one. Its two drawn buttons —
+  // back to Home, view the register — are the way out, and both replace rather than push.
+  'permit-submitted',
 ] as const;
 
 /**

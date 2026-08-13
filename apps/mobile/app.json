@@ -78,7 +78,8 @@
         {
           "faceIDPermission": "Allow Construction OS to unlock the app with Face ID."
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": false

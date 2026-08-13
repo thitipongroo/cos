@@ -67,6 +67,13 @@ const BREADCRUMB_MAP: Record<string, Crumb[]> = {
   // pointing at it would be a dead link. Back still returns to Home, which is where the overlay was
   // opened from.
   '/report': [{ key: 'nav.tabs.home', href: '/home' }, { key: 'nav.tabs.reports' }],
+  // The permit request form, pushed from the Permits tab's FAB (mockup 07_safety_officer/
+  // 04_permit_management/02_permit_request). `/permit-submitted` has NO entry on purpose: it is
+  // terminal, and Back from it would return to the form that already created the permit.
+  '/permit-request': [
+    { key: 'nav.tabs.permits', href: '/permits' },
+    { key: 'safety.permitRequest.title' },
+  ],
   '/account-settings': [{ key: 'nav.tabs.home', href: '/home' }, { key: 'drawer.settings' }],
   // Home FAB / Quick-Add flows
   '/system-integration': [

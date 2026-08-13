@@ -11,7 +11,16 @@ import { sqliteTable, text, real, integer } from 'drizzle-orm/sqlite-core';
 
 export type SyncStatus = 'PENDING' | 'SYNCED' | 'CONFLICT';
 export type UploadStatus = 'PENDING' | 'UPLOADING' | 'UPLOADED' | 'FAILED';
-export type PhotoEntityType = 'site_report' | 'issue' | 'inspection';
+/**
+ * What a queued photo is attached to. Sent verbatim as `entity_type` on the file upload
+ * (PhotoUploadQueue), where it lands in `files.file_metadata.entity_type` — a plain VARCHAR(100)
+ * with no CHECK constraint, so adding a value here needs no migration.
+ *
+ * 'permit' added 2026-08-13 for the permit request form. Unlike the other three, a permit's id does
+ * not exist until the server creates it, so those photos are captured against a draft id and
+ * re-keyed by `reassignPhotoEntity()` once the POST returns.
+ */
+export type PhotoEntityType = 'site_report' | 'issue' | 'inspection' | 'permit';
 
 // ── local_site_reports — mirrors server site_ops.site_reports (offline subset) ──
 export const localSiteReports = sqliteTable('local_site_reports', {

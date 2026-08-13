@@ -134,6 +134,8 @@ export class SafetyService {
       linked_task_id: dto.linked_task_id ?? null,
       valid_from: dto.valid_from ?? null,
       valid_until: dto.valid_until ?? null,
+      contractor_name: dto.contractor_name ?? null,
+      description: dto.description ?? null,
       created_by: this.userId,
     });
   }
@@ -181,8 +183,15 @@ export class SafetyService {
     return updated;
   }
 
-  /** Reject a PENDING permit → REVOKED. */
-  async rejectPermit(permitId: string): Promise<PermitRow> {
+  /**
+   * Reject a PENDING permit → REVOKED.
+   *
+   * `reason` is optional because the endpoint took no body at all until 2026-08-13 and a client
+   * that still sends `{}` must keep working (QM-2). Absent, the row stores NULL rather than an
+   * invented string — "no reason was given" and "the reason was blank" are the same fact here, and
+   * neither is "rejected for cause".
+   */
+  async rejectPermit(permitId: string, reason?: string): Promise<PermitRow> {
     const permit = await this.getPermit(permitId);
     if (permit.status !== 'PENDING') {
       throw new UnprocessableEntityException({
@@ -190,7 +199,7 @@ export class SafetyService {
         message: `Permit is ${permit.status}; only PENDING permits can be rejected`,
       });
     }
-    return this.repo.updatePermitStatus(permitId, 'REVOKED');
+    return this.repo.updatePermitStatus(permitId, 'REVOKED', reason ?? null);
   }
 
   // ── Compliance ──────────────────────────────────────────────────────────────

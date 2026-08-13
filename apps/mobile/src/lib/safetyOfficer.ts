@@ -10,7 +10,13 @@
 // draw those panels and say they are not available yet (PO decision 2026-08-13), rather than a
 // number being invented in this file.
 
-import type { IncidentRow, IncidentSeverity, PermitRow, PermitStatus } from '../api/safety';
+import type {
+  IncidentRow,
+  IncidentSeverity,
+  PermitRow,
+  PermitStatus,
+  PermitType,
+} from '../api/safety';
 
 /** Which palette role a value takes. Resolved to a colour by the screen, so this stays pure. */
 export type Tone = 'danger' | 'warning' | 'success' | 'muted';
@@ -174,4 +180,82 @@ export function sortPermits(permits: readonly PermitRow[]): PermitRow[] {
     if (aPending !== bPending) return aPending - bPending;
     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
+}
+
+/**
+ * The permit dashboard's TYPE tabs (mockup 04_permit_management/01_sa_permit_dashboard).
+ *
+ * THE DRAWING SHOWS THREE — Work Permits · Safety Permits · Drawing Approvals — and this list has
+ * FIVE. The two additions are not embellishment:
+ *
+ *   ENTRY_PERMIT is the fourth value of the `permit_type` CHECK constraint
+ *   (20260619000002_tasks_permits) and of CreatePermitDto's enum. With only the drawn three, an
+ *   entry permit would be filed by the request form and then be unreachable on every tab of the
+ *   screen that lists permits. That is a defect, not a style difference, and ADR-085 makes the
+ *   mockup authoritative for style — not for which rows the product can show.
+ *
+ *   ALL is the landing tab. A three-tab bar with no "all" forces a reader who does not yet know a
+ *   permit's type to visit each tab in turn, and the officer's job here is to find what needs a
+ *   decision, which is a question about STATUS, not type.
+ */
+export interface PermitTypeFilter {
+  id: 'all' | PermitType;
+  labelKey: string;
+}
+
+export const PERMIT_TYPE_FILTERS: readonly PermitTypeFilter[] = [
+  { id: 'all', labelKey: 'safety.permits.filterAllTypes' },
+  { id: 'WORK_PERMIT', labelKey: 'safety.permits.type.WORK_PERMIT' },
+  { id: 'SAFETY_PERMIT', labelKey: 'safety.permits.type.SAFETY_PERMIT' },
+  { id: 'DRAWING_APPROVAL', labelKey: 'safety.permits.type.DRAWING_APPROVAL' },
+  { id: 'ENTRY_PERMIT', labelKey: 'safety.permits.type.ENTRY_PERMIT' },
+];
+
+/**
+ * Both filters at once — type tab AND the pending-only pill — then the standard sort.
+ *
+ * The two are kept because they answer different questions and the screen offers both: the tab is
+ * "which kind of permit", the pill is "which ones still need me". The pill predates the drawing and
+ * is a real query (`status` is an enum the endpoint filters on), so ADR-085 keeps it: a drawing does
+ * not remove reviewed working capability.
+ */
+export function applyPermitFilters(
+  permits: readonly PermitRow[],
+  filters: { type: PermitTypeFilter['id']; pendingOnly: boolean },
+): PermitRow[] {
+  const byType =
+    filters.type === 'all' ? permits : permits.filter((p) => p.permit_type === filters.type);
+  return sortPermits(filters.pendingOnly ? byType.filter((p) => p.status === 'PENDING') : byType);
+}
+
+/**
+ * How long a permit's validity has left — the drawing's EXPIRY column.
+ *
+ * THE DRAWING PRINTS "04h 22m" AND THIS RETURNS DAYS. `valid_until` is a Postgres **DATE**
+ * (20260619000002_tasks_permits) — no time part exists in the column, so an hours-and-minutes
+ * countdown could only be manufactured by assuming a time of day the tenant never entered. Days is
+ * what the data supports.
+ *
+ * Compared on the calendar rather than by elapsed milliseconds: a permit valid until today expires
+ * at the END of today, so "0 days" means today, not overdue.
+ */
+export type PermitExpiry =
+  { state: 'today' } | { state: 'remaining'; days: number } | { state: 'overdue'; days: number };
+
+const MS_PER_DAY = 86_400_000;
+
+export function permitExpiry(
+  validUntil: string | null | undefined,
+  now: Date,
+): PermitExpiry | null {
+  if (validUntil == null || validUntil === '') return null;
+  // A DATE arrives as "YYYY-MM-DD"; once something has parsed it, as "YYYY-MM-DDT...". Take the
+  // leading date either way, then compare local midnights so a timezone cannot shift the day.
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(validUntil);
+  if (m === null) return null;
+  const until = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])).getTime();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const days = Math.round((until - today) / MS_PER_DAY);
+  if (days === 0) return { state: 'today' };
+  return days > 0 ? { state: 'remaining', days } : { state: 'overdue', days: -days };
 }

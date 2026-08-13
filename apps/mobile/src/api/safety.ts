@@ -43,6 +43,16 @@ export interface PermitRow {
   linked_task_id: string | null;
   created_by: string | null;
   created_at: string;
+  /**
+   * The three columns added 2026-08-13 for the permit screens
+   * (migration 20260813000001_add_contractor_description_reason_to_permits).
+   *
+   * `contractor_name` is the firm doing the work — free text, NOT a vendor reference. `revoke_reason`
+   * is set only when a permit is rejected, and is null when the approver gave none.
+   */
+  contractor_name: string | null;
+  description: string | null;
+  revoke_reason: string | null;
 }
 
 /**
@@ -100,6 +110,8 @@ export async function createPermit(body: {
   permit_number: string;
   valid_from?: string;
   valid_until?: string;
+  contractor_name?: string;
+  description?: string;
 }): Promise<PermitRow> {
   return post<PermitRow>('/safety/permits', body);
 }
@@ -116,7 +128,16 @@ export async function approvePermit(permitId: string): Promise<PermitRow> {
   return patch<PermitRow>(`/safety/permits/${permitId}/approve`, { tier: 'SAFETY_OFFICER' });
 }
 
-/** PENDING → REVOKED. */
-export async function rejectPermit(permitId: string): Promise<PermitRow> {
-  return patch<PermitRow>(`/safety/permits/${permitId}/reject`, {});
+/**
+ * PENDING → REVOKED.
+ *
+ * `reason` is optional on the endpoint (added 2026-08-13, non-breaking per QM-2) and is sent only
+ * when one was given — an empty `reason` key would store '' and read as a blank reason rather than
+ * as none.
+ */
+export async function rejectPermit(permitId: string, reason?: string): Promise<PermitRow> {
+  return patch<PermitRow>(
+    `/safety/permits/${permitId}/reject`,
+    reason === undefined || reason === '' ? {} : { reason },
+  );
 }
