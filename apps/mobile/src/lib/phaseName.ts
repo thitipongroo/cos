@@ -18,6 +18,20 @@
 const TRAILING_PARENS = /^(.*?)\s*\(([^()]*)\)\s*$/;
 
 /**
+ * A capture group of `TRAILING_PARENS`, which always participates when the pattern matches.
+ *
+ * `noUncheckedIndexedAccess` types `match[1]` as `string | undefined` all the same, and the two
+ * `?? ''` fallbacks that used to stand here were UNREACHABLE — neither group is optional and neither
+ * is inside an alternation, so no input can match the regex and leave one undefined. They were the
+ * only uncovered branches in `src/lib/**` and therefore the only thing holding the 100 %-branch gate
+ * (QM-1) below 100: a branch no input can take is a branch no test can cover, so the fix is to stop
+ * writing one rather than to chase it with a test.
+ */
+function group(match: RegExpExecArray, index: 1 | 2): string {
+  return match[index]!.trim();
+}
+
+/**
  * The phase's name for `locale`.
  *
  * "งานฐานราก (Foundation)" → `th` gives "งานฐานราก", `en` gives "Foundation".
@@ -29,8 +43,8 @@ export function phaseName(name: string, locale: string): string {
   const match = TRAILING_PARENS.exec(trimmed);
   if (match === null) return trimmed;
 
-  const outside = (match[1] ?? '').trim();
-  const inside = (match[2] ?? '').trim();
+  const outside = group(match, 1);
+  const inside = group(match, 2);
 
   // English wants the parenthetical; falls back to the outside when the brackets are empty, which
   // is what "งานฐานราก ()" — a name someone half-translated — should still read as.

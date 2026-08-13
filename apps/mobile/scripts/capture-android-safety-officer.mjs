@@ -6,6 +6,8 @@
 //   02-Incidents/01-sa-incident-dashboard  the four filter pills · the incident feed · AI-risk card
 //   03-Checklists/01-sa-safety-checklist   the inspection list (the checklist itself is behind a row)
 //   04-Permits/01-sa-permits               the permit register + the approve/reject controls
+//   04-Permits/02-sa-permit-request        the request form behind the register's FAB
+//   04-Permits/03-sa-permit-submitted      its confirmation — reached by ACTUALLY submitting, see below
 //
 // Numbered for the bar as the product owner settled it on 2026-08-13 —
 // Home | Incidents | Checklists | Permits. "Checklists" is the `/inspections` ROUTE relabelled, so
@@ -273,6 +275,40 @@ async function main() {
       '04-Permits/01-sa-permits',
       await boundsOf(byId('permit-fab'), 'Permits FAB'),
     );
+  }
+
+  // THE REQUEST FORM, behind the Permits FAB (mockup 04_permit_management/02_permit_request).
+  if (wanted('permit-request')) {
+    console.log('· Permits → request form');
+    await tap(byId('permits-tab'), 'Permits tab');
+    await find(byId('permits-screen'), 'permits-screen', 20);
+    await tap(byId('permit-fab'), 'Permits FAB');
+    await find(byId('permit-request-screen'), 'permit-request-screen', 20);
+    await delay(1500);
+    await stitchFull('04-Permits/02-sa-permit-request');
+  }
+
+  // THE CONFIRMATION (mockup 04_permit_management/03_permit_request_submitted).
+  //
+  // THIS STEP WRITES. It fills the form and submits it, so the frame is the real screen with the
+  // real permit number the server stored — there is no other way to reach it, the route being
+  // `router.replace`-only from a successful POST. It therefore leaves one extra PENDING permit in
+  // the demo tenant per run, which is the same trade every capture script here makes for a
+  // create-flow (the site-worker issue capture leaves an issue behind too).
+  if (wanted('permit-submitted')) {
+    console.log('· Permits → request form → submit');
+    await tap(byId('permits-tab'), 'Permits tab');
+    await find(byId('permits-screen'), 'permits-screen', 20);
+    await tap(byId('permit-fab'), 'Permits FAB');
+    await find(byId('permit-request-screen'), 'permit-request-screen', 20);
+    await tap(byId('permit-number-input'), 'permit number input');
+    // Stamped so a re-run cannot collide with the row the previous run left behind.
+    await type(`WP-CAP-${Date.now().toString().slice(-6)}`);
+    await hideKeyboard();
+    await tap(byId('submit-permit-request'), 'submit');
+    await find(byId('permit-submitted-screen'), 'permit-submitted-screen', 25);
+    await delay(1500);
+    await stitchFull('04-Permits/03-sa-permit-submitted');
   }
 
   // HOME IS SHOT LAST, for the reason the project-manager script documents: a dashboard

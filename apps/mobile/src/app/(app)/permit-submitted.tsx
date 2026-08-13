@@ -64,7 +64,11 @@ export default function PermitSubmittedScreen(): React.JSX.Element {
           : p.muted;
 
   return (
-    <ScrollView style={styles.root} contentContainerStyle={styles.page}>
+    <ScrollView
+      testID="permit-submitted-screen"
+      style={styles.root}
+      contentContainerStyle={styles.page}
+    >
       <View style={styles.hero}>
         <MaterialIcons name="check-circle" size={72} color={p.success} />
         <Text testID="permit-submitted-title" style={styles.title}>

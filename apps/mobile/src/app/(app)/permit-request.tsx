@@ -118,7 +118,11 @@ export default function PermitRequestScreen(): React.JSX.Element {
   };
 
   return (
-    <ScrollView style={styles.root} contentContainerStyle={styles.page}>
+    <ScrollView
+      testID="permit-request-screen"
+      style={styles.root}
+      contentContainerStyle={styles.page}
+    >
       <ProjectContextBar />
 
       {/* PERMIT TYPE — the drawing's horizontal card row. */}
