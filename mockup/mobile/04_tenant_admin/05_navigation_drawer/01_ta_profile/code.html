@@ -1,4 +1,4 @@
-<!DOCTYPE html><html class="dark" lang="en"><head>
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
 <meta charset="utf-8">
 <meta content="width=device-width, initial-scale=1.0" name="viewport">
 <title>Construction OS - Navigation Drawer</title>
@@ -147,7 +147,7 @@
 <!-- Branding Header (Predicted Shared Component: TopAppBar branding logic) -->
 <div class="flex items-center gap-3 mb-10">
 <div class="w-10 h-10 bg-primary-container rounded-lg flex items-center justify-center"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuCVxH__txb0904YRLhX2suP-6RE3grayCrn33_Tc82KE3grL6ZpnkOgeathvy9DP5aSa4Rikpv9lzuz5AglmOKUrBoCVtqmbMj5EcoHXmgMQL98RiW1qRZaoMEHUX_eMi-Ok0u0NCZfxEfbwpS0stbPMGvuu52ZObsZIyTdwAE6ux4cwOvjLnzixIxFoOVeaGL94UVvpZRb_1u-kgHbWCjpEAW3cKdjAZpGW4R4CKnNhj7hJ54cS6LdDSifzDhb8vo__XeSLr1O0r8" alt="Construction OS Logo" class="w-full h-full object-cover"></div>
-<h1 class="font-hero-mobile text-hero-mobile font-extrabold tracking-tight text-cos-blue dark:text-primary">CONSTRUCTION OS</h1>
+<h1 class="font-hero-mobile text-hero-mobile font-extrabold tracking-tight text-cos-blue dark:text-primary">CONSTRUCTION</h1>
 </div>
 <!-- Profile Header (JSON header_type: profile, header_layout: left_align) -->
 <div class="mb-8 p-4 bg-surface-container-highest rounded-xl border border-outline-variant/20">
@@ -161,13 +161,7 @@
 <p class="text-tiny-web uppercase tracking-wider text-outline">Supervisor - Site A</p>
 </div>
 </div>
-<div class="mt-4 flex items-center justify-between bg-surface-container-low/50 px-3 py-2 rounded-lg border border-outline-variant/10">
-<div class="flex items-center gap-2">
-<span class="material-symbols-outlined text-mobile-success text-sm" style="font-variation-settings: 'opsz' 20;">cloud_done</span>
-<span class="text-tiny-web text-on-surface-variant">Online &amp; Synced</span>
-</div>
-<span class="text-[10px] font-bold text-primary px-1.5 py-0.5 bg-primary/10 rounded uppercase">Pro</span>
-</div>
+
 </div>
 <!-- Navigation Items (Predicted Shared Component: NavigationDrawer label_texts & icons) -->
 <nav class="flex-1 space-y-1 overflow-y-auto">
@@ -208,8 +202,11 @@
 <!-- Settings (ACTIVE STATE LOGIC applied) -->
 <!-- style_active_navigation: text-primary font-bold bg-primary/10 -->
 <a class="flex items-center gap-4 px-3 py-3 rounded-lg text-primary font-bold bg-primary/10 active-pill transition-colors duration-150" href="#">
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">settings</span>
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">settings</span>
 <span class="font-bold">Settings</span>
+</a><a class="flex items-center gap-4 px-3 py-3 rounded-lg text-on-surface-variant hover:bg-surface-variant transition-colors duration-150" href="#">
+<span class="material-symbols-outlined">policy</span>
+<span class="font-medium">Privacy Policy</span>
 </a>
 </nav>
 <!-- Footer (Logout) -->
@@ -219,14 +216,7 @@
 <span class="font-bold">Logout</span>
 <span class="ml-auto material-symbols-outlined text-sm">chevron_right</span>
 </button>
-<div class="mt-6 flex flex-col items-center gap-1 opacity-40">
-<p class="text-tiny-web">v4.2.0-site-stable</p>
-<div class="flex gap-2">
-<div class="w-1.5 h-1.5 rounded-full bg-primary"></div>
-<div class="w-1.5 h-1.5 rounded-full bg-outline"></div>
-<div class="w-1.5 h-1.5 rounded-full bg-outline"></div>
-</div>
-</div>
+
 </div>
 </div>
 </aside>
@@ -288,6 +278,10 @@
             });
         });
     </script>
+
+
+
+
 
 
 </body></html>
