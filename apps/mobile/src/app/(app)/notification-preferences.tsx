@@ -1,5 +1,14 @@
-// Notification Preferences (§19.6) — the Tenant-Admin control panel from
-// mockup/mobile/04_tenant_admin/06_notification/01_notification_preferences + 02_success_state.
+// Notification Preferences (§19.6) — the Tenant-Admin control panel.
+//
+// ITS MOBILE DRAWING WAS WITHDRAWN on 2026-08-13: mockup/mobile/04_tenant_admin/06_notification/
+// (01_notification_preferences + 02_success_state) was deleted from the mockup set. This screen
+// stands regardless — ADR-085: a mockup is authoritative for STYLE, not for existence, and "a
+// drawing does not remove reviewed working capability". The screen stays wired (MobileNav,
+// roleTabs, AccountSettings, Breadcrumb, routeRegistry.spec) and master §Phase 10 still lists it
+// as the TENANT_ADMIN "Settings" tab. It is NOT repointed at the surviving desktop drawing
+// (mockup/desktop/notification_desktop_view/notification_preferences_tenant_admin) — that is a
+// different surface, and citing it here would claim a mobile layout it does not specify.
+// The §32.7 dark-screen ruling for this route is unchanged.
 //
 // Wired to the REAL model (PO decision 2026-07-26 — "event catalog จริง + โครง mockup"):
 //   - Per (event_type × channel) enable flags → GET/PATCH /notifications/preferences (writable).

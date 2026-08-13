@@ -147,40 +147,51 @@ describe('drawerLinksFor — the invariants', () => {
   });
 });
 
-describe('drawerLinksFor — the two roles whose drawer is DRAWN', () => {
-  it('gives the Project Manager the set from its own mockup', () => {
-    // 06_project_manager/05_navigation_drawer, minus BIM Progress Audit — 00-glossary.md puts full
-    // BIM integration post-MVP, so there is no screen to link.
-    expect(routes(CosRole.PROJECT_MANAGER)).toEqual([
-      '/dashboard',
-      '/projects',
-      '/reports',
-      '/material-request',
-      '/issues',
-      '/incidents',
-      '/directory',
-    ]);
+describe('drawerLinksFor — the shared drawing leads every role (PO 2026-08-14)', () => {
+  // The drawing was copied to mockup/mobile/02_shared/01_navigation_drawer, byte-identical to
+  // 04_tenant_admin/05_navigation_drawer, so it is no longer any one role's menu. Its four buildable
+  // rows now open every role's drawer — still gated by §6.4, so none of them can 403.
+  const DRAWN_ORDER = ['/projects', '/reports', '/incidents', '/material-request'];
+
+  it('opens every role on the drawn rows it is allowed, in the drawing’s order', () => {
+    for (const role of Object.values(CosRole)) {
+      const list = routes(role);
+      const lead = list.filter((route) => DRAWN_ORDER.includes(route));
+      // whatever of the four this role may open comes first, and in the drawing's order
+      expect({ role, lead, head: list.slice(0, lead.length) }).toEqual({
+        role,
+        lead,
+        head: lead,
+      });
+      expect(lead).toEqual(DRAWN_ORDER.filter((route) => lead.includes(route)));
+    }
   });
 
-  it('keeps `/projects` for the Project Manager, whose Projects TAB was given up', () => {
-    // The 2026-08-10 bar swap took the slot for Finance. A screen must not lose its last entry point
-    // in a swap, and the drawer is where it went.
-    expect(routes(CosRole.PROJECT_MANAGER)).toContain('/projects');
+  it('gives the Tenant Admin the drawn rows AND what §6.4 allows it, no longer just the drawing', () => {
+    // Reverses the 2026-08-10 narrowing: that only held because the drawing was filed under this
+    // role, and the drawing has moved to 02_shared/.
+    expect(routes(CosRole.TENANT_ADMIN).slice(0, 4)).toEqual(DRAWN_ORDER);
+    expect(routes(CosRole.TENANT_ADMIN)).toContain('/payments'); // §6.4 Payments: FULL
   });
 
-  it('gives the Tenant Admin its drawing, NOT everything §6.4 would allow it', () => {
-    // 04_tenant_admin/05_navigation_drawer. This role holds FULL almost everywhere, so derivation
-    // would hand it fifteen rows; the drawing is the narrower, deliberate answer and it wins.
-    expect(routes(CosRole.TENANT_ADMIN)).toEqual([
-      '/projects',
-      '/reports',
-      '/incidents',
-      '/material-request',
-    ]);
-    expect(routes(CosRole.TENANT_ADMIN)).not.toContain('/payments');
+  it('drops no row the two verbatim drawings used to carry', () => {
+    // Nothing may lose its last entry point in the swap. These three are the rows §6.4 governs no
+    // module for, so only the PROJECT_MANAGER drawing carried them.
+    for (const route of ['/dashboard', '/issues', '/directory']) {
+      expect(routes(CosRole.PROJECT_MANAGER)).toContain(route);
+    }
+    // and the rows it shared with §6.4 survive as drawn rows
+    for (const route of DRAWN_ORDER) expect(routes(CosRole.PROJECT_MANAGER)).toContain(route);
   });
 
-  it('links no BIM or Equipment Logs screen, because neither exists', () => {
+  it('keeps `/inspections` in the Site Engineer drawer — master §Phase 10 guarantees it', () => {
+    // "Inspections is NOT dropped: /inspections is a derived drawer row for this role … so it
+    // reappears in the drawer the moment it leaves the bar" (PO 2026-08-12, when Tasks took the tab).
+    expect(routes(CosRole.SITE_ENGINEER)).toContain('/inspections');
+  });
+
+  it('links no BIM, Equipment Logs or Drawing Viewer screen, because none exists', () => {
+    // The drawing's other two rows. Mapping them onto a route would be inventing one.
     for (const role of Object.values(CosRole)) {
       expect(routes(role).some((route) => /bim|equipment|drawing-viewer/i.test(route))).toBe(false);
     }
@@ -270,10 +281,14 @@ describe('drawerLinksFor — derived from §6.4 / §6.8', () => {
 describe('drawerSectionFor — row seven becomes More', () => {
   it('shows everything when the list fits, and folds nothing', () => {
     expect(DRAWER_MAX_ROWS).toBe(7);
-    const pm = drawerSectionFor(CosRole.PROJECT_MANAGER);
+    // PROCUREMENT_OFFICER lands on exactly seven: the four drawn rows minus /incidents (§6.4 Safety
+    // incidents is “—” for it), plus /tasks /invoices /vendors /budget. It took over this case from
+    // PROJECT_MANAGER on 2026-08-14 — that role now derives as well as taking the drawn rows, so it
+    // is far past seven and exercises the folding case below instead.
+    const po = drawerSectionFor(CosRole.PROCUREMENT_OFFICER);
     // Exactly seven — folding here would replace one row with a "More" revealing one row.
-    expect(pm.visible).toHaveLength(7);
-    expect(pm.overflow).toEqual([]);
+    expect(po.visible).toHaveLength(7);
+    expect(po.overflow).toEqual([]);
   });
 
   it('folds at six-plus-More once there is genuinely more than fits', () => {

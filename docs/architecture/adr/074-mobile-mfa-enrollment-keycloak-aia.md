@@ -79,5 +79,7 @@ Build screens 03/05 as **native chrome around a Keycloak-driven flow**, and use 
 - `docs/specifications/14-api-architecture.md` §MFA · `docs/specifications/20-ux-flow.md` §MFA
 - Keycloak Application-Initiated Actions (`kc_action=CONFIGURE_TOTP`); `recovery-authn-codes` required action
 - NIST SP 800-63B (recovery codes = lookup secrets); OWASP MFA cheat sheet
-- `mockup/mobile/04_tenant_admin/07_mfa/01_mfa_enrollment` · `07_mfa/02_mfa_enrollment_success` ·
-  `07_mfa/03_mfa_backup_codes_success_state` · `07_mfa/04_mfa_backup_codes_download_success`
+- `mockup/mobile/02_shared/02_mfa/01_mfa_enrollment` · `02_mfa/02_mfa_enrollment_success` ·
+  `02_mfa/03_mfa_backup_codes_success_state` · `02_mfa/04_mfa_backup_codes_download_success`
+  (moved out of `04_tenant_admin/07_mfa` on 2026-08-13 — MFA enrolment is not Tenant-Admin-only;
+  it is reached by every role that carries it, which is what `02_shared/` now records)

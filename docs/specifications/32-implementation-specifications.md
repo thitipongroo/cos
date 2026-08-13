@@ -806,8 +806,19 @@ Dark screens (the pre-2026-08-04 set — see the note above):
 | Project Manager / Proc Manager screens  | `mockup/mobile/06_project_manager/`                                          |
 | Site Engineer Home                      | `mockup/mobile/03_site_engineer/01_home/01_se_home_dashboard/`               |
 | Tenant Admin Home                       | `mockup/mobile/04_tenant_admin/01_home/01_home_dashboard/`                   |
-| Notification preferences (Tenant Admin) | `mockup/mobile/04_tenant_admin/06_notification/01_notification_preferences/` |
-| Navigation drawer                       | `mockup/mobile/04_tenant_admin/05_navigation_drawer/`                        |
+| Notification preferences (Tenant Admin) | drawing withdrawn 2026-08-13 — see the note below it                         |
+| Navigation drawer                       | `mockup/mobile/02_shared/01_navigation_drawer/`                               |
+
+**Notification preferences keeps its row without a drawing.** The directory
+`mockup/mobile/04_tenant_admin/06_notification/` (`01_notification_preferences` + `02_success_state`) was deleted from
+the mockup set on 2026-08-13. The row stays because this table rules on **which screens render dark**, not on which
+screens have a drawing — withdrawing the drawing does not relight the screen. The screen itself also stands: it is
+wired into `MobileNav`, `roleTabs`, `AccountSettings`, `Breadcrumb` and `routeRegistry.spec`, and master §Phase 10
+still lists it as the TENANT_ADMIN **Settings** tab, so ADR-085 applies as written — a drawing does not remove
+reviewed working capability. The Reference cell is deliberately NOT repointed at the surviving desktop drawing
+(`mockup/desktop/notification_desktop_view/notification_preferences_tenant_admin`): that is a different surface and
+would claim a mobile layout it does not specify. Both drawings were dark (`<html class="dark">`, `#031427`), which is
+the evidence the dark ruling rests on.
 
 The Tenant-Admin notification control panel and the navigation drawer were added by product-owner
 decision (2026-07-26); the **Tenant Admin Home** was added by product-owner decision (2026-07-28); the

@@ -1,19 +1,32 @@
 // What each role sees in the navigation drawer.
 //
-// TWO ENTRIES ARE SHARED AND THE REST ARE NOT — product-owner decision 2026-08-10. The drawer used to
-// show ONE list to every role, and that list was not neutral: it was the TENANT_ADMIN drawer drawing
-// (mockup 04_tenant_admin/05_navigation_drawer) plus two extra rows, handed to all twelve. A Site
-// Worker was being offered the administrator's menu.
+// EVERY ROLE OPENS ON THE SAME FOUR ROWS, THEN ITS OWN — product-owner decision 2026-08-14. The
+// drawer drawing was copied to `mockup/mobile/02_shared/01_navigation_drawer`, byte-identical to
+// `04_tenant_admin/05_navigation_drawer`, which is what settled it: a drawing filed under `02_shared/`
+// is nobody's role menu. So the drawn rows lead every role's drawer and the role's own rows follow.
 //
-// WHERE EACH ROLE'S LIST COMES FROM (PO decision 2026-08-10, after the mockup set was searched):
+// This REPLACES the 2026-08-10 arrangement, where exactly two roles (TENANT_ADMIN, PROJECT_MANAGER)
+// took their drawing verbatim and the other ten derived their list. What that decision was actually
+// protecting is kept, not discarded: it existed because the drawer once handed the TENANT_ADMIN menu
+// to all twelve roles, so a Site Worker was offered the administrator's screens. The four shared rows
+// below are gated by §6.4 exactly like the derived ones, so a role still sees only what it may open.
 //
-//   - Exactly TWO roles have a drawer DRAWING — `04_tenant_admin/05_navigation_drawer` and
-//     `06_project_manager/05_navigation_drawer`. The other roles' `05_profile` / `04_profile` folders
-//     are Account Settings screens (Dark Mode, Biometric, MFA), not drawers. Those two roles get
-//     their drawing; a drawing beats a derivation.
-//   - Every other role's list is DERIVED from spec §6.4's module permission matrix (and §6.8 for the
+// WHERE EACH ROLE'S LIST COMES FROM:
+//
+//   - THE FOUR DRAWN ROWS FIRST — Project Overview · Daily Site Reports · Safety Incident Logs ·
+//     Material Inventory. They are not a separate table: they are the first four entries of `DERIVED`,
+//     so each still appears only where §6.4 grants the module behind it. A role holding `—` on Safety
+//     incidents does not get that row, and no drawn row can lead to a 403.
+//     The drawing's other two rows are NOT here: Equipment Logs and Drawing Viewer have no route in
+//     this app, and inventing one would put a drawing's authority behind a guess.
+//   - THE ROLE'S OWN ROWS BELOW — DERIVED from spec §6.4's module permission matrix (and §6.8 for the
 //     three sub-roles): a row appears if that role's cell is anything other than `—`. So the drawer
-//     offers a role exactly the screens it may actually open, and no row can lead to a 403.
+//     offers a role exactly the screens it may actually open.
+//
+// NOTHING LOST ITS LAST ENTRY POINT IN THE SWAP. Dropping the two verbatim drawings would have
+// orphaned five routes that §6.4 governs no module for, and `drawerSectionFor` folds the longer lists
+// at DRAWER_MAX_ROWS rather than truncating them, so no role pays for the four leading rows with a
+// screen it can no longer reach. `NOT_DERIVED_ROLES` below carries the five.
 //
 // SAFETY_OFFICER NOW HAS A DRAWER DRAWING AND IT IS DELIBERATELY NOT ADOPTED (PO decision
 // 2026-08-13). `mockup/mobile/07_safety_officer/05_profile/01_sa_drawer` arrived on a parallel branch
@@ -185,20 +198,6 @@ const DERIVED: readonly { link: DrawerLink; module: string; roles: readonly CosR
     ],
   },
   {
-    link: TASKS,
-    module: 'Tasks',
-    roles: [
-      EXECUTIVE,
-      PROJECT_MANAGER,
-      SITE_ENGINEER,
-      PROCUREMENT_OFFICER,
-      SAFETY_OFFICER,
-      TENANT_ADMIN,
-      SITE_WORKER,
-      VIEWER,
-    ],
-  },
-  {
     link: REPORTS,
     module: 'Site reports',
     roles: [
@@ -207,6 +206,40 @@ const DERIVED: readonly { link: DrawerLink; module: string; roles: readonly CosR
       SITE_ENGINEER,
       PROCUREMENT_OFFICER,
       FINANCE,
+      SAFETY_OFFICER,
+      TENANT_ADMIN,
+      SITE_WORKER,
+      VIEWER,
+    ],
+  },
+  {
+    link: INCIDENTS,
+    module: 'Safety incidents',
+    roles: [EXECUTIVE, PROJECT_MANAGER, SITE_ENGINEER, SAFETY_OFFICER, TENANT_ADMIN, SITE_WORKER],
+  },
+  {
+    link: MATERIALS,
+    module: 'Purchase requests',
+    roles: [
+      EXECUTIVE,
+      PROJECT_MANAGER,
+      SITE_ENGINEER,
+      PROCUREMENT_OFFICER,
+      FINANCE,
+      TENANT_ADMIN,
+      PROC_MANAGER,
+      VIEWER,
+    ],
+  },
+  // ── end of the four drawn rows; everything below is the role's own ──────────────────────────────
+  {
+    link: TASKS,
+    module: 'Tasks',
+    roles: [
+      EXECUTIVE,
+      PROJECT_MANAGER,
+      SITE_ENGINEER,
+      PROCUREMENT_OFFICER,
       SAFETY_OFFICER,
       TENANT_ADMIN,
       SITE_WORKER,
@@ -223,11 +256,6 @@ const DERIVED: readonly { link: DrawerLink; module: string; roles: readonly CosR
     module: 'Safety checklists',
     roles: [EXECUTIVE, PROJECT_MANAGER, SITE_ENGINEER, SAFETY_OFFICER, TENANT_ADMIN, SITE_WORKER],
   },
-  {
-    link: INCIDENTS,
-    module: 'Safety incidents',
-    roles: [EXECUTIVE, PROJECT_MANAGER, SITE_ENGINEER, SAFETY_OFFICER, TENANT_ADMIN, SITE_WORKER],
-  },
   // §6.4 "Permits" — Executive R, PM RW, Site Engineer R, Safety RW, Tenant Admin FULL (ADR-064 also
   // folds building permits and company licences into this row). Added 2026-08-13 with the screen:
   // the route existed nowhere before, so no role could reach a permit outside SAFETY_OFFICER's new
@@ -236,20 +264,6 @@ const DERIVED: readonly { link: DrawerLink; module: string; roles: readonly CosR
     link: PERMITS,
     module: 'Permits',
     roles: [EXECUTIVE, PROJECT_MANAGER, SITE_ENGINEER, SAFETY_OFFICER, TENANT_ADMIN],
-  },
-  {
-    link: MATERIALS,
-    module: 'Purchase requests',
-    roles: [
-      EXECUTIVE,
-      PROJECT_MANAGER,
-      SITE_ENGINEER,
-      PROCUREMENT_OFFICER,
-      FINANCE,
-      TENANT_ADMIN,
-      PROC_MANAGER,
-      VIEWER,
-    ],
   },
   {
     link: RFQS,
@@ -351,40 +365,55 @@ const DERIVED: readonly { link: DrawerLink; module: string; roles: readonly CosR
 ];
 
 /**
- * The roles offered `/directory`, which §6.4 does not govern.
+ * Rows §6.4 governs no module for, and the roles that get them anyway.
  *
- * The team directory is a crew contact list. No row in the matrix names it — "Workforce attendance"
- * is who turned up, not who to call — so this stays the explicit rule the file already carried
- * rather than being attached to a row it does not read.
+ * These cannot be derived: no row in the matrix names them, and attaching one to a row it does not
+ * read would put the spec's authority behind a guess. They are therefore listed, with the reason each
+ * role is on the list.
+ *
+ * `/directory` — a crew contact list. "Workforce attendance" is who turned up, not who to call.
+ *   SITE_ENGINEER and SAFETY_OFFICER carried it before; PROJECT_MANAGER joins them because its own
+ *   drawing drew it, and dropping that drawing must not cost the role a screen (see below).
+ * `/dashboard` and `/issues` — PROJECT_MANAGER only, and for the same reason: both were rows in
+ *   `06_project_manager/05_navigation_drawer`, and neither is a PM tab (its bar is Home · Procurement
+ *   · Finance · More), so removing the verbatim drawings would have left them unreachable for the one
+ *   role that had them. SITE_ENGINEER reaches `/issues` as a TAB, so it is not listed here.
  */
-const DIRECTORY_ROLES: readonly CosRole[] = [SITE_ENGINEER, SAFETY_OFFICER];
+const NOT_DERIVED: readonly { link: DrawerLink; roles: readonly CosRole[] }[] = [
+  { link: DASHBOARD, roles: [PROJECT_MANAGER] },
+  { link: ISSUES, roles: [PROJECT_MANAGER] },
+  { link: DIRECTORY, roles: [SITE_ENGINEER, SAFETY_OFFICER, PROJECT_MANAGER] },
+];
 
 /**
- * The two roles whose drawer is DRAWN, and what their drawing says.
+ * WHAT THE TWO VERBATIM DRAWINGS SAID, AND WHERE EACH ROW WENT (kept as the record of the 2026-08-14
+ * change — the rows did not disappear, they moved into the two tables above).
  *
  * PROJECT_MANAGER — mockup 06_project_manager/05_navigation_drawer:
- *   Project Dashboard  → `/dashboard`
- *   Daily Site Reports → `/reports`
- *   Material Inventory → `/material-request`
- *   Issue Management   → `/issues`
- *   Safety Compliance  → `/incidents`   the safety-event REGISTER, not `/safety-checklist`: the
+ *   Project Dashboard  → `/dashboard`         → NOT_DERIVED (PM only)
+ *   Daily Site Reports → `/reports`           → DERIVED "Site reports" — now a drawn row
+ *   Material Inventory → `/material-request`  → DERIVED "Purchase requests" — now a drawn row
+ *   Issue Management   → `/issues`            → NOT_DERIVED (PM only)
+ *   Safety Compliance  → `/incidents`         → DERIVED "Safety incidents" — now a drawn row.
+ *                                       The safety-event REGISTER, not `/safety-checklist`: the
  *                                       checklist is the worker's daily form, an action; a manager
  *                                       opening "compliance" is reviewing what happened.
  *   System Settings    → in SHARED_LINKS
  *   BIM Progress Audit → NOTHING. `00-glossary.md`: "Full BIM integration is post-MVP".
- *   `/projects` is added although the drawing does not name it: this role's Projects TAB was given up
+ *   `/projects` was added although the drawing does not name it: this role's Projects TAB was given up
  *   on 2026-08-10 for Finance and More, and a screen must not lose its last entry point in a swap.
+ *   It is now a drawn row (DERIVED "Project (view)"), so the role keeps it either way.
  *
- * TENANT_ADMIN — mockup 04_tenant_admin/05_navigation_drawer:
- *   Project Overview · Daily Site Reports · Safety Incident Logs · Material Inventory · Settings.
- *   Equipment Logs and Drawing Viewer are omitted — neither has a route in this app.
- *   This role could DERIVE far more (it holds FULL almost everywhere), and does not: its drawer was
- *   drawn, and the drawing is the narrower, deliberate answer.
+ * TENANT_ADMIN — mockup 04_tenant_admin/05_navigation_drawer, the drawing since copied to
+ *   `02_shared/01_navigation_drawer`: Project Overview · Daily Site Reports · Safety Incident Logs ·
+ *   Material Inventory · Settings. Equipment Logs and Drawing Viewer were omitted then and still are
+ *   — neither has a route in this app. Those four rows ARE the shared block now, which is the whole
+ *   point of the 2026-08-14 decision: they were never Tenant-Admin-specific.
+ *   ONE BEHAVIOUR CHANGED HERE. This role's drawer used to stop at its drawing even though it holds
+ *   FULL almost everywhere; it now also derives, so rows such as `/payments` appear for it. That is
+ *   the intended consequence of the drawing no longer being its own — a narrowing that only ever
+ *   applied because the drawing was filed under this role cannot survive the drawing moving out.
  */
-const DRAWN: Partial<Record<CosRole, readonly DrawerLink[]>> = {
-  [PROJECT_MANAGER]: [DASHBOARD, PROJECTS, REPORTS, MATERIALS, ISSUES, INCIDENTS, DIRECTORY],
-  [TENANT_ADMIN]: [PROJECTS, REPORTS, INCIDENTS, MATERIALS],
-};
 
 /**
  * The two rows every role gets (PO 2026-08-10).
@@ -430,13 +459,10 @@ export function tabAsDrawerLink(tab: {
  */
 export function drawerLinksFor(role: CosRole | null | undefined): readonly DrawerLink[] {
   if (role == null) return [];
-  const drawn = DRAWN[role];
   const base = [
     ...overflowTabsFor(role).map(tabAsDrawerLink),
-    ...(drawn ?? [
-      ...DERIVED.filter((entry) => entry.roles.includes(role)).map((entry) => entry.link),
-      ...(DIRECTORY_ROLES.includes(role) ? [DIRECTORY] : []),
-    ]),
+    ...DERIVED.filter((entry) => entry.roles.includes(role)).map((entry) => entry.link),
+    ...NOT_DERIVED.filter((entry) => entry.roles.includes(role)).map((entry) => entry.link),
   ];
   const tabs = visibleTabRoutes(role);
   // An overflow tab can also appear in the derived list (a role may both have it as a fifth tab and
@@ -472,8 +498,12 @@ export interface DrawerSection {
  * more than fits, and then row seven becomes "More" and carries everything from seven on, so eight
  * rows render as six + More rather than seven + More.
  *
- * Three roles need it today: EXECUTIVE (17 rows — it may read almost every module), FINANCE (10) and
- * VIEWER (9, whose §6.8 grant is "Procurement (all) R" and "Finance (all) R").
+ * Six roles need it today: PROJECT_MANAGER and TENANT_ADMIN (19 rows each), EXECUTIVE (18 — it may
+ * read almost every module), FINANCE (10), VIEWER (9, whose §6.8 grant is "Procurement (all) R" and
+ * "Finance (all) R") and SITE_ENGINEER (8). PROCUREMENT_OFFICER sits on exactly seven and so shows
+ * all seven. The counts moved on 2026-08-14, when TENANT_ADMIN and PROJECT_MANAGER stopped taking
+ * their drawing verbatim and began deriving as well; the previous note read 17/10/9 and was already
+ * one row stale on EXECUTIVE, which gained /permits on 2026-08-13.
  */
 export function drawerSectionFor(role: CosRole | null | undefined): DrawerSection {
   const links = drawerLinksFor(role);

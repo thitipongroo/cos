@@ -1,4 +1,5 @@
-// Vendors — the supplier directory (mockup 06_project_manager/03_vendors/01_vendor_directory).
+// Vendors — the supplier directory (mockup role_proc_manager/03_vendors/03_vendor_directory;
+// the same drawing, moved out of 06_project_manager/03_vendors/01_vendor_directory in bcda2bf5).
 //
 // A tab for PROJECT_MANAGER and PROC_MANAGER (PO decision 2026-08-10). Both read the same list;
 // the "manage" action is PROC_MANAGER's alone — §6.4 gives PROJECT_MANAGER `R` on vendor management

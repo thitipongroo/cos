@@ -1,6 +1,6 @@
 // Which single badge a vendor card shows.
 //
-// The mockup (06_project_manager/03_vendors) draws three: VERIFIED, UNDER REVIEW and TOP RATED. Only
+// The mockup (role_proc_manager/03_vendors) draws three: VERIFIED, UNDER REVIEW and TOP RATED. Only
 // the first two are stored — `procurement.vendors.verification_status` records a document check.
 // TOP RATED is DERIVED from the vendor score's grade-A threshold (≥ 90, backend vendor-scoring.ts),
 // deliberately: storing "this vendor is good" a second time would let the badge drift away from the

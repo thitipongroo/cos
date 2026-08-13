@@ -116,7 +116,7 @@ export class ProcurementRepository {
   }
 
   /**
-   * The vendor directory (mockup 06_project_manager/03_vendors): active vendors, optionally narrowed
+   * The vendor directory (mockup role_proc_manager/03_vendors): active vendors, optionally narrowed
    * to one category, each with the number of projects it currently has open work on.
    *
    * The count is a LATERAL sub-select rather than a GROUP BY join so a vendor with no purchase orders

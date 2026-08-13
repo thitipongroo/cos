@@ -48,7 +48,7 @@ export async function createPurchaseRequest(params: {
   );
 }
 
-// ── Vendor directory (mockup 06_project_manager/03_vendors) ──────────────────────────────────────
+// ── Vendor directory (mockup role_proc_manager/03_vendors) ───────────────────────────────────────
 
 export type VendorCategory = 'MATERIALS' | 'LOGISTICS' | 'SERVICES' | 'EQUIPMENT';
 export type VendorVerificationStatus = 'PENDING' | 'VERIFIED' | 'REJECTED';
