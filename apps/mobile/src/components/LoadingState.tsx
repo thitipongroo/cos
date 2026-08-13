@@ -1,5 +1,5 @@
 // <LoadingState /> — the standard loading placeholder / progress component (§32.7 "Loading State";
-// ADR-055). Layout from mockup/mobile/02_loading (the "Universal Loading Patterns" A–D).
+// ADR-055). Layout from mockup/mobile/00_loading (the "Universal Loading Patterns" A–D).
 //
 // Presentational only: it owns no data source and no i18n copy. The caller passes `progress` (0–100;
 // omit for indeterminate) and an already-translated `label` (QM-3 — the component holds no key and no

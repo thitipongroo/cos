@@ -657,7 +657,7 @@ is pre-auth by construction, so the same "no project data on screen" rationale a
 scoped to the brand logo on that screen and nothing else.
 
 **Exception 2 — loading states** (product-owner decision 2026-07-17; ADR-055; reference
-`mockup/mobile/02_loading` + `mockup/desktop/imp_002_universal_loading_component_desktop_view`).
+`mockup/mobile/00_loading` + `mockup/desktop/imp_002_universal_loading_component_desktop_view`).
 `<LoadingState />` may use the same motif — a cyan glow, a scan-line gradient, and a waveform on
 the `ai` variant — **for the same reason the pre-auth exception exists: no project data is on
 screen yet**. A loading state is by definition the interval before data arrives, so the motif never
