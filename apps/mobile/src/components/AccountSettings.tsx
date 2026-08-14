@@ -19,6 +19,7 @@ import { View, Text, Pressable, Switch, Alert, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
+import { NotificationSettings } from './NotificationSettings';
 import { useThemeStore } from '../store/themeStore';
 import { useBiometricStore } from '../store/biometricStore';
 import { useI18n } from '../i18n';
@@ -216,14 +217,10 @@ export function AccountSettings() {
           trailingIcon="swap-horiz"
           onPress={() => setLocale(locale === 'th' ? 'en' : 'th')}
         />
-        {/* Per-event notification preferences are their own screen (the drawer used to link to it
-            twice). This row is the mockup's single "Notification Alerts" entry pointing at it. */}
-        <Row
-          testID="notifications-row"
-          icon="notifications-active"
-          label={t('profile.notifications.title')}
-          onPress={() => router.push('/notification-preferences')}
-        />
+        {/* The row that pushed /notification-preferences was removed on 2026-08-14: that screen is
+            the TENANT_ADMIN panel, reached from its Settings tab. Every role's own notification
+            settings are the <NotificationSettings /> section below, which mockup
+            02_shared/03_account_settings draws inside this screen rather than behind a row. */}
         <Row
           testID="theme-row"
           icon="dark-mode"
@@ -235,19 +232,20 @@ export function AccountSettings() {
         />
       </Section>
 
+      {/* Notification Settings — drawn INSIDE this screen by mockup 02_shared/03_account_settings,
+          and the one part of Account Settings that differs by role: it offers only the types §19.4
+          routes to the signed-in role. Its own component because it owns server state. */}
+      <NotificationSettings />
+
+      {/* The Privacy Policy row left this card on 2026-08-14 — it is a drawer row now, where
+          mockup 02_shared/01_navigation_drawer draws it, and one screen should not be reachable
+          from two doors one tap apart. About keeps the version. */}
       <Section label={t('profile.main.aboutSection')}>
         <Row
           testID="profile-version"
           icon="info"
           label={t('profile.main.version')}
           value={appVersion}
-        />
-        <Row
-          testID="profile-privacy-link"
-          icon="policy"
-          label={t('privacy.policy.title')}
-          trailingIcon="open-in-new"
-          onPress={() => router.push('/privacy-policy')}
         />
       </Section>
     </View>

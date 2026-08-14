@@ -1042,6 +1042,37 @@
         "justNow": "Just now",
         "back": "Back"
       }
+    },
+    "settings": {
+      "channelsLabel": "Delivery channels",
+      "typesLabel": "Notification types",
+      "channels": {
+        "IN_APP": "In-app",
+        "EMAIL": "Email",
+        "LINE": "LINE"
+      },
+      "channelDesc": {
+        "IN_APP": "Alerts inside the app",
+        "EMAIL": "Alerts sent to your email",
+        "LINE": "Alerts sent over LINE"
+      },
+      "groups": {
+        "immediate": "Immediate",
+        "digest": "Daily & weekly digest",
+        "escalation": "Escalation"
+      },
+      "groupDesc": {
+        "IMMEDIATE": "Sent the moment the event happens.",
+        "DIGEST": "Batched into a scheduled summary.",
+        "ESCALATION": "Sent when an alert goes unacknowledged."
+      },
+      "alwaysOn": "Always on",
+      "quietLabel": "Quiet hours",
+      "quietWindow": "Mute notifications automatically",
+      "quietStart": "Start",
+      "quietEnd": "End",
+      "quietExempt": "* Critical safety notifications are always delivered.",
+      "saveFailed": "Could not save your notification settings. Check your connection and try again."
     }
   },
   "drawer": {
