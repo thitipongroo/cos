@@ -1,0 +1,308 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Privacy PDF Download Success</title>
+<!-- Google Fonts: Inter -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary": "#2b3041",
+                    "on-secondary-fixed-variant": "#003ea8",
+                    "on-primary-fixed-variant": "#414658",
+                    "on-tertiary-fixed-variant": "#004e5c",
+                    "success": "#10B981",
+                    "surface-container-low": "#0b1c30",
+                    "on-secondary-container": "#cdd7ff",
+                    "on-error-container": "#ffdad6",
+                    "surface-container-lowest": "#000f21",
+                    "on-primary-container": "#777c90",
+                    "secondary-fixed-dim": "#b4c5ff",
+                    "outline": "#909097",
+                    "concrete-white": "#F8FAFC",
+                    "on-secondary-fixed": "#00174b",
+                    "surface-container-high": "#1b2b3f",
+                    "secondary-fixed": "#dbe1ff",
+                    "warning": "#F59E0B",
+                    "primary-fixed": "#dee1f9",
+                    "tertiary-fixed-dim": "#4cd7f6",
+                    "danger": "#EF4444",
+                    "error": "#ffb4ab",
+                    "surface-tint": "#c1c5dc",
+                    "surface": "#031427",
+                    "tertiary-fixed": "#acedff",
+                    "surface-container-highest": "#26364a",
+                    "surface-container": "#102034",
+                    "on-error": "#690005",
+                    "on-primary-fixed": "#161b2b",
+                    "tertiary-container": "#001318",
+                    "secondary": "#b4c5ff",
+                    "background": "#031427",
+                    "mobile-primary": "#0066FF",
+                    "primary-container": "#0b1020",
+                    "primary": "#c1c5dc",
+                    "inverse-primary": "#595e71",
+                    "inverse-surface": "#d3e4fe",
+                    "surface-variant": "#26364a",
+                    "on-surface": "#d3e4fe",
+                    "tertiary": "#4cd7f6",
+                    "offline": "#8E8E93",
+                    "outline-variant": "#46464c",
+                    "secondary-container": "#0053db",
+                    "error-container": "#93000a",
+                    "on-tertiary-fixed": "#001f26",
+                    "on-secondary": "#002a78",
+                    "on-tertiary-container": "#0088a0",
+                    "primary-fixed-dim": "#c1c5dc",
+                    "on-background": "#d3e4fe",
+                    "inverse-on-surface": "#213145",
+                    "on-surface-variant": "#c7c6cd",
+                    "on-tertiary": "#003640",
+                    "surface-dim": "#031427",
+                    "surface-bright": "#2a3a4f",
+                    "syncing": "#FFD60A"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "mobile-section-pad": "16px",
+                    "web-base": "4px",
+                    "web-page-gap": "64px",
+                    "web-gap-tight": "4px",
+                    "mobile-card-pad": "12px",
+                    "mobile-base": "8px",
+                    "mobile-icon-pad": "8px",
+                    "touch-target-optimum": "52px",
+                    "web-margin-component": "32px",
+                    "web-padding-card": "16px",
+                    "touch-target-min": "44px",
+                    "mobile-edge-margin": "24px"
+            },
+            "fontFamily": {
+                    "label-tiny": [
+                            "Inter"
+                    ],
+                    "display-lg": [
+                            "Inter"
+                    ],
+                    "body-md": [
+                            "Inter"
+                    ],
+                    "mobile-body": [
+                            "Inter"
+                    ],
+                    "headline-h2": [
+                            "Inter"
+                    ],
+                    "headline-h1": [
+                            "Inter"
+                    ],
+                    "body-sm": [
+                            "Inter"
+                    ],
+                    "mobile-hero": [
+                            "Inter"
+                    ],
+                    "headline-h3": [
+                            "Inter"
+                    ],
+                    "mobile-title": [
+                            "Inter"
+                    ]
+            },
+            "fontSize": {
+                    "label-tiny": [
+                            "11px",
+                            {
+                                    "lineHeight": "1",
+                                    "letterSpacing": "0.05em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "display-lg": [
+                            "32px",
+                            {
+                                    "lineHeight": "1.2",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "body-md": [
+                            "14px",
+                            {
+                                    "lineHeight": "1.6",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "mobile-body": [
+                            "17px",
+                            {
+                                    "lineHeight": "1.5",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "headline-h2": [
+                            "20px",
+                            {
+                                    "lineHeight": "1.3",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "headline-h1": [
+                            "24px",
+                            {
+                                    "lineHeight": "1.3",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "body-sm": [
+                            "12px",
+                            {
+                                    "lineHeight": "1.5",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "mobile-hero": [
+                            "28px",
+                            {
+                                    "lineHeight": "1.2",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "headline-h3": [
+                            "16px",
+                            {
+                                    "lineHeight": "1.3",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "mobile-title": [
+                            "22px",
+                            {
+                                    "lineHeight": "1.3",
+                                    "fontWeight": "600"
+                            }
+                    ]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        /* Custom Styles to ensure Material Symbols fill property works properly */
+        .material-symbols-outlined {
+          font-variation-settings:
+          'FILL' 0,
+          'wght' 400,
+          'GRAD' 0,
+          'opsz' 24;
+        }
+        .material-symbols-fill {
+          font-variation-settings:
+          'FILL' 1,
+          'wght' 400,
+          'GRAD' 0,
+          'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col font-sans">
+<!-- TopAppBar -->
+<header class="bg-surface-container dark:bg-surface-container text-primary dark:text-primary font-headline-h2 text-headline-h2 fixed top-0 w-full border-b border-outline-variant flat no shadows transition-colors duration-200 flex items-center justify-between px-mobile-edge-margin h-touch-target-optimum z-50">
+<button aria-label="Go back" class="flex items-center justify-center w-touch-target-min h-touch-target-min hover:bg-surface-container-highest transition-colors rounded-full">
+<span class="material-symbols-outlined text-on-surface" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-headline-h2 text-headline-h2 font-bold text-on-surface truncate px-4">DOWNLOAD STATUS</h1>
+
+</header>
+<!-- Main Content Canvas -->
+<!-- Suppressing Bottom Navigation as this is a linear transactional / success screen -->
+<main class="flex-grow pt-[calc(var(--touch-target-optimum,52px)+24px)] pb-mobile-edge-margin px-mobile-edge-margin flex flex-col gap-6 max-w-2xl mx-auto w-full">
+<!-- Success Indicator Section -->
+<div class="flex flex-col items-center justify-center text-center gap-4 mt-8">
+<div class="w-24 h-24 rounded-full bg-surface-container flex items-center justify-center border border-success shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+<span class="material-symbols-outlined text-[64px] text-success" style="font-variation-settings: &quot;FILL&quot; 1, &quot;wght&quot; 400, &quot;GRAD&quot; 0, &quot;opsz&quot; 48;">check_circle</span>
+</div>
+<div class="flex flex-col gap-2">
+<h2 class="font-mobile-hero text-mobile-hero text-on-surface font-bold">Download Complete</h2>
+<p class="font-mobile-body text-mobile-body text-on-surface-variant max-w-[280px] mx-auto">
+                    Construction OS Privacy Policy v2.4.0 has been saved to your device.
+                </p>
+</div>
+</div>
+<!-- File Info Card -->
+<div class="bg-surface rounded-xl border border-outline-variant p-web-padding-card flex flex-col gap-4 mt-4 relative overflow-hidden">
+<!-- Subtle AI accent line top -->
+<div class="absolute top-0 left-0 w-full h-[2px] bg-tertiary opacity-80"></div>
+<div class="flex items-start gap-4">
+<div class="w-12 h-12 rounded bg-surface-container-high flex items-center justify-center shrink-0 border border-outline-variant">
+<span class="material-symbols-outlined text-primary" data-icon="description">description</span>
+</div>
+<div class="flex flex-col gap-1 min-w-0">
+<span class="font-headline-h3 text-headline-h3 text-on-surface truncate">COS_Privacy_Policy_Oct2023.pdf</span>
+<div class="flex items-center gap-3 font-body-sm text-body-sm text-on-surface-variant">
+<span class="">Format: PDF</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="">Size: 1.2 MB</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Audit Metadata Section (Bento style details) -->
+<div class="bg-surface-container rounded-xl border border-outline-variant p-web-padding-card flex flex-col gap-3">
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-[16px] text-primary" data-icon="verified_user">verified_user</span>
+<span class="font-label-tiny text-label-tiny uppercase tracking-wider text-primary">Audit Metadata</span>
+</div>
+<div class="grid grid-cols-1 gap-y-3 font-body-sm text-body-sm">
+<div class="flex justify-between items-center border-b border-outline-variant pb-2 border-opacity-50">
+<span class="text-on-surface-variant">SHA-256 Hash</span>
+<span class="text-on-surface font-mono bg-surface-container-highest px-2 py-0.5 rounded text-[10px]">7a92b4c8...e3d5f821</span>
+</div>
+<div class="flex justify-between items-center border-b border-outline-variant pb-2 border-opacity-50">
+<span class="text-on-surface-variant">Timestamp</span>
+<span class="text-on-surface">2023-10-24 14:32:05 UTC</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-on-surface-variant">Source</span>
+<span class="text-on-surface flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="lock">lock</span>
+                        Secure Vault
+                    </span>
+</div>
+</div>
+</div>
+<!-- Actions -->
+<div class="flex flex-col gap-4 mt-auto pt-8">
+<button class="w-full h-touch-target-optimum bg-mobile-primary text-concrete-white rounded-lg font-headline-h3 text-headline-h3 flex items-center justify-center gap-2 hover:bg-blue-600 transition-colors active:scale-[0.98]">
+<span class="material-symbols-outlined" data-icon="open_in_new">open_in_new</span>
+                OPEN PDF
+            </button>
+<button class="w-full h-touch-target-optimum bg-transparent text-mobile-primary border border-mobile-primary rounded-lg font-headline-h3 text-headline-h3 flex items-center justify-center gap-2 hover:bg-surface-container-high transition-colors active:scale-[0.98]">
+                VIEW DATA PORTAL
+            </button>
+</div>
+</main>
+<!-- Suppressed BottomNavBar due to linear flow rule (Success Screen) -->
+
+
+
+
+
+
+</body></html>

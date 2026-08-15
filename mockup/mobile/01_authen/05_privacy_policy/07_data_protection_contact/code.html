@@ -1,0 +1,258 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+<title>Contact DPO - Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-on-surface": "#213145",
+                        "offline": "#8E8E93",
+                        "primary-fixed-dim": "#c1c5dc",
+                        "danger": "#EF4444",
+                        "surface-container-high": "#1b2b3f",
+                        "on-primary-container": "#777c90",
+                        "surface-bright": "#2a3a4f",
+                        "on-secondary": "#002a78",
+                        "secondary": "#b4c5ff",
+                        "surface": "#031427",
+                        "on-tertiary-container": "#0088a0",
+                        "primary": "#c1c5dc",
+                        "tertiary-fixed": "#acedff",
+                        "tertiary-container": "#001318",
+                        "warning": "#F59E0B",
+                        "on-tertiary": "#003640",
+                        "surface-variant": "#26364a",
+                        "primary-container": "#0b1020",
+                        "on-background": "#d3e4fe",
+                        "mobile-primary": "#0066FF",
+                        "on-tertiary-fixed": "#001f26",
+                        "on-secondary-fixed-variant": "#003ea8",
+                        "error": "#ffb4ab",
+                        "tertiary-fixed-dim": "#4cd7f6",
+                        "on-tertiary-fixed-variant": "#004e5c",
+                        "error-container": "#93000a",
+                        "inverse-primary": "#595e71",
+                        "surface-container": "#102034",
+                        "surface-container-highest": "#26364a",
+                        "on-surface-variant": "#c7c6cd",
+                        "on-error": "#690005",
+                        "surface-container-low": "#0b1c30",
+                        "background": "#031427",
+                        "on-surface": "#d3e4fe",
+                        "on-error-container": "#ffdad6",
+                        "primary-fixed": "#dee1f9",
+                        "on-primary-fixed": "#161b2b",
+                        "success": "#10B981",
+                        "outline-variant": "#46464c",
+                        "secondary-fixed": "#dbe1ff",
+                        "surface-container-lowest": "#000f21",
+                        "inverse-surface": "#d3e4fe",
+                        "on-secondary-container": "#cdd7ff",
+                        "surface-dim": "#031427",
+                        "on-primary": "#2b3041",
+                        "on-primary-fixed-variant": "#414658",
+                        "outline": "#909097",
+                        "concrete-white": "#F8FAFC",
+                        "on-secondary-fixed": "#00174b",
+                        "secondary-container": "#0053db",
+                        "surface-tint": "#c1c5dc",
+                        "secondary-fixed-dim": "#b4c5ff",
+                        "syncing": "#FFD60A",
+                        "tertiary": "#4cd7f6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "web-margin-component": "32px",
+                        "web-padding-card": "16px",
+                        "mobile-icon-pad": "8px",
+                        "mobile-section-pad": "16px",
+                        "web-gap-tight": "4px",
+                        "mobile-edge-margin": "24px",
+                        "web-page-gap": "64px",
+                        "mobile-card-pad": "12px",
+                        "web-base": "4px",
+                        "mobile-base": "8px",
+                        "touch-target-min": "44px",
+                        "touch-target-optimum": "52px"
+                    },
+                    "fontFamily": {
+                        "headline-h2": ["Inter"],
+                        "mobile-body": ["Inter"],
+                        "headline-h1": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "label-tiny": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "mobile-hero": ["Inter"],
+                        "body-md": ["Inter"],
+                        "mobile-title": ["Inter"],
+                        "headline-h3": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-h2": ["20px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "mobile-body": ["17px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "headline-h1": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "body-sm": ["12px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "label-tiny": ["11px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "display-lg": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "mobile-hero": ["28px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "body-md": ["14px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "mobile-title": ["22px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "headline-h3": ["16px", { "lineHeight": "1.3", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            -webkit-tap-highlight-color: transparent;
+        }
+        .ai-border-focus:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px #06B6D4;
+            border-color: #06B6D4;
+        }
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #031427;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #26364a;
+            border-radius: 4px;
+        }
+        .material-symbols-outlined {
+          font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface font-mobile-body antialiased selection:bg-mobile-primary selection:text-white flex flex-col min-h-screen">
+<!-- Top App Bar (Task-Focused: Back button, no nav cluster) -->
+<header class="bg-surface border-b border-outline-variant fixed top-0 w-full z-50 flex justify-between items-center px-mobile-edge-margin h-touch-target-optimum w-full transition-colors duration-200">
+<button aria-label="Go back" class="flex items-center justify-center w-touch-target-optimum h-touch-target-optimum -ml-mobile-icon-pad text-primary hover:bg-surface-variant rounded-full transition-colors">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-headline-h2 text-headline-h2 text-on-surface absolute left-1/2 -translate-x-1/2 whitespace-nowrap overflow-hidden text-ellipsis max-w-[60%] text-center">CONTACT SUPPORT</h1>
+<div class="w-touch-target-optimum h-touch-target-optimum"></div> <!-- Spacer for centering -->
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 mt-[52px] px-mobile-edge-margin py-mobile-section-pad pb-web-page-gap flex flex-col gap-6 w-full max-w-2xl mx-auto overflow-y-auto">
+<!-- Contact Form -->
+<form class="flex flex-col gap-5" id="dpo-contact-form">
+<!-- Identity Fields -->
+<div class="flex flex-col gap-web-base">
+<label class="font-label-tiny text-label-tiny text-on-surface-variant uppercase tracking-wider" for="full-name">Full Name</label>
+<input class="w-full h-touch-target-optimum bg-surface-container border border-outline-variant rounded text-on-surface px-4 ai-border-focus font-body-md text-body-md placeholder:text-on-surface-variant/50" id="full-name" name="full_name" placeholder="Enter your full name" required="" type="text">
+</div>
+<div class="flex flex-col gap-web-base">
+<label class="font-label-tiny text-label-tiny text-on-surface-variant uppercase tracking-wider" for="email">Email Address</label>
+<input class="w-full h-touch-target-optimum bg-surface-container border border-outline-variant rounded text-on-surface px-4 ai-border-focus font-body-md text-body-md placeholder:text-on-surface-variant/50" id="email" name="email" placeholder="Enter your email address" required="" type="email">
+</div>
+<div class="flex flex-col gap-web-base">
+<label class="font-label-tiny text-label-tiny text-on-surface-variant uppercase tracking-wider" for="phone">Phone Number <span class="normal-case opacity-70">(Optional)</span></label>
+<input class="w-full h-touch-target-optimum bg-surface-container border border-outline-variant rounded text-on-surface px-4 ai-border-focus font-body-md text-body-md placeholder:text-on-surface-variant/50" id="phone" name="phone" placeholder="Enter your phone number" type="tel">
+</div>
+<!-- Category Dropdown -->
+<div class="flex flex-col gap-web-base">
+<label class="font-label-tiny text-label-tiny text-on-surface-variant uppercase tracking-wider" for="inquiry-category">Inquiry Category</label>
+<div class="relative">
+<select class="w-full h-touch-target-optimum bg-surface-container border border-outline-variant rounded text-on-surface px-4 appearance-none ai-border-focus font-body-md text-body-md cursor-pointer" id="inquiry-category" name="category">
+<option value="general">General Inquiry</option>
+<option value="access">Data Access Request</option>
+<option value="correction">Data Correction</option>
+<option value="deletion">Data Deletion</option>
+<option value="security">Security Concern</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="arrow_drop_down">arrow_drop_down</span>
+</div>
+</div>
+</div>
+<!-- Subject Input -->
+<div class="flex flex-col gap-web-base">
+<label class="font-label-tiny text-label-tiny text-on-surface-variant uppercase tracking-wider" for="inquiry-subject">Subject</label>
+<input class="w-full h-touch-target-optimum bg-surface-container border border-outline-variant rounded text-on-surface px-4 ai-border-focus font-body-md text-body-md placeholder:text-on-surface-variant/50" id="inquiry-subject" name="subject" placeholder="Brief description of your request" required="" type="text">
+</div>
+<!-- Message TextArea -->
+<div class="flex flex-col gap-web-base">
+<label class="font-label-tiny text-label-tiny text-on-surface-variant uppercase tracking-wider" for="inquiry-message">Detailed Message</label>
+<textarea class="w-full bg-surface-container border border-outline-variant rounded text-on-surface p-4 ai-border-focus font-body-md text-body-md resize-none placeholder:text-on-surface-variant/50" id="inquiry-message" name="message" placeholder="Please provide specific details to help us process your request..." required="" rows="5"></textarea>
+</div>
+<!-- Attachment Section -->
+<div class="flex flex-col gap-web-base">
+<label class="font-label-tiny text-label-tiny text-on-surface-variant uppercase tracking-wider">Supporting Documents</label>
+<button class="w-full h-touch-target-optimum border border-dashed border-outline-variant rounded bg-surface-container-low hover:bg-surface-variant transition-colors flex items-center justify-center gap-2 text-primary font-body-md text-body-md" type="button">
+<span class="material-symbols-outlined" data-icon="attach_file">attach_file</span>
+                    Attach relevant documents
+                </button>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1 text-center">Max file size: 10MB. Formats: PDF, JPG, PNG.</p>
+</div>
+<!-- Submit Action -->
+<div class="mt-4">
+<button class="w-full h-touch-target-optimum bg-mobile-primary hover:bg-secondary-container text-white font-headline-h3 text-headline-h3 rounded-lg shadow-sm transition-all active:scale-95 flex items-center justify-center gap-2" type="submit">
+<span class="material-symbols-outlined" data-icon="send" data-weight="fill">send</span>
+                    SUBMIT INQUIRY
+                </button>
+</div>
+<!-- Security Footer -->
+<div class="mt-6 flex flex-col items-center justify-center gap-2 text-center border-t border-outline-variant pt-6">
+<span class="material-symbols-outlined text-success text-2xl" data-icon="lock" data-weight="fill">lock</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant max-w-[280px]">
+                    Your message is encrypted and sent directly to our Data Protection Office.
+                </p>
+</div>
+</form>
+</main>
+<script>
+        // Simple optimistic UI interaction for the form
+        document.getElementById('dpo-contact-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const btn = this.querySelector('button[type="submit"]');
+            const originalText = btn.innerHTML;
+            
+            // Loading state
+            btn.innerHTML = `<span class="material-symbols-outlined animate-spin" data-icon="sync">sync</span> PROCESSING...`;
+            btn.classList.add('opacity-80', 'cursor-not-allowed');
+            btn.disabled = true;
+
+            // Simulate API call
+            setTimeout(() => {
+                // Success state
+                btn.classList.remove('bg-mobile-primary', 'hover:bg-secondary-container', 'opacity-80', 'cursor-not-allowed');
+                btn.classList.add('bg-success', 'text-surface-container-lowest');
+                btn.innerHTML = `<span class="material-symbols-outlined" data-icon="check_circle" data-weight="fill">check_circle</span> REQUEST SUBMITTED`;
+                
+                // Optional: reset form or navigate away
+                setTimeout(() => {
+                    // Reset to original state for demo purposes
+                    btn.classList.add('bg-mobile-primary', 'hover:bg-secondary-container');
+                    btn.classList.remove('bg-success', 'text-surface-container-lowest');
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    this.reset();
+                }, 3000);
+            }, 800);
+        });
+    </script>
+
+
+</body></html>
