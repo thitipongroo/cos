@@ -610,9 +610,17 @@ jobs:
       - name: pnpm audit (Node.js dependencies)
         run: bash scripts/pnpm-audit.sh
       # Go vulnerability check for kg-ingestion-worker
+      #
+      # Pinned to a PATCH version, not the '1.26' minor it used to be. setup-go satisfies a spec from
+      # the runner's tool cache before it downloads anything, so '1.26' kept resolving to the 1.26.5
+      # already baked into the image — and go1.26.6 (a security release fixing six stdlib
+      # vulnerabilities reachable from this worker: net/url, html/template, crypto/tls, net/http ×2,
+      # encoding/asn1) had shipped roughly an hour earlier. A floating minor cannot promise a patched
+      # standard library on the day the patch lands, which is the only day it matters. Bump this in
+      # step with the `go` directive in the service go.mod files, which is what actually builds them.
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.26'
+          go-version: '1.26.6'
       - name: govulncheck — kg-ingestion-worker
         working-directory: services/kg-ingestion-worker
         run: |

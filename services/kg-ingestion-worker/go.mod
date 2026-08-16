@@ -1,6 +1,6 @@
 module github.com/construction-os/kg-ingestion-worker
 
-go 1.26.5
+go 1.26.6
 
 require (
 	github.com/neo4j/neo4j-go-driver/v5 v5.28.4

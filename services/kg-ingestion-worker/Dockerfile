@@ -1,4 +1,4 @@
-FROM golang:1.26.5-alpine AS builder
+FROM golang:1.26.6-alpine AS builder
 # Root build context. This service depends on the shared coslib module via a `replace`
 # directive pointing outside its own directory, so a service-scoped context cannot see it
 # (ADR-069). A published module tag would avoid this, but `go mod download` would then need
