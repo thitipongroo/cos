@@ -23,6 +23,105 @@ components:
       bearerFormat: JWT
 
   schemas:
+    # ─── Subject requests (ADR-090; PDPA-48) ────────────────────────────────────
+    CreateSubjectRequest:
+      type: object
+      required: [request_type, received_at]
+      description: |
+        At least one of `subject_email` / `subject_phone` is required — enforced by the DTO, by the
+        service (which also rejects whitespace-only values) and by the DB CHECK
+        `subject_requests_identifier_present`. A request with no identifier would authorise a search
+        it cannot scope.
+      properties:
+        request_type:
+          type: string
+          enum: [ACCESS, ERASURE]
+          description: ACCESS covers PDPA §30/§31; ERASURE covers §33.
+        subject_email:
+          type: string
+          maxLength: 255
+        subject_phone:
+          type: string
+          maxLength: 50
+        received_at:
+          type: string
+          format: date-time
+          description: When the TENANT received it. Starts the §30 clock; may not be in the future.
+        note:
+          type: string
+          maxLength: 2000
+
+    CloseSubjectRequest:
+      type: object
+      required: [status, outcome_note]
+      properties:
+        status:
+          type: string
+          enum: [FULFILLED, REJECTED]
+        outcome_note:
+          type: string
+          minLength: 10
+          maxLength: 2000
+          description: What was done, or why it was refused, naming the basis.
+          example: 'Anonymised 2 CRM contact rows. Vendor row retained — Revenue Code §87, 7 years.'
+
+    SubjectRequest:
+      type: object
+      properties:
+        request_id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        request_type: { type: string, enum: [ACCESS, ERASURE] }
+        subject_email: { type: [string, 'null'] }
+        subject_phone: { type: [string, 'null'] }
+        status: { type: string, enum: [OPEN, FULFILLED, REJECTED] }
+        received_at: { type: string, format: date-time }
+        opened_by: { type: string, format: uuid }
+        opened_at: { type: string, format: date-time }
+        closed_at: { type: [string, 'null'], format: date-time }
+        outcome_note: { type: [string, 'null'] }
+
+    SubjectMatch:
+      type: object
+      description: |
+        Only the columns tagged `@pdpa` on that table, plus the row id — never the whole row. The
+        rest is the tenant's business data and is not the subject's to receive.
+      properties:
+        source:
+          type: string
+          enum: [crm.contacts, crm.leads, procurement.vendors]
+        id: { type: string, format: uuid }
+        fields:
+          type: object
+          additionalProperties:
+            type: [string, 'null']
+
+    SubjectMatchResult:
+      type: object
+      properties:
+        request_id: { type: string, format: uuid }
+        matches:
+          type: array
+          items:
+            $ref: '#/components/schemas/SubjectMatch'
+        note:
+          type: [string, 'null']
+          description: |
+            Set when nothing matched. An empty list is not the same as "nothing is held": a lead
+            carries a contact name but no email or phone of its own, so a lead with no contact row
+            cannot be reached by identifier.
+
+    ErasureResult:
+      type: object
+      properties:
+        request_id: { type: string, format: uuid }
+        anonymised:
+          type: object
+          properties:
+            contacts: { type: integer }
+            leads: { type: integer }
+            vendors: { type: integer }
+        total: { type: integer }
+
     RequestOtpRequest:
       type: object
       required: [phoneNumber]
@@ -487,3 +586,154 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+
+  # ─── Subject requests from people with NO platform account (ADR-090; PDPA-48) ────────────────
+  #
+  # Under the identity module because that is where the platform's other rights surfaces live, but a
+  # different relationship: for CRM contacts, CRM leads and the named contact at a vendor the TENANT
+  # is the controller and Construction OS the processor, so these routes serve the tenant's own
+  # compliance desk rather than a data subject. All are TENANT_ADMIN-only.
+  /subject-requests:
+    post:
+      summary: Open a subject request (ADR-090)
+      description: |
+        The row is also the AUTHORISATION to search: no search runs without one, which is what stops
+        a free lookup by email answering "is this address one of your customers".
+
+        `received_at` is when the TENANT received the request and starts the PDPA §30 30-day clock —
+        it is supplied, never defaulted to now(), and may not be in the future.
+      tags: [subject-requests]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSubjectRequest'
+      responses:
+        '201':
+          description: Request opened
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubjectRequest'
+        '400':
+          description: No identifier supplied, or received_at is in the future
+        '403':
+          description: Not a TENANT_ADMIN
+    get:
+      summary: The tenant's request queue, oldest received first
+      tags: [subject-requests]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [OPEN, FULFILLED, REJECTED]
+      responses:
+        '200':
+          description: Requests, ordered by received_at ascending
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SubjectRequest'
+
+  /subject-requests/{requestId}/matches:
+    get:
+      summary: What the tenant holds about the subject of this request
+      description: |
+        Identifiers come from the REQUEST ROW, never from the query string. Writes an audit row
+        carrying the actor, the request id and the match count (never the matches themselves).
+
+        `tax_id` and `address` on a vendor row are returned only where `vendor_type = 'INDIVIDUAL'`;
+        on a company row they are not the person's data.
+
+        Rate-limited to 10/min — below the QM-7 default of 100/min, as the residual enumeration
+        control after the request-binding.
+      tags: [subject-requests]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Matches, with a note when nothing matched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubjectMatchResult'
+        '400':
+          description: The request is already closed
+        '404':
+          description: No such request in this tenant
+
+  /subject-requests/{requestId}/erase:
+    post:
+      summary: Anonymise in place (QM-5) — clears personal columns, keeps the rows
+      description: |
+        ERASURE requests only. Irreversible by design: a hard delete would break
+        `crm.contacts.lead_id` into a chain Thai accounting law retains for 7 years (ADR-090 §5).
+      tags: [subject-requests]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Per-table counts of the rows anonymised
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErasureResult'
+        '400':
+          description: Request is not an ERASURE, or is already closed
+        '404':
+          description: No such request in this tenant
+
+  /subject-requests/{requestId}/close:
+    patch:
+      summary: Close the request as FULFILLED or REJECTED
+      description: |
+        The outcome note is required on BOTH outcomes: a refusal that does not name its basis is
+        itself a breach (ADR-090 §5).
+      tags: [subject-requests]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CloseSubjectRequest'
+      responses:
+        '200':
+          description: The closed request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubjectRequest'
+        '404':
+          description: No OPEN request with that id in this tenant

@@ -26,6 +26,9 @@ import {
 import { UnconfiguredAttestationVerifier } from './device-trust/adapters/unconfigured-attestation.adapter';
 import { PlayIntegrityVerifier } from './device-trust/adapters/play-integrity.adapter';
 import { AppAttestVerifier } from './device-trust/adapters/app-attest.adapter';
+import { SubjectRequestController } from './subject-request/subject-request.controller';
+import { SubjectRequestService } from './subject-request/subject-request.service';
+import { SubjectRequestRepository } from './subject-request/subject-request.repository';
 import { ConsentController } from './consent/consent.controller';
 import { ConsentService } from './consent/consent.service';
 import { GeoIpService } from './network-origin/geoip.service';
@@ -67,8 +70,18 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
     // whether the container can build it.
     forwardRef(() => TenantModule),
   ],
-  controllers: [IdentityController, ConsentController, DataExportController],
+  controllers: [
+    IdentityController,
+    ConsentController,
+    DataExportController,
+    // ADR-090: the tenant's own compliance desk for subject requests from people with no account.
+    SubjectRequestController,
+  ],
   providers: [
+    // Request-scoped: SubjectRequestRepository resolves tenant_id per request (REQUEST + CLS
+    // fallback, ADR-031), the same shape CrmRepository uses.
+    SubjectRequestService,
+    SubjectRequestRepository,
     KeycloakAdminService,
     IdentityService,
     MfaService,

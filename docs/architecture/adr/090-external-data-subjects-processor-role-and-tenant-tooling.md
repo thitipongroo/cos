@@ -130,6 +130,24 @@ a breach, which is why `data-retention-policy.md` now names a statute per row.
   that the mechanism exists and was used; it cannot evidence that the tenant verified the right
   person.
 
+### Shipped in this change, and what is not
+
+The API is built and covered: `platform.subject_requests` (migration `20260816000003`, RLS +
+`app_user` grant), `SubjectRequestRepository` / `Service` / `Controller` under
+`backend/src/modules/identity/subject-request/`, five TENANT_ADMIN routes documented in
+`docs/api/auth.openapi.yaml`, 28 unit tests at 100% lines and branches.
+
+Two parts of §4 and §5 are **not** built, and PDPA-48 says so in the register rather than here alone:
+
+- **No admin screen.** The tooling is the API; a tenant without an integrator drives it from an API
+  client. Nothing about the decisions above depends on the screen — it is a surface over routes that
+  already enforce the role, the request-binding, the audit and the rate limit.
+- **No legal-hold archive.** §5 says a row under `legal_hold` keeps its pre-anonymisation values in a
+  restricted store. There is no such store in this platform, and inventing one (bucket, access
+  control, retention sweep, who may read it) is its own decision rather than an implementation
+  detail. Until it exists, anonymisation is unconditional: the personal columns are cleared and no
+  pre-image is kept. A tenant that needs the archive behaviour must export the row before erasing.
+
 ## Alternatives considered
 
 - **Treat it as out of scope on a B2B basis.** Rejected: Thailand has no B2B exemption (see Context),
