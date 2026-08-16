@@ -52,13 +52,41 @@
 
 ### Procurement data
 
-| Entity            | Table               | Retention Period        | Disposal Method | Legal Basis                    |
-| ----------------- | ------------------- | ----------------------- | --------------- | ------------------------------ |
-| Purchase requests | `purchase_requests` | 7 years from PO close   | Archive         | Thai accounting law            |
-| RFQs              | `rfqs`              | 7 years from completion | Archive         | Accounting                     |
-| Vendor quotations | `quotations`        | 7 years from PO award   | Archive         | Accounting; dispute resolution |
-| Purchase orders   | `purchase_orders`   | 7 years from delivery   | Archive         | Accounting                     |
-| Delivery notes    | `delivery_notes`    | 7 years                 | Archive         | Accounting                     |
+| Entity                         | Table                                                                       | Retention Period                                               | Disposal Method                                                                              | Legal Basis                                                                                  |
+| ------------------------------ | --------------------------------------------------------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Purchase requests              | `purchase_requests`                                                         | 7 years from PO close                                          | Archive                                                                                      | Thai accounting law                                                                          |
+| RFQs                           | `rfqs`                                                                      | 7 years from completion                                        | Archive                                                                                      | Accounting                                                                                   |
+| Vendor quotations              | `quotations`                                                                | 7 years from PO award                                          | Archive                                                                                      | Accounting; dispute resolution                                                               |
+| Purchase orders                | `purchase_orders`                                                           | 7 years from delivery                                          | Archive                                                                                      | Accounting                                                                                   |
+| Delivery notes                 | `delivery_notes`                                                            | 7 years                                                        | Archive                                                                                      | Accounting                                                                                   |
+| Vendor contact person          | `procurement.vendors.contact_email`, `.contact_phone`                       | While the vendor is active + 7 years from the last transaction | **Anonymise in place** (clear the two columns; the vendor row and its purchase history stay) | Accounting (the transactions), not the contact — see § External people below                 |
+| Sole trader's tax id / address | `procurement.vendors.tax_id`, `.address` where `vendor_type = 'INDIVIDUAL'` | Same as above                                                  | Anonymise in place                                                                           | Revenue Code §87 requires the TRANSACTION record, which survives anonymisation of the person |
+
+### CRM data — EXTERNAL people (COS is processor)
+
+| Entity         | Table                                     | Retention Period                              | Disposal Method                                                      | Legal Basis                                           |
+| -------------- | ----------------------------------------- | --------------------------------------------- | -------------------------------------------------------------------- | ----------------------------------------------------- |
+| CRM contact    | `crm.contacts`                            | Until the tenant erases, or lead close + 2 yr | **Anonymise in place** — clear `name`/`email`/`phone`, keep the row  | No statutory basis to keep the PERSON; see below      |
+| CRM lead       | `crm.leads`                               | Same                                          | Anonymise `contact_name`; `company` is untouched (not personal data) | —                                                     |
+| Converted lead | `crm.opportunities` → `finance.customers` | 7 years from conversion                       | Row retained; personal columns already anonymised upstream           | Thai accounting law (the transaction, not the person) |
+
+**Why anonymise rather than delete, and why the row stays.** QM-5 states the platform's strategy
+outright — _"anonymization-in-place preferred over cascade delete (preserves aggregate analytics)"_ —
+and the schema makes it the only correct option here: `crm.contacts.lead_id` is `NOT NULL REFERENCES
+crm.leads`, and a lead converts into an opportunity and then a `finance.customers` row that Thai
+accounting law requires be kept for 7 years. Deleting the contact would break a chain the tenant is
+legally obliged to retain; clearing the personal columns removes the person from it and leaves the
+transaction intact. This is the standard **conditional erasure** shape: the personal data leaves the
+operational system, the record that the law requires survives.
+
+**A legal-hold copy is kept separately, reachable by legal only.** Where a row is under
+`legal_hold` (§ Legal hold below), anonymisation is deferred and the pre-anonymisation values are
+written to the restricted archive rather than discarded, so a dispute can still be answered.
+Product-owner decision 2026-08-16; the archive and its access control are specified in ADR-090.
+
+**Stating the basis is itself an obligation.** Answering a data subject with "we keep it for legal
+reasons" without naming the law, the categories and the period is a breach in its own right — which
+is why each row above names its statute rather than pointing at this document generally.
 
 ### Finance data
 

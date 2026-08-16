@@ -3564,6 +3564,11 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
         PATCH /api/v1/crm/opportunities/:id/convert · GET|POST /api/v1/crm/contacts
         GET /api/v1/crm/customers
       RBAC: read = EXECUTIVE + CRM_SALES_MANAGER; write = CRM_SALES_MANAGER (+ TENANT_ADMIN).
+      PDPA: `crm.contacts.{name,email,phone}` and `crm.leads.contact_name` are personal data about
+      people with NO platform account. The TENANT is the controller and COS the PROCESSOR, so a
+      subject request is routed to the tenant rather than answered here — ADR-090; tagged by
+      migration 20260816000002; flows in docs/compliance/data-flow-map.md §9. `crm.leads.company`
+      is NOT tagged: a juristic person is not a data subject. There is no B2B exemption in Thai law.
 
 Local SQLite Schema (mirrors server entities for offline use):
   sync_queue:

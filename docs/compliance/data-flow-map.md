@@ -47,19 +47,22 @@ The **Implemented** column is the fact that governs the privacy notice: a catego
 yet collected must never be described to a data subject as collected (verified 2026-08-03 against
 `backend/prisma/migrations/` and `backend/prisma/schema.prisma`).
 
-| PDPA Category | Description                       | Implemented at Stage 1                                                                              | @pdpa tag                        | Retention                    |
-| ------------- | --------------------------------- | --------------------------------------------------------------------------------------------------- | -------------------------------- | ---------------------------- |
-| `identity`    | Full name (ชื่อ-นามสกุล)          | **Yes** — `platform.users.display_name`, `workforce.workers.full_name`                              | `@pdpa(category: "identity")`    | See data-retention-policy.md |
-| `identity`    | Date of birth                     | **No** — no `date_of_birth` column exists in any migration                                          | —                                | —                            |
-| `contact`     | Phone number, email address       | **Yes** — `platform.users`, `workforce.workers.contact_phone`                                       | `@pdpa(category: "contact")`     | See data-retention-policy.md |
-| `national_id` | Thai national ID (เลขบัตรประชาชน) | **No** — no `national_id` column exists in any migration                                            | —                                | —                            |
-| `location`    | GPS coordinates                   | **Yes** — 5 tables, see §3 below                                                                    | `@pdpa(category: "location")`    | 90 days (attendance)         |
-| `biometric`   | Face scan / fingerprint           | **No** — not in Stage 1; photos may incidentally contain faces (§5, §26)                            | `@pdpa(category: "biometric")`   | N/A Stage 1                  |
-| `financial`   | Worker daily rate                 | **Yes** — `workforce.project_workforce.daily_rate`                                                  | `@pdpa(category: "financial")`   | 7 years (accounting law)     |
-| `financial`   | Hours worked                      | **Yes** — `workforce_telemetry.timesheets.regular_hours`, `.overtime_hours`                         | `@pdpa(category: "financial")`   | 2 years (labor law)          |
-| `financial`   | Payslip / salary paid             | **No** — no payroll table exists; `finance.payments` is invoice-keyed with no personal payee        | —                                | —                            |
-| `financial`   | Bank account                      | **No** — no bank-account column exists in any migration                                             | —                                | —                            |
-| `operational` | Actions the user performed        | **Yes** — `platform.audit_logs.actor_id`, `files.files.uploaded_by`, `finance.payments.recorded_by` | `@pdpa(category: "operational")` | See data-retention-policy.md |
+| PDPA Category          | Description                       | Implemented at Stage 1                                                                                                    | @pdpa tag                        | Retention                    |
+| ---------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | -------------------------------- | ---------------------------- |
+| `identity`             | Full name (ชื่อ-นามสกุล)          | **Yes** — `platform.users.display_name`, `workforce.workers.full_name`                                                    | `@pdpa(category: "identity")`    | See data-retention-policy.md |
+| `identity`             | Name of an EXTERNAL person        | **Yes** — `crm.contacts.name`, `crm.leads.contact_name` (COS is **processor**, §9)                                        | `@pdpa(… role: "processor")`     | See data-retention-policy.md |
+| `identity`             | Date of birth                     | **No** — no `date_of_birth` column exists in any migration                                                                | —                                | —                            |
+| `contact`              | Phone number, email address       | **Yes** — `platform.users`, `workforce.workers.contact_phone`                                                             | `@pdpa(category: "contact")`     | See data-retention-policy.md |
+| `contact`              | EXTERNAL person's phone / email   | **Yes** — `crm.contacts.email`/`.phone`, `procurement.vendors.contact_email`/`.contact_phone` (§9, §10)                   | `@pdpa(… role: "processor")`     | See data-retention-policy.md |
+| `identity` / `contact` | Sole trader's tax id / address    | **Conditional** — `procurement.vendors.tax_id`/`.address` are personal data only where `vendor_type = 'INDIVIDUAL'` (§10) | `@pdpa(… conditional: …)`        | See data-retention-policy.md |
+| `national_id`          | Thai national ID (เลขบัตรประชาชน) | **No** — no `national_id` column exists in any migration                                                                  | —                                | —                            |
+| `location`             | GPS coordinates                   | **Yes** — 5 tables, see §3 below                                                                                          | `@pdpa(category: "location")`    | 90 days (attendance)         |
+| `biometric`            | Face scan / fingerprint           | **No** — not in Stage 1; photos may incidentally contain faces (§5, §26)                                                  | `@pdpa(category: "biometric")`   | N/A Stage 1                  |
+| `financial`            | Worker daily rate                 | **Yes** — `workforce.project_workforce.daily_rate`                                                                        | `@pdpa(category: "financial")`   | 7 years (accounting law)     |
+| `financial`            | Hours worked                      | **Yes** — `workforce_telemetry.timesheets.regular_hours`, `.overtime_hours`                                               | `@pdpa(category: "financial")`   | 2 years (labor law)          |
+| `financial`            | Payslip / salary paid             | **No** — no payroll table exists; `finance.payments` is invoice-keyed with no personal payee                              | —                                | —                            |
+| `financial`            | Bank account                      | **No** — no bank-account column exists in any migration                                                                   | —                                | —                            |
+| `operational`          | Actions the user performed        | **Yes** — `platform.audit_logs.actor_id`, `files.files.uploaded_by`, `finance.payments.recorded_by`                       | `@pdpa(category: "operational")` | See data-retention-policy.md |
 
 > Corrected 2026-08-03: this table previously listed date of birth, national ID and bank account as
 > collected categories. None of them exist in the schema, and the mobile privacy notice had repeated
@@ -77,6 +80,18 @@ yet collected must never be described to a data subject as collected (verified 2
 > personal datum is _who keyed the entry in_ — an action, exactly like `audit_logs.actor_id`. The
 > amount columns are deliberately untagged and are never exported into an individual's archive; that
 > money is the organisation's, not the recorder's.
+>
+> **Updated 2026-08-16 — EXTERNAL people were missing from this map entirely.** Both earlier tagging
+> passes scoped themselves to what the PDPA export collector reads, and that collector is keyed by
+> `userId`: it answers "what does the platform hold about this ACCOUNT HOLDER". CRM contacts, CRM
+> leads and the named contact person at a vendor have no account, so no query reached them and
+> nothing prompted a tag — leaving this table reading as though the platform held no personal data
+> about them. It does. `20260816000002_tag_external_party_pii` tags those columns and §9/§10 below
+> record the flows. **"It is only business contact data" was considered and rejected as a basis for
+> leaving them out**: Singapore's PDPA §4(5) exempts business contact information used for B2B, but
+> **Thailand's PDPA has no such exemption** — its definition covers any data enabling identification
+> of a person, directly or indirectly, and it follows the GDPR model here rather than Singapore's.
+> The role differs, not the obligation: see § Controller and processor roles.
 
 ---
 
@@ -199,6 +214,58 @@ Construction knowledge graph
   ├── Relationships: project → task → worker_id (UUID pseudonymous)
   └── Access: internal service-to-service only
 ```
+
+### 9. CRM → PostgreSQL (cos-db) — EXTERNAL people, COS as processor
+
+```text
+Leads, contacts and opportunities a tenant records about prospective customers
+  ├── Stored: PostgreSQL `crm` schema (crm.leads, crm.contacts, crm.opportunities)
+  ├── PII fields: contacts.name (RESTRICTED, NOT NULL — every row identifies someone),
+  │               contacts.email, contacts.phone, leads.contact_name
+  ├── NOT PII: leads.company — a juristic person is not a data subject under the PDPA
+  ├── Data subject: an EXTERNAL person with no platform account
+  ├── Role: TENANT is controller (it decides to record them and why); COS is PROCESSOR
+  ├── Written by: CRM_SALES_MANAGER / TENANT_ADMIN via POST /api/v1/crm/{leads,contacts}
+  ├── Isolation: RLS `rls_tenant_isolation` — a contact is visible to one tenant only
+  ├── Cross-border: none — stays in the tenant home region
+  └── Subject rights: routed to the tenant, which holds the tooling (ADR-090)
+```
+
+### 10. Procurement → vendor contact person, COS as processor
+
+```text
+The named person a tenant deals with at a supplier
+  ├── Stored: PostgreSQL `procurement.vendors`
+  ├── PII fields: contact_email, contact_phone (a PERSON's work address and number —
+  │               the company is not the data subject, that person is)
+  ├── CONDITIONAL PII: tax_id, address — personal data only where
+  │                    vendor_type = 'INDIVIDUAL' (sole trader). A consumer of the @pdpa
+  │                    tags MUST read vendor_type first; treating every row as personal
+  │                    would put a company's tax id into an individual's archive.
+  ├── vendor_type is NULLABLE and NOT backfilled: nothing in the schema distinguishes a
+  │                    sole trader from a company, and a guess mislabels a real person's
+  │                    tax id as company data. NULL = not recorded, never "juristic".
+  ├── Role: TENANT is controller; COS is PROCESSOR
+  ├── Isolation: RLS `rls_tenant_isolation`; UNIQUE (tenant_id, vendor_code)
+  └── Subject rights: routed to the tenant (ADR-090)
+```
+
+---
+
+## Controller and processor roles
+
+**This map describes two different relationships, and conflating them is the mistake §9 and §10 were
+added to prevent.**
+
+| Data                                                   | Controller | COS's role     | Who answers a data subject                                |
+| ------------------------------------------------------ | ---------- | -------------- | --------------------------------------------------------- |
+| Platform accounts, workers, site operations (§1–§8)    | COS        | **Controller** | COS, via `POST /api/v1/users/me/data-export` (PDPA-10/11) |
+| Tenant-entered records about EXTERNAL people (§9, §10) | **Tenant** | **Processor**  | The tenant, using tooling COS provides (ADR-090)          |
+
+The table above §Third-party processors lists processors **COS sends data to**. This section is the
+opposite direction — where COS is itself the processor, for its own tenants. Both exist, and PDPA §40
+imposes a record-keeping duty on a processor independently of the controller's, which is why the
+§9/§10 columns are tagged rather than left out on the grounds that someone else is the controller.
 
 ---
 

@@ -101,12 +101,15 @@ model User {
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz()
 
-  tenant         Tenant             @relation(fields: [tenantId], references: [tenantId])
-  memberships    TenantMembership[]
-  auditLogs      AuditLog[]         @relation("ActorLogs")
-  trustedDevices TrustedDevice[]
-  consents       ConsentRecord[]
-  exportRequests ExportRequest[]
+  tenant                Tenant             @relation(fields: [tenantId], references: [tenantId])
+  memberships           TenantMembership[]
+  auditLogs             AuditLog[]         @relation("ActorLogs")
+  trustedDevices        TrustedDevice[]
+  consents              ConsentRecord[]
+  exportRequests        ExportRequest[]
+  // Subject requests this user KEYED IN as an admin — not requests about them (ADR-090: the subject
+  // of one of these has no account, so they can never be the `User` on the other end).
+  subjectRequestsOpened SubjectRequest[]
 
   @@index([tenantId, email])
   @@index([phoneNumber])
@@ -228,16 +231,16 @@ enum DeviceRevocationReason {
 // carries tenantId and the standard rls_tenant_isolation policy (ADR-031).
 // @pdpa(category: "identity") — user_id links a consent decision to a person
 model ConsentRecord {
-  consentId String @id @default(dbgenerated("gen_random_uuid()")) @map("consent_id") @db.Uuid
-  tenantId  String @map("tenant_id") @db.Uuid
-  userId    String @map("user_id") @db.Uuid
+  consentId     String         @id @default(dbgenerated("gen_random_uuid()")) @map("consent_id") @db.Uuid
+  tenantId      String         @map("tenant_id") @db.Uuid
+  userId        String         @map("user_id") @db.Uuid
   // @pdpa(category: "operational") — which processing purpose the decision covers
-  purpose   ConsentPurpose @map("purpose")
+  purpose       ConsentPurpose @map("purpose")
   // true = granted, false = withdrawn. Both are inserts; neither mutates the prior row.
-  granted   Boolean @map("granted")
+  granted       Boolean        @map("granted")
   // Version of the privacy notice in force at the time (PrivacyPolicyDocument.tsx POLICY_VERSION).
-  noticeVersion String   @map("notice_version") @db.VarChar(32)
-  recordedAt    DateTime @default(now()) @map("recorded_at") @db.Timestamptz()
+  noticeVersion String         @map("notice_version") @db.VarChar(32)
+  recordedAt    DateTime       @default(now()) @map("recorded_at") @db.Timestamptz()
 
   user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
 
@@ -263,6 +266,28 @@ enum ExportFormat {
   @@schema("platform")
 }
 
+// A subject request from a person with no platform account (ADR-090). Two types, not five: PDPA §30
+// access and §31 portability are one job here — the tenant is handed what is held and gives it to the
+// subject in whatever form it agreed — and §33 erasure is the other. Rectification is deliberately
+// absent: an admin corrects a CRM contact by editing it, which needs no request record.
+enum SubjectRequestType {
+  ACCESS
+  ERASURE
+
+  @@schema("platform")
+}
+
+// OPEN until answered. FULFILLED and REJECTED are both closures and both require an outcome note —
+// a refusal that does not name its basis is itself a breach (ADR-090 §5), which the DB CHECK
+// `subject_requests_closed_has_outcome` enforces alongside `closed_at`.
+enum SubjectRequestStatus {
+  OPEN
+  FULFILLED
+  REJECTED
+
+  @@schema("platform")
+}
+
 // PDPA §30/§31 data-export request (ADR-078; closes PDPA-10/11).
 //
 // A row per request because §30 gives the controller 30 days to answer one, and "we ran a job" is not
@@ -284,19 +309,61 @@ model ExportRequest {
   fromDate DateTime?    @map("from_date") @db.Date
   toDate   DateTime?    @map("to_date") @db.Date
 
-  status ExportStatus @default(PENDING) @map("status")
-  fileId String?      @map("file_id") @db.Uuid
+  status        ExportStatus @default(PENDING) @map("status")
+  fileId        String?      @map("file_id") @db.Uuid
   // Never a stack trace — this is shown to the subject (QM-10).
-  failureReason String?   @map("failure_reason") @db.Text
-  requestedAt   DateTime  @default(now()) @map("requested_at") @db.Timestamptz()
-  completedAt   DateTime? @map("completed_at") @db.Timestamptz()
-  expiresAt     DateTime  @map("expires_at") @db.Timestamptz()
+  failureReason String?      @map("failure_reason") @db.Text
+  requestedAt   DateTime     @default(now()) @map("requested_at") @db.Timestamptz()
+  completedAt   DateTime?    @map("completed_at") @db.Timestamptz()
+  expiresAt     DateTime     @map("expires_at") @db.Timestamptz()
 
   user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
 
   @@index([userId, requestedAt(sort: Desc)])
   @@index([status, expiresAt])
   @@map("export_requests")
+  @@schema("platform")
+}
+
+// A subject request from someone with NO platform account (ADR-090; PDPA-48).
+//
+// The sibling of ExportRequest above, and the difference is who drives it. ExportRequest is keyed by
+// `userId` and the subject operates it themselves; the people here — a CRM contact, a lead, the named
+// contact at a vendor — have no account, so the TENANT is their controller and answers on their
+// behalf. What this row records is the tenant's handling, not a subject session.
+//
+// It is also the permission to search: without it there is no lawful reason for an admin to look a
+// stranger's email up in the tenant's customer base, and every search cites a request id and is
+// audited (ADR-090 §4).
+//
+// `receivedAt` is when the TENANT received the request, not when it was keyed in — PDPA §30 runs 30
+// days from receipt, so it is supplied and never defaulted to now().
+model SubjectRequest {
+  requestId   String             @id @default(dbgenerated("gen_random_uuid()")) @map("request_id") @db.Uuid
+  tenantId    String             @map("tenant_id") @db.Uuid
+  requestType SubjectRequestType @map("request_type")
+
+  // At least one identifier is required (DB CHECK `subject_requests_identifier_present`): with
+  // neither there is nothing to search for.
+  // @pdpa(category: "contact", role: "processor") — the email a data subject identified themselves by
+  subjectEmail String? @map("subject_email") @db.VarChar(255)
+  // @pdpa(category: "contact", role: "processor") — the phone a data subject identified themselves by
+  subjectPhone String? @map("subject_phone") @db.VarChar(50)
+
+  status      SubjectRequestStatus @default(OPEN) @map("status")
+  receivedAt  DateTime             @map("received_at") @db.Timestamptz()
+  // @pdpa(category: "operational") — traces the request record to the admin who keyed it in
+  openedBy    String               @map("opened_by") @db.Uuid
+  openedAt    DateTime             @default(now()) @map("opened_at") @db.Timestamptz()
+  closedAt    DateTime?            @map("closed_at") @db.Timestamptz()
+  // What was done, or why it was refused. A refusal must name its basis — "kept for legal reasons"
+  // without naming the law is itself a breach (ADR-090 §5).
+  outcomeNote String?              @map("outcome_note") @db.Text
+
+  openedByUser User @relation(fields: [openedBy], references: [userId])
+
+  @@index([tenantId, status, receivedAt])
+  @@map("subject_requests")
   @@schema("platform")
 }
 
