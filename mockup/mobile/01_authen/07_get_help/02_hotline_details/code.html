@@ -1,0 +1,226 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>IT Support Hotline</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-high": "#1b2b3f",
+                    "outline-variant": "#46464c",
+                    "primary-container": "#0b1020",
+                    "on-primary-fixed": "#161b2b",
+                    "surface-variant": "#26364a",
+                    "on-tertiary-container": "#0088a0",
+                    "concrete-white": "#F8FAFC",
+                    "surface": "#031427",
+                    "on-primary": "#2b3041",
+                    "surface-container": "#102034",
+                    "on-background": "#d3e4fe",
+                    "on-tertiary-fixed": "#001f26",
+                    "on-surface-variant": "#c7c6cd",
+                    "danger": "#EF4444",
+                    "inverse-on-surface": "#213145",
+                    "on-tertiary": "#003640",
+                    "secondary-fixed-dim": "#b4c5ff",
+                    "on-secondary-fixed-variant": "#003ea8",
+                    "on-primary-container": "#777c90",
+                    "tertiary-fixed": "#acedff",
+                    "syncing": "#FFD60A",
+                    "surface-tint": "#c1c5dc",
+                    "tertiary-container": "#001318",
+                    "mobile-primary": "#0066FF",
+                    "on-surface": "#d3e4fe",
+                    "surface-container-highest": "#26364a",
+                    "on-secondary-fixed": "#00174b",
+                    "tertiary": "#4cd7f6",
+                    "secondary-container": "#0053db",
+                    "secondary-fixed": "#dbe1ff",
+                    "on-secondary-container": "#cdd7ff",
+                    "inverse-surface": "#d3e4fe",
+                    "tertiary-fixed-dim": "#4cd7f6",
+                    "success": "#10B981",
+                    "secondary": "#b4c5ff",
+                    "error": "#ffb4ab",
+                    "surface-bright": "#2a3a4f",
+                    "outline": "#909097",
+                    "primary-fixed": "#dee1f9",
+                    "surface-container-low": "#0b1c30",
+                    "background": "#031427",
+                    "on-primary-fixed-variant": "#414658",
+                    "surface-container-lowest": "#000f21",
+                    "primary": "#c1c5dc",
+                    "offline": "#8E8E93",
+                    "primary-fixed-dim": "#c1c5dc",
+                    "inverse-primary": "#595e71",
+                    "on-error-container": "#ffdad6",
+                    "on-secondary": "#002a78",
+                    "surface-dim": "#031427",
+                    "warning": "#F59E0B",
+                    "on-tertiary-fixed-variant": "#004e5c",
+                    "error-container": "#93000a",
+                    "on-error": "#690005"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "web-page-gap": "64px",
+                    "mobile-edge-margin": "24px",
+                    "mobile-card-pad": "12px",
+                    "mobile-section-pad": "16px",
+                    "web-margin-component": "32px",
+                    "web-padding-card": "16px",
+                    "touch-target-min": "44px",
+                    "mobile-icon-pad": "8px",
+                    "web-gap-tight": "4px",
+                    "web-base": "4px",
+                    "mobile-base": "8px",
+                    "touch-target-optimum": "52px"
+            },
+            "fontFamily": {
+                    "headline-h2": ["Inter"],
+                    "body-md": ["Inter"],
+                    "mobile-body": ["Inter"],
+                    "mobile-hero": ["Inter"],
+                    "mobile-title": ["Inter"],
+                    "body-sm": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "headline-h1": ["Inter"],
+                    "headline-h3": ["Inter"],
+                    "label-tiny": ["Inter"]
+            },
+            "fontSize": {
+                    "headline-h2": ["20px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                    "body-md": ["14px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "mobile-body": ["17px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "mobile-hero": ["28px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                    "mobile-title": ["22px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                    "body-sm": ["12px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "display-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-h1": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                    "headline-h3": ["16px", {"lineHeight": "1.3", "fontWeight": "500"}],
+                    "label-tiny": ["11px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}]
+            }
+          }
+        }
+      }
+    </script>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col font-mobile-body antialiased">
+<!-- TopNav - Transactional/Task Focused (Suppress Shell rules apply, rendering custom back-only header) -->
+<header class="bg-surface-container-lowest border-b border-outline-variant fixed top-0 left-0 w-full z-50 flex justify-between items-center px-mobile-edge-margin h-touch-target-optimum">
+<button class="flex items-center justify-center w-[44px] h-[44px] text-primary hover:bg-surface-variant transition-colors rounded-DEFAULT">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<div class="text-headline-h3 font-headline-h3 font-bold text-tertiary tracking-tighter">IT SUPPORT HOTLINE</div>
+<div class="w-[44px]"></div> <!-- Spacer for center alignment -->
+</header>
+<main class="flex-grow pt-[68px] pb-mobile-section-pad px-mobile-edge-margin flex flex-col gap-mobile-section-pad">
+<!-- Primary Call Card -->
+<div class="bg-surface border border-outline-variant rounded-DEFAULT p-web-padding-card flex flex-col items-center text-center gap-mobile-base">
+<div class="w-16 h-16 rounded-full bg-surface-container-high border border-outline-variant flex items-center justify-center mb-2">
+<span class="material-symbols-outlined text-mobile-primary text-3xl" style="font-variation-settings: &quot;FILL&quot; 1;">headset_mic</span>
+</div>
+<h2 class="text-mobile-title font-mobile-title text-on-surface">Global IT Support</h2>
+<p class="text-body-md font-body-md text-on-surface-variant">Priority routing for field operations and mission-critical systems.</p>
+<div class="mt-4 w-full">
+<div class="bg-surface-container-lowest border border-outline-variant py-3 px-4 flex justify-center items-center rounded-DEFAULT mb-4">
+<span class="text-headline-h2 font-headline-h2 text-tertiary tracking-wider">+1 (800) 555-0199</span>
+</div>
+<button class="w-full h-touch-target-optimum bg-mobile-primary text-concrete-white rounded-DEFAULT font-headline-h3 text-headline-h3 flex items-center justify-center gap-2 hover:bg-secondary-container transition-colors active:scale-95 duration-100">
+<span class="material-symbols-outlined">call</span>
+                    CALL NOW
+                </button>
+</div>
+</div>
+<!-- Operating Hours -->
+<div class="bg-surface-container-low border border-outline-variant rounded-DEFAULT p-web-padding-card">
+<h3 class="text-headline-h3 font-headline-h3 text-on-surface mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-outline">schedule</span>
+                Operating Hours
+            </h3>
+<div class="flex flex-col gap-3">
+<div class="flex justify-between items-center border-b border-outline-variant pb-2">
+<span class="text-body-md font-body-md text-on-surface-variant">Critical Systems</span>
+<span class="text-label-tiny font-label-tiny bg-success/20 text-success px-2 py-1 rounded-DEFAULT uppercase border border-success/30">24/7 Available</span>
+</div>
+<div class="flex justify-between items-center pb-1">
+<span class="text-body-md font-body-md text-on-surface-variant">General Inquiry</span>
+<span class="text-body-md font-body-md text-on-surface">08:00 - 18:00</span>
+</div>
+</div>
+</div>
+<!-- Preparation Checklist -->
+<div class="bg-surface-container-low border border-outline-variant rounded-DEFAULT p-web-padding-card">
+<h3 class="text-headline-h3 font-headline-h3 text-on-surface mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-outline">list_alt</span>
+                Information to Prepare
+            </h3>
+<p class="text-body-sm font-body-sm text-on-surface-variant mb-4">Having these details ready expedites resolution.</p>
+<ul class="flex flex-col gap-3">
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-tertiary mt-0.5">devices</span>
+<div>
+<div class="text-body-md font-body-md text-on-surface">Device ID or Asset Tag</div>
+<div class="text-body-sm font-body-sm text-outline">Located on the back of the device hardware.</div>
+</div>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-tertiary mt-0.5">location_on</span>
+<div>
+<div class="text-body-md font-body-md text-on-surface">Site Location</div>
+<div class="text-body-sm font-body-sm text-outline">Project code or physical site name.</div>
+</div>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-danger mt-0.5">error</span>
+<div>
+<div class="text-body-md font-body-md text-on-surface">Error Code</div>
+<div class="text-body-sm font-body-sm text-outline">Any numeric code displayed on the screen.</div>
+</div>
+</li>
+</ul>
+</div>
+<!-- Regional Numbers -->
+<div class="bg-surface-container-low border border-outline-variant rounded-DEFAULT p-web-padding-card">
+<h3 class="text-headline-h3 font-headline-h3 text-on-surface mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-outline">public</span>
+                Regional Hotlines
+            </h3>
+<div class="flex flex-col gap-4">
+<div class="flex justify-between items-center">
+<div>
+<div class="text-body-md font-body-md text-on-surface">Bangkok HQ</div>
+<div class="text-body-sm font-body-sm text-on-surface-variant">+66 2 555 0100</div>
+</div>
+<button class="w-[44px] h-[44px] flex items-center justify-center border border-outline-variant rounded-DEFAULT text-mobile-primary hover:bg-surface-variant">
+<span class="material-symbols-outlined">call</span>
+</button>
+</div>
+<div class="flex justify-between items-center border-t border-outline-variant pt-4">
+<div>
+<div class="text-body-md font-body-md text-on-surface">Eastern Seaboard</div>
+<div class="text-body-sm font-body-sm text-on-surface-variant">+66 38 555 0101</div>
+</div>
+<button class="w-[44px] h-[44px] flex items-center justify-center border border-outline-variant rounded-DEFAULT text-mobile-primary hover:bg-surface-variant">
+<span class="material-symbols-outlined">call</span>
+</button>
+</div>
+</div>
+</div>
+<!-- System Status Action -->
+
+</main>
+
+
+</body></html>
