@@ -33,11 +33,22 @@ const config: Config = {
     '^@react-native-community/netinfo$': '<rootDir>/src/__mocks__/netinfo.ts',
     '^@nozbe/watermelondb$': '<rootDir>/src/__mocks__/watermelondb.ts',
     '^@nozbe/watermelondb/(.*)$': '<rootDir>/src/__mocks__/watermelondb.ts',
-    // Workspace package aliases
+    // Workspace package aliases.
+    //
+    // Every one of these points at the package's SOURCE, mirroring the `paths` in tsconfig.json.
+    // That is not a convenience: apps/mobile is a standalone workspace consuming these as `file:`
+    // dependencies, whose package.json `main` is dist/index.js — and the Mobile Tests CI job only
+    // installs, it never builds the packages. Resolving through node_modules therefore finds a
+    // package whose entry point does not exist. That is exactly how @cos/financial broke: it was in
+    // tsconfig paths (so type-check passed) but missing here, so four suites died with "Cannot find
+    // module '@cos/financial'" in CI while passing locally, where a previous `pnpm run build` had
+    // left a dist/ behind. Add BOTH lines for any new @cos package used from mobile.
     '^@cos/types$': '<rootDir>/../../packages/@cos/types/src/index.ts',
     '^@cos/types/(.*)$': '<rootDir>/../../packages/@cos/types/src/$1',
     '^@cos/ui-logic$': '<rootDir>/../../packages/@cos/ui-logic/src/index.ts',
     '^@cos/ui-logic/(.*)$': '<rootDir>/../../packages/@cos/ui-logic/src/$1',
+    '^@cos/financial$': '<rootDir>/../../packages/@cos/financial/src/index.ts',
+    '^@cos/financial/(.*)$': '<rootDir>/../../packages/@cos/financial/src/$1',
   },
   collectCoverage: true,
   coverageDirectory: 'coverage',

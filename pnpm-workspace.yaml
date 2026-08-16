@@ -41,7 +41,24 @@ overrides:
   'ip-address@<=10.3.0': '^10.3.1' # GHSA-mwp4-54f8-5fhr — Address4 reads leading-zero octets as decimal while resolvers read them as octal, giving SSRF / trust-boundary bypass (via socks-proxy-agent / unleash-client)
   '@fastify/static@<10.1.1': '^10.1.1' # GHSA-83w8-p2f5-377r — route-guard bypass via path traversal; patched only in 10.1.1 (major bump, Fastify 5 compatible — via @fastify/swagger-ui / @nestjs/platform-fastify / @nestjs/swagger)
   'brace-expansion@<5.0.8': '5.0.9' # GHSA-mh99-v99m-4gvg — DoS via unbounded expansion (OOM); env advisory patches only >=5.0.8, so every vulnerable major (1.x/2.x/5.x, all transitive dev/build tooling) is bumped to 5.0.9
-  'nanoid@<3.3.17': '^3.3.17' # GHSA-2v37-7h3g-55p8 — a custom alphabet generator loops forever when size is 0, hanging the caller; only the 3.x line is in this tree (3.3.16, via postcss ← next / tailwind / webpack), so the advisory's other branch (>=4.0.0 <5.1.6) needs no entry
+  # GHSA-jmr9-qjv8-65gv — extract-zip follows symlinks out of the extraction directory. It cannot be
+  # fixed by bumping extract-zip: the advisory names 2.0.2 as the patched release and NO SUCH VERSION
+  # EXISTS on npm (2.0.1 is the newest published). The dependency is dev-only and single-sourced —
+  # apps/web devDependency @lhci/cli@0.15.1 (already the latest) pins lighthouse to EXACTLY 12.6.1,
+  # whose puppeteer-core@24 asks for @puppeteer/browsers@^2, which is the last line still using
+  # extract-zip. @puppeteer/browsers@3 replaced it with modern-tar, so overriding the 2.x line removes
+  # the vulnerable package from the tree entirely rather than suppressing the finding.
+  #
+  # Compatibility was verified, not assumed: puppeteer-core@24.43.1 uses 13 symbols from this package
+  # and 3.1.0 exports all 13. 3.x is ESM-only ("type": "module"), which would break a `require()` —
+  # but lighthouse is ESM and does `import puppeteer from 'puppeteer-core'`, so the ESM build is what
+  # loads, and it imports @puppeteer/browsers as ESM. Its `engines` floor of node >=22.12 is met by
+  # the repo's Node 24 (CI NODE_VERSION: '24').
+  #
+  # Pinned exactly, not ^3.1.0: puppeteer@25.5.0 (mermaid-cli) already resolves 3.1.0, so an exact pin
+  # keeps ONE copy in the store instead of adding a second, newer one beside it.
+  '@puppeteer/browsers@<3': '3.1.0'
+  'nanoid@<3.3.18': '^3.3.18' # GHSA-2v37-7h3g-55p8 — a custom alphabet generator loops forever when size is 0, hanging the caller; only the 3.x line is in this tree (via postcss ← next / tailwind / webpack), so the advisory's other branch (>=4.0.0 <5.1.6) needs no entry. Range widened from <3.3.17: the advisory was re-scoped after 3.3.17 shipped an incomplete fix, and now reads vulnerable <3.3.18 / patched >=3.3.18 — the pinned 3.3.17 became vulnerable again where it stood, which is what turned the audit gate red
 
 auditConfig:
   ignoreCves:
