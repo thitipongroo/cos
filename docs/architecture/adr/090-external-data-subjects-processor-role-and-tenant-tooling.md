@@ -83,12 +83,10 @@ first, every search cites it, and each search writes an `audit_logs` row carryin
 request, and the number of matches. This is also what GDPR Article 12 asks of the controller — an
 auditable record of receipt, identity check, extension and outcome — kept where the search happens.
 
-**Identity verification stays with the tenant, deliberately.** The person operating the tool is the
-admin, not the data subject, and the tenant is the controller: verification happens off-platform,
-against whatever the tenant already knows about that person. Requiring a step-up from the ADMIN was
-considered and rejected — it adds friction to a routine job without verifying the party whose
-identity is actually in question, and Article 12(2)/12(6) makes over-verification an infringement in
-its own right rather than a free precaution.
+**Identity verification is witnessed by the platform, and §6 says how.** The earlier version of this
+decision left verification entirely off-platform, which left Construction OS able to evidence that
+the mechanism existed and was used but not that the tenant checked the right person. That gap is now
+closed — see §6.
 
 ### 5. Erasure is anonymisation in place, with a legal-hold copy
 
@@ -105,6 +103,38 @@ operational system, the record the law requires survives. GDPR Article 17(3)(b) 
 equivalent permit exactly this, on the condition that the basis is stated specifically; answering a
 subject with "kept for legal reasons" without naming the law, the categories and the period is itself
 a breach, which is why `data-retention-policy.md` now names a statute per row.
+
+### 6. Verification proves CONTROL OF THE IDENTIFIER ON FILE, and the platform witnesses it
+
+The subject is emailed a single-use, HMAC-signed link — the token shape the vendor portal and
+contract signing already use (ADR-030, ADR-058), with only `sha256(token)` stored so a database copy
+cannot be replayed. Confirming it sets `verified_at`, and a DB CHECK
+(`subject_requests_verified_has_evidence`) refuses to let that timestamp exist without a record of
+what was sent and where.
+
+**The link goes to the address ON THE MATCHED RECORD, never to the one typed into the request.** This
+is the whole property. Challenging an operator-supplied address would prove control of a _claimed_
+address and say nothing about the person the tenant holds data about; challenging the address the
+tenant already had proves the answerer controls that identifier. The verification therefore requires
+at least one match with an email on file, and refuses rather than falling back to a method it did not
+use — `verification_method` records `EMAIL_LINK` because that is what happened.
+
+**What it does NOT prove is legal identity, and that is deliberate.** Regulators ask for verification
+_proportionate to the risk_, built on information already held, and treat demanding identity documents
+without reasonable doubt as an infringement in its own right (GDPR Art 12(2)/12(6)). A platform that
+demanded a passport scan to answer "which of my details do you hold" would be over-collecting to
+solve a problem the address on file already answers.
+
+**Verification gates the irreversible step only.** Anonymisation refuses on an unverified request:
+acting on it risks destroying a real person's record on a stranger's say-so, and there is no undo.
+The search stays open before verification because the operator needs it to find the address to
+challenge — and its result is read by the tenant, not handed to the subject. This is the shape
+regulators describe: processing pauses while verification is pending and proceeds once confirmed.
+
+**The subject is never attributed as a platform user.** The public confirm endpoint runs behind
+`SubjectVerifyTokenGuard`, which publishes the tenant from the token's own signed claim (so the write
+stays under RLS) and sets the actor to `urn:cos:data-subject:<request>` — not a user id, because no
+user acted.
 
 ## Consequences
 
@@ -130,23 +160,31 @@ a breach, which is why `data-retention-policy.md` now names a statute per row.
   that the mechanism exists and was used; it cannot evidence that the tenant verified the right
   person.
 
-### Shipped in this change, and what is not
+### Shipped in this change
 
-The API is built and covered: `platform.subject_requests` (migration `20260816000003`, RLS +
-`app_user` grant), `SubjectRequestRepository` / `Service` / `Controller` under
-`backend/src/modules/identity/subject-request/`, five TENANT_ADMIN routes documented in
-`docs/api/auth.openapi.yaml`, 28 unit tests at 100% lines and branches.
+All of §4, §5 and §6 are built, with nothing outstanding:
 
-Two parts of §4 and §5 are **not** built, and PDPA-48 says so in the register rather than here alone:
+- **API** — `platform.subject_requests` (migrations `20260816000003`, `20260816000004`; RLS +
+  `app_user` grant) and seven routes under `backend/src/modules/identity/subject-request/`, six
+  TENANT_ADMIN and one public, documented in `docs/api/auth.openapi.yaml`.
+- **Admin screen** — `apps/web` `/settings/subject-requests`, in the TENANT_ADMIN nav beside the two
+  §20.7.8 routes. It searches nothing until a request is selected, shows each request's verification
+  state, and says before the destructive button is pressed why it may refuse.
+- **Legal-hold archive** — built on the platform's existing per-file hold. Migration
+  `20260706000003` added `files.files.legal_hold*` in Phase 9 and stated the guarantee ("legal hold
+  blocks ALL deletion, soft + hard"), but **nothing ever set those columns** — the WORM promise was a
+  column with no writer. `FileLegalHoldService` is that writer.
+- **Verification** — `SubjectVerificationService` (token), `SubjectVerifyTokenGuard` (public tenant
+  context), and the send/confirm pair, at 100% line and branch coverage.
 
-- **No admin screen.** The tooling is the API; a tenant without an integrator drives it from an API
-  client. Nothing about the decisions above depends on the screen — it is a surface over routes that
-  already enforce the role, the request-binding, the audit and the rate limit.
-- **No legal-hold archive.** §5 says a row under `legal_hold` keeps its pre-anonymisation values in a
-  restricted store. There is no such store in this platform, and inventing one (bucket, access
-  control, retention sweep, who may read it) is its own decision rather than an implementation
-  detail. Until it exists, anonymisation is unconditional: the personal columns are cleared and no
-  pre-image is kept. A tenant that needs the archive behaviour must export the row before erasing.
+Three behaviours are easy to reverse by accident, so they are stated here as well as in the code:
+
+- **The archive is opt-in, off by default.** A hold is something a person places when a dispute
+  exists (`data-retention-policy.md` § Legal hold). Archiving every erasure would mean the personal
+  data never leaves the platform, which is not erasure.
+- **If the hold cannot be placed, the erasure does not run.** An archive the retention sweep can
+  delete is not an archive.
+- **If the subject is not verified, the erasure does not run either.**
 
 ## Alternatives considered
 

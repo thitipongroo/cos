@@ -360,9 +360,27 @@ model SubjectRequest {
   // without naming the law is itself a breach (ADR-090 §5).
   outcomeNote String?              @map("outcome_note") @db.Text
 
+  // Platform-witnessed verification (ADR-090 §6, migration 20260816000004).
+  //
+  // What these prove is CONTROL OF THE IDENTIFIER THE TENANT ALREADY HOLDS — the challenge goes to
+  // the address on the MATCHED RECORD, never to one typed into the request. Not proof of legal
+  // identity, and deliberately not: regulators ask for verification proportionate to the risk and
+  // treat demanding ID documents without reasonable doubt as an infringement (Art 12(2)/12(6)).
+  //
+  // Only the hash is stored, as with the vendor-portal and contract-signing links (ADR-030/058): the
+  // raw token leaves in the email and a database copy cannot be replayed. `verifiedAt` is also what
+  // makes the token single-use, and the DB CHECK `subject_requests_verified_has_evidence` stops a row
+  // claiming it was verified with no record of what was sent where.
+  verificationTokenHash String?   @map("verification_token_hash") @db.VarChar(64)
+  verificationSentTo    String?   @map("verification_sent_to") @db.VarChar(255)
+  verificationSentAt    DateTime? @map("verification_sent_at") @db.Timestamptz()
+  verifiedAt            DateTime? @map("verified_at") @db.Timestamptz()
+  verificationMethod    String?   @map("verification_method") @db.VarChar(20)
+
   openedByUser User @relation(fields: [openedBy], references: [userId])
 
   @@index([tenantId, status, receivedAt])
+  @@index([verificationTokenHash])
   @@map("subject_requests")
   @@schema("platform")
 }
@@ -446,6 +464,17 @@ model StoredFile {
   uploadedAt       DateTime   @default(now()) @map("uploaded_at") @db.Timestamptz()
   deletedAt        DateTime?  @map("deleted_at") @db.Timestamptz()
   quarantinedAt    DateTime?  @map("quarantined_at") @db.Timestamptz()
+
+  // Per-file legal hold (migration 20260706000003). The columns have existed since Phase 9 and
+  // NOTHING SET THEM until ADR-090 — the WORM guarantee the migration describes ("legal hold blocks
+  // ALL deletion, soft + hard") was a column with no writer. Modelled here so the subject-request
+  // erasure can place a hold through the files module rather than reaching into `files.files` from
+  // another module's code (master §4). No migration accompanies this: the columns already exist, and
+  // adding them to the model is alignment, not a schema change.
+  legalHold       Boolean   @default(false) @map("legal_hold")
+  legalHoldReason String?   @map("legal_hold_reason") @db.Text
+  legalHoldBy     String?   @map("legal_hold_by") @db.Uuid
+  legalHoldAt     DateTime? @map("legal_hold_at") @db.Timestamptz()
 
   metadata   FileMetadata[]
   annotation PhotoAnnotation?

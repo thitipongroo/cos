@@ -5,7 +5,10 @@
 // param, and the search route passes only the request id — the identifiers are the row's, not the
 // caller's.
 
-import { SubjectRequestController } from '../subject-request.controller';
+import {
+  SubjectRequestController,
+  SubjectVerifyPublicController,
+} from '../subject-request.controller';
 import type { SubjectRequestService } from '../subject-request.service';
 import type { TenantRequest } from '../../../tenant/tenant.middleware';
 
@@ -17,7 +20,16 @@ const req = { tenantId: TENANT, userId: USER } as unknown as TenantRequest;
 
 describe('SubjectRequestController', () => {
   let service: jest.Mocked<
-    Pick<SubjectRequestService, 'create' | 'list' | 'findMatches' | 'erase' | 'close'>
+    Pick<
+      SubjectRequestService,
+      | 'create'
+      | 'list'
+      | 'findMatches'
+      | 'erase'
+      | 'close'
+      | 'sendVerification'
+      | 'confirmVerification'
+    >
   >;
   let controller: SubjectRequestController;
 
@@ -28,6 +40,8 @@ describe('SubjectRequestController', () => {
       findMatches: jest.fn(),
       erase: jest.fn(),
       close: jest.fn(),
+      sendVerification: jest.fn(),
+      confirmVerification: jest.fn(),
     } as unknown as typeof service;
     controller = new SubjectRequestController(service as unknown as SubjectRequestService);
   });
@@ -64,9 +78,10 @@ describe('SubjectRequestController', () => {
       request_id: REQUEST_ID,
       anonymised: { contacts: 0, leads: 0, vendors: 0 },
       total: 0,
+      archived_file_id: null,
     });
-    await controller.erase(REQUEST_ID, req);
-    expect(service.erase).toHaveBeenCalledWith(REQUEST_ID, USER);
+    await controller.erase(REQUEST_ID, {}, req);
+    expect(service.erase).toHaveBeenCalledWith(REQUEST_ID, {}, USER);
   });
 
   it('close() forwards the body and the actor', async () => {
@@ -74,5 +89,22 @@ describe('SubjectRequestController', () => {
     service.close.mockResolvedValue({} as never);
     await controller.close(REQUEST_ID, dto, req);
     expect(service.close).toHaveBeenCalledWith(REQUEST_ID, dto, USER);
+  });
+
+  it('sendVerification() passes only the request id and the actor', async () => {
+    service.sendVerification.mockResolvedValue({ sent_to: 'o***@b.co' });
+    await controller.sendVerification(REQUEST_ID, req);
+    expect(service.sendVerification).toHaveBeenCalledWith(REQUEST_ID, USER);
+  });
+
+  it('the public confirm route takes the token and nothing else', async () => {
+    // No actor, no tenant: the subject has no account, and the guard derives the tenant from the
+    // token's own signed claim (ADR-090 §6).
+    const publicController = new SubjectVerifyPublicController(
+      service as unknown as SubjectRequestService,
+    );
+    service.confirmVerification.mockResolvedValue({ verified: true });
+    await publicController.confirm('tok');
+    expect(service.confirmVerification).toHaveBeenCalledWith('tok');
   });
 });

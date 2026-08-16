@@ -28,6 +28,8 @@ import { CosRole } from '@cos/types';
 import { SubjectRequestService } from './subject-request.service';
 import { CreateSubjectRequestDto } from './dto/create-subject-request.dto';
 import { CloseSubjectRequestDto } from './dto/close-subject-request.dto';
+import { EraseSubjectRequestDto } from './dto/erase-subject-request.dto';
+import { SubjectVerifyTokenGuard } from './subject-verify-token.guard';
 import type { TenantRequest } from '../../tenant/tenant.middleware';
 
 @ApiTags('subject-requests')
@@ -85,11 +87,35 @@ export class SubjectRequestController {
     summary: 'Anonymise in place (QM-5) — clears personal columns, keeps the rows',
     description:
       'ERASURE requests only. Irreversible by design: a hard delete would break ' +
-      'crm.contacts.lead_id into a chain Thai accounting law retains for 7 years (ADR-090 §5).',
+      'crm.contacts.lead_id into a chain Thai accounting law retains for 7 years (ADR-090 §5). ' +
+      'Pass legal_hold=true (with a reason) to snapshot the rows to a WORM file first.',
   })
   @ApiResponse({ status: 400, description: 'Request is not an ERASURE, or is already closed' })
-  erase(@Param('requestId', ParseUUIDPipe) requestId: string, @Req() req: TenantRequest) {
-    return this.service.erase(requestId, req.userId!);
+  erase(
+    @Param('requestId', ParseUUIDPipe) requestId: string,
+    @Body() dto: EraseSubjectRequestDto,
+    @Req() req: TenantRequest,
+  ) {
+    return this.service.erase(requestId, dto, req.userId!);
+  }
+
+  @Post(':requestId/verify')
+  @Roles(CosRole.TENANT_ADMIN)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @ApiOperation({
+    summary: 'Email a verification link to the address ON THE MATCHED RECORD',
+    description:
+      'Proves the answerer controls the identifier the tenant already holds — not that they are ' +
+      'who they say they are. The address is taken from the matched record, never from the ' +
+      'request: challenging a typed-in address would prove control of a claimed address and say ' +
+      'nothing about the person the tenant holds data about (ADR-090 §6). The response masks it.',
+  })
+  @ApiResponse({ status: 400, description: 'No match, no email on file, or the request is closed' })
+  sendVerification(
+    @Param('requestId', ParseUUIDPipe) requestId: string,
+    @Req() req: TenantRequest,
+  ) {
+    return this.service.sendVerification(requestId, req.userId!);
   }
 
   @Patch(':requestId/close')
@@ -107,5 +133,27 @@ export class SubjectRequestController {
     @Req() req: TenantRequest,
   ) {
     return this.service.close(requestId, dto, req.userId!);
+  }
+}
+
+/**
+ * The subject's own confirm endpoint — NOT behind JwtAuthGuard (ADR-090 §6).
+ *
+ * The person here has no account at all. They authenticate solely with the single-use link, and
+ * `SubjectVerifyTokenGuard` publishes the tenant from the token's signed claim so the write below
+ * still runs under RLS. Same shape as ContractSignPublicController (ADR-058 CT-5).
+ */
+@ApiTags('subject-requests')
+@Controller()
+export class SubjectVerifyPublicController {
+  constructor(private readonly service: SubjectRequestService) {}
+
+  @Post('subject-requests/verify/:token')
+  @UseGuards(SubjectVerifyTokenGuard)
+  @ApiOperation({ summary: 'A data subject confirms a verification link (single use)' })
+  @ApiResponse({ status: 400, description: 'Link already used or no longer current' })
+  @ApiResponse({ status: 401, description: 'Bad signature or expired link' })
+  confirm(@Param('token') token: string) {
+    return this.service.confirmVerification(token);
   }
 }

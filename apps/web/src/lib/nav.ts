@@ -59,6 +59,9 @@ const TENANT_ADMIN_NAV: NavItem[] = [
   ...SITE_ENGINEER_NAV,
   { href: '/settings/users', labelKey: 'nav.admin.users' },
   { href: '/settings/tenant', labelKey: 'nav.admin.tenant' },
+  // ADR-090 — subject requests from people with no platform account. TENANT_ADMIN only: this is
+  // the controller's own compliance desk, not a feature for the roles that create CRM records.
+  { href: '/settings/subject-requests', labelKey: 'nav.admin.subjectRequests' },
 ];
 
 export const NAV_BY_ROLE: Record<string, NavItem[]> = {

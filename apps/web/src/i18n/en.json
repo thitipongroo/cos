@@ -204,7 +204,8 @@
     },
     "admin": {
       "users": "User management",
-      "tenant": "Tenant settings"
+      "tenant": "Tenant settings",
+      "subjectRequests": "Subject requests"
     },
     "safety": {
       "incidents": "Incidents",
@@ -418,7 +419,37 @@
     "lineToken": "LINE Channel Access Token",
     "notifications": "Enable notifications",
     "save": "Save",
-    "saved": "Saved"
+    "saved": "Saved",
+    "srTitle": "Subject requests",
+    "srIntro": "Requests from people with no account here — CRM contacts, leads, vendor contacts. Your organisation is the controller; Construction OS holds this data on your instruction.",
+    "srType": "Type",
+    "srSubject": "Subject",
+    "srStatus": "Status",
+    "srReceived": "Received",
+    "srOpen": "Open",
+    "srAccess": "Access",
+    "srErasure": "Erasure",
+    "srEmail": "Email",
+    "srPhone": "Phone",
+    "srReceivedAt": "Received at",
+    "srNote": "Note",
+    "srCreate": "Open request",
+    "srViewMatches": "View what is held",
+    "srMatches": "Records held",
+    "srNoMatches": "Nothing matched the identifiers on this request.",
+    "srErase": "Anonymise",
+    "srLegalHold": "Keep a copy under legal hold",
+    "srLegalHoldReason": "Reason for the hold",
+    "srClose": "Close request",
+    "srOutcome": "What was done, or why it was refused",
+    "srFulfilled": "Fulfilled",
+    "srRejected": "Rejected",
+    "srErased": "Anonymised {total} record(s)",
+    "srVerify": "Send verification link",
+    "srVerified": "Verified",
+    "srUnverified": "Not verified",
+    "srVerifySent": "Verification link sent to {to}",
+    "srVerifyHint": "Anonymisation is blocked until the subject confirms the link. It is sent to the address on the matched record, not the one typed above."
   },
   "shell": {
     "notifications": "Notifications",

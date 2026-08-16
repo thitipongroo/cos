@@ -14,6 +14,9 @@ import {
   tenantCreateSchema,
   tenantSettingsSchema,
   userCreateSchema,
+  subjectRequestCreateSchema,
+  subjectRequestCloseSchema,
+  subjectRequestEraseSchema,
   vendorInvoiceSubmitSchema,
 } from '../forms';
 
@@ -499,5 +502,85 @@ describe('otpVerifySchema', () => {
 
   it('rejects a malformed phone number even with a valid code', () => {
     expect(otpVerifySchema.safeParse({ ...base, phoneNumber: '0812345678' }).success).toBe(false);
+  });
+});
+
+// ─── Subject requests (ADR-090; PDPA-48) ────────────────────────────────────────────────────────
+
+describe('subjectRequestCreateSchema', () => {
+  const base = { request_type: 'ACCESS' as const, received_at: '2026-08-14T09:00' };
+
+  it('accepts an email-only request', () => {
+    expect(subjectRequestCreateSchema.safeParse({ ...base, subject_email: 'a@b.co' }).success).toBe(
+      true,
+    );
+  });
+
+  it('accepts a phone-only request', () => {
+    expect(
+      subjectRequestCreateSchema.safeParse({ ...base, subject_phone: '0812345678' }).success,
+    ).toBe(true);
+  });
+
+  it('rejects a request with neither identifier — it would authorise an unscoped search', () => {
+    const result = subjectRequestCreateSchema.safeParse(base);
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects a malformed received_at', () => {
+    expect(
+      subjectRequestCreateSchema.safeParse({
+        ...base,
+        subject_email: 'a@b.co',
+        received_at: '14/08/2026',
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe('subjectRequestCloseSchema', () => {
+  it('accepts either outcome with a substantive note', () => {
+    for (const status of ['FULFILLED', 'REJECTED'] as const) {
+      expect(
+        subjectRequestCloseSchema.safeParse({ status, outcome_note: 'Anonymised 2 CRM rows.' })
+          .success,
+      ).toBe(true);
+    }
+  });
+
+  it('rejects a note too short to name a basis', () => {
+    // "ok" is what an empty-by-default field collects; a refusal must name its law (ADR-090 §5).
+    expect(
+      subjectRequestCloseSchema.safeParse({ status: 'REJECTED', outcome_note: 'ok' }).success,
+    ).toBe(false);
+  });
+
+  it('rejects an unknown outcome', () => {
+    expect(
+      subjectRequestCloseSchema.safeParse({
+        status: 'PENDING',
+        outcome_note: 'still working on it',
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe('subjectRequestEraseSchema', () => {
+  it('accepts an erasure with no hold — the default, so erasure really erases', () => {
+    expect(subjectRequestEraseSchema.safeParse({}).success).toBe(true);
+    expect(subjectRequestEraseSchema.safeParse({ legal_hold: false }).success).toBe(true);
+  });
+
+  it('requires a reason when a hold is asked for', () => {
+    expect(subjectRequestEraseSchema.safeParse({ legal_hold: true }).success).toBe(false);
+    expect(
+      subjectRequestEraseSchema.safeParse({ legal_hold: true, legal_hold_reason: 'short' }).success,
+    ).toBe(false);
+    expect(
+      subjectRequestEraseSchema.safeParse({
+        legal_hold: true,
+        legal_hold_reason: 'Labour Court case 123/2569',
+      }).success,
+    ).toBe(true);
   });
 });

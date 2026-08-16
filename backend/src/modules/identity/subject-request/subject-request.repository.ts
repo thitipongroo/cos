@@ -26,6 +26,11 @@ export interface SubjectRequestRow {
   opened_at: Date;
   closed_at: Date | null;
   outcome_note: string | null;
+  verification_token_hash: string | null;
+  verification_sent_to: string | null;
+  verification_sent_at: Date | null;
+  verified_at: Date | null;
+  verification_method: string | null;
 }
 
 /**
@@ -292,6 +297,65 @@ export class SubjectRequestRepository {
     );
 
     return { contacts, leads, vendors };
+  }
+
+  // ── Verification (ADR-090 §6) ───────────────────────────────────────────────
+
+  /**
+   * Record that a challenge was sent, and to where.
+   *
+   * `sentTo` is the identifier copied from the MATCHED RECORD, not from the request — the service
+   * enforces that, and storing it here is what lets an auditor see WHICH address was proved rather
+   * than only that something was.
+   *
+   * Re-issuing replaces the previous hash, so an earlier link stops working. `verified_at` is reset
+   * to NULL with it: a fresh challenge means the old proof no longer describes the live token.
+   */
+  async recordChallenge(params: {
+    requestId: string;
+    tokenHash: string;
+    sentTo: string;
+  }): Promise<void> {
+    await this.db.run(
+      (tx) =>
+        tx.$executeRaw`
+        UPDATE platform.subject_requests
+           SET verification_token_hash = ${params.tokenHash},
+               verification_sent_to = ${params.sentTo},
+               verification_sent_at = now(),
+               verification_method = 'EMAIL_LINK',
+               verified_at = NULL
+         WHERE request_id = ${params.requestId}::uuid
+           AND tenant_id = ${this.tenantId}::uuid
+      `,
+    );
+  }
+
+  /**
+   * Mark the request verified, by TOKEN HASH.
+   *
+   * Runs on the PUBLIC confirm endpoint, where there is no session — but it is still tenant-scoped
+   * and still under RLS, because `SubjectVerifyTokenGuard` publishes the tenant from the token's own
+   * signed claim into CLS before this is reached (the shape ContractSignTokenGuard established for
+   * ADR-058). So an unscoped query was never needed: the token IS the tenant context.
+   *
+   * `verified_at IS NULL` is what makes the link single-use.
+   *
+   * Returns false when nothing matched — already used, re-issued, or never existed. The caller must
+   * not report a successful verification on an UPDATE that changed nothing.
+   */
+  async markVerifiedByTokenHash(tokenHash: string): Promise<boolean> {
+    const changed = await this.db.run(
+      (tx) =>
+        tx.$executeRaw`
+        UPDATE platform.subject_requests
+           SET verified_at = now()
+         WHERE verification_token_hash = ${tokenHash}
+           AND tenant_id = ${this.tenantId}::uuid
+           AND verified_at IS NULL
+      `,
+    );
+    return changed > 0;
   }
 
   // ── Audit ───────────────────────────────────────────────────────────────────

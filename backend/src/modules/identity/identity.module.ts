@@ -26,7 +26,13 @@ import {
 import { UnconfiguredAttestationVerifier } from './device-trust/adapters/unconfigured-attestation.adapter';
 import { PlayIntegrityVerifier } from './device-trust/adapters/play-integrity.adapter';
 import { AppAttestVerifier } from './device-trust/adapters/app-attest.adapter';
-import { SubjectRequestController } from './subject-request/subject-request.controller';
+import {
+  SubjectRequestController,
+  SubjectVerifyPublicController,
+} from './subject-request/subject-request.controller';
+import { SendGridAdapter } from '../notification/adapters/sendgrid.adapter';
+import { SubjectVerificationService } from './subject-request/subject-verification.service';
+import { SubjectVerifyTokenGuard } from './subject-request/subject-verify-token.guard';
 import { SubjectRequestService } from './subject-request/subject-request.service';
 import { SubjectRequestRepository } from './subject-request/subject-request.repository';
 import { ConsentController } from './consent/consent.controller';
@@ -76,11 +82,15 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
     DataExportController,
     // ADR-090: the tenant's own compliance desk for subject requests from people with no account.
     SubjectRequestController,
+    SubjectVerifyPublicController,
   ],
   providers: [
     // Request-scoped: SubjectRequestRepository resolves tenant_id per request (REQUEST + CLS
     // fallback, ADR-031), the same shape CrmRepository uses.
     SubjectRequestService,
+    SubjectVerificationService,
+    SubjectVerifyTokenGuard,
+    SendGridAdapter,
     SubjectRequestRepository,
     KeycloakAdminService,
     IdentityService,

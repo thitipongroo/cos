@@ -64,6 +64,10 @@ PAIRS = [
     ('opportunityCreateSchema', 'CreateOpportunityInput'),
     ('quotationSubmitSchema', 'SubmitQuotationInput'),
     ('vendorInvoiceSubmitSchema', 'SubmitInvoiceInput'),
+    # ADR-090 — the tenant's compliance desk for subject requests from people with no account.
+    ('subjectRequestCreateSchema', 'CreateSubjectRequestInput'),
+    ('subjectRequestCloseSchema', 'CloseSubjectRequestInput'),
+    ('subjectRequestEraseSchema', 'EraseSubjectRequestInput'),
 ]
 
 # Schemas with no `Create*Input` / `Record*Input` counterpart to mirror:

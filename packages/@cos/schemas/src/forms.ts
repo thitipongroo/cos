@@ -309,3 +309,60 @@ export const otpVerifySchema = z.object({
     .string()
     .check(z.minLength(1, 'validation.required'), z.regex(/^\d{6}$/, 'validation.notAnOtp')),
 });
+
+/**
+ * Open a subject request from a person with NO platform account (ADR-090; PDPA-48).
+ *
+ * At least one identifier, because the row is the AUTHORISATION to search and a request with
+ * neither would authorise a search it cannot scope. The same rule is enforced by the API DTO and by
+ * the `subject_requests_identifier_present` DB CHECK — this is the copy the form can act on before
+ * a round trip.
+ */
+export const subjectRequestCreateSchema = z
+  .object({
+    request_type: z.enum(['ACCESS', 'ERASURE']),
+    subject_email: optionalEmail,
+    subject_phone: optionalText(50),
+    // Local datetime from the form; when the TENANT received it, which starts the PDPA §30 clock.
+    received_at: isoDateTimeLocal,
+    note: optionalText(2000),
+  })
+  .check(
+    z.refine((v) => Boolean(v.subject_email) || Boolean(v.subject_phone), {
+      error: 'validation.required',
+      path: ['subject_email'],
+    }),
+  );
+
+/**
+ * Close a subject request.
+ *
+ * The note is required on BOTH outcomes: a refusal that does not name its basis is itself a breach
+ * (ADR-090 §5). The 10-character floor is a guard against "ok"/"done", not a quality bar — no
+ * validator can tell a real basis from a plausible sentence.
+ */
+export const subjectRequestCloseSchema = z.object({
+  status: z.enum(['FULFILLED', 'REJECTED']),
+  outcome_note: z
+    .string()
+    .check(z.minLength(10, 'validation.required'), z.maxLength(2000, 'validation.tooLong')),
+});
+
+/**
+ * Erasure options.
+ *
+ * `legal_hold` is off by default and the reason is required only when it is on. Archiving every
+ * erasure would mean the personal data never leaves the platform, which is not erasure; a hold is
+ * something a person places when a dispute exists (`data-retention-policy.md` § Legal hold).
+ */
+export const subjectRequestEraseSchema = z
+  .object({
+    legal_hold: z.optional(z.boolean()),
+    legal_hold_reason: optionalText(2000),
+  })
+  .check(
+    z.refine((v) => v.legal_hold !== true || (v.legal_hold_reason ?? '').length >= 10, {
+      error: 'validation.required',
+      path: ['legal_hold_reason'],
+    }),
+  );

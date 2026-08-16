@@ -160,4 +160,29 @@ describe('SubjectRequestRepository', () => {
     // QM-8: audit rows carry IDs and counts, not a second copy of the personal data.
     expect(JSON.stringify(params)).not.toContain('@b.co');
   });
+
+  it('recordChallenge() stores the hash and the address, and clears any earlier proof', async () => {
+    mockPrisma.$executeRaw.mockResolvedValue(1);
+    await repo.recordChallenge({ requestId: REQUEST_ID, tokenHash: 'hash', sentTo: 'a@b.co' });
+
+    const params = mockPrisma.$executeRaw.mock.calls[0] as unknown[];
+    expect(params).toContain('hash');
+    expect(params).toContain('a@b.co');
+    // Re-issuing must reset verified_at: a fresh challenge means the old proof no longer describes
+    // the live token.
+    expect(String(params[0])).toContain('verified_at = NULL');
+  });
+
+  it('markVerifiedByTokenHash() is tenant-scoped and single-use', async () => {
+    mockPrisma.$executeRaw.mockResolvedValueOnce(1);
+    await expect(repo.markVerifiedByTokenHash('hash')).resolves.toBe(true);
+    const sql = String((mockPrisma.$executeRaw.mock.calls[0] as unknown[])[0]);
+    // The guard puts the tenant in CLS before this runs, so the write stays under RLS rather than
+    // being an unscoped update keyed only by a secret.
+    expect(sql).toContain('tenant_id');
+    expect(sql).toContain('verified_at IS NULL');
+
+    mockPrisma.$executeRaw.mockResolvedValueOnce(0);
+    await expect(repo.markVerifiedByTokenHash('hash')).resolves.toBe(false);
+  });
 });

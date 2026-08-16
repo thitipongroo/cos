@@ -737,3 +737,71 @@ paths:
                 $ref: '#/components/schemas/SubjectRequest'
         '404':
           description: No OPEN request with that id in this tenant
+
+  /subject-requests/{requestId}/verify:
+    post:
+      summary: Email a verification link to the address ON THE MATCHED RECORD
+      description: |
+        Proves the answerer CONTROLS THE IDENTIFIER THE TENANT ALREADY HOLDS — not that they are who
+        they say they are, and deliberately not: regulators ask for verification proportionate to the
+        risk, built on information already held, and treat demanding ID documents without reasonable
+        doubt as an infringement in its own right (GDPR Art 12(2)/12(6)).
+
+        The address is taken from the matched record, never from the request: challenging a typed-in
+        address would prove control of a claimed address and say nothing about the person the tenant
+        holds data about. Requires at least one match with an email on file. The response masks the
+        address; the full value is stored on the request row for an auditor.
+      tags: [subject-requests]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '201':
+          description: Challenge sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sent_to:
+                    type: string
+                    example: 's***@example.co.th'
+        '400':
+          description: No match, no email on the held records, or the request is closed
+        '404':
+          description: No such request in this tenant
+
+  /subject-requests/verify/{token}:
+    post:
+      summary: A data subject confirms a verification link (single use, no account)
+      description: |
+        PUBLIC — no bearer token. The person has no account at all and authenticates solely with the
+        emailed link; the guard takes the tenant from the token's own signed claim, so the write still
+        runs under RLS. Single use: a replayed link reports 400 rather than re-stamping the proof.
+      tags: [subject-requests]
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Verified
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  verified:
+                    type: boolean
+        '400':
+          description: Link already used or no longer current
+        '401':
+          description: Bad signature or expired link

@@ -51,7 +51,7 @@ check_header() {
   if [[ -z "$value" ]]; then
     if [[ "$required" == "true" ]]; then
       echo "  ✗ $header_name — MISSING"
-      ((FAIL++))
+      FAIL=$((FAIL + 1))
     else
       echo "  - $header_name — not set (optional)"
     fi
@@ -60,10 +60,10 @@ check_header() {
 
   if echo "$value" | grep -qiE "$expected_pattern" 2>/dev/null; then
     echo "  ✓ $header_name: $value"
-    ((PASS++))
+    PASS=$((PASS + 1))
   else
     echo "  ✗ $header_name: '$value' does not match expected pattern '$expected_pattern'"
-    ((FAIL++))
+    FAIL=$((FAIL + 1))
   fi
 }
 
@@ -80,10 +80,10 @@ powered_by=$(curl -s -I --max-time 5 "$BASE_URL/health/live" 2>/dev/null \
   | grep -i "^X-Powered-By:" | tr -d '\r' || echo "")
 if [[ -z "$powered_by" ]]; then
   echo "  ✓ X-Powered-By — absent (correct)"
-  ((PASS++))
+  PASS=$((PASS + 1))
 else
   echo "  ✗ X-Powered-By present: $powered_by (information disclosure — must be removed)"
-  ((FAIL++))
+  FAIL=$((FAIL + 1))
 fi
 
 # Ensure Server header doesn't reveal version
@@ -91,10 +91,10 @@ server_header=$(curl -s -I --max-time 5 "$BASE_URL/health/live" 2>/dev/null \
   | grep -i "^Server:" | tr -d '\r' || echo "")
 if echo "$server_header" | grep -qiE "[0-9]\.[0-9]" 2>/dev/null; then
   echo "  ✗ Server header reveals version: $server_header"
-  ((FAIL++))
+  FAIL=$((FAIL + 1))
 else
   echo "  ✓ Server header — no version disclosed"
-  ((PASS++))
+  PASS=$((PASS + 1))
 fi
 
 echo ""

@@ -17,10 +17,10 @@ if command -v nmap &>/dev/null && [[ -n "$INGRESS_HOST" ]]; then
   tls13=$(nmap --script ssl-enum-ciphers -p 443 "$INGRESS_HOST" 2>/dev/null | grep "TLSv1.3" || echo "")
   if [[ -n "$tls13" ]]; then
     echo "  ✓ TLS 1.3 enabled on $INGRESS_HOST"
-    ((PASS++))
+    PASS=$((PASS + 1))
   else
     echo "  ✗ TLS 1.3 not detected on $INGRESS_HOST"
-    ((FAIL++))
+    FAIL=$((FAIL + 1))
   fi
 else
   echo "  - TLS check: nmap not installed or INGRESS_HOST not set — skipping"
@@ -44,21 +44,21 @@ for n in unprotected[:5]:
 
 if [[ "$raw_opaque" == "0" ]]; then
   echo "  ✓ All Opaque secrets are managed by sealed-secrets"
-  ((PASS++))
+  PASS=$((PASS + 1))
 else
   echo "  ✗ Raw Opaque secrets found (not sealed):"
   echo "$raw_opaque"
-  ((FAIL++))
+  FAIL=$((FAIL + 1))
 fi
 
 # ArgoCD — check CI workflow has no kubectl apply / helm upgrade
 kubectl_in_ci=$(grep -r "kubectl apply\|helm upgrade" "$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.github/workflows/" 2>/dev/null | wc -l | tr -d ' ')
 if [[ "$kubectl_in_ci" == "0" ]]; then
   echo "  ✓ CI workflow does not contain kubectl apply / helm upgrade (GitOps pattern correct)"
-  ((PASS++))
+  PASS=$((PASS + 1))
 else
   echo "  ✗ CI workflow contains $kubectl_in_ci direct kubectl/helm commands (should use ArgoCD)"
-  ((FAIL++))
+  FAIL=$((FAIL + 1))
 fi
 
 echo ""

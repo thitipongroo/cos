@@ -539,3 +539,61 @@ export interface UpdateRiskInput {
   mitigation?: string;
   owner?: string;
 }
+
+// ─── Subject requests (ADR-090; PDPA-48) ────────────────────────────────────
+// People with NO platform account — CRM contacts and leads, the named contact at a vendor. The
+// TENANT is their controller and Construction OS the processor, so these routes serve the tenant's
+// own compliance desk rather than a data subject.
+
+export interface SubjectRequestRow {
+  request_id: string;
+  request_type: 'ACCESS' | 'ERASURE';
+  subject_email: string | null;
+  subject_phone: string | null;
+  status: 'OPEN' | 'FULFILLED' | 'REJECTED';
+  received_at: string;
+  opened_at: string;
+  closed_at: string | null;
+  outcome_note: string | null;
+  /** Proof that the subject controls the identifier on file — gates anonymisation. */
+  verified_at: string | null;
+}
+
+export interface CreateSubjectRequestInput {
+  request_type: 'ACCESS' | 'ERASURE';
+  subject_email?: string;
+  subject_phone?: string;
+  received_at: string;
+  note?: string;
+}
+
+export interface CloseSubjectRequestInput {
+  status: 'FULFILLED' | 'REJECTED';
+  outcome_note: string;
+}
+
+export interface EraseSubjectRequestInput {
+  legal_hold?: boolean;
+  legal_hold_reason?: string;
+}
+
+/** Only the @pdpa-tagged columns of the matched row, plus its id — never the whole row. */
+export interface SubjectMatch {
+  source: 'crm.contacts' | 'crm.leads' | 'procurement.vendors';
+  id: string;
+  fields: Record<string, string | null>;
+}
+
+export interface SubjectMatchResult {
+  request_id: string;
+  matches: SubjectMatch[];
+  /** Set when nothing matched — an empty list is not the same as "nothing is held". */
+  note: string | null;
+}
+
+export interface ErasureResult {
+  request_id: string;
+  anonymised: { contacts: number; leads: number; vendors: number };
+  total: number;
+  archived_file_id: string | null;
+}

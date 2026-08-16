@@ -61,6 +61,12 @@ import type {
   RfqRow,
   SiteReportListResponse,
   VendorRow,
+  SubjectRequestRow,
+  CreateSubjectRequestInput,
+  CloseSubjectRequestInput,
+  EraseSubjectRequestInput,
+  SubjectMatchResult,
+  ErasureResult,
 } from './types';
 
 function filterQuery(filter: ProcurementListFilter): string {
@@ -904,5 +910,88 @@ export function useTransitionRiskStatus(id: string) {
         body: JSON.stringify({ status }),
       }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['project', id, 'risks'] }),
+  });
+}
+
+// ─── Subject requests (ADR-090; PDPA-48) ────────────────────────────────────
+// TENANT_ADMIN only. The request row is the authorisation to search: `useSubjectMatches` is enabled
+// only once a request id is chosen, so opening the page never runs a lookup on its own.
+
+export function useSubjectRequests(status?: string) {
+  const api = useApi();
+  return useQuery({
+    queryKey: ['subject-requests', status ?? 'all'],
+    queryFn: () =>
+      api<SubjectRequestRow[]>(`/subject-requests${status ? `?status=${status}` : ''}`),
+  });
+}
+
+export function useCreateSubjectRequest() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateSubjectRequestInput) =>
+      api<SubjectRequestRow>('/subject-requests', { method: 'POST', body: JSON.stringify(input) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['subject-requests'] }),
+  });
+}
+
+/**
+ * What the tenant holds about the subject of one request.
+ *
+ * `enabled` is what keeps this from being a lookup tool: with no request selected the query never
+ * fires, and the identifiers it searches on come from the row on the server, not from this client.
+ * Each call writes an audit row server-side, so it is deliberately NOT refetched on window focus.
+ */
+export function useSubjectMatches(requestId: string | null) {
+  const api = useApi();
+  return useQuery({
+    queryKey: ['subject-requests', requestId, 'matches'],
+    queryFn: () => api<SubjectMatchResult>(`/subject-requests/${requestId}/matches`),
+    enabled: requestId !== null,
+    refetchOnWindowFocus: false,
+    staleTime: Infinity,
+  });
+}
+
+export function useEraseSubjectRequest() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ requestId, input }: { requestId: string; input: EraseSubjectRequestInput }) =>
+      api<ErasureResult>(`/subject-requests/${requestId}/erase`, {
+        method: 'POST',
+        body: JSON.stringify(input),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['subject-requests'] }),
+  });
+}
+
+export function useCloseSubjectRequest() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ requestId, input }: { requestId: string; input: CloseSubjectRequestInput }) =>
+      api<SubjectRequestRow>(`/subject-requests/${requestId}/close`, {
+        method: 'PATCH',
+        body: JSON.stringify(input),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['subject-requests'] }),
+  });
+}
+
+/**
+ * Send the verification challenge (ADR-090 §6).
+ *
+ * Takes no address: the server picks it from the MATCHED RECORD, which is the whole point — a
+ * client-supplied address would prove control of a claimed address and nothing more.
+ */
+export function useSendSubjectVerification() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (requestId: string) =>
+      api<{ sent_to: string }>(`/subject-requests/${requestId}/verify`, { method: 'POST' }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['subject-requests'] }),
   });
 }

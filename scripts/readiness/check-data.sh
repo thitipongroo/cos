@@ -22,18 +22,18 @@ if command -v aws &>/dev/null; then
 
   if [[ "$retention" -ge 7 ]] 2>/dev/null; then
     echo "  ✓ RDS: backup retention = $retention days"
-    ((PASS++))
+    PASS=$((PASS + 1))
   else
     echo "  ✗ RDS: backup retention = '${retention}' (expected >= 7)"
-    ((FAIL++))
+    FAIL=$((FAIL + 1))
   fi
 
   if [[ "$multiaz" == "True" ]]; then
     echo "  ✓ RDS: Multi-AZ enabled (PITR active)"
-    ((PASS++))
+    PASS=$((PASS + 1))
   else
     echo "  ✗ RDS: Multi-AZ = $multiaz (expected True for production)"
-    ((FAIL++))
+    FAIL=$((FAIL + 1))
   fi
 else
   echo "  - AWS CLI not installed — skipping RDS checks"
@@ -46,10 +46,10 @@ if command -v redis-cli &>/dev/null; then
   aof=$(redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" CONFIG GET appendonly 2>/dev/null | tail -1 || echo "")
   if [[ "$aof" == "yes" ]]; then
     echo "  ✓ Redis: AOF persistence enabled"
-    ((PASS++))
+    PASS=$((PASS + 1))
   else
     echo "  ✗ Redis: AOF persistence = '${aof}' (expected: yes)"
-    ((FAIL++))
+    FAIL=$((FAIL + 1))
   fi
 else
   echo "  - redis-cli not installed — skipping Redis check"
@@ -62,10 +62,10 @@ if command -v kafka-topics.sh &>/dev/null; then
     | awk '/ReplicationFactor: [12]($| )/ || /Isr: [0-9]+$/ && NF < 4 {print}' | wc -l | tr -d ' ')
   if [[ "$bad_topics" == "0" ]]; then
     echo "  ✓ Kafka: all topics have RF>=3 and ISR>=2"
-    ((PASS++))
+    PASS=$((PASS + 1))
   else
     echo "  ✗ Kafka: $bad_topics topics with insufficient replication"
-    ((FAIL++))
+    FAIL=$((FAIL + 1))
   fi
 else
   echo "  - kafka-topics.sh not installed — skipping Kafka check"

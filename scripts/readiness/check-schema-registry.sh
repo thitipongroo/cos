@@ -24,8 +24,8 @@ AVRO_DIR="$REPO_ROOT/packages/@cos/shared/src/avro"
 PASS=0
 FAIL=0
 
-pass() { echo "  ✅ $1"; ((PASS++)) || true; }
-fail() { echo "  ❌ $1"; ((FAIL++)) || true; }
+pass() { echo "  ✅ $1"; PASS=$((PASS + 1)) || true; }
+fail() { echo "  ❌ $1"; FAIL=$((FAIL + 1)) || true; }
 
 echo ""
 echo "═══════════════════════════════════════════════════════════"
@@ -118,7 +118,7 @@ else
     filename=$(basename "$avsc_file")
     if python3 -c "import json,sys; json.load(open('$avsc_file'))" 2>/dev/null; then
       pass "Valid JSON: $filename"
-      ((AVSC_COUNT++)) || true
+      AVSC_COUNT=$((AVSC_COUNT + 1)) || true
     else
       fail "Invalid JSON: $filename"
     fi
