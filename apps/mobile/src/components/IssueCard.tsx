@@ -78,7 +78,14 @@ export function IssueCard({
   /** The local file URI of this issue's own captured photo, when there is one. */
   photoUri?: string | null;
   onPress?: () => void;
-  /** The escalate control, passed in so this card stays about rendering an issue (G-M12). */
+  /**
+   * Slot below the card body, kept so this card stays about rendering an issue.
+   *
+   * It carried the escalate control (G-M12) until 2026-08-12, when that button left the board with
+   * its drawing; NO caller passes it today (`issues.tsx` is the only one, and it passes `issue` +
+   * `photoUri` only). Kept as the extension point the next such control uses, rather than removed
+   * and re-added.
+   */
   children?: React.ReactNode;
 }) {
   const { t, statusLabel } = useI18n();

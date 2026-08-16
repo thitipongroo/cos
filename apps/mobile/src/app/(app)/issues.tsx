@@ -13,11 +13,14 @@
 // (client_id → server issue_id) so the issue actually pushes and the attached photo links on sync.
 //
 // ESCALATE (G-M12) IS GONE FROM THIS SCREEN (PO decision 2026-08-12: "ตัดปุ่ม Escalate ออก เพราะใน
-// Mockup ไม่มี"). Stating the consequence plainly rather than burying it: `POST /site/issues/:id/
-// escalate` is still served, but no screen in the app calls it any more — this was its only caller,
-// and its own drawing (site_issues/escalate_issue_to_manager) was deleted in the 2026-08-12 mockup
-// restructure with no successor. Re-entering the app needs a new surface, wherever the drawings put
-// one next.
+// Mockup ไม่มี"). Stating the consequence precisely, because an earlier version of this comment
+// overstated it: `POST /site/issues/:id/escalate` is still served, and G-M12 STILL HAS A SURFACE —
+// `apps/web` calls it (`useEscalateIssue` in `lib/api/queries.ts`, wired into
+// `app/(app)/site/issues/page.tsx`). What was removed is the MOBILE entry point, and this screen was
+// its only one; its drawing (site_issues/escalate_issue_to_manager) was deleted in the 2026-08-12
+// mockup restructure with no successor. Re-entering it on mobile needs a new surface, wherever the
+// drawings put one next. (This comment read "no screen in the app calls it any more — this was its
+// only caller" until 2026-08-16; both halves were false of the product, true only of mobile.)
 //
 // DEVIATIONS FROM THE MOCKUP, and why:
 //   - CATEGORY CHIPS carry the four REAL values of `site_ops.issues.issue_type` — DEFECT, REWORK,
@@ -37,8 +40,9 @@
 //     that same commit with no successor drawing; the capability is unaffected — ADR-085 makes the
 //     mockups authoritative for style, not composition, and a drawing that is withdrawn does not
 //     withdraw reviewed working capability.
-//     Deleting the zone outright would have taken G-M12 (escalate → PM) out of the app entirely,
-//     since this is its only screen — so the zone is role-scoped rather than removed.
+//     Deleting the zone outright would have taken G-M12 (escalate → PM) off MOBILE entirely, since
+//     this is its only screen there — so the zone is role-scoped rather than removed. (It would not
+//     have left the product: `apps/web` has its own escalate control.)
 //     A worker who needs sync state still has the global sync indicator and the Sync Queue screen.
 //     THAT LIST WAS REBUILT TO ITS OWN DRAWING ON 2026-08-12 (PO decision: "ต้องการให้รูปแบบเหมือน
 //     กับใน mockup"). It had been two stacked StatusChips on a plain row — the generic list shape,

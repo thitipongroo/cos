@@ -353,9 +353,10 @@ the capture form, `SITE_ENGINEER` gets this board with the form behind its float
   report's text and §26 meters AI per tenant against a monthly quota — a dashboard that reported on
   load would spend the tenant's allowance on every tab tap.
 - **Escalate (G-M12) is gone from this screen** (PO decision 2026-08-12 — the mockup has no such
-  button). Stated plainly because it is easy to miss: `POST /site/issues/:id/escalate` is still
-  served, but **no screen in the app calls it any more**; this was its only caller, and its drawing
-  was deleted in the same restructure with no successor.
+  button), and **from mobile entirely** — this was its only mobile entry point, and its drawing was
+  deleted in the same restructure with no successor. It is **not** gone from the product:
+  `POST /site/issues/:id/escalate` is still served and `apps/web` still calls it
+  (`useEscalateIssue` → [`site/issues/page.tsx`](<../../../apps/web/src/app/(app)/site/issues/page.tsx>)).
 
 ### Tasks — [`03-Tasks/01-se-tasks.png`](03-site-engineer/03-Tasks/01-se-tasks.png)
 
@@ -1645,10 +1646,12 @@ passes any other diameter.
   **not deleted**: `SITE_ENGINEER` shares this route, its own mockups draw the list
   (`03_site_engineer/02_issues/02_se_issue_dashboard` — renamed from `site_issues/issue_list` in the
   2026-08-12 restructure; its companion `…/escalate_issue_to_manager` was deleted there with no
-  successor drawing, which per ADR-085 withdraws a drawing, not the capability), and this screen is
-  the only place **G-M12** (escalate → PM) exists in the app — removing it outright would have taken
-  a deliverable out with the zone. So it is role-scoped, not dropped. A worker who needs sync state has
-  the global sync indicator and the Sync Queue screen.
+  successor drawing, which per ADR-085 withdraws a drawing, not the capability), and this screen was
+  the only place **G-M12** (escalate → PM) reached MOBILE — removing it outright would have taken a
+  deliverable off the platform the field uses. So it is role-scoped, not dropped. (G-M12 itself never
+  left the product: `apps/web` has its own escalate control. This sentence read "the only place G-M12
+  exists in the app" until 2026-08-16, which was wrong — it is the only place on mobile.) A worker
+  who needs sync state has the global sync indicator and the Sync Queue screen.
 
 ### Daily report — [`01-Home/04-sw-daily-report.png`](05-site-worker/01-Home/04-sw-daily-report.png)
 
