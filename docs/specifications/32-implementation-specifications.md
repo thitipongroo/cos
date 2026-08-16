@@ -781,9 +781,9 @@ Optimised for outdoor sunlight visibility.
 >
 > Two surfaces remain **pinned** regardless of the preference, and both are deliberate:
 >
-> | Pinned surface                                                                                        | Why                                                                                                                                           |
-> | ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-> | Pre-auth screens (login, OTP, overlay, and the Privacy Policy / Terms of Use / Support Centre routes) | The preference is per-user and there is no user yet. They are pushed from a dark login, so following a light preference would break mid-flow. |
+> | Pinned surface                                                                                        | Why                                                                                                                                                             |
+> | ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+> | Pre-auth screens (login, OTP, overlay, and the Privacy Policy / Terms of Use / Support Centre routes) | The preference is per-user and there is no user yet. They are pushed from a dark login, so following a light preference would break mid-flow.                   |
 > | Navigation drawer                                                                                     | An overlay panel, not a page. It reads as a raised dark sheet over either mode — the same way its mockup drew it (withdrawn 2026-08-16; the pin is unaffected). |
 >
 > `--cos-dark-cyan` stays scoped to the **auth entry screens** (see the accent note under Mobile
@@ -796,19 +796,19 @@ same surface as the web login and the Keycloak `cos` theme, so the product looks
 
 Dark screens (the pre-2026-08-04 set — see the note above):
 
-| Screen                                  | Reference                                                                    |
-| --------------------------------------- | ---------------------------------------------------------------------------- |
-| Login                                   | `mockup/mobile/01_authen/01_landing_page_login_mobile/`                      |
-| OTP verify                              | `mockup/mobile/01_authen/02_login_otp_verification_mobile/`                  |
-| Session-securing overlay                | `mockup/mobile/01_authen/04_verification_loading_mobile/`                    |
-| Privacy Policy (pre-auth)               | `mockup/mobile/01_authen/05_privacy_policy/01_privacy_policy`                |
-| Terms of Use (pre-auth)                 | `mockup/mobile/01_authen/06_terms_of_use/01_dashboard/`                      |
-| Support Centre (pre-auth)               | drawing withdrawn 2026-08-15 — see the note below it                        |
-| Project Manager / Proc Manager screens  | `mockup/mobile/06_project_manager/`                                          |
-| Site Engineer Home                      | `mockup/mobile/03_site_engineer/01_home/01_se_home_dashboard/`               |
-| Tenant Admin Home                       | `mockup/mobile/04_tenant_admin/01_home/01_home_dashboard/`                   |
-| Notification preferences (Tenant Admin) | drawing withdrawn 2026-08-13 — see the note below it                         |
-| Navigation drawer                       | drawing withdrawn 2026-08-16 — see the note below it                         |
+| Screen                                  | Reference                                                      |
+| --------------------------------------- | -------------------------------------------------------------- |
+| Login                                   | `mockup/mobile/01_authen/01_landing_page_login_mobile/`        |
+| OTP verify                              | `mockup/mobile/01_authen/02_login_otp_verification_mobile/`    |
+| Session-securing overlay                | `mockup/mobile/01_authen/04_verification_loading_mobile/`      |
+| Privacy Policy (pre-auth)               | `mockup/mobile/01_authen/05_privacy_policy/01_privacy_policy`  |
+| Terms of Use (pre-auth)                 | `mockup/mobile/01_authen/06_terms_of_use/01_dashboard/`        |
+| Support Centre (pre-auth)               | drawing withdrawn 2026-08-15 — see the note below it           |
+| Project Manager / Proc Manager screens  | `mockup/mobile/06_project_manager/`                            |
+| Site Engineer Home                      | `mockup/mobile/03_site_engineer/01_home/01_se_home_dashboard/` |
+| Tenant Admin Home                       | `mockup/mobile/04_tenant_admin/01_home/01_home_dashboard/`     |
+| Notification preferences (Tenant Admin) | drawing withdrawn 2026-08-13 — see the note below it           |
+| Navigation drawer                       | drawing withdrawn 2026-08-16 — see the note below it           |
 
 **Notification preferences keeps its row without a drawing.** The directory
 `mockup/mobile/04_tenant_admin/06_notification/` (`01_notification_preferences` + `02_success_state`) was deleted from
@@ -841,11 +841,11 @@ reviewed working capability — the drawer, Account Settings and Profile Setting
 than withdrawn.** One commit on **2026-08-15** restructured `mockup/mobile/01_authen/05_privacy_policy/`
 from **123 drawings to 9**, and deleted `01_authen/07_get_help/01_support_center/` outright:
 
-| Drawing                                         | What happened                                                                                                                                                                                                                       |
-| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `05_privacy_policy/00_policy_data`               | **Renamed** to `05_privacy_policy/01_privacy_policy` (git records `R075`). Every reference to it is repointed, not withdrawn.                                                                                                       |
-| `05_privacy_policy/01_data_collection/**`        | **Withdrawn — about 114 drawings**, the whole Transparency Portal set. It is deliberately NOT repointed at the surviving `02_data_collection`: that is a single-screen folder, not the container, and claiming it would be a lie.   |
-| `01_authen/07_get_help/01_support_center`        | **Withdrawn.** `mockup/mobile/support_center/01_dashboard` exists, but it was added by a DIFFERENT, earlier commit with no rename record linking the two, and the files differ (329 lines against 293) — so it is not asserted as the successor (product-owner decision 2026-08-16). |
+| Drawing                                   | What happened                                                                                                                                                                                                                                                                        |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `05_privacy_policy/00_policy_data`        | **Renamed** to `05_privacy_policy/01_privacy_policy` (git records `R075`). Every reference to it is repointed, not withdrawn.                                                                                                                                                        |
+| `05_privacy_policy/01_data_collection/**` | **Withdrawn — about 114 drawings**, the whole Transparency Portal set. It is deliberately NOT repointed at the surviving `02_data_collection`: that is a single-screen folder, not the container, and claiming it would be a lie.                                                    |
+| `01_authen/07_get_help/01_support_center` | **Withdrawn.** `mockup/mobile/support_center/01_dashboard` exists, but it was added by a DIFFERENT, earlier commit with no rename record linking the two, and the files differ (329 lines against 293) — so it is not asserted as the successor (product-owner decision 2026-08-16). |
 
 ADR-085 applies throughout: **every screen those drawings specified is still in the product and still
 captured.** The Transparency Portal's 14 committed Android frames, `TransparencyKit.tsx`, the
