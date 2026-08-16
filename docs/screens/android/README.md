@@ -58,9 +58,9 @@ gets its own full-page file (the Invite-user `email` method, the Alerts `diff`-e
 | [`00-loading/`](00-loading/)               | The two frames before the app has a screen — the Android 12+ native splash (`00`) and the app-launch loading state (`01`) the JS layer holds while the session hydrates.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | [`01-authen/`](01-authen/)                 | Getting in, one subfolder per flow: [`01-login/`](01-authen/01-login/) the login flow (`01`–`04`); [`03-privacy-policy/`](01-authen/03-privacy-policy/) the Privacy Policy in **both** entry states (`00-…-preauth` from the login footer, `00-…-postauth` from the drawer) plus the Transparency Portal ([`01-data-collection/`](01-authen/03-privacy-policy/01-data-collection/), 14 screens `00`–`13`); [`04-terms-of-use/`](01-authen/04-terms-of-use/) (`01`); [`05-get-support/`](01-authen/05-get-support/) (`01`), reached from the OTP step's GET SUPPORT.                                                                                                                             |
 | [`02-shared/`](02-shared/)                 | Cross-role screens that belong to no role. **Since 2026-08-16 it holds exactly one flow:** [`01-mfa/`](02-shared/01-mfa/) — office-role MFA enrolment, `01` in-app and `02`–`07` on Keycloak's hosted pages. It arrived from `01-authen/02-mfa/` (enrolment is reached AFTER sign-in, so it is cross-role rather than pre-auth) and was renumbered `02-mfa/` → `01-mfa/` on becoming the folder's only occupant. The notification-preferences frames (`01`, `02`) and the navigation drawer (`03`) that used to sit here were **retired the same day**; both sections are kept below, marked retired, because what they documented is still true of the app.                                                                                                                                                         |
-| [`03-site-engineer/`](03-site-engineer/)         | Tabs: **Home \| Issues \| Inspections \| Reports**. Captured so far: [`01-Home/`](03-site-engineer/01-Home/) — the loading state (`00`) + dashboard (`01`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| [`03-site-engineer/`](03-site-engineer/)         | Tabs: **Home \| Issues \| Tasks \| Reports** — `Tasks` replaced `Inspections` on 2026-08-12 (PO decision; [`roleTabs.ts`](../../../apps/mobile/src/lib/roleTabs.ts) is the source, and `/inspections` became a derived drawer row for the role rather than being dropped). [`01-Home/`](03-site-engineer/01-Home/) — the **project picker** overlay (`00-se-project-selection`), the dashboard's loading state (`00-se-home-loading`) and the dashboard itself (`01`). [`02-Issues/`](03-site-engineer/02-Issues/) — the issue board (`01`). [`03-Tasks/`](03-site-engineer/03-Tasks/) — the task list (`01`). [`04-Reports/`](03-site-engineer/04-Reports/) — the submitted-report review list (`01`). Both `00-` frames sort before the dashboard because each precedes it: the picker is answered first, then the dashboard loads.                                                                                                                                                                                                        |
 | [`04-tenant-admin/`](04-tenant-admin/)           | Tabs: **Home \| Users \| Alerts \| Settings**. [`01-Home/`](04-tenant-admin/01-Home/) — dashboard (`01`), Quick-Add (`02`) and the FAB flows: Invite-user (`03`), Role-permissions (`04`), Roles-selection (`05`), Invitation-success (`06`), System-integration (`07`), Apps-&-Services (`08`). [`02-Users/`](04-tenant-admin/02-Users/) — the users list (`01`), the per-user action sheet (`02`), the user profile (`03`), the multi-role permission editor (`04`) + the save-success screen (`05`), and the password-reset form (`06`) + its two done screens — temp-password (`07`) and email-link-sent (`08`). [`03-Alerts/`](04-tenant-admin/03-Alerts/) — the sync-review queue (`01`). [`04-Settings/`](04-tenant-admin/04-Settings/) — System Settings (`01`, one full-page).                                     |
-| [`05-site-worker/`](05-site-worker/)             | Tabs: **Home \| Tasks \| Safety \| Directory**. [`01-Home/`](05-site-worker/01-Home/) — the **site picker** overlay in both its states (`00-sw-select-project` forced, `00-sw-change-project` dismissible), the field dashboard (`01`), the FAB's **Quick actions** overlay (`02`), and the two screens that overlay opens: **Report issue** (`03`) and **Daily report** (`04`). Those four are named for the mockup folders they implement (`01_dashboard`, `02_quick_actions`, `03_issue`, `04_daily_report`). [`02-Tasks/`](05-site-worker/02-Tasks/) (`01`), [`03-Safety/`](05-site-worker/03-Safety/) (`01`), [`04-Directory/`](05-site-worker/04-Directory/) (`01`). [`05-Drawer/`](05-site-worker/05-Drawer/) — the **navigation drawer** (`01`), which IS the profile.                                                                                                                                                                     |
+| [`05-site-worker/`](05-site-worker/)             | Tabs: **Home \| Tasks \| Safety \| Directory**. [`01-Home/`](05-site-worker/01-Home/) — the **site picker** overlay in both its states (`00-sw-select-project` forced, `00-sw-change-project` dismissible), the field dashboard (`01`), the FAB's **Quick actions** overlay (`02`), and the two screens that overlay opens: **Report issue** (`03`) and **Daily report** (`04`). Those four are named for the mockup folders they implement (`01_dashboard`, `02_quick_actions`, `03_issue`, `04_daily_report`). [`02-Tasks/`](05-site-worker/02-Tasks/) (`01`), [`03-Safety/`](05-site-worker/03-Safety/) (`01`), [`04-Directory/`](05-site-worker/04-Directory/) (`01`). [`05-Drawer/`](05-site-worker/05-Drawer/) — the **navigation drawer** (`01`), which IS the profile, and the **account settings** screen its Settings row pushes to (`02`).                                                                                                                                                                     |
 | [`07-safety-officer/`](07-safety-officer/)       | Tabs: **Home \| Incidents \| Checklists \| Permits** — the bar the product owner settled on 2026-08-13 from [`mockup/mobile/07_safety_officer`](../../../mockup/mobile/07_safety_officer), whose three drawings agree on `Home \| Incidents \| Checklists \| Profile`; Profile is no role's tab (§32.7), so Permits took the slot. [`01-Home/`](07-safety-officer/01-Home/) — the safety dashboard (`01`): open-incident tile, the two unavailable KPI tiles, the daily-checklist card, recent incidents. [`02-Incidents/`](07-safety-officer/02-Incidents/) — the feed (`01`): four filter pills, the incident card with its photo plate, the AI-risk panel. [`03-Checklists/`](07-safety-officer/03-Checklists/) — the inspection list (`01`) and the checklist being filled (`02`), which is what the mockup actually draws. [`04-Permits/`](07-safety-officer/04-Permits/) — the permit register (`01`), the request form behind its FAB (`02`) and the confirmation that follows a real submission (`03`). The `03` frame is reached by ACTUALLY submitting the form, the route being `router.replace`-only from a successful POST, so each run leaves one extra PENDING permit in the demo tenant and the REQUEST ID on screen is the number the server stored. **"Checklists" is the `/inspections` route relabelled**, not a new screen, which is why its tab testID is still `inspection-tab`. FOUR PANELS IN THESE FRAMES READ "not available yet", AND THAT IS THE HONEST STATE: the drawings show a compliance percentage, safe-hours-since-last-LTI, an AI-predicted risk per incident and a weather-sourced hazard alert, and none of the four has a source anywhere in this platform (`GET /safety/compliance` returns four counts and no score; nothing records hours against a lost-time injury; `/ai/reports/*` has no safety surface; nothing ingests weather). Product-owner ruling 2026-08-13: draw the zone, say plainly it is not ready, never print an invented figure. What IS real in these frames — the counts, the incident feed, the checklist templates and their Thai item text, the permit row and its validity dates — comes from the live backend against seeded data. Captured by [`capture-android-safety-officer.mjs`](../../../apps/mobile/scripts/capture-android-safety-officer.mjs) as `+66811000007` (Decha Phumipat). |
 | [`06-project-manager/`](06-project-manager/)     | Tabs: **Home \| Procurement \| Finance \| More** — the bar from the CORRECTED [`mockup/mobile/06_project_manager`](../../../mockup/mobile/06_project_manager) set (2026-08-10). [`01-Home/`](06-project-manager/01-Home/) — the manager dashboard (`01`): two KPI tiles, the critical-blockers card, the AI panel and YOUR PROJECTS. [`02-Procurement/`](06-project-manager/02-Procurement/) — three counters, the AI panel and the approvals queue (`01`). [`03-Finance/`](06-project-manager/03-Finance/) — portfolio financial summary, AI panel, per-project budget health (`01`). [`04-More/`](06-project-manager/04-More/) — the More menu (`01`); the vendor directory it pushes to was `02` until 2026-08-11, when it left the committed set (see the restructure note above) — the screen itself is unchanged. [`05-Drawer/`](06-project-manager/05-Drawer/) — the navigation drawer (`01`), which from 2026-08-10 is PER ROLE: only **Settings** and **Support Center** are shared, and the section above them comes from [`lib/drawerLinks.ts`](../../../apps/mobile/src/lib/drawerLinks.ts). **Superseded 2026-08-14:** the drawer drawing was copied to `mockup/mobile/02_shared/01_navigation_drawer`, byte-identical to `04_tenant_admin/05_navigation_drawer`, so it is nobody's role menu any more. (**Both drawings were withdrawn on 2026-08-16**, in one commit. The ruling stands — ADR-085; `apps/mobile/src/lib/drawerLinks.ts` now carries the four rows and is the record of what they specified.) Its four buildable rows — Project Overview, Daily Site Reports, Safety Incident Logs, Material Inventory — now LEAD every role's drawer, and the role's own rows follow. No role takes a drawing verbatim now: the four are the first entries of the DERIVED table, so each still appears only where §6.4 grants the module behind it and no drawer row can lead to a 403. The 2026-08-10 arrangement this replaces gave `04_tenant_admin/` and `06_project_manager/05_navigation_drawer` their drawing verbatim and derived the other ten; what it was protecting is kept, since the list every role used to share was not neutral — it was the TENANT_ADMIN drawing plus two extra rows. **This frame was recaptured on 2026-08-14 and shows the new model**: the four drawn rows lead (Project overview · Daily site reports · Safety incident logs · Materials), Tasks and Inspections follow, and `More (13)` carries the rest — this role derives now as well as taking the drawn rows, where before it stopped at its drawing's seven. The earlier `03-Approvals/` and `04-Vendors/` folders were removed with the bar they were numbered for. `PROC_MANAGER` does not share these screens: the corrected mockup set is a PROJECT_MANAGER app end to end, and master 3490 keeps that role on Home \| RFQs \| Orders \| Deliveries. |
 
@@ -262,6 +262,159 @@ uiautomator can't dump the animating skeletons, so the shots are screencapped di
 the shimmer from defeating the stitch's overlap match, `LoadingState` **freezes every skeleton loop at
 a mid-frame in capture builds** (`EXPO_PUBLIC_CAPTURE`, the same flag that mutes the LogBox toast);
 production and normal dev animate as usual.
+
+## Site Engineer — project picker — [`01-Home/00-se-project-selection.png`](03-site-engineer/01-Home/00-se-project-selection.png)
+
+[`<SelectProjectSheet />`](../../../apps/mobile/src/components/SelectProjectSheet.tsx), implementing
+[`03_site_engineer/01_home/00_project_selection`](../../../mockup/mobile/03_site_engineer/01_home/00_project_selection)
+— and since the 2026-08-12 product-owner decision it is **the project's one project-selection shape**,
+the same overlay the Site Worker gets.
+
+**An OVERLAY, not a route.** A dimmed backdrop with a centred card, so the page underneath stays
+legible around the edges — which is what tells the user this is a question about the app rather than a
+new place inside it. It rendered full-screen until 2026-08-12 and read as a route, the exact confusion
+the decision resolved. This frame is the **dismissible** state: it carries the close **X**, which the
+forced state (no project chosen yet) does not.
+
+**The RECOMMENDED panel is STATIC, all of it but one number**, and that is the single most important
+thing to know about this frame. `Priority action`, `Critical-path risk detection`, `Conf: 98%` and
+`Source: site telemetry` are **i18n string literals bound to no computation whatsoever**. Nothing in
+this product can produce any of them: critical-path risk would need a model that does not exist (the
+nearest, DelayForecastModel, is Phase 23 and needs 90+ days of production data, §22.6), and
+site telemetry is IoT — Phase 24. The panel is drawn in full as a declared future feature
+(PO decision 2026-08-12, "static ตามใน mockup เพื่อแสดงไว้เป็น feature ในอนาคต").
+
+> **This frame is the reason a `COMING SOON` chip now sits on that risk strip.** The component's own
+> note has claimed since 2026-08-12 that such a tag was kept "because §22.3 is explicit that a surface
+> must not read as AI-derived while a placeholder serves it" — but no tag was ever rendered, and no
+> i18n key existed for one. This capture is what put the undisclosed version on the record. The chip
+> was added on 2026-08-16 (PO decision) and the misleading comment corrected with it, so **the
+> committed frame above predates the fix and shows the panel without it**; it needs recapturing.
+> No render test could have caught this — the disclaimer existed only in prose.
+
+The one figure that **is** real is **`CURRENT PROGRESS 69%`** — the §32.12 BOQ-value-weighted
+`progress_percent`, the same number the card for that project shows lower down the same list. The
+project the panel is about is simply **the first row, not a ranking**: nothing in the platform ranks
+sites by risk yet, and the code says so rather than implying an ordering.
+
+Everything below the panel is live: **Chaeng Watthana Access Road Upgrade** `ACTIVE` 69%, **Rama IX
+Corporate Tower** `ACTIVE` `Office Block` 63%, **Thonglor Park Residences** `ON HOLD` `Tower B` 0%.
+The line beside the pin is the project's **building name**, so Chaeng Watthana shows none — the office
+has not modelled a building for it — rather than a pin over nothing.
+
+## Site Engineer — Issues · Tasks · Reports — [`02-Issues/`](03-site-engineer/02-Issues/) · [`03-Tasks/`](03-site-engineer/03-Tasks/) · [`04-Reports/`](03-site-engineer/04-Reports/)
+
+The role's other three tabs, all captured signed in as **Waraporn Klinhom** (`+66811000009`) against
+`seed-realistic.ts` — the same engineer as the Home frames, so both runs document one person's data.
+All three open with the global TopBar and
+[`<ProjectContextBar />`](../../../apps/mobile/src/components/ProjectContextBar.tsx) naming the active
+project, and all three carry the bar **Home | Issues | Tasks | Reports**.
+
+> **These three are full pages made by SHRINKING THE DISPLAY, not by stitching**
+> ([`capture-android-site-engineer-tabs.mjs`](../../../apps/mobile/scripts/capture-android-site-engineer-tabs.mjs)).
+> `adb shell input swipe` moves the Issues board but does **not** move the Tasks or Reports lists at
+> all, and it fails silently in both directions — the swipe always "succeeds", and a verify step that
+> diffs uiautomator dumps reports movement that is really the status-bar clock ticking. **Three runs
+> were committed as full pages with most of the list missing** before that was pinned down by hashing
+> frames with the top quarter excluded. Lowering `wm density` puts the whole page in one frame
+> instead: no gesture to get wrong, no seam to stitch, and the pixels are the app's real output at a
+> real density. Each screen is asserted by its own testID before the shutter, so a mis-tap fails the
+> run rather than filing a screenshot of the wrong screen.
+
+### Issues — [`02-Issues/01-se-issue-dashboard.png`](03-site-engineer/02-Issues/01-se-issue-dashboard.png)
+
+The **issue board** ([`app/(app)/issues.tsx`](<../../../apps/mobile/src/app/(app)/issues.tsx>), mockup
+`03_site_engineer/02_issues/02_se_issue_dashboard`). One route serves two screens: `SITE_WORKER` gets
+the capture form, `SITE_ENGINEER` gets this board with the form behind its floating **+**. Until
+2026-08-12 the engineer got the worker's whole camera-and-voice form with a list bolted underneath.
+
+- **The five filter chips map to real columns and nothing else** ([`lib/issueBoard.ts`](../../../apps/mobile/src/lib/issueBoard.ts)):
+  `ALL · CRITICAL · HIGH · OPEN · RESOLVED` over `site_ops.issues.severity` and `.status`. `RESOLVED`
+  covers **CLOSED** too — both are end states and the drawing has one chip for the pair.
+- **The left strip answers "does this need me", not "how bad was it".** A finished issue is green
+  whatever it once was; otherwise CRITICAL → danger, HIGH → warning, MEDIUM → accent, LOW → the
+  neutral. All five cards in this frame follow it: `MEDIUM/RESOLVED` and `LOW/RESOLVED` are green,
+  the two `HIGH` are amber, the open `MEDIUM` is cyan.
+- **The slot the drawing fills with a location ("Sector B - Pier 4") carries `issue_type` instead**
+  (PO decision 2026-08-12) — Defect · General · Punch item here. An issue has no floor, room, zone or
+  area column, only lat/long, so a per-issue location would have meant a migration plus a picker in
+  the capture flow. `issue_type` is real, CHECK-constrained, varies per card, and is the same
+  classification the Phase 6 task-completion gate reads.
+- **`1h ago` is the real age** from `created_at`; a row cached before local DDL v6 shows no age rather
+  than an invented one. The id eyebrow (`F2FC7CAC`) is `shortId(issue_id)`, with the sync state
+  opposite it.
+- **ISSUE INSIGHT** is [`<SiteInsight />`](../../../apps/mobile/src/components/SiteInsight.tsx) bound
+  to the `SITE_SUMMARY` report, and it renders **only what the server returns** — here the honest
+  pre-report state, _"No report has been generated for this project yet"_, naming the project it would
+  report on. **GENERATE REPORT exists although no mockup draws it** (PO decision 2026-08-11): the
+  drawings show a panel already full of prose, but `POST /ai/reports/*` is the only way to obtain a
+  report's text and §26 meters AI per tenant against a monthly quota — a dashboard that reported on
+  load would spend the tenant's allowance on every tab tap.
+- **Escalate (G-M12) is gone from this screen** (PO decision 2026-08-12 — the mockup has no such
+  button). Stated plainly because it is easy to miss: `POST /site/issues/:id/escalate` is still
+  served, but **no screen in the app calls it any more**; this was its only caller, and its drawing
+  was deleted in the same restructure with no successor.
+
+### Tasks — [`03-Tasks/01-se-tasks.png`](03-site-engineer/03-Tasks/01-se-tasks.png)
+
+The task list ([`app/(app)/tasks.tsx`](<../../../apps/mobile/src/app/(app)/tasks.tsx>), mockup
+`03_site_engineer/03_tasks/01_se_tasks`). `Tasks` took this tab from `Inspections` on 2026-08-12;
+`/inspections` became a derived drawer row for the role rather than being dropped.
+
+- **`PHASE 1 : FOUNDATION` is derived, never a stored flag** (ADR-070): the lowest-seq phase that is
+  `IN_PROGRESS`, or the next one not yet `COMPLETED`. With no phase known the heading names the list
+  instead of inventing one. The column holds both languages — `งานฐานราก (Foundation)` — and
+  [`phaseName()`](../../../apps/mobile/src/lib/phaseName.ts) renders **one**, the reader's.
+- **`3 outstanding` counts work still open, not the list length** — five cards here, two `Completed`,
+  so three. It is scoped to the project the bar above names, because a header about one site over a
+  list of five sites would be two answers on one screen.
+- **The filtering is behind the `filter_list` glyph**, not a chip row (PO decision 2026-08-12): four
+  always-on buttons took a whole row to say what one glyph and a sheet can, and pushed the first card
+  off the fold.
+- **The badge slot carries a delay severity** (`! HIGH`, `! MEDIUM`) because **there is no priority
+  column anywhere** — not in `projects.tasks`, not in any migration, not in the API. Completed cards
+  are dimmed and carry **no Update progress button**; `Not started` sits at 0% with one.
+- **The cards show dates, not times.** Times exist since migration `20260811000001`, but this screen's
+  badge is a delay severity and its cards span weeks — a red chip over a time of day says nothing
+  about how late the work is. The dashboard, which is about today, shows the window instead.
+- **SCHEDULE INSIGHT** is [`<ScheduleInsight />`](../../../apps/mobile/src/components/ScheduleInsight.tsx)
+  bound to `DELAY_RISK`, the only schedule report the gateway serves. It replaced a **static** "AI
+  Insight" card on 2026-08-12: a real forecast became obtainable, and with one on the screen the
+  static one stopped being a placeholder for something absent and became a second, invented insight
+  beside a true one.
+
+> **This frame prints a raw UUID and that was a real defect**, fixed on 2026-08-16. `Source: project
+> d0c71c19-bf77-53bc-8a9c-0ad00385982a`: `tasks.tsx` rendered `<ScheduleInsight>` **without
+> `projectLabel`**, so `InsightPanel` fell back to the id, while `issues.tsx` and `reports.tsx` both
+> passed the name. The capture is what surfaced it — three screens carrying one panel, and only this
+> one naming nothing. The screen now passes the name; **the frame above predates the fix** and needs
+> recapturing.
+
+### Reports — [`04-Reports/01-se-reports.png`](03-site-engineer/04-Reports/01-se-reports.png)
+
+The submitted-report review list ([`app/(app)/reports.tsx`](<../../../apps/mobile/src/app/(app)/reports.tsx>),
+mockup `03_site_engineer/04_reports/04_se_reports`). The route is shared with `EXECUTIVE`, which gets
+a different screen behind the same tab; this half was rebuilt to its drawing on 2026-08-12.
+
+- **It was the last Site Engineer screen still pinned to the static LIGHT palette** while every other
+  one followed `usePalette()` — on the app's dark default this list was the one page that stayed
+  white. It reads the palette now.
+- **`24 TOTAL` is the response's real `total`**, and the same number decides whether **Load More
+  History** appears; the previous full-page heuristic was wrong.
+- **The left strip is NOT the status colour** — it answers "does this need me", and turns on the
+  blocker as much as on the status: **amber** while the report is a `DRAFT` (unfinished work the
+  engineer owes), **red** when `blocker_category` is set to something other than `OTHER` — `WEATHER`,
+  `MATERIAL` or `POWER`, a named cause someone can act on — and **green** otherwise. The three rules
+  are checked in that order, so every row is coloured. In this frame the single red card is the
+  `WEATHER` one; the `POWER` card is amber because it is still a `DRAFT`, which outranks its blocker.
+- **The card's headline is `blockers`** — what the report says actually stopped work — falling back
+  to its own `summary`, and only then to a generic name. The chip under it is `blocker_category`.
+- **INSIGHT**, not "SITE INSIGHT" (PO decision 2026-08-12): the drawing's own heading, and on a screen
+  already headed by the project bar the word "site" said it twice. Same `SITE_SUMMARY` report as the
+  issue board — whose declared inputs are these very reports plus the project's open issues.
+- **Two things the drawing puts on a card cannot be filled**: a per-report **title** (there is no such
+  column) and a per-row **sync state** — this list is the SERVER's own copy fetched over HTTP, so
+  every row in it is already synced and the value would be a constant.
 
 ## Tenant Admin dashboard — [`04-tenant-admin/01-Home/01-ta-home-dashboard.png`](04-tenant-admin/01-Home/01-ta-home-dashboard.png)
 
@@ -1154,13 +1307,15 @@ seed sets `is_required` on every item, so it printed on all nine and distinguish
 
 The field dashboard and the role's landing screen. **Reworked on 2026-08-08** to mockup
 `01_home/01_sw_dashboard`, which the restructure added — this role had no Home drawing before it. Now:
-two bento stat tiles, the AI Insight module, the project picker and **CHECK IN**, today's priority
-tasks, and the FAB.
+two bento stat tiles, the AI Insight module, today's priority tasks, and the FAB. (The drawing also
+puts a project picker and a **CHECK IN** button on this screen; both were cut from the product on
+2026-08-09 — see below.)
 
 - **`My tasks 10 / 25 done`** and its bar are counted from `local_tasks`, so they are honest with no
   signal (§17.4).
-- **`Shift hours`** is elapsed time since today's check-in, from `local_attendance` — the row the
-  CHECK IN button on this same screen writes. It shows a dash, not `00:00`, when the worker has not
+- **`Shift hours`** is elapsed time since today's check-in, from `local_attendance` — rows that
+  `/sync/delta` streams down, not rows this screen writes (the CHECK IN button that used to write
+  them was removed on 2026-08-09, below). It shows a dash, not `00:00`, when the worker has not
   checked in: a zero would read as a shift that has just begun. The bar scales against an 8-hour
   shift (mirroring the server's `DEFAULT_SHIFT_HOURS`) and caps at full, while the number beside it
   is never clamped — ten hours into an eight-hour shift reads `10:00` against a full bar.

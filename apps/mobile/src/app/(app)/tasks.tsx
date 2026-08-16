@@ -100,6 +100,11 @@ export default function TasksScreen() {
   // The same site the bar above the list names — read from the store rather than a second chooser,
   // so the Insight card can never report on a different project than the screen says it is on.
   const insightProjectId = useProjectStore((s) => s.active?.projectId ?? '');
+  // The project's NAME for the panel's "Source:" line. Without it InsightPanel falls back to the id
+  // and the line reads `Source: project d0c71c19-bf77-…`, which names nothing to the person reading
+  // it — the same defect issues.tsx fixed on 2026-08-12 and this screen kept until 2026-08-16, when
+  // the committed capture (03-Tasks/01-se-tasks.png) put the bare uuid on the record.
+  const insightProjectName = useProjectStore((s) => s.active?.projectName ?? '');
   const [phases, setPhases] = useState<ProjectPhase[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
   const [limit, setLimit] = useState(DEFAULT_LIMIT);
@@ -252,7 +257,7 @@ export default function TasksScreen() {
         // Its own breathing room: the panel sat flush against the Active Project bar above it, so the
         // two read as one stacked block instead of as the bar and a separate insight (PO 2026-08-12).
         <View style={[styles.insightSlot, styles.headerInset]}>
-          <ScheduleInsight projectId={insightProjectId} />
+          <ScheduleInsight projectId={insightProjectId} projectLabel={insightProjectName} />
         </View>
       ) : null}
       {/* NO in-content page title, though the mockup draws "รายการงานวันนี้" (§32.7 Mobile App Shell:

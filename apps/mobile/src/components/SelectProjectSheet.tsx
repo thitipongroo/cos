@@ -341,7 +341,13 @@ export function SelectProjectSheet(): React.JSX.Element {
               THE "COMING SOON" TAG IS THE ONE THING KEPT FROM THE REDUCED VERSION, because §22.3 is
               explicit that a surface must not read as AI-derived while a placeholder serves it, and
               that tag is what keeps this panel a declared preview rather than a claim about the
-              site named in it. Everything else the drawing has is here. */}
+              site named in it. Everything else the drawing has is here.
+              THAT SENTENCE WAS UNTRUE FROM 2026-08-12 TO 2026-08-16: this paragraph said the tag was
+              kept while no tag was rendered anywhere in the file and no i18n key existed for one, so
+              the panel shipped asserting a confidence and a telemetry source with nothing marking it
+              as a preview. It was caught by reading this comment against the committed capture, not
+              by a test — no render test can see a disclaimer that was only ever described. The chip
+              is now rendered on the risk strip below; see its note there. */}
             {!loading && !failed && projects.length > 0 ? (
               <View testID="select-project-recommended" style={styles.recSection}>
                 <View style={styles.recHead}>
@@ -375,11 +381,26 @@ export function SelectProjectSheet(): React.JSX.Element {
                     <MaterialIcons name="chevron-right" size={20} color={darkColors.accent} />
                   </View>
 
-                  {/* The drawing's inner insight strip. */}
+                  {/* The drawing's inner insight strip — and the ONE thing added to it: the
+                  COMING SOON chip beside the claim. This block asserted a critical-path finding, a
+                  confidence and a telemetry source with nothing marking it as a preview from the
+                  2026-08-12 rebuild until 2026-08-16, even though the note above has claimed the tag
+                  was kept the whole time; the committed capture
+                  (03-site-engineer/01-Home/00-se-project-selection.png) is what put the undisclosed
+                  version on the record. §22.3 is explicit that a surface must not read as
+                  AI-derived while a placeholder serves it, so the chip sits ON the strip that
+                  carries the claim rather than in a corner away from it. Outlined, not filled, for
+                  the reason PrivacyPolicyDocument's twin records: a fill alone does not carry a chip
+                  between two navies this close together. */}
                   <View style={styles.recInsight}>
                     <View style={styles.recHead}>
                       <MaterialIcons name="warning" size={16} color={darkColors.accent} />
                       <Text style={styles.recEyebrow}>{t('project.select.recommendedRisk')}</Text>
+                      <View style={styles.recSoonChip}>
+                        <Text style={styles.recSoonText}>
+                          {t('project.select.recommendedSoon')}
+                        </Text>
+                      </View>
                     </View>
                     <View style={styles.recMetaRow}>
                       <Text style={styles.recFoot}>{t('project.select.recommendedConf')}</Text>
@@ -658,6 +679,21 @@ const styles = StyleSheet.create({
     borderColor: darkColors.accent,
   },
   recMetaRow: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.xs },
+  recSoonChip: {
+    paddingHorizontal: spacing.xs,
+    paddingVertical: 2,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: darkColors.border,
+    backgroundColor: darkColors.surface,
+  },
+  recSoonText: {
+    color: darkColors.muted,
+    fontFamily: fontFamily.medium,
+    fontSize: 10,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
   recProgress: {
     gap: spacing.xs,
     paddingTop: spacing.xs,
