@@ -1,8 +1,8 @@
 <#--
   Construction OS — Keycloak TOTP (authenticator) setup page. Standalone template (same PROCESS as the
-  custom login.ftl) styled to match mockup/mobile/02_shared/02_mfa/01_mfa_enrollment
+  custom login.ftl) styled to match mockup/mobile/02_shared/01_mfa/01_mfa_enrollment
   for the parts Keycloak owns (PO decision: theme the Keycloak-owned parts exactly, omit the mockup's
-  backup-codes bento / audit-trail / bottom-nav — those belong to the 02_mfa/03 recovery page, app/backend data,
+  backup-codes bento / audit-trail / bottom-nav — those belong to the 01_mfa/03 recovery page, app/backend data,
   and the native tab bar respectively; putting fake codes/audit on a real security page would mislead).
 
   Keycloak form contract preserved — action ${url.loginAction}; id kc-totp-settings-form; the code field

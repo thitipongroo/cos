@@ -1,7 +1,13 @@
 // Notification Settings — the section every role gets inside Account Settings.
 //
-// LAID OUT AS `mockup/mobile/02_shared/03_account_settings` DRAWS IT. Read the drawing, not this
-// comment, if the two ever disagree — ADR-085 makes it authoritative for style:
+// LAID OUT AS `mockup/mobile/02_shared/03_account_settings` DREW IT — THAT DRAWING WAS WITHDRAWN on
+// 2026-08-16, when the account-settings, profile-settings and navigation-drawer directories left
+// `02_shared/` and `01_mfa/` became its only occupant. The layout below stands regardless: ADR-085
+// makes a drawing authoritative for STYLE, not for existence, and "a drawing does not remove
+// reviewed working capability". It is deliberately NOT repointed at a per-role profile drawing
+// (`05_site_worker/05_profile/01_sw_account_settings` and its siblings) — this is the section EVERY
+// role gets, so citing one role's drawing would claim a layout it does not specify. The structure
+// the withdrawn drawing called for, kept here as the record of what was reviewed:
 //   ช่องทางรับแจ้ง  — one card, a row per channel: a tinted square glyph plate, the channel name over
 //                    a one-line description, and a switch at the trailing edge.
 //   ประเภทการแจ้งเตือน — one card per GROUP: a coloured left accent bar, a coloured group glyph and

@@ -5,6 +5,18 @@
 // `04_tenant_admin/05_navigation_drawer`, which is what settled it: a drawing filed under `02_shared/`
 // is nobody's role menu. So the drawn rows lead every role's drawer and the role's own rows follow.
 //
+// BOTH OF THOSE DRAWINGS WERE WITHDRAWN ON 2026-08-16 — one commit removed
+// `02_shared/01_navigation_drawer` and `04_tenant_admin/05_navigation_drawer` together, leaving
+// `02_shared/01_mfa/` as that directory's only occupant. The ruling stands (ADR-085: a drawing is
+// authoritative for STYLE, not for existence, and withdrawing one does not un-make reviewed work),
+// and the four rows named below are now the only record of what those two drawings specified —
+// which is why they are spelled out here rather than cited. Per-role drawer drawings do survive
+// (`03_site_engineer/05_profile/01_se_navigation_drawer`,
+// `06_project_manager/05_navigation_drawer/01_pm_profile`,
+// `07_safety_officer/05_profile/01_sa_drawer`,
+// `role_executive/05_profile/01_executive_navigation_drawer`) and are deliberately NOT put in their
+// place: no role takes a drawing verbatim any more, so citing one would misstate the model below.
+//
 // This REPLACES the 2026-08-10 arrangement, where exactly two roles (TENANT_ADMIN, PROJECT_MANAGER)
 // took their drawing verbatim and the other ten derived their list. What that decision was actually
 // protecting is kept, not discarded: it existed because the drawer once handed the TENANT_ADMIN menu
@@ -405,7 +417,8 @@ const NOT_DERIVED: readonly { link: DrawerLink; roles: readonly CosRole[] }[] = 
  *   It is now a drawn row (DERIVED "Project (view)"), so the role keeps it either way.
  *
  * TENANT_ADMIN — mockup 04_tenant_admin/05_navigation_drawer, the drawing since copied to
- *   `02_shared/01_navigation_drawer`: Project Overview · Daily Site Reports · Safety Incident Logs ·
+ *   `02_shared/01_navigation_drawer` and WITHDRAWN together with it on 2026-08-16 (see the header):
+ *   Project Overview · Daily Site Reports · Safety Incident Logs ·
  *   Material Inventory · Settings. Equipment Logs and Drawing Viewer were omitted then and still are
  *   — neither has a route in this app. Those four rows ARE the shared block now, which is the whole
  *   point of the 2026-08-14 decision: they were never Tenant-Admin-specific.

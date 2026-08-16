@@ -783,7 +783,7 @@ Optimised for outdoor sunlight visibility.
 > | Pinned surface                                                                                        | Why                                                                                                                                           |
 > | ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
 > | Pre-auth screens (login, OTP, overlay, and the Privacy Policy / Terms of Use / Support Centre routes) | The preference is per-user and there is no user yet. They are pushed from a dark login, so following a light preference would break mid-flow. |
-> | Navigation drawer                                                                                     | An overlay panel, not a page. It reads as a raised dark sheet over either mode — the same way its mockup draws it.                            |
+> | Navigation drawer                                                                                     | An overlay panel, not a page. It reads as a raised dark sheet over either mode — the same way its mockup drew it (withdrawn 2026-08-16; the pin is unaffected). |
 >
 > `--cos-dark-cyan` stays scoped to the **auth entry screens** (see the accent note under Mobile
 > Colour Tokens). The post-auth Privacy Policy route therefore takes `primary` as its accent, not
@@ -807,7 +807,7 @@ Dark screens (the pre-2026-08-04 set — see the note above):
 | Site Engineer Home                      | `mockup/mobile/03_site_engineer/01_home/01_se_home_dashboard/`               |
 | Tenant Admin Home                       | `mockup/mobile/04_tenant_admin/01_home/01_home_dashboard/`                   |
 | Notification preferences (Tenant Admin) | drawing withdrawn 2026-08-13 — see the note below it                         |
-| Navigation drawer                       | `mockup/mobile/02_shared/01_navigation_drawer/`                               |
+| Navigation drawer                       | drawing withdrawn 2026-08-16 — see the note below it                         |
 
 **Notification preferences keeps its row without a drawing.** The directory
 `mockup/mobile/04_tenant_admin/06_notification/` (`01_notification_preferences` + `02_success_state`) was deleted from
@@ -819,6 +819,22 @@ reviewed working capability. The Reference cell is deliberately NOT repointed at
 (`mockup/desktop/notification_desktop_view/notification_preferences_tenant_admin`): that is a different surface and
 would claim a mobile layout it does not specify. Both drawings were dark (`<html class="dark">`, `#031427`), which is
 the evidence the dark ruling rests on.
+
+**The navigation drawer keeps its row on exactly the same terms** (product-owner decision 2026-08-16).
+`mockup/mobile/02_shared/01_navigation_drawer/` was deleted from the mockup set on 2026-08-16, in the commit that
+also removed `mockup/mobile/04_tenant_admin/05_navigation_drawer/` — the two were byte-identical, which is what the
+2026-08-14 "shared drawing leads every role" decision rested on — together with `02_shared/03_account_settings/` and
+`02_shared/04_profile_settings/`, leaving `02_shared/01_mfa/` as that directory's only occupant. The row stays for the
+reason given above: this table rules on **which screens render dark**, not on which screens have a drawing. The drawer
+is additionally one of the two **pinned** surfaces named at the top of this note, and a withdrawn drawing does not
+unpin it. The Reference cell is deliberately NOT repointed at a surviving per-role drawer drawing
+(`03_site_engineer/05_profile/01_se_navigation_drawer`, `06_project_manager/05_navigation_drawer/01_pm_profile`,
+`07_safety_officer/05_profile/01_sa_drawer`, `role_executive/05_profile/01_executive_navigation_drawer`): since
+2026-08-14 **no role takes a drawing verbatim** — every drawer is DERIVED from the §6.4 module matrix with the four
+drawn rows leading — so citing one role's drawing would claim a menu this product does not build.
+`apps/mobile/src/lib/drawerLinks.ts` names those four rows and is now the record of what the withdrawn drawings
+specified. ADR-085 applies as written: a drawing is authoritative for STYLE, not for existence, and does not remove
+reviewed working capability — the drawer, Account Settings and Profile Settings screens all stand.
 
 The Tenant-Admin notification control panel and the navigation drawer were added by product-owner
 decision (2026-07-26); the **Tenant Admin Home** was added by product-owner decision (2026-07-28); the

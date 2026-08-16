@@ -8,10 +8,12 @@
 //     written over a wider verbal mapping).
 //   - HOW TYPES GROUP — §19.3 "Notification Types" and DESIGN.md §10.2, which agree: Immediate
 //     (real-time) · Digest (scheduled) · Escalation (threshold-triggered). A DELIVERY-TIMING axis.
-//     `mockup/mobile/02_shared/03_account_settings` draws a topical grouping instead — ความปลอดภัย /
-//     งานประจำวัน / วัสดุและอุปกรณ์ — and four of the six real event types map to no group it draws.
-//     The drawing decides what a group LOOKS like (see NotificationSettings.tsx); the spec decides
-//     which groups there are.
+//     `mockup/mobile/02_shared/03_account_settings` drew a topical grouping instead — ความปลอดภัย /
+//     งานประจำวัน / วัสดุและอุปกรณ์ — and four of the six real event types mapped to no group it drew.
+//     The drawing decided what a group LOOKS like (see NotificationSettings.tsx); the spec decides
+//     which groups there are. That drawing was WITHDRAWN on 2026-08-16 — it does not change either
+//     half of this: the spec side never depended on it, and the style side is recorded in
+//     NotificationSettings.tsx (ADR-085 — a withdrawn drawing does not un-make reviewed work).
 //
 // §19.4 HAS NO TENANT_ADMIN COLUMN. Its columns are Executive · PM · Site Engineer · Procurement ·
 // Finance · Safety Officer · CRM/Sales. TENANT_ADMIN therefore configures none of these types here;

@@ -151,6 +151,9 @@ describe('drawerLinksFor — the shared drawing leads every role (PO 2026-08-14)
   // The drawing was copied to mockup/mobile/02_shared/01_navigation_drawer, byte-identical to
   // 04_tenant_admin/05_navigation_drawer, so it is no longer any one role's menu. Its four buildable
   // rows now open every role's drawer — still gated by §6.4, so none of them can 403.
+  // BOTH DRAWINGS WERE WITHDRAWN ON 2026-08-16 (one commit, see drawerLinks.ts header). Nothing here
+  // changes: this spec asserts ROUTES, never the presence of a file under mockup/, and ADR-085 keeps
+  // the ruling standing without its drawing. DRAWN_ORDER is now the executable record of that order.
   const DRAWN_ORDER = ['/projects', '/reports', '/incidents', '/material-request'];
 
   it('opens every role on the drawn rows it is allowed, in the drawing’s order', () => {

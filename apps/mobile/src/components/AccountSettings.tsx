@@ -220,7 +220,8 @@ export function AccountSettings() {
         {/* The row that pushed /notification-preferences was removed on 2026-08-14: that screen is
             the TENANT_ADMIN panel, reached from its Settings tab. Every role's own notification
             settings are the <NotificationSettings /> section below, which mockup
-            02_shared/03_account_settings draws inside this screen rather than behind a row. */}
+            02_shared/03_account_settings drew inside this screen rather than behind a row (that
+            drawing was withdrawn 2026-08-16 — see the NotificationSettings header; ADR-085). */}
         <Row
           testID="theme-row"
           icon="dark-mode"
@@ -232,14 +233,17 @@ export function AccountSettings() {
         />
       </Section>
 
-      {/* Notification Settings — drawn INSIDE this screen by mockup 02_shared/03_account_settings,
-          and the one part of Account Settings that differs by role: it offers only the types §19.4
-          routes to the signed-in role. Its own component because it owns server state. */}
+      {/* Notification Settings — drawn INSIDE this screen by mockup 02_shared/03_account_settings
+          (withdrawn 2026-08-16), and the one part of Account Settings that differs by role: it
+          offers only the types §19.4 routes to the signed-in role. Its own component because it
+          owns server state. */}
       <NotificationSettings />
 
       {/* The Privacy Policy row left this card on 2026-08-14 — it is a drawer row now, where
-          mockup 02_shared/01_navigation_drawer draws it, and one screen should not be reachable
-          from two doors one tap apart. About keeps the version. */}
+          mockup 02_shared/01_navigation_drawer drew it, and one screen should not be reachable
+          from two doors one tap apart. That drawing was withdrawn on 2026-08-16 together with
+          04_tenant_admin/05_navigation_drawer; the placement stands (ADR-085) and the drawer's
+          rows are derived — see lib/drawerLinks.ts. About keeps the version. */}
       <Section label={t('profile.main.aboutSection')}>
         <Row
           testID="profile-version"
