@@ -1,6 +1,6 @@
 ---
 title: Construction OS — iOS Screen Capture
-last_updated: 2026-07-04
+last_updated: 2026-08-17
 ---
 
 # Construction OS — iOS App Screens
@@ -10,8 +10,12 @@ last_updated: 2026-07-04
 ❌ **No iOS screenshots are committed.** Every `.png` this file indexes was deleted by `7d2ba1b`
 ("update: screens out date") and has not been retaken — Android was recaptured after that commit,
 iOS was not. Everything below therefore describes the **target** set and how to produce it, not
-files you will find in this folder. Re-run the capture (see [How these were captured](#how-these-were-captured))
-before treating any link here as live.
+files you will find in this folder: see [How these were captured](#how-these-were-captured).
+
+The table below **names its frames instead of linking them**, as of 2026-08-17. Twenty-one links
+pointed at files this note already said were absent, so every one of them was a dead link inside a
+document explaining that they would be — the same treatment the retired Android sets get. Restore the
+links in the same change that restores the files.
 
 Full-flow screenshots of the Construction OS mobile app (Expo / React Native, iOS),
 captured against the **local backend running with seeded demo data**. Every screen was
@@ -25,29 +29,29 @@ reached by a real login (Path A phone + OTP) and live API/analytics calls — no
 
 ## Screens
 
-| #   | Screen                                    | Route             | What it shows (live data)                                                                               |
-| --- | ----------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------- |
-| 00  | [Login](00-login.png)                     | `(auth)/login`    | Path A phone + OTP sign-in                                                                              |
-| 01  | [Home](01-home.png)                       | `home`            | 2 open issues · 0 pending sync · project picker · Check in                                              |
-| 02  | [PM Dashboard](02-dashboard.png)          | `dashboard`       | Daily KPI cards from ClickHouse analytics — manpower 24, open issues 2, failed inspections 1, reports 1 |
-| 03  | [Projects](03-projects.png)               | `projects`        | Offline-cached project list — DEMO-001 · Bangkok Tower — Phase 1 (ACTIVE)                               |
-| 04  | [Tasks](04-tasks.png)                     | `tasks`           | Pour foundation — Zone A, Install rebar — Level 2 (0%, NOT_STARTED, SYNCED)                             |
-| 05  | [Portfolio](05-portfolio.png)             | `portfolio`       | Bangkok Tower — Phase 1 (ACTIVE)                                                                        |
-| 06  | [Budget](06-budget.png)                   | `budget`          | Total budget 5,000,000 THB · allocated/committed/actual · variance                                      |
-| 07  | [Invoices](07-invoices.png)               | `invoices`        | INV-2026-001 (RECEIVED)                                                                                 |
-| 08  | [Payments](08-payments.png)               | `payments`        | Payment 125,000 (PENDING) + Approve                                                                     |
-| 09  | [Procurement](09-procurement.png)         | `procurement`     | PO-2026-001 (DRAFT)                                                                                     |
-| 10  | [RFQs](10-rfqs.png)                       | `rfqs`            | RFQ-2026-001 (DRAFT)                                                                                    |
-| 11  | [Purchase Orders](11-orders.png)          | `orders`          | PO-2026-001 (DRAFT)                                                                                     |
-| 12  | [Deliveries](12-deliveries.png)           | `deliveries`      | Record-delivery form (PO ID, camera) + delivery record                                                  |
-| 13  | [Issues](13-issues.png)                   | `issues`          | Water leak in basement — Zone B, Delayed concrete delivery (LOW, SYNCED)                                |
-| 14  | [Incidents](14-incidents.png)             | `incidents`       | Safety incident report form (severity LOW→CRITICAL) — no incidents yet                                  |
-| 15  | [Inspections](15-inspections.png)         | `inspections`     | Inspection checklist                                                                                    |
-| 16  | [Site Reports](16-reports.png)            | `reports`         | 2 site reports — 2026-07-04, 2026-07-03 (DRAFT)                                                         |
-| 17  | [Daily Report](17-report.png)             | `report`          | Report submission form — project picker + summary + Save                                                |
-| 18  | [Alerts](18-alerts.png)                   | `alerts`          | Notification feed — no alerts                                                                           |
-| 19  | [Conflict Review](19-conflict-review.png) | `conflict-review` | Offline sync conflict review — no conflicts 🎉                                                          |
-| 20  | [Profile](20-profile.png)                 | `profile`         | User ID · role PROJECT_MANAGER · Log out                                                                |
+| #   | Screen          | Route             | What it shows (live data)                                                                               |
+| --- | --------------- | ----------------- | ------------------------------------------------------------------------------------------------------- |
+| 00  | Login           | `(auth)/login`    | Path A phone + OTP sign-in                                                                              |
+| 01  | Home            | `home`            | 2 open issues · 0 pending sync · project picker · Check in                                              |
+| 02  | PM Dashboard    | `dashboard`       | Daily KPI cards from ClickHouse analytics — manpower 24, open issues 2, failed inspections 1, reports 1 |
+| 03  | Projects        | `projects`        | Offline-cached project list — DEMO-001 · Bangkok Tower — Phase 1 (ACTIVE)                               |
+| 04  | Tasks           | `tasks`           | Pour foundation — Zone A, Install rebar — Level 2 (0%, NOT_STARTED, SYNCED)                             |
+| 05  | Portfolio       | `portfolio`       | Bangkok Tower — Phase 1 (ACTIVE)                                                                        |
+| 06  | Budget          | `budget`          | Total budget 5,000,000 THB · allocated/committed/actual · variance                                      |
+| 07  | Invoices        | `invoices`        | INV-2026-001 (RECEIVED)                                                                                 |
+| 08  | Payments        | `payments`        | Payment 125,000 (PENDING) + Approve                                                                     |
+| 09  | Procurement     | `procurement`     | PO-2026-001 (DRAFT)                                                                                     |
+| 10  | RFQs            | `rfqs`            | RFQ-2026-001 (DRAFT)                                                                                    |
+| 11  | Purchase Orders | `orders`          | PO-2026-001 (DRAFT)                                                                                     |
+| 12  | Deliveries      | `deliveries`      | Record-delivery form (PO ID, camera) + delivery record                                                  |
+| 13  | Issues          | `issues`          | Water leak in basement — Zone B, Delayed concrete delivery (LOW, SYNCED)                                |
+| 14  | Incidents       | `incidents`       | Safety incident report form (severity LOW→CRITICAL) — no incidents yet                                  |
+| 15  | Inspections     | `inspections`     | Inspection checklist                                                                                    |
+| 16  | Site Reports    | `reports`         | 2 site reports — 2026-07-04, 2026-07-03 (DRAFT)                                                         |
+| 17  | Daily Report    | `report`          | Report submission form — project picker + summary + Save                                                |
+| 18  | Alerts          | `alerts`          | Notification feed — no alerts                                                                           |
+| 19  | Conflict Review | `conflict-review` | Offline sync conflict review — no conflicts 🎉                                                          |
+| 20  | Profile         | `profile`         | User ID · role PROJECT_MANAGER · Log out                                                                |
 
 Screens that read from the offline WatermelonDB cache (dashboard, budget, incidents, report)
 gate their data behind selecting a project — the capture taps the **DEMO-001** chip before

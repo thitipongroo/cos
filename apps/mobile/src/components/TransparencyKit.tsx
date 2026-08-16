@@ -3,8 +3,10 @@
 //
 // THOSE DRAWINGS WERE WITHDRAWN ON 2026-08-15 — one commit took that directory from 123 drawings to
 // 9, and the whole `01_data_collection/**` set (~114 screens) went with it. Nothing here changes:
-// ADR-085 makes a drawing authoritative for STYLE, not for existence, and the portal's screens, its
-// 14 committed Android captures and ADR-078/080/081/082/083/084 all stand. The kit below is now the
+// ADR-085 makes a drawing authoritative for STYLE, not for existence, and the portal's screens and
+// ADR-078/080/081/082/083/084 all stand. The 14 Android captures that documented them were retired
+// on 2026-08-17, and capture-android-transparency.mjs was deleted so nothing recreates them — the
+// screens outlived both their drawings and their screenshots. That leaves the kit below as the ONLY
 // record of the layout those drawings specified, which is the reason its shapes are described in
 // prose here rather than by pointing at a directory. The surviving `02_data_collection` is a
 // single-screen folder, not the set — it is deliberately not cited as a replacement.

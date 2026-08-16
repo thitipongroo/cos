@@ -1,6 +1,6 @@
 ---
 title: Construction OS — Android Screen Capture
-last_updated: 2026-08-16
+last_updated: 2026-08-17
 ---
 
 # Construction OS — Android App Screens
@@ -40,7 +40,9 @@ gets its own full-page file (the Invite-user `email` method, the Alerts `diff`-e
 >    `02-shared/privacy-policy/` moved under `01-authen/` too, since both are part of getting in.
 >    **MFA moved on again on 2026-08-16**, to [`02-shared/01-mfa/`](02-shared/01-mfa/): enrolment is
 >    reached AFTER sign-in by every role that carries it, so it is cross-role rather than pre-auth.
->    The Privacy Policy stayed in `01-authen/`.
+>    The Privacy Policy stayed in `01-authen/` until **2026-08-17**, when it was retired along with
+>    the Terms of Use, the Support Center and the Transparency Portal — `01-login/` is all that
+>    folder holds now.
 > 2. **Every frame in a role folder names its role**: `01-dashboard.png` became
 >    `01-ta-home-dashboard.png` / `01-sw-home-dashboard.png` / `01-pm-home-dashboard.png`, so a file
 >    stays identifiable once it is out of its folder. Cross-role folders (`00-loading/`, `01-authen/`,
@@ -56,7 +58,7 @@ gets its own full-page file (the Invite-user `email` method, the Alerts `diff`-e
 | Folder                                       | What it holds                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`00-loading/`](00-loading/)                 | The two frames before the app has a screen — the Android 12+ native splash (`00`) and the app-launch loading state (`01`) the JS layer holds while the session hydrates.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| [`01-authen/`](01-authen/)                   | Getting in, one subfolder per flow: [`01-login/`](01-authen/01-login/) the login flow (`01`–`04`); [`03-privacy-policy/`](01-authen/03-privacy-policy/) the Privacy Policy in **both** entry states (`00-…-preauth` from the login footer, `00-…-postauth` from the drawer) plus the Transparency Portal ([`01-data-collection/`](01-authen/03-privacy-policy/01-data-collection/), 14 screens `00`–`13`); [`04-terms-of-use/`](01-authen/04-terms-of-use/) (`01`); [`05-get-support/`](01-authen/05-get-support/) (`01`), reached from the OTP step's GET SUPPORT.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| [`01-authen/`](01-authen/)                   | Getting in. **Since 2026-08-17 it holds exactly one flow:** [`01-login/`](01-authen/01-login/), the login flow (`01`–`04`). Four sets left that day (product-owner decision): `03-privacy-policy/` — the Privacy Policy in both entry states (`00-…-preauth` from the login footer, `00-…-postauth` from the drawer) — the Transparency Portal beneath it (`01-data-collection/`, 14 screens `00`–`13`), `04-terms-of-use/` and `05-get-support/`. Their sections are kept below, marked retired, because what they documented is still true of the app; **all four capture scripts were deleted with them**, so nothing recreates the folders.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | [`02-shared/`](02-shared/)                   | Cross-role screens that belong to no role. **Since 2026-08-16 it holds exactly one flow:** [`01-mfa/`](02-shared/01-mfa/) — office-role MFA enrolment, `01` in-app and `02`–`07` on Keycloak's hosted pages. It arrived from `01-authen/02-mfa/` (enrolment is reached AFTER sign-in, so it is cross-role rather than pre-auth) and was renumbered `02-mfa/` → `01-mfa/` on becoming the folder's only occupant. The notification-preferences frames (`01`, `02`) and the navigation drawer (`03`) that used to sit here were **retired the same day**; both sections are kept below, marked retired, because what they documented is still true of the app.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | [`03-site-engineer/`](03-site-engineer/)     | Tabs: **Home \| Issues \| Tasks \| Reports** — `Tasks` replaced `Inspections` on 2026-08-12 (PO decision; [`roleTabs.ts`](../../../apps/mobile/src/lib/roleTabs.ts) is the source, and `/inspections` became a derived drawer row for the role rather than being dropped). [`01-Home/`](03-site-engineer/01-Home/) — the **project picker** overlay (`00-se-project-selection`), the dashboard's loading state (`00-se-home-loading`) and the dashboard itself (`01`). [`02-Issues/`](03-site-engineer/02-Issues/) — the issue board (`01`). [`03-Tasks/`](03-site-engineer/03-Tasks/) — the task list (`01`). [`04-Reports/`](03-site-engineer/04-Reports/) — the submitted-report review list (`01`). Both `00-` frames sort before the dashboard because each precedes it: the picker is answered first, then the dashboard loads.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | [`04-tenant-admin/`](04-tenant-admin/)       | Tabs: **Home \| Users \| Alerts \| Settings**. [`01-Home/`](04-tenant-admin/01-Home/) — dashboard (`01`), Quick-Add (`02`) and the FAB flows: Invite-user (`03`), Role-permissions (`04`), Roles-selection (`05`), Invitation-success (`06`), System-integration (`07`), Apps-&-Services (`08`). [`02-Users/`](04-tenant-admin/02-Users/) — the users list (`01`), the per-user action sheet (`02`), the user profile (`03`), the multi-role permission editor (`04`) + the save-success screen (`05`), and the password-reset form (`06`) + its two done screens — temp-password (`07`) and email-link-sent (`08`). [`03-Alerts/`](04-tenant-admin/03-Alerts/) — the sync-review queue (`01`). [`04-Settings/`](04-tenant-admin/04-Settings/) — System Settings (`01`, one full-page).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
@@ -76,18 +78,7 @@ each write into `04-tenant-admin/01-Home/`. `04-tenant-admin/02-Users/` has its 
 frame**: the tenant-admin-home script used to stitch a second copy of the users list, and that step was
 removed on 2026-08-07 so the file cannot depend on which script ran last.
 [`capture-android-login.mjs`](../../../apps/mobile/scripts/capture-android-login.mjs)
-writes `01-authen/01-login/`;
-[`capture-android-privacy-policy.mjs`](../../../apps/mobile/scripts/capture-android-privacy-policy.mjs)
-writes `01-authen/03-privacy-policy/00-privacy-policy-preauth.png` and
-[`capture-android-terms-of-use.mjs`](../../../apps/mobile/scripts/capture-android-terms-of-use.mjs)
-writes `01-authen/04-terms-of-use/` — the two captures here that need **no backend**: neither screen
-makes an API call, so Metro alone is enough and no login is performed.
-[`capture-android-support.mjs`](../../../apps/mobile/scripts/capture-android-support.mjs)
-
-writes `01-authen/05-get-support/`, and it **does** need the backend — not because the
-screen needs one to render, but because the only entry the mockups draw for it is on the OTP step, so
-the script requests a real passcode to get there, and the screen's status banner then probes
-`GET /health/live`.
+writes `01-authen/01-login/` — the whole of that folder now, and the only pre-auth writer left.
 [`capture-android-shared-mfa.mjs`](../../../apps/mobile/scripts/capture-android-shared-mfa.mjs) writes the
 one **in-app** cross-role shot — `02-shared/01-mfa/01-app-intro.png`. Everything else under
 `02-shared/01-mfa/` (`02`–`07`) is the **Keycloak hosted browser** flow and is captured by hand, because it
@@ -100,6 +91,25 @@ runs outside the app where adb/uiautomator cannot drive it.
 > path recreates it on the next run. Removing the preferences step also removed the only capture step
 > in this repo that WROTE to the database — it pressed SAVE CHANGES for real to reach the `if (saved)`
 > branch. **Neither screen left the app**; only their screenshots left this set.
+
+<!-- markdownlint-disable-next-line MD028 -->
+
+> **Four scripts were deleted outright on 2026-08-17**, by the same rule one step further: when every
+> frame a script writes has been retired, the file has nothing left to write. `01-authen/` lost
+> `03-privacy-policy/` (both entry states), its `01-data-collection/` portal, `04-terms-of-use/` and
+> `05-get-support/` — 18 frames — so `capture-android-privacy-policy.mjs`,
+> `capture-android-terms-of-use.mjs`, `capture-android-support.mjs` and
+> `capture-android-transparency.mjs` went with them, along with the
+> `capture:android:privacy-policy` and `capture:android:transparency` entries in
+> `apps/mobile/package.json` (the other two never had one). This is the CRM disposal, not the
+> notification-preferences one: there was no surviving step to keep.
+>
+> Two facts those scripts carried are worth keeping, because they are the reason the flows were
+> captured the way they were. The policy and terms captures were **the only two here that needed no
+> backend** — neither screen makes an API call, so Metro alone was enough and no login was performed.
+> The support capture **did** need one, not to render the screen but to reach it: the only entry the
+> mockups draw is on the OTP step, so the script requested a real passcode to get there, and the
+> screen's status banner then probed `GET /health/live`.
 
 <!-- markdownlint-disable-next-line MD028 -->
 
@@ -144,20 +154,21 @@ runs outside the app where adb/uiautomator cannot drive it.
 English UI (matching [`mockup/mobile/01_authen/`](../../../mockup/mobile/01_authen)); the
 login header's language switcher is used to leave the th-TH default (QM-3).
 
-**Each pre-auth flow is its own numbered subfolder and numbers from its own start**, which is why the
-Terms of Use and the Support Center are both `01`. They were `06` and `07` in one flat `01-public/`
-until the 2026-08-11 restructure; the splash and app-launch loading left that folder in the same
-change, for [`00-loading/`](00-loading/).
+**Each pre-auth flow was its own numbered subfolder, numbering from its own start** — which is why
+the Terms of Use and the Support Center were both `01` while the login flow ran `01`–`04`. They were
+`06` and `07` in one flat `01-public/` until the 2026-08-11 restructure; the splash and app-launch
+loading left that folder in the same change, for [`00-loading/`](00-loading/). **The numbering is
+history now:** `01-login/` is the only subfolder left, the gap at `02` being where MFA sat before it
+moved to `02-shared/01-mfa/` on 2026-08-16, and `03`–`05` where the three flows retired on 2026-08-17
+sat. The numbers are NOT closed up — renumbering would break every link that ever pointed at them and
+would claim the flows had been reordered rather than withdrawn.
 
-| Folder               | Screen                                                                      | What it shows                                                                       |
-| -------------------- | --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `01-login/`          | [Login](01-authen/01-login/01-login.png)                                    | Landing — Path A phone form, Path B "Login with Email" as the secondary action      |
-| `01-login/`          | [OTP verify](01-authen/01-login/02-login-otp-verify.png)                    | Passcode step for `+66 •••• 0010`, requested from the landing                       |
-| `01-login/`          | [Email + password](01-authen/01-login/03-login-password.png)                | Keycloak's hosted page in a Chrome Custom Tab, `cos` theme (§20.6.1 / QM-4)         |
-| `01-login/`          | [Securing session](01-authen/01-login/04-login-loading.png)                 | `VerifyingOverlay`, shown while the Path B code→token exchange runs                 |
-| `03-privacy-policy/` | [Privacy Policy](01-authen/03-privacy-policy/00-privacy-policy-preauth.png) | Pre-auth policy screen, reached from the login footer link — all sections collapsed |
-| `04-terms-of-use/`   | [Terms of Use](01-authen/04-terms-of-use/01-terms-of-use.png)               | Pre-auth terms, the footer's other link — clause `01` open, as the screen opens     |
-| `05-get-support/`    | [Support Center](01-authen/05-get-support/01-get-support.png)               | Pre-auth support, reached from the OTP step's GET SUPPORT — all topics collapsed    |
+| Folder      | Screen                                                       | What it shows                                                                  |
+| ----------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| `01-login/` | [Login](01-authen/01-login/01-login.png)                     | Landing — Path A phone form, Path B "Login with Email" as the secondary action |
+| `01-login/` | [OTP verify](01-authen/01-login/02-login-otp-verify.png)     | Passcode step for `+66 •••• 0010`, requested from the landing                  |
+| `01-login/` | [Email + password](01-authen/01-login/03-login-password.png) | Keycloak's hosted page in a Chrome Custom Tab, `cos` theme (§20.6.1 / QM-4)    |
+| `01-login/` | [Securing session](01-authen/01-login/04-login-loading.png)  | `VerifyingOverlay`, shown while the Path B code→token exchange runs            |
 
 Captured by [`apps/mobile/scripts/capture-android-login.mjs`](../../../apps/mobile/scripts/capture-android-login.mjs)
 (`cd apps/mobile && pnpm capture:android` — it installs standalone, see the root `pnpm-workspace.yaml`)
@@ -167,25 +178,37 @@ connection a `uiautomator dump` only ever returns the instrumented app's own win
 browser undrivable. The script asserts the screen it expects (e.g. `verifying-overlay`) before saving
 each frame, so a mis-tap fails the run instead of writing a screenshot of the wrong thing.
 
-> **The pre-auth Privacy Policy is one frame, and only the collapsed state.** Until 2026-08-07 the
-> then-`01-public/` folder also carried
-> `05-privacy-policy-{data-collection,usage,compliance,security,rights}.png` — the same screen with each
-> accordion section expanded. All five were removed as duplicates (product-owner decision): the identical
-> policy document is captured post-auth as
-> [`00-privacy-policy-postauth.png`](01-authen/03-privacy-policy/00-privacy-policy-postauth.png) in the
-> same folder, where it is the live route rather than a pre-auth stand-in.
-> [`capture-android-privacy-policy.mjs`](../../../apps/mobile/scripts/capture-android-privacy-policy.mjs)
-> no longer expands the sections, so re-running it cannot reintroduce them.
->
-> **The Support Center shows both emergency controls DISABLED, and that is the honest default.** The priority line
+## Pre-auth Terms of Use — not captured (retired 2026-08-17)
+
+**`01-authen/04-terms-of-use/01-terms-of-use.png` is no longer part of this set** (product-owner
+decision 2026-08-17), and `capture-android-terms-of-use.mjs` was deleted with it — that script wrote
+nothing else, so there was no step to remove and no file to keep.
+
+**The SCREEN is untouched** (ADR-085): [`(auth)/terms-of-use.tsx`](<../../../apps/mobile/src/app/(auth)/terms-of-use.tsx>)
+is still reached from the login footer, beside the Privacy Policy link. What the retired frame
+documented, kept because it is easy to re-break: the screen opens with **clause `01` already
+expanded** rather than fully collapsed, so the reader lands on text instead of on a list of headings.
+
+## Pre-auth Support Center — not captured (retired 2026-08-17)
+
+**`01-authen/05-get-support/01-get-support.png` is no longer part of this set** (product-owner
+decision 2026-08-17); `capture-android-support.mjs` was deleted with it. The frame showed the screen
+reached from the OTP step's GET SUPPORT, all topics collapsed.
+
+**The SCREEN is untouched** (ADR-085): [`(auth)/support.tsx`](<../../../apps/mobile/src/app/(auth)/support.tsx>)
+still carries it, and its own header is now the record — that screen has outlived both its drawing
+(withdrawn 2026-08-15) and its screenshot. What the retired frame documented is kept below, because
+it is the part that reads as a defect to anyone who has not been told otherwise.
+
+> **The Support Center showed both emergency controls DISABLED, and that is the honest default.** The priority line
 > and the IT hotline dial `EXPO_PUBLIC_SUPPORT_CENTER_PHONE` and `EXPO_PUBLIC_SUPPORT_IT_HOTLINE`
 > (product-owner decision 2026-08-09) — per-deployment config, because no support-desk,
 > emergency-contact or hotline column exists in the schema and this screen is reached before sign-in,
 > so there is no project to resolve one from. The priority line calls the **support centre**, not a
 > named person: the drawing's "Call Site Supervisor" was renamed on 2026-08-09, which is also why the
 > variable is not `…_SUPERVISOR_PHONE` — a desk number is a per-deployment fact, an on-duty supervisor
-> is not. Both are unset in the repo, so the capture shows the unconfigured state
-> rather than an invented number. Set them in `apps/mobile/.env` and re-run to capture the live state.
+> is not. Both are unset in the repo, so the frame showed the unconfigured state
+> rather than an invented number — and the screen still does, until they are set in `apps/mobile/.env`.
 >
 > Two other things on that screen deliberately differ from its mockup
 > (`mockup/mobile/01_authen/07_get_help/01_support_center`, **withdrawn 2026-08-15** — not repointed
@@ -995,98 +1018,102 @@ DECIMAL **string** the API returns — never parsed into a JS number (§14). The
 container laid nothing out, and since choosing a lead is mandatory before an opportunity can be
 created, that made the screen unusable.
 
-## Shared — Privacy Policy + Data Collection — [`01-authen/03-privacy-policy/`](01-authen/03-privacy-policy/)
+## Privacy Policy (both entry states) + Data Collection — not captured (retired 2026-08-17)
 
-The post-auth Privacy Policy and the PDPA data-collection portal beneath it, reached from **drawer →
-PRIVACY POLICY → Data Collection card** (PO decision 2026-08-04). They are not any role's tab, and
-they live under [`01-authen/03-privacy-policy/`](01-authen/03-privacy-policy/) — the pre-auth policy
-screen is the same document, so both entry states are filed together rather than split across
-`01-authen/` and `02-shared/`. (This paragraph said "Under `02-shared/`" until 2026-08-16; the files
-moved in the 2026-08-11 restructure and the sentence had not followed them.)
+**Sixteen frames left this set in one change** (product-owner decision 2026-08-17): the whole of
+`01-authen/03-privacy-policy/` — the Privacy Policy in both entry states, and the fourteen-screen
+PDPA Transparency Portal beneath it at `01-data-collection/`. Both capture paths were retired with
+them: `capture-android-privacy-policy.mjs` and `capture-android-transparency.mjs` are gone, along
+with their `capture:android:privacy-policy` and `capture:android:transparency` entries, so nothing
+recreates the folder on the next run.
 
-The folder was named to mirror the mockup tree rather than inventing its own name (PO decision
-2026-08-04):
+**The SCREENS are untouched** (ADR-085). [`(auth)/privacy-policy.tsx`](<../../../apps/mobile/src/app/(auth)/privacy-policy.tsx>)
+is still the login footer's policy link, [`(app)/privacy-policy.tsx`](<../../../apps/mobile/src/app/(app)/privacy-policy.tsx>)
+is still the drawer's route, and [`(app)/transparency.tsx`](<../../../apps/mobile/src/app/(app)/transparency.tsx>)
+with its eight child screens is still reached from the policy's Data Collection card, all backed by
+ADR-078 / ADR-080 / ADR-081 / ADR-082 / ADR-083 / ADR-084. **These screens have now outlived both
+their drawings and their screenshots** — the mockups went on 2026-08-15, the captures on 2026-08-17 —
+which is why everything the frames documented is written out below rather than left to the images.
+The layout the withdrawn drawings specified lives in
+[`TransparencyKit.tsx`](../../../apps/mobile/src/components/TransparencyKit.tsx) and in the
+`cardBodyLength.spec.ts` / `headingStutter.spec.ts` tests; this section is the record of what the
+frames showed.
 
-| Here                                            | Mockup                                                                                                                                                      |
-| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `privacy-policy/00-privacy-policy-postauth.png` | [`05_privacy_policy/01_privacy_policy`](../../../mockup/mobile/01_authen/05_privacy_policy/01_privacy_policy) — renamed from `00_policy_data` on 2026-08-15 |
-| `privacy-policy/01-data-collection/`            | `05_privacy_policy/01_data_collection/` — **withdrawn 2026-08-15**, see below                                                                               |
-
-> **The mirror no longer holds, and the folder name is kept anyway.** On 2026-08-15 one commit took
-> `mockup/mobile/01_authen/05_privacy_policy/` from **123 drawings to 9**: `00_policy_data` was
-> renamed, and the entire `01_data_collection/**` set — about **114** drawings, the whole Transparency
-> Portal — was withdrawn. The 14 frames below are unaffected and so are the screens they document
-> (ADR-085), and the capture paths are deliberately NOT renamed to chase the mockup tree: they are
-> what the committed files are called, and renaming them would break every link on this page to
-> follow a directory that is gone. The surviving `02_data_collection` is a **single-screen** folder,
-> not the set, so nothing here is repointed at it. What those drawings settled about layout now lives
-> in tests — `cardBodyLength.spec.ts` and `headingStutter.spec.ts` — and in
-> [`TransparencyKit.tsx`](../../../apps/mobile/src/components/TransparencyKit.tsx), whose header
-> carries the full note.
-
-<!-- markdownlint-disable-next-line MD028 -->
+**Reached from drawer → PRIVACY POLICY → Data Collection card** (PO decision 2026-08-04). They are
+not any role's tab. The folder sat under `01-authen/` because the pre-auth policy screen is the same
+document, so both entry states were filed together rather than split across `01-authen/` and
+`02-shared/`.
 
 > **Entry path changed 2026-08-04.** These screens were previously reached from **Profile →
 > Transparency Portal**. Both halves of that path are gone: the Profile **tab** was removed for every
 > role (Profile is reached from the top-bar avatar), and the portal row was removed from Profile when
-> the policy's Data Collection card became the entry point. Frame `00-privacy-policy-postauth` is the
-> new doorway.
+> the policy's Data Collection card became the entry point. The post-auth policy frame was the new
+> doorway.
+
+<!-- markdownlint-disable-next-line MD028 -->
+
+> **The pre-auth policy was one frame, and only the collapsed state.** Until 2026-08-07 the
+> then-`01-public/` folder also carried
+> `05-privacy-policy-{data-collection,usage,compliance,security,rights}.png` — the same screen with
+> each accordion section expanded. All five were removed as duplicates (product-owner decision),
+> since the identical policy document was captured post-auth where it is the live route rather than a
+> pre-auth stand-in, and the capture script was changed to stop expanding the sections so that
+> re-running it could not reintroduce them.
 
 Captured signed in as **Thanawat Boonmee — PROJECT_MANAGER** (`seed-realistic.ts`), because
-`01-identity` renders that account's real stored values from `GET /api/v1/users/me`.
+`01-identity` renders that account's real stored values from `GET /api/v1/users/me`. Shell colour is
+not role-dependent: **dark is the product default for every role** (PO decision 2026-08-04), with
+light selectable in Profile, so the frames showed the dark default. Each child screen carries the `<`
+back control restored to the top bar on 2026-08-04, alongside the breadcrumb.
 
-Shell colour is no longer role-dependent: **dark is the product default for every role** (PO decision
-2026-08-04), with light selectable in Profile, so these frames show the dark default. Each child
-screen carries the `<` back control restored to the top bar on 2026-08-04, alongside the breadcrumb.
+What the sixteen policy/portal frames showed, kept because it is the only remaining description of
+these screens as a set:
 
-| #   | Screen                                                                                             | What it shows                                                                   |
-| --- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| 00  | [Privacy Policy (post-auth)](01-authen/03-privacy-policy/00-privacy-policy-postauth.png)           | The drawer's policy route — same document as the pre-auth one, in the app shell |
-| 00  | [Data Collection](01-authen/03-privacy-policy/01-data-collection/00-data-collection.png)           | Category count, what is collected, how it arrives, retention and rights         |
-| 01  | [Identity & contact](01-authen/03-privacy-policy/01-data-collection/01-identity.png)               | The signed-in account's real name / email / phone / photo / role                |
-| 02  | [Site & location](01-authen/03-privacy-policy/01-data-collection/02-location.png)                  | The five record types that carry a coordinate; geofencing marked Planned        |
-| 03  | [Technical logs](01-authen/03-privacy-policy/01-data-collection/03-technical-logs.png)             | Audit-log fields, the path an entry travels, retention tiers                    |
-| 04  | [What you enter](01-authen/03-privacy-policy/01-data-collection/04-manual-input.png)               | The forms that create records and how entries are handled                       |
-| 05  | [Equipment sensors](01-authen/03-privacy-policy/01-data-collection/05-equipment-sensors.png)       | Every row Planned — IoT ingestion is Phase 21/24 and collects nothing today     |
-| 06  | [Automated processing](01-authen/03-privacy-policy/01-data-collection/06-automated-processing.png) | OCR + report drafting in use; PPE detection and photo-vs-design Planned         |
-| 07  | [Erasing your data](01-authen/03-privacy-policy/01-data-collection/07-erasure.png)                 | What is erased vs anonymised-and-kept, and why; request control inactive        |
+| #   | Screen                     | What it showed                                                                  |
+| --- | -------------------------- | ------------------------------------------------------------------------------- |
+| 00  | Privacy Policy (post-auth) | The drawer's policy route — same document as the pre-auth one, in the app shell |
+| 00  | Data Collection            | Category count, what is collected, how it arrives, retention and rights         |
+| 01  | Identity & contact         | The signed-in account's real name / email / phone / photo / role                |
+| 02  | Site & location            | The five record types that carry a coordinate; geofencing marked Planned        |
+| 03  | Technical logs             | Audit-log fields, the path an entry travels, retention tiers                    |
+| 04  | What you enter             | The forms that create records and how entries are handled                       |
+| 05  | Equipment sensors          | Every row Planned — IoT ingestion is Phase 21/24 and collects nothing today     |
+| 06  | Automated processing       | OCR + report drafting in use; PPE detection and photo-vs-design Planned         |
+| 07  | Erasing your data          | What is erased vs anonymised-and-kept, and why; request control inactive        |
 
 ### The D-series (`08`–`13`) — ADR-078 / ADR-080 / ADR-081 / ADR-084
 
-| #   | Screen                                                                                     | What it shows                                                                        |
-| --- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
-| 08  | [Data export](01-authen/03-privacy-policy/01-data-collection/08-data-export.png)           | The five real @pdpa categories, JSON/CSV, and the step-up before an archive is built |
-| 09  | [Network origin](01-authen/03-privacy-policy/01-data-collection/09-network-origin.png)     | What the ingress address resolves to, latency measured on the device, and the rule   |
-| 10  | [Device details](01-authen/03-privacy-policy/01-data-collection/10-device-details.png)     | Installation id (not a hardware serial), how sign-in is bound, platform integrity    |
-| 11  | [Account security](01-authen/03-privacy-policy/01-data-collection/11-account-security.png) | Registered devices, revocation with a reason, and the biometric unlock switch        |
-| 12  | [Session details](01-authen/03-privacy-policy/01-data-collection/12-session.png)           | Real token lifetimes and transport — not the mockup's invented parameters (ADR-084)  |
-| 13  | [Timestamps](01-authen/03-privacy-policy/01-data-collection/13-timestamps.png)             | UTC, storage precision, append-only audit, and the real retention tiers              |
+| #   | Screen           | What it showed                                                                       |
+| --- | ---------------- | ------------------------------------------------------------------------------------ |
+| 08  | Data export      | The five real @pdpa categories, JSON/CSV, and the step-up before an archive is built |
+| 09  | Network origin   | What the ingress address resolves to, latency measured on the device, and the rule   |
+| 10  | Device details   | Installation id (not a hardware serial), how sign-in is bound, platform integrity    |
+| 11  | Account security | Registered devices, revocation with a reason, and the biometric unlock switch        |
+| 12  | Session details  | Real token lifetimes and transport — not the mockup's invented parameters (ADR-084)  |
+| 13  | Timestamps       | UTC, storage precision, append-only audit, and the real retention tiers              |
 
-**Two flag-dependent states are visible in these frames, and both are the correct rendering rather
+**Two flag-dependent states were visible in those frames, and both were the correct rendering rather
 than a defect:**
 
-- `10-device-details` shows **no trust-score panel**, because `s1.identity.device-trust-score` ships
+- `10-device-details` showed **no trust-score panel**, because `s1.identity.device-trust-score` ships
   OFF. The screen is built to drop the panel and still render every stored fact — the score is
   advisory and gates nothing (§22.3, ADR-081). To photograph the gauge, enable that flag first.
-- `08-data-export` renders its full flow only because `s1.identity.data-export` was flipped ON at
+- `08-data-export` rendered its full flow only because `s1.identity.data-export` was flipped ON at
   100% rollout on 2026-08-05. With it OFF the screen shows "not available yet" instead.
 
-The emulator reports `Never checked` / `Not reported on this platform` under Platform Integrity. That
-is correct for a device enrolled before attestation existed, and it is exactly the distinction
-ADR-083 required the screen to keep separate from "failed" — the frame is evidence the four-state
+The emulator reported `Never checked` / `Not reported on this platform` under Platform Integrity.
+That is correct for a device enrolled before attestation existed, and it is exactly the distinction
+ADR-083 required the screen to keep separate from "failed" — the frame was evidence the four-state
 rendering works, not evidence of a broken check.
 
-Captured by
-[`apps/mobile/scripts/capture-android-transparency.mjs`](../../../apps/mobile/scripts/capture-android-transparency.mjs)
-(`cd apps/mobile && pnpm capture:android:transparency`). It is the only capture script here that
-signs in and then walks a sub-tree, so it carries two helpers the others do not need: the shell's
-fixed bands are **taller** than the pre-auth screens (the breadcrumb pushes the content start to row
-311 — it was 375 until the green sync strip was removed on 2026-08-04), and rows below the fold are
-tapped via a scroll-until-found helper, because React Native does not report off-viewport rows to
-`uiautomator`.
-
-> Measure the BOTTOM band by walking **up** from the last row, never down: the content cards use the
-> same `#0F172A` surface as the bottom nav, so a downward scan stops in the middle of the page.
+> **What a recapture would have to rebuild.** `capture-android-transparency.mjs` was the only capture
+> script here that signed in and then walked a sub-tree, so it carried two helpers the others did not
+> need: the shell's fixed bands are **taller** than the pre-auth screens (the breadcrumb pushes the
+> content start to row 311 — it was 375 until the green sync strip was removed on 2026-08-04), and
+> rows below the fold have to be tapped via a scroll-until-found helper, because React Native does not
+> report off-viewport rows to `uiautomator`. Measure the BOTTOM band by walking **up** from the last
+> row, never down: the content cards use the same `#0F172A` surface as the bottom nav, so a downward
+> scan stops in the middle of the page.
 
 ## Shared — Navigation drawer — not captured (retired 2026-08-16)
 

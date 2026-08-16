@@ -1,6 +1,7 @@
 // Transparency Portal — hub (mockup 01_data_collection/00_data_collection_detail, withdrawn
 // 2026-08-15 with the whole `01_data_collection/**` set — ~114 drawings; ADR-085 leaves this screen
-// and its committed capture standing. See TransparencyKit.tsx's header for the full note).
+// standing. Its 14 Android captures were then retired on 2026-08-17, so the screen now has neither
+// a drawing nor a screenshot. See TransparencyKit.tsx's header for the full note).
 //
 // Reached from drawer → PRIVACY POLICY → the policy's Data Collection card (PO decision 2026-08-04;
 // the push lives in privacy-policy.tsx). It was Profile → Transparency Portal at first; both halves

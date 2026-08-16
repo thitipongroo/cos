@@ -297,7 +297,8 @@ async function freshApp() {
   // is a genuine cold start: Metro re-serves the bundle and the app re-runs it before anything is on
   // screen. The default budget (~25-40s including dump time) is enough on a warm emulator and is not
   // enough on one that was just booted, which is exactly when a capture run tends to start.
-  // `capture-android-transparency.mjs` sleeps a flat 30s here for the same reason.
+  // `capture-android-transparency.mjs` sleeps a flat 30s here for the same reason — that script was
+  // deleted on 2026-08-17 with the captures it wrote, so this is the only remaining statement of it.
   await find(byId('office-login-button'), 'login screen', 90);
   await delay(2500); // let the hero/card finish laying out
   await dismissDevBanners();

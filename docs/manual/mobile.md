@@ -102,9 +102,13 @@ pnpm capture:android                      # login flow → docs/screens/android/
 pnpm capture:android:home                 # SITE_ENGINEER dashboard
 pnpm capture:android:tenant-admin-home    # TENANT_ADMIN home / alerts / settings
 pnpm capture:android:site-worker          # the SITE_WORKER tab set
-pnpm capture:android:transparency         # the PDPA transparency portal
-pnpm capture:android:privacy-policy       # pre-auth Privacy Policy (needs NO backend)
 ```
+
+The Privacy Policy, Terms of Use, Support Center and Transparency Portal captures were **retired on
+2026-08-17** (product-owner decision) and their four scripts were deleted with them, so no command
+above writes `01-authen/03-privacy-policy/`, `04-terms-of-use/` or `05-get-support/` any more. The
+screens are untouched — see the "not captured (retired 2026-08-17)" sections in
+[`docs/screens/android/README.md`](../screens/android/README.md).
 
 The capture scripts are adb/uiautomator, deliberately **not** Detox: Path B hands off to Keycloak in
 a Chrome Custom Tab, and while Detox holds the UiAutomation connection a `uiautomator dump` only

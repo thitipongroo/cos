@@ -1,6 +1,8 @@
 // Support Center — pre-auth route (mockup/mobile/01_authen/07_get_help/01_support_center, WITHDRAWN
-// 2026-08-15). The screen stands (ADR-085) and its capture is committed at
-// docs/screens/android/01-authen/05-get-support/. It is deliberately NOT repointed at
+// 2026-08-15). The screen stands (ADR-085) — it now has neither a drawing nor a screenshot, since
+// docs/screens/android/01-authen/05-get-support/ was retired on 2026-08-17 and
+// capture-android-support.mjs was deleted with it. That makes this header the record of what the
+// screen is, which is why the notes below are kept in full. It is deliberately NOT repointed at
 // `mockup/mobile/support_center/01_dashboard`: that drawing was added by a different, earlier commit
 // with no rename record linking the two, and the files differ (329 lines against 293), so calling it
 // the successor would assert something unverified (product-owner decision 2026-08-16).

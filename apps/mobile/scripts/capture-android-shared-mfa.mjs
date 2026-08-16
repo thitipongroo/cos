@@ -36,7 +36,9 @@ const PKG = 'com.constructionos.cos';
 
 // The full-page stitcher and its chrome-band constants (TOP/BOT, stitch-fullpage.py) left with the
 // notification-preferences step on 2026-08-16 — the MFA intro fits one viewport, so nothing here
-// scrolls. capture-android-transparency.mjs still carries that machinery for the pages that need it.
+// scrolls. capture-android-transparency.mjs carried that machinery for the pages that needed it,
+// until it was deleted on 2026-08-17 with the captures it wrote; stitch-fullpage.py is still here
+// beside this file, and docs/screens/android/README.md records what a rebuilt walker would have to do.
 
 const OTP_PHONE = process.env['E2E_OTP_PHONE'] ?? '0811000010'; // Somsak Duangdee — SITE_WORKER
 const OTP_CODE = process.env['E2E_TEST_OTP'] ?? '123456';
