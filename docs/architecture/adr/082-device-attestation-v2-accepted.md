@@ -185,3 +185,5 @@ must not be the permissive choice.
 - `backend/prisma/migrations/20260716000003_device_trust/`,
   `backend/src/modules/identity/device-trust/device-trust.service.ts`
 - `mockup/mobile/01_authen/05_privacy_policy/01_data_collection/03_03_device_id_details`
+- **That drawing was withdrawn on 2026-08-15**, with the whole `01_data_collection/**` set (~114
+  screens). This decision and the screen it shipped are unaffected — ADR-085.

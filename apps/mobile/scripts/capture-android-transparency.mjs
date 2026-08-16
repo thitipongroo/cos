@@ -1,8 +1,12 @@
 // Android Transparency Portal screenshot capture — adb/uiautomator only, like every sibling script.
 //
 // Writes to docs/screens/android/01-authen/03-privacy-policy/ — the post-auth policy screen at the top
-// level and the portal screens under 01-data-collection/, mirroring the mockup tree
-// (05_privacy_policy/00_policy_data + 05_privacy_policy/01_data_collection). The folder sits under
+// level and the portal screens under 01-data-collection/, mirroring the mockup tree as it stood when
+// this folder was named (05_privacy_policy/00_policy_data + 05_privacy_policy/01_data_collection).
+// THAT TREE CHANGED ON 2026-08-15: `00_policy_data` was renamed `01_privacy_policy`, and the whole
+// `01_data_collection/**` set (~114 drawings) was withdrawn. The capture paths below are NOT renamed
+// to follow it — they are what the committed frames are called, and renaming them would orphan every
+// link in docs/screens/android/README.md to chase a directory that no longer exists. The folder sits under
 // 01-authen/ beside the pre-auth entry state of the SAME document (00-privacy-policy-preauth.png,
 // written by capture-android-privacy-policy.mjs); the two are told apart by the pre/post-auth
 // suffix. It was under 02-shared/privacy-policy/ until the tree was restructured — the policy and

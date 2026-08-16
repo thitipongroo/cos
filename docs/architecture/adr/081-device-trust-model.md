@@ -114,3 +114,5 @@ cannot be evaluated, and a wrong security score has a real victim); **let the sc
 - `mlops/models/` (the four existing models), `mlops/airflow/dags/`, `mlops/mlflow/`
 - ADR-054 (`platform.trusted_devices`, earned trust), ADR-082 (attestation signals), ADR-038 (Evidently)
 - `mockup/mobile/01_authen/05_privacy_policy/01_data_collection/03_03_device_id_details`
+- **That drawing was withdrawn on 2026-08-15**, with the whole `01_data_collection/**` set (~114
+  screens). This decision and the screen it shipped are unaffected — ADR-085.

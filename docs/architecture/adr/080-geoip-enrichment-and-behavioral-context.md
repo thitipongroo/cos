@@ -119,3 +119,5 @@ worker — a category error dressed as behaviour).
 - ADR-079 (consent purposes this depends on), ADR-054 (`/auth/otp/attest`, reused by `03_02`)
 - `mockup/mobile/01_authen/05_privacy_policy/01_data_collection/03_01_ip_address_details`,
   `03_02_network_refresh_success`
+- **Those drawings were withdrawn on 2026-08-15**, with the whole `01_data_collection/**` set (~114
+  screens). This decision and the screen it shipped are unaffected — ADR-085.

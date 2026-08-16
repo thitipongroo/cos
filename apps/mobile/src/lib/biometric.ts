@@ -1,5 +1,6 @@
 // Biometric unlock — the mobile half of the Security Settings toggle
-// (mockup 01_authen/05_privacy_policy/01_data_collection/03_04_manage_account_access).
+// (mockup 01_authen/05_privacy_policy/01_data_collection/03_04_manage_account_access, withdrawn
+// 2026-08-15 with that whole set; the toggle and its screen stand — ADR-085).
 //
 // Wraps expo-local-authentication. What this gates is LOCAL: the session tokens already live in
 // expo-secure-store and are protected at rest by the OS. The lock stops someone holding an already

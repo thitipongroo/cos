@@ -1,4 +1,9 @@
-// Support Center — pre-auth route (mockup/mobile/01_authen/07_get_help/01_support_center).
+// Support Center — pre-auth route (mockup/mobile/01_authen/07_get_help/01_support_center, WITHDRAWN
+// 2026-08-15). The screen stands (ADR-085) and its capture is committed at
+// docs/screens/android/01-authen/05-get-support/. It is deliberately NOT repointed at
+// `mockup/mobile/support_center/01_dashboard`: that drawing was added by a different, earlier commit
+// with no rename record linking the two, and the files differ (329 lines against 293), so calling it
+// the successor would assert something unverified (product-owner decision 2026-08-16).
 //
 // Route placement: the (auth) group, like the Privacy Policy and the Terms of Use before it. It is
 // reached from the OTP step's "GET SUPPORT" footer item, which had been inert text — and that item is

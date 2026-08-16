@@ -187,8 +187,10 @@ each frame, so a mis-tap fails the run instead of writing a screenshot of the wr
 > is not. Both are unset in the repo, so the capture shows the unconfigured state
 > rather than an invented number. Set them in `apps/mobile/.env` and re-run to capture the live state.
 >
-> Two other things on that screen deliberately differ from
-> [its mockup](../../../mockup/mobile/01_authen/07_get_help/01_support_center): there is **no bottom
+> Two other things on that screen deliberately differ from its mockup
+> (`mockup/mobile/01_authen/07_get_help/01_support_center`, **withdrawn 2026-08-15** — not repointed
+> at `mockup/mobile/support_center/01_dashboard`, which came from a different commit with no rename
+> record and differs in content, so it is not asserted as the successor): there is **no bottom
 > nav** (the drawing has one, but this is a pre-auth route — and `Field | Tasks | Support | Profile` is
 > no role's tab set, while §32.7 fixes each role at four), and the assistant panel is labelled **FIELD
 > ASSISTANT**, not the drawn "AI FIELD ASSISTANT". Its text is derived from the connectivity state and
@@ -999,12 +1001,27 @@ screen is the same document, so both entry states are filed together rather than
 `01-authen/` and `02-shared/`. (This paragraph said "Under `02-shared/`" until 2026-08-16; the files
 moved in the 2026-08-11 restructure and the sentence had not followed them.)
 
-The folder mirrors the mockup tree rather than inventing its own name (PO decision 2026-08-04):
+The folder was named to mirror the mockup tree rather than inventing its own name (PO decision
+2026-08-04):
 
-| Here                                            | Mockup                                                                                                           |
-| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `privacy-policy/00-privacy-policy-postauth.png` | [`05_privacy_policy/00_policy_data`](../../../mockup/mobile/01_authen/05_privacy_policy/00_policy_data)          |
-| `privacy-policy/01-data-collection/`            | [`05_privacy_policy/01_data_collection/`](../../../mockup/mobile/01_authen/05_privacy_policy/01_data_collection) |
+| Here                                            | Mockup                                                                                                                 |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `privacy-policy/00-privacy-policy-postauth.png` | [`05_privacy_policy/01_privacy_policy`](../../../mockup/mobile/01_authen/05_privacy_policy/01_privacy_policy) — renamed from `00_policy_data` on 2026-08-15 |
+| `privacy-policy/01-data-collection/`            | `05_privacy_policy/01_data_collection/` — **withdrawn 2026-08-15**, see below                                          |
+
+> **The mirror no longer holds, and the folder name is kept anyway.** On 2026-08-15 one commit took
+> `mockup/mobile/01_authen/05_privacy_policy/` from **123 drawings to 9**: `00_policy_data` was
+> renamed, and the entire `01_data_collection/**` set — about **114** drawings, the whole Transparency
+> Portal — was withdrawn. The 14 frames below are unaffected and so are the screens they document
+> (ADR-085), and the capture paths are deliberately NOT renamed to chase the mockup tree: they are
+> what the committed files are called, and renaming them would break every link on this page to
+> follow a directory that is gone. The surviving `02_data_collection` is a **single-screen** folder,
+> not the set, so nothing here is repointed at it. What those drawings settled about layout now lives
+> in tests — `cardBodyLength.spec.ts` and `headingStutter.spec.ts` — and in
+> [`TransparencyKit.tsx`](../../../apps/mobile/src/components/TransparencyKit.tsx), whose header
+> carries the full note.
+
+<!-- markdownlint-disable-next-line MD028 -->
 
 > **Entry path changed 2026-08-04.** These screens were previously reached from **Profile →
 > Transparency Portal**. Both halves of that path are gone: the Profile **tab** was removed for every

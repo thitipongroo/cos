@@ -150,3 +150,5 @@ Whichever is chosen, two things follow regardless:
   · [Making the Play Integrity API faster, more resilient, and more private](https://android-developers.googleblog.com/2024/12/making-play-integrity-api-faster-resilient-private.html)
 - [Mitigate fraud with App Attest and DeviceCheck (WWDC21)](https://developer.apple.com/videos/play/wwdc2021/10244/)
 - `mockup/mobile/01_authen/05_privacy_policy/01_data_collection/03_03_device_id_details`
+- **That drawing was withdrawn on 2026-08-15**, with the whole `01_data_collection/**` set (~114
+  screens). This decision and the screen it shipped are unaffected — ADR-085.

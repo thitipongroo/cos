@@ -1,4 +1,5 @@
-// Privacy Policy — pre-auth route (mockup/mobile/01_authen/05_privacy_policy/00_policy_data).
+// Privacy Policy — pre-auth route (mockup/mobile/01_authen/05_privacy_policy/01_privacy_policy,
+// renamed from 00_policy_data on 2026-08-15).
 //
 // Route placement: this lives in the (auth) group on purpose. The root AuthGate
 // (app/_layout.tsx) redirects every non-(auth) route to login while unauthenticated, and the screen

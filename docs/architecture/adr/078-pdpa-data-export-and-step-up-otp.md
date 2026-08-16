@@ -207,3 +207,5 @@ in-app download page already gives without weakening the 1-hour signed-URL invar
 - ADR-030 (magic-link tokens), ADR-035 (AES-256-GCM field encryption)
 - `mockup/mobile/01_authen/05_privacy_policy/01_data_collection/01_01_data_export_request`,
   `01_02_export_otp_verification`, `01_03_data_export_success`
+- **Those drawings were withdrawn on 2026-08-15**, with the whole `01_data_collection/**` set (~114
+  screens). This decision and the flow it shipped are unaffected — ADR-085.

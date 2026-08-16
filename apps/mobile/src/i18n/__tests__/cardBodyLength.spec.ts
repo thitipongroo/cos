@@ -6,7 +6,9 @@
 // sits between a 44px icon tile and a chevron, fits 42–48 characters per line, so three lines is
 // roughly 140 characters. The budget is the proxy; the mockups are the reason.
 //
-// The mockups run one to two lines per card (`01_data_collection/**`). The screens had drifted to
+// The mockups ran one to two lines per card (`01_data_collection/**`, withdrawn 2026-08-15 — this
+// spec is what holds the rule now, which is why the measurement above is recorded rather than
+// re-derivable from a directory). The screens had drifted to
 // four and five — `transparency.portal.retentionBody` was 306 characters — which is also what left
 // the card icons looking stranded at the top of a tall block.
 //

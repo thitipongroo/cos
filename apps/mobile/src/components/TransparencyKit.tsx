@@ -1,6 +1,14 @@
 // Shared presentational pieces for the Transparency Portal screens
 // (mockup/mobile/01_authen/05_privacy_policy/01_data_collection/, PO approval 2026-08-04).
 //
+// THOSE DRAWINGS WERE WITHDRAWN ON 2026-08-15 — one commit took that directory from 123 drawings to
+// 9, and the whole `01_data_collection/**` set (~114 screens) went with it. Nothing here changes:
+// ADR-085 makes a drawing authoritative for STYLE, not for existence, and the portal's screens, its
+// 14 committed Android captures and ADR-078/080/081/082/083/084 all stand. The kit below is now the
+// record of the layout those drawings specified, which is the reason its shapes are described in
+// prose here rather than by pointing at a directory. The surviving `02_data_collection` is a
+// single-screen folder, not the set — it is deliberately not cited as a replacement.
+//
 // Why a kit: the eight portal screens repeat the same handful of shapes — a status pill, a small
 // caps section label, an icon card, a label/value row, a vertical flow step, a disabled action row.
 // Written per screen that is eight near-identical StyleSheets, which is exactly the clone cluster
@@ -301,8 +309,10 @@ export function SummaryTile({ children }: { children: ReactNode }): React.JSX.El
 // ─── Shapes the mockups use that the original kit had no equivalent for ──────
 //
 // Added 2026-08-05 after the product owner compared the shipped screens against
-// mockup/mobile/01_authen/05_privacy_policy/01_data_collection/ and found the structure had been
-// flattened into generic cards. The mockups' LAYOUT is design input and is followed here; their
+// mockup/mobile/01_authen/05_privacy_policy/01_data_collection/ (withdrawn 2026-08-15 — see the file
+// header) and found the structure had been flattened into generic cards. That comparison is why
+// these shapes exist, so it is recorded even though the drawings it was made against are gone.
+// The mockups' LAYOUT is design input and is followed here; their
 // factual claims are not (ADR-078/080/081/083/084 record which numbers were untrue and why), and
 // their per-screen bottom navigation is deliberately NOT reproduced — DESIGN.md §5.5 fixes the
 // bottom nav as the role's 4–5 item set, so a nav that changes per screen would break the spec.
@@ -688,7 +698,8 @@ const makeStyles = (p: Palette) =>
       // a 44px tile with no cross-axis alignment sits against the TOP edge and reads as stranded.
       //
       // THIS OVERRIDES THE MOCKUPS, deliberately: every icon card in
-      // `01_data_collection/*/code.html` uses `flex items-start`. That works there because the
+      // `01_data_collection/*/code.html` used `flex items-start` (that set was withdrawn on
+      // 2026-08-15 — see the file header; this remains why the override exists). That worked there because the
       // mockup bodies are one or two lines of placeholder copy, so top and centre are nearly the
       // same pixel. The real screens carry longer, corrected copy — the gap the mockup never had.
       alignSelf: 'center',

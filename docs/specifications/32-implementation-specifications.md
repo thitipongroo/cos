@@ -652,7 +652,8 @@ where the "mission-critical operating system" personality is set, before any pro
 screen (product-owner decision 2026-07-16; reference
 `mockup/mobile/01_authen/04_verification_loading_mobile`). **Privacy Policy** was added to this
 exception by product-owner decision 2026-08-03 (reference
-`mockup/mobile/01_authen/05_privacy_policy/00_policy_data`): it is reached from the login footer and
+`mockup/mobile/01_authen/05_privacy_policy/01_privacy_policy`, renamed from `00_policy_data` on
+2026-08-15): it is reached from the login footer and
 is pre-auth by construction, so the same "no project data on screen" rationale applies — the glow is
 scoped to the brand logo on that screen and nothing else.
 
@@ -800,9 +801,9 @@ Dark screens (the pre-2026-08-04 set — see the note above):
 | Login                                   | `mockup/mobile/01_authen/01_landing_page_login_mobile/`                      |
 | OTP verify                              | `mockup/mobile/01_authen/02_login_otp_verification_mobile/`                  |
 | Session-securing overlay                | `mockup/mobile/01_authen/04_verification_loading_mobile/`                    |
-| Privacy Policy (pre-auth)               | `mockup/mobile/01_authen/05_privacy_policy/00_policy_data`                   |
+| Privacy Policy (pre-auth)               | `mockup/mobile/01_authen/05_privacy_policy/01_privacy_policy`                |
 | Terms of Use (pre-auth)                 | `mockup/mobile/01_authen/06_terms_of_use/01_dashboard/`                      |
-| Support Centre (pre-auth)               | `mockup/mobile/01_authen/07_get_help/01_support_center/`                     |
+| Support Centre (pre-auth)               | drawing withdrawn 2026-08-15 — see the note below it                        |
 | Project Manager / Proc Manager screens  | `mockup/mobile/06_project_manager/`                                          |
 | Site Engineer Home                      | `mockup/mobile/03_site_engineer/01_home/01_se_home_dashboard/`               |
 | Tenant Admin Home                       | `mockup/mobile/04_tenant_admin/01_home/01_home_dashboard/`                   |
@@ -835,6 +836,23 @@ drawn rows leading — so citing one role's drawing would claim a menu this prod
 `apps/mobile/src/lib/drawerLinks.ts` names those four rows and is now the record of what the withdrawn drawings
 specified. ADR-085 applies as written: a drawing is authoritative for STYLE, not for existence, and does not remove
 reviewed working capability — the drawer, Account Settings and Profile Settings screens all stand.
+
+**The Support Centre keeps its row on the same terms, and the Privacy Policy row was repointed rather
+than withdrawn.** One commit on **2026-08-15** restructured `mockup/mobile/01_authen/05_privacy_policy/`
+from **123 drawings to 9**, and deleted `01_authen/07_get_help/01_support_center/` outright:
+
+| Drawing                                         | What happened                                                                                                                                                                                                                       |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `05_privacy_policy/00_policy_data`               | **Renamed** to `05_privacy_policy/01_privacy_policy` (git records `R075`). Every reference to it is repointed, not withdrawn.                                                                                                       |
+| `05_privacy_policy/01_data_collection/**`        | **Withdrawn — about 114 drawings**, the whole Transparency Portal set. It is deliberately NOT repointed at the surviving `02_data_collection`: that is a single-screen folder, not the container, and claiming it would be a lie.   |
+| `01_authen/07_get_help/01_support_center`        | **Withdrawn.** `mockup/mobile/support_center/01_dashboard` exists, but it was added by a DIFFERENT, earlier commit with no rename record linking the two, and the files differ (329 lines against 293) — so it is not asserted as the successor (product-owner decision 2026-08-16). |
+
+ADR-085 applies throughout: **every screen those drawings specified is still in the product and still
+captured.** The Transparency Portal's 14 committed Android frames, `TransparencyKit.tsx`, the
+`/transparency*` routes and ADR-078 / 080 / 081 / 082 / 083 / 084 — each of which resolved a specific
+figure in those drawings as untrue and recorded what replaced it — are all unaffected. What was
+withdrawn is the drawings, and the rules taken from them now live in tests (`cardBodyLength.spec.ts`,
+`headingStutter.spec.ts`) rather than in a directory that can be reorganised out from under them.
 
 The Tenant-Admin notification control panel and the navigation drawer were added by product-owner
 decision (2026-07-26); the **Tenant Admin Home** was added by product-owner decision (2026-07-28); the
@@ -1132,7 +1150,9 @@ Enforced in two places, and the distinction matters:
 140 characters is three lines measured off `01-identity.png` at 1080px, where a card body sits
 between a 44px icon tile and a chevron and fits 42–48 characters per line. It is a proxy for the
 line count, which no unit test can measure; the mockups (one to two lines per card throughout
-`mockup/mobile/01_authen/05_privacy_policy/01_data_collection`) are the reason for the number.
+`mockup/mobile/01_authen/05_privacy_policy/01_data_collection`, **withdrawn 2026-08-15** — see the
+note under the dark-screen table) are the reason for the number. The measurement stands: it was taken
+off a committed capture, and `cardBodyLength.spec.ts` is what holds it now.
 
 **Truncation is a safety net, not a layout tool.** An ellipsis on a transparency screen hides the
 thing the reader opened the screen for, and gives them no way to recover it. A card that truncates
@@ -1154,8 +1174,9 @@ Eight pairs shipped with the label and the card's `title` reading from the SAME 
 screens said things like "HOW LONG THIS IS KEPT / How long this is kept": `delete.why`,
 `delete.how`, `identity.access`, `iot.note`, `location.where`, `logs.retention`,
 `network.retention`, `portal.rights`. The mockups under
-`mockup/mobile/01_authen/05_privacy_policy/01_data_collection` head a section once — the identity
-mockup puts "Who Can Access?" above the card and leaves the card body alone.
+`mockup/mobile/01_authen/05_privacy_policy/01_data_collection` (**withdrawn 2026-08-15**) head a
+section once — the identity mockup put "Who Can Access?" above the card and left the card body alone.
+The rule outlives the drawings: `headingStutter.spec.ts` scans screen source and is what enforces it.
 
 `InfoCard`'s `title` is therefore optional, and omitting it is correct wherever the enclosing
 `SectionLabel` already carries the words. A card that is one of SEVERAL in a section keeps its title:

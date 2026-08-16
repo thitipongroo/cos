@@ -20,8 +20,12 @@
 //     a model that does not exist; the closest, DelayForecastModel, is Phase 23 and needs 90+ days
 //     of production data (§22.6), and real-time telemetry is IoT, Phase 24. Drawing a confidence
 //     figure the platform cannot compute is the one thing §22.3 is most explicit about — a surface
-//     must not be described as AI-derived while a placeholder is serving it. The PANEL is rendered,
-//     as a declared future feature with none of those figures — see its own note further down.
+//     must not be described as AI-derived while a placeholder is serving it. The PANEL IS rendered,
+//     figures and all, as a declared future feature — what makes that honest rather than a claim is
+//     the COMING SOON chip on the risk strip, and nothing else. This paragraph said the panel showed
+//     "none of those figures" until 2026-08-16, which was never true of the code: `Conf: 98%` and
+//     `Source: site telemetry` are rendered, as i18n literals bound to no computation. See the
+//     panel's own note further down.
 // The status chip, the left accent strip, the location line, the progress bar and the search are all
 // real, and are what this renders.
 //

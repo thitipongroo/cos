@@ -21,9 +21,14 @@ examined in detail.
 
 ### The transparency hub: accordion vs navigation rows
 
-`mockup/mobile/01_authen/05_privacy_policy/01_data_collection/00_data_collection_detail` renders a
+`mockup/mobile/01_authen/05_privacy_policy/01_data_collection/00_data_collection_detail` rendered a
 "Compliance Breakdown" section as accordion items that expand in place. The app renders the same
 categories as rows that navigate to a detail screen.
+
+**That drawing was withdrawn on 2026-08-15**, with the whole `01_data_collection/**` set (~114
+screens) — which is this ADR's own rule applied to this ADR: the withdrawal changes nothing about the
+hub, and the rows stand. The comparison is kept in the past tense because it is the record of why
+they look the way they do.
 
 The accordion's contents are the reason it exists, and none of those contents are real:
 

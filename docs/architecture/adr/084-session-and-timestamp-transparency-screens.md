@@ -146,3 +146,5 @@ decision that deserves its own ADR rather than being forced by a mockup).
   other transparency screens)
 - `mockup/mobile/01_authen/05_privacy_policy/01_data_collection/03_05_session_metadata_details`,
   `03_06_request_timestamp_details`, `01_04_contact_preferences`, `01_05_preferences_update_success`
+- **Those drawings were withdrawn on 2026-08-15**, with the whole `01_data_collection/**` set (~114
+  screens). This decision and the screens it shipped are unaffected — ADR-085.
