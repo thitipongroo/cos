@@ -32,6 +32,7 @@ import { checkBackendHealth } from '../api/health';
 import { getAiUsage, type AiUsage } from '../api/ai';
 import { QuickAddMenu } from './QuickAddMenu';
 import { LoadingBoundary } from './LoadingBoundary';
+import { loadProgress } from '../lib/loadingState';
 import { useT } from '../i18n';
 import {
   darkColors,
@@ -79,6 +80,10 @@ export default function TenantAdminHome(): React.JSX.Element {
   const [pendingPos, setPendingPos] = useState<number | null>(null);
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  // Honest load progress: this dashboard waits on four independent KPI fetches, so the loader can
+  // report how many have landed rather than sitting at one value until they all do (Rule 40).
+  const [settled, setSettled] = useState(0);
+  const LOAD_STEPS = 4;
 
   useEffect(() => {
     const usageP = getAiUsage()
@@ -100,7 +105,14 @@ export default function TenantAdminHome(): React.JSX.Element {
         /* offline — keep last */
       });
     // Loader clears once every KPI fetch has settled (each catch resolves, so this never hangs offline).
-    Promise.allSettled([usageP, healthP, paymentsP, posP]).finally(() => setLoading(false));
+    // Each one also ticks the counter as it lands, which is what makes the percentage move.
+    const step = <T,>(p: Promise<T>): Promise<T> => {
+      void p.finally(() => setSettled((n) => n + 1));
+      return p;
+    };
+    Promise.allSettled([step(usageP), step(healthP), step(paymentsP), step(posP)]).finally(() =>
+      setLoading(false),
+    );
   }, []);
 
   const pct = usage?.percentUsed ?? null;
@@ -132,7 +144,13 @@ export default function TenantAdminHome(): React.JSX.Element {
         contentContainerStyle={styles.content}
         testID="tenant-admin-home"
       >
-        <LoadingBoundary loading={loading} variant="widget" theme="dark" style={styles.boundary}>
+        <LoadingBoundary
+          loading={loading}
+          variant="widget"
+          theme="dark"
+          progress={loadProgress(settled, LOAD_STEPS) ?? undefined}
+          style={styles.boundary}
+        >
           {/* ── System Overview ─────────────────────────────────────────────── */}
           <Text style={styles.sectionLabel}>{t('adminHome.systemOverview')}</Text>
 

@@ -133,6 +133,27 @@ export function listRowWidths(row: number): { title: string; subtitle: string } 
   return widths[row % widths.length];
 }
 
+/**
+ * Honest load progress for a surface, as a percentage — or `null` when it must not show one.
+ *
+ * A percentage is only meaningful when the surface has MORE THAN ONE load step (product-owner
+ * decision 2026-08-17). A screen that loads with a single request can only ever report 0% and then
+ * 100%: the number never moves, so it reads as a stuck loader rather than as progress. That is the
+ * same reason a `micro` ring inside a submit button shows no percentage — one POST, one step.
+ *
+ * So: two or more steps → a real fraction that climbs as each settles. One step (or none) → `null`,
+ * and the caller passes no `progress`, leaving an indeterminate loader whose skeletons sweep and
+ * whose bar runs a segment across the track. Nothing is fabricated either way (ADR-055 honest-data).
+ *
+ * `doneSteps` is clamped into range, so a caller that miscounts cannot render 120% or a negative bar.
+ */
+export function loadProgress(doneSteps: number, totalSteps: number): number | null {
+  if (!Number.isFinite(totalSteps) || totalSteps < 2) return null;
+  if (!Number.isFinite(doneSteps)) return 0;
+  const done = Math.min(Math.max(doneSteps, 0), totalSteps);
+  return Math.round((done / totalSteps) * 100);
+}
+
 /** How long <LoadingState />'s fill eases to a new value — its own `advance` timing. */
 export const FILL_DURATION_MS = 600;
 

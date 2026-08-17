@@ -18,6 +18,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { getUserRoles, setUserRoles } from '../../api/users';
 import { getRolePermissions } from '../../api/roles';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
+import { loadProgress } from '../../lib/loadingState';
 import { useT } from '../../i18n';
 import {
   darkColors,
@@ -100,6 +101,10 @@ export default function EditPermissionScreen(): React.JSX.Element {
   const name = typeof params.display_name === 'string' ? params.display_name : '';
 
   const [loading, setLoading] = useState(true);
+  // Honest load progress: the roles and the per-role permission sets are two independent waits
+  // (Rule 40) — the permission sets are one step because they resolve together.
+  const [settled, setSettled] = useState(0);
+  const LOAD_STEPS = 2;
   const [error, setError] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -121,10 +126,20 @@ export default function EditPermissionScreen(): React.JSX.Element {
       setLoading(false);
       return;
     }
+    const step = <T,>(p: Promise<T>): Promise<T> => {
+      void p.finally(() => {
+        if (active) setSettled((n) => n + 1);
+      });
+      return p;
+    };
     Promise.all([
-      getUserRoles(userId),
-      Promise.all(
-        ASSIGNABLE_ROLES.map((r) => getRolePermissions(r).then((p) => [r, p.permissions] as const)),
+      step(getUserRoles(userId)),
+      step(
+        Promise.all(
+          ASSIGNABLE_ROLES.map((r) =>
+            getRolePermissions(r).then((p) => [r, p.permissions] as const),
+          ),
+        ),
       ),
     ])
       .then(([roles, perms]) => {
@@ -206,6 +221,7 @@ export default function EditPermissionScreen(): React.JSX.Element {
       loading={loading}
       variant="widget"
       theme="dark"
+      progress={loadProgress(settled, LOAD_STEPS) ?? undefined}
       style={styles.root}
       testID="edit-permission"
     >

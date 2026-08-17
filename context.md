@@ -868,7 +868,16 @@ If any check fails → list what needs to be fixed before re-running. Do not adv
   runs to 100 and holds one fill before the crossfade
   (d) `label` is caller-supplied, already-translated copy (QM-3) — the component holds no key and no literal
   (e) `progress` only when a real percentage exists; omitted = indeterminate = **no percentage shown**, never
-  a fabricated one
+  a fabricated one. **A percentage needs ≥ 2 load steps** — one request can only report 0% then 100%, which
+  reads as stuck (same rule that keeps a `micro` ring in a submit button wordless). Use
+  `loadProgress(done, total)` (returns `null` below two steps) and count the steps that settle **while the
+  loader is on screen**, not the APIs the file imports
+  (g) Skeletons animate **per element**, never as one band across the card — the mockup puts
+  `.skeleton-pulse` on each bar and plate separately
+  (h) The bar and the percentage are **one JS-driven animated value**. Never move the bar to the native
+  driver for smoothness: that driver keeps animating *while the JS thread is blocked* and only JS can write
+  text, so the bar fills while the number sits at 0 (hit on app launch 2026-08-17). Smoothness comes from
+  animating `translateX` rather than `width`, and from isolating the counting text
   (f) Any ink override (`tone`, `color`) must **measure** ≥ 3:1 against the surface it sits on (SC 1.4.11),
   and ≥ 4.5:1 if it colours text (§20.8) — on 2026-08-17 every cyan in the product measured under 3:1 on a
   `--mobile-primary` button while looking fine

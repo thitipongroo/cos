@@ -39,6 +39,7 @@ import { QuickActionsMenu } from '../../components/QuickActionsMenu';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Alert, ScrollView } from 'react-native';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
+import { loadProgress } from '../../lib/loadingState';
 import SiteEngineerHome from '../../components/SiteEngineerHome';
 import TenantAdminHome from '../../components/TenantAdminHome';
 import SafetyOfficerHome from '../../components/SafetyOfficerHome';
@@ -438,6 +439,9 @@ function ExecHome() {
   // First-load flag: true until the remote KPI fetches settle (success OR offline failure), so the
   // loader crossfades to the real values — which stay the offline-safe `—` when a fetch fails.
   const [loading, setLoading] = useState(true);
+  // Honest load progress: two independent fetches, counted as each lands (Rule 40).
+  const [settled, setSettled] = useState(0);
+  const LOAD_STEPS = 2;
   const activeCount = projects.filter((p) => p.status === 'ACTIVE').length;
 
   useEffect(() => {
@@ -460,7 +464,11 @@ function ExecHome() {
       .catch(() => {
         /* offline — keep last */
       });
-    void Promise.allSettled([execFetch, issuesFetch]).then(() => setLoading(false));
+    const step = <T,>(p: Promise<T>): Promise<T> => {
+      void p.finally(() => setSettled((n) => n + 1));
+      return p;
+    };
+    void Promise.allSettled([step(execFetch), step(issuesFetch)]).then(() => setLoading(false));
   }, []);
 
   // DESIGN.md §9.5 — one presentation everywhere, and never a bare toLocaleString: that renders
@@ -473,6 +481,7 @@ function ExecHome() {
         loading={loading}
         variant="widget"
         theme={loaderTheme}
+        progress={loadProgress(settled, LOAD_STEPS) ?? undefined}
         style={styles.kpiRegion}
       >
         <View style={styles.kpiRow}>
@@ -505,6 +514,9 @@ function FinanceHome() {
   const [overdueInvoices, setOverdueInvoices] = useState<number | null>(null);
   // First-load flag: true until both remote KPI fetches settle (offline failures included).
   const [loading, setLoading] = useState(true);
+  // Honest load progress: two independent fetches, counted as each lands (Rule 40).
+  const [settled, setSettled] = useState(0);
+  const LOAD_STEPS = 2;
 
   useEffect(() => {
     const paymentsFetch = get<{ items?: { status: string }[] } | { status: string }[]>(
@@ -519,7 +531,11 @@ function FinanceHome() {
       .catch(() => {
         /* offline — keep last */
       });
-    void Promise.allSettled([paymentsFetch, execFetch]).then(() => setLoading(false));
+    const step = <T,>(p: Promise<T>): Promise<T> => {
+      void p.finally(() => setSettled((n) => n + 1));
+      return p;
+    };
+    void Promise.allSettled([step(paymentsFetch), step(execFetch)]).then(() => setLoading(false));
   }, []);
 
   const n = (v: number | null): string => (v === null ? '—' : String(v));
@@ -530,6 +546,7 @@ function FinanceHome() {
         loading={loading}
         variant="widget"
         theme={loaderTheme}
+        progress={loadProgress(settled, LOAD_STEPS) ?? undefined}
         style={styles.kpiRegion}
       >
         <View style={styles.kpiRow}>
@@ -564,6 +581,9 @@ function ProcurementHome() {
   const [insightProject, setInsightProject] = useState('');
   // First-load flag: true until all three remote KPI fetches settle (offline failures included).
   const [loading, setLoading] = useState(true);
+  // Honest load progress: three independent fetches, counted as each lands (Rule 40).
+  const [settled, setSettled] = useState(0);
+  const LOAD_STEPS = 3;
 
   useEffect(() => {
     // The urgency window IS defined now — `lib/approvalUrgency.ts`, 24 hours — and RFQs carry a real
@@ -595,7 +615,13 @@ function ProcurementHome() {
       .catch(() => {
         /* offline — keep last */
       });
-    void Promise.allSettled([rfqsFetch, posFetch, deliveriesFetch]).then(() => setLoading(false));
+    const step = <T,>(p: Promise<T>): Promise<T> => {
+      void p.finally(() => setSettled((n) => n + 1));
+      return p;
+    };
+    void Promise.allSettled([step(rfqsFetch), step(posFetch), step(deliveriesFetch)]).then(() =>
+      setLoading(false),
+    );
   }, []);
 
   const n = (v: number | null): string => (v === null ? '—' : String(v));
@@ -606,6 +632,7 @@ function ProcurementHome() {
         loading={loading}
         variant="widget"
         theme={loaderTheme}
+        progress={loadProgress(settled, LOAD_STEPS) ?? undefined}
         style={styles.kpiRegion}
       >
         {/* The mockup's full-width spend tile. A dash until the request settles — never a 0, which
@@ -693,6 +720,9 @@ function PmHome() {
   const [blockers, setBlockers] = useState<ActiveIssue[]>([]);
   const [insightProject, setInsightProject] = useState('');
   const [loading, setLoading] = useState(true);
+  // Honest load progress: two independent fetches, counted as each lands (Rule 40).
+  const [settled, setSettled] = useState(0);
+  const LOAD_STEPS = 2;
   const [projectsState, setProjectsState] = useState<PmLoadState>('loading');
   const activeCount = cached.filter((project) => project.status === 'ACTIVE').length;
 
@@ -785,7 +815,13 @@ function PmHome() {
       if (!cancelled) setProjectsState('failed');
     });
 
-    void Promise.allSettled([issuesFetch, projectsFetch]).then(() => {
+    const step = <T,>(p: Promise<T>): Promise<T> => {
+      void p.finally(() => {
+        if (!cancelled) setSettled((n) => n + 1);
+      });
+      return p;
+    };
+    void Promise.allSettled([step(issuesFetch), step(projectsFetch)]).then(() => {
       if (!cancelled) setLoading(false);
     });
     return () => {
@@ -822,6 +858,7 @@ function PmHome() {
         loading={loading}
         variant="widget"
         theme={loaderTheme}
+        progress={loadProgress(settled, LOAD_STEPS) ?? undefined}
         style={styles.kpiRegion}
       >
         <View style={styles.kpiRow}>

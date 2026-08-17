@@ -28,6 +28,7 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import { getMyTenant, type MyTenant } from '../../api/tenant';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
+import { loadProgress } from '../../lib/loadingState';
 import { getSettings, updateSettings, type TenantSettings } from '../../api/settings';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { useT } from '../../i18n';
@@ -48,6 +49,9 @@ export default function SystemSettingsScreen(): React.JSX.Element {
   const [tenant, setTenant] = useState<MyTenant | null>(null);
   const [settings, setSettings] = useState<TenantSettings | null>(null);
   const [error, setError] = useState(false);
+  // Honest load progress: two independent fetches, counted as each lands (Rule 40).
+  const [settled, setSettled] = useState(0);
+  const LOAD_STEPS = 2;
 
   // LINE token: local editable copy + reveal state. Seeded once settings load.
   const [token, setToken] = useState('');
@@ -57,7 +61,13 @@ export default function SystemSettingsScreen(): React.JSX.Element {
 
   useEffect(() => {
     let active = true;
-    Promise.all([getMyTenant(), getSettings()])
+    const step = <T,>(p: Promise<T>): Promise<T> => {
+      void p.finally(() => {
+        if (active) setSettled((n) => n + 1);
+      });
+      return p;
+    };
+    Promise.all([step(getMyTenant()), step(getSettings())])
       .then(([tn, st]) => {
         if (!active) return;
         setTenant(tn);
@@ -111,6 +121,7 @@ export default function SystemSettingsScreen(): React.JSX.Element {
       loading={!tenant || !settings}
       variant="widget"
       theme="dark"
+      progress={loadProgress(settled, LOAD_STEPS) ?? undefined}
       style={styles.root}
       testID="tenant-admin-settings"
     >

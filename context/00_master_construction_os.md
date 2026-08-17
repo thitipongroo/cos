@@ -5806,6 +5806,21 @@ ROOT CAUSE PREVENTION RULES (prevent recurring bugs):
         (QM-3). The component holds no key and no literal.
     (e) Progress is the caller's: pass `progress` only when a real percentage exists. Omitted
         means indeterminate, which renders NO percentage — never fabricate one.
+        A PERCENTAGE NEEDS TWO OR MORE LOAD STEPS. A surface that loads with one request can only
+        report 0% then 100% — the number never moves and reads as a stuck loader, the same reason a
+        `micro` ring in a submit button stays wordless. Use loadProgress(done, total) from
+        lib/loadingState.ts; it returns null below two steps. COUNT THE STEPS THAT SETTLE WHILE THE
+        LOADER IS ON SCREEN, not the APIs the file imports — the vendor directory looks multi-step
+        and is not: its list fetch clears the loader and the scores arrive afterwards.
+    (g) Skeletons animate PER ELEMENT, never as one band across the card. The mockup puts
+        `.skeleton-pulse` on each bar and plate separately, each with its own sweep; one band over
+        the whole card reads as a pane sliding across it and lights unrelated elements.
+    (h) The bar and the percentage are ONE animated value, and it is JS-driven. Do not move the bar
+        to React Native's native driver for smoothness: that driver exists to keep animating WHILE
+        THE JS THREAD IS BLOCKED, and only JS can write text, so on the app launch the bar filled
+        while the percentage sat at 0 (observed and reverted 2026-08-17). Smoothness comes from
+        animating a translateX transform rather than a width, and from isolating the counting text
+        so a 1% tick re-renders one node instead of every skeleton on the card.
     (f) Any ink override (`tone`, `color`) must clear WCAG SC 1.4.11 (3:1) against the surface
         it actually sits on, and 4.5:1 if it also colours text (§20.8). MEASURE it — on
         2026-08-17 every cyan in the product measured below 3:1 on a --mobile-primary button,

@@ -51,6 +51,7 @@ import {
 import { sortIncidents } from '../lib/safetyOfficer';
 import { IncidentCard } from './IncidentCard';
 import { LoadingBoundary } from './LoadingBoundary';
+import { loadProgress } from '../lib/loadingState';
 import { ProjectContextBar } from './ProjectContextBar';
 import { UnavailableNote } from './UnavailableNote';
 import { useProjectStore } from '../store/projectStore';
@@ -117,6 +118,9 @@ export default function SafetyOfficerHome(): React.JSX.Element {
   const [incidents, setIncidents] = useState<IncidentRow[]>([]);
   const [checklist, setChecklist] = useState<ChecklistRow | null>(null);
   const [loading, setLoading] = useState(true);
+  // Honest load progress: three independent fetches, counted as each lands (Rule 40).
+  const [settled, setSettled] = useState(0);
+  const LOAD_STEPS = 3;
 
   // ON FOCUS, not on mount — the same fix the manager Home needed. A load fired once immediately
   // after sign-in can lose the race with the session and leave the dashboard permanently empty with
@@ -125,6 +129,7 @@ export default function SafetyOfficerHome(): React.JSX.Element {
     useCallback(() => {
       let cancelled = false;
       setLoading(true);
+      setSettled(0); // a re-focus reloads, so the percentage restarts with it
       const scope = projectId ? { projectId } : undefined;
 
       const complianceFetch = getCompliance(projectId || undefined)
@@ -154,7 +159,17 @@ export default function SafetyOfficerHome(): React.JSX.Element {
           /* offline — keep last */
         });
 
-      void Promise.allSettled([complianceFetch, incidentsFetch, checklistFetch]).then(() => {
+      const step = <T,>(p: Promise<T>): Promise<T> => {
+        void p.finally(() => {
+          if (!cancelled) setSettled((n) => n + 1);
+        });
+        return p;
+      };
+      void Promise.allSettled([
+        step(complianceFetch),
+        step(incidentsFetch),
+        step(checklistFetch),
+      ]).then(() => {
         if (!cancelled) setLoading(false);
       });
       return () => {
@@ -176,6 +191,7 @@ export default function SafetyOfficerHome(): React.JSX.Element {
           loading={loading}
           variant="widget"
           theme={isDark ? 'dark' : 'light'}
+          progress={loadProgress(settled, LOAD_STEPS) ?? undefined}
           style={styles.kpiRegion}
         >
           {/* OPEN INCIDENTS — the drawing's full-width danger card. A real count. */}
@@ -275,7 +291,12 @@ export default function SafetyOfficerHome(): React.JSX.Element {
           </TouchableOpacity>
         </View>
 
-        <LoadingBoundary loading={loading} variant="list" theme={isDark ? 'dark' : 'light'}>
+        <LoadingBoundary
+          loading={loading}
+          variant="list"
+          theme={isDark ? 'dark' : 'light'}
+          progress={loadProgress(settled, LOAD_STEPS) ?? undefined}
+        >
           {recent.length === 0 ? (
             <Text testID="home-no-incidents" style={styles.muted}>
               {t('safety.home.noIncidents')}

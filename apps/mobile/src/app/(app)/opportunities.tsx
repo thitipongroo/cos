@@ -33,6 +33,7 @@ import { radius } from '../../theme/tokens';
 import type { Palette } from '../../theme/palette';
 import { StatusChip } from '../../components/StatusChip';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
+import { loadProgress } from '../../lib/loadingState';
 import {
   listLeads,
   listOpportunities,
@@ -52,6 +53,9 @@ export default function OpportunitiesScreen(): React.JSX.Element {
   const [rows, setRows] = useState<Opportunity[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(false);
+  // Honest load progress: two independent fetches, counted as each lands (Rule 40).
+  const [settled, setSettled] = useState(0);
+  const LOAD_STEPS = 2;
   const [busyId, setBusyId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [leadId, setLeadId] = useState<string | null>(null);
@@ -60,8 +64,13 @@ export default function OpportunitiesScreen(): React.JSX.Element {
 
   const load = useCallback(async (): Promise<void> => {
     setLoading(true);
+    setSettled(0);
+    const step = <T,>(p: Promise<T>): Promise<T> => {
+      void p.finally(() => setSettled((n) => n + 1));
+      return p;
+    };
     try {
-      const [opps, allLeads] = await Promise.all([listOpportunities(), listLeads()]);
+      const [opps, allLeads] = await Promise.all([step(listOpportunities()), step(listLeads())]);
       setRows(opps);
       setLeads(allLeads.filter((l) => l.status !== 'DISQUALIFIED'));
     } catch {
@@ -192,6 +201,7 @@ export default function OpportunitiesScreen(): React.JSX.Element {
         loading={loading && rows.length === 0}
         variant="list"
         theme={dark ? 'dark' : 'light'}
+        progress={loadProgress(settled, LOAD_STEPS) ?? undefined}
       >
         <FlatList
           testID="opportunity-list"

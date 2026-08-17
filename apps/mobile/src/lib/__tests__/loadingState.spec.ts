@@ -8,6 +8,7 @@ import {
   listRowWidths,
   accessibilityLabel,
   completionHoldMs,
+  loadProgress,
   resolveMicroInk,
   LIST_SKELETON_ROWS,
   FILL_DURATION_MS,
@@ -217,5 +218,40 @@ describe('resolveMicroInk', () => {
   it('ignores an empty colour, so a caller passing "" does not draw an inkless ring', () => {
     expect(resolveMicroInk(resolvePalette('light'), 'default', '')).toBe(colors.primary);
     expect(resolveMicroInk(resolvePalette('light'), 'onPrimary', '')).toBe(colors.bg);
+  });
+});
+
+describe('loadProgress', () => {
+  it('returns null for a single-step surface — 0%% then 100%% is not progress', () => {
+    expect(loadProgress(0, 1)).toBeNull();
+    expect(loadProgress(1, 1)).toBeNull();
+  });
+
+  it('returns null when there are no steps at all', () => {
+    expect(loadProgress(0, 0)).toBeNull();
+  });
+
+  it('climbs as each step of a multi-step surface settles', () => {
+    expect(loadProgress(0, 4)).toBe(0);
+    expect(loadProgress(1, 4)).toBe(25);
+    expect(loadProgress(2, 4)).toBe(50);
+    expect(loadProgress(3, 4)).toBe(75);
+    expect(loadProgress(4, 4)).toBe(100);
+  });
+
+  it('rounds to a whole percent', () => {
+    expect(loadProgress(1, 3)).toBe(33);
+    expect(loadProgress(2, 3)).toBe(67);
+  });
+
+  it('clamps a miscounted caller rather than rendering past the end of the bar', () => {
+    expect(loadProgress(9, 4)).toBe(100);
+    expect(loadProgress(-3, 4)).toBe(0);
+  });
+
+  it('survives non-finite input', () => {
+    expect(loadProgress(NaN, 4)).toBe(0);
+    expect(loadProgress(2, NaN)).toBeNull();
+    expect(loadProgress(2, Infinity)).toBeNull();
   });
 });

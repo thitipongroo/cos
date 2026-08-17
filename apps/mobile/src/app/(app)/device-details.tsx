@@ -19,6 +19,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LoadingState } from '../../components/LoadingState';
+import { loadProgress } from '../../lib/loadingState';
 import { useT } from '../../i18n';
 import { usePalette, useIsDark } from '../../theme/usePalette';
 import { fontFamily, spacing, typography } from '../../theme/tokens';
@@ -48,13 +49,20 @@ export default function DeviceDetailsScreen(): React.JSX.Element {
   const [deviceId, setDeviceId] = useState<string | null>(null);
   const [report, setReport] = useState<DeviceTrustReport | null>(null);
   const [loading, setLoading] = useState(true);
+  // Honest load progress: three steps run in sequence here — the device id, the enrolled-device list,
+  // then the advisory trust score — so the percentage climbs as each returns (Rule 40).
+  const [settled, setSettled] = useState(0);
+  const LOAD_STEPS = 3;
 
   const load = useCallback(async () => {
     setLoading(true);
+    setSettled(0);
     try {
       const id = await getDeviceId();
+      setSettled(1);
       setDeviceId(id);
       const devices = await listDevices();
+      setSettled(2);
       setDevice(devices.find((d) => d.deviceId === id) ?? null);
       try {
         setReport(await getDeviceTrustScore(id));
@@ -63,6 +71,8 @@ export default function DeviceDetailsScreen(): React.JSX.Element {
         // design (§22.3). A missing panel is not an error for this screen — everything else here
         // is a stored fact and still worth showing.
         setReport(null);
+      } finally {
+        setSettled(3);
       }
     } catch {
       setDevice(null);
@@ -87,7 +97,12 @@ export default function DeviceDetailsScreen(): React.JSX.Element {
       <Lede>{t('deviceDetails.lede')}</Lede>
 
       {loading ? (
-        <LoadingState testID="device-loading" variant="widget" theme={isDark ? 'dark' : 'light'} />
+        <LoadingState
+          testID="device-loading"
+          variant="widget"
+          theme={isDark ? 'dark' : 'light'}
+          progress={loadProgress(settled, LOAD_STEPS) ?? undefined}
+        />
       ) : null}
 
       {!loading && !device ? (

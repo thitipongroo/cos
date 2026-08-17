@@ -220,6 +220,41 @@ and mobile still had 24 raw `ActivityIndicator` call sites. Decisions 1–7 and 
    and already renders beside the ring in the `bar` shape. Product-owner decision 2026-08-17, taken
    against these measurements after cyan was first requested.
 
+### Update (2026-08-17, later the same day) — motion corrections found by running it
+
+Running the component on an emulator against the real backend produced four corrections. The
+numbered decisions above and the earlier updates stand; these four refine how it moves.
+
+1. **The whole-card shimmer is gone.** `<CardShimmer />` (added in 005c018f) drew one gradient band
+   over the entire card. The mockup does not: `.skeleton-pulse` sits on each bar and plate
+   separately, eleven times on the one screen, each with its own sweep. One band reads as a pane
+   sliding across the card and lights elements that have nothing to do with each other; per-element
+   sweeps read as each placeholder filling in. `<SkeletonBar>` now carries its own clipped gradient,
+   all driven by one shared value so they travel in step exactly as one CSS animation does for the
+   mockup. The widget's icon plate became a `<SkeletonBar>` with the glyph inside it, matching the
+   mockup's `animate-pulse` on the glyph over `skeleton-pulse` on the plate.
+2. **The bar and the percentage must share one JS-driven value — do not split them again.** They
+   were briefly split for smoothness: the bar on the native driver, the number on JS because only JS
+   can write text. That is precisely wrong. The native driver exists to keep animating **while the JS
+   thread is blocked**, and the app launch blocks it hard — the instant the gate opens React mounts
+   `GestureHandlerRootView → SafeAreaProvider → I18nProvider → AuthGate → Slot`. The bar filled on
+   the UI thread while the percentage stayed at 0 on the stalled JS thread. Reverted the same day.
+   Smoothness now comes from what the bar animates — `translateX` behind `overflow: hidden`, never an
+   animated `width`, so no layout pass per frame — and from `<CountingPercent />`, which isolates the
+   number so a 1% tick re-renders one text node rather than every skeleton `<Svg>` on the card.
+3. **A percentage requires two or more load steps.** A single-request surface can only report 0% then
+   100%; the number never moves and reads as a stuck loader — the same reason a `micro` ring in a
+   submit button stays wordless. `loadProgress(doneSteps, totalSteps)` returns `null` below two steps
+   and is the only place that rule lives. Twelve surfaces now pass a real percentage (the app launch,
+   SITE_ENGINEER Home ×3, Tenant Admin Home, Safety Officer Home ×2, system settings, opportunities,
+   procurement, device details, edit permission, and the four manager Home KPI regions); every other
+   loader is honestly indeterminate. **Count the steps that settle while the loader is on screen**,
+   not the APIs a file imports: the vendor directory looks multi-step and is not — its list fetch
+   clears the loader and the per-vendor scores arrive afterwards, against a list already on screen.
+4. **`<LoadingBoundary />` holds a determinate loader at 100 before it fades** (already decided
+    2026-08-17, restated here because item 2 is what makes it visible): the bar and the number arrive
+    together, and only then does the crossfade start.
+
 ## References
 
 - [32-implementation-specifications.md §32.7](../../specifications/32-implementation-specifications.md) —

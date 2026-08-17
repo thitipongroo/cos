@@ -26,6 +26,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet, Alert } from 'react-native';
 import { LoadingState } from '../../components/LoadingState';
+import { loadProgress } from '../../lib/loadingState';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { formatMoney } from '@cos/financial';
@@ -72,6 +73,9 @@ export default function ProcurementScreen(): React.JSX.Element {
   const [activeRfqs, setActiveRfqs] = useState<number | null>(null);
   const [deliveriesToday, setDeliveriesToday] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  // Honest load progress: three independent fetches, counted as each lands (Rule 40).
+  const [settled, setSettled] = useState(0);
+  const LOAD_STEPS = 3;
   const [busyId, setBusyId] = useState<string | null>(null);
   const [insightProject, setInsightProject] = useState('');
   const [insightProjectName, setInsightProjectName] = useState<string | undefined>(undefined);
@@ -81,6 +85,7 @@ export default function ProcurementScreen(): React.JSX.Element {
 
   const load = useCallback(async () => {
     setLoading(true);
+    setSettled(0);
     // Refreshed here too, not only on Home: this tab names each order's project from that cache, and
     // a manager who opens Procurement first would otherwise read UUIDs until they visited Home.
     refreshProjectsCache().catch(() => {
@@ -140,7 +145,11 @@ export default function ProcurementScreen(): React.JSX.Element {
     })().catch(() => {
       /* offline — keep last */
     });
-    await Promise.allSettled([approvals, rfqs, deliveries]);
+    const step = <T,>(p: Promise<T>): Promise<T> => {
+      void p.finally(() => setSettled((n) => n + 1));
+      return p;
+    };
+    await Promise.allSettled([step(approvals), step(rfqs), step(deliveries)]);
     setLoading(false);
   }, []);
 
@@ -291,6 +300,7 @@ export default function ProcurementScreen(): React.JSX.Element {
           testID="procurement-loading"
           variant="list"
           theme={isDark ? 'dark' : 'light'}
+          progress={loadProgress(settled, LOAD_STEPS) ?? undefined}
         />
       ) : null}
 

@@ -1329,6 +1329,28 @@ Rules:
   its percentage up and eases its fill to the value — one animated value driving both, so the number
   and the bar can never disagree. An indeterminate loader sweeps a segment across the track instead
   of standing still, and never shows a percentage.
+- **The percentage and the bar are ONE animated value, and it is JS-driven.** Splitting them — the
+  bar on React Native's native driver for smoothness, the number on JS because only JS can write
+  text — makes them disagree exactly when it matters: the native driver's purpose is to keep
+  animating **while the JS thread is blocked**, which on the app launch is the moment React mounts
+  the whole app tree. The bar ran to full while the percentage sat at 0 (observed 2026-08-17, fixed
+  the same day). Smoothness is bought instead by what the bar animates — a `translateX` transform
+  behind `overflow: hidden`, never an animated `width`, so no layout pass runs per frame — and by
+  isolating the counting text in its own component so a 1% tick re-renders one text node instead of
+  every skeleton on the card.
+- **Skeletons animate per element, never as one band across the card** (product-owner decision
+  2026-08-17). The mockup puts `.skeleton-pulse` on each bar and plate separately — eleven of them on
+  one screen, each running its own gradient sweep. A single band drawn over the whole card reads as a
+  pane sliding across it rather than as each placeholder filling in, and it crosses elements that
+  have nothing to do with each other.
+- **A percentage requires more than one load step.** A surface that loads with a single request can
+  only ever report 0% and then 100% — the number never moves, so it reads as a stuck loader. Such a
+  surface passes no `progress` and shows an indeterminate loader instead. This is the same rule that
+  keeps a `micro` ring inside a submit button wordless: one POST, one step. `loadProgress(doneSteps,
+  totalSteps)` in each app's `lib/loadingState.ts` encodes it — it returns `null` below two steps —
+  and the count is of the steps that settle **while the loader is on screen**, not of every API the
+  file imports. (Vendors looks multi-step and is not: its directory fetch clears the loader, and the
+  per-vendor scores land afterwards, against a list the reader can already see.)
 
 #### Standard Top Bar (`<TopBar />`)
 

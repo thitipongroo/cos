@@ -9,8 +9,13 @@
 // Motion (PO 2026-08-01 — "loadings must actually move"): when the caller supplies a real `progress`
 // (determinate), the fill bar / ring arc animate smoothly to it and the percentage counts up with the
 // same value — the number is never fabricated, it tracks the caller's honest progress. When `progress`
-// is omitted (indeterminate) there is NO percentage and the bar stays a pulsing skeleton — the ring
+// is omitted (indeterminate) there is NO percentage and a segment sweeps the track instead — the ring
 // keeps its rotating sweep — so nothing invents a figure it doesn't have (honest-data policy).
+//
+// Skeletons animate PER ELEMENT, never as one band over the card (PO 2026-08-17). The mockup puts
+// `.skeleton-pulse` on each bar and plate separately, each running its own gradient sweep; a single
+// overlay reads as a pane sliding across the card instead of as each placeholder filling in. The
+// whole-card <CardShimmer> that stood here from 005c018f was removed for that reason.
 //
 // The `ai` variant carries the cyan glow / scan-line / waveform. §32.7 "Exception 2 — loading states"
 // permits the motif here: no project data is on screen yet, and it unmounts the moment data renders.
@@ -21,7 +26,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Animated, Easing, Image } from 'react-native';
-import type { ImageSourcePropType } from 'react-native';
+import type { ImageSourcePropType, StyleProp, TextStyle } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import Svg, {
   Circle,
@@ -39,6 +44,7 @@ import {
   listRowWidths,
   accessibilityLabel,
   LIST_SKELETON_ROWS,
+  FILL_DURATION_MS,
   type LoadingVariant,
   type LoadingTheme,
   type LoadingTone,
@@ -86,31 +92,117 @@ export interface LoadingStateProps {
   testID?: string;
 }
 
-/** A single pulsing skeleton bar — the shared primitive behind every non-ai variant. */
+// Each <SkeletonBar> needs its own SVG gradient id — a shared one makes every instance paint from
+// whichever <Defs> mounted last. A module counter is enough: the id never leaves the element.
+let skeletonGradientSeq = 0;
+
+/**
+ * A single skeleton element — the shared primitive behind every non-ai variant.
+ *
+ * The mockup animates each skeleton SEPARATELY: `.skeleton-pulse` sits on every bar and every plate
+ * and runs its own 1.5s gradient sweep (`background-position: 200% → -200%`) — eleven of them on the
+ * one screen. It draws NO band over the card as a whole. That is a different effect: one sheet of
+ * light crossing unrelated elements reads as a pane sliding over the card, where the mockup reads as
+ * each placeholder filling in on its own.
+ *
+ * React Native cannot animate a background gradient, so the equivalent is a highlight band moved
+ * inside the element, which clips it (`overflow: 'hidden'`). `sweep` is the shared 0→1 driver, so
+ * every skeleton on screen travels in step — exactly what one shared CSS animation gives the mockup.
+ *
+ * `children` render above the sweep: the widget's icon plate is a skeleton with a glyph inside it,
+ * and in the mockup that glyph carries its own `animate-pulse` while the plate sweeps.
+ */
 function SkeletonBar({
   palette,
   width,
   height,
   radius = 4,
-  pulse,
+  sweep,
+  highlight,
+  children,
 }: {
   palette: LoadingPalette;
   width: number | string;
   height: number;
   radius?: number;
-  pulse: Animated.AnimatedInterpolation<number>;
+  sweep: Animated.Value;
+  highlight: string;
+  children?: React.ReactNode;
 }): React.JSX.Element {
+  const [measured, setMeasured] = useState(0);
+  const gradientId = useRef(`cosSkeleton${skeletonGradientSeq++}`).current;
+  // The mockup's gradient is 200% of the element and its lit core is the middle half, so the band is
+  // wider than the bar and the highlight passes through rather than sitting in it.
+  const band = Math.max(24, Math.round(measured * 1.2));
+  const travel = sweep.interpolate({ inputRange: [0, 1], outputRange: [-band, measured] });
+
   return (
-    <Animated.View
+    <View
+      onLayout={(e) => setMeasured(e.nativeEvent.layout.width)}
       style={{
-        width: width as Animated.WithAnimatedValue<number | `${number}%`>,
+        width: width as number | `${number}%`,
         height,
         borderRadius: radius,
         backgroundColor: palette.skeleton,
-        opacity: pulse,
+        overflow: 'hidden',
+        alignItems: 'center',
+        justifyContent: 'center',
       }}
-    />
+    >
+      {measured > 0 ? (
+        <Animated.View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: band,
+            height,
+            transform: [{ translateX: travel }],
+          }}
+        >
+          <Svg width={band} height={height}>
+            <Defs>
+              <SvgLinearGradient id={gradientId} x1="0" y1="0" x2="1" y2="0">
+                <Stop offset="0" stopColor={highlight} stopOpacity={0} />
+                <Stop offset="0.5" stopColor={highlight} stopOpacity={0.28} />
+                <Stop offset="1" stopColor={highlight} stopOpacity={0} />
+              </SvgLinearGradient>
+            </Defs>
+            <Rect x={0} y={0} width={band} height={height} fill={`url(#${gradientId})`} />
+          </Svg>
+        </Animated.View>
+      ) : null}
+      {children}
+    </View>
   );
+}
+
+/**
+ * The counting percentage, isolated so it is the ONLY thing that re-renders as the number climbs.
+ *
+ * SMOOTHNESS: the value is read off the same animated `fill` the bar and ring use, so the three can
+ * never disagree — but React state is the only way to put a number into a <Text>, and holding that
+ * state in <LoadingState /> re-rendered the whole card (every skeleton, every <Svg>) on each 1%
+ * tick. Owning it here confines that to one text node. The listener fires per frame; React bails out
+ * when the rounded value is unchanged, so this updates at most 100 times over a whole run.
+ */
+function CountingPercent({
+  fill,
+  seed,
+  style,
+}: {
+  fill: Animated.Value;
+  /** The caller's current percentage, so a remount starts from the truth rather than from 0. */
+  seed: number;
+  style: StyleProp<TextStyle>;
+}): React.JSX.Element {
+  const [shown, setShown] = useState(seed);
+  useEffect(() => {
+    const id = fill.addListener(({ value }) => setShown(Math.round(value * 100)));
+    return () => fill.removeListener(id);
+  }, [fill]);
+  return <Text style={style}>{formatPercent(shown)}</Text>;
 }
 
 /**
@@ -150,70 +242,21 @@ function ProgressBar({
       </View>
     );
   }
-  const width = fill.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
+  // SMOOTHNESS: the fill is a FULL-WIDTH bar slid in from the left behind `overflow: hidden`, not a
+  // bar whose `width` animates. Width is a layout prop, so animating it re-runs layout on the JS
+  // thread every frame and stutters whenever the app is doing anything else — which, during a load,
+  // it always is. `translateX` is a transform, so it runs on the UI thread under the native driver
+  // and keeps moving even while JS is busy parsing the response that ends the load.
+  const slide = fill.interpolate({ inputRange: [0, 1], outputRange: [-trackW, 0] });
   return (
-    <View style={styles.track}>
-      <Animated.View
-        style={[
-          styles.fill,
-          { width: width as unknown as `${number}%`, backgroundColor: barColor },
-        ]}
-      />
-    </View>
-  );
-}
-
-/**
- * A perpetual shimmer band that sweeps across a card, so the loading always reads as "working" — even
- * in the branded launch case where the skeletons are replaced by a static favicon + tagline, or when a
- * determinate bar is sitting at a fixed percentage between steps. Absolutely positioned over the card
- * (which clips it via overflow:hidden); purely decorative, so it is pointer-transparent and a11y-hidden.
- */
-function CardShimmer({
-  sweep,
-  color,
-  alpha,
-}: {
-  sweep: Animated.Value;
-  color: string;
-  alpha: number;
-}): React.JSX.Element {
-  const [size, setSize] = useState({ w: 0, h: 0 });
-  const BAND = 150;
-  // Move a STATIC gradient band with a native translateX (react-native-svg's own animated props don't
-  // drive from a JS Animated.Value reliably, so the band lives in a plain View that the transform moves).
-  // The band's left edge travels from off-screen-left to off-screen-right, forever.
-  const tx = sweep.interpolate({ inputRange: [0, 1], outputRange: [-BAND, size.w + BAND] });
-  return (
-    <View
-      pointerEvents="none"
-      accessibilityElementsHidden
-      importantForAccessibility="no-hide-descendants"
-      style={StyleSheet.absoluteFill}
-      onLayout={(e) => setSize({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}
-    >
-      {size.h > 0 ? (
+    <View style={styles.track} onLayout={(e) => setTrackW(e.nativeEvent.layout.width)}>
+      {trackW > 0 ? (
         <Animated.View
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: BAND,
-            height: size.h,
-            transform: [{ translateX: tx }],
-          }}
-        >
-          <Svg width={BAND} height={size.h}>
-            <Defs>
-              <SvgLinearGradient id="cardShimmer" x1="0" y1="0" x2="1" y2="0">
-                <Stop offset="0" stopColor={color} stopOpacity={0} />
-                <Stop offset="0.5" stopColor={color} stopOpacity={alpha} />
-                <Stop offset="1" stopColor={color} stopOpacity={0} />
-              </SvgLinearGradient>
-            </Defs>
-            <Rect x={0} y={0} width={BAND} height={size.h} fill="url(#cardShimmer)" />
-          </Svg>
-        </Animated.View>
+          style={[
+            styles.fill,
+            { width: '100%', backgroundColor: barColor, transform: [{ translateX: slide }] },
+          ]}
+        />
       ) : null}
     </View>
   );
@@ -303,29 +346,30 @@ export function LoadingState({
   const clamped = clampProgress(progress); // number 0–100, or null when indeterminate
   const determinate = clamped !== null;
   const target = clamped === null ? 0 : clamped / 100;
-  // The percentage shown IS the animated fill value, so number and bar/ring never disagree; it renders
-  // only when the caller gave a real progress (honest-data policy — no invented figure).
-  const [displayPct, setDisplayPct] = useState(0);
-  const percent = determinate ? formatPercent(displayPct) : null;
+  // The percentage renders only when the caller gave a real progress (honest-data policy — no
+  // invented figure). <CountingPercent /> reads the same animated value the bar and ring do.
   const a11y = accessibilityLabel(label, progress);
 
   const pulseValue = useRef(new Animated.Value(0)).current;
   const spinValue = useRef(new Animated.Value(0)).current;
   const scanValue = useRef(new Animated.Value(0)).current;
-  // Drives the fill-bar width, the ring arc, and the counting percentage — one value so they agree.
+  // ONE value drives the bar, the ring AND the percentage, so the three can never disagree.
+  //
+  // This was briefly split into a native-driven value for the bar and a JS-driven one for the number
+  // (2026-08-17), to keep the bar smooth while JS was busy. It had to be reverted the same day: the
+  // native driver's whole purpose is to keep animating WHILE THE JS THREAD IS BLOCKED, so on the app
+  // launch — where React mounts the entire app tree the instant the gate opens — the bar ran to full
+  // on the UI thread while the percentage sat at 0 on the stalled JS thread. A percentage in a <Text>
+  // can only ever be written from JS, so the bar has to stay on JS too or the two tell different
+  // stories. Smoothness is bought instead by what the bar animates (a transform, not a layout prop)
+  // and by <CountingPercent /> re-rendering one text node instead of the whole card.
   const fillValue = useRef(new Animated.Value(0)).current;
   // A perpetual left-to-right sweep (never settles) — drives the card shimmer and the indeterminate
   // bar segment, so the loading always reads as actively working, not a frozen still.
   const sweepValue = useRef(new Animated.Value(0)).current;
-  // Shimmer highlight: a light band on the dark shell, a brighter white on the light one (the alpha
-  // is applied on the gradient stop, so the colour stays a solid SVG-friendly hex).
+  // The highlight each skeleton's own gradient sweeps with (the mockup's lit gradient core). Opacity
+  // is applied on the gradient stop, so the colour stays a solid SVG-friendly hex.
   const shimmerColor = theme === 'dark' ? '#F8FAFC' : '#FFFFFF';
-  const shimmerAlpha = theme === 'dark' ? 0.22 : 0.6;
-
-  useEffect(() => {
-    const id = fillValue.addListener(({ value }) => setDisplayPct(Math.round(value * 100)));
-    return () => fillValue.removeListener(id);
-  }, [fillValue]);
 
   useEffect(() => {
     // Capture builds (EXPO_PUBLIC_CAPTURE, same flag that mutes the LogBox toast) FREEZE every loop at a
@@ -378,12 +422,15 @@ export function LoadingState({
     spin.start();
     scan.start();
     sweep.start();
-    // Slide the fill/ring/percentage to the current honest value. Width + SVG stroke are layout/JS
-    // props, so this one animation cannot use the native driver (the loops above still do).
+    // Slide to the current honest value. Longer than a UI transition on purpose: a load step lands
+    // whenever it lands, and a 250ms snap between steps reads as the number teleporting rather than
+    // running. Easing.out keeps it quick off the mark and settling into the value.
     const advance = Animated.timing(fillValue, {
       toValue: target,
-      duration: 600,
+      duration: FILL_DURATION_MS,
       easing: Easing.out(Easing.cubic),
+      // JS-driven on purpose — see the note on fillValue. The bar animates a transform rather than a
+      // width, so this still costs no layout pass per frame.
       useNativeDriver: false,
     });
     advance.start();
@@ -427,8 +474,12 @@ export function LoadingState({
             {label}
           </Text>
         )}
-        {percent !== null && (
-          <Text style={[styles.microPercent, { color: toneColor }]}>{percent}</Text>
+        {determinate && (
+          <CountingPercent
+            fill={fillValue}
+            seed={clamped ?? 0}
+            style={[styles.microPercent, { color: toneColor }]}
+          />
         )}
       </View>
     );
@@ -443,10 +494,29 @@ export function LoadingState({
           const { title, subtitle } = listRowWidths(row);
           return (
             <View key={row} style={styles.listRow}>
-              <SkeletonBar palette={palette} width={40} height={40} radius={4} pulse={pulse} />
+              <SkeletonBar
+                palette={palette}
+                width={40}
+                height={40}
+                radius={4}
+                sweep={sweepValue}
+                highlight={shimmerColor}
+              />
               <View style={styles.listRowText}>
-                <SkeletonBar palette={palette} width={title} height={14} pulse={pulse} />
-                <SkeletonBar palette={palette} width={subtitle} height={10} pulse={pulse} />
+                <SkeletonBar
+                  palette={palette}
+                  width={title}
+                  height={14}
+                  sweep={sweepValue}
+                  highlight={shimmerColor}
+                />
+                <SkeletonBar
+                  palette={palette}
+                  width={subtitle}
+                  height={10}
+                  sweep={sweepValue}
+                  highlight={shimmerColor}
+                />
               </View>
               {/* The first row carries a sync-in-progress spinner + counting percentage (mockup B). */}
               {row === 0 ? (
@@ -454,13 +524,18 @@ export function LoadingState({
                   <Animated.View style={{ transform: [{ rotate: spinDeg }] }}>
                     <MaterialIcons name="sync" size={18} color={palette.syncing} />
                   </Animated.View>
-                  {percent !== null ? <Text style={styles.listSyncPercent}>{percent}</Text> : null}
+                  {determinate ? (
+                    <CountingPercent
+                      fill={fillValue}
+                      seed={clamped ?? 0}
+                      style={styles.listSyncPercent}
+                    />
+                  ) : null}
                 </View>
               ) : null}
             </View>
           );
         })}
-        <CardShimmer sweep={sweepValue} color={shimmerColor} alpha={shimmerAlpha} />
       </View>
     );
   }
@@ -494,12 +569,20 @@ export function LoadingState({
         <View style={styles.aiHeader}>
           <MaterialIcons name="psychology" size={18} color={palette.accent ?? palette.primary} />
           {label !== undefined && label !== '' && <Text style={styles.aiLabel}>{label}</Text>}
-          {percent !== null && <Text style={styles.aiPercent}>{percent}</Text>}
+          {determinate && (
+            <CountingPercent fill={fillValue} seed={clamped ?? 0} style={styles.aiPercent} />
+          )}
         </View>
         {showMotif ? (
           <Waveform palette={palette} pulse={pulse} />
         ) : (
-          <SkeletonBar palette={palette} width="100%" height={14} pulse={pulse} />
+          <SkeletonBar
+            palette={palette}
+            width="100%"
+            height={14}
+            sweep={sweepValue}
+            highlight={shimmerColor}
+          />
         )}
         <ProgressBar
           palette={palette}
@@ -508,7 +591,6 @@ export function LoadingState({
           sweep={sweepValue}
           color={palette.accent ?? palette.primary}
         />
-        <CardShimmer sweep={sweepValue} color={shimmerColor} alpha={shimmerAlpha} />
       </View>
     );
   }
@@ -523,24 +605,43 @@ export function LoadingState({
         {iconSource !== undefined ? (
           <Image source={iconSource} style={styles.iconImage} resizeMode="contain" />
         ) : (
-          <Animated.View style={[styles.iconPlate, { opacity: pulse }]}>
-            <MaterialIcons name="analytics" size={28} color={palette.muted} />
-          </Animated.View>
+          <SkeletonBar
+            palette={palette}
+            width={56}
+            height={56}
+            radius={28}
+            sweep={sweepValue}
+            highlight={shimmerColor}
+          >
+            {/* The plate sweeps; the glyph inside carries its own opacity pulse, as the mockup's
+                `animate-pulse` on the analytics symbol does. */}
+            <Animated.View style={{ opacity: pulse }}>
+              <MaterialIcons name="analytics" size={28} color={palette.muted} />
+            </Animated.View>
+          </SkeletonBar>
         )}
         {/* Under the mark: the caller's heading (brand tagline) when branded, else a skeleton bar. */}
         {heading !== undefined && heading !== '' ? (
           <Text style={styles.widgetHeading}>{heading}</Text>
         ) : (
-          <SkeletonBar palette={palette} width="35%" height={12} pulse={pulse} />
+          <SkeletonBar
+            palette={palette}
+            width="35%"
+            height={12}
+            sweep={sweepValue}
+            highlight={shimmerColor}
+          />
         )}
-        {(label !== undefined && label !== '') || percent !== null ? (
+        {(label !== undefined && label !== '') || determinate ? (
           <View style={styles.widgetTextRow}>
             {label !== undefined && label !== '' && (
               <Text style={styles.widgetLabel} numberOfLines={1}>
                 {label}
               </Text>
             )}
-            {percent !== null && <Text style={styles.widgetPercent}>{percent}</Text>}
+            {determinate && (
+              <CountingPercent fill={fillValue} seed={clamped ?? 0} style={styles.widgetPercent} />
+            )}
           </View>
         ) : null}
       </View>
@@ -550,7 +651,6 @@ export function LoadingState({
         fill={fillValue}
         sweep={sweepValue}
       />
-      <CardShimmer sweep={sweepValue} color={shimmerColor} alpha={shimmerAlpha} />
     </View>
   );
 }
@@ -601,14 +701,6 @@ const makeStyles = (palette: LoadingPalette) =>
       overflow: 'hidden',
     },
     // Icon plate (mockup A) — a circular skeleton with a glyph centred inside.
-    iconPlate: {
-      width: 56,
-      height: 56,
-      borderRadius: 28,
-      backgroundColor: palette.skeleton,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
     aiCard: {
       // Start/end, not left/right: RN does not auto-flip borderLeft* under I18nManager.isRTL, so a
       // physical edge would sit on the wrong side in ar-SA (QM-3).
