@@ -193,9 +193,37 @@ const SECTIONS = [
   { row: 'rights', screen: 'privacy-user-rights', file: '05-user-rights' },
 ];
 
+/**
+ * The DPO contact form (ADR-091), reached from the policy footer rather than from a section row.
+ *
+ * The RECEIPT is not captured here and cannot be: reaching it means POSTing a real inquiry, which
+ * needs the backend up AND `s1.identity.privacy-inquiry` flipped on — the flag ships OFF (QM-15).
+ * Every other frame in this folder renders from the i18n bundle alone, which is what lets this script
+ * run against Metro with nothing else started; adding one backend-dependent step would make the whole
+ * run conditional on a stack that the other six frames do not need.
+ */
+const CONTACT = { link: 'privacy-contact-link', screen: 'privacy-contact', file: '06-contact' };
+
+/**
+ * The download receipt (ADR-091). THE ONE FRAME HERE THAT NEEDS THE BACKEND.
+ *
+ * Everything above renders from the i18n bundle alone, which is what lets this script run against
+ * Metro with nothing else started. This step downloads the real PDF from
+ * `GET /privacy/policy/pdf` and verifies its digest on the device, so it needs NestJS on :3000 and
+ * `adb reverse tcp:3000` (asserted below). Run with `--skip-download` to capture only the six
+ * offline frames.
+ */
+const DOWNLOAD = {
+  button: 'privacy-download-pdf',
+  screen: 'privacy-policy-downloaded',
+  file: '07-download-complete',
+};
+
 async function main() {
   mkdirSync(OUT, { recursive: true });
+  // 8081 Metro; 3000 the backend, needed only by the download step at the end.
   adb('reverse', 'tcp:8081', 'tcp:8081');
+  adb('reverse', 'tcp:3000', 'tcp:3000');
 
   // Fresh start: pm clear drops any stored session so the app always lands on the login screen, which
   // is where the Privacy Policy link lives.
@@ -225,6 +253,54 @@ async function main() {
     await tapUntil(`${section.screen}-back`, 'privacy-policy', `${section.file} back`);
     await delay(500);
   }
+
+  console.log(CONTACT.file);
+  for (let i = 0; i < 8; i++) {
+    adb('shell', 'input', 'swipe', '540', '700', '540', '1900', '300');
+    await delay(400);
+  }
+  await delay(700);
+  // The link sits in the FOOTER, below the five rows, so it needs a scroll down rather than the
+  // rewind the sections needed.
+  for (let i = 0; i < 3; i++) {
+    adb('shell', 'input', 'swipe', '540', '1800', '540', '900', '400');
+    await delay(500);
+  }
+  await delay(700);
+  await tapUntil(CONTACT.link, CONTACT.screen, 'DPO contact link');
+  await delay(500);
+  await stitchFull(CONTACT.file);
+
+  if (process.argv.includes('--skip-download')) {
+    console.log(`\nDone (download skipped) → ${OUT}`);
+    return;
+  }
+
+  console.log(DOWNLOAD.file);
+  await tapUntil(`${CONTACT.screen}-back`, 'privacy-policy', 'contact back');
+  await delay(500);
+  for (let i = 0; i < 8; i++) {
+    adb('shell', 'input', 'swipe', '540', '700', '540', '1900', '300');
+    await delay(400);
+  }
+  await delay(700);
+  for (let i = 0; i < 3; i++) {
+    adb('shell', 'input', 'swipe', '540', '1800', '540', '900', '400');
+    await delay(500);
+  }
+  await delay(700);
+  // The download runs before the route changes, so this tap has to survive a second or two of work.
+  // tapUntil already retries; the failure message names the likely cause rather than the symptom.
+  try {
+    await tapUntil(DOWNLOAD.button, DOWNLOAD.screen, 'download PDF button');
+  } catch {
+    throw new Error(
+      'capture: the download never opened its receipt. This step needs the backend on :3000 — ' +
+        'check `curl http://localhost:3000/api/v1/privacy/policy/metadata`, or pass --skip-download.',
+    );
+  }
+  await delay(600);
+  await stitchFull(DOWNLOAD.file);
 
   console.log(`\nDone → ${OUT}`);
 }

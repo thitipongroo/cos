@@ -202,10 +202,20 @@ policy itself, then the five sections it links to.
 | [PDPA & GDPR](01-authen/03-privacy-policy/03-pdpa-gdpr.png)                        | Principles, regional frameworks, data residency, and certification status                          |
 | [Technical Security](01-authen/03-privacy-policy/04-technical-security.png)        | Encryption / network guard / tenant isolation with their tags, then infrastructure                 |
 | [User Rights](01-authen/03-privacy-policy/05-user-rights.png)                      | The four rights, and an `AUTHENTICATE` action that returns to the login the reader came from       |
+| [Contact the DPO](01-authen/03-privacy-policy/06-contact.png)                      | The pre-auth inquiry form (ADR-091). Attachments are drawn disabled — see the note below           |
+| [Download complete](01-authen/03-privacy-policy/07-download-complete.png)          | The policy PDF on the device, with its digest checked against the one the platform published       |
 
 Captured by [`apps/mobile/scripts/capture-android-privacy-policy.mjs`](../../../apps/mobile/scripts/capture-android-privacy-policy.mjs).
-**No backend is needed** — none of these screens makes an API call, so Metro alone is enough and no
-login is performed.
+**Seven of the eight frames need no backend** — they render from the i18n bundle alone, so Metro is
+enough and no login is performed. `07-download-complete` is the exception: it downloads the real PDF
+from `GET /privacy/policy/pdf` and verifies its digest on the device, so it needs NestJS on `:3000`.
+Pass `--skip-download` to capture only the offline seven.
+
+**The inquiry receipt (`08_data_protection_submit_success`) is deliberately not captured.** Reaching
+it means POSTing a real inquiry, which needs the backend AND `s1.identity.privacy-inquiry` flipped on
+— and that flag ships OFF (QM-15), because the route it gates is the one endpoint an unauthenticated
+stranger can write a row through. A capture step that only works with a kill-switch disabled is a
+step that fails for everyone who runs the script as shipped.
 
 **The five sections became routes on 2026-08-17** (product-owner decision), matching
 `mockup/mobile/01_authen/05_privacy_policy/02…06`, which draw them as full screens. The policy's own

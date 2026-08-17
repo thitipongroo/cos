@@ -60,6 +60,18 @@ export const DEFAULT_FLAGS: Readonly<Record<string, boolean>> = {
   // screen and costs the platform nothing. A wrong score shown confidently on a security screen is
   // the more expensive failure, and this is the switch that removes it in under 60 seconds.
   's1.identity.device-trust-score': false,
+  // The pre-auth privacy-inquiry channel (ADR-091). New feature, so OFF until rollout per this
+  // file's convention — and the failure direction is deliberate rather than default here.
+  //
+  // OFF is NOT the same failure as `s1.identity.data-export` OFF, which is why the fallbacks differ.
+  // That flag gates a STATUTORY right exercised by an account holder who has no other route: closed,
+  // the platform simply cannot answer within §30. This one gates an ADDITIONAL channel — the Privacy
+  // Policy screen still publishes the Data Protection Office address beside it, and that address is
+  // the §37(3) contact. Closed, a sender uses the mail link; closed on data-export, nobody can.
+  //
+  // Because it is publicly writable, OFF is also the kill switch for abuse: a spam wave is stopped in
+  // under 60 seconds without a deploy (QM-15), and nothing a person is entitled to is lost meanwhile.
+  's1.identity.privacy-inquiry': false,
 };
 
 export interface FlagContext {

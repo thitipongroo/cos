@@ -86,6 +86,7 @@ the difference between "still running", "it broke", and "the window closed" is t
 | COS-PDPA-005 | 422  | Still being prepared, or the failure reason | Status is PENDING/PROCESSING (wait) or FAILED (`failure_reason`, never a stack trace)                                                    |
 | COS-PDPA-006 | 404  | Archive not currently retrievable           | File Service returned 404, or 409 `FILE_NOT_CLEAN` — a just-finished archive is briefly PENDING_SCAN while ClamAV runs                   |
 | COS-PDPA-007 | 410  | This export has expired                     | Past `expires_at` (7 days), or status EXPIRED. The archive is gone; a new request is the way back                                        |
+| COS-PDPA-008 | 404  | No inquiry with that reference              | `GET /privacy/inquiries/:reference` (SYSTEM_ADMIN) for a reference that does not exist. The public POST never returns this — it is the read side of ADR-091 |
 
 ---
 

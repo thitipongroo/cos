@@ -20,6 +20,7 @@ disable a live production feature. New-feature flags should default OFF until ro
 | `s1.identity.data-export`              | `POST /api/v1/users/me/data-export`, `GET /api/v1/users/me/data-export`, `GET /api/v1/users/me/data-export/:id/download` — PDPA §30/§31 subject access + portability (ADR-078)                                                                             | **ON** (flipped 2026-08-05 at 100%) | kill-switch — permanent |
 | `s1.identity.device-attestation`       | `DeviceTrustService.registerDevice()` — whether a Play Integrity / App Attest token is sent for server-side verification (ADR-082). Checked in code, NOT as a route decorator: a 503 on enrolment would make a Google outage break device enrolment        | ON                                  | kill-switch — permanent |
 | `s1.identity.device-trust-score`       | `GET /api/v1/auth/devices/:deviceId/trust` — the rule-based device trust score (ADR-081). A route decorator here, unlike the attestation flag above: the score is advisory and gates nothing, so a 503 removes a panel and breaks no flow                  | OFF                                 | kill-switch — permanent |
+| `s1.identity.privacy-inquiry`          | `POST /api/v1/privacy/inquiries` — the pre-auth inquiry channel on the Privacy Policy screen (ADR-091). Gates the PUBLIC write only; the SYSTEM_ADMIN reads beside it stay reachable so a queue accepted before the switch was thrown can still be worked | OFF                                 | kill-switch — permanent |
 
 Notes:
 
@@ -46,5 +47,13 @@ Notes:
   and in that incident the archives already written to MinIO are exactly what must stop being served.
   **Do not flip it back as a matter of routine.** Turning it off is now an incident action, and the
   incident must be closed by turning it back on rather than by leaving it off.
+- `s1.identity.privacy-inquiry` is a **permanent** kill-switch rather than a rollout flag, even
+  though it ships OFF like any new feature. The route it gates is the one endpoint in the platform an
+  unauthenticated stranger can write a row through, so the switch is the abuse control: a spam wave is
+  stopped in under 60 seconds without a deploy (QM-15). Its fallback is deliberately the OPPOSITE of
+  `s1.identity.data-export` above, and the difference is what OFF costs a person. Data-export OFF
+  suspends a statutory right with no other route. Privacy-inquiry OFF removes an ADDITIONAL channel —
+  the Privacy Policy screen still publishes the Data Protection Office address beside the form, and
+  that address, not this endpoint, is the PDPA §37(3) contact.
 - Stale flags (100% rollout > 30 days) move to `cleanup-backlog.md` (QM-15) — kill-switches are
   exempt (permanent operational controls).

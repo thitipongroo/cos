@@ -23,6 +23,131 @@ components:
       bearerFormat: JWT
 
   schemas:
+    # ─── The Privacy Policy document (ADR-091) ──────────────────────────────────
+    PolicyMetadata:
+      type: object
+      required: [version, effective_date, file_name, sha256, size_bytes, language]
+      properties:
+        version:
+          type: string
+          example: 1.0.0
+          description: Must equal the version the app screen shows — held by scripts/ci/check-policy-parity.mjs.
+        effective_date:
+          type: string
+          format: date
+        file_name:
+          type: string
+          example: COS_Privacy_Policy_v1.0.0.pdf
+        sha256:
+          type: string
+          description: Digest of the PDF, published before the transfer so the client can verify it.
+        size_bytes:
+          type: integer
+        language:
+          type: string
+          example: en
+          description: |
+            The document is English only. Stated rather than implied, so a Thai reader is not left
+            to discover it by opening the file.
+
+    # ─── Pre-auth privacy inquiries (ADR-091) ───────────────────────────────────
+    CreatePrivacyInquiry:
+      type: object
+      required: [full_name, email, subject, message]
+      description: |
+        Every field arrives from an unauthenticated stranger, so the caps below are not cosmetic —
+        together with the rate limit they are the only bound on a publicly writable table. They mirror
+        the column widths in migration 20260817000001, so a value that validates always fits.
+
+        Nothing here is verified. `full_name` and `email` are what the sender typed; no confirmation
+        step is imposed before the inquiry is accepted, because demanding one before accepting a
+        rights request is over-verification (GDPR Art 12(2)/12(6)).
+      properties:
+        full_name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        email:
+          type: string
+          format: email
+          maxLength: 255
+          description: The only route back to the sender, so syntax is validated.
+        phone:
+          type: string
+          maxLength: 50
+          description: Optional, as the form marks it.
+        category:
+          type: string
+          enum: [GENERAL, DATA_ACCESS, DATA_CORRECTION, DATA_DELETION, SECURITY_CONCERN]
+          default: GENERAL
+        subject:
+          type: string
+          minLength: 1
+          maxLength: 255
+        message:
+          type: string
+          minLength: 1
+          maxLength: 5000
+
+    PrivacyInquiryReceipt:
+      type: object
+      required: [reference, received_at]
+      description: |
+        Deliberately minimal. The sender already has everything they typed, and echoing it back would
+        make the endpoint useful for probing what the platform stores.
+      properties:
+        reference:
+          type: string
+          example: REQ-A1B2-C3D4
+          description: |
+            The handle to quote. Random, not sequential — a monotonic public reference would disclose
+            how many inquiries the platform receives and the rate between any two of them.
+        received_at:
+          type: string
+          format: date-time
+
+    PrivacyInquiry:
+      type: object
+      description: The stored row, as SYSTEM_ADMIN sees it. Not returned by the public POST.
+      properties:
+        inquiryId:
+          type: string
+          format: uuid
+        reference:
+          type: string
+        senderName:
+          type: string
+        senderEmail:
+          type: string
+        senderPhone:
+          type: string
+          nullable: true
+        category:
+          type: string
+          enum: [GENERAL, DATA_ACCESS, DATA_CORRECTION, DATA_DELETION, SECURITY_CONCERN]
+        subject:
+          type: string
+        message:
+          type: string
+        status:
+          type: string
+          enum: [OPEN, ROUTED, CLOSED]
+        receivedAt:
+          type: string
+          format: date-time
+        linkedRequestId:
+          type: string
+          format: uuid
+          nullable: true
+          description: The `subject_requests` row this was routed into, once matched to a tenant.
+        closedAt:
+          type: string
+          format: date-time
+          nullable: true
+        outcomeNote:
+          type: string
+          nullable: true
+
     # ─── Subject requests (ADR-090; PDPA-48) ────────────────────────────────────
     CreateSubjectRequest:
       type: object
@@ -586,6 +711,155 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+
+  # ─── The Privacy Policy document (ADR-091) ───────────────────────────────────────────────────
+  #
+  # Public, and NOT behind `s1.identity.privacy-inquiry`: that flag is the abuse switch for the write
+  # route below, and turning it off must not take the policy document down with it. A notice you must
+  # authenticate to read is not a notice.
+  /privacy/policy/metadata:
+    get:
+      summary: Version, effective date, file name and SHA-256 of the policy PDF
+      description: |
+        Fetched BEFORE the download so the client can verify the bytes it receives rather than trust
+        them. The digest is stable: the document has no per-request input and its PDF timestamps are
+        pinned to the effective date, so the same version always produces the same bytes.
+      tags: [privacy-policy]
+      security: []
+      responses:
+        '200':
+          description: Document metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyMetadata'
+
+  /privacy/policy/pdf:
+    get:
+      summary: The Privacy Policy as a PDF
+      description: |
+        `ETag` is the content digest, so a conditional request costs nothing and a proxy cannot serve
+        a stale edition under a new version number.
+
+        English only — pdf-lib's standard fonts carry no Thai glyphs, and embedding a Thai face is an
+        unmade font-licensing decision. `/privacy/policy/metadata` states this in `language`.
+      tags: [privacy-policy]
+      security: []
+      responses:
+        '200':
+          description: The document
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+                example: attachment; filename="COS_Privacy_Policy_v1.0.0.pdf"
+            ETag:
+              schema:
+                type: string
+                description: The SHA-256 of the body, quoted.
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+
+  # ─── Pre-auth privacy inquiries (ADR-091) ────────────────────────────────────────────────────
+  #
+  # The one write in this file reachable with NO credential of any kind — not a JWT, not even a
+  # magic-link token. It exists because the sender has no account AND no known tenant: a reader on the
+  # pre-auth Privacy Policy screen may not know which organisation here holds their data, so there is
+  # nothing to scope them to. `platform.privacy_inquiries` is correspondingly the one platform table
+  # with no `tenant_id` and no RLS; access to the READ side is confined by role instead.
+  #
+  # NOT a PDPA §30 request in its own right. The controller is the tenant, and the statutory clock
+  # starts when the tenant receives it — which is what `subject_requests.received_at` below records.
+  # An inquiry that is matched to a tenant is routed into one of those rows; the two chain.
+  /privacy/inquiries:
+    post:
+      summary: Lodge a privacy inquiry without an account (ADR-091)
+      description: |
+        Public. Rate-limited at the QM-7 AUTH tier (10 req/min per IP) rather than the general tier,
+        because it is unauthenticated and writes a row.
+
+        Returns ONLY a reference and a timestamp. Nothing the sender supplied is echoed back: an
+        endpoint that reflects its input is a free oracle for probing what the platform stores.
+
+        Gated by `s1.identity.privacy-inquiry`, which ships OFF (QM-15). OFF removes an ADDITIONAL
+        channel — the Privacy Policy screen still publishes the Data Protection Office address, and
+        that address is the PDPA §37(3) contact.
+      tags: [privacy-inquiries]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePrivacyInquiry'
+      responses:
+        '201':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivacyInquiryReceipt'
+        '400':
+          description: A field is missing, malformed, or over its length cap
+        '429':
+          description: Rate limited (10/min per IP) — `Retry-After` gives the seconds until reset
+        '503':
+          description: COS-FLAG-001 — `s1.identity.privacy-inquiry` is off
+    get:
+      summary: The triage queue, oldest received first (SYSTEM_ADMIN)
+      description: |
+        SYSTEM_ADMIN, not TENANT_ADMIN. The queue is cross-tenant by construction — the sender has
+        not been matched to a tenant — so a tenant admin reading it would be reading strangers'
+        inquiries about other organisations.
+      tags: [privacy-inquiries]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [OPEN, ROUTED, CLOSED]
+      responses:
+        '200':
+          description: Inquiries, ordered by received_at ascending
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PrivacyInquiry'
+        '403':
+          description: Not a SYSTEM_ADMIN
+
+  /privacy/inquiries/{reference}:
+    get:
+      summary: One inquiry, by the reference the sender was given (SYSTEM_ADMIN)
+      tags: [privacy-inquiries]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: reference
+          in: path
+          required: true
+          schema:
+            type: string
+            example: REQ-A1B2-C3D4
+      responses:
+        '200':
+          description: The inquiry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivacyInquiry'
+        '403':
+          description: Not a SYSTEM_ADMIN
+        '404':
+          description: COS-PDPA-008 — no inquiry with that reference
 
   # ─── Subject requests from people with NO platform account (ADR-090; PDPA-48) ────────────────
   #

@@ -26,6 +26,12 @@ export default function AuthLayout() {
       <Stack.Screen name="privacy-pdpa-gdpr" />
       <Stack.Screen name="privacy-technical-security" />
       <Stack.Screen name="privacy-user-rights" />
+      {/* ADR-091 — the DPO contact form and its receipt. The receipt is reached with router.replace,
+          so it is terminal: the form is gone from the stack by the time it renders. */}
+      <Stack.Screen name="privacy-contact" />
+      <Stack.Screen name="privacy-contact-sent" />
+      {/* ADR-091 — the download receipt, reached after the PDF is on disk and its digest checked. */}
+      <Stack.Screen name="privacy-policy-downloaded" />
       <Stack.Screen name="terms-of-use" />
       <Stack.Screen name="support" />
     </Stack>

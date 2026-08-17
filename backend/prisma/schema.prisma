@@ -379,6 +379,11 @@ model SubjectRequest {
 
   openedByUser User @relation(fields: [openedBy], references: [userId])
 
+  // Pre-auth inquiries that were routed here (ADR-091). Usually zero or one: a request the tenant
+  // received by email or phone has none, and one that started on the public policy screen has the
+  // inquiry it came from. Nothing on this side changes — the FK lives on PrivacyInquiry.
+  privacyInquiries PrivacyInquiry[]
+
   @@index([tenantId, status, receivedAt])
   @@index([verificationTokenHash])
   @@map("subject_requests")
@@ -412,6 +417,77 @@ model UserAdditionalRole {
   @@id([userId, tenantId, role])
   @@index([userId, tenantId])
   @@map("user_additional_roles")
+  @@schema("platform")
+}
+
+// An inquiry lodged from the PRE-AUTH Privacy Policy screen, by someone with NO account (ADR-091).
+//
+// THE ONLY platform MODEL WITHOUT tenant_id, and the only one with no RLS policy behind it. Both are
+// deliberate and both are permitted by master §Phase 2 ("platform tables exempt"; identity tables are
+// "cross-tenant, no RLS needed"): the sender has not identified a tenant and may not know which one
+// holds their data, so there is nothing to isolate by and the standard policy shape would deny every
+// row. Access is confined by ROLE — SYSTEM_ADMIN through RolesGuard — and every read is audited.
+//
+// Chains into SubjectRequest rather than duplicating it: when an inquiry is matched to a tenant, that
+// tenant's admin opens a SubjectRequest in the normal way and `linkedRequestId` points at it. The two
+// records are two different events with two different clocks — see the migration header.
+model PrivacyInquiry {
+  inquiryId String @id @default(dbgenerated("gen_random_uuid()")) @map("inquiry_id") @db.Uuid
+
+  // The handle the sender is given and can quote back. Not the UUID — it is read off a screen and
+  // typed into an email — and not a sequence, because a monotonic public reference would disclose how
+  // many inquiries the platform receives.
+  reference String @unique @map("reference") @db.VarChar(32)
+
+  // Supplied by an unauthenticated stranger and therefore UNVERIFIED. Nothing downstream may treat
+  // these as proof of identity: GDPR Art 12(2)/12(6) makes over-verification an infringement, and the
+  // controller that eventually answers verifies against what IT already holds (ADR-090 §6).
+  // @pdpa(category: "identity", role: "controller") — a name given by a person with no account here
+  senderName  String  @map("sender_name") @db.VarChar(255)
+  // @pdpa(category: "contact", role: "controller") — the address a reply goes to
+  senderEmail String  @map("sender_email") @db.VarChar(255)
+  // @pdpa(category: "contact", role: "controller") — optional, as the form marks it
+  senderPhone String? @map("sender_phone") @db.VarChar(50)
+
+  category PrivacyInquiryCategory @default(GENERAL) @map("category")
+  subject  String                 @map("subject") @db.VarChar(255)
+  // @pdpa(category: "operational", role: "controller") — free text written by the sender
+  message  String                 @db.Text
+
+  status     PrivacyInquiryStatus @default(OPEN) @map("status")
+  receivedAt DateTime             @default(now()) @map("received_at") @db.Timestamptz()
+
+  // Set when the inquiry is handed to a tenant. ON DELETE SET NULL — the subject request is the
+  // controller's record on its own retention schedule, and losing it must not delete the evidence
+  // that a stranger wrote in.
+  linkedRequestId String?         @map("linked_request_id") @db.Uuid
+  linkedRequest   SubjectRequest? @relation(fields: [linkedRequestId], references: [requestId], onDelete: SetNull)
+
+  closedAt DateTime? @map("closed_at") @db.Timestamptz()
+  // Required on close (DB CHECK): a refusal that does not name its basis is itself a breach.
+  outcomeNote String? @map("outcome_note") @db.Text
+
+  @@index([status, receivedAt])
+  @@index([senderEmail])
+  @@map("privacy_inquiries")
+  @@schema("platform")
+}
+
+enum PrivacyInquiryCategory {
+  GENERAL
+  DATA_ACCESS
+  DATA_CORRECTION
+  DATA_DELETION
+  SECURITY_CONCERN
+
+  @@schema("platform")
+}
+
+enum PrivacyInquiryStatus {
+  OPEN
+  ROUTED
+  CLOSED
+
   @@schema("platform")
 }
 

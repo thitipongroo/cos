@@ -35,6 +35,13 @@ import { SubjectVerificationService } from './subject-request/subject-verificati
 import { SubjectVerifyTokenGuard } from './subject-request/subject-verify-token.guard';
 import { SubjectRequestService } from './subject-request/subject-request.service';
 import { SubjectRequestRepository } from './subject-request/subject-request.repository';
+import {
+  PrivacyInquiryAdminController,
+  PrivacyInquiryPublicController,
+} from './privacy-inquiry/privacy-inquiry.controller';
+import { PrivacyInquiryService } from './privacy-inquiry/privacy-inquiry.service';
+import { PrivacyPolicyController } from './privacy-policy/privacy-policy.controller';
+import { PrivacyPolicyService } from './privacy-policy/privacy-policy.service';
 import { ConsentController } from './consent/consent.controller';
 import { ConsentService } from './consent/consent.service';
 import { GeoIpService } from './network-origin/geoip.service';
@@ -83,6 +90,14 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
     // ADR-090: the tenant's own compliance desk for subject requests from people with no account.
     SubjectRequestController,
     SubjectVerifyPublicController,
+    // ADR-091: the pre-auth inquiry channel. The PUBLIC controller is the one route in this module a
+    // stranger can reach without a token of any kind — not even a magic link — so its class carries
+    // no guard by design and is kept separate from the SYSTEM_ADMIN reads beside it.
+    PrivacyInquiryPublicController,
+    PrivacyInquiryAdminController,
+    // Public and deliberately NOT flag-gated: a notice you must authenticate to read is not a notice,
+    // and the inquiry kill-switch must not take the policy document down with it.
+    PrivacyPolicyController,
   ],
   providers: [
     // Request-scoped: SubjectRequestRepository resolves tenant_id per request (REQUEST + CLS
@@ -90,6 +105,11 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
     SubjectRequestService,
     SubjectVerificationService,
     SubjectVerifyTokenGuard,
+    // Singleton, and it owns its own PrismaClient: `platform.privacy_inquiries` has no tenant_id, so
+    // there is no request scope to resolve and TenantPrismaService would reject it (ADR-091).
+    PrivacyInquiryService,
+    // Builds the policy PDF once and caches it — the document has no per-request input.
+    PrivacyPolicyService,
     SendGridAdapter,
     SubjectRequestRepository,
     KeycloakAdminService,

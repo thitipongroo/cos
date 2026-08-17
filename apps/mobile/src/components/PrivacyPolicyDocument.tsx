@@ -38,6 +38,7 @@ import {
   Platform,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { LoadingState } from './LoadingState';
 import { useI18n } from '../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../theme/tokens';
 import type { Palette } from '../theme/palette';
@@ -159,6 +160,9 @@ export function PrivacyPolicyDocument({
   showBrandGlow,
   onDataCollection,
   onSection,
+  onContact,
+  onDownload,
+  downloading,
   testID,
 }: {
   palette: Palette;
@@ -171,6 +175,26 @@ export function PrivacyPolicyDocument({
   onDataCollection?: () => void;
   /** Supplied pre-auth: makes every row push its own section screen instead of expanding. */
   onSection?: (id: string) => void;
+  /**
+   * Supplied pre-auth: adds the in-app contact form above the mail link (ADR-091).
+   *
+   * The mail link STAYS when this is passed, and that is not redundancy. The published address is the
+   * PDPA §37(3) contact and works with no session, no flag and no network round-trip to this
+   * platform; the form is the additional channel that produces a reference and a queue. Its
+   * feature flag ships OFF, so a build where the form cannot be served must still show the address.
+   */
+  onContact?: () => void;
+  /**
+   * Supplied where the policy PDF can be fetched (ADR-091, PDF decision 2026-08-17): makes the
+   * download button live instead of the disabled COMING SOON it carried from 2026-08-03.
+   *
+   * Still a prop rather than a hardcoded action, because the two routes differ. Pre-auth passes it;
+   * post-auth is inside the (app) shell where the same document is already on screen and a signed-in
+   * reader has the account-holder export routes (ADR-078) for anything they need to keep.
+   */
+  onDownload?: () => void;
+  /** True while `onDownload` is in flight — drives the button's `micro` loader (Rule 40). */
+  downloading?: boolean;
   testID: string;
 }): React.JSX.Element {
   const { t, formatDate } = useI18n();
@@ -322,6 +346,23 @@ export function PrivacyPolicyDocument({
       {/* Footer — DPO contact + policy download */}
       <Text style={styles.footerLabel}>{t('privacy.policy.contact.label')}</Text>
 
+      {/* The in-app form leads, because it is the channel that produces a reference and lands in a
+          queue with a deadline; the mail link below it is the published §37(3) address and stays
+          whether or not this is passed. Pre-auth only — post-auth a signed-in user has the
+          account-holder routes instead (ADR-078), which need no free-text request at all. */}
+      {onContact !== undefined ? (
+        <Pressable
+          testID="privacy-contact-link"
+          accessibilityRole="button"
+          accessibilityLabel={t('privacy.policy.contact.form')}
+          onPress={onContact}
+          style={styles.secondaryButton}
+        >
+          <MaterialIcons name="edit-note" size={20} color={palette.primary} />
+          <Text style={styles.secondaryButtonText}>{t('privacy.policy.contact.form')}</Text>
+        </Pressable>
+      ) : null}
+
       <Pressable
         testID="privacy-dpo-email"
         accessibilityRole="link"
@@ -341,23 +382,49 @@ export function PrivacyPolicyDocument({
         </Text>
       </Pressable>
 
-      {/* Download is rendered disabled: there is no policy PDF asset and no backend endpoint to
-          serve one (PO decision 2026-08-03 — keep the affordance, label it unavailable). */}
+      {/* Download. LIVE where `onDownload` is supplied — the backend generates the document with
+          pdf-lib and publishes its digest (ADR-091, PDF decision 2026-08-17), which retired the
+          disabled COMING SOON state this button carried from 2026-08-03. Where it is NOT supplied the
+          old state stands, because the affordance is still worth showing and the reason is still
+          true there. */}
       <Pressable
         testID="privacy-download-pdf"
         accessibilityRole="button"
-        accessibilityState={{ disabled: true }}
-        accessibilityLabel={`${t('privacy.policy.downloadPdf')} — ${t('privacy.policy.comingSoon')}`}
-        disabled
-        style={[styles.primaryButton, styles.buttonDisabled]}
+        accessibilityState={{ disabled: onDownload === undefined || downloading === true }}
+        accessibilityLabel={
+          onDownload === undefined
+            ? `${t('privacy.policy.downloadPdf')} — ${t('privacy.policy.comingSoon')}`
+            : t('privacy.policy.downloadPdf')
+        }
+        disabled={onDownload === undefined || downloading === true}
+        onPress={onDownload}
+        style={[styles.primaryButton, onDownload === undefined && styles.buttonDisabled]}
       >
-        <MaterialIcons name="download" size={20} color={palette.muted} />
-        <Text style={[styles.primaryButtonText, styles.buttonTextDisabled]}>
-          {t('privacy.policy.downloadPdf')}
-        </Text>
-        <View style={styles.comingSoonChip}>
-          <Text style={styles.comingSoonText}>{t('privacy.policy.comingSoon')}</Text>
-        </View>
+        {downloading === true ? (
+          // Wordless (Rule 40(e)): one request, so a percentage could only read 0 then 100.
+          <LoadingState variant="micro" theme="dark" tone="onPrimary" />
+        ) : (
+          <>
+            <MaterialIcons
+              name="download"
+              size={20}
+              color={onDownload === undefined ? palette.muted : palette.onPrimary}
+            />
+            <Text
+              style={[
+                styles.primaryButtonText,
+                onDownload === undefined && styles.buttonTextDisabled,
+              ]}
+            >
+              {t('privacy.policy.downloadPdf')}
+            </Text>
+            {onDownload === undefined ? (
+              <View style={styles.comingSoonChip}>
+                <Text style={styles.comingSoonText}>{t('privacy.policy.comingSoon')}</Text>
+              </View>
+            ) : null}
+          </>
+        )}
       </Pressable>
 
       <Text style={styles.copyright}>

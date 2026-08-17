@@ -2,6 +2,7 @@
   "common": {
     "appName": "Construction OS",
     "back": "← Back",
+    "optional": "(optional)",
     "featureFlag": {
       "disabled": "This feature is temporarily disabled"
     },
@@ -160,9 +161,10 @@
       },
       "contact": {
         "label": "Contact Data Protection Office",
+        "form": "Send a request",
         "pending": "Contact address not yet published"
       },
-      "downloadPdf": "Download PDF Policy",
+      "downloadPdf": "DOWNLOAD PDF POLICY",
       "comingSoon": "Coming soon",
       "copyright": "© {year} CONSTRUCTION OS, All rights reserved."
     },
@@ -344,6 +346,60 @@
         "footnote": "Sign in to exercise these rights from your account, or send a request to our Data Protection Office from the Privacy Policy screen.",
         "cta": "Authenticate"
       }
+    },
+    "contact": {
+      "title": "Contact Support",
+      "fields": {
+        "fullName": "Full name",
+        "email": "Email address",
+        "phone": "Phone number",
+        "category": "Inquiry category",
+        "subject": "Subject",
+        "message": "Detailed message",
+        "attachment": "Supporting documents"
+      },
+      "placeholders": {
+        "fullName": "Enter your full name",
+        "email": "Enter your email address",
+        "phone": "Enter your phone number",
+        "subject": "Brief description of your request",
+        "message": "Please provide specific details to help us process your request…"
+      },
+      "categories": {
+        "GENERAL": "General",
+        "DATA_ACCESS": "Data access",
+        "DATA_CORRECTION": "Correction",
+        "DATA_DELETION": "Deletion",
+        "SECURITY_CONCERN": "Security"
+      },
+      "attach": "Attach documents",
+      "submit": "Submit inquiry",
+      "assurance": "Your message is sent over an encrypted connection and recorded with a reference you can quote.",
+      "error": "We could not send your inquiry. Check your connection and try again, or email our Data Protection Office instead."
+    },
+    "contactSent": {
+      "title": "Inquiry submitted",
+      "headline": "Inquiry received",
+      "lede": "Your message has been recorded and is waiting to be reviewed.",
+      "referenceLabel": "Reference number",
+      "pending": "Pending review",
+      "referenceHelp": "Save this reference. Quote it in any further correspondence about this request.",
+      "nextTitle": "What happens next",
+      "nextBody": "We route this to the organisation holding your data. They are the controller, and the 30-day PDPA and GDPR period runs for them.",
+      "receivedLabel": "Received",
+      "done": "Done"
+    },
+    "downloaded": {
+      "title": "Download status",
+      "headline": "Download complete",
+      "lede": "Privacy Policy v{version} has been saved to this device.",
+      "format": "PDF",
+      "integrityTitle": "Integrity check",
+      "integrityOk": "The file matches the digest published by the platform, so it is the policy we issued.",
+      "integrityMismatch": "The file does not match the digest published by the platform. Download it again, and if it still differs do not rely on this copy.",
+      "at": "Downloaded {date}",
+      "open": "Open PDF",
+      "backToPolicy": "Back to the policy"
     }
   },
   "terms": {

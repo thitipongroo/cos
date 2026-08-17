@@ -11,6 +11,13 @@ import { enqueue, SyncOperation } from '../db/sync-queue';
 
 const BASE_URL = process.env['EXPO_PUBLIC_API_URL'] ?? 'http://localhost:3000/api/v1';
 
+/**
+ * The same base the axios instance below uses, exported for the few callers that need a full URL
+ * rather than a request — handing a link to the system browser, for one (the policy PDF, ADR-091).
+ * Exported rather than re-derived so there is one place the base is decided.
+ */
+export const API_BASE_URL = BASE_URL;
+
 // Maximum retries for 401 → refresh flow
 
 interface DeltaResponse<T> {
