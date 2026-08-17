@@ -38,7 +38,20 @@ describe('secret-cipher (AES-256-GCM, ADR-035)', () => {
     process.env.NODE_ENV = 'test';
     delete process.env.APP_SECRET_ENCRYPTION_KEY;
     const [iv, tag, ct] = encryptSecret('secret').split(':');
-    const tampered = `${iv}:${tag}:${ct.slice(0, -2)}00`;
+
+    // FLIP the last byte rather than OVERWRITING it with a constant.
+    //
+    // This test read `${ct.slice(0, -2)}00` and failed roughly once in 256 runs — including on CI
+    // run 32060998876. `encryptSecret` draws a fresh random IV every call, so the ciphertext differs
+    // each time; when it happened to END in `00`, the "tampered" blob was byte-identical to the
+    // original, GCM authenticated it, and the expected throw never came. A test whose subject is
+    // "reject a MODIFIED ciphertext" must actually modify it, and overwriting with a fixed value
+    // cannot guarantee that. XOR 0xff always yields a different byte.
+    const lastByte = parseInt(ct.slice(-2), 16);
+    const flipped = (lastByte ^ 0xff).toString(16).padStart(2, '0');
+    const tampered = `${iv}:${tag}:${ct.slice(0, -2)}${flipped}`;
+    expect(tampered).not.toBe(`${iv}:${tag}:${ct}`);
+
     expect(() => decryptSecret(tampered)).toThrow();
   });
 });

@@ -252,8 +252,8 @@ numbered decisions above and the earlier updates stand; these four refine how it
    not the APIs a file imports: the vendor directory looks multi-step and is not — its list fetch
    clears the loader and the per-vendor scores arrive afterwards, against a list already on screen.
 4. **`<LoadingBoundary />` holds a determinate loader at 100 before it fades** (already decided
-    2026-08-17, restated here because item 2 is what makes it visible): the bar and the number arrive
-    together, and only then does the crossfade start.
+   2026-08-17, restated here because item 2 is what makes it visible): the bar and the number arrive
+   together, and only then does the crossfade start.
 
 ## References
 

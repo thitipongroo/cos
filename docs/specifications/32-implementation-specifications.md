@@ -668,10 +668,10 @@ before data arrives, so the motif never competes with project content.
 **The motif is per platform, because the two mockups genuinely differ** (product-owner decision
 2026-08-17 — the earlier wording named one motif for both and did not match either drawing):
 
-| Platform | `ai` motif                                                      | Reference                                    |
-| -------- | --------------------------------------------------------------- | -------------------------------------------- |
-| Mobile   | cyan glow · **scan-line gradient** · **waveform** · left border | `mockup/mobile/00_loading` section C         |
-| Web      | cyan glow · **processor plate** · **ping dot** · full border-2  | `mockup/desktop/imp_002_…` Variant C         |
+| Platform | `ai` motif                                                      | Reference                            |
+| -------- | --------------------------------------------------------------- | ------------------------------------ |
+| Mobile   | cyan glow · **scan-line gradient** · **waveform** · left border | `mockup/mobile/00_loading` section C |
+| Web      | cyan glow · **processor plate** · **ping dot** · full border-2  | `mockup/desktop/imp_002_…` Variant C |
 
 The web drawing carries neither a scan-line nor a waveform; it signals work with a pulsing processor
 glyph on a tinted plate and a `ping` dot on its status row. Do not port the mobile pair onto web to
@@ -811,19 +811,19 @@ same surface as the web login and the Keycloak `cos` theme, so the product looks
 
 Dark screens (the pre-2026-08-04 set — see the note above):
 
-| Screen                                  | Reference                                                      |
-| --------------------------------------- | -------------------------------------------------------------- |
+| Screen                                  | Reference                                                            |
+| --------------------------------------- | -------------------------------------------------------------------- |
 | Login                                   | `mockup/mobile/01_authen/01_login/01_landing_page_login_mobile/`     |
 | OTP verify                              | `mockup/mobile/01_authen/01_login/02_login_otp_verification_mobile/` |
 | Session-securing overlay                | `mockup/mobile/01_authen/01_login/04_verification_loading_mobile/`   |
 | Privacy Policy                          | `mockup/mobile/02_shared/01_privacy_policy/00_policy_dashboard`      |
 | Terms of Use (pre-auth)                 | `mockup/mobile/01_authen/04_terms_of_use/01_terms_of_use_dashboard/` |
-| Support Centre (pre-auth)               | drawing withdrawn 2026-08-15 — see the note below it           |
-| Project Manager / Proc Manager screens  | `mockup/mobile/06_project_manager/`                            |
-| Site Engineer Home                      | `mockup/mobile/03_site_engineer/01_home/01_se_home_dashboard/` |
-| Tenant Admin Home                       | `mockup/mobile/04_tenant_admin/01_home/01_home_dashboard/`     |
-| Notification preferences (Tenant Admin) | drawing withdrawn 2026-08-13 — see the note below it           |
-| Navigation drawer                       | drawing withdrawn 2026-08-16 — see the note below it           |
+| Support Centre (pre-auth)               | drawing withdrawn 2026-08-15 — see the note below it                 |
+| Project Manager / Proc Manager screens  | `mockup/mobile/06_project_manager/`                                  |
+| Site Engineer Home                      | `mockup/mobile/03_site_engineer/01_home/01_se_home_dashboard/`       |
+| Tenant Admin Home                       | `mockup/mobile/04_tenant_admin/01_home/01_home_dashboard/`           |
+| Notification preferences (Tenant Admin) | drawing withdrawn 2026-08-13 — see the note below it                 |
+| Navigation drawer                       | drawing withdrawn 2026-08-16 — see the note below it                 |
 
 **Notification preferences keeps its row without a drawing.** The directory
 `mockup/mobile/04_tenant_admin/06_notification/` (`01_notification_preferences` + `02_success_state`) was deleted from
@@ -1294,14 +1294,14 @@ One component per platform, same name and same props, so a loading state reads i
 mobile and web (product-owner decision 2026-07-17; ADR-055). It is **presentational only** — it
 owns no data source, no timer, and no i18n copy.
 
-| Prop       | Type                | Behaviour                                                                                                  |
-| ---------- | ------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `variant`  | see table below     | Required. Selects the layout.                                                                              |
-| `progress` | `number` (0–100)    | Optional. Omitted → indeterminate (no bar, no %). Given → clamped and shown.                               |
-| `label`    | `string`            | Optional. Caller passes **already-translated** text — the component never holds a key or a literal (QM-3). |
-| `theme`    | `'light' \| 'dark'` | Required on mobile. Selects `colors` vs `darkColors` (§32.7 Mobile Dark Surfaces).                         |
-| `tone`     | `'default' \| 'onPrimary'` | Mobile, `micro` only. `onPrimary` for a loader INSIDE a primary-filled control (a submit button mid-request — the mockup's "inside a button" case); the default ink is the button's own fill colour and would vanish in it. |
-| `color`    | `string`            | Mobile, `micro` only. Overrides `tone` for a host carrying a meaningful colour of its own — `<QuickActionRow />`'s per-action accent, where a `primary` ring would erase the grouping the accent makes. **A palette colour, never a hex**, and it must clear WCAG SC 1.4.11 (3:1) against the surface it sits on (§20.8). |
+| Prop       | Type                       | Behaviour                                                                                                                                                                                                                                                                                                                 |
+| ---------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `variant`  | see table below            | Required. Selects the layout.                                                                                                                                                                                                                                                                                             |
+| `progress` | `number` (0–100)           | Optional. Omitted → indeterminate (no bar, no %). Given → clamped and shown.                                                                                                                                                                                                                                              |
+| `label`    | `string`                   | Optional. Caller passes **already-translated** text — the component never holds a key or a literal (QM-3).                                                                                                                                                                                                                |
+| `theme`    | `'light' \| 'dark'`        | Required on mobile. Selects `colors` vs `darkColors` (§32.7 Mobile Dark Surfaces).                                                                                                                                                                                                                                        |
+| `tone`     | `'default' \| 'onPrimary'` | Mobile, `micro` only. `onPrimary` for a loader INSIDE a primary-filled control (a submit button mid-request — the mockup's "inside a button" case); the default ink is the button's own fill colour and would vanish in it.                                                                                               |
+| `color`    | `string`                   | Mobile, `micro` only. Overrides `tone` for a host carrying a meaningful colour of its own — `<QuickActionRow />`'s per-action accent, where a `primary` ring would erase the grouping the accent makes. **A palette colour, never a hex**, and it must clear WCAG SC 1.4.11 (3:1) against the surface it sits on (§20.8). |
 
 **Variants are per platform** — the layouts genuinely differ, so the union is not shared:
 
@@ -1362,7 +1362,7 @@ Rules:
   only ever report 0% and then 100% — the number never moves, so it reads as a stuck loader. Such a
   surface passes no `progress` and shows an indeterminate loader instead. This is the same rule that
   keeps a `micro` ring inside a submit button wordless: one POST, one step. `loadProgress(doneSteps,
-  totalSteps)` in each app's `lib/loadingState.ts` encodes it — it returns `null` below two steps —
+totalSteps)` in each app's `lib/loadingState.ts` encodes it — it returns `null` below two steps —
   and the count is of the steps that settle **while the loader is on screen**, not of every API the
   file imports. (Vendors looks multi-step and is not: its directory fetch clears the loader, and the
   per-vendor scores land afterwards, against a list the reader can already see.)
@@ -1405,9 +1405,9 @@ card colour; `<MobileNav />` overrides `tabBarStyle` only on dark.
 > corners), `shadow-lg`, and `border-t border-outline-variant/10` — a 10%-alpha hairline, against the
 > opaque `--cos-dark-outline` the implementation uses. Only the background was decided here.
 
-| Element | Content                                                                                                                                             |
-| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Left    | App icon + `CONSTRUCTION OS` wordmark (doubles as the drawer trigger, PO 2026-07-31); leading `<` on child screens only (PO 2026-08-04)              |
+| Element | Content                                                                                                                                                |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Left    | App icon + `CONSTRUCTION OS` wordmark (doubles as the drawer trigger, PO 2026-07-31); leading `<` on child screens only (PO 2026-08-04)                |
 | Right   | `<SyncPill />` · Help `?` → `/support` · notification bell (unread badge → `/notifications`) · avatar (photo/initials → the drawer's Account Settings) |
 
 > **The Right cell listed only the bell and the avatar until 2026-08-17**, while the implementation
@@ -1463,13 +1463,13 @@ The Support Centre has **two** routes as of 2026-08-17 (product-owner decision),
 their content and differ in frame and extras — the shape `PrivacyPolicyDocument` already uses for the
 same pre-auth/post-auth pair (PO 2026-08-04).
 
-| | Pre-auth | Post-auth |
-| --- | --- | --- |
-| Route | `app/(auth)/support.tsx` | `app/(app)/support.tsx` |
-| Entry | OTP step's `GET SUPPORT` footer item | `<TopBar />` Help `?` — the **only** post-auth entry |
-| Palette | pinned dark (§32.7 pinned pre-auth surfaces) | follows the user's theme |
-| Chrome | own back + title bar, connection mark, build | none — `<TopBar />` + `Breadcrumb` supply it |
-| Adds | `FIELD ASSISTANT` panel | identity · active project · diagnostics · role modules |
+|         | Pre-auth                                     | Post-auth                                              |
+| ------- | -------------------------------------------- | ------------------------------------------------------ |
+| Route   | `app/(auth)/support.tsx`                     | `app/(app)/support.tsx`                                |
+| Entry   | OTP step's `GET SUPPORT` footer item         | `<TopBar />` Help `?` — the **only** post-auth entry   |
+| Palette | pinned dark (§32.7 pinned pre-auth surfaces) | follows the user's theme                               |
+| Chrome  | own back + title bar, connection mark, build | none — `<TopBar />` + `Breadcrumb` supply it           |
+| Adds    | `FIELD ASSISTANT` panel                      | identity · active project · diagnostics · role modules |
 
 **Shared** (`components/SupportCenterDocument.tsx`): system status (a real `GET /health/live` probe) ·
 search · emergency contacts · field troubleshooting.
@@ -1548,6 +1548,7 @@ across roles.
   > form (`/(app)/privacy-policy`) while `route` stays bare for the active-state comparison, since
   > `usePathname()` never reports the group. The same rule is why the TopBar `?` pushes
   > `/(app)/support` rather than `/support`.
+
 - Child screens stay mounted as `href: null` siblings so `router.push()` reaches them and
   `backBehavior="history"` returns to the screen they were pushed from.
 - **Palette follows the theme**, the same as the top bar — the whole shell is one mode.

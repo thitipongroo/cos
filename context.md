@@ -875,7 +875,7 @@ If any check fails → list what needs to be fixed before re-running. Do not adv
   (g) Skeletons animate **per element**, never as one band across the card — the mockup puts
   `.skeleton-pulse` on each bar and plate separately
   (h) The bar and the percentage are **one JS-driven animated value**. Never move the bar to the native
-  driver for smoothness: that driver keeps animating *while the JS thread is blocked* and only JS can write
+  driver for smoothness: that driver keeps animating _while the JS thread is blocked_ and only JS can write
   text, so the bar fills while the number sits at 0 (hit on app launch 2026-08-17). Smoothness comes from
   animating `translateX` rather than `width`, and from isolating the counting text
   (f) Any ink override (`tone`, `color`) must **measure** ≥ 3:1 against the surface it sits on (SC 1.4.11),
