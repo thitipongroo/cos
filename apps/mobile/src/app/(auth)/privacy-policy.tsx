@@ -18,7 +18,13 @@
 //
 // The Data Collection card does NOT link to the Transparency Portal here (no `onDataCollection`):
 // every portal screen sits behind AuthGate and one of them renders the signed-in user's own record,
-// so there is nowhere for a pre-auth reader to go. It stays an accordion section.
+// so there is nowhere for a pre-auth reader to go.
+//
+// It — and the other four rows — DO push a section screen (`onSection`, PO decision 2026-08-17).
+// mockup/mobile/01_authen/05_privacy_policy draws 02…06 as five full screens, and this screen's own
+// drawing carries EMPTY accordion bodies, so the rows were always meant to lead somewhere. The route
+// name is derived from the section id through SECTION_ROUTE below rather than interpolated, so a
+// renamed section fails to compile instead of pushing a route that does not exist.
 
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -30,6 +36,22 @@ import { paletteFor } from '../../theme/palette';
 import { PrivacyPolicyDocument } from '../../components/PrivacyPolicyDocument';
 
 const DARK = paletteFor('dark');
+
+/**
+ * Section id (as declared in <PrivacyPolicyDocument />'s SECTIONS) → the route that renders it.
+ *
+ * An explicit map, not `/(auth)/privacy-${id}`: the ids are the policy's own vocabulary
+ * (`compliance`, `security`, `rights`) and the routes are named for what the mockup calls the
+ * screens (`pdpa-gdpr`, `technical-security`, `user-rights`). Interpolating would silently push a
+ * route that does not exist; this way a renamed section is a type error.
+ */
+const SECTION_ROUTE = {
+  collection: '/(auth)/privacy-data-collection',
+  usage: '/(auth)/privacy-data-usage',
+  compliance: '/(auth)/privacy-pdpa-gdpr',
+  security: '/(auth)/privacy-technical-security',
+  rights: '/(auth)/privacy-user-rights',
+} as const;
 
 export default function PrivacyPolicyScreen(): React.JSX.Element {
   const insets = useSafeAreaInsets();
@@ -64,6 +86,10 @@ export default function PrivacyPolicyScreen(): React.JSX.Element {
         accent={darkColors.cyan}
         showBrandGlow
         paddingBottom={insets.bottom + spacing.xl}
+        onSection={(id) => {
+          const route = SECTION_ROUTE[id as keyof typeof SECTION_ROUTE];
+          if (route !== undefined) router.push(route);
+        }}
       />
     </View>
   );

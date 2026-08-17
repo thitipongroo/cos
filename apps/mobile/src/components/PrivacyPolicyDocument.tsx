@@ -15,6 +15,13 @@
 //   - `onDataCollection` — post-auth, the Data Collection card is the entry point to the Transparency
 //     Portal (PO decision 2026-08-04), so it navigates instead of expanding. Pre-auth it has nowhere
 //     to go: every portal screen is behind AuthGate and one of them shows the user's own record.
+//   - `onSection` — pre-auth, ALL FIVE rows navigate to their own screen (PO decision 2026-08-17),
+//     because mockup/mobile/01_authen/05_privacy_policy draws 02…06 as full screens and its
+//     `01_privacy_policy` accordion items are literally empty: the drawing carries no inline bodies
+//     at all, so the rows were always meant to lead somewhere. Post-auth does NOT pass it and keeps
+//     the accordion — that route already has the Transparency Portal beneath it, and stacking a
+//     second set of section screens under a shell that has its own TopBar and breadcrumb would put
+//     two back controls on one screen.
 //
 // Content provenance is unchanged from the original screen and is documented at each section below.
 
@@ -151,6 +158,7 @@ export function PrivacyPolicyDocument({
   paddingBottom,
   showBrandGlow,
   onDataCollection,
+  onSection,
   testID,
 }: {
   palette: Palette;
@@ -161,6 +169,8 @@ export function PrivacyPolicyDocument({
   showBrandGlow?: boolean;
   /** Supplied post-auth: makes the Data Collection card open the Transparency Portal. */
   onDataCollection?: () => void;
+  /** Supplied pre-auth: makes every row push its own section screen instead of expanding. */
+  onSection?: (id: string) => void;
   testID: string;
 }): React.JSX.Element {
   const { t, formatDate } = useI18n();
@@ -220,9 +230,13 @@ export function PrivacyPolicyDocument({
       {/* Accordion */}
       <View style={styles.accordion}>
         {SECTIONS.map((section) => {
-          // The Data Collection card is the portal's entry point post-auth, so there it is a link,
-          // not a disclosure — the portal covers this section in far more depth than the accordion.
-          const links = section.id === 'collection' && onDataCollection !== undefined;
+          // A row is a LINK rather than a disclosure in two cases: pre-auth, where every row pushes
+          // its own section screen, and post-auth for Data Collection alone, where it is the
+          // Transparency Portal's entry point — the portal covers that section in far more depth
+          // than an accordion body could.
+          const pushesSection = onSection !== undefined;
+          const links =
+            pushesSection || (section.id === 'collection' && onDataCollection !== undefined);
           const open = !links && openId === section.id;
           const titleKey = `${K}.${section.id}.title`;
           return (
@@ -232,7 +246,13 @@ export function PrivacyPolicyDocument({
                 accessibilityRole="button"
                 accessibilityState={links ? undefined : { expanded: open }}
                 accessibilityLabel={t(titleKey)}
-                onPress={links ? onDataCollection : () => toggle(section.id)}
+                onPress={
+                  onSection !== undefined
+                    ? () => onSection(section.id)
+                    : links
+                      ? onDataCollection
+                      : () => toggle(section.id)
+                }
                 style={styles.cardHeader}
               >
                 <MaterialIcons name={section.icon} size={22} color={tintOf(section.tint)} />
@@ -442,12 +462,17 @@ const makeStyles = (p: Palette, accent: string, glow: boolean) =>
       alignItems: 'center',
       gap: spacing.sm,
     },
+    // Uppercase, as the drawing sets them (`<h3>DATA COLLECTION</h3>` in
+    // mockup/mobile/01_authen/05_privacy_policy/01_privacy_policy). Applied here rather than in the
+    // i18n value so the stored string stays natural: the same five keys title the screens these rows
+    // now push, where they render as ordinary sentence case. Thai has no case, so `th` is unaffected.
     cardTitle: {
       flex: 1,
       color: p.text,
       fontFamily: fontFamily.medium,
       fontSize: typography.caption.fontSize,
       lineHeight: typography.caption.lineHeight,
+      textTransform: 'uppercase',
     },
     cardBody: { paddingHorizontal: spacing.md, paddingBottom: spacing.md, gap: spacing.sm },
     bodyText: {
