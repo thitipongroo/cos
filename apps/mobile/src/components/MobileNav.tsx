@@ -225,6 +225,11 @@ export function MobileNav() {
           pushes here from every screen. */}
       {/* Post-auth Privacy Policy — drawer entry (PO 2026-08-04); same document as the (auth) route. */}
       <Tabs.Screen name="privacy-policy" options={{ href: null }} />
+      {/* Post-auth Support Centre — the TopBar "?" (PO 2026-08-17); shares SupportCenterDocument with
+          the (auth) route but adds identity, project and diagnostics. It is NOT a tab for any role:
+          the withdrawn mockup drew a Field | Tasks | Support | Profile bar, which is no role's set,
+          and §32.7 fixes each role at exactly four tabs. */}
+      <Tabs.Screen name="support" options={{ href: null }} />
       <Tabs.Screen name="transparency" options={{ href: null }} />
       <Tabs.Screen name="transparency-identity" options={{ href: null }} />
       <Tabs.Screen name="transparency-location" options={{ href: null }} />

@@ -6,7 +6,7 @@
 // same way the bottom nav does, and the safe-area strip above it takes the same surface colour.
 
 import { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -95,15 +95,25 @@ export function TopBar({ variant = 'light' }: { variant?: 'light' | 'dark' }) {
           <SyncPill />
         </View>
         {/* Standard Help "?" — on every authenticated screen, beside the bell (PO decision 2026-07-29).
-            There is no in-app help centre yet, so it opens an honest "coming soon" note rather than a
-            fabricated help surface. */}
+            It opened an honest "coming soon" note until 2026-08-17, because there was no in-app help
+            surface it could reach: the Support Centre existed but only in the (auth) group, and
+            AuthGate bounces a signed-in user out of that group (`isAuthenticated && inAuthGroup →
+            /(app)/home`), so pushing to it landed on Home. The (app) twin added that day fixed it,
+            and the product owner made this "?" the SINGLE post-auth entry — the drawer's Support row
+            was removed in the same change rather than kept as a second one.
+
+            THE GROUP IS NAMED ON PURPOSE. `app/(auth)/support.tsx` and `app/(app)/support.tsx` both
+            resolve to the path `/support` — groups add no segment — so a bare `router.push('/support')`
+            is ambiguous between them. The pre-auth entry names its group for the same reason
+            (login.tsx pushes `/(auth)/support`). usePathname() still reports `/support`, which is what
+            Breadcrumb keys on. */}
         <TouchableOpacity
           testID="topbar-help"
           accessibilityRole="button"
           accessibilityLabel={t('help.title')}
           hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
           style={styles.bell}
-          onPress={() => Alert.alert(t('help.title'), t('help.comingSoon'))}
+          onPress={() => router.push('/(app)/support')}
         >
           <MaterialIcons name="help-outline" size={22} color={fg} />
         </TouchableOpacity>

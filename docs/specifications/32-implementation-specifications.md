@@ -874,8 +874,9 @@ footer and therefore continues the dark pre-auth surface it is pushed from, rath
 user onto the light task palette mid-flow. The **Terms of Use** was added by product-owner decision
 (2026-08-09) for the same reason: it is the login footer's other link, and it is PRE-AUTH ONLY — the
 Privacy Policy's second, post-auth entry was a later decision that this document did not receive. The
-**Support Centre** followed on the same day and on the same terms — pre-auth only, entered from the
-OTP step's GET SUPPORT item, which is the only entry any mockup draws for it. Its drawing carries a
+**Support Centre** followed on the same day and on the same terms — pre-auth, entered from the
+OTP step's GET SUPPORT item, which is the only entry any mockup draws for it (**no longer pre-auth
+_only_ as of 2026-08-17 — see § Support Centre: two routes, below**). Its drawing carries a
 `Field | Tasks | Support | Profile` bottom bar, which is **not** implemented: there is no tab bar
 before sign-in, and that is no role's tab set (see the four-tab rule above). All
 ship on the dark surface as their mockups define, continuing the signed-in dark identity rather than the
@@ -1390,10 +1391,25 @@ card colour; `<MobileNav />` overrides `tabBarStyle` only on dark.
 > corners), `shadow-lg`, and `border-t border-outline-variant/10` — a 10%-alpha hairline, against the
 > opaque `--cos-dark-outline` the implementation uses. Only the background was decided here.
 
-| Element | Content                                                                                    |
-| ------- | ------------------------------------------------------------------------------------------ |
-| Left    | App icon + `CONSTRUCTION OS` wordmark                                                      |
-| Right   | Notification bell (unread badge → `/notifications`) · avatar (photo/initials → `/profile`) |
+| Element | Content                                                                                                                                             |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Left    | App icon + `CONSTRUCTION OS` wordmark (doubles as the drawer trigger, PO 2026-07-31); leading `<` on child screens only (PO 2026-08-04)              |
+| Right   | `<SyncPill />` · Help `?` → `/support` · notification bell (unread badge → `/notifications`) · avatar (photo/initials → the drawer's Account Settings) |
+
+> **The Right cell listed only the bell and the avatar until 2026-08-17**, while the implementation
+> had carried four controls for months. Both missing entries were decided in prose elsewhere in this
+> document and never reached the table: `<SyncPill />` became the standard sync indicator for every
+> role on 2026-08-04 (recorded three paragraphs below, where the `SyncStatusBar` strip was deleted),
+> and the Help `?` was added to every authenticated screen on 2026-07-29 with no spec entry at all —
+> `apps/mobile/src/components/TopBar.tsx` was its only record. A table that omits half a bar is worse
+> than no table: it reads as a complete contract. Both are now listed, per Rule 37.
+>
+> **The Help `?` navigates as of 2026-08-17** (product-owner decision). It had opened an
+> `Alert.alert('Help & Support', 'coming soon')` since 2026-07-29 — honest at the time, because the
+> Support Centre existed only pre-auth and could not be reached from a signed-in screen (AuthGate
+> redirects `isAuthenticated && inAuthGroup → /(app)/home`). The post-auth route added that day makes
+> it a real destination, and it is the **single** post-auth entry: the drawer's Support row was
+> removed in the same change. See § Support Centre below.
 
 - **One component, all roles.** It is not per-screen; it lives in the authenticated layout so a role
   screen never renders its own header. The safe-area strip above it takes the same background, so
@@ -1427,6 +1443,60 @@ card colour; `<MobileNav />` overrides `tabBarStyle` only on dark.
   > and `orders` each render the selected checklist / project / invoice number / PO number when the
   > tab switches to a detail view, which names the RECORD rather than the screen.
 
+#### Support Centre — two routes (`?` and GET SUPPORT)
+
+The Support Centre has **two** routes as of 2026-08-17 (product-owner decision), not one. They share
+their content and differ in frame and extras — the shape `PrivacyPolicyDocument` already uses for the
+same pre-auth/post-auth pair (PO 2026-08-04).
+
+| | Pre-auth | Post-auth |
+| --- | --- | --- |
+| Route | `app/(auth)/support.tsx` | `app/(app)/support.tsx` |
+| Entry | OTP step's `GET SUPPORT` footer item | `<TopBar />` Help `?` — the **only** post-auth entry |
+| Palette | pinned dark (§32.7 pinned pre-auth surfaces) | follows the user's theme |
+| Chrome | own back + title bar, connection mark, build | none — `<TopBar />` + `Breadcrumb` supply it |
+| Adds | `FIELD ASSISTANT` panel | identity · active project · diagnostics · role modules |
+
+**Shared** (`components/SupportCenterDocument.tsx`): system status (a real `GET /health/live` probe) ·
+search · emergency contacts · field troubleshooting.
+
+**Why two routes and not one link.** `AuthGate` (`app/_layout.tsx`) redirects in both directions —
+`isAuthenticated && inAuthGroup → /(app)/home` — so a signed-in screen cannot push to anything in the
+`(auth)` group. Any "post-auth entry" that points at an `(auth)` route silently lands on Home. This is
+not hypothetical: `/support` was added to the drawer's `SHARED_LINKS` on 2026-08-10 for exactly this
+purpose and never once worked, because the reasoning recorded there — "expo-router groups add no path
+segment" — is true of path resolution and irrelevant to the guard. It went unnoticed for a week
+because `drawerLinks.spec.ts` asserted the ARRAY, not that its routes resolve; the spec now checks the
+route directory instead.
+
+**The `?` is the single post-auth entry.** The drawer's Support row was removed in the same change
+rather than kept alongside it (product-owner decision 2026-08-17), so `drawer.support` is gone from
+the i18n catalogues.
+
+**The two screens are deliberately not identical** (product-owner decision 2026-08-17). Everything the
+post-auth route adds is data the app already holds — signing in adds **no backend** here:
+
+- **Identity** — name + role from `authStore`, so the person on the phone need not recite them.
+- **Active project** — from `projectStore`, the same answer `<ProjectContextBar />` prints; a
+  "none selected" line rather than a placeholder when the picker has not been answered.
+- **Diagnostics** — connection, queued changes, unresolved conflicts, build. These replace the
+  `FIELD ASSISTANT` panel, which exists to say something when the app knows nothing else.
+- **Role modules** — derived from `drawerLinksFor(role)`, i.e. the §6.4 matrix. It answers "should I
+  be able to see X?". It is **not** a help-article list.
+
+**What it does not add.** No better phone number: no support-desk, hotline or emergency-contact column
+exists anywhere in `backend/prisma/schema.prisma` (verified 2026-08-17), for a tenant or a project, so
+both routes read the same `EXPO_PUBLIC_SUPPORT_CENTER_PHONE` / `EXPO_PUBLIC_SUPPORT_IT_HOTLINE`
+deployment config, and unset still renders the control disabled and says so. No ticket: no ticket
+table exists either. **Search stays disabled and Quick Help Chat stays unavailable on BOTH routes**
+(PO 2026-08-09, re-affirmed 2026-08-17) — there is no `help_article`/`faq` table, no search endpoint
+and no chat, and a signed-in user can see a dead control as clearly as a signed-out one.
+
+Neither route is a tab for any role: the withdrawn drawing's `Field | Tasks | Support | Profile` bar
+is no role's set, and §32.7 fixes each role at exactly four tabs. The post-auth route is registered
+`href: null` in `<MobileNav />` and carries a `Breadcrumb` entry (Home → Support), which is what makes
+it a child screen.
+
 #### Bottom Navigation (`<MobileNav />`)
 
 **Exactly four items, varying by role** (product-owner decision 2026-08-04). Four is the standard,
@@ -1440,6 +1510,30 @@ across roles.
   **Privacy Policy** (the last added by product-owner decision 2026-08-04; it is not in the drawer
   mockup, which only ever reaches the policy from the login footer and so leaves a signed-in user
   with no route to a notice PDPA §23 requires to remain available).
+
+  > **This rule was silently broken for three days, and the notice was unreachable for them.** The
+  > Privacy Policy row was added to the drawer on 2026-08-04 exactly as this bullet says. Commit
+  > `44d46a40` (2026-08-09, "split account settings out of the drawer") deleted the row and left its
+  > five-line justification comment orphaned in `NavigationDrawer.tsx`; the screen stayed reachable
+  > only because `AccountSettings` still carried its own `profile-privacy-link`. Commit `7f65cc59`
+  > (2026-08-14) removed that copy too, giving as its reason "it is a drawer row now" — false since
+  > 08-09. From 2026-08-14 to 2026-08-17 **nothing in the app pushed `/privacy-policy`**, which also
+  > stranded the Transparency Portal and its eight child screens: `/transparency` is entered from the
+  > policy's Data Collection card and from nowhere else.
+  >
+  > Nothing failed. The route file existed, `<MobileNav />` mounted it `href: null`, `Breadcrumb` had
+  > a crumb for it, `pageTitle.spec.ts` and `routeRegistry` were green — because **no test asked
+  > whether anything navigates there.** Restored to `SHARED_LINKS` on 2026-08-17 and now held by
+  > `drawerLinks.spec.ts` ("the Privacy Policy is reachable after sign-in (PDPA §23)"), which asserts
+  > the entry point exists rather than that the destination does.
+  >
+  > **A row onto a screen that exists in both route groups must name its group.** `/privacy-policy`
+  > resolves to both `app/(auth)/privacy-policy.tsx` and `app/(app)/privacy-policy.tsx` — groups add
+  > no path segment — so a bare push is ambiguous, and the `(auth)` candidate is behind AuthGate's
+  > `isAuthenticated && inAuthGroup → /(app)/home` redirect. `DrawerLink.href` carries the qualified
+  > form (`/(app)/privacy-policy`) while `route` stays bare for the active-state comparison, since
+  > `usePathname()` never reports the group. The same rule is why the TopBar `?` pushes
+  > `/(app)/support` rather than `/support`.
 - Child screens stay mounted as `href: null` siblings so `router.push()` reaches them and
   `backBehavior="history"` returns to the screen they were pushed from.
 - **Palette follows the theme**, the same as the top bar — the whole shell is one mode.

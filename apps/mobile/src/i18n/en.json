@@ -265,6 +265,26 @@
       "offline": "This device has no connection right now. Keep working — everything you record is saved on the device and uploads by itself once you are back in range.",
       "unreachable": "The device is connected, but the platform did not answer the last check. Keep working: your records stay on the device and upload once the service responds again.",
       "online": "The device is connected and the platform answered the last check. If something still fails, the topics above cover what field crews hit most."
+    },
+    "context": {
+      "heading": "Your session",
+      "signedInAs": "Signed in as",
+      "project": "Active project",
+      "noProject": "No project selected yet"
+    },
+    "diagnostics": {
+      "heading": "Device diagnostics",
+      "note": "Read these out if you call — they are the three things support asks for first.",
+      "connection": "Connection",
+      "online": "Online",
+      "offline": "Offline",
+      "queued": "Changes waiting to sync",
+      "conflicts": "Unresolved conflicts",
+      "appVersion": "App version"
+    },
+    "modules": {
+      "heading": "What your role can open",
+      "note": "The modules your role has access to. Not a help-article list — this platform has none."
     }
   },
   "approvals": {
@@ -1083,7 +1103,6 @@
     "online": "Online & synced",
     "fieldTools": "Field tools",
     "settings": "Settings",
-    "support": "Support Center",
     "more": "More ({count})",
     "privacyPolicy": "Privacy policy",
     "logout": "Log out",
@@ -1410,8 +1429,7 @@
     }
   },
   "help": {
-    "title": "Help & Support",
-    "comingSoon": "In-app help & support is coming soon."
+    "title": "Help & Support"
   },
   "rolePermissions": {
     "title": "Role permissions",

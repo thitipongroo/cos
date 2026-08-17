@@ -1,3 +1,5 @@
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { CosRole } from '@cos/types';
 import {
   drawerLinksFor,
@@ -10,10 +12,87 @@ import { ALL_TABS, MAX_TABS, overflowTabsFor, visibleTabsFor } from '../roleTabs
 
 const routes = (role: CosRole): string[] => drawerLinksFor(role).map((link) => link.route);
 
+const APP_DIR = join(__dirname, '..', '..', 'app', '(app)');
+const AUTH_DIR = join(__dirname, '..', '..', 'app', '(auth)');
+const screenFile = (route: string): string => `${route.replace(/^\/(\([a-z]+\)\/)?/, '')}.tsx`;
+
 describe('SHARED_LINKS', () => {
-  it('is exactly Settings and the Support Center', () => {
-    // PO decision 2026-08-10: those two, and nothing else, are the same for every role.
-    expect(SHARED_LINKS.map((link) => link.route)).toEqual(['/account-settings', '/support']);
+  it('is exactly Settings and the Privacy Policy', () => {
+    // PO decision 2026-08-10 put Settings and the Support Center here. 2026-08-17 replaced Support
+    // with the Privacy Policy: Support moved to the TopBar "?" as its single post-auth entry, and the
+    // Privacy Policy came back after three days with no entry point at all (see drawerLinks.ts).
+    expect(SHARED_LINKS.map((link) => link.route)).toEqual([
+      '/account-settings',
+      '/privacy-policy',
+    ]);
+  });
+
+  it('every shared row has a screen in the (app) group', () => {
+    // The 2026-08-17 defect as a rule rather than a fixed list. A drawer row is always pressed from
+    // inside (app), and AuthGate redirects an authenticated user out of (auth), so a row whose target
+    // exists ONLY in the (auth) group is unreachable by construction — which is exactly what
+    // `/support` was for a week. Reading the route directory is the only way to see it: the array
+    // assertion above passes either way, and no render test can navigate the real guard.
+    for (const link of SHARED_LINKS) {
+      const file = screenFile(link.href ?? link.route);
+      expect({ route: link.route, hasAppScreen: existsSync(join(APP_DIR, file)) }).toEqual({
+        route: link.route,
+        hasAppScreen: true,
+      });
+    }
+  });
+
+  it('names its group whenever the screen exists in both groups', () => {
+    // `app/(auth)/x.tsx` and `app/(app)/x.tsx` both resolve to `/x` — groups add no path segment — so
+    // a bare push of `/x` is ambiguous, and one of the two candidates is behind AuthGate's redirect.
+    // A row onto such a screen must name its group in `href`; a row onto a screen that exists once
+    // must not bother. Both halves are asserted so neither drifts.
+    for (const link of SHARED_LINKS) {
+      const bare = screenFile(link.route);
+      const alsoInAuth = existsSync(join(AUTH_DIR, bare));
+      expect({ route: link.route, alsoInAuth, namesGroup: link.href !== undefined }).toEqual({
+        route: link.route,
+        alsoInAuth,
+        namesGroup: alsoInAuth,
+      });
+    }
+  });
+
+  it('is never folded behind the "More" row', () => {
+    // DRAWER_MAX_ROWS counts the ROLE's rows only. That is what keeps the Privacy Policy one tap away
+    // for the six roles whose own section overflows — a notice PDPA §23 requires to remain available
+    // must not sit behind a disclosure. Asserted against the role with the longest section.
+    const worst = Object.values(CosRole).reduce((a, b) =>
+      drawerLinksFor(a).length >= drawerLinksFor(b).length ? a : b,
+    );
+    const { visible, overflow } = drawerSectionFor(worst);
+    const shared = SHARED_LINKS.map((link) => link.route);
+    expect(overflow.length).toBeGreaterThan(0); // the fold is actually exercised
+    for (const route of shared) {
+      expect({
+        route,
+        foldedForWorstRole: [...visible, ...overflow].some((l) => l.route === route),
+      }).toEqual({ route, foldedForWorstRole: false });
+    }
+  });
+});
+
+describe('the Privacy Policy is reachable after sign-in (PDPA §23)', () => {
+  // A REGRESSION GUARD FOR A REAL THREE-DAY OUTAGE, not a hypothetical. The post-auth notice lost its
+  // last entry point on 2026-08-14 and nothing failed: the route file still existed, `MobileNav` still
+  // mounted it, `Breadcrumb` still had a crumb for it, and every test still passed — because none of
+  // them asks whether anything NAVIGATES there. This one does.
+  it('has an entry point in SHARED_LINKS', () => {
+    expect(SHARED_LINKS.some((link) => link.route === '/privacy-policy')).toBe(true);
+  });
+
+  it('and that entry point targets the (app) copy, not the pre-auth one', () => {
+    const row = SHARED_LINKS.find((link) => link.route === '/privacy-policy');
+    // Both copies exist on purpose — the pre-auth one is pushed from the login footer. Only the (app)
+    // copy survives AuthGate when pressed from inside the drawer.
+    expect(row?.href).toBe('/(app)/privacy-policy');
+    expect(existsSync(join(APP_DIR, 'privacy-policy.tsx'))).toBe(true);
+    expect(existsSync(join(AUTH_DIR, 'privacy-policy.tsx'))).toBe(true);
   });
 });
 

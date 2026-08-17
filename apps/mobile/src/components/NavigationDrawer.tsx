@@ -11,9 +11,10 @@
 // Only real, mounted routes are linked. The mockup's "Equipment Logs" and "Drawing Viewer" have no
 // route in this app, so they are omitted rather than linking to a dead path (no guessing).
 //
-// WHAT IS IN THE LIST IS NOW PER ROLE (PO decision 2026-08-10): Settings and the Support Center are
-// the only two rows every role gets, and the section above them is that role's own. The table lives
-// in `lib/drawerLinks.ts` — this component renders it and decides nothing about its contents.
+// WHAT IS IN THE LIST IS NOW PER ROLE (PO decision 2026-08-10): a short section every role gets, and
+// the section above it is that role's own. The table lives in `lib/drawerLinks.ts` — this component
+// renders it and decides nothing about its contents. The shared rows were Settings + Support Centre
+// on 2026-08-10 and are Settings + Privacy Policy as of 2026-08-17; see that file for both moves.
 
 import { useEffect, useRef, useState } from 'react';
 import { View, Text, Pressable, Animated, StyleSheet, ScrollView, BackHandler } from 'react-native';
@@ -31,15 +32,19 @@ import { darkColors, fontFamily, radius, spacing, touchTarget, typography } from
 
 const DRAWER_WIDTH = 310;
 
-// PO decision 2026-08-04 — the post-auth entry to the Privacy Policy. Not in the drawer mockup: the
-// mockups only ever reach the policy from the login footer, which leaves a signed-in user with no
-// route to it at all. PDPA §23 makes the notice a standing disclosure, so it needs a permanent home
-// once the login footer is behind you. Grouped with Settings rather than Field tools — it is an
-// account-level document, not a site tool.
-// QM-15: the MFA-enrollment surface is a new auth flow and must be flag-gated. Mobile has no
-// server-evaluated flags client yet (ADR-049 is backend-only), so this is a build-time flag read
-// statically (Expo only inlines EXPO_PUBLIC_* on static access); a runtime client is a follow-up.
-// Fail closed — a security surface stays hidden unless the flag is explicitly on.
+// THE TWO COMMENTS THAT STOOD HERE UNTIL 2026-08-17 DESCRIBED CONSTANTS THAT NO LONGER EXISTED, and
+// one of them was load-bearing. Commit 44d46a40 (2026-08-09) deleted `PRIVACY_LINK` and
+// `MFA_ENROLLMENT_ENABLED` from this file but left both justifications behind, so the file went on
+// explaining a Privacy Policy row it did not render and a feature flag it did not read.
+//   - The MFA note moved with its code: the flag now lives in AccountSettings.tsx, which owns that
+//     row since the account split. Nothing was lost.
+//   - The Privacy Policy row did NOT move. It survived on the AccountSettings card until commit
+//     7f65cc59 (2026-08-14) removed that copy too, on the stated grounds that "it is a drawer row
+//     now" — false since 08-09. For three days the app had no way at all to open the notice PDPA §23
+//     requires to remain available, and no way to reach the Transparency Portal behind it.
+// The row is back, in `SHARED_LINKS` where spec §32.7 (Bottom Navigation) puts it, and its reasoning
+// now lives beside the data in lib/drawerLinks.ts rather than beside the component that renders it —
+// which is what let the two drift apart in the first place.
 export function NavigationDrawer(): React.JSX.Element | null {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -94,12 +99,14 @@ export function NavigationDrawer(): React.JSX.Element | null {
   };
 
   const renderLink = (link: DrawerLink): React.JSX.Element => {
+    // Matched on `route`, navigated by `href ?? route`: usePathname() never reports the group, so a
+    // row that must name its group to be unambiguous still compares against the bare path.
     const active = pathname === link.route;
     return (
       <Pressable
         key={link.route}
         testID={`drawer-link-${link.route}`}
-        onPress={() => go(link.route)}
+        onPress={() => go(link.href ?? link.route)}
         style={[styles.navItem, active && styles.navItemActive]}
         accessibilityRole="link"
         accessibilityLabel={t(link.labelKey)}
@@ -208,9 +215,10 @@ export function NavigationDrawer(): React.JSX.Element | null {
               ) : null}
             </>
           ) : null}
-          {/* Settings and Support — ONE ROW EACH, not the settings sections themselves (PO decision
-              2026-08-09). They rendered inline here for one build and made the panel carry both
-              navigation and settings, with ~900px of a 2400px screen below the fold. */}
+          {/* The shared rows — ONE ROW EACH, not the sections themselves (PO decision 2026-08-09).
+              They rendered inline here for one build and made the panel carry both navigation and
+              settings, with ~900px of a 2400px screen below the fold. Never folded behind "More":
+              see DRAWER_MAX_ROWS. */}
           <View style={styles.divider} />
           {SHARED_LINKS.map(renderLink)}
         </ScrollView>
