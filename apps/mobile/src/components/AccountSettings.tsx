@@ -239,11 +239,18 @@ export function AccountSettings() {
           owns server state. */}
       <NotificationSettings />
 
-      {/* The Privacy Policy row left this card on 2026-08-14 — it is a drawer row now, where
-          mockup 02_shared/01_navigation_drawer drew it, and one screen should not be reachable
-          from two doors one tap apart. That drawing was withdrawn on 2026-08-16 together with
+      {/* The Privacy Policy row left this card on 2026-08-14 for the drawer, where mockup
+          02_shared/01_navigation_drawer drew it and where spec §32.7 (Bottom Navigation) puts
+          account-level destinations — one screen should not be reachable from two doors one tap
+          apart. That drawing was withdrawn on 2026-08-16 together with
           04_tenant_admin/05_navigation_drawer; the placement stands (ADR-085) and the drawer's
-          rows are derived — see lib/drawerLinks.ts. About keeps the version. */}
+          rows live in lib/drawerLinks.ts. About keeps the version.
+
+          "IT IS A DRAWER ROW NOW" WAS NOT TRUE WHEN THIS COMMENT WAS WRITTEN. Commit 44d46a40 had
+          deleted the drawer's `PRIVACY_LINK` five days earlier (2026-08-09), so removing this row
+          left the policy — and the Transparency Portal entered from it — with no route into them at
+          all, for three days, against PDPA §23. Restored to SHARED_LINKS on 2026-08-17; the sentence
+          above is now accurate, and drawerLinks.spec.ts holds it that way. */}
       <Section label={t('profile.main.aboutSection')}>
         <Row
           testID="profile-version"

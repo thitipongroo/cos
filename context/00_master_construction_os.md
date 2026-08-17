@@ -1028,6 +1028,16 @@ Avoid in all visual work:
        routes (2026-08-09) are pre-auth, are pinned dark like the rest, and ship with NO
        glow — they are opened FROM an entry screen rather than being one. Adding a
        pre-auth screen does not add it here.
+       SUPPORT CENTRE IS NO LONGER PRE-AUTH ONLY (PO decision 2026-08-17): it gained a
+       POST-AUTH twin at app/(app)/support.tsx, opened by the TopBar "?" — which until
+       then showed a "coming soon" note, because AuthGate bounces a signed-in user out
+       of the (auth) group and the only Support route lived there. The line above still
+       holds for the PRE-AUTH route, which keeps its pinned dark surface and no glow.
+       The post-auth twin follows the USER'S THEME, exactly like app/(app)/privacy-policy
+       .tsx (PO 2026-08-04) — pinning is a property of the pre-auth surfaces only, so a
+       screen having a pre-auth copy never makes its post-auth copy dark. The two are not
+       the same screen either; the split is authoritative in spec §32.7
+       "Support Centre — two routes".
     2. <LoadingState /> `ai` variant only — cyan glow; unmounts the moment data renders.
        PO decision 2026-07-17; ADR-055. THE REST OF THE MOTIF IS PER PLATFORM (PO 2026-08-17):
        mobile adds a scan-line + waveform (mockup/mobile/00_loading C), web adds a pulsing

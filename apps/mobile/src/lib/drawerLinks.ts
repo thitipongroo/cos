@@ -77,7 +77,21 @@ import { CosRole } from '@cos/types';
 import { overflowTabsFor, visibleTabsFor } from './roleTabs';
 
 export interface DrawerLink {
+  /** The PATHNAME. Also what the drawer compares `usePathname()` against to mark a row active. */
   route: string;
+  /**
+   * What to push, when that is not the same string as `route` (added 2026-08-17).
+   *
+   * Needed only for a screen that exists in BOTH route groups. Expo-router groups add no path
+   * segment, so `app/(auth)/privacy-policy.tsx` and `app/(app)/privacy-policy.tsx` both resolve to
+   * `/privacy-policy` and a bare push of it is ambiguous between them — and one of the two is behind
+   * AuthGate's `isAuthenticated && inAuthGroup → /(app)/home` redirect, so guessing wrong lands the
+   * user on Home. Naming the group removes the guess. `usePathname()` still reports `/privacy-policy`
+   * either way, which is why `route` stays the bare form and the active-state check is unaffected.
+   *
+   * Rows whose screen exists in one group only (every other row here) omit it.
+   */
+  href?: string;
   labelKey: string;
   icon: keyof typeof MaterialIcons.glyphMap;
 }
@@ -429,16 +443,43 @@ const NOT_DERIVED: readonly { link: DrawerLink; roles: readonly CosRole[] }[] = 
  */
 
 /**
- * The two rows every role gets (PO 2026-08-10).
+ * The rows every role gets (PO 2026-08-10; recomposed 2026-08-17).
  *
- * Settings is the signed-in user's own account. The Support Center lives at `/support` — a route in
- * the `(auth)` group, which costs nothing here: expo-router groups add no path segment, and that
- * screen carries its own Back control, so it returns the user where they came from. It was reachable
- * only from the login footer before this, which left a signed-in user with no way to ask for help.
+ * Settings is the signed-in user's own account. The Privacy Policy is the notice PDPA §23 requires to
+ * stay available to a signed-in user, and spec §32.7 (Bottom Navigation) places it here in as many
+ * words: "Account-level destinations belong in the drawer, not the nav — Settings, Security & MFA and
+ * Privacy Policy".
+ *
+ * THE PRIVACY POLICY ROW WAS ABSENT FOR THREE DAYS AND THE SCREEN WAS UNREACHABLE FOR THEM. It was
+ * added by PO decision 2026-08-04 as `PRIVACY_LINK` in NavigationDrawer.tsx; commit 44d46a40
+ * (2026-08-09, "split account settings out of the drawer") deleted the constant and left its
+ * five-line justification comment behind, orphaned above the component. The screen stayed reachable
+ * because `AccountSettings` still carried a `profile-privacy-link` row — until commit 7f65cc59
+ * (2026-08-14) removed THAT one too, on the stated grounds that "it is a drawer row now", which had
+ * been false for five days. From 2026-08-14 nothing in the app pushed `/privacy-policy`, which also
+ * stranded `/transparency` and its eight child screens: the portal is entered from the policy's Data
+ * Collection card and from nowhere else. Restored here 2026-08-17.
+ *
+ * THE SUPPORT CENTRE ROW WAS REMOVED ON 2026-08-17, and it never worked. It was added on 2026-08-10
+ * pointing at `/support` on the reasoning that "expo-router groups add no path segment", which is
+ * true of path resolution and irrelevant to the guard: `/support` existed only in the `(auth)` group,
+ * and AuthGate (app/_layout.tsx) redirects an authenticated user out of that group
+ * (`isAuthenticated && inAuthGroup → /(app)/home`). Every press of this row went to Home. Nothing
+ * caught it because the spec below asserts the ARRAY, not that the routes resolve.
+ *
+ * The fix is app/(app)/support.tsx — an (app) twin, the same answer app/(app)/privacy-policy.tsx
+ * already gives. With that route in place the product owner ruled that the TopBar "?" is the SINGLE
+ * post-auth entry to the Support Centre rather than restoring this row alongside it, so the drawer no
+ * longer carries Support and `drawer.support` was deleted from the i18n catalogues.
  */
 export const SHARED_LINKS: readonly DrawerLink[] = [
   { route: '/account-settings', labelKey: 'drawer.settings', icon: 'settings' },
-  { route: '/support', labelKey: 'drawer.support', icon: 'support-agent' },
+  {
+    route: '/privacy-policy',
+    href: '/(app)/privacy-policy',
+    labelKey: 'drawer.privacyPolicy',
+    icon: 'privacy-tip',
+  },
 ];
 
 /** The routes that are bottom tabs for `role` — a drawer row onto one of them would be a duplicate. */
@@ -467,8 +508,10 @@ export function tabAsDrawerLink(tab: {
  * Overflow tabs come FIRST: a screen the tab table thought worth a bar slot is that role's primary
  * work, and burying it under the derived list would rank it below screens it outranks.
  *
- * A signed-out or unknown role gets nothing role-specific — the drawer then shows only the two
- * shared rows, which is what a session with no role can honestly offer.
+ * A signed-out or unknown role gets nothing role-specific — the drawer then shows only the shared
+ * rows, which is what a session with no role can honestly offer. That case is why the Privacy Policy
+ * belongs in SHARED_LINKS rather than the derived table: PDPA §23 does not stop applying to a session
+ * whose role the client could not read.
  */
 export function drawerLinksFor(role: CosRole | null | undefined): readonly DrawerLink[] {
   if (role == null) return [];
@@ -491,8 +534,10 @@ export function drawerLinksFor(role: CosRole | null | undefined): readonly Drawe
 /**
  * How many rows the drawer shows before it folds the rest away (PO decision 2026-08-10).
  *
- * Counts the role's own rows only — Settings and the Support Center sit below the divider and are
- * never folded, because "where do I get help" must not itself be two taps deep.
+ * Counts the role's own rows only — SHARED_LINKS sits below the divider and is never folded. That
+ * mattered when the Support Centre was one of them ("where do I get help" must not itself be two taps
+ * deep) and it matters more now that the Privacy Policy is: a notice PDPA §23 requires to remain
+ * available must not be hidden behind a "More" row for the six roles whose section overflows.
  */
 export const DRAWER_MAX_ROWS = 7;
 
