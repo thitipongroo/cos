@@ -58,6 +58,24 @@ overrides:
   # Pinned exactly, not ^3.1.0: puppeteer@25.5.0 (mermaid-cli) already resolves 3.1.0, so an exact pin
   # keeps ONE copy in the store instead of adding a second, newer one beside it.
   '@puppeteer/browsers@<3': '3.1.0'
+  # GHSA-ggr8-5vv4-36mx — deepmerge-ts blows the stack merging a recursive object graph. Disclosed
+  # 2026-08-17, hours after the tree it sits in was last touched: nothing here changed, the advisory
+  # arrived under a dependency that had been still for months. It surfaced only once the Lint job went
+  # green again, because `dependency-audit` has `needs: [lint, type-check]` and had been skipping.
+  #
+  # UPSTREAM CANNOT FIX IT TODAY. @prisma/config pins `deepmerge-ts: 7.1.5` EXACTLY — not a range —
+  # and prisma 7.9.1, the newest release, still pins the same version. Waiting for Prisma is waiting
+  # indefinitely, so the patched line is forced in here instead.
+  #
+  # Compatibility was verified, not assumed. @prisma/config imports exactly ONE symbol, `deepmerge`,
+  # and passes it to c12 as `merger`; 8.0.0 still exports it (and removes nothing — it adds five).
+  # All four of 8.0.0's BREAKING CHANGES miss that call site: three concern `deepmergeInto` and
+  # type-level renames (DeepMergeMetaMetaData → DeepMergeMergeInfo, DeepMergeIntoFunctionUtils →
+  # DeepMergeIntoUtils), and the fourth changes how colliding Map keys merge — a Prisma config is
+  # plain objects loaded from a .ts/.js file, not Maps. Both builds were run side by side over eight
+  # merge shapes (nested records, arrays, nulls, functions, Dates, empty objects) with identical
+  # results.
+  'deepmerge-ts@<8.0.0': '^8.0.0'
   'nanoid@<3.3.18': '^3.3.18' # GHSA-2v37-7h3g-55p8 — a custom alphabet generator loops forever when size is 0, hanging the caller; only the 3.x line is in this tree (via postcss ← next / tailwind / webpack), so the advisory's other branch (>=4.0.0 <5.1.6) needs no entry. Range widened from <3.3.17: the advisory was re-scoped after 3.3.17 shipped an incomplete fix, and now reads vulnerable <3.3.18 / patched >=3.3.18 — the pinned 3.3.17 became vulnerable again where it stood, which is what turned the audit gate red
 
 auditConfig:
