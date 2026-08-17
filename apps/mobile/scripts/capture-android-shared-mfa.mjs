@@ -1,9 +1,17 @@
 // Shared MFA-intro screenshot capture — adb/uiautomator only (same approach as
 // capture-android-home.mjs). Logs in as a SITE_WORKER (Somsak Duangdee, +66811000010) and captures
 // the one in-app screen of the MFA enrolment flow:
-//   docs/screens/android/02-shared/01-mfa/01-app-intro.png — the in-app MFA enrolment intro
+//   docs/screens/android/01-authen/02-mfa/01-app-intro.png — the in-app MFA enrolment intro
 // The Keycloak hosted-browser steps (`02`–`07` in that same folder) are captured by hand, because they
 // run outside the app where adb/uiautomator cannot drive them.
+//
+// THE FOLDER MOVED BACK on 2026-08-18: `02-shared/01-mfa/` → `01-authen/02-mfa/`, following the
+// mockup set, which moved `02_shared/01_mfa` → `01_authen/02_mfa` the same day. The move renamed the
+// committed frames but not this script — so until this line was written, the next run would have
+// recreated `02-shared/01-mfa/` beside the folder that replaced it. That is the exact failure the
+// note below records for three OTHER frames, arriving a second time from the opposite direction:
+// there the path was retired and the script kept writing it; here the path moved and the script kept
+// writing the old one. Both are "a script that still writes a stale path recreates it".
 //
 // THIS SCRIPT USED TO WRITE THREE MORE FRAMES; THEY WERE RETIRED ON 2026-08-16 (product-owner
 // decision) and their steps were removed with them:
@@ -161,7 +169,7 @@ async function main() {
   await find(byId('mfa-enroll-start'), 'MFA intro (mfa-enroll-start)', 25);
   await dismissDevBanners();
   await delay(1500);
-  await shot('02-shared/01-mfa/01-app-intro');
+  await shot('01-authen/02-mfa/01-app-intro');
 
   console.log('done.');
 }

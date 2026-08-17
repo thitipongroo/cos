@@ -1,4 +1,4 @@
-// Privacy Policy → Technical Security (mockup/mobile/01_authen/05_privacy_policy/05_technical_security).
+// Privacy Policy → Technical Security (mockup/mobile/01_authen/03_privacy_policy/04_technical_security).
 //
 // The three Core Protection cards restate controls the policy already names
 // (`privacy.policy.sections.security.controls.*`) and every one of them is spec-backed: AES-256 at

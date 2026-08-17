@@ -14,8 +14,8 @@
 //
 // The eight `privacy-*` screens joined them on 2026-08-17 (product-owner decision): the policy's five
 // sections became pushed routes instead of accordion bodies, matching
-// mockup/mobile/01_authen/05_privacy_policy/02…06, each of which is drawn as a full screen, and
-// 07…09 added the DPO contact flow and the download receipt (ADR-091). They are flat files in this
+// mockup/mobile/01_authen/03_privacy_policy/01…05, each of which is drawn as a full screen, and
+// 06…08 added the DPO contact flow and the download receipt (ADR-091). They are flat files in this
 // group rather than a nested directory — a directory under (app)/ would slip past
 // lib/__tests__/routeRegistry.spec.ts, which enumerates flat route files only, and auto-register as a
 // visible bottom tab.

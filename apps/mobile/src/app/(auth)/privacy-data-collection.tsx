@@ -1,4 +1,4 @@
-// Privacy Policy → Data Collection (mockup/mobile/01_authen/05_privacy_policy/02_data_collection).
+// Privacy Policy → Data Collection (mockup/mobile/01_authen/03_privacy_policy/01_data_collection).
 //
 // Pushed from the Data Collection row on (auth)/privacy-policy. Pre-auth only: every Transparency
 // Portal screen sits behind AuthGate and one of them renders the signed-in reader's OWN record, so a

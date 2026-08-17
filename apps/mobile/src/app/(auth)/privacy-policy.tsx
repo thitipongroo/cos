@@ -1,5 +1,10 @@
-// Privacy Policy — pre-auth route (mockup/mobile/01_authen/05_privacy_policy/01_privacy_policy,
-// renamed from 00_policy_data on 2026-08-15).
+// Privacy Policy — pre-auth route (mockup/mobile/02_shared/01_privacy_policy/00_policy_dashboard).
+//
+// The drawing has moved twice and the current location is the informative one: `00_policy_data` →
+// `01_authen/05_privacy_policy/01_privacy_policy` (2026-08-15) → `02_shared/01_privacy_policy/
+// 00_policy_dashboard` (2026-08-18). Filing it under 02_shared matches what the code already does —
+// this document is mounted at BOTH (auth)/privacy-policy and (app)/privacy-policy through one
+// <PrivacyPolicyDocument />, so it belongs to neither group alone.
 //
 // Route placement: this lives in the (auth) group on purpose. The root AuthGate
 // (app/_layout.tsx) redirects every non-(auth) route to login while unauthenticated, and the screen
@@ -21,7 +26,7 @@
 // so there is nowhere for a pre-auth reader to go.
 //
 // It — and the other four rows — DO push a section screen (`onSection`, PO decision 2026-08-17).
-// mockup/mobile/01_authen/05_privacy_policy draws 02…06 as five full screens, and this screen's own
+// mockup/mobile/01_authen/03_privacy_policy draws 01…05 as five full screens, and this screen's own
 // drawing carries EMPTY accordion bodies, so the rows were always meant to lead somewhere. The route
 // name is derived from the section id through SECTION_ROUTE below rather than interpolated, so a
 // renamed section fails to compile instead of pushing a route that does not exist.

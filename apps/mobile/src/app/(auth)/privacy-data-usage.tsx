@@ -1,4 +1,4 @@
-// Privacy Policy → Data Usage (mockup/mobile/01_authen/05_privacy_policy/03_data_usage).
+// Privacy Policy → Data Usage (mockup/mobile/01_authen/03_privacy_policy/02_data_usage).
 //
 // The drawing's fourth tile says the data trains "ConstructSafe" AI models. Two things are wrong with
 // that as shipped copy and both are fixed here rather than reproduced: the product is Construction

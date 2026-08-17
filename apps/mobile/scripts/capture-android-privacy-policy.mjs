@@ -8,13 +8,26 @@
 // frames document. docs/screens/android/README.md is updated to match — its note that "nothing
 // recreates the folders" was true only while this file did not exist.
 //
-// Writes six full-page frames:
-//   00-privacy-policy-preauth   the policy itself — five section rows, as the screen opens
-//   01-data-collection          what is collected today, and what is only planned
-//   02-data-usage               what the data is used for
-//   03-pdpa-gdpr                principles, regional compliance, residency, certification status
-//   04-technical-security       encryption, network guard, tenant isolation, infrastructure
-//   05-user-rights              the four PDPA/GDPR rights + the Authenticate action
+// IT WRITES TO TWO FOLDERS, and the split follows the mockup restructure of 2026-08-18.
+//
+//   docs/screens/android/02-shared/01-privacy-policy/
+//     00-policy-dashboard       the policy itself — five section rows, as the screen opens
+//
+//   docs/screens/android/01-authen/03-privacy-policy/
+//     01-data-collection        what is collected today, and what is only planned
+//     02-data-usage             what the data is used for
+//     03-pdpa-gdpr              principles, regional compliance, residency, certification status
+//     04-technical-security     encryption, network guard, tenant isolation, infrastructure
+//     05-user-rights            the four PDPA/GDPR rights + the Authenticate action
+//     06-contact                the DPO contact form (ADR-091)
+//     07-download-complete      the policy PDF on the device, with its digest checked
+//
+// The policy screen sits in 02-shared because it is not a pre-auth screen: one
+// <PrivacyPolicyDocument /> is mounted at BOTH (auth)/privacy-policy and (app)/privacy-policy. Its
+// drawing moved the same way on the same day — mockup/mobile/02_shared/01_privacy_policy/
+// 00_policy_dashboard. The seven screens BELOW it are
+// pre-auth only and stay in 01-authen, which is why this one script writes to two places rather than
+// being split in two: they are one walk through one flow.
 //
 // The five section frames are NOT the ones removed on 2026-08-07. Those were the same document with
 // one accordion body expanded — duplicates of the post-auth capture, which is why they went. These
@@ -40,7 +53,11 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const OUT = resolve(HERE, '../../../docs/screens/android/01-authen/03-privacy-policy');
+const SCREENS = resolve(HERE, '../../../docs/screens/android');
+/** The seven pre-auth screens pushed from the policy. */
+const OUT = join(SCREENS, '01-authen/03-privacy-policy');
+/** The policy document itself — shared between the pre-auth and post-auth routes. */
+const OUT_SHARED = join(SCREENS, '02-shared/01-privacy-policy');
 const TMP = process.env['TEMP'] ?? process.env['TMP'] ?? HERE;
 const STITCH = join(HERE, 'stitch-fullpage.py');
 const PKG = 'com.constructionos.cos';
@@ -145,8 +162,8 @@ function grab(path) {
  * scripts/stitch-fullpage.py (docs/screens/android/README.md: every committed screen is one
  * full-page image).
  */
-async function stitchFull(name) {
-  const dest = join(OUT, `${name}.png`);
+async function stitchFull(name, dir = OUT) {
+  const dest = join(dir, `${name}.png`);
   mkdirSync(dirname(dest), { recursive: true });
   for (let i = 0; i < 8; i++) {
     adb('shell', 'input', 'swipe', '540', '700', '540', '1900', '300');
@@ -221,6 +238,7 @@ const DOWNLOAD = {
 
 async function main() {
   mkdirSync(OUT, { recursive: true });
+  mkdirSync(OUT_SHARED, { recursive: true });
   // 8081 Metro; 3000 the backend, needed only by the download step at the end.
   adb('reverse', 'tcp:8081', 'tcp:8081');
   adb('reverse', 'tcp:3000', 'tcp:3000');
@@ -235,7 +253,10 @@ async function main() {
   await tapUntil('privacy-policy-link', 'privacy-policy', 'Privacy Policy footer link');
   await delay(600);
   await dismissDevBanners();
-  await stitchFull('00-privacy-policy-preauth');
+  // 02-shared, not 01-authen: this is the shared document, and its file was moved there on
+  // 2026-08-18 (git records the rename). Writing it back to 01-authen would silently rebuild the
+  // structure that move retired — which is exactly how a capture script drifts from its tree.
+  await stitchFull('00-policy-dashboard', OUT_SHARED);
 
   for (const section of SECTIONS) {
     console.log(section.file);
@@ -272,7 +293,7 @@ async function main() {
   await stitchFull(CONTACT.file);
 
   if (process.argv.includes('--skip-download')) {
-    console.log(`\nDone (download skipped) → ${OUT}`);
+    console.log(`\nDone (download skipped) → ${OUT_SHARED} + ${OUT}`);
     return;
   }
 
@@ -302,7 +323,7 @@ async function main() {
   await delay(600);
   await stitchFull(DOWNLOAD.file);
 
-  console.log(`\nDone → ${OUT}`);
+  console.log(`\nDone → ${OUT_SHARED} + ${OUT}`);
 }
 
 main().catch((err) => {

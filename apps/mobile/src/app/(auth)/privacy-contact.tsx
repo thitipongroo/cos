@@ -1,5 +1,5 @@
 // Privacy Policy → Contact the Data Protection Office
-// (mockup/mobile/01_authen/05_privacy_policy/07_data_protection_contact).
+// (mockup/mobile/01_authen/03_privacy_policy/06_data_protection_contact).
 //
 // Pushed from the DPO contact row on (auth)/privacy-policy. Pre-auth: the sender has no account, and
 // `POST /privacy/inquiries` is the one write in this app that reaches the backend with no token at

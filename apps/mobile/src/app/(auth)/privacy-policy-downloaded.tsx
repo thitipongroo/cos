@@ -1,5 +1,5 @@
 // Privacy Policy → Download complete
-// (mockup/mobile/01_authen/05_privacy_policy/09_privacy_download_success).
+// (mockup/mobile/01_authen/03_privacy_policy/08_privacy_download_success).
 //
 // Reached with router.replace after the file is on disk, carrying what was actually written: the file
 // name the server published, the size measured on disk, and the SHA-256 computed over the bytes that

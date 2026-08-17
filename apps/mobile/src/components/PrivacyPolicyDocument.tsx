@@ -16,8 +16,8 @@
 //     Portal (PO decision 2026-08-04), so it navigates instead of expanding. Pre-auth it has nowhere
 //     to go: every portal screen is behind AuthGate and one of them shows the user's own record.
 //   - `onSection` — pre-auth, ALL FIVE rows navigate to their own screen (PO decision 2026-08-17),
-//     because mockup/mobile/01_authen/05_privacy_policy draws 02…06 as full screens and its
-//     `01_privacy_policy` accordion items are literally empty: the drawing carries no inline bodies
+//     because mockup/mobile/01_authen/03_privacy_policy draws 01…05 as full screens and this
+//     document's own drawing has empty accordion items: it carries no inline bodies
 //     at all, so the rows were always meant to lead somewhere. Post-auth does NOT pass it and keeps
 //     the accordion — that route already has the Transparency Portal beneath it, and stacking a
 //     second set of section screens under a shell that has its own TopBar and breadcrumb would put
@@ -530,7 +530,7 @@ const makeStyles = (p: Palette, accent: string, glow: boolean) =>
       gap: spacing.sm,
     },
     // Uppercase, as the drawing sets them (`<h3>DATA COLLECTION</h3>` in
-    // mockup/mobile/01_authen/05_privacy_policy/01_privacy_policy). Applied here rather than in the
+    // mockup/mobile/02_shared/01_privacy_policy/00_policy_dashboard). Applied here rather than in the
     // i18n value so the stored string stays natural: the same five keys title the screens these rows
     // now push, where they render as ordinary sentence case. Thai has no case, so `th` is unaffected.
     cardTitle: {

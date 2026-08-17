@@ -2,7 +2,7 @@
 //
 // Why it exists: product-owner decision 2026-08-17 split the policy's five sections out of the
 // accordion in <PrivacyPolicyDocument /> into five pushed routes, matching
-// mockup/mobile/01_authen/05_privacy_policy/02_data_collection … 06_user_rights, each of which is
+// mockup/mobile/01_authen/03_privacy_policy/01_data_collection … 05_user_rights, each of which is
 // drawn as a full screen with its own app bar. The five drawings share one layout — an intro
 // paragraph over groups of icon-and-prose cards — so they share one component and differ only in the
 // data passed to it. Five copies of this file would be the largest clone in the app and would fail

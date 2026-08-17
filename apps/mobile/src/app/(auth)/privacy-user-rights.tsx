@@ -1,4 +1,4 @@
-// Privacy Policy → User Rights (mockup/mobile/01_authen/05_privacy_policy/06_user_rights).
+// Privacy Policy → User Rights (mockup/mobile/01_authen/03_privacy_policy/05_user_rights).
 //
 // The four rights are the drawing's, and all four are exercisable rather than aspirational: PDPA §30
 // access and §31 portability are served by the data-export endpoints behind

@@ -650,12 +650,14 @@ Policy). These screens may use the "technical / mission-critical" motif — a ro
 `architecture` mark, and a cyan glow on progress/accent elements — because the entry sequence is
 where the "mission-critical operating system" personality is set, before any project data is on
 screen (product-owner decision 2026-07-16; reference
-`mockup/mobile/01_authen/04_verification_loading_mobile`). **Privacy Policy** was added to this
-exception by product-owner decision 2026-08-03 (reference
-`mockup/mobile/01_authen/05_privacy_policy/01_privacy_policy`, renamed from `00_policy_data` on
-2026-08-15): it is reached from the login footer and
-is pre-auth by construction, so the same "no project data on screen" rationale applies — the glow is
-scoped to the brand logo on that screen and nothing else.
+`mockup/mobile/01_authen/01_login/04_verification_loading_mobile`). **Privacy Policy** was added to
+this exception by product-owner decision 2026-08-03 (reference
+`mockup/mobile/02_shared/01_privacy_policy/00_policy_dashboard` — `00_policy_data` →
+`01_authen/05_privacy_policy/01_privacy_policy` on 2026-08-15 → its present path on 2026-08-18, where
+it joins the shared set because one `<PrivacyPolicyDocument />` serves both the pre-auth and
+post-auth routes): it is reached from the login footer and is pre-auth by construction, so the same
+"no project data on screen" rationale applies — the glow is scoped to the brand logo on that screen
+and nothing else.
 
 **Exception 2 — loading states** (product-owner decision 2026-07-17; ADR-055; reference
 `mockup/mobile/00_loading` + `mockup/desktop/imp_002_universal_loading_component_desktop_view`).
@@ -811,11 +813,11 @@ Dark screens (the pre-2026-08-04 set — see the note above):
 
 | Screen                                  | Reference                                                      |
 | --------------------------------------- | -------------------------------------------------------------- |
-| Login                                   | `mockup/mobile/01_authen/01_landing_page_login_mobile/`        |
-| OTP verify                              | `mockup/mobile/01_authen/02_login_otp_verification_mobile/`    |
-| Session-securing overlay                | `mockup/mobile/01_authen/04_verification_loading_mobile/`      |
-| Privacy Policy (pre-auth)               | `mockup/mobile/01_authen/05_privacy_policy/01_privacy_policy`  |
-| Terms of Use (pre-auth)                 | `mockup/mobile/01_authen/06_terms_of_use/01_dashboard/`        |
+| Login                                   | `mockup/mobile/01_authen/01_login/01_landing_page_login_mobile/`     |
+| OTP verify                              | `mockup/mobile/01_authen/01_login/02_login_otp_verification_mobile/` |
+| Session-securing overlay                | `mockup/mobile/01_authen/01_login/04_verification_loading_mobile/`   |
+| Privacy Policy                          | `mockup/mobile/02_shared/01_privacy_policy/00_policy_dashboard`      |
+| Terms of Use (pre-auth)                 | `mockup/mobile/01_authen/04_terms_of_use/01_terms_of_use_dashboard/` |
 | Support Centre (pre-auth)               | drawing withdrawn 2026-08-15 — see the note below it           |
 | Project Manager / Proc Manager screens  | `mockup/mobile/06_project_manager/`                            |
 | Site Engineer Home                      | `mockup/mobile/03_site_engineer/01_home/01_se_home_dashboard/` |
@@ -849,6 +851,18 @@ drawn rows leading — so citing one role's drawing would claim a menu this prod
 `apps/mobile/src/lib/drawerLinks.ts` names those four rows and is now the record of what the withdrawn drawings
 specified. ADR-085 applies as written: a drawing is authoritative for STYLE, not for existence, and does not remove
 reviewed working capability — the drawer, Account Settings and Profile Settings screens all stand.
+
+**The whole `01_authen/` tree was renumbered on 2026-08-18**, and every Reference cell above is
+repointed to match. Login, OTP and the overlay moved into `01_login/`; MFA came back from
+`02_shared/01_mfa` to `01_authen/02_mfa`; `05_privacy_policy/` became `03_privacy_policy/` with its
+screens shifted down one (`02_data_collection` → `01_data_collection`, and so on to
+`09_privacy_download_success` → `08_privacy_download_success`); `06_terms_of_use/` → `04_terms_of_use/`
+and `07_get_help/` → `05_get_help/`. The policy DOCUMENT went the other way, out of `01_authen/`
+entirely and into `02_shared/`, which is the one move that is more than renumbering: one
+`<PrivacyPolicyDocument />` renders it at both `(auth)/privacy-policy` and `(app)/privacy-policy`, so
+it belongs to neither flow. `docs/screens/android/` was restructured the same way on the same day.
+Terms of Use also gained a second drawing, `02_terms_of_use_download`, which the app does not
+implement — the terms download is still rendered disabled (2026-08-09).
 
 **The Support Centre keeps its row on the same terms, and the Privacy Policy row was repointed rather
 than withdrawn.** One commit on **2026-08-15** restructured `mockup/mobile/01_authen/05_privacy_policy/`

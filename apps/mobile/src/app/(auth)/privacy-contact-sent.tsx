@@ -1,5 +1,5 @@
 // Privacy Policy → Inquiry submitted
-// (mockup/mobile/01_authen/05_privacy_policy/08_data_protection_submit_success).
+// (mockup/mobile/01_authen/03_privacy_policy/07_data_protection_submit_success).
 //
 // Reached with router.replace from the form, carrying the reference and timestamp the server
 // returned. Nothing here is fabricated: both values come off the response, and the screen shows

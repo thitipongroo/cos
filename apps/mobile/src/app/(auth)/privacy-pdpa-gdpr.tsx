@@ -1,4 +1,4 @@
-// Privacy Policy → PDPA & GDPR (mockup/mobile/01_authen/05_privacy_policy/04_pdpa_gdpr).
+// Privacy Policy → PDPA & GDPR (mockup/mobile/01_authen/03_privacy_policy/03_pdpa_gdpr).
 //
 // THE CERTIFICATION ROW IS THE REASON THIS FILE HAS A LONG COMMENT. The drawing stamps
 // "ISO/IEC 27001:2022 — ACTIVE" and "SOC 2 Type II — ACTIVE". Neither is held:

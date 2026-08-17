@@ -9,9 +9,9 @@
 
 ## Context
 
-`mockup/mobile/01_authen/05_privacy_policy/07_data_protection_contact` draws a contact form on the
+`mockup/mobile/01_authen/03_privacy_policy/06_data_protection_contact` draws a contact form on the
 **pre-auth** Privacy Policy: full name, email, phone, inquiry category (General / Data Access / Data
-Correction / Data Deletion / Security Concern), subject, message, and a document attachment. `08`
+Correction / Data Deletion / Security Concern), subject, message, and a document attachment. `07`
 draws its success state with a reference number, an SHA-256 digest and a submission timestamp.
 
 Nothing in the platform can accept that form today, and the product-owner decision of 2026-08-17 was
@@ -75,7 +75,7 @@ own STRIDE row (§5.9), ClamAV scanning and quarantine (§9), and a size/rate bu
 alone does not give. None of that is required to lodge a request — PDPA §30 asks the controller to
 answer, not the subject to prove anything up front — so it is out of v1 rather than half-built.
 
-**Why the reference number is not a hash of the message.** `08` draws an "SHA-256 Integrity Hash".
+**Why the reference number is not a hash of the message.** `07` draws an "SHA-256 Integrity Hash".
 A digest of a message the sender still holds proves only that the row was not edited afterwards,
 which is what the append-only audit log already provides. What the sender needs is a handle they can
 quote, so the screen shows the reference and the submission timestamp, and the audit-metadata block
@@ -139,7 +139,7 @@ built once, with the PDF's CreationDate/ModDate pinned to the effective date so 
 clock stamp cannot move them. The server publishes the digest before the transfer and
 `apps/mobile/src/lib/policyDownload.ts` recomputes it over the bytes that reached the device, so
 "verified" answers a question a reader can act on. This is the opposite call from the SHA-256 the
-drawing puts on the inquiry receipt (`08`), which was dropped: hashing a message the sender still
+drawing puts on the inquiry receipt (`07`), which was dropped: hashing a message the sender still
 holds proves nothing about what the server stored.
 
 **English only.** pdf-lib's standard fonts carry no Thai glyphs; a Thai edition needs an embedded
