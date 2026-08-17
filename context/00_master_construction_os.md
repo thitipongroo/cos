@@ -5783,6 +5783,41 @@ ROOT CAUSE PREVENTION RULES (prevent recurring bugs):
     (root cause: ~12 providers created clients with no cleanup → BOQ integration ran
     32 min before being killed; pods severed connections abruptly on SIGTERM)
 
+  Rule 40 — Every surface that waits for data renders its wait through <LoadingState />
+    (prevents Bug-class: a specified component drifting out of use while screens hand-roll
+    their own indicators). Authoritative component: spec §32.7 "Loading State"; ADR-055.
+    Applies whenever a screen, region, list, card or button gains an async state — a fetch,
+    a submit, a sync flush, an AI job:
+    (a) Render the loading state with <LoadingState />, choosing the variant by the SHAPE of
+        what it stands in for, not by convenience:
+          widget — a card, tile or dashboard panel
+          list   — a stacked list or feed (mobile)
+          table  — data-table rows (web; §32.7 prohibits tables on mobile)
+          ai     — an AI job, not a plain fetch
+          micro  — inline, or inside a button
+    (b) NEVER hand-roll one. No <ActivityIndicator>. No View/div doing its own skeleton or
+        spinner. No line of text standing in for a loading state. No placeholder glyph ("…").
+        The last two have no signature a script can match — they are ordinary markup — so they
+        are caught in review or not at all. That is why this rule is written down.
+    (c) Mobile: a region that reveals content once it settles is wrapped in <LoadingBoundary>,
+        not swapped by a ternary. A determinate loader is driven to 100 and held one fill
+        before the crossfade, so the run the user is watching actually completes.
+    (d) Copy is the caller's: `label` takes an already-translated string from an i18n key
+        (QM-3). The component holds no key and no literal.
+    (e) Progress is the caller's: pass `progress` only when a real percentage exists. Omitted
+        means indeterminate, which renders NO percentage — never fabricate one.
+    (f) Any ink override (`tone`, `color`) must clear WCAG SC 1.4.11 (3:1) against the surface
+        it actually sits on, and 4.5:1 if it also colours text (§20.8). MEASURE it — on
+        2026-08-17 every cyan in the product measured below 3:1 on a --mobile-primary button,
+        while reading as obviously fine.
+    Enforced for the two machine-checkable classes by scripts/ci/check-loading-state.sh,
+    wired into the CI lint job. A PASS there does NOT mean (b)'s text and placeholder cases
+    are clean.
+    (root cause: 24 hand-rolled indicators accumulated after <LoadingState /> was specified —
+    22 <ActivityIndicator> in apps/mobile and 2 raw skeleton blocks in apps/web — and web's
+    own <LoadingState /> reached zero production consumers, with ~35 list pages rendering a
+    plain "Loading…" line through one shared DataTable)
+
 25. When a rule in this document conflicts with a command in a Phase:
 
     THIS RULE SECTION takes precedence — surface the conflict, do not guess.

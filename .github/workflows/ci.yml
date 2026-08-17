@@ -107,6 +107,14 @@ jobs:
       - name: Unit-test env covers every getOrThrow key
         run: bash ./scripts/ci/check-unit-test-env.sh
 
+      # Rule 40. Same shape again: a component was specified (<LoadingState />, §32.7 / ADR-055) and
+      # then 24 hand-rolled loading indicators accumulated beside it, because nothing compared the
+      # spec to what screens rendered. Repo-wide, not changed-files-only — the drift is per-screen
+      # and a new screen is exactly the case this guards. Catches the two grep-able classes; the
+      # text-only and placeholder classes are Rule 40(b)'s job, not this script's.
+      - name: Loading states go through <LoadingState />
+        run: bash ./scripts/ci/check-loading-state.sh
+
   # ─── MLOps tests (Python / Airflow 3.x DAGs) ────────────────────────────────
   mlops-tests:
     name: MLOps Tests (Python)
