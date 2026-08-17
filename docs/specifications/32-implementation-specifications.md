@@ -1297,6 +1297,17 @@ owns no data source, no timer, and no i18n copy.
 
 Rules:
 
+- **This component is the only way to render a loading state.** A screen, region, list, card or
+  button that waits for data — a fetch, a submit, a sync flush, an AI job — renders that wait with
+  `<LoadingState />`, never a raw `ActivityIndicator`, a hand-made skeleton `View`/`div`, a line of
+  text, or a placeholder glyph (`…`). On 2026-08-17 a sweep found 24 hand-rolled indicators that had
+  accumulated beside this component, and web's own copy had reached **zero** production consumers
+  while ~35 list pages showed a plain "Loading…" line through one shared `DataTable` — a component
+  can be specified here and still go unused, which is what this rule exists to stop. The per-task
+  obligation, including which variant a given shape takes, is **Rule 40**
+  (`context/00_master_construction_os.md` § ROOT CAUSE PREVENTION RULES);
+  `scripts/ci/check-loading-state.sh` gates the two machine-checkable classes in the CI lint job and
+  by design cannot see the text and placeholder ones.
 - **Tokens only.** Mobile reads `colors` / `darkColors` from `apps/mobile/src/theme/tokens.ts`;
   web reads Tailwind token utilities. No hardcoded hex, no arbitrary values.
 - **Caller owns progress.** The component does not read the sync queue, an AI job, or any store —
