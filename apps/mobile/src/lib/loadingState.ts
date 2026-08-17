@@ -10,6 +10,7 @@
 // are not (jest.config.ts collectCoverageFrom excludes src/components/**, and react-native is mocked
 // wholesale, so a component cannot be rendered under jest at all).
 
+import { isDeterminate } from '@cos/ui-logic';
 import { colors, darkColors } from '../theme/tokens';
 
 export {
@@ -41,6 +42,8 @@ export interface LoadingPalette {
   readonly accent: string | null;
   /** Offline-sync-in-progress accent (mockup's `sync-active`) — the `list` variant's sync spinner. */
   readonly syncing: string;
+  /** Ink on a primary-filled surface — what a `micro` loader inside a CTA button draws with. */
+  readonly onPrimary: string;
 }
 
 /** Skeleton bars are the surface's neighbour, tinted — the §32.7 tonal-layer rule, not a new token. */
@@ -57,6 +60,7 @@ export function resolvePalette(theme: LoadingTheme): LoadingPalette {
       primary: darkColors.primary,
       accent: darkColors.cyan,
       syncing: darkColors.syncing,
+      onPrimary: darkColors.onPrimary,
     };
   }
   return {
@@ -67,7 +71,23 @@ export function resolvePalette(theme: LoadingTheme): LoadingPalette {
     primary: colors.primary,
     accent: null,
     syncing: colors.syncing,
+    // The light set defines no `onPrimary`; `bg` is the token §32.7 documents as the on-colour ink.
+    onPrimary: colors.bg,
   };
+}
+
+/**
+ * Where a `micro` loader is drawn, which decides which ink it takes.
+ *
+ * `onPrimary` is for a loader sitting INSIDE a primary-filled control — a submit button mid-request,
+ * which is the mockup's "Variant D / inside a button" case. Drawing `primary` there would put the
+ * ring in the button's own fill colour and it would disappear. Everywhere else takes `default`.
+ */
+export type LoadingTone = 'default' | 'onPrimary';
+
+/** The ink a `micro` loader's ring and percentage take for the given tone. */
+export function resolveToneColor(palette: LoadingPalette, tone: LoadingTone): string {
+  return tone === 'onPrimary' ? palette.onPrimary : palette.primary;
 }
 
 /**
@@ -96,4 +116,27 @@ export function listRowWidths(row: number): { title: string; subtitle: string } 
     { title: '50%', subtitle: '60%' },
   ];
   return widths[row % widths.length];
+}
+
+/** How long <LoadingState />'s fill eases to a new value — its own `advance` timing. */
+export const FILL_DURATION_MS = 600;
+
+/** How long <LoadingBoundary /> takes to crossfade the settled loader out over the real content. */
+export const CROSSFADE_MS = 260;
+
+/**
+ * How long <LoadingBoundary /> holds a finished loader at 100% before starting its crossfade
+ * (product-owner decision 2026-08-17 — "บังคับให้ bar วิ่งถึง 100 ก่อน fade").
+ *
+ * Why it exists: a fetch settles whenever it settles, which is usually while the bar is mid-travel —
+ * so the loader used to vanish at, say, 70%, and the completion the user was watching for never
+ * happened on screen. Holding for one fill duration lets the bar and the counting percentage finish
+ * their run to 100 first, which is the moment the mockup's progress animation is about.
+ *
+ * Indeterminate callers get 0: with no honest percentage there is no bar to fill and nothing to
+ * arrive at, so holding would just delay the content for a sweep that never completes (ADR-055
+ * honest-data policy — the component must not imply a progress it does not have).
+ */
+export function completionHoldMs(progress?: number): number {
+  return isDeterminate(progress) ? FILL_DURATION_MS : 0;
 }

@@ -25,11 +25,12 @@
 // The Export / Update-preferences actions render disabled: PDPA-10/11/14 are OPEN, no route exists.
 
 import { useEffect, useState } from 'react';
-import { ScrollView, View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { ScrollView, View, Text, StyleSheet } from 'react-native';
+import { LoadingState } from '../../components/LoadingState';
 import { useRouter } from 'expo-router';
 import { get } from '../../api/client';
 import { useT } from '../../i18n';
-import { usePalette } from '../../theme/usePalette';
+import { usePalette, useIsDark } from '../../theme/usePalette';
 import { useAuthStore } from '../../store/authStore';
 import { fontFamily, spacing, typography } from '../../theme/tokens';
 import type { Palette } from '../../theme/palette';
@@ -77,6 +78,7 @@ const PURPOSES = [
 export default function TransparencyIdentityScreen(): React.JSX.Element {
   const t = useT();
   const pal = usePalette();
+  const isDark = useIsDark();
   const styles = makeStyles(pal);
   const router = useRouter();
   const role = useAuthStore((s) => s.role);
@@ -129,7 +131,11 @@ export default function TransparencyIdentityScreen(): React.JSX.Element {
         tag={t('transparency.identity.schemaTag')}
       />
       {loading ? (
-        <ActivityIndicator testID="transparency-identity-loading" color={pal.primary} />
+        <LoadingState
+          testID="transparency-identity-loading"
+          variant="list"
+          theme={isDark ? 'dark' : 'light'}
+        />
       ) : (
         <View style={styles.fields}>
           {offline ? (

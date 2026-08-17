@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { Controller } from 'react-hook-form';
 import { NativeSelectField } from '../../../../../components/form/NativeSelectField';
 import { TextInputField } from '../../../../../components/form/TextInputField';
+import { LoadingState } from '../../../../../components/ui/LoadingState';
 import { useI18n } from '../../../../../i18n';
 import {
   useAllPurchaseOrders,
@@ -180,7 +181,11 @@ export default function RecordDeliveryPage() {
           />
         </div>
 
-        {poId && detail.isLoading && <p className="text-sm text-gray-500">{t('common.loading')}</p>}
+        {poId && detail.isLoading && (
+          // §32.7 loading component (ADR-055) rather than a bare paragraph — the inline `micro`
+          // shape is the mockup's in-button/inline indicator, and it keeps the copy caller-owned.
+          <LoadingState variant="micro" label={t('common.loading')} />
+        )}
 
         {lines.length > 0 && (
           <div className="overflow-x-auto rounded-md border border-gray-200">

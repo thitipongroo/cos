@@ -1028,8 +1028,11 @@ Avoid in all visual work:
        routes (2026-08-09) are pre-auth, are pinned dark like the rest, and ship with NO
        glow — they are opened FROM an entry screen rather than being one. Adding a
        pre-auth screen does not add it here.
-    2. <LoadingState /> `ai` variant only — cyan glow, scan-line, waveform; unmounts the
-       moment data renders. PO decision 2026-07-17; ADR-055.
+    2. <LoadingState /> `ai` variant only — cyan glow; unmounts the moment data renders.
+       PO decision 2026-07-17; ADR-055. THE REST OF THE MOTIF IS PER PLATFORM (PO 2026-08-17):
+       mobile adds a scan-line + waveform (mockup/mobile/00_loading C), web adds a pulsing
+       processor plate + ping dot and has NEITHER (mockup/desktop/imp_002_… C). One component,
+       two drawings — do not port one platform's pair onto the other. Spec §32.7 Exception 2.
   Everywhere the signed-in app shows project data, the prohibition holds.
   Amber stays a semantic warning token — only its use as a *brand* colour is prohibited.
   Authoritative: spec §32.7 "Exception 1 / Exception 2".
@@ -1354,6 +1357,11 @@ Core components (React Native — implement in apps/mobile/):
                         `progress` (0–100, omit = indeterminate) and `label` (pre-translated).
                         Mobile variants: widget | list | ai | micro (no `table` — see below).
                         Web variants:    widget | table | ai | micro (no `list`).
+                        `tone="onPrimary"` (mobile, micro only) for a loader inside a
+                        primary-filled button — the default ink is that button's own fill.
+                        A DETERMINATE LOADER FINISHES ITS RUN before it is replaced: the bar is
+                        driven to 100 and held one fill duration, then <LoadingBoundary />
+                        crossfades to the content (PO 2026-08-17). Indeterminate holds 0ms.
                         Full contract: spec §32.7 "Loading State"; ADR-055.
 
 Form components:

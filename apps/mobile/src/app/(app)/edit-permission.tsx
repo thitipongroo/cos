@@ -11,16 +11,8 @@
 // recommendation is dropped for an honest shell. Save persists via PUT /users/:id/roles.
 
 import { useEffect, useMemo, useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  Modal,
-  ActivityIndicator,
-  StyleSheet,
-  Alert,
-} from 'react-native';
+import { View, Text, ScrollView, Pressable, Modal, StyleSheet, Alert } from 'react-native';
+import { LoadingState } from '../../components/LoadingState';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { getUserRoles, setUserRoles } from '../../api/users';
@@ -302,7 +294,7 @@ export default function EditPermissionScreen(): React.JSX.Element {
           testID="save-roles"
         >
           {saving ? (
-            <ActivityIndicator color={darkColors.onPrimary} />
+            <LoadingState variant="micro" theme="dark" tone="onPrimary" />
           ) : (
             <>
               <MaterialIcons name="save" size={20} color={darkColors.onPrimary} />

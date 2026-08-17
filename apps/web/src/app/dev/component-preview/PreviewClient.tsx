@@ -2,12 +2,7 @@
 
 import { useState } from 'react';
 import { ImageWithFallback } from '../../../components/ui/ImageWithFallback';
-import {
-  LoadingState,
-  SkeletonCard,
-  LoadingSpinner,
-  EmptyState,
-} from '../../../components/ui/LoadingState';
+import { LoadingState, EmptyState } from '../../../components/ui/LoadingState';
 import { VoiceInput } from '../../../components/ui/VoiceInput';
 import { LocationDisplay } from '../../../components/ui/LocationDisplay';
 
@@ -66,13 +61,12 @@ export function PreviewClient() {
         <LoadingState variant="micro" />
       </section>
 
-      <section data-testid="loading-skeleton">
-        <SkeletonCard />
-      </section>
-
-      <section data-testid="loading-spinner">
-        <LoadingSpinner size="md" />
-      </section>
+      {/* `SkeletonCard` / `LoadingSpinner` used to be previewed here. Both were deleted on
+          2026-08-17 (product-owner decision, reversing ADR-055 decision 8): they drew the SAME two
+          mockup patterns <LoadingState /> already draws — the widget's plate-plus-two-bars card and
+          the micro spinner — but off-token (`gray-200`, `rounded-xl`, a round plate where the mockup
+          has a rounded square), so the app carried two implementations of one specified component.
+          Their shapes live on as `variant="widget"` and `variant="micro"` in the sections above. */}
 
       <section data-testid="empty-state">
         <EmptyState

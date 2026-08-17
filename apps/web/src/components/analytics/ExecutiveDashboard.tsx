@@ -11,6 +11,7 @@ import {
   Legend,
   Cell,
 } from 'recharts';
+import { LoadingState } from '../ui/LoadingState';
 
 export interface ExecutiveDashboardRow {
   projectId: string;
@@ -32,7 +33,16 @@ const ACTUAL_COLOR = '#3b82f6'; // blue-500
 const BUDGET_COLOR = '#e5e7eb'; // gray-200
 
 export function ExecutiveDashboard({ data, isLoading }: Props) {
-  if (isLoading) return <div className="h-64 animate-pulse rounded-lg bg-gray-100" />;
+  // The §32.7 loading component (ADR-055) rather than the bare `bg-gray-100` block this rendered
+  // before — that block was off-token, which §32.7 "Tokens only" forbids. The wrapper keeps the
+  // chart's reserved height so settling data does not jump the page. No `label`: this component
+  // takes no `t`, and ADR-055 forbids baking a literal.
+  if (isLoading)
+    return (
+      <div className="h-64">
+        <LoadingState variant="widget" />
+      </div>
+    );
   if (!data || data.length === 0)
     return <p className="text-sm text-gray-500">No data available.</p>;
 

@@ -22,13 +22,13 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
   Image,
   Modal,
   FlatList,
   Pressable,
   ScrollView,
 } from 'react-native';
+import { LoadingState } from '../../components/LoadingState';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
@@ -289,7 +289,7 @@ export default function LoginScreen() {
                 disabled={busy || nationalNumber.length !== country.nationalDigits}
               >
                 {busy ? (
-                  <ActivityIndicator color={darkColors.onPrimary} />
+                  <LoadingState variant="micro" theme="dark" tone="onPrimary" />
                 ) : (
                   <>
                     <Text style={styles.buttonText}>{t('auth.login.sendOtp')}</Text>
@@ -311,7 +311,7 @@ export default function LoginScreen() {
                 disabled={!request || oidcBusy}
               >
                 {oidcBusy ? (
-                  <ActivityIndicator color={darkColors.primary} />
+                  <LoadingState variant="micro" theme="dark" />
                 ) : (
                   <>
                     <MaterialIcons name="corporate-fare" size={20} color={darkColors.primary} />
@@ -468,7 +468,7 @@ export default function LoginScreen() {
               disabled={busy || otp.trim().length !== 6}
             >
               {busy ? (
-                <ActivityIndicator color={darkColors.onPrimary} />
+                <LoadingState variant="micro" theme="dark" tone="onPrimary" />
               ) : (
                 <>
                   <Text style={styles.buttonText}>{t('auth.login.verifyContinue')}</Text>

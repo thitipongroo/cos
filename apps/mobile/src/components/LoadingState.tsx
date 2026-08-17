@@ -32,6 +32,7 @@ import Svg, {
 } from 'react-native-svg';
 import {
   resolvePalette,
+  resolveToneColor,
   formatPercent,
   clampProgress,
   aiMotifEnabled,
@@ -40,6 +41,7 @@ import {
   LIST_SKELETON_ROWS,
   type LoadingVariant,
   type LoadingTheme,
+  type LoadingTone,
   type LoadingPalette,
 } from '../lib/loadingState';
 import { fontFamily, radius, spacing, typography } from '../theme/tokens';
@@ -69,6 +71,12 @@ export interface LoadingStateProps {
   theme: LoadingTheme;
   /** Rows for the `list` variant. Defaults to the three the mockup shows. */
   rows?: number;
+  /**
+   * `micro` only — which ink the ring and percentage take. Pass `onPrimary` when the loader sits
+   * inside a primary-filled control (a submit button mid-request, the mockup's "inside a button"
+   * case); the default `primary` ink would vanish into the button's own fill.
+   */
+  tone?: LoadingTone;
   testID?: string;
 }
 
@@ -211,12 +219,12 @@ function CardShimmer({
  * stroke, not a border trick.
  */
 function ProgressRing({
-  palette,
+  color,
   determinate,
   fill,
   spinDeg,
 }: {
-  palette: LoadingPalette;
+  color: string;
   determinate: boolean;
   fill: Animated.Value;
   spinDeg: Animated.AnimatedInterpolation<string>;
@@ -225,7 +233,7 @@ function ProgressRing({
   const stroke = 2;
   const r = (size - stroke) / 2;
   const circumference = 2 * Math.PI * r;
-  const track = `${palette.primary}33`;
+  const track = `${color}33`;
   if (determinate) {
     // Offset shrinks from full circumference (empty) to 0 (full) as fill goes 0→1.
     const offset = fill.interpolate({
@@ -239,7 +247,7 @@ function ProgressRing({
           cx={size / 2}
           cy={size / 2}
           r={r}
-          stroke={palette.primary}
+          stroke={color}
           strokeWidth={stroke}
           fill="none"
           strokeDasharray={circumference}
@@ -260,7 +268,7 @@ function ProgressRing({
           cx={size / 2}
           cy={size / 2}
           r={r}
-          stroke={palette.primary}
+          stroke={color}
           strokeWidth={stroke}
           fill="none"
           strokeDasharray={`${circumference * 0.25} ${circumference}`}
@@ -277,11 +285,13 @@ export function LoadingState({
   label,
   theme,
   rows = LIST_SKELETON_ROWS,
+  tone = 'default',
   iconSource,
   heading,
   testID,
 }: LoadingStateProps): React.JSX.Element {
   const palette = resolvePalette(theme);
+  const toneColor = resolveToneColor(palette, tone);
   const showMotif = aiMotifEnabled(variant, theme);
   const clamped = clampProgress(progress); // number 0–100, or null when indeterminate
   const determinate = clamped !== null;
@@ -395,17 +405,22 @@ export function LoadingState({
       <View testID={testID} style={styles.microRow} {...a11yProps}>
         {/* Progress ring (mockup D) — a real arc when determinate, a rotating sweep when not. */}
         <ProgressRing
-          palette={palette}
+          color={toneColor}
           determinate={determinate}
           fill={fillValue}
           spinDeg={spinDeg}
         />
         {label !== undefined && label !== '' && (
-          <Text style={styles.microLabel} numberOfLines={1}>
+          <Text
+            style={[styles.microLabel, tone === 'onPrimary' && { color: toneColor }]}
+            numberOfLines={1}
+          >
             {label}
           </Text>
         )}
-        {percent !== null && <Text style={styles.microPercent}>{percent}</Text>}
+        {percent !== null && (
+          <Text style={[styles.microPercent, { color: toneColor }]}>{percent}</Text>
+        )}
       </View>
     );
   }

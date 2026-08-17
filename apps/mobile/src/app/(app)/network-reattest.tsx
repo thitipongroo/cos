@@ -11,11 +11,12 @@
 // refreshes the trust window and writes an audit entry. Same gesture, an action that exists.
 
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { LoadingState } from '../../components/LoadingState';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useT } from '../../i18n';
-import { usePalette } from '../../theme/usePalette';
+import { usePalette, useIsDark } from '../../theme/usePalette';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
 import { InfoCard, FieldRow, Lede } from '../../components/TransparencyKit';
 import { requestAttestationChallenge } from '../../api/devices';
@@ -26,6 +27,7 @@ type Outcome = 'RUNNING' | 'REFRESHED' | 'UNAVAILABLE';
 export default function NetworkReattestScreen(): React.JSX.Element {
   const t = useT();
   const pal = usePalette();
+  const isDark = useIsDark();
   const router = useRouter();
   const [outcome, setOutcome] = useState<Outcome>('RUNNING');
   const [at, setAt] = useState<string | null>(null);
@@ -61,7 +63,11 @@ export default function NetworkReattestScreen(): React.JSX.Element {
     >
       {outcome === 'RUNNING' ? (
         <View style={styles.centre}>
-          <ActivityIndicator testID="reattest-running" color={pal.primary} />
+          <LoadingState
+            testID="reattest-running"
+            variant="micro"
+            theme={isDark ? 'dark' : 'light'}
+          />
           <Text style={styles.runningText}>{t('reattest.running')}</Text>
         </View>
       ) : null}

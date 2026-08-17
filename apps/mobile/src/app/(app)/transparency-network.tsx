@@ -15,11 +15,12 @@
 // Worker" with no definition cannot be contested by the person it describes.
 
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { LoadingState } from '../../components/LoadingState';
 import { useRouter } from 'expo-router';
 import NetInfo from '@react-native-community/netinfo';
 import { useT } from '../../i18n';
-import { usePalette } from '../../theme/usePalette';
+import { usePalette, useIsDark } from '../../theme/usePalette';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
 import { FieldRow, InfoCard, Lede, SectionLabel } from '../../components/TransparencyKit';
 import { getNetworkOrigin, type NetworkOriginPanel } from '../../api/networkOrigin';
@@ -27,6 +28,7 @@ import { getNetworkOrigin, type NetworkOriginPanel } from '../../api/networkOrig
 export default function TransparencyNetworkScreen(): React.JSX.Element {
   const t = useT();
   const pal = usePalette();
+  const isDark = useIsDark();
   const router = useRouter();
 
   const [panel, setPanel] = useState<NetworkOriginPanel | null>(null);
@@ -71,7 +73,9 @@ export default function TransparencyNetworkScreen(): React.JSX.Element {
     >
       <Lede>{t('transparency.network.lede')}</Lede>
 
-      {loading ? <ActivityIndicator testID="network-loading" color={pal.primary} /> : null}
+      {loading ? (
+        <LoadingState testID="network-loading" variant="list" theme={isDark ? 'dark' : 'light'} />
+      ) : null}
 
       {failed ? (
         <InfoCard

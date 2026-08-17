@@ -15,18 +15,11 @@
 //     user's, never a client-side default.
 
 import { useCallback, useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  View,
-} from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { LoadingState } from '../../components/LoadingState';
 import { useRouter } from 'expo-router';
 import { useT } from '../../i18n';
-import { usePalette } from '../../theme/usePalette';
+import { usePalette, useIsDark } from '../../theme/usePalette';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
 import { InfoCard, Lede, SectionLabel } from '../../components/TransparencyKit';
 import { listDevices, revokeDevice, type TrustedDeviceSummary } from '../../api/devices';
@@ -42,6 +35,7 @@ import {
 export default function AccountSecurityScreen(): React.JSX.Element {
   const t = useT();
   const pal = usePalette();
+  const isDark = useIsDark();
   const router = useRouter();
 
   const [devices, setDevices] = useState<TrustedDeviceSummary[]>([]);
@@ -89,7 +83,9 @@ export default function AccountSecurityScreen(): React.JSX.Element {
       <Lede>{t('accountSecurity.lede')}</Lede>
 
       <SectionLabel>{t('accountSecurity.devices')}</SectionLabel>
-      {loading ? <ActivityIndicator testID="devices-loading" color={pal.primary} /> : null}
+      {loading ? (
+        <LoadingState testID="devices-loading" variant="list" theme={isDark ? 'dark' : 'light'} />
+      ) : null}
 
       {!loading && devices.length === 0 ? (
         <InfoCard

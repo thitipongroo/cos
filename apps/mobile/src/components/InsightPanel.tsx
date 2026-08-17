@@ -29,7 +29,8 @@
 // choosing a project silently and letting one project's findings read as a tenant-wide statement.
 
 import { useCallback, useMemo, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { LoadingState } from './LoadingState';
 import { MaterialIcons } from '@expo/vector-icons';
 import type { AiReport } from '../api/ai';
 import { decodeJwtPayload } from '../lib/jwt';
@@ -38,7 +39,7 @@ import { insightAdvice } from '../lib/insightAdvice';
 import { useAuthStore } from '../store/authStore';
 import { useT } from '../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../theme/tokens';
-import { usePalette, type Palette } from '../theme/usePalette';
+import { usePalette, type Palette, useIsDark } from '../theme/usePalette';
 
 const BAND_LABEL = {
   HIGH: 'insight.bandHigh',
@@ -135,6 +136,7 @@ export function InsightPanel({
 }: InsightPanelProps): React.JSX.Element {
   const t = useT();
   const p = usePalette();
+  const isDark = useIsDark();
   const styles = useMemo(() => makeStyles(p), [p]);
   const washed = variant === 'washed';
   const token = useAuthStore((s) => s.accessToken);
@@ -201,7 +203,9 @@ export function InsightPanel({
         </View>
       </View>
 
-      {loading ? <ActivityIndicator testID="insight-loading" color={p.primary} /> : null}
+      {loading ? (
+        <LoadingState testID="insight-loading" variant="ai" theme={isDark ? 'dark' : 'light'} />
+      ) : null}
 
       {!loading && report === null && !failed ? (
         <Text style={styles.body}>{t('insight.idle')}</Text>

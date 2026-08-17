@@ -14,16 +14,8 @@
 // badge but its copy is role-aware without the mockup's fabricated permission specifics (PO 2026-07-29).
 
 import { useEffect, useMemo, useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TextInput,
-  Pressable,
-  ActivityIndicator,
-  StyleSheet,
-  Alert,
-} from 'react-native';
+import { View, Text, ScrollView, TextInput, Pressable, StyleSheet, Alert } from 'react-native';
+import { LoadingState } from '../../components/LoadingState';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { CosRole } from '@cos/types';
@@ -384,7 +376,7 @@ export default function InviteUserScreen(): React.JSX.Element {
           accessibilityRole="button"
         >
           {sending ? (
-            <ActivityIndicator color={darkColors.onPrimary} />
+            <LoadingState variant="micro" theme="dark" tone="onPrimary" />
           ) : (
             <>
               <Text style={styles.sendText}>{t('inviteUser.send')}</Text>

@@ -24,7 +24,8 @@
 // render follows the approved mockup structure.
 
 import { useEffect, useMemo, useState } from 'react';
-import { View, Text, ScrollView, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
+import { LoadingState } from '../../components/LoadingState';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -207,7 +208,7 @@ export default function NotificationPreferencesScreen(): React.JSX.Element {
   if (loading) {
     return (
       <View style={[styles.root, styles.center, { paddingTop: insets.top }]}>
-        <ActivityIndicator color={darkColors.primary} />
+        <LoadingState variant="list" theme="dark" />
       </View>
     );
   }
@@ -377,7 +378,7 @@ export default function NotificationPreferencesScreen(): React.JSX.Element {
           onPress={onSave}
         >
           {saving ? (
-            <ActivityIndicator color={darkColors.onPrimary} />
+            <LoadingState variant="micro" theme="dark" tone="onPrimary" />
           ) : (
             <Text style={styles.primaryButtonText}>{t('notifications.preferences.save')}</Text>
           )}

@@ -1,6 +1,7 @@
 'use client';
 
 import { DataTable, type Column } from '../../../../components/ui/DataTable';
+import { LoadingState } from '../../../../components/ui/LoadingState';
 import { useI18n } from '../../../../i18n';
 import { useVendors, useVendorScore } from '../../../../lib/api/queries';
 import { formatNationalPhone } from '../../../../lib/countries';
@@ -49,7 +50,9 @@ export default function VendorsPage() {
 // scoring data yet (new vendor / no deliveries, invoices or quotations).
 function VendorScoreCell({ vendorId }: { vendorId: string }) {
   const q = useVendorScore(vendorId);
-  if (q.isLoading) return <span className="text-gray-300">…</span>;
+  // The §32.7 inline indicator (ADR-055) rather than a grey ellipsis. No `label`: this is one cell
+  // in a grade column, the spinner alone says "still fetching", and ADR-055 forbids baking copy.
+  if (q.isLoading) return <LoadingState variant="micro" />;
   const grade = q.data?.grade ?? null;
   if (!grade) return <span className="text-gray-400">—</span>;
   const color =

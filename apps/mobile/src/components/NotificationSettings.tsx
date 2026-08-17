@@ -36,7 +36,8 @@
 // Online-required: §17.4 lists no notification preference as offline-writable.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, Switch, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, Switch, StyleSheet } from 'react-native';
+import { LoadingState } from './LoadingState';
 import { MaterialIcons } from '@expo/vector-icons';
 import {
   getNotificationPreferences,
@@ -47,7 +48,7 @@ import { notificationSectionsFor, toHhMm, type NotificationGroup } from '../lib/
 import { useAuthStore } from '../store/authStore';
 import { useT } from '../i18n';
 import { fontFamily, plateRadius, radius, spacing, touchTarget, typography } from '../theme/tokens';
-import { usePalette, type Palette } from '../theme/usePalette';
+import { usePalette, type Palette, useIsDark } from '../theme/usePalette';
 
 /** Exactly the channels the PATCH DTO accepts AND the dispatcher delivers — see the header. */
 const CHANNELS = ['IN_APP', 'EMAIL', 'LINE'] as const;
@@ -84,6 +85,7 @@ const key = (eventType: string, channel: string): string => `${eventType}:${chan
 export function NotificationSettings(): React.JSX.Element {
   const t = useT();
   const p = usePalette();
+  const isDark = useIsDark();
   const styles = useMemo(() => makeStyles(p), [p]);
   const role = useAuthStore((s) => s.role);
 
@@ -160,7 +162,7 @@ export function NotificationSettings(): React.JSX.Element {
   if (loading) {
     return (
       <View testID="notification-settings-loading" style={styles.loading}>
-        <ActivityIndicator color={p.primary} />
+        <LoadingState variant="list" theme={isDark ? 'dark' : 'light'} />
       </View>
     );
   }

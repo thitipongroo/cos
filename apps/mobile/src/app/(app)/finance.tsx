@@ -32,7 +32,8 @@
 // dashboard measures, and `/material-request` is a screen that already exists.
 
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, ActivityIndicator, Pressable } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Pressable } from 'react-native';
+import { LoadingState } from '../../components/LoadingState';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { get } from '../../api/client';
@@ -44,7 +45,7 @@ import { spendTrend, type CostTransaction, type SpendTrend } from '../../lib/spe
 import { PortfolioInsight } from '../../components/PortfolioInsight';
 import { useT } from '../../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
-import { usePalette, type Palette } from '../../theme/usePalette';
+import { usePalette, type Palette, useIsDark } from '../../theme/usePalette';
 
 interface BudgetResponse {
   budget: {
@@ -73,6 +74,7 @@ const HEALTH_KEY: Record<BudgetHealth, string> = {
 export default function FinanceScreen(): React.JSX.Element {
   const t = useT();
   const p = usePalette();
+  const isDark = useIsDark();
   const router = useRouter();
   const styles = useMemo(() => makeStyles(p), [p]);
 
@@ -268,7 +270,9 @@ export default function FinanceScreen(): React.JSX.Element {
       >
         <Text style={styles.sectionTitle}>{t('pm.finance.portfolioSummary')}</Text>
 
-        {loading ? <ActivityIndicator testID="finance-loading" color={p.primary} /> : null}
+        {loading ? (
+          <LoadingState testID="finance-loading" variant="list" theme={isDark ? 'dark' : 'light'} />
+        ) : null}
 
         <View style={styles.bento}>
           {/* Each tile opens where its own figure comes from: the budget total is broken down by the

@@ -20,16 +20,8 @@
 // TOP RATED is not a stored badge — see lib/vendorBadge.ts for why it is derived from the score.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  ScrollView,
-  Pressable,
-  StyleSheet,
-  Alert,
-  ActivityIndicator,
-} from 'react-native';
+import { View, Text, TextInput, ScrollView, Pressable, StyleSheet, Alert } from 'react-native';
+import { LoadingState } from '../../components/LoadingState';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CosRole } from '@cos/types';
 import {
@@ -42,7 +34,7 @@ import { vendorBadge, type ScoreGrade, type VendorBadge } from '../../lib/vendor
 import { useAuthStore } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
-import { usePalette, type Palette } from '../../theme/usePalette';
+import { usePalette, type Palette, useIsDark } from '../../theme/usePalette';
 
 const CATEGORIES: readonly { id: VendorCategory | 'ALL'; labelKey: string }[] = [
   { id: 'ALL', labelKey: 'vendors.filterAll' },
@@ -65,6 +57,7 @@ type Scores = Record<string, { total: number | null; grade: ScoreGrade } | undef
 export default function VendorsScreen(): React.JSX.Element {
   const t = useT();
   const p = usePalette();
+  const isDark = useIsDark();
   const styles = useMemo(() => makeStyles(p), [p]);
   const role = useAuthStore((s) => s.role);
   const canManage = role === CosRole.PROC_MANAGER;
@@ -176,7 +169,7 @@ export default function VendorsScreen(): React.JSX.Element {
       </ScrollView>
 
       {loading ? (
-        <ActivityIndicator testID="vendors-loading" color={p.primary} style={styles.spinner} />
+        <LoadingState testID="vendors-loading" variant="list" theme={isDark ? 'dark' : 'light'} />
       ) : null}
 
       {!loading && failed ? <Text style={styles.notice}>{t('vendors.failed')}</Text> : null}
@@ -278,7 +271,6 @@ const makeStyles = (p: Palette) =>
     chipText: { color: p.text, fontFamily: fontFamily.medium, fontSize: typography.label.fontSize },
     chipTextOn: { color: p.onPrimary },
 
-    spinner: { marginTop: spacing.xl },
     notice: {
       marginTop: spacing.lg,
       textAlign: 'center',

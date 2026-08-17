@@ -17,9 +17,10 @@
 //      evidence for, and on Android 13+ STRONG already means "patched within the last year".
 
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { LoadingState } from '../../components/LoadingState';
 import { useT } from '../../i18n';
-import { usePalette } from '../../theme/usePalette';
+import { usePalette, useIsDark } from '../../theme/usePalette';
 import { fontFamily, spacing, typography } from '../../theme/tokens';
 import { FieldRow, InfoCard, Lede, SectionLabel } from '../../components/TransparencyKit';
 import {
@@ -41,6 +42,7 @@ import {
 export default function DeviceDetailsScreen(): React.JSX.Element {
   const t = useT();
   const pal = usePalette();
+  const isDark = useIsDark();
 
   const [device, setDevice] = useState<TrustedDeviceSummary | null>(null);
   const [deviceId, setDeviceId] = useState<string | null>(null);
@@ -84,7 +86,9 @@ export default function DeviceDetailsScreen(): React.JSX.Element {
     >
       <Lede>{t('deviceDetails.lede')}</Lede>
 
-      {loading ? <ActivityIndicator testID="device-loading" color={pal.primary} /> : null}
+      {loading ? (
+        <LoadingState testID="device-loading" variant="widget" theme={isDark ? 'dark' : 'light'} />
+      ) : null}
 
       {!loading && !device ? (
         <InfoCard

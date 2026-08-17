@@ -166,6 +166,43 @@ and `label`. The launch tagline is the English brand default (not i18n) because 
 `I18nProvider` mounts and before the persisted locale is known — QM-3's documented system default,
 the same reason the interactive `label` is omitted there.
 
+### Update (2026-08-17) — mockup conformance sweep; decision 8 reversed
+
+Product-owner request: bring **every** loading animation in the project onto the mockup patterns. An
+inventory found mobile largely conformant (30 screens on `<LoadingBoundary>` / `<LoadingState />`)
+and two real gaps — web's `<LoadingState />` had **zero production consumers** (its only importer was
+`dev/component-preview`, while ~35 list pages rendered a bare `Loading…` line through `DataTable`),
+and mobile still had 24 raw `ActivityIndicator` call sites. Decisions 1–7 and 9 stand. Changes:
+
+1. **Web follows the desktop mockup, including where it disagrees with the mobile one.** §32.7's
+   "Exception 2" previously named one motif (glow + scan-line + waveform) for both platforms, which
+   matched neither drawing: the desktop `ai` card carries a glow, a pulsing processor plate and a
+   `ping` dot, and **no** scan-line or waveform. Web dropped both; mobile keeps both. §32.7 now
+   states the motif per platform. ADR-085 is the rule applied — a mockup is authoritative for style
+   (the web widget also gained the drawing's corner brackets, percentage chip, icon plate, bar glow
+   and mono caption; the table gained its header strip, sync row and dimmed queue), but not for
+   composition, so removing the two motif elements was escalated rather than assumed.
+2. **`SkeletonCard` and `LoadingSpinner` are deleted — this reverses decision 8.** They drew the same
+   two mockup patterns `<LoadingState />` draws (`widget`'s plate-plus-two-bars, `micro`'s spinner)
+   but off-token (`gray-200`, `rounded-xl`, a round plate where the mockup has a rounded square), so
+   the app carried two implementations of one specified component. `EmptyState` is untouched, and
+   `dev/component-preview` now previews the variants instead.
+3. **New `tone` prop** (mobile, `micro` only). Ten of the replaced `ActivityIndicator`s sat inside
+   primary-filled submit buttons and passed `onPrimary`; the ring resolves `primary` from the palette
+   and would have disappeared into the button's own fill. `tone="onPrimary"` is the mockup's
+   "inside a button" case. `resolveToneColor` is in `lib/loadingState.ts`, inside the QM-1 gate.
+4. **A determinate loader now completes before it is replaced.** `<LoadingBoundary />` drives the bar
+   to 100, holds one fill duration (`completionHoldMs`), then crossfades. Raised by the product owner
+   from the mockup's own progress script: it animates the percentage and the bar, so a loader that
+   unmounted the instant a fetch settled discarded the completion the animation is about.
+   Indeterminate callers hold 0ms — nothing to arrive at, and forcing a figure would break the
+   honest-data policy. The crossfade itself was reviewed and kept: the mockup loops back to 0 at 100%
+   rather than handing off to content, so it is **silent** on the handoff rather than against it.
+5. **Two call sites were deliberately left on `ActivityIndicator`**, both being §32.7-specified
+   components whose spinner colour is semantic rather than incidental: `<VoiceNoteButton />` (the
+   hold-to-record trigger, product-owner decision) and `<QuickActionRow />`, whose spinner takes the
+   caller's per-action accent — "the caller's signal, not decoration" — which `tone` cannot express.
+
 ## References
 
 - [32-implementation-specifications.md §32.7](../../specifications/32-implementation-specifications.md) —

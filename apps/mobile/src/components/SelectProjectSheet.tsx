@@ -73,16 +73,8 @@
 // the data has, and a project without one shows its code instead of an invented place.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  TextInput,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  ActivityIndicator,
-} from 'react-native';
+import { Modal, View, Text, TextInput, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { LoadingState } from './LoadingState';
 import { MaterialIcons } from '@expo/vector-icons';
 import { getMyProjects, type MyProject } from '../api/projects';
 import { projectStatusTone } from '../lib/projectStatusTone';
@@ -294,7 +286,7 @@ export function SelectProjectSheet(): React.JSX.Element {
             </View>
 
             {loading ? (
-              <ActivityIndicator testID="select-project-loading" color={darkColors.primary} />
+              <LoadingState testID="select-project-loading" variant="list" theme="dark" />
             ) : null}
 
             {/* A WAY OUT OF THE FAILED STATE (2026-08-12). The list is the whole sheet, so a failed

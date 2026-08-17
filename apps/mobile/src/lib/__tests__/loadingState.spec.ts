@@ -7,7 +7,11 @@ import {
   aiMotifEnabled,
   listRowWidths,
   accessibilityLabel,
+  completionHoldMs,
+  resolveToneColor,
   LIST_SKELETON_ROWS,
+  FILL_DURATION_MS,
+  CROSSFADE_MS,
 } from '../loadingState';
 import { colors, darkColors } from '../../theme/tokens';
 
@@ -167,5 +171,37 @@ describe('accessibilityLabel', () => {
 
   it('appends the percentage to the label when determinate', () => {
     expect(accessibilityLabel('Refining results...', 82)).toBe('Refining results... 82%');
+  });
+});
+
+describe('completionHoldMs', () => {
+  it('holds a determinate loader for one fill, so the bar reaches 100 before the fade', () => {
+    expect(completionHoldMs(0)).toBe(FILL_DURATION_MS);
+    expect(completionHoldMs(42)).toBe(FILL_DURATION_MS);
+    expect(completionHoldMs(100)).toBe(FILL_DURATION_MS);
+  });
+
+  it('does not hold an indeterminate loader — there is no percentage to arrive at', () => {
+    expect(completionHoldMs(undefined)).toBe(0);
+    expect(completionHoldMs()).toBe(0);
+    expect(completionHoldMs(NaN)).toBe(0);
+  });
+
+  it('exposes the two timings the boundary animates with', () => {
+    expect(FILL_DURATION_MS).toBe(600);
+    expect(CROSSFADE_MS).toBe(260);
+  });
+});
+
+describe('resolveToneColor', () => {
+  it('takes the primary ink by default', () => {
+    expect(resolveToneColor(resolvePalette('dark'), 'default')).toBe(darkColors.primary);
+    expect(resolveToneColor(resolvePalette('light'), 'default')).toBe(colors.primary);
+  });
+
+  it('takes the on-primary ink inside a primary-filled control, so the ring is not lost in it', () => {
+    expect(resolveToneColor(resolvePalette('dark'), 'onPrimary')).toBe(darkColors.onPrimary);
+    // The light set has no `onPrimary`; §32.7 documents `bg` as its on-colour ink.
+    expect(resolveToneColor(resolvePalette('light'), 'onPrimary')).toBe(colors.bg);
   });
 });

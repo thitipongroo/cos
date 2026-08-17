@@ -659,10 +659,23 @@ scoped to the brand logo on that screen and nothing else.
 
 **Exception 2 — loading states** (product-owner decision 2026-07-17; ADR-055; reference
 `mockup/mobile/00_loading` + `mockup/desktop/imp_002_universal_loading_component_desktop_view`).
-`<LoadingState />` may use the same motif — a cyan glow, a scan-line gradient, and a waveform on
-the `ai` variant — **for the same reason the pre-auth exception exists: no project data is on
-screen yet**. A loading state is by definition the interval before data arrives, so the motif never
-competes with project content. The exception is scoped to `<LoadingState />` itself:
+`<LoadingState />` may use the same motif on the `ai` variant — **for the same reason the pre-auth
+exception exists: no project data is on screen yet**. A loading state is by definition the interval
+before data arrives, so the motif never competes with project content.
+
+**The motif is per platform, because the two mockups genuinely differ** (product-owner decision
+2026-08-17 — the earlier wording named one motif for both and did not match either drawing):
+
+| Platform | `ai` motif                                                      | Reference                                    |
+| -------- | --------------------------------------------------------------- | -------------------------------------------- |
+| Mobile   | cyan glow · **scan-line gradient** · **waveform** · left border | `mockup/mobile/00_loading` section C         |
+| Web      | cyan glow · **processor plate** · **ping dot** · full border-2  | `mockup/desktop/imp_002_…` Variant C         |
+
+The web drawing carries neither a scan-line nor a waveform; it signals work with a pulsing processor
+glyph on a tinted plate and a `ping` dot on its status row. Do not port the mobile pair onto web to
+"make them match" — they are two drawings of one component, and each platform follows its own.
+
+The exception is scoped to `<LoadingState />` itself:
 
 - It applies **only while loading**. The moment real data renders, the motif unmounts with the
   component — a loaded dashboard, list, or form carries none of it.
@@ -1272,6 +1285,7 @@ owns no data source, no timer, and no i18n copy.
 | `progress` | `number` (0–100)    | Optional. Omitted → indeterminate (no bar, no %). Given → clamped and shown.                               |
 | `label`    | `string`            | Optional. Caller passes **already-translated** text — the component never holds a key or a literal (QM-3). |
 | `theme`    | `'light' \| 'dark'` | Required on mobile. Selects `colors` vs `darkColors` (§32.7 Mobile Dark Surfaces).                         |
+| `tone`     | `'default' \| 'onPrimary'` | Mobile, `micro` only. `onPrimary` for a loader INSIDE a primary-filled control (a submit button mid-request — the mockup's "inside a button" case); the default ink is the button's own fill colour and would vanish in it. |
 
 **Variants are per platform** — the layouts genuinely differ, so the union is not shared:
 
@@ -1290,8 +1304,19 @@ Rules:
 - **Caller owns copy.** No default string. A `<LoadingState />` with no `label` renders no text.
 - **Not a screen.** It is a presentational component, not a screen or workflow step, so QM-15 does
   not require a feature flag (ADR-055).
-- **The `ai` variant is the only one carrying the glow/scan-line/waveform** — see "Exception 2 —
-  loading states" above. `widget` / `list` / `table` / `micro` are flat skeletons and spinners.
+- **The `ai` variant is the only one carrying the motif** — see "Exception 2 — loading states" above
+  for the per-platform motif. `widget` / `list` / `table` / `micro` are flat skeletons and spinners.
+- **A determinate loader must finish its run before it is replaced** (product-owner decision
+  2026-08-17). A fetch settles whenever it settles, usually mid-travel, so a loader that unmounted on
+  that instant vanished at, say, 70% and the completion the user was watching never happened on
+  screen. Mobile's `<LoadingBoundary />` therefore drives the bar to 100, holds one fill duration,
+  then crossfades to the content. Indeterminate loaders do not hold: with no honest percentage there
+  is nothing to arrive at, and waiting would delay content for a sweep that never completes.
+- **Every loader animates.** The mockup's own bar counts up and eases (`mockup/mobile/00_loading`
+  runs it on a timer; its bar carries `transition-all duration-1000`), so a determinate loader counts
+  its percentage up and eases its fill to the value — one animated value driving both, so the number
+  and the bar can never disagree. An indeterminate loader sweeps a segment across the track instead
+  of standing still, and never shows a percentage.
 
 #### Standard Top Bar (`<TopBar />`)
 

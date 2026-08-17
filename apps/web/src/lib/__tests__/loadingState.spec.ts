@@ -5,6 +5,9 @@ import {
   progressWidth,
   aiMotifEnabled,
   tableColumnWidth,
+  tableHeaderWidth,
+  isTableSyncCell,
+  tableRowOpacity,
   accessibilityLabel,
   TABLE_SKELETON_ROWS,
   TABLE_SKELETON_COLUMNS,
@@ -108,6 +111,61 @@ describe('tableColumnWidth', () => {
   it('renders three rows of four columns by default', () => {
     expect(TABLE_SKELETON_ROWS).toBe(3);
     expect(TABLE_SKELETON_COLUMNS).toBe(4);
+  });
+});
+
+describe('tableHeaderWidth', () => {
+  it('gives the header strip its own four widths, shorter than the body bars', () => {
+    expect(tableHeaderWidth(0)).toBe('w-16');
+    expect(tableHeaderWidth(1)).toBe('w-20');
+    expect(tableHeaderWidth(2)).toBe('w-12');
+    expect(tableHeaderWidth(3)).toBe('w-24');
+  });
+
+  it('differs from the body width in the same column, so the header does not read as a data row', () => {
+    expect(tableHeaderWidth(0)).not.toBe(tableColumnWidth(0));
+    expect(tableHeaderWidth(2)).not.toBe(tableColumnWidth(2));
+  });
+
+  it('wraps for a caller with more columns than the mockup', () => {
+    expect(tableHeaderWidth(4)).toBe(tableHeaderWidth(0));
+    expect(tableHeaderWidth(7)).toBe(tableHeaderWidth(3));
+  });
+});
+
+describe('isTableSyncCell', () => {
+  it('marks the last cell of the first row when the caller gave a percentage', () => {
+    expect(isTableSyncCell(0, 3, 4, true)).toBe(true);
+  });
+
+  it('is false without an honest percentage — nothing to show beside the spinner', () => {
+    expect(isTableSyncCell(0, 3, 4, false)).toBe(false);
+  });
+
+  it('is false on any row but the first', () => {
+    expect(isTableSyncCell(1, 3, 4, true)).toBe(false);
+    expect(isTableSyncCell(2, 3, 4, true)).toBe(false);
+  });
+
+  it('is false on any column but the last', () => {
+    expect(isTableSyncCell(0, 0, 4, true)).toBe(false);
+    expect(isTableSyncCell(0, 2, 4, true)).toBe(false);
+  });
+
+  it('tracks the caller column count rather than the mockup default', () => {
+    expect(isTableSyncCell(0, 5, 6, true)).toBe(true);
+    expect(isTableSyncCell(0, 3, 6, true)).toBe(false);
+  });
+});
+
+describe('tableRowOpacity', () => {
+  it('leaves the first row at full strength — it is the row being written', () => {
+    expect(tableRowOpacity(0)).toBe('');
+  });
+
+  it('dims every row queued behind it', () => {
+    expect(tableRowOpacity(1)).toBe('opacity-60');
+    expect(tableRowOpacity(2)).toBe('opacity-60');
   });
 });
 

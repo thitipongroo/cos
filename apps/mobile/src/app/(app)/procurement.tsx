@@ -24,15 +24,8 @@
 // picker above it (PO decision 2026-08-10).
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  StyleSheet,
-  Alert,
-  ActivityIndicator,
-} from 'react-native';
+import { View, Text, ScrollView, Pressable, StyleSheet, Alert } from 'react-native';
+import { LoadingState } from '../../components/LoadingState';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { formatMoney } from '@cos/financial';
@@ -50,7 +43,7 @@ import { waitingAge } from '../../lib/waitingAge';
 import { ProcurementInsight } from '../../components/ProcurementInsight';
 import { useT } from '../../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
-import { usePalette, type Palette } from '../../theme/usePalette';
+import { usePalette, type Palette, useIsDark } from '../../theme/usePalette';
 
 interface DeliveryRow {
   delivered_at: string;
@@ -68,6 +61,7 @@ function asList<T>(res: { items?: T[] } | T[]): T[] {
 export default function ProcurementScreen(): React.JSX.Element {
   const t = useT();
   const p = usePalette();
+  const isDark = useIsDark();
   const router = useRouter();
   const styles = useMemo(() => makeStyles(p), [p]);
 
@@ -292,7 +286,13 @@ export default function ProcurementScreen(): React.JSX.Element {
         </Pressable>
       </View>
 
-      {loading ? <ActivityIndicator testID="procurement-loading" color={p.primary} /> : null}
+      {loading ? (
+        <LoadingState
+          testID="procurement-loading"
+          variant="list"
+          theme={isDark ? 'dark' : 'light'}
+        />
+      ) : null}
 
       {!loading && pos.length === 0 ? (
         <Text testID="procurement-empty" style={styles.notice}>

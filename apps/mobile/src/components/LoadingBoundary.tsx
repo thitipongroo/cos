@@ -15,6 +15,7 @@ import { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, Animated, Easing } from 'react-native';
 import type { StyleProp, ViewStyle, ImageSourcePropType } from 'react-native';
 import { LoadingState } from './LoadingState';
+import { completionHoldMs, CROSSFADE_MS } from '../lib/loadingState';
 import type { LoadingVariant, LoadingTheme } from '../lib/loadingState';
 
 export interface LoadingBoundaryProps {
@@ -52,27 +53,42 @@ export function LoadingBoundary({
 }: LoadingBoundaryProps): React.JSX.Element {
   // The loader stays mounted through its fade-out, one tick past `loading` going false.
   const [loaderMounted, setLoaderMounted] = useState(loading);
+  // Once the fetch settles, the loader is driven to 100% before it fades — so the bar and the
+  // counting percentage complete the run the user was watching instead of vanishing mid-travel
+  // (product-owner decision 2026-08-17). Indeterminate callers hold for 0ms; see completionHoldMs.
+  const [completing, setCompleting] = useState(false);
   const opacity = useRef(new Animated.Value(loading ? 1 : 0)).current;
   const wasLoading = useRef(loading);
 
   useEffect(() => {
-    if (loading && !wasLoading.current) {
+    const cameBackIntoLoading = loading && !wasLoading.current;
+    const settled = !loading && wasLoading.current;
+    wasLoading.current = loading;
+
+    if (cameBackIntoLoading) {
       // Back into loading (e.g. a manual refetch) — show the loader immediately.
+      setCompleting(false);
       setLoaderMounted(true);
       opacity.setValue(1);
-    } else if (!loading && wasLoading.current) {
-      // Settled — fade the loader out over the freshly-mounted content, then drop it.
+      return;
+    }
+    if (!settled) return;
+
+    // Settled — drive the bar to 100, hold for exactly one fill, then fade out over the
+    // freshly-mounted content and drop the loader.
+    setCompleting(true);
+    const timer = setTimeout(() => {
       Animated.timing(opacity, {
         toValue: 0,
-        duration: 260,
+        duration: CROSSFADE_MS,
         easing: Easing.out(Easing.quad),
         useNativeDriver: true,
       }).start(({ finished }) => {
         if (finished) setLoaderMounted(false);
       });
-    }
-    wasLoading.current = loading;
-  }, [loading, opacity]);
+    }, completionHoldMs(progress));
+    return () => clearTimeout(timer);
+  }, [loading, opacity, progress]);
 
   return (
     <View style={style} testID={testID}>
@@ -86,7 +102,10 @@ export function LoadingBoundary({
           <LoadingState
             variant={variant}
             theme={theme}
-            progress={progress}
+            // While completing, a determinate caller's bar is sent to 100 so it finishes its run.
+            // An indeterminate one is left alone — it has no percentage to complete, and forcing
+            // one would invent a figure the caller never supplied (ADR-055 honest-data policy).
+            progress={completing && progress !== undefined ? 100 : progress}
             label={label}
             rows={rows}
             iconSource={iconSource}

@@ -16,16 +16,8 @@
 //    "AUTH LEVEL: TENANT ADMIN" is real (only a TENANT_ADMIN can reach this endpoint) and kept.
 
 import { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  Image,
-  ActivityIndicator,
-  StyleSheet,
-  Alert,
-} from 'react-native';
+import { View, Text, ScrollView, Pressable, Image, StyleSheet, Alert } from 'react-native';
+import { LoadingState } from '../../components/LoadingState';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { resetUserPassword, sendResetLinkEmail } from '../../api/users';
@@ -252,7 +244,7 @@ export default function ResetPasswordScreen(): React.JSX.Element {
           accessibilityRole="button"
         >
           {busy ? (
-            <ActivityIndicator color={darkColors.onPrimary} />
+            <LoadingState variant="micro" theme="dark" tone="onPrimary" />
           ) : (
             <>
               <MaterialIcons name="lock-reset" size={20} color={darkColors.onPrimary} />

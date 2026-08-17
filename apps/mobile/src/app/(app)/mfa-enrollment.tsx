@@ -19,7 +19,8 @@
 // QM-15: gated by `s1.auth.mfa-enrollment` (build-time EXPO_PUBLIC flag on the drawer entry; ADR-074).
 
 import { useEffect, useState } from 'react';
-import { View, Text, Pressable, ActivityIndicator, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
+import { LoadingState } from '../../components/LoadingState';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -269,7 +270,7 @@ export default function MfaEnrollmentScreen(): React.JSX.Element {
           onPress={onEnroll}
         >
           {busy ? (
-            <ActivityIndicator color={darkColors.onPrimary} />
+            <LoadingState variant="micro" theme="dark" tone="onPrimary" />
           ) : (
             <>
               <MaterialIcons

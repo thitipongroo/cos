@@ -17,18 +17,11 @@
 //      real state instead, and offers the download when the server says it is downloadable.
 
 import { useCallback, useState } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { LoadingState } from '../../components/LoadingState';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useT } from '../../i18n';
-import { usePalette } from '../../theme/usePalette';
+import { usePalette, useIsDark } from '../../theme/usePalette';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
 import { InfoCard, Lede, SectionLabel } from '../../components/TransparencyKit';
 import {
@@ -56,6 +49,7 @@ type Stage = 'CHOOSE' | 'VERIFY' | 'SUBMITTED';
 export default function DataExportScreen(): React.JSX.Element {
   const t = useT();
   const pal = usePalette();
+  const isDark = useIsDark();
 
   const [stage, setStage] = useState<Stage>('CHOOSE');
   const [categories, setCategories] = useState<ExportCategory[]>([...EXPORT_CATEGORIES]);
@@ -186,7 +180,7 @@ export default function DataExportScreen(): React.JSX.Element {
             onPress={() => void startStepUp()}
           >
             {busy ? (
-              <ActivityIndicator color={pal.onPrimary} />
+              <LoadingState variant="micro" theme={isDark ? 'dark' : 'light'} tone="onPrimary" />
             ) : (
               <Text style={styles.actionText}>{t('dataExport.request')}</Text>
             )}
@@ -224,7 +218,7 @@ export default function DataExportScreen(): React.JSX.Element {
             onPress={() => void submit()}
           >
             {busy ? (
-              <ActivityIndicator color={pal.onPrimary} />
+              <LoadingState variant="micro" theme={isDark ? 'dark' : 'light'} tone="onPrimary" />
             ) : (
               <Text style={styles.actionText}>{t('dataExport.verify')}</Text>
             )}
