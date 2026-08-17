@@ -1286,6 +1286,7 @@ owns no data source, no timer, and no i18n copy.
 | `label`    | `string`            | Optional. Caller passes **already-translated** text — the component never holds a key or a literal (QM-3). |
 | `theme`    | `'light' \| 'dark'` | Required on mobile. Selects `colors` vs `darkColors` (§32.7 Mobile Dark Surfaces).                         |
 | `tone`     | `'default' \| 'onPrimary'` | Mobile, `micro` only. `onPrimary` for a loader INSIDE a primary-filled control (a submit button mid-request — the mockup's "inside a button" case); the default ink is the button's own fill colour and would vanish in it. |
+| `color`    | `string`            | Mobile, `micro` only. Overrides `tone` for a host carrying a meaningful colour of its own — `<QuickActionRow />`'s per-action accent, where a `primary` ring would erase the grouping the accent makes. **A palette colour, never a hex**, and it must clear WCAG SC 1.4.11 (3:1) against the surface it sits on (§20.8). |
 
 **Variants are per platform** — the layouts genuinely differ, so the union is not shared:
 

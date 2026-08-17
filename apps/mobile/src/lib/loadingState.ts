@@ -85,8 +85,23 @@ export function resolvePalette(theme: LoadingTheme): LoadingPalette {
  */
 export type LoadingTone = 'default' | 'onPrimary';
 
-/** The ink a `micro` loader's ring and percentage take for the given tone. */
-export function resolveToneColor(palette: LoadingPalette, tone: LoadingTone): string {
+/**
+ * The ink a `micro` loader's ring and percentage take.
+ *
+ * Precedence: an explicit `color` wins, else the tone, else the palette's primary.
+ *
+ * `color` exists for the handful of hosts that carry a MEANINGFUL colour of their own, which neither
+ * tone can name — <QuickActionRow />'s per-action accent is the case that forced it: the accent says
+ * which of a menu's actions are alike, so a spinner drawn in `primary` would erase the grouping the
+ * caller is making. Like that component's own `accent` prop, `color` takes a palette colour and
+ * never a hex — §32.7 forbids a literal at the call site.
+ */
+export function resolveMicroInk(
+  palette: LoadingPalette,
+  tone: LoadingTone,
+  color?: string,
+): string {
+  if (color !== undefined && color !== '') return color;
   return tone === 'onPrimary' ? palette.onPrimary : palette.primary;
 }
 

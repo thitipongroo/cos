@@ -198,10 +198,27 @@ and mobile still had 24 raw `ActivityIndicator` call sites. Decisions 1–7 and 
    Indeterminate callers hold 0ms — nothing to arrive at, and forcing a figure would break the
    honest-data policy. The crossfade itself was reviewed and kept: the mockup loops back to 0 at 100%
    rather than handing off to content, so it is **silent** on the handoff rather than against it.
-5. **Two call sites were deliberately left on `ActivityIndicator`**, both being §32.7-specified
-   components whose spinner colour is semantic rather than incidental: `<VoiceNoteButton />` (the
-   hold-to-record trigger, product-owner decision) and `<QuickActionRow />`, whose spinner takes the
-   caller's per-action accent — "the caller's signal, not decoration" — which `tone` cannot express.
+5. **New `color` prop** (mobile, `micro` only), overriding `tone`. Two §32.7 components carry a
+   spinner colour that is semantic rather than incidental, and neither tone can name it:
+   `<QuickActionRow />` inks its spinner with the caller's per-action accent — "the caller's signal,
+   not decoration" — and drawing it in `primary` would erase the grouping the menu is making. Like
+   that component's own `accent` prop, `color` takes a palette colour and never a hex.
+   `resolveMicroInk(palette, tone, color?)` replaces `resolveToneColor` and is inside the QM-1 gate.
+   **Every `ActivityIndicator` in the app is now gone** — 24 call sites across 19 files.
+6. **`<VoiceNoteButton />`'s transcribing ring stays white, and the reason is measured, not
+   aesthetic.** The one mockup that draws this state
+   (`mockup/desktop/role_site_worker_desktop_view/site_worker_desktop_3`) keeps the mic glyph in the
+   button and puts a **cyan** "AI Transcribing…" label outside it — but that is a dark desktop screen
+   (`#031427`), where cyan measures 10.25:1. `<VoiceNoteButton />` is fixed to the light `colors` set
+   and its button is `--mobile-primary` `#0066FF`, where **every** cyan in the product fails even
+   WCAG SC 1.4.11's 3:1 floor for a non-text control: `#22D3EE` → 2.67:1, `#4CD7F6` → 2.84:1,
+   `#06B6D4` → 1.99:1. Cyan fails on the light page (`#FFFFFF`, 1.81–2.43:1) and card (`#F5F5F5`,
+   1.56–2.23:1) too, so moving the label out of the button does not rescue it either. `tone`
+   `onPrimary` resolves to `colors.bg` `#FFFFFF` — **4.83:1, the same ink the mic, the label and the
+   waveform bars already use** — so the ring keeps exactly the colour it had and §20.8 holds. The AI
+   signal is carried by the words: `voiceNote.transcribing` is already translated in `en` and `th`
+   and already renders beside the ring in the `bar` shape. Product-owner decision 2026-08-17, taken
+   against these measurements after cyan was first requested.
 
 ## References
 

@@ -19,10 +19,11 @@
 // on both themes, while the Site Worker's menu is an ordinary screen that follows the user's theme.
 // Same idiom as <ProjectPicker />, <Avatar /> and <LoadingBoundary />.
 
-import { View, Text, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { LoadingState } from './LoadingState';
 import { darkColors, fontFamily, plateRadius, radius, spacing, typography } from '../theme/tokens';
-import { usePalette } from '../theme/usePalette';
+import { usePalette, useIsDark } from '../theme/usePalette';
 
 type IconName = keyof typeof MaterialIcons.glyphMap;
 
@@ -57,6 +58,7 @@ export function QuickActionRow({
   variant = 'themed',
 }: QuickActionRowProps) {
   const palette = usePalette();
+  const isDark = useIsDark();
   const p = variant === 'dark' ? darkColors : palette;
 
   return (
@@ -79,7 +81,13 @@ export function QuickActionRow({
           them without a second token per colour. */}
       <View style={[styles.plate, { backgroundColor: `${accent}1A` }]}>
         {busy ? (
-          <ActivityIndicator color={accent} />
+          // The §32.7 loading component (ADR-055), inked with the SAME accent the glyph it replaces
+          // uses — the accent is the caller's grouping signal, so a `primary` ring would erase it.
+          <LoadingState
+            variant="micro"
+            theme={variant === 'dark' || isDark ? 'dark' : 'light'}
+            color={accent}
+          />
         ) : (
           <MaterialIcons name={icon} size={28} color={accent} />
         )}

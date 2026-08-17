@@ -8,7 +8,7 @@ import {
   listRowWidths,
   accessibilityLabel,
   completionHoldMs,
-  resolveToneColor,
+  resolveMicroInk,
   LIST_SKELETON_ROWS,
   FILL_DURATION_MS,
   CROSSFADE_MS,
@@ -193,15 +193,29 @@ describe('completionHoldMs', () => {
   });
 });
 
-describe('resolveToneColor', () => {
+describe('resolveMicroInk', () => {
   it('takes the primary ink by default', () => {
-    expect(resolveToneColor(resolvePalette('dark'), 'default')).toBe(darkColors.primary);
-    expect(resolveToneColor(resolvePalette('light'), 'default')).toBe(colors.primary);
+    expect(resolveMicroInk(resolvePalette('dark'), 'default')).toBe(darkColors.primary);
+    expect(resolveMicroInk(resolvePalette('light'), 'default')).toBe(colors.primary);
   });
 
   it('takes the on-primary ink inside a primary-filled control, so the ring is not lost in it', () => {
-    expect(resolveToneColor(resolvePalette('dark'), 'onPrimary')).toBe(darkColors.onPrimary);
+    expect(resolveMicroInk(resolvePalette('dark'), 'onPrimary')).toBe(darkColors.onPrimary);
     // The light set has no `onPrimary`; §32.7 documents `bg` as its on-colour ink.
-    expect(resolveToneColor(resolvePalette('light'), 'onPrimary')).toBe(colors.bg);
+    expect(resolveMicroInk(resolvePalette('light'), 'onPrimary')).toBe(colors.bg);
+  });
+
+  it('lets an explicit colour win over the tone — the per-action accent case', () => {
+    expect(resolveMicroInk(resolvePalette('dark'), 'default', darkColors.cyan)).toBe(
+      darkColors.cyan,
+    );
+    expect(resolveMicroInk(resolvePalette('dark'), 'onPrimary', darkColors.warning)).toBe(
+      darkColors.warning,
+    );
+  });
+
+  it('ignores an empty colour, so a caller passing "" does not draw an inkless ring', () => {
+    expect(resolveMicroInk(resolvePalette('light'), 'default', '')).toBe(colors.primary);
+    expect(resolveMicroInk(resolvePalette('light'), 'onPrimary', '')).toBe(colors.bg);
   });
 });

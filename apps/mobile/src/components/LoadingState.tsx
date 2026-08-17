@@ -32,7 +32,7 @@ import Svg, {
 } from 'react-native-svg';
 import {
   resolvePalette,
-  resolveToneColor,
+  resolveMicroInk,
   formatPercent,
   clampProgress,
   aiMotifEnabled,
@@ -77,6 +77,12 @@ export interface LoadingStateProps {
    * case); the default `primary` ink would vanish into the button's own fill.
    */
   tone?: LoadingTone;
+  /**
+   * `micro` only — an explicit ink for the ring and percentage, overriding `tone`. For a host that
+   * carries a meaningful colour of its own (e.g. <QuickActionRow />'s per-action accent, where a
+   * `primary` spinner would erase the grouping the accent is making). A palette colour, never a hex.
+   */
+  color?: string;
   testID?: string;
 }
 
@@ -286,12 +292,13 @@ export function LoadingState({
   theme,
   rows = LIST_SKELETON_ROWS,
   tone = 'default',
+  color,
   iconSource,
   heading,
   testID,
 }: LoadingStateProps): React.JSX.Element {
   const palette = resolvePalette(theme);
-  const toneColor = resolveToneColor(palette, tone);
+  const toneColor = resolveMicroInk(palette, tone, color);
   const showMotif = aiMotifEnabled(variant, theme);
   const clamped = clampProgress(progress); // number 0–100, or null when indeterminate
   const determinate = clamped !== null;
@@ -412,7 +419,9 @@ export function LoadingState({
         />
         {label !== undefined && label !== '' && (
           <Text
-            style={[styles.microLabel, tone === 'onPrimary' && { color: toneColor }]}
+            // When the ink was overridden (a tone or an explicit colour), the label follows it so
+            // the strip reads as one mark; otherwise it stays the muted secondary text.
+            style={[styles.microLabel, toneColor !== palette.primary && { color: toneColor }]}
             numberOfLines={1}
           >
             {label}

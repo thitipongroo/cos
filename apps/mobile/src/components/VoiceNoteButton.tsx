@@ -6,8 +6,9 @@
 // transcribeAudio() (upload to File Service → POST /ai/transcribe).
 
 import { useEffect, useRef, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, Animated, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Animated } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { LoadingState } from './LoadingState';
 import { useAudioRecorder, RecordingPresets, requestRecordingPermissionsAsync } from 'expo-audio';
 import { useT } from '../i18n';
 import { transcribeAudio } from '../api/transcribe';
@@ -152,7 +153,10 @@ export function VoiceNoteButton({
             ))}
           </View>
         ) : phase === 'transcribing' ? (
-          <ActivityIndicator color={colors.bg} />
+          // The §32.7 loading component (ADR-055) — the mockup's "inside a button" case. This button
+          // is theme-fixed on the light tokens (every glyph beside this one takes `colors.bg`), and
+          // `tone="onPrimary"` resolves to exactly that token, so the ring keeps the white it had.
+          <LoadingState variant="micro" theme="light" tone="onPrimary" />
         ) : shape === 'fab' ? (
           // Round FAB (SITE_ENGINEER home) — the mockup's clean line mic, white on the blue button.
           <MaterialIcons name="mic" size={Math.round(fabSize * 0.46)} color={colors.bg} />
