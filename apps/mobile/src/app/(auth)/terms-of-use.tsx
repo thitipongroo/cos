@@ -32,8 +32,9 @@
 //     ACTIVE MONITORING                     MONITORING             (AI USAGE tile)
 //     User Responsibilities (Site Safety)   User Responsibilities  (clause 03; also in the PDF)
 //     I AGREE TO ALL TERMS                  AGREE TO ALL TERMS     (the action button)
-//   Thai needs no change for the third (it carries no leading pronoun); the first two are still
-//   pending their own decision in that locale — see the SUMMARY note below.
+//   Thai carries the first two cuts as well (product-owner decision 2026-08-18, taken after the
+//   English ones): the qualifier and the parenthetical are dropped there too, so the locales say the
+//   same thing. The third needs no Thai change — it carries no leading pronoun.
 //
 // THE BAR CARRIES THE TITLE, not the wordmark (corrected 2026-08-18 against the drawing, which puts
 // "TERMS OF USE" in the bar and no heading in the content). It had been built the other way round —
@@ -115,8 +116,10 @@ const SECTIONS: readonly { id: string; highlight?: true }[] = [
  * THE AI USAGE TILE READS "MONITORING", NOT the drawing's "ACTIVE MONITORING" (product-owner
  * decision 2026-08-18). A deliberate copy deviation, recorded here because ADR-085 makes the mockup
  * authoritative for style — including copy length — so an unexplained difference cannot be told
- * apart from an oversight. The Thai value is unchanged pending its own decision; it still carries
- * the "continuous" sense that "Active" carried in English.
+ * apart from an oversight. Thai took the same cut in the same decision — "ติดตาม", not
+ * "ติดตามอย่างต่อเนื่อง" — so the tile does not claim continuous monitoring in one locale and plain
+ * monitoring in the other. Nothing in the parity check would have caught that: it compares the
+ * English bundle against the PDF, and the PDF is English only.
  */
 const SUMMARY: readonly {
   id: 'status' | 'aiUsage';

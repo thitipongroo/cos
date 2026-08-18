@@ -101,8 +101,8 @@ carries; the fourth reinstates something the drawing had and the first build dro
 
 | Where            | Drawing                             | Shipped               | Note                                                |
 | ---------------- | ----------------------------------- | --------------------- | --------------------------------------------------- |
-| AI USAGE tile    | ACTIVE MONITORING                   | MONITORING            | Thai value pending its own decision                 |
-| Clause 03 title  | User Responsibilities (Site Safety) | User Responsibilities | Also in the PDF — both halves cut, parity holds     |
+| AI USAGE tile    | ACTIVE MONITORING                   | MONITORING            | Thai cut to match, same decision                    |
+| Clause 03 title  | User Responsibilities (Site Safety) | User Responsibilities | Also in the PDF and in Thai; parity holds           |
 | Action button    | I AGREE TO ALL TERMS                | AGREE TO ALL TERMS    | Thai needs no change; it carries no leading pronoun |
 | Receipt hash row | `SHA-256: 8a7f...e210`              | same shape            | Reverses this ADR's own §4 note — see below         |
 
@@ -112,6 +112,12 @@ the drawing. The full value is therefore moved to the row's `accessibilityLabel`
 it stays recoverable, and the verdict line underneath still answers the question the digest was there
 to answer. `lib/abbreviateDigest.ts` holds the shape (four characters, ellipsis, four characters) with
 its own tests, including the case where a digest is too short to abbreviate and is returned whole.
+
+**Thai took the first two cuts as well**, decided after the English ones. Nothing in the tooling
+would have caught a divergence: `check-legal-parity.mjs` compares the ENGLISH bundle against the PDF,
+because the PDF is English only, and the en/th parity test asserts that a key exists in both bundles,
+not that the two say the same thing. A tile reading "continuous monitoring" in the primary field
+language while English said "monitoring" would have shipped unnoticed.
 
 The DOWNLOAD PDF label is uppercased in the stylesheet, not in the stored string — the rule the
 product owner set on 2026-08-03 for the pre-auth bars: the i18n value stays natural, so a screen
