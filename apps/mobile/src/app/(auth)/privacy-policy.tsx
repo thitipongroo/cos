@@ -40,7 +40,7 @@ import { useT } from '../../i18n';
 import { darkColors, fontFamily, spacing, typography, touchTarget } from '../../theme/tokens';
 import { paletteFor } from '../../theme/palette';
 import { PrivacyPolicyDocument } from '../../components/PrivacyPolicyDocument';
-import { downloadPolicy } from '../../lib/policyDownload';
+import { downloadPolicy } from '../../lib/legalDownload';
 import { API_BASE_URL } from '../../api/client';
 
 const DARK = paletteFor('dark');

@@ -130,7 +130,8 @@ leave `apps/web` without a PDF, since the policy prose has no copy there either.
 **The cost, and what pays it.** The prose now exists twice: `apps/mobile/src/i18n/{en,th}.json` for
 the screen, `backend/.../privacy-policy/policy-document.ts` for the PDF. That is exactly the drift
 `<PrivacyPolicyDocument />` was extracted to prevent, and it is only acceptable because
-`scripts/ci/check-policy-parity.mjs` runs in the CI lint job and fails the build when the two
+`scripts/ci/check-legal-parity.mjs` (named `check-policy-parity.mjs`
+until ADR-092 gave the Terms of Use a PDF of its own) runs in the CI lint job and fails the build when the two
 disagree on the version, the effective date, or any sentence. Verified to catch both classes before
 it was wired in. Without that script this decision should be reversed, not merely watched.
 

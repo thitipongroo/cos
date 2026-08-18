@@ -861,8 +861,17 @@ and `07_get_help/` → `05_get_help/`. The policy DOCUMENT went the other way, o
 entirely and into `02_shared/`, which is the one move that is more than renumbering: one
 `<PrivacyPolicyDocument />` renders it at both `(auth)/privacy-policy` and `(app)/privacy-policy`, so
 it belongs to neither flow. `docs/screens/android/` was restructured the same way on the same day.
-Terms of Use also gained a second drawing, `02_terms_of_use_download`, which the app does not
-implement — the terms download is still rendered disabled (2026-08-09).
+Terms of Use also gained a second drawing, `02_terms_of_use_download`. **Both are implemented as of
+2026-08-18 (ADR-092)**, reversing the 2026-08-09 decision that left the download button disabled. That
+decision was correct while there was no terms PDF and no endpoint to serve one — a receipt could then
+only have shown invented figures — and stopped being correct when ADR-091 built exactly that
+machinery for the Privacy Policy the day before. The terms now have their own byte-stable PDF
+(`GET /api/v1/terms/metadata`, `GET /api/v1/terms/pdf`), the receipt renders at
+`(auth)/terms-of-use-downloaded` from measured values only, and `scripts/ci/check-legal-parity.mjs`
+(formerly `check-policy-parity.mjs`) holds BOTH documents' screens and PDFs to the same text. The
+document screen was corrected against its own drawing in the same change: the title moved into the top
+bar, the summary tiles took the drawn blue/`#4cd7f6` accents instead of cyan/amber, and clause 03's
+edge and numerals stopped being cyan.
 
 **The Support Centre keeps its row on the same terms, and the Privacy Policy row was repointed rather
 than withdrawn.** One commit on **2026-08-15** restructured `mockup/mobile/01_authen/05_privacy_policy/`

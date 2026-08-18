@@ -413,7 +413,7 @@
       },
       "aiUsage": {
         "label": "AI usage",
-        "value": "Active monitoring"
+        "value": "Monitoring"
       }
     },
     "sections": {
@@ -426,7 +426,7 @@
         "body": "Construction OS grants you a non-exclusive, non-transferable, limited license to access and use the software solely for professional construction project management and site supervision. Use for benchmarking or competitive analysis is strictly prohibited."
       },
       "responsibilities": {
-        "title": "User Responsibilities (Site Safety)",
+        "title": "User Responsibilities",
         "body": "Users must maintain active PPE compliance as logged within the Safety Module. Failure to report site incidents or intentional bypassing of the AI Safety Guardian will result in immediate platform restriction. You are responsible for ensuring all field data entered is accurate and representative of actual site conditions."
       },
       "ownership": {
@@ -449,8 +449,22 @@
     "version": "Version {version}",
     "lastUpdated": "Last updated: {date}",
     "downloadPdf": "Download PDF",
-    "comingSoon": "Coming soon",
-    "agree": "I agree to all terms"
+    "agree": "Agree to all terms",
+    "downloaded": {
+      "title": "Download PDF",
+      "headline": "Download complete",
+      "lede": "Terms of Use v{version} has been saved to this device.",
+      "metadataTitle": "File metadata",
+      "file": "File",
+      "size": "Size",
+      "hash": "Hash",
+      "hashValue": "SHA-256: {digest}",
+      "timestamp": "Timestamp",
+      "integrityOk": "The file matches the digest published by the platform, so it is the edition we issued.",
+      "integrityMismatch": "The file does not match the digest published by the platform. Download it again, and if it still differs do not rely on this copy.",
+      "open": "Open PDF",
+      "backToTerms": "Back to the terms"
+    }
   },
   "support": {
     "title": "Support",

@@ -44,6 +44,10 @@ export default function AuthLayout() {
       {/* ADR-091 — the download receipt, reached after the PDF is on disk and its digest checked. */}
       <Stack.Screen name="privacy-policy-downloaded" />
       <Stack.Screen name="terms-of-use" />
+      {/* ADR-092 — the terms download receipt, reached after the PDF is on disk and its digest
+          checked. Pushed rather than replaced, unlike the privacy receipt: BACK TO TERMS OF USE is
+          one of the two actions the drawing gives it, so the document must still be on the stack. */}
+      <Stack.Screen name="terms-of-use-downloaded" />
       <Stack.Screen name="support" />
     </Stack>
   );

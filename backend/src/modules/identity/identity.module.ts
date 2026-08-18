@@ -42,6 +42,8 @@ import {
 import { PrivacyInquiryService } from './privacy-inquiry/privacy-inquiry.service';
 import { PrivacyPolicyController } from './privacy-policy/privacy-policy.controller';
 import { PrivacyPolicyService } from './privacy-policy/privacy-policy.service';
+import { TermsOfUseController } from './terms-of-use/terms-of-use.controller';
+import { TermsOfUseService } from './terms-of-use/terms-of-use.service';
 import { ConsentController } from './consent/consent.controller';
 import { ConsentService } from './consent/consent.service';
 import { GeoIpService } from './network-origin/geoip.service';
@@ -98,6 +100,8 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
     // Public and deliberately NOT flag-gated: a notice you must authenticate to read is not a notice,
     // and the inquiry kill-switch must not take the policy document down with it.
     PrivacyPolicyController,
+    // The login footer's other legal document, public on the same terms (ADR-092).
+    TermsOfUseController,
   ],
   providers: [
     // Request-scoped: SubjectRequestRepository resolves tenant_id per request (REQUEST + CLS
@@ -110,6 +114,8 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
     PrivacyInquiryService,
     // Builds the policy PDF once and caches it — the document has no per-request input.
     PrivacyPolicyService,
+    // Same, for the Terms of Use (ADR-092).
+    TermsOfUseService,
     SendGridAdapter,
     SubjectRequestRepository,
     KeycloakAdminService,

@@ -2,7 +2,7 @@
 //
 // WHY THE TEXT IS HERE AS WELL AS IN apps/mobile/src/i18n/en.json, AND WHAT KEEPS THEM HONEST.
 // It is a second copy of legal prose, which is exactly the drift <PrivacyPolicyDocument /> was
-// extracted to prevent — so it does not stand on discipline. `scripts/ci/check-policy-parity.mjs`
+// extracted to prevent — so it does not stand on discipline. `scripts/ci/check-legal-parity.mjs`
 // reads BOTH this file and the mobile bundle on every CI lint run and fails when they disagree, on
 // the version, the effective date, or any string. Two copies with a machine check between them is a
 // different situation from two copies and a promise.

@@ -1,4 +1,9 @@
-// Terms of Use — pre-auth route (mockup/mobile/01_authen/06_terms_of_use/01_dashboard).
+// Terms of Use — pre-auth route
+// (mockup/mobile/01_authen/04_terms_of_use/01_terms_of_use_dashboard).
+//
+// The drawing moved twice without changing: `06_terms_of_use/01_dashboard` →
+// `06_terms_of_use/01_terms_of_use_dashboard` → `04_terms_of_use/…` in the 2026-08-18 renumbering of
+// the whole `01_authen/` tree (git records the last move as R100 — the same file).
 //
 // Route placement: the (auth) group, for the same reason the Privacy Policy is there — the root
 // AuthGate (app/_layout.tsx) redirects every non-(auth) route to login while unauthenticated, and
@@ -14,11 +19,32 @@
 //
 // Two departures from the drawing, both forced by what exists rather than chosen:
 //   - the top bar's SYNC button is not drawn. Pre-auth there is no session and no sync engine
-//     running, so the control would report on nothing. The back control and the wordmark stay.
-//   - "I AGREE TO ALL TERMS" closes the screen and records nothing (PO decision 2026-08-09).
+//     running, so the control would report on nothing. The back control and the title stay.
+//   - the action button closes the screen and records nothing (PO decision 2026-08-09).
 //     Nothing in the repo can accept the acceptance: the consent module covers PDPA processing
 //     purposes only (location / financial / operational) and there is no terms-acceptance column or
 //     endpoint anywhere. Pre-auth there is not even a user_id to attach one to.
+//
+// THREE COPY CUTS against the drawing, all product-owner decisions of 2026-08-18 and all recorded
+// because ADR-085 makes the drawing authoritative for copy — an unexplained difference cannot be told
+// apart from an oversight:
+//     drawing                               here
+//     ACTIVE MONITORING                     MONITORING             (AI USAGE tile)
+//     User Responsibilities (Site Safety)   User Responsibilities  (clause 03; also in the PDF)
+//     I AGREE TO ALL TERMS                  AGREE TO ALL TERMS     (the action button)
+//   Thai needs no change for the third (it carries no leading pronoun); the first two are still
+//   pending their own decision in that locale — see the SUMMARY note below.
+//
+// THE BAR CARRIES THE TITLE, not the wordmark (corrected 2026-08-18 against the drawing, which puts
+// "TERMS OF USE" in the bar and no heading in the content). It had been built the other way round —
+// wordmark in the bar, title repeated at the top of the page — which also disagreed with the sibling
+// pre-auth document, (auth)/privacy-policy.tsx, whose bar has said "PRIVACY POLICY" since it shipped.
+// The (app) TopBar's wordmark rule is a rule about the SHELL; there is no shell out here.
+//
+// DOWNLOAD PDF IS LIVE as of ADR-092 (2026-08-18), reversing the 2026-08-09 decision that rendered it
+// disabled. That call was correct while there was no terms PDF and no endpoint to serve one — both
+// now exist (`GET /terms/metadata`, `GET /terms/pdf`), built the same way the policy's are, so the
+// button downloads, verifies the digest, and pushes the receipt at (auth)/terms-of-use-downloaded.
 
 import { useState } from 'react';
 import {
@@ -35,7 +61,7 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { BrandLogo } from '../../components/BrandLogo';
+import { LoadingState } from '../../components/LoadingState';
 import { useI18n } from '../../i18n';
 import {
   darkColors,
@@ -45,6 +71,8 @@ import {
   touchTarget,
   typography,
 } from '../../theme/tokens';
+import { downloadTerms } from '../../lib/legalDownload';
+import { API_BASE_URL } from '../../api/client';
 import safetyPhoto from '../../../assets/terms-safety.jpg';
 
 // Effective version + date of the terms below (PO decision 2026-08-09: first published edition).
@@ -58,8 +86,14 @@ const K = 'terms.sections';
 
 /**
  * The six clauses, in the mockup's order. `highlight` marks the one the drawing singles out with a
- * border and a coloured numeral — Site Safety, which is the clause a field worker is actually bound
- * by day to day.
+ * border and a coloured numeral — clause 03, which is the one a field worker is actually bound by
+ * day to day.
+ *
+ * CLAUSE 03 IS TITLED "User Responsibilities", not the drawing's "User Responsibilities (Site
+ * Safety)" (product-owner decision 2026-08-18). Recorded here for the reason the tile copy below is:
+ * ADR-085 makes the drawing authoritative for copy, so a difference with no note cannot be told apart
+ * from an oversight. The title is also printed in the PDF, so backend/…/terms-of-use/terms-document.ts
+ * carries the same cut — check-legal-parity.mjs fails the build if the two ever disagree.
  */
 const SECTIONS: readonly { id: string; highlight?: true }[] = [
   { id: 'acceptance' },
@@ -70,14 +104,27 @@ const SECTIONS: readonly { id: string; highlight?: true }[] = [
   { id: 'termination' },
 ];
 
-/** The two summary tiles. `tone` names a palette key so no hex reaches the call site (§32.7). */
+/**
+ * The two summary tiles. `tone` names a palette key so no hex reaches the call site (§32.7).
+ *
+ * The accents are the drawing's own: `border-secondary-container` (a blue) on STATUS and
+ * `border-tertiary` #4cd7f6 on AI USAGE — which is `accent` here, to the digit. They read `primary`
+ * and `warning` until 2026-08-18; amber was never in this drawing, and a caution colour on a tile
+ * that says LEGALLY BINDING was saying something the document does not.
+ *
+ * THE AI USAGE TILE READS "MONITORING", NOT the drawing's "ACTIVE MONITORING" (product-owner
+ * decision 2026-08-18). A deliberate copy deviation, recorded here because ADR-085 makes the mockup
+ * authoritative for style — including copy length — so an unexplained difference cannot be told
+ * apart from an oversight. The Thai value is unchanged pending its own decision; it still carries
+ * the "continuous" sense that "Active" carried in English.
+ */
 const SUMMARY: readonly {
   id: 'status' | 'aiUsage';
   icon: keyof typeof MaterialIcons.glyphMap;
-  tone: 'cyan' | 'warning';
+  tone: 'primary' | 'accent';
 }[] = [
-  { id: 'status', icon: 'verified-user', tone: 'cyan' },
-  { id: 'aiUsage', icon: 'analytics', tone: 'warning' },
+  { id: 'status', icon: 'verified-user', tone: 'primary' },
+  { id: 'aiUsage', icon: 'analytics', tone: 'accent' },
 ];
 
 export default function TermsOfUseScreen(): React.JSX.Element {
@@ -89,6 +136,7 @@ export default function TermsOfUseScreen(): React.JSX.Element {
   // The mockup opens on the first clause (its DOMContentLoaded handler adds `active` to it) rather
   // than fully collapsed, so a reader lands on prose instead of six closed bars.
   const [openId, setOpenId] = useState<string | null>(SECTIONS[0]!.id);
+  const [downloading, setDownloading] = useState(false);
 
   const toggle = (id: string): void => {
     setOpenId((current) => (current === id ? null : id));
@@ -97,10 +145,39 @@ export default function TermsOfUseScreen(): React.JSX.Element {
     Vibration.vibrate(10);
   };
 
+  /**
+   * Fetch the document, verify it, and show the receipt (ADR-092).
+   *
+   * A failure leaves the reader on the terms with the button live again rather than pushing an error
+   * screen — the document they came to read is already in front of them and the retry is one tap,
+   * which is the call the policy screen made for the same flow. `verified` is passed through even
+   * when FALSE: the receipt states a mismatch rather than hiding it.
+   */
+  const download = async (): Promise<void> => {
+    setDownloading(true);
+    try {
+      const file = await downloadTerms(API_BASE_URL);
+      router.push({
+        pathname: '/(auth)/terms-of-use-downloaded',
+        params: {
+          fileName: file.fileName,
+          version: file.version,
+          sizeBytes: String(file.sizeBytes),
+          sha256: file.sha256,
+          verified: String(file.verified),
+          downloadedAt: file.downloadedAt,
+        },
+      });
+    } catch {
+      // Deliberately silent beyond restoring the button; there is no error surface on this screen.
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
-      {/* Top app bar — back + the wordmark. The mockup puts the screen's title in the CONTENT, not
-          in the bar, so the bar carries the brand exactly as the drawing does. */}
+      {/* Top app bar — back + the screen's title, which is where the drawing puts it. */}
       <View style={styles.header}>
         <Pressable
           testID="terms-of-use-back"
@@ -111,7 +188,9 @@ export default function TermsOfUseScreen(): React.JSX.Element {
         >
           <MaterialIcons name="arrow-back" size={24} color={darkColors.primary} />
         </Pressable>
-        <BrandLogo variant="dark" height={26} showTagline={false} />
+        <Text style={styles.headerTitle} numberOfLines={1}>
+          {t('terms.title')}
+        </Text>
       </View>
 
       <ScrollView
@@ -119,7 +198,8 @@ export default function TermsOfUseScreen(): React.JSX.Element {
         style={styles.scroll}
         contentContainerStyle={styles.content}
       >
-        <Text style={styles.title}>{t('terms.title')}</Text>
+        {/* No heading here: it is in the bar, and the drawing opens the canvas on this paragraph.
+            Printing it twice is the stutter headingStutter.spec.ts exists to stop elsewhere. */}
         <Text style={styles.intro}>{t('terms.intro')}</Text>
 
         {/* Summary tiles — two cards, each with a thick coloured rule down its leading edge. */}
@@ -130,7 +210,9 @@ export default function TermsOfUseScreen(): React.JSX.Element {
               testID={`terms-summary-${id}`}
               style={[styles.summaryCard, { borderLeftColor: darkColors[tone] }]}
             >
-              <MaterialIcons name={icon} size={22} color={darkColors[tone]} />
+              {/* The GLYPH is neutral in the drawing (`text-primary` there is its pale lavender
+                  ink, not its blue); the accent is carried by the leading rule alone. */}
+              <MaterialIcons name={icon} size={22} color={darkColors.text} />
               <Text style={styles.summaryLabel}>{t(`terms.summary.${id}.label`)}</Text>
               <Text style={styles.summaryValue}>{t(`terms.summary.${id}.value`)}</Text>
             </View>
@@ -157,14 +239,13 @@ export default function TermsOfUseScreen(): React.JSX.Element {
                 >
                   {/* The clause number, drawn large and faded — the mockup's `opacity-50`. It is
                       decoration over a title that already reads, so it is hidden from screen
-                      readers rather than announced as a bare digit before every heading. */}
+                      readers rather than announced as a bare digit before every heading.
+                      NEUTRAL ON EVERY CLAUSE, including the highlighted one: all six numerals are
+                      the same grey in the drawing. It tinted 03's cyan until 2026-08-18. */}
                   <Text
                     accessibilityElementsHidden
                     importantForAccessibility="no"
-                    style={[
-                      styles.cardNumber,
-                      section.highlight === true && styles.cardNumberHighlight,
-                    ]}
+                    style={styles.cardNumber}
                   >
                     {String(index + 1).padStart(2, '0')}
                   </Text>
@@ -228,24 +309,29 @@ export default function TermsOfUseScreen(): React.JSX.Element {
             </Text>
           </View>
 
-          {/* Rendered disabled: there is no terms PDF asset and no endpoint to serve one — the same
-              call the PO made for the Privacy Policy's download on 2026-08-03. The affordance stays
-              so the drawing is honoured.
-              NO "COMING SOON" CHIP, unlike the Privacy Policy's download. That button is full-width
-              with room to spare; this one shares a row with the version block, and the chip cost
-              ~110px of it — enough that "Last updated: Aug 9, 2026" wrapped onto a third line and
-              collided with the button (seen in the first capture). The state is carried by the
-              muted fill and by the label a screen reader announces. */}
+          {/* LIVE since ADR-092 — see the header note. The COMING SOON chip that the Privacy
+              Policy's disabled button carries was never drawn here and is not reinstated: this
+              button shares a row with the version block, and the chip cost enough of it that
+              "Last updated: Aug 9, 2026" wrapped onto a third line and collided with the button. */}
           <Pressable
             testID="terms-download-pdf"
             accessibilityRole="button"
-            accessibilityState={{ disabled: true }}
-            accessibilityLabel={`${t('terms.downloadPdf')} — ${t('terms.comingSoon')}`}
-            disabled
+            accessibilityState={{ disabled: downloading }}
+            accessibilityLabel={t('terms.downloadPdf')}
+            disabled={downloading}
+            onPress={() => void download()}
             style={styles.downloadButton}
           >
-            <MaterialIcons name="download" size={18} color={darkColors.muted} />
-            <Text style={styles.downloadText}>{t('terms.downloadPdf')}</Text>
+            {downloading ? (
+              // Wordless (Rule 40(e)): one request, so a percentage could only read 0 then 100.
+              // Default ink — this button is `elevated`, not a primary fill, so `primary` reads on it.
+              <LoadingState variant="micro" theme="dark" />
+            ) : (
+              <>
+                <MaterialIcons name="download" size={18} color={darkColors.text} />
+                <Text style={styles.downloadText}>{t('terms.downloadPdf')}</Text>
+              </>
+            )}
           </Pressable>
         </View>
 
@@ -285,18 +371,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  // Uppercased here rather than in the i18n value, as on every other pre-auth bar: the stored string
+  // stays natural, and Thai has no case so `th` renders unchanged.
+  headerTitle: {
+    flex: 1,
+    color: darkColors.text,
+    fontFamily: fontFamily.semibold,
+    fontSize: typography.title.fontSize,
+    lineHeight: typography.title.lineHeight,
+    textTransform: 'uppercase',
+  },
 
   scroll: { flex: 1 },
   content: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.xl },
 
-  title: {
-    color: darkColors.text,
-    fontFamily: fontFamily.semibold,
-    fontSize: typography.hero.fontSize,
-    lineHeight: typography.hero.lineHeight,
-  },
   intro: {
-    marginTop: spacing.xs,
     color: darkColors.muted,
     fontFamily: fontFamily.regular,
     fontSize: typography.body.fontSize,
@@ -331,10 +420,11 @@ const styles = StyleSheet.create({
 
   accordion: { marginTop: spacing.xl, gap: spacing.sm },
   card: { borderRadius: radius.lg, backgroundColor: darkColors.surface, overflow: 'hidden' },
-  // Site Safety carries an edge the other five do not. The mockup draws it at 20% opacity, which is
-  // no edge at all on a phone — the same failure the dark border token was replaced to fix — so it
-  // is the full accent here, which is what the rendered mockup actually shows.
-  cardHighlight: { borderWidth: 1, borderColor: darkColors.cyan },
+  // Site Safety carries an edge the other five do not. The mockup draws it as
+  // `border-secondary-container/20` — a BLUE at 20% opacity, which is no edge at all on a phone (the
+  // same failure the dark border token was replaced to fix), so it is that blue at full strength.
+  // It was cyan until 2026-08-18, which is a different colour from the one drawn.
+  cardHighlight: { borderWidth: 1, borderColor: darkColors.primary },
   cardHeader: {
     minHeight: touchTarget.listItem,
     paddingHorizontal: spacing.md,
@@ -344,13 +434,12 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   cardNumber: {
-    color: darkColors.primary,
-    opacity: 0.5,
+    color: darkColors.muted,
+    opacity: 0.7,
     fontFamily: fontFamily.semibold,
     fontSize: typography.title.fontSize,
     lineHeight: typography.title.lineHeight,
   },
-  cardNumberHighlight: { color: darkColors.cyan },
   cardTitle: {
     flex: 1,
     color: darkColors.text,
@@ -422,12 +511,19 @@ const styles = StyleSheet.create({
     backgroundColor: darkColors.elevated,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: spacing.xs,
   },
+  // Full-strength ink now that the control is live; it was muted while the button was disabled.
+  // UPPERCASED HERE, not in the i18n value (the rule PO set on 2026-08-03 for the pre-auth bars, and
+  // the drawing's own DOWNLOAD PDF): the stored string stays natural, so the accessibilityLabel reads
+  // "Download PDF" to a screen reader rather than being spelled out, and Thai renders unchanged
+  // because Thai has no case.
   downloadText: {
-    color: darkColors.muted,
+    color: darkColors.text,
     fontFamily: fontFamily.medium,
     fontSize: typography.label.fontSize,
+    textTransform: 'uppercase',
   },
   agreeButton: {
     minHeight: touchTarget.primaryButton,

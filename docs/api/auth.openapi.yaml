@@ -23,15 +23,19 @@ components:
       bearerFormat: JWT
 
   schemas:
-    # ─── The Privacy Policy document (ADR-091) ──────────────────────────────────
-    PolicyMetadata:
+    # ─── Downloadable legal documents: Privacy Policy (ADR-091), Terms of Use (ADR-092) ──────────
+    #
+    # ONE schema for both. The two documents are built the same way and verified the same way — a
+    # digest published before the transfer, recomputed by the client over the bytes that land — so a
+    # second, identical schema under a second name would only be a place for them to drift apart.
+    LegalDocumentMetadata:
       type: object
       required: [version, effective_date, file_name, sha256, size_bytes, language]
       properties:
         version:
           type: string
           example: 1.0.0
-          description: Must equal the version the app screen shows — held by scripts/ci/check-policy-parity.mjs.
+          description: Must equal the version the app screen shows — held by scripts/ci/check-legal-parity.mjs.
         effective_date:
           type: string
           format: date
@@ -732,7 +736,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PolicyMetadata'
+                $ref: '#/components/schemas/LegalDocumentMetadata'
 
   /privacy/policy/pdf:
     get:
@@ -753,6 +757,57 @@ paths:
               schema:
                 type: string
                 example: attachment; filename="COS_Privacy_Policy_v1.0.0.pdf"
+            ETag:
+              schema:
+                type: string
+                description: The SHA-256 of the body, quoted.
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+
+  # ─── The Terms of Use document (ADR-092) ─────────────────────────────────────────────────────
+  #
+  # The login footer's other legal document, public on the same terms as the policy above: the terms
+  # are what a person reads BEFORE deciding to sign up. Same two-route shape — metadata first so the
+  # client can verify the transfer rather than trust it.
+  /terms/metadata:
+    get:
+      summary: Version, effective date, file name and SHA-256 of the Terms of Use PDF
+      description: |
+        Fetched BEFORE the download so the client can verify the bytes it receives. The digest is
+        stable: the document has no per-request input and its PDF timestamps are pinned to the
+        effective date, so the same version always produces the same bytes.
+      tags: [terms-of-use]
+      security: []
+      responses:
+        '200':
+          description: Document metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LegalDocumentMetadata'
+
+  /terms/pdf:
+    get:
+      summary: The Terms of Use as a PDF
+      description: |
+        `ETag` is the content digest, so a conditional request costs nothing and a proxy cannot serve
+        a stale edition under a new version number.
+
+        English only — pdf-lib's standard fonts carry no Thai glyphs, and embedding a Thai face is an
+        unmade font-licensing decision. `/terms/metadata` states this in `language`.
+      tags: [terms-of-use]
+      security: []
+      responses:
+        '200':
+          description: The document
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+                example: attachment; filename="COS_Terms_of_Use_v1.0.0.pdf"
             ETag:
               schema:
                 type: string

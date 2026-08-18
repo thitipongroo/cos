@@ -7,7 +7,7 @@
 //
 // THE DIGEST HERE IS A REAL CHECK, unlike the one dropped from the inquiry receipt. The server
 // publishes the document's digest through /privacy/policy/metadata BEFORE the transfer, and
-// lib/policyDownload.ts recomputes it over the downloaded bytes — so `verified` answers "is this the
+// lib/legalDownload.ts recomputes it over the downloaded bytes — so `verified` answers "is this the
 // policy the platform published", which a reader can act on. A hash of something the device itself
 // produced would have answered nothing, which is why the receipt screen has none.
 //
@@ -39,17 +39,11 @@ import {
   typography,
 } from '../../theme/tokens';
 import { paletteFor } from '../../theme/palette';
-import { policyPdfUrl } from '../../lib/policyDownload';
+import { policyPdfUrl } from '../../lib/legalDownload';
+import { formatBytes } from '../../lib/formatBytes';
 import { API_BASE_URL } from '../../api/client';
 
 const DARK = paletteFor('dark');
-
-/** Bytes → a figure a person reads. KB/MB, one decimal, which is what the drawing shows. */
-export function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
 
 export default function PrivacyPolicyDownloadedScreen(): React.JSX.Element {
   const insets = useSafeAreaInsets();

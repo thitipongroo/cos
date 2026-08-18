@@ -14,6 +14,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiProduces } from '@nestjs/swagger
 // present on both reply objects and `@types/express` is already a devDependency; pulling in `fastify`
 // types purely to annotate one parameter would add a dependency (Rule 26/28) for no behaviour.
 import type { Response } from 'express';
+import { legalPdfMetadata, sendLegalPdf, type LegalPdfMetadata } from '../legal-document';
 import { PrivacyPolicyService } from './privacy-policy.service';
 
 @ApiTags('privacy-policy')
@@ -32,19 +33,10 @@ export class PrivacyPolicyController {
       'effective date, so the same version always produces the same bytes.',
   })
   @ApiResponse({ status: 200, description: 'Document metadata' })
-  async metadata() {
-    const pdf = await this.service.getPdf();
-    return {
-      version: pdf.version,
-      effective_date: pdf.effectiveDate,
-      file_name: pdf.fileName,
-      sha256: pdf.sha256,
-      size_bytes: pdf.bytes.length,
-      // English only: pdf-lib's standard fonts carry no Thai glyphs, and embedding a Thai face is a
-      // font-licensing decision nobody has taken. Stated rather than implied, so a Thai reader is not
-      // left wondering why the download is not in their language.
-      language: 'en',
-    };
+  async metadata(): Promise<LegalPdfMetadata> {
+    // Shared with the Terms of Use (ADR-092): both documents publish the same six fields, and two
+    // copies of that shape were a clone jscpd reported.
+    return legalPdfMetadata(await this.service.getPdf());
   }
 
   @Get('pdf')
@@ -53,13 +45,6 @@ export class PrivacyPolicyController {
   @ApiResponse({ status: 200, description: 'The document' })
   @Header('Cache-Control', 'public, max-age=3600')
   async pdf(@Res({ passthrough: true }) res: Response): Promise<Buffer> {
-    const doc = await this.service.getPdf();
-    res.header('Content-Type', 'application/pdf');
-    res.header('Content-Disposition', `attachment; filename="${doc.fileName}"`);
-    res.header('Content-Length', String(doc.bytes.length));
-    // ETag is the content digest, so a conditional request is answered without rebuilding anything
-    // and a proxy cannot serve a stale edition under a new version number.
-    res.header('ETag', `"${doc.sha256}"`);
-    return doc.bytes;
+    return sendLegalPdf(res, await this.service.getPdf());
   }
 }

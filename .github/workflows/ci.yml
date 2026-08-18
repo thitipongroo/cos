@@ -115,14 +115,14 @@ jobs:
       - name: Loading states go through <LoadingState />
         run: bash ./scripts/ci/check-loading-state.sh
 
-      # ADR-091. The Privacy Policy prose lives in two places — the mobile i18n bundle the screen
-      # renders, and the backend document the downloadable PDF is built from — because apps/mobile is
-      # a standalone workspace whose bundles the backend cannot import at runtime. Two copies of a
-      # legal notice is the drift <PrivacyPolicyDocument /> was extracted to prevent, so the trade is
-      # only acceptable with a machine between them: this fails the build the moment they disagree on
-      # the version, the effective date, or any sentence.
-      - name: Privacy Policy screen and PDF say the same thing
-        run: node ./scripts/ci/check-policy-parity.mjs
+      # ADR-091 (Privacy Policy) and ADR-092 (Terms of Use). Each document's prose lives in two
+      # places — the mobile i18n bundle the screen renders, and the backend document the downloadable
+      # PDF is built from — because apps/mobile is a standalone workspace whose bundles the backend
+      # cannot import at runtime. Two copies of a legal text is the drift <PrivacyPolicyDocument />
+      # was extracted to prevent, so the trade is only acceptable with a machine between them: this
+      # fails the build the moment they disagree on the version, the effective date, or any sentence.
+      - name: Legal screens and their PDFs say the same thing
+        run: node ./scripts/ci/check-legal-parity.mjs
 
   # ─── MLOps tests (Python / Airflow 3.x DAGs) ────────────────────────────────
   mlops-tests:
