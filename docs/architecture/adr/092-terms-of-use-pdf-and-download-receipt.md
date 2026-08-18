@@ -84,11 +84,11 @@ the policy receipt.
 Three style differences were found while implementing and fixed (ADR-085 — the mockups are
 authoritative for style):
 
-| Element              | Drawing                                   | Was                       |
-| -------------------- | ----------------------------------------- | ------------------------- |
-| Top bar              | back + **TERMS OF USE**, no page heading  | wordmark + heading in the content |
-| Summary tile accents | blue (STATUS) · `#4cd7f6` (AI USAGE)      | cyan · **amber**          |
-| Clause 03 edge + numerals | blue edge; all six numerals one grey  | cyan edge; cyan numeral on 03 |
+| Element                   | Drawing                                  | Was                               |
+| ------------------------- | ---------------------------------------- | --------------------------------- |
+| Top bar                   | back + **TERMS OF USE**, no page heading | wordmark + heading in the content |
+| Summary tile accents      | blue (STATUS) · `#4cd7f6` (AI USAGE)     | cyan · **amber**                  |
+| Clause 03 edge + numerals | blue edge; all six numerals one grey     | cyan edge; cyan numeral on 03     |
 
 The bar change also settles a disagreement between two sibling screens: `(auth)/privacy-policy.tsx`
 has carried its own title since it shipped. The `(app)` TopBar wordmark rule (2026-07-31) governs the
@@ -99,12 +99,12 @@ signed-in **shell**, and there is no shell out here.
 Four calls made while walking the built screens against the drawing. Three cut copy the drawing
 carries; the fourth reinstates something the drawing had and the first build dropped:
 
-| Where                     | Drawing                             | Shipped                | Note                                                     |
-| ------------------------- | ----------------------------------- | ---------------------- | -------------------------------------------------------- |
-| AI USAGE tile             | ACTIVE MONITORING                   | MONITORING             | Thai value pending its own decision                      |
-| Clause 03 title           | User Responsibilities (Site Safety) | User Responsibilities  | Also in the PDF — both halves cut, parity holds          |
-| Action button             | I AGREE TO ALL TERMS                | AGREE TO ALL TERMS     | Thai needs no change; it carries no leading pronoun      |
-| Receipt hash row          | `SHA-256: 8a7f...e210`              | same shape             | Reverses this ADR's own §4 note — see below              |
+| Where            | Drawing                             | Shipped               | Note                                                |
+| ---------------- | ----------------------------------- | --------------------- | --------------------------------------------------- |
+| AI USAGE tile    | ACTIVE MONITORING                   | MONITORING            | Thai value pending its own decision                 |
+| Clause 03 title  | User Responsibilities (Site Safety) | User Responsibilities | Also in the PDF — both halves cut, parity holds     |
+| Action button    | I AGREE TO ALL TERMS                | AGREE TO ALL TERMS    | Thai needs no change; it carries no leading pronoun |
+| Receipt hash row | `SHA-256: 8a7f...e210`              | same shape            | Reverses this ADR's own §4 note — see below         |
 
 The last one is a reversal worth stating plainly. §4 argued for printing the whole 64-character
 digest, because an abbreviated one cannot be compared against anything. The product owner ruled for
