@@ -7,8 +7,20 @@
 // Dark surface: this screen is opened from the dark Site Engineer Home and shares its palette
 // (§32.7 "Mobile Dark Surfaces").
 
-import { useCallback, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+import type { StyleProp, TextStyle, ViewStyle } from 'react-native';
+
+/** The part of this screen's stylesheet a row draws with. */
+type NotificationStyles = {
+  row: StyleProp<ViewStyle>;
+  rowUnread: StyleProp<ViewStyle>;
+  dot: StyleProp<ViewStyle>;
+  rowBody: StyleProp<ViewStyle>;
+  subject: StyleProp<TextStyle>;
+  body: StyleProp<TextStyle>;
+  meta: StyleProp<TextStyle>;
+};
 import {
   listNotifications,
   markAllNotificationsRead,
@@ -26,6 +38,45 @@ import {
   touchTarget,
   typography,
 } from '../../theme/tokens';
+
+/**
+ * One notification, memoized.
+ *
+ * This list is one page of twenty, so the memo is about the reading rather than the scale: marking
+ * one notification read must grey THAT row and leave its neighbours alone. `onRead` takes the
+ * notification so a single callback serves the list.
+ */
+const NotificationRow = memo(function NotificationRow({
+  notification,
+  onRead,
+  styles,
+  formatDate,
+}: {
+  notification: Notification;
+  onRead: (n: Notification) => void;
+  styles: NotificationStyles;
+  formatDate: (date: Date | string) => string;
+}) {
+  const isUnread = notification.read_at === null;
+  return (
+    <TouchableOpacity
+      testID={`notification-${notification.notification_id}`}
+      style={[styles.row, isUnread && styles.rowUnread]}
+      onPress={() => onRead(notification)}
+    >
+      {isUnread ? <View testID="unread-dot" style={styles.dot} /> : null}
+      <View style={styles.rowBody}>
+        <Text style={styles.subject} numberOfLines={2}>
+          {notification.subject ?? notification.event_type}
+        </Text>
+        <Text style={styles.body} numberOfLines={3}>
+          {notification.body}
+        </Text>
+        <Text style={styles.meta}>{formatDate(notification.created_at)}</Text>
+      </View>
+    </TouchableOpacity>
+  );
+});
 
 export default function NotificationsScreen() {
   const { t, formatDate } = useI18n();
@@ -48,7 +99,7 @@ export default function NotificationsScreen() {
 
   const unread = unreadCount(items);
 
-  const onRead = async (n: Notification): Promise<void> => {
+  const onRead = useCallback(async (n: Notification): Promise<void> => {
     if (n.read_at !== null) return;
     // Optimistic: the row greys out immediately, and mutate() replays the PATCH when back online.
     setItems((prev) =>
@@ -63,7 +114,19 @@ export default function NotificationsScreen() {
         prev.map((i) => (i.notification_id === n.notification_id ? { ...i, read_at: null } : i)),
       );
     }
-  };
+  }, []);
+
+  const renderNotification = useCallback(
+    ({ item }: { item: Notification }) => (
+      <NotificationRow
+        notification={item}
+        onRead={onRead}
+        styles={styles}
+        formatDate={formatDate}
+      />
+    ),
+    [onRead, formatDate],
+  );
 
   const onReadAll = async (): Promise<void> => {
     const now = new Date().toISOString();
@@ -98,27 +161,7 @@ export default function NotificationsScreen() {
               </Text>
             ) : null
           }
-          renderItem={({ item }) => {
-            const isUnread = item.read_at === null;
-            return (
-              <TouchableOpacity
-                testID={`notification-${item.notification_id}`}
-                style={[styles.row, isUnread && styles.rowUnread]}
-                onPress={() => void onRead(item)}
-              >
-                {isUnread ? <View testID="unread-dot" style={styles.dot} /> : null}
-                <View style={styles.rowBody}>
-                  <Text style={styles.subject} numberOfLines={2}>
-                    {item.subject ?? item.event_type}
-                  </Text>
-                  <Text style={styles.body} numberOfLines={3}>
-                    {item.body}
-                  </Text>
-                  <Text style={styles.meta}>{formatDate(item.created_at)}</Text>
-                </View>
-              </TouchableOpacity>
-            );
-          }}
+          renderItem={renderNotification}
         />
       </LoadingBoundary>
     </View>

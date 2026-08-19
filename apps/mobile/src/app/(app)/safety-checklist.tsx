@@ -23,8 +23,9 @@
 //     `inspected_at`, set server-side from the session. See <SignaturePad /> and ADR-058 for the
 //     separate contract e-signature mechanism this must not be confused with.
 
-import { useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
+import type { StyleProp, TextStyle, ViewStyle } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { get, mutate } from '../../api/client';
 import type { SafetyChecklist } from '../../db/database';
@@ -44,7 +45,7 @@ import {
   touchTarget,
   typography,
 } from '../../theme/tokens';
-import { usePalette, useIsDark } from '../../theme/usePalette';
+import { usePalette, useIsDark, type Palette } from '../../theme/usePalette';
 import { makeScreenStyles } from '../../theme/screenStyles';
 
 /** One row of a checklist template — `site_ops.safety_checklists.items` (JSONB array). */
@@ -99,6 +100,77 @@ function labelOf(item: ChecklistItem, index: number): string {
   return item.description ?? item.label ?? `#${index + 1}`;
 }
 
+/**
+ * One checklist item, memoized.
+ *
+ * This is a FORM, not a feed: every item must be ticked before the worker can attest, so the screen
+ * re-renders on every single tick. Without memo each tick rebuilt every row on the list — and the
+ * row that matters is the one whose `checked` actually changed.
+ *
+ * `showGroupLabel` is decided by the LIST, because it compares this row with the one before it, and
+ * `onToggle` takes the row's key so one callback serves them all.
+ */
+/** The subset of the screen's stylesheet an item row draws with. */
+type ChecklistStyles = {
+  groupLabel: StyleProp<TextStyle>;
+  item: StyleProp<ViewStyle>;
+  itemBody: StyleProp<ViewStyle>;
+  itemText: StyleProp<TextStyle>;
+};
+
+/** One rendered checklist line: the item, the checklist it belongs to, and its namespaced key. */
+type ChecklistRowModel = {
+  checklist: { checklistId: string; name: string };
+  item: ChecklistItem;
+  index: number;
+  key: string;
+};
+
+const ChecklistItemRow = memo(function ChecklistItemRow({
+  row,
+  checked,
+  showGroupLabel,
+  onToggle,
+  p,
+  styles,
+}: {
+  row: ChecklistRowModel;
+  checked: boolean;
+  showGroupLabel: boolean;
+  onToggle: (key: string) => void;
+  p: Palette;
+  styles: ChecklistStyles;
+}) {
+  return (
+    <View>
+      {showGroupLabel ? (
+        <Text style={[styles.groupLabel, { color: p.accent }]}>
+          {shortChecklistName(row.checklist.name)}
+        </Text>
+      ) : null}
+      <TouchableOpacity
+        testID={`safety-item-${row.key}`}
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked }}
+        onPress={() => onToggle(row.key)}
+        style={[
+          styles.item,
+          { backgroundColor: p.surface, borderColor: checked ? p.success : p.border },
+        ]}
+      >
+        <MaterialIcons
+          name={checked ? 'check-box' : 'check-box-outline-blank'}
+          size={28}
+          color={checked ? p.success : p.muted}
+        />
+        <View style={styles.itemBody}>
+          <Text style={[styles.itemText, { color: p.text }]}>{labelOf(row.item, row.index)}</Text>
+        </View>
+      </TouchableOpacity>
+    </View>
+  );
+});
+
 export default function SafetyChecklistScreen() {
   const cached = useCollection<SafetyChecklist>('local_safety_checklists');
   // The site comes from the store, not from a picker on this screen (PO decision 2026-08-11). The
@@ -116,6 +188,11 @@ export default function SafetyChecklistScreen() {
   const [submitted, setSubmitted] = useState(false);
   const t = useT();
   const p = usePalette();
+
+  // One callback for every row — the functional update keeps `checked` out of its dependency list.
+  const toggleItem = useCallback((key: string): void => {
+    setChecked((c) => ({ ...c, [key]: !c[key] }));
+  }, []);
   const isDark = useIsDark();
   // Whoever is signing — the authenticated session, never typed in.
   const displayName = useAuthStore((state) => state.displayName);
@@ -343,47 +420,24 @@ export default function SafetyChecklistScreen() {
               </TouchableOpacity>
             </View>
 
-            {rows.map((row, i) => {
-              const isChecked = Boolean(checked[row.key]);
-              // In All mode the rows come from several checklists, so each group is headed once —
-              // otherwise "ตรวจการวางเหล็กเสริม" and "สวมใส่หมวกนิรภัย" sit in one undifferentiated
-              // list and the worker cannot tell which inspection they are completing.
-              const groupChanged =
-                i === 0 || rows[i - 1]!.checklist.checklistId !== row.checklist.checklistId;
-              return (
-                <View key={row.key}>
-                  {selectedId === null && groupChanged ? (
-                    <Text style={[styles.groupLabel, { color: p.accent }]}>
-                      {shortChecklistName(row.checklist.name)}
-                    </Text>
-                  ) : null}
-                  <TouchableOpacity
-                    testID={`safety-item-${row.key}`}
-                    accessibilityRole="checkbox"
-                    accessibilityState={{ checked: isChecked }}
-                    onPress={() => setChecked((c) => ({ ...c, [row.key]: !c[row.key] }))}
-                    style={[
-                      styles.item,
-                      {
-                        backgroundColor: p.surface,
-                        borderColor: isChecked ? p.success : p.border,
-                      },
-                    ]}
-                  >
-                    <MaterialIcons
-                      name={isChecked ? 'check-box' : 'check-box-outline-blank'}
-                      size={28}
-                      color={isChecked ? p.success : p.muted}
-                    />
-                    <View style={styles.itemBody}>
-                      <Text style={[styles.itemText, { color: p.text }]}>
-                        {labelOf(row.item, row.index)}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                </View>
-              );
-            })}
+            {rows.map((row, i) => (
+              <ChecklistItemRow
+                key={row.key}
+                row={row}
+                checked={Boolean(checked[row.key])}
+                // In All mode the rows come from several checklists, so each group is headed once —
+                // otherwise "ตรวจการวางเหล็กเสริม" and "สวมใส่หมวกนิรภัย" sit in one
+                // undifferentiated list and the worker cannot tell which inspection they are
+                // completing. The comparison needs the row BEFORE this one, which only the list has.
+                showGroupLabel={
+                  selectedId === null &&
+                  (i === 0 || rows[i - 1]!.checklist.checklistId !== row.checklist.checklistId)
+                }
+                onToggle={toggleItem}
+                p={p}
+                styles={styles}
+              />
+            ))}
 
             {/* DIGITAL AUTHORIZATION — mockup 04_safety. The drawn mark is STORED (migration
                 20260808000002, PO decision 2026-08-08): it goes up with the submission and is
