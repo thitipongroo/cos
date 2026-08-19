@@ -12,19 +12,19 @@
 `mockup/mobile/01_authen/05_get_help/` draws three screens, added 2026-08-17 and renumbered from
 `07_get_help/` on 2026-08-18:
 
-| Drawing              | What it draws                                                                                                                 |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `01_home_support`    | The Support Centre already in the product, plus a `chevron_right` on the IT Hotline and Help Chat cards                        |
-| `02_hotline_details` | A hotline number, operating hours (`24/7` / `08:00–18:00`), a preparation checklist, and two regional hotlines                 |
-| `03_help_chat`       | A live conversation: `AGENT ONLINE`, `Secure Session • Ticket #8824`, agent and user bubbles, quick-action chips, a composer   |
+| Drawing              | What it draws                                                                                                                |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `01_home_support`    | The Support Centre already in the product, plus a `chevron_right` on the IT Hotline and Help Chat cards                      |
+| `02_hotline_details` | A hotline number, operating hours (`24/7` / `08:00–18:00`), a preparation checklist, and two regional hotlines               |
+| `03_help_chat`       | A live conversation: `AGENT ONLINE`, `Secure Session • Ticket #8824`, agent and user bubbles, quick-action chips, a composer |
 
 **None of it had anything behind it.** Verified 2026-08-18:
 `grep -niE "support|hotline|emergency|chat|ticket|faq|help_article" backend/prisma/schema.prisma`
 returns only `PrivacyInquiry.message`; `grep -rhoE "@Controller\('[^']*'\)"` over
 `backend/src/**/*.controller.ts` lists 24 prefixes and none of them is support, chat or ticket. Spec
-§32.7 recorded the consequence on 2026-08-17 — *"Search stays disabled and Quick Help Chat stays
-unavailable on BOTH routes … there is no `help_article`/`faq` table, no search endpoint and no chat"*
-and *"No ticket: no ticket table exists either."*
+§32.7 recorded the consequence on 2026-08-17 — _"Search stays disabled and Quick Help Chat stays
+unavailable on BOTH routes … there is no `help_article`/`faq` table, no search endpoint and no chat"_
+and _"No ticket: no ticket table exists either."_
 
 The product owner decided on 2026-08-18 to **build the backing rather than draw dead controls**, and
 answered the four questions that decision opens:
@@ -43,10 +43,10 @@ the same difficulty ADR-091 met with pre-auth privacy inquiries, and it is settl
 
 ### 1. The desk is two tables, not one, because only one of them can be public
 
-| Table                            | `tenant_id` | RLS                        | Written by     | Read by                       |
-| -------------------------------- | ----------- | -------------------------- | -------------- | ----------------------------- |
-| `platform.support_desk_default`  | none        | none — nothing to scope by | `SYSTEM_ADMIN` | **public**, incl. pre-auth    |
-| `platform.tenant_support_desks`  | NOT NULL    | ENABLE + FORCE, standard   | `TENANT_ADMIN` | that tenant, post-auth only   |
+| Table                           | `tenant_id` | RLS                        | Written by     | Read by                     |
+| ------------------------------- | ----------- | -------------------------- | -------------- | --------------------------- |
+| `platform.support_desk_default` | none        | none — nothing to scope by | `SYSTEM_ADMIN` | **public**, incl. pre-auth  |
+| `platform.tenant_support_desks` | NOT NULL    | ENABLE + FORCE, standard   | `TENANT_ADMIN` | that tenant, post-auth only |
 
 `GET /api/v1/support/desk` is **public** and returns the default row alone. When the caller presents a
 JWT, the tenant's row is read under RLS and merged over it field by field — an unset override field
@@ -65,7 +65,7 @@ committed nowhere.
 
 **`EXPO_PUBLIC_SUPPORT_CENTER_PHONE` / `EXPO_PUBLIC_SUPPORT_IT_HOTLINE` stay** as the last fallback,
 below the platform row. They are what the app has when the backend cannot be reached — which is the
-one state a support screen must survive, because a person opens it *because* something is broken.
+one state a support screen must survive, because a person opens it _because_ something is broken.
 Order: tenant override → platform default → env → control disabled and says so.
 
 ### 2. One ticket table that both an account holder and a stranger can open
@@ -145,7 +145,7 @@ answers immediately and honestly, and escalation records that a person is needed
 pretending one is present.
 
 **Why the preparation checklist is rewritten.** The drawing asks for `Device ID or Asset Tag`
-(*"Located on the back of the device hardware"*), `Site Location` and `Error Code`. Two of the three
+(_"Located on the back of the device hardware"_), `Site Location` and `Error Code`. Two of the three
 are real here and one is not: this platform has no asset tag on the back of anything, but it does
 have a device record (ADR-082/083) the app can read, a project code from `projectStore`, and a
 `COS-{DOMAIN}-{NNN}` error code that every error response actually carries (QM-10). The checklist
@@ -159,8 +159,8 @@ names those.
   submission; a chat takes a stream. The rate limit is load-bearing, not decorative.
 - **`ESCALATED` has no consumer yet.** Until a support-agent role and console exist, an escalated
   ticket waits on `SYSTEM_ADMIN`. This is recorded in the screen's copy, not hidden.
-- **Spec §32.7 changes twice.** *"Quick Help Chat stays unavailable on BOTH routes"* and *"no ticket
-  table exists either"* both stop being true, and the Support Centre's `Reference` cell stops being
+- **Spec §32.7 changes twice.** _"Quick Help Chat stays unavailable on BOTH routes"_ and _"no ticket
+  table exists either"_ both stop being true, and the Support Centre's `Reference` cell stops being
   `drawing withdrawn 2026-08-15` — there are three drawings again.
 - **The AI answers about this product.** The chat's retrieval corpus is the same troubleshooting copy
   the Support Centre already renders plus the module matrix; there is still no `help_article` table,

@@ -819,8 +819,8 @@ Dark screens (the pre-2026-08-04 set — see the note above):
 | Privacy Policy                          | `mockup/mobile/02_shared/01_privacy_policy/00_policy_dashboard`      |
 | Terms of Use (pre-auth)                 | `mockup/mobile/01_authen/04_terms_of_use/01_terms_of_use_dashboard/` |
 | Support Centre (pre-auth)               | `mockup/mobile/01_authen/05_get_help/01_home_support/`               |
-| IT Support Hotline (pre-auth)           | `mockup/mobile/01_authen/05_get_help/02_hotline_details/`           |
-| Help Chat (pre-auth)                    | `mockup/mobile/01_authen/05_get_help/03_help_chat/`                 |
+| IT Support Hotline (pre-auth)           | `mockup/mobile/01_authen/05_get_help/02_hotline_details/`            |
+| Help Chat (pre-auth)                    | `mockup/mobile/01_authen/05_get_help/03_help_chat/`                  |
 | Project Manager / Proc Manager screens  | `mockup/mobile/06_project_manager/`                                  |
 | Site Engineer Home                      | `mockup/mobile/03_site_engineer/01_home/01_se_home_dashboard/`       |
 | Tenant Admin Home                       | `mockup/mobile/04_tenant_admin/01_home/01_home_dashboard/`           |
