@@ -19,6 +19,20 @@ const mockBiometric = {
 jest.mock('expo-secure-store', () => mockSecureStore);
 jest.mock('../../lib/biometric', () => mockBiometric);
 
+// The AppState listener the store registers to re-arm the lock on foreground. Captured here so a
+// test can drive the transitions the OS would.
+const appStateHandlers: Array<(state: string) => void> = [];
+const mockRemove = jest.fn();
+jest.mock('react-native', () => ({
+  AppState: {
+    currentState: 'active',
+    addEventListener: (_type: string, handler: (state: string) => void) => {
+      appStateHandlers.push(handler);
+      return { remove: mockRemove };
+    },
+  },
+}));
+
 import { useBiometricStore } from '../biometricStore';
 
 const AVAILABLE = { available: true, kind: 'face', hardwareWithoutEnrolment: false };
@@ -167,5 +181,75 @@ describe('unlock', () => {
     mockBiometric.authenticate.mockResolvedValue('unlocked');
     await useBiometricStore.getState().unlock('Unlock Construction OS');
     expect(mockBiometric.authenticate).toHaveBeenCalledWith('Unlock Construction OS');
+  });
+
+  // The lock used to be raised once, from the root layout's launch effect, so it was per-PROCESS.
+  // A phone is backgrounded and resumed dozens of times a day and restarted once a week - so the
+  // case the gate exists for ("someone holding an already unlocked handset opens the app") was
+  // precisely the case it did not cover.
+  describe('watchAppState', () => {
+    const fire = (state: string) => appStateHandlers.forEach((h) => h(state));
+
+    beforeEach(() => {
+      appStateHandlers.length = 0;
+      mockRemove.mockClear();
+      mockBiometric.getCapability.mockResolvedValue(AVAILABLE);
+    });
+
+    it('re-raises the gate when the app returns from the background', async () => {
+      useBiometricStore.setState({ enabled: true, locked: false });
+      useBiometricStore.getState().watchAppState();
+
+      fire('background');
+      fire('active');
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(useBiometricStore.getState().locked).toBe(true);
+    });
+
+    it('ignores an inactive->active blip, which is the prompt itself on iOS', async () => {
+      // 'inactive' covers the app switcher, a system banner, and the biometric prompt. Re-locking on
+      // it would fire a second prompt on top of the one the user is answering.
+      useBiometricStore.setState({ enabled: true, locked: false });
+      useBiometricStore.getState().watchAppState();
+
+      fire('inactive');
+      await Promise.resolve();
+
+      expect(useBiometricStore.getState().locked).toBe(false);
+    });
+
+    it('does nothing for a user who never turned the setting on', async () => {
+      useBiometricStore.setState({ enabled: false, locked: false });
+      useBiometricStore.getState().watchAppState();
+
+      fire('background');
+      fire('active');
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(useBiometricStore.getState().locked).toBe(false);
+    });
+
+    it('does not lock a device that can no longer open the prompt', async () => {
+      // Same invariant as lockIfEnabled: the gate is never raised where it cannot be opened.
+      mockBiometric.getCapability.mockResolvedValue(NO_HARDWARE);
+      useBiometricStore.setState({ enabled: true, locked: false });
+      useBiometricStore.getState().watchAppState();
+
+      fire('background');
+      fire('active');
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(useBiometricStore.getState().locked).toBe(false);
+    });
+
+    it('unsubscribes when told to', () => {
+      const stop = useBiometricStore.getState().watchAppState();
+      stop();
+      expect(mockRemove).toHaveBeenCalled();
+    });
   });
 });

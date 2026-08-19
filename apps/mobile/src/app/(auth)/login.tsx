@@ -36,9 +36,8 @@ import { SvgXml } from 'react-native-svg';
 import { useRouter } from 'expo-router';
 import { getLocales } from 'expo-localization';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CosRole } from '@cos/types';
 import { useAuthStore } from '../../store/authStore';
-import { decodeJwtPayload } from '../../lib/jwt';
+import { sessionFromToken } from '../../lib/sessionClaims';
 import Constants from 'expo-constants';
 import { useT } from '../../i18n';
 import {
@@ -159,14 +158,21 @@ export default function LoginScreen() {
       discovery,
     )
       .then(async (token) => {
-        const claims = decodeJwtPayload(token.accessToken);
-        const userId = typeof claims['user_id'] === 'string' ? claims['user_id'] : '';
-        const role = claims['role'] as CosRole;
+        // Validated rather than cast — see lib/sessionClaims.ts. A token with no usable role claim
+        // used to be persisted anyway, leaving the app routing by `undefined`.
+        const session = sessionFromToken(token.accessToken);
+        if (!session) throw new Error('Access token carried no usable user_id/role claim');
+        // `?? ''` used to stand here. An empty refresh token is not a session: `authStore.hydrate`
+        // rejects it (`!refreshToken`), so the user was signed in until the first cold start and then
+        // silently signed out — and the 401 interceptor had nothing to refresh with in the meantime.
+        // Failing here instead means the OIDC error copy is shown, and the cause is one place.
+        if (!token.refreshToken) throw new Error('Token exchange returned no refresh token');
         await setTokens({
           accessToken: token.accessToken,
-          refreshToken: token.refreshToken ?? '',
-          userId,
-          role,
+          refreshToken: token.refreshToken,
+          userId: session.userId,
+          role: session.role,
+          displayName: session.displayName,
         });
       })
       .catch(() => setError(t('auth.login.oidcError')))

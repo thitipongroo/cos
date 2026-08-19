@@ -110,6 +110,8 @@ const mockRepo = {
   createLineItems: jest.fn(),
   findLineItemsByPo: jest.fn(),
   createDelivery: jest.fn(),
+  findDeliveryById: jest.fn(),
+  findPurchaseRequestById: jest.fn(),
   findDeliveriesByPo: jest.fn(),
   sumDeliveredQuantity: jest.fn(),
   createInvoice: jest.fn(),
@@ -2063,5 +2065,143 @@ describe('exact contracts — invoices', () => {
     await expect(service.approveInvoice('inv-uuid-001')).rejects.toThrow(
       'Invoice inv-uuid-001 must be RECEIVED or VERIFIED to approve (current: APPROVED)',
     );
+  });
+});
+
+// Offline idempotency (§17.4 amendment 2026-08-19). Both entities are captured on site, so their
+// writes are queued and /sync/push replays them - after a timeout, or after any retry. A replay must
+// resolve to the record already filed and run NONE of the side effects a genuine create has.
+describe('replayed offline creates', () => {
+  const existingDelivery = {
+    delivery_id: 'client-uuid',
+    po_id: 'po-uuid-001',
+    tenant_id: 'tenant-uuid-001',
+    delivery_note: null,
+    delivered_at: new Date(),
+    received_by: 'user-uuid-001',
+    notes: null,
+  } as DeliveryRow;
+
+  it('recordDelivery passes client_id through as the delivery_id', async () => {
+    mockRepo.findPoById.mockResolvedValue({ ...poFixture, status: 'ACKNOWLEDGED' as const });
+    mockRepo.createDelivery.mockResolvedValue({ delivery: existingDelivery, items: [] });
+    mockRepo.findLineItemsByPo.mockResolvedValue(lineItemFixtures);
+    mockRepo.sumDeliveredQuantity.mockResolvedValue('10.0000');
+
+    await service.recordDelivery({
+      client_id: 'client-uuid',
+      po_id: 'po-uuid-001',
+      delivered_at: new Date().toISOString(),
+      items: [],
+    });
+
+    expect(mockRepo.createDelivery).toHaveBeenCalledWith(
+      expect.objectContaining({ delivery_id: 'client-uuid' }),
+    );
+  });
+
+  it('recordDelivery on a replay returns the existing delivery and signals nothing', async () => {
+    mockRepo.findPoById.mockResolvedValue({ ...poFixture, status: 'ACKNOWLEDGED' as const });
+    mockRepo.createDelivery.mockResolvedValue(null); // ON CONFLICT DO NOTHING
+    mockRepo.findDeliveryById.mockResolvedValue(existingDelivery);
+    mockRepo.findLineItemsByPo.mockResolvedValue(lineItemFixtures);
+    mockRepo.sumDeliveredQuantity.mockResolvedValue('5.0000');
+
+    const result = await service.recordDelivery({
+      client_id: 'client-uuid',
+      po_id: 'po-uuid-001',
+      delivered_at: new Date().toISOString(),
+      items: [{ line_id: 'line-uuid-001', quantity_received: '5.0000' }],
+    });
+
+    expect(result.delivery).toBe(existingDelivery);
+    // Still answers the partial/complete question from the quantities already stored.
+    expect(result.is_partial).toBe(true);
+    // The three things that must not happen twice: the workflow signal, the event, and (in the
+    // repository) the line items.
+    expect(mockWorkflowSignal).not.toHaveBeenCalled();
+  });
+
+  it('recordDelivery rejects a client_id it cannot see - it belongs to another tenant', async () => {
+    mockRepo.findPoById.mockResolvedValue({ ...poFixture, status: 'ACKNOWLEDGED' as const });
+    mockRepo.createDelivery.mockResolvedValue(null);
+    mockRepo.findDeliveryById.mockResolvedValue(null);
+
+    await expect(
+      service.recordDelivery({
+        client_id: 'client-uuid',
+        po_id: 'po-uuid-001',
+        delivered_at: new Date().toISOString(),
+        items: [],
+      }),
+    ).rejects.toMatchObject({ status: 409 });
+  });
+
+  it('createPurchaseRequest passes client_id through as the pr_id', async () => {
+    mockRepo.createPurchaseRequest.mockResolvedValue({ pr_id: 'client-uuid' });
+
+    await service.createPurchaseRequest({
+      client_id: 'client-uuid',
+      project_id: 'proj-uuid-001',
+      items: [],
+    } as never);
+
+    expect(mockRepo.createPurchaseRequest).toHaveBeenCalledWith(
+      expect.objectContaining({ pr_id: 'client-uuid' }),
+    );
+  });
+
+  it('createPurchaseRequest on a replay returns the request already filed', async () => {
+    const existing = { pr_id: 'client-uuid', pr_number: 'PR-2026-0001' };
+    mockRepo.createPurchaseRequest.mockResolvedValue(null);
+    mockRepo.findPurchaseRequestById.mockResolvedValue(existing);
+
+    const result = await service.createPurchaseRequest({
+      client_id: 'client-uuid',
+      project_id: 'proj-uuid-001',
+      items: [],
+    } as never);
+
+    expect(result).toBe(existing);
+    expect(mockRepo.findPurchaseRequestById).toHaveBeenCalledWith('client-uuid');
+  });
+
+  it('createPurchaseRequest rejects a client_id it cannot see', async () => {
+    mockRepo.createPurchaseRequest.mockResolvedValue(null);
+    mockRepo.findPurchaseRequestById.mockResolvedValue(null);
+
+    await expect(
+      service.createPurchaseRequest({
+        client_id: 'client-uuid',
+        project_id: 'proj-uuid-001',
+        items: [],
+      } as never),
+    ).rejects.toMatchObject({ status: 409 });
+  });
+
+  it('createPurchaseRequest with no client_id and a null result is still a conflict', async () => {
+    // Cannot happen through the repository (a null return needs a pr_id), but the branch exists and
+    // must not fall through to returning undefined as a PurchaseRequestRow.
+    mockRepo.createPurchaseRequest.mockResolvedValue(null);
+
+    await expect(
+      service.createPurchaseRequest({ project_id: 'proj-uuid-001', items: [] } as never),
+    ).rejects.toMatchObject({ status: 409 });
+  });
+
+  it('recordDelivery with no client_id and a null result is a conflict, not a crash', async () => {
+    // Unreachable through the repository (a null return needs a delivery_id), but the branch exists
+    // and must not fall through to reading `.delivery` off null.
+    mockRepo.findPoById.mockResolvedValue({ ...poFixture, status: 'ACKNOWLEDGED' as const });
+    mockRepo.createDelivery.mockResolvedValue(null);
+
+    await expect(
+      service.recordDelivery({
+        po_id: 'po-uuid-001',
+        delivered_at: new Date().toISOString(),
+        items: [],
+      }),
+    ).rejects.toMatchObject({ status: 409 });
+    expect(mockRepo.findDeliveryById).not.toHaveBeenCalled();
   });
 });

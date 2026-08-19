@@ -22,11 +22,14 @@ import { SiteOpsService } from '../site-ops/site-ops.service';
 import { SafetyService } from '../safety/safety.service';
 import { WorkforceService } from '../workforce/workforce.service';
 import { AnnotationService } from '../files/annotation.service';
+import { ProcurementService } from '../procurement/procurement.service';
 import type { CreateIssueDto } from '../site-ops/dto/create-issue.dto';
 import type { CreateMaterialConsumptionDto } from '../site-ops/dto/create-material-consumption.dto';
 import type { SubmitInspectionDto } from '../site-ops/dto/submit-inspection.dto';
 import type { SyncSiteReportsDto } from '../site-ops/dto/sync-site-reports.dto';
 import type { RecordAttendanceDto } from '../workforce/dto/attendance.dto';
+import type { RecordDeliveryDto } from '../procurement/dto/record-delivery.dto';
+import type { CreatePurchaseRequestDto } from '../procurement/dto/create-purchase-request.dto';
 import type { CreateIncidentDto } from '../safety/dto/safety.dto';
 import { PushItemDto, PushResponse, DeltaResponse, ServerSyncStatus } from './dto/sync.dto';
 import { tombstoneRetentionCutoff, tombstoneRetentionDays } from './tombstone-retention';
@@ -68,6 +71,7 @@ export class SyncService {
     private readonly safety: SafetyService,
     private readonly workforce: WorkforceService,
     private readonly annotations: AnnotationService,
+    private readonly procurement: ProcurementService,
   ) {}
 
   /**
@@ -236,6 +240,30 @@ export class SyncService {
         return { status: 'ACCEPTED', server_payload: row };
       }
 
+      case 'delivery': {
+        // Goods signed for at the gate (§17.4, 2026-08-19 amendment). entity_id is the client-generated
+        // delivery_id, and recordDelivery is idempotent on it — which matters more here than for any
+        // other pushable type: delivery_items are the quantities `sumDeliveredQuantity` adds up, so a
+        // double-applied replay can mark a PO fulfilled on goods that arrived once.
+        const result = await this.procurement.recordDelivery({
+          ...(dto.payload as unknown as RecordDeliveryDto),
+          client_id: dto.entity_id,
+        });
+        return { status: 'ACCEPTED', server_payload: result.delivery };
+      }
+
+      case 'purchase-request': {
+        // Raised the moment someone on site notices the material has run out — so, where there is no
+        // signal (§17.4, 2026-08-19 amendment). entity_id is the client-generated pr_id; a replay
+        // resolves to the request already filed rather than raising a second one and consuming
+        // another PR number.
+        const row = await this.procurement.createPurchaseRequest({
+          ...(dto.payload as unknown as CreatePurchaseRequestDto),
+          client_id: dto.entity_id,
+        });
+        return { status: 'ACCEPTED', server_payload: row };
+      }
+
       case 'photo_annotation': {
         // Re-editable photo markup (ADR-056; §17.5). entity_id is the file_id; the payload carries the
         // stroke list + the base version the client read. CONFLICT_FLAGGED when someone else saved in
@@ -250,6 +278,10 @@ export class SyncService {
       }
 
       default:
+        // The set of cases above IS the client's offline contract — see SYNC_PUSHABLE_ENTITY_TYPES in
+        // @cos/types, which the mobile client gates its outbox on, and the test that asserts this
+        // switch and that constant name exactly the same types. Reaching here means a client queued
+        // something this server cannot replay, which it should have refused to queue at all.
         throw new BadRequestException(`Unknown entity_type: ${dto.entity_type}`);
     }
   }

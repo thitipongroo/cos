@@ -21,7 +21,7 @@ import {
   devicePlatform,
   deviceModel,
 } from '../lib/deviceTrust';
-import { decodeJwtPayload } from '../lib/jwt';
+import { sessionFromToken } from '../lib/sessionClaims';
 
 const ACCESS_TOKEN_KEY = 'cos_access_token';
 const REFRESH_TOKEN_KEY = 'cos_refresh_token';
@@ -172,18 +172,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   verifyOtp: async (phoneNumber, otp) => {
     const tokens = await verifyOtpApi(phoneNumber, otp);
-    const claims = decodeJwtPayload(tokens.accessToken);
-    const userId = typeof claims['user_id'] === 'string' ? claims['user_id'] : '';
-    const role = claims['role'] as CosRole;
-    // Keycloak's standard `name` claim (given_name + family_name). Not every account has one, so the
-    // avatar treats it as optional.
-    const displayName = typeof claims['name'] === 'string' ? claims['name'] : null;
+    // Validated, not cast. `claims['role'] as CosRole` used to hand `undefined` to SecureStore (which
+    // throws) whenever the claim was absent, and would persist an unrecognised role string when it
+    // was present but unknown. See lib/sessionClaims.ts.
+    const session = sessionFromToken(tokens.accessToken);
+    if (!session) {
+      throw new Error('Access token carried no usable user_id/role claim');
+    }
+    if (!tokens.refreshToken) {
+      // Without one there is no silent refresh, and `hydrate()` rejects the stored session on the
+      // next launch — so this would be a session that quietly expires at the next cold start.
+      throw new Error('Sign-in returned no refresh token');
+    }
     await get().setTokens({
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
-      userId,
-      role,
-      displayName,
+      userId: session.userId,
+      role: session.role,
+      displayName: session.displayName,
     });
     // Enrol this device's public key so the NEXT login on it is trusted (§20.6.1). Best-effort: runs
     // after the session is set (so the request is authenticated) and never blocks or fails login.

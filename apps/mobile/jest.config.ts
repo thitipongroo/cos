@@ -52,18 +52,35 @@ const config: Config = {
   },
   collectCoverage: true,
   coverageDirectory: 'coverage',
-  // Scope the 100% gate to unit-testable business logic. Excluded by omission: UI screens
-  // (src/app/**), RN components (src/components/**), the i18n React provider (src/i18n/index.tsx —
-  // its logic lives in the fully covered src/i18n/*.ts modules), the axios instance + interceptors
-  // (src/api/client.ts), WatermelonDB runtime wiring (src/db/database|schema|migrations + models),
-  // and React data hooks that require a render host (useNetworkStatus, useCollection). These are
-  // covered by the Detox E2E suite / integration, not unit tests.
+  // WHAT THIS LIST IS FOR, after 2026-08-19. The gate below is 100%/100%, and it was 100%/100% on the
+  // day a review found seven data-losing defects in the sync engine — because every one of them lived
+  // in the WIRING between two covered modules rather than inside either: `requeueFailed` and
+  // `resetStale` had no caller, so a failed mutation was never retried; `registerBackgroundSyncTask`
+  // had no caller, so the background job never existed; nothing ever wrote `syncStore.pendingCount`,
+  // so the only sync indicator in the product read "synced" to a device holding an unsent shift.
+  // Unit coverage of a module cannot see that nobody calls it.
+  //
+  // Two things changed in response. First and most of all, the WIRING WAS MOVED INTO THE GATED TREE
+  // rather than the gate being stretched over the wiring: sync/syncRunner.ts (the single entry point
+  // every trigger now uses), sync/queueObserver.ts (queue depth → the store the pill reads),
+  // sync/resolutionTargets.ts (server verdict → the local row) and sync/httpFailure.ts each exist
+  // because the logic they hold used to sit inline in a screen or a layout, where nothing could reach
+  // it. A test can now assert that the connection is made, which is the class of bug that got through.
+  //
+  // Second, `src/api/client.ts` joins the list — the 401-refresh interceptor and the offline-queue
+  // fallback are where the app meets the server, and the refresh queue leaked pending promises there
+  // for months. The remaining src/api modules are thin request wrappers; screens (src/app) and RN
+  // components (src/components) need a render host this project does not install (no
+  // react-test-renderer / @testing-library/react-native) and stay with Detox; src/db is runtime SQLite
+  // wiring. Those exclusions are a real gap, not a claim of coverage — they are why the E2E suite
+  // exists, and the hooks below are the three that are pure store reads.
   collectCoverageFrom: [
     'src/sync/**/*.ts',
     'src/store/*.ts',
     'src/lib/**/*.ts',
     'src/i18n/**/*.ts',
     'src/api/auth.ts',
+    'src/api/client.ts',
     'src/hooks/useSyncStatus.ts',
     'src/hooks/usePendingCount.ts',
     'src/hooks/useConflicts.ts',

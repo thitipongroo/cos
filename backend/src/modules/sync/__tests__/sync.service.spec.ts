@@ -16,14 +16,17 @@ function harness() {
   const safety = { createIncident: jest.fn() };
   const workforce = { recordAttendance: jest.fn() };
   const annotations = { applyPush: jest.fn() };
+  // Delivery + purchase-request push handlers (§17.4 amendment 2026-08-19).
+  const procurement = { recordDelivery: jest.fn(), createPurchaseRequest: jest.fn() };
   const svc = new SyncService(
     db as never,
     siteOps as never,
     safety as never,
     workforce as never,
     annotations as never,
+    procurement as never,
   );
-  return { svc, tx, db, siteOps, safety, workforce, annotations };
+  return { svc, tx, db, siteOps, safety, workforce, annotations, procurement };
 }
 
 const push = (over: Partial<PushItemDto>): PushItemDto => ({
@@ -147,6 +150,43 @@ describe('SyncService', () => {
         server_payload: { inspection_id: 'insp1', status: 'FAILED' },
       });
       expect(siteOps.submitInspection).toHaveBeenCalledWith(payload);
+    });
+
+    // Admitted to the offline set on 2026-08-19 (§17.4 amendment). Both take entity_id as the
+    // client-generated primary key, which is what makes a replayed queue item idempotent.
+    it('delivery delegates to ProcurementService with entity_id as the client_id', async () => {
+      const { svc, procurement } = harness();
+      procurement.recordDelivery.mockResolvedValue({
+        delivery: { delivery_id: 'd1' },
+        is_partial: false,
+      });
+
+      const res = await svc.push(
+        push({ entity_type: 'delivery', entity_id: 'd1', payload: { po_id: 'po1', items: [] } }),
+      );
+
+      expect(procurement.recordDelivery).toHaveBeenCalledWith(
+        expect.objectContaining({ po_id: 'po1', client_id: 'd1' }),
+      );
+      expect(res).toEqual({ status: 'ACCEPTED', server_payload: { delivery_id: 'd1' } });
+    });
+
+    it('purchase-request delegates to ProcurementService with entity_id as the client_id', async () => {
+      const { svc, procurement } = harness();
+      procurement.createPurchaseRequest.mockResolvedValue({ pr_id: 'pr1' });
+
+      const res = await svc.push(
+        push({
+          entity_type: 'purchase-request',
+          entity_id: 'pr1',
+          payload: { project_id: 'p1', items: [] },
+        }),
+      );
+
+      expect(procurement.createPurchaseRequest).toHaveBeenCalledWith(
+        expect.objectContaining({ project_id: 'p1', client_id: 'pr1' }),
+      );
+      expect(res).toEqual({ status: 'ACCEPTED', server_payload: { pr_id: 'pr1' } });
     });
 
     it('photo_annotation delegates to AnnotationService and passes conflict_status through', async () => {

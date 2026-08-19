@@ -8,7 +8,7 @@
 
 import { openDatabaseSync } from 'expo-sqlite';
 import { drizzle } from 'drizzle-orm/expo-sqlite';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { localDbStatus, type LocalDbStatus } from '../sync/localDbLimit';
 import {
   localSiteReports,
@@ -25,153 +25,128 @@ import {
 export const sqlite = openDatabaseSync('cos_offline_v2.db', { enableChangeListener: true });
 sqlite.execSync('PRAGMA journal_mode = WAL');
 
-const DDL_VERSION = 6;
+const DDL_VERSION = 8;
 
-// v2→v3 (ADR-056): the re-editable photo-annotation table. Idempotent (IF NOT EXISTS), so it is safe
-// to run both as an upgrade step and — via the fresh CREATE block below — on a first install.
-const ANNOTATIONS_DDL = `
+// ── Schema, expressed as it should END UP, not as a chain of upgrade steps ──────────────────────
+//
+// WHY THIS IS NOT A LADDER OF `if (current === n)` BRANCHES ANY MORE. It was, and on 2026-08-19 a
+// review found that the ladder had no rung for v5: a device on v5 matched none of the v1–v4 branches
+// and fell through to the fresh-install block, whose `CREATE TABLE IF NOT EXISTS` no-ops on tables
+// that already exist — so `local_issues.issue_type` / `created_at` were never added, while
+// `user_version` was still stamped to 6. Every read of that table then failed with "no such column",
+// which `runDeltaSync`'s caller swallows, so sync died silently and permanently on those devices.
+//
+// A ladder needs one correct rung per released version and stays correct only while nobody forgets
+// one. What follows cannot forget: the CREATE block declares the FINAL shape of every table, and
+// ADDED_COLUMNS declares every column added after a table's first release. Both are applied
+// idempotently — `IF NOT EXISTS` for tables, a `PRAGMA table_info` check for columns — so the same
+// code takes a fresh install, a v1 install and a v5 install to exactly the same schema. Adding a
+// column from here on is two edits (the CREATE block and ADDED_COLUMNS) plus a DDL_VERSION bump, and
+// no new branch.
+
+// The whole schema at DDL_VERSION. Safe to run against any prior version: existing tables are left
+// alone and only genuinely missing ones are created.
+const CREATE_TABLES_DDL = `
+  CREATE TABLE IF NOT EXISTS local_site_reports (
+    id TEXT PRIMARY KEY NOT NULL, report_id TEXT NOT NULL, project_id TEXT NOT NULL,
+    report_date TEXT NOT NULL, summary TEXT, blockers TEXT, manpower_count INTEGER,
+    status TEXT NOT NULL, sync_status TEXT NOT NULL);
+  CREATE TABLE IF NOT EXISTS local_issues (
+    id TEXT PRIMARY KEY NOT NULL, issue_id TEXT NOT NULL, project_id TEXT NOT NULL,
+    report_id TEXT, title TEXT NOT NULL, description TEXT, severity TEXT NOT NULL,
+    status TEXT NOT NULL, issue_type TEXT, created_at TEXT, sync_status TEXT NOT NULL);
+  CREATE TABLE IF NOT EXISTS local_photos (
+    id TEXT PRIMARY KEY NOT NULL, photo_id TEXT NOT NULL, entity_type TEXT NOT NULL,
+    entity_id TEXT NOT NULL, local_path TEXT NOT NULL, upload_status TEXT NOT NULL,
+    server_file_id TEXT, upload_retry_count INTEGER);
+  CREATE TABLE IF NOT EXISTS local_tasks (
+    id TEXT PRIMARY KEY NOT NULL, task_id TEXT NOT NULL, project_id TEXT NOT NULL,
+    task_name TEXT NOT NULL, status TEXT NOT NULL, progress_percent REAL NOT NULL,
+    assigned_to TEXT, work_type TEXT, planned_start TEXT, planned_end TEXT,
+    planned_start_time TEXT, planned_end_time TEXT,
+    sync_status TEXT NOT NULL);
+  CREATE TABLE IF NOT EXISTS local_attendance (
+    id TEXT PRIMARY KEY NOT NULL, log_id TEXT NOT NULL, worker_id TEXT NOT NULL,
+    project_id TEXT NOT NULL, check_in_at TEXT, check_out_at TEXT, hours_worked REAL,
+    sync_status TEXT NOT NULL);
+  CREATE TABLE IF NOT EXISTS local_safety_checklists (
+    id TEXT PRIMARY KEY NOT NULL, checklist_id TEXT NOT NULL, project_id TEXT NOT NULL,
+    checklist_name TEXT NOT NULL, version INTEGER NOT NULL, items TEXT NOT NULL,
+    responses TEXT, sync_status TEXT NOT NULL);
+  CREATE TABLE IF NOT EXISTS local_projects (
+    id TEXT PRIMARY KEY NOT NULL, project_id TEXT NOT NULL, project_code TEXT NOT NULL,
+    project_name TEXT NOT NULL, status TEXT NOT NULL);
+  CREATE TABLE IF NOT EXISTS local_incidents (
+    id TEXT PRIMARY KEY NOT NULL, incident_id TEXT NOT NULL, project_id TEXT NOT NULL,
+    incident_type TEXT NOT NULL, severity TEXT NOT NULL, status TEXT NOT NULL,
+    created_at TEXT, sync_status TEXT NOT NULL);
+  CREATE TABLE IF NOT EXISTS local_material_consumptions (
+    id TEXT PRIMARY KEY NOT NULL, consumption_id TEXT NOT NULL, project_id TEXT NOT NULL,
+    material_name TEXT NOT NULL, quantity REAL NOT NULL, unit TEXT NOT NULL,
+    consumed_at TEXT, sync_status TEXT NOT NULL);
   CREATE TABLE IF NOT EXISTS local_photo_annotations (
     local_photo_id TEXT PRIMARY KEY NOT NULL, strokes TEXT NOT NULL,
     base_version INTEGER NOT NULL, dirty INTEGER NOT NULL, updated_at TEXT NOT NULL);
 `;
 
-// v3→v4: the task fields the Tasks screen shows on each card — trade (`work_type`) and the planned
-// window. The server has always sent them (`/sync/delta` runs `SELECT *` over projects.tasks); the
-// client simply dropped them on the floor, so a card could show nothing but a name and a percentage.
-// Nullable, because a task may genuinely have no planned dates, and because rows cached before this
-// upgrade have no values to backfill from until the next delta pull refreshes them.
-//
-// NOT idempotent — SQLite has no ADD COLUMN IF NOT EXISTS — so it runs on the v3 upgrade path only;
-// a fresh install gets these columns from the CREATE TABLE below.
-const TASK_DETAIL_DDL = `
-  ALTER TABLE local_tasks ADD COLUMN work_type TEXT;
-  ALTER TABLE local_tasks ADD COLUMN planned_start TEXT;
-  ALTER TABLE local_tasks ADD COLUMN planned_end TEXT;
-`;
+/**
+ * Every column added to a table AFTER that table's first release, with the version that added it
+ * recorded for the reader. Order does not matter — each is applied only if genuinely absent — but
+ * keeping them grouped by the release that introduced them keeps the history legible.
+ *
+ * Identifiers are fixed literals in this file, never user input; `PRAGMA table_info` takes no bound
+ * parameters, so interpolation is the only form available and is safe here.
+ */
+const ADDED_COLUMNS: ReadonlyArray<{ table: string; column: string; type: string }> = [
+  // v1→v2 (G-M5a/G-M5b): site-report blockers + manpower.
+  { table: 'local_site_reports', column: 'blockers', type: 'TEXT' },
+  { table: 'local_site_reports', column: 'manpower_count', type: 'INTEGER' },
+  // v3→v4: the task fields the Tasks screen shows on each card — trade and the planned window. The
+  // server has always sent them (`/sync/delta` runs `SELECT *` over projects.tasks); the client
+  // simply dropped them, so a card could show nothing but a name and a percentage.
+  { table: 'local_tasks', column: 'work_type', type: 'TEXT' },
+  { table: 'local_tasks', column: 'planned_start', type: 'TEXT' },
+  { table: 'local_tasks', column: 'planned_end', type: 'TEXT' },
+  // v4→v5: the PLANNED WORKING WINDOW ("08:00 - 12:00"), cached from the two TIME columns migration
+  // 20260811000001 added to projects.tasks. A worker looking at a card at 09:00 wants to know
+  // whether this is the morning job, which a date range cannot tell them.
+  { table: 'local_tasks', column: 'planned_start_time', type: 'TEXT' },
+  { table: 'local_tasks', column: 'planned_end_time', type: 'TEXT' },
+  // v5→v6: what KIND of issue it is and when it was raised, for the Site Engineer's issue board.
+  // Both have existed on `site_ops.issues` all along and `/sync/delta` selects the whole row.
+  { table: 'local_issues', column: 'issue_type', type: 'TEXT' },
+  { table: 'local_issues', column: 'created_at', type: 'TEXT' },
+  // v7->v8: the photo upload attempt counter. It lives on the row because PhotoUploadQueue is
+  // reconstructed every sync cycle, so the in-memory counter it used to keep reset to zero each time
+  // and its retry ceiling was unreachable (see sync/PhotoUploadQueue.ts).
+  { table: 'local_photos', column: 'upload_retry_count', type: 'INTEGER' },
+];
 
-// v4→v5: the PLANNED WORKING WINDOW ("08:00 - 12:00"), cached from the two TIME columns migration
-// 20260811000001 added to projects.tasks. The dashboard's priority cards are headed by it — a
-// worker looking at a card at 09:00 wants to know whether this is the morning job, which the date
-// range they used to show cannot tell them.
-//
-// Nullable, and NOT backfilled: nothing records what time a past task was planned for, and a card
-// with no window falls back to its dates rather than to an assumed shift.
-const TASK_TIME_DDL = `
-  ALTER TABLE local_tasks ADD COLUMN planned_start_time TEXT;
-  ALTER TABLE local_tasks ADD COLUMN planned_end_time TEXT;
-`;
+// None of the added columns are backfilled: a row already cached has no value for one until the next
+// delta pull refreshes it, and a card with no age shows none rather than an invented one.
 
-// v5→v6: the two issue columns the Site Engineer's issue board reads — what KIND of issue it is and
-// when it was raised. Both have existed on `site_ops.issues` all along (`issue_type` since migration
-// 20260619000002, `created_at` since the table was created) and `/sync/delta` runs SELECT * over it,
-// so the server has been sending them and the client dropping them.
-//
-// They replace the two things the drawing puts on a card that nothing could fill: its location line
-// is now the issue's CATEGORY (PO decision 2026-08-12, after `site_ops.issues` was confirmed to
-// carry no floor or room link at all), and its "2h ago" is now a real age.
-//
-// Nullable and NOT backfilled: a row already cached has no value for either until the next delta
-// pull refreshes it, and a card with no age shows none rather than an invented one.
-const ISSUE_DETAIL_DDL = `
-  ALTER TABLE local_issues ADD COLUMN issue_type TEXT;
-  ALTER TABLE local_issues ADD COLUMN created_at TEXT;
-`;
+/** Whether `table` already has `column` — the idempotence check that replaces version branching. */
+function columnExists(table: string, column: string): boolean {
+  const rows = sqlite.getAllSync<{ name: string }>(`PRAGMA table_info(${table})`);
+  return rows.some((r) => r.name === column);
+}
 
 function ddl(): void {
   const row = sqlite.getFirstSync<{ user_version: number }>('PRAGMA user_version');
   const current = row?.user_version ?? 0;
   if (current >= DDL_VERSION) return;
 
-  // v1→v2 (G-M5a/G-M5b): add site-report blockers + manpower_count columns to existing installs.
-  // Fresh installs (current < 1) get these columns from the CREATE TABLE below, so only ALTER when
-  // upgrading from exactly v1 (SQLite has no ADD COLUMN IF NOT EXISTS).
-  if (current === 1) {
-    sqlite.execSync(`
-      ALTER TABLE local_site_reports ADD COLUMN blockers TEXT;
-      ALTER TABLE local_site_reports ADD COLUMN manpower_count INTEGER;
-      ${ANNOTATIONS_DDL}
-      ${TASK_DETAIL_DDL}
-      ${TASK_TIME_DDL}
-      ${ISSUE_DETAIL_DDL}
-      PRAGMA user_version = ${DDL_VERSION};
-    `);
-    return;
+  sqlite.execSync(CREATE_TABLES_DDL);
+  for (const { table, column, type } of ADDED_COLUMNS) {
+    // SQLite has no ADD COLUMN IF NOT EXISTS, hence the explicit check rather than a try/catch —
+    // swallowing the error would also swallow a genuinely malformed ALTER.
+    if (!columnExists(table, column)) {
+      sqlite.execSync(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
+    }
   }
-
-  // v2→v3: existing v2 installs already have every v2 table — only the annotations table is new.
-  if (current === 2) {
-    sqlite.execSync(`
-      ${ANNOTATIONS_DDL}
-      ${TASK_DETAIL_DDL}
-      ${TASK_TIME_DDL}
-      ${ISSUE_DETAIL_DDL}
-      PRAGMA user_version = ${DDL_VERSION};
-    `);
-    return;
-  }
-
-  // v3→v4: the task-detail columns, plus v5's times on the way past.
-  if (current === 3) {
-    sqlite.execSync(`
-      ${TASK_DETAIL_DDL}
-      ${TASK_TIME_DDL}
-      ${ISSUE_DETAIL_DDL}
-      PRAGMA user_version = ${DDL_VERSION};
-    `);
-    return;
-  }
-
-  // v4→v5: the planned working window only.
-  if (current === 4) {
-    sqlite.execSync(`
-      ${TASK_TIME_DDL}
-      ${ISSUE_DETAIL_DDL}
-      PRAGMA user_version = ${DDL_VERSION};
-    `);
-    return;
-  }
-
-  sqlite.execSync(`
-    CREATE TABLE IF NOT EXISTS local_site_reports (
-      id TEXT PRIMARY KEY NOT NULL, report_id TEXT NOT NULL, project_id TEXT NOT NULL,
-      report_date TEXT NOT NULL, summary TEXT, blockers TEXT, manpower_count INTEGER,
-      status TEXT NOT NULL, sync_status TEXT NOT NULL);
-    CREATE TABLE IF NOT EXISTS local_issues (
-      id TEXT PRIMARY KEY NOT NULL, issue_id TEXT NOT NULL, project_id TEXT NOT NULL,
-      report_id TEXT, title TEXT NOT NULL, description TEXT, severity TEXT NOT NULL,
-      status TEXT NOT NULL, issue_type TEXT, created_at TEXT, sync_status TEXT NOT NULL);
-    CREATE TABLE IF NOT EXISTS local_photos (
-      id TEXT PRIMARY KEY NOT NULL, photo_id TEXT NOT NULL, entity_type TEXT NOT NULL,
-      entity_id TEXT NOT NULL, local_path TEXT NOT NULL, upload_status TEXT NOT NULL,
-      server_file_id TEXT);
-    CREATE TABLE IF NOT EXISTS local_tasks (
-      id TEXT PRIMARY KEY NOT NULL, task_id TEXT NOT NULL, project_id TEXT NOT NULL,
-      task_name TEXT NOT NULL, status TEXT NOT NULL, progress_percent REAL NOT NULL,
-      assigned_to TEXT, work_type TEXT, planned_start TEXT, planned_end TEXT,
-      planned_start_time TEXT, planned_end_time TEXT,
-      sync_status TEXT NOT NULL);
-    CREATE TABLE IF NOT EXISTS local_attendance (
-      id TEXT PRIMARY KEY NOT NULL, log_id TEXT NOT NULL, worker_id TEXT NOT NULL,
-      project_id TEXT NOT NULL, check_in_at TEXT, check_out_at TEXT, hours_worked REAL,
-      sync_status TEXT NOT NULL);
-    CREATE TABLE IF NOT EXISTS local_safety_checklists (
-      id TEXT PRIMARY KEY NOT NULL, checklist_id TEXT NOT NULL, project_id TEXT NOT NULL,
-      checklist_name TEXT NOT NULL, version INTEGER NOT NULL, items TEXT NOT NULL,
-      responses TEXT, sync_status TEXT NOT NULL);
-    CREATE TABLE IF NOT EXISTS local_projects (
-      id TEXT PRIMARY KEY NOT NULL, project_id TEXT NOT NULL, project_code TEXT NOT NULL,
-      project_name TEXT NOT NULL, status TEXT NOT NULL);
-    CREATE TABLE IF NOT EXISTS local_incidents (
-      id TEXT PRIMARY KEY NOT NULL, incident_id TEXT NOT NULL, project_id TEXT NOT NULL,
-      incident_type TEXT NOT NULL, severity TEXT NOT NULL, status TEXT NOT NULL,
-      created_at TEXT, sync_status TEXT NOT NULL);
-    CREATE TABLE IF NOT EXISTS local_material_consumptions (
-      id TEXT PRIMARY KEY NOT NULL, consumption_id TEXT NOT NULL, project_id TEXT NOT NULL,
-      material_name TEXT NOT NULL, quantity REAL NOT NULL, unit TEXT NOT NULL,
-      consumed_at TEXT, sync_status TEXT NOT NULL);
-    ${ANNOTATIONS_DDL}
-    PRAGMA user_version = ${DDL_VERSION};
-  `);
+  // Stamped LAST and separately, so a failure part-way leaves the version behind and the next launch
+  // retries from where it stopped rather than declaring a half-applied schema current.
+  sqlite.execSync(`PRAGMA user_version = ${DDL_VERSION}`);
 }
 ddl();
 
@@ -244,15 +219,87 @@ export async function upsertByKey(
   }
 }
 
-// Delete rows matching a server id in a given table's key column (delta tombstones).
-export async function deleteByKey(
+/**
+ * Delete every row whose key is in `keyValues` (delta tombstones).
+ *
+ * Replaced a one-id-at-a-time `deleteByKey`, which was removed with its last caller rather than left
+ * exported for a hypothetical one.
+ *
+ * `/sync/delta` returns `deleted` as a FLAT list of ids with no entity type attached, so the only way
+ * to apply it is to try each id against each table. Done one id at a time that is 6 statements per
+ * tombstone; a delta carrying 500 deletions cost 3,000 sequential round-trips on the handle the UI
+ * thread also draws from. This makes it 6 statements per PAGE regardless of how many ids it holds.
+ */
+export async function deleteByKeys(
+  table: TableName,
+  keyColumn: string,
+  keyValues: string[],
+): Promise<void> {
+  if (keyValues.length === 0) return;
+  const t = TABLES[table];
+  const col = t[keyColumn as keyof typeof t] as never;
+  await db.delete(t).where(inArray(col, keyValues));
+}
+
+/**
+ * Which of `keyValues` already exist in `table` — one query instead of one SELECT per row.
+ *
+ * Lets the delta applier decide insert-vs-update for a whole page up front, rather than re-asking
+ * the database the same question once per row (`upsertByKey` does exactly that, and is kept for the
+ * single-row callers that are not in a hot loop).
+ */
+export async function existingKeys(
+  table: TableName,
+  keyColumn: string,
+  keyValues: string[],
+): Promise<Set<string>> {
+  if (keyValues.length === 0) return new Set();
+  const t = TABLES[table];
+  const col = t[keyColumn as keyof typeof t] as never;
+  const rows = await db.select({ key: col }).from(t).where(inArray(col, keyValues));
+  return new Set(rows.map((r) => String((r as { key: unknown }).key)));
+}
+
+/** Insert many rows in one statement (each still gets its own local id). */
+export async function insertMany(
+  table: TableName,
+  rows: Array<Record<string, unknown>>,
+): Promise<void> {
+  if (rows.length === 0) return;
+  const t = TABLES[table];
+  await db.insert(t).values(rows.map((values) => ({ id: newLocalId(), ...values })) as never);
+}
+
+/**
+ * Write a sync status onto the local row a pushed mutation came from.
+ *
+ * The write-back half of the /sync/push loop — see sync/resolutionTargets.ts for how `keyValue`
+ * locates the row and why some entity types have no row to locate.
+ */
+export async function setSyncStatusByKey(
   table: TableName,
   keyColumn: string,
   keyValue: string,
+  status: string,
 ): Promise<void> {
   const t = TABLES[table];
   const col = t[keyColumn as keyof typeof t] as never;
-  await db.delete(t).where(eq(col, keyValue));
+  await db
+    .update(t)
+    .set({ offlineSyncStatus: status } as never)
+    .where(eq(col, keyValue));
+}
+
+/**
+ * Empty a table completely.
+ *
+ * Used only for `full_resync_required`: when the client's cursor predates the server's tombstone
+ * retention window, the `deleted` list it receives is knowingly incomplete, so rows deleted on the
+ * server while this device was away would otherwise live on it forever. The server documents this
+ * as the client's obligation (SyncService.delta); the client had never implemented it.
+ */
+export async function clearTable(table: TableName): Promise<void> {
+  await db.delete(TABLES[table]);
 }
 
 // Re-export row types so existing `import { Issue } from '../db/database'` call sites compile.

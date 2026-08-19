@@ -11,6 +11,7 @@
 // not a theoretical one.
 
 import { create } from 'zustand';
+import { AppState } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { authenticate, getCapability, type BiometricKind } from '../lib/biometric';
 
@@ -37,6 +38,19 @@ interface BiometricState {
   setEnabled: (enabled: boolean) => Promise<boolean>;
   lockIfEnabled: () => Promise<void>;
   unlock: (promptMessage: string) => Promise<boolean>;
+
+  /**
+   * Re-raise the gate whenever the app returns to the foreground, for as long as the returned
+   * function is not called.
+   *
+   * WHY THE LAUNCH-ONLY LOCK WAS NOT ENOUGH. `lockIfEnabled()` ran once, from the root layout's
+   * hydrate effect, so the lock was per-PROCESS. A phone is rarely restarted: the app is
+   * backgrounded and resumed dozens of times a day and killed once a week, so the case this gate
+   * exists for — "someone holding an already unlocked handset opens the app" (lib/biometric.ts) — is
+   * exactly the case it did not cover. Whoever picked up the unattended phone simply switched back
+   * to a still-mounted, still-unlocked session.
+   */
+  watchAppState: () => () => void;
 }
 
 export const useBiometricStore = create<BiometricState>((set, get) => ({
@@ -128,5 +142,18 @@ export const useBiometricStore = create<BiometricState>((set, get) => ({
     if (outcome === 'cancelled') return false;
     set({ locked: false });
     return true;
+  },
+
+  watchAppState: () => {
+    let previous = AppState.currentState;
+    const subscription = AppState.addEventListener('change', (next) => {
+      // Only the background→active EDGE. 'inactive' is transient on iOS (the app switcher, a system
+      // banner, the biometric prompt ITSELF), and re-locking on it would fire a second prompt on top
+      // of the one the user is answering.
+      const returned = previous.match(/inactive|background/) && next === 'active';
+      previous = next;
+      if (returned) void get().lockIfEnabled();
+    });
+    return () => subscription.remove();
   },
 }));

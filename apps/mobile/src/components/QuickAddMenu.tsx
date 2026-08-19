@@ -9,7 +9,7 @@
 // drift. `variant="dark"` because this surface is a modal that stays dark on both themes.
 //
 // Real vs honest-placeholder policy ("ถ้าไม่รู้ ห้ามเดา"):
-//   • Force System Sync   → REAL: runPushSync() then runDeltaSync() (§17.6 flush + pull).
+//   • Force System Sync   → REAL: runSyncCycle() — push then pull (§17.6 flush + pull).
 //   • SYNCED pill         → REAL: useSyncStatus() (same source as SyncPill / the SyncStatusBar).
 //   • Active Projects     → REAL: count from GET /projects/mine.
 //   • System Health       → REAL: GET /health/live liveness (checkBackendHealth) shown as a status word,
@@ -34,8 +34,7 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { runPushSync } from '../sync/runPushSync';
-import { runDeltaSync } from '../sync/runDeltaSync';
+import { runSyncCycle } from '../sync/syncRunner';
 import { getMyProjects } from '../api/projects';
 import { checkBackendHealth } from '../api/health';
 import { BrandLogo } from './BrandLogo';
@@ -100,15 +99,10 @@ export function QuickAddMenu({
   const forceSync = (): void => {
     if (syncing) return;
     setSyncing(true);
-    runPushSync()
-      .catch(() => {
-        /* offline / transient — the queue stays, retried on next entry */
-      })
-      .then(() => runDeltaSync())
-      .catch(() => {
-        /* offline / transient — local cache unchanged */
-      })
-      .finally(() => setSyncing(false));
+    // Same single entry point the shell, the reconnect listener and the background job use, so a
+    // manual sync cannot race one of those (runSyncCycle joins an in-flight cycle rather than
+    // starting a second). It never rejects — the outcome is reported through syncStore/<SyncPill />.
+    void runSyncCycle().finally(() => setSyncing(false));
   };
 
   const healthLabel =

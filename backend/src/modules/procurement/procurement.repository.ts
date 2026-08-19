@@ -181,17 +181,39 @@ export class ProcurementRepository {
    * there claimed it ran "inside the caller's transaction", which was never true — leaving a window
    * where concurrent creates both read the same MAX and the second one died on the unique index.
    */
+  /**
+   * Create a purchase request, at most once per caller-supplied `pr_id`.
+   *
+   * Returns null when a request with that id already exists — the offline replay case (§17.4, 2026-08-19
+   * amendment). The caller reads the existing row back and skips whatever side effects a genuine
+   * creation would have had.
+   *
+   * THE EXISTENCE CHECK COMES BEFORE THE NUMBER ALLOCATION, deliberately. `nextPrNumberIn` consumes
+   * the tenant's next PR-<year>-<seq> under an advisory lock; running it first would burn a document
+   * number on every replay of a request that was already filed, leaving gaps in a sequence people
+   * read off paperwork. The ON CONFLICT below still guards the case where two replays race past the
+   * check together.
+   */
   async createPurchaseRequest(params: {
+    /** Client-generated id for offline creates. Omitted → the column DEFAULT mints one. */
+    pr_id?: string;
     project_id: string;
     pr_number?: string;
     requested_by: string;
     required_date?: string;
     year?: number;
     items?: Array<{ description: string; quantity: number; unit: string; material_id?: string }>;
-  }): Promise<PurchaseRequestRow> {
+  }): Promise<PurchaseRequestRow | null> {
     // PR + its lines in one transaction: a request that records no materials is not a request, so
     // the two must not be able to land separately.
     return this.db.run(async (prisma) => {
+      if (params.pr_id) {
+        const existing = await prisma.$queryRaw<PurchaseRequestRow[]>`
+          SELECT * FROM procurement.purchase_requests
+          WHERE pr_id = ${params.pr_id}::uuid AND tenant_id = ${this.tenantId}::uuid`;
+        if (existing[0]) return null;
+      }
+
       let prNumber = params.pr_number;
       if (!prNumber) {
         const year = params.year ?? new Date().getFullYear();
@@ -206,12 +228,18 @@ export class ProcurementRepository {
         prNumber = await this.nextPrNumberIn(prisma, year);
       }
 
+      // COALESCE, not two query branches: a null pr_id falls through to the column's own
+      // gen_random_uuid() DEFAULT, so the online path is byte-for-byte what it was.
       const rows = await prisma.$queryRaw<PurchaseRequestRow[]>`
-        INSERT INTO procurement.purchase_requests (project_id, tenant_id, pr_number, requested_by, required_date)
-        VALUES (${params.project_id}::uuid, ${this.tenantId}::uuid, ${prNumber},
+        INSERT INTO procurement.purchase_requests (pr_id, project_id, tenant_id, pr_number, requested_by, required_date)
+        VALUES (COALESCE(${params.pr_id ?? null}::uuid, gen_random_uuid()),
+                ${params.project_id}::uuid, ${this.tenantId}::uuid, ${prNumber},
                 ${params.requested_by}::uuid, ${params.required_date ?? null}::date)
+        ON CONFLICT (pr_id) DO NOTHING
         RETURNING *`;
-      const pr = rows[0]!;
+      // Empty means a concurrent replay inserted it between the check above and this statement.
+      if (!rows[0]) return null;
+      const pr = rows[0];
       const items = params.items ?? [];
       if (items.length > 0) {
         // One set-based INSERT rather than a round trip per line, all still inside this transaction.
@@ -647,22 +675,59 @@ export class ProcurementRepository {
 
   // ── Deliveries ────────────────────────────────────────────────────────────
 
+  /**
+   * Record a delivery, at most once per caller-supplied `delivery_id`.
+   *
+   * Returns null when one with that id already exists — the offline replay case. This matters more
+   * here than anywhere else in procurement: `delivery_items` is what `sumDeliveredQuantity` adds up
+   * to decide whether a PO line is fulfilled, so a replayed delivery does not merely duplicate a
+   * record, it DOUBLE-COUNTS goods received and can close a PO that is still short.
+   */
+  /** One delivery by id, tenant-scoped. Used to answer a replayed offline create. */
+  async findDeliveryById(deliveryId: string): Promise<DeliveryRow | null> {
+    const rows = await this.db.run(
+      (prisma) =>
+        prisma.$queryRaw<DeliveryRow[]>`
+        SELECT * FROM procurement.deliveries
+        WHERE delivery_id = ${deliveryId}::uuid AND tenant_id = ${this.tenantId}::uuid`,
+    );
+    return rows[0] ?? null;
+  }
+
+  /** One purchase request by id, tenant-scoped. Used to answer a replayed offline create. */
+  async findPurchaseRequestById(prId: string): Promise<PurchaseRequestRow | null> {
+    const rows = await this.db.run(
+      (prisma) =>
+        prisma.$queryRaw<PurchaseRequestRow[]>`
+        SELECT * FROM procurement.purchase_requests
+        WHERE pr_id = ${prId}::uuid AND tenant_id = ${this.tenantId}::uuid`,
+    );
+    return rows[0] ?? null;
+  }
+
   async createDelivery(params: {
+    /** Client-generated id for offline creates. Omitted → the column DEFAULT mints one. */
+    delivery_id?: string;
     po_id: string;
     delivery_note?: string;
     delivered_at: string;
     received_by: string;
     notes?: string;
     items: Array<{ line_id: string; quantity_received: string }>;
-  }): Promise<{ delivery: DeliveryRow; items: DeliveryItemRow[] }> {
+  }): Promise<{ delivery: DeliveryRow; items: DeliveryItemRow[] } | null> {
     return this.db.run(async (prisma) => {
       const deliveries = await prisma.$queryRaw<DeliveryRow[]>`
-        INSERT INTO procurement.deliveries (po_id, tenant_id, delivery_note, delivered_at, received_by, notes)
-        VALUES (${params.po_id}::uuid, ${this.tenantId}::uuid,
+        INSERT INTO procurement.deliveries (delivery_id, po_id, tenant_id, delivery_note, delivered_at, received_by, notes)
+        VALUES (COALESCE(${params.delivery_id ?? null}::uuid, gen_random_uuid()),
+                ${params.po_id}::uuid, ${this.tenantId}::uuid,
                 ${params.delivery_note ?? null}, ${params.delivered_at}::timestamptz,
                 ${params.received_by}::uuid, ${params.notes ?? null})
+        ON CONFLICT (delivery_id) DO NOTHING
         RETURNING *`;
-      const delivery = deliveries[0]!;
+      // Nothing returned means this delivery was already recorded — the line items below, which are
+      // the quantities, must NOT run again.
+      if (!deliveries[0]) return null;
+      const delivery = deliveries[0];
 
       // Single set-based INSERT, same reasoning as insertLineItems. Ordered back to the caller's
       // input order via line_id, which uq_delivery_line makes unique within one delivery.

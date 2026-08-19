@@ -605,6 +605,85 @@ describe('syncSiteReports', () => {
 describe('createIssue', () => {
   beforeEach(() => mockRepo.nextIssueNumber.mockResolvedValue('ISS-2026-0001'));
 
+  // Offline idempotency. `client_id` has been accepted since G-M11 for photo linkage, but the write
+  // was not idempotent on it: a replayed queue item hit issues_pkey and came back a 500, which the
+  // device's outbox reads as a retryable failure - so the issue existed on the server while the
+  // person who raised it watched it retry five times and get discarded under 17.2.
+  describe('replayed offline create', () => {
+    /** publish mock of the KafkaProducer this spec constructs. */
+    const publishMock = (): jest.Mock => {
+      const { KafkaProducer } = jest.requireMock('@cos/shared') as { KafkaProducer: jest.Mock };
+      return (KafkaProducer.mock.results[0]?.value as { publish: jest.Mock }).publish;
+    };
+
+    it('returns the issue already raised, without re-emitting or re-numbering', async () => {
+      const existing = makeIssue({ issue_id: 'client-uuid' });
+      mockRepo.findIssueById.mockResolvedValue(existing);
+      publishMock().mockClear();
+
+      const result = await service.createIssue({
+        client_id: 'client-uuid',
+        project_id: 'project-1',
+        title: 'Crack in foundation',
+        severity: IssueSeverity.HIGH,
+      });
+
+      expect(result).toBe(existing);
+      expect(mockRepo.createIssue).not.toHaveBeenCalled();
+      // No second notification, and no second read of the ISS-<year>-<seq> sequence.
+      expect(mockRepo.nextIssueNumber).not.toHaveBeenCalled();
+      expect(publishMock()).not.toHaveBeenCalled();
+    });
+
+    it('does not look for an existing issue when the caller sent no client_id', async () => {
+      mockRepo.findIssueById.mockResolvedValue(null);
+      mockRepo.createIssue.mockResolvedValue(makeIssue());
+
+      await service.createIssue({
+        project_id: 'project-1',
+        title: 'Crack in foundation',
+        severity: IssueSeverity.HIGH,
+      });
+
+      expect(mockRepo.findIssueById).not.toHaveBeenCalled();
+      expect(mockRepo.createIssue).toHaveBeenCalled();
+    });
+
+    it('resolves a concurrent replay that won the insert race', async () => {
+      // Nothing found by the pre-check, then an empty RETURNING from ON CONFLICT DO NOTHING.
+      const existing = makeIssue({ issue_id: 'client-uuid' });
+      mockRepo.findIssueById.mockResolvedValueOnce(null).mockResolvedValueOnce(existing);
+      mockRepo.createIssue.mockResolvedValue(null);
+      publishMock().mockClear();
+
+      const result = await service.createIssue({
+        client_id: 'client-uuid',
+        project_id: 'project-1',
+        title: 'Crack in foundation',
+        severity: IssueSeverity.HIGH,
+      });
+
+      expect(result).toBe(existing);
+      expect(publishMock()).not.toHaveBeenCalled();
+    });
+
+    it('rejects an id that conflicts but is invisible - it belongs to another tenant', async () => {
+      // RLS hides the row while the primary key still rejects the insert. A silent success would
+      // report an issue this tenant cannot see and nobody will act on.
+      mockRepo.findIssueById.mockResolvedValue(null);
+      mockRepo.createIssue.mockResolvedValue(null);
+
+      await expect(
+        service.createIssue({
+          client_id: 'client-uuid',
+          project_id: 'project-1',
+          title: 'Crack in foundation',
+          severity: IssueSeverity.HIGH,
+        }),
+      ).rejects.toMatchObject({ status: 409 });
+    });
+  });
+
   it('creates issue and emits site.issue.created.v1', async () => {
     mockRepo.createIssue.mockResolvedValue(makeIssue());
     const result = await service.createIssue({

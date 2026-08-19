@@ -31,6 +31,8 @@ import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { loadProgress } from '../../lib/loadingState';
 import { getSettings, updateSettings, type TenantSettings } from '../../api/settings';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
+import { UnavailableNote } from '../../components/UnavailableNote';
+import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { useT } from '../../i18n';
 import {
   darkColors,
@@ -90,7 +92,11 @@ export default function SystemSettingsScreen(): React.JSX.Element {
   // The org code is selectable, read-only text; tapping copy selects it so the OS Copy menu appears.
   const onCopyCode = (): void => codeRef.current?.focus();
 
+  // Online-required (§17.4). Read here so the controls can say so before they are used.
+  const { isOnline } = useNetworkStatus();
+
   const onToggleNotify = (value: boolean): void => {
+    if (!isOnline) return;
     const prev = notify;
     setNotify(value); // optimistic
     updateSettings({ notifications_enabled: value }).catch(() => {
@@ -100,6 +106,7 @@ export default function SystemSettingsScreen(): React.JSX.Element {
   };
 
   const onSaveToken = (): void => {
+    if (!isOnline) return;
     if (!settings || token === (settings.line_channel_token ?? '')) return;
     const next = token.trim();
     updateSettings({ line_channel_token: next === '' ? null : next })
@@ -209,6 +216,14 @@ export default function SystemSettingsScreen(): React.JSX.Element {
 
         {/* LINE Notification (REAL: GET/PATCH /tenant/settings) */}
         <View style={[styles.card, { borderLeftWidth: 4, borderLeftColor: LINE_GREEN }]}>
+          {/* Said BEFORE the tap, not in an alert after it — the same rule the COMING SOON chips
+              follow. Tenant settings are online-required (§17.4 puts permission/config changes in the
+              online-required set, and api/settings.ts says so in its own header), so `mutate()` now
+              refuses to queue them: without this the user filled the field, pressed save, and only
+              then learnt it could not be saved. */}
+          {isOnline ? null : (
+            <UnavailableNote testID="settings-online-only" reason={t('common.onlineOnly')} />
+          )}
           <View style={styles.rowBetween}>
             <View style={styles.rowLeft}>
               <View style={[styles.iconPlate, { backgroundColor: `${LINE_GREEN}1A` }]}>
@@ -222,6 +237,7 @@ export default function SystemSettingsScreen(): React.JSX.Element {
             <Switch
               testID="line-toggle"
               value={notify}
+              disabled={!isOnline}
               onValueChange={onToggleNotify}
               trackColor={{ false: darkColors.border, true: darkColors.primary }}
               thumbColor={notify ? darkColors.onPrimary : darkColors.muted}
@@ -234,6 +250,7 @@ export default function SystemSettingsScreen(): React.JSX.Element {
                 testID="line-token"
                 style={styles.tokenInput}
                 value={token}
+                editable={isOnline}
                 onChangeText={setToken}
                 onEndEditing={onSaveToken}
                 secureTextEntry={!revealed}

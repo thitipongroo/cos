@@ -46,7 +46,7 @@ import SafetyOfficerHome from '../../components/SafetyOfficerHome';
 import { useT } from '../../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
 import { usePalette, useIsDark, type Palette } from '../../theme/usePalette';
-import { formatMoney } from '@cos/financial';
+import { Decimal, formatMoney, sumDecimals, toDecimal } from '@cos/financial';
 import {
   committedSpend,
   openRfqCount,
@@ -423,6 +423,7 @@ function FieldHome() {
 
 // ── EXECUTIVE — active projects · budget vs actual · open critical issues ─────
 interface ExecutiveDashboardRow {
+  /** DECIMAL strings, exactly as the API returned them — never parsed to a JS number. */
   totalActual: string;
   totalBudget: string;
   overdueInvoiceCount: number;
@@ -433,8 +434,8 @@ function ExecHome() {
   const loaderTheme = useLoaderTheme();
   const projects = useCollection<Project>('local_projects');
   const t = useT();
-  const [budget, setBudget] = useState<number | null>(null);
-  const [actual, setActual] = useState<number | null>(null);
+  const [budget, setBudget] = useState<Decimal | null>(null);
+  const [actual, setActual] = useState<Decimal | null>(null);
   const [critical, setCritical] = useState<number | null>(null);
   // First-load flag: true until the remote KPI fetches settle (success OR offline failure), so the
   // loader crossfades to the real values — which stay the offline-safe `—` when a fetch fails.
@@ -450,8 +451,20 @@ function ExecHome() {
     });
     const execFetch = get<ExecutiveDashboardRow[]>('/analytics/executive')
       .then((rows) => {
-        setBudget(rows.reduce((s, r) => s + Number(r.totalBudget), 0));
-        setActual(rows.reduce((s, r) => s + Number(r.totalActual), 0));
+        // decimal.js, not `+`. QM-3 forbids native float for money, and these are the largest
+        // figures in the product — a portfolio's total budget, hundreds of millions of baht, where a
+        // double's 2^-53 relative error stops being invisible. lib/portfolioFinance.ts sums the very
+        // same class of figure for the PM's Finance screen and says so in its header; this screen was
+        // reducing with `s + Number(...)` a few lines away from importing that module's formatter.
+        //
+        // NOT FIXED HERE, because it cannot be from this endpoint: `/analytics/executive` returns no
+        // currency, so a portfolio spanning two of them is still added together. portfolioFinance
+        // refuses that (it totals the dominant currency and reports how many projects it left out)
+        // and can only do so because `GET /finance/budget/:projectId` carries
+        // `total_budget_currency`. Giving the executive figure the same honesty needs the currency on
+        // the analytics row.
+        setBudget(sumDecimals(rows.map((r) => toDecimal(r.totalBudget))));
+        setActual(sumDecimals(rows.map((r) => toDecimal(r.totalActual))));
       })
       .catch(() => {
         /* offline — keep last */
@@ -473,7 +486,7 @@ function ExecHome() {
 
   // DESIGN.md §9.5 — one presentation everywhere, and never a bare toLocaleString: that renders
   // 1.234,56 on a German handset and degrades on Android builds with trimmed ICU.
-  const money = (n: number | null): string => (n === null ? '—' : formatMoney(n));
+  const money = (n: Decimal | null): string => (n === null ? '—' : formatMoney(n));
 
   return (
     <Screen testID="home-screen">

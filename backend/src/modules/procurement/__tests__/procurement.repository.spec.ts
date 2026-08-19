@@ -267,7 +267,7 @@ describe('ProcurementRepository', () => {
       pr_number: 'PR-001',
       requested_by: 'user-uuid-001',
     });
-    expect(result.pr_id).toBe('pr-uuid-001');
+    expect(result!.pr_id).toBe('pr-uuid-001');
   });
 
   it('createPurchaseRequest defaults the allocation year to now when the caller omits it', async () => {
@@ -615,8 +615,8 @@ describe('ProcurementRepository', () => {
       received_by: 'user-uuid-001',
       items: [{ line_id: 'line-uuid-001', quantity_received: '10.0000' }],
     });
-    expect(result.delivery.delivery_id).toBe('del-uuid-001');
-    expect(result.items).toHaveLength(1);
+    expect(result!.delivery.delivery_id).toBe('del-uuid-001');
+    expect(result!.items).toHaveLength(1);
   });
 
   it('createDelivery records the header with no items at all', async () => {
@@ -630,8 +630,8 @@ describe('ProcurementRepository', () => {
       received_by: 'user-uuid-001',
       items: [],
     });
-    expect(result.delivery.delivery_id).toBe('del-uuid-001');
-    expect(result.items).toEqual([]);
+    expect(result!.delivery.delivery_id).toBe('del-uuid-001');
+    expect(result!.items).toEqual([]);
     expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(1);
   });
 
@@ -654,8 +654,8 @@ describe('ProcurementRepository', () => {
       received_by: 'user-uuid-001',
       items: [{ line_id: 'line-requested', quantity_received: '1.0000' }],
     });
-    expect(result.items).toHaveLength(1);
-    expect(result.items[0]!.line_id).toBe('line-UNREQUESTED');
+    expect(result!.items).toHaveLength(1);
+    expect(result!.items[0]!.line_id).toBe('line-UNREQUESTED');
   });
 
   it('createDelivery inserts all items in one query, ordered by the caller’s line_ids', async () => {
@@ -682,7 +682,7 @@ describe('ProcurementRepository', () => {
 
     // One INSERT for the delivery + one for all three items.
     expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(2);
-    expect(result.items.map((i) => i.line_id)).toEqual(lineIds);
+    expect(result!.items.map((i) => i.line_id)).toEqual(lineIds);
   });
 
   it('findDeliveriesByPo returns rows', async () => {
@@ -852,5 +852,83 @@ describe('ProcurementRepository', () => {
     expect(await repo.vendorPriceStats('v1')).toEqual({ price_pct: 95.5, count: 4 });
     mockPrisma.$queryRaw.mockResolvedValueOnce([]);
     expect(await repo.vendorPriceStats('v1')).toEqual({ price_pct: null, count: 0 });
+  });
+
+  // Offline idempotency (§17.4 amendment 2026-08-19). /sync/push replays a queued create - after a
+  // timeout, or after any retry - so a caller-supplied id must produce at most one row.
+  describe('idempotent creates', () => {
+    it('createPurchaseRequest returns null when the pr_id already exists, without allocating a number', async () => {
+      // The existence check runs BEFORE nextPrNumberIn, so a replay does not burn a PR number and
+      // leave a gap in a sequence people read off paperwork.
+      mockPrisma.$queryRaw.mockResolvedValueOnce([{ pr_id: 'pr-uuid-001' }]);
+
+      await expect(
+        repo.createPurchaseRequest({
+          pr_id: 'pr-uuid-001',
+          project_id: 'proj-uuid-001',
+          requested_by: 'user-uuid-001',
+        }),
+      ).resolves.toBeNull();
+      expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
+    });
+
+    it('createPurchaseRequest returns null when a concurrent replay wins the insert race', async () => {
+      // Nothing found by the pre-check, then an empty RETURNING: another replay landed in between.
+      mockPrisma.$queryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+
+      await expect(
+        repo.createPurchaseRequest({
+          pr_id: 'pr-uuid-001',
+          pr_number: 'PR-2026-0001',
+          project_id: 'proj-uuid-001',
+          requested_by: 'user-uuid-001',
+        }),
+      ).resolves.toBeNull();
+    });
+
+    it('createDelivery returns null on a replay and does NOT insert line items', async () => {
+      // The load-bearing assertion. delivery_items are the quantities sumDeliveredQuantity adds up,
+      // so re-inserting them would double-count goods received and could close a PO still short.
+      mockPrisma.$queryRaw.mockResolvedValueOnce([]);
+
+      await expect(
+        repo.createDelivery({
+          delivery_id: 'del-uuid-001',
+          po_id: 'po-uuid-001',
+          delivered_at: '2026-08-19T00:00:00Z',
+          received_by: 'user-uuid-001',
+          items: [{ line_id: 'line-uuid-001', quantity_received: '10.0000' }],
+        }),
+      ).resolves.toBeNull();
+      // Exactly one statement ran: the header insert that returned nothing.
+      expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  // The read-back a replayed create uses to answer with the record already filed.
+  describe('lookups for replayed creates', () => {
+    it('findDeliveryById returns the row', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([{ delivery_id: 'del-uuid-001' }]);
+      await expect(repo.findDeliveryById('del-uuid-001')).resolves.toEqual({
+        delivery_id: 'del-uuid-001',
+      });
+    });
+
+    it('findDeliveryById returns null when the id is not this tenant', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([]);
+      await expect(repo.findDeliveryById('del-uuid-001')).resolves.toBeNull();
+    });
+
+    it('findPurchaseRequestById returns the row', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([{ pr_id: 'pr-uuid-001' }]);
+      await expect(repo.findPurchaseRequestById('pr-uuid-001')).resolves.toEqual({
+        pr_id: 'pr-uuid-001',
+      });
+    });
+
+    it('findPurchaseRequestById returns null when the id is not this tenant', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([]);
+      await expect(repo.findPurchaseRequestById('pr-uuid-001')).resolves.toBeNull();
+    });
   });
 });

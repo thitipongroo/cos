@@ -7,8 +7,7 @@ import { View, StyleSheet } from 'react-native';
 import { usePathname } from 'expo-router';
 import { SelectProjectSheet } from '../../components/SelectProjectSheet';
 import { CosRole } from '@cos/types';
-import { runDeltaSync } from '../../sync/runDeltaSync';
-import { runPushSync } from '../../sync/runPushSync';
+import { runSyncCycle } from '../../sync/syncRunner';
 import { checkLocalDbLimit } from '../../db/database';
 import { TopBar } from '../../components/TopBar';
 import { Breadcrumb } from '../../components/Breadcrumb';
@@ -18,11 +17,14 @@ import { useIsDark } from '../../theme/usePalette';
 import { setLastAppPath } from '../../lib/e2e/lastRoute';
 import { useAuthStore } from '../../store/authStore';
 import { useProjectStore } from '../../store/projectStore';
+import { useNetworkStatus } from '../../hooks/useNetworkStatus';
+import { useOfflineStore } from '../../store/offlineStore';
 
 export default function AppLayout() {
   const pathname = usePathname();
   const role = useAuthStore((s) => s.role);
   const hydrateProject = useProjectStore((s) => s.hydrate);
+  const { isOnline } = useNetworkStatus();
 
   // The remembered site, read back once per launch. Until it has been read, `active` is null and the
   // guard below must not fire — otherwise every cold start would bounce a worker who had already
@@ -41,19 +43,21 @@ export default function AppLayout() {
   // server-side delta into the local DB. Both are best-effort — offline or transient failures leave
   // local state untouched and are retried on the next entry. After the pull grows the cache, check
   // it against the §17.7 500 MB ceiling (warns on WARN/FULL).
+  //
+  // AND AGAIN THE MOMENT THE SIGNAL COMES BACK. `isOnline` in the dependency list is the whole point:
+  // the effect used to run once, on `[]`, so a worker who spent a morning filling in reports with no
+  // coverage had to leave the app group and come back before any of it was sent. `useNetworkStatus`
+  // already knew when connectivity returned; nothing had ever asked it. `runSyncCycle` is idempotent
+  // and self-serialising, so the extra runs (including the false start when the hook's optimistic
+  // initial `true` is corrected) cost one no-op each.
   useEffect(() => {
-    runPushSync()
-      .catch(() => {
-        /* offline or transient — queued mutations stay pending, retried next entry */
-      })
-      .then(() => runDeltaSync())
-      .catch(() => {
-        /* offline or transient — local cache stays as-is */
-      })
-      .finally(() => {
-        checkLocalDbLimit();
-      });
-  }, []);
+    if (!isOnline) return;
+    void runSyncCycle().finally(() => {
+      // Published, not just logged. `checkLocalDbLimit` returns the §17.7 verdict and its only other
+      // output is a console.warn, which nobody on a site can see.
+      useOfflineStore.getState().setLocalDbStatus(checkLocalDbLimit());
+    });
+  }, [isOnline]);
 
   // Shell colour follows the USER'S theme, not the role (PO decision 2026-08-04: dark is the product
   // default for every role, light is selectable in Profile). This replaces the previous rule where

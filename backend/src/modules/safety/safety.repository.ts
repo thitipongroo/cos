@@ -70,7 +70,20 @@ export class SafetyRepository {
 
   // ── Incidents ───────────────────────────────────────────────────────────────
 
+  /**
+   * Insert an incident under a caller-supplied id.
+   *
+   * ON CONFLICT DO NOTHING against the `incident_id` primary key, the same idempotency shape
+   * `insertCarbonRecord` uses in site-ops: a replayed offline incident must not become a second
+   * safety record. Returns null when the row already existed, so the caller can skip re-emitting
+   * `safety.incident.created.v1` — re-emitting is what would re-notify the Safety Officer and re-arm
+   * the §19.3 escalation timer for an incident that was already reported.
+   *
+   * `incident_id` is now passed explicitly rather than left to the column DEFAULT, because the
+   * conflict target has to be a value the client can repeat.
+   */
   async createIncident(params: {
+    incident_id: string;
     project_id: string;
     incident_type: string;
     severity: string;
@@ -78,20 +91,23 @@ export class SafetyRepository {
     task_id?: string | null;
     latitude?: number | null;
     longitude?: number | null;
-  }): Promise<IncidentRow> {
+  }): Promise<IncidentRow | null> {
     const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<IncidentRow[]>`
         INSERT INTO site_ops.incidents
-          (tenant_id, project_id, task_id, incident_type, severity, reported_by, latitude, longitude)
+          (incident_id, tenant_id, project_id, task_id, incident_type, severity, reported_by,
+           latitude, longitude)
         VALUES
-          (${this.tenantId}::uuid, ${params.project_id}::uuid, ${params.task_id ?? null}::uuid,
+          (${params.incident_id}::uuid, ${this.tenantId}::uuid, ${params.project_id}::uuid,
+           ${params.task_id ?? null}::uuid,
            ${params.incident_type}::text, ${params.severity}::text, ${params.reported_by}::uuid,
            ${params.latitude ?? null}::numeric, ${params.longitude ?? null}::numeric)
+        ON CONFLICT (incident_id) DO NOTHING
         RETURNING *
       `,
     );
-    return rows[0]!;
+    return rows[0] ?? null;
   }
 
   async findIncidents(params: {

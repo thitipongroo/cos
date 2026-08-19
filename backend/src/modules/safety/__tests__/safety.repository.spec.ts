@@ -45,23 +45,25 @@ describe('SafetyRepository', () => {
     expect(
       (
         await repo.createIncident({
+          incident_id: 'inc-1',
           project_id: 'p1',
           incident_type: 'fall',
           severity: 'HIGH',
           reported_by: 'u1',
           task_id: 't1',
         })
-      ).incident_id,
+      )?.incident_id,
     ).toBe('inc-1');
     expect(
       (
         await repo.createIncident({
+          incident_id: 'inc-1',
           project_id: 'p1',
           incident_type: 'fall',
           severity: 'LOW',
           reported_by: 'u1',
         })
-      ).incident_id,
+      )?.incident_id,
     ).toBe('inc-1');
   });
 
@@ -173,5 +175,20 @@ describe('SafetyRepository', () => {
     mockPrisma.$queryRaw.mockResolvedValue([summary]);
     expect((await repo.getComplianceSummary('p1')).open_incidents).toBe(2);
     expect((await repo.getComplianceSummary()).revoked_permits).toBe(1);
+  });
+
+  it('returns null when the incident_id already exists (ON CONFLICT DO NOTHING)', async () => {
+    // The replay case: /sync/push resends a queued offline incident and the insert must not create a
+    // second safety record. An empty RETURNING is how DO NOTHING reports that.
+    mockPrisma.$queryRaw.mockResolvedValue([]);
+    await expect(
+      repo.createIncident({
+        incident_id: 'inc-1',
+        project_id: 'p1',
+        incident_type: 'fall',
+        severity: 'HIGH',
+        reported_by: 'u1',
+      }),
+    ).resolves.toBeNull();
   });
 });

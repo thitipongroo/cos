@@ -23,6 +23,28 @@ export class CreateIncidentDto {
   @IsUUID()
   project_id!: string;
 
+  /**
+   * Client-generated incident id, for offline creates (mirrors `client_id` on CreateIssueDto and
+   * SyncSiteReportsDto). When provided it BECOMES the server `incident_id`.
+   *
+   * WHY THIS HAD TO EXIST. An incident filed with no signal is queued on the device and replayed by
+   * `/sync/push` when the link returns. Without a client id the server minted a fresh UUID on every
+   * attempt, so any replay — and `mutate()` queues on a TIMEOUT too, where the first attempt may
+   * well have landed — created a SECOND incident record, re-notified the Safety Officer and re-armed
+   * the §19.3 30-minute escalation timer. Duplicate safety records are not a cosmetic problem: they
+   * are the input to the compliance summary, and an incident that appears twice is an incident whose
+   * count nobody can trust.
+   *
+   * Optional, so the online path and older clients are unchanged: absent means "mint one".
+   */
+  @ApiPropertyOptional({
+    format: 'uuid',
+    description: 'Client-generated id for offline idempotency',
+  })
+  @IsOptional()
+  @IsUUID()
+  client_id?: string;
+
   @ApiProperty({ description: 'Incident classification (free-form)' })
   @IsString()
   @IsNotEmpty()

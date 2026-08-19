@@ -14,7 +14,8 @@
       "empty": "No projects cached — connect once to load"
     },
     "loadingLabel": "Loading…",
-    "comingSoon": "Not available yet."
+    "comingSoon": "Not available yet.",
+    "onlineOnly": "This action needs a connection — it cannot be saved offline."
   },
   "nav": {
     "tabs": {
@@ -173,8 +174,12 @@
         "title": "Data Collection",
         "intro": "These are the categories of information the platform records while work is carried out on a site.",
         "sections": {
-          "collected": { "label": "Collected today" },
-          "planned": { "label": "Planned — not collected yet" }
+          "collected": {
+            "label": "Collected today"
+          },
+          "planned": {
+            "label": "Planned — not collected yet"
+          }
         },
         "cards": {
           "identity": {
@@ -212,8 +217,12 @@
         "title": "Data Usage",
         "intro": "What the information above is used for, and what it is not used for.",
         "sections": {
-          "today": { "label": "In use today" },
-          "planned": { "label": "Planned — not in use yet" }
+          "today": {
+            "label": "In use today"
+          },
+          "planned": {
+            "label": "Planned — not in use yet"
+          }
         },
         "cards": {
           "safety": {
@@ -239,10 +248,18 @@
         "title": "PDPA & GDPR",
         "intro": "This platform is built to the Thai Personal Data Protection Act and the EU General Data Protection Regulation.",
         "sections": {
-          "principles": { "label": "Protection principles" },
-          "regional": { "label": "Regional compliance" },
-          "residency": { "label": "Data residency" },
-          "certifications": { "label": "Certifications" }
+          "principles": {
+            "label": "Protection principles"
+          },
+          "regional": {
+            "label": "Regional compliance"
+          },
+          "residency": {
+            "label": "Data residency"
+          },
+          "certifications": {
+            "label": "Certifications"
+          }
         },
         "cards": {
           "sovereignty": {
@@ -284,8 +301,12 @@
         "title": "Technical Security",
         "intro": "The controls that protect personal data on this platform, described in general terms.",
         "sections": {
-          "core": { "label": "Core protection" },
-          "infrastructure": { "label": "Infrastructure" }
+          "core": {
+            "label": "Core protection"
+          },
+          "infrastructure": {
+            "label": "Infrastructure"
+          }
         },
         "cards": {
           "encryption": {
@@ -323,7 +344,9 @@
         "title": "User Rights",
         "intro": "Transparency and control over your own data, under PDPA and GDPR.",
         "sections": {
-          "rights": { "label": "Your rights" }
+          "rights": {
+            "label": "Your rights"
+          }
         },
         "cards": {
           "access": {
@@ -529,7 +552,11 @@
       "offline": "Offline",
       "queued": "Changes waiting to sync",
       "conflicts": "Unresolved conflicts",
-      "appVersion": "App version"
+      "appVersion": "App version",
+      "storage": "Device storage",
+      "storageOk": "OK",
+      "storageWarn": "Nearly full",
+      "storageFull": "Full"
     },
     "modules": {
       "heading": "What your role can open",
@@ -1054,6 +1081,13 @@
       "syncing": "SYNCING",
       "pending": "{count} PENDING",
       "error": "SYNC ERROR"
+    },
+    "conflict": {
+      "flagged": "A conflict was detected — please review the item.",
+      "rejected": "Your change was overridden by the server version."
+    },
+    "exhausted": {
+      "discarded": "A change could not be saved and has been discarded."
     }
   },
   "photos": {

@@ -15,6 +15,8 @@ export const photoRepo: PhotoRepository = {
       localPath: r.localPath,
       entityType: r.entityType,
       entityId: r.entityId,
+      // Null on rows written before DDL v8 added the column — those have simply not failed yet.
+      retryCount: r.uploadRetryCount ?? 0,
     }));
   },
 
@@ -29,6 +31,19 @@ export const photoRepo: PhotoRepository = {
     await db
       .update(localPhotos)
       .set({ uploadStatus: 'UPLOADED', serverFileId })
+      .where(eq(localPhotos.id, localId));
+  },
+
+  /**
+   * Put a photo back in the queue after a failed attempt, recording the attempt.
+   *
+   * The status half is the load-bearing one: without it the row stays UPLOADING, which
+   * `getPendingPhotos` does not select, and the photo is stranded on the device forever.
+   */
+  async markPending(localId: string, retryCount: number): Promise<void> {
+    await db
+      .update(localPhotos)
+      .set({ uploadStatus: 'PENDING', uploadRetryCount: retryCount })
       .where(eq(localPhotos.id, localId));
   },
 

@@ -52,6 +52,15 @@ import { useProjectStore } from '../../store/projectStore';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { usePendingCount } from '../../hooks/usePendingCount';
 import { useConflicts } from '../../hooks/useConflicts';
+import { useOfflineStore } from '../../store/offlineStore';
+import type { LocalDbStatus } from '../../sync/localDbLimit';
+
+/** §17.7 verdict → the copy that states it. */
+const STORAGE_LABEL_KEY: Record<LocalDbStatus, string> = {
+  OK: 'support.diagnostics.storageOk',
+  WARN: 'support.diagnostics.storageWarn',
+  FULL: 'support.diagnostics.storageFull',
+};
 import { drawerLinksFor } from '../../lib/drawerLinks';
 import { formatRole } from '../../lib/formatRole';
 import { SupportCenterDocument, useBackendHealth } from '../../components/SupportCenterDocument';
@@ -70,6 +79,7 @@ export default function SupportScreen(): React.JSX.Element {
   const { isOnline } = useNetworkStatus();
   const pending = usePendingCount();
   const conflicts = useConflicts();
+  const localDbStatus = useOfflineStore((state) => state.localDbStatus);
   const { health, minutesAgo } = useBackendHealth();
 
   // The role's own modules, from the §6.4 matrix via drawerLinks — the single source the drawer
@@ -146,6 +156,20 @@ export default function SupportScreen(): React.JSX.Element {
                 label={t('support.diagnostics.conflicts')}
                 value={String(conflicts.length)}
                 tint={conflicts.length > 0 ? pal.danger : pal.muted}
+              />
+              {/* The §17.7 local-cache verdict. It was computed on every entry to the app and thrown
+                  away apart from a console.warn — see store/offlineStore.localDbStatus. */}
+              <Stat
+                styles={styles}
+                label={t('support.diagnostics.storage')}
+                value={t(STORAGE_LABEL_KEY[localDbStatus])}
+                tint={
+                  localDbStatus === 'FULL'
+                    ? pal.danger
+                    : localDbStatus === 'WARN'
+                      ? pal.warning
+                      : pal.muted
+                }
               />
               <Stat
                 styles={styles}

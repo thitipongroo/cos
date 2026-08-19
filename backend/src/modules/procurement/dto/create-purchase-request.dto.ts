@@ -45,6 +45,24 @@ export class PurchaseRequestItemDto {
 }
 
 export class CreatePurchaseRequestDto {
+  /**
+   * Client-generated id for offline creates, which becomes the server's primary key.
+   *
+   * Mirrors `client_id` on CreateIssueDto (G-M11), SyncSiteReportsDto and CreateIncidentDto. §17.4
+   * admitted this entity to the offline-capable set on 2026-08-19: it is captured on site, which is
+   * where there is no signal, so the write is queued and `/sync/push` replays it — after a timeout,
+   * or after any retry. Without an id the client can repeat, every replay created another record.
+   *
+   * Optional, so the online path and older clients are unchanged: absent means "mint one".
+   */
+  @ApiPropertyOptional({
+    format: 'uuid',
+    description: 'Client-generated id for offline idempotency',
+  })
+  @IsOptional()
+  @IsUUID()
+  client_id?: string;
+
   @ApiProperty({ format: 'uuid' })
   @IsUUID()
   project_id!: string;

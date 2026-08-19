@@ -107,6 +107,26 @@ const INSPECTION_WRITE_ROLES = [
   CosRole.TENANT_ADMIN,
 ] as const;
 
+// procurement.controller.ts — POST /procurement/purchase-requests. Copied from that decorator, which
+// itself cites the RW column of 06-rbac-permission-matrix "Purchase requests": a request starts on
+// site, where the shortage is noticed, so SITE_ENGINEER and PROJECT_MANAGER hold RW alongside
+// Procurement and Tenant Admin.
+const PURCHASE_REQUEST_WRITE_ROLES = [
+  CosRole.SITE_ENGINEER,
+  CosRole.PROJECT_MANAGER,
+  CosRole.PROCUREMENT_OFFICER,
+  CosRole.PROC_MANAGER,
+  CosRole.TENANT_ADMIN,
+] as const;
+
+// procurement.controller.ts — POST /procurement/deliveries. Narrower than the above, and copied
+// rather than reasoned about: recording receipt against a PO is Procurement's act, not the site's.
+const DELIVERY_WRITE_ROLES = [
+  CosRole.PROCUREMENT_OFFICER,
+  CosRole.PROC_MANAGER,
+  CosRole.TENANT_ADMIN,
+] as const;
+
 // workforce.controller.ts — POST /workers/{id}/attendance (14-api-architecture §Workforce APIs:
 // "PM, Site Engineer"; TENANT_ADMIN is FULL on Workforce attendance per the §6.4 matrix).
 const ATTENDANCE_WRITE_ROLES = [
@@ -135,6 +155,10 @@ export const PUSH_ROLES: Readonly<Record<string, readonly CosRole[]>> = Object.f
   material: FIELD_WRITE_ROLES,
   inspection: INSPECTION_WRITE_ROLES,
   photo_annotation: FIELD_WRITE_ROLES,
+  // Admitted to the offline set on 2026-08-19 (§17.4 amendment). Same mirror rule as every entry
+  // above: these are the roles the equivalent POST route enforces today, copied, not re-decided.
+  delivery: DELIVERY_WRITE_ROLES,
+  'purchase-request': PURCHASE_REQUEST_WRITE_ROLES,
 });
 
 /**

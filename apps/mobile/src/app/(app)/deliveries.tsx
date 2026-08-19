@@ -7,6 +7,7 @@
 
 import { useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
+import * as Crypto from 'expo-crypto';
 import { get, mutate } from '../../api/client';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { PhotoCapture } from '../../components/PhotoCapture';
@@ -89,17 +90,27 @@ export default function DeliveriesScreen() {
     const items = lines
       .map((l) => ({ line_id: l.line_id, quantity_received: (received[l.line_id] ?? '').trim() }))
       .filter((it) => it.quantity_received !== '');
+    // ONE CLIENT ID for the payload, the queue key and the server's delivery_id (ADR-051 / G-M11).
+    //
+    // The queue key used to be the PO id, which meant two deliveries against the same order shared
+    // one identity in the outbox — and, worse, that the server had no way to recognise a replay.
+    // Replaying a delivery does not merely duplicate a record: `delivery_items` are the quantities
+    // `sumDeliveredQuantity` adds up to decide whether a PO line is fulfilled, so a double-applied
+    // delivery can close a purchase order on goods that arrived once. `RecordDeliveryDto` gained
+    // `client_id` on 2026-08-19 and `recordDelivery` is idempotent on it.
+    const clientId = Crypto.randomUUID();
     await mutate(
       'POST',
       '/procurement/deliveries',
       {
+        client_id: clientId,
         po_id: poId,
         delivered_at: new Date().toISOString(),
         delivery_note: note.trim() || undefined,
         items,
       },
       'delivery',
-      poId,
+      clientId,
     );
     setSaved(true);
     setNote('');

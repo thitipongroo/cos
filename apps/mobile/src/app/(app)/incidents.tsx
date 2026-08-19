@@ -45,6 +45,7 @@ import {
   Alert,
 } from 'react-native';
 import { useFocusEffect } from 'expo-router';
+import * as Crypto from 'expo-crypto';
 import { MaterialIcons } from '@expo/vector-icons';
 import { db, newLocalId } from '../../db/database';
 import type { Incident } from '../../db/database';
@@ -83,7 +84,10 @@ const SEVERITIES: readonly IncidentSeverity[] = ['LOW', 'MEDIUM', 'HIGH', 'CRITI
  */
 function fromLocal(row: Incident): IncidentRow {
   return {
-    incident_id: row.incidentId === '' ? row.id : row.incidentId,
+    // `incidentId` is the client UUID for an offline create and the server's id once the delta pull
+    // has replaced the row. The `|| row.id` fallback covers rows written before 2026-08-19, which
+    // were stored with an empty incidentId.
+    incident_id: row.incidentId || row.id,
     project_id: row.projectId,
     task_id: null,
     incident_type: row.incidentType,
@@ -97,8 +101,11 @@ function fromLocal(row: Incident): IncidentRow {
 }
 
 export default function IncidentsScreen(): React.JSX.Element {
-  const local = useCollection<Incident>('local_incidents');
   const projectId = useProjectStore((s) => s.active?.projectId ?? '');
+  // Scoped in SQL rather than pulled whole and filtered in JS — see hooks/useCollection.
+  const local = useCollection<Incident>('local_incidents', {
+    equals: { column: 'projectId', value: projectId },
+  });
   const t = useT();
   const p = usePalette();
   const isDark = useIsDark();
@@ -135,26 +142,53 @@ export default function IncidentsScreen(): React.JSX.Element {
 
   useFocusEffect(load);
 
-  // Server rows when the fetch answered; the offline cache when it did not. Never both — a merged
-  // list would show a just-created row twice, once from each source, until the next delta pull.
-  const source: IncidentRow[] =
-    remote.length > 0
-      ? remote
-      : local.filter((row) => projectId === '' || row.projectId === projectId).map(fromLocal);
+  // Server rows, PLUS any local row the server has not sent back yet.
+  //
+  // This used to be either/or — `remote.length > 0 ? remote : local` — which avoided showing a row
+  // twice by making it disappear instead: file an incident with no signal, regain signal, and the
+  // fetch returns the server's list (which cannot contain the unpushed row), so the thing the
+  // officer had just filed vanished from the feed until a push AND a delta pull had both run.
+  //
+  // Merging by id gives the same no-duplicates guarantee without that: a local row is shown only
+  // while nothing with its id has come back from the server, and the moment the delta pull brings the
+  // real row down it takes over. Rows still awaiting push are `sync_status = 'PENDING'` — see
+  // `IncidentCard`, which is what marks them as not-yet-sent.
+  const remoteIds = new Set(remote.map((r) => r.incident_id));
+  const source: IncidentRow[] = [
+    ...remote,
+    ...local.filter((row) => !remoteIds.has(row.incidentId)).map(fromLocal),
+  ];
 
   const visible = sortIncidents(applyIncidentFilter(source, filterId));
   const now = new Date();
   const canSubmit = projectId !== '' && incidentType.trim() !== '';
 
   const onCreate = async (): Promise<void> => {
+    // ONE CLIENT ID, SHARED BY THE ROW AND ITS QUEUE ITEM — the pattern every other offline create in
+    // this app already uses (issues.tsx draftId → issueId, report.tsx clientId → reportId; ADR-051).
+    //
+    // This screen was the exception, and it cost two things. It enqueued under the PROJECT id, so two
+    // incidents filed offline on the same site were two queue rows with one identity, and it wrote
+    // `incidentId: ''`, so the local row could never be matched to anything — not to its queue item,
+    // not to the server's answer, and not to the copy the next delta pull brings down, which
+    // therefore arrived as a SECOND row for the same incident.
+    //
+    // SENT TO THE SERVER TOO, as `client_id` (added to CreateIncidentDto 2026-08-19, mirroring
+    // CreateIssueDto's G-M11 field). It becomes the server's `incident_id`, and SafetyService inserts
+    // ON CONFLICT DO NOTHING — so a replay of this queued mutation, which /sync/push will attempt
+    // after a timeout or any retry, resolves to the incident that already exists instead of filing a
+    // second one and re-arming the §19.3 escalation timer. It is therefore both the local identity
+    // AND the idempotency key, which is why one value serves the row, the queue and the payload.
+    const clientId = Crypto.randomUUID();
     const payload = {
+      client_id: clientId,
       project_id: projectId,
       incident_type: incidentType.trim(),
       severity,
     };
     await db.insert(localIncidents).values({
       id: newLocalId(),
-      incidentId: '',
+      incidentId: clientId,
       projectId: payload.project_id,
       incidentType: payload.incident_type,
       severity: payload.severity,
@@ -163,7 +197,9 @@ export default function IncidentsScreen(): React.JSX.Element {
       offlineSyncStatus: 'PENDING',
     });
     // SyncManager → /sync/push (entity_type 'safety'); §17.6 flushes these first on reconnect.
-    enqueue('safety', payload.project_id, 'CREATE', payload);
+    // `clientId` as the queue key is what lets runPushSync write the server's verdict back onto the
+    // row above (sync/resolutionTargets.ts).
+    enqueue('safety', clientId, 'CREATE', payload);
     setIncidentType('');
     setComposing(false);
   };

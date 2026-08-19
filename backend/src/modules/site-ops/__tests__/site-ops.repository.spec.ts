@@ -334,7 +334,7 @@ describe('SiteOpsRepository', () => {
       created_by: 'user-uuid-001',
       client_submitted_at: null,
     });
-    expect(result.issue_id).toBe('issue-uuid-001');
+    expect(result!.issue_id).toBe('issue-uuid-001');
   });
 
   // nextIssueNumber (ADR-069) — ISS-<year>-<seq> from MAX+1 per tenant/year. The three cases cover the
@@ -700,5 +700,25 @@ describe('SiteOpsRepository', () => {
     ]);
     expect(await repo.listChecklists('proj-uuid-001')).toHaveLength(1);
     expect(await repo.listChecklists()).toHaveLength(1);
+  });
+
+  it('createIssue returns null when the issue_id is already taken (ON CONFLICT DO NOTHING)', async () => {
+    // The offline replay: /sync/push resends a queued create under the same client UUID. This used to
+    // raise a primary-key violation, which the device's outbox read as a retryable failure.
+    mockPrisma.$queryRaw.mockResolvedValue([]);
+    await expect(
+      repo.createIssue({
+        issue_id: 'issue-uuid-001',
+        issue_number: 'ISS-2026-0001',
+        project_id: 'proj-uuid-001',
+        report_id: null,
+        title: 'Cracked slab',
+        description: null,
+        severity: 'HIGH',
+        assigned_to: null,
+        created_by: 'user-uuid-001',
+        client_submitted_at: null,
+      }),
+    ).resolves.toBeNull();
   });
 });

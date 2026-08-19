@@ -7,51 +7,65 @@ describe('ConflictHandler', () => {
     handler = new ConflictHandler();
   });
 
-  // ── resolveStrategy ──────────────────────────────────────────────────────
+  const local = { title: 'local version' };
+  const server = { title: 'server version' };
 
-  describe('resolveStrategy', () => {
-    it('returns LAST_WRITE_WINS for local_site_reports', () => {
-      expect(handler.resolveStrategy('local_site_reports')).toBe('LAST_WRITE_WINS');
-    });
-
-    it('returns FIELD_LEVEL_MERGE for local_issues', () => {
-      expect(handler.resolveStrategy('local_issues')).toBe('FIELD_LEVEL_MERGE');
-    });
-
-    it('returns SERVER_WINS for safety_checklists', () => {
-      expect(handler.resolveStrategy('safety_checklists')).toBe('SERVER_WINS');
-    });
-
-    it('returns SERVER_WINS as default for unknown entity types', () => {
-      expect(handler.resolveStrategy('some_unknown_entity')).toBe('SERVER_WINS');
-    });
-  });
-
-  // ── apply ────────────────────────────────────────────────────────────────
+  // The strategy map (LAST_WRITE_WINS / FIELD_LEVEL_MERGE / SERVER_WINS) and its `resolveStrategy`
+  // reader were removed on 2026-08-19: nothing called them, and the server owns strategy selection
+  // (backend conflict-handler.ts, QM-9 — "NEVER invent additional strategies"). What the device does
+  // with the verdict is what is asserted here instead.
 
   describe('apply', () => {
-    const local = { title: 'local version' };
-    const server = { title: 'server version' };
-
-    it('ACCEPTED → SYNCED status, local payload, no user message', () => {
+    it('ACCEPTED → SYNCED, adopts the server payload, no message', () => {
       const result = handler.apply('ACCEPTED', local, server);
       expect(result.localSyncStatus).toBe('SYNCED');
-      expect(result.payload).toBe(local);
-      expect(result.userMessage).toBeNull();
+      expect(result.payload).toBe(server);
+      expect(result.userMessageKey).toBeNull();
     });
 
-    it('CONFLICT_FLAGGED → CONFLICT status, local payload, user message', () => {
+    it('ACCEPTED with no server payload keeps the local one', () => {
+      // `site_report` is the real case: its service returns a conflict_status and no row, and what
+      // the server stored IS what the client sent.
+      const result = handler.apply('ACCEPTED', local, null);
+      expect(result.localSyncStatus).toBe('SYNCED');
+      expect(result.payload).toBe(local);
+    });
+
+    it('ACCEPTED adopts an EMPTY server payload rather than falling back to local', () => {
+      // Guards the `?? localPayload` choice over a truthiness check: `{}` from a service that does
+      // return rows is an answer, not an absence.
+      const empty = {};
+      expect(handler.apply('ACCEPTED', local, empty).payload).toBe(empty);
+    });
+
+    it('CONFLICT_FLAGGED → CONFLICT, adopts the server payload, message key', () => {
       const result = handler.apply('CONFLICT_FLAGGED', local, server);
       expect(result.localSyncStatus).toBe('CONFLICT');
-      expect(result.payload).toBe(local);
-      expect(result.userMessage).toBeTruthy();
+      expect(result.payload).toBe(server);
+      expect(result.userMessageKey).toBe('sync.conflict.flagged');
     });
 
-    it('CONFLICT_REJECTED → SYNCED status, server payload, user message', () => {
+    it('CONFLICT_FLAGGED with no server payload keeps the local one', () => {
+      expect(handler.apply('CONFLICT_FLAGGED', local, null).payload).toBe(local);
+    });
+
+    it('CONFLICT_REJECTED → SYNCED, server payload, message key', () => {
       const result = handler.apply('CONFLICT_REJECTED', local, server);
       expect(result.localSyncStatus).toBe('SYNCED');
       expect(result.payload).toBe(server);
-      expect(result.userMessage).toBeTruthy();
+      expect(result.userMessageKey).toBe('sync.conflict.rejected');
+    });
+
+    it('CONFLICT_REJECTED with no server payload keeps the local one', () => {
+      expect(handler.apply('CONFLICT_REJECTED', local, null).payload).toBe(local);
+    });
+
+    it('never returns a finished sentence — only translation keys', () => {
+      // The messages were hardcoded English until 2026-08-19, in an app whose tenants are Thai.
+      for (const status of ['ACCEPTED', 'CONFLICT_FLAGGED', 'CONFLICT_REJECTED'] as const) {
+        const key = handler.apply(status, local, server).userMessageKey;
+        if (key !== null) expect(key).toMatch(/^[a-z]+(\.[a-zA-Z]+)+$/);
+      }
     });
   });
 });

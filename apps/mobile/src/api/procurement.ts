@@ -6,6 +6,7 @@
 // the controller's READ_ROLES; what differs per role is which ACTIONS the screen offers, and that is
 // decided in the screen from the RBAC matrix, not here.
 
+import * as Crypto from 'expo-crypto';
 import { get, post, mutate, type QueuedResult } from './client';
 
 export interface PurchaseRequestItem {
@@ -33,18 +34,26 @@ export async function createPurchaseRequest(params: {
   requiredDate?: string;
   items: PurchaseRequestItem[];
 }): Promise<PurchaseRequest | QueuedResult> {
+  // ONE CLIENT ID, used as the payload's `client_id`, the queue key, and (once it lands) the server's
+  // pr_id — the pattern every other offline create in this app uses (ADR-051 / G-M11).
+  //
+  // It replaces `${projectId}:${firstItemDescription}` as the queue key. That composite was distinct
+  // enough to keep two requests apart in the outbox, which is all it was for, but it was not an
+  // identity the SERVER could recognise: every replay of the same queued request raised another
+  // purchase request and consumed another PR number. `CreatePurchaseRequestDto` gained `client_id`
+  // on 2026-08-19 and `createPurchaseRequest` is now idempotent on it.
+  const clientId = Crypto.randomUUID();
   return mutate<PurchaseRequest>(
     'POST',
     '/procurement/purchase-requests',
     {
+      client_id: clientId,
       project_id: params.projectId,
       required_date: params.requiredDate,
       items: params.items,
     },
     'purchase-request',
-    // No server id yet — the queue key is the project, so two requests raised offline for the same
-    // project stay distinct rows in the outbox rather than overwriting one another.
-    `${params.projectId}:${params.items[0]?.description ?? ''}`,
+    clientId,
   );
 }
 

@@ -126,6 +126,22 @@ These entities are critical for daily site operations and must work without conn
 - Material consumption records
 - Safety checklists and incident reports
 - Equipment usage logs
+- Deliveries received against a purchase order (amended 2026-08-19)
+- Purchase requests (amended 2026-08-19)
+
+The last two were added after a review found the mobile client already queuing them while
+`/sync/push` had no case for either — the writes were accepted by the UI and discarded by the
+platform. The decision was to make them genuinely offline-capable rather than to refuse them,
+because both are captured **on site**, which is exactly where there is no signal: a delivery is
+signed for at the gate, and a purchase request is raised the moment someone notices the material has
+run out. Neither is a financial commitment — the purchase **order** below stays online-required, and
+a request is its precursor, not the commitment itself.
+
+Both carry a client-generated `client_id` which becomes the server's primary key, and both server
+handlers are idempotent on it (`ON CONFLICT DO NOTHING`), so a replayed queue item resolves to the
+record already filed. That matters most for deliveries: `delivery_items` are the quantities the
+platform sums to decide whether a PO line is fulfilled, so a double-applied replay would not merely
+duplicate a record, it would close a purchase order on goods that arrived once.
 
 ### Online-required (read cache only, no offline write)
 
@@ -136,6 +152,16 @@ These entities require server-side validation before mutation :
 - Budget line mutations (cost accounting integrity)
 - Vendor master data (shared reference data)
 - User permissions and role changes
+- Tenant settings / configuration (same reasoning as permissions: an administrative change, made at a
+  desk, whose effect the administrator must be able to see take hold)
+- Sync conflict resolution (§17.5) — a decision taken against the server state the reviewer is
+  looking at, so replaying it hours later would apply it to a state they never saw
+
+The mobile client enforces this list at the point of the write: `mutate()` refuses to queue an entity
+type `/sync/push` cannot replay, and the screens that own these actions disable the control and say
+so while offline rather than failing after the form is filled in. The authoritative list of pushable
+types is `SYNC_PUSHABLE_ENTITY_TYPES` in `@cos/types`, imported by both the API and the client, with
+a backend test asserting `SyncService.push()` handles exactly those.
 
 ### Read-only cache (stale-while-revalidate)
 

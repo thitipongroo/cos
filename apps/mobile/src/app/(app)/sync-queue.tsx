@@ -9,6 +9,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
+import { UnavailableNote } from '../../components/UnavailableNote';
+import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { MaterialIcons } from '@expo/vector-icons';
 import {
   getConflictRecords,
@@ -141,7 +143,11 @@ export default function SyncQueueScreen(): React.JSX.Element {
     [records, filter],
   );
 
+  // Online-required: see the note rendered below.
+  const { isOnline } = useNetworkStatus();
+
   const onResolve = (id: string): void => {
+    if (!isOnline) return;
     // Optimistic — the review queue drops the record; a failed PATCH just leaves it for the next load.
     setRecords((prev) => (prev ? prev.filter((r) => r.conflict_id !== id) : prev));
     void resolveConflict(id).catch(() => {
@@ -155,6 +161,15 @@ export default function SyncQueueScreen(): React.JSX.Element {
         <Text style={styles.subtitle}>
           {t('syncQueue.subtitle', { count: records ? records.length : 0 })}
         </Text>
+
+        {/* Resolving a conflict is a DECISION made against what the server currently holds — the
+            screen above shows client-vs-server for exactly that purpose — so it cannot be taken
+            offline and replayed hours later against a state the reviewer never saw. `mutate()` no
+            longer queues it (the push endpoint has no case for `conflict` either), and this says so
+            before the button is reached rather than after it is pressed. */}
+        {isOnline ? null : (
+          <UnavailableNote testID="sync-queue-online-only" reason={t('common.onlineOnly')} />
+        )}
 
         {/* Filter chips (real conflict_type) */}
         <ScrollView
@@ -268,7 +283,8 @@ export default function SyncQueueScreen(): React.JSX.Element {
                         <Text style={styles.reviewText}>{t('syncQueue.review')}</Text>
                       </Pressable>
                       <Pressable
-                        style={styles.resolveBtn}
+                        style={[styles.resolveBtn, !isOnline && styles.disabled]}
+                        disabled={!isOnline}
                         onPress={() => onResolve(r.conflict_id)}
                         testID={`resolve-${r.conflict_id}`}
                       >
@@ -288,6 +304,8 @@ export default function SyncQueueScreen(): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
+  // Dimmed rather than hidden: the action still exists, it just needs a connection.
+  disabled: { opacity: 0.4 },
   root: { flex: 1, backgroundColor: darkColors.bg },
   content: { padding: spacing.lg, gap: spacing.sm, paddingBottom: spacing.xl },
   subtitle: {

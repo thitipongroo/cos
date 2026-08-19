@@ -73,6 +73,83 @@ describe('incidents', () => {
     );
   });
 
+  // Offline idempotency (mirrors createIssue's G-M11 client_id). An incident filed with no signal is
+  // queued and replayed by /sync/push - including after a TIMEOUT, where the first attempt may
+  // already have landed. Without this a replay filed a SECOND safety record, re-notified the Safety
+  // Officer and re-armed the 30-minute escalation timer.
+  describe('client_id makes a replayed offline incident idempotent', () => {
+    /** The publish mock of the most recently constructed KafkaProducer, as the specs above read it. */
+    const lastPublish = (): jest.Mock => {
+      const { KafkaProducer } = jest.requireMock('@cos/shared') as { KafkaProducer: jest.Mock };
+      return (
+        KafkaProducer.mock.results[KafkaProducer.mock.results.length - 1]?.value as {
+          publish: jest.Mock;
+        }
+      ).publish;
+    };
+
+    it('uses the client-provided id as the incident_id', async () => {
+      mockRepo.createIncident.mockResolvedValue({ incident_id: 'client-uuid', project_id: 'p1' });
+      await service.createIncident({
+        client_id: 'client-uuid',
+        project_id: 'p1',
+        incident_type: 'fall',
+        severity: 'HIGH',
+      } as never);
+      expect(mockRepo.createIncident).toHaveBeenCalledWith(
+        expect.objectContaining({ incident_id: 'client-uuid' }),
+      );
+    });
+
+    it('generates an id when the client did not send one', async () => {
+      mockRepo.createIncident.mockResolvedValue({ incident_id: 'gen', project_id: 'p1' });
+      await service.createIncident({
+        project_id: 'p1',
+        incident_type: 'fall',
+        severity: 'HIGH',
+      } as never);
+      const arg = mockRepo.createIncident.mock.calls[0][0] as { incident_id: string };
+      expect(arg.incident_id).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+      );
+    });
+
+    it('returns the existing incident on a replay, WITHOUT re-emitting the event', async () => {
+      // Null from the repository is ON CONFLICT DO NOTHING reporting "already there".
+      mockRepo.createIncident.mockResolvedValue(null);
+      mockRepo.findIncidentById.mockResolvedValue({ incident_id: 'client-uuid', project_id: 'p1' });
+
+      const result = await service.createIncident({
+        client_id: 'client-uuid',
+        project_id: 'p1',
+        incident_type: 'fall',
+        severity: 'CRITICAL',
+      } as never);
+
+      expect(result).toEqual({ incident_id: 'client-uuid', project_id: 'p1' });
+      expect(mockRepo.findIncidentById).toHaveBeenCalledWith('client-uuid');
+      // The whole point: no duplicate notification, no second escalation timer.
+      expect(lastPublish()).not.toHaveBeenCalled();
+    });
+
+    it('rejects an id that conflicts but is not visible - it belongs to another tenant', async () => {
+      // RLS hides the row while the primary key still rejects the insert. A silent success would
+      // report an incident that this tenant cannot see and nobody will act on.
+      mockRepo.createIncident.mockResolvedValue(null);
+      mockRepo.findIncidentById.mockResolvedValue(null);
+
+      await expect(
+        service.createIncident({
+          client_id: 'client-uuid',
+          project_id: 'p1',
+          incident_type: 'fall',
+          severity: 'HIGH',
+        } as never),
+      ).rejects.toMatchObject({ status: 409 });
+      expect(lastPublish()).not.toHaveBeenCalled();
+    });
+  });
+
   it('createIncident emits safety.incident.created.v1 (§19.3 escalation source)', async () => {
     mockRepo.createIncident.mockResolvedValue({ incident_id: 'inc-1', project_id: 'p1' });
     await service.createIncident({

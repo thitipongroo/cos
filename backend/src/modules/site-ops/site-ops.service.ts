@@ -9,6 +9,7 @@ import {
   Inject,
   NotFoundException,
   UnprocessableEntityException,
+  ConflictException,
 } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
@@ -290,13 +291,40 @@ export class SiteOpsService {
 
   // ── Issues ────────────────────────────────────────────────────────────────
 
+  /**
+   * Raise an issue, at most once per `client_id`.
+   *
+   * The id half of this has been here since G-M11 — a client UUID becomes the `issue_id` so that
+   * photos captured offline against it link up on sync. What was missing until 2026-08-19 is that
+   * the write was not IDEMPOTENT on that id: `/sync/push` replays a queued create after a timeout or
+   * any retry, and the replay hit the primary key and came back a 500, which the device's outbox
+   * treats as a retryable failure. Five attempts later §17.2 discarded the item. The issue existed on
+   * the server the whole time, and the person who raised it was never told anything.
+   *
+   * The existence check comes first so a replay does not re-read the issue-number sequence or reach
+   * the insert at all; the ON CONFLICT in the repository still covers two replays racing each other.
+   */
   async createIssue(dto: CreateIssueDto) {
     // Use the client-provided id when present (offline create → photo linkage, G-M11); else generate.
     const issueId = dto.client_id ?? randomUUID();
+
+    if (dto.client_id) {
+      const existing = await this.repo.findIssueById(dto.client_id);
+      if (existing) {
+        logger.info({
+          event: 'issue.created.duplicate_ignored',
+          issue_id: dto.client_id,
+          tenant_id: this.tenantId,
+          trace_id: this.correlationId,
+        });
+        return existing;
+      }
+    }
+
     // Server assigns the human-readable number (ADR-069) — not the offline client, which cannot know
     // the tenant's next ISS-<year>-<seq>.
     const issueNumber = await this.repo.nextIssueNumber(new Date().getFullYear());
-    const issue = await this.repo.createIssue({
+    const created = await this.repo.createIssue({
       issue_id: issueId,
       issue_number: issueNumber,
       project_id: dto.project_id,
@@ -313,6 +341,22 @@ export class SiteOpsService {
       latitude: dto.latitude ?? null,
       longitude: dto.longitude ?? null,
     });
+
+    // Nothing returned means a concurrent replay inserted it between the check above and the INSERT.
+    if (!created) {
+      const existing = await this.repo.findIssueById(issueId);
+      if (existing) return existing;
+      // The id conflicted but is invisible here, so it belongs to another tenant — RLS hides the row
+      // while the primary key still rejects the insert.
+      throw new ConflictException({
+        error: {
+          code: 'COS-SITE-409',
+          message: 'client_id is already in use',
+          messageKey: 'siteOps.issue.duplicateId',
+        },
+      });
+    }
+    const issue = created;
 
     await this.emitEvent('site.issue.created.v1', {
       issue_id: issue.issue_id,

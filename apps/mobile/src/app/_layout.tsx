@@ -19,7 +19,11 @@ import { useLocaleStore } from '../store/localeStore';
 import { useThemeStore } from '../store/themeStore';
 import { useBiometricStore } from '../store/biometricStore';
 import { I18nProvider } from '../i18n';
-import { initSyncQueue } from '../db/sync-queue';
+import { initSyncQueue, subscribeQueueChanged, countPending } from '../db/sync-queue';
+import { startQueueObserver } from '../sync/queueObserver';
+import { runSyncCycle } from '../sync/syncRunner';
+import { registerBackgroundSyncTask, scheduleBackgroundSync } from '../sync/BackgroundSyncTask';
+import { useSyncStore } from '../store/syncStore';
 import { isE2EEnabled, setForcedOnline } from '../lib/e2e/networkOverride';
 import { LoadingBoundary } from '../components/LoadingBoundary';
 import { BiometricLock } from '../components/BiometricLock';
@@ -81,9 +85,31 @@ export default function RootLayout() {
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
     initSyncQueue();
+
+    // Publish the outbox depth to the store that <SyncPill /> reads, now and on every queue change.
+    // Nothing wrote `pendingCount` before this, so the pill reported "synced" to a device holding a
+    // full outbox — see sync/queueObserver.ts.
+    const stopQueueObserver = startQueueObserver({
+      subscribe: subscribeQueueChanged,
+      countPending,
+      setPendingCount: useSyncStore.getState().setPendingCount,
+    });
+
+    // Define and schedule the OS background sync job (§Phase 10 Background Sync). Both halves were
+    // written and neither was ever called, so the task was never registered with TaskManager and the
+    // 15-minute job never existed. Scheduling can reject (the OS refuses in Background App Refresh
+    // "off", and it is unavailable in Expo Go) — that is a degraded mode, not a launch failure.
+    registerBackgroundSyncTask(runSyncCycle);
+    void scheduleBackgroundSync().catch(() => {
+      /* background refresh unavailable — foreground + reconnect sync still run */
+    });
+
     void Promise.all([
       useAuthStore.getState().hydrate(),
       useLocaleStore.getState().hydrate(),
+      // The delta cursor, so the first pull after a cold start is incremental instead of asking for
+      // everything since 1970 (it was held in memory only until 2026-08-19).
+      useSyncStore.getState().hydrate(),
       // Theme is hydrated in the same gate as the session and locale so the first painted frame is
       // already in the user's mode — hydrating later would flash the default dark shell at someone
       // who has chosen light.
@@ -96,6 +122,15 @@ export default function RootLayout() {
         .hydrate()
         .then(() => useBiometricStore.getState().lockIfEnabled()),
     ]).finally(() => setHydrated(true));
+
+    // Re-raise the biometric gate every time the app comes back to the foreground, not only on a cold
+    // start — see store/biometricStore.watchAppState for why per-launch was the wrong granularity.
+    const stopAppStateWatch = useBiometricStore.getState().watchAppState();
+
+    return () => {
+      stopQueueObserver();
+      stopAppStateWatch();
+    };
   }, []);
 
   // E2E-only: let Detox toggle simulated connectivity via `cos://e2e/network?online=0|1`.

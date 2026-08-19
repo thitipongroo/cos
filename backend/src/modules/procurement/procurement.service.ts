@@ -12,6 +12,7 @@ import {
   BadRequestException,
   NotFoundException,
   UnprocessableEntityException,
+  ConflictException,
 } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
@@ -155,6 +156,15 @@ export class ProcurementService {
 
   // ── Purchase Requests ──────────────────────────────────────────────────────
 
+  /**
+   * Raise a purchase request, at most once per `client_id`.
+   *
+   * `client_id` becomes the `pr_id` (mirrors CreateIssueDto's G-M11 handling and CreateIncidentDto's).
+   * A material shortage is noticed on site, which is exactly where there is no signal, so this write
+   * is queued offline and `/sync/push` replays it — including after a TIMEOUT, where the first
+   * attempt may already have landed. Without an id from the client each replay filed another request
+   * against the same shortage, and consumed another PR number doing it.
+   */
   async createPurchaseRequest(dto: CreatePurchaseRequestDto): Promise<PurchaseRequestRow> {
     // A caller that supplies its own number keeps it (the web form does); everyone else gets the
     // tenant's next PR-<year>-<seq>, because a document number is not something to ask a site
@@ -162,6 +172,7 @@ export class ProcurementService {
     // createPurchaseRequest) — deriving it here first was a read-then-write race across two
     // transactions.
     const pr = await this.repo.createPurchaseRequest({
+      pr_id: dto.client_id,
       project_id: dto.project_id,
       pr_number: dto.pr_number,
       requested_by: this.userId,
@@ -169,6 +180,27 @@ export class ProcurementService {
       year: new Date().getFullYear(),
       items: dto.items,
     });
+
+    if (!pr) {
+      // Already raised. Read it back so a replay still answers with the row it asked for.
+      const existing = dto.client_id
+        ? await this.repo.findPurchaseRequestById(dto.client_id)
+        : null;
+      if (existing) {
+        logger.info({ pr_id: dto.client_id }, 'pr.created.duplicate_ignored');
+        return existing;
+      }
+      // The id conflicted but is invisible here, so it belongs to another tenant — RLS hides the row
+      // while the primary key still rejects the insert.
+      throw new ConflictException({
+        error: {
+          code: 'COS-PROC-409',
+          message: 'client_id is already in use',
+          messageKey: 'procurement.pr.duplicateId',
+        },
+      });
+    }
+
     logger.info({ pr_id: pr.pr_id, tenant_id: this.tenantId }, 'pr.created');
     return pr;
   }
@@ -523,7 +555,8 @@ export class ProcurementService {
       );
     }
 
-    const { delivery, items } = await this.repo.createDelivery({
+    const created = await this.repo.createDelivery({
+      delivery_id: dto.client_id,
       po_id,
       delivery_note: dto.delivery_note,
       delivered_at: dto.delivered_at,
@@ -534,6 +567,34 @@ export class ProcurementService {
         quantity_received: i.quantity_received,
       })),
     });
+
+    // ALREADY RECORDED — a replay of a delivery queued at the gate. Return the existing row and run
+    // none of what follows: the quantities are already counted, the Temporal workflow was already
+    // signalled, and `procurement.delivery.received.v1` was already published. Re-running any of the
+    // three is how a partially-delivered PO gets closed on goods that arrived once.
+    if (!created) {
+      const existing = dto.client_id ? await this.repo.findDeliveryById(dto.client_id) : null;
+      if (existing) {
+        logger.info({ delivery_id: dto.client_id }, 'delivery.recorded.duplicate_ignored');
+        const lines = await this.repo.findLineItemsByPo(po_id);
+        const fulfilled = await Promise.all(
+          lines.map(async (li) => {
+            const delivered = new Decimal(await this.repo.sumDeliveredQuantity(li.line_id));
+            return delivered.greaterThanOrEqualTo(new Decimal(li.quantity));
+          }),
+        );
+        return { delivery: existing, is_partial: !fulfilled.every(Boolean) };
+      }
+      throw new ConflictException({
+        error: {
+          code: 'COS-PROC-409',
+          message: 'client_id is already in use',
+          messageKey: 'procurement.delivery.duplicateId',
+        },
+      });
+    }
+
+    const { delivery, items } = created;
 
     // Determine partial vs. complete delivery
     const lineItems = await this.repo.findLineItemsByPo(po_id);

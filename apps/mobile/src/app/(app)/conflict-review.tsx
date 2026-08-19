@@ -6,6 +6,7 @@
 import { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
 import { get, mutate } from '../../api/client';
+import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { StatusChip } from '../../components/StatusChip';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { useT } from '../../i18n';
@@ -69,7 +70,11 @@ export default function ConflictReviewScreen() {
     void load();
   }, []);
 
+  // Online-required: see the note rendered below.
+  const { isOnline } = useNetworkStatus();
+
   const resolve = async (id: string): Promise<void> => {
+    if (!isOnline) return;
     await mutate(
       'PATCH',
       `/site/conflict-records/${id}/resolve`,
@@ -135,6 +140,7 @@ export default function ConflictReviewScreen() {
                 <TouchableOpacity
                   testID="resolve-conflict-button"
                   style={styles.resolve}
+                  disabled={!isOnline}
                   onPress={() => resolve(item.conflict_id)}
                 >
                   <Text style={styles.resolveText}>{t('sync.conflictReview.resolve')}</Text>

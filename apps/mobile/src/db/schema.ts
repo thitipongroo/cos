@@ -65,6 +65,10 @@ export const localPhotos = sqliteTable('local_photos', {
   localPath: text('local_path').notNull(), // expo-file-system URI
   uploadStatus: text('upload_status').notNull().$type<UploadStatus>(),
   serverFileId: text('server_file_id'), // populated after upload
+  // Attempts already spent uploading this photo. On the ROW, not in memory: PhotoUploadQueue is
+  // rebuilt every sync cycle, so an in-memory counter reset to zero each time and its retry ceiling
+  // was never reached. Null on rows cached before DDL v8 — read as 0.
+  uploadRetryCount: integer('upload_retry_count'),
 });
 
 // ── local_photo_annotations — re-editable markup on a photo (ADR-056) ──

@@ -285,6 +285,19 @@ export class SiteOpsRepository {
     return `${prefix}${String(next).padStart(4, '0')}`;
   }
 
+  /**
+   * Insert an issue under a caller-supplied id. Returns null when that id is already taken.
+   *
+   * `client_id` has been accepted on this path since G-M11, so that photos captured offline against
+   * the client's UUID link up on sync — but nothing made the INSERT itself idempotent. A replayed
+   * queue item hit the `issues_pkey` primary key and surfaced as a 500: better than a silent
+   * duplicate, and worse than either, because the mutation stayed FAILED in the device's outbox and
+   * retried until §17.2 discarded it. An issue raised on site could be reported, rejected five times
+   * and thrown away without a word to the person who raised it.
+   *
+   * ON CONFLICT DO NOTHING is the same shape `createIncident`, `createDelivery` and
+   * `createPurchaseRequest` use; the caller reads the existing row back and skips the side effects.
+   */
   async createIssue(params: {
     issue_id: string;
     issue_number: string;
@@ -309,7 +322,7 @@ export class SiteOpsRepository {
     client_submitted_at: string | null;
     latitude?: number | null;
     longitude?: number | null;
-  }): Promise<IssueRow> {
+  }): Promise<IssueRow | null> {
     const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<IssueRow[]>`
@@ -325,10 +338,13 @@ export class SiteOpsRepository {
            ${params.assigned_to}::uuid, ${params.created_by}::uuid,
            ${params.client_submitted_at}::timestamptz,
            ${params.latitude ?? null}::numeric, ${params.longitude ?? null}::numeric)
+        ON CONFLICT (issue_id) DO NOTHING
         RETURNING *
       `,
     );
-    return rows[0]!;
+    // `?? null`, not `rows[0]!` — DO NOTHING returns no row, and the non-null assertion would hand
+    // the caller `undefined` typed as an IssueRow.
+    return rows[0] ?? null;
   }
 
   async findIssueById(issueId: string): Promise<IssueRow | null> {

@@ -11,6 +11,7 @@ import {
   NotFoundException,
   UnprocessableEntityException,
   ForbiddenException,
+  ConflictException,
 } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import { randomUUID } from 'crypto';
@@ -50,8 +51,21 @@ export class SafetyService {
 
   // ── Incidents ───────────────────────────────────────────────────────────────
 
+  /**
+   * Report an incident, at most once per client id.
+   *
+   * Use the client-provided id when present (offline create; mirrors `createIssue`'s G-M11 handling),
+   * else generate. The repository inserts ON CONFLICT DO NOTHING, so a REPLAY of the same queued
+   * mutation — which `/sync/push` will do after a timeout, or after any retry — resolves to the
+   * incident that already exists instead of filing a second one.
+   *
+   * The early return on a replay is the point of the whole thing: it skips the event, and with it the
+   * duplicate Safety Officer notification and the second §19.3 escalation timer.
+   */
   async createIncident(dto: CreateIncidentDto): Promise<IncidentRow> {
+    const incidentId = dto.client_id ?? randomUUID();
     const incident = await this.repo.createIncident({
+      incident_id: incidentId,
       project_id: dto.project_id,
       incident_type: dto.incident_type,
       severity: dto.severity,
@@ -60,6 +74,26 @@ export class SafetyService {
       latitude: dto.latitude ?? null,
       longitude: dto.longitude ?? null,
     });
+
+    if (!incident) {
+      // Already reported. Read it back so the caller still gets the row it asked for.
+      const existing = await this.repo.findIncidentById(incidentId);
+      if (existing) {
+        logger.info({ incident_id: incidentId }, 'incident.reported.duplicate_ignored');
+        return existing;
+      }
+      // The id conflicted but is not visible here, so it belongs to another tenant — RLS hides the
+      // row while the primary key still rejects the insert. Vanishingly unlikely with client-side
+      // UUIDv4, and a conflict the caller must be told about rather than a silent success.
+      throw new ConflictException({
+        error: {
+          code: 'COS-SAFETY-409',
+          message: 'incident_id is already in use',
+          messageKey: 'safety.incident.duplicateId',
+        },
+      });
+    }
+
     logger.info({ incident_id: incident.incident_id, severity: dto.severity }, 'incident.reported');
 
     // Emit safety.incident.created.v1 (§19.3) — the Notification Service consumes this to notify the

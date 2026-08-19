@@ -2,7 +2,9 @@
 // (conflict resolution, enqueue-on-upload, the upload queue) are unit-tested in their own specs; here
 // we assert the wiring: queue drains BEFORE photos upload, and the annotation callbacks are hooked.
 
-const mockProcessQueue = jest.fn().mockResolvedValue({ synced: 0, failed: 0, exhausted: 0 });
+const mockProcessQueue = jest
+  .fn()
+  .mockResolvedValue({ synced: 0, failed: 0, exhausted: 0, interrupted: false });
 const mockProcessAll = jest.fn().mockResolvedValue(undefined);
 let capturedManagerCallbacks: Record<string, unknown> = {};
 let capturedOnUploaded: ((l: string, s: string) => Promise<void>) | undefined;
@@ -43,6 +45,14 @@ jest.mock('../../store/authStore', () => ({
 }));
 jest.mock('../../store/offlineStore', () => ({
   useOfflineStore: { getState: () => ({ addConflict: mockAddConflict }) },
+}));
+const mockSetError = jest.fn();
+jest.mock('../../store/syncStore', () => ({
+  useSyncStore: { getState: () => ({ setError: mockSetError }) },
+}));
+const mockSetSyncStatusByKey = jest.fn().mockResolvedValue(undefined);
+jest.mock('../../db/database', () => ({
+  setSyncStatusByKey: (...a: unknown[]) => mockSetSyncStatusByKey(...a),
 }));
 
 import { runPushSync } from '../runPushSync';
@@ -127,6 +137,109 @@ describe('runPushSync', () => {
       await runPushSync();
       await onAccepted()('photo_annotation', 'server-9', { version: 3 });
       expect(mockMarkSynced).not.toHaveBeenCalled();
+    });
+  });
+
+  // The verdict reaches the local row. `onResolved` closes the loop ConflictHandler used to compute
+  // and SyncManager used to drop - the row that produced a mutation kept sync_status PENDING
+  // whatever the server answered.
+  describe('onResolved writes the verdict back', () => {
+    it('maps a pushed entity type to its local table and writes the status', async () => {
+      await runPushSync();
+      const onResolved = capturedManagerCallbacks['onResolved'] as (
+        t: string,
+        id: string,
+        r: { localSyncStatus: string; payload: unknown },
+      ) => Promise<void>;
+
+      await onResolved('issue', 'client-uuid-1', { localSyncStatus: 'SYNCED', payload: {} });
+
+      expect(mockSetSyncStatusByKey).toHaveBeenCalledWith(
+        'local_issues',
+        'issueId',
+        'client-uuid-1',
+        'SYNCED',
+      );
+    });
+
+    it('writes CONFLICT for a flagged row', async () => {
+      await runPushSync();
+      const onResolved = capturedManagerCallbacks['onResolved'] as (
+        t: string,
+        id: string,
+        r: { localSyncStatus: string; payload: unknown },
+      ) => Promise<void>;
+
+      await onResolved('safety', 'inc-1', { localSyncStatus: 'CONFLICT', payload: {} });
+
+      expect(mockSetSyncStatusByKey).toHaveBeenCalledWith(
+        'local_incidents',
+        'incidentId',
+        'inc-1',
+        'CONFLICT',
+      );
+    });
+
+    it('does nothing for an entity type with no local row to update', async () => {
+      // `material` enqueues under the parent report's id and writes no local consumption row;
+      // `inspection` has no local table at all. Guessing at a target would corrupt an unrelated row.
+      await runPushSync();
+      const onResolved = capturedManagerCallbacks['onResolved'] as (
+        t: string,
+        id: string,
+        r: { localSyncStatus: string; payload: unknown },
+      ) => Promise<void>;
+
+      await onResolved('material', 'report-1', { localSyncStatus: 'SYNCED', payload: {} });
+      await onResolved('inspection', 'checklist-1', { localSyncStatus: 'SYNCED', payload: {} });
+
+      expect(mockSetSyncStatusByKey).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('the user hears about a change that did not stick', () => {
+    it('records a REJECTED push as a conflict, the surface ConflictBadge already counts', async () => {
+      await runPushSync();
+      const onRejected = capturedManagerCallbacks['onRejected'] as (
+        t: string,
+        id: string,
+        p: unknown,
+      ) => void;
+
+      onRejected('issue', 'i-9', { server: true });
+
+      expect(mockAddConflict).toHaveBeenCalledWith(
+        expect.objectContaining({ entityType: 'issue', entityId: 'i-9' }),
+      );
+    });
+
+    it('passes a translation KEY to the store, never a finished sentence', async () => {
+      await runPushSync();
+      const onUserNotify = capturedManagerCallbacks['onUserNotify'] as (k: string) => void;
+
+      onUserNotify('sync.conflict.rejected');
+
+      expect(mockSetError).toHaveBeenCalledWith('sync.conflict.rejected');
+    });
+  });
+
+  describe('a cycle cut short by the network', () => {
+    it("does not run the photo queue - each failure would spend one of a photo's three attempts", async () => {
+      mockProcessQueue.mockResolvedValueOnce({
+        synced: 0,
+        failed: 0,
+        exhausted: 0,
+        interrupted: true,
+      });
+
+      await runPushSync();
+
+      expect(mockProcessAll).not.toHaveBeenCalled();
+    });
+
+    it('runs the photo queue on a normal cycle', async () => {
+      await runPushSync();
+      expect(mockProcessAll).toHaveBeenCalledTimes(1);
     });
   });
 });

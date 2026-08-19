@@ -204,15 +204,61 @@ describe('authStore Path A OTP flow', () => {
     expect(SecureStore.deleteItemAsync).toHaveBeenCalled();
   });
 
-  it('verifyOtp defaults userId to empty when the token lacks a user_id claim', async () => {
-    (verifyOtpApi as jest.Mock).mockResolvedValue({
-      accessToken: tokenWithClaims({ role: 'SITE_WORKER' }), // no user_id claim
-      refreshToken: 'r',
+  // A token missing or carrying a bad identity claim used to be accepted. `claims['role'] as CosRole`
+  // handed `undefined` to SecureStore.setItemAsync (which throws, surfacing as a bare "login failed"
+  // with no cause), and an unrecognised role string persisted and left the app routing by a role no
+  // screen knows. Rejected at the door instead - see lib/sessionClaims.ts.
+  describe('verifyOtp rejects a token it cannot build a session from', () => {
+    const tokens = (accessToken: string, refreshToken = 'r') => ({
+      accessToken,
+      refreshToken,
       expiresIn: 60,
       refreshExpiresIn: 120,
     });
-    await useAuthStore.getState().verifyOtp('+66800000001', '123456');
-    expect(useAuthStore.getState().userId).toBe('');
+
+    const expectRejected = async () => {
+      await expect(useAuthStore.getState().verifyOtp('+66800000001', '123456')).rejects.toThrow();
+      expect(useAuthStore.getState().isAuthenticated).toBe(false);
+      expect(SecureStore.setItemAsync).not.toHaveBeenCalledWith('cos_user_role', undefined);
+    };
+
+    it('rejects a token with no user_id claim', async () => {
+      (verifyOtpApi as jest.Mock).mockResolvedValue(
+        tokens(tokenWithClaims({ role: 'SITE_WORKER' })),
+      );
+      await expectRejected();
+    });
+
+    it('rejects a token with no role claim', async () => {
+      (verifyOtpApi as jest.Mock).mockResolvedValue(tokens(tokenWithClaims({ user_id: 'u-1' })));
+      await expectRejected();
+    });
+
+    it('rejects a role that is not one this app knows', async () => {
+      (verifyOtpApi as jest.Mock).mockResolvedValue(
+        tokens(tokenWithClaims({ user_id: 'u-1', role: 'GALACTIC_OVERLORD' })),
+      );
+      await expectRejected();
+    });
+
+    it('rejects a sign-in that came back without a refresh token', async () => {
+      // hydrate() rejects a stored session with no refresh token, so this would be a session that
+      // silently disappears at the next cold start.
+      (verifyOtpApi as jest.Mock).mockResolvedValue(
+        tokens(tokenWithClaims({ user_id: 'u-1', role: 'SITE_WORKER' }), ''),
+      );
+      await expectRejected();
+    });
+
+    it('accepts a well-formed token', async () => {
+      (verifyOtpApi as jest.Mock).mockResolvedValue(
+        tokens(tokenWithClaims({ user_id: 'u-1', role: 'SITE_WORKER', name: 'Somchai' })),
+      );
+      await useAuthStore.getState().verifyOtp('+66800000001', '123456');
+      expect(useAuthStore.getState().userId).toBe('u-1');
+      expect(useAuthStore.getState().role).toBe('SITE_WORKER');
+      expect(useAuthStore.getState().displayName).toBe('Somchai');
+    });
   });
 
   describe('device trust (§20.6.1)', () => {
