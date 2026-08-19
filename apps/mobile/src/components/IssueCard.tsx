@@ -27,6 +27,7 @@
 // this issue's own photo, read from the local file — not a stock image, and not a network fetch. An
 // issue that arrived from the server with no local capture simply has no header, which is honest.
 
+import { memo } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import type { Issue } from '../db/database';
@@ -68,7 +69,13 @@ function syncMark(status: string): {
   return { icon: 'sync', tone: 'muted' };
 }
 
-export function IssueCard({
+/**
+ * MEMOIZED. This is the row of the issue board, whose screen re-renders on every filter chip and on
+ * every change the local database reports — none of which alters a card whose issue and photo are
+ * the same as last time. Props are an issue row, an optional photo URI, and two optional slots, so
+ * the default shallow comparison is the right one.
+ */
+export const IssueCard = memo(function IssueCard({
   issue,
   photoUri,
   onPress,
@@ -208,7 +215,7 @@ export function IssueCard({
       </TouchableOpacity>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   card: {

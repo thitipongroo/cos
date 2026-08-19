@@ -2,7 +2,7 @@
 // GET /procurement/vendor-invoices?status=. NOTE: per-invoice detail + add-note (nav 3112) are NOT
 // built — there is no GET /vendor-invoices/:id nor a note endpoint yet (flagged as a backend follow-up).
 
-import { useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
 import { get, post } from '../../api/client';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
@@ -20,6 +20,36 @@ interface InvoiceRow {
   invoice_number?: string;
   status?: string;
 }
+/**
+ * One vendor invoice, memoized.
+ *
+ * `onOpen` takes the id, so one callback serves the whole list and a row's props stay equal between
+ * renders — which is what lets memo skip the rows that did not change when the status filter
+ * re-queries or a detail opens.
+ */
+const InvoiceItem = memo(function InvoiceItem({
+  invoice,
+  onOpen,
+}: {
+  invoice: InvoiceRow;
+  onOpen: (id: string) => void;
+}) {
+  const id = invoice.vendor_invoice_id ?? invoice.invoice_id;
+  return (
+    <TouchableOpacity
+      testID="invoice-item"
+      style={screen.item}
+      disabled={!id}
+      onPress={() => id && onOpen(id)}
+    >
+      <Text style={screen.itemTitle}>
+        {invoice.invoice_number ?? invoice.vendor_invoice_id ?? invoice.invoice_id ?? '—'}
+      </Text>
+      {invoice.status ? <StatusChip label={invoice.status} /> : null}
+    </TouchableOpacity>
+  );
+});
+
 interface InvoiceDetail {
   invoice_id: string;
   po_id: string;
@@ -45,7 +75,7 @@ export default function InvoicesScreen() {
   const [noteSaved, setNoteSaved] = useState(false);
   const t = useT();
 
-  const openDetail = async (id: string): Promise<void> => {
+  const openDetail = useCallback(async (id: string): Promise<void> => {
     try {
       const d = await get<InvoiceDetail>(`/procurement/vendor-invoices/${id}`);
       setDetail(d);
@@ -54,7 +84,12 @@ export default function InvoicesScreen() {
     } catch {
       /* offline / error — stay on list */
     }
-  };
+  }, []);
+
+  const renderItem = useCallback(
+    ({ item }: { item: InvoiceRow }) => <InvoiceItem invoice={item} onOpen={openDetail} />,
+    [openDetail],
+  );
 
   const saveNote = (): void => {
     if (!detail) return;
@@ -158,22 +193,7 @@ export default function InvoicesScreen() {
           data={rows}
           keyExtractor={(r, i) => r.vendor_invoice_id ?? r.invoice_id ?? String(i)}
           ListEmptyComponent={<Text style={screen.empty}>{t('finance.invoices.empty')}</Text>}
-          renderItem={({ item }) => {
-            const id = item.vendor_invoice_id ?? item.invoice_id;
-            return (
-              <TouchableOpacity
-                testID="invoice-item"
-                style={screen.item}
-                disabled={!id}
-                onPress={() => id && openDetail(id)}
-              >
-                <Text style={screen.itemTitle}>
-                  {item.invoice_number ?? item.vendor_invoice_id ?? item.invoice_id ?? '—'}
-                </Text>
-                {item.status ? <StatusChip label={item.status} /> : null}
-              </TouchableOpacity>
-            );
-          }}
+          renderItem={renderItem}
         />
       </LoadingBoundary>
     </View>

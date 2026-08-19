@@ -54,7 +54,7 @@
 //   - The mockup's own top bar (brand + close) is dropped in favour of the app's global TopBar, as
 //     on every other screen.
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -169,6 +169,15 @@ export default function IssuesScreen() {
     }
     return map;
   }, [allPhotos]);
+
+  // Rebuilt only when the photo map changes, so a filter tap or a keystroke in the capture form
+  // below does not hand every card a new element to diff.
+  const renderIssue = useCallback(
+    ({ item }: { item: Issue }) => (
+      <IssueCard issue={item} photoUri={photoByIssue.get(item.issueId) ?? null} />
+    ),
+    [photoByIssue],
+  );
 
   const onCreate = async (): Promise<void> => {
     const text = description.trim();
@@ -388,9 +397,7 @@ export default function IssuesScreen() {
         style={styles.listFill}
         contentContainerStyle={styles.listStack}
         ListEmptyComponent={<Text style={screen.empty}>{t('site.issues.empty')}</Text>}
-        renderItem={({ item }) => (
-          <IssueCard issue={item} photoUri={photoByIssue.get(item.issueId) ?? null} />
-        )}
+        renderItem={renderIssue}
       />
 
       {/* The drawing's floating "+" — and the only route to the capture form for this role. */}

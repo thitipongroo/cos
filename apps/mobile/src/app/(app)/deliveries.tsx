@@ -5,7 +5,7 @@
 // PO line data is not cached offline (§17.4 — POs are online read-cache), so lines load online; the
 // record submission itself still queues offline.
 
-import { useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
 import * as Crypto from 'expo-crypto';
 import { get, mutate } from '../../api/client';
@@ -20,6 +20,22 @@ interface DeliveryRow {
   delivery_id: string;
   status: string;
 }
+/**
+ * One recorded delivery, memoized.
+ *
+ * This row is read-only, which is exactly why memo pays here: the screen above it re-renders on
+ * every keystroke in the delivery-note field and on every PO the picker selects, and none of that
+ * changes a single row.
+ */
+const DeliveryItem = memo(function DeliveryItem({ delivery }: { delivery: DeliveryRow }) {
+  return (
+    <View testID="delivery-item" style={screen.item}>
+      <Text style={screen.itemTitle}>{delivery.delivery_id.slice(0, 8)}</Text>
+      <StatusChip label={delivery.status} />
+    </View>
+  );
+});
+
 interface PoRow {
   po_id: string;
   po_number?: string;
@@ -47,6 +63,12 @@ export default function DeliveriesScreen() {
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true); // initial deliveries + PO fetch is in flight on mount
   const t = useT();
+
+  // Created once: the row takes nothing but its own record, so this never has to be rebuilt.
+  const renderDelivery = useCallback(
+    ({ item }: { item: DeliveryRow }) => <DeliveryItem delivery={item} />,
+    [],
+  );
 
   const load = async (): Promise<void> => {
     setLoading(true);
@@ -196,12 +218,7 @@ export default function DeliveriesScreen() {
           data={rows}
           keyExtractor={(r, i) => r.delivery_id || String(i)}
           ListEmptyComponent={<Text style={screen.empty}>{t('procurement.deliveries.empty')}</Text>}
-          renderItem={({ item }) => (
-            <View testID="delivery-item" style={screen.item}>
-              <Text style={screen.itemTitle}>{item.delivery_id.slice(0, 8)}</Text>
-              <StatusChip label={item.status} />
-            </View>
-          )}
+          renderItem={renderDelivery}
         />
       </LoadingBoundary>
     </View>

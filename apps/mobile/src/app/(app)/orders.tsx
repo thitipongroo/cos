@@ -2,7 +2,7 @@
 // shows its line items and the delivery-phase status (SENT/ACKNOWLEDGED/PARTIALLY_DELIVERED/…). Source:
 // GET /procurement/purchase-orders (list) + /:poId (detail). Master 3125-3126.
 
-import { useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, ScrollView, StyleSheet } from 'react-native';
 import { get } from '../../api/client';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
@@ -31,6 +31,28 @@ function asList<T>(res: { items?: T[] } | T[]): T[] {
   return Array.isArray(res) ? res : (res.items ?? []);
 }
 
+/**
+ * One purchase order, memoized.
+ *
+ * The row's whole appearance comes from its own props, and `onOpen` takes the id so one callback
+ * serves the entire list — which is what lets memo skip a row when the screen re-renders for
+ * something else (the detail fetch, a refresh).
+ */
+const OrderItem = memo(function OrderItem({
+  po,
+  onOpen,
+}: {
+  po: PoRow;
+  onOpen: (poId: string) => void;
+}) {
+  return (
+    <TouchableOpacity testID="order-item" style={screen.item} onPress={() => onOpen(po.po_id)}>
+      <Text style={screen.itemTitle}>{po.po_number ?? po.po_id.slice(0, 8)}</Text>
+      <StatusChip label={po.status} />
+    </TouchableOpacity>
+  );
+});
+
 export default function OrdersScreen() {
   const [rows, setRows] = useState<PoRow[]>([]);
   const [loading, setLoading] = useState(true); // initial PO fetch is in flight on mount
@@ -46,13 +68,18 @@ export default function OrdersScreen() {
       .finally(() => setLoading(false));
   }, []);
 
-  const open = async (poId: string): Promise<void> => {
+  const open = useCallback(async (poId: string): Promise<void> => {
     try {
       setDetail(await get<PoDetail>(`/procurement/purchase-orders/${poId}`));
     } catch {
       /* offline / error — stay on list */
     }
-  };
+  }, []);
+
+  const renderItem = useCallback(
+    ({ item }: { item: PoRow }) => <OrderItem po={item} onOpen={open} />,
+    [open],
+  );
 
   if (detail) {
     return (
@@ -98,16 +125,7 @@ export default function OrdersScreen() {
           data={rows}
           keyExtractor={(r, i) => r.po_id || String(i)}
           ListEmptyComponent={<Text style={screen.empty}>{t('procurement.orders.empty')}</Text>}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              testID="order-item"
-              style={screen.item}
-              onPress={() => open(item.po_id)}
-            >
-              <Text style={screen.itemTitle}>{item.po_number ?? item.po_id.slice(0, 8)}</Text>
-              <StatusChip label={item.status} />
-            </TouchableOpacity>
-          )}
+          renderItem={renderItem}
         />
       </LoadingBoundary>
     </View>

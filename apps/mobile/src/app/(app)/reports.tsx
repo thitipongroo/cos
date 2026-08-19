@@ -22,7 +22,8 @@
 //     existed) was wrong.
 // The EXECUTIVE half is untouched: it is a different role with a different drawing.
 
-import { useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 import {
   View,
   Text,
@@ -35,6 +36,7 @@ import {
 import axios from 'axios';
 import { useRouter } from 'expo-router';
 import { CosRole } from '@cos/types';
+import type { TranslateFn } from '../../i18n';
 import { get, post } from '../../api/client';
 import { enqueue } from '../../db/sync-queue';
 import { decodeJwtPayload } from '../../lib/jwt';
@@ -100,6 +102,101 @@ interface ReportRow {
 }
 
 // ── SITE_ENGINEER — review reports + record material consumption ──────────────
+/**
+ * One report card, memoized.
+ *
+ * It is not told whether it is open — the material form is passed as `children` instead, and that is
+ * the whole point:
+ * only the OPEN row is given children, so a keystroke in the material name field rebuilds one card's
+ * props instead of every card's. Everything else this takes is stable across renders — `p` is one of
+ * two module constants, `sc` is useMemo'd on it, and the i18n functions are useCallback'd on locale.
+ */
+const ReportCard = memo(function ReportCard({
+  report,
+  onToggle,
+  p,
+  t,
+  formatDate,
+  formatTime,
+  statusLabel,
+  children,
+}: {
+  report: ReportRow;
+  onToggle: (reportId: string) => void;
+  p: Palette;
+  t: TranslateFn;
+  formatDate: (date: Date | string) => string;
+  formatTime: (date: Date | string) => string;
+  statusLabel: (status: string) => string;
+  children?: ReactNode;
+}) {
+  const tone = statusTone(p, report.status);
+  const accent = accentTone(p, report);
+  // The headline the drawing gives each card. `blockers` is what the report actually says went
+  // wrong, and it is the field the product owner chose for this slot; a report filed with nothing
+  // blocking falls back to its own summary, and only a report with neither takes the generic name.
+  const headline = report.blockers?.trim() ?? report.summary?.trim() ?? t('site.reports.untitled');
+  // The drawing's "Oct 24 • 14:30". The DATE is the report's own `report_date`; the TIME is when it
+  // was submitted — the device's own stamp where the report was queued offline, else when the server
+  // received it. Neither is invented, and a row carrying neither simply shows the date.
+  const stamp = report.client_submitted_at ?? report.server_received_at ?? null;
+  return (
+    <TouchableOpacity
+      testID="report-item"
+      style={[
+        styles.card,
+        { backgroundColor: p.surface, borderColor: p.border, borderLeftColor: accent },
+      ]}
+      onPress={() => onToggle(report.report_id)}
+    >
+      <View style={styles.cardRow}>
+        <View style={styles.cardMain}>
+          <View style={styles.cardHead}>
+            <View style={[styles.statusChip, { borderColor: tone }]}>
+              <Text style={[styles.statusChipText, { color: tone }]}>
+                {statusLabel(report.status)}
+              </Text>
+            </View>
+            <Text style={[styles.stamp, { color: p.muted }]}>
+              {formatDate(report.report_date)}
+              {stamp === null ? '' : ` • ${formatTime(stamp)}`}
+            </Text>
+          </View>
+          {/* NO REPORT TITLE COLUMN EXISTS. The drawing names its cards "Daily Site
+            Report" / "Safety Incident Report" / "Material Delivery Log", which implies
+            report TYPES this product does not have — `site_ops.site_reports` is one
+            kind of thing, the daily report, and its only lifecycle is the DRAFT /
+            SUBMITTED pair the capture form's two buttons already set (mockup
+            05_site_worker/01_home/04_sw_daily_report), which is what the status chip
+            above shows. So the headline is the BLOCKERS DESCRIPTION (PO decision
+            2026-08-12): the one free-text field that says what is actually happening on
+            that report. ONE LINE with an ellipsis, as instructed — `numberOfLines={1}`
+            is what puts the "…" in. */}
+          <Text style={[styles.cardTitle, { color: p.text }]} numberOfLines={1}>
+            {headline}
+          </Text>
+          {/* The drawing's third row is a SYNCED / PENDING sync state, and this list
+            cannot honestly show one: it is the SERVER's own copy, fetched over HTTP, so
+            every row in it is already synced and the value would be a constant. The row
+            carries the BLOCKER CATEGORY instead (PO decision 2026-08-12) — the named
+            cause behind the headline above it, and what decides the card's left accent.
+            A report with no blocker recorded shows no row at all. */}
+          {report.blocker_category == null ? null : (
+            <View style={styles.blockerRow}>
+              <MaterialIcons name="report-problem" size={14} color={accent} />
+              <Text style={[styles.blockerText, { color: accent }]}>
+                {t(`site.report.blockerCategories.${report.blocker_category}`)}
+              </Text>
+            </View>
+          )}
+        </View>
+        <MaterialIcons name="chevron-right" size={22} color={p.muted} />
+      </View>
+      {children}
+    </TouchableOpacity>
+  );
+});
+
 function SiteEngineerReports() {
   const router = useRouter();
   const [reports, setReports] = useState<ReportRow[]>([]);
@@ -198,6 +295,95 @@ function SiteEngineerReports() {
     setQty('');
     setUnit('');
   };
+
+  // One callback for the whole list; the functional update keeps `selectedReportId` out of its
+  // dependency list so it is created once.
+  const toggleReport = useCallback((reportId: string): void => {
+    setSelectedReportId((prev) => (prev === reportId ? null : reportId));
+  }, []);
+
+  // Rebuilt when anything the OPEN card shows changes; every closed card's props are unchanged, so
+  // memo lets them skip. `children` is undefined for a closed row, which is a stable value.
+  const renderReport = useCallback(
+    ({ item }: { item: ReportRow }) => {
+      const open = selectedReportId === item.report_id;
+      return (
+        <ReportCard
+          report={item}
+          onToggle={toggleReport}
+          p={p}
+          t={t}
+          formatDate={formatDate}
+          formatTime={formatTime}
+          statusLabel={statusLabel}
+        >
+          {open ? (
+            <View testID="material-form" style={styles.matForm}>
+              <Text style={[styles.matHeading, { color: p.muted }]}>
+                {t('site.reports.materialTitle')}
+              </Text>
+              <TextInput
+                testID="material-name-input"
+                style={sc.input}
+                placeholder={t('site.reports.materialPlaceholder')}
+                placeholderTextColor={p.muted}
+                value={matName}
+                onChangeText={setMatName}
+              />
+              <View style={styles.qtyRow}>
+                <TextInput
+                  testID="material-qty-input"
+                  style={[sc.input, styles.qtyInput]}
+                  placeholder={t('site.reports.qtyPlaceholder')}
+                  placeholderTextColor={p.muted}
+                  keyboardType="decimal-pad"
+                  value={qty}
+                  onChangeText={setQty}
+                />
+                <TextInput
+                  testID="material-unit-input"
+                  style={[sc.input, styles.qtyInput]}
+                  placeholder={t('site.reports.unitPlaceholder')}
+                  placeholderTextColor={p.muted}
+                  value={unit}
+                  onChangeText={setUnit}
+                />
+              </View>
+              <TouchableOpacity
+                testID="record-material-button"
+                style={[sc.primaryButton, !canRecord && sc.buttonDisabled]}
+                onPress={() => recordMaterial(item.report_id)}
+                disabled={!canRecord}
+              >
+                <Text style={sc.primaryButtonText}>{t('site.reports.record')}</Text>
+              </TouchableOpacity>
+              {savedFor === item.report_id ? (
+                <Text testID="material-saved" style={[styles.saved, { color: p.success }]}>
+                  {t('site.reports.recorded')}
+                </Text>
+              ) : null}
+            </View>
+          ) : null}
+        </ReportCard>
+      );
+    },
+    [
+      selectedReportId,
+      toggleReport,
+      p,
+      t,
+      formatDate,
+      formatTime,
+      statusLabel,
+      sc,
+      matName,
+      qty,
+      unit,
+      savedFor,
+      canRecord,
+      recordMaterial,
+    ],
+  );
 
   return (
     <View testID="reports-screen" style={sc.container}>
@@ -319,124 +505,7 @@ function SiteEngineerReports() {
               </TouchableOpacity>
             ) : null
           }
-          renderItem={({ item }) => {
-            const open = selectedReportId === item.report_id;
-            const tone = statusTone(p, item.status);
-            const accent = accentTone(p, item);
-            // The headline the drawing gives each card. `blockers` is what the report actually
-            // says went wrong, and it is the field the product owner chose for this slot; a report
-            // filed with nothing blocking falls back to its own summary, and only a report with
-            // neither takes the generic name of the thing.
-            const headline =
-              item.blockers?.trim() ?? item.summary?.trim() ?? t('site.reports.untitled');
-            // The drawing's "Oct 24 • 14:30". The DATE is the report's own `report_date`; the TIME
-            // is when it was submitted — the device's own stamp where the report was queued
-            // offline, else when the server received it. Neither is invented, and a row that
-            // somehow carries neither simply shows the date.
-            const stamp = item.client_submitted_at ?? item.server_received_at ?? null;
-            return (
-              <TouchableOpacity
-                testID="report-item"
-                style={[
-                  styles.card,
-                  { backgroundColor: p.surface, borderColor: p.border, borderLeftColor: accent },
-                ]}
-                onPress={() => setSelectedReportId(open ? null : item.report_id)}
-              >
-                <View style={styles.cardRow}>
-                  <View style={styles.cardMain}>
-                    <View style={styles.cardHead}>
-                      <View style={[styles.statusChip, { borderColor: tone }]}>
-                        <Text style={[styles.statusChipText, { color: tone }]}>
-                          {statusLabel(item.status)}
-                        </Text>
-                      </View>
-                      <Text style={[styles.stamp, { color: p.muted }]}>
-                        {formatDate(item.report_date)}
-                        {stamp === null ? '' : ` • ${formatTime(stamp)}`}
-                      </Text>
-                    </View>
-                    {/* NO REPORT TITLE COLUMN EXISTS. The drawing names its cards "Daily Site
-                        Report" / "Safety Incident Report" / "Material Delivery Log", which implies
-                        report TYPES this product does not have — `site_ops.site_reports` is one
-                        kind of thing, the daily report, and its only lifecycle is the DRAFT /
-                        SUBMITTED pair the capture form's two buttons already set (mockup
-                        05_site_worker/01_home/04_sw_daily_report), which is what the status chip
-                        above shows. So the headline is the BLOCKERS DESCRIPTION (PO decision
-                        2026-08-12): the one free-text field that says what is actually happening on
-                        that report. ONE LINE with an ellipsis, as instructed — `numberOfLines={1}`
-                        is what puts the "…" in. */}
-                    <Text style={[styles.cardTitle, { color: p.text }]} numberOfLines={1}>
-                      {headline}
-                    </Text>
-                    {/* The drawing's third row is a SYNCED / PENDING sync state, and this list
-                        cannot honestly show one: it is the SERVER's own copy, fetched over HTTP, so
-                        every row in it is already synced and the value would be a constant. The row
-                        carries the BLOCKER CATEGORY instead (PO decision 2026-08-12) — the named
-                        cause behind the headline above it, and what decides the card's left accent.
-                        A report with no blocker recorded shows no row at all. */}
-                    {item.blocker_category == null ? null : (
-                      <View style={styles.blockerRow}>
-                        <MaterialIcons name="report-problem" size={14} color={accent} />
-                        <Text style={[styles.blockerText, { color: accent }]}>
-                          {t(`site.report.blockerCategories.${item.blocker_category}`)}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                  <MaterialIcons name="chevron-right" size={22} color={p.muted} />
-                </View>
-
-                {open ? (
-                  <View testID="material-form" style={styles.matForm}>
-                    <Text style={[styles.matHeading, { color: p.muted }]}>
-                      {t('site.reports.materialTitle')}
-                    </Text>
-                    <TextInput
-                      testID="material-name-input"
-                      style={sc.input}
-                      placeholder={t('site.reports.materialPlaceholder')}
-                      placeholderTextColor={p.muted}
-                      value={matName}
-                      onChangeText={setMatName}
-                    />
-                    <View style={styles.qtyRow}>
-                      <TextInput
-                        testID="material-qty-input"
-                        style={[sc.input, styles.qtyInput]}
-                        placeholder={t('site.reports.qtyPlaceholder')}
-                        placeholderTextColor={p.muted}
-                        keyboardType="decimal-pad"
-                        value={qty}
-                        onChangeText={setQty}
-                      />
-                      <TextInput
-                        testID="material-unit-input"
-                        style={[sc.input, styles.qtyInput]}
-                        placeholder={t('site.reports.unitPlaceholder')}
-                        placeholderTextColor={p.muted}
-                        value={unit}
-                        onChangeText={setUnit}
-                      />
-                    </View>
-                    <TouchableOpacity
-                      testID="record-material-button"
-                      style={[sc.primaryButton, !canRecord && sc.buttonDisabled]}
-                      onPress={() => recordMaterial(item.report_id)}
-                      disabled={!canRecord}
-                    >
-                      <Text style={sc.primaryButtonText}>{t('site.reports.record')}</Text>
-                    </TouchableOpacity>
-                    {savedFor === item.report_id ? (
-                      <Text testID="material-saved" style={[styles.saved, { color: p.success }]}>
-                        {t('site.reports.recorded')}
-                      </Text>
-                    ) : null}
-                  </View>
-                ) : null}
-              </TouchableOpacity>
-            );
-          }}
+          renderItem={renderReport}
         />
       </LoadingBoundary>
 
