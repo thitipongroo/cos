@@ -121,7 +121,14 @@ export default function RootLayout() {
         .getState()
         .hydrate()
         .then(() => useBiometricStore.getState().lockIfEnabled()),
-    ]).finally(() => setHydrated(true));
+    ])
+      // A store that cannot read its own key falls back to its default and the app still mounts —
+      // which is what `finally` below was already arranging. The catch is what stops the failure
+      // ALSO surfacing as an unhandled rejection: none of these hydrate() calls guards its own
+      // SecureStore read, and `.finally()` returns a new promise that rejects with the same reason.
+      // On the root gate that is an unhandled rejection at launch.
+      .catch(() => undefined)
+      .finally(() => setHydrated(true));
 
     // Re-raise the biometric gate every time the app comes back to the foreground, not only on a cold
     // start — see store/biometricStore.watchAppState for why per-launch was the wrong granularity.

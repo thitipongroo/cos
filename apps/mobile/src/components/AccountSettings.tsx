@@ -187,7 +187,13 @@ export function AccountSettings() {
             disabled: !available || busy,
             onChange: (next) => {
               setBusy(true);
-              void Promise.resolve(setEnabled(next)).finally(() => setBusy(false));
+              // setEnabled awaits SecureStore and the biometric prompt and guards neither, so it
+              // can reject — and `.finally()` would then reject too, with nobody listening. The
+              // switch reads `enabled` from the store, so a failed enable already shows as the
+              // toggle staying where it was; this only stops the rejection escaping.
+              void Promise.resolve(setEnabled(next))
+                .catch(() => undefined)
+                .finally(() => setBusy(false));
             },
           }}
         />
