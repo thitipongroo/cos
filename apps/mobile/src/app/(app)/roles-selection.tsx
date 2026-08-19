@@ -16,6 +16,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { CosRole } from '@cos/types';
 import { useInviteRoleStore } from '../../store/inviteRoleStore';
 import { useT } from '../../i18n';
+import { darkScreen } from '../../theme/screenStyles';
 import {
   darkColors,
   fontFamily,
@@ -126,14 +127,14 @@ export default function RolesSelectionScreen(): React.JSX.Element {
   };
 
   return (
-    <View style={styles.root} testID="roles-selection">
+    <View style={darkScreen.root} testID="roles-selection">
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {/* Search */}
         <View style={styles.searchBox}>
           <MaterialIcons name="search" size={20} color={darkColors.muted} />
           <TextInput
             testID="roles-search"
-            style={styles.searchInput}
+            style={darkScreen.searchInput}
             value={query}
             onChangeText={setQuery}
             placeholder={t('rolesSelection.searchPlaceholder')}
@@ -166,7 +167,7 @@ export default function RolesSelectionScreen(): React.JSX.Element {
         ) : null}
 
         {primary.length === 0 && support.length === 0 ? (
-          <Text style={styles.empty}>{t('rolesSelection.noMatch')}</Text>
+          <Text style={darkScreen.empty}>{t('rolesSelection.noMatch')}</Text>
         ) : null}
 
         {/* CORE_AI banner (kept as the mockup drew it — PO decision 2026-07-29) */}
@@ -203,7 +204,6 @@ export default function RolesSelectionScreen(): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: darkColors.bg },
   content: { padding: spacing.lg, paddingBottom: 120, gap: spacing.md },
 
   searchBox: {
@@ -216,12 +216,6 @@ const styles = StyleSheet.create({
     borderColor: darkColors.border,
     paddingHorizontal: spacing.md,
     height: touchTarget.formInput,
-  },
-  searchInput: {
-    flex: 1,
-    color: darkColors.text,
-    fontFamily: fontFamily.regular,
-    fontSize: typography.body.fontSize,
   },
 
   sectionRow: {
@@ -284,8 +278,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     color: darkColors.muted,
   },
-
-  empty: { textAlign: 'center', color: darkColors.muted, fontSize: 14, marginTop: spacing.md },
 
   aiPanel: {
     marginTop: spacing.xs,

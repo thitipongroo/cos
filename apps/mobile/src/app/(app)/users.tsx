@@ -48,6 +48,7 @@ import {
   typography,
 } from '../../theme/tokens';
 import { shortId } from '../../lib/shortId';
+import { darkScreen } from '../../theme/screenStyles';
 
 const AUDIT_DORMANT_DAYS = 30;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -167,7 +168,7 @@ export default function UsersScreen(): React.JSX.Element {
     );
 
   return (
-    <View style={styles.root} testID="tenant-admin-users">
+    <View style={darkScreen.root} testID="tenant-admin-users">
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {/* Title lives in the global TopBar (PO decision 2026-07-29 — main screens drop their in-content
             page header). */}
@@ -176,7 +177,7 @@ export default function UsersScreen(): React.JSX.Element {
           <MaterialIcons name="search" size={20} color={darkColors.muted} />
           <TextInput
             testID="users-search"
-            style={styles.searchInput}
+            style={darkScreen.searchInput}
             placeholder={t('adminUsers.searchPlaceholder')}
             placeholderTextColor={darkColors.muted}
             value={query}
@@ -277,7 +278,7 @@ export default function UsersScreen(): React.JSX.Element {
 
       {/* FAB — invite user */}
       <Pressable
-        style={styles.fab}
+        style={darkScreen.fab}
         onPress={onInvite}
         testID="invite-user-fab"
         accessibilityRole="button"
@@ -398,7 +399,7 @@ function FilterChip({
       testID={testID}
       accessibilityRole="button"
     >
-      <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
+      <Text style={[darkScreen.chipText, active && styles.chipTextActive]}>{label}</Text>
     </Pressable>
   );
 }
@@ -516,7 +517,6 @@ function UserCard({
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: darkColors.bg },
   content: { padding: spacing.lg, gap: spacing.sm, paddingBottom: 96 },
   searchBox: {
     flexDirection: 'row',
@@ -528,12 +528,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: darkColors.border,
     paddingHorizontal: spacing.md,
-  },
-  searchInput: {
-    flex: 1,
-    color: darkColors.text,
-    fontFamily: fontFamily.regular,
-    fontSize: typography.body.fontSize,
   },
   chips: { gap: spacing.xs, paddingVertical: spacing.xs, paddingRight: spacing.lg },
   chip: {
@@ -547,11 +541,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   chipActive: { backgroundColor: darkColors.primary, borderColor: darkColors.primary },
-  chipText: {
-    fontFamily: fontFamily.semibold,
-    fontSize: typography.label.fontSize,
-    color: darkColors.muted,
-  },
   chipTextActive: { color: darkColors.onPrimary },
   auditCard: {
     position: 'relative',
@@ -726,22 +715,6 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.regular,
     fontSize: typography.label.fontSize,
     color: darkColors.muted,
-  },
-  fab: {
-    position: 'absolute',
-    right: spacing.lg,
-    bottom: spacing.lg,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: darkColors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
   },
 
   // Action sheet (mockup 01_management): dim backdrop + a bottom sheet pinned to the bottom.

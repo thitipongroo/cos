@@ -13,6 +13,8 @@
 import { useMemo, useRef, useState } from 'react';
 import { Gesture } from 'react-native-gesture-handler';
 import type { PanGesture } from 'react-native-gesture-handler';
+import { Skia } from '@shopify/react-native-skia';
+import type { SkPath } from '@shopify/react-native-skia';
 
 export interface StrokePoint {
   x: number;
@@ -77,4 +79,23 @@ export function useStrokeCapture({
   );
 
   return { pan, liveKey, drawing };
+}
+
+/**
+ * Scale a normalised path into the pixel space it is being drawn in.
+ *
+ * Strokes are STORED normalised — every coordinate in 0..1 — so a signature captured on a phone
+ * replays correctly on a tablet, and so the stored string does not change when a layout does. This
+ * is the other end of that: multiply back up by the surface's measured width and height.
+ *
+ * An unparseable string yields an EMPTY path rather than throwing. The caller is a render pass; a
+ * corrupt stroke should cost that one stroke, not the screen.
+ */
+export function denormalisePath(d: string, w: number, h: number): SkPath {
+  const path = Skia.Path.MakeFromSVGString(d);
+  if (!path) return Skia.Path.Make();
+  const m = Skia.Matrix();
+  m.scale(w, h);
+  path.transform(m);
+  return path;
 }

@@ -73,6 +73,7 @@ import {
   typography,
 } from '../../theme/tokens';
 import { downloadTerms } from '../../lib/legalDownload';
+import { useLegalDownload } from '../../hooks/useLegalDownload';
 import { API_BASE_URL } from '../../api/client';
 import safetyPhoto from '../../../assets/terms-safety.jpg';
 import { darkScreen } from '../../theme/screenStyles';
@@ -140,7 +141,6 @@ export default function TermsOfUseScreen(): React.JSX.Element {
   // The mockup opens on the first clause (its DOMContentLoaded handler adds `active` to it) rather
   // than fully collapsed, so a reader lands on prose instead of six closed bars.
   const [openId, setOpenId] = useState<string | null>(SECTIONS[0]!.id);
-  const [downloading, setDownloading] = useState(false);
 
   const toggle = (id: string): void => {
     setOpenId((current) => (current === id ? null : id));
@@ -149,35 +149,11 @@ export default function TermsOfUseScreen(): React.JSX.Element {
     Vibration.vibrate(10);
   };
 
-  /**
-   * Fetch the document, verify it, and show the receipt (ADR-092).
-   *
-   * A failure leaves the reader on the terms with the button live again rather than pushing an error
-   * screen — the document they came to read is already in front of them and the retry is one tap,
-   * which is the call the policy screen made for the same flow. `verified` is passed through even
-   * when FALSE: the receipt states a mismatch rather than hiding it.
-   */
-  const download = async (): Promise<void> => {
-    setDownloading(true);
-    try {
-      const file = await downloadTerms(API_BASE_URL);
-      router.push({
-        pathname: '/(auth)/terms-of-use-downloaded',
-        params: {
-          fileName: file.fileName,
-          version: file.version,
-          sizeBytes: String(file.sizeBytes),
-          sha256: file.sha256,
-          verified: String(file.verified),
-          downloadedAt: file.downloadedAt,
-        },
-      });
-    } catch {
-      // Deliberately silent beyond restoring the button; there is no error surface on this screen.
-    } finally {
-      setDownloading(false);
-    }
-  };
+  const { downloading, download } = useLegalDownload(
+    downloadTerms,
+    '/(auth)/terms-of-use-downloaded',
+    API_BASE_URL,
+  );
 
   return (
     <View style={[darkScreen.root, { paddingTop: insets.top }]}>
@@ -204,7 +180,7 @@ export default function TermsOfUseScreen(): React.JSX.Element {
       >
         {/* No heading here: it is in the bar, and the drawing opens the canvas on this paragraph.
             Printing it twice is the stutter headingStutter.spec.ts exists to stop elsewhere. */}
-        <Text style={styles.intro}>{t('terms.intro')}</Text>
+        <Text style={darkScreen.intro}>{t('terms.intro')}</Text>
 
         {/* Summary tiles — two cards, each with a thick coloured rule down its leading edge. */}
         <View style={styles.summaryRow}>
@@ -253,7 +229,7 @@ export default function TermsOfUseScreen(): React.JSX.Element {
                   >
                     {String(index + 1).padStart(2, '0')}
                   </Text>
-                  <Text style={styles.cardTitle}>{t(titleKey)}</Text>
+                  <Text style={darkScreen.cardCaptionRow}>{t(titleKey)}</Text>
                   <MaterialIcons
                     name={open ? 'expand-less' : 'expand-more'}
                     size={24}
@@ -362,13 +338,6 @@ const styles = StyleSheet.create({
 
   content: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.xl },
 
-  intro: {
-    color: darkColors.muted,
-    fontFamily: fontFamily.regular,
-    fontSize: typography.body.fontSize,
-    lineHeight: typography.body.lineHeight,
-  },
-
   summaryRow: { marginTop: spacing.xl, flexDirection: 'row', gap: spacing.sm },
   summaryCard: {
     flex: 1,
@@ -416,13 +385,6 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.semibold,
     fontSize: typography.title.fontSize,
     lineHeight: typography.title.lineHeight,
-  },
-  cardTitle: {
-    flex: 1,
-    color: darkColors.text,
-    fontFamily: fontFamily.semibold,
-    fontSize: typography.caption.fontSize,
-    lineHeight: typography.caption.lineHeight,
   },
   cardBody: { paddingHorizontal: spacing.md, paddingBottom: spacing.md },
   bodyText: {

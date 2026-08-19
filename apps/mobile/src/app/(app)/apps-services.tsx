@@ -14,6 +14,7 @@ import { View, Text, ScrollView, TextInput, Pressable, StyleSheet, Alert } from 
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useT } from '../../i18n';
+import { darkScreen } from '../../theme/screenStyles';
 import {
   darkColors,
   fontFamily,
@@ -73,14 +74,14 @@ export default function AppsServicesScreen(): React.JSX.Element {
   };
 
   return (
-    <View style={styles.root} testID="apps-services">
+    <View style={darkScreen.root} testID="apps-services">
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {/* Search */}
         <View style={styles.searchBox}>
           <MaterialIcons name="search" size={20} color={darkColors.muted} />
           <TextInput
             testID="apps-search"
-            style={styles.searchInput}
+            style={darkScreen.searchInput}
             value={query}
             onChangeText={setQuery}
             placeholder={t('appsServices.searchPlaceholder')}
@@ -184,7 +185,7 @@ export default function AppsServicesScreen(): React.JSX.Element {
         ) : null}
 
         {core.length === 0 && tools.length === 0 && exts.length === 0 ? (
-          <Text style={styles.empty}>{t('appsServices.noMatch')}</Text>
+          <Text style={darkScreen.empty}>{t('appsServices.noMatch')}</Text>
         ) : null}
       </ScrollView>
     </View>
@@ -201,7 +202,6 @@ function SectionHeader({ label }: { label: string }): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: darkColors.bg },
   content: { padding: spacing.lg, paddingBottom: spacing.xl, gap: spacing.xl },
 
   searchBox: {
@@ -214,12 +214,6 @@ const styles = StyleSheet.create({
     borderColor: darkColors.border,
     paddingHorizontal: spacing.md,
     height: touchTarget.formInput + 4,
-  },
-  searchInput: {
-    flex: 1,
-    color: darkColors.text,
-    fontFamily: fontFamily.regular,
-    fontSize: typography.body.fontSize,
   },
 
   section: { gap: spacing.md },
@@ -333,6 +327,4 @@ const styles = StyleSheet.create({
     color: darkColors.text,
   },
   extDesc: { fontFamily: fontFamily.regular, fontSize: 12, color: darkColors.muted },
-
-  empty: { textAlign: 'center', color: darkColors.muted, fontSize: 14, marginTop: spacing.md },
 });

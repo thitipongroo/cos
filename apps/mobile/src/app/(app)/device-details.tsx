@@ -31,6 +31,7 @@ import {
   type TrustedDeviceSummary,
 } from '../../api/devices';
 import { getDeviceId } from '../../lib/deviceTrust';
+import { screenChrome } from '../../theme/screenStyles';
 import {
   attestationBand,
   cappingSignal,
@@ -220,7 +221,7 @@ function toneColour(p: ReturnType<typeof usePalette>, tone: 'STRONG' | 'FAIR' | 
 
 const makeStyles = (p: ReturnType<typeof usePalette>) =>
   StyleSheet.create({
-    content: { padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xl },
+    ...screenChrome(p),
     gauge: { alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.md },
     gaugeValue: { fontFamily: fontFamily.bold, fontSize: 56 },
     gaugeMax: { fontSize: typography.caption.fontSize, color: p.muted },

@@ -175,3 +175,57 @@ export function shareOfBudget(
   // percent hides movement on a portfolio this size: one point of ฿805M is ฿8M.
   return numerator.dividedBy(denominator).times(100).toDecimalPlaces(1).toNumber();
 }
+
+/** The shape `GET /finance/budget/:projectId` answers with. */
+export interface ProjectBudgetResponse {
+  budget: {
+    total_budget_amount: string;
+    total_budget_currency: string;
+    allocated_amount: string;
+    committed_amount: string;
+    actual_amount: string;
+  };
+}
+
+/** The fields of a project this roll-up needs; both callers pass the `/projects/mine` row whole. */
+export interface ProjectIdentity {
+  project_id: string;
+  project_name: string;
+  project_code: string;
+}
+
+/**
+ * Pair each project with its budget response, dropping the ones that have none.
+ *
+ * The budgets are fetched with `Promise.allSettled` — one request per project, in parallel, because
+ * a manager with eight projects would otherwise wait eight round trips for a screen that is read at
+ * a glance. A REJECTED entry means 404 (the project was never budgeted) or offline, and either way
+ * there is no figure for that project: it is left OUT rather than entered as zero, which would read
+ * as "budgeted at nothing" on the Finance screen and would drag the portfolio variance towards a
+ * number nobody's data supports on the PM home.
+ *
+ * `budgets` is positional — `budgets[i]` is `projects[i]`'s — which is what `allSettled` guarantees
+ * and what a missing entry (a short array) would break, so that case is dropped too.
+ */
+export function settledBudgetRows(
+  projects: readonly ProjectIdentity[],
+  budgets: readonly PromiseSettledResult<ProjectBudgetResponse>[],
+): ProjectFinance[] {
+  return projects.flatMap((project, i) => {
+    const result = budgets[i];
+    if (result === undefined || result.status !== 'fulfilled') return [];
+    const b = result.value.budget;
+    return [
+      {
+        projectId: project.project_id,
+        projectName: project.project_name,
+        projectCode: project.project_code,
+        currency: b.total_budget_currency,
+        totalBudget: b.total_budget_amount,
+        allocated: b.allocated_amount,
+        committed: b.committed_amount,
+        actual: b.actual_amount,
+      },
+    ];
+  });
+}

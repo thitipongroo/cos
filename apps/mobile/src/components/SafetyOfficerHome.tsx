@@ -58,6 +58,8 @@ import { useProjectStore } from '../store/projectStore';
 import { useT } from '../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../theme/tokens';
 import { usePalette, useIsDark, type Palette } from '../theme/usePalette';
+import { screenChrome } from '../theme/screenStyles';
+import { Fab } from './Fab';
 
 /** How many incidents the Home summary lists before "View all" is the way to the rest. */
 const RECENT_LIMIT = 3;
@@ -318,25 +320,20 @@ export default function SafetyOfficerHome(): React.JSX.Element {
       </ScrollView>
 
       {/* The drawing's "+ REPORT NEW". Black elevation, never a coloured glow — §32.7 prohibits it. */}
-      <TouchableOpacity
+      <Fab
         testID="home-report-incident-fab"
-        accessibilityRole="button"
         accessibilityLabel={t('safety.home.reportNew')}
         onPress={() => router.push('/incidents')}
-        style={[styles.fab, { backgroundColor: p.primary }]}
-      >
-        <MaterialIcons name="add" size={28} color={p.onPrimary} />
-      </TouchableOpacity>
+      />
     </View>
   );
 }
 
 const makeStyles = (p: Palette) =>
   StyleSheet.create({
-    root: { flex: 1, backgroundColor: p.bg },
+    ...screenChrome(p),
     page: { padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xl * 3 },
     kpiRegion: { gap: spacing.sm },
-    grow: { flex: 1 },
     // The drawing's full-width alert tile — danger tint + 4px leading strip.
     alertTile: {
       justifyContent: 'space-between',
@@ -431,20 +428,5 @@ const makeStyles = (p: Palette) =>
       color: p.muted,
       fontSize: typography.label.fontSize,
       fontFamily: fontFamily.regular,
-    },
-    fab: {
-      position: 'absolute',
-      right: spacing.md,
-      bottom: spacing.xl,
-      width: 56,
-      height: 56,
-      borderRadius: 999,
-      alignItems: 'center',
-      justifyContent: 'center',
-      shadowColor: '#000000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.45,
-      shadowRadius: 12,
-      elevation: 8,
     },
   });

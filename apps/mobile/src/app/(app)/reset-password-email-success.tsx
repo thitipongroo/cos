@@ -14,7 +14,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useT } from '../../i18n';
 import { darkScreen } from '../../theme/screenStyles';
-import { darkColors, fontFamily, radius, spacing, typography } from '../../theme/tokens';
+import { darkColors, radius, spacing } from '../../theme/tokens';
 
 export default function ResetPasswordEmailSuccessScreen(): React.JSX.Element {
   const t = useT();
@@ -32,20 +32,22 @@ export default function ResetPasswordEmailSuccessScreen(): React.JSX.Element {
             <MaterialIcons name="mark-email-read" size={44} color={darkColors.success} />
           </View>
           <Text style={darkScreen.heading}>{t('resetLinkSent.heading')}</Text>
-          <View style={styles.accentLine} />
-          <Text style={styles.body}>{t('resetLinkSent.body', { email: email || '—' })}</Text>
+          <View style={darkScreen.accentLine} />
+          <Text style={darkScreen.bodyCentered}>
+            {t('resetLinkSent.body', { email: email || '—' })}
+          </Text>
         </View>
 
         <View style={styles.logCard}>
-          <View style={styles.logHead}>
+          <View style={darkScreen.iconRow}>
             <MaterialIcons name="terminal" size={16} color={darkColors.cyan} />
-            <Text style={styles.logTitle}>{t('resetLinkSent.logTitle')}</Text>
+            <Text style={darkScreen.logTitle}>{t('resetLinkSent.logTitle')}</Text>
           </View>
-          <Text style={styles.logBody}>{t('resetLinkSent.logBody')}</Text>
+          <Text style={darkScreen.logBody}>{t('resetLinkSent.logBody')}</Text>
         </View>
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={darkScreen.footerFlush}>
         <Pressable
           style={darkScreen.primaryBtn}
           onPress={() => router.replace('/users')}
@@ -62,20 +64,6 @@ export default function ResetPasswordEmailSuccessScreen(): React.JSX.Element {
 
 const styles = StyleSheet.create({
   hero: { alignItems: 'center', marginTop: spacing.sm, marginBottom: spacing.sm },
-  accentLine: {
-    width: 48,
-    height: 4,
-    borderRadius: radius.sm,
-    backgroundColor: `${darkColors.success}80`,
-    marginBottom: spacing.md,
-  },
-  body: {
-    fontFamily: fontFamily.regular,
-    fontSize: typography.body.fontSize,
-    lineHeight: typography.body.fontSize * 1.5,
-    color: darkColors.muted,
-    textAlign: 'center',
-  },
 
   logCard: {
     backgroundColor: `${darkColors.cyan}0D`,
@@ -84,26 +72,5 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     padding: spacing.md,
     gap: spacing.xs,
-  },
-  logHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  logTitle: {
-    fontFamily: fontFamily.bold,
-    fontSize: typography.label.fontSize,
-    letterSpacing: 1,
-    color: darkColors.cyan,
-  },
-  logBody: {
-    fontFamily: fontFamily.regular,
-    fontSize: 13,
-    lineHeight: 19,
-    color: darkColors.muted,
-    fontStyle: 'italic',
-  },
-
-  footer: {
-    padding: spacing.lg,
-    backgroundColor: darkColors.surface,
-    borderTopWidth: 1,
-    borderTopColor: darkColors.border,
   },
 });

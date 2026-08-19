@@ -85,6 +85,7 @@ import { useT } from '../../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
 import { usePalette } from '../../theme/usePalette';
 import { makeScreenStyles } from '../../theme/screenStyles';
+import { Fab } from '../../components/Fab';
 
 type IconName = keyof typeof MaterialIcons.glyphMap;
 
@@ -401,15 +402,11 @@ export default function IssuesScreen() {
       />
 
       {/* The drawing's floating "+" — and the only route to the capture form for this role. */}
-      <TouchableOpacity
+      <Fab
         testID="issue-fab"
-        accessibilityRole="button"
         accessibilityLabel={t('site.issues.submit')}
         onPress={() => setComposing(true)}
-        style={[styles.fab, { backgroundColor: p.primary }]}
-      >
-        <MaterialIcons name="add" size={28} color={p.onPrimary} />
-      </TouchableOpacity>
+      />
     </View>
   );
 }

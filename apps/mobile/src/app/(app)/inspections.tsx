@@ -57,6 +57,8 @@ import { useProjectStore } from '../../store/projectStore';
 import { useI18n } from '../../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
 import { usePalette, useIsDark, type Palette } from '../../theme/usePalette';
+import { screenChrome } from '../../theme/screenStyles';
+import { SeverityPicker, SEVERITIES } from '../../components/SeverityPicker';
 
 interface InspectionRow {
   inspection_id: string;
@@ -89,7 +91,6 @@ interface ChecklistItem {
 }
 
 type ItemResult = 'PASS' | 'FAIL';
-const SEVERITIES = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as const;
 type Severity = (typeof SEVERITIES)[number];
 
 /** The template array, whether it arrived parsed (server) or as JSON text (local cache). */
@@ -380,31 +381,14 @@ export default function InspectionsScreen(): React.JSX.Element {
               </Text>
             ))}
             <Text style={styles.fieldLabel}>{t('site.inspections.severityLabel')}</Text>
-            <View testID="severity-picker" style={styles.severityRow}>
-              {SEVERITIES.map((level) => {
-                const on = severity === level;
-                return (
-                  <TouchableOpacity
-                    key={level}
-                    testID={`severity-${level}`}
-                    accessibilityRole="radio"
-                    accessibilityState={{ selected: on }}
-                    onPress={() => setSeverity(level)}
-                    style={[
-                      styles.severityChip,
-                      {
-                        borderColor: on ? p.danger : p.border,
-                        backgroundColor: on ? p.danger : 'transparent',
-                      },
-                    ]}
-                  >
-                    <Text style={[styles.severityText, { color: on ? p.onPrimary : p.muted }]}>
-                      {t(`status.${level}`)}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+            <SeverityPicker
+              value={severity}
+              onChange={setSeverity}
+              palette={p}
+              accent={p.danger}
+              restBackground="transparent"
+              levels={SEVERITIES}
+            />
           </View>
         ) : null}
 
@@ -532,32 +516,14 @@ export default function InspectionsScreen(): React.JSX.Element {
 
 const makeStyles = (p: Palette) =>
   StyleSheet.create({
-    root: { flex: 1, backgroundColor: p.bg },
+    ...screenChrome(p),
     // `xl * 3`, not `xl * 2` — the first capture (2026-08-13) caught COMPLETE INSPECTION sitting
     // half-under the bottom nav, which is ~56px plus the gesture inset. Same clearance as every
     // other scrolling screen in the shell.
-    page: { padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xl * 3 },
-    grow: { flex: 1 },
     subtitle: {
       color: p.muted,
       fontSize: typography.label.fontSize,
       fontFamily: fontFamily.medium,
-    },
-    aiCard: {
-      gap: spacing.xs,
-      padding: spacing.md,
-      borderRadius: radius.lg,
-      borderWidth: 1,
-      borderColor: p.border,
-      borderLeftWidth: 4,
-      backgroundColor: p.surface,
-    },
-    aiHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-    aiTitle: {
-      fontSize: 11,
-      fontFamily: fontFamily.bold,
-      letterSpacing: 1.2,
-      textTransform: 'uppercase',
     },
     itemCard: {
       gap: spacing.sm,
@@ -608,15 +574,6 @@ const makeStyles = (p: Palette) =>
       textTransform: 'uppercase',
       marginTop: spacing.xs,
     },
-    severityRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-    severityChip: {
-      minHeight: touchTarget.secondaryButton,
-      justifyContent: 'center',
-      paddingHorizontal: spacing.md,
-      borderRadius: radius.xl,
-      borderWidth: 1,
-    },
-    severityText: { fontSize: typography.label.fontSize, fontFamily: fontFamily.medium },
     sectionLabel: {
       color: p.muted,
       fontSize: typography.label.fontSize,
@@ -640,7 +597,6 @@ const makeStyles = (p: Palette) =>
       fontFamily: fontFamily.semibold,
       textTransform: 'uppercase',
     },
-    disabled: { opacity: 0.5 },
     voiceButton: {
       alignSelf: 'flex-start',
       flexDirection: 'row',
@@ -670,5 +626,4 @@ const makeStyles = (p: Palette) =>
       borderLeftWidth: 4,
       backgroundColor: p.surface,
     },
-    muted: { color: p.muted, fontSize: typography.label.fontSize, fontFamily: fontFamily.regular },
   });

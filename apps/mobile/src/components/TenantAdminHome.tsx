@@ -34,6 +34,7 @@ import { QuickAddMenu } from './QuickAddMenu';
 import { LoadingBoundary } from './LoadingBoundary';
 import { loadProgress } from '../lib/loadingState';
 import { useT } from '../i18n';
+import { darkScreen } from '../theme/screenStyles';
 import {
   darkColors,
   fontFamily,
@@ -138,9 +139,9 @@ export default function TenantAdminHome(): React.JSX.Element {
         : t('adminHome.insightsAllClear');
 
   return (
-    <View style={styles.root}>
+    <View style={darkScreen.root}>
       <ScrollView
-        style={styles.scroll}
+        style={darkScreen.fill}
         contentContainerStyle={styles.content}
         testID="tenant-admin-home"
       >
@@ -179,7 +180,7 @@ export default function TenantAdminHome(): React.JSX.Element {
             style={[styles.card, styles.cardRow, styles.cardAccentGreen]}
             testID="admin-system-status"
           >
-            <View style={styles.flex1}>
+            <View style={darkScreen.fill}>
               <Text style={styles.cardLabel}>{t('adminHome.systemStatus')}</Text>
               <View style={styles.statusRow}>
                 <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
@@ -237,7 +238,7 @@ export default function TenantAdminHome(): React.JSX.Element {
       </ScrollView>
 
       <Pressable
-        style={styles.fab}
+        style={darkScreen.fab}
         onPress={() => setQuickAddOpen(true)}
         testID="quick-add-fab"
         accessibilityRole="button"
@@ -275,7 +276,7 @@ function ApprovalRow({
         >
           <MaterialIcons name={icon} size={22} color={tint} />
         </View>
-        <View style={styles.flex1}>
+        <View style={darkScreen.fill}>
           <Text style={styles.approvalTitle}>{title}</Text>
           <Text style={styles.approvalCount}>{count === null ? '—' : String(count)}</Text>
         </View>
@@ -289,27 +290,8 @@ function ApprovalRow({
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: darkColors.bg },
-  scroll: { flex: 1 },
   // Extra bottom room so the last card clears the floating action button when scrolled to the end.
   content: { padding: spacing.md, gap: spacing.sm, paddingBottom: 96 },
-  fab: {
-    position: 'absolute',
-    right: spacing.lg,
-    bottom: spacing.lg,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: darkColors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-  },
-  flex1: { flex: 1 },
   // The boundary is now the ScrollView's single child, so it carries the inter-card gap the content
   // container used to apply directly.
   boundary: { gap: spacing.sm },

@@ -93,11 +93,11 @@ export function PrivacyDetailScreen({
     tone === undefined || tone === 'accent' ? DARK.accent : DARK[tone];
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
+    <View style={[darkScreen.root, { paddingTop: insets.top }]}>
       {/* Top app bar. The drawings centre the title; it is left-aligned next to Back here, the way
           every other pushed screen in this app titles itself, so the pre-auth documents read as one
           stack rather than three different bars. */}
-      <View style={styles.header}>
+      <View style={darkScreen.header}>
         <Pressable
           testID={`${testID}-back`}
           accessibilityRole="button"
@@ -107,7 +107,7 @@ export function PrivacyDetailScreen({
         >
           <MaterialIcons name="arrow-back" size={24} color={darkColors.primary} />
         </Pressable>
-        <Text style={styles.headerTitle} numberOfLines={1}>
+        <Text style={darkScreen.headerTitle} numberOfLines={1}>
           {t(`${ns}.title`)}
         </Text>
       </View>
@@ -123,7 +123,7 @@ export function PrivacyDetailScreen({
           </View>
         ) : null}
 
-        <Text style={[styles.intro, heroIcon !== undefined && styles.introCentred]}>
+        <Text style={[darkScreen.intro, heroIcon !== undefined && styles.introCentred]}>
           {t(`${ns}.intro`)}
         </Text>
 
@@ -137,7 +137,7 @@ export function PrivacyDetailScreen({
                   <View style={styles.iconPlate}>
                     <MaterialIcons name={card.icon} size={22} color={tintOf(card.tone)} />
                   </View>
-                  <Text style={styles.cardTitle}>{t(`${ns}.cards.${card.id}.title`)}</Text>
+                  <Text style={darkScreen.cardCaptionRow}>{t(`${ns}.cards.${card.id}.title`)}</Text>
                   {card.status === 'comingSoon' ? (
                     <View style={styles.comingSoonChip}>
                       <Text style={styles.comingSoonText}>{t('privacy.policy.comingSoon')}</Text>
@@ -184,28 +184,8 @@ export function PrivacyDetailScreen({
 const PLATE = 40;
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: DARK.bg },
-
-  header: {
-    height: touchTarget.listItem,
-    paddingHorizontal: spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    borderBottomWidth: 1,
-    borderBottomColor: DARK.border,
-    backgroundColor: DARK.surface,
-  },
   // Uppercased here rather than in the i18n value, so the stored string stays natural and reusable —
   // the same call (auth)/privacy-policy.tsx makes. Thai has no case, so `th` renders unchanged.
-  headerTitle: {
-    flex: 1,
-    color: DARK.text,
-    fontFamily: fontFamily.semibold,
-    fontSize: typography.title.fontSize,
-    lineHeight: typography.title.lineHeight,
-    textTransform: 'uppercase',
-  },
 
   content: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg },
 
@@ -225,12 +205,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
 
-  intro: {
-    color: DARK.muted,
-    fontFamily: fontFamily.regular,
-    fontSize: typography.body.fontSize,
-    lineHeight: typography.body.lineHeight,
-  },
   introCentred: { textAlign: 'center' },
 
   section: { marginTop: spacing.xl, gap: spacing.sm },
@@ -259,13 +233,6 @@ const styles = StyleSheet.create({
     backgroundColor: DARK.elevated,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  cardTitle: {
-    flex: 1,
-    color: DARK.text,
-    fontFamily: fontFamily.semibold,
-    fontSize: typography.caption.fontSize,
-    lineHeight: typography.caption.lineHeight,
   },
 
   // Outlined, not filled. The fill alone does not carry it: on a `surface` card the chip's own

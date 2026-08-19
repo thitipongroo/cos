@@ -25,6 +25,7 @@ import { InfoCard, Lede, SectionLabel } from '../../components/TransparencyKit';
 import { listDevices, revokeDevice, type TrustedDeviceSummary } from '../../api/devices';
 import { getDeviceId } from '../../lib/deviceTrust';
 import { useBiometricStore } from '../../store/biometricStore';
+import { screenChrome } from '../../theme/screenStyles';
 import {
   REVOCATION_REASONS,
   isSelfRevocation,
@@ -205,7 +206,7 @@ export default function AccountSecurityScreen(): React.JSX.Element {
 
 const makeStyles = (p: ReturnType<typeof usePalette>) =>
   StyleSheet.create({
-    content: { padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xl },
+    ...screenChrome(p),
     deviceCard: {
       backgroundColor: p.surface,
       borderRadius: radius.lg, // card

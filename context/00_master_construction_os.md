@@ -1351,7 +1351,9 @@ Core components (React Native — implement in apps/mobile/):
                         Distinct from <SyncPill />, which is glyph-only because the shared TopBar
                         also holds the brand and two icon buttons; a full-screen overlay has room
                         for the word, and the quick-action mockups draw it. Same four states and
-                        precedence as every other sync indicator.
+                        precedence as every other sync indicator — and since 2026-08-20 that is
+                        enforced rather than asserted: both pills read useSyncPillView, so the
+                        precedence exists once and only the presentation is each pill's own.
   <PhotoCapture />      Camera + gallery grid, inline annotation, offline queue
   <VoiceNoteButton />   Hold-to-record, waveform animation, auto-transcription
   <SyncPill />          Top-bar glyph carrying EVERY sync state, offline included.
@@ -1360,6 +1362,15 @@ Core components (React Native — implement in apps/mobile/):
                         offline with an empty queue genuinely is synced.
                         OfflineBanner deleted 2026-08-06 (PO): two indicators of one
                         subject in one shell, and the red strip pushed pages down.
+                        SYNCED IS cloud-done, APP-WIDE (PO 2026-08-06, reaffirmed
+                        2026-08-20). check-circle is the rejected option: one state
+                        may not have two glyphs, and a cloud says WHERE the work is —
+                        on the server — which a tick leaves open. <OverlaySyncPill />
+                        had drawn the tick from 01_quick_action_menu's "✓ SYNCED"
+                        since it was extracted; a mockup is authoritative for style,
+                        not for what a symbol means (ADR-085). The drawer and the
+                        sync queue already drew the cloud. Held by useSyncPillView,
+                        where it is a constant rather than a caller's choice.
   <TaskCard />          Swipeable (swipe-right = done), status badge, photo count
   <StatusChip />        Visual status: Todo / InProgress / Done / Syncing / Synced
   <OptimisticList />    Instant UI update, rollback on failure, retry option

@@ -32,6 +32,7 @@ import { UnavailableNote } from '../../components/UnavailableNote';
 import { useI18n } from '../../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
 import { usePalette, type Palette } from '../../theme/usePalette';
+import { screenChrome } from '../../theme/screenStyles';
 
 /** A route param arrives as `string | string[]`; take the first value either way. */
 function one(value: string | string[] | undefined): string {
@@ -138,7 +139,7 @@ export default function PermitSubmittedScreen(): React.JSX.Element {
 
 const makeStyles = (p: Palette) =>
   StyleSheet.create({
-    root: { flex: 1, backgroundColor: p.bg },
+    ...screenChrome(p),
     page: { padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xl * 2 },
     hero: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xl },
     // Hero-sized, and it IS this screen's name — but the screen is not a tab, so §32.7's

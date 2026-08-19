@@ -30,8 +30,10 @@ const SRC = join(__dirname, '..', '..');
  * plate became a <SkeletonBar> that takes its radius as a prop. 26 -> 24 on 2026-08-20: the
  * pinned-dark success screens each carried their own copy of the `checkCircle` ring
  * (`borderRadius: 40`, half of an 80px circle); the four copies became one in
- * `screenStyles.darkScreen`. Lower this when literals are removed; never raise it. */
-const CEILING = 24;
+ * `screenStyles.darkScreen`. 24 -> 23 the same day: the pinned-dark FAB's `borderRadius: 28` (half
+ * of 56 — the circle rule) was written out in both users.tsx and TenantAdminHome.tsx, and is now
+ * `darkScreen.fab`. Lower this when literals are removed; never raise it. */
+const CEILING = 23;
 
 function sourceFiles(dir: string): string[] {
   const out: string[] = [];

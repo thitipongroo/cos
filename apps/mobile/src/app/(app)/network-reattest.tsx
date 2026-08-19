@@ -21,6 +21,7 @@ import { fontFamily, radius, spacing, touchTarget, typography } from '../../them
 import { InfoCard, FieldRow, Lede } from '../../components/TransparencyKit';
 import { requestAttestationChallenge } from '../../api/devices';
 import { getDeviceId, signChallenge } from '../../lib/deviceTrust';
+import { screenChrome } from '../../theme/screenStyles';
 
 type Outcome = 'RUNNING' | 'REFRESHED' | 'UNAVAILABLE';
 
@@ -117,7 +118,7 @@ export default function NetworkReattestScreen(): React.JSX.Element {
 
 const makeStyles = (p: ReturnType<typeof usePalette>) =>
   StyleSheet.create({
-    content: { padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xl },
+    ...screenChrome(p),
     centre: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xl },
     heading: {
       fontFamily: fontFamily.bold,
@@ -135,10 +136,5 @@ const makeStyles = (p: ReturnType<typeof usePalette>) =>
       alignItems: 'center',
       justifyContent: 'center',
       paddingHorizontal: spacing.lg,
-    },
-    actionText: {
-      fontFamily: fontFamily.bold,
-      fontSize: typography.body.fontSize,
-      color: p.onPrimary,
     },
   });

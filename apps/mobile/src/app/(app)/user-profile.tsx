@@ -162,9 +162,9 @@ export default function UserProfileScreen(): React.JSX.Element {
 
         {/* AI Analytics Engine — shell only; the value is the real last-seen, no fabricated confidence. */}
         <View style={styles.aiCard}>
-          <View style={darkScreen.aiHead}>
+          <View style={darkScreen.iconRow}>
             <MaterialIcons name="psychology" size={16} color={darkColors.cyan} />
-            <Text style={styles.aiTitle}>{t('userProfile.aiTitle')}</Text>
+            <Text style={darkScreen.aiTitle}>{t('userProfile.aiTitle')}</Text>
           </View>
           <Text style={styles.aiValue}>
             {t('userProfile.lastActive')}: {relativeLastSeen(lastSeen)}
@@ -349,12 +349,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     padding: spacing.md,
     gap: 2,
-  },
-  aiTitle: {
-    fontFamily: fontFamily.bold,
-    fontSize: typography.label.fontSize,
-    letterSpacing: 0.8,
-    color: darkColors.cyan,
   },
   aiValue: {
     fontFamily: fontFamily.bold,

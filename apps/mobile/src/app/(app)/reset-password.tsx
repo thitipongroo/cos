@@ -103,7 +103,7 @@ export default function ResetPasswordScreen(): React.JSX.Element {
 
   return (
     <View style={darkScreen.root} testID="reset-password">
-      <ScrollView style={darkScreen.fill} contentContainerStyle={styles.content}>
+      <ScrollView style={darkScreen.fill} contentContainerStyle={darkScreen.contentTight}>
         {/* Target user card (compact, horizontal) */}
         <View style={styles.userCard}>
           <View style={styles.avatarWrap}>
@@ -138,9 +138,9 @@ export default function ResetPasswordScreen(): React.JSX.Element {
 
         {/* AI Security Check — honest shell (no fabricated confidence score). */}
         <View style={styles.aiCard}>
-          <View style={darkScreen.aiHead}>
+          <View style={darkScreen.iconRow}>
             <MaterialIcons name="verified-user" size={18} color={darkColors.cyan} />
-            <Text style={styles.aiTitle}>{t('resetPassword.aiTitle')}</Text>
+            <Text style={darkScreen.aiTitle}>{t('resetPassword.aiTitle')}</Text>
           </View>
           <Text style={darkScreen.aiBody}>{t('resetPassword.aiBody')}</Text>
         </View>
@@ -268,8 +268,6 @@ export default function ResetPasswordScreen(): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
-  content: { padding: spacing.lg, paddingBottom: spacing.md, gap: spacing.sm },
-
   userCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -344,12 +342,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
     gap: spacing.xs,
-  },
-  aiTitle: {
-    fontFamily: fontFamily.bold,
-    fontSize: typography.label.fontSize,
-    letterSpacing: 0.8,
-    color: darkColors.cyan,
   },
 
   sectionLabel: {

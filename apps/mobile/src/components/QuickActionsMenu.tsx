@@ -28,6 +28,7 @@ import { QuickActionRow } from './QuickActionRow';
 import { OverlaySyncPill } from './OverlaySyncPill';
 import { useT } from '../i18n';
 import { darkColors, fontFamily, radius, spacing, touchTarget, typography } from '../theme/tokens';
+import { darkScreen } from '../theme/screenStyles';
 
 type IconName = keyof typeof MaterialIcons.glyphMap;
 
@@ -70,7 +71,7 @@ export function QuickActionsMenu({ visible, onClose }: { visible: boolean; onClo
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.root} testID="quick-actions-screen">
+      <View style={darkScreen.root} testID="quick-actions-screen">
         {/* Own top bar, matching the reference exactly: brand on the left, sync pill and close on
             the right (mockup 04_tenant_admin/…/01_quick_action_menu). */}
         <View style={styles.topbar}>
@@ -149,7 +150,6 @@ export function QuickActionsMenu({ visible, onClose }: { visible: boolean; onClo
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: darkColors.bg },
   topbar: {
     flexDirection: 'row',
     alignItems: 'center',

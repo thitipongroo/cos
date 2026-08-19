@@ -27,6 +27,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import { useI18n } from '../../i18n';
+import { darkScreen } from '../../theme/screenStyles';
 import {
   darkColors,
   fontFamily,
@@ -100,7 +101,7 @@ export default function MfaEnrollmentScreen(): React.JSX.Element {
     return (
       <View
         style={[
-          styles.root,
+          darkScreen.root,
           styles.center,
           { paddingTop: insets.top, paddingBottom: insets.bottom },
         ]}
@@ -166,7 +167,7 @@ export default function MfaEnrollmentScreen(): React.JSX.Element {
     return (
       <View
         style={[
-          styles.root,
+          darkScreen.root,
           styles.center,
           { paddingTop: insets.top, paddingBottom: insets.bottom },
         ]}
@@ -186,7 +187,7 @@ export default function MfaEnrollmentScreen(): React.JSX.Element {
               <View style={styles.pdfPlate}>
                 <MaterialIcons name="description" size={22} color={darkColors.primary} />
               </View>
-              <View style={styles.flex1}>
+              <View style={darkScreen.fill}>
                 <Text style={styles.fileName} numberOfLines={1}>
                   {t('mfa.downloaded.fileName')}
                 </Text>
@@ -232,7 +233,7 @@ export default function MfaEnrollmentScreen(): React.JSX.Element {
   const introCta = isRecovery ? t('mfa.recovery.cta') : t('mfa.enroll.cta');
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
+    <View style={[darkScreen.root, { paddingTop: insets.top }]}>
       <ScrollView contentContainerStyle={styles.content} testID="mfa-enrollment">
         <View style={styles.shieldPlate}>
           <MaterialIcons
@@ -289,10 +290,8 @@ export default function MfaEnrollmentScreen(): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: darkColors.bg },
   center: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.lg },
   content: { padding: spacing.lg, alignItems: 'center', gap: spacing.md },
-  flex1: { flex: 1 },
   shieldPlate: {
     width: 96,
     height: 96,

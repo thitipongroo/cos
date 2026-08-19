@@ -37,7 +37,7 @@ export default function ResetPasswordSuccessScreen(): React.JSX.Element {
 
   return (
     <View style={darkScreen.root} testID="reset-password-success">
-      <ScrollView style={darkScreen.fill} contentContainerStyle={styles.content}>
+      <ScrollView style={darkScreen.fill} contentContainerStyle={darkScreen.contentTight}>
         <View style={styles.hero}>
           <View style={styles.checkCircle}>
             <MaterialIcons name="check-circle" size={44} color={darkColors.success} />
@@ -79,7 +79,7 @@ export default function ResetPasswordSuccessScreen(): React.JSX.Element {
 
         {/* CORE_AI insight — honest shell (no fabricated 60-minute expiry). */}
         <View style={styles.aiCard}>
-          <View style={darkScreen.aiHead}>
+          <View style={darkScreen.iconRow}>
             <MaterialIcons name="auto-awesome" size={18} color={darkColors.cyan} />
             <Text style={styles.aiTitle}>{t('resetSuccess.aiTitle')}</Text>
           </View>
@@ -88,15 +88,15 @@ export default function ResetPasswordSuccessScreen(): React.JSX.Element {
 
         {/* System security log — honest audit fact. */}
         <View style={styles.logCard}>
-          <View style={styles.logHead}>
+          <View style={darkScreen.iconRow}>
             <MaterialIcons name="terminal" size={16} color={darkColors.cyan} />
-            <Text style={styles.logTitle}>{t('resetSuccess.logTitle')}</Text>
+            <Text style={darkScreen.logTitle}>{t('resetSuccess.logTitle')}</Text>
           </View>
-          <Text style={styles.logBody}>{t('resetSuccess.logBody')}</Text>
+          <Text style={darkScreen.logBody}>{t('resetSuccess.logBody')}</Text>
         </View>
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={darkScreen.footerFlush}>
         <Pressable
           style={darkScreen.primaryBtn}
           onPress={() => router.replace('/users')}
@@ -111,8 +111,6 @@ export default function ResetPasswordSuccessScreen(): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
-  content: { padding: spacing.lg, paddingBottom: spacing.md, gap: spacing.sm },
-
   hero: { alignItems: 'center', marginTop: spacing.xs, marginBottom: spacing.xs, gap: spacing.xs },
   checkCircle: {
     width: 72,
@@ -216,26 +214,5 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     gap: spacing.xs,
     marginTop: spacing.xs,
-  },
-  logHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  logTitle: {
-    fontFamily: fontFamily.bold,
-    fontSize: typography.label.fontSize,
-    letterSpacing: 1,
-    color: darkColors.cyan,
-  },
-  logBody: {
-    fontFamily: fontFamily.regular,
-    fontSize: 13,
-    lineHeight: 19,
-    color: darkColors.muted,
-    fontStyle: 'italic',
-  },
-
-  footer: {
-    padding: spacing.lg,
-    backgroundColor: darkColors.surface,
-    borderTopWidth: 1,
-    borderTopColor: darkColors.border,
   },
 });

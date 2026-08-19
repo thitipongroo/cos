@@ -99,8 +99,8 @@ export default function PrivacyContactScreen(): React.JSX.Element {
   };
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
+    <View style={[darkScreen.root, { paddingTop: insets.top }]}>
+      <View style={darkScreen.header}>
         <Pressable
           testID="privacy-contact-back"
           accessibilityRole="button"
@@ -110,7 +110,7 @@ export default function PrivacyContactScreen(): React.JSX.Element {
         >
           <MaterialIcons name="arrow-back" size={24} color={darkColors.primary} />
         </Pressable>
-        <Text style={styles.headerTitle} numberOfLines={1}>
+        <Text style={darkScreen.headerTitle} numberOfLines={1}>
           {t('privacy.contact.title')}
         </Text>
       </View>
@@ -311,27 +311,6 @@ function Field({
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: DARK.bg },
-
-  header: {
-    height: touchTarget.listItem,
-    paddingHorizontal: spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    borderBottomWidth: 1,
-    borderBottomColor: DARK.border,
-    backgroundColor: DARK.surface,
-  },
-  headerTitle: {
-    flex: 1,
-    color: DARK.text,
-    fontFamily: fontFamily.semibold,
-    fontSize: typography.title.fontSize,
-    lineHeight: typography.title.lineHeight,
-    textTransform: 'uppercase',
-  },
-
   content: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, gap: spacing.md },
 
   field: { gap: spacing.xs },

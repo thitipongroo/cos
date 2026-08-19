@@ -43,6 +43,7 @@ import {
   type ExportFormat,
 } from '../../lib/dataExport';
 import { isFeatureDisabled } from '../../lib/featureFlag';
+import { screenChrome } from '../../theme/screenStyles';
 
 type Stage = 'CHOOSE' | 'VERIFY' | 'SUBMITTED';
 
@@ -301,7 +302,7 @@ function ExportResult({ request }: { request: DataExportRequest }): React.JSX.El
 
 const makeStyles = (p: ReturnType<typeof usePalette>) =>
   StyleSheet.create({
-    content: { padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xl },
+    ...screenChrome(p),
     checkRow: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -366,9 +367,4 @@ const makeStyles = (p: ReturnType<typeof usePalette>) =>
       paddingHorizontal: spacing.lg,
     },
     actionOff: { opacity: 0.5 },
-    actionText: {
-      fontFamily: fontFamily.bold,
-      fontSize: typography.body.fontSize,
-      color: p.onPrimary,
-    },
   });

@@ -16,6 +16,7 @@ import { useT } from '../../i18n';
 import { usePalette } from '../../theme/usePalette';
 import { ProjectContextBar } from '../ProjectContextBar';
 import { useHomeStyles, StatTile, PRIORITY_TASK_COUNT } from './HomeKit';
+import { Fab } from '../Fab';
 
 // ── SITE_WORKER — bento stats, priority tasks ────────────────────────────────
 //
@@ -195,15 +196,11 @@ export default function FieldHome() {
           quick-action menu as an OVERLAY (2026-08-09): the reference that menu now follows
           (04_tenant_admin/…/01_quick_action_menu) heads the surface with its own bar and a close
           button, and a pushed route gets the shared TopBar's back chevron instead. */}
-      <TouchableOpacity
+      <Fab
         testID="home-quick-action-fab"
-        accessibilityRole="button"
         accessibilityLabel={t('quickActions.title')}
         onPress={() => setQuickActionsOpen(true)}
-        style={[styles.fab, { backgroundColor: p.primary }]}
-      >
-        <MaterialIcons name="add" size={28} color={p.onPrimary} />
-      </TouchableOpacity>
+      />
 
       <QuickActionsMenu visible={quickActionsOpen} onClose={() => setQuickActionsOpen(false)} />
     </View>

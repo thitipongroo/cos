@@ -11,11 +11,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useSyncPillView } from '../hooks/useSyncPillView';
 
 export function SyncPill(): React.JSX.Element {
-  // `cloud-done`, not `check-circle` (product-owner decision 2026-08-06). The drawer already drew
-  // synced this way, and two glyphs for one state taught the holder that the tick and the cloud
-  // meant different things. A cloud also says WHERE the work is — on the server — which is the
-  // question a check mark leaves open. The four states and their precedence come from the hook.
-  const view = useSyncPillView('cloud-done');
+  const view = useSyncPillView();
 
   return (
     <MaterialIcons

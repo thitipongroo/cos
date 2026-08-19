@@ -72,8 +72,9 @@ import { useProjectStore } from '../../store/projectStore';
 import { useT } from '../../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
 import { usePalette, useIsDark, type Palette } from '../../theme/usePalette';
-
-const SEVERITIES: readonly IncidentSeverity[] = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+import { screenChrome } from '../../theme/screenStyles';
+import { SeverityPicker, SEVERITIES } from '../../components/SeverityPicker';
+import { Fab } from '../../components/Fab';
 
 /**
  * A locally-cached row rendered through the same card as a server row.
@@ -266,31 +267,14 @@ export default function IncidentsScreen(): React.JSX.Element {
               onChangeText={setIncidentType}
             />
             <Text style={styles.fieldLabel}>{t('safety.incidents.severityLabel')}</Text>
-            <View testID="severity-picker" style={styles.severityRow}>
-              {SEVERITIES.map((level) => {
-                const on = severity === level;
-                return (
-                  <TouchableOpacity
-                    key={level}
-                    testID={`severity-${level}`}
-                    accessibilityRole="radio"
-                    accessibilityState={{ selected: on }}
-                    onPress={() => setSeverity(level)}
-                    style={[
-                      styles.severityChip,
-                      {
-                        borderColor: on ? p.primary : p.border,
-                        backgroundColor: on ? p.primary : p.surface,
-                      },
-                    ]}
-                  >
-                    <Text style={[styles.severityText, { color: on ? p.onPrimary : p.muted }]}>
-                      {t(`status.${level}`)}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+            <SeverityPicker
+              value={severity}
+              onChange={setSeverity}
+              palette={p}
+              accent={p.primary}
+              restBackground={p.surface}
+              levels={SEVERITIES}
+            />
             {/* A site must be chosen before an incident can be filed against one — the bar at the top
                 is where that happens, and the button says so rather than failing on submit. */}
             {projectId === '' ? (
@@ -346,23 +330,19 @@ export default function IncidentsScreen(): React.JSX.Element {
         </View>
       </ScrollView>
 
-      <TouchableOpacity
+      <Fab
         testID="incident-fab"
-        accessibilityRole="button"
         accessibilityLabel={t(composing ? 'common.back' : 'safety.incidents.submit')}
         onPress={() => setComposing((open) => !open)}
-        style={[styles.fab, { backgroundColor: p.primary }]}
-      >
-        <MaterialIcons name={composing ? 'close' : 'add'} size={28} color={p.onPrimary} />
-      </TouchableOpacity>
+        icon={composing ? 'close' : 'add'}
+      />
     </View>
   );
 }
 
 const makeStyles = (p: Palette) =>
   StyleSheet.create({
-    root: { flex: 1, backgroundColor: p.bg },
-    page: { padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xl * 3 },
+    ...screenChrome(p),
     filterRow: { gap: spacing.xs, paddingVertical: spacing.xs / 2 },
     // A BUTTON, not a badge — named so `theme/__tests__/badgeRadius.spec.ts` does not read it as a
     // status pill and hold it to `radius.xl`. It takes the button radius the drawing gives it, like
@@ -404,15 +384,6 @@ const makeStyles = (p: Palette) =>
       letterSpacing: 0.5,
       textTransform: 'uppercase',
     },
-    severityRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-    severityChip: {
-      minHeight: touchTarget.secondaryButton,
-      justifyContent: 'center',
-      paddingHorizontal: spacing.md,
-      borderRadius: radius.xl,
-      borderWidth: 1,
-    },
-    severityText: { fontSize: typography.label.fontSize, fontFamily: fontFamily.medium },
     primaryButton: {
       minHeight: touchTarget.primaryButton + 4,
       alignItems: 'center',
@@ -426,38 +397,5 @@ const makeStyles = (p: Palette) =>
       fontFamily: fontFamily.semibold,
       textTransform: 'uppercase',
     },
-    disabled: { opacity: 0.5 },
     feed: { gap: spacing.sm },
-    aiCard: {
-      gap: spacing.xs,
-      padding: spacing.md,
-      borderRadius: radius.lg,
-      borderWidth: 1,
-      borderColor: p.border,
-      borderLeftWidth: 4,
-      backgroundColor: p.surface,
-    },
-    aiHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-    aiTitle: {
-      fontSize: 11,
-      fontFamily: fontFamily.bold,
-      letterSpacing: 1.2,
-      textTransform: 'uppercase',
-    },
-    muted: { color: p.muted, fontSize: typography.label.fontSize, fontFamily: fontFamily.regular },
-    fab: {
-      position: 'absolute',
-      right: spacing.md,
-      bottom: spacing.xl,
-      width: 56,
-      height: 56,
-      borderRadius: 999,
-      alignItems: 'center',
-      justifyContent: 'center',
-      shadowColor: '#000000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.45,
-      shadowRadius: 12,
-      elevation: 8,
-    },
   });

@@ -21,9 +21,10 @@ import { useRouter } from 'expo-router';
 import NetInfo from '@react-native-community/netinfo';
 import { useT } from '../../i18n';
 import { usePalette, useIsDark } from '../../theme/usePalette';
-import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
+import { radius, spacing, touchTarget } from '../../theme/tokens';
 import { FieldRow, InfoCard, Lede, SectionLabel } from '../../components/TransparencyKit';
 import { getNetworkOrigin, type NetworkOriginPanel } from '../../api/networkOrigin';
+import { screenChrome } from '../../theme/screenStyles';
 
 export default function TransparencyNetworkScreen(): React.JSX.Element {
   const t = useT();
@@ -203,7 +204,7 @@ export default function TransparencyNetworkScreen(): React.JSX.Element {
 
 const makeStyles = (p: ReturnType<typeof usePalette>) =>
   StyleSheet.create({
-    content: { padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xl },
+    ...screenChrome(p),
     action: {
       minHeight: touchTarget.primaryButton,
       marginTop: spacing.md,
@@ -213,10 +214,5 @@ const makeStyles = (p: ReturnType<typeof usePalette>) =>
       alignItems: 'center',
       justifyContent: 'center',
       paddingHorizontal: spacing.lg,
-    },
-    actionText: {
-      fontFamily: fontFamily.bold,
-      fontSize: typography.body.fontSize,
-      color: p.onPrimary,
     },
   });

@@ -29,6 +29,7 @@ import {
   portfolioTotals,
   portfolioVariance,
   varianceExceedsThreshold,
+  settledBudgetRows,
   type ProjectFinance,
 } from '../../lib/portfolioFinance';
 import { useHomeStyles, Screen, asList, KpiRegion } from './HomeKit';
@@ -163,27 +164,7 @@ export default function PmHome() {
       // move the report out from under someone reading it.
       setInsightProject((current) => (current === '' ? (mine[0]?.project_id ?? '') : current));
 
-      setFinance(
-        mine.flatMap((project, i) => {
-          const result = budgets[i];
-          // Rejected = 404 (never budgeted) or offline. A zero row would drag the portfolio
-          // variance towards a number nobody's data supports.
-          if (result === undefined || result.status !== 'fulfilled') return [];
-          const b = result.value.budget;
-          return [
-            {
-              projectId: project.project_id,
-              projectName: project.project_name,
-              projectCode: project.project_code,
-              currency: b.total_budget_currency,
-              totalBudget: b.total_budget_amount,
-              allocated: b.allocated_amount,
-              committed: b.committed_amount,
-              actual: b.actual_amount,
-            },
-          ];
-        }),
-      );
+      setFinance(settledBudgetRows(mine, budgets));
       loadedOnce.current = true;
       setProjectsState('ready');
     })().catch(() => {

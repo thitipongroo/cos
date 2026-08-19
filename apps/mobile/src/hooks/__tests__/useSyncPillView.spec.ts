@@ -26,19 +26,21 @@ describe('useSyncPillView', () => {
     pending = 0;
   });
 
-  it('reports synced with the glyph its caller asked for', () => {
-    expect(useSyncPillView('cloud-done')).toEqual({
+  // ONE glyph for synced, for every indicator (PO 2026-08-20). The overlay pill used to draw
+  // `check-circle` from its mockup while the top bar, the drawer and the sync queue drew the cloud;
+  // this is what stops that reopening.
+  it('reports synced as cloud-done', () => {
+    expect(useSyncPillView()).toEqual({
       icon: 'cloud-done',
       color: darkColors.success,
       label: 'sync.pill.synced',
     });
-    expect(useSyncPillView('check-circle').icon).toBe('check-circle');
   });
 
   it('reports pending with the queue depth once anything is waiting', () => {
     pending = 3;
 
-    expect(useSyncPillView('cloud-done')).toEqual({
+    expect(useSyncPillView()).toEqual({
       icon: 'cloud-upload',
       color: darkColors.syncing,
       label: 'sync.pill.pending:{"count":3}',
@@ -49,14 +51,14 @@ describe('useSyncPillView', () => {
     status = 'syncing';
     pending = 3;
 
-    expect(useSyncPillView('cloud-done').icon).toBe('sync');
+    expect(useSyncPillView().icon).toBe('sync');
   });
 
   it('reports error ahead of every other state', () => {
     status = 'error';
     pending = 3;
 
-    expect(useSyncPillView('cloud-done')).toEqual({
+    expect(useSyncPillView()).toEqual({
       icon: 'sync-problem',
       color: darkColors.danger,
       label: 'sync.pill.error',
@@ -69,6 +71,6 @@ describe('useSyncPillView', () => {
     status = 'idle';
     pending = 0;
 
-    expect(useSyncPillView('cloud-done').icon).toBe('cloud-done');
+    expect(useSyncPillView().icon).toBe('cloud-done');
   });
 });

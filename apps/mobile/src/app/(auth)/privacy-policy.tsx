@@ -31,7 +31,6 @@
 // name is derived from the section id through SECTION_ROUTE below rather than interpolated, so a
 // renamed section fails to compile instead of pushing a route that does not exist.
 
-import { useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -41,6 +40,7 @@ import { darkColors, fontFamily, spacing } from '../../theme/tokens';
 import { paletteFor } from '../../theme/palette';
 import { PrivacyPolicyDocument } from '../../components/PrivacyPolicyDocument';
 import { downloadPolicy } from '../../lib/legalDownload';
+import { useLegalDownload } from '../../hooks/useLegalDownload';
 import { API_BASE_URL } from '../../api/client';
 import { darkScreen } from '../../theme/screenStyles';
 
@@ -66,38 +66,11 @@ export default function PrivacyPolicyScreen(): React.JSX.Element {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const t = useT();
-  const [downloading, setDownloading] = useState(false);
-
-  /**
-   * Fetch the document, verify it, and show the receipt.
-   *
-   * A failure leaves the reader on the policy with the button live again rather than pushing an error
-   * screen: the document they came to read is already in front of them, and the retry is one tap.
-   * `verified` is passed through even when FALSE — the receipt screen states a mismatch rather than
-   * hiding it, because a reader handed the wrong file needs to know.
-   */
-  const download = async (): Promise<void> => {
-    setDownloading(true);
-    try {
-      const file = await downloadPolicy(API_BASE_URL);
-      router.push({
-        pathname: '/(auth)/privacy-policy-downloaded',
-        params: {
-          fileName: file.fileName,
-          version: file.version,
-          sizeBytes: String(file.sizeBytes),
-          sha256: file.sha256,
-          verified: String(file.verified),
-          downloadedAt: file.downloadedAt,
-        },
-      });
-    } catch {
-      // Deliberately silent beyond restoring the button. There is no error surface on this screen and
-      // adding one for a download that the reader can simply retry would be more chrome than help.
-    } finally {
-      setDownloading(false);
-    }
-  };
+  const { downloading, download } = useLegalDownload(
+    downloadPolicy,
+    '/(auth)/privacy-policy-downloaded',
+    API_BASE_URL,
+  );
 
   return (
     <View style={[darkScreen.root, { paddingTop: insets.top }]}>

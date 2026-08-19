@@ -52,6 +52,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { colors, fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
 import { makeScreenStyles, screen } from '../../theme/screenStyles';
 import { usePalette, type Palette } from '../../theme/usePalette';
+import { Fab } from '../../components/Fab';
 
 /**
  * The tone of a site report's status chip.
@@ -513,15 +514,11 @@ function SiteEngineerReports() {
           is the singular `/report` route — a different screen from this plural review list that
           shares the word. That form is a tab for no role since 2026-08-08 and is reached from
           quick-action menus, so this list previously had no way to start the thing it lists. */}
-      <TouchableOpacity
+      <Fab
         testID="reports-fab"
-        accessibilityRole="button"
         accessibilityLabel={t('site.reports.newReport')}
         onPress={() => router.push('/report')}
-        style={[styles.fab, { backgroundColor: p.primary }]}
-      >
-        <MaterialIcons name="add" size={28} color={p.onPrimary} />
-      </TouchableOpacity>
+      />
     </View>
   );
 }

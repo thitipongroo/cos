@@ -37,7 +37,7 @@ import Svg, { Polygon } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useI18n } from '../../i18n';
 import {
   darkColors,
@@ -52,6 +52,7 @@ import { formatBytes } from '../../lib/formatBytes';
 import { abbreviateDigest } from '../../lib/abbreviateDigest';
 import { API_BASE_URL } from '../../api/client';
 import { darkScreen } from '../../theme/screenStyles';
+import { useLegalReceipt } from '../../hooks/useLegalDownload';
 
 /** The drawing's `w-32 h-32` badge, and the inset of its inner plate (`inset-2`). */
 const HEX = 128;
@@ -67,21 +68,7 @@ export default function TermsOfUseDownloadedScreen(): React.JSX.Element {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { t, formatDate, formatTime } = useI18n();
-  const params = useLocalSearchParams<{
-    fileName?: string;
-    version?: string;
-    sizeBytes?: string;
-    sha256?: string;
-    verified?: string;
-    downloadedAt?: string;
-  }>();
-
-  const fileName = params.fileName ?? '';
-  const version = params.version ?? '';
-  const sizeBytes = Number(params.sizeBytes ?? '0');
-  const sha256 = params.sha256 ?? '';
-  const verified = params.verified === 'true';
-  const downloadedAt = params.downloadedAt ?? '';
+  const { fileName, version, sizeBytes, sha256, verified, downloadedAt } = useLegalReceipt();
 
   // The badge and the verdict share one colour: a green hexagon over a mismatch warning would be the
   // screen contradicting itself.
@@ -107,7 +94,10 @@ export default function TermsOfUseDownloadedScreen(): React.JSX.Element {
       <ScrollView
         testID="terms-of-use-downloaded"
         style={darkScreen.fill}
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.xl }]}
+        contentContainerStyle={[
+          darkScreen.contentSafeBottom,
+          { paddingBottom: insets.bottom + spacing.xl },
+        ]}
       >
         <View style={styles.badge}>
           <Svg width={HEX} height={HEX} viewBox="0 0 100 100">
@@ -127,8 +117,8 @@ export default function TermsOfUseDownloadedScreen(): React.JSX.Element {
           </View>
         </View>
 
-        <Text style={styles.headline}>{t('terms.downloaded.headline')}</Text>
-        <Text style={styles.lede}>{t('terms.downloaded.lede', { version })}</Text>
+        <Text style={darkScreen.headline}>{t('terms.downloaded.headline')}</Text>
+        <Text style={darkScreen.lede}>{t('terms.downloaded.lede', { version })}</Text>
 
         {/* File metadata — the drawing's four rows, in its order, with hairlines between them. */}
         <View style={styles.card}>
@@ -138,13 +128,13 @@ export default function TermsOfUseDownloadedScreen(): React.JSX.Element {
             <Text style={styles.rowLabel}>{t('terms.downloaded.file')}</Text>
             <Text style={[styles.rowValue, styles.mono]}>{fileName}</Text>
           </View>
-          <View style={styles.divider} />
+          <View style={darkScreen.divider} />
 
           <View style={styles.row}>
             <Text style={styles.rowLabel}>{t('terms.downloaded.size')}</Text>
             <Text style={styles.rowValue}>{formatBytes(sizeBytes)}</Text>
           </View>
-          <View style={styles.divider} />
+          <View style={darkScreen.divider} />
 
           <View style={styles.row}>
             <Text style={styles.rowLabel}>{t('terms.downloaded.hash')}</Text>
@@ -163,7 +153,7 @@ export default function TermsOfUseDownloadedScreen(): React.JSX.Element {
               {t('terms.downloaded.hashValue', { digest: abbreviateDigest(sha256) })}
             </Text>
           </View>
-          <View style={styles.divider} />
+          <View style={darkScreen.divider} />
 
           <View style={styles.row}>
             <Text style={styles.rowLabel}>{t('terms.downloaded.timestamp')}</Text>
@@ -196,7 +186,7 @@ export default function TermsOfUseDownloadedScreen(): React.JSX.Element {
           style={styles.primaryButton}
         >
           <MaterialIcons name="open-in-new" size={20} color={darkColors.onPrimary} />
-          <Text style={styles.primaryText}>{t('terms.downloaded.open')}</Text>
+          <Text style={darkScreen.primaryTextCompact}>{t('terms.downloaded.open')}</Text>
         </Pressable>
 
         <Pressable
@@ -207,7 +197,7 @@ export default function TermsOfUseDownloadedScreen(): React.JSX.Element {
           style={styles.primaryButton}
         >
           <MaterialIcons name="arrow-back" size={20} color={darkColors.onPrimary} />
-          <Text style={styles.primaryText}>{t('terms.downloaded.backToTerms')}</Text>
+          <Text style={darkScreen.primaryTextCompact}>{t('terms.downloaded.backToTerms')}</Text>
         </Pressable>
       </ScrollView>
     </View>
@@ -217,8 +207,6 @@ export default function TermsOfUseDownloadedScreen(): React.JSX.Element {
 const styles = StyleSheet.create({
   // Uppercased here rather than in the i18n value, as on every other pre-auth bar: the stored string
   // stays natural, and Thai has no case so `th` renders unchanged.
-
-  content: { paddingHorizontal: spacing.lg, paddingTop: spacing.xl, gap: spacing.md },
 
   badge: {
     alignSelf: 'center',
@@ -246,23 +234,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-
-  headline: {
-    textAlign: 'center',
-    color: darkColors.text,
-    fontFamily: fontFamily.semibold,
-    fontSize: typography.hero.fontSize,
-    lineHeight: typography.hero.lineHeight,
-  },
-  lede: {
-    textAlign: 'center',
-    alignSelf: 'center',
-    maxWidth: 300,
-    color: darkColors.muted,
-    fontFamily: fontFamily.regular,
-    fontSize: typography.caption.fontSize,
-    lineHeight: typography.caption.lineHeight,
   },
 
   card: {
@@ -305,7 +276,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     lineHeight: 17,
   },
-  divider: { height: 1, backgroundColor: darkColors.border },
 
   verdict: {
     marginTop: spacing.xs,
@@ -330,12 +300,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.sm,
     paddingVertical: spacing.sm,
-  },
-  primaryText: {
-    color: darkColors.onPrimary,
-    fontFamily: fontFamily.semibold,
-    fontSize: typography.caption.fontSize,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
   },
 });

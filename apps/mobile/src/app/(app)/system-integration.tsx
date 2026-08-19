@@ -34,6 +34,7 @@ import {
 } from '../../theme/tokens';
 // Bundled server-room photo for the enterprise band (PO decision 2026-07-29).
 import enterpriseBg from '../../../assets/tenant-admin/server_room.jpg';
+import { darkScreen } from '../../theme/screenStyles';
 
 type IconName = keyof typeof MaterialIcons.glyphMap;
 
@@ -61,8 +62,8 @@ export default function SystemIntegrationScreen(): React.JSX.Element {
     Alert.alert(t(`systemIntegration.${key}.name`), t('systemIntegration.comingSoon'));
 
   return (
-    <View style={styles.root} testID="system-integration">
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <View style={darkScreen.root} testID="system-integration">
+      <ScrollView contentContainerStyle={darkScreen.content} keyboardShouldPersistTaps="handled">
         <Text style={styles.subtitle}>{t('systemIntegration.subtitle')}</Text>
 
         {/* Search */}
@@ -70,7 +71,7 @@ export default function SystemIntegrationScreen(): React.JSX.Element {
           <MaterialIcons name="search" size={20} color={darkColors.muted} />
           <TextInput
             testID="integration-search"
-            style={styles.searchInput}
+            style={darkScreen.searchInput}
             value={query}
             onChangeText={setQuery}
             placeholder={t('systemIntegration.searchPlaceholder')}
@@ -118,7 +119,7 @@ export default function SystemIntegrationScreen(): React.JSX.Element {
             </Pressable>
           ))}
           {connectors.length === 0 ? (
-            <Text style={styles.empty}>{t('systemIntegration.noMatch')}</Text>
+            <Text style={darkScreen.empty}>{t('systemIntegration.noMatch')}</Text>
           ) : null}
         </View>
 
@@ -144,9 +145,6 @@ export default function SystemIntegrationScreen(): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: darkColors.bg },
-  content: { padding: spacing.lg, paddingBottom: spacing.xl, gap: spacing.md },
-
   subtitle: {
     fontFamily: fontFamily.regular,
     fontSize: typography.body.fontSize,
@@ -163,12 +161,6 @@ const styles = StyleSheet.create({
     borderColor: darkColors.border,
     paddingHorizontal: spacing.md,
     height: touchTarget.formInput + 4,
-  },
-  searchInput: {
-    flex: 1,
-    color: darkColors.text,
-    fontFamily: fontFamily.regular,
-    fontSize: typography.body.fontSize,
   },
 
   aiPanel: {
@@ -255,7 +247,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     color: darkColors.muted,
   },
-  empty: { textAlign: 'center', color: darkColors.muted, fontSize: 14, marginTop: spacing.md },
 
   enterprise: {
     marginTop: spacing.lg,

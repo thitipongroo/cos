@@ -44,6 +44,7 @@ import { OverlaySyncPill } from './OverlaySyncPill';
 import activeProjectsBg from '../../assets/tenant-admin/digital_archectural_blueprint.jpg';
 import systemHealthBg from '../../assets/tenant-admin/micro_server.jpg';
 import { useT } from '../i18n';
+import { darkScreen } from '../theme/screenStyles';
 import {
   darkColors,
   fontFamily,
@@ -115,7 +116,7 @@ export function QuickAddMenu({
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.root} testID="quick-add-menu">
+      <View style={darkScreen.root} testID="quick-add-menu">
         {/* Top bar */}
         <View style={styles.topbar}>
           <View style={styles.brand}>
@@ -260,7 +261,6 @@ function BentoTile({
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: darkColors.bg },
   topbar: {
     flexDirection: 'row',
     alignItems: 'center',

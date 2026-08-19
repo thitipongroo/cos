@@ -1565,7 +1565,17 @@ is where a screen's private detail becomes a component. It is NOT `<SyncPill />`
 the shared TopBar and is glyph-only, because a word would crowd a row that also holds the brand and
 two icon buttons (PO 2026-08-04). A full-screen overlay has its own bar with room to spare, and both
 quick-action mockups draw the word. Same four states, same precedence, same source: error > syncing >
-pending > synced, where offline is not a state but a producer of pending.
+pending > synced, where offline is not a state but a producer of pending — and since 2026-08-20 that
+is enforced rather than asserted, because both pills read
+[`useSyncPillView`](../../../apps/mobile/src/hooks/useSyncPillView.ts) and only the presentation is
+each pill's own.
+
+**SYNCED draws `cloud-done`, not the mockup's tick** (PO 2026-08-06, reaffirmed 2026-08-20). This pill
+had drawn `check-circle` since it was extracted, following `01_quick_action_menu`'s `✓ SYNCED`, while
+the top bar, the navigation drawer and the sync queue all drew the cloud. One state may not have two
+glyphs — that is the whole of the original decision — and the cloud also says WHERE the work is, on
+the server, which a tick leaves open. A mockup is authoritative for style, not for what a symbol
+means (ADR-085).
 
 A screen rather than a modal or bottom sheet: the mockup draws it as a full page with its own top
 bar, §32.7 keeps modals for things that interrupt, and being a route gives it a breadcrumb and a back

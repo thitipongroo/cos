@@ -29,6 +29,7 @@ import {
   typography,
 } from '../../theme/tokens';
 import { formatRole } from '../../lib/formatRole';
+import { darkScreen } from '../../theme/screenStyles';
 
 type IconName = React.ComponentProps<typeof MaterialIcons>['name'];
 
@@ -215,7 +216,7 @@ export default function EditPermissionScreen(): React.JSX.Element {
 
   if (error) {
     return (
-      <View style={[styles.root, styles.center]} testID="edit-permission">
+      <View style={[darkScreen.root, styles.center]} testID="edit-permission">
         <Text style={styles.errorText}>{t('editPermission.errorBody')}</Text>
       </View>
     );
@@ -227,15 +228,15 @@ export default function EditPermissionScreen(): React.JSX.Element {
       variant="widget"
       theme="dark"
       progress={loadProgress(settled, LOAD_STEPS) ?? undefined}
-      style={styles.root}
+      style={darkScreen.root}
       testID="edit-permission"
     >
       <ScrollView contentContainerStyle={styles.content}>
         {/* AI shell — honest: the effective permissions are simply the union of the assigned roles. */}
         <View style={styles.aiCard}>
-          <View style={styles.aiHead}>
+          <View style={darkScreen.iconRow}>
             <MaterialIcons name="psychology" size={16} color={darkColors.cyan} />
-            <Text style={styles.aiTitle}>{t('editPermission.aiTitle')}</Text>
+            <Text style={darkScreen.aiTitle}>{t('editPermission.aiTitle')}</Text>
           </View>
           <Text style={styles.aiBody}>
             {name !== '' ? `${name} — ` : ''}
@@ -267,7 +268,7 @@ export default function EditPermissionScreen(): React.JSX.Element {
                 testID={`add-role-${r}`}
               >
                 {on ? <MaterialIcons name="check" size={14} color={darkColors.onPrimary} /> : null}
-                <Text style={[styles.chipText, on && styles.chipTextOn]}>{formatRole(r)}</Text>
+                <Text style={[darkScreen.chipText, on && styles.chipTextOn]}>{formatRole(r)}</Text>
               </Pressable>
             );
           })}
@@ -362,7 +363,6 @@ export default function EditPermissionScreen(): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: darkColors.bg },
   center: { alignItems: 'center', justifyContent: 'center' },
   errorText: { color: darkColors.muted, fontFamily: fontFamily.regular },
   content: { padding: spacing.lg, paddingBottom: 210, gap: spacing.sm },
@@ -375,13 +375,6 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     gap: 4,
     marginBottom: spacing.xs,
-  },
-  aiHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  aiTitle: {
-    fontFamily: fontFamily.bold,
-    fontSize: typography.label.fontSize,
-    letterSpacing: 0.8,
-    color: darkColors.cyan,
   },
   aiBody: {
     fontFamily: fontFamily.regular,
@@ -428,11 +421,6 @@ const styles = StyleSheet.create({
     borderColor: darkColors.border,
   },
   chipOn: { backgroundColor: darkColors.primary, borderColor: darkColors.primary },
-  chipText: {
-    fontFamily: fontFamily.semibold,
-    fontSize: typography.label.fontSize,
-    color: darkColors.muted,
-  },
   chipTextOn: { color: darkColors.onPrimary },
 
   matrixHead: {

@@ -82,6 +82,8 @@ import { useProjectStore } from '../../store/projectStore';
 import { useI18n } from '../../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
 import { usePalette, useIsDark, type Palette } from '../../theme/usePalette';
+import { screenChrome } from '../../theme/screenStyles';
+import { Fab } from '../../components/Fab';
 
 export default function PermitsScreen(): React.JSX.Element {
   const router = useRouter();
@@ -357,24 +359,18 @@ export default function PermitsScreen(): React.JSX.Element {
 
       {/* The drawing's FAB. It opens the request SCREEN now — the inline composer this screen used
           to unfold collected a type and a number, which is a fraction of what the form collects. */}
-      <TouchableOpacity
+      <Fab
         testID="permit-fab"
-        accessibilityRole="button"
         accessibilityLabel={t('safety.permits.create')}
         onPress={() => router.push('/permit-request')}
-        style={[styles.fab, { backgroundColor: p.primary }]}
-      >
-        <MaterialIcons name="add" size={28} color={p.onPrimary} />
-      </TouchableOpacity>
+      />
     </View>
   );
 }
 
 const makeStyles = (p: Palette) =>
   StyleSheet.create({
-    root: { flex: 1, backgroundColor: p.bg },
-    page: { padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xl * 3 },
-    grow: { flex: 1 },
+    ...screenChrome(p),
     filterRow: { flexDirection: 'row', gap: spacing.xs, paddingVertical: spacing.xs / 2 },
     // A BUTTON, not a badge — `badgeRadius.spec.ts` reads style NAMES, and a segmented control
     // called `pill` would be held to the status-pill radius.
@@ -453,21 +449,5 @@ const makeStyles = (p: Palette) =>
       fontSize: typography.label.fontSize,
       fontFamily: fontFamily.semibold,
       textTransform: 'uppercase',
-    },
-    muted: { color: p.muted, fontSize: typography.label.fontSize, fontFamily: fontFamily.regular },
-    fab: {
-      position: 'absolute',
-      right: spacing.md,
-      bottom: spacing.xl,
-      width: 56,
-      height: 56,
-      borderRadius: 999,
-      alignItems: 'center',
-      justifyContent: 'center',
-      shadowColor: '#000000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.45,
-      shadowRadius: 12,
-      elevation: 8,
     },
   });

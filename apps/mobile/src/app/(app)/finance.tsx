@@ -40,22 +40,18 @@ import { get } from '../../api/client';
 import { getMyProjects } from '../../api/projects';
 import { compactMoney, type MoneyScale } from '../../lib/compactMoney';
 import { budgetHealth, budgetFraction, type BudgetHealth } from '../../lib/budgetHealth';
-import { portfolioTotals, type ProjectFinance } from '../../lib/portfolioFinance';
+import {
+  portfolioTotals,
+  settledBudgetRows,
+  type ProjectBudgetResponse,
+  type ProjectFinance,
+} from '../../lib/portfolioFinance';
 import { spendTrend, type CostTransaction, type SpendTrend } from '../../lib/spendTrend';
 import { PortfolioInsight } from '../../components/PortfolioInsight';
 import { useT } from '../../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
 import { usePalette, type Palette, useIsDark } from '../../theme/usePalette';
-
-interface BudgetResponse {
-  budget: {
-    total_budget_amount: string;
-    total_budget_currency: string;
-    allocated_amount: string;
-    committed_amount: string;
-    actual_amount: string;
-  };
-}
+import { screenChrome } from '../../theme/screenStyles';
 
 /** i18n key for the magnitude `compactMoney` scaled to — "M"/"B" in English, ล้าน/พันล้าน in Thai. */
 const SCALE_KEY: Record<MoneyScale, string | null> = {
@@ -101,30 +97,12 @@ export default function FinanceScreen(): React.JSX.Element {
         // Budgets are fetched together rather than in sequence — a manager with eight projects would
         // otherwise wait eight round trips for a screen that is read at a glance.
         const budgets = await Promise.allSettled(
-          projects.map((project) => get<BudgetResponse>(`/finance/budget/${project.project_id}`)),
+          projects.map((project) =>
+            get<ProjectBudgetResponse>(`/finance/budget/${project.project_id}`),
+          ),
         );
         if (cancelled) return;
-        setRows(
-          projects.flatMap((project, i) => {
-            const result = budgets[i];
-            // Rejected = 404 (never budgeted) or offline. Either way there is no figure to show for
-            // this project, and a zero would read as "budgeted at nothing".
-            if (result === undefined || result.status !== 'fulfilled') return [];
-            const b = result.value.budget;
-            return [
-              {
-                projectId: project.project_id,
-                projectName: project.project_name,
-                projectCode: project.project_code,
-                currency: b.total_budget_currency,
-                totalBudget: b.total_budget_amount,
-                allocated: b.allocated_amount,
-                committed: b.committed_amount,
-                actual: b.actual_amount,
-              },
-            ];
-          }),
-        );
+        setRows(settledBudgetRows(projects, budgets));
         // The dated ledger behind the two trend arrows. Paged: the endpoint caps `limit` at 100, and
         // two 30-day windows across five projects run past that.
         const ledger: CostTransaction[] = [];
@@ -462,7 +440,7 @@ export default function FinanceScreen(): React.JSX.Element {
 
 const makeStyles = (p: Palette) =>
   StyleSheet.create({
-    root: { flex: 1, backgroundColor: p.bg },
+    ...screenChrome(p),
     // The list scrolls under the FAB, so the last card needs room or the button sits on its figures.
     page: { padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xl * 3 },
 

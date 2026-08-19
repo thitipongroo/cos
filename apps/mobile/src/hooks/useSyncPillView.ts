@@ -6,8 +6,8 @@
 // glyph-only, because a word would crowd a row that also holds the brand and two icon buttons,
 // while a full-screen overlay has room for it. What is NOT meant to differ is what they say —
 // both docs record "same four states, same order of precedence, same source". That agreement was
-// being maintained by two copies of the same ternary, which is how it quietly stopped being true
-// (see `syncedIcon` below).
+// being maintained by two copies of the same ternary, which is how it quietly stopped being true —
+// the two had drifted on the SYNCED glyph (settled below).
 //
 // So the precedence lives here and the presentation stays with each component.
 
@@ -25,17 +25,20 @@ export interface SyncPillView {
   label: string;
 }
 
+const SYNCED_ICON: IconName = 'cloud-done';
+
 /**
- * @param syncedIcon the glyph for the SYNCED state.
+ * SYNCED IS `cloud-done` EVERYWHERE (PO 2026-08-06, reaffirmed 2026-08-20).
  *
- * A parameter, not a constant, because the two callers do not agree today: the top-bar pill uses
- * `cloud-done` on PO decision 2026-08-06 ("two glyphs for one state taught the holder that the tick
- * and the cloud meant different things" — the drawer and the sync queue draw the cloud too), and
- * the overlay pill uses `check-circle` because its mockup draws `✓ SYNCED`. Passing it keeps both
- * components rendering exactly what they render today rather than this refactor silently picking a
- * winner; the disagreement is now in ONE place instead of hidden in two copies of a ternary.
+ * Pulling the two pills onto one hook exposed that they had drifted: the top-bar pill drew
+ * `cloud-done` and the overlay pill drew `check-circle`, taken from a mockup that letters the pill
+ * `✓ SYNCED`. The original decision names `check-circle` as the option it rejected — two glyphs for
+ * one state teach the holder that the tick and the cloud mean different things — and the cloud also
+ * says WHERE the work is, on the server, which is the question a tick leaves open. The drawer and
+ * the sync queue already drew the cloud, so the overlay was the only dissenter. It is a constant
+ * rather than a parameter so a third indicator cannot reopen this by passing something else.
  */
-export function useSyncPillView(syncedIcon: IconName): SyncPillView {
+export function useSyncPillView(): SyncPillView {
   const status = useSyncStatus();
   const pending = usePendingCount();
   const t = useT();
@@ -58,5 +61,5 @@ export function useSyncPillView(syncedIcon: IconName): SyncPillView {
       label: t('sync.pill.pending', { count: pending }),
     };
   }
-  return { icon: syncedIcon, color: darkColors.success, label: t('sync.pill.synced') };
+  return { icon: SYNCED_ICON, color: darkColors.success, label: t('sync.pill.synced') };
 }

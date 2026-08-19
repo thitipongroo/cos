@@ -15,6 +15,7 @@ import { LoadingBoundary } from '../LoadingBoundary';
 import { loadProgress } from '../../lib/loadingState';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
 import { usePalette, useIsDark, type Palette } from '../../theme/usePalette';
+import { screenChrome } from '../../theme/screenStyles';
 
 /** The palette-resolved stylesheet. One hook so every home variant reads the same set. */
 /**
@@ -209,6 +210,7 @@ export function asList<T>(res: { items?: T[] } | T[]): T[] {
 // sees. Shapes are unchanged; only the colours now resolve from the user's mode.
 const makeStyles = (p: Palette) =>
   StyleSheet.create({
+    ...screenChrome(p),
     container: { flex: 1, backgroundColor: p.bg, padding: spacing.md, gap: spacing.md },
     scrollRoot: { flex: 1, backgroundColor: p.bg },
     scrollPage: { padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xl * 3 },
@@ -423,21 +425,6 @@ const makeStyles = (p: Palette) =>
     moreTasksText: { fontSize: typography.label.fontSize, fontFamily: fontFamily.semibold },
     // 56px round FAB per the DESIGN.md spec, cleared of the bottom nav. Black elevation, never a
     // coloured glow — FAB glow is §32.7-prohibited.
-    fab: {
-      position: 'absolute',
-      right: spacing.md,
-      bottom: spacing.xl,
-      width: 56,
-      height: 56,
-      borderRadius: 999,
-      alignItems: 'center',
-      justifyContent: 'center',
-      shadowColor: '#000000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.45,
-      shadowRadius: 12,
-      elevation: 8,
-    },
     // Wrapper the LoadingBoundary occupies — reproduces the Screen container's vertical gap so a
     // multi-row KPI region keeps its spacing once the loader crossfades to the real cards.
     kpiRegion: { gap: spacing.md },

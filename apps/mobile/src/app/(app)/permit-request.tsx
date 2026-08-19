@@ -50,6 +50,7 @@ import { useProjectStore } from '../../store/projectStore';
 import { useI18n } from '../../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
 import { usePalette, type Palette } from '../../theme/usePalette';
+import { screenChrome } from '../../theme/screenStyles';
 
 /** The four §11 permit types with the drawing's glyph for each, in the DTO enum's order. */
 const PERMIT_TYPES: readonly { type: PermitType; icon: keyof typeof MaterialIcons.glyphMap }[] = [
@@ -249,8 +250,7 @@ export default function PermitRequestScreen(): React.JSX.Element {
 
 const makeStyles = (p: Palette) =>
   StyleSheet.create({
-    root: { flex: 1, backgroundColor: p.bg },
-    page: { padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xl * 3 },
+    ...screenChrome(p),
     field: { gap: spacing.xs / 2 },
     fieldLabel: {
       color: p.muted,
@@ -305,6 +305,4 @@ const makeStyles = (p: Palette) =>
       textTransform: 'uppercase',
       letterSpacing: 0.5,
     },
-    disabled: { opacity: 0.5 },
-    muted: { color: p.muted, fontSize: typography.label.fontSize, fontFamily: fontFamily.regular },
   });

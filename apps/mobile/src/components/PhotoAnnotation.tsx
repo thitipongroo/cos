@@ -23,7 +23,6 @@ import {
   Image as SkiaImage,
   Path,
   Group,
-  Skia,
   useCanvasRef,
   useImage,
   type SkImage,
@@ -31,7 +30,7 @@ import {
 // SDK 54+ moved documentDirectory / writeAsStringAsync to the `/legacy` subpath (the new File/Directory
 // API has no drop-in for a one-shot base64 write). Same choice as src/api/transcribe.ts.
 import * as FileSystem from 'expo-file-system/legacy';
-import { useStrokeCapture, type StrokePoint } from '../hooks/useStrokeCapture';
+import { useStrokeCapture, type StrokePoint, denormalisePath } from '../hooks/useStrokeCapture';
 import { useT } from '../i18n';
 import { colors, darkColors, fontFamily, radius, spacing, typography } from '../theme/tokens';
 
@@ -144,7 +143,7 @@ export function PhotoAnnotation({
             {strokes.map((s, i) => (
               <Path
                 key={i}
-                path={denormalise(s.d, canvasW, canvasH)}
+                path={denormalisePath(s.d, canvasW, canvasH)}
                 color={s.color}
                 style="stroke"
                 strokeWidth={s.width * longEdge}
@@ -155,7 +154,7 @@ export function PhotoAnnotation({
             {liveD ? (
               <Path
                 key={`live-${liveKey}`}
-                path={denormalise(liveD, canvasW, canvasH)}
+                path={denormalisePath(liveD, canvasW, canvasH)}
                 color={PEN_COLOR}
                 style="stroke"
                 strokeWidth={STROKE_FRACTION * longEdge}
@@ -263,16 +262,6 @@ function strokeToSvg(pts: { x: number; y: number }[]): string {
   const last = p[p.length - 1]!;
   d += `L${last.x} ${last.y}`;
   return d;
-}
-
-/** Scale a normalised SVG path string into pixel space for rendering. */
-function denormalise(d: string, w: number, h: number) {
-  const path = Skia.Path.MakeFromSVGString(d);
-  if (!path) return Skia.Path.Make();
-  const m = Skia.Matrix();
-  m.scale(w, h);
-  path.transform(m);
-  return path;
 }
 
 async function writePng(snapshot: SkImage): Promise<string> {

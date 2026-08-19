@@ -16,10 +16,10 @@
 import { useCallback, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { GestureDetector } from 'react-native-gesture-handler';
-import { Canvas, Path, Group, Skia } from '@shopify/react-native-skia';
+import { Canvas, Path, Group } from '@shopify/react-native-skia';
 import { MaterialIcons } from '@expo/vector-icons';
 import type { AnnotationStroke } from './PhotoAnnotation';
-import { useStrokeCapture, type StrokePoint } from '../hooks/useStrokeCapture';
+import { useStrokeCapture, type StrokePoint, denormalisePath } from '../hooks/useStrokeCapture';
 import { useI18n } from '../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../theme/tokens';
 import { usePalette, type Palette } from '../theme/usePalette';
@@ -96,7 +96,7 @@ export function SignaturePad({ strokes, onChange, signerName, testID }: Signatur
               {strokes.map((s, i) => (
                 <Path
                   key={i}
-                  path={denormalise(s.d, size.w, size.h)}
+                  path={denormalisePath(s.d, size.w, size.h)}
                   color={s.color}
                   style="stroke"
                   strokeWidth={s.width * longEdge}
@@ -107,7 +107,7 @@ export function SignaturePad({ strokes, onChange, signerName, testID }: Signatur
               {liveD ? (
                 <Path
                   key={`live-${liveKey}`}
-                  path={denormalise(liveD, size.w, size.h)}
+                  path={denormalisePath(liveD, size.w, size.h)}
                   color={p.text}
                   style="stroke"
                   strokeWidth={STROKE_FRACTION * longEdge}
@@ -151,16 +151,6 @@ function strokeToSvg(pts: { x: number; y: number }[]): string {
   return `M${head.x.toFixed(4)},${head.y.toFixed(4)} ${rest
     .map((pt) => `L${pt.x.toFixed(4)},${pt.y.toFixed(4)}`)
     .join(' ')}`;
-}
-
-/** Scale a normalised path onto the live pad. */
-function denormalise(d: string, w: number, h: number) {
-  const path = Skia.Path.MakeFromSVGString(d);
-  if (!path) return Skia.Path.Make();
-  const m = Skia.Matrix();
-  m.scale(w, h);
-  path.transform(m);
-  return path;
 }
 
 const makeStyles = (p: Palette) =>

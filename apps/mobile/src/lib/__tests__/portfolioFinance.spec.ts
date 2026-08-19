@@ -6,6 +6,7 @@ import {
   varianceExceedsThreshold,
   VARIANCE_ALERT_THRESHOLD,
   type ProjectFinance,
+  settledBudgetRows,
 } from '../portfolioFinance';
 
 const row = (over: Partial<ProjectFinance>): ProjectFinance => ({
@@ -152,5 +153,66 @@ describe('varianceExceedsThreshold', () => {
 
   it('does not alert on a figure that could not be computed', () => {
     expect(varianceExceedsThreshold(null)).toBe(false);
+  });
+});
+
+describe('settledBudgetRows', () => {
+  const project = (n: number) => ({
+    project_id: `p-${n}`,
+    project_name: `Project ${n}`,
+    project_code: `PRJ-${n}`,
+  });
+  const budget = (total: string) => ({
+    status: 'fulfilled' as const,
+    value: {
+      budget: {
+        total_budget_amount: total,
+        total_budget_currency: 'THB',
+        allocated_amount: '900000.0000',
+        committed_amount: '400000.0000',
+        actual_amount: '350000.0000',
+      },
+    },
+  });
+
+  it('carries every field the portfolio figures are summed from', () => {
+    expect(settledBudgetRows([project(1)], [budget('1000000.0000')])).toEqual([
+      {
+        projectId: 'p-1',
+        projectName: 'Project 1',
+        projectCode: 'PRJ-1',
+        currency: 'THB',
+        totalBudget: '1000000.0000',
+        allocated: '900000.0000',
+        committed: '400000.0000',
+        actual: '350000.0000',
+      },
+    ]);
+  });
+
+  // A rejected budget is 404 (never budgeted) or offline. Entering it as zero would read as
+  // "budgeted at nothing" and would pull the portfolio variance towards a number nobody's data
+  // supports — so the project is left out, and the screens say how many were.
+  it('leaves out a project whose budget could not be fetched', () => {
+    const rows = settledBudgetRows(
+      [project(1), project(2), project(3)],
+      [
+        budget('1000000.0000'),
+        { status: 'rejected', reason: new Error('404') },
+        budget('500.0000'),
+      ],
+    );
+
+    expect(rows.map((r) => r.projectId)).toEqual(['p-1', 'p-3']);
+  });
+
+  // `budgets` is positional — budgets[i] belongs to projects[i]. A short array would otherwise
+  // read past its end and hand the next project someone else's figures.
+  it('leaves out a project the budget array does not reach', () => {
+    expect(settledBudgetRows([project(1), project(2)], [budget('1000000.0000')])).toHaveLength(1);
+  });
+
+  it('returns nothing when there are no projects', () => {
+    expect(settledBudgetRows([], [])).toEqual([]);
   });
 });

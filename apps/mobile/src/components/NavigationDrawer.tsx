@@ -29,6 +29,7 @@ import { Avatar } from './Avatar';
 import { shortId } from '../lib/shortId';
 import { BrandLogo } from './BrandLogo';
 import { darkColors, fontFamily, radius, spacing, touchTarget, typography } from '../theme/tokens';
+import { darkScreen } from '../theme/screenStyles';
 
 const DRAWER_WIDTH = 310;
 
@@ -158,7 +159,7 @@ export function NavigationDrawer(): React.JSX.Element | null {
         <View testID="drawer-profile-card" style={styles.profileCard}>
           <View style={styles.profileRow}>
             <Avatar variant="dark" />
-            <View style={styles.flex1}>
+            <View style={darkScreen.fill}>
               <Text style={styles.profileName} numberOfLines={1}>
                 {displayName ?? t('drawer.member')}
               </Text>
@@ -180,7 +181,7 @@ export function NavigationDrawer(): React.JSX.Element | null {
           </View>
         </View>
 
-        <ScrollView style={styles.flex1} contentContainerStyle={styles.navList}>
+        <ScrollView style={darkScreen.fill} contentContainerStyle={styles.navList}>
           {/* The role's own section. Empty for a session with no role, in which case the heading
               would label nothing and is not drawn either. */}
           {visible.length > 0 ? (
@@ -265,7 +266,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.md,
   },
-  flex1: { flex: 1 },
   brandRow: {
     flexDirection: 'row',
     alignItems: 'center',

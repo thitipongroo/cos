@@ -43,7 +43,7 @@ export default function InvitationSuccessScreen(): React.JSX.Element {
     <View style={darkScreen.root} testID="invitation-success">
       <ScrollView style={darkScreen.fill} contentContainerStyle={darkScreen.content}>
         {/* Success indicator */}
-        <View style={styles.hero}>
+        <View style={darkScreen.hero}>
           <View style={darkScreen.checkCircle}>
             <MaterialIcons name="check-circle" size={48} color={darkColors.success} />
           </View>
@@ -68,7 +68,7 @@ export default function InvitationSuccessScreen(): React.JSX.Element {
                 color={darkColors.primary}
               />
             </View>
-            <View style={styles.divider} />
+            <View style={darkScreen.divider} />
             <View style={styles.field}>
               <Text style={styles.fieldLabel}>{t('invitationSuccess.role')}</Text>
               <Text style={styles.fieldValue}>{formatRole(role)}</Text>
@@ -83,11 +83,11 @@ export default function InvitationSuccessScreen(): React.JSX.Element {
         </View>
 
         {/* CORE_AI transparency banner (kept as the mockup drew it — PO decision 2026-07-29) */}
-        <View style={styles.aiPanel}>
+        <View style={darkScreen.aiPanel}>
           <View style={styles.aiHeaderRow}>
             <View style={styles.aiHeaderLeft}>
               <MaterialIcons name="auto-awesome" size={18} color={darkColors.cyan} />
-              <Text style={styles.aiTitle}>{t('invitationSuccess.aiTitle')}</Text>
+              <Text style={darkScreen.aiTitleCompact}>{t('invitationSuccess.aiTitle')}</Text>
             </View>
             <Text style={styles.aiMeta}>{t('invitationSuccess.aiMeta')}</Text>
           </View>
@@ -125,7 +125,6 @@ export default function InvitationSuccessScreen(): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
-  hero: { alignItems: 'center', marginTop: spacing.sm, marginBottom: spacing.md },
   accentLine: {
     width: 48,
     height: 4,
@@ -174,16 +173,7 @@ const styles = StyleSheet.create({
     fontSize: typography.body.fontSize,
     color: darkColors.text,
   },
-  divider: { height: 1, backgroundColor: darkColors.border },
 
-  aiPanel: {
-    backgroundColor: `${darkColors.cyan}0D`,
-    borderLeftWidth: 4,
-    borderLeftColor: darkColors.cyan,
-    borderRadius: radius.xl,
-    padding: spacing.md,
-    gap: spacing.xs,
-  },
   aiHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -191,12 +181,6 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   aiHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  aiTitle: {
-    fontFamily: fontFamily.bold,
-    fontSize: 11,
-    letterSpacing: 1.5,
-    color: darkColors.cyan,
-  },
   aiMeta: { fontFamily: fontFamily.bold, fontSize: 9, color: darkColors.muted, flexShrink: 1 },
   aiBody: { fontFamily: fontFamily.regular, fontSize: 13, lineHeight: 19, color: darkColors.muted },
 

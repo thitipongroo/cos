@@ -228,6 +228,50 @@ export const darkScreen = StyleSheet.create({
 
   // Body padding of a centred success / consent screen.
   content: { padding: spacing.lg, paddingBottom: spacing.xl, gap: spacing.md },
+  // Same body, but with NO bottom padding: the screens that use it are the ones whose footer sits on
+  // the safe area, so they add `paddingBottom: insets.bottom + …` at the call site.
+  contentSafeBottom: { paddingHorizontal: spacing.lg, paddingTop: spacing.xl, gap: spacing.md },
+
+  // Centred hero line of a confirmation screen (the "…was sent", "…was downloaded" page). NOT
+  // uppercased — unlike `heading`, which is the success screens' shouted hero.
+  headline: {
+    textAlign: 'center',
+    color: darkColors.text,
+    fontFamily: fontFamily.semibold,
+    fontSize: typography.hero.fontSize,
+    lineHeight: typography.hero.lineHeight,
+  },
+  // The explanatory line under `headline`, held to a readable measure.
+  lede: {
+    textAlign: 'center',
+    alignSelf: 'center',
+    maxWidth: 300,
+    color: darkColors.muted,
+    fontFamily: fontFamily.regular,
+    fontSize: typography.caption.fontSize,
+    lineHeight: typography.caption.lineHeight,
+  },
+
+  // Hairline between rows of a card or list.
+  divider: { height: 1, backgroundColor: darkColors.border },
+
+  // Placeholder shown in place of a list that has no rows.
+  empty: { textAlign: 'center', color: darkColors.muted, fontSize: 14, marginTop: spacing.md },
+
+  // The text field inside a search box (the box itself differs per screen).
+  searchInput: {
+    flex: 1,
+    color: darkColors.text,
+    fontFamily: fontFamily.regular,
+    fontSize: typography.body.fontSize,
+  },
+
+  // Label of an unselected filter chip; the selected one takes the screen's own accent.
+  chipText: {
+    fontFamily: fontFamily.semibold,
+    fontSize: typography.label.fontSize,
+    color: darkColors.muted,
+  },
 
   // Centred hero heading of a success screen.
   heading: {
@@ -294,12 +338,243 @@ export const darkScreen = StyleSheet.create({
     color: darkColors.text,
   },
 
-  // The cyan AI footnote: icon + caption on one line, explanation under it.
-  aiHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  // An icon and its caption on one line — the head of the AI footnote, of the audit-log note, and
+  // of the receipt's note card. It was `aiHead` until 2026-08-20, when the other two turned out to
+  // be the same three properties under different names.
+  iconRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  // Caption of the AI footnote. NB the two success screens draw a smaller, wider-tracked variant of
+  // this and keep it local — same role, different value, so it is not the same style.
+  aiTitle: {
+    fontFamily: fontFamily.bold,
+    fontSize: typography.label.fontSize,
+    letterSpacing: 0.8,
+    color: darkColors.cyan,
+  },
   aiBody: {
     fontFamily: fontFamily.regular,
     fontSize: 13,
     lineHeight: 19,
     color: darkColors.muted,
+  },
+  // The success screens draw a smaller, wider-tracked caption than `aiTitle`.
+  aiTitleCompact: {
+    fontFamily: fontFamily.bold,
+    fontSize: 11,
+    letterSpacing: 1.5,
+    color: darkColors.cyan,
+  },
+  // The tinted panel the AI footnote sits in, marked by a cyan rule down its left edge.
+  aiPanel: {
+    backgroundColor: `${darkColors.cyan}0D`,
+    borderLeftWidth: 4,
+    borderLeftColor: darkColors.cyan,
+    borderRadius: radius.xl,
+    padding: spacing.md,
+    gap: spacing.xs,
+  },
+
+  // ── The screens with no back control ──────────────────────────────────────
+  //
+  // A confirmation screen replaced what came before it, so there is nothing behind it to go back to.
+  // Its bar has no leading button and centres the title, which is why these are separate values
+  // rather than `header`/`headerTitle` with a prop.
+  headerCentered: {
+    height: touchTarget.listItem,
+    paddingHorizontal: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: darkColors.border,
+    backgroundColor: darkColors.surface,
+  },
+  headerTitleCentered: {
+    flex: 1,
+    textAlign: 'center',
+    color: darkColors.text,
+    fontFamily: fontFamily.semibold,
+    fontSize: typography.title.fontSize,
+    lineHeight: typography.title.lineHeight,
+    textTransform: 'uppercase',
+  },
+
+  // ── Cards ─────────────────────────────────────────────────────────────────
+
+  // A bordered panel on the page surface.
+  card: {
+    borderWidth: 1,
+    borderColor: darkColors.border,
+    borderRadius: radius.lg,
+    backgroundColor: darkColors.surface,
+    padding: spacing.md,
+    gap: spacing.xs,
+  },
+  // Caption-sized heading inside a card, and the variant that takes the free space in a row.
+  cardCaption: {
+    color: darkColors.text,
+    fontFamily: fontFamily.semibold,
+    fontSize: typography.caption.fontSize,
+    lineHeight: typography.caption.lineHeight,
+  },
+  cardCaptionRow: {
+    flex: 1,
+    color: darkColors.text,
+    fontFamily: fontFamily.semibold,
+    fontSize: typography.caption.fontSize,
+    lineHeight: typography.caption.lineHeight,
+  },
+  // Opening paragraph of a long-form document.
+  intro: {
+    color: darkColors.muted,
+    fontFamily: fontFamily.regular,
+    fontSize: typography.body.fontSize,
+    lineHeight: typography.body.lineHeight,
+  },
+  // Hairline WITH breathing room, for a divider between rows inside a card.
+  dividerSpaced: { height: 1, backgroundColor: darkColors.border, marginVertical: spacing.xs },
+
+  // ── Success screens ───────────────────────────────────────────────────────
+
+  // The centred block the success tick and heading sit in.
+  hero: { alignItems: 'center', marginTop: spacing.sm, marginBottom: spacing.md },
+  // The short green rule under the heading.
+  accentLine: {
+    width: 48,
+    height: 4,
+    borderRadius: radius.sm,
+    backgroundColor: `${darkColors.success}80`,
+    marginBottom: spacing.md,
+  },
+  // Centred explanatory copy under `heading`.
+  bodyCentered: {
+    fontFamily: fontFamily.regular,
+    fontSize: typography.body.fontSize,
+    lineHeight: typography.body.fontSize * 1.5,
+    color: darkColors.muted,
+    textAlign: 'center',
+  },
+  // Body padding when the screen's footer is flush against the content.
+  contentTight: { padding: spacing.lg, paddingBottom: spacing.md, gap: spacing.sm },
+  // Footer with no gap: it carries a single action, so there is nothing to space.
+  footerFlush: {
+    padding: spacing.lg,
+    backgroundColor: darkColors.surface,
+    borderTopWidth: 1,
+    borderTopColor: darkColors.border,
+  },
+  // The audit-log footnote: what the system recorded, in the system's own voice.
+  logTitle: {
+    fontFamily: fontFamily.bold,
+    fontSize: typography.label.fontSize,
+    letterSpacing: 1,
+    color: darkColors.cyan,
+  },
+  logBody: {
+    fontFamily: fontFamily.regular,
+    fontSize: 13,
+    lineHeight: 19,
+    color: darkColors.muted,
+    fontStyle: 'italic',
+  },
+  // Floating action button on a pinned-dark screen.
+  //
+  // `borderRadius: 28` is half of 56 — the circle rule, which is why the radius ratchet allows it.
+  // NOTE for the PO: `screenChrome.fab`, the themed one, writes the same 56px circle as the `999`
+  // capsule marker and sits `spacing.md`/`spacing.xl` from the corner rather than `spacing.lg`. The
+  // two are left as they are because reconciling them would move a button; it is recorded here so
+  // the difference is a decision rather than an accident.
+  fab: {
+    position: 'absolute',
+    right: spacing.lg,
+    bottom: spacing.lg,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: darkColors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+  },
+
+  // Label on a compact filled action — smaller than `primaryText`, used where two buttons share a row.
+  primaryTextCompact: {
+    color: darkColors.onPrimary,
+    fontFamily: fontFamily.semibold,
+    fontSize: typography.caption.fontSize,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+});
+
+// ── Shared primitives for a screen's OWN themed sheet ────────────────────────
+//
+// The screens that build their own sheet (`useMemo(() => makeStyles(p), [p])`) had each written
+// these eight out identically — jscpd's largest remaining mobile cluster once the pinned-dark
+// chrome went. They are returned as a PLAIN object rather than a StyleSheet so a screen can spread
+// them into its own `StyleSheet.create({ ...screenChrome(p), … })`: the call sites stay `styles.fab`
+// and a screen that needs a different `root` simply declares one after the spread, where it wins.
+//
+// Same rule as `darkScreen`: a screen adopted a key only where its own value already matched
+// byte-for-byte, so nothing here changed what any screen draws.
+export const screenChrome = (p: Palette) => ({
+  // Page root WITHOUT padding — for screens that pad the scroll body instead (`content`/`page`).
+  root: { flex: 1, backgroundColor: p.bg },
+  // Scroll body of an ordinary screen.
+  content: { padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xl },
+  // Scroll body of a screen with a floating action button: the tail clears the FAB.
+  page: { padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xl * 3 },
+
+  // The floating action button itself. `999` is the documented capsule marker (§32.7), not a step
+  // on the radius scale — which is why the radius ratchet skips it.
+  fab: {
+    position: 'absolute' as const,
+    right: spacing.md,
+    bottom: spacing.xl,
+    width: 56,
+    height: 56,
+    borderRadius: 999,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.45,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+
+  // Secondary caption inside a card — the label-size muted line.
+  muted: { color: p.muted, fontSize: typography.label.fontSize, fontFamily: fontFamily.regular },
+  // Takes the free space in a row.
+  grow: { flex: 1 },
+  // Dimmed affordance for a control that cannot be used yet.
+  disabled: { opacity: 0.5 },
+  // The themed AI note: a card with a thicker rule down its leading edge, an icon-and-caption head,
+  // and the caption itself. The pinned-dark screens draw their own (`darkScreen.aiPanel`); these are
+  // the palette-resolved ones the ordinary screens use.
+  aiCard: {
+    gap: spacing.xs,
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: p.border,
+    borderLeftWidth: 4,
+    backgroundColor: p.surface,
+  },
+  aiHead: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: spacing.xs },
+  aiTitle: {
+    fontSize: 11,
+    fontFamily: fontFamily.bold,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase' as const,
+  },
+
+  // Label on a filled action, when the action is not the screen's `primaryButton`.
+  actionText: {
+    fontFamily: fontFamily.bold,
+    fontSize: typography.body.fontSize,
+    color: p.onPrimary,
   },
 });

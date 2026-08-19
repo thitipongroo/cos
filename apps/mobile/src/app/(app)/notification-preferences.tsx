@@ -30,6 +30,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useI18n } from '../../i18n';
+import { darkScreen } from '../../theme/screenStyles';
 import {
   darkColors,
   fontFamily,
@@ -207,7 +208,7 @@ export default function NotificationPreferencesScreen(): React.JSX.Element {
 
   if (loading) {
     return (
-      <View style={[styles.root, styles.center, { paddingTop: insets.top }]}>
+      <View style={[darkScreen.root, styles.center, { paddingTop: insets.top }]}>
         <LoadingState variant="list" theme="dark" />
       </View>
     );
@@ -217,7 +218,7 @@ export default function NotificationPreferencesScreen(): React.JSX.Element {
     return (
       <View
         style={[
-          styles.root,
+          darkScreen.root,
           styles.center,
           { paddingTop: insets.top, paddingBottom: insets.bottom },
         ]}
@@ -254,7 +255,7 @@ export default function NotificationPreferencesScreen(): React.JSX.Element {
   }
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
+    <View style={[darkScreen.root, { paddingTop: insets.top }]}>
       <ScrollView
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.xl }]}
         testID="notification-preferences"
@@ -273,7 +274,7 @@ export default function NotificationPreferencesScreen(): React.JSX.Element {
         {EVENT_CATALOG.filter((e) => e.critical).map((ev) => (
           <View key={ev.eventType} style={[styles.card, styles.criticalCard]}>
             <View style={styles.cardHeaderRow}>
-              <View style={styles.flex1}>
+              <View style={darkScreen.fill}>
                 <Text style={styles.cardTitle}>{t(ev.labelKey)}</Text>
                 <Text style={styles.cardDesc}>{t(ev.descKey)}</Text>
               </View>
@@ -296,7 +297,7 @@ export default function NotificationPreferencesScreen(): React.JSX.Element {
         </Text>
         {EVENT_CATALOG.filter((e) => !e.critical).map((ev) => (
           <View key={ev.eventType} style={styles.card}>
-            <View style={styles.flex1}>
+            <View style={darkScreen.fill}>
               <Text style={styles.cardTitle}>{t(ev.labelKey)}</Text>
               <Text style={styles.cardDesc}>{t(ev.descKey)}</Text>
             </View>
@@ -389,7 +390,6 @@ export default function NotificationPreferencesScreen(): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: darkColors.bg },
   center: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.lg },
   content: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, gap: spacing.md },
   sectionHeaderRow: {
@@ -434,7 +434,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.sm,
   },
-  flex1: { flex: 1 },
   cardTitle: {
     fontFamily: fontFamily.semibold,
     fontSize: typography.body.fontSize,

@@ -29,8 +29,9 @@ import { ScrollView, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useT } from '../../i18n';
 import { usePalette } from '../../theme/usePalette';
-import { fontFamily, spacing, typography } from '../../theme/tokens';
+import { fontFamily, typography } from '../../theme/tokens';
 import type { Palette } from '../../theme/palette';
+import { screenChrome } from '../../theme/screenStyles';
 import {
   SectionLabel,
   NavCard,
@@ -190,7 +191,7 @@ export default function TransparencyScreen(): React.JSX.Element {
 
 const makeStyles = (p: Palette) =>
   StyleSheet.create({
-    content: { padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xl },
+    ...screenChrome(p),
     dashedBody: {
       color: p.muted,
       fontFamily: fontFamily.regular,

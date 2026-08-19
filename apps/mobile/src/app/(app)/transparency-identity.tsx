@@ -38,6 +38,7 @@ import { formatNationalPhone } from '@cos/ui-logic';
 import { initialsOf } from '../../lib/initials';
 import { formatRole } from '../../lib/formatRole';
 import { shortId } from '../../lib/shortId';
+import { screenChrome } from '../../theme/screenStyles';
 import {
   SectionLabel,
   SectionLabelRow,
@@ -270,7 +271,7 @@ export default function TransparencyIdentityScreen(): React.JSX.Element {
 
 const makeStyles = (p: Palette) =>
   StyleSheet.create({
-    content: { padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xl },
+    ...screenChrome(p),
     fields: { gap: spacing.xs },
     cellValue: {
       color: p.text,

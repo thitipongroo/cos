@@ -26,6 +26,7 @@ import {
   typography,
 } from '../../theme/tokens';
 import { formatRole } from '../../lib/formatRole';
+import { darkScreen } from '../../theme/screenStyles';
 
 type IconName = keyof typeof MaterialIcons.glyphMap;
 type Level = 'FULL' | 'RW' | 'R';
@@ -143,7 +144,7 @@ export default function RolePermissionsScreen(): React.JSX.Element {
   const roleDesc = role ? t(`inviteUser.roleDesc.${role}`) : '';
 
   return (
-    <View style={styles.root} testID="role-permissions">
+    <View style={darkScreen.root} testID="role-permissions">
       <ScrollView contentContainerStyle={styles.content}>
         {/* Hero — role name + description */}
         <View style={styles.hero}>
@@ -230,7 +231,6 @@ export default function RolePermissionsScreen(): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: darkColors.bg },
   content: { padding: spacing.lg, paddingBottom: 120 },
 
   hero: {

@@ -28,7 +28,7 @@ import { View, Text, ScrollView, Pressable, StyleSheet, Platform } from 'react-n
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useI18n } from '../../i18n';
 import {
   fontFamily,
@@ -43,6 +43,7 @@ import { policyPdfUrl } from '../../lib/legalDownload';
 import { formatBytes } from '../../lib/formatBytes';
 import { API_BASE_URL } from '../../api/client';
 import { darkScreen } from '../../theme/screenStyles';
+import { useLegalReceipt } from '../../hooks/useLegalDownload';
 
 const DARK = paletteFor('dark');
 
@@ -50,26 +51,12 @@ export default function PrivacyPolicyDownloadedScreen(): React.JSX.Element {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { t, formatDate } = useI18n();
-  const params = useLocalSearchParams<{
-    fileName?: string;
-    version?: string;
-    sizeBytes?: string;
-    sha256?: string;
-    verified?: string;
-    downloadedAt?: string;
-  }>();
-
-  const fileName = params.fileName ?? '';
-  const version = params.version ?? '';
-  const sizeBytes = Number(params.sizeBytes ?? '0');
-  const sha256 = params.sha256 ?? '';
-  const verified = params.verified === 'true';
-  const downloadedAt = params.downloadedAt ?? '';
+  const { fileName, version, sizeBytes, sha256, verified, downloadedAt } = useLegalReceipt();
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle} numberOfLines={1}>
+    <View style={[darkScreen.root, { paddingTop: insets.top }]}>
+      <View style={darkScreen.headerCentered}>
+        <Text style={darkScreen.headerTitleCentered} numberOfLines={1}>
           {t('privacy.downloaded.title')}
         </Text>
       </View>
@@ -77,7 +64,10 @@ export default function PrivacyPolicyDownloadedScreen(): React.JSX.Element {
       <ScrollView
         testID="privacy-policy-downloaded"
         style={darkScreen.fill}
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.xl }]}
+        contentContainerStyle={[
+          darkScreen.contentSafeBottom,
+          { paddingBottom: insets.bottom + spacing.xl },
+        ]}
       >
         <View style={[styles.ring, verified ? styles.ringOk : styles.ringWarn]}>
           <MaterialIcons
@@ -87,11 +77,11 @@ export default function PrivacyPolicyDownloadedScreen(): React.JSX.Element {
           />
         </View>
 
-        <Text style={styles.headline}>{t('privacy.downloaded.headline')}</Text>
-        <Text style={styles.lede}>{t('privacy.downloaded.lede', { version })}</Text>
+        <Text style={darkScreen.headline}>{t('privacy.downloaded.headline')}</Text>
+        <Text style={darkScreen.lede}>{t('privacy.downloaded.lede', { version })}</Text>
 
         {/* File card */}
-        <View style={styles.card}>
+        <View style={darkScreen.card}>
           <View style={styles.fileRow}>
             <View style={styles.filePlate}>
               <MaterialIcons name="description" size={24} color={DARK.accent} />
@@ -108,14 +98,14 @@ export default function PrivacyPolicyDownloadedScreen(): React.JSX.Element {
         </View>
 
         {/* Integrity — the one place a hash on this flow earns its space. */}
-        <View style={styles.card}>
-          <View style={styles.noteHead}>
+        <View style={darkScreen.card}>
+          <View style={darkScreen.iconRow}>
             <MaterialIcons
               name={verified ? 'verified-user' : 'gpp-maybe'}
               size={20}
               color={verified ? DARK.success : DARK.warning}
             />
-            <Text style={styles.noteTitle}>{t('privacy.downloaded.integrityTitle')}</Text>
+            <Text style={darkScreen.cardCaption}>{t('privacy.downloaded.integrityTitle')}</Text>
           </View>
           <Text style={darkScreen.cardBody}>
             {verified
@@ -127,7 +117,7 @@ export default function PrivacyPolicyDownloadedScreen(): React.JSX.Element {
           </Text>
           {downloadedAt !== '' ? (
             <>
-              <View style={styles.divider} />
+              <View style={darkScreen.dividerSpaced} />
               <Text style={darkScreen.cardBody}>
                 {t('privacy.downloaded.at', { date: formatDate(downloadedAt) })}
               </Text>
@@ -143,7 +133,7 @@ export default function PrivacyPolicyDownloadedScreen(): React.JSX.Element {
           style={styles.primaryButton}
         >
           <MaterialIcons name="open-in-new" size={20} color={DARK.onPrimary} />
-          <Text style={styles.primaryText}>{t('privacy.downloaded.open')}</Text>
+          <Text style={darkScreen.primaryTextCompact}>{t('privacy.downloaded.open')}</Text>
         </Pressable>
 
         <Pressable
@@ -164,29 +154,6 @@ export default function PrivacyPolicyDownloadedScreen(): React.JSX.Element {
 const FILE_PLATE = 48;
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: DARK.bg },
-
-  header: {
-    height: touchTarget.listItem,
-    paddingHorizontal: spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: DARK.border,
-    backgroundColor: DARK.surface,
-  },
-  headerTitle: {
-    flex: 1,
-    textAlign: 'center',
-    color: DARK.text,
-    fontFamily: fontFamily.semibold,
-    fontSize: typography.title.fontSize,
-    lineHeight: typography.title.lineHeight,
-    textTransform: 'uppercase',
-  },
-
-  content: { paddingHorizontal: spacing.lg, paddingTop: spacing.xl, gap: spacing.md },
-
   ring: {
     alignSelf: 'center',
     width: 96,
@@ -200,31 +167,6 @@ const styles = StyleSheet.create({
   ringOk: { borderColor: DARK.success },
   ringWarn: { borderColor: DARK.warning },
 
-  headline: {
-    textAlign: 'center',
-    color: DARK.text,
-    fontFamily: fontFamily.semibold,
-    fontSize: typography.hero.fontSize,
-    lineHeight: typography.hero.lineHeight,
-  },
-  lede: {
-    textAlign: 'center',
-    alignSelf: 'center',
-    maxWidth: 300,
-    color: DARK.muted,
-    fontFamily: fontFamily.regular,
-    fontSize: typography.caption.fontSize,
-    lineHeight: typography.caption.lineHeight,
-  },
-
-  card: {
-    borderWidth: 1,
-    borderColor: DARK.border,
-    borderRadius: radius.lg,
-    backgroundColor: DARK.surface,
-    padding: spacing.md,
-    gap: spacing.xs,
-  },
   fileRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   filePlate: {
     width: FILE_PLATE,
@@ -250,13 +192,6 @@ const styles = StyleSheet.create({
     fontSize: typography.label.fontSize,
   },
 
-  noteHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  noteTitle: {
-    color: DARK.text,
-    fontFamily: fontFamily.semibold,
-    fontSize: typography.caption.fontSize,
-    lineHeight: typography.caption.lineHeight,
-  },
   // Wraps rather than truncating: a digest with an ellipsis in the middle cannot be compared against
   // anything, which is the only thing a reader would want it for.
   hash: {
@@ -265,7 +200,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     lineHeight: 17,
   },
-  divider: { height: 1, backgroundColor: DARK.border, marginVertical: spacing.xs },
 
   primaryButton: {
     marginTop: spacing.md,
@@ -277,13 +211,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.sm,
     paddingVertical: spacing.sm,
-  },
-  primaryText: {
-    color: DARK.onPrimary,
-    fontFamily: fontFamily.semibold,
-    fontSize: typography.caption.fontSize,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
   },
   secondaryButton: {
     minHeight: touchTarget.secondaryButton,

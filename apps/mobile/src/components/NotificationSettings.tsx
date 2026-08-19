@@ -49,6 +49,7 @@ import { useAuthStore } from '../store/authStore';
 import { useT } from '../i18n';
 import { fontFamily, plateRadius, radius, spacing, touchTarget, typography } from '../theme/tokens';
 import { usePalette, type Palette, useIsDark } from '../theme/usePalette';
+import { screenChrome } from '../theme/screenStyles';
 
 /** Exactly the channels the PATCH DTO accepts AND the dispatcher delivers — see the header. */
 const CHANNELS = ['IN_APP', 'EMAIL', 'LINE'] as const;
@@ -282,6 +283,7 @@ export function NotificationSettings(): React.JSX.Element {
 
 const makeStyles = (p: Palette) =>
   StyleSheet.create({
+    ...screenChrome(p),
     loading: { paddingVertical: spacing.lg, alignItems: 'center' },
     sectionLabel: {
       fontFamily: fontFamily.semibold,
@@ -316,7 +318,6 @@ const makeStyles = (p: Palette) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    grow: { flex: 1 },
     rowLabel: {
       fontFamily: fontFamily.medium,
       fontSize: typography.body.fontSize,

@@ -42,9 +42,9 @@ export default function PrivacyContactSentScreen(): React.JSX.Element {
   const receivedAt = params.receivedAt ?? '';
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle} numberOfLines={1}>
+    <View style={[darkScreen.root, { paddingTop: insets.top }]}>
+      <View style={darkScreen.headerCentered}>
+        <Text style={darkScreen.headerTitleCentered} numberOfLines={1}>
           {t('privacy.contactSent.title')}
         </Text>
       </View>
@@ -52,18 +52,21 @@ export default function PrivacyContactSentScreen(): React.JSX.Element {
       <ScrollView
         testID="privacy-contact-sent"
         style={darkScreen.fill}
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.xl }]}
+        contentContainerStyle={[
+          darkScreen.contentSafeBottom,
+          { paddingBottom: insets.bottom + spacing.xl },
+        ]}
       >
         <View style={styles.successRing}>
           <MaterialIcons name="check-circle" size={64} color={DARK.success} />
         </View>
 
-        <Text style={styles.headline}>{t('privacy.contactSent.headline')}</Text>
+        <Text style={darkScreen.headline}>{t('privacy.contactSent.headline')}</Text>
         <Text style={styles.lede}>{t('privacy.contactSent.lede')}</Text>
 
         {/* The reference card. The status pill says PENDING REVIEW as the drawing does, and it is
             true: the row is created with status OPEN and nothing has triaged it yet. */}
-        <View style={styles.card}>
+        <View style={darkScreen.card}>
           <View style={styles.cardHead}>
             <Text style={styles.cardLabel}>{t('privacy.contactSent.referenceLabel')}</Text>
             <View style={styles.pendingChip}>
@@ -73,22 +76,22 @@ export default function PrivacyContactSentScreen(): React.JSX.Element {
           <Text testID="privacy-contact-reference" style={styles.reference} selectable>
             {reference}
           </Text>
-          <View style={styles.divider} />
+          <View style={darkScreen.dividerSpaced} />
           <Text style={darkScreen.cardBody}>{t('privacy.contactSent.referenceHelp')}</Text>
         </View>
 
         {/* What happens next — stated as the platform's own commitment, and naming who the statutory
             deadline actually binds. */}
-        <View style={styles.card}>
-          <View style={styles.noteHead}>
+        <View style={darkScreen.card}>
+          <View style={darkScreen.iconRow}>
             <MaterialIcons name="info" size={20} color={DARK.accent} />
-            <Text style={styles.noteTitle}>{t('privacy.contactSent.nextTitle')}</Text>
+            <Text style={darkScreen.cardCaption}>{t('privacy.contactSent.nextTitle')}</Text>
           </View>
           <Text style={darkScreen.cardBody}>{t('privacy.contactSent.nextBody')}</Text>
         </View>
 
         {receivedAt !== '' ? (
-          <View style={styles.card}>
+          <View style={darkScreen.card}>
             <Text style={styles.cardLabel}>{t('privacy.contactSent.receivedLabel')}</Text>
             <Text style={styles.received}>{formatDate(receivedAt)}</Text>
           </View>
@@ -109,29 +112,7 @@ export default function PrivacyContactSentScreen(): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: DARK.bg },
-
-  header: {
-    height: touchTarget.listItem,
-    paddingHorizontal: spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: DARK.border,
-    backgroundColor: DARK.surface,
-  },
   // No back control: the form was replaced, so there is nothing behind this screen.
-  headerTitle: {
-    flex: 1,
-    textAlign: 'center',
-    color: DARK.text,
-    fontFamily: fontFamily.semibold,
-    fontSize: typography.title.fontSize,
-    lineHeight: typography.title.lineHeight,
-    textTransform: 'uppercase',
-  },
-
-  content: { paddingHorizontal: spacing.lg, paddingTop: spacing.xl, gap: spacing.md },
 
   successRing: {
     alignSelf: 'center',
@@ -146,13 +127,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
 
-  headline: {
-    textAlign: 'center',
-    color: DARK.text,
-    fontFamily: fontFamily.semibold,
-    fontSize: typography.hero.fontSize,
-    lineHeight: typography.hero.lineHeight,
-  },
   lede: {
     textAlign: 'center',
     alignSelf: 'center',
@@ -164,14 +138,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
 
-  card: {
-    borderWidth: 1,
-    borderColor: DARK.border,
-    borderRadius: radius.lg,
-    backgroundColor: DARK.surface,
-    padding: spacing.md,
-    gap: spacing.xs,
-  },
   cardHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   cardLabel: {
     color: DARK.muted,
@@ -203,15 +169,6 @@ const styles = StyleSheet.create({
     fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace', default: 'monospace' }),
     fontSize: typography.title.fontSize,
     letterSpacing: 1,
-  },
-  divider: { height: 1, backgroundColor: DARK.border, marginVertical: spacing.xs },
-
-  noteHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  noteTitle: {
-    color: DARK.text,
-    fontFamily: fontFamily.semibold,
-    fontSize: typography.caption.fontSize,
-    lineHeight: typography.caption.lineHeight,
   },
 
   received: {

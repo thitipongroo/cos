@@ -82,6 +82,7 @@ import {
   type UpcomingTask as TaskRow,
 } from '../lib/siteEngineerHome';
 import { darkColors, fontFamily, radius, spacing, touchTarget, typography } from '../theme/tokens';
+import { darkScreen } from '../theme/screenStyles';
 
 /** Normalise a list endpoint that may return `T[]` or `{ items: T[] }`. */
 function asList<T>(res: { items?: T[] } | T[]): T[] {
@@ -321,7 +322,7 @@ export default function SiteEngineerHome() {
     ) : null;
 
   return (
-    <View style={styles.root}>
+    <View style={darkScreen.root}>
       <ScrollView
         testID="site-engineer-home"
         style={styles.screen}
@@ -610,7 +611,6 @@ export default function SiteEngineerHome() {
 
 const styles = StyleSheet.create({
   // Solid tiered dark background (design tokens) — no blueprint grid (ADR-071 grid removed 2026-07-26).
-  root: { flex: 1, backgroundColor: darkColors.bg },
   screen: { flex: 1, backgroundColor: 'transparent' },
   content: {
     padding: spacing.md,

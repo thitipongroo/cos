@@ -61,6 +61,27 @@ export type CapabilityStatus = 'live' | 'planned';
  */
 const CARD_BODY_LINES = 3;
 
+/**
+ * The kit's palette and its sheet, resolved once per component.
+ *
+ * Nineteen components in this file opened with the same two lines. The `useMemo` is the point of it:
+ * `makeStyles` builds a sheet of ~60 entries, and a transparency screen mounts a dozen of these, so
+ * rebuilding on every render is work done a dozen times for a theme that changes almost never.
+ */
+/** An icon, a title, and whatever the caller puts inside — the shape of both titled panels. */
+interface IconTitlePanelProps {
+  icon: keyof typeof MaterialIcons.glyphMap;
+  title: string;
+  children: ReactNode;
+  testID?: string;
+}
+
+function useKitStyles(): { p: Palette; styles: ReturnType<typeof makeStyles> } {
+  const p = usePalette();
+  const styles = useMemo(() => makeStyles(p), [p]);
+  return { p, styles };
+}
+
 export function StatusPill({
   status,
   label,
@@ -71,8 +92,7 @@ export function StatusPill({
   label: string;
   testID?: string;
 }): React.JSX.Element {
-  const p = usePalette();
-  const styles = useMemo(() => makeStyles(p), [p]);
+  const { p, styles } = useKitStyles();
   const live = status === 'live';
   return (
     <View
@@ -87,8 +107,7 @@ export function StatusPill({
 
 /** Small uppercase caption that opens a section ("Compliance breakdown", "Active inputs"). */
 export function SectionLabel({ children }: { children: string }): React.JSX.Element {
-  const p = usePalette();
-  const styles = useMemo(() => makeStyles(p), [p]);
+  const { styles } = useKitStyles();
   return (
     <Text accessibilityRole="header" style={styles.sectionLabel}>
       {children}
@@ -98,8 +117,7 @@ export function SectionLabel({ children }: { children: string }): React.JSX.Elem
 
 /** Lead-in paragraph under a screen title. */
 export function Lede({ children }: { children: string }): React.JSX.Element {
-  const p = usePalette();
-  const styles = useMemo(() => makeStyles(p), [p]);
+  const { styles } = useKitStyles();
   return <Text style={styles.lede}>{children}</Text>;
 }
 
@@ -132,8 +150,7 @@ export function InfoCard({
   statusLabel?: string;
   testID?: string;
 }): React.JSX.Element {
-  const p = usePalette();
-  const styles = useMemo(() => makeStyles(p), [p]);
+  const { p, styles } = useKitStyles();
   const pill = status && statusLabel ? <StatusPill status={status} label={statusLabel} /> : null;
   return (
     <View testID={testID} style={styles.card}>
@@ -173,8 +190,7 @@ export function FieldRow({
   note?: string;
   testID?: string;
 }): React.JSX.Element {
-  const p = usePalette();
-  const styles = useMemo(() => makeStyles(p), [p]);
+  const { styles } = useKitStyles();
   return (
     <View testID={testID} style={styles.field}>
       <Text style={styles.fieldLabel}>{label}</Text>
@@ -196,8 +212,7 @@ export function FlowStep({
   caption: string;
   last?: boolean;
 }): React.JSX.Element {
-  const p = usePalette();
-  const styles = useMemo(() => makeStyles(p), [p]);
+  const { p, styles } = useKitStyles();
   return (
     <View style={styles.flowRow}>
       <View style={styles.flowRail}>
@@ -234,8 +249,7 @@ export function DisabledAction({
   comingSoon: string;
   testID: string;
 }): React.JSX.Element {
-  const p = usePalette();
-  const styles = useMemo(() => makeStyles(p), [p]);
+  const { p, styles } = useKitStyles();
   return (
     <View
       testID={testID}
@@ -273,8 +287,7 @@ export function NavCard({
   statusLabel?: string;
   testID: string;
 }): React.JSX.Element {
-  const p = usePalette();
-  const styles = useMemo(() => makeStyles(p), [p]);
+  const { p, styles } = useKitStyles();
   return (
     <Pressable
       testID={testID}
@@ -304,8 +317,7 @@ export function NavCard({
 
 /** Card wrapper used for the screen-opening summary tile. */
 export function SummaryTile({ children }: { children: ReactNode }): React.JSX.Element {
-  const p = usePalette();
-  const styles = useMemo(() => makeStyles(p), [p]);
+  const { styles } = useKitStyles();
   return <View style={styles.summary}>{children}</View>;
 }
 
@@ -344,8 +356,7 @@ export function HeroCard({
   icon?: keyof typeof MaterialIcons.glyphMap;
   testID?: string;
 }): React.JSX.Element {
-  const p = usePalette();
-  const styles = useMemo(() => makeStyles(p), [p]);
+  const { p, styles } = useKitStyles();
   return (
     <View testID={testID} style={styles.hero}>
       <View style={styles.heroAccent} />
@@ -378,8 +389,7 @@ export function SectionLabelRow({
   label: string;
   tag?: string;
 }): React.JSX.Element {
-  const p = usePalette();
-  const styles = useMemo(() => makeStyles(p), [p]);
+  const { styles } = useKitStyles();
   return (
     <View style={styles.sectionRow}>
       <Text accessibilityRole="header" style={[styles.sectionLabel, styles.sectionRowLabel]}>
@@ -412,8 +422,7 @@ export function FieldCard({
   verified?: boolean;
   testID?: string;
 }): React.JSX.Element {
-  const p = usePalette();
-  const styles = useMemo(() => makeStyles(p), [p]);
+  const { p, styles } = useKitStyles();
   return (
     <View testID={testID} style={styles.fieldCard}>
       <View style={styles.fieldCardBody}>
@@ -432,8 +441,7 @@ export function FieldCard({
 
 /** Two small cards side by side (PROFILE IMAGE ⟷ PROFESSIONAL ROLE in the identity mockup). */
 export function TwoUp({ children }: { children: ReactNode }): React.JSX.Element {
-  const p = usePalette();
-  const styles = useMemo(() => makeStyles(p), [p]);
+  const { styles } = useKitStyles();
   return <View style={styles.twoUp}>{children}</View>;
 }
 
@@ -465,8 +473,7 @@ export function TwoUpCell({
   avatar?: { uri?: string | null; initials: string };
   testID?: string;
 }): React.JSX.Element {
-  const p = usePalette();
-  const styles = useMemo(() => makeStyles(p), [p]);
+  const { p, styles } = useKitStyles();
   return (
     <View testID={testID} style={styles.twoUpCell}>
       <Text style={styles.fieldLabel}>{label}</Text>
@@ -507,8 +514,7 @@ export function ActionRow({
   onPress: () => void;
   testID: string;
 }): React.JSX.Element {
-  const p = usePalette();
-  const styles = useMemo(() => makeStyles(p), [p]);
+  const { p, styles } = useKitStyles();
   return (
     <Pressable
       testID={testID}
@@ -532,14 +538,8 @@ export function AccentCard({
   title,
   children,
   testID,
-}: {
-  icon: keyof typeof MaterialIcons.glyphMap;
-  title: string;
-  children: ReactNode;
-  testID?: string;
-}): React.JSX.Element {
-  const p = usePalette();
-  const styles = useMemo(() => makeStyles(p), [p]);
+}: IconTitlePanelProps): React.JSX.Element {
+  const { p, styles } = useKitStyles();
   return (
     <View testID={testID} style={styles.accent}>
       <View style={styles.accentBar} />
@@ -568,8 +568,7 @@ export function AccentRow({
   tint?: string;
   testID?: string;
 }): React.JSX.Element {
-  const p = usePalette();
-  const styles = useMemo(() => makeStyles(p), [p]);
+  const { p, styles } = useKitStyles();
   return (
     <View testID={testID} style={styles.accentRow}>
       <MaterialIcons name={icon} size={18} color={tint ?? p.muted} style={styles.accentRowIcon} />
@@ -589,14 +588,8 @@ export function DashedPanel({
   title,
   children,
   testID,
-}: {
-  icon: keyof typeof MaterialIcons.glyphMap;
-  title: string;
-  children: ReactNode;
-  testID?: string;
-}): React.JSX.Element {
-  const p = usePalette();
-  const styles = useMemo(() => makeStyles(p), [p]);
+}: IconTitlePanelProps): React.JSX.Element {
+  const { p, styles } = useKitStyles();
   return (
     <View testID={testID} style={styles.dashed}>
       <MaterialIcons name={icon} size={28} color={p.muted} />
@@ -623,8 +616,7 @@ export function DangerLink({
   icon?: keyof typeof MaterialIcons.glyphMap;
   testID: string;
 }): React.JSX.Element {
-  const p = usePalette();
-  const styles = useMemo(() => makeStyles(p), [p]);
+  const { p, styles } = useKitStyles();
   return (
     <Pressable
       testID={testID}

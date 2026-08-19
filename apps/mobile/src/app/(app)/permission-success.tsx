@@ -13,14 +13,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useT } from '../../i18n';
 import { darkScreen } from '../../theme/screenStyles';
-import {
-  darkColors,
-  fontFamily,
-  radius,
-  spacing,
-  touchTarget,
-  typography,
-} from '../../theme/tokens';
+import { darkColors, radius, spacing, touchTarget } from '../../theme/tokens';
 
 export default function PermissionSuccessScreen(): React.JSX.Element {
   const t = useT();
@@ -32,13 +25,13 @@ export default function PermissionSuccessScreen(): React.JSX.Element {
   return (
     <View style={darkScreen.root} testID="permission-success">
       <ScrollView style={darkScreen.fill} contentContainerStyle={darkScreen.content}>
-        <View style={styles.hero}>
+        <View style={darkScreen.hero}>
           <View style={darkScreen.checkCircle}>
             <MaterialIcons name="check-circle" size={48} color={darkColors.success} />
           </View>
           <Text style={darkScreen.heading}>{t('permissionSuccess.heading')}</Text>
-          <View style={styles.accentLine} />
-          <Text style={styles.body}>
+          <View style={darkScreen.accentLine} />
+          <Text style={darkScreen.bodyCentered}>
             {name !== ''
               ? t('permissionSuccess.body', { name })
               : t('permissionSuccess.bodyGeneric')}
@@ -46,10 +39,10 @@ export default function PermissionSuccessScreen(): React.JSX.Element {
         </View>
 
         {/* AI Sync Log — honest shell (no fabricated confidence score). */}
-        <View style={styles.aiPanel}>
+        <View style={darkScreen.aiPanel}>
           <View style={styles.aiHeaderRow}>
             <MaterialIcons name="psychology" size={18} color={darkColors.cyan} />
-            <Text style={styles.aiTitle}>{t('permissionSuccess.aiTitle')}</Text>
+            <Text style={darkScreen.aiTitleCompact}>{t('permissionSuccess.aiTitle')}</Text>
           </View>
           <Text style={darkScreen.aiBody}>{t('permissionSuccess.aiBody')}</Text>
         </View>
@@ -85,37 +78,7 @@ export default function PermissionSuccessScreen(): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
-  hero: { alignItems: 'center', marginTop: spacing.sm, marginBottom: spacing.md },
-  accentLine: {
-    width: 48,
-    height: 4,
-    borderRadius: radius.sm,
-    backgroundColor: `${darkColors.success}80`,
-    marginBottom: spacing.md,
-  },
-  body: {
-    fontFamily: fontFamily.regular,
-    fontSize: typography.body.fontSize,
-    lineHeight: typography.body.fontSize * 1.5,
-    color: darkColors.muted,
-    textAlign: 'center',
-  },
-
-  aiPanel: {
-    backgroundColor: `${darkColors.cyan}0D`,
-    borderLeftWidth: 4,
-    borderLeftColor: darkColors.cyan,
-    borderRadius: radius.xl,
-    padding: spacing.md,
-    gap: spacing.xs,
-  },
   aiHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  aiTitle: {
-    fontFamily: fontFamily.bold,
-    fontSize: 11,
-    letterSpacing: 1.5,
-    color: darkColors.cyan,
-  },
 
   secondaryBtn: {
     flexDirection: 'row',

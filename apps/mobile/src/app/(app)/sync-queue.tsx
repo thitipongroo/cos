@@ -22,6 +22,7 @@ import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { useI18n } from '../../i18n';
 import type { Locale } from '../../i18n';
 import { shortId } from '../../lib/shortId';
+import { darkScreen } from '../../theme/screenStyles';
 import {
   darkColors,
   fontFamily,
@@ -156,7 +157,7 @@ export default function SyncQueueScreen(): React.JSX.Element {
   };
 
   return (
-    <View style={styles.root} testID="tenant-admin-sync-queue">
+    <View style={darkScreen.root} testID="tenant-admin-sync-queue">
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.subtitle}>
           {t('syncQueue.subtitle', { count: records ? records.length : 0 })}
@@ -187,7 +188,7 @@ export default function SyncQueueScreen(): React.JSX.Element {
               {f !== 'ALL' ? (
                 <View style={[styles.chipDot, { backgroundColor: TYPE_COLOR[f] }]} />
               ) : null}
-              <Text style={[styles.chipText, filter === f && styles.chipTextActive]}>
+              <Text style={[darkScreen.chipText, filter === f && styles.chipTextActive]}>
                 {f === 'ALL' ? t('syncQueue.filterAll') : t(TYPE_LABEL_KEY[f])}
               </Text>
             </Pressable>
@@ -306,7 +307,6 @@ export default function SyncQueueScreen(): React.JSX.Element {
 const styles = StyleSheet.create({
   // Dimmed rather than hidden: the action still exists, it just needs a connection.
   disabled: { opacity: 0.4 },
-  root: { flex: 1, backgroundColor: darkColors.bg },
   content: { padding: spacing.lg, gap: spacing.sm, paddingBottom: spacing.xl },
   subtitle: {
     fontFamily: fontFamily.regular,
@@ -328,11 +328,6 @@ const styles = StyleSheet.create({
   },
   chipActive: { backgroundColor: darkColors.primary, borderColor: darkColors.primary },
   chipDot: { width: 8, height: 8, borderRadius: radius.md },
-  chipText: {
-    fontFamily: fontFamily.semibold,
-    fontSize: typography.label.fontSize,
-    color: darkColors.muted,
-  },
   chipTextActive: { color: darkColors.onPrimary },
   listBoundary: { gap: spacing.sm },
   emptyState: { alignItems: 'center', gap: spacing.sm, marginTop: spacing.xl },

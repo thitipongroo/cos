@@ -34,6 +34,7 @@ import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { UnavailableNote } from '../../components/UnavailableNote';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { useT } from '../../i18n';
+import { darkScreen } from '../../theme/screenStyles';
 import {
   darkColors,
   fontFamily,
@@ -123,7 +124,7 @@ export default function SystemSettingsScreen(): React.JSX.Element {
 
   if (error) {
     return (
-      <View style={[styles.root, styles.center]} testID="tenant-admin-settings">
+      <View style={[darkScreen.root, styles.center]} testID="tenant-admin-settings">
         <Text style={styles.empty}>{t('systemSettings.error')}</Text>
       </View>
     );
@@ -134,7 +135,7 @@ export default function SystemSettingsScreen(): React.JSX.Element {
       variant="widget"
       theme="dark"
       progress={loadProgress(settled, LOAD_STEPS) ?? undefined}
-      style={styles.root}
+      style={darkScreen.root}
       testID="tenant-admin-settings"
     >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -196,7 +197,7 @@ export default function SystemSettingsScreen(): React.JSX.Element {
             </View>
             <MaterialIcons name="chevron-right" size={22} color={darkColors.muted} />
           </Pressable>
-          <View style={styles.divider} />
+          <View style={darkScreen.divider} />
           <View style={styles.rowBetween}>
             <View style={styles.rowLeft}>
               <View style={styles.colorSwatch} />
@@ -320,7 +321,7 @@ export default function SystemSettingsScreen(): React.JSX.Element {
             </View>
             <LanguageSwitcher />
           </View>
-          <View style={styles.divider} />
+          <View style={darkScreen.divider} />
           {/* Security policy (PLACEHOLDER) */}
           <Pressable
             style={styles.rowBetween}
@@ -334,7 +335,7 @@ export default function SystemSettingsScreen(): React.JSX.Element {
             </View>
             <MaterialIcons name="chevron-right" size={22} color={darkColors.muted} />
           </Pressable>
-          <View style={styles.divider} />
+          <View style={darkScreen.divider} />
           {/* Delete tenant (PLACEHOLDER, destructive) */}
           <Pressable
             style={styles.rowBetween}
@@ -383,7 +384,6 @@ function SectionHeader({
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: darkColors.bg },
   center: { alignItems: 'center', justifyContent: 'center' },
   content: { padding: spacing.lg, paddingBottom: 96 },
   empty: {
@@ -493,7 +493,6 @@ const styles = StyleSheet.create({
     color: darkColors.muted,
     marginTop: 2,
   },
-  divider: { height: 1, backgroundColor: darkColors.border },
 
   logoPlate: {
     width: 56,
