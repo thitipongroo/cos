@@ -12,6 +12,7 @@ import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useT } from '../../i18n';
+import { darkScreen } from '../../theme/screenStyles';
 import {
   darkColors,
   fontFamily,
@@ -29,13 +30,13 @@ export default function PermissionSuccessScreen(): React.JSX.Element {
   const name = typeof params.display_name === 'string' ? params.display_name : '';
 
   return (
-    <View style={styles.root} testID="permission-success">
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+    <View style={darkScreen.root} testID="permission-success">
+      <ScrollView style={darkScreen.fill} contentContainerStyle={darkScreen.content}>
         <View style={styles.hero}>
-          <View style={styles.checkCircle}>
+          <View style={darkScreen.checkCircle}>
             <MaterialIcons name="check-circle" size={48} color={darkColors.success} />
           </View>
-          <Text style={styles.heading}>{t('permissionSuccess.heading')}</Text>
+          <Text style={darkScreen.heading}>{t('permissionSuccess.heading')}</Text>
           <View style={styles.accentLine} />
           <Text style={styles.body}>
             {name !== ''
@@ -50,18 +51,18 @@ export default function PermissionSuccessScreen(): React.JSX.Element {
             <MaterialIcons name="psychology" size={18} color={darkColors.cyan} />
             <Text style={styles.aiTitle}>{t('permissionSuccess.aiTitle')}</Text>
           </View>
-          <Text style={styles.aiBody}>{t('permissionSuccess.aiBody')}</Text>
+          <Text style={darkScreen.aiBody}>{t('permissionSuccess.aiBody')}</Text>
         </View>
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={darkScreen.footer}>
         <Pressable
-          style={styles.primaryBtn}
+          style={darkScreen.primaryBtn}
           onPress={() => router.replace('/users')}
           testID="perm-success-users"
           accessibilityRole="button"
         >
-          <Text style={styles.primaryText}>{t('permissionSuccess.backToUsers')}</Text>
+          <Text style={darkScreen.primaryText}>{t('permissionSuccess.backToUsers')}</Text>
           <MaterialIcons name="arrow-forward" size={20} color={darkColors.onPrimary} />
         </Pressable>
         <Pressable
@@ -76,7 +77,7 @@ export default function PermissionSuccessScreen(): React.JSX.Element {
           accessibilityRole="button"
         >
           <MaterialIcons name="person" size={20} color={darkColors.text} />
-          <Text style={styles.secondaryText}>{t('permissionSuccess.viewProfile')}</Text>
+          <Text style={darkScreen.secondaryText}>{t('permissionSuccess.viewProfile')}</Text>
         </Pressable>
       </View>
     </View>
@@ -84,30 +85,7 @@ export default function PermissionSuccessScreen(): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: darkColors.bg },
-  scroll: { flex: 1 },
-  content: { padding: spacing.lg, paddingBottom: spacing.xl, gap: spacing.md },
-
   hero: { alignItems: 'center', marginTop: spacing.sm, marginBottom: spacing.md },
-  checkCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: `${darkColors.success}1A`,
-    borderWidth: 1,
-    borderColor: `${darkColors.success}4D`,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.md,
-  },
-  heading: {
-    fontFamily: fontFamily.bold,
-    fontSize: typography.hero.fontSize,
-    textTransform: 'uppercase',
-    color: darkColors.text,
-    textAlign: 'center',
-    marginBottom: spacing.sm,
-  },
   accentLine: {
     width: 48,
     height: 4,
@@ -138,36 +116,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
     color: darkColors.cyan,
   },
-  aiBody: {
-    fontFamily: fontFamily.regular,
-    fontSize: 13,
-    lineHeight: 19,
-    color: darkColors.muted,
-  },
 
-  footer: {
-    padding: spacing.lg,
-    gap: spacing.sm,
-    backgroundColor: darkColors.surface,
-    borderTopWidth: 1,
-    borderTopColor: darkColors.border,
-  },
-  primaryBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    height: touchTarget.primaryButton + 8,
-    borderRadius: radius.md,
-    backgroundColor: darkColors.primary,
-  },
-  primaryText: {
-    fontFamily: fontFamily.bold,
-    fontSize: typography.label.fontSize,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    color: darkColors.onPrimary,
-  },
   secondaryBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -177,12 +126,5 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: 2,
     borderColor: darkColors.border,
-  },
-  secondaryText: {
-    fontFamily: fontFamily.bold,
-    fontSize: typography.label.fontSize,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    color: darkColors.text,
   },
 });

@@ -37,11 +37,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useT } from '../../i18n';
-import { darkColors, fontFamily, spacing, typography, touchTarget } from '../../theme/tokens';
+import { darkColors, fontFamily, spacing } from '../../theme/tokens';
 import { paletteFor } from '../../theme/palette';
 import { PrivacyPolicyDocument } from '../../components/PrivacyPolicyDocument';
 import { downloadPolicy } from '../../lib/legalDownload';
 import { API_BASE_URL } from '../../api/client';
+import { darkScreen } from '../../theme/screenStyles';
 
 const DARK = paletteFor('dark');
 
@@ -99,19 +100,19 @@ export default function PrivacyPolicyScreen(): React.JSX.Element {
   };
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
+    <View style={[darkScreen.root, { paddingTop: insets.top }]}>
       {/* Top app bar — back, title, and the encrypted-transport marker from the mockup. */}
-      <View style={styles.header}>
+      <View style={darkScreen.header}>
         <Pressable
           testID="privacy-policy-back"
           accessibilityRole="button"
           accessibilityLabel={t('privacy.policy.back')}
           onPress={() => router.back()}
-          style={styles.backButton}
+          style={darkScreen.backButton}
         >
           <MaterialIcons name="arrow-back" size={24} color={darkColors.primary} />
         </Pressable>
-        <Text style={styles.headerTitle} numberOfLines={1}>
+        <Text style={darkScreen.headerTitle} numberOfLines={1}>
           {t('privacy.policy.title')}
         </Text>
         <View style={styles.headerBadge}>
@@ -139,34 +140,8 @@ export default function PrivacyPolicyScreen(): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: darkColors.bg },
-
-  header: {
-    height: touchTarget.listItem,
-    paddingHorizontal: spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    borderBottomWidth: 1,
-    borderBottomColor: darkColors.border,
-    backgroundColor: darkColors.surface,
-  },
-  backButton: {
-    width: touchTarget.iconButton,
-    height: touchTarget.iconButton,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   // Uppercased here rather than in the i18n value (PO 2026-08-03) so the stored string stays natural
   // and reusable. Safe for both shipped locales: Thai has no case, so `th` renders unchanged.
-  headerTitle: {
-    flex: 1,
-    color: darkColors.text,
-    fontFamily: fontFamily.semibold,
-    fontSize: typography.title.fontSize,
-    lineHeight: typography.title.lineHeight,
-    textTransform: 'uppercase',
-  },
   headerBadge: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs / 2 },
   headerBadgeText: {
     color: darkColors.muted,

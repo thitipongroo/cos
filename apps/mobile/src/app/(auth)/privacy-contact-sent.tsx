@@ -28,6 +28,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useI18n } from '../../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
 import { paletteFor } from '../../theme/palette';
+import { darkScreen } from '../../theme/screenStyles';
 
 const DARK = paletteFor('dark');
 
@@ -50,7 +51,7 @@ export default function PrivacyContactSentScreen(): React.JSX.Element {
 
       <ScrollView
         testID="privacy-contact-sent"
-        style={styles.flex}
+        style={darkScreen.fill}
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.xl }]}
       >
         <View style={styles.successRing}>
@@ -73,7 +74,7 @@ export default function PrivacyContactSentScreen(): React.JSX.Element {
             {reference}
           </Text>
           <View style={styles.divider} />
-          <Text style={styles.cardBody}>{t('privacy.contactSent.referenceHelp')}</Text>
+          <Text style={darkScreen.cardBody}>{t('privacy.contactSent.referenceHelp')}</Text>
         </View>
 
         {/* What happens next — stated as the platform's own commitment, and naming who the statutory
@@ -83,7 +84,7 @@ export default function PrivacyContactSentScreen(): React.JSX.Element {
             <MaterialIcons name="info" size={20} color={DARK.accent} />
             <Text style={styles.noteTitle}>{t('privacy.contactSent.nextTitle')}</Text>
           </View>
-          <Text style={styles.cardBody}>{t('privacy.contactSent.nextBody')}</Text>
+          <Text style={darkScreen.cardBody}>{t('privacy.contactSent.nextBody')}</Text>
         </View>
 
         {receivedAt !== '' ? (
@@ -109,7 +110,6 @@ export default function PrivacyContactSentScreen(): React.JSX.Element {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: DARK.bg },
-  flex: { flex: 1 },
 
   header: {
     height: touchTarget.listItem,
@@ -205,12 +205,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   divider: { height: 1, backgroundColor: DARK.border, marginVertical: spacing.xs },
-  cardBody: {
-    color: DARK.muted,
-    fontFamily: fontFamily.regular,
-    fontSize: typography.label.fontSize,
-    lineHeight: typography.label.lineHeight * 1.15,
-  },
 
   noteHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   noteTitle: {

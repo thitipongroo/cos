@@ -28,6 +28,7 @@ import {
 } from '../../theme/tokens';
 import { formatNationalPhone } from '@cos/ui-logic';
 import { shortId } from '../../lib/shortId';
+import { darkScreen } from '../../theme/screenStyles';
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/);
@@ -109,8 +110,8 @@ export default function UserProfileScreen(): React.JSX.Element {
   }, [userId]);
 
   return (
-    <View style={styles.root} testID="user-profile">
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+    <View style={darkScreen.root} testID="user-profile">
+      <ScrollView style={darkScreen.fill} contentContainerStyle={styles.content}>
         {/* Hero */}
         <View style={styles.hero}>
           <View style={styles.avatarWrap}>
@@ -161,7 +162,7 @@ export default function UserProfileScreen(): React.JSX.Element {
 
         {/* AI Analytics Engine — shell only; the value is the real last-seen, no fabricated confidence. */}
         <View style={styles.aiCard}>
-          <View style={styles.aiHead}>
+          <View style={darkScreen.aiHead}>
             <MaterialIcons name="psychology" size={16} color={darkColors.cyan} />
             <Text style={styles.aiTitle}>{t('userProfile.aiTitle')}</Text>
           </View>
@@ -229,9 +230,9 @@ export default function UserProfileScreen(): React.JSX.Element {
       </ScrollView>
 
       {/* Footer actions (mockup): Edit permissions → multi-role editor, Reset password → reset flow. */}
-      <View style={styles.footer}>
+      <View style={darkScreen.footer}>
         <Pressable
-          style={styles.primaryBtn}
+          style={darkScreen.primaryBtn}
           onPress={() =>
             router.push({
               pathname: '/edit-permission',
@@ -271,8 +272,6 @@ export default function UserProfileScreen(): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: darkColors.bg },
-  scroll: { flex: 1 },
   content: { padding: spacing.lg, paddingBottom: spacing.md, gap: spacing.md },
 
   hero: {
@@ -351,7 +350,6 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     gap: 2,
   },
-  aiHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   aiTitle: {
     fontFamily: fontFamily.bold,
     fontSize: typography.label.fontSize,
@@ -439,22 +437,6 @@ const styles = StyleSheet.create({
   },
   projectBadgeText: { fontFamily: fontFamily.bold, fontSize: 10, letterSpacing: 0.5 },
 
-  footer: {
-    padding: spacing.lg,
-    gap: spacing.sm,
-    backgroundColor: darkColors.surface,
-    borderTopWidth: 1,
-    borderTopColor: darkColors.border,
-  },
-  primaryBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    height: touchTarget.primaryButton + 8,
-    borderRadius: radius.md,
-    backgroundColor: darkColors.primary,
-  },
   primaryText: {
     fontFamily: fontFamily.bold,
     fontSize: typography.label.fontSize,

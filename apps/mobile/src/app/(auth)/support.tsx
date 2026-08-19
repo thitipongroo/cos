@@ -45,14 +45,8 @@ import { useT } from '../../i18n';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { SupportCenterDocument, useBackendHealth } from '../../components/SupportCenterDocument';
 import { paletteFor } from '../../theme/palette';
-import {
-  darkColors,
-  fontFamily,
-  radius,
-  spacing,
-  touchTarget,
-  typography,
-} from '../../theme/tokens';
+import { darkScreen } from '../../theme/screenStyles';
+import { darkColors, fontFamily, radius, spacing, typography } from '../../theme/tokens';
 
 const DARK = paletteFor('dark');
 
@@ -73,22 +67,22 @@ export default function SupportScreen(): React.JSX.Element {
       : t('support.assistant.online');
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
+    <View style={[darkScreen.root, { paddingTop: insets.top }]}>
       {/* Top app bar — back + SUPPORT, with the connection mark and the build on the right. The
           version is the REAL one (app.json, the way the login footer reads it); the mockup's "v2.4.8"
           is a drawing and matches no build of this app. The (app) twin has no bar of its own —
           <TopBar /> supplies one there. */}
-      <View style={styles.header}>
+      <View style={darkScreen.header}>
         <Pressable
           testID="support-back"
           accessibilityRole="button"
           accessibilityLabel={t('support.back')}
           onPress={() => router.back()}
-          style={styles.backButton}
+          style={darkScreen.backButton}
         >
           <MaterialIcons name="arrow-back" size={24} color={darkColors.primary} />
         </Pressable>
-        <Text style={styles.headerTitle} numberOfLines={1}>
+        <Text style={darkScreen.headerTitle} numberOfLines={1}>
           {t('support.title')}
         </Text>
         <View style={styles.headerMeta}>
@@ -133,34 +127,8 @@ export default function SupportScreen(): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: darkColors.bg },
-
-  header: {
-    height: touchTarget.listItem,
-    paddingHorizontal: spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    borderBottomWidth: 1,
-    borderBottomColor: darkColors.border,
-    backgroundColor: darkColors.surface,
-  },
-  backButton: {
-    width: touchTarget.iconButton,
-    height: touchTarget.iconButton,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   // Uppercased in the style rather than in the i18n value (PO 2026-08-03), so the stored string stays
   // natural and reusable; Thai has no case, so `th` renders unchanged.
-  headerTitle: {
-    flex: 1,
-    color: darkColors.text,
-    fontFamily: fontFamily.semibold,
-    fontSize: typography.title.fontSize,
-    lineHeight: typography.title.lineHeight,
-    textTransform: 'uppercase',
-  },
   headerMeta: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs / 2 },
   headerVersion: {
     color: darkColors.muted,

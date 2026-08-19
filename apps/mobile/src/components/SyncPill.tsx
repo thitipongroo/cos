@@ -8,39 +8,14 @@
 // 02_quick_action_button/01_quick_action_menu correctly shows).
 
 import { MaterialIcons } from '@expo/vector-icons';
-import { useSyncStatus } from '../hooks/useSyncStatus';
-import { usePendingCount } from '../hooks/usePendingCount';
-import { useT } from '../i18n';
-import { darkColors } from '../theme/tokens';
-
-type IconName = keyof typeof MaterialIcons.glyphMap;
+import { useSyncPillView } from '../hooks/useSyncPillView';
 
 export function SyncPill(): React.JSX.Element {
-  const status = useSyncStatus();
-  const pending = usePendingCount();
-  const t = useT();
-
-  // NO SEPARATE OFFLINE STATE, deliberately (product-owner decision 2026-08-06). Losing the network
-  // is not a state of its own here — it is what PRODUCES the pending one: every write made offline
-  // enqueues, `pendingCount` rises, and the pill already says `cloud-upload` with the count. A
-  // distinct "offline" branch would be a second name for the same fact, and offline with an empty
-  // queue genuinely is synced — nothing is waiting.
-  const view: { icon: IconName; color: string; label: string } =
-    status === 'error'
-      ? { icon: 'sync-problem', color: darkColors.danger, label: t('sync.pill.error') }
-      : status === 'syncing'
-        ? { icon: 'sync', color: darkColors.syncing, label: t('sync.pill.syncing') }
-        : pending > 0
-          ? {
-              icon: 'cloud-upload',
-              color: darkColors.syncing,
-              label: t('sync.pill.pending', { count: pending }),
-            }
-          : // `cloud-done`, not `check-circle` (product-owner decision 2026-08-06). The drawer already
-            // drew synced this way, and two glyphs for one state taught the holder that the tick and
-            // the cloud meant different things. A cloud also says WHERE the work is — on the server —
-            // which is the question a check mark leaves open.
-            { icon: 'cloud-done', color: darkColors.success, label: t('sync.pill.synced') };
+  // `cloud-done`, not `check-circle` (product-owner decision 2026-08-06). The drawer already drew
+  // synced this way, and two glyphs for one state taught the holder that the tick and the cloud
+  // meant different things. A cloud also says WHERE the work is — on the server — which is the
+  // question a check mark leaves open. The four states and their precedence come from the hook.
+  const view = useSyncPillView('cloud-done');
 
   return (
     <MaterialIcons

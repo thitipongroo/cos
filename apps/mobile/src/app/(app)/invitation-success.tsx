@@ -23,6 +23,7 @@ import {
   typography,
 } from '../../theme/tokens';
 import { formatRole } from '../../lib/formatRole';
+import { darkScreen } from '../../theme/screenStyles';
 
 export default function InvitationSuccessScreen(): React.JSX.Element {
   const t = useT();
@@ -39,14 +40,14 @@ export default function InvitationSuccessScreen(): React.JSX.Element {
   const projects = typeof params.projects === 'string' ? params.projects : '';
 
   return (
-    <View style={styles.root} testID="invitation-success">
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+    <View style={darkScreen.root} testID="invitation-success">
+      <ScrollView style={darkScreen.fill} contentContainerStyle={darkScreen.content}>
         {/* Success indicator */}
         <View style={styles.hero}>
-          <View style={styles.checkCircle}>
+          <View style={darkScreen.checkCircle}>
             <MaterialIcons name="check-circle" size={48} color={darkColors.success} />
           </View>
-          <Text style={styles.heading}>{t('invitationSuccess.heading')}</Text>
+          <Text style={darkScreen.heading}>{t('invitationSuccess.heading')}</Text>
           <View style={styles.accentLine} />
         </View>
 
@@ -101,14 +102,14 @@ export default function InvitationSuccessScreen(): React.JSX.Element {
       </ScrollView>
 
       {/* Footer actions */}
-      <View style={styles.footer}>
+      <View style={darkScreen.footer}>
         <Pressable
           style={styles.secondaryBtn}
           onPress={() => router.replace('/invite-user')}
           testID="invitation-success-invite-another"
           accessibilityRole="button"
         >
-          <Text style={styles.secondaryText}>{t('invitationSuccess.inviteAnother')}</Text>
+          <Text style={darkScreen.secondaryText}>{t('invitationSuccess.inviteAnother')}</Text>
         </Pressable>
         <Pressable
           style={styles.primaryBtn}
@@ -116,7 +117,7 @@ export default function InvitationSuccessScreen(): React.JSX.Element {
           testID="invitation-success-dashboard"
           accessibilityRole="button"
         >
-          <Text style={styles.primaryText}>{t('invitationSuccess.goToDashboard')}</Text>
+          <Text style={darkScreen.primaryText}>{t('invitationSuccess.goToDashboard')}</Text>
         </Pressable>
       </View>
     </View>
@@ -124,30 +125,7 @@ export default function InvitationSuccessScreen(): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: darkColors.bg },
-  scroll: { flex: 1 },
-  content: { padding: spacing.lg, paddingBottom: spacing.xl, gap: spacing.md },
-
   hero: { alignItems: 'center', marginTop: spacing.sm, marginBottom: spacing.md },
-  checkCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: `${darkColors.success}1A`,
-    borderWidth: 1,
-    borderColor: `${darkColors.success}4D`,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.md,
-  },
-  heading: {
-    fontFamily: fontFamily.bold,
-    fontSize: typography.hero.fontSize,
-    textTransform: 'uppercase',
-    color: darkColors.text,
-    textAlign: 'center',
-    marginBottom: spacing.sm,
-  },
   accentLine: {
     width: 48,
     height: 4,
@@ -234,13 +212,6 @@ const styles = StyleSheet.create({
 
   // In normal flow below the ScrollView (not absolute): this is a fixed-height terminal screen whose
   // content never scrolls, so an absolute footer only risked overlapping the last row (Status).
-  footer: {
-    padding: spacing.lg,
-    gap: spacing.sm,
-    backgroundColor: darkColors.surface,
-    borderTopWidth: 1,
-    borderTopColor: darkColors.border,
-  },
   secondaryBtn: {
     height: touchTarget.primaryButton + 8,
     alignItems: 'center',
@@ -249,25 +220,11 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: darkColors.border,
   },
-  secondaryText: {
-    fontFamily: fontFamily.bold,
-    fontSize: typography.label.fontSize,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    color: darkColors.text,
-  },
   primaryBtn: {
     height: touchTarget.primaryButton + 8,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.md,
     backgroundColor: darkColors.primary,
-  },
-  primaryText: {
-    fontFamily: fontFamily.bold,
-    fontSize: typography.label.fontSize,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    color: darkColors.onPrimary,
   },
 });

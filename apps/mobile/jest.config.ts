@@ -94,6 +94,9 @@ const config: Config = {
     'src/hooks/useSyncStatus.ts',
     'src/hooks/usePendingCount.ts',
     'src/hooks/useConflicts.ts',
+    // Added 2026-08-20: the sync indicators' state precedence moved out of two .tsx copies into
+    // this hook, which puts it inside the gate's reach for the first time.
+    'src/hooks/useSyncPillView.ts',
     '!src/**/*.spec.ts',
   ],
   coveragePathIgnorePatterns: ['/node_modules/', '/src/__mocks__/', '\\.spec\\.ts$'],

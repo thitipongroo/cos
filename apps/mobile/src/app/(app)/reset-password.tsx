@@ -33,6 +33,7 @@ import {
 } from '../../theme/tokens';
 import { formatRole } from '../../lib/formatRole';
 import { shortId } from '../../lib/shortId';
+import { darkScreen } from '../../theme/screenStyles';
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/);
@@ -101,8 +102,8 @@ export default function ResetPasswordScreen(): React.JSX.Element {
   };
 
   return (
-    <View style={styles.root} testID="reset-password">
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+    <View style={darkScreen.root} testID="reset-password">
+      <ScrollView style={darkScreen.fill} contentContainerStyle={styles.content}>
         {/* Target user card (compact, horizontal) */}
         <View style={styles.userCard}>
           <View style={styles.avatarWrap}>
@@ -137,11 +138,11 @@ export default function ResetPasswordScreen(): React.JSX.Element {
 
         {/* AI Security Check — honest shell (no fabricated confidence score). */}
         <View style={styles.aiCard}>
-          <View style={styles.aiHead}>
+          <View style={darkScreen.aiHead}>
             <MaterialIcons name="verified-user" size={18} color={darkColors.cyan} />
             <Text style={styles.aiTitle}>{t('resetPassword.aiTitle')}</Text>
           </View>
-          <Text style={styles.aiBody}>{t('resetPassword.aiBody')}</Text>
+          <Text style={darkScreen.aiBody}>{t('resetPassword.aiBody')}</Text>
         </View>
 
         {/* Delivery method */}
@@ -235,9 +236,9 @@ export default function ResetPasswordScreen(): React.JSX.Element {
         </View>
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={darkScreen.footer}>
         <Pressable
-          style={[styles.primaryBtn, busy && styles.btnBusy]}
+          style={[darkScreen.primaryBtn, busy && styles.btnBusy]}
           onPress={onConfirm}
           disabled={busy}
           testID="reset-confirm"
@@ -248,7 +249,7 @@ export default function ResetPasswordScreen(): React.JSX.Element {
           ) : (
             <>
               <MaterialIcons name="lock-reset" size={20} color={darkColors.onPrimary} />
-              <Text style={styles.primaryText}>{t('resetPassword.confirm')}</Text>
+              <Text style={darkScreen.primaryText}>{t('resetPassword.confirm')}</Text>
             </>
           )}
         </Pressable>
@@ -259,7 +260,7 @@ export default function ResetPasswordScreen(): React.JSX.Element {
           testID="reset-cancel"
           accessibilityRole="button"
         >
-          <Text style={styles.secondaryText}>{t('resetPassword.cancel')}</Text>
+          <Text style={darkScreen.secondaryText}>{t('resetPassword.cancel')}</Text>
         </Pressable>
       </View>
     </View>
@@ -267,8 +268,6 @@ export default function ResetPasswordScreen(): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: darkColors.bg },
-  scroll: { flex: 1 },
   content: { padding: spacing.lg, paddingBottom: spacing.md, gap: spacing.sm },
 
   userCard: {
@@ -346,18 +345,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     gap: spacing.xs,
   },
-  aiHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   aiTitle: {
     fontFamily: fontFamily.bold,
     fontSize: typography.label.fontSize,
     letterSpacing: 0.8,
     color: darkColors.cyan,
-  },
-  aiBody: {
-    fontFamily: fontFamily.regular,
-    fontSize: 13,
-    lineHeight: 19,
-    color: darkColors.muted,
   },
 
   sectionLabel: {
@@ -436,13 +428,6 @@ const styles = StyleSheet.create({
     borderColor: darkColors.border,
   },
 
-  footer: {
-    padding: spacing.lg,
-    gap: spacing.sm,
-    backgroundColor: darkColors.surface,
-    borderTopWidth: 1,
-    borderTopColor: darkColors.border,
-  },
   meta: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -465,23 +450,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
     color: darkColors.warning,
   },
-  primaryBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    height: touchTarget.primaryButton + 8,
-    borderRadius: radius.md,
-    backgroundColor: darkColors.primary,
-  },
   btnBusy: { opacity: 0.7 },
-  primaryText: {
-    fontFamily: fontFamily.bold,
-    fontSize: typography.label.fontSize,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    color: darkColors.onPrimary,
-  },
   secondaryBtn: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -489,12 +458,5 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: darkColors.border,
-  },
-  secondaryText: {
-    fontFamily: fontFamily.bold,
-    fontSize: typography.label.fontSize,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    color: darkColors.text,
   },
 });

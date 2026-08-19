@@ -8,7 +8,7 @@
 // `StyleSheet.create({ … })` for the screen's own variants. Values mirror the §32.7 mobile tokens.
 
 import { StyleSheet } from 'react-native';
-import { colors, fontFamily, spacing, typography } from './tokens';
+import { colors, darkColors, fontFamily, spacing, touchTarget, typography } from './tokens';
 import type { Palette } from './palette';
 import { radius } from '../theme/tokens';
 
@@ -176,3 +176,130 @@ export const makeScreenStyles = (p: Palette) =>
       color: p.text,
     },
   });
+
+// ── Pinned-dark screen chrome ────────────────────────────────────────────────
+//
+// The pre-auth / success screens are pinned to the dark palette regardless of theme (§32.7), and
+// each of them had re-declared the same chrome: the page root, the scroll body, the back button,
+// the sticky header, the primary CTA and its label, the footer bar, the success ring, the AI
+// footnote. jscpd counted 29 clone blocks across that cluster.
+//
+// Every entry below is a value that was byte-identical in at least THREE of those screens — nothing
+// here was normalised into agreement. Keys that genuinely differ per screen (each screen's own
+// `content` padding, `card`, `row`, chips, …) stay local, so adopting this object cannot change a
+// screen's appearance. `cardBody` was written as `DARK.muted` in the screens that use
+// `paletteFor('dark')`; that accessor returns `darkColors.muted` verbatim (see palette.ts), so the
+// value is the same one, reached by a different name.
+export const darkScreen = StyleSheet.create({
+  // Page root of a pinned-dark screen.
+  root: { flex: 1, backgroundColor: darkColors.bg },
+
+  // Fills the remaining space — the scroll body (`scroll`) and the keyboard-avoiding wrapper
+  // (`flex`) were both this exact value.
+  fill: { flex: 1 },
+
+  // Sticky top bar with a hairline under it.
+  header: {
+    height: touchTarget.listItem,
+    paddingHorizontal: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: darkColors.border,
+    backgroundColor: darkColors.surface,
+  },
+  // Uppercased title inside `header`, taking the space left by the back button.
+  headerTitle: {
+    flex: 1,
+    color: darkColors.text,
+    fontFamily: fontFamily.semibold,
+    fontSize: typography.title.fontSize,
+    lineHeight: typography.title.lineHeight,
+    textTransform: 'uppercase',
+  },
+  // 44×44 tap target for the header's leading icon (WCAG AAA).
+  backButton: {
+    width: touchTarget.iconButton,
+    height: touchTarget.iconButton,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // Body padding of a centred success / consent screen.
+  content: { padding: spacing.lg, paddingBottom: spacing.xl, gap: spacing.md },
+
+  // Centred hero heading of a success screen.
+  heading: {
+    fontFamily: fontFamily.bold,
+    fontSize: typography.hero.fontSize,
+    textTransform: 'uppercase',
+    color: darkColors.text,
+    textAlign: 'center',
+    marginBottom: spacing.sm,
+  },
+  // Long-form body copy inside a card.
+  cardBody: {
+    color: darkColors.muted,
+    fontFamily: fontFamily.regular,
+    fontSize: typography.label.fontSize,
+    lineHeight: typography.label.lineHeight * 1.15,
+  },
+
+  // The tinted ring the success tick sits in.
+  checkCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: `${darkColors.success}1A`,
+    borderWidth: 1,
+    borderColor: `${darkColors.success}4D`,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.md,
+  },
+
+  // Bottom action bar, separated by a hairline.
+  footer: {
+    padding: spacing.lg,
+    gap: spacing.sm,
+    backgroundColor: darkColors.surface,
+    borderTopWidth: 1,
+    borderTopColor: darkColors.border,
+  },
+  // Filled CTA in `footer` (52px = touchTarget.primaryButton + 8, the recommended height).
+  primaryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    height: touchTarget.primaryButton + 8,
+    borderRadius: radius.md,
+    backgroundColor: darkColors.primary,
+  },
+  // Label on the filled CTA.
+  primaryText: {
+    fontFamily: fontFamily.bold,
+    fontSize: typography.label.fontSize,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: darkColors.onPrimary,
+  },
+  // Label on the outlined companion action next to it.
+  secondaryText: {
+    fontFamily: fontFamily.bold,
+    fontSize: typography.label.fontSize,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: darkColors.text,
+  },
+
+  // The cyan AI footnote: icon + caption on one line, explanation under it.
+  aiHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  aiBody: {
+    fontFamily: fontFamily.regular,
+    fontSize: 13,
+    lineHeight: 19,
+    color: darkColors.muted,
+  },
+});

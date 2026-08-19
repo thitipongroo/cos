@@ -75,6 +75,7 @@ import {
 import { downloadTerms } from '../../lib/legalDownload';
 import { API_BASE_URL } from '../../api/client';
 import safetyPhoto from '../../../assets/terms-safety.jpg';
+import { darkScreen } from '../../theme/screenStyles';
 
 // Effective version + date of the terms below (PO decision 2026-08-09: first published edition).
 // Bump BOTH whenever the copy in i18n changes — they are the document's identity, not decoration.
@@ -179,26 +180,26 @@ export default function TermsOfUseScreen(): React.JSX.Element {
   };
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
+    <View style={[darkScreen.root, { paddingTop: insets.top }]}>
       {/* Top app bar — back + the screen's title, which is where the drawing puts it. */}
-      <View style={styles.header}>
+      <View style={darkScreen.header}>
         <Pressable
           testID="terms-of-use-back"
           accessibilityRole="button"
           accessibilityLabel={t('terms.back')}
           onPress={() => router.back()}
-          style={styles.backButton}
+          style={darkScreen.backButton}
         >
           <MaterialIcons name="arrow-back" size={24} color={darkColors.primary} />
         </Pressable>
-        <Text style={styles.headerTitle} numberOfLines={1}>
+        <Text style={darkScreen.headerTitle} numberOfLines={1}>
           {t('terms.title')}
         </Text>
       </View>
 
       <ScrollView
         testID="terms-of-use"
-        style={styles.scroll}
+        style={darkScreen.fill}
         contentContainerStyle={styles.content}
       >
         {/* No heading here: it is in the bar, and the drawing opens the canvas on this paragraph.
@@ -356,36 +357,9 @@ export default function TermsOfUseScreen(): React.JSX.Element {
 const BANNER_HEIGHT = 160;
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: darkColors.bg },
-
-  header: {
-    height: touchTarget.listItem,
-    paddingHorizontal: spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    borderBottomWidth: 1,
-    borderBottomColor: darkColors.border,
-    backgroundColor: darkColors.surface,
-  },
-  backButton: {
-    width: touchTarget.iconButton,
-    height: touchTarget.iconButton,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   // Uppercased here rather than in the i18n value, as on every other pre-auth bar: the stored string
   // stays natural, and Thai has no case so `th` renders unchanged.
-  headerTitle: {
-    flex: 1,
-    color: darkColors.text,
-    fontFamily: fontFamily.semibold,
-    fontSize: typography.title.fontSize,
-    lineHeight: typography.title.lineHeight,
-    textTransform: 'uppercase',
-  },
 
-  scroll: { flex: 1 },
   content: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.xl },
 
   intro: {

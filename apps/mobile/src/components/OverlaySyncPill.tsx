@@ -16,30 +16,14 @@
 
 import { View, Text, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useSyncStatus } from '../hooks/useSyncStatus';
-import { usePendingCount } from '../hooks/usePendingCount';
-import { useT } from '../i18n';
-import { darkColors, fontFamily, radius, spacing } from '../theme/tokens';
-
-type IconName = keyof typeof MaterialIcons.glyphMap;
+import { useSyncPillView } from '../hooks/useSyncPillView';
+import { fontFamily, radius, spacing } from '../theme/tokens';
 
 export function OverlaySyncPill({ testID = 'overlay-sync-pill' }: { testID?: string }) {
-  const status = useSyncStatus();
-  const pending = usePendingCount();
-  const t = useT();
-
-  const v: { icon: IconName; color: string; label: string } =
-    status === 'error'
-      ? { icon: 'sync-problem', color: darkColors.danger, label: t('sync.pill.error') }
-      : status === 'syncing'
-        ? { icon: 'sync', color: darkColors.syncing, label: t('sync.pill.syncing') }
-        : pending > 0
-          ? {
-              icon: 'cloud-upload',
-              color: darkColors.syncing,
-              label: t('sync.pill.pending', { count: pending }),
-            }
-          : { icon: 'check-circle', color: darkColors.success, label: t('sync.pill.synced') };
+  // `check-circle`, because the overlay's mockup draws `✓ SYNCED`; the top-bar pill draws
+  // `cloud-done` on PO 2026-08-06. See useSyncPillView's `syncedIcon` — the two do not agree, and
+  // that is recorded there rather than settled here.
+  const v = useSyncPillView('check-circle');
 
   return (
     // `1A` is 10% alpha — the pill is a tint OF its own state colour, so one rule covers all four.

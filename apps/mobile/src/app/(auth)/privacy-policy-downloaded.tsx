@@ -42,6 +42,7 @@ import { paletteFor } from '../../theme/palette';
 import { policyPdfUrl } from '../../lib/legalDownload';
 import { formatBytes } from '../../lib/formatBytes';
 import { API_BASE_URL } from '../../api/client';
+import { darkScreen } from '../../theme/screenStyles';
 
 const DARK = paletteFor('dark');
 
@@ -75,7 +76,7 @@ export default function PrivacyPolicyDownloadedScreen(): React.JSX.Element {
 
       <ScrollView
         testID="privacy-policy-downloaded"
-        style={styles.flex}
+        style={darkScreen.fill}
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.xl }]}
       >
         <View style={[styles.ring, verified ? styles.ringOk : styles.ringWarn]}>
@@ -116,7 +117,7 @@ export default function PrivacyPolicyDownloadedScreen(): React.JSX.Element {
             />
             <Text style={styles.noteTitle}>{t('privacy.downloaded.integrityTitle')}</Text>
           </View>
-          <Text style={styles.cardBody}>
+          <Text style={darkScreen.cardBody}>
             {verified
               ? t('privacy.downloaded.integrityOk')
               : t('privacy.downloaded.integrityMismatch')}
@@ -127,7 +128,7 @@ export default function PrivacyPolicyDownloadedScreen(): React.JSX.Element {
           {downloadedAt !== '' ? (
             <>
               <View style={styles.divider} />
-              <Text style={styles.cardBody}>
+              <Text style={darkScreen.cardBody}>
                 {t('privacy.downloaded.at', { date: formatDate(downloadedAt) })}
               </Text>
             </>
@@ -164,7 +165,6 @@ const FILE_PLATE = 48;
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: DARK.bg },
-  flex: { flex: 1 },
 
   header: {
     height: touchTarget.listItem,
@@ -256,12 +256,6 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.semibold,
     fontSize: typography.caption.fontSize,
     lineHeight: typography.caption.lineHeight,
-  },
-  cardBody: {
-    color: DARK.muted,
-    fontFamily: fontFamily.regular,
-    fontSize: typography.label.fontSize,
-    lineHeight: typography.label.lineHeight * 1.15,
   },
   // Wraps rather than truncating: a digest with an ellipsis in the middle cannot be compared against
   // anything, which is the only thing a reader would want it for.

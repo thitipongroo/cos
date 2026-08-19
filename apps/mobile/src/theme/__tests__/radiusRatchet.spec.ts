@@ -27,9 +27,11 @@ const SRC = join(__dirname, '..', '..');
  * became the 999 capsule marker — its diameter is a prop now, and a fixed radius stops being a
  * circle as soon as a caller passes anything but 56. 27 → 26 on 2026-08-17: <LoadingState />'s
  * `iconPlate` style, whose `borderRadius: 28` was the plate's own literal, was deleted when the
- * plate became a <SkeletonBar> that takes its radius as a prop. Lower this when literals are
- * removed; never raise it. */
-const CEILING = 26;
+ * plate became a <SkeletonBar> that takes its radius as a prop. 26 -> 24 on 2026-08-20: the
+ * pinned-dark success screens each carried their own copy of the `checkCircle` ring
+ * (`borderRadius: 40`, half of an 80px circle); the four copies became one in
+ * `screenStyles.darkScreen`. Lower this when literals are removed; never raise it. */
+const CEILING = 24;
 
 function sourceFiles(dir: string): string[] {
   const out: string[] = [];

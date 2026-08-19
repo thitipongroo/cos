@@ -13,14 +13,8 @@ import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useT } from '../../i18n';
-import {
-  darkColors,
-  fontFamily,
-  radius,
-  spacing,
-  touchTarget,
-  typography,
-} from '../../theme/tokens';
+import { darkScreen } from '../../theme/screenStyles';
+import { darkColors, fontFamily, radius, spacing, typography } from '../../theme/tokens';
 
 export default function ResetPasswordEmailSuccessScreen(): React.JSX.Element {
   const t = useT();
@@ -31,13 +25,13 @@ export default function ResetPasswordEmailSuccessScreen(): React.JSX.Element {
   const email = str(params.email);
 
   return (
-    <View style={styles.root} testID="reset-password-email-success">
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+    <View style={darkScreen.root} testID="reset-password-email-success">
+      <ScrollView style={darkScreen.fill} contentContainerStyle={darkScreen.content}>
         <View style={styles.hero}>
-          <View style={styles.checkCircle}>
+          <View style={darkScreen.checkCircle}>
             <MaterialIcons name="mark-email-read" size={44} color={darkColors.success} />
           </View>
-          <Text style={styles.heading}>{t('resetLinkSent.heading')}</Text>
+          <Text style={darkScreen.heading}>{t('resetLinkSent.heading')}</Text>
           <View style={styles.accentLine} />
           <Text style={styles.body}>{t('resetLinkSent.body', { email: email || '—' })}</Text>
         </View>
@@ -53,12 +47,12 @@ export default function ResetPasswordEmailSuccessScreen(): React.JSX.Element {
 
       <View style={styles.footer}>
         <Pressable
-          style={styles.primaryBtn}
+          style={darkScreen.primaryBtn}
           onPress={() => router.replace('/users')}
           testID="reset-link-done"
           accessibilityRole="button"
         >
-          <Text style={styles.primaryText}>{t('resetLinkSent.returnToUsers')}</Text>
+          <Text style={darkScreen.primaryText}>{t('resetLinkSent.returnToUsers')}</Text>
           <MaterialIcons name="arrow-forward" size={20} color={darkColors.onPrimary} />
         </Pressable>
       </View>
@@ -67,30 +61,7 @@ export default function ResetPasswordEmailSuccessScreen(): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: darkColors.bg },
-  scroll: { flex: 1 },
-  content: { padding: spacing.lg, paddingBottom: spacing.xl, gap: spacing.md },
-
   hero: { alignItems: 'center', marginTop: spacing.sm, marginBottom: spacing.sm },
-  checkCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: `${darkColors.success}1A`,
-    borderWidth: 1,
-    borderColor: `${darkColors.success}4D`,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.md,
-  },
-  heading: {
-    fontFamily: fontFamily.bold,
-    fontSize: typography.hero.fontSize,
-    textTransform: 'uppercase',
-    color: darkColors.text,
-    textAlign: 'center',
-    marginBottom: spacing.sm,
-  },
   accentLine: {
     width: 48,
     height: 4,
@@ -134,21 +105,5 @@ const styles = StyleSheet.create({
     backgroundColor: darkColors.surface,
     borderTopWidth: 1,
     borderTopColor: darkColors.border,
-  },
-  primaryBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    height: touchTarget.primaryButton + 8,
-    borderRadius: radius.md,
-    backgroundColor: darkColors.primary,
-  },
-  primaryText: {
-    fontFamily: fontFamily.bold,
-    fontSize: typography.label.fontSize,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    color: darkColors.onPrimary,
   },
 });

@@ -34,6 +34,7 @@ import {
   typography,
 } from '../theme/tokens';
 import { paletteFor } from '../theme/palette';
+import { darkScreen } from '../theme/screenStyles';
 
 const DARK = paletteFor('dark');
 
@@ -102,7 +103,7 @@ export function PrivacyDetailScreen({
           accessibilityRole="button"
           accessibilityLabel={t('privacy.policy.back')}
           onPress={() => router.back()}
-          style={styles.backButton}
+          style={darkScreen.backButton}
         >
           <MaterialIcons name="arrow-back" size={24} color={darkColors.primary} />
         </Pressable>
@@ -113,7 +114,7 @@ export function PrivacyDetailScreen({
 
       <ScrollView
         testID={testID}
-        style={styles.scroll}
+        style={darkScreen.fill}
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.xl }]}
       >
         {heroIcon !== undefined ? (
@@ -144,7 +145,7 @@ export function PrivacyDetailScreen({
                   ) : null}
                 </View>
 
-                <Text style={styles.cardBody}>{t(`${ns}.cards.${card.id}.body`)}</Text>
+                <Text style={darkScreen.cardBody}>{t(`${ns}.cards.${card.id}.body`)}</Text>
 
                 {card.tags !== undefined ? (
                   <View style={styles.tagRow}>
@@ -195,12 +196,6 @@ const styles = StyleSheet.create({
     borderBottomColor: DARK.border,
     backgroundColor: DARK.surface,
   },
-  backButton: {
-    width: touchTarget.iconButton,
-    height: touchTarget.iconButton,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   // Uppercased here rather than in the i18n value, so the stored string stays natural and reusable —
   // the same call (auth)/privacy-policy.tsx makes. Thai has no case, so `th` renders unchanged.
   headerTitle: {
@@ -212,7 +207,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
 
-  scroll: { flex: 1 },
   content: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg },
 
   hero: {
@@ -272,12 +266,6 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.semibold,
     fontSize: typography.caption.fontSize,
     lineHeight: typography.caption.lineHeight,
-  },
-  cardBody: {
-    color: DARK.muted,
-    fontFamily: fontFamily.regular,
-    fontSize: typography.label.fontSize,
-    lineHeight: typography.label.lineHeight * 1.15,
   },
 
   // Outlined, not filled. The fill alone does not carry it: on a `surface` card the chip's own

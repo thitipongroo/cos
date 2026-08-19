@@ -21,14 +21,8 @@ import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useT } from '../../i18n';
-import {
-  darkColors,
-  fontFamily,
-  radius,
-  spacing,
-  touchTarget,
-  typography,
-} from '../../theme/tokens';
+import { darkScreen } from '../../theme/screenStyles';
+import { darkColors, fontFamily, radius, spacing, typography } from '../../theme/tokens';
 
 export default function ResetPasswordSuccessScreen(): React.JSX.Element {
   const t = useT();
@@ -42,8 +36,8 @@ export default function ResetPasswordSuccessScreen(): React.JSX.Element {
   const [revealed, setRevealed] = useState(false);
 
   return (
-    <View style={styles.root} testID="reset-password-success">
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+    <View style={darkScreen.root} testID="reset-password-success">
+      <ScrollView style={darkScreen.fill} contentContainerStyle={styles.content}>
         <View style={styles.hero}>
           <View style={styles.checkCircle}>
             <MaterialIcons name="check-circle" size={44} color={darkColors.success} />
@@ -85,11 +79,11 @@ export default function ResetPasswordSuccessScreen(): React.JSX.Element {
 
         {/* CORE_AI insight — honest shell (no fabricated 60-minute expiry). */}
         <View style={styles.aiCard}>
-          <View style={styles.aiHead}>
+          <View style={darkScreen.aiHead}>
             <MaterialIcons name="auto-awesome" size={18} color={darkColors.cyan} />
             <Text style={styles.aiTitle}>{t('resetSuccess.aiTitle')}</Text>
           </View>
-          <Text style={styles.aiBody}>{t('resetSuccess.aiBody')}</Text>
+          <Text style={darkScreen.aiBody}>{t('resetSuccess.aiBody')}</Text>
         </View>
 
         {/* System security log — honest audit fact. */}
@@ -104,12 +98,12 @@ export default function ResetPasswordSuccessScreen(): React.JSX.Element {
 
       <View style={styles.footer}>
         <Pressable
-          style={styles.primaryBtn}
+          style={darkScreen.primaryBtn}
           onPress={() => router.replace('/users')}
           testID="reset-success-done"
           accessibilityRole="button"
         >
-          <Text style={styles.primaryText}>{t('resetSuccess.done')}</Text>
+          <Text style={darkScreen.primaryText}>{t('resetSuccess.done')}</Text>
         </Pressable>
       </View>
     </View>
@@ -117,8 +111,6 @@ export default function ResetPasswordSuccessScreen(): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: darkColors.bg },
-  scroll: { flex: 1 },
   content: { padding: spacing.lg, paddingBottom: spacing.md, gap: spacing.sm },
 
   hero: { alignItems: 'center', marginTop: spacing.xs, marginBottom: spacing.xs, gap: spacing.xs },
@@ -209,18 +201,11 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     gap: spacing.xs,
   },
-  aiHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   aiTitle: {
     fontFamily: fontFamily.bold,
     fontSize: typography.label.fontSize,
     letterSpacing: 1,
     color: darkColors.cyan,
-  },
-  aiBody: {
-    fontFamily: fontFamily.regular,
-    fontSize: 13,
-    lineHeight: 19,
-    color: darkColors.muted,
   },
 
   logCard: {
@@ -252,21 +237,5 @@ const styles = StyleSheet.create({
     backgroundColor: darkColors.surface,
     borderTopWidth: 1,
     borderTopColor: darkColors.border,
-  },
-  primaryBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    height: touchTarget.primaryButton + 8,
-    borderRadius: radius.md,
-    backgroundColor: darkColors.primary,
-  },
-  primaryText: {
-    fontFamily: fontFamily.bold,
-    fontSize: typography.label.fontSize,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    color: darkColors.onPrimary,
   },
 });

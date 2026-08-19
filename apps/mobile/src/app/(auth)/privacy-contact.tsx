@@ -43,6 +43,7 @@ import {
 import { paletteFor } from '../../theme/palette';
 import { INQUIRY_CATEGORIES, submitPrivacyInquiry } from '../../api/privacyInquiry';
 import type { InquiryCategory } from '../../api/privacyInquiry';
+import { darkScreen } from '../../theme/screenStyles';
 
 const DARK = paletteFor('dark');
 
@@ -105,7 +106,7 @@ export default function PrivacyContactScreen(): React.JSX.Element {
           accessibilityRole="button"
           accessibilityLabel={t('privacy.policy.back')}
           onPress={() => router.back()}
-          style={styles.backButton}
+          style={darkScreen.backButton}
         >
           <MaterialIcons name="arrow-back" size={24} color={darkColors.primary} />
         </Pressable>
@@ -115,12 +116,12 @@ export default function PrivacyContactScreen(): React.JSX.Element {
       </View>
 
       <KeyboardAvoidingView
-        style={styles.flex}
+        style={darkScreen.fill}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
           testID="privacy-contact"
-          style={styles.flex}
+          style={darkScreen.fill}
           contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.xl }]}
           keyboardShouldPersistTaps="handled"
         >
@@ -311,7 +312,6 @@ function Field({
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: DARK.bg },
-  flex: { flex: 1 },
 
   header: {
     height: touchTarget.listItem,
@@ -322,12 +322,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: DARK.border,
     backgroundColor: DARK.surface,
-  },
-  backButton: {
-    width: touchTarget.iconButton,
-    height: touchTarget.iconButton,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   headerTitle: {
     flex: 1,
