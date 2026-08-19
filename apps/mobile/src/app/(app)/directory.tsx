@@ -23,13 +23,13 @@
 // SCHEDULE): the product has no chat — no route, no backend module, no API spec — so the button
 // says so rather than opening nothing or pretending to send.
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
+  FlatList,
   StyleSheet,
   Linking,
   Alert,
@@ -42,8 +42,9 @@ import { initialsOf as initials } from '../../lib/initials';
 import { matchesDirectoryQuery } from '../../lib/directoryFilter';
 import { useProjectStore } from '../../store/projectStore';
 import { useT } from '../../i18n';
+import type { TranslateFn } from '../../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
-import { usePalette, useIsDark } from '../../theme/usePalette';
+import { usePalette, useIsDark, type Palette } from '../../theme/usePalette';
 
 /** One card — the DirectoryEntry schema of workforce.openapi.yaml. */
 interface DirectoryEntry {
@@ -54,6 +55,111 @@ interface DirectoryEntry {
   role_on_project?: string | null;
   on_site: boolean;
 }
+
+/**
+ * One colleague, memoized.
+ *
+ * The screen above re-renders on every keystroke in the search field; a card whose entry has not
+ * changed has nothing new to draw. `call` is created once by the screen and `t` is useCallback'd on
+ * locale, so the props of an unaffected card really are equal between renders.
+ */
+const DirectoryCard = memo(function DirectoryCard({
+  entry,
+  p,
+  t,
+  styles,
+  onCall,
+}: {
+  entry: DirectoryEntry;
+  p: Palette;
+  t: TranslateFn;
+  styles: ReturnType<typeof makeStyles>;
+  onCall: (phone: string) => void;
+}) {
+  return (
+    <View
+      testID={`directory-card-${entry.worker_id}`}
+      style={[
+        styles.card,
+        {
+          backgroundColor: p.surface,
+          borderColor: p.border,
+          // The mockup's left strip: green while they are on site, neutral otherwise.
+          borderLeftColor: entry.on_site ? p.success : p.border,
+        },
+      ]}
+    >
+      {/* Initials, not <Avatar /> — that component renders the SIGNED-IN user (it reads
+      displayName from the auth store), and `workforce.workers` has no photo column, so
+      there is no colleague photo to show even if it did. */}
+      {/* The avatar is a filled, outlined disc — on the dark palette `elevated` sits so close
+      to `surface` that an unbordered circle vanished and the initials read as loose
+      letters beside the name (PO 2026-08-09). A person glyph stands in when the name
+      yields no initials at all, so the shape is never empty. */}
+      <View style={[styles.avatar, { backgroundColor: p.elevated, borderColor: p.border }]}>
+        {initials(entry.full_name) === '' ? (
+          <MaterialIcons name="person" size={24} color={p.muted} />
+        ) : (
+          <Text style={[styles.avatarText, { color: p.text }]}>{initials(entry.full_name)}</Text>
+        )}
+      </View>
+      <View style={styles.cardBody}>
+        <Text style={[styles.name, { color: p.text }]} numberOfLines={1}>
+          {entry.full_name}
+        </Text>
+        {/* The job on THIS project when the allocation names one, else the trade they were
+        hired under — the same person can be a foreman here and a fitter elsewhere. */}
+        <Text style={[styles.role, { color: p.muted }]} numberOfLines={1}>
+          {entry.role_on_project ?? entry.trade_type}
+        </Text>
+        {/* The drawing puts a glyph beside the words, and it earns its place: a green dot
+          and a grey one are the same shape at arm's length, while a tick and a clock are
+          not — a foreman scanning a crew list reads the shape before the colour. */}
+        <View style={styles.statusRow}>
+          <MaterialIcons
+            name={entry.on_site ? 'check-circle' : 'schedule'}
+            size={14}
+            color={entry.on_site ? p.success : p.muted}
+          />
+          <Text
+            style={[styles.status, { color: entry.on_site ? p.success : p.muted }]}
+            numberOfLines={1}
+          >
+            {entry.on_site ? t('directory.onSite') : t('directory.offSite')}
+          </Text>
+        </View>
+      </View>
+      <TouchableOpacity
+        testID={`directory-chat-${entry.worker_id}`}
+        onPress={() => Alert.alert(t('directory.chat'), t('common.comingSoon'))}
+        accessibilityRole="button"
+        accessibilityLabel={t('directory.chatWith', { name: entry.full_name })}
+        style={[styles.actionButton, { backgroundColor: p.primary }]}
+      >
+        <MaterialIcons name="chat-bubble" size={20} color={p.onPrimary} />
+      </TouchableOpacity>
+      <TouchableOpacity
+        testID={`directory-call-${entry.worker_id}`}
+        onPress={() => entry.contact_phone && onCall(entry.contact_phone)}
+        disabled={!entry.contact_phone}
+        accessibilityRole="button"
+        accessibilityLabel={t('directory.call', { name: entry.full_name })}
+        accessibilityState={{ disabled: !entry.contact_phone }}
+        style={[
+          styles.actionButton,
+          // The mockup's call disc is `bg-surface-bright` — BRIGHTER than the card it sits
+          // on. This palette has no such token and `elevated` is within a few points of
+          // `surface`, so the disc vanished into the card. A hairline border gives it the
+          // edge that brightness was providing.
+          { backgroundColor: p.elevated, borderColor: p.border, borderWidth: 1 },
+          !entry.contact_phone && styles.callDisabled,
+        ]}
+      >
+        <MaterialIcons name="call" size={20} color={entry.contact_phone ? p.accent : p.muted} />
+      </TouchableOpacity>
+    </View>
+  );
+});
 
 export default function DirectoryScreen() {
   // The site comes from the store, not from a picker on this screen (PO decision 2026-08-11). The
@@ -101,152 +207,82 @@ export default function DirectoryScreen() {
     void Linking.openURL(`tel:${phone}`);
   }, []);
 
-  return (
-    <ScrollView
-      testID="directory-screen"
-      style={{ backgroundColor: p.bg }}
-      contentContainerStyle={styles.page}
-      keyboardShouldPersistTaps="handled"
-    >
-      <ProjectContextBar />
-
-      {/* Search — the mockup's rounded field with a leading glyph. */}
-      <View style={[styles.search, { backgroundColor: p.surface, borderColor: p.border }]}>
-        <MaterialIcons name="search" size={20} color={p.muted} />
-        <TextInput
-          testID="directory-search"
-          style={[styles.searchInput, { color: p.text }]}
-          placeholder={t('directory.searchPlaceholder')}
-          placeholderTextColor={p.muted}
-          value={query}
-          onChangeText={setQuery}
-          accessibilityLabel={t('directory.searchPlaceholder')}
-        />
-      </View>
-
-      {/* A real count, never a fixed figure: how many of the crew are on site right now. */}
-      {entries.length > 0 ? (
-        <Text testID="directory-count" style={[styles.count, { color: p.muted }]}>
-          {t('directory.onSiteCount', { onSite, total: entries.length })}
-        </Text>
-      ) : null}
-
-      <LoadingBoundary loading={loading} variant="list" theme={isDark ? 'dark' : 'light'}>
-        {failed ? (
-          <Text testID="directory-error" style={[styles.empty, { color: p.muted }]}>
-            {t('directory.unavailable')}
-          </Text>
-        ) : visible.length === 0 ? (
-          <Text testID="directory-empty" style={[styles.empty, { color: p.muted }]}>
-            {projectId === '' ? t('directory.pickProject') : t('directory.empty')}
-          </Text>
-        ) : (
-          // Wrapped so the gap applies BETWEEN cards: they are children of <LoadingBoundary />, not
-          // of the ScrollView, so the page's own `gap` never reached them and the cards sat flush
-          // against each other (PO 2026-08-09). `gap-4` is what the mockup sets.
-          <View style={styles.list}>
-            {visible.map((entry) => (
-              <View
-                key={entry.worker_id}
-                testID={`directory-card-${entry.worker_id}`}
-                style={[
-                  styles.card,
-                  {
-                    backgroundColor: p.surface,
-                    borderColor: p.border,
-                    // The mockup's left strip: green while they are on site, neutral otherwise.
-                    borderLeftColor: entry.on_site ? p.success : p.border,
-                  },
-                ]}
-              >
-                {/* Initials, not <Avatar /> — that component renders the SIGNED-IN user (it reads
-                  displayName from the auth store), and `workforce.workers` has no photo column, so
-                  there is no colleague photo to show even if it did. */}
-                {/* The avatar is a filled, outlined disc — on the dark palette `elevated` sits so close
-                  to `surface` that an unbordered circle vanished and the initials read as loose
-                  letters beside the name (PO 2026-08-09). A person glyph stands in when the name
-                  yields no initials at all, so the shape is never empty. */}
-                <View
-                  style={[styles.avatar, { backgroundColor: p.elevated, borderColor: p.border }]}
-                >
-                  {initials(entry.full_name) === '' ? (
-                    <MaterialIcons name="person" size={24} color={p.muted} />
-                  ) : (
-                    <Text style={[styles.avatarText, { color: p.text }]}>
-                      {initials(entry.full_name)}
-                    </Text>
-                  )}
-                </View>
-                <View style={styles.cardBody}>
-                  <Text style={[styles.name, { color: p.text }]} numberOfLines={1}>
-                    {entry.full_name}
-                  </Text>
-                  {/* The job on THIS project when the allocation names one, else the trade they were
-                    hired under — the same person can be a foreman here and a fitter elsewhere. */}
-                  <Text style={[styles.role, { color: p.muted }]} numberOfLines={1}>
-                    {entry.role_on_project ?? entry.trade_type}
-                  </Text>
-                  {/* The drawing puts a glyph beside the words, and it earns its place: a green dot
-                      and a grey one are the same shape at arm's length, while a tick and a clock are
-                      not — a foreman scanning a crew list reads the shape before the colour. */}
-                  <View style={styles.statusRow}>
-                    <MaterialIcons
-                      name={entry.on_site ? 'check-circle' : 'schedule'}
-                      size={14}
-                      color={entry.on_site ? p.success : p.muted}
-                    />
-                    <Text
-                      style={[styles.status, { color: entry.on_site ? p.success : p.muted }]}
-                      numberOfLines={1}
-                    >
-                      {entry.on_site ? t('directory.onSite') : t('directory.offSite')}
-                    </Text>
-                  </View>
-                </View>
-                <TouchableOpacity
-                  testID={`directory-chat-${entry.worker_id}`}
-                  onPress={() => Alert.alert(t('directory.chat'), t('common.comingSoon'))}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('directory.chatWith', { name: entry.full_name })}
-                  style={[styles.actionButton, { backgroundColor: p.primary }]}
-                >
-                  <MaterialIcons name="chat-bubble" size={20} color={p.onPrimary} />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  testID={`directory-call-${entry.worker_id}`}
-                  onPress={() => entry.contact_phone && call(entry.contact_phone)}
-                  disabled={!entry.contact_phone}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('directory.call', { name: entry.full_name })}
-                  accessibilityState={{ disabled: !entry.contact_phone }}
-                  style={[
-                    styles.actionButton,
-                    // The mockup's call disc is `bg-surface-bright` — BRIGHTER than the card it sits
-                    // on. This palette has no such token and `elevated` is within a few points of
-                    // `surface`, so the disc vanished into the card. A hairline border gives it the
-                    // edge that brightness was providing.
-                    { backgroundColor: p.elevated, borderColor: p.border, borderWidth: 1 },
-                    !entry.contact_phone && styles.callDisabled,
-                  ]}
-                >
-                  <MaterialIcons
-                    name="call"
-                    size={20}
-                    color={entry.contact_phone ? p.accent : p.muted}
-                  />
-                </TouchableOpacity>
-              </View>
-            ))}
-          </View>
-        )}
-      </LoadingBoundary>
-    </ScrollView>
+  const renderCard = useCallback(
+    ({ item }: { item: DirectoryEntry }) => (
+      <DirectoryCard entry={item} p={p} t={t} styles={styles} onCall={call} />
+    ),
+    [p, t, styles, call],
   );
+
+  return (
+    <View testID="directory-screen" style={[styles.screen, { backgroundColor: p.bg }]}>
+      <FlatList
+        contentContainerStyle={styles.page}
+        keyboardShouldPersistTaps="handled"
+        // The crew of a large site has no upper bound and every card was mounted at once before.
+        // The bar, the search field and the count stay in the HEADER so they scroll away with the
+        // list exactly as they did inside the ScrollView this replaced; the loader and the three
+        // empty/error states stay in the EMPTY slot, so a search that matches nobody still shows
+        // its own message rather than the loader.
+        data={failed ? [] : visible}
+        keyExtractor={(entry) => entry.worker_id}
+        renderItem={renderCard}
+        // `styles.list` set `gap` on the wrapper this replaces; a separator is the list's equivalent.
+        ItemSeparatorComponent={CardSeparator}
+        ListHeaderComponent={
+          <View style={styles.header}>
+            <ProjectContextBar />
+
+            {/* Search — the mockup's rounded field with a leading glyph. */}
+            <View style={[styles.search, { backgroundColor: p.surface, borderColor: p.border }]}>
+              <MaterialIcons name="search" size={20} color={p.muted} />
+              <TextInput
+                testID="directory-search"
+                style={[styles.searchInput, { color: p.text }]}
+                placeholder={t('directory.searchPlaceholder')}
+                placeholderTextColor={p.muted}
+                value={query}
+                onChangeText={setQuery}
+                accessibilityLabel={t('directory.searchPlaceholder')}
+              />
+            </View>
+
+            {/* A real count, never a fixed figure: how many of the crew are on site right now. */}
+            {entries.length > 0 ? (
+              <Text testID="directory-count" style={[styles.count, { color: p.muted }]}>
+                {t('directory.onSiteCount', { onSite, total: entries.length })}
+              </Text>
+            ) : null}
+          </View>
+        }
+        ListEmptyComponent={
+          <LoadingBoundary loading={loading} variant="list" theme={isDark ? 'dark' : 'light'}>
+            {failed ? (
+              <Text testID="directory-error" style={[styles.empty, { color: p.muted }]}>
+                {t('directory.unavailable')}
+              </Text>
+            ) : (
+              <Text testID="directory-empty" style={[styles.empty, { color: p.muted }]}>
+                {projectId === '' ? t('directory.pickProject') : t('directory.empty')}
+              </Text>
+            )}
+          </LoadingBoundary>
+        }
+      />
+    </View>
+  );
+}
+
+/** The gap `styles.list` used to put between cards, as a list separator. */
+function CardSeparator() {
+  return <View style={{ height: spacing.md }} />;
 }
 
 const makeStyles = () =>
   StyleSheet.create({
+    screen: { flex: 1 },
     page: { padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xl },
+    header: { gap: spacing.sm },
     search: {
       flexDirection: 'row',
       alignItems: 'center',
