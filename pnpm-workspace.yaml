@@ -15,6 +15,21 @@ overrides:
   # pulls its own; a duplicate breaks file-service's plugin type augmentation (FastifyTypeProvider
   # mismatch). Pin both to one v5 release (NestJS 11 / ADR-042 requires Fastify 5).
   fastify: '5.9.0'
+  # Single pg version — same class of failure as fastify above, but it fails at RUNTIME, not in the
+  # type checker. @prisma/adapter-pg decides whether it was handed a live pool or a config object
+  # with `poolOrConfig instanceof pg.Pool` (adapter-pg@7.8.0 dist/index.js:772), resolved against ITS
+  # OWN copy of pg. backend pinned pg 8.22.0 while the adapter's `^8.16.3` resolved 8.21.0, so
+  # pnpm's isolated linker gave them two physical modules with two distinct Pool classes — and the
+  # shared pool that createPrismaClient() passes in (ADR-094) failed that instanceof, fell through to
+  # the config branch, and was handed to `new pg.Pool(<a Pool instance>)`. Every connection parameter
+  # was then an object, and pg-protocol threw on the startup packet:
+  #   TypeError: The "string" argument must be of type string ... Received an instance of Object
+  #     at Writer.addCString (pg-protocol/buffer-writer.ts:43)
+  # It took out 12 of 13 Testcontainers suites and all 4 isolation tests while every unit test stayed
+  # green, because the unit specs mock the adapter and never reach the instanceof.
+  # 8.22.0 satisfies every declared range (backend 8.22.0 exact, file-service and credential-service
+  # ^8.11.5, @cos/test-utils ^8.21.0, adapter-pg ^8.16.3), so one copy serves all of them.
+  pg: '8.22.0'
   multer: '^2.1.1'
   lodash: '^4.18.1'
   'picomatch@>=4.0.0 <4.0.4': '4.0.4'
