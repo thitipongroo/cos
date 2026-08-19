@@ -12,6 +12,18 @@
 # if the number grows. Lower BASELINE in the same PR that fixes a file — that is what makes the
 # number fall instead of drift.
 #
+# 19 → 10 on 2026-08-19, in two parts. FOUR of them were already fixed by earlier work that never
+# lowered this number — verified by running the check against 20e4ce40, which reports the same 15
+# files as today's tree did before this pass. A ratchet that lags reality stops being a ratchet: it
+# would have accepted four regressions in silence.
+#
+# The other five were labelled here: conflict-review, deliveries, invoices, orders and payments —
+# the list screens whose rows had just been lifted into their own components, which is what made the
+# tappables easy to name. Each row announces the thing it is (a payment reference, a PO number, the
+# entity in conflict) rather than "button", carries `expanded` where a tap expands it, and `disabled`
+# where the control genuinely cannot act (resolve is online-only; an invoice row with no id opens
+# nothing). The status and PO chips became radios with a selected state, matching tasks.tsx.
+#
 # 20 → 19 on 2026-08-08: profile.tsx, when the mockup restructure added its MFA row, version line
 # and privacy link — the logout button and theme chips were labelled in the same pass. The three
 # screens added that day (directory, quick-actions) shipped with accessibility props from the start,
@@ -28,9 +40,9 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
-# Number of files with tappable elements but no accessibility prop, as of 2026-08-08.
+# Number of files with tappable elements but no accessibility prop, as of 2026-08-19.
 # This may only ever be lowered.
-BASELINE=19
+BASELINE=10
 
 python3 - "$ROOT" "$BASELINE" <<'PY'
 import pathlib

@@ -41,6 +41,13 @@ const InvoiceItem = memo(function InvoiceItem({
       style={screen.item}
       disabled={!id}
       onPress={() => id && onOpen(id)}
+      accessibilityRole="button"
+      accessibilityLabel={
+        invoice.invoice_number ?? invoice.vendor_invoice_id ?? invoice.invoice_id ?? '—'
+      }
+      // A row with no id opens nothing; saying so is the difference between a control that is
+      // unavailable and one that is broken.
+      accessibilityState={{ disabled: !id }}
     >
       <Text style={screen.itemTitle}>
         {invoice.invoice_number ?? invoice.vendor_invoice_id ?? invoice.invoice_id ?? '—'}
@@ -142,7 +149,13 @@ export default function InvoicesScreen() {
           placeholder={t('finance.invoices.notePlaceholder')}
           placeholderTextColor={colors.textSecondary}
         />
-        <TouchableOpacity testID="save-note-button" style={styles.noteButton} onPress={saveNote}>
+        <TouchableOpacity
+          testID="save-note-button"
+          style={styles.noteButton}
+          onPress={saveNote}
+          accessibilityRole="button"
+          accessibilityLabel={t('finance.invoices.saveNote')}
+        >
           <Text style={styles.noteButtonText}>{t('finance.invoices.saveNote')}</Text>
         </TouchableOpacity>
         {noteSaved ? (
@@ -151,7 +164,12 @@ export default function InvoicesScreen() {
           </Text>
         ) : null}
 
-        <TouchableOpacity testID="invoice-back" onPress={() => setDetail(null)}>
+        <TouchableOpacity
+          testID="invoice-back"
+          onPress={() => setDetail(null)}
+          accessibilityRole="button"
+          accessibilityLabel={t('common.back')}
+        >
           <Text style={styles.back}>{t('common.back')}</Text>
         </TouchableOpacity>
       </View>
@@ -165,6 +183,9 @@ export default function InvoicesScreen() {
           testID="filter-ALL"
           style={[styles.chip, status === '' && styles.chipOn]}
           onPress={() => setStatus('')}
+          accessibilityRole="radio"
+          accessibilityLabel={t('finance.invoices.all')}
+          accessibilityState={{ selected: status === '' }}
         >
           <Text style={[styles.chipText, status === '' && styles.chipTextOn]}>
             {t('finance.invoices.all')}
@@ -176,6 +197,9 @@ export default function InvoicesScreen() {
             testID={`filter-${s}`}
             style={[styles.chip, status === s && styles.chipOn]}
             onPress={() => setStatus(s)}
+            accessibilityRole="radio"
+            accessibilityLabel={s}
+            accessibilityState={{ selected: status === s }}
           >
             <Text style={[styles.chipText, status === s && styles.chipTextOn]}>{s}</Text>
           </TouchableOpacity>

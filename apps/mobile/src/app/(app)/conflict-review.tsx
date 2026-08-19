@@ -71,7 +71,14 @@ const ConflictRecordItem = memo(function ConflictRecordItem({
   const diff = open ? buildDiff(record.client_payload ?? null, record.server_payload ?? null) : [];
   return (
     <View testID="conflict-record-item" style={screen.item}>
-      <TouchableOpacity style={styles.itemHead} onPress={() => onToggle(record.conflict_id)}>
+      <TouchableOpacity
+        style={styles.itemHead}
+        onPress={() => onToggle(record.conflict_id)}
+        accessibilityRole="button"
+        // The entity in conflict is what names this row; `expanded` is what the tap changes.
+        accessibilityLabel={record.entity_type}
+        accessibilityState={{ expanded: open }}
+      >
         <Text style={screen.itemTitle}>{record.entity_type}</Text>
         <StatusChip label={record.conflict_type} />
       </TouchableOpacity>
@@ -107,6 +114,11 @@ const ConflictRecordItem = memo(function ConflictRecordItem({
         style={styles.resolve}
         disabled={!isOnline}
         onPress={() => onResolve(record.conflict_id)}
+        accessibilityRole="button"
+        accessibilityLabel={t('sync.conflictReview.resolve')}
+        // Resolving is online-only, and a control that cannot act must say so rather than look
+        // available and do nothing when pressed.
+        accessibilityState={{ disabled: !isOnline }}
       >
         <Text style={styles.resolveText}>{t('sync.conflictReview.resolve')}</Text>
       </TouchableOpacity>

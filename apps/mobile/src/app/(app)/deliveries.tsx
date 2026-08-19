@@ -150,6 +150,11 @@ export default function DeliveriesScreen() {
             testID={`po-option-${po.po_id}`}
             style={[styles.poChip, poId === po.po_id && styles.poChipOn]}
             onPress={() => selectPo(po.po_id)}
+            // One of a set, exactly one chosen — a radio, not a button, so a screen reader
+            // announces which purchase order the form below belongs to.
+            accessibilityRole="radio"
+            accessibilityLabel={po.po_number ?? po.po_id.slice(0, 8)}
+            accessibilityState={{ selected: poId === po.po_id }}
           >
             <Text style={[styles.poChipText, poId === po.po_id && styles.poChipTextOn]}>
               {po.po_number ?? po.po_id.slice(0, 8)}
@@ -196,6 +201,8 @@ export default function DeliveriesScreen() {
             testID="record-delivery-button"
             style={screen.primaryButton}
             onPress={record}
+            accessibilityRole="button"
+            accessibilityLabel={t('procurement.deliveries.record')}
           >
             <Text style={screen.primaryButtonText}>{t('procurement.deliveries.record')}</Text>
           </TouchableOpacity>

@@ -46,7 +46,15 @@ const PaymentItem = memo(function PaymentItem({
 }) {
   return (
     <View testID="payment-item" style={screen.item}>
-      <TouchableOpacity style={styles.row} onPress={() => onToggle(payment.payment_id)}>
+      <TouchableOpacity
+        style={styles.row}
+        onPress={() => onToggle(payment.payment_id)}
+        accessibilityRole="button"
+        // The row's own reference is its name — a screen reader announcing "button" over a list of
+        // payments says nothing about which payment. `expanded` is what tapping it changes.
+        accessibilityLabel={payment.payment_reference ?? payment.payment_id.slice(0, 8)}
+        accessibilityState={{ expanded: open }}
+      >
         <Text style={screen.itemTitle}>
           {payment.payment_reference ?? payment.payment_id.slice(0, 8)}
         </Text>
@@ -80,6 +88,8 @@ const PaymentItem = memo(function PaymentItem({
           testID="approve-payment-button"
           style={styles.approve}
           onPress={() => onApprove(payment.payment_id)}
+          accessibilityRole="button"
+          accessibilityLabel={t('finance.payments.approve')}
         >
           <Text style={styles.approveText}>{t('finance.payments.approve')}</Text>
         </TouchableOpacity>

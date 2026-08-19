@@ -46,7 +46,13 @@ const OrderItem = memo(function OrderItem({
   onOpen: (poId: string) => void;
 }) {
   return (
-    <TouchableOpacity testID="order-item" style={screen.item} onPress={() => onOpen(po.po_id)}>
+    <TouchableOpacity
+      testID="order-item"
+      style={screen.item}
+      onPress={() => onOpen(po.po_id)}
+      accessibilityRole="button"
+      accessibilityLabel={po.po_number ?? po.po_id.slice(0, 8)}
+    >
       <Text style={screen.itemTitle}>{po.po_number ?? po.po_id.slice(0, 8)}</Text>
       <StatusChip label={po.status} />
     </TouchableOpacity>
@@ -105,7 +111,12 @@ export default function OrdersScreen() {
             </View>
           ))
         )}
-        <TouchableOpacity testID="order-back-button" onPress={() => setDetail(null)}>
+        <TouchableOpacity
+          testID="order-back-button"
+          onPress={() => setDetail(null)}
+          accessibilityRole="button"
+          accessibilityLabel={t('common.back')}
+        >
           <Text style={styles.back}>{t('common.back')}</Text>
         </TouchableOpacity>
       </ScrollView>
