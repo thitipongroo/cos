@@ -1,4 +1,4 @@
--- platform.outbox_events: delivery state, so the table can actually be used.
+-- platform.outbox_events: delivery state, so the table can actually be used (ADR-094).
 --
 -- WHAT WAS WRONG
 -- --------------

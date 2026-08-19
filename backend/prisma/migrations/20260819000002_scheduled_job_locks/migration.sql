@@ -1,4 +1,4 @@
--- platform.scheduled_job_locks — one leader per scheduled job, across replicas.
+-- platform.scheduled_job_locks — one leader per scheduled job, across replicas (ADR-095).
 --
 -- WHAT WAS WRONG
 -- --------------

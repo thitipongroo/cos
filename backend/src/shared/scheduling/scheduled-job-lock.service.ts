@@ -1,4 +1,4 @@
-// ScheduledJobLockService — one replica runs a scheduled job, not all of them.
+// ScheduledJobLockService — one replica runs a scheduled job, not all of them (ADR-095).
 //
 // @nestjs/schedule registers @Cron timers per PROCESS, so on a deployment with N replicas every job
 // fires N times on the same minute. Production runs three (values-prod.yaml: replicaCount 3,

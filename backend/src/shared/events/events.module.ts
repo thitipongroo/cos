@@ -1,4 +1,4 @@
-// Global module for the event outbox.
+// Global module for the event outbox (ADR-094).
 //
 // EventOutboxService replaces a KafkaProducer that twelve feature services each constructed for
 // themselves, so it has to be reachable from all twelve — and from the next one, without that module

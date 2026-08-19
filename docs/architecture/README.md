@@ -243,95 +243,104 @@ work as drawn; that is a different list and still applies.
 86 ADRs plus the template. Format and process: QM-11. Before writing `(see ADR-NNN)` anywhere,
 verify the file exists — Rule 29.
 
-| ADR                                                                           | Title                                                                  |
-| ----------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| [000](adr/000-template.md)                                                    | Template                                                               |
-| [001](adr/001-modular-monolith.md)                                            | Modular Monolith Architecture                                          |
-| [002](adr/002-schema-per-tenant.md)                                           | Tiered Tenant Isolation (superseded by ADR-008)                        |
-| [003](adr/003-keycloak-auth.md)                                               | Keycloak for Identity and Authorization                                |
-| [004](adr/004-kafka-event-bus.md)                                             | Apache Kafka as Internal Event Bus                                     |
-| [005](adr/005-clickhouse-analytics.md)                                        | ClickHouse for OLAP Analytics                                          |
-| [006](adr/006-temporal-workflows.md)                                          | Temporal for Long-running Workflows                                    |
-| [007](adr/007-k6-load-testing.md)                                             | k6 for Load Testing                                                    |
-| [008](adr/008-shared-db-tenant-id-rls.md)                                     | Tenant Isolation — Shared DB + tenant_id + PostgreSQL RLS              |
-| [009](adr/009-runtime-mapping.md)                                             | Runtime Mapping (Node.js / Go / Python per Service)                    |
-| [010](adr/010-kong-gateway.md)                                                | Kong Gateway for API Rate Limiting and Request Management              |
-| [011](adr/011-codeql-semgrep-replace-sonarqube.md)                            | CodeQL + Semgrep CE + jscpd replace SonarQube                          |
-| [012](adr/012-argocd.md)                                                      | ArgoCD for GitOps Continuous Delivery                                  |
-| [013](adr/013-secrets-management.md)                                          | Secrets management and delivery                                        |
-| [014](adr/014-cos-role-enum.md)                                               | CosRole Enum — Role Definitions and Implementation Sub-Roles           |
-| [015](adr/015-database-retry-helpers.md)                                      | Database Retry Helper Pattern for Prisma Transient Errors              |
-| [016](adr/016-unified-web-pwa-app.md)                                         | Unified Next.js + PWA Web App (`apps/web/`)                            |
-| [017](adr/017-keycloak-dual-auth-path.md)                                     | Keycloak Dual Authentication Path (Path A OTP, Path B OIDC)            |
-| [018](adr/018-prisma-as-orm.md)                                               | Prisma as ORM                                                          |
-| [019](adr/019-credentialservice-did-vc-mvp.md)                                | CredentialService (W3C DID/VC) promoted to MVP                         |
-| [020](adr/020-staging-branch-e2e-gate.md)                                     | Staging branch as the E2E gate before production                       |
-| [021](adr/021-shared-go-coslib-module.md)                                     | One shared Go module (`libs/go`)                                       |
-| [022](adr/022-procurement-tenant-wide-list-endpoints.md)                      | Procurement tenant-wide list endpoints under `/api/v1/procurement/*`   |
-| [023](adr/023-finance-canonical-paths-ap-queue.md)                            | Finance canonical `/api/v1/finance/*` paths + AP queue                 |
-| [024](adr/024-ar-billing-cashflow-mvp.md)                                     | AR Client Billing, AR Receipts, direct-method Cash Flow Forecast       |
-| [025](adr/025-site-ops-canonical-paths-inspection-approval.md)                | Site-ops canonical `/site/*` paths and inspection approval             |
-| [026](adr/026-task-completion-gates.md)                                       | Task completion gates and the BOQ-dependency interpretation            |
-| [027](adr/027-safety-module-permits-compliance.md)                            | Safety module — incidents, permit approval, compliance                 |
-| [028](adr/028-tenant-settings.md)                                             | Tenant settings store                                                  |
-| [029](adr/029-crm-module-mvp.md)                                              | CRM module brought into MVP (Lead → Opportunity → Customer)            |
-| [030](adr/030-vendor-portal-mvp.md)                                           | Vendor Portal brought into MVP (two-tier external access)              |
-| [031](adr/031-tenant-context-resolution-and-app-user-rls.md)                  | Tenant context after auth + dedicated `app_user` role for RLS          |
-| [032](adr/032-timescaledb-colocated-then-split.md)                            | TimescaleDB co-located on primary PostgreSQL, split on volume trigger  |
-| [033](adr/033-ci-build-gate.md)                                               | CI Build Gate — `turbo run build` on every PR                          |
-| [034](adr/034-graceful-shutdown-resource-lifecycle.md)                        | Graceful shutdown — close every long-lived handle                      |
-| [035](adr/035-app-layer-secret-encryption.md)                                 | Application-layer encryption for secrets at rest (TOTP seeds)          |
-| [036](adr/036-compose-profiles-local-app-services.md)                         | Docker Compose `apps` profile for local application services           |
-| [037](adr/037-kg-uniqueness-constraints-neo4j-community.md)                   | KG composite UNIQUE constraints (Neo4j Community compatible)           |
-| [038](adr/038-mlflow-evidently-replace-wandb.md)                              | Replace Weights & Biases with MLflow + Evidently AI                    |
-| [039](adr/039-production-onprem-k8s-distro.md)                                | Production on-premise Kubernetes distribution (RKE2 profile:cis)       |
-| [040](adr/040-onprem-sms-gateway.md)                                          | On-premise SMS gateway for OTP delivery                                |
-| [041](adr/041-prisma-7-driver-adapters.md)                                    | Prisma 7 upgrade — node-postgres driver adapter                        |
-| [042](adr/042-nestjs-11-fastify-5.md)                                         | NestJS 11 + Fastify 5 upgrade                                          |
-| [043](adr/043-next-16-react-19.md)                                            | Next.js 16 + React 19 upgrade (web)                                    |
-| [044](adr/044-otel-sdk-node-0219.md)                                          | OpenTelemetry JS SDK upgrade                                           |
-| [045](adr/045-wave-f-stateful-infra-upgrades.md)                              | Wave F — stateful infrastructure major upgrades                        |
-| [046](adr/046-expo-56-mobile.md)                                              | Expo SDK 56 mobile upgrade                                             |
-| [047](adr/047-serwist-turbopack-pwa.md)                                       | Replace next-pwa with Serwist (Turbopack-compatible PWA)               |
-| [048](adr/048-drizzle-expo-sqlite-offline-db.md)                              | Replace WatermelonDB with Drizzle ORM on expo-sqlite                   |
-| [049](adr/049-unleash-feature-flags.md)                                       | Unleash feature flags, server-evaluated delivery                       |
-| [050](adr/050-mobile-path-b-login.md)                                         | Mobile supports Path B (email/password) login via Keycloak OIDC        |
-| [051](adr/051-mobile-expo-crypto-uuid.md)                                     | expo-crypto for client-generated UUIDs (offline sync idempotency)      |
-| [052](adr/052-mobile-voice-note-transcription.md)                             | Mobile voice-note capture → File Service → AI transcription            |
-| [053](adr/053-mobile-gesture-handler-taskcard.md)                             | react-native-gesture-handler for the TaskCard swipe                    |
-| [054](adr/054-device-trust.md)                                                | Device trust via hardware-bound keypair + server-side registry         |
-| [055](adr/055-universal-loading-component.md)                                 | Universal loading component (`<LoadingState />`)                       |
-| [056](adr/056-photo-annotation.md)                                            | Photo annotation — engines, stroke model, conflict strategy            |
-| [057](adr/057-construction-full-flow-scope-additions.md)                      | Construction full-flow scope additions                                 |
-| [058](adr/058-client-contract-signing-mechanism.md)                           | Client contract signing (PKI/VC e-signature, bilateral)                |
-| [059](adr/059-variation-order-claims.md)                                      | Variation Order / Change Order / Claims (post-MVP)                     |
-| [060](adr/060-inventory-warehouse-wms.md)                                     | Inventory / Warehouse Management (post-MVP)                            |
-| [061](adr/061-rakaklang-central-pricing.md)                                   | ราคากลาง central pricing as a BOQ price source (post-MVP)              |
-| [062](adr/062-egp-public-procurement.md)                                      | e-GP public procurement integration (post-MVP)                         |
-| [063](adr/063-bank-guarantees-bonds.md)                                       | Bank guarantees / bonds (post-MVP)                                     |
-| [064](adr/064-building-permit-license.md)                                     | Building permit & license management (post-MVP)                        |
-| [065](adr/065-project-risk-register.md)                                       | Project risk register (post-MVP)                                       |
-| [066](adr/066-site-instruction-minutes-correspondence.md)                     | Site instruction / meeting minutes / correspondence log (post-MVP)     |
-| [067](adr/067-mfa-enforcement-keycloak-native.md)                             | MFA enforcement — Keycloak-native OTP + backend `acr` gate             |
-| [068](adr/068-cross-platform-ui-logic-package.md)                             | `@cos/ui-logic` — zero-dependency package shared by web and mobile     |
-| [069](adr/069-issue-human-readable-numbering.md)                              | Human-readable issue numbers (`ISS-<year>-<seq>`)                      |
-| [070](adr/070-project-phases.md)                                              | Project phases (execution-stage tracking)                              |
-| [071](adr/071-site-engineer-home-visual-exception.md)                         | §32.7 visual exception for the SITE_ENGINEER mobile home               |
-| [072](adr/072-project-work-hours.md)                                          | Project standard working hours                                         |
-| [073](adr/073-voice-command-intents.md)                                       | Voice-command intents for the SITE_ENGINEER home FAB                   |
-| [074](adr/074-mobile-mfa-enrollment-keycloak-aia.md)                          | Mobile MFA enrollment via Keycloak Application-Initiated Action        |
-| [075](adr/075-tail-based-trace-sampling.md)                                   | Trace sampling is tail-based at the Collector only                     |
-| [076](adr/076-client-side-form-validation.md)                                 | Client-side form validation via zod/mini + react-hook-form             |
-| [077](adr/077-authoritative-role-and-active-check-per-request.md)             | Resolve `is_active` and effective role from the DB on every request    |
-| [078](adr/078-pdpa-data-export-and-step-up-otp.md)                            | PDPA data export via async job, gated by step-up OTP                   |
-| [079](adr/079-platform-wide-consent.md)                                       | Platform-wide PDPA consent — per-purpose records                       |
-| [080](adr/080-geoip-enrichment-and-behavioral-context.md)                     | Network-origin enrichment — self-hosted GeoLite2, derived at read time |
-| [081](adr/081-device-trust-model.md)                                          | DeviceTrustModel — promoted only by beating a rule-based baseline      |
-| [082](adr/082-device-attestation-v2-accepted.md)                              | Device attestation v2 (Play Integrity / App Attest) accepted           |
-| [083](adr/083-security-patch-level-source.md)                                 | Where the Security Patch Level row gets its value                      |
-| [084](adr/084-session-and-timestamp-transparency-screens.md)                  | Session-metadata and timestamp transparency screens                    |
-| [085](adr/085-mockup-deviations-navigation-rows-and-implemented-structure.md) | Mockup authority — style yes, composition no                           |
-| [086](adr/086-self-hosted-nominatim-geocoding.md)                             | Self-hosted Nominatim for reverse geocoding                            |
+| ADR                                                                           | Title                                                                                      |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| [000](adr/000-template.md)                                                    | Template                                                                                   |
+| [001](adr/001-modular-monolith.md)                                            | Modular Monolith Architecture                                                              |
+| [002](adr/002-schema-per-tenant.md)                                           | Tiered Tenant Isolation (superseded by ADR-008)                                            |
+| [003](adr/003-keycloak-auth.md)                                               | Keycloak for Identity and Authorization                                                    |
+| [004](adr/004-kafka-event-bus.md)                                             | Apache Kafka as Internal Event Bus                                                         |
+| [005](adr/005-clickhouse-analytics.md)                                        | ClickHouse for OLAP Analytics                                                              |
+| [006](adr/006-temporal-workflows.md)                                          | Temporal for Long-running Workflows                                                        |
+| [007](adr/007-k6-load-testing.md)                                             | k6 for Load Testing                                                                        |
+| [008](adr/008-shared-db-tenant-id-rls.md)                                     | Tenant Isolation — Shared DB + tenant_id + PostgreSQL RLS                                  |
+| [009](adr/009-runtime-mapping.md)                                             | Runtime Mapping (Node.js / Go / Python per Service)                                        |
+| [010](adr/010-kong-gateway.md)                                                | Kong Gateway for API Rate Limiting and Request Management                                  |
+| [011](adr/011-codeql-semgrep-replace-sonarqube.md)                            | CodeQL + Semgrep CE + jscpd replace SonarQube                                              |
+| [012](adr/012-argocd.md)                                                      | ArgoCD for GitOps Continuous Delivery                                                      |
+| [013](adr/013-secrets-management.md)                                          | Secrets management and delivery                                                            |
+| [014](adr/014-cos-role-enum.md)                                               | CosRole Enum — Role Definitions and Implementation Sub-Roles                               |
+| [015](adr/015-database-retry-helpers.md)                                      | Database Retry Helper Pattern for Prisma Transient Errors                                  |
+| [016](adr/016-unified-web-pwa-app.md)                                         | Unified Next.js + PWA Web App (`apps/web/`)                                                |
+| [017](adr/017-keycloak-dual-auth-path.md)                                     | Keycloak Dual Authentication Path (Path A OTP, Path B OIDC)                                |
+| [018](adr/018-prisma-as-orm.md)                                               | Prisma as ORM                                                                              |
+| [019](adr/019-credentialservice-did-vc-mvp.md)                                | CredentialService (W3C DID/VC) promoted to MVP                                             |
+| [020](adr/020-staging-branch-e2e-gate.md)                                     | Staging branch as the E2E gate before production                                           |
+| [021](adr/021-shared-go-coslib-module.md)                                     | One shared Go module (`libs/go`)                                                           |
+| [022](adr/022-procurement-tenant-wide-list-endpoints.md)                      | Procurement tenant-wide list endpoints under `/api/v1/procurement/*`                       |
+| [023](adr/023-finance-canonical-paths-ap-queue.md)                            | Finance canonical `/api/v1/finance/*` paths + AP queue                                     |
+| [024](adr/024-ar-billing-cashflow-mvp.md)                                     | AR Client Billing, AR Receipts, direct-method Cash Flow Forecast                           |
+| [025](adr/025-site-ops-canonical-paths-inspection-approval.md)                | Site-ops canonical `/site/*` paths and inspection approval                                 |
+| [026](adr/026-task-completion-gates.md)                                       | Task completion gates and the BOQ-dependency interpretation                                |
+| [027](adr/027-safety-module-permits-compliance.md)                            | Safety module — incidents, permit approval, compliance                                     |
+| [028](adr/028-tenant-settings.md)                                             | Tenant settings store                                                                      |
+| [029](adr/029-crm-module-mvp.md)                                              | CRM module brought into MVP (Lead → Opportunity → Customer)                                |
+| [030](adr/030-vendor-portal-mvp.md)                                           | Vendor Portal brought into MVP (two-tier external access)                                  |
+| [031](adr/031-tenant-context-resolution-and-app-user-rls.md)                  | Tenant context after auth + dedicated `app_user` role for RLS                              |
+| [032](adr/032-timescaledb-colocated-then-split.md)                            | TimescaleDB co-located on primary PostgreSQL, split on volume trigger                      |
+| [033](adr/033-ci-build-gate.md)                                               | CI Build Gate — `turbo run build` on every PR                                              |
+| [034](adr/034-graceful-shutdown-resource-lifecycle.md)                        | Graceful shutdown — close every long-lived handle                                          |
+| [035](adr/035-app-layer-secret-encryption.md)                                 | Application-layer encryption for secrets at rest (TOTP seeds)                              |
+| [036](adr/036-compose-profiles-local-app-services.md)                         | Docker Compose `apps` profile for local application services                               |
+| [037](adr/037-kg-uniqueness-constraints-neo4j-community.md)                   | KG composite UNIQUE constraints (Neo4j Community compatible)                               |
+| [038](adr/038-mlflow-evidently-replace-wandb.md)                              | Replace Weights & Biases with MLflow + Evidently AI                                        |
+| [039](adr/039-production-onprem-k8s-distro.md)                                | Production on-premise Kubernetes distribution (RKE2 profile:cis)                           |
+| [040](adr/040-onprem-sms-gateway.md)                                          | On-premise SMS gateway for OTP delivery                                                    |
+| [041](adr/041-prisma-7-driver-adapters.md)                                    | Prisma 7 upgrade — node-postgres driver adapter                                            |
+| [042](adr/042-nestjs-11-fastify-5.md)                                         | NestJS 11 + Fastify 5 upgrade                                                              |
+| [043](adr/043-next-16-react-19.md)                                            | Next.js 16 + React 19 upgrade (web)                                                        |
+| [044](adr/044-otel-sdk-node-0219.md)                                          | OpenTelemetry JS SDK upgrade                                                               |
+| [045](adr/045-wave-f-stateful-infra-upgrades.md)                              | Wave F — stateful infrastructure major upgrades                                            |
+| [046](adr/046-expo-56-mobile.md)                                              | Expo SDK 56 mobile upgrade                                                                 |
+| [047](adr/047-serwist-turbopack-pwa.md)                                       | Replace next-pwa with Serwist (Turbopack-compatible PWA)                                   |
+| [048](adr/048-drizzle-expo-sqlite-offline-db.md)                              | Replace WatermelonDB with Drizzle ORM on expo-sqlite                                       |
+| [049](adr/049-unleash-feature-flags.md)                                       | Unleash feature flags, server-evaluated delivery                                           |
+| [050](adr/050-mobile-path-b-login.md)                                         | Mobile supports Path B (email/password) login via Keycloak OIDC                            |
+| [051](adr/051-mobile-expo-crypto-uuid.md)                                     | expo-crypto for client-generated UUIDs (offline sync idempotency)                          |
+| [052](adr/052-mobile-voice-note-transcription.md)                             | Mobile voice-note capture → File Service → AI transcription                                |
+| [053](adr/053-mobile-gesture-handler-taskcard.md)                             | react-native-gesture-handler for the TaskCard swipe                                        |
+| [054](adr/054-device-trust.md)                                                | Device trust via hardware-bound keypair + server-side registry                             |
+| [055](adr/055-universal-loading-component.md)                                 | Universal loading component (`<LoadingState />`)                                           |
+| [056](adr/056-photo-annotation.md)                                            | Photo annotation — engines, stroke model, conflict strategy                                |
+| [057](adr/057-construction-full-flow-scope-additions.md)                      | Construction full-flow scope additions                                                     |
+| [058](adr/058-client-contract-signing-mechanism.md)                           | Client contract signing (PKI/VC e-signature, bilateral)                                    |
+| [059](adr/059-variation-order-claims.md)                                      | Variation Order / Change Order / Claims (post-MVP)                                         |
+| [060](adr/060-inventory-warehouse-wms.md)                                     | Inventory / Warehouse Management (post-MVP)                                                |
+| [061](adr/061-rakaklang-central-pricing.md)                                   | ราคากลาง central pricing as a BOQ price source (post-MVP)                                  |
+| [062](adr/062-egp-public-procurement.md)                                      | e-GP public procurement integration (post-MVP)                                             |
+| [063](adr/063-bank-guarantees-bonds.md)                                       | Bank guarantees / bonds (post-MVP)                                                         |
+| [064](adr/064-building-permit-license.md)                                     | Building permit & license management (post-MVP)                                            |
+| [065](adr/065-project-risk-register.md)                                       | Project risk register (post-MVP)                                                           |
+| [066](adr/066-site-instruction-minutes-correspondence.md)                     | Site instruction / meeting minutes / correspondence log (post-MVP)                         |
+| [067](adr/067-mfa-enforcement-keycloak-native.md)                             | MFA enforcement — Keycloak-native OTP + backend `acr` gate                                 |
+| [068](adr/068-cross-platform-ui-logic-package.md)                             | `@cos/ui-logic` — zero-dependency package shared by web and mobile                         |
+| [069](adr/069-issue-human-readable-numbering.md)                              | Human-readable issue numbers (`ISS-<year>-<seq>`)                                          |
+| [070](adr/070-project-phases.md)                                              | Project phases (execution-stage tracking)                                                  |
+| [071](adr/071-site-engineer-home-visual-exception.md)                         | §32.7 visual exception for the SITE_ENGINEER mobile home                                   |
+| [072](adr/072-project-work-hours.md)                                          | Project standard working hours                                                             |
+| [073](adr/073-voice-command-intents.md)                                       | Voice-command intents for the SITE_ENGINEER home FAB                                       |
+| [074](adr/074-mobile-mfa-enrollment-keycloak-aia.md)                          | Mobile MFA enrollment via Keycloak Application-Initiated Action                            |
+| [075](adr/075-tail-based-trace-sampling.md)                                   | Trace sampling is tail-based at the Collector only                                         |
+| [076](adr/076-client-side-form-validation.md)                                 | Client-side form validation via zod/mini + react-hook-form                                 |
+| [077](adr/077-authoritative-role-and-active-check-per-request.md)             | Resolve `is_active` and effective role from the DB on every request                        |
+| [078](adr/078-pdpa-data-export-and-step-up-otp.md)                            | PDPA data export via async job, gated by step-up OTP                                       |
+| [079](adr/079-platform-wide-consent.md)                                       | Platform-wide PDPA consent — per-purpose records                                           |
+| [080](adr/080-geoip-enrichment-and-behavioral-context.md)                     | Network-origin enrichment — self-hosted GeoLite2, derived at read time                     |
+| [081](adr/081-device-trust-model.md)                                          | DeviceTrustModel — promoted only by beating a rule-based baseline                          |
+| [082](adr/082-device-attestation-v2-accepted.md)                              | Device attestation v2 (Play Integrity / App Attest) accepted                               |
+| [083](adr/083-security-patch-level-source.md)                                 | Where the Security Patch Level row gets its value                                          |
+| [084](adr/084-session-and-timestamp-transparency-screens.md)                  | Session-metadata and timestamp transparency screens                                        |
+| [085](adr/085-mockup-deviations-navigation-rows-and-implemented-structure.md) | Mockup authority — style yes, composition no                                               |
+| [086](adr/086-self-hosted-nominatim-geocoding.md)                             | Self-hosted Nominatim for reverse geocoding                                                |
+| [087](adr/087-two-ifc-parsers-per-runtime.md)                                 | Two IFC parsers, one per runtime — ifcopenshell (Python) and web-ifc (TypeScript)          |
+| [088](adr/088-canonical-service-runtime-declaration.md)                       | One canonical service-runtime table, enforced by a CI fitness function                     |
+| [089](adr/089-site-worker-may-submit-safety-checklists.md)                    | A Site Worker may submit a safety checklist, but not report an incident                    |
+| [090](adr/090-external-data-subjects-processor-role-and-tenant-tooling.md)    | External data subjects — Construction OS is the processor, and the tenant gets the tooling |
+| [091](adr/091-pre-auth-privacy-inquiries.md)                                  | Pre-auth privacy inquiries — where a request from a stranger lands                         |
+| [092](adr/092-terms-of-use-pdf-and-download-receipt.md)                       | The Terms of Use gets a PDF, and its download button goes live                             |
+| [093](adr/093-support-desk-and-help-chat.md)                                  | Support desk and Help Chat — where a support conversation lives                            |
+| [094](adr/094-durable-event-outbox.md)                                        | Domain events go through a durable outbox, not an inline Kafka publish                     |
+| [095](adr/095-scheduled-job-leader-election.md)                               | Scheduled jobs elect a leader through a lease row, not an advisory lock                    |
 
 > 📎 [`specifications/03-system-design.md`](../specifications/03-system-design.md) (system design and
 > the C4 gate) · [`specifications/04-tech-stack.md`](../specifications/04-tech-stack.md) (versions) ·

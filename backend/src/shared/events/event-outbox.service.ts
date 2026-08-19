@@ -1,4 +1,4 @@
-// EventOutboxService — where domain services publish events.
+// EventOutboxService — where domain services publish events (ADR-094).
 //
 // WHAT THIS REPLACES
 // ------------------

@@ -1,4 +1,4 @@
-// OutboxPollerService — drains platform.outbox_events into Kafka.
+// OutboxPollerService — drains platform.outbox_events into Kafka (ADR-094).
 //
 // The delivery half of the outbox (see event-outbox.service.ts for the write half, and for why the
 // inline publish it replaces was losing events). Runs in EVERY replica, deliberately: the claim
