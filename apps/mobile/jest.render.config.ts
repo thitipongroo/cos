@@ -60,8 +60,16 @@ const config: Config = {
     '^expo-task-manager$': '<rootDir>/src/__mocks__/expo-task-manager.ts',
     '^expo-battery$': '<rootDir>/src/__mocks__/expo-battery.ts',
     '^expo-secure-store$': '<rootDir>/src/__mocks__/expo-secure-store.ts',
+    '^expo-crypto$': '<rootDir>/src/__mocks__/expo-crypto.ts',
+    '^expo-camera$': '<rootDir>/src/__mocks__/expo-camera.tsx',
+    '^@shopify/react-native-skia$': '<rootDir>/src/__mocks__/react-native-skia.tsx',
     '^@react-native-community/netinfo$': '<rootDir>/src/__mocks__/netinfo.ts',
     '^@expo/vector-icons$': '<rootDir>/src/__mocks__/expo-vector-icons.tsx',
+
+    // The @cos/* sources live OUTSIDE apps/mobile, so the @babel/runtime helpers that
+    // babel-preset-expo injects into them cannot be resolved from their own directory — only
+    // apps/mobile has that package installed. Pin the helpers to this package's copy.
+    '^@babel/runtime/(.*)$': '<rootDir>/node_modules/@babel/runtime/$1',
 
     '^@cos/types$': '<rootDir>/../../packages/@cos/types/src/index.ts',
     '^@cos/types/(.*)$': '<rootDir>/../../packages/@cos/types/src/$1',
@@ -72,8 +80,16 @@ const config: Config = {
   },
 
   // The preset's own setup (the native-module bridge stubs) MUST stay — naming setupFiles in a
-  // config replaces the preset's list rather than extending it.
-  setupFiles: [...rnPreset.setupFiles, '<rootDir>/jest.render.setup.ts'],
+  // config replaces the preset's list rather than extending it. The two library setups after it are
+  // react-native-gesture-handler's own published setup — it calls TurboModuleRegistry.getEnforcing
+  // at import time and throws without it (PhotoAnnotation reaches it). Skia publishes an equivalent
+  // but it needs global.CanvasKit from its jestEnv environment, which is on the jest 29 line; it is
+  // mocked as a module instead (src/__mocks__/react-native-skia.tsx).
+  setupFiles: [
+    ...rnPreset.setupFiles,
+    'react-native-gesture-handler/jestSetup',
+    '<rootDir>/jest.render.setup.ts',
+  ],
 
   collectCoverage: false,
 };
