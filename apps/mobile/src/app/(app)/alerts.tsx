@@ -1,11 +1,12 @@
 // Alerts screen — EXECUTIVE risk feed. Source: GET /analytics/executive → ExecutiveDashboardRow[]
 // (one row per project). At-risk projects are surfaced first with utilization + overdue invoices.
 
-import { useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { get } from '../../api/client';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { useT } from '../../i18n';
+import type { TranslateFn } from '../../i18n';
 import { colors, fontFamily, radius, spacing, typography } from '../../theme/tokens';
 import { screen } from '../../theme/screenStyles';
 
@@ -33,10 +34,56 @@ function severityOf(r: ExecutiveDashboardRow): Severity {
   return 'LOW';
 }
 
+/**
+ * One project's risk card, memoized.
+ *
+ * Severity is derived from this row's own metrics, so it belongs with the row rather than being
+ * computed in a shared renderer — and memo then lets the feed skip every card whose figures have
+ * not moved.
+ */
+const AlertItem = memo(function AlertItem({
+  alert,
+  t,
+}: {
+  alert: ExecutiveDashboardRow;
+  t: TranslateFn;
+}) {
+  return (
+    <View testID="alert-item" style={[styles.card, alert.atRisk && styles.cardRisk]}>
+      <View style={styles.row}>
+        <Text style={styles.project}>{alert.projectId.slice(0, 8)}</Text>
+        <Text
+          style={[styles.badge, severityOf(alert) === 'LOW' ? styles.badgeOk : styles.badgeRisk]}
+        >
+          {t(`status.${severityOf(alert)}`)}
+        </Text>
+      </View>
+      <Text style={styles.metric}>
+        {t('exec.alerts.utilization', { value: alert.utilizationPct })}
+      </Text>
+      <Text style={styles.metric}>
+        {t('exec.alerts.budgetLine', {
+          budget: alert.totalBudget,
+          committed: alert.totalCommitted,
+          actual: alert.totalActual,
+        })}
+      </Text>
+      <Text style={styles.metric}>
+        {t('exec.alerts.overdueInvoices', { count: alert.overdueInvoiceCount })}
+      </Text>
+    </View>
+  );
+});
+
 export default function AlertsScreen() {
   const [rows, setRows] = useState<ExecutiveDashboardRow[]>([]);
   const [loading, setLoading] = useState(true);
   const t = useT();
+
+  const renderAlert = useCallback(
+    ({ item }: { item: ExecutiveDashboardRow }) => <AlertItem alert={item} t={t} />,
+    [t],
+  );
 
   useEffect(() => {
     // rows is [] both before the fetch and when genuinely empty, so a dedicated flag drives the loader.
@@ -58,34 +105,7 @@ export default function AlertsScreen() {
           data={rows}
           keyExtractor={(r, i) => r.projectId || String(i)}
           ListEmptyComponent={<Text style={screen.empty}>{t('exec.alerts.empty')}</Text>}
-          renderItem={({ item }) => (
-            <View testID="alert-item" style={[styles.card, item.atRisk && styles.cardRisk]}>
-              <View style={styles.row}>
-                <Text style={styles.project}>{item.projectId.slice(0, 8)}</Text>
-                <Text
-                  style={[
-                    styles.badge,
-                    severityOf(item) === 'LOW' ? styles.badgeOk : styles.badgeRisk,
-                  ]}
-                >
-                  {t(`status.${severityOf(item)}`)}
-                </Text>
-              </View>
-              <Text style={styles.metric}>
-                {t('exec.alerts.utilization', { value: item.utilizationPct })}
-              </Text>
-              <Text style={styles.metric}>
-                {t('exec.alerts.budgetLine', {
-                  budget: item.totalBudget,
-                  committed: item.totalCommitted,
-                  actual: item.totalActual,
-                })}
-              </Text>
-              <Text style={styles.metric}>
-                {t('exec.alerts.overdueInvoices', { count: item.overdueInvoiceCount })}
-              </Text>
-            </View>
-          )}
+          renderItem={renderAlert}
         />
       </LoadingBoundary>
     </View>

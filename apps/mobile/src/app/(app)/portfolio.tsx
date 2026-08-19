@@ -3,7 +3,7 @@
 // Projects are the offline-cached list (local_projects); health metrics come online from
 // GET /analytics/executive (one row per project). Offline: shows the cached list without badges.
 
-import { useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
 import type { Project } from '../../db/database';
 import { useCollection } from '../../hooks/useCollection';
@@ -12,6 +12,7 @@ import { get } from '../../api/client';
 import { StatusChip } from '../../components/StatusChip';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { useT } from '../../i18n';
+import type { TranslateFn } from '../../i18n';
 import { colors, fontFamily, radius, spacing, typography } from '../../theme/tokens';
 import { screen } from '../../theme/screenStyles';
 
@@ -25,12 +26,52 @@ interface ExecRow {
   overdueInvoiceCount: number;
 }
 
+/**
+ * One project in the portfolio, memoized.
+ *
+ * `health` arrives from a SECOND source (/analytics/executive) and is joined to the project by id;
+ * passing it in as this row's own prop is what keeps that join visible — and what lets memo skip
+ * every row whose project and health are unchanged when the health request lands.
+ */
+const PortfolioItem = memo(function PortfolioItem({
+  project,
+  health,
+  onOpen,
+  t,
+}: {
+  project: Project;
+  health: ExecRow | undefined;
+  onOpen: (project: Project) => void;
+  t: TranslateFn;
+}) {
+  return (
+    <TouchableOpacity testID="portfolio-item" style={screen.item} onPress={() => onOpen(project)}>
+      <Text style={screen.itemTitle}>{project.projectName}</Text>
+      <View style={styles.chips}>
+        <StatusChip label={project.status} />
+        {health ? (
+          <Text style={[styles.badge, health.atRisk ? styles.badgeRisk : styles.badgeOk]}>
+            {health.atRisk ? t('exec.portfolio.atRisk') : `${health.utilizationPct}%`}
+          </Text>
+        ) : null}
+      </View>
+    </TouchableOpacity>
+  );
+});
+
 export default function PortfolioScreen() {
   const projects = useCollection<Project>('local_projects');
   const [execById, setExecById] = useState<Record<string, ExecRow>>({});
   const [selected, setSelected] = useState<Project | null>(null);
   const [healthLoading, setHealthLoading] = useState(true);
   const t = useT();
+
+  const renderProject = useCallback(
+    ({ item }: { item: Project }) => (
+      <PortfolioItem project={item} health={execById[item.projectId]} onOpen={setSelected} t={t} />
+    ),
+    [execById, t],
+  );
 
   useEffect(() => {
     refreshProjectsCache().catch(() => {
@@ -93,26 +134,7 @@ export default function PortfolioScreen() {
         data={projects}
         keyExtractor={(p) => p.id}
         ListEmptyComponent={<Text style={screen.empty}>{t('exec.portfolio.empty')}</Text>}
-        renderItem={({ item }) => {
-          const h = execById[item.projectId];
-          return (
-            <TouchableOpacity
-              testID="portfolio-item"
-              style={screen.item}
-              onPress={() => setSelected(item)}
-            >
-              <Text style={screen.itemTitle}>{item.projectName}</Text>
-              <View style={styles.chips}>
-                <StatusChip label={item.status} />
-                {h ? (
-                  <Text style={[styles.badge, h.atRisk ? styles.badgeRisk : styles.badgeOk]}>
-                    {h.atRisk ? t('exec.portfolio.atRisk') : `${h.utilizationPct}%`}
-                  </Text>
-                ) : null}
-              </View>
-            </TouchableOpacity>
-          );
-        }}
+        renderItem={renderProject}
       />
     </View>
   );

@@ -35,7 +35,7 @@
 // and a message rather than a guessed action when the intent is unsupported. No second voice
 // behaviour was invented for this screen.
 
-import { useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -94,6 +94,33 @@ function matches(task: Task, filter: Filter): boolean {
       return true;
   }
 }
+
+/**
+ * One task row, memoized.
+ *
+ * TaskCard takes zero-argument callbacks, so wiring it inline gave every card two new functions on
+ * every render and nothing could bail out. This wrapper takes the task and two callbacks that are
+ * built once for the whole list, and creates the per-task closures INSIDE itself — where they are
+ * not props and so cannot defeat the comparison.
+ */
+const TaskRow = memo(function TaskRow({
+  task,
+  onOpen,
+  onComplete,
+}: {
+  task: Task;
+  onOpen: (task: Task) => void;
+  onComplete: (task: Task) => void;
+}) {
+  return (
+    <TaskCard
+      badge="severity"
+      task={task}
+      onPress={() => onOpen(task)}
+      onComplete={() => onComplete(task)}
+    />
+  );
+});
 
 export default function TasksScreen() {
   const tasks = useCollection<Task>('local_tasks');
@@ -168,11 +195,12 @@ export default function TasksScreen() {
     [projectTasks],
   );
 
-  const openTask = (task: Task): void => {
+  // Built once for the whole list, so TaskRow's props stay equal between renders.
+  const openTask = useCallback((task: Task): void => {
     setSelected(task);
     setProgress(String(task.progressPercent));
     setSavedValue(null);
-  };
+  }, []);
 
   const onSave = async (): Promise<void> => {
     if (!selected) return;
@@ -193,13 +221,27 @@ export default function TasksScreen() {
   };
 
   // Swipe-right on a TaskCard completes the task (progress → 100). Same offline path as onSave.
-  const completeTask = async (task: Task): Promise<void> => {
+  const completeTask = useCallback(async (task: Task): Promise<void> => {
     await db
       .update(localTasks)
       .set({ progressPercent: 100, offlineSyncStatus: 'PENDING' })
       .where(eq(localTasks.id, task.id));
     await mutate('PATCH', `/tasks/${task.taskId}`, { progress_percent: 100 }, 'task', task.taskId);
-  };
+  }, []);
+
+  const onCompleteRow = useCallback(
+    (task: Task): void => {
+      void completeTask(task);
+    },
+    [completeTask],
+  );
+
+  const renderTask = useCallback(
+    ({ item }: { item: Task }) => (
+      <TaskRow task={item} onOpen={openTask} onComplete={onCompleteRow} />
+    ),
+    [openTask, onCompleteRow],
+  );
 
   if (selected) {
     return (
@@ -394,14 +436,7 @@ export default function TasksScreen() {
             </TouchableOpacity>
           ) : null
         }
-        renderItem={({ item }) => (
-          <TaskCard
-            badge="severity"
-            task={item}
-            onPress={() => openTask(item)}
-            onComplete={() => void completeTask(item)}
-          />
-        )}
+        renderItem={renderTask}
       />
 
       {/* NO VOICE FAB ON THIS SCREEN (PO decision 2026-08-12: "ตัดปุ่มไมโครโฟนออก"). The Site
