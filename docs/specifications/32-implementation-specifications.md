@@ -818,7 +818,9 @@ Dark screens (the pre-2026-08-04 set — see the note above):
 | Session-securing overlay                | `mockup/mobile/01_authen/01_login/04_verification_loading_mobile/`   |
 | Privacy Policy                          | `mockup/mobile/02_shared/01_privacy_policy/00_policy_dashboard`      |
 | Terms of Use (pre-auth)                 | `mockup/mobile/01_authen/04_terms_of_use/01_terms_of_use_dashboard/` |
-| Support Centre (pre-auth)               | drawing withdrawn 2026-08-15 — see the note below it                 |
+| Support Centre (pre-auth)               | `mockup/mobile/01_authen/05_get_help/01_home_support/`               |
+| IT Support Hotline (pre-auth)           | `mockup/mobile/01_authen/05_get_help/02_hotline_details/`           |
+| Help Chat (pre-auth)                    | `mockup/mobile/01_authen/05_get_help/03_help_chat/`                 |
 | Project Manager / Proc Manager screens  | `mockup/mobile/06_project_manager/`                                  |
 | Site Engineer Home                      | `mockup/mobile/03_site_engineer/01_home/01_se_home_dashboard/`       |
 | Tenant Admin Home                       | `mockup/mobile/04_tenant_admin/01_home/01_home_dashboard/`           |
@@ -882,6 +884,16 @@ from **123 drawings to 9**, and deleted `01_authen/07_get_help/01_support_center
 | `05_privacy_policy/00_policy_data`        | **Renamed** to `05_privacy_policy/01_privacy_policy` (git records `R075`). Every reference to it is repointed, not withdrawn.                                                                                                                                                        |
 | `05_privacy_policy/01_data_collection/**` | **Withdrawn — about 114 drawings**, the whole Transparency Portal set. It is deliberately NOT repointed at the surviving `02_data_collection`: that is a single-screen folder, not the container, and claiming it would be a lie.                                                    |
 | `01_authen/07_get_help/01_support_center` | **Withdrawn.** `mockup/mobile/support_center/01_dashboard` exists, but it was added by a DIFFERENT, earlier commit with no rename record linking the two, and the files differ (329 lines against 293) — so it is not asserted as the successor (product-owner decision 2026-08-16). |
+
+**The Support Centre has drawings again as of 2026-08-17 — three of them, and two are new screens.**
+Commit `76c8225c` added `01_authen/07_get_help/{01_home_support,02_hotline_details,03_help_chat}` and
+`c086e600` renumbered the folder to `05_get_help/` the next day with zero content change. This is not
+the withdrawn `01_support_center` returning: that folder name does not reappear, and no rename record
+links it to `01_home_support`, so the row above stands as written and the three Reference cells in the
+dark-screens table point at the new drawings on their own authority. `01_home_support` re-draws the
+screen already in the product and adds a `chevron_right` to the IT Hotline and Help Chat cards; the
+other two are screens that never existed. **All three are implemented as of 2026-08-18 (ADR-093)** —
+see "Support Centre — two routes" below, which the same change rewrites.
 
 ADR-085 applies throughout: **every screen those drawings specified is still in the product and still
 captured.** The Transparency Portal's 14 committed Android frames, `TransparencyKit.tsx`, the
@@ -1507,13 +1519,63 @@ post-auth route adds is data the app already holds — signing in adds **no back
 - **Role modules** — derived from `drawerLinksFor(role)`, i.e. the §6.4 matrix. It answers "should I
   be able to see X?". It is **not** a help-article list.
 
-**What it does not add.** No better phone number: no support-desk, hotline or emergency-contact column
-exists anywhere in `backend/prisma/schema.prisma` (verified 2026-08-17), for a tenant or a project, so
-both routes read the same `EXPO_PUBLIC_SUPPORT_CENTER_PHONE` / `EXPO_PUBLIC_SUPPORT_IT_HOTLINE`
-deployment config, and unset still renders the control disabled and says so. No ticket: no ticket
-table exists either. **Search stays disabled and Quick Help Chat stays unavailable on BOTH routes**
-(PO 2026-08-09, re-affirmed 2026-08-17) — there is no `help_article`/`faq` table, no search endpoint
-and no chat, and a signed-in user can see a dead control as clearly as a signed-out one.
+**What it does not add.** Identity, project and diagnostics are all the app's own state — signing in
+adds no backend _to this pair of screens_. **Search stays disabled on BOTH routes** (PO 2026-08-09,
+re-affirmed 2026-08-17 and again 2026-08-18): there is still no `help_article`/`faq` table and no
+search endpoint, and ADR-093 gives it none — a signed-in user can see a dead control as clearly as a
+signed-out one.
+
+> **The two paragraphs this one replaced stopped being true on 2026-08-18 (ADR-093).** They read
+> _"No better phone number … both routes read the same `EXPO_PUBLIC_SUPPORT__` deployment config"*,
+> _"No ticket: no ticket table exists either"_ and _"Quick Help Chat stays unavailable on BOTH
+> routes"_. Each was accurate when written and each was a statement about what the schema held, so
+> each fell the moment the product owner decided (2026-08-18) to build the backing rather than keep
+> drawing dead controls. What replaced them:
+>
+> - **The desk is data.** `platform.support_desk_default` (no `tenant_id`, no RLS, one row, public
+>   read — a support number you must sign in to read is useless to someone who cannot sign in) merged
+>   under `platform.tenant_support_desks` (RLS, `TENANT_ADMIN`). `GET /api/v1/support/desk` is public
+>   and returns the default alone; with a JWT the tenant row is merged over it field by field. The
+>   `EXPO_PUBLIC_SUPPORT_*` variables survive **below both** as the offline fallback — the one state a
+>   support screen must survive, since a person opens it _because_ something is broken.
+> - **Tickets exist.** `platform.support_tickets` + `platform.support_messages`, both carrying the
+>   widened `rls_tenant_or_anonymous` policy, because Help Chat is open **pre-auth and post-auth**
+>   (PO 2026-08-18) and a pre-auth ticket has no tenant to be scoped by. An anonymous ticket is
+>   addressed by a one-time token (SHA-256 stored, spec §5.4.3) — RLS scopes the anonymous set but
+>   cannot divide it.
+> - **Help Chat is answered by AI first and escalates to a person.** Every AI turn goes through
+>   `LLMProvider` and the Phase 12 `HallucinationGuard`, and the verdict (`model_used`, `confidence`,
+>   `low_confidence`) is **stored on the message and rendered**, the way `<ProcurementInsight />`
+>   renders exactly what its endpoint returns. The chat is advisory (§22.3): it may not transition a
+>   workflow, approve anything, or mutate financial data.
+> - **`AGENT ONLINE` is not implemented as drawn**, and neither is the drawing's
+>   `"I'm Terminal 01, your technical support agent"`. There is no agent presence service and no
+>   `SUPPORT_AGENT` role in §6.2, so an `ESCALATED` ticket waits on `SYSTEM_ADMIN` until that role and
+>   its console exist. The header says the assistant is ready, or that a person has been asked for and
+>   has not answered — labelling an AI turn as a human is the same misstatement ADR-081 forbids in the
+>   other direction.
+
+#### IT Support Hotline (`02_hotline_details`)
+
+A child of the Support Centre on both sides of login, reached by the **chevron** the 2026-08-17
+drawing puts on the IT Hotline card — which is why that card no longer dials in place (PO decision
+2026-08-18). `CALL NOW` on the detail screen is the dial.
+
+Everything on it is desk data or editorial copy; nothing is asserted by this repository. The drawn
+numbers `+1 (800) 555-0199`, `+66 2 555 0100` and `+66 38 555 0101`, and the drawn hours `24/7` and
+`08:00 - 18:00`, are **placeholders committed nowhere** — they render only what a deployment or a
+tenant has set, and an unset block does not render at all.
+
+The **preparation checklist is rewritten against what this product actually has** (ADR-093
+Rationale). The drawing asks for `Device ID or Asset Tag` — _"located on the back of the device
+hardware"_ — `Site Location` and `Error Code`. There is no asset tag on the back of anything here, but
+there is a device record the app can read (ADR-082/083), a project code in `projectStore`, and a
+`COS-{DOMAIN}-{NNN}` code that every error response really carries (QM-10). The checklist names those.
+
+The drawing's own two files disagree about the top bar: `code.html` ends it with an empty 44px spacer,
+`screen.png` shows a trailing call glyph. `code.html` is followed — it is the drawing; the PNG is a
+render of some state of it — and the dial stays the one full-width `CALL NOW` control, so the screen
+has exactly one way to place the same call.
 
 Neither route is a tab for any role: the withdrawn drawing's `Field | Tasks | Support | Profile` bar
 is no role's set, and §32.7 fixes each role at exactly four tabs. The post-auth route is registered

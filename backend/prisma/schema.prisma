@@ -463,9 +463,9 @@ model PrivacyInquiry {
   linkedRequestId String?         @map("linked_request_id") @db.Uuid
   linkedRequest   SubjectRequest? @relation(fields: [linkedRequestId], references: [requestId], onDelete: SetNull)
 
-  closedAt DateTime? @map("closed_at") @db.Timestamptz()
+  closedAt    DateTime? @map("closed_at") @db.Timestamptz()
   // Required on close (DB CHECK): a refusal that does not name its basis is itself a breach.
-  outcomeNote String? @map("outcome_note") @db.Text
+  outcomeNote String?   @map("outcome_note") @db.Text
 
   @@index([status, receivedAt])
   @@index([senderEmail])
@@ -599,4 +599,152 @@ model PhotoAnnotation {
   @@index([tenantId])
   @@map("photo_annotations")
   @@schema("files")
+}
+
+// ─── SUPPORT DESK + HELP CHAT (ADR-093) ───────────────────────────────────
+// Backs mockup/mobile/01_authen/05_get_help/. All four models live in "platform" because the
+// Support Centre is reached BEFORE sign-in: a pre-auth caller has no tenant, and master §Phase 2
+// exempts platform tables from the tenant_id rule. See migration 20260818000001 for the full note.
+
+/// The one fallback desk, served to anyone including a pre-auth caller. No tenant_id and no RLS —
+/// there is nothing to scope by, and this row is public by design (a support number you must sign in
+/// to read is useless to someone who cannot sign in). Exactly one row, pinned by `singleton`.
+model SupportDeskDefault {
+  singleton Boolean @id @default(true) @map("singleton")
+
+  supportCenterPhone   String? @map("support_center_phone") @db.VarChar(50)
+  itHotlinePhone       String? @map("it_hotline_phone") @db.VarChar(50)
+  itHotlineLabel       String? @map("it_hotline_label") @db.VarChar(255)
+  itHotlineDescription String? @map("it_hotline_description") @db.Text
+  // Free text, not two TIME columns: "24/7 Available" has no open and close time (ADR-093 §1).
+  hoursCritical        String? @map("hours_critical") @db.VarChar(120)
+  hoursGeneral         String? @map("hours_general") @db.VarChar(120)
+  // [{ label, phone }] — read whole, never queried into. Shape held by a CHECK and the DTO.
+  regionalHotlines     Json    @default("[]") @map("regional_hotlines") @db.JsonB
+
+  // @updatedAt, not @default(now()): this column is here to say when an admin last edited the desk,
+  // and a create-only default would freeze it at seed time. There is no BEFORE UPDATE trigger anywhere
+  // in this schema — Tenant and User keep updated_at honest the same way.
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+  updatedBy String?  @map("updated_by") @db.Uuid
+
+  @@map("support_desk_default")
+  @@schema("platform")
+}
+
+/// A tenant's override of the row above, merged over it field by field — an unset column falls
+/// through to the default rather than blanking it. Tenant-scoped, so it takes the ORDINARY
+/// rls_tenant_isolation policy and is unreachable pre-auth, which is the whole reason the default
+/// row exists separately.
+model TenantSupportDesk {
+  tenantId String @id @map("tenant_id") @db.Uuid
+
+  supportCenterPhone   String? @map("support_center_phone") @db.VarChar(50)
+  itHotlinePhone       String? @map("it_hotline_phone") @db.VarChar(50)
+  itHotlineLabel       String? @map("it_hotline_label") @db.VarChar(255)
+  itHotlineDescription String? @map("it_hotline_description") @db.Text
+  hoursCritical        String? @map("hours_critical") @db.VarChar(120)
+  hoursGeneral         String? @map("hours_general") @db.VarChar(120)
+  regionalHotlines     Json    @default("[]") @map("regional_hotlines") @db.JsonB
+
+  // @updatedAt, not @default(now()): this column is here to say when an admin last edited the desk,
+  // and a create-only default would freeze it at seed time. There is no BEFORE UPDATE trigger anywhere
+  // in this schema — Tenant and User keep updated_at honest the same way.
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+  updatedBy String?  @map("updated_by") @db.Uuid
+
+  @@map("tenant_support_desks")
+  @@schema("platform")
+}
+
+enum SupportTicketStatus {
+  OPEN
+  AI_HANDLING
+  /// A person has been asked for. No support-agent role or console exists yet (ADR-093 §3), so this
+  /// waits on SYSTEM_ADMIN and the screen says so rather than implying someone is watching.
+  ESCALATED
+  RESOLVED
+  CLOSED
+
+  @@schema("platform")
+}
+
+enum SupportMessageSender {
+  USER
+  AI
+  /// Defined now, produced by nothing yet — the console that emits it is out of ADR-093's scope.
+  HUMAN_AGENT
+  /// The thread's own notices (opened, escalated), attributable to no person.
+  SYSTEM
+
+  @@schema("platform")
+}
+
+/// One support conversation. `tenantId` and `openedBy` are BOTH nullable because Help Chat is open
+/// pre-auth (PO decision 2026-08-18), which is why these tables carry `rls_tenant_or_anonymous`
+/// rather than the standard policy: with no tenant context the policy matches the tenantId IS NULL
+/// rows and nothing else. RLS scopes that anonymous set but cannot divide it, so an anonymous ticket
+/// is addressed by an unguessable token whose SHA-256 is `accessTokenHash`.
+model SupportTicket {
+  ticketId  String @id @default(dbgenerated("gen_random_uuid()")) @map("ticket_id") @db.Uuid
+  /// Human-quotable handle ("Ticket #…"), never an authenticator. Application-generated, not a
+  /// sequence: a monotonic public reference would disclose the platform's ticket volume (ADR-091).
+  reference String @unique @map("reference") @db.VarChar(32)
+
+  tenantId String? @map("tenant_id") @db.Uuid
+  /// @pdpa(category: "operational", role: "controller") — traces a ticket to the account that opened it
+  openedBy String? @map("opened_by") @db.Uuid
+
+  /// SHA-256 of a one-time token (spec §5.4.3). Set on anonymous tickets only; never rendered, never
+  /// logged. NULL when a JWT is the credential and RLS the scope.
+  accessTokenHash String? @map("access_token_hash") @db.Char(64)
+
+  status      SupportTicketStatus @default(OPEN) @map("status")
+  openedAt    DateTime            @default(now()) @map("opened_at") @db.Timestamptz()
+  /// Stamped on escalation and KEPT through RESOLVED/CLOSED — how long the caller waited for a
+  /// person is the number that says whether ESCALATED is honest.
+  escalatedAt DateTime?           @map("escalated_at") @db.Timestamptz()
+  closedAt    DateTime?           @map("closed_at") @db.Timestamptz()
+
+  /// The device's locale at open, so a reply is written back in the language it was asked in (QM-3).
+  locale String? @map("locale") @db.VarChar(16)
+
+  messages SupportMessage[]
+
+  @@index([status, openedAt])
+  @@index([tenantId, openedAt(sort: Desc)])
+  @@map("support_tickets")
+  @@schema("platform")
+}
+
+/// One turn in a thread. The three AI columns are NOT optional decoration: §22.3 forbids presenting a
+/// model's output as more than advice, and storing the HallucinationGuard verdict with the message is
+/// what lets the thread RENDER it — the rule <ProcurementInsight /> already follows. A CHECK holds
+/// "AI turn iff verdict present".
+model SupportMessage {
+  messageId String  @id @default(dbgenerated("gen_random_uuid()")) @map("message_id") @db.Uuid
+  ticketId  String  @map("ticket_id") @db.Uuid
+  /// Denormalised from the ticket so this table can carry the SAME policy — RLS does not follow FKs.
+  tenantId  String? @map("tenant_id") @db.Uuid
+
+  senderType   SupportMessageSender @map("sender_type")
+  /// @pdpa(category: "operational", role: "controller") — traces a turn to the account that wrote it
+  senderUserId String?              @map("sender_user_id") @db.Uuid
+
+  /// @pdpa(category: "operational", role: "controller") — free text; a caller may include anything
+  /// about themselves. Retained per docs/compliance/data-retention-policy.md.
+  body String @map("body") @db.Text
+
+  modelUsed     String?  @map("model_used") @db.VarChar(100)
+  confidence    Decimal? @map("confidence") @db.Decimal(4, 3)
+  lowConfidence Boolean? @map("low_confidence")
+
+  sentAt DateTime  @default(now()) @map("sent_at") @db.Timestamptz()
+  readAt DateTime? @map("read_at") @db.Timestamptz()
+
+  ticket SupportTicket @relation(fields: [ticketId], references: [ticketId], onDelete: Cascade)
+
+  @@index([ticketId, sentAt])
+  @@map("support_messages")
+  @@schema("platform")
 }
