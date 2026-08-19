@@ -86,9 +86,10 @@ export class OtpService implements OnModuleDestroy {
     const fixedOtp = e2eFixedOtp();
     // The E2E bypass skips BOTH the resend cooldown and the per-phone daily limit: automated suites
     // request many OTPs for the same test phone back-to-back. Production always enforces both.
+    let claimedDailyKey: string | null = null;
     if (!fixedOtp) {
       await this.enforceResendCooldown(phoneNumber);
-      await this.enforceDailyLimit(phoneNumber);
+      claimedDailyKey = await this.enforceDailyLimit(phoneNumber);
     }
 
     const otp = fixedOtp ?? generateOtp();
@@ -99,7 +100,18 @@ export class OtpService implements OnModuleDestroy {
     await this.redis.set(otpKey, otp, 'EX', OTP_TTL_SECONDS);
     await this.redis.set(attemptsKey, '0', 'EX', OTP_TTL_SECONDS);
 
-    await this.sendSms(phoneNumber, otp);
+    try {
+      await this.sendSms(phoneNumber, otp);
+    } catch (err) {
+      // The daily slot is claimed BEFORE the send, because the INCR is what makes the limit atomic
+      // under concurrency (the same reason verifyOtp spends its attempt budget up front). That left a
+      // gateway failure burning one of the caller's ten daily codes for a message that never arrived
+      // — and SMS OTP is the ONLY login SITE_WORKER has, so ten failed sends locked them out for the
+      // day. Hand the slot back. The cooldown needs no unwinding: it is only opened after a
+      // successful send.
+      if (claimedDailyKey) await this.refundDailyLimit(claimedDailyKey);
+      throw err;
+    }
     // Open the cooldown window only after a send actually went out (a failed send lets the user retry).
     if (!fixedOtp) await this.startResendCooldown(phoneNumber);
 
@@ -173,7 +185,9 @@ export class OtpService implements OnModuleDestroy {
     return true;
   }
 
-  private async enforceDailyLimit(phoneNumber: string): Promise<void> {
+  /** Claim one of the day's OTP slots. Returns the Redis key that was charged, so a failed send can
+   *  refund exactly that key even if the call straddles the UTC date rollover. */
+  private async enforceDailyLimit(phoneNumber: string): Promise<string> {
     const dailyKey = `otp:daily:${phoneNumber}:${new Date().toISOString().slice(0, 10)}`;
     const count = await this.redis.incr(dailyKey);
     if (count === 1) {
@@ -182,6 +196,24 @@ export class OtpService implements OnModuleDestroy {
     if (count > OTP_DAILY_LIMIT) {
       throw new HttpException('Daily OTP limit exceeded', HttpStatus.TOO_MANY_REQUESTS);
     }
+    return dailyKey;
+  }
+
+  /**
+   * Return an unused daily slot after a failed send.
+   *
+   * Guarded by EXISTS inside the script rather than a bare DECR: the key carries a 24h TTL, and a
+   * plain DECR arriving after it expired would RECREATE it at -1 with no expiry, which then lets the
+   * next day start from a negative count (eleven sends, forever). Doing the check and the decrement
+   * in one Lua call keeps them atomic — a DECR guarded by a separate EXISTS round trip has the same
+   * race, just narrower.
+   */
+  private async refundDailyLimit(dailyKey: string): Promise<void> {
+    await this.redis.eval(
+      "if redis.call('EXISTS', KEYS[1]) == 1 then return redis.call('DECR', KEYS[1]) end return 0",
+      1,
+      dailyKey,
+    );
   }
 
   private async sendSms(phoneNumber: string, otp: string): Promise<void> {

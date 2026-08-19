@@ -15,7 +15,7 @@ import {
 } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import { randomUUID } from 'crypto';
-import { KafkaProducer } from '@cos/shared';
+import { EventOutboxService } from '../../shared/events/event-outbox.service';
 import { createLogger } from '@cos/logger';
 import { clsUserId, clsTenantId } from '../../shared/context/cls-context';
 import { SafetyRepository } from './safety.repository';
@@ -40,11 +40,11 @@ export class SafetyService {
   }
 
   private readonly correlationId: string;
-  private readonly kafka = new KafkaProducer();
 
   constructor(
     private readonly repo: SafetyRepository,
     @Inject(REQUEST) private readonly request: { userId?: string; correlationId?: string },
+    private readonly outbox: EventOutboxService,
   ) {
     this.correlationId = request.correlationId ?? randomUUID();
   }
@@ -109,30 +109,17 @@ export class SafetyService {
     return incident;
   }
 
+  /** Queue a domain event. Durable and off the request path — see EventOutboxService. */
   private async emitEvent(eventType: string, payload: Record<string, unknown>): Promise<void> {
-    try {
-      await this.kafka.connect();
-      await this.kafka.publish({
-        event_type: eventType,
-        event_version: '1.0',
-        tenant_id: this.tenantId,
-        actor_id: this.userId,
-        occurred_at: new Date().toISOString(),
-        correlation_id: this.correlationId,
-        payload,
-      });
-    } catch (err) {
-      /* istanbul ignore next -- String(err) fallback is defensive */
-      const errMsg = err instanceof Error ? err.message : String(err);
-      logger.warn({
-        event: 'kafka.publish.failed',
-        event_type: eventType,
-        tenant_id: this.tenantId,
-        error: errMsg,
-      });
-    } finally {
-      await this.kafka.disconnect().catch(/* istanbul ignore next */ () => undefined);
-    }
+    await this.outbox.publish({
+      event_type: eventType,
+      event_version: '1.0',
+      tenant_id: this.tenantId,
+      actor_id: this.userId,
+      occurred_at: new Date().toISOString(),
+      correlation_id: this.correlationId,
+      payload,
+    });
   }
 
   async listIncidents(params: {

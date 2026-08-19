@@ -84,6 +84,31 @@ describe('IdentityService', () => {
       );
       expect(keycloakAdmin.exchangeOtpForTokens).not.toHaveBeenCalled();
     });
+
+    // The query used to be `LIMIT 1` with no ORDER BY, so a phone number on two rows authenticated
+    // the caller into whichever tenant PostgreSQL happened to return — silently, and not necessarily
+    // the same one next time. The database now forbids the duplicate (20260819000001), but this path
+    // must not go back to guessing if that index is ever absent: a restored snapshot from before the
+    // migration, or its rollback, would put the rows back.
+    it('refuses to issue tokens when one phone resolves to two accounts, instead of picking one', async () => {
+      const other = { ...mockUser, user_id: 'user-2', tenant_id: 'tenant-2' };
+      (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([mockUser, other]);
+
+      await expect(service.issueTokensForPhone('+66812345678')).rejects.toThrow(
+        UnauthorizedException,
+      );
+      // The point of the fix: no token is minted for EITHER tenant.
+      expect(keycloakAdmin.exchangeOtpForTokens).not.toHaveBeenCalled();
+    });
+
+    it('reports the ambiguity as COS-AUTH-101 without echoing the phone number', async () => {
+      const other = { ...mockUser, user_id: 'user-2', tenant_id: 'tenant-2' };
+      (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([mockUser, other]);
+
+      await expect(service.issueTokensForPhone('+66812345678')).rejects.toMatchObject({
+        response: { error: { code: 'COS-AUTH-101', messageKey: 'auth.phone.ambiguous' } },
+      });
+    });
   });
 
   describe('refreshAccessToken', () => {

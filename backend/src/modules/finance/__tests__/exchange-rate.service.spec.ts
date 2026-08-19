@@ -32,7 +32,12 @@ const mockFetch = jest.fn();
 global.fetch = mockFetch;
 
 import { Decimal } from '@cos/financial';
-import { ExchangeRateService } from '../exchange-rate.service';
+import {
+  ExchangeRateService,
+  EXCHANGE_RATE_JOB,
+  EXCHANGE_RATE_LEASE_SECONDS,
+} from '../exchange-rate.service';
+import { makeLockDouble } from '../../../shared/scheduling/__tests__/lock-double';
 
 // ── Fixtures ────────────────────────────────────────────────────────────────
 
@@ -51,7 +56,8 @@ let svc: ExchangeRateService;
 
 beforeEach(() => {
   jest.clearAllMocks();
-  svc = new ExchangeRateService();
+  // A lock that grants — the refresh tests below are about the refresh, not about who runs it.
+  svc = new ExchangeRateService(makeLockDouble().service);
 });
 
 afterEach(async () => {
@@ -176,5 +182,33 @@ describe('onModuleDestroy', () => {
   it('swallows quit errors', async () => {
     mockQuit.mockRejectedValueOnce(new Error('already closed'));
     await expect(svc.onModuleDestroy()).resolves.not.toThrow();
+  });
+});
+
+// One shared Redis key and a metered third-party quota: three replicas refreshing meant three calls
+// to Open Exchange Rates for one day's rates, and three writers racing the same key.
+describe('ExchangeRateService — single-replica refresh', () => {
+  it('does not call the rates API on a replica that does not hold the lease', async () => {
+    const lock = makeLockDouble(false);
+    const other = new ExchangeRateService(lock.service);
+    try {
+      await other.refreshRates();
+      expect(mockFetch).not.toHaveBeenCalled();
+    } finally {
+      await other.onModuleDestroy();
+    }
+  });
+
+  it('claims the lease under the job name', async () => {
+    const lock = makeLockDouble();
+    const other = new ExchangeRateService(lock.service);
+    try {
+      await other.refreshRates();
+      expect(lock.calls).toEqual([
+        { jobName: EXCHANGE_RATE_JOB, leaseSeconds: EXCHANGE_RATE_LEASE_SECONDS },
+      ]);
+    } finally {
+      await other.onModuleDestroy();
+    }
   });
 });

@@ -74,6 +74,13 @@ export interface DeviceTokenRow {
 
 // ── Repository ─────────────────────────────────────────────────────────────
 
+/**
+ * Most notifications one escalation sweep will send in a single tick, per rule. The sweep runs every
+ * five minutes and sends one message per row, so this is a rate limit on a burst as much as a memory
+ * bound — the remainder is not lost, it is escalated on the next tick.
+ */
+export const ESCALATION_BATCH_SIZE = 200;
+
 @Injectable()
 export class NotificationRepository implements OnModuleDestroy {
   // platform.* tables always stay on the shared DB — never move to dedicated DB
@@ -451,6 +458,16 @@ export class NotificationRepository implements OnModuleDestroy {
    * (the RLS-bypassing shared connection) precisely because it must span every tenant; per-tenant
    * reads/writes instead go through `this.db.run`, under the notifications-schema RLS policies.
    */
+  /**
+   * Unescalated, unread notifications past their acknowledgement window.
+   *
+   * Bounded and oldest-first. Unbounded, this returned every stale notification the tenant had ever
+   * accumulated, and the caller then sent one message per row inside a single cron tick — so the
+   * first sweep after an outage (or after the escalation rules were widened) was a backlog delivered
+   * all at once. ORDER BY created_at is what makes the bound safe rather than arbitrary: the oldest
+   * are the ones most overdue, and whatever does not fit is picked up by the next tick five minutes
+   * later, because rows are only marked escalated once they have actually been sent.
+   */
   async findEscalationCandidates(
     eventType: string,
     olderThanSeconds: number,
@@ -465,6 +482,8 @@ export class NotificationRepository implements OnModuleDestroy {
           AND read_at      IS NULL
           AND escalated_at IS NULL
           AND created_at   < now() - (${olderThanSeconds}::int * interval '1 second')
+        ORDER BY created_at ASC
+        LIMIT ${ESCALATION_BATCH_SIZE}
       `,
     );
   }

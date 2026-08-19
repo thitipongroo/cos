@@ -89,4 +89,14 @@ async function bootstrap(): Promise<void> {
   await app.listen(port, '0.0.0.0');
 }
 
-bootstrap();
+// A rejected bootstrap must terminate the process with a non-zero exit code and a logged reason.
+// Without this handler the startup guards above (appDatabaseUrl / assertSecurityTogglesConfigured)
+// surfaced as a bare unhandled rejection: Node still exits non-zero, but the operator sees a raw
+// stack with no indication that the pod refused to start on purpose. Kubernetes then restarts it in
+// a loop with nothing in the logs naming the misconfiguration.
+bootstrap().catch((err: unknown) => {
+  // console, not @cos/logger: this runs when the Nest DI container may never have been created, so
+  // the logger's own config is not guaranteed to be loaded.
+  console.error('bootstrap.failed', err);
+  process.exit(1);
+});

@@ -27,7 +27,22 @@ jest.mock('@cos/logger', () => {
 const { __loggerMock: loggerMock } = jest.requireMock('@cos/logger');
 
 import { PrismaClient } from '@prisma/client';
-import { KafkaProducer } from '@cos/shared';
+// publishEvent() queues through EventOutboxService now instead of building a KafkaProducer per
+// activity. The envelope assertions below are unchanged and still the point — only the collaborator
+// that receives it moved, so `mockKafkaPublish` is rebound to the outbox.
+jest.mock('../../../../shared/events/event-outbox.service', () => ({
+  // A plain class, NOT jest.fn().mockImplementation(...): the suites below call jest.resetAllMocks()
+  // in beforeEach, which strips a mock constructor's implementation and leaves `new` returning a bare
+  // object with no publish(). Delegating at CALL time keeps mockKafkaPublish resettable as usual.
+  EventOutboxService: class {
+    publish(...args: unknown[]): Promise<unknown> {
+      return mockKafkaPublish(...args) as Promise<unknown>;
+    }
+    onModuleDestroy(): Promise<void> {
+      return Promise.resolve();
+    }
+  },
+}));
 import { updatePoStatus, notifyApprover, compensateCancelledPo } from '../po.activities';
 
 const mockExecuteRaw = jest.fn().mockResolvedValue(1);
@@ -35,9 +50,7 @@ const mockExecuteRawUnsafe = jest.fn().mockResolvedValue(undefined);
 const mockPrismaDisconnect = jest.fn().mockResolvedValue(undefined);
 const mockTransaction = jest.fn();
 
-const mockKafkaConnect = jest.fn().mockResolvedValue(undefined);
 const mockKafkaPublish = jest.fn().mockResolvedValue(undefined);
-const mockKafkaDisconnect = jest.fn().mockResolvedValue(undefined);
 
 const baseParams = {
   po_id: 'po-uuid-001',
@@ -60,16 +73,7 @@ beforeEach(() => {
     $transaction: mockTransaction,
     $disconnect: mockPrismaDisconnect,
   }));
-
-  mockKafkaConnect.mockResolvedValue(undefined);
   mockKafkaPublish.mockResolvedValue(undefined);
-  mockKafkaDisconnect.mockResolvedValue(undefined);
-
-  (KafkaProducer as jest.Mock).mockImplementation(() => ({
-    connect: mockKafkaConnect,
-    publish: mockKafkaPublish,
-    disconnect: mockKafkaDisconnect,
-  }));
 });
 
 describe('module wiring', () => {
@@ -84,9 +88,7 @@ describe('updatePoStatus', () => {
     expect(mockTransaction).toHaveBeenCalledTimes(1);
     expect(mockExecuteRawUnsafe).toHaveBeenCalledTimes(1);
     expect(mockExecuteRaw).toHaveBeenCalledTimes(1);
-    expect(mockKafkaConnect).toHaveBeenCalledTimes(1);
     expect(mockKafkaPublish).toHaveBeenCalledTimes(1);
-    expect(mockKafkaDisconnect).toHaveBeenCalledTimes(1);
     // Pooling (ADR-021): the client is reused across activities and closed only by
     // disconnectActivityClients() on worker shutdown. Disconnecting per activity is what made every
     // workflow step pay for a fresh pg pool.
@@ -140,24 +142,6 @@ describe('updatePoStatus', () => {
     );
   });
 
-  it('disconnects kafka even when publish throws and logs the exact failure event', async () => {
-    mockKafkaPublish.mockRejectedValueOnce(new Error('kafka down'));
-    await updatePoStatus(baseParams, 'DRAFT', 'PENDING_APPROVAL');
-    expect(mockKafkaDisconnect).toHaveBeenCalledTimes(1);
-    // Pooling (ADR-021): the client is reused across activities and closed only by
-    // disconnectActivityClients() on worker shutdown. Disconnecting per activity is what made every
-    // workflow step pay for a fresh pg pool.
-    expect(mockPrismaDisconnect).not.toHaveBeenCalled();
-    expect(loggerMock.error).toHaveBeenCalledWith(
-      {
-        event_type: 'procurement.po.status_changed.v1',
-        err: expect.any(Error),
-        correlation_id: 'corr-uuid-001',
-      },
-      'kafka.publish.failed',
-    );
-  });
-
   it('propagates DB error from withTenantTx', async () => {
     mockTransaction.mockRejectedValueOnce(new Error('DB write failed'));
     await expect(updatePoStatus(baseParams, 'DRAFT', 'PENDING_APPROVAL')).rejects.toThrow(
@@ -174,9 +158,7 @@ describe('notifyApprover', () => {
   it('publishes approval_requested event without touching DB', async () => {
     await notifyApprover(baseParams, 'approver-uuid-001', 'L1', 'PO-2025-001', '50000', 'THB');
     expect(mockTransaction).not.toHaveBeenCalled();
-    expect(mockKafkaConnect).toHaveBeenCalledTimes(1);
     expect(mockKafkaPublish).toHaveBeenCalledTimes(1);
-    expect(mockKafkaDisconnect).toHaveBeenCalledTimes(1);
   });
 
   it('publishes the exact approval_requested envelope and logs the request', async () => {
@@ -209,21 +191,13 @@ describe('notifyApprover', () => {
       'po.approval.requested',
     );
   });
-
-  it('disconnects kafka even when publish throws', async () => {
-    mockKafkaPublish.mockRejectedValueOnce(new Error('kafka down'));
-    await notifyApprover(baseParams, 'approver-uuid-001', 'L1', 'PO-2025-001', '50000', 'THB');
-    expect(mockKafkaDisconnect).toHaveBeenCalledTimes(1);
-  });
 });
 
 describe('compensateCancelledPo', () => {
   it('publishes status_changed event without touching DB', async () => {
     await compensateCancelledPo(baseParams);
     expect(mockTransaction).not.toHaveBeenCalled();
-    expect(mockKafkaConnect).toHaveBeenCalledTimes(1);
     expect(mockKafkaPublish).toHaveBeenCalledTimes(1);
-    expect(mockKafkaDisconnect).toHaveBeenCalledTimes(1);
   });
 
   it('publishes the exact compensation envelope (PENDING_APPROVAL → DRAFT) and logs it', async () => {
@@ -245,11 +219,5 @@ describe('compensateCancelledPo', () => {
       { po_id: 'po-uuid-001', correlation_id: 'corr-uuid-001' },
       'po.cancelled.compensation',
     );
-  });
-
-  it('disconnects kafka even when publish throws', async () => {
-    mockKafkaPublish.mockRejectedValueOnce(new Error('kafka down'));
-    await compensateCancelledPo(baseParams);
-    expect(mockKafkaDisconnect).toHaveBeenCalledTimes(1);
   });
 });

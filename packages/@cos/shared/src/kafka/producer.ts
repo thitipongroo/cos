@@ -65,17 +65,25 @@ export class KafkaProducer {
   /**
    * Publish a typed event. The event envelope is Avro-encoded using the
    * registered schema for this event type.
-   * Idempotency key: event_id (UUID v4 — unique per publish call).
+   * Idempotency key: event_id (UUID v4). Supplied by the caller when the event has a durable
+   * identity (the outbox), otherwise minted here.
    */
   async publish<T>(
-    event: Omit<BaseEventEnvelope<T>, 'event_id'>,
+    event: Omit<BaseEventEnvelope<T>, 'event_id'> & { event_id?: string },
     options: ProduceOptions = {},
   ): Promise<void> {
     if (!this.producer) throw new Error('KafkaProducer not connected — call connect() first');
 
+    // Honour a caller-supplied event_id; mint one only when there is none.
+    //
+    // KafkaConsumer dedupes on event_id (a Redis key, 24h TTL — consumer.ts), so the id is the
+    // IDENTITY of the event, not a per-attempt tag. Minting a fresh one on every publish made that
+    // dedupe unreachable for anything republished: the outbox poller retries a delivery it is not
+    // sure landed, and with a new id each time every retry looked like a brand-new event to every
+    // consumer. Callers that pass no id (direct publishers) behave exactly as before.
     const envelope: BaseEventEnvelope<T> = {
       ...event,
-      event_id: randomUUID(),
+      event_id: event.event_id ?? randomUUID(),
     };
 
     // Per-tenant topic name (§7.3): {tenant_id}.{event_type}; platform events use the

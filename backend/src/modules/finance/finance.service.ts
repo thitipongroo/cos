@@ -17,7 +17,7 @@ import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
 import { randomUUID } from 'crypto';
 import { Decimal, sumDecimals } from '@cos/financial';
-import { KafkaProducer } from '@cos/shared';
+import { EventOutboxService } from '../../shared/events/event-outbox.service';
 import { createLogger } from '@cos/logger';
 import { FinanceRepository } from './finance.repository';
 import { FileServiceClient } from '../files/file-service-client.service';
@@ -83,7 +83,6 @@ export class FinanceService {
     return (this.request as { userId?: string }).userId ?? '';
   }
   private readonly correlationId: string;
-  private readonly kafka: KafkaProducer;
 
   constructor(
     private readonly repo: FinanceRepository,
@@ -92,9 +91,9 @@ export class FinanceService {
     private readonly signLink: ContractSignLinkService,
     @Inject(REQUEST)
     private readonly request: Request & { tenantId?: string; user?: { user_id?: string } },
+    private readonly outbox: EventOutboxService,
   ) {
     this.correlationId = randomUUID();
-    this.kafka = new KafkaProducer();
   }
 
   // ── Budget Management ─────────────────────────────────────────────────────
@@ -819,25 +818,16 @@ export class FinanceService {
     return periods;
   }
 
+  /** Queue a domain event. Durable and off the request path — see EventOutboxService. */
   private async emitEvent<T>(eventType: string, payload: T): Promise<void> {
-    try {
-      await this.kafka.connect();
-      await this.kafka.publish({
-        event_type: eventType,
-        event_version: '1.0',
-        tenant_id: this.tenantId,
-        actor_id: this.userId,
-        occurred_at: new Date().toISOString(),
-        correlation_id: this.correlationId,
-        payload,
-      });
-    } catch (err) {
-      logger.error(
-        { event_type: eventType, err, correlation_id: this.correlationId },
-        'kafka.publish.failed',
-      );
-    } finally {
-      await this.kafka.disconnect().catch(/* istanbul ignore next */ () => undefined);
-    }
+    await this.outbox.publish({
+      event_type: eventType,
+      event_version: '1.0',
+      tenant_id: this.tenantId,
+      actor_id: this.userId,
+      occurred_at: new Date().toISOString(),
+      correlation_id: this.correlationId,
+      payload,
+    });
   }
 }

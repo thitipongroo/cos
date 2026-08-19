@@ -10,6 +10,7 @@ import { clsTenantId } from '../../../shared/context/cls-context';
 import type { CreatePhaseDto } from './dto/create-phase.dto';
 import type { UpdatePhaseDto } from './dto/update-phase.dto';
 import { projectExistsInTenant } from '../shared/parent-existence';
+import { applyCap, capLimit } from '../../../shared/pagination/list-cap';
 
 export type PhaseStatusValue = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
 
@@ -81,16 +82,23 @@ export class PhasesRepository {
   }
 
   // Ordered by seq — the derivation order the dashboard's "current phase" depends on (ADR-070).
-  // Phases per project are bounded, so this returns the whole ordered list (no pagination).
+  //
+  // Phases per project really are bounded in practice, so this still returns the whole ordered list
+  // rather than a paginated envelope. The cap is the backstop for when practice is wrong: nothing in
+  // the schema limits how many phases a project may hold, and an unbounded SELECT that is only safe
+  // by convention is the exact shape shared/pagination/list-cap.ts was written to retire. Ordering by
+  // seq keeps the truncation deterministic — the earliest phases, never an arbitrary slice.
   async listByProject(projectId: string): Promise<PhaseRow[]> {
-    return this.tenantPrisma.run(
+    const rows = await this.tenantPrisma.run(
       async (tx) =>
         await tx.$queryRaw<PhaseRow[]>`
         SELECT * FROM projects.project_phases
         WHERE project_id = ${projectId}::uuid AND tenant_id = ${this.tenantId}::uuid
         ORDER BY seq ASC
+        LIMIT ${capLimit()}
       `,
     );
+    return applyCap(rows, 'project.phases');
   }
 
   async update(phaseId: string, dto: UpdatePhaseDto): Promise<PhaseRow> {

@@ -17,7 +17,7 @@ import type { Request } from 'express';
 import { randomUUID } from 'crypto';
 import { Decimal, calculateLineTotal, sumDecimals } from '@cos/financial';
 import { toBoqCsv } from './boq-csv.util';
-import { KafkaProducer } from '@cos/shared';
+import { EventOutboxService } from '../../shared/events/event-outbox.service';
 import { createLogger } from '@cos/logger';
 import { BoqRepository } from './boq.repository';
 import type { BoqVersionRow, BoqCategoryRow, BoqItemRow } from './boq.repository';
@@ -37,7 +37,6 @@ export class BoqService {
     return (this.request as { userId?: string }).userId ?? '';
   }
   private readonly correlationId: string;
-  private readonly kafka: KafkaProducer;
 
   constructor(
     private readonly repo: BoqRepository,
@@ -46,9 +45,9 @@ export class BoqService {
       tenantId?: string;
       user?: { user_id?: string; role?: string };
     },
+    private readonly outbox: EventOutboxService,
   ) {
     this.correlationId = randomUUID();
-    this.kafka = new KafkaProducer();
   }
 
   // ── Version Operations ────────────────────────────────────────────────────
@@ -379,23 +378,16 @@ export class BoqService {
     });
   }
 
+  /** Queue a domain event. Durable and off the request path — see EventOutboxService. */
   private async publishEvent<T>(eventType: string, payload: T): Promise<void> {
-    try {
-      await this.kafka.connect();
-      await this.kafka.publish({
-        event_type: eventType,
-        event_version: '1.0',
-        tenant_id: this.tenantId,
-        actor_id: this.userId,
-        occurred_at: new Date().toISOString(),
-        correlation_id: this.correlationId,
-        payload,
-      });
-    } catch (err) {
-      logger.error(
-        { event_type: eventType, err, correlation_id: this.correlationId },
-        'kafka.publish.failed',
-      );
-    }
+    await this.outbox.publish({
+      event_type: eventType,
+      event_version: '1.0',
+      tenant_id: this.tenantId,
+      actor_id: this.userId,
+      occurred_at: new Date().toISOString(),
+      correlation_id: this.correlationId,
+      payload,
+    });
   }
 }

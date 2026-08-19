@@ -7,7 +7,7 @@ import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
 import { randomUUID } from 'crypto';
 import { Decimal } from '@cos/financial';
-import { KafkaProducer } from '@cos/shared';
+import { EventOutboxService } from '../../shared/events/event-outbox.service';
 import { createLogger } from '@cos/logger';
 import { WorkforceRepository } from './workforce.repository';
 import type {
@@ -26,14 +26,11 @@ const logger = createLogger('workforce-service');
 
 @Injectable({ scope: Scope.REQUEST })
 export class WorkforceService {
-  private readonly kafka: KafkaProducer;
-
   constructor(
     @Inject(REQUEST) private readonly req: Request,
     private readonly repo: WorkforceRepository,
-  ) {
-    this.kafka = new KafkaProducer();
-  }
+    private readonly outbox: EventOutboxService,
+  ) {}
 
   private get tenantId(): string {
     return (this.req as Request & { tenantId: string }).tenantId;
@@ -182,20 +179,16 @@ export class WorkforceService {
     return this.repo.getManpowerSummary(projectId);
   }
 
+  /** Queue a domain event. Durable and off the request path — see EventOutboxService. */
   private async emitEvent(eventType: string, payload: Record<string, unknown>): Promise<void> {
-    try {
-      await this.kafka.connect();
-      await this.kafka.publish({
-        event_type: eventType,
-        event_version: '1.0',
-        tenant_id: this.tenantId,
-        actor_id: this.userId,
-        correlation_id: randomUUID(),
-        occurred_at: new Date().toISOString(),
-        payload,
-      });
-    } catch (err) {
-      logger.error({ err, eventType }, 'Failed to emit Kafka event');
-    }
+    await this.outbox.publish({
+      event_type: eventType,
+      event_version: '1.0',
+      tenant_id: this.tenantId,
+      actor_id: this.userId,
+      correlation_id: randomUUID(),
+      occurred_at: new Date().toISOString(),
+      payload,
+    });
   }
 }

@@ -112,6 +112,13 @@ model User {
   subjectRequestsOpened SubjectRequest[]
 
   @@index([tenantId, email])
+  // UNIQUE in the database, and only expressible as a plain @@index here: the real index is PARTIAL
+  // (`WHERE phone_number IS NOT NULL`, migration 20260819000001_unique_user_phone_number) and Prisma
+  // schema has no syntax for a partial index. The uniqueness is load-bearing, not cosmetic — Path A
+  // OTP login resolves a caller by this column alone, so two rows sharing a number means logging in
+  // as an arbitrary tenant (IdentityService.issueTokensForPhone refuses rather than guess). Do not
+  // "fix" this line to match the database by making it @@unique: Prisma would then generate a
+  // NON-partial unique index and drift the other way.
   @@index([phoneNumber])
   @@map("users")
   @@schema("platform")

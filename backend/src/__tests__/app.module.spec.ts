@@ -44,13 +44,26 @@ describe('AppModule', () => {
   // covered), and this one gets a value. Coverage is cumulative across the run, so the left operand
   // this file exercises only adds to the total. afterAll restores the previous state because jest
   // workers reuse a process across spec files.
+  //
+  // APP_DATABASE_URL is pinned here for a different reason: not coverage, but ISOLATION. It normally
+  // arrives from the repo-root .env via ConfigModule, but several specs (tenant-prisma.service,
+  // get-db-url) delete it to exercise the "refuse to fall back to the superuser role" path, and jest
+  // reuses a worker process across spec files. Whether this suite saw the variable therefore depended
+  // on which files happened to run before it in the same worker — AuditInterceptor calls
+  // appDatabaseUrl() in a field initializer, so an unset variable fails the compile with an error
+  // about RLS that has nothing to do with the module graph. Setting it here makes the result
+  // independent of scheduling; the same save/restore keeps the deletion tests unaffected.
   const previousRedisUrl = process.env['REDIS_URL'];
+  const previousAppDbUrl = process.env['APP_DATABASE_URL'];
   beforeAll(() => {
     process.env['REDIS_URL'] = 'redis://localhost:6379';
+    process.env['APP_DATABASE_URL'] ??= 'postgresql://app_user@localhost:6432/construction_os';
   });
   afterAll(() => {
     if (previousRedisUrl === undefined) delete process.env['REDIS_URL'];
     else process.env['REDIS_URL'] = previousRedisUrl;
+    if (previousAppDbUrl === undefined) delete process.env['APP_DATABASE_URL'];
+    else process.env['APP_DATABASE_URL'] = previousAppDbUrl;
   });
 
   it('resolves every provider in every module', async () => {

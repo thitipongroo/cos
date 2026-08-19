@@ -30,6 +30,7 @@ jest.mock('@temporalio/client', () => ({
 }));
 
 import { TenantService, defaultTimezoneForRegion } from '../tenant.service';
+import { makeOutboxDouble } from '../../../shared/events/__tests__/outbox-double';
 import { PrismaClient } from '@prisma/client';
 import { KafkaTopicProvisioner } from '@cos/shared';
 import { Connection, Client } from '@temporalio/client';
@@ -52,7 +53,7 @@ describe('TenantService', () => {
     // FeatureFlagService gates encrypt-on-write for dedicated_db_url (security review F5b). Default
     // the flag OFF so these existing assertions keep comparing against the plaintext URL; the cipher
     // has its own dedicated spec.
-    service = new TenantService({ isEnabled: () => false } as never);
+    service = new TenantService({ isEnabled: () => false } as never, makeOutboxDouble().service);
     prismaMock = (service as unknown as { prisma: jest.Mocked<PrismaClient> }).prisma;
   });
 
@@ -91,15 +92,15 @@ describe('TenantService', () => {
           return fn(tx);
         },
       );
-      const kafkaMock = (service as unknown as { kafka: { publish: jest.Mock } }).kafka;
-      kafkaMock.publish.mockClear();
+      const outboxMock = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
+      outboxMock.publish.mockClear();
 
       await service.createTenant(
         { tenantCode: 'acme_corp', tenantName: 'ACME Construction', planType: 'STARTER' as never },
         'admin-1',
       );
 
-      const created = kafkaMock.publish.mock.calls.find(
+      const created = outboxMock.publish.mock.calls.find(
         (c) => c[0]?.event_type === 'identity.tenant.created.v1',
       );
       expect(created).toBeDefined();
@@ -367,38 +368,6 @@ describe('TenantService', () => {
     });
   });
 
-  describe('publishEvent error handling', () => {
-    it('logs error but does not throw when Kafka publish fails (covers catch branch)', async () => {
-      (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([]);
-      (prismaMock.$transaction as jest.Mock).mockImplementation(
-        async (fn: (tx: unknown) => Promise<unknown>) => {
-          const tx = {
-            $queryRaw: jest.fn().mockResolvedValue([mockTenant]),
-            $executeRawUnsafe: jest.fn().mockResolvedValue(undefined),
-          };
-          return fn(tx);
-        },
-      );
-      const kafkaMock = (
-        service as unknown as {
-          kafka: { connect: jest.Mock; publish: jest.Mock; disconnect: jest.Mock };
-        }
-      ).kafka;
-      kafkaMock.publish.mockRejectedValueOnce(new Error('Kafka unavailable'));
-
-      await expect(
-        service.createTenant(
-          {
-            tenantCode: 'acme_corp',
-            tenantName: 'ACME Construction',
-            planType: 'STARTER' as never,
-          },
-          'admin-1',
-        ),
-      ).resolves.toBeDefined();
-    });
-  });
-
   describe('assignDedicatedDb', () => {
     it('throws BadRequestException for URL without postgresql:// or postgres:// prefix', async () => {
       await expect(
@@ -545,7 +514,7 @@ describe('TenantService', () => {
 
 describe('TenantService onModuleDestroy', () => {
   it('disconnects Prisma on shutdown', async () => {
-    const svc = new TenantService({ isEnabled: () => false } as never);
+    const svc = new TenantService({ isEnabled: () => false } as never, makeOutboxDouble().service);
     await svc.onModuleDestroy();
     expect(
       (svc as unknown as { prisma: { $disconnect: jest.Mock } }).prisma.$disconnect,

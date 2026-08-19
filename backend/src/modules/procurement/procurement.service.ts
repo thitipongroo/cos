@@ -19,7 +19,7 @@ import type { Request } from 'express';
 import { randomUUID } from 'crypto';
 import { Connection, Client } from '@temporalio/client';
 import { Decimal, calculateLineTotal, sumDecimals } from '@cos/financial';
-import { KafkaProducer } from '@cos/shared';
+import { EventOutboxService } from '../../shared/events/event-outbox.service';
 import { createLogger } from '@cos/logger';
 import { ProcurementRepository } from './procurement.repository';
 import { VendorScoring } from './vendor-scoring';
@@ -78,7 +78,6 @@ export class ProcurementService {
     return (this.request as { userId?: string }).userId ?? '';
   }
   private readonly correlationId: string;
-  private readonly kafka: KafkaProducer;
 
   constructor(
     private readonly repo: ProcurementRepository,
@@ -87,9 +86,9 @@ export class ProcurementService {
       tenantId?: string;
       user?: { user_id?: string; role?: string };
     },
+    private readonly outbox: EventOutboxService,
   ) {
     this.correlationId = randomUUID();
-    this.kafka = new KafkaProducer();
   }
 
   // ── Vendors ────────────────────────────────────────────────────────────────
@@ -860,23 +859,16 @@ export class ProcurementService {
     return client.workflow.getHandle(po.temporal_workflow_id);
   }
 
+  /** Queue a domain event. Durable and off the request path — see EventOutboxService. */
   private async publishEvent<T>(eventType: string, payload: T): Promise<void> {
-    try {
-      await this.kafka.connect();
-      await this.kafka.publish({
-        event_type: eventType,
-        event_version: '1.0',
-        tenant_id: this.tenantId,
-        actor_id: this.userId,
-        occurred_at: new Date().toISOString(),
-        correlation_id: this.correlationId,
-        payload,
-      });
-    } catch (err) {
-      logger.error(
-        { event_type: eventType, err, correlation_id: this.correlationId },
-        'kafka.publish.failed',
-      );
-    }
+    await this.outbox.publish({
+      event_type: eventType,
+      event_version: '1.0',
+      tenant_id: this.tenantId,
+      actor_id: this.userId,
+      occurred_at: new Date().toISOString(),
+      correlation_id: this.correlationId,
+      payload,
+    });
   }
 }

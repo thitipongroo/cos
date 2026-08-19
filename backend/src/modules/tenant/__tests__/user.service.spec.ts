@@ -22,6 +22,7 @@ jest.mock('@cos/logger', () => ({
 }));
 
 import { UserService } from '../user.service';
+import { makeOutboxDouble } from '../../../shared/events/__tests__/outbox-double';
 import { KeycloakAdminService } from '../../identity/keycloak-admin.service';
 import { PrismaClient } from '@prisma/client';
 import {
@@ -66,7 +67,7 @@ describe('UserService', () => {
       syncUserRole: jest.fn().mockResolvedValue(undefined),
     } as unknown as jest.Mocked<KeycloakAdminService>;
 
-    service = new UserService(keycloakAdmin);
+    service = new UserService(keycloakAdmin, makeOutboxDouble().service);
     prismaMock = (service as unknown as { prisma: jest.Mocked<PrismaClient> }).prisma;
   });
 
@@ -195,6 +196,84 @@ describe('UserService', () => {
       };
       await expect(service.createUser(dto, TENANT_ID, ACTOR_ID)).rejects.toThrow('DB error');
       expect(keycloakAdmin.deleteUser).toHaveBeenCalledWith(KC_USER_ID, REALM);
+    });
+
+    // The conflict guard above is a SELECT followed by an INSERT, so two concurrent creates on one
+    // phone number both read "no existing row". `users_phone_number_key` (migration 20260819000001)
+    // is what actually settles it — and the loser has to look identical to the caller that lost the
+    // race by a millisecond, i.e. a 409, not a 500 out of the driver.
+    it('maps the phone-number unique violation to the same 409 as the pre-flight conflict guard', async () => {
+      (prismaMock.$queryRaw as jest.Mock)
+        .mockResolvedValueOnce([]) // conflict guard — the racing create has not committed yet
+        .mockResolvedValueOnce([{ keycloak_realm: REALM }]); // tenant lookup
+      (prismaMock.$transaction as jest.Mock).mockRejectedValueOnce(
+        new Error('duplicate key value violates unique constraint "users_phone_number_key"'),
+      );
+
+      const dto = {
+        display_name: 'สมชาย',
+        phone_number: '+66812345678',
+        role: CosRole.SITE_ENGINEER,
+      };
+      await expect(service.createUser(dto, TENANT_ID, ACTOR_ID)).rejects.toThrow(ConflictException);
+      // The Keycloak account still has to go — the COS row it belonged to was never written.
+      expect(keycloakAdmin.deleteUser).toHaveBeenCalledWith(KC_USER_ID, REALM);
+    });
+
+    // Prisma normally rejects with an Error, but the driver adapter can surface a raw value. That must
+    // not throw on `.message` inside the error handler — the rollback above it still has to run.
+    it('handles a non-Error rejection without breaking the Keycloak rollback', async () => {
+      (prismaMock.$queryRaw as jest.Mock)
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([{ keycloak_realm: REALM }]);
+      (prismaMock.$transaction as jest.Mock).mockRejectedValueOnce('connection reset');
+
+      const dto = {
+        display_name: 'สมชาย',
+        phone_number: '+66812345678',
+        role: CosRole.SITE_ENGINEER,
+      };
+      await expect(service.createUser(dto, TENANT_ID, ACTOR_ID)).rejects.toBe('connection reset');
+      expect(keycloakAdmin.deleteUser).toHaveBeenCalledWith(KC_USER_ID, REALM);
+    });
+
+    // The translation is scoped to Path A. A Path B (email) create cannot hit the phone-number index
+    // at all, so a failure there is always a real error — never "this user already exists".
+    it('leaves a Path B failure untranslated even if the message mentions the phone index', async () => {
+      (prismaMock.$queryRaw as jest.Mock)
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([{ keycloak_realm: REALM }]);
+      (prismaMock.$transaction as jest.Mock).mockRejectedValueOnce(
+        new Error('duplicate key value violates unique constraint "users_phone_number_key"'),
+      );
+
+      const dto = {
+        display_name: 'สมชาย',
+        email: 'somchai@example.com',
+        role: CosRole.SITE_ENGINEER,
+      };
+      await expect(service.createUser(dto, TENANT_ID, ACTOR_ID)).rejects.toThrow(
+        'users_phone_number_key',
+      );
+    });
+
+    // Only the phone-number constraint is translated. Any other failure is a real error and must not
+    // be disguised as "this user already exists", which would send an operator looking for a row that
+    // is not there.
+    it('does not disguise an unrelated DB failure as a conflict', async () => {
+      (prismaMock.$queryRaw as jest.Mock)
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([{ keycloak_realm: REALM }]);
+      (prismaMock.$transaction as jest.Mock).mockRejectedValueOnce(new Error('deadlock detected'));
+
+      const dto = {
+        display_name: 'สมชาย',
+        phone_number: '+66812345678',
+        role: CosRole.SITE_ENGINEER,
+      };
+      await expect(service.createUser(dto, TENANT_ID, ACTOR_ID)).rejects.toThrow(
+        'deadlock detected',
+      );
     });
 
     it('logs error but still throws original error when Keycloak deleteUser also fails (covers rollback .catch branch)', async () => {
@@ -345,40 +424,11 @@ describe('UserService', () => {
   });
 
   // ─── publishEvent error handling ─────────────────────────────────────────
-
-  describe('publishEvent error handling', () => {
-    it('logs error but does not throw when Kafka publish fails (covers catch branch)', async () => {
-      (prismaMock.$queryRaw as jest.Mock)
-        .mockResolvedValueOnce([]) // conflict guard
-        .mockResolvedValueOnce([{ keycloak_realm: REALM }]); // tenant lookup
-      (prismaMock.$transaction as jest.Mock).mockImplementation(
-        async (fn: (tx: unknown) => Promise<unknown>) => {
-          const tx = {
-            $queryRaw: jest.fn().mockResolvedValueOnce([mockUserRow]).mockResolvedValueOnce([{}]),
-          };
-          return fn(tx);
-        },
-      );
-      const kafkaMock = (
-        service as unknown as {
-          kafka: { connect: jest.Mock; publish: jest.Mock; disconnect: jest.Mock };
-        }
-      ).kafka;
-      kafkaMock.publish.mockRejectedValueOnce(new Error('Kafka unavailable'));
-
-      const dto = {
-        display_name: 'สมชาย',
-        phone_number: '+66812345678',
-        role: CosRole.SITE_ENGINEER,
-      };
-      await expect(service.createUser(dto, TENANT_ID, ACTOR_ID)).resolves.toBeDefined();
-    });
-  });
 });
 
 describe('UserService onModuleDestroy', () => {
   it('disconnects Prisma on shutdown', async () => {
-    const svc = new UserService({} as never);
+    const svc = new UserService({} as never, makeOutboxDouble().service);
     await svc.onModuleDestroy();
     expect(
       (svc as unknown as { prisma: { $disconnect: jest.Mock } }).prisma.$disconnect,
@@ -393,7 +443,7 @@ describe('UserService self-service', () => {
   let prismaMock: jest.Mocked<PrismaClient>;
 
   beforeEach(() => {
-    service = new UserService({} as never);
+    service = new UserService({} as never, makeOutboxDouble().service);
     prismaMock = (service as unknown as { prisma: jest.Mocked<PrismaClient> }).prisma;
   });
 
@@ -486,7 +536,7 @@ describe('UserService getUserRoles', () => {
   let prismaMock: jest.Mocked<PrismaClient>;
 
   beforeEach(() => {
-    service = new UserService({} as never);
+    service = new UserService({} as never, makeOutboxDouble().service);
     prismaMock = (service as unknown as { prisma: jest.Mocked<PrismaClient> }).prisma;
   });
 
@@ -526,20 +576,20 @@ describe('UserService getUserRoles', () => {
 describe('UserService setUserRoles', () => {
   let service: UserService;
   let prismaMock: jest.Mocked<PrismaClient>;
-  let kafkaMock: { connect: jest.Mock; publish: jest.Mock; disconnect: jest.Mock };
+  let outboxMock: { publish: jest.Mock };
   let keycloakAdmin: jest.Mocked<KeycloakAdminService>;
 
   beforeEach(() => {
     keycloakAdmin = {
       syncUserRole: jest.fn().mockResolvedValue(undefined),
     } as unknown as jest.Mocked<KeycloakAdminService>;
-    service = new UserService(keycloakAdmin);
+    service = new UserService(keycloakAdmin, makeOutboxDouble().service);
     prismaMock = (service as unknown as { prisma: jest.Mocked<PrismaClient> }).prisma;
-    kafkaMock = (
+    outboxMock = (
       service as unknown as {
-        kafka: { connect: jest.Mock; publish: jest.Mock; disconnect: jest.Mock };
+        outbox: { publish: jest.Mock };
       }
-    ).kafka;
+    ).outbox;
   });
 
   // The whole role change runs inside one $transaction — mirror that here so the tx-scoped calls are
@@ -577,7 +627,7 @@ describe('UserService setUserRoles', () => {
     // Every write went through the transaction, never straight at the client.
     expect(prismaMock.$queryRaw).not.toHaveBeenCalled();
     // oldRole (SITE_ENGINEER) !== primary (PROJECT_MANAGER) → role_changed published
-    expect(kafkaMock.publish).toHaveBeenCalledTimes(1);
+    expect(outboxMock.publish).toHaveBeenCalledTimes(1);
   });
 
   it('does not emit role_changed when the primary is unchanged (actor "system" → assigned_by null)', async () => {
@@ -591,7 +641,7 @@ describe('UserService setUserRoles', () => {
     // branch to skip — the INSERT is issued unconditionally.
     expect(txQueryRaw).toHaveBeenCalledTimes(4);
     // oldRole === primary → no event
-    expect(kafkaMock.publish).not.toHaveBeenCalled();
+    expect(outboxMock.publish).not.toHaveBeenCalled();
   });
 
   it('throws NotFoundException when the user has no membership (falsy actorId → assigned_by null)', async () => {
@@ -604,7 +654,7 @@ describe('UserService setUserRoles', () => {
     );
     // Aborted on the SELECT — nothing was mutated, so the rollback has nothing to undo.
     expect(txQueryRaw).toHaveBeenCalledTimes(1);
-    expect(kafkaMock.publish).not.toHaveBeenCalled();
+    expect(outboxMock.publish).not.toHaveBeenCalled();
   });
 
   it('publishes no role_changed event when the transaction fails (all-or-nothing)', async () => {
@@ -615,7 +665,7 @@ describe('UserService setUserRoles', () => {
     await expect(service.setUserRoles(USER_ID, dto, TENANT_ID, ACTOR_ID)).rejects.toThrow(
       'DB error',
     );
-    expect(kafkaMock.publish).not.toHaveBeenCalled();
+    expect(outboxMock.publish).not.toHaveBeenCalled();
   });
 
   it('rejects a SYSTEM_ADMIN primary role before any DB write (privilege-escalation guard)', async () => {
@@ -646,20 +696,20 @@ describe('UserService password resets', () => {
   let service: UserService;
   let prismaMock: jest.Mocked<PrismaClient>;
   let keycloakAdmin: jest.Mocked<KeycloakAdminService>;
-  let kafkaMock: { connect: jest.Mock; publish: jest.Mock; disconnect: jest.Mock };
+  let outboxMock: { publish: jest.Mock };
 
   beforeEach(() => {
     keycloakAdmin = {
       setTemporaryPassword: jest.fn().mockResolvedValue(undefined),
       sendPasswordResetEmail: jest.fn().mockResolvedValue(undefined),
     } as unknown as jest.Mocked<KeycloakAdminService>;
-    service = new UserService(keycloakAdmin);
+    service = new UserService(keycloakAdmin, makeOutboxDouble().service);
     prismaMock = (service as unknown as { prisma: jest.Mocked<PrismaClient> }).prisma;
-    kafkaMock = (
+    outboxMock = (
       service as unknown as {
-        kafka: { connect: jest.Mock; publish: jest.Mock; disconnect: jest.Mock };
+        outbox: { publish: jest.Mock };
       }
-    ).kafka;
+    ).outbox;
   });
 
   describe('resetPassword', () => {
@@ -679,7 +729,7 @@ describe('UserService password resets', () => {
         REALM,
         result.temporary_password,
       );
-      expect(kafkaMock.publish).toHaveBeenCalledTimes(1);
+      expect(outboxMock.publish).toHaveBeenCalledTimes(1);
     });
 
     it('throws NotFoundException when the user is not found (or inactive) in the tenant', async () => {
@@ -713,7 +763,7 @@ describe('UserService password resets', () => {
 
       expect(result).toEqual({ email: 'w@a.com' });
       expect(keycloakAdmin.sendPasswordResetEmail).toHaveBeenCalledWith(KC_USER_ID, REALM, 900);
-      expect(kafkaMock.publish).toHaveBeenCalledTimes(1);
+      expect(outboxMock.publish).toHaveBeenCalledTimes(1);
     });
 
     it('throws NotFoundException when the user is not found (or inactive) in the tenant', async () => {

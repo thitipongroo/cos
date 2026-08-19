@@ -68,16 +68,31 @@ export class VendorIdentityRepository implements OnModuleDestroy {
     return rows[0];
   }
 
-  /** Active relationship for a vendor in a specific tenant (Tier-2 authorization). */
+  /**
+   * Active relationship for a vendor in a specific tenant (Tier-2 authorization).
+   *
+   * The JOIN onto vendor_identities is load-bearing, not decoration. A Tier-2 session token is a
+   * stateless 7-day HMAC with no server-side revocation, so every request must re-derive the
+   * vendor's standing from the database — the same reason KeycloakJwtStrategy re-reads
+   * platform.users.is_active on each call instead of trusting the token's claims (ADR-077, findings
+   * F1b/F2b). Only the RELATIONSHIP status was checked here, so `vendor_identities.is_active` was a
+   * column nothing enforced: disabling a vendor across the network left every outstanding session
+   * token working for up to a week, and an operator reading the schema would reasonably believe
+   * otherwise. Revoking per-tenant (status) and disabling network-wide (is_active) are different
+   * actions, and both must land.
+   */
   async findActiveRelationship(
     vendorIdentityId: string,
     tenantId: string,
   ): Promise<TradingRelationshipRow | null> {
     const rows = await this.prisma.$queryRaw<TradingRelationshipRow[]>`
-      SELECT relationship_id, vendor_identity_id, tenant_id, vendor_id, status
-      FROM platform.vendor_trading_relationships
-      WHERE vendor_identity_id = ${vendorIdentityId}::uuid
-        AND tenant_id = ${tenantId}::uuid AND status = 'ACTIVE'
+      SELECT r.relationship_id, r.vendor_identity_id, r.tenant_id, r.vendor_id, r.status
+      FROM platform.vendor_trading_relationships r
+      JOIN platform.vendor_identities i
+        ON i.vendor_identity_id = r.vendor_identity_id
+       AND i.is_active = true
+      WHERE r.vendor_identity_id = ${vendorIdentityId}::uuid
+        AND r.tenant_id = ${tenantId}::uuid AND r.status = 'ACTIVE'
     `;
     return rows[0] ?? null;
   }

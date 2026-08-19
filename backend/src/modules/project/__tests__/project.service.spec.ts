@@ -6,6 +6,8 @@ import { Test } from '@nestjs/testing';
 import { REQUEST } from '@nestjs/core';
 import { NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import { ProjectService } from '../project.service';
+import { EventOutboxService } from '../../../shared/events/event-outbox.service';
+import { makeOutboxDouble } from '../../../shared/events/__tests__/outbox-double';
 import { ProjectRepository } from '../project.repository';
 import type { ProjectRow } from '../project.repository';
 
@@ -74,6 +76,7 @@ async function buildService(repo: ProjectRepository, reqOverride = {}): Promise<
   const module = await Test.createTestingModule({
     providers: [
       ProjectService,
+      { provide: EventOutboxService, useValue: makeOutboxDouble().service },
       { provide: ProjectRepository, useValue: repo },
       { provide: REQUEST, useValue: { ...mockRequest, ...reqOverride } },
     ],
@@ -89,6 +92,7 @@ describe('ProjectService', () => {
       const module = await Test.createTestingModule({
         providers: [
           ProjectService,
+          { provide: EventOutboxService, useValue: makeOutboxDouble().service },
           { provide: ProjectRepository, useValue: makeRepo() },
           { provide: REQUEST, useValue: {} },
         ],
@@ -509,26 +513,6 @@ describe('ProjectService', () => {
       const service = await buildService(repo);
       const result = await service.list({ q: 'Test', limit: 10 } as never);
       expect(result.items).toHaveLength(0);
-    });
-  });
-
-  describe('publishEvent — error path (line 335)', () => {
-    it('logs error when Kafka publish throws (non-fatal)', async () => {
-      const { KafkaProducer } = jest.requireMock('@cos/shared') as { KafkaProducer: jest.Mock };
-      KafkaProducer.mockImplementationOnce(() => ({
-        connect: jest.fn().mockRejectedValue(new Error('Kafka down')),
-        publish: jest.fn(),
-        disconnect: jest.fn(),
-      }));
-      const service = await buildService(makeRepo());
-      // create() calls publishEvent internally — Kafka failure must not throw
-      await expect(
-        service.create({
-          project_code: 'P2',
-          project_name: 'P2',
-          project_type: 'COMMERCIAL' as never,
-        }),
-      ).resolves.toBeDefined();
     });
   });
 

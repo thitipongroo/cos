@@ -72,6 +72,41 @@ describe('KafkaProducer', () => {
     expect(call.messages[0].key).toBe('tenant-1');
   });
 
+  // The outbox stores a complete envelope and republishes it until Kafka accepts it. KafkaConsumer
+  // dedupes on event_id (a Redis key, 24h TTL), so minting a fresh id on each attempt made every
+  // retry look like a brand-new event to every consumer — the dedupe could never fire.
+  it('keeps a caller-supplied event_id, so a republished event stays the same event', async () => {
+    await producer.publish({
+      event_id: '11111111-2222-3333-4444-555555555555',
+      event_type: 'construction.project.created.v1',
+      event_version: '1.0',
+      tenant_id: 'tenant-1',
+      actor_id: 'user-1',
+      occurred_at: new Date().toISOString(),
+      correlation_id: 'corr-1',
+      payload: { project_id: 'p-1' },
+    });
+
+    expect(sendMock.mock.calls[0][0].messages[0].headers['event_id']).toBe(
+      '11111111-2222-3333-4444-555555555555',
+    );
+  });
+
+  // Direct publishers pass no id and must keep working exactly as before.
+  it('mints an event_id when the caller supplies none', async () => {
+    await producer.publish({
+      event_type: 'construction.project.created.v1',
+      event_version: '1.0',
+      tenant_id: 'tenant-1',
+      actor_id: 'user-1',
+      occurred_at: new Date().toISOString(),
+      correlation_id: 'corr-1',
+      payload: { project_id: 'p-1' },
+    });
+
+    expect(sendMock.mock.calls[0][0].messages[0].headers['event_id']).toMatch(/^[0-9a-f-]{36}$/);
+  });
+
   it('propagates OTel trace headers when provided', async () => {
     await producer.publish(
       {

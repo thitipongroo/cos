@@ -12,6 +12,7 @@
 // The scheduling, per-tenant timezone gating, and email delivery below are fully live.
 
 import { Injectable } from '@nestjs/common';
+import { ScheduledJobLockService } from '../../shared/scheduling/scheduled-job-lock.service';
 import { Cron } from '@nestjs/schedule';
 import { createLogger } from '@cos/logger';
 import { NotificationRepository } from './notification.repository';
@@ -35,15 +36,40 @@ export function localSlot(now: Date, tz: string): { hour: number; weekday: numbe
   return { hour, weekday };
 }
 
+/** @Cron name and the lease key in platform.scheduled_job_locks — the same string on purpose. */
+export const DIGEST_JOB = 'notification-digest';
+
+/**
+ * Lease length. Thirty minutes against an hourly schedule: the run walks every active tenant and
+ * sends per-role, so it is the longest of the scheduled jobs, and half the interval still leaves the
+ * next hour free to proceed if the holder is killed mid-run.
+ */
+export const DIGEST_LEASE_SECONDS = 1800;
+
 @Injectable()
 export class NotificationDigestService {
   constructor(
     private readonly repo: NotificationRepository,
     private readonly svc: NotificationService,
+    private readonly locks: ScheduledJobLockService,
   ) {}
 
-  @Cron('0 * * * *', { name: 'notification-digest' })
+  /**
+   * ONE replica sends the digest, not all three.
+   *
+   * @nestjs/schedule registers this timer per process and prod runs three replicas
+   * (values-prod.yaml), so at 18:00 tenant-local every project manager received the daily site
+   * summary three times, and the Monday-morning weekly three times again. Nothing downstream
+   * deduplicates: deliverDigest sends, and there is no per-period record to check against.
+   */
+  @Cron('0 * * * *', { name: DIGEST_JOB })
   async runHourly(now: Date = new Date()): Promise<void> {
+    await this.locks.runExclusively(DIGEST_JOB, DIGEST_LEASE_SECONDS, () => this.sendDue(now));
+  }
+
+  /** The hour's actual work. Split from the @Cron entry point so tests can drive a specific `now`
+   *  without also asserting on the lease. */
+  async sendDue(now: Date): Promise<void> {
     const tenants = await this.repo.listActiveTenants();
     for (const tenant of tenants) {
       const { hour, weekday } = localSlot(now, tenant.timezone);

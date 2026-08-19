@@ -1,5 +1,6 @@
 import { createPrismaClient } from '../../../shared/prisma/create-prisma-client';
-import { KafkaProducer, KafkaTopicProvisioner } from '@cos/shared';
+import { EventOutboxService } from '../../../shared/events/event-outbox.service';
+import { KafkaTopicProvisioner } from '@cos/shared';
 import { createLogger } from '@cos/logger';
 import { randomUUID } from 'crypto';
 import { readMasterPassword, ensureAppUserPassword } from './tenant-db-secrets';
@@ -365,10 +366,14 @@ export async function provisionKafkaTopicsActivity(params: RdsActivityParams): P
 // ── Emit completion event ──────────────────────────────────────────────────
 
 export async function emitProvisionedEventActivity(params: RdsWithEndpointParams): Promise<void> {
-  const kafka = new KafkaProducer();
+  // Queued through the outbox rather than published inline. This activity runs at the END of a long
+  // provisioning workflow — dedicated RDS, VPC peering, Route 53 — and a broker blip at that moment
+  // used to throw, which made Temporal retry the ACTIVITY, not just the publish. Retrying an emit is
+  // harmless; what made it worth changing is that until the retries were exhausted the workflow could
+  // not complete, over an event that nothing is waiting on synchronously.
+  const outbox = new EventOutboxService();
   try {
-    await kafka.connect();
-    await kafka.publish({
+    await outbox.publish({
       event_type: 'platform.enterprise.db_provisioned.v1',
       event_version: '1.0',
       tenant_id: 'platform',
@@ -379,7 +384,7 @@ export async function emitProvisionedEventActivity(params: RdsWithEndpointParams
     });
     logger.info({ tenantId: params.tenantId }, 'platform.enterprise.db_provisioned.v1.emitted');
   } finally {
-    await kafka.disconnect();
+    await outbox.onModuleDestroy();
   }
 }
 

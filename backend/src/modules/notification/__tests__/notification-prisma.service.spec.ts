@@ -45,6 +45,17 @@ const { _mocks } = jest.requireMock('@prisma/client') as {
 import { UnauthorizedException } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
+
+// createPrismaClient now hands PrismaPg a SHARED pg.Pool (one per connection string) instead of a
+// bare `{ connectionString }` config — see shared/prisma/create-prisma-client.ts. What these tests
+// care about is unchanged and still worth asserting: WHICH datasource each client was routed to.
+// Read it back off the pool the adapter was constructed with.
+function adapterUrl(nth: number): string | undefined {
+  const arg = (PrismaPg as jest.Mock).mock.calls[nth]?.[0] as
+    { options?: { connectionString?: string }; connectionString?: string } | undefined;
+  return arg?.options?.connectionString ?? arg?.connectionString;
+}
+
 import { getDbUrlForTenant } from '../../tenant/utils/get-db-url';
 import { NotificationPrismaService } from '../notification-prisma.service';
 
@@ -73,7 +84,7 @@ describe('run', () => {
     const fn = jest.fn().mockResolvedValue('result');
     const result = await svc.run(TENANT_A, fn);
     expect(getDbUrlForTenant).toHaveBeenCalledWith(TENANT_A);
-    expect(PrismaPg).toHaveBeenCalledWith({ connectionString: 'postgresql://tenant-db/testdb' });
+    expect(adapterUrl(0)).toBe('postgresql://tenant-db/testdb');
     expect(_mocks.$transaction).toHaveBeenCalledTimes(1);
     expect(fn).toHaveBeenCalledWith(_mocks.mockTx);
     expect(result).toBe('result');
@@ -130,8 +141,8 @@ describe('run', () => {
     await svc.run(TENANT_B, jest.fn().mockResolvedValue(undefined));
 
     expect(PrismaClient).toHaveBeenCalledTimes(2);
-    expect(PrismaPg).toHaveBeenNthCalledWith(1, { connectionString: 'postgresql://db1' });
-    expect(PrismaPg).toHaveBeenNthCalledWith(2, { connectionString: 'postgresql://db2' });
+    expect(adapterUrl(0)).toBe('postgresql://db1');
+    expect(adapterUrl(1)).toBe('postgresql://db2');
     expect(getDbUrlForTenant).toHaveBeenNthCalledWith(1, TENANT_A);
     expect(getDbUrlForTenant).toHaveBeenNthCalledWith(2, TENANT_B);
   });

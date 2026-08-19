@@ -38,6 +38,7 @@ const makeReq = (userId = 'user-1', tenantId = 'tenant-1'): MockRequest => ({
 
 import { NotFoundException } from '@nestjs/common';
 import { WorkforceService } from '../workforce.service';
+import { makeOutboxDouble } from '../../../shared/events/__tests__/outbox-double';
 
 describe('WorkforceService', () => {
   let service: WorkforceService;
@@ -49,6 +50,7 @@ describe('WorkforceService', () => {
     service = new WorkforceService(
       req as unknown as ConstructorParameters<typeof WorkforceService>[0],
       repo as unknown as WorkforceRepository,
+      makeOutboxDouble().service,
     );
   });
 
@@ -85,13 +87,12 @@ describe('WorkforceService', () => {
     });
 
     it('emits checkin event when only check_in_at is set', async () => {
-      const { KafkaProducer } = jest.requireMock('@cos/shared');
-      const kafkaMock = { connect: jest.fn(), publish: jest.fn() };
-      KafkaProducer.mockImplementation(() => kafkaMock);
+      const outboxMock = makeOutboxDouble();
       repo = makeRepo();
       service = new WorkforceService(
         req as unknown as ConstructorParameters<typeof WorkforceService>[0],
         repo as unknown as WorkforceRepository,
+        outboxMock.service,
       );
 
       repo.findWorkerById.mockResolvedValue({ worker_id: 'w1' });
@@ -102,7 +103,7 @@ describe('WorkforceService', () => {
         check_in_at: '2026-06-08T08:00:00Z',
       });
 
-      expect(kafkaMock.publish).toHaveBeenCalledWith(
+      expect(outboxMock.publish).toHaveBeenCalledWith(
         expect.objectContaining({ event_type: 'workforce.checkin.created.v1' }),
       );
     });
@@ -117,13 +118,12 @@ describe('WorkforceService', () => {
 
   describe('timesheet aggregation', () => {
     it('approves timesheet and emits event with total_hours', async () => {
-      const { KafkaProducer } = jest.requireMock('@cos/shared');
-      const kafkaMock = { connect: jest.fn(), publish: jest.fn() };
-      KafkaProducer.mockImplementation(() => kafkaMock);
+      const outboxMock = makeOutboxDouble();
       repo = makeRepo();
       service = new WorkforceService(
         req as unknown as ConstructorParameters<typeof WorkforceService>[0],
         repo as unknown as WorkforceRepository,
+        outboxMock.service,
       );
 
       const ts = {
@@ -139,7 +139,7 @@ describe('WorkforceService', () => {
 
       const result = await service.approveTimesheet('ts-1');
       expect(result.status).toBe('APPROVED');
-      expect(kafkaMock.publish).toHaveBeenCalledWith(
+      expect(outboxMock.publish).toHaveBeenCalledWith(
         expect.objectContaining({
           event_type: 'workforce.timesheet.approved.v1',
           payload: expect.objectContaining({ total_hours: 168 }),
@@ -273,43 +273,15 @@ describe('WorkforceService', () => {
     });
   });
 
-  describe('emitEvent error path', () => {
-    it('does not throw when Kafka publish fails', async () => {
-      const { KafkaProducer } = jest.requireMock('@cos/shared');
-      KafkaProducer.mockImplementation(() => ({
-        connect: jest.fn().mockResolvedValue(undefined),
-        publish: jest.fn().mockRejectedValue(new Error('Kafka down')),
-      }));
-      repo = makeRepo();
-      service = new WorkforceService(
-        req as unknown as ConstructorParameters<typeof WorkforceService>[0],
-        repo as unknown as WorkforceRepository,
-      );
-      repo.findWorkerById.mockResolvedValue({ worker_id: 'w1' });
-      repo.recordAttendance.mockResolvedValue({ log_id: 'log-1' });
-
-      await expect(
-        service.recordAttendance('w1', {
-          project_id: 'proj-1',
-          check_in_at: '2026-06-08T08:00:00Z',
-        }),
-      ).resolves.not.toThrow();
-    });
-  });
-
   describe('userId fallback to system', () => {
     it('uses "system" as actor_id when req.user is undefined', async () => {
-      const { KafkaProducer } = jest.requireMock('@cos/shared');
-      const kafkaMock = {
-        connect: jest.fn().mockResolvedValue(undefined),
-        publish: jest.fn().mockResolvedValue(undefined),
-      };
-      KafkaProducer.mockImplementation(() => kafkaMock);
+      const outboxMock = makeOutboxDouble();
       const noUserReq = { tenantId: 'tenant-1' };
       repo = makeRepo();
       service = new WorkforceService(
         noUserReq as unknown as ConstructorParameters<typeof WorkforceService>[0],
         repo as unknown as WorkforceRepository,
+        outboxMock.service,
       );
       repo.findWorkerById.mockResolvedValue({ worker_id: 'w1' });
       repo.recordAttendance.mockResolvedValue({ log_id: 'log-1' });
@@ -319,7 +291,7 @@ describe('WorkforceService', () => {
         check_in_at: '2026-06-08T08:00:00Z',
       });
 
-      expect(kafkaMock.publish).toHaveBeenCalledWith(
+      expect(outboxMock.publish).toHaveBeenCalledWith(
         expect.objectContaining({ actor_id: 'system' }),
       );
     });

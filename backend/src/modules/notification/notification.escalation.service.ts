@@ -4,6 +4,7 @@
 // job on the shared DB (covers SMB/mid-market; enterprise dedicated-DB sweeps are a Stage-2 follow-up).
 
 import { Injectable } from '@nestjs/common';
+import { ScheduledJobLockService } from '../../shared/scheduling/scheduled-job-lock.service';
 import { Cron } from '@nestjs/schedule';
 import { createLogger } from '@cos/logger';
 import { NotificationRepository, type EscalationCandidate } from './notification.repository';
@@ -40,15 +41,43 @@ export const ESCALATION_RULES: readonly EscalationRule[] = [
   },
 ];
 
+/** @Cron name and the lease key in platform.scheduled_job_locks — the same string on purpose. */
+export const ESCALATION_JOB = 'notification-escalation';
+
+/**
+ * Lease length. Four minutes against a five-minute schedule: long enough that a sweep is never
+ * overtaken while it is still sending, short enough that a replica killed mid-sweep costs at most one
+ * skipped tick rather than blocking escalations until someone notices.
+ */
+export const ESCALATION_LEASE_SECONDS = 240;
+
 @Injectable()
 export class NotificationEscalationService {
   constructor(
     private readonly repo: NotificationRepository,
     private readonly svc: NotificationService,
+    private readonly locks: ScheduledJobLockService,
   ) {}
 
-  @Cron('*/5 * * * *', { name: 'notification-escalation' })
+  /**
+   * ONE replica sweeps, not all three.
+   *
+   * @nestjs/schedule registers this timer in every process, and prod runs three replicas
+   * (values-prod.yaml), so this fired three times every five minutes. The sweep is not idempotent
+   * across processes: `escalated_at` is written only AFTER svc.escalate() has already sent, so all
+   * three replicas read the same unescalated rows and all three sent. Every unacknowledged incident
+   * escalated in triplicate — to the site manager's phone.
+   *
+   * The lease makes the winner the only sweeper; see ScheduledJobLockService.
+   */
+  @Cron('*/5 * * * *', { name: ESCALATION_JOB })
   async runEscalationSweep(): Promise<void> {
+    await this.locks.runExclusively(ESCALATION_JOB, ESCALATION_LEASE_SECONDS, () => this.sweep());
+  }
+
+  /** The sweep itself. Split from the @Cron entry point so the scheduling decision and the work are
+   *  separately readable — and separately testable. */
+  async sweep(): Promise<void> {
     for (const rule of ESCALATION_RULES) {
       const candidates = await this.repo.findEscalationCandidates(
         rule.eventType,

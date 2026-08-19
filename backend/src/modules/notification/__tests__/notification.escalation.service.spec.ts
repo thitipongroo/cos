@@ -7,7 +7,10 @@ jest.mock('@cos/logger', () => ({
 import {
   NotificationEscalationService,
   ESCALATION_RULES,
+  ESCALATION_JOB,
+  ESCALATION_LEASE_SECONDS,
 } from '../notification.escalation.service';
+import { makeLockDouble } from '../../../shared/scheduling/__tests__/lock-double';
 
 const mockRepo = {
   findEscalationCandidates: jest.fn(),
@@ -15,8 +18,11 @@ const mockRepo = {
 };
 const mockSvc = { escalate: jest.fn() };
 
-function makeService(): NotificationEscalationService {
-  return new NotificationEscalationService(mockRepo as never, mockSvc as never);
+// Default to a lock that GRANTS, so every existing assertion below still exercises the sweep. The
+// lease is what decides whether the work happens at all now, and the tests about the work should not
+// have to restate that decision.
+function makeService(lock = makeLockDouble()): NotificationEscalationService {
+  return new NotificationEscalationService(mockRepo as never, mockSvc as never, lock.service);
 }
 
 const candidate = {
@@ -97,5 +103,32 @@ describe('runEscalationSweep', () => {
     await makeService().runEscalationSweep();
 
     expect(mockRepo.markEscalated).not.toHaveBeenCalled();
+  });
+});
+
+// Prod runs three replicas (values-prod.yaml) and @nestjs/schedule arms this timer in every one of
+// them. `escalated_at` is written only after svc.escalate() has already sent, so without the lease
+// all three read the same unescalated rows and all three sent — one unacknowledged incident, three
+// escalation messages to the site manager.
+describe('NotificationEscalationService — single-replica execution', () => {
+  it('does nothing at all on a replica that does not hold the lease', async () => {
+    const lock = makeLockDouble(false);
+    await makeService(lock).runEscalationSweep();
+
+    expect(mockRepo.findEscalationCandidates).not.toHaveBeenCalled();
+    expect(mockSvc.escalate).not.toHaveBeenCalled();
+    expect(mockRepo.markEscalated).not.toHaveBeenCalled();
+  });
+
+  it('claims the lease under the job name, with a lease shorter than the five-minute schedule', async () => {
+    mockRepo.findEscalationCandidates.mockResolvedValue([]);
+    const lock = makeLockDouble();
+    await makeService(lock).runEscalationSweep();
+
+    expect(lock.calls).toEqual([
+      { jobName: ESCALATION_JOB, leaseSeconds: ESCALATION_LEASE_SECONDS },
+    ]);
+    // A lease that outlived the interval would let a crashed holder block escalations indefinitely.
+    expect(ESCALATION_LEASE_SECONDS).toBeLessThan(5 * 60);
   });
 });

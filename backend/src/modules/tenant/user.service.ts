@@ -13,7 +13,7 @@ import {
   OnModuleDestroy,
 } from '@nestjs/common';
 import { createPrismaClient } from '../../shared/prisma/create-prisma-client';
-import { KafkaProducer } from '@cos/shared';
+import { EventOutboxService } from '../../shared/events/event-outbox.service';
 import { createLogger } from '@cos/logger';
 import { CosRole } from '@cos/types';
 import { KeycloakAdminService } from '../identity/keycloak-admin.service';
@@ -116,9 +116,11 @@ export interface PaginatedUsers {
 export class UserService implements OnModuleDestroy {
   // Platform PrismaClient — NOT TenantPrismaService (platform.users is cross-tenant)
   private readonly prisma = createPrismaClient();
-  private readonly kafka = new KafkaProducer();
 
-  constructor(private readonly keycloakAdmin: KeycloakAdminService) {}
+  constructor(
+    private readonly keycloakAdmin: KeycloakAdminService,
+    private readonly outbox: EventOutboxService,
+  ) {}
 
   /** Close the Prisma connection on shutdown so the query-engine socket does not leak. */
   async onModuleDestroy(): Promise<void> {
@@ -308,6 +310,18 @@ export class UserService implements OnModuleDestroy {
       await this.keycloakAdmin
         .deleteUser(keycloakUserId, tenant.keycloak_realm)
         .catch((e) => logger.error({ keycloakUserId, err: e }, 'keycloak.rollback.failed'));
+
+      // The pre-flight conflict check above is a read followed by a write, so two concurrent creates
+      // on one phone number both saw "no existing row" and both got here. `users_phone_number_key`
+      // (migration 20260819000001) is what actually decides which one wins — the loser must come back
+      // as the SAME 409 the pre-flight would have produced, not a 500, because from the caller's side
+      // nothing distinguishable happened. Matching on the index NAME, not on the driver's error shape:
+      // the message text differs between the driver adapter and the query engine, but the constraint
+      // name is ours.
+      const message = err instanceof Error ? err.message : String(err);
+      if (isPathA && message.includes('users_phone_number_key')) {
+        throw new ConflictException(`User with this identity already exists`);
+      }
       throw err;
     }
 
@@ -617,21 +631,16 @@ export class UserService implements OnModuleDestroy {
     logger.info({ userId, tenantId, actorId }, 'user.deactivated');
   }
 
+  /** Queue a platform-scope event. Durable and off the request path — see EventOutboxService. */
   private async publishEvent<T>(eventType: string, payload: T): Promise<void> {
-    try {
-      await this.kafka.connect();
-      await this.kafka.publish<T>({
-        event_type: eventType,
-        event_version: '1.0',
-        tenant_id: 'platform',
-        actor_id: 'system',
-        occurred_at: new Date().toISOString(),
-        correlation_id: globalThis.crypto.randomUUID(),
-        payload,
-      });
-      await this.kafka.disconnect();
-    } catch (err) {
-      logger.error({ event_type: eventType, err }, 'kafka.publish.failed');
-    }
+    await this.outbox.publish<T>({
+      event_type: eventType,
+      event_version: '1.0',
+      tenant_id: 'platform',
+      actor_id: 'system',
+      occurred_at: new Date().toISOString(),
+      correlation_id: globalThis.crypto.randomUUID(),
+      payload,
+    });
   }
 }

@@ -16,6 +16,8 @@ import { Test } from '@nestjs/testing';
 import { REQUEST } from '@nestjs/core';
 import { NotFoundException } from '@nestjs/common';
 import { RisksService } from '../risks.service';
+import { EventOutboxService } from '../../../../shared/events/event-outbox.service';
+import { makeOutboxDouble } from '../../../../shared/events/__tests__/outbox-double';
 import { RisksRepository } from '../risks.repository';
 import type { RiskRow } from '../risks.repository';
 
@@ -60,6 +62,7 @@ async function build(
   const moduleRef = await Test.createTestingModule({
     providers: [
       RisksService,
+      { provide: EventOutboxService, useValue: makeOutboxDouble().service },
       { provide: RisksRepository, useValue: repo },
       { provide: REQUEST, useValue: req },
     ],
@@ -110,25 +113,6 @@ describe('RisksService', () => {
         expect.objectContaining({ title: 'X' }),
         '',
       );
-    });
-
-    it('does not throw when Kafka publish fails (non-fatal path)', async () => {
-      const { KafkaProducer } = jest.requireMock('@cos/shared') as { KafkaProducer: jest.Mock };
-      KafkaProducer.mockImplementationOnce(() => ({
-        connect: jest.fn().mockRejectedValue(new Error('Kafka down')),
-        publish: jest.fn(),
-        disconnect: jest.fn(),
-      }));
-      const repo = makeRepo();
-      const svc = await build(repo);
-      await expect(
-        svc.create(PROJECT_ID, {
-          title: 'X',
-          category: 'SAFETY' as never,
-          likelihood: 1,
-          impact: 1,
-        }),
-      ).resolves.toEqual(baseRow);
     });
   });
 

@@ -25,6 +25,14 @@ jest.mock('ioredis', () => ({
       key in expiryMock ? expiryMock[key] : key in redisMock ? -1 : -2,
     ),
     expire: jest.fn(),
+    // refundDailyLimit() is the only eval() caller: "DECR the key only if it still exists". The mock
+    // implements that contract rather than a Lua interpreter — an unconditional DECR here would pass
+    // while hiding the expiry race the real script exists to close.
+    eval: jest.fn(async (_script: string, _numKeys: number, key: string) => {
+      if (!(key in redisMock)) return 0;
+      redisMock[key] = String(parseInt(redisMock[key]!, 10) - 1);
+      return parseInt(redisMock[key]!, 10);
+    }),
     quit: jest.fn().mockResolvedValue(undefined),
   })),
 }));
@@ -189,6 +197,42 @@ describe('OtpService — delivery is env-independent now (ADR-040)', () => {
     await expect(new OtpService(smsSender).requestOtp('+66812345678')).rejects.toThrow(
       'gateway down',
     );
+  });
+
+  // The E2E bypass claims no daily slot at all, so a failed send there has nothing to hand back —
+  // and must not invent a refund against a key it never charged.
+  it('refunds nothing when the E2E bypass skipped the daily limit in the first place', async () => {
+    process.env['NODE_ENV'] = 'test';
+    process.env['E2E_AUTH_BYPASS'] = 'true';
+    try {
+      const phone = '+66812345688';
+      const dailyKey = `otp:daily:${phone}:${new Date().toISOString().slice(0, 10)}`;
+      smsSender.sendSms.mockRejectedValueOnce(new Error('gateway down'));
+
+      await expect(new OtpService(smsSender).requestOtp(phone)).rejects.toThrow('gateway down');
+      expect(redisMock[dailyKey]).toBeUndefined();
+    } finally {
+      delete process.env['E2E_AUTH_BYPASS'];
+    }
+  });
+
+  // The daily slot is claimed before the send so the limit stays atomic under concurrency. That made
+  // a gateway outage spend the caller's quota on codes that never arrived — ten failures and the
+  // worker cannot log in until UTC midnight, with SMS OTP their only login method.
+  it('refunds the daily slot when the gateway fails, so a failed send costs no quota', async () => {
+    process.env['NODE_ENV'] = 'production';
+    const phone = '+66812345699';
+    const dailyKey = `otp:daily:${phone}:${new Date().toISOString().slice(0, 10)}`;
+    const service = new OtpService(smsSender);
+
+    smsSender.sendSms.mockRejectedValueOnce(new Error('gateway down'));
+    await expect(service.requestOtp(phone)).rejects.toThrow('gateway down');
+    expect(redisMock[dailyKey]).toBe('0');
+
+    // And a slot that WAS delivered still counts — the refund must not swallow successful sends.
+    delete redisMock[`otp:cooldown:${phone}`];
+    await service.requestOtp(phone);
+    expect(redisMock[dailyKey]).toBe('1');
   });
 });
 

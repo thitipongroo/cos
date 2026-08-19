@@ -9,6 +9,7 @@ import { clsTenantId } from '../../../shared/context/cls-context';
 import type { CreateRiskDto } from './dto/create-risk.dto';
 import type { UpdateRiskDto } from './dto/update-risk.dto';
 import { projectExistsInTenant } from '../shared/parent-existence';
+import { applyCap, capLimit } from '../../../shared/pagination/list-cap';
 
 export type RiskCategoryValue =
   'SAFETY' | 'FINANCIAL' | 'SCHEDULE' | 'TECHNICAL' | 'EXTERNAL' | 'OTHER';
@@ -95,15 +96,22 @@ export class RisksRepository {
   }
 
   // Highest-risk first (risk_score DESC) then newest — the order the register/heat map reads.
-  // Bounded per project, so the whole filtered set is returned (no pagination).
+  //
+  // Still unpaginated — the response is a bare array and the register UI wants the whole filtered set
+  // — but no longer UNBOUNDED. "Bounded per project" was an assumption about how customers use the
+  // feature, not a property the query had: a register that grows (AI_SUGGESTED risks are written by a
+  // pipeline, not typed by a person) loaded every row into the heap and into one JSON response. The
+  // shared cap keeps the contract and logs when a project outgrows it (shared/pagination/list-cap.ts).
+  // Safe here because these rows are handed to a client as a list; nothing sums them.
   async list(projectId: string, filter: ListRisksFilter): Promise<RiskRow[]> {
-    return this.tenantPrisma.run(async (tx): Promise<RiskRow[]> => {
+    const rows = await this.tenantPrisma.run(async (tx): Promise<RiskRow[]> => {
       if (filter.status && filter.category) {
         return await tx.$queryRaw<RiskRow[]>`
           SELECT * FROM projects.project_risk
           WHERE tenant_id = ${this.tenantId}::uuid AND project_id = ${projectId}::uuid
             AND status = ${filter.status} AND category = ${filter.category}
           ORDER BY risk_score DESC, created_at DESC
+          LIMIT ${capLimit()}
         `;
       }
       if (filter.status) {
@@ -112,6 +120,7 @@ export class RisksRepository {
           WHERE tenant_id = ${this.tenantId}::uuid AND project_id = ${projectId}::uuid
             AND status = ${filter.status}
           ORDER BY risk_score DESC, created_at DESC
+          LIMIT ${capLimit()}
         `;
       }
       if (filter.category) {
@@ -120,14 +129,17 @@ export class RisksRepository {
           WHERE tenant_id = ${this.tenantId}::uuid AND project_id = ${projectId}::uuid
             AND category = ${filter.category}
           ORDER BY risk_score DESC, created_at DESC
+          LIMIT ${capLimit()}
         `;
       }
       return await tx.$queryRaw<RiskRow[]>`
         SELECT * FROM projects.project_risk
         WHERE tenant_id = ${this.tenantId}::uuid AND project_id = ${projectId}::uuid
         ORDER BY risk_score DESC, created_at DESC
+        LIMIT ${capLimit()}
       `;
     });
+    return applyCap(rows, 'project.risks');
   }
 
   async update(riskId: string, dto: UpdateRiskDto): Promise<RiskRow> {

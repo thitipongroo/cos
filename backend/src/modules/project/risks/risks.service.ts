@@ -6,7 +6,7 @@ import { Injectable, Scope, Inject, NotFoundException } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
 import { randomUUID } from 'crypto';
-import { KafkaProducer } from '@cos/shared';
+import { EventOutboxService } from '../../../shared/events/event-outbox.service';
 import { createLogger } from '@cos/logger';
 import { RisksRepository } from './risks.repository';
 import type { RiskRow } from './risks.repository';
@@ -28,14 +28,13 @@ export class RisksService {
     return (this.request as { userId?: string }).userId ?? '';
   }
   private readonly correlationId: string;
-  private readonly kafka: KafkaProducer;
 
   constructor(
     private readonly repo: RisksRepository,
     @Inject(REQUEST) private readonly request: Request & { tenantId?: string; userId?: string },
+    private readonly outbox: EventOutboxService,
   ) {
     this.correlationId = randomUUID();
-    this.kafka = new KafkaProducer();
   }
 
   private notFound(): never {
@@ -156,25 +155,16 @@ export class RisksService {
     return updated;
   }
 
+  /** Queue a domain event. The outbox the old comment here promised now exists. */
   private async publishEvent<T>(eventType: string, payload: T): Promise<void> {
-    try {
-      await this.kafka.connect();
-      await this.kafka.publish<T>({
-        event_type: eventType,
-        event_version: '1.0',
-        tenant_id: this.tenantId,
-        actor_id: this.userId,
-        occurred_at: new Date().toISOString(),
-        correlation_id: this.correlationId,
-        payload,
-      });
-      await this.kafka.disconnect();
-    } catch (err) {
-      // Non-fatal in MVP: log and continue — outbox pattern picks up failures (Phase 8).
-      logger.error(
-        { event_type: eventType, err, correlation_id: this.correlationId },
-        'kafka.publish.failed',
-      );
-    }
+    await this.outbox.publish<T>({
+      event_type: eventType,
+      event_version: '1.0',
+      tenant_id: this.tenantId,
+      actor_id: this.userId,
+      occurred_at: new Date().toISOString(),
+      correlation_id: this.correlationId,
+      payload,
+    });
   }
 }

@@ -36,6 +36,7 @@ const makeReq = (userId = 'user-1', tenantId = 'tenant-1'): MockRequest => ({
 });
 
 import { EquipmentService } from '../equipment.service';
+import { makeOutboxDouble } from '../../../shared/events/__tests__/outbox-double';
 
 describe('EquipmentService', () => {
   let service: EquipmentService;
@@ -47,6 +48,7 @@ describe('EquipmentService', () => {
     service = new EquipmentService(
       req as unknown as ConstructorParameters<typeof EquipmentService>[0],
       repo as unknown as EquipmentRepository,
+      makeOutboxDouble().service,
     );
   });
 
@@ -198,41 +200,15 @@ describe('EquipmentService', () => {
     });
   });
 
-  describe('emitEvent error path', () => {
-    it('does not throw when Kafka publish fails', async () => {
-      const { KafkaProducer } = jest.requireMock('@cos/shared');
-      KafkaProducer.mockImplementation(() => ({
-        connect: jest.fn().mockResolvedValue(undefined),
-        publish: jest.fn().mockRejectedValue(new Error('Kafka down')),
-      }));
-      repo = makeRepo();
-      service = new EquipmentService(
-        req as unknown as ConstructorParameters<typeof EquipmentService>[0],
-        repo as unknown as EquipmentRepository,
-      );
-      repo.findById.mockResolvedValue({ equipment_id: 'eq-1', status: 'AVAILABLE' });
-      repo.createAssignment.mockResolvedValue({ assignment_id: 'a-1', equipment_id: 'eq-1' });
-      repo.updateStatus.mockResolvedValue({ equipment_id: 'eq-1', status: 'IN_USE' });
-
-      await expect(
-        service.assignToProject('eq-1', { project_id: 'p-1' } as never),
-      ).resolves.not.toThrow();
-    });
-  });
-
   describe('userId fallback to system', () => {
     it('uses "system" as actor_id when req.user is undefined', async () => {
-      const { KafkaProducer } = jest.requireMock('@cos/shared');
-      const kafkaMock = {
-        connect: jest.fn().mockResolvedValue(undefined),
-        publish: jest.fn().mockResolvedValue(undefined),
-      };
-      KafkaProducer.mockImplementation(() => kafkaMock);
+      const outboxMock = makeOutboxDouble();
       const noUserReq = { tenantId: 'tenant-1' };
       repo = makeRepo();
       service = new EquipmentService(
         noUserReq as unknown as ConstructorParameters<typeof EquipmentService>[0],
         repo as unknown as EquipmentRepository,
+        outboxMock.service,
       );
       repo.findById.mockResolvedValue({ equipment_id: 'eq-1', status: 'AVAILABLE' });
       repo.createAssignment.mockResolvedValue({ assignment_id: 'a-1', equipment_id: 'eq-1' });
@@ -240,7 +216,7 @@ describe('EquipmentService', () => {
 
       await service.assignToProject('eq-1', { project_id: 'p-1' } as never);
 
-      expect(kafkaMock.publish).toHaveBeenCalledWith(
+      expect(outboxMock.publish).toHaveBeenCalledWith(
         expect.objectContaining({ actor_id: 'system' }),
       );
     });

@@ -39,6 +39,9 @@ import { TenantContextInterceptor } from './shared/interceptors/tenant-context.i
 import { CloudflareWafMiddleware } from './shared/middleware/cloudflare-waf.middleware';
 import { SecureHeadersMiddleware } from './shared/middleware/secure-headers.middleware';
 import { TracingShutdownService } from './shared/tracing-shutdown.service';
+import { PrismaPoolShutdownService } from './shared/prisma/prisma-pool-shutdown.service';
+import { SchedulingModule } from './shared/scheduling/scheduling.module';
+import { EventsModule } from './shared/events/events.module';
 
 @Module({
   imports: [
@@ -68,6 +71,9 @@ import { TracingShutdownService } from './shared/tracing-shutdown.service';
     TerminusModule,
     FeatureFlagsModule, // QM-15 / ADR-049 — Unleash-backed flags + GET /api/v1/flags
     LastSeenModule, // @Global — last_seen_at touch used by JwtAuthGuard in every module (User Audit)
+    SchedulingModule, // @Global — leader election for @Cron jobs, so they run on ONE replica not all
+    EventsModule, // @Global — durable event outbox + its poller (replaces per-request Kafka producers)
+
     IdentityModule,
     TenantModule,
     ProjectModule,
@@ -111,6 +117,9 @@ import { TracingShutdownService } from './shared/tracing-shutdown.service';
     { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },
     // Closes the OpenTelemetry SDK (Prometheus exporter) on graceful shutdown (enableShutdownHooks)
     TracingShutdownService,
+    // Ends the shared pg pools that back every PrismaClient. No individual client may close them
+    // (they are shared by URL — see shared/prisma/create-prisma-client.ts), so this hook owns it.
+    PrismaPoolShutdownService,
   ],
 })
 export class AppModule implements NestModule {

@@ -13,6 +13,7 @@ import { Injectable, Scope, Inject } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import { TenantPrismaService } from '../../tenant/prisma/tenant-prisma.service';
 import { clsTenantId } from '../../../shared/context/cls-context';
+import { applyCap, capLimit } from '../../../shared/pagination/list-cap';
 
 export interface SubjectRequestRow {
   request_id: string;
@@ -90,9 +91,17 @@ export class SubjectRequestRepository {
     return rows[0]!;
   }
 
-  /** The tenant's queue, oldest-received first — the order the 30-day deadline is counted in. */
+  /**
+   * The tenant's queue, oldest-received first — the order the 30-day deadline is counted in.
+   *
+   * Capped. This table only ever grows: a subject request is compliance evidence, so CLOSED rows are
+   * kept, and the unfiltered call (the default the admin screen makes) therefore returned the tenant's
+   * entire PDPA history in one array. Oldest-first is what makes the cap safe to apply: the rows that
+   * survive truncation are the ones nearest their statutory deadline, which is what this queue exists
+   * to surface. `?status=OPEN` narrows it further and is the query that actually matters operationally.
+   */
   async list(status?: string): Promise<SubjectRequestRow[]> {
-    return this.db.run(
+    const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<SubjectRequestRow[]>`
         SELECT * FROM platform.subject_requests
@@ -100,8 +109,10 @@ export class SubjectRequestRepository {
           AND (${status ?? null}::text IS NULL
                OR status = (${status ?? null})::platform."SubjectRequestStatus")
         ORDER BY received_at ASC
+        LIMIT ${capLimit()}
       `,
     );
+    return applyCap(rows, 'identity.subject_requests');
   }
 
   async findById(requestId: string): Promise<SubjectRequestRow | null> {

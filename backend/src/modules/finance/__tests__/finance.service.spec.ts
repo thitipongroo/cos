@@ -23,6 +23,8 @@ import {
 import { Test, TestingModule } from '@nestjs/testing';
 import { REQUEST } from '@nestjs/core';
 import { FinanceService } from '../finance.service';
+import { EventOutboxService } from '../../../shared/events/event-outbox.service';
+import { makeOutboxDouble } from '../../../shared/events/__tests__/outbox-double';
 import { FinanceRepository } from '../finance.repository';
 import { FileServiceClient } from '../../files/file-service-client.service';
 import { CredentialClientService } from '../../credentials/credential-client.service';
@@ -149,6 +151,7 @@ beforeEach(async () => {
   const module: TestingModule = await Test.createTestingModule({
     providers: [
       FinanceService,
+      { provide: EventOutboxService, useValue: makeOutboxDouble().service },
       { provide: FinanceRepository, useValue: mockRepo },
       { provide: FileServiceClient, useValue: mockFileClient },
       { provide: CredentialClientService, useValue: mockCredentialClient },
@@ -166,6 +169,7 @@ describe('constructor', () => {
     const m = await Test.createTestingModule({
       providers: [
         FinanceService,
+        { provide: EventOutboxService, useValue: makeOutboxDouble().service },
         { provide: FinanceRepository, useValue: mockRepo },
         { provide: FileServiceClient, useValue: mockFileClient },
         { provide: CredentialClientService, useValue: mockCredentialClient },
@@ -447,8 +451,7 @@ describe('variance alert', () => {
       total_amount: { amount: '80.0000', currency_code: 'THB' },
     });
 
-    const { KafkaProducer } = jest.requireMock('@cos/shared') as { KafkaProducer: jest.Mock };
-    const instance = KafkaProducer.mock.results[0]?.value as { publish: jest.Mock };
+    const instance = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
     expect(instance.publish).toHaveBeenCalledWith(
       expect.objectContaining({ event_type: expect.stringContaining('variance.alert') }),
     );
@@ -475,8 +478,7 @@ describe('variance alert', () => {
       total_amount: { amount: '80.0000', currency_code: 'THB' },
     });
 
-    const { KafkaProducer } = jest.requireMock('@cos/shared') as { KafkaProducer: jest.Mock };
-    const instance = KafkaProducer.mock.results[0]?.value as { publish: jest.Mock };
+    const instance = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
     expect(instance.publish).not.toHaveBeenCalledWith(
       expect.objectContaining({ event_type: expect.stringContaining('variance.alert') }),
     );
@@ -511,8 +513,7 @@ describe('recordPayment', () => {
     });
     expect(result.payment_id).toBe('pay-uuid-001');
 
-    const { KafkaProducer } = jest.requireMock('@cos/shared') as { KafkaProducer: jest.Mock };
-    const instance = KafkaProducer.mock.results[0]?.value as { publish: jest.Mock };
+    const instance = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
     expect(instance.publish).toHaveBeenCalledWith(
       expect.objectContaining({ event_type: expect.stringContaining('payment.processed') }),
     );
@@ -563,39 +564,9 @@ describe('getVarianceReport', () => {
 
 // ── emitEvent error handling ───────────────────────────────────────────────
 
-describe('emitEvent error handling', () => {
-  it('logs error but does not throw when Kafka publish fails', async () => {
-    mockRepo.upsertBudget.mockResolvedValue(budgetRow);
-    const kafkaMock = (
-      service as unknown as {
-        kafka: { connect: jest.Mock; publish: jest.Mock; disconnect: jest.Mock };
-      }
-    ).kafka;
-    kafkaMock.publish.mockRejectedValueOnce(new Error('Kafka down'));
-    await expect(
-      service.createOrUpdateBudget('proj-uuid-001', {
-        total_budget_amount: '1000000.0000',
-        total_budget_currency: 'THB',
-      }),
-    ).resolves.toBeDefined();
-  });
-
-  it('instanceof branch: non-Error throw covered', async () => {
-    mockRepo.upsertBudget.mockResolvedValue(budgetRow);
-    const kafkaMock = (
-      service as unknown as {
-        kafka: { connect: jest.Mock; publish: jest.Mock; disconnect: jest.Mock };
-      }
-    ).kafka;
-    kafkaMock.publish.mockRejectedValueOnce('plain string error');
-    await expect(
-      service.createOrUpdateBudget('proj-uuid-001', {
-        total_budget_amount: '1000000.0000',
-        total_budget_currency: 'THB',
-      }),
-    ).resolves.toBeDefined();
-  });
-
+// (Named for the two Kafka catch-branch tests it used to open with; those moved to
+// shared/events/__tests__/event-outbox.service.spec.ts when the services stopped publishing inline.)
+describe('AR billing — customers, contracts, invoices and payments', () => {
   // ── AR Billing increment ────────────────────────────────────────────────────
 
   describe('Customers & Contracts', () => {

@@ -7,6 +7,8 @@ import { NotFoundException, UnprocessableEntityException } from '@nestjs/common'
 import { Test, TestingModule } from '@nestjs/testing';
 import { REQUEST } from '@nestjs/core';
 import { SiteOpsService } from '../site-ops.service';
+import { EventOutboxService } from '../../../shared/events/event-outbox.service';
+import { makeOutboxDouble } from '../../../shared/events/__tests__/outbox-double';
 import { SiteOpsRepository } from '../site-ops.repository';
 import type {
   SiteReportRow,
@@ -149,6 +151,7 @@ beforeEach(async () => {
   const module: TestingModule = await Test.createTestingModule({
     providers: [
       SiteOpsService,
+      { provide: EventOutboxService, useValue: makeOutboxDouble().service },
       { provide: SiteOpsRepository, useValue: mockRepo },
       { provide: REQUEST, useValue: MOCK_REQUEST },
     ],
@@ -163,6 +166,7 @@ describe('constructor', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SiteOpsService,
+        { provide: EventOutboxService, useValue: makeOutboxDouble().service },
         { provide: SiteOpsRepository, useValue: mockRepo },
         { provide: REQUEST, useValue: {} },
       ],
@@ -180,6 +184,7 @@ describe('constructor', () => {
       const module: TestingModule = await Test.createTestingModule({
         providers: [
           SiteOpsService,
+          { provide: EventOutboxService, useValue: makeOutboxDouble().service },
           { provide: SiteOpsRepository, useValue: mockRepo },
           { provide: REQUEST, useValue: MOCK_REQUEST },
         ],
@@ -305,8 +310,7 @@ describe('createSiteReport', () => {
     mockRepo.createSiteReport.mockResolvedValue(makeReport());
     await service.createSiteReport({ project_id: 'project-1', report_date: '2026-06-04' });
     // KafkaProducer.publish is called once (event emission)
-    const { KafkaProducer } = jest.requireMock('@cos/shared') as { KafkaProducer: jest.Mock };
-    const instance = KafkaProducer.mock.results[0]?.value as { publish: jest.Mock };
+    const instance = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
     expect(instance.publish).toHaveBeenCalledWith(
       expect.objectContaining({
         event_type: expect.stringContaining('site.report.created.v1'),
@@ -476,8 +480,7 @@ describe('syncSiteReports', () => {
     expect(results[0]?.conflict_status).toBe('CONFLICT_FLAGGED');
     expect(mockRepo.createConflictRecord).toHaveBeenCalledTimes(1);
     // Emits site.conflict.flagged.v1 for notification routing (ConflictRecord persistence AND notification)
-    const { KafkaProducer } = jest.requireMock('@cos/shared') as { KafkaProducer: jest.Mock };
-    const producer = KafkaProducer.mock.results[0]?.value as { publish: jest.Mock };
+    const producer = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
     expect(producer.publish).toHaveBeenCalledWith(
       expect.objectContaining({
         event_type: 'site.conflict.flagged.v1',
@@ -610,11 +613,9 @@ describe('createIssue', () => {
   // device's outbox reads as a retryable failure - so the issue existed on the server while the
   // person who raised it watched it retry five times and get discarded under 17.2.
   describe('replayed offline create', () => {
-    /** publish mock of the KafkaProducer this spec constructs. */
-    const publishMock = (): jest.Mock => {
-      const { KafkaProducer } = jest.requireMock('@cos/shared') as { KafkaProducer: jest.Mock };
-      return (KafkaProducer.mock.results[0]?.value as { publish: jest.Mock }).publish;
-    };
+    /** Outbox publish mock of the service under test — events are queued now, not published. */
+    const publishMock = (): jest.Mock =>
+      (service as unknown as { outbox: { publish: jest.Mock } }).outbox.publish;
 
     it('returns the issue already raised, without re-emitting or re-numbering', async () => {
       const existing = makeIssue({ issue_id: 'client-uuid' });
@@ -692,8 +693,7 @@ describe('createIssue', () => {
       severity: IssueSeverity.HIGH,
     });
     expect(result.issue_id).toBe('issue-1');
-    const { KafkaProducer } = jest.requireMock('@cos/shared') as { KafkaProducer: jest.Mock };
-    const instance = KafkaProducer.mock.results[0]?.value as { publish: jest.Mock };
+    const instance = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
     expect(instance.publish).toHaveBeenCalledWith(
       expect.objectContaining({ event_type: expect.stringContaining('site.issue.created.v1') }),
     );
@@ -798,8 +798,7 @@ describe('updateIssue', () => {
 
     expect(mockRepo.createConflictRecord).toHaveBeenCalledTimes(1);
     // Emits site.conflict.flagged.v1 for notification routing
-    const { KafkaProducer } = jest.requireMock('@cos/shared') as { KafkaProducer: jest.Mock };
-    const producer = KafkaProducer.mock.results[0]?.value as { publish: jest.Mock };
+    const producer = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
     expect(producer.publish).toHaveBeenCalledWith(
       expect.objectContaining({
         event_type: 'site.conflict.flagged.v1',
@@ -819,8 +818,7 @@ describe('updateIssue', () => {
 
     await service.updateIssue('issue-1', { status: IssueStatus.OPEN });
     // No status change event since from=OPEN and to=OPEN
-    const { KafkaProducer } = jest.requireMock('@cos/shared') as { KafkaProducer: jest.Mock };
-    const instance = KafkaProducer.mock.results[0]?.value as { publish: jest.Mock };
+    const instance = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
     expect(instance.publish).not.toHaveBeenCalledWith(
       expect.objectContaining({ event_type: expect.stringContaining('status_changed') }),
     );
@@ -840,8 +838,7 @@ describe('escalateIssue', () => {
     const res = await service.escalateIssue('i-esc');
     expect(res).toEqual({ issue_id: 'i-esc', status: 'ESCALATED' });
 
-    const { KafkaProducer } = jest.requireMock('@cos/shared') as { KafkaProducer: jest.Mock };
-    const instance = KafkaProducer.mock.results[0]?.value as { publish: jest.Mock };
+    const instance = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
     expect(instance.publish).toHaveBeenCalledWith(
       expect.objectContaining({ event_type: 'site.issue.escalated.v1' }),
     );
@@ -935,8 +932,7 @@ describe('submitInspection', () => {
       inspected_at: '2026-06-04T08:00:00Z',
     });
 
-    const { KafkaProducer } = jest.requireMock('@cos/shared') as { KafkaProducer: jest.Mock };
-    const instance = KafkaProducer.mock.results[0]?.value as { publish: jest.Mock };
+    const instance = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
     expect(instance.publish).toHaveBeenCalledWith(
       expect.objectContaining({ event_type: expect.stringContaining('inspection.passed') }),
     );
@@ -968,8 +964,7 @@ describe('submitInspection', () => {
       expect.objectContaining({ issue_severity: 'HIGH' }),
     );
 
-    const { KafkaProducer } = jest.requireMock('@cos/shared') as { KafkaProducer: jest.Mock };
-    const instance = KafkaProducer.mock.results[0]?.value as { publish: jest.Mock };
+    const instance = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
     expect(instance.publish).toHaveBeenCalledWith(
       expect.objectContaining({ event_type: expect.stringContaining('inspection.failed') }),
     );
@@ -998,8 +993,7 @@ describe('submitInspection', () => {
     });
 
     expect(mockRepo.createInspection).toHaveBeenCalled();
-    const { KafkaProducer } = jest.requireMock('@cos/shared') as { KafkaProducer: jest.Mock };
-    const instance = KafkaProducer.mock.results[0]?.value as { publish: jest.Mock };
+    const instance = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
     expect(instance.publish).not.toHaveBeenCalledWith(
       expect.objectContaining({ event_type: expect.stringContaining('inspection.passed') }),
     );
@@ -1093,39 +1087,10 @@ describe('updateIssue — status_changed event emission', () => {
     mockRepo.updateIssue.mockResolvedValue({ ...serverIssue, status: 'OPEN' });
 
     await service.updateIssue('issue-1', { status: IssueStatus.OPEN, description: 'update' });
-    const { KafkaProducer } = jest.requireMock('@cos/shared') as { KafkaProducer: jest.Mock };
-    const instance = KafkaProducer.mock.results[0]?.value as { publish: jest.Mock };
+    const instance = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
     expect(instance.publish).not.toHaveBeenCalledWith(
       expect.objectContaining({ event_type: expect.stringContaining('status_changed') }),
     );
-  });
-});
-
-describe('emitEvent error handling (covers Kafka catch branch)', () => {
-  it('logs warn but does not throw when Kafka publish fails with Error instance', async () => {
-    mockRepo.createSiteReport.mockResolvedValue(makeReport());
-    const kafkaMock = (
-      service as unknown as {
-        kafka: { connect: jest.Mock; publish: jest.Mock; disconnect: jest.Mock };
-      }
-    ).kafka;
-    kafkaMock.publish.mockRejectedValueOnce(new Error('Kafka down'));
-    await expect(
-      service.createSiteReport({ project_id: 'project-1', report_date: '2026-06-04' }),
-    ).resolves.toBeDefined();
-  });
-
-  it('logs warn with String(err) when Kafka publish fails with non-Error (covers instanceof false branch)', async () => {
-    mockRepo.createSiteReport.mockResolvedValue(makeReport());
-    const kafkaMock = (
-      service as unknown as {
-        kafka: { connect: jest.Mock; publish: jest.Mock; disconnect: jest.Mock };
-      }
-    ).kafka;
-    kafkaMock.publish.mockRejectedValueOnce('plain string error'); // non-Error throw
-    await expect(
-      service.createSiteReport({ project_id: 'project-1', report_date: '2026-06-04' }),
-    ).resolves.toBeDefined();
   });
 });
 
@@ -1299,8 +1264,7 @@ describe('createMaterialConsumption', () => {
     };
 
     const carbonPublish = () => {
-      const { KafkaProducer } = jest.requireMock('@cos/shared') as { KafkaProducer: jest.Mock };
-      const producer = KafkaProducer.mock.results[0]?.value as { publish: jest.Mock };
+      const producer = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
       return producer.publish.mock.calls.find(
         (c) => (c[0] as { event_type: string }).event_type === 'carbon.record.created.v1',
       );

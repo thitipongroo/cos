@@ -72,6 +72,19 @@ describe('VendorIdentityRepository', () => {
     q.mockResolvedValue([]);
     expect(await repo.findActiveRelationship('vid-1', 'ten-1')).toBeNull();
   });
+
+  // A Tier-2 vendor session is a stateless 7-day HMAC, so this query IS the revocation check that
+  // runs on every request. It used to filter on the relationship status alone, which left
+  // vendor_identities.is_active enforced nowhere: disabling a vendor network-wide changed nothing
+  // until their token expired. $queryRaw is mocked here, so assert on the SQL the repository builds
+  // — the predicate is the behaviour, and dropping it again would otherwise pass silently.
+  it('findActiveRelationship requires the network identity to still be active', async () => {
+    q.mockResolvedValue([relationship]);
+    await repo.findActiveRelationship('vid-1', 'ten-1');
+    const sql = (q.mock.calls[0]![0] as string[]).join('?');
+    expect(sql).toContain('platform.vendor_identities');
+    expect(sql.replace(/\s+/g, ' ')).toContain('i.is_active = true');
+  });
 });
 
 describe('VendorIdentityRepository onModuleDestroy', () => {

@@ -13,7 +13,7 @@ import {
 import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
 import { randomUUID } from 'crypto';
-import { KafkaProducer } from '@cos/shared';
+import { EventOutboxService } from '../../shared/events/event-outbox.service';
 import { createLogger } from '@cos/logger';
 import { EquipmentRepository } from './equipment.repository';
 import type { EquipmentRow, AssignmentRow, MaintenanceRow } from './equipment.repository';
@@ -33,14 +33,11 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
 
 @Injectable({ scope: Scope.REQUEST })
 export class EquipmentService {
-  private readonly kafka: KafkaProducer;
-
   constructor(
     @Inject(REQUEST) private readonly req: Request,
     private readonly repo: EquipmentRepository,
-  ) {
-    this.kafka = new KafkaProducer();
-  }
+    private readonly outbox: EventOutboxService,
+  ) {}
 
   private get tenantId(): string {
     return (this.req as Request & { tenantId: string }).tenantId;
@@ -168,20 +165,19 @@ export class EquipmentService {
     return this.repo.findEquipmentByProject(projectId);
   }
 
+  /**
+   * Queue a domain event. The old comment here said "will retry via outbox" — nothing did, because
+   * no outbox was wired. This writes to the one that now exists (EventOutboxService).
+   */
   private async emitEvent(eventType: string, payload: Record<string, unknown>): Promise<void> {
-    try {
-      await this.kafka.connect();
-      await this.kafka.publish({
-        event_type: eventType,
-        event_version: '1.0',
-        tenant_id: this.tenantId,
-        actor_id: this.userId,
-        correlation_id: randomUUID(),
-        occurred_at: new Date().toISOString(),
-        payload,
-      });
-    } catch (err) {
-      logger.error({ err, eventType }, 'Failed to emit Kafka event — will retry via outbox');
-    }
+    await this.outbox.publish({
+      event_type: eventType,
+      event_version: '1.0',
+      tenant_id: this.tenantId,
+      actor_id: this.userId,
+      correlation_id: randomUUID(),
+      occurred_at: new Date().toISOString(),
+      payload,
+    });
   }
 }

@@ -8,11 +8,11 @@
 
 import { PrismaClient } from '@prisma/client';
 import type { Logger } from '@cos/logger';
-import { KafkaProducer } from '@cos/shared';
 
 import { createPrismaClient } from '../../../shared/prisma/create-prisma-client';
 import { assertSafeTenantId } from '../../../shared/prisma/assert-safe-tenant-id';
 import { getDbUrlForTenant } from '../../tenant/utils/get-db-url';
+import { EventOutboxService } from '../../../shared/events/event-outbox.service';
 
 // Clients pooled per datasource URL. Building a PrismaClient per activity (and disconnecting it in a
 // finally) meant a fresh pg pool + connect/teardown for every workflow step; activities run
@@ -57,37 +57,49 @@ export async function withTenantTx<T>(
 export async function disconnectActivityClients(): Promise<void> {
   await Promise.all([...clients.values()].map((c) => c.$disconnect()));
   clients.clear();
+  await outbox?.onModuleDestroy();
+  outbox = undefined;
 }
 
 /**
- * Publish a domain event, logging and swallowing any Kafka failure.
+ * The outbox, for activities. Not injected — Temporal activities run outside the Nest container, so
+ * there is no injector to ask. One instance per worker process, built on first use; its Prisma client
+ * shares the process-wide pg pool like every other one (shared/prisma/create-prisma-client.ts).
+ */
+let outbox: EventOutboxService | undefined;
+
+/**
+ * Queue a domain event for delivery.
  *
- * Swallowing is deliberate and pre-existing: the DB transaction has already committed by the time
- * an activity publishes, so throwing here would make Temporal retry the whole activity and repeat
- * the write. The logger is a parameter because each activity module names its own.
+ * A failure here was previously swallowed for a REASON specific to activities: the DB transaction has
+ * already committed by the time an activity publishes, so throwing would make Temporal retry the whole
+ * activity and repeat the write. That reasoning was sound and the outcome was still a lost event —
+ * the retry policy protected the write, and nothing protected the event.
+ *
+ * Writing to the outbox keeps the property that matters (this never throws at the activity, so
+ * Temporal never re-runs a committed write) and drops the one that did not (delivery is now retried
+ * until it lands, by OutboxPollerService). The Kafka connect/publish/disconnect per activity goes with
+ * it — activities run constantly, and that handshake was the same churn the pooled Prisma clients
+ * above were introduced to remove.
+ *
+ * The logger parameter is kept: callers pass their own module's logger, and removing it would be an
+ * unrelated change to two activity modules' signatures.
  */
 export async function publishEvent<T>(
-  logger: Logger,
+  _logger: Logger,
   event_type: string,
   payload: T,
   tenant_id: string,
   correlation_id: string,
 ): Promise<void> {
-  const kafka = new KafkaProducer();
-  try {
-    await kafka.connect();
-    await kafka.publish({
-      event_type,
-      event_version: '1.0',
-      tenant_id,
-      actor_id: 'system',
-      occurred_at: new Date().toISOString(),
-      correlation_id,
-      payload,
-    });
-  } catch (err) {
-    logger.error({ event_type, err, correlation_id }, 'kafka.publish.failed');
-  } finally {
-    await kafka.disconnect();
-  }
+  outbox ??= new EventOutboxService();
+  await outbox.publish({
+    event_type,
+    event_version: '1.0',
+    tenant_id,
+    actor_id: 'system',
+    occurred_at: new Date().toISOString(),
+    correlation_id,
+    payload,
+  });
 }

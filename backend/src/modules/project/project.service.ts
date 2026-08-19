@@ -14,7 +14,7 @@ import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
 import { randomUUID } from 'crypto';
 import { Client as OpenSearchClient } from '@opensearch-project/opensearch';
-import { KafkaProducer } from '@cos/shared';
+import { EventOutboxService } from '../../shared/events/event-outbox.service';
 import { createLogger } from '@cos/logger';
 import type { CosRole } from '@cos/types';
 import { ProjectRepository } from './project.repository';
@@ -42,7 +42,6 @@ export class ProjectService {
   private readonly userRole: string;
   private readonly correlationId: string;
   private readonly openSearch: OpenSearchClient;
-  private readonly kafka: KafkaProducer;
 
   constructor(
     private readonly repo: ProjectRepository,
@@ -51,13 +50,13 @@ export class ProjectService {
       tenantId?: string;
       user?: { user_id?: string; role?: string };
     },
+    private readonly outbox: EventOutboxService,
   ) {
     this.userRole = request.user?.role ?? '';
     this.correlationId = randomUUID();
     this.openSearch = new OpenSearchClient({
       node: process.env['OPENSEARCH_URL'] ?? 'http://localhost:9200',
     });
-    this.kafka = new KafkaProducer();
   }
 
   async create(dto: CreateProjectDto): Promise<ProjectRow> {
@@ -333,25 +332,22 @@ export class ProjectService {
     }
   }
 
+  /**
+   * Queue a domain event.
+   *
+   * This is the method whose old comment promised "outbox pattern picks up failures (Phase 8)" while
+   * publishing inline and swallowing the error — there was no outbox, so a broker hiccup dropped the
+   * event for good. Now there is one, and this writes to it.
+   */
   private async publishEvent<T>(eventType: string, payload: T): Promise<void> {
-    try {
-      await this.kafka.connect();
-      await this.kafka.publish<T>({
-        event_type: eventType,
-        event_version: '1.0',
-        tenant_id: this.tenantId,
-        actor_id: this.userId,
-        occurred_at: new Date().toISOString(),
-        correlation_id: this.correlationId,
-        payload,
-      });
-      await this.kafka.disconnect();
-    } catch (err) {
-      // Non-fatal in MVP: log and continue — outbox pattern picks up failures (Phase 8)
-      logger.error(
-        { event_type: eventType, err, correlation_id: this.correlationId },
-        'kafka.publish.failed',
-      );
-    }
+    await this.outbox.publish<T>({
+      event_type: eventType,
+      event_version: '1.0',
+      tenant_id: this.tenantId,
+      actor_id: this.userId,
+      occurred_at: new Date().toISOString(),
+      correlation_id: this.correlationId,
+      payload,
+    });
   }
 }

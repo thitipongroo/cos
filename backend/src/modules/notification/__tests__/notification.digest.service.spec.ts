@@ -4,13 +4,20 @@ jest.mock('@cos/logger', () => ({
   createLogger: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }),
 }));
 
-import { NotificationDigestService, localSlot } from '../notification.digest.service';
+import {
+  NotificationDigestService,
+  localSlot,
+  DIGEST_JOB,
+  DIGEST_LEASE_SECONDS,
+} from '../notification.digest.service';
+import { makeLockDouble } from '../../../shared/scheduling/__tests__/lock-double';
 
 const mockRepo = { listActiveTenants: jest.fn() };
 const mockSvc = { deliverDigest: jest.fn() };
 
-function makeService(): NotificationDigestService {
-  return new NotificationDigestService(mockRepo as never, mockSvc as never);
+// Grants by default — see the note in the escalation spec.
+function makeService(lock = makeLockDouble()): NotificationDigestService {
+  return new NotificationDigestService(mockRepo as never, mockSvc as never, lock.service);
 }
 
 beforeEach(() => jest.resetAllMocks());
@@ -71,5 +78,27 @@ describe('runHourly', () => {
     await expect(
       makeService().runHourly(new Date('2026-01-06T11:00:00Z')),
     ).resolves.toBeUndefined();
+  });
+});
+
+// Three replicas, one digest. Nothing downstream deduplicates a digest: deliverDigest sends, and no
+// per-period record is kept, so without the lease every project manager got the 18:00 site summary
+// three times and the Monday 08:00 weekly three times.
+describe('NotificationDigestService — single-replica execution', () => {
+  it('sends nothing on a replica that does not hold the lease', async () => {
+    const lock = makeLockDouble(false);
+    await makeService(lock).runHourly(new Date('2026-01-05T11:00:00Z'));
+
+    expect(mockRepo.listActiveTenants).not.toHaveBeenCalled();
+    expect(mockSvc.deliverDigest).not.toHaveBeenCalled();
+  });
+
+  it('claims the lease under the job name, with a lease shorter than the hourly schedule', async () => {
+    mockRepo.listActiveTenants.mockResolvedValue([]);
+    const lock = makeLockDouble();
+    await makeService(lock).runHourly(new Date('2026-01-05T11:00:00Z'));
+
+    expect(lock.calls).toEqual([{ jobName: DIGEST_JOB, leaseSeconds: DIGEST_LEASE_SECONDS }]);
+    expect(DIGEST_LEASE_SECONDS).toBeLessThan(60 * 60);
   });
 });

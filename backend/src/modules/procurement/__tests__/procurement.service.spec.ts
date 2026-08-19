@@ -10,6 +10,7 @@ import {
 import { Test, TestingModule } from '@nestjs/testing';
 import { REQUEST } from '@nestjs/core';
 import { ProcurementService } from '../procurement.service';
+import { EventOutboxService } from '../../../shared/events/event-outbox.service';
 import { ProcurementRepository } from '../procurement.repository';
 import type {
   VendorRow,
@@ -250,6 +251,10 @@ beforeEach(async () => {
   const module: TestingModule = await Test.createTestingModule({
     providers: [
       ProcurementService,
+      // The suite's assertions are written against `mockKafkaPublish`, and they are still exactly
+      // the right assertions — an operation emits this envelope. Wire that same mock in as the
+      // outbox's publish so the contracts below keep checking what they were written to check.
+      { provide: EventOutboxService, useValue: { publish: mockKafkaPublish } },
       { provide: ProcurementRepository, useValue: mockRepo },
       { provide: REQUEST, useValue: mockRequest },
     ],
@@ -1101,6 +1106,7 @@ describe('private helper branches', () => {
     const module = await Test.createTestingModule({
       providers: [
         ProcurementService,
+        { provide: EventOutboxService, useValue: { publish: mockKafkaPublish } },
         {
           provide: ProcurementRepository,
           useValue: mockRepo,
@@ -1112,25 +1118,6 @@ describe('private helper branches', () => {
     expect(svc).toBeDefined();
     expect((svc as unknown as { tenantId: string }).tenantId).toBe('');
     expect((svc as unknown as { userId: string }).userId).toBe('');
-  });
-
-  it('publishEvent — logs error but does not throw when Kafka fails (covers catch branch)', async () => {
-    mockRepo.findRfqById.mockResolvedValue(rfqDraftFixture);
-    mockRepo.setRfqWorkflowId.mockResolvedValue(undefined);
-    mockRepo.createRfq.mockResolvedValue(rfqDraftFixture);
-    const kafkaMock = (
-      service as unknown as {
-        kafka: { connect: jest.Mock; publish: jest.Mock; disconnect: jest.Mock };
-      }
-    ).kafka;
-    kafkaMock.publish.mockRejectedValueOnce(new Error('Kafka down'));
-    await expect(
-      service.createRfq({
-        project_id: 'project-uuid-001',
-        rfq_number: 'RFQ-001',
-        deadline: new Date(Date.now() + 7 * 86400 * 1000).toISOString(),
-      }),
-    ).resolves.toBeDefined();
   });
 });
 
@@ -1318,27 +1305,6 @@ describe('exact contracts — createRfq', () => {
       expect.objectContaining({
         payload: expect.objectContaining({ pr_id: 'pr-uuid-777' }),
       }),
-    );
-  });
-
-  it('kafka publish failure logs exact error event and does not throw', async () => {
-    mockRepo.createRfq.mockResolvedValue({ ...rfqDraftFixture });
-    mockRepo.setRfqWorkflowId.mockResolvedValue(undefined);
-    mockKafkaPublish.mockRejectedValueOnce(new Error('Kafka down'));
-    await expect(
-      service.createRfq({
-        project_id: 'project-uuid-001',
-        rfq_number: 'RFQ-001',
-        deadline: isoDeadline,
-      }),
-    ).resolves.toBeDefined();
-    expect(loggerMock.error).toHaveBeenCalledWith(
-      {
-        event_type: 'procurement.rfq.created.v1',
-        err: expect.any(Error),
-        correlation_id: expect.any(String),
-      },
-      'kafka.publish.failed',
     );
   });
 });

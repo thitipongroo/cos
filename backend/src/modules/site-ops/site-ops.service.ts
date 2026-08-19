@@ -15,7 +15,7 @@ import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
 import { randomUUID } from 'crypto';
 import { Client as OpenSearchClient } from '@opensearch-project/opensearch';
-import { KafkaProducer } from '@cos/shared';
+import { EventOutboxService } from '../../shared/events/event-outbox.service';
 import { createLogger } from '@cos/logger';
 import { SiteOpsRepository } from './site-ops.repository';
 import type {
@@ -55,7 +55,6 @@ export class SiteOpsService {
     return (this.request as { userId?: string }).userId ?? '';
   }
   private readonly correlationId: string;
-  private readonly kafka: KafkaProducer;
   private readonly openSearch: OpenSearchClient;
 
   constructor(
@@ -66,9 +65,9 @@ export class SiteOpsService {
       userId?: string;
       correlationId?: string;
     },
+    private readonly outbox: EventOutboxService,
   ) {
     this.correlationId = request.correlationId ?? randomUUID();
-    this.kafka = new KafkaProducer();
     this.openSearch = new OpenSearchClient({
       node: process.env['OPENSEARCH_URL'] ?? 'http://localhost:9200',
     });
@@ -751,29 +750,17 @@ export class SiteOpsService {
 
   // ── Private helpers ───────────────────────────────────────────────────────
 
+  /** Queue a domain event. Durable and off the request path — see EventOutboxService. */
   private async emitEvent(eventType: string, payload: Record<string, unknown>): Promise<void> {
-    try {
-      await this.kafka.connect();
-      await this.kafka.publish({
-        event_type: eventType,
-        event_version: '1.0',
-        tenant_id: this.tenantId,
-        actor_id: this.userId,
-        occurred_at: new Date().toISOString(),
-        correlation_id: this.correlationId,
-        payload,
-      });
-    } catch (err) {
-      logger.warn({
-        event: 'kafka.publish.failed',
-        event_type: eventType,
-        tenant_id: this.tenantId,
-        trace_id: this.correlationId,
-        error: err instanceof Error ? err.message : String(err),
-      });
-    } finally {
-      await this.kafka.disconnect().catch(/* istanbul ignore next */ () => undefined);
-    }
+    await this.outbox.publish({
+      event_type: eventType,
+      event_version: '1.0',
+      tenant_id: this.tenantId,
+      actor_id: this.userId,
+      occurred_at: new Date().toISOString(),
+      correlation_id: this.correlationId,
+      payload,
+    });
   }
 
   private toMinimalReport(report: SiteReportRow) {

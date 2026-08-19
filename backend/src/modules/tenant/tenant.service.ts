@@ -11,7 +11,7 @@ import {
   OnModuleDestroy,
 } from '@nestjs/common';
 import { createPrismaClient } from '../../shared/prisma/create-prisma-client';
-import { KafkaProducer } from '@cos/shared';
+import { EventOutboxService } from '../../shared/events/event-outbox.service';
 import { createLogger } from '@cos/logger';
 import { Connection, Client } from '@temporalio/client';
 import { CreateTenantDto } from './dto/create-tenant.dto';
@@ -66,12 +66,14 @@ export interface TenantSummaryRow {
 export class TenantService implements OnModuleDestroy {
   // Platform PrismaClient — NOT TenantPrismaService (this operates cross-tenant)
   private readonly prisma = createPrismaClient();
-  private readonly kafka = new KafkaProducer();
 
   // FeatureFlagService gates whether dedicated_db_url is encrypted on write (s1.tenant.encrypted-db-url,
   // security review F5b / QM-15). Injected rather than constructed so the Unleash client stays owned by
   // Nest and is closed on shutdown (Rule 39).
-  constructor(private readonly flags: FeatureFlagService) {}
+  constructor(
+    private readonly flags: FeatureFlagService,
+    private readonly outbox: EventOutboxService,
+  ) {}
 
   /** Encrypt-on-write decision for this tenant, honouring the QM-15 rollout flag. */
   private encryptDbUrl(url: string, tenantId?: string): string {
@@ -305,21 +307,16 @@ export class TenantService implements OnModuleDestroy {
     `;
   }
 
+  /** Queue a platform-scope event. Durable and off the request path — see EventOutboxService. */
   private async publishEvent<T>(eventType: string, payload: T): Promise<void> {
-    try {
-      await this.kafka.connect();
-      await this.kafka.publish<T>({
-        event_type: eventType,
-        event_version: '1.0',
-        tenant_id: 'platform',
-        actor_id: 'system',
-        occurred_at: new Date().toISOString(),
-        correlation_id: globalThis.crypto.randomUUID(),
-        payload,
-      });
-      await this.kafka.disconnect();
-    } catch (err) {
-      logger.error({ event_type: eventType, err }, 'kafka.publish.failed');
-    }
+    await this.outbox.publish<T>({
+      event_type: eventType,
+      event_version: '1.0',
+      tenant_id: 'platform',
+      actor_id: 'system',
+      occurred_at: new Date().toISOString(),
+      correlation_id: globalThis.crypto.randomUUID(),
+      payload,
+    });
   }
 }

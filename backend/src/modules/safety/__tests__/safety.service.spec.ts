@@ -18,6 +18,8 @@ import {
 import { Test, TestingModule } from '@nestjs/testing';
 import { REQUEST } from '@nestjs/core';
 import { SafetyService } from '../safety.service';
+import { EventOutboxService } from '../../../shared/events/event-outbox.service';
+import { makeOutboxDouble } from '../../../shared/events/__tests__/outbox-double';
 import { SafetyRepository } from '../safety.repository';
 
 const mockRepo = {
@@ -39,6 +41,7 @@ beforeEach(async () => {
   const moduleRef: TestingModule = await Test.createTestingModule({
     providers: [
       SafetyService,
+      { provide: EventOutboxService, useValue: makeOutboxDouble().service },
       { provide: SafetyRepository, useValue: mockRepo },
       { provide: REQUEST, useValue: { userId: 'user-1' } },
     ],
@@ -50,6 +53,7 @@ it('constructor tolerates missing request context; userId falls back to empty', 
   const m = await Test.createTestingModule({
     providers: [
       SafetyService,
+      { provide: EventOutboxService, useValue: makeOutboxDouble().service },
       { provide: SafetyRepository, useValue: mockRepo },
       { provide: REQUEST, useValue: {} },
     ],
@@ -78,15 +82,9 @@ describe('incidents', () => {
   // already have landed. Without this a replay filed a SECOND safety record, re-notified the Safety
   // Officer and re-armed the 30-minute escalation timer.
   describe('client_id makes a replayed offline incident idempotent', () => {
-    /** The publish mock of the most recently constructed KafkaProducer, as the specs above read it. */
-    const lastPublish = (): jest.Mock => {
-      const { KafkaProducer } = jest.requireMock('@cos/shared') as { KafkaProducer: jest.Mock };
-      return (
-        KafkaProducer.mock.results[KafkaProducer.mock.results.length - 1]?.value as {
-          publish: jest.Mock;
-        }
-      ).publish;
-    };
+    /** The outbox publish mock of the service under test — events are queued now, not published. */
+    const lastPublish = (): jest.Mock =>
+      (service as unknown as { outbox: { publish: jest.Mock } }).outbox.publish;
 
     it('uses the client-provided id as the incident_id', async () => {
       mockRepo.createIncident.mockResolvedValue({ incident_id: 'client-uuid', project_id: 'p1' });
@@ -157,31 +155,13 @@ describe('incidents', () => {
       incident_type: 'fall',
       severity: 'CRITICAL',
     } as never);
-    const { KafkaProducer } = jest.requireMock('@cos/shared') as { KafkaProducer: jest.Mock };
-    const instance = KafkaProducer.mock.results[KafkaProducer.mock.results.length - 1]?.value as {
-      publish: jest.Mock;
-    };
-    expect(instance.publish).toHaveBeenCalledWith(
+    const outbox = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
+    expect(outbox.publish).toHaveBeenCalledWith(
       expect.objectContaining({
         event_type: 'safety.incident.created.v1',
         payload: expect.objectContaining({ incident_id: 'inc-1', severity: 'CRITICAL' }),
       }),
     );
-  });
-
-  it('createIncident still succeeds when the Kafka publish fails (error swallowed)', async () => {
-    mockRepo.createIncident.mockResolvedValue({ incident_id: 'inc-2', project_id: 'p1' });
-    const { KafkaProducer } = jest.requireMock('@cos/shared') as { KafkaProducer: jest.Mock };
-    const instance = KafkaProducer.mock.results[KafkaProducer.mock.results.length - 1]?.value as {
-      publish: jest.Mock;
-    };
-    instance.publish.mockRejectedValueOnce(new Error('kafka down'));
-    const result = await service.createIncident({
-      project_id: 'p1',
-      incident_type: 'fall',
-      severity: 'HIGH',
-    } as never);
-    expect(result.incident_id).toBe('inc-2');
   });
 
   it('listIncidents returns envelope', async () => {

@@ -10,6 +10,8 @@ import {
 import { Test, TestingModule } from '@nestjs/testing';
 import { REQUEST } from '@nestjs/core';
 import { BoqService } from '../boq.service';
+import { EventOutboxService } from '../../../shared/events/event-outbox.service';
+import { makeOutboxDouble } from '../../../shared/events/__tests__/outbox-double';
 import { BoqRepository } from '../boq.repository';
 import type { BoqVersionRow, BoqCategoryRow, BoqItemRow } from '../boq.repository';
 
@@ -116,6 +118,7 @@ describe('BoqService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         BoqService,
+        { provide: EventOutboxService, useValue: makeOutboxDouble().service },
         { provide: BoqRepository, useValue: mockRepo },
         { provide: REQUEST, useValue: mockRequest },
       ],
@@ -129,6 +132,7 @@ describe('BoqService', () => {
       const module: TestingModule = await Test.createTestingModule({
         providers: [
           BoqService,
+          { provide: EventOutboxService, useValue: makeOutboxDouble().service },
           { provide: BoqRepository, useValue: mockRepo },
           { provide: REQUEST, useValue: {} },
         ],
@@ -270,15 +274,15 @@ describe('BoqService', () => {
       mockRepo.claimNextVersion.mockResolvedValue({ version: draftVersion, version_number: 1 });
       mockRepo.findLatestApprovedVersion.mockResolvedValue(null);
 
-      const kafkaMock = (
+      const outboxMock = (
         service as unknown as {
-          kafka: { connect: jest.Mock; publish: jest.Mock; disconnect: jest.Mock };
+          outbox: { publish: jest.Mock };
         }
-      ).kafka;
+      ).outbox;
 
       await service.createVersion('project-uuid-001', { currency_code: 'THB' });
 
-      const eventTypes = kafkaMock.publish.mock.calls.map(
+      const eventTypes = outboxMock.publish.mock.calls.map(
         (c: [{ event_type: string }]) => c[0].event_type,
       );
       expect(eventTypes).toContain('construction.boq.created.v1');
@@ -297,17 +301,17 @@ describe('BoqService', () => {
       mockRepo.updateCategorySubtotals.mockResolvedValue(undefined);
       mockRepo.updateVersionTotal.mockResolvedValue(undefined);
 
-      const kafkaMock = (
+      const outboxMock = (
         service as unknown as {
-          kafka: { connect: jest.Mock; publish: jest.Mock; disconnect: jest.Mock };
+          outbox: { publish: jest.Mock };
         }
-      ).kafka;
+      ).outbox;
 
       const result = await service.createVersion('project-uuid-001', { currency_code: 'THB' });
       expect(result.version_number).toBe(2);
       expect(mockRepo.copyVersionContents).toHaveBeenCalled();
 
-      const eventTypes = kafkaMock.publish.mock.calls.map(
+      const eventTypes = outboxMock.publish.mock.calls.map(
         (c: [{ event_type: string }]) => c[0].event_type,
       );
       expect(eventTypes).not.toContain('construction.boq.created.v1');
@@ -396,12 +400,12 @@ describe('BoqService', () => {
       );
 
       // ADR-058 CT-2c-2: approval also publishes the full itemized line set for downstream materialization.
-      const kafkaMock = (
+      const outboxMock = (
         service as unknown as {
-          kafka: { connect: jest.Mock; publish: jest.Mock; disconnect: jest.Mock };
+          outbox: { publish: jest.Mock };
         }
-      ).kafka;
-      const itemsEvent = kafkaMock.publish.mock.calls
+      ).outbox;
+      const itemsEvent = outboxMock.publish.mock.calls
         .map((c) => c[0] as { event_type: string; payload: { items: unknown[] } })
         .find((e) => e.event_type === 'construction.boq.items_published.v1');
       expect(itemsEvent).toBeDefined();
@@ -584,35 +588,6 @@ describe('BoqService', () => {
   });
 
   // ── Kafka error handling ───────────────────────────────────────────────────
-  describe('publishEvent error handling', () => {
-    it('logs error but does not throw when Kafka publish fails (G4 — covers catch branch)', async () => {
-      const draftV2: BoqVersionRow = {
-        ...draftVersion,
-        version_id: 'version-uuid-002',
-        version_number: 2,
-      };
-      mockRepo.findVersionById
-        .mockResolvedValueOnce(draftV2)
-        .mockResolvedValueOnce({ ...draftV2, status: 'APPROVED' });
-      mockRepo.findItemsByVersion.mockResolvedValue([item]);
-      mockRepo.findCategoriesByVersion.mockResolvedValue([category]);
-      mockRepo.updateCategorySubtotals.mockResolvedValue(undefined);
-      mockRepo.updateVersionTotal.mockResolvedValue(undefined);
-      mockRepo.approveVersion.mockResolvedValue(undefined);
-
-      const kafkaMock = (
-        service as unknown as {
-          kafka: { connect: jest.Mock; publish: jest.Mock; disconnect: jest.Mock };
-        }
-      ).kafka;
-      kafkaMock.publish.mockRejectedValueOnce(new Error('Kafka down'));
-
-      await expect(
-        service.approveVersion('project-uuid-001', 'version-uuid-002'),
-      ).resolves.toBeDefined();
-    });
-  });
-
   // ── Category and item listing ─────────────────────────────────────────────
   describe('getVersionDetail', () => {
     it('returns version, categories, items', async () => {
