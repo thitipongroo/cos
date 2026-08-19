@@ -49,14 +49,10 @@ import {
 } from '../../theme/tokens';
 import { shortId } from '../../lib/shortId';
 import { darkScreen } from '../../theme/screenStyles';
+import { initialsFirstTwo as initials } from '../../lib/initials';
 
 const AUDIT_DORMANT_DAYS = 30;
 const DAY_MS = 24 * 60 * 60 * 1000;
-
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || '?';
-}
 
 function isDormant(u: TenantUser): boolean {
   return (

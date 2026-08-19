@@ -34,11 +34,8 @@ import {
 import { formatRole } from '../../lib/formatRole';
 import { shortId } from '../../lib/shortId';
 import { darkScreen } from '../../theme/screenStyles';
+import { initialsFirstTwo as initials } from '../../lib/initials';
 
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || '?';
-}
 export default function ResetPasswordScreen(): React.JSX.Element {
   const t = useT();
   const router = useRouter();
