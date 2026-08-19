@@ -41,8 +41,12 @@ const config: Config = {
 
   // The preset's own patterns cover react-native and @react-native only; the Expo packages this app
   // imports (expo-router, @expo/vector-icons, …) also publish untranspiled sources.
+  // The preset's own patterns cover react-native and @react-native only. Everything added here
+  // publishes untranspiled ESM/flow and is reached from a screen: the expo packages, the Google
+  // Fonts packages, and `standard-navigation` — which is not an expo package by name but is what
+  // expo-router's standard-navigation entry point resolves to.
   transformIgnorePatterns: [
-    'node_modules/(?!((jest-)?react-native|@react-native(-community)?|expo|expo-.*|@expo|@expo-google-fonts|react-clone-referenced-element|@testing-library)/)',
+    'node_modules/(?!((jest-)?react-native|@react-native(-community)?|expo|expo-.*|@expo|@expo-google-fonts|standard-navigation|react-clone-referenced-element|@testing-library)/)',
   ],
 
   moduleNameMapper: {
@@ -61,7 +65,10 @@ const config: Config = {
     '^expo-battery$': '<rootDir>/src/__mocks__/expo-battery.ts',
     '^expo-secure-store$': '<rootDir>/src/__mocks__/expo-secure-store.ts',
     '^expo-crypto$': '<rootDir>/src/__mocks__/expo-crypto.ts',
+    '^@expo/app-integrity$': '<rootDir>/src/__mocks__/expo-app-integrity.ts',
+    '^react-native-secure-sign$': '<rootDir>/src/__mocks__/react-native-secure-sign.ts',
     '^expo-camera$': '<rootDir>/src/__mocks__/expo-camera.tsx',
+    '^expo-audio$': '<rootDir>/src/__mocks__/expo-audio.ts',
     '^@shopify/react-native-skia$': '<rootDir>/src/__mocks__/react-native-skia.tsx',
     '^@react-native-community/netinfo$': '<rootDir>/src/__mocks__/netinfo.ts',
     '^@expo/vector-icons$': '<rootDir>/src/__mocks__/expo-vector-icons.tsx',
