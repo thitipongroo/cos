@@ -64,7 +64,7 @@ describe('BudgetScreen', () => {
 
     const { getByTestId, getByText } = await renderScreen();
 
-    fireEvent.press(getByTestId('project-option-proj-1'));
+    await fireEvent.press(getByTestId('project-option-proj-1'));
 
     await waitFor(() => expect(getByTestId('budget-figures')).toBeTruthy());
     expect(client.get).toHaveBeenCalledWith('/finance/budget/proj-1');
@@ -80,7 +80,7 @@ describe('BudgetScreen', () => {
 
     const { getByTestId, getByText } = await renderScreen();
 
-    fireEvent.press(getByTestId('project-option-proj-1'));
+    await fireEvent.press(getByTestId('project-option-proj-1'));
 
     await waitFor(() => expect(getByText('Structure')).toBeTruthy());
     expect(getByText('MEP')).toBeTruthy();
@@ -92,7 +92,7 @@ describe('BudgetScreen', () => {
 
     const { getByTestId, queryByTestId } = await renderScreen();
 
-    fireEvent.press(getByTestId('project-option-proj-1'));
+    await fireEvent.press(getByTestId('project-option-proj-1'));
 
     await waitFor(() => expect(getByTestId('budget-figures')).toBeTruthy());
     expect(queryByTestId('budget-lines')).toBeNull();
@@ -103,7 +103,7 @@ describe('BudgetScreen', () => {
 
     const { getByTestId, queryByTestId } = await renderScreen();
 
-    fireEvent.press(getByTestId('project-option-proj-1'));
+    await fireEvent.press(getByTestId('project-option-proj-1'));
 
     await waitFor(() => expect(queryByTestId('budget-figures')).toBeNull());
   });

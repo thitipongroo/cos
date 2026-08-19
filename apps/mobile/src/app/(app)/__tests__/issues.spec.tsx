@@ -112,7 +112,7 @@ describe('IssuesScreen', () => {
 
     await waitFor(() => expect(getAllByTestId('issue-item')).toHaveLength(2));
 
-    fireEvent.press(getByTestId('issue-filter-critical'));
+    await fireEvent.press(getByTestId('issue-filter-critical'));
 
     await waitFor(() => expect(getAllByTestId('issue-item')).toHaveLength(1));
     expect(queryByText('Paint scuff')).toBeNull();

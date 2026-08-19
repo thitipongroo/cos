@@ -13,12 +13,13 @@
 // NORMALISED (0..1) coordinates, so the mark re-renders at any pad size or screen density and the
 // payload stays a few hundred bytes on a sync batch that flushes over site 3G (§17.7).
 
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { GestureDetector, Gesture } from 'react-native-gesture-handler';
+import { GestureDetector } from 'react-native-gesture-handler';
 import { Canvas, Path, Group, Skia } from '@shopify/react-native-skia';
 import { MaterialIcons } from '@expo/vector-icons';
 import type { AnnotationStroke } from './PhotoAnnotation';
+import { useStrokeCapture, type StrokePoint } from '../hooks/useStrokeCapture';
 import { useI18n } from '../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../theme/tokens';
 import { usePalette, type Palette } from '../theme/usePalette';
@@ -42,40 +43,23 @@ export function SignaturePad({ strokes, onChange, signerName, testID }: Signatur
   const styles = useMemo(() => makeStyles(p), [p]);
 
   const [size, setSize] = useState({ w: 0, h: PAD_HEIGHT });
-  const drawing = useRef<{ x: number; y: number }[]>([]);
-  const [liveKey, setLiveKey] = useState(0); // bump to re-render the in-flight stroke
-
   const norm = useCallback(
     (x: number, y: number) => ({ x: size.w ? x / size.w : 0, y: size.h ? y / size.h : 0 }),
     [size.w, size.h],
   );
 
-  const pan = useMemo(
-    () =>
-      Gesture.Pan()
-        .runOnJS(true)
-        .onBegin((e) => {
-          drawing.current = [norm(e.x, e.y)];
-          setLiveKey((k) => k + 1);
-        })
-        .onUpdate((e) => {
-          drawing.current.push(norm(e.x, e.y));
-          setLiveKey((k) => k + 1);
-        })
-        .onEnd(() => {
-          const pts = drawing.current;
-          drawing.current = [];
-          // A tap is not a stroke: two points are the minimum that draws a line, and committing a
-          // single point would make the pad "signed" on an accidental touch.
-          if (pts.length < 2) {
-            setLiveKey((k) => k + 1);
-            return;
-          }
-          onChange([...strokes, { d: strokeToSvg(pts), color: p.text, width: STROKE_FRACTION }]);
-          setLiveKey((k) => k + 1);
-        }),
-    [norm, onChange, strokes, p.text],
+  const commit = useCallback(
+    (points: StrokePoint[]) => {
+      onChange([...strokes, { d: strokeToSvg(points), color: p.text, width: STROKE_FRACTION }]);
+    },
+    [onChange, strokes, p.text],
   );
+
+  const { pan, liveKey, drawing } = useStrokeCapture({
+    norm,
+    onCommit: commit,
+    testId: 'signature-pad-pan',
+  });
 
   const longEdge = Math.max(size.w, size.h);
   const liveD = drawing.current.length >= 2 ? strokeToSvg(drawing.current) : null;
@@ -94,6 +78,7 @@ export function SignaturePad({ strokes, onChange, signerName, testID }: Signatur
           accessibilityRole="image"
           accessibilityLabel={t('safety.checklist.signHere')}
           accessibilityValue={{ text: signed ? t('safety.checklist.signed') : '' }}
+          testID="signature-pad-canvas"
           onLayout={(e) =>
             setSize({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })
           }

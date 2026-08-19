@@ -69,7 +69,7 @@ describe('DashboardScreen', () => {
 
     const { getByTestId, getAllByTestId } = await renderScreen();
 
-    fireEvent.press(getByTestId('project-option-proj-1'));
+    await fireEvent.press(getByTestId('project-option-proj-1'));
 
     await waitFor(() => expect(getAllByTestId('kpi-day')).toHaveLength(2));
     expect(client.get).toHaveBeenCalledWith('/analytics/pm/proj-1');
@@ -80,7 +80,7 @@ describe('DashboardScreen', () => {
 
     const { getByTestId, getByText } = await renderScreen();
 
-    fireEvent.press(getByTestId('project-option-proj-1'));
+    await fireEvent.press(getByTestId('project-option-proj-1'));
 
     await waitFor(() => expect(getByTestId('kpi-list')).toBeTruthy());
     expect(getByText('24')).toBeTruthy();
@@ -104,7 +104,7 @@ describe('DashboardScreen', () => {
 
     const { getByTestId, queryAllByTestId } = await renderScreen();
 
-    fireEvent.press(getByTestId('project-option-proj-1'));
+    await fireEvent.press(getByTestId('project-option-proj-1'));
 
     await waitFor(() => expect(queryAllByTestId('kpi-day')).toHaveLength(0));
   });

@@ -61,7 +61,7 @@ describe('InvoicesScreen', () => {
     const { getByText, getByTestId } = await renderScreen();
 
     await waitFor(() => expect(getByText('INV-0001')).toBeTruthy());
-    fireEvent.press(getByText('INV-0001'));
+    await fireEvent.press(getByText('INV-0001'));
 
     await waitFor(() => expect(getByTestId('invoice-detail')).toBeTruthy());
     expect(client.get).toHaveBeenCalledWith('/procurement/vendor-invoices/vi-1');
@@ -74,7 +74,7 @@ describe('InvoicesScreen', () => {
 
     await waitFor(() => expect(client.get).toHaveBeenCalledWith('/procurement/vendor-invoices'));
 
-    fireEvent.press(getByTestId('filter-APPROVED'));
+    await fireEvent.press(getByTestId('filter-APPROVED'));
 
     await waitFor(() =>
       expect(client.get).toHaveBeenCalledWith('/procurement/vendor-invoices?status=APPROVED'),

@@ -62,7 +62,7 @@ describe('ConflictReviewScreen', () => {
     await waitFor(() => expect(getAllByTestId('conflict-record-item')).toHaveLength(2));
     expect(queryAllByTestId('conflict-diff')).toHaveLength(0);
 
-    fireEvent.press(getByText('site_report'));
+    await fireEvent.press(getByText('site_report'));
 
     await waitFor(() => expect(getAllByTestId('conflict-diff')).toHaveLength(1));
     // The diff belongs to RECORD_A: its differing field is `summary`, not `status`.
@@ -76,10 +76,10 @@ describe('ConflictReviewScreen', () => {
     const { getByText, queryAllByTestId, getAllByTestId } = await renderScreen();
 
     await waitFor(() => expect(getAllByTestId('conflict-record-item')).toHaveLength(1));
-    fireEvent.press(getByText('site_report'));
+    await fireEvent.press(getByText('site_report'));
     await waitFor(() => expect(getAllByTestId('conflict-diff')).toHaveLength(1));
 
-    fireEvent.press(getByText('site_report'));
+    await fireEvent.press(getByText('site_report'));
     await waitFor(() => expect(queryAllByTestId('conflict-diff')).toHaveLength(0));
   });
 

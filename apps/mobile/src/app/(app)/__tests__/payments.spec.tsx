@@ -72,10 +72,10 @@ describe('PaymentsScreen', () => {
     await waitFor(() => expect(getByText('PAY-0001')).toBeTruthy());
     expect(queryByTestId('payment-detail')).toBeNull();
 
-    fireEvent.press(getByText('PAY-0001'));
+    await fireEvent.press(getByText('PAY-0001'));
     await waitFor(() => expect(getByTestId('payment-detail')).toBeTruthy());
 
-    fireEvent.press(getByText('PAY-0001'));
+    await fireEvent.press(getByText('PAY-0001'));
     await waitFor(() => expect(queryByTestId('payment-detail')).toBeNull());
   });
 
@@ -85,7 +85,7 @@ describe('PaymentsScreen', () => {
     const { getAllByTestId, getByTestId } = await renderScreen();
 
     await waitFor(() => expect(getAllByTestId('payment-item')).toHaveLength(2));
-    fireEvent.press(getByTestId('approve-payment-button'));
+    await fireEvent.press(getByTestId('approve-payment-button'));
 
     await waitFor(() => expect(getAllByTestId('payment-item')).toHaveLength(1));
     expect(client.mutate).toHaveBeenCalledWith(

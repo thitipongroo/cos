@@ -80,7 +80,7 @@ describe('DirectoryScreen', () => {
 
     await waitFor(() => expect(getByTestId('directory-card-w-2')).toBeTruthy());
 
-    fireEvent.changeText(getByTestId('directory-search'), 'Alice');
+    await fireEvent.changeText(getByTestId('directory-search'), 'Alice');
 
     await waitFor(() => expect(queryByTestId('directory-card-w-2')).toBeNull());
     expect(getByTestId('directory-card-w-1')).toBeTruthy();
@@ -104,7 +104,7 @@ describe('DirectoryScreen', () => {
     const { getByTestId } = await renderScreen();
 
     await waitFor(() => expect(getByTestId('directory-card-w-1')).toBeTruthy());
-    fireEvent.press(getByTestId('directory-call-w-1'));
+    await fireEvent.press(getByTestId('directory-call-w-1'));
 
     expect(openURL).toHaveBeenCalledWith('tel:+66811111111');
     openURL.mockRestore();

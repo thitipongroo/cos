@@ -15,9 +15,9 @@
 // stroke list + a flattened-image file URI through onSave. Persistence, versioning, and the sync
 // enqueue are the caller's concern (same split as <PhotoCapture />).
 
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, useWindowDimensions } from 'react-native';
-import { GestureDetector, Gesture } from 'react-native-gesture-handler';
+import { GestureDetector } from 'react-native-gesture-handler';
 import {
   Canvas,
   Image as SkiaImage,
@@ -31,6 +31,7 @@ import {
 // SDK 54+ moved documentDirectory / writeAsStringAsync to the `/legacy` subpath (the new File/Directory
 // API has no drop-in for a one-shot base64 write). Same choice as src/api/transcribe.ts.
 import * as FileSystem from 'expo-file-system/legacy';
+import { useStrokeCapture, type StrokePoint } from '../hooks/useStrokeCapture';
 import { useT } from '../i18n';
 import { colors, darkColors, fontFamily, radius, spacing, typography } from '../theme/tokens';
 
@@ -96,43 +97,24 @@ export function PhotoAnnotation({
   }, [image, screenW]);
 
   const [strokes, setStrokes] = useState<AnnotationStroke[]>(initialStrokes);
-  // The in-progress stroke's normalised points, collected during a drag.
-  const drawing = useRef<{ x: number; y: number }[]>([]);
-  const [liveKey, setLiveKey] = useState(0); // bump to re-render the live stroke
 
   const norm = useCallback(
     (x: number, y: number) => ({ x: x / canvasW, y: y / canvasH }),
     [canvasW, canvasH],
   );
 
-  const pan = useMemo(
-    () =>
-      Gesture.Pan()
-        .runOnJS(true)
-        .onBegin((e) => {
-          drawing.current = [norm(e.x, e.y)];
-          setLiveKey((k) => k + 1);
-        })
-        .onUpdate((e) => {
-          drawing.current.push(norm(e.x, e.y));
-          setLiveKey((k) => k + 1);
-        })
-        .onEnd(() => {
-          const pts = drawing.current;
-          drawing.current = [];
-          if (pts.length < 2) {
-            setLiveKey((k) => k + 1);
-            return;
-          }
-          // Commit the finished stroke at a pointer-up boundary (one undo step per stroke).
-          setStrokes((prev) => [
-            ...prev,
-            { d: strokeToSvg(pts), color: PEN_COLOR, width: STROKE_FRACTION },
-          ]);
-          setLiveKey((k) => k + 1);
-        }),
-    [norm],
-  );
+  const commit = useCallback((points: StrokePoint[]) => {
+    setStrokes((prev) => [
+      ...prev,
+      { d: strokeToSvg(points), color: PEN_COLOR, width: STROKE_FRACTION },
+    ]);
+  }, []);
+
+  const { pan, liveKey, drawing } = useStrokeCapture({
+    norm,
+    onCommit: commit,
+    testId: 'photo-annotation-pan',
+  });
 
   const undo = useCallback(() => setStrokes((prev) => prev.slice(0, -1)), []);
   const clear = useCallback(() => setStrokes([]), []);

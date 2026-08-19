@@ -90,7 +90,7 @@ describe('ReportsScreen', () => {
 
     await waitFor(() => expect(getAllByTestId('report-item')).toHaveLength(1));
 
-    fireEvent.press(getByTestId('reports-load-more'));
+    await fireEvent.press(getByTestId('reports-load-more'));
 
     await waitFor(() => expect(getAllByTestId('report-item')).toHaveLength(2));
     // The first page is still there — this is an append, not a replace.
@@ -109,10 +109,10 @@ describe('ReportsScreen', () => {
     await waitFor(() => expect(getAllByTestId('report-item')).toHaveLength(2));
     expect(queryAllByTestId('material-name-input')).toHaveLength(0);
 
-    fireEvent.press(getByText('Concrete pour delayed'));
+    await fireEvent.press(getByText('Concrete pour delayed'));
     await waitFor(() => expect(queryAllByTestId('material-name-input')).toHaveLength(1));
 
-    fireEvent.press(getByText('Concrete pour delayed'));
+    await fireEvent.press(getByText('Concrete pour delayed'));
     await waitFor(() => expect(queryAllByTestId('material-name-input')).toHaveLength(0));
   });
 

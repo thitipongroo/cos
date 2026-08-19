@@ -78,7 +78,7 @@ describe('DeliveriesScreen', () => {
     const { getByTestId } = await renderScreen();
 
     await waitFor(() => expect(getByTestId('po-option-po-2')).toBeTruthy());
-    fireEvent.press(getByTestId('po-option-po-2'));
+    await fireEvent.press(getByTestId('po-option-po-2'));
 
     await waitFor(() =>
       expect(client.get).toHaveBeenCalledWith('/procurement/purchase-orders/po-2'),
