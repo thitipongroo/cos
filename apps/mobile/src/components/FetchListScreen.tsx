@@ -1,12 +1,15 @@
 // FetchListScreen — reusable read-only list backed by a GET endpoint (online; offline shows the
-// last fetched list). Used by the dashboard/status screens (payments, invoices, rfqs, orders,
-// deliveries, CRM customers, etc.). Each row maps to { key, title, status }.
+// last fetched list). Each row maps to { key, title, status }.
 //
-// Themed via usePalette (2026-08-04). This one component is the fastest step of the staged palette
-// rollout: every screen listed above renders through it, so they all follow the user's mode without
-// being touched individually.
+// WHO ACTUALLY USES IT: app/(app)/rfqs.tsx and app/(app)/customers.tsx — those two, verified by
+// grep. The header here used to claim payments, invoices, orders and deliveries as well; each of
+// those screens has since grown its own FlatList with per-screen columns and filters, and none of
+// them imports this file any more. The stale list mattered: it made this component look like the
+// hub of every status screen when it is a two-caller helper.
+//
+// Themed via usePalette (2026-08-04) — both callers follow the user's mode without being touched.
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, FlatList, RefreshControl, StyleSheet } from 'react-native';
 import { get } from '../api/client';
 import { LoadingBoundary } from './LoadingBoundary';
@@ -16,16 +19,53 @@ import { fontFamily, spacing, typography } from '../theme/tokens';
 import { usePalette, useIsDark } from '../theme/usePalette';
 import type { Palette } from '../theme/palette';
 
+/** What a caller's `mapItem` reduces one server row to — everything this list can draw. */
+interface RowModel {
+  key: string;
+  title: string;
+  status?: string;
+}
+
+type Styles = ReturnType<typeof makeStyles>;
+
 interface FetchListScreenProps<T> {
   heading: string;
   endpoint: string;
   testID: string;
   itemTestID: string;
-  mapItem: (row: T) => { key: string; title: string; status?: string };
+  mapItem: (row: T) => RowModel;
   emptyText?: string;
   /** Optional testID for the FlatList itself (e.g. 'po-list'); omit to leave the list untagged. */
   listTestID?: string;
 }
+
+/**
+ * One row, memoized.
+ *
+ * Both callers pass `mapItem` as an inline arrow, so it is a new function on every render and no
+ * amount of useCallback upstream can make the rows' props-producing chain stable. What CAN be made
+ * stable is a row's own props — a title, an optional status, a testID and the memoized stylesheet —
+ * and memo compares exactly those. A parent re-render then walks the list but re-renders no row
+ * whose text did not change.
+ */
+const Row = memo(function Row({
+  title,
+  status,
+  testID,
+  styles,
+}: {
+  title: string;
+  status?: string;
+  testID: string;
+  styles: Styles;
+}) {
+  return (
+    <View testID={testID} style={styles.item}>
+      <Text style={styles.itemTitle}>{title}</Text>
+      {status ? <StatusChip label={status} /> : null}
+    </View>
+  );
+});
 
 export function FetchListScreen<T>({
   heading,
@@ -59,6 +99,17 @@ export function FetchListScreen<T>({
     void load();
   }, [load]);
 
+  // Map ONCE per render. keyExtractor and renderItem both need the mapped shape, and calling
+  // mapItem in each of them ran a caller's mapper twice for every row on every render.
+  const items = useMemo(() => rows.map((row) => mapItem(row)), [rows, mapItem]);
+
+  const renderRow = useCallback(
+    ({ item }: { item: RowModel }) => (
+      <Row title={item.title} status={item.status} testID={itemTestID} styles={styles} />
+    ),
+    [itemTestID, styles],
+  );
+
   return (
     <View testID={testID} style={styles.container}>
       <Text style={styles.heading}>{heading}</Text>
@@ -72,21 +123,13 @@ export function FetchListScreen<T>({
       >
         <FlatList
           testID={listTestID}
-          data={rows}
-          keyExtractor={(row, index) => mapItem(row).key || String(index)}
+          data={items}
+          keyExtractor={(item, index) => item.key || String(index)}
           refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
           ListEmptyComponent={
             <Text style={styles.empty}>{emptyText ?? t('common.list.empty')}</Text>
           }
-          renderItem={({ item }) => {
-            const m = mapItem(item);
-            return (
-              <View testID={itemTestID} style={styles.item}>
-                <Text style={styles.itemTitle}>{m.title}</Text>
-                {m.status ? <StatusChip label={m.status} /> : null}
-              </View>
-            );
-          }}
+          renderItem={renderRow}
         />
       </LoadingBoundary>
     </View>

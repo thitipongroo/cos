@@ -355,6 +355,13 @@ jobs:
       - name: Unit tests + coverage — apps/mobile
         working-directory: apps/mobile
         run: pnpm run test:cov
+      # Render tests (jest.render.config.ts) — src/components and src/app, which the coverage gate
+      # above deliberately excludes. Run as a SEPARATE command rather than a second jest project:
+      # the two instrument differently (ts-jest vs babel-jest) and merging their reports made files
+      # the logic suite covers fully report as low as 80%.
+      - name: Render tests — apps/mobile
+        working-directory: apps/mobile
+        run: pnpm run test:render
 
   # ─── Step 3c: Go Worker Tests ───────────────────────────────────────────────
   # These suites existed but nothing ran them: CI's only `pytest`/`go test` invocation was

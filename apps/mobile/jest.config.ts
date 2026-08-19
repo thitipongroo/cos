@@ -69,11 +69,21 @@ const config: Config = {
   //
   // Second, `src/api/client.ts` joins the list — the 401-refresh interceptor and the offline-queue
   // fallback are where the app meets the server, and the refresh queue leaked pending promises there
-  // for months. The remaining src/api modules are thin request wrappers; screens (src/app) and RN
-  // components (src/components) need a render host this project does not install (no
-  // react-test-renderer / @testing-library/react-native) and stay with Detox; src/db is runtime SQLite
-  // wiring. Those exclusions are a real gap, not a claim of coverage — they are why the E2E suite
-  // exists, and the hooks below are the three that are pure store reads.
+  // for months. The remaining src/api modules are thin request wrappers, and src/db is runtime
+  // SQLite wiring.
+  //
+  // ON src/app AND src/components (rewritten 2026-08-19). This used to read "need a render host this
+  // project does not install (no react-test-renderer / @testing-library/react-native) and stay with
+  // Detox". Both halves were wrong by then. A render host IS installed now — see
+  // jest.render.config.ts and `pnpm test:render`. And "stay with Detox" meant "stay unverified":
+  // `grep -rniE 'detox' .github/workflows/` returns NOTHING, so no pull request has ever run a
+  // mobile E2E test.
+  //
+  // They stay out of THIS list on purpose even so. The render suite is run by its own command, not
+  // merged into this coverage report: the two projects instrument differently (ts-jest here,
+  // babel-jest there) and merging them made files this suite covers fully report as low as 80%.
+  // A line percentage over a UI tree measures little anyway; what those trees now have is
+  // behavioural render tests.
   collectCoverageFrom: [
     'src/sync/**/*.ts',
     'src/store/*.ts',
