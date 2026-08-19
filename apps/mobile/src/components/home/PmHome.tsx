@@ -6,8 +6,6 @@ import { useCollection } from '../../hooks/useCollection';
 import { get } from '../../api/client';
 import { refreshProjectsCache } from '../../api/projects';
 import { MaterialIcons } from '@expo/vector-icons';
-import { LoadingBoundary } from '../LoadingBoundary';
-import { loadProgress } from '../../lib/loadingState';
 import { useT } from '../../i18n';
 import { usePalette } from '../../theme/usePalette';
 import { PortfolioInsight } from '../PortfolioInsight';
@@ -33,7 +31,7 @@ import {
   varianceExceedsThreshold,
   type ProjectFinance,
 } from '../../lib/portfolioFinance';
-import { useHomeStyles, useLoaderTheme, Screen, asList } from './HomeKit';
+import { useHomeStyles, Screen, asList, KpiRegion } from './HomeKit';
 
 /** `GET /finance/budget/:projectId` — only the aggregate block the manager Home reads. */
 interface PmBudget {
@@ -94,7 +92,6 @@ interface PmProjectRow {
 export default function PmHome() {
   const styles = useHomeStyles();
   const p = usePalette();
-  const loaderTheme = useLoaderTheme();
   const cached = useCollection<Project>('local_projects');
   const router = useRouter();
   const t = useT();
@@ -238,13 +235,7 @@ export default function PmHome() {
           above the tiles; it is dropped here. It named the screen to someone who had just tapped
           Home from this role's own bar and could read the answer off the tab bar underneath. */}
 
-      <LoadingBoundary
-        loading={loading}
-        variant="widget"
-        theme={loaderTheme}
-        progress={loadProgress(settled, LOAD_STEPS) ?? undefined}
-        style={styles.kpiRegion}
-      >
+      <KpiRegion loading={loading} settled={settled} steps={LOAD_STEPS}>
         <View style={styles.kpiRow}>
           {/* Both tiles open something, so both carry the drawing's chevron. In the mockup these two
               are `opacity-0 group-hover:opacity-100` — hover-only, which on a touch screen means
@@ -304,7 +295,7 @@ export default function PmHome() {
             </View>
           </View>
         </View>
-      </LoadingBoundary>
+      </KpiRegion>
 
       {/* Critical blockers. The card is only drawn when something is actually blocked — an empty
           red-striped panel reads as an alert in its own right. */}

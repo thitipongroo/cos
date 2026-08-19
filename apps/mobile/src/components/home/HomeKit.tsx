@@ -7,9 +7,12 @@
 // the point.
 
 import { useMemo } from 'react';
+import type { ReactNode } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { ScrollView } from 'react-native';
+import { LoadingBoundary } from '../LoadingBoundary';
+import { loadProgress } from '../../lib/loadingState';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
 import { usePalette, useIsDark, type Palette } from '../../theme/usePalette';
 
@@ -40,6 +43,51 @@ export function useHomeStyles() {
  */
 export function useLoaderTheme(): 'dark' | 'light' {
   return useIsDark() ? 'dark' : 'light';
+}
+
+/**
+ * The KPI band every role Home opens with.
+ *
+ * Four homes carried the same six lines of <LoadingBoundary> props — loading, the widget variant,
+ * the loader theme, the honest progress fraction and the region style — which is Rule 40's contract
+ * repeated four times and four places to get it wrong. `steps` is the caller's own LOAD_STEPS,
+ * because only the caller knows how many requests it waits on.
+ */
+export function KpiRegion({
+  loading,
+  settled,
+  steps,
+  children,
+}: {
+  loading: boolean;
+  settled: number;
+  steps: number;
+  children: ReactNode;
+}): React.JSX.Element {
+  const styles = useHomeStyles();
+  const loaderTheme = useLoaderTheme();
+  return (
+    <LoadingBoundary
+      loading={loading}
+      variant="widget"
+      theme={loaderTheme}
+      progress={loadProgress(settled, steps) ?? undefined}
+      style={styles.kpiRegion}
+    >
+      {children}
+    </LoadingBoundary>
+  );
+}
+
+/**
+ * A KPI that has not arrived yet, as text.
+ *
+ * An em dash rather than 0: "not loaded" and "none" are different answers, and a KPI tile showing 0
+ * while its request is still in flight states the second one. Defined once here because two homes
+ * had written the same one-liner.
+ */
+export function countLabel(value: number | null): string {
+  return value === null ? '—' : String(value);
 }
 
 // ── shared presentational bits ──────────────────────────────────────────────

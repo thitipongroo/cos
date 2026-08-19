@@ -4,24 +4,21 @@ import type { Project } from '../../db/database';
 import { useCollection } from '../../hooks/useCollection';
 import { get } from '../../api/client';
 import { refreshProjectsCache } from '../../api/projects';
-import { LoadingBoundary } from '../LoadingBoundary';
-import { loadProgress } from '../../lib/loadingState';
 import { useT } from '../../i18n';
 import { Decimal, formatMoney, sumDecimals, toDecimal } from '@cos/financial';
 import {
   useHomeStyles,
-  useLoaderTheme,
   KpiCard,
   Screen,
   asList,
   type ExecutiveDashboardRow,
+  KpiRegion,
 } from './HomeKit';
 
 // ── EXECUTIVE — active projects · budget vs actual · open critical issues ─────
 
 export default function ExecHome() {
   const styles = useHomeStyles();
-  const loaderTheme = useLoaderTheme();
   const projects = useCollection<Project>('local_projects');
   const t = useT();
   const [budget, setBudget] = useState<Decimal | null>(null);
@@ -80,13 +77,7 @@ export default function ExecHome() {
 
   return (
     <Screen testID="home-screen">
-      <LoadingBoundary
-        loading={loading}
-        variant="widget"
-        theme={loaderTheme}
-        progress={loadProgress(settled, LOAD_STEPS) ?? undefined}
-        style={styles.kpiRegion}
-      >
+      <KpiRegion loading={loading} settled={settled} steps={LOAD_STEPS}>
         <View style={styles.kpiRow}>
           <KpiCard
             testID="kpi-active-projects"
@@ -103,7 +94,7 @@ export default function ExecHome() {
           <KpiCard testID="kpi-budget" value={money(budget)} label={t('home.exec.budget')} />
           <KpiCard testID="kpi-actual" value={money(actual)} label={t('home.exec.actual')} />
         </View>
-      </LoadingBoundary>
+      </KpiRegion>
     </Screen>
   );
 }

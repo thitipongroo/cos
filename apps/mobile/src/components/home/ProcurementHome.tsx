@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { get } from '../../api/client';
-import { LoadingBoundary } from '../LoadingBoundary';
-import { loadProgress } from '../../lib/loadingState';
 import { useT } from '../../i18n';
 import { formatMoney } from '@cos/financial';
 import {
@@ -14,12 +12,11 @@ import {
 } from '../../lib/procurementKpi';
 import { ProjectPicker } from '../ProjectPicker';
 import { ProcurementInsight } from '../ProcurementInsight';
-import { useHomeStyles, useLoaderTheme, KpiCard, Screen, asList } from './HomeKit';
+import { useHomeStyles, KpiCard, Screen, asList, KpiRegion, countLabel } from './HomeKit';
 
 // ── PROCUREMENT — open RFQs · POs awaiting ack · deliveries ───────────────────
 export default function ProcurementHome() {
   const styles = useHomeStyles();
-  const loaderTheme = useLoaderTheme();
   const t = useT();
   const [openRfqs, setOpenRfqs] = useState<number | null>(null);
   const [urgentRfqs, setUrgentRfqs] = useState<number | null>(null);
@@ -74,17 +71,9 @@ export default function ProcurementHome() {
     );
   }, []);
 
-  const n = (v: number | null): string => (v === null ? '—' : String(v));
-
   return (
     <Screen testID="home-screen">
-      <LoadingBoundary
-        loading={loading}
-        variant="widget"
-        theme={loaderTheme}
-        progress={loadProgress(settled, LOAD_STEPS) ?? undefined}
-        style={styles.kpiRegion}
-      >
+      <KpiRegion loading={loading} settled={settled} steps={LOAD_STEPS}>
         {/* The mockup's full-width spend tile. A dash until the request settles — never a 0, which
             would read as "nothing is committed" rather than "not loaded". */}
         <View style={styles.kpiRow}>
@@ -97,30 +86,30 @@ export default function ProcurementHome() {
         <View style={styles.kpiRow}>
           <KpiCard
             testID="kpi-open-rfqs"
-            value={n(openRfqs)}
+            value={countLabel(openRfqs)}
             label={t('home.procurement.openRfqs')}
           />
           <KpiCard
             testID="kpi-urgent-rfqs"
-            value={n(urgentRfqs)}
+            value={countLabel(urgentRfqs)}
             label={t('home.procurement.urgentRfqs')}
           />
         </View>
         <View style={styles.kpiRow}>
           <KpiCard
             testID="kpi-awaiting-ack"
-            value={n(awaitingAck)}
+            value={countLabel(awaitingAck)}
             label={t('home.procurement.awaitingAck')}
           />
         </View>
         <View style={styles.kpiRow}>
           <KpiCard
             testID="kpi-deliveries"
-            value={n(deliveries)}
+            value={countLabel(deliveries)}
             label={t('home.procurement.deliveries')}
           />
         </View>
-      </LoadingBoundary>
+      </KpiRegion>
       <ProjectPicker selectedId={insightProject} onSelect={setInsightProject} />
       <ProcurementInsight projectId={insightProject} />
     </Screen>

@@ -61,7 +61,11 @@ jobs:
       - name: jscpd (duplication)
         # `libs` is in the list because the shared Go module lives there (ADR-021); without it
         # code moved out of services/ would silently leave the duplication gate's scope.
-        run: pnpm exec jscpd backend/src packages apps/web/src services libs
+        #
+        # `apps/mobile/src` joined it on 2026-08-19. It had NEVER been measured: the largest tsx
+        # tree in the repo (144 files, 38k lines) sat outside the only gate that looks for copy-paste,
+        # so a clone there was invisible by construction rather than by decision.
+        run: pnpm exec jscpd backend/src packages apps/web/src services libs apps/mobile/src
 
       # markdownlint runs on CHANGED Markdown files only — a repo-wide gate is not feasible
       # (~101k pre-existing violations). The large legacy reference trees (docs/specifications/,
