@@ -14,7 +14,7 @@
 //     the trust model's only positive class, so revoking asks which it was — and the answer is the
 //     user's, never a client-side default.
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { LoadingState } from '../../components/LoadingState';
 import { useRouter } from 'expo-router';
@@ -72,7 +72,7 @@ export default function AccountSecurityScreen(): React.JSX.Element {
     [load],
   );
 
-  const styles = makeStyles(pal);
+  const styles = useMemo(() => makeStyles(pal), [pal]);
 
   return (
     <ScrollView

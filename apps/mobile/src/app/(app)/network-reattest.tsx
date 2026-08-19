@@ -10,7 +10,7 @@
 // this device's possession of its hardware key against a fresh server challenge (ADR-054), which
 // refreshes the trust window and writes an audit entry. Same gesture, an action that exists.
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LoadingState } from '../../components/LoadingState';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -53,7 +53,7 @@ export default function NetworkReattestScreen(): React.JSX.Element {
     void run();
   }, [run]);
 
-  const styles = makeStyles(pal);
+  const styles = useMemo(() => makeStyles(pal), [pal]);
 
   return (
     <ScrollView

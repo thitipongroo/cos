@@ -24,6 +24,7 @@
 // 20260803000001_tag_pii_columns (identity, contact, location, financial, operational = 5), and
 // retention is described as per-record-type because that is what data-retention-policy.md defines.
 
+import { useMemo } from 'react';
 import { ScrollView, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useT } from '../../i18n';
@@ -74,7 +75,7 @@ export default function TransparencyScreen(): React.JSX.Element {
   const t = useT();
   const pal = usePalette();
   const router = useRouter();
-  const styles = makeStyles(pal);
+  const styles = useMemo(() => makeStyles(pal), [pal]);
 
   return (
     <ScrollView

@@ -25,6 +25,7 @@
 // built per render from the palette rather than at module load, which is what lets one component
 // serve both modes without a second copy.
 
+import { useMemo } from 'react';
 import type { ReactNode } from 'react';
 import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -71,7 +72,7 @@ export function StatusPill({
   testID?: string;
 }): React.JSX.Element {
   const p = usePalette();
-  const styles = makeStyles(p);
+  const styles = useMemo(() => makeStyles(p), [p]);
   const live = status === 'live';
   return (
     <View
@@ -87,7 +88,7 @@ export function StatusPill({
 /** Small uppercase caption that opens a section ("Compliance breakdown", "Active inputs"). */
 export function SectionLabel({ children }: { children: string }): React.JSX.Element {
   const p = usePalette();
-  const styles = makeStyles(p);
+  const styles = useMemo(() => makeStyles(p), [p]);
   return (
     <Text accessibilityRole="header" style={styles.sectionLabel}>
       {children}
@@ -98,7 +99,7 @@ export function SectionLabel({ children }: { children: string }): React.JSX.Elem
 /** Lead-in paragraph under a screen title. */
 export function Lede({ children }: { children: string }): React.JSX.Element {
   const p = usePalette();
-  const styles = makeStyles(p);
+  const styles = useMemo(() => makeStyles(p), [p]);
   return <Text style={styles.lede}>{children}</Text>;
 }
 
@@ -132,7 +133,7 @@ export function InfoCard({
   testID?: string;
 }): React.JSX.Element {
   const p = usePalette();
-  const styles = makeStyles(p);
+  const styles = useMemo(() => makeStyles(p), [p]);
   const pill = status && statusLabel ? <StatusPill status={status} label={statusLabel} /> : null;
   return (
     <View testID={testID} style={styles.card}>
@@ -173,7 +174,7 @@ export function FieldRow({
   testID?: string;
 }): React.JSX.Element {
   const p = usePalette();
-  const styles = makeStyles(p);
+  const styles = useMemo(() => makeStyles(p), [p]);
   return (
     <View testID={testID} style={styles.field}>
       <Text style={styles.fieldLabel}>{label}</Text>
@@ -196,7 +197,7 @@ export function FlowStep({
   last?: boolean;
 }): React.JSX.Element {
   const p = usePalette();
-  const styles = makeStyles(p);
+  const styles = useMemo(() => makeStyles(p), [p]);
   return (
     <View style={styles.flowRow}>
       <View style={styles.flowRail}>
@@ -234,7 +235,7 @@ export function DisabledAction({
   testID: string;
 }): React.JSX.Element {
   const p = usePalette();
-  const styles = makeStyles(p);
+  const styles = useMemo(() => makeStyles(p), [p]);
   return (
     <View
       testID={testID}
@@ -273,7 +274,7 @@ export function NavCard({
   testID: string;
 }): React.JSX.Element {
   const p = usePalette();
-  const styles = makeStyles(p);
+  const styles = useMemo(() => makeStyles(p), [p]);
   return (
     <Pressable
       testID={testID}
@@ -304,7 +305,7 @@ export function NavCard({
 /** Card wrapper used for the screen-opening summary tile. */
 export function SummaryTile({ children }: { children: ReactNode }): React.JSX.Element {
   const p = usePalette();
-  const styles = makeStyles(p);
+  const styles = useMemo(() => makeStyles(p), [p]);
   return <View style={styles.summary}>{children}</View>;
 }
 
@@ -344,7 +345,7 @@ export function HeroCard({
   testID?: string;
 }): React.JSX.Element {
   const p = usePalette();
-  const styles = makeStyles(p);
+  const styles = useMemo(() => makeStyles(p), [p]);
   return (
     <View testID={testID} style={styles.hero}>
       <View style={styles.heroAccent} />
@@ -378,7 +379,7 @@ export function SectionLabelRow({
   tag?: string;
 }): React.JSX.Element {
   const p = usePalette();
-  const styles = makeStyles(p);
+  const styles = useMemo(() => makeStyles(p), [p]);
   return (
     <View style={styles.sectionRow}>
       <Text accessibilityRole="header" style={[styles.sectionLabel, styles.sectionRowLabel]}>
@@ -412,7 +413,7 @@ export function FieldCard({
   testID?: string;
 }): React.JSX.Element {
   const p = usePalette();
-  const styles = makeStyles(p);
+  const styles = useMemo(() => makeStyles(p), [p]);
   return (
     <View testID={testID} style={styles.fieldCard}>
       <View style={styles.fieldCardBody}>
@@ -432,7 +433,7 @@ export function FieldCard({
 /** Two small cards side by side (PROFILE IMAGE ⟷ PROFESSIONAL ROLE in the identity mockup). */
 export function TwoUp({ children }: { children: ReactNode }): React.JSX.Element {
   const p = usePalette();
-  const styles = makeStyles(p);
+  const styles = useMemo(() => makeStyles(p), [p]);
   return <View style={styles.twoUp}>{children}</View>;
 }
 
@@ -465,7 +466,7 @@ export function TwoUpCell({
   testID?: string;
 }): React.JSX.Element {
   const p = usePalette();
-  const styles = makeStyles(p);
+  const styles = useMemo(() => makeStyles(p), [p]);
   return (
     <View testID={testID} style={styles.twoUpCell}>
       <Text style={styles.fieldLabel}>{label}</Text>
@@ -507,7 +508,7 @@ export function ActionRow({
   testID: string;
 }): React.JSX.Element {
   const p = usePalette();
-  const styles = makeStyles(p);
+  const styles = useMemo(() => makeStyles(p), [p]);
   return (
     <Pressable
       testID={testID}
@@ -538,7 +539,7 @@ export function AccentCard({
   testID?: string;
 }): React.JSX.Element {
   const p = usePalette();
-  const styles = makeStyles(p);
+  const styles = useMemo(() => makeStyles(p), [p]);
   return (
     <View testID={testID} style={styles.accent}>
       <View style={styles.accentBar} />
@@ -568,7 +569,7 @@ export function AccentRow({
   testID?: string;
 }): React.JSX.Element {
   const p = usePalette();
-  const styles = makeStyles(p);
+  const styles = useMemo(() => makeStyles(p), [p]);
   return (
     <View testID={testID} style={styles.accentRow}>
       <MaterialIcons name={icon} size={18} color={tint ?? p.muted} style={styles.accentRowIcon} />
@@ -595,7 +596,7 @@ export function DashedPanel({
   testID?: string;
 }): React.JSX.Element {
   const p = usePalette();
-  const styles = makeStyles(p);
+  const styles = useMemo(() => makeStyles(p), [p]);
   return (
     <View testID={testID} style={styles.dashed}>
       <MaterialIcons name={icon} size={28} color={p.muted} />
@@ -623,7 +624,7 @@ export function DangerLink({
   testID: string;
 }): React.JSX.Element {
   const p = usePalette();
-  const styles = makeStyles(p);
+  const styles = useMemo(() => makeStyles(p), [p]);
   return (
     <Pressable
       testID={testID}

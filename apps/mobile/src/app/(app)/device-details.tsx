@@ -16,7 +16,7 @@
 //      date (ADR-083). The integrity tier is shown instead: it is the conclusion the date was only
 //      evidence for, and on Android 13+ STRONG already means "patched within the last year".
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LoadingState } from '../../components/LoadingState';
 import { loadProgress } from '../../lib/loadingState';
@@ -85,7 +85,7 @@ export default function DeviceDetailsScreen(): React.JSX.Element {
     void load();
   }, [load]);
 
-  const styles = makeStyles(pal);
+  const styles = useMemo(() => makeStyles(pal), [pal]);
   const capping = report ? cappingSignal(report) : null;
 
   return (

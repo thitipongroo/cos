@@ -24,7 +24,7 @@
 //
 // The Export / Update-preferences actions render disabled: PDPA-10/11/14 are OPEN, no route exists.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, View, Text, StyleSheet } from 'react-native';
 import { LoadingState } from '../../components/LoadingState';
 import { useRouter } from 'expo-router';
@@ -79,7 +79,7 @@ export default function TransparencyIdentityScreen(): React.JSX.Element {
   const t = useT();
   const pal = usePalette();
   const isDark = useIsDark();
-  const styles = makeStyles(pal);
+  const styles = useMemo(() => makeStyles(pal), [pal]);
   const router = useRouter();
   const role = useAuthStore((s) => s.role);
   const userId = useAuthStore((s) => s.userId);

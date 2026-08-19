@@ -16,7 +16,7 @@
 //      the workflow, or in PDPA §30 (which allows thirty days). The final stage shows the request's
 //      real state instead, and offers the download when the server says it is downloadable.
 
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LoadingState } from '../../components/LoadingState';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -97,7 +97,7 @@ export default function DataExportScreen(): React.JSX.Element {
     }
   }, [categories, code, format, t]);
 
-  const styles = makeStyles(pal);
+  const styles = useMemo(() => makeStyles(pal), [pal]);
 
   return (
     <ScrollView
@@ -241,7 +241,7 @@ export default function DataExportScreen(): React.JSX.Element {
 function ExportResult({ request }: { request: DataExportRequest }): React.JSX.Element {
   const t = useT();
   const pal = usePalette();
-  const styles = makeStyles(pal);
+  const styles = useMemo(() => makeStyles(pal), [pal]);
   const view = describeExport(request);
   const [linkError, setLinkError] = useState(false);
 

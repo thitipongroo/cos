@@ -6,7 +6,7 @@
 // rollout: every screen listed above renders through it, so they all follow the user's mode without
 // being touched individually.
 
-import { useEffect, useState, useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, FlatList, RefreshControl, StyleSheet } from 'react-native';
 import { get } from '../api/client';
 import { LoadingBoundary } from './LoadingBoundary';
@@ -41,7 +41,7 @@ export function FetchListScreen<T>({
   const t = useT();
   const p = usePalette();
   const dark = useIsDark();
-  const styles = makeStyles(p);
+  const styles = useMemo(() => makeStyles(p), [p]);
 
   const load = useCallback(async (): Promise<void> => {
     setLoading(true);

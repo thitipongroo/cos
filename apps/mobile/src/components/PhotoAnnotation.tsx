@@ -143,7 +143,7 @@ export function PhotoAnnotation({
     onSave(strokes, uri);
   }, [canvasRef, strokes, onSave]);
 
-  const styles = makeStyles(palette);
+  const styles = useMemo(() => makeStyles(palette), [palette]);
   const longEdge = Math.max(canvasW, canvasH);
   const liveD = drawing.current.length >= 2 ? strokeToSvg(drawing.current) : null;
 

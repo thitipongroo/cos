@@ -24,7 +24,7 @@
 // shell (jest.config.ts collectCoverageFrom excludes src/components/**, and react-native is mocked
 // wholesale, so components cannot be rendered under jest — they are Detox territory).
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Animated, Easing, Image } from 'react-native';
 import type { ImageSourcePropType, StyleProp, TextStyle } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -223,7 +223,7 @@ function ProgressBar({
   sweep: Animated.Value;
   color?: string;
 }): React.JSX.Element {
-  const styles = makeStyles(palette);
+  const styles = useMemo(() => makeStyles(palette), [palette]);
   const [trackW, setTrackW] = useState(0);
   const barColor = color ?? palette.primary;
   if (!determinate) {
@@ -446,7 +446,7 @@ export function LoadingState({
   const pulse = pulseValue.interpolate({ inputRange: [0, 1], outputRange: [0.4, 1] });
   const spinDeg = spinValue.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
 
-  const styles = makeStyles(palette);
+  const styles = useMemo(() => makeStyles(palette), [palette]);
   const a11yProps =
     a11y === null
       ? {}

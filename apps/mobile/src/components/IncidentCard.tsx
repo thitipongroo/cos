@@ -26,6 +26,7 @@
 // status, the age to the minute, and the §19.3 acknowledgement deadline — an OPEN incident
 // unacknowledged for 30 minutes escalates to the PM, which is the only clock this record really has.
 
+import { useMemo } from 'react';
 import { View, Text, Pressable, TouchableOpacity, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import type { IncidentRow } from '../api/safety';
@@ -72,7 +73,7 @@ export function IncidentCard({
 }: IncidentCardProps): React.JSX.Element {
   const p = usePalette();
   const t = useT();
-  const styles = makeStyles(p);
+  const styles = useMemo(() => makeStyles(p), [p]);
 
   const accent = toneColour(p, severityTone(incident.severity));
   const statusColour = toneColour(p, incidentStatusTone(incident.status));

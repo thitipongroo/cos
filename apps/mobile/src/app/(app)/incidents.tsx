@@ -33,7 +33,7 @@
 // NO IN-CONTENT PAGE TITLE — §32.7, held by `theme/__tests__/pageTitle.spec.ts`: a tab screen is
 // named by its tab.
 
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -109,7 +109,7 @@ export default function IncidentsScreen(): React.JSX.Element {
   const t = useT();
   const p = usePalette();
   const isDark = useIsDark();
-  const styles = makeStyles(p);
+  const styles = useMemo(() => makeStyles(p), [p]);
 
   const [remote, setRemote] = useState<IncidentRow[]>([]);
   const [loading, setLoading] = useState(true);

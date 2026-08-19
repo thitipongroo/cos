@@ -14,7 +14,7 @@
 // The rule's thresholds travel with the verdict so the screen can state a derivation. "Stationary
 // Worker" with no definition cannot be contested by the person it describes.
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { LoadingState } from '../../components/LoadingState';
 import { useRouter } from 'expo-router';
@@ -63,7 +63,7 @@ export default function TransparencyNetworkScreen(): React.JSX.Element {
       .catch(() => setConnection(null));
   }, [load]);
 
-  const styles = makeStyles(pal);
+  const styles = useMemo(() => makeStyles(pal), [pal]);
 
   return (
     <ScrollView

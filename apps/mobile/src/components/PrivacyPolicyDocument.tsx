@@ -25,7 +25,7 @@
 //
 // Content provenance is unchanged from the original screen and is documented at each section below.
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -198,7 +198,10 @@ export function PrivacyPolicyDocument({
   testID: string;
 }): React.JSX.Element {
   const { t, formatDate } = useI18n();
-  const styles = makeStyles(palette, accent, showBrandGlow === true);
+  const styles = useMemo(
+    () => makeStyles(palette, accent, showBrandGlow === true),
+    [palette, accent, showBrandGlow],
+  );
 
   // One section open at a time — the mockup's exclusive accordion. `null` = all collapsed, matching
   // the mockup's initial state.

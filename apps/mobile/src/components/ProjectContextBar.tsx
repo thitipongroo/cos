@@ -23,6 +23,7 @@
 // worker has not been through the picker yet — and the picker is already over them, held open by
 // <SelectProjectSheet /> until they answer.
 
+import { useMemo } from 'react';
 import { Pressable, Text, View, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useProjectStore } from '../store/projectStore';
@@ -38,7 +39,7 @@ export function ProjectContextBar(): React.JSX.Element | null {
   const openPicker = useProjectStore((s) => s.openPicker);
   const p = usePalette();
   const t = useT();
-  const styles = makeStyles(p);
+  const styles = useMemo(() => makeStyles(p), [p]);
 
   if (active === null) return null;
 

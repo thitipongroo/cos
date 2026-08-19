@@ -37,7 +37,7 @@
 // tooltip that never disappears is a caption, and the button already carries the same words to a
 // screen reader.
 
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { View, Text, ScrollView, Pressable, TouchableOpacity, StyleSheet } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -107,7 +107,7 @@ export default function SafetyOfficerHome(): React.JSX.Element {
   const t = useT();
   const p = usePalette();
   const isDark = useIsDark();
-  const styles = makeStyles(p);
+  const styles = useMemo(() => makeStyles(p), [p]);
 
   // The chosen site, from the store — the same value <ProjectContextBar /> names at the top of the
   // screen. The shell raises <SelectProjectSheet /> for this role until it has one (2026-08-13), so

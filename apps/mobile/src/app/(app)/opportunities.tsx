@@ -16,7 +16,7 @@
 // Online-only for the reason given in api/crm.ts: a queued convert replayed hours later could only
 // ever come back as a stale COS-CRM-003.
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -48,7 +48,7 @@ export default function OpportunitiesScreen(): React.JSX.Element {
   const p = usePalette();
   const dark = useIsDark();
   const s = makeScreenStyles(p);
-  const styles = makeStyles(p);
+  const styles = useMemo(() => makeStyles(p), [p]);
 
   const [rows, setRows] = useState<Opportunity[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
