@@ -64,9 +64,14 @@ export default function SystemSettingsScreen(): React.JSX.Element {
   useEffect(() => {
     let active = true;
     const step = <T,>(p: Promise<T>): Promise<T> => {
-      void p.finally(() => {
-        if (active) setSettled((n) => n + 1);
-      });
+      // `.finally()` returns a NEW promise that rejects with the same reason, and the caller only
+      // ever handles the original — so without this catch a failed load raises an unhandled
+      // rejection. The counter is a side effect; it has no business reporting the failure again.
+      void p
+        .finally(() => {
+          if (active) setSettled((n) => n + 1);
+        })
+        .catch(() => undefined);
       return p;
     };
     Promise.all([step(getMyTenant()), step(getSettings())])

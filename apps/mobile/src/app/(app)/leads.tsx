@@ -12,20 +12,46 @@
 // Status is shown per row because it drives the next step: only a NEW/QUALIFIED lead is a candidate
 // for an opportunity, and the Opportunities screen filters on exactly that.
 
-import { useCallback, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, TextInput, FlatList, Pressable, RefreshControl } from 'react-native';
 import { useT } from '../../i18n';
+import type { TranslateFn } from '../../i18n';
 import { usePalette, useIsDark } from '../../theme/usePalette';
 import { makeScreenStyles } from '../../theme/screenStyles';
 import { StatusChip } from '../../components/StatusChip';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { listLeads, createLead, type Lead } from '../../api/crm';
 
+/**
+ * One lead, memoized. /crm/leads has no LIMIT, so this is the row of a list that grows with the
+ * tenant's whole pipeline; the title is a fallback chain and belongs with the row that draws it.
+ */
+const LeadItem = memo(function LeadItem({
+  lead,
+  s,
+  t,
+}: {
+  lead: Lead;
+  s: ReturnType<typeof makeScreenStyles>;
+  t: TranslateFn;
+}) {
+  return (
+    <View testID="lead-item" style={s.item}>
+      <Text style={s.itemTitle}>
+        {lead.company ?? lead.contact_name ?? t('crm.leads.untitled')}
+      </Text>
+      {/* Both are shown when both exist — the title already used one of them. */}
+      {lead.company && lead.contact_name ? <Text style={s.kvKey}>{lead.contact_name}</Text> : null}
+      <StatusChip label={lead.status} />
+    </View>
+  );
+});
+
 export default function LeadsScreen(): React.JSX.Element {
   const t = useT();
   const p = usePalette();
   const dark = useIsDark();
-  const s = makeScreenStyles(p);
+  const s = useMemo(() => makeScreenStyles(p), [p]);
 
   const [rows, setRows] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(false);
@@ -70,6 +96,11 @@ export default function LeadsScreen(): React.JSX.Element {
       setSaving(false);
     }
   };
+
+  const renderLead = useCallback(
+    ({ item }: { item: Lead }) => <LeadItem lead={item} s={s} t={t} />,
+    [s, t],
+  );
 
   return (
     <View testID="leads-screen" style={s.container}>
@@ -118,18 +149,7 @@ export default function LeadsScreen(): React.JSX.Element {
           keyExtractor={(r) => r.lead_id}
           refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
           ListEmptyComponent={<Text style={s.empty}>{t('crm.leads.empty')}</Text>}
-          renderItem={({ item }) => (
-            <View testID="lead-item" style={s.item}>
-              <Text style={s.itemTitle}>
-                {item.company ?? item.contact_name ?? t('crm.leads.untitled')}
-              </Text>
-              {/* Both are shown when both exist — the title already used one of them. */}
-              {item.company && item.contact_name ? (
-                <Text style={s.kvKey}>{item.contact_name}</Text>
-              ) : null}
-              <StatusChip label={item.status} />
-            </View>
-          )}
+          renderItem={renderLead}
         />
       </LoadingBoundary>
     </View>

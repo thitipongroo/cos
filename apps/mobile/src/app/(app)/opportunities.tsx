@@ -16,7 +16,7 @@
 // Online-only for the reason given in api/crm.ts: a queued convert replayed hours later could only
 // ever come back as a stale COS-CRM-003.
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -27,6 +27,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { useT } from '../../i18n';
+import type { TranslateFn } from '../../i18n';
 import { usePalette, useIsDark } from '../../theme/usePalette';
 import { makeScreenStyles } from '../../theme/screenStyles';
 import { radius } from '../../theme/tokens';
@@ -43,11 +44,60 @@ import {
   type Opportunity,
 } from '../../api/crm';
 
+/**
+ * One opportunity, memoized. The row owns two things a shared list cannot: whether ITS OWN convert
+ * is in flight, and whether the status still allows converting at all — WON is terminal
+ * (COS-CRM-003) and LOST is not a customer.
+ */
+const OpportunityItem = memo(function OpportunityItem({
+  opportunity,
+  busy,
+  onConvert,
+  s,
+  t,
+}: {
+  opportunity: Opportunity;
+  busy: boolean;
+  onConvert: (id: string) => void;
+  s: ReturnType<typeof makeScreenStyles>;
+  t: TranslateFn;
+}) {
+  return (
+    <View testID="opportunity-item" style={s.item}>
+      <Text style={s.itemTitle}>{opportunity.title}</Text>
+      {opportunity.value ? (
+        <View style={s.kvRow}>
+          <Text style={s.kvKey}>{t('crm.opportunities.value')}</Text>
+          <Text style={s.kvValue}>{opportunity.value}</Text>
+        </View>
+      ) : null}
+      <StatusChip label={opportunity.status} />
+      {/* Convert is offered only while the row can still be converted. WON is terminal
+                    (COS-CRM-003) and LOST is not a customer. */}
+      {opportunity.status === 'OPEN' ? (
+        <Pressable
+          testID={`convert-${opportunity.opportunity_id}`}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: busy }}
+          accessibilityLabel={t('crm.opportunities.convert')}
+          disabled={busy}
+          onPress={() => onConvert(opportunity.opportunity_id)}
+          style={[s.primaryButton, busy && s.buttonDisabled]}
+        >
+          <Text style={s.primaryButtonText}>
+            {busy ? t('crm.opportunities.converting') : t('crm.opportunities.convert')}
+          </Text>
+        </Pressable>
+      ) : null}
+    </View>
+  );
+});
+
 export default function OpportunitiesScreen(): React.JSX.Element {
   const t = useT();
   const p = usePalette();
   const dark = useIsDark();
-  const s = makeScreenStyles(p);
+  const s = useMemo(() => makeScreenStyles(p), [p]);
   const styles = useMemo(() => makeStyles(p), [p]);
 
   const [rows, setRows] = useState<Opportunity[]>([]);
@@ -66,7 +116,10 @@ export default function OpportunitiesScreen(): React.JSX.Element {
     setLoading(true);
     setSettled(0);
     const step = <T,>(p: Promise<T>): Promise<T> => {
-      void p.finally(() => setSettled((n) => n + 1));
+      // `.finally()` returns a NEW promise that rejects with the same reason. The caller only ever
+      // handles `p` itself, so without this catch an offline load produces an unhandled rejection
+      // — the counter is a side effect and has no business reporting the failure a second time.
+      void p.finally(() => setSettled((n) => n + 1)).catch(() => undefined);
       return p;
     };
     try {
@@ -126,6 +179,19 @@ export default function OpportunitiesScreen(): React.JSX.Element {
       setBusyId(null);
     }
   };
+
+  const renderOpportunity = useCallback(
+    ({ item }: { item: Opportunity }) => (
+      <OpportunityItem
+        opportunity={item}
+        busy={busyId === item.opportunity_id}
+        onConvert={onConvert}
+        s={s}
+        t={t}
+      />
+    ),
+    [busyId, onConvert, s, t],
+  );
 
   return (
     <View testID="opportunities-screen" style={s.container}>
@@ -209,38 +275,7 @@ export default function OpportunitiesScreen(): React.JSX.Element {
           keyExtractor={(r) => r.opportunity_id}
           refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
           ListEmptyComponent={<Text style={s.empty}>{t('crm.opportunities.empty')}</Text>}
-          renderItem={({ item }) => {
-            const busy = busyId === item.opportunity_id;
-            return (
-              <View testID="opportunity-item" style={s.item}>
-                <Text style={s.itemTitle}>{item.title}</Text>
-                {item.value ? (
-                  <View style={s.kvRow}>
-                    <Text style={s.kvKey}>{t('crm.opportunities.value')}</Text>
-                    <Text style={s.kvValue}>{item.value}</Text>
-                  </View>
-                ) : null}
-                <StatusChip label={item.status} />
-                {/* Convert is offered only while the row can still be converted. WON is terminal
-                    (COS-CRM-003) and LOST is not a customer. */}
-                {item.status === 'OPEN' ? (
-                  <Pressable
-                    testID={`convert-${item.opportunity_id}`}
-                    accessibilityRole="button"
-                    accessibilityState={{ disabled: busy }}
-                    accessibilityLabel={t('crm.opportunities.convert')}
-                    disabled={busy}
-                    onPress={() => onConvert(item.opportunity_id)}
-                    style={[s.primaryButton, busy && s.buttonDisabled]}
-                  >
-                    <Text style={s.primaryButtonText}>
-                      {busy ? t('crm.opportunities.converting') : t('crm.opportunities.convert')}
-                    </Text>
-                  </Pressable>
-                ) : null}
-              </View>
-            );
-          }}
+          renderItem={renderOpportunity}
         />
       </LoadingBoundary>
     </View>
