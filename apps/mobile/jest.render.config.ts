@@ -117,7 +117,15 @@ const config: Config = {
   // severity picker, the shared FAB):
   //   statements 33.33  branches 27.33  functions 29.97  lines 34.25
   //
-  // 84 of the 145 files are still at zero. That is the work this ratchet exists to pull along.
+  // Same day, 33 specs — inspections, edit-permission, material-request and mfa-enrollment joined
+  // them. Chosen because each had had behaviour changed under it that week and none had a test: the
+  // severity picker's per-screen accent, the radio/checkbox split on the role editor, the submit
+  // gate on the request form, and the four answers Keycloak can give an enrolment:
+  //   statements 38.91  branches 32.11  functions 35.26  lines 39.81
+  //
+  // 74 of the 145 files are still at zero — counted, not subtracted: five specs closed ten files,
+  // because a screen's spec also exercises the components it renders. That is the work this ratchet
+  // exists to pull along.
   //
   // Counted separately from the logic suite rather than merged with it: the two instrument
   // differently (ts-jest vs babel-jest) and merging their reports made files the logic suite covers
@@ -126,10 +134,10 @@ const config: Config = {
   collectCoverageFrom: ['src/components/**/*.tsx', 'src/app/**/*.tsx'],
   coverageThreshold: {
     global: {
-      statements: 33,
-      branches: 27,
-      functions: 29,
-      lines: 34,
+      statements: 38,
+      branches: 32,
+      functions: 35,
+      lines: 39,
     },
   },
 };
