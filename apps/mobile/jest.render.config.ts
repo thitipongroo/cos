@@ -181,7 +181,10 @@ const config: Config = {
   // launch gate and the auth gate:
   //   statements 73.61  branches 62.02  functions 67.53  lines 74.77
   //
-  // 30 of the 145 files are still at zero — counted, not subtracted, because a screen's spec also
+  // Same day, 77 specs — the '/' entry redirect, system-integration and the two pre-auth receipts:
+  //   statements 74.53  branches 62.69  functions 68.49  lines 75.75
+  //
+  // 26 of the 145 files are still at zero — counted, not subtracted, because a screen's spec also
   // exercises the components it renders. That is the work this ratchet exists to pull along.
   //
   // Counted separately from the logic suite rather than merged with it: the two instrument
@@ -191,10 +194,10 @@ const config: Config = {
   collectCoverageFrom: ['src/components/**/*.tsx', 'src/app/**/*.tsx'],
   coverageThreshold: {
     global: {
-      statements: 73,
+      statements: 74,
       branches: 62,
-      functions: 67,
-      lines: 74,
+      functions: 68,
+      lines: 75,
     },
   },
 };
