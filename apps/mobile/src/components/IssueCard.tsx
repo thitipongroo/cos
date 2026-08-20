@@ -59,12 +59,21 @@ function toneColor(p: Palette, tone: IssueTone): string {
   }
 }
 
-/** The sync state's glyph and tone — the drawing's SYNCED / PENDING pair at the card's top right. */
+/**
+ * The sync state's glyph and tone — the drawing's SYNCED / PENDING pair at the card's top right.
+ *
+ * SYNCED IS `cloud-done`, not the mockup's tick (PO 2026-08-20). This card drew `check-circle` and
+ * was missed when the two sync pills were corrected on the same day: the mockups draw a tick here
+ * and a cloud everywhere else, and ONE STATE MAY NOT HAVE TWO GLYPHS — a worker who learns the cloud
+ * on the top bar has to read this card's tick as something else, which on a board about defects is
+ * the wrong thing to make ambiguous. ADR-085: the mockup is authoritative for STYLE, never for what
+ * a symbol means.
+ */
 function syncMark(status: string): {
-  icon: 'check-circle' | 'sync' | 'error-outline';
+  icon: 'cloud-done' | 'sync' | 'error-outline';
   tone: IssueTone;
 } {
-  if (status === 'SYNCED') return { icon: 'check-circle', tone: 'success' };
+  if (status === 'SYNCED') return { icon: 'cloud-done', tone: 'success' };
   if (status === 'CONFLICT') return { icon: 'error-outline', tone: 'danger' };
   return { icon: 'sync', tone: 'muted' };
 }

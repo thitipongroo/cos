@@ -239,6 +239,13 @@ const config: Config = {
   // pre-auth privacy policy at 0% branches. Seven specs later:
   //   statements 86.79  branches 76.63  functions 81.31  lines 88.34
   //
+  // DEPTH PASS 4 — the weakest by branch that were left: LanguageSwitcher, IssueCard, TaskCard,
+  // inspections and deliveries. Two findings came out of it rather than out of the tests: IssueCard
+  // still drew `check-circle` for SYNCED (the 2026-08-20 cloud-done decision reached both pills and
+  // missed this card), and two file headers still stated QM-3's th-TH default when the code has
+  // exported 'en' since the 2026-07-26 decision that overrode it:
+  //   statements 87.60  branches 78.40  functions 82.46  lines 89.13
+  //
   // Counted separately from the logic suite rather than merged with it: the two instrument
   // differently (ts-jest vs babel-jest) and merging their reports made files the logic suite covers
   // fully report as low as 80%.
@@ -246,10 +253,10 @@ const config: Config = {
   collectCoverageFrom: ['src/components/**/*.tsx', 'src/app/**/*.tsx'],
   coverageThreshold: {
     global: {
-      statements: 86,
-      branches: 76,
-      functions: 81,
-      lines: 88,
+      statements: 87,
+      branches: 78,
+      functions: 82,
+      lines: 89,
     },
   },
 };
