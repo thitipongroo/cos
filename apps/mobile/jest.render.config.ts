@@ -211,6 +211,12 @@ const config: Config = {
   //
   // So the remaining climb is depth on the files already covered, not breadth.
   //
+  // DEPTH PASS, same day — 88 specs. ConflictBadge, QuickActionsMenu and PhotoCapture were the three
+  // weakest by branch (25%, 25%, 29%) and each holds a rule worth the visit: a badge that reads zero
+  // is worse than no badge, a sheet that navigates before it closes swallows the first tap on the
+  // screen it opened, and §17.7's photo-queue cap is enforced BEFORE the shutter:
+  //   statements 79.55  branches 66.31  functions 73.85  lines 81.04
+  //
   // Counted separately from the logic suite rather than merged with it: the two instrument
   // differently (ts-jest vs babel-jest) and merging their reports made files the logic suite covers
   // fully report as low as 80%.
@@ -218,10 +224,10 @@ const config: Config = {
   collectCoverageFrom: ['src/components/**/*.tsx', 'src/app/**/*.tsx'],
   coverageThreshold: {
     global: {
-      statements: 78,
-      branches: 65,
+      statements: 79,
+      branches: 66,
       functions: 73,
-      lines: 80,
+      lines: 81,
     },
   },
 };
