@@ -192,8 +192,24 @@ const config: Config = {
   // account-settings frame:
   //   statements 76.66  branches 64.14  functions 70.98  lines 77.93
   //
-  // 15 of the 145 files are still at zero — counted, not subtracted, because a screen's spec also
-  // exercises the components it renders. That is the work this ratchet exists to pull along.
+  // Same day, 85 specs — the eight transparency detail pages, the post-auth policy twin, and a
+  // filesystem guard on the (auth) stack in the logic suite:
+  //   statements 78.92  branches 65.44  functions 73.34  lines 80.38
+  //
+  // SIX FILES REMAIN AT ZERO, and each is a decision rather than a gap:
+  //   MobileNav.tsx        renders Expo Router's <Tabs>. The role-to-tab rule it exists for is
+  //                        lib/roleTabs.ts, already at 100% in the logic suite; a render test here
+  //                        would mostly exercise the navigator.
+  //   (auth)/_layout.tsx   a bare <Stack> declaration — a list of names, no behaviour. What can go
+  //                        wrong with it is the list drifting from the files on disk, and that is
+  //                        guarded by lib/__tests__/authStackRegistry.spec.ts, which reads both.
+  //   app/e2e/*.tsx        three routes that exist only to absorb Detox deep links. reset and
+  //                        network render null by design; the work is done by the root layout's
+  //                        Linking listener. Their behaviour IS the Detox run.
+  //   BlueprintGrid.tsx    an SVG backdrop, `pointerEvents="none"`, purely decorative (ADR-071).
+  //                        There is no behaviour to assert that is not "it drew some lines".
+  //
+  // So the remaining climb is depth on the files already covered, not breadth.
   //
   // Counted separately from the logic suite rather than merged with it: the two instrument
   // differently (ts-jest vs babel-jest) and merging their reports made files the logic suite covers
@@ -202,10 +218,10 @@ const config: Config = {
   collectCoverageFrom: ['src/components/**/*.tsx', 'src/app/**/*.tsx'],
   coverageThreshold: {
     global: {
-      statements: 76,
-      branches: 64,
-      functions: 70,
-      lines: 77,
+      statements: 78,
+      branches: 65,
+      functions: 73,
+      lines: 80,
     },
   },
 };
