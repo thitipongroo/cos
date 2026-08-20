@@ -145,7 +145,11 @@ const config: Config = {
   // role-to-tab rule it exists for is lib/roleTabs.ts, which is already at 100% in the logic suite.
   // A render test there would mostly be testing the navigator.
   //
-  // 59 of the 145 files are still at zero — counted, not subtracted, because a screen's spec also
+  // Same day, 50 specs — Breadcrumb (the other half of the back-chevron pair), permit-request and
+  // data-export:
+  //   statements 53.37  branches 47.79  functions 48.15  lines 54.29
+  //
+  // 56 of the 145 files are still at zero — counted, not subtracted, because a screen's spec also
   // exercises the components it renders. That is the work this ratchet exists to pull along.
   //
   // Counted separately from the logic suite rather than merged with it: the two instrument
@@ -155,10 +159,10 @@ const config: Config = {
   collectCoverageFrom: ['src/components/**/*.tsx', 'src/app/**/*.tsx'],
   coverageThreshold: {
     global: {
-      statements: 50,
-      branches: 45,
-      functions: 46,
-      lines: 51,
+      statements: 53,
+      branches: 47,
+      functions: 48,
+      lines: 54,
     },
   },
 };
