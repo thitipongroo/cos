@@ -224,6 +224,13 @@ const config: Config = {
   // to the wrong branch would get a working screen, just the wrong one:
   //   statements 80.60  branches 68.72  functions 74.61  lines 82.05
   //
+  // DEPTH PASS 3 — 93 specs. VoiceNoteButton (44%), InsightPanel (46%) and orders (44%). The first
+  // two are the app's two AI surfaces and both are mostly failure paths: the voice note hands its
+  // transcript into a field someone is already typing in, and the insight panel spends the tenant's
+  // metered AI quota, so what each does when the answer does not arrive is the behaviour worth
+  // pinning:
+  //   statements 81.88  branches 71.27  functions 75.63  lines 83.34
+  //
   // Counted separately from the logic suite rather than merged with it: the two instrument
   // differently (ts-jest vs babel-jest) and merging their reports made files the logic suite covers
   // fully report as low as 80%.
@@ -231,10 +238,10 @@ const config: Config = {
   collectCoverageFrom: ['src/components/**/*.tsx', 'src/app/**/*.tsx'],
   coverageThreshold: {
     global: {
-      statements: 80,
-      branches: 68,
-      functions: 74,
-      lines: 82,
+      statements: 81,
+      branches: 71,
+      functions: 75,
+      lines: 83,
     },
   },
 };
