@@ -174,7 +174,10 @@ const config: Config = {
   // past 70%:
   //   statements 71.75  branches 60.60  functions 65.81  lines 72.80
   //
-  // 35 of the 145 files are still at zero — counted, not subtracted, because a screen's spec also
+  // Same day, 73 specs — the two reset receipts, the erasure screen and the permit receipt:
+  //   statements 72.76  branches 61.39  functions 66.83  lines 73.88
+  //
+  // 31 of the 145 files are still at zero — counted, not subtracted, because a screen's spec also
   // exercises the components it renders. That is the work this ratchet exists to pull along.
   //
   // Counted separately from the logic suite rather than merged with it: the two instrument
@@ -184,10 +187,10 @@ const config: Config = {
   collectCoverageFrom: ['src/components/**/*.tsx', 'src/app/**/*.tsx'],
   coverageThreshold: {
     global: {
-      statements: 71,
-      branches: 60,
-      functions: 65,
-      lines: 72,
+      statements: 72,
+      branches: 61,
+      functions: 66,
+      lines: 73,
     },
   },
 };
