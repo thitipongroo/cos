@@ -123,9 +123,14 @@ const config: Config = {
   // gate on the request form, and the four answers Keycloak can give an enrolment:
   //   statements 38.91  branches 32.11  functions 35.26  lines 39.81
   //
-  // 74 of the 145 files are still at zero — counted, not subtracted: five specs closed ten files,
-  // because a screen's spec also exercises the components it renders. That is the work this ratchet
-  // exists to pull along.
+  // Same day, 37 specs — reset-password, user-profile, finance and permits, the four screens whose
+  // rules are about consequence rather than layout: which reset method an account may have, what a
+  // profile carries into it, the difference between an empty portfolio and a request that failed,
+  // and the tier rule that lets a safety officer refuse a safety permit but not grant one:
+  //   statements 43.68  branches 37.82  functions 39.15  lines 44.69
+  //
+  // 70 of the 145 files are still at zero — counted, not subtracted, because a screen's spec also
+  // exercises the components it renders. That is the work this ratchet exists to pull along.
   //
   // Counted separately from the logic suite rather than merged with it: the two instrument
   // differently (ts-jest vs babel-jest) and merging their reports made files the logic suite covers
@@ -134,10 +139,10 @@ const config: Config = {
   collectCoverageFrom: ['src/components/**/*.tsx', 'src/app/**/*.tsx'],
   coverageThreshold: {
     global: {
-      statements: 38,
-      branches: 32,
-      functions: 35,
-      lines: 39,
+      statements: 43,
+      branches: 37,
+      functions: 39,
+      lines: 44,
     },
   },
 };
