@@ -1,9 +1,45 @@
 # ADR-067: MFA enforcement for TENANT_ADMIN / FINANCE — Keycloak-native OTP + backend acr gate
 
 **Date:** 2026-07-24
-**Status:** Accepted
+**Status:** Accepted — **Layer 1 NOT PRESENT in the checked-in realm (verified 2026-08-20)**
 **Deciders:** Product owner, Security
 **Tags:** security
+
+> ## ⚠️ Verified gap — 2026-08-20
+>
+> The Decision below records Layer 1 as "Applied and verified against a live Keycloak … then exported
+> to the realm JSON". **The realm JSON in git contains none of it.** Read directly from
+> `infrastructure/keycloak/realms/construction-os-realm.json`:
+>
+> | What Layer 1 requires                             | What the realm file holds                                                                    |
+> | ------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+> | a `browser-mfa` flow bound as the Browser flow    | `browserFlow: "browser"` — the stock flow, and **every** flow in the file is `builtIn: true` |
+> | `Condition - user role` (`conditional-user-role`) | absent — 0 occurrences; the `forms` subflow still runs stock `conditional-user-configured`   |
+> | a composite realm role `mfa-required`             | absent from `roles.realm` (12 roles, none of them this)                                      |
+> | realm attribute `acr.loa.map`                     | absent from `attributes` (8 keys, none of them this)                                         |
+>
+> `conditional-user-configured` is precisely the condition the Context section says the security review
+> **rejected**: it runs OTP only for users who have already enrolled, so a privileged user who never
+> enrolled still signs in with a password alone.
+>
+> **Nor is it anywhere else in the repository.** A search across every provisioning-relevant file type
+> (`.ts`, `.sh`, `.yaml`, `.yml`, `.tf`, `.json`, `.mjs`, excluding `node_modules` and the realm file
+> itself) finds `conditional-user-role` / `acr.loa.map` / `browserFlow` in exactly three places, all
+> of them prose comments in backend TypeScript. There is no terraform, no provisioning script, no CI
+> step and no second realm file that would add the flow at deploy time — so no automated path exists
+> by which any environment could acquire Layer 1.
+>
+> Layer 2 is `MFA_ENFORCE`, which defaults to `false` (`shared/guards/mfa-enforcement.ts`).
+>
+> **Consequence, and it is checkable:** any environment provisioned from this realm file has NEITHER
+> layer active for `TENANT_ADMIN` / `FINANCE`. Whether Layer 1 was applied to some live Keycloak and
+> never exported back to git, or never applied at all, cannot be determined from this repository —
+> both leave a freshly provisioned realm unprotected, so the required action is the same.
+>
+> **Not fixed here on purpose.** The runbook forbids a blind realm-JSON edit for a stated reason: a
+> malformed authentication-flow import breaks _all_ logins, and this repo has no Keycloak to validate
+> an import against. The fix is `docs/runbooks/mfa-enforcement.md` steps 1–2 against a live realm,
+> followed by the export back to git that the Decision already assumes happened.
 
 ---
 
@@ -57,7 +93,9 @@ The custom backend TOTP module is marked **deprecated** (kept to avoid test chur
 ### Negative
 
 - Layer 1 is a live-Keycloak configuration task (runbook), not a CI-verified realm-JSON change; drift risk
-  until the realm is exported back to git.
+  until the realm is exported back to git. **That drift is now confirmed, not hypothetical** — see the
+  verified-gap note at the top of this ADR (2026-08-20). Nothing in CI can catch it: there is no Keycloak
+  in the test harness, so the only guard against a realm that silently loses Layer 1 is reading the file.
 - Two MFA mechanisms coexist until the deprecated custom module is removed.
 
 ### Neutral

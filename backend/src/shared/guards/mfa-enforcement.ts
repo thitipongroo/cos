@@ -1,7 +1,20 @@
 // MFA enforcement — Layer 2 (defense-in-depth) for the two-layer MFA design (spec §5.4.1, master Phase 2).
 //
-// Layer 1 (authoritative): Keycloak forces OTP at login for TENANT_ADMIN / FINANCE via a role-conditional
-//   OTP subflow in the browser flow (infrastructure/keycloak/realms/construction-os-realm.json).
+// Layer 1 (authoritative, BY DESIGN — NOT PRESENT IN THE CHECKED-IN REALM, verified 2026-08-20):
+//   Keycloak is supposed to force OTP at login for TENANT_ADMIN / FINANCE via a role-conditional OTP
+//   subflow in the browser flow. It is not in
+//   infrastructure/keycloak/realms/construction-os-realm.json: that file binds the stock `browser`
+//   flow, every flow in it is `builtIn: true`, `conditional-user-role` appears zero times, the
+//   composite role `mfa-required` is not among its twelve realm roles, and there is no `acr.loa.map`
+//   attribute. What the `forms` subflow actually runs is `conditional-user-configured` — the very
+//   condition ADR-067's Context says the security review rejected, because it prompts only users who
+//   have ALREADY enrolled.
+//
+//   So on any environment provisioned from that file, this module's Layer 2 is not defence in depth —
+//   it is the only depth there is, and it is off by default (below). See the verified-gap note at the
+//   top of ADR-067. Fixing it means the live-Keycloak procedure in docs/runbooks/mfa-enforcement.md,
+//   never a hand edit of the realm JSON: a malformed flow import breaks every login, and there is no
+//   Keycloak in CI to validate one against.
 // Layer 2 (this module): the backend independently rejects a privileged token whose `acr` does not prove
 //   OTP was performed, so a token minted without the OTP step cannot act as TENANT_ADMIN / FINANCE. Invoked
 //   from JwtAuthGuard.handleRequest (every authenticated request) — JwtAuthGuard is applied per-route, and

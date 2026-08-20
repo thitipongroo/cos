@@ -127,4 +127,52 @@ describe('DirectoryScreen', () => {
     await waitFor(() => expect(getByTestId('directory-empty')).toBeTruthy());
     expect(client.get).not.toHaveBeenCalled();
   });
+
+  // ── THE AVATAR FALLBACK (PO 2026-08-20) ──────────────────────────────────────────────────────
+  //
+  // ONE RULE, EVERY AVATAR IN THE APP: the photo, else the initials, else a PERSON GLYPH — never a
+  // literal "?", which is what several of these sites drew before the decision. `workforce.workers`
+  // has no photo column at all, so on this screen the ladder starts at the initials and the glyph is
+  // the only other outcome there is.
+  //
+  // The shape is never left EMPTY, which is the point: on the dark palette `elevated` sits so close
+  // to `surface` that an unbordered empty circle vanished, and the initials beside it read as loose
+  // letters next to the name (PO 2026-08-09).
+
+  it('shows a crew member initials', async () => {
+    client.get.mockResolvedValue({ items: [ALICE] });
+
+    const { getByText } = await renderScreen();
+
+    await waitFor(() => expect(getByText('AS')).toBeTruthy());
+  });
+
+  // A name that yields no initials is a real case here: `full_name` is free text typed by whoever
+  // enrolled the worker, and an empty or whitespace-only value reaches this screen unchanged.
+  //
+  // A PUNCTUATION-ONLY NAME IS NOT ONE OF THEM. `initialsOf('—')` returns '—' — it takes the first
+  // code point of the first word and does not ask what kind of character it is, which is what keeps
+  // it correct for Thai. So that row draws a dash in the circle rather than the glyph. Recorded
+  // because the obvious guess is the other way, and a test written on the guess fails.
+  it.each([[''], ['   ']])(
+    'falls back to a person glyph when the name %p yields no initials',
+    async (fullName) => {
+      client.get.mockResolvedValue({ items: [{ ...ALICE, full_name: fullName }] });
+
+      const { getByText } = await renderScreen();
+
+      await waitFor(() => expect(getByText('person')).toBeTruthy());
+    },
+  );
+
+  // Never a question mark — the glyph is a person, which reads as "we do not have a face" rather
+  // than as "something went wrong with this record".
+  it('never draws a question mark for a nameless worker', async () => {
+    client.get.mockResolvedValue({ items: [{ ...ALICE, full_name: '' }] });
+
+    const { getByText, queryByText } = await renderScreen();
+
+    await waitFor(() => expect(getByText('person')).toBeTruthy());
+    expect(queryByText('?')).toBeNull();
+  });
 });
