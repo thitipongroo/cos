@@ -173,10 +173,20 @@ Scenarios for MVP:
 
 Scenarios:
 
-1. **Offline check-in** — Worker checks in with no connectivity → record queued → sync on reconnect
-2. **Offline inspection** — Inspector fills checklist offline → photo attached → sync on reconnect
-3. **Sync conflict resolution** — Two users update same task `progress_percent` while offline → Max-wins applied on sync
+1. **Offline inspection** — Inspector fills checklist offline → photo attached → sync on reconnect
+2. **Sync conflict resolution** — Two users update same task `progress_percent` while offline → Max-wins applied on sync
    (higher value wins; progress is monotonic)
+
+> **Offline check-in was scenario 1 until 2026-08-21, and was retired with the feature it tested.**
+> Self check-in was removed from the mobile product on 2026-08-09 (product-owner decision, recorded
+> in `apps/mobile/src/components/home/FieldHome.tsx`): it left the Site Worker home, then the
+> navigation drawer, then the product. Attendance rows are still READ — the Shift Hours tile counts
+> them and they arrive through `/sync/delta` — but nothing in the app writes one, so there was no
+> control left for the scenario to drive. The offline queue-and-sync path it covered is exercised by
+> scenario 1 above.
+>
+> This retires the E2E SCENARIO only. `21-mvp-scope.md` still lists check-in/check-out inside MVP
+> workforce scope — see the note there.
 
 ### Environment
 

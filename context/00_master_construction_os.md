@@ -4765,9 +4765,9 @@ Generate:
     9. QC inspection — Inspector fills checklist → result recorded as fail → issue_severity populated → photo uploaded
     10. Approval escalation — Approver does not respond in 48 hours → next approver is notified
 - Detox E2E tests (React Native mobile — location: apps/mobile/e2e/; runs on merge to `staging` (ADR-020); source: spec §30.5, §30.7):
-    1. Offline check-in — Worker checks in with no connectivity → record queued → sync on reconnect
-    2. Offline inspection — Inspector fills checklist offline → photo attached → sync on reconnect
-    3. Sync conflict resolution — Two users update same task progress_percent while offline → Max-wins applied on sync (higher value wins; progress is monotonic)
+    1. Offline inspection — Inspector fills checklist offline → photo attached → sync on reconnect
+    2. Sync conflict resolution — Two users update same task progress_percent while offline → Max-wins applied on sync (higher value wins; progress is monotonic)
+    - RETIRED 2026-08-21 (PO): "Offline check-in — Worker checks in with no connectivity → record queued → sync on reconnect". Self check-in was removed from the mobile product on 2026-08-09, so the scenario had no control to drive; see spec §30 "Mobile E2E (Detox)". Note that 21-mvp-scope.md still places check-in/check-out inside MVP workforce scope — that is a separate open question, not settled by this.
 - Pact consumer test examples for Finance ← Procurement
 - GitHub Actions integration: lint + type-check + build + unit (incl. serial Temporal workflow step) + integration + isolation + contract + dependency-audit on every PR (spec §30.12); load tests weekly scheduled on staging (not per-deploy; spec §30.9)
 - Test data factories (factory_bot pattern — plain TypeScript functions, minimal required fields, spread overrides) per entity — location: packages/@cos/test-utils/src/factories.ts, naming: build<EntityName>Dto for request DTOs; RESOLVED 2026-06-13, see spec §30.13

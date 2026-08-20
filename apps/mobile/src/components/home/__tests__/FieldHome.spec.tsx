@@ -71,11 +71,23 @@ function task(over: Record<string, unknown> = {}) {
   };
 }
 
-/** An open shift that began `hoursAgo` hours ago, today. */
+/**
+ * An open shift that began `hoursAgo` hours ago — CLAMPED TO TODAY.
+ *
+ * `shiftProgress` only counts a check-in on the SAME LOCAL DAY, so a naive `Date.now() - 3h` is a
+ * test that fails between midnight and 03:00 and passes the rest of the day. It did: this spec was
+ * written in the afternoon and broke at 00:04 the next morning, which is the worst kind of test —
+ * red for a reason that has nothing to do with the code, on the shift this app is most used on.
+ *
+ * Clamping to the later of "today at 00:00" and "n hours ago" keeps the check-in inside today and
+ * never in the future, whatever hour the suite runs at.
+ */
 function checkedIn(hoursAgo: number) {
+  const now = Date.now();
+  const startOfToday = new Date(now).setHours(0, 0, 0, 0);
   return {
     id: 'att-1',
-    checkInAt: new Date(Date.now() - hoursAgo * 3_600_000).toISOString(),
+    checkInAt: new Date(Math.max(startOfToday, now - hoursAgo * 3_600_000)).toISOString(),
     checkOutAt: null,
   };
 }

@@ -1,17 +1,12 @@
 # Runbook — Mobile E2E (Detox) on CI
 
-The `mobile-e2e-tests` job in `.github/workflows/ci.yml` runs three Detox specs against a staging
+The `mobile-e2e-tests` job in `.github/workflows/ci.yml` runs two Detox specs against a staging
 backend on an Android emulator. **It has never executed.** It is gated to the `staging` branch and
-needs seven repository secrets that do not exist yet, so its first real run will also be its first
+needs six repository secrets that do not exist yet, so its first real run will also be its first
 verification.
 
 This runbook is what to create, what each value has to be, and what is known to be broken before you
 start — so the first run costs one hour rather than three.
-
-> **Read the blocker first.** One of the three specs drives a control the product no longer has. See
-> [Known divergence](#known-divergence-check-in) at the bottom. The job cannot go green until that is
-> answered, so create the secrets and run it only once you have the answer, or expect two failures
-> you already know about.
 
 ---
 
@@ -28,14 +23,13 @@ what this runbook is for.
 
 ---
 
-## Step 1 — Create the seven secrets
+## Step 1 — Create the six secrets
 
 Repository → Settings → Secrets and variables → Actions → New repository secret.
 
 | Secret                   | What it must contain                                                                                                                                                                                                                 |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `STAGING_MOBILE_API_URL` | The staging API base, e.g. `https://api.staging.example/api/v1`. Used **twice**: baked into the APK as `EXPO_PUBLIC_API_URL` at build time, and passed to the test runner as `E2E_API_URL` for the direct call in the conflict spec. |
-| `E2E_WORKER_PHONE`       | E.164 phone of a **SITE_WORKER** on staging, e.g. `+66800000001`. The spec strips `+66` and types the national digits, so it must be a Thai number.                                                                                  |
 | `E2E_INSPECTOR_PHONE`    | E.164 phone of a **SAFETY_OFFICER** on staging. Not any inspector — `inspections` is that role's tab and no other's (`src/lib/roleTabs.ts`), so a SITE_ENGINEER account fails at the second test with no tab to open.                |
 | `E2E_USER_A_PHONE`       | E.164 phone of a user who is assigned the task in `E2E_TEST_TASK_ID` and can update its progress.                                                                                                                                    |
 | `E2E_TEST_OTP`           | An OTP the staging auth path accepts for these numbers. All three specs log in through Path A (SMS OTP), so a real one-time code cannot work — staging needs a fixed test OTP for these accounts.                                    |
@@ -49,7 +43,7 @@ before you check the backend.
 
 ## Step 2 — Prepare the staging data
 
-1. Three accounts with the roles above, all reachable by SMS OTP with `E2E_TEST_OTP`.
+1. Two accounts with the roles above, both reachable by SMS OTP with `E2E_TEST_OTP`.
 2. `E2E_USER_A_PHONE` assigned to `E2E_TEST_TASK_ID`, with the task's `progress_percent` **below 40**
    at the start of a run — the assertion is that Max-wins settles on 70, and a task already at 80
    passes for the wrong reason.
@@ -78,27 +72,24 @@ re-running; a second identical hour tells you nothing the first did not.
 
 ---
 
-## Known divergence — check-in
+## Retired — offline check-in
 
-`e2e/offline-checkin.spec.ts` drives `check-in-button`. **No component in the app renders it.**
+`e2e/offline-checkin.spec.ts` used to be the job's first spec. It drove `check-in-button`, which no
+component in the app renders: self check-in was removed from the product on 2026-08-09 (product-owner
+decision, recorded in `src/components/home/FieldHome.tsx`). Two of its tests waited on that button
+unguarded and would have failed this job; two more sat behind `isVisible` and passed having checked
+nothing.
 
-Self check-in was removed from the product by product-owner decision on 2026-08-09 — it was on the
-Site Worker home, then briefly in the navigation drawer, then removed outright along with its project
-picker (recorded in `src/components/home/FieldHome.tsx`). Attendance rows are still READ — the Shift
-Hours tile counts them and they arrive through `/sync/delta` — so the data survived; the control did
-not.
+The product owner retired the spec with the feature on 2026-08-21, and `E2E_WORKER_PHONE` went with
+it — no remaining spec reads it. The offline queue-and-sync path it covered is exercised by
+`offline-inspection.spec.ts`.
 
-Spec §Phase 18 Detox item 1 still requires "Offline check-in — Worker checks in with no connectivity
-→ record queued → sync on reconnect".
+`detoxCiWiring.spec.ts` keeps a `KNOWN_MISSING` list, now empty, that fails if a driven control ever
+goes missing again.
 
-What that costs on a run:
-
-- two tests wait on the button **unguarded** and fail after their timeout;
-- two more sit behind `isVisible` and **pass having checked nothing**.
-
-So the job cannot go green as written. The resolution is a product-owner call — retire the Phase 18
-item with the feature, or restore check-in — and it is pinned in `detoxCiWiring.spec.ts`'s
-`KNOWN_MISSING` list, which may only shrink.
+**Still open, and NOT settled by that:** `docs/specifications/21-mvp-scope.md` places daily
+check-in/check-out inside MVP workforce scope, and the app has no way to check in. Retiring the E2E
+scenario settled the test, not the scope — see the note in that file.
 
 ## References
 

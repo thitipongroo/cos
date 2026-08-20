@@ -949,7 +949,9 @@ the glyph changes with the state — per Mobile Colour Tokens.
 
 - `components/OfflineBanner.tsx` is deleted. The five Detox assertions across `offline-checkin`,
   `offline-inspection` and `sync-conflict` that matched `by.id('offline-banner')` now match the pill
-  by label, exactly as the `SyncStatusBar` migration above did.
+  by label, exactly as the `SyncStatusBar` migration above did. (`offline-checkin` was itself retired
+  on 2026-08-21 with the self check-in feature — see §30 "Mobile E2E (Detox)". The sentence above
+  records what this migration did at the time and is left as written.)
 - The signed-in shell got **64px shorter** on a 1080×2400 frame, which moves the fixed band the
   full-page screenshot stitcher clips to (`TOP` 375 → 311 in the capture scripts).
 

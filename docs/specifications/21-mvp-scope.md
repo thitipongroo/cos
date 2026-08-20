@@ -81,6 +81,22 @@ Workforce management (check-in/check-out, site attendance, daily timesheet) is i
 MVP Workforce scope : daily check-in/check-out, timesheet by project, manpower count for
 site reports. Advanced features (shift optimization, productivity analytics) are post-MVP.
 
+> **OPEN — the mobile app has no check-in control (found 2026-08-21).** Self check-in was removed
+> from `apps/mobile` on 2026-08-09 by product-owner decision: it was on the Site Worker home, then
+> briefly in the navigation drawer, then removed outright along with its project picker (recorded in
+> `src/components/home/FieldHome.tsx`). Verified by grep — `check-in-button` exists nowhere in the
+> app, and no client API writes attendance; the rows the Shift Hours tile counts arrive read-only
+> through `/sync/delta`.
+>
+> So this paragraph and the product disagree, and the disagreement is load-bearing: the reasons given
+> above are that attendance feeds daily site reports and manpower counts, and that offline check-in
+> is a field-operation critical path (§17.4 makes attendance a high-priority sync entity). If workers
+> cannot check in from the app, those rows come from somewhere else — or not at all.
+>
+> **Not resolved here.** The 2026-08-09 decision removed a control; whether it also narrowed MVP
+> workforce scope is a separate question that has not been asked. The Detox scenario that tested it
+> was retired on 2026-08-21 (§30) — that settles the TEST, not the scope.
+
 Note on Safety and Quality Control in MVP :
 
 Safety and QC are included in MVP because daily field operations depend on them from Day 1 :

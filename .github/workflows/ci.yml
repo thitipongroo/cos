@@ -929,6 +929,14 @@ jobs:
   # NOT VERIFIED BY A RUN. This job has never executed; it is written from the Detox config, the
   # specs' own env usage, and the existing mobile job. Expect the first staging run to need
   # adjustment (AVD name, Gradle memory, boot timeout) rather than to pass first time.
+  # TWO SPECS, NOT THREE. `offline-checkin.spec.ts` was deleted on 2026-08-21 (PO): it drove
+  # `check-in-button`, and self check-in was removed from the product on 2026-08-09 — two of its
+  # tests waited on that button unguarded and would have failed this job, and two sat behind
+  # `isVisible` and passed having checked nothing. Attendance is still covered end to end by
+  # `offline-inspection.spec.ts`, which exercises the same offline queue-and-sync path.
+  #
+  # SIX SECRETS, NOT SEVEN: `E2E_WORKER_PHONE` went with it — no remaining spec reads it, and a
+  # secret nobody reads is one somebody was asked to create for nothing.
   mobile-e2e-tests:
     name: Mobile E2E (Detox — Android emulator)
     runs-on: ubuntu-latest
@@ -972,7 +980,6 @@ jobs:
           # .detoxrc.js reads this; it must name the AVD the action creates.
           DETOX_AVD_NAME: test
           E2E_API_URL: ${{ secrets.STAGING_MOBILE_API_URL }}
-          E2E_WORKER_PHONE: ${{ secrets.E2E_WORKER_PHONE }}
           E2E_INSPECTOR_PHONE: ${{ secrets.E2E_INSPECTOR_PHONE }}
           E2E_USER_A_PHONE: ${{ secrets.E2E_USER_A_PHONE }}
           E2E_TEST_OTP: ${{ secrets.E2E_TEST_OTP }}
@@ -988,7 +995,7 @@ jobs:
           working-directory: apps/mobile
           script: >-
             pnpm exec detox test --configuration android.emu.debug --headless --record-logs failing
-            e2e/offline-checkin.spec.ts e2e/offline-inspection.spec.ts e2e/sync-conflict.spec.ts
+            e2e/offline-inspection.spec.ts e2e/sync-conflict.spec.ts
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

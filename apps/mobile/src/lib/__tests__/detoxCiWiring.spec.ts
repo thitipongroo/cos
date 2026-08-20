@@ -109,27 +109,15 @@ function readVars(file: string): string[] {
 /**
  * Controls a CI spec drives that the app does not render.
  *
- * ONLY EVER SHRINKS. Everything on this list is a spec and a product that have diverged, which is a
- * question for the product owner rather than something to quietly delete — but it must not GROW
- * without someone noticing, which is what pinning it exactly does.
+ * EMPTY, AND ONLY EVER SHRINKS. It held `check-in-button` until 2026-08-21: self check-in was
+ * removed from the product on 2026-08-09 while `e2e/offline-checkin.spec.ts` went on driving it, so
+ * two of that spec's tests would have failed this job and two passed having checked nothing. The
+ * product owner retired the spec with the feature, so the divergence is gone rather than tolerated.
  *
- *   check-in-button   SELF CHECK-IN WAS REMOVED FROM THE PRODUCT (PO decision 2026-08-09, recorded
- *                     in components/home/FieldHome.tsx). It was on the Site Worker home, then
- *                     briefly in the drawer, then removed outright with its project picker.
- *                     `attendance` rows are still READ — the Shift Hours tile counts them, and they
- *                     arrive through /sync/delta — so the data survived; the control did not.
- *
- *                     But `e2e/offline-checkin.spec.ts` still drives it, and spec §Phase 18 Detox
- *                     item 1 still requires an offline check-in scenario. Two of that spec's tests
- *                     wait on the button UNGUARDED and would fail the job; two more sit behind
- *                     `isVisible` and pass having checked nothing.
- *
- *                     So the CI job cannot go green as written, and the resolution is not this
- *                     file's to make: either the Phase 18 item is retired with the feature, or
- *                     check-in returns. Recorded here so the answer is visible rather than
- *                     discovered an hour into a staging run.
+ * A list longer than what is found fails the ratchet below — slack here is room for the next
+ * divergence to arrive unnoticed.
  */
-const KNOWN_MISSING = ['check-in-button'];
+const KNOWN_MISSING: readonly string[] = [];
 
 describe('the Detox CI job refers to things that exist', () => {
   it('finds the job, so an empty read cannot pass silently', () => {
@@ -138,8 +126,12 @@ describe('the Detox CI job refers to things that exist', () => {
   });
 
   // The job's whole purpose. A renamed spec makes Detox exit having run nothing.
-  it('names at least the three functional specs', () => {
-    expect(namedSpecs().length).toBeGreaterThanOrEqual(3);
+  //
+  // TWO since 2026-08-21, when offline-checkin was retired with the feature it drove. Asserted as a
+  // floor rather than an exact count: a spec ADDED to the job is a good thing that should not need
+  // this file edited, while the job silently dropping to one is not.
+  it('names at least the two functional specs', () => {
+    expect(namedSpecs().length).toBeGreaterThanOrEqual(2);
   });
 
   it('names only specs that exist on disk', () => {
