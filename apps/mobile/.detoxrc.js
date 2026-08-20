@@ -48,10 +48,16 @@ module.exports = {
     emulator: {
       type: 'android.emulator',
       device: {
-        // Unlike the iOS `device.type` above, this must name an AVD that exists on the machine —
-        // and no CI job runs Detox, so it is always someone's local emulator. `cos_test` is the
-        // documented one (docs/screens/README.md); override for any other without editing this
-        // file: DETOX_AVD_NAME=Medium_Phone detox test -c android.emu.debug
+        // Unlike the iOS `device.type` above, this must name an AVD that exists on the machine.
+        // The DEFAULT is for local runs: `cos_test` is the documented one (docs/screens/README.md),
+        // and any other is used without editing this file —
+        //   DETOX_AVD_NAME=Medium_Phone detox test -c android.emu.debug
+        //
+        // CI overrides it. The `mobile-e2e-tests` job (.github/workflows/ci.yml) has
+        // android-emulator-runner create an AVD named `test` and sets DETOX_AVD_NAME to match; the
+        // two names have to stay equal or Detox looks for an emulator the runner never made. (This
+        // comment used to say "no CI job runs Detox" — true when it was written, false since the
+        // job was added on 2026-08-20.)
         avdName: process.env.DETOX_AVD_NAME || 'cos_test',
       },
     },
