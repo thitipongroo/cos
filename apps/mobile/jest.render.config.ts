@@ -184,7 +184,11 @@ const config: Config = {
   // Same day, 77 specs — the '/' entry redirect, system-integration and the two pre-auth receipts:
   //   statements 74.53  branches 62.69  functions 68.49  lines 75.75
   //
-  // 26 of the 145 files are still at zero — counted, not subtracted, because a screen's spec also
+  // Same day, 80 specs — the app shell, the two FetchListScreen wrappers and the identity page.
+  // Functions past 70%:
+  //   statements 76.10  branches 63.91  functions 70.40  lines 77.30
+  //
+  // 22 of the 145 files are still at zero — counted, not subtracted, because a screen's spec also
   // exercises the components it renders. That is the work this ratchet exists to pull along.
   //
   // Counted separately from the logic suite rather than merged with it: the two instrument
@@ -194,10 +198,10 @@ const config: Config = {
   collectCoverageFrom: ['src/components/**/*.tsx', 'src/app/**/*.tsx'],
   coverageThreshold: {
     global: {
-      statements: 74,
-      branches: 62,
-      functions: 68,
-      lines: 75,
+      statements: 76,
+      branches: 63,
+      functions: 70,
+      lines: 77,
     },
   },
 };
