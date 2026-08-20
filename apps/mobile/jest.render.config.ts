@@ -253,6 +253,13 @@ const config: Config = {
   // the file:
   //   statements 88.09  branches 79.50  functions 83.41  lines 89.63
   //
+  // DEPTH PASS 6 — FieldHome and the root layout's E2E deep-link listener. That listener is the only
+  // plumbing the Detox suite has for two things it cannot otherwise do (Detox has no connectivity
+  // toggle, and the iOS keychain survives a reinstall), and the Detox job has never been executed —
+  // so root-layout-e2e.spec.tsx is currently the ONLY thing verifying either link is wired, and it
+  // asserts first that both are dead when EXPO_PUBLIC_E2E is not set:
+  //   statements 88.81  branches 80.14  functions 84.31  lines 90.26
+  //
   // Counted separately from the logic suite rather than merged with it: the two instrument
   // differently (ts-jest vs babel-jest) and merging their reports made files the logic suite covers
   // fully report as low as 80%.
@@ -261,9 +268,9 @@ const config: Config = {
   coverageThreshold: {
     global: {
       statements: 88,
-      branches: 79,
-      functions: 83,
-      lines: 89,
+      branches: 80,
+      functions: 84,
+      lines: 90,
     },
   },
 };
