@@ -49,6 +49,7 @@ import {
 } from '../../theme/tokens';
 import { shortId } from '../../lib/shortId';
 import { darkScreen } from '../../theme/screenStyles';
+import { Fab } from '../../components/Fab';
 import { initialsOf as initials } from '../../lib/initials';
 
 const AUDIT_DORMANT_DAYS = 30;
@@ -272,16 +273,15 @@ export default function UsersScreen(): React.JSX.Element {
         </LoadingBoundary>
       </ScrollView>
 
-      {/* FAB — invite user */}
-      <Pressable
-        style={darkScreen.fab}
-        onPress={onInvite}
+      {/* FAB — invite user. THE SHARED <Fab /> since 2026-08-20 (PO): this screen and the Tenant
+          Admin home were the last two hand-rolling their own, and the two definitions had already
+          drifted apart on six values. The button sits 8px further right and 8px higher than it did,
+          which is where every other FAB in the app already sits. */}
+      <Fab
         testID="invite-user-fab"
-        accessibilityRole="button"
         accessibilityLabel={t('adminUsers.invite')}
-      >
-        <MaterialIcons name="add" size={30} color={darkColors.onPrimary} />
-      </Pressable>
+        onPress={onInvite}
+      />
 
       {/* Per-user action sheet (mockup 02_user_management/01_management). Opens on a card's ⋮. */}
       <Modal

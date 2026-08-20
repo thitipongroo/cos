@@ -31,6 +31,7 @@ import { get } from '../api/client';
 import { checkBackendHealth } from '../api/health';
 import { getAiUsage, type AiUsage } from '../api/ai';
 import { QuickAddMenu } from './QuickAddMenu';
+import { Fab } from './Fab';
 import { LoadingBoundary } from './LoadingBoundary';
 import { loadProgress } from '../lib/loadingState';
 import { useT } from '../i18n';
@@ -237,15 +238,17 @@ export default function TenantAdminHome(): React.JSX.Element {
         </LoadingBoundary>
       </ScrollView>
 
-      <Pressable
-        style={darkScreen.fab}
-        onPress={() => setQuickAddOpen(true)}
+      {/* THE SHARED <Fab /> since 2026-08-20 (PO). This screen and the user list were the last two
+          drawing their own, against a second `fab` style that had drifted from the shared one on six
+          values — while agreeing, by coincidence, on the two that are visible at this size: radius 28
+          and radius 999 are the same circle on a 56px box, and darkColors.primary IS colors.primary.
+          What actually moves is the position: 8px right, 8px up, onto the line every other FAB
+          already keeps. */}
+      <Fab
         testID="quick-add-fab"
-        accessibilityRole="button"
         accessibilityLabel={t('quickAdd.fab')}
-      >
-        <MaterialIcons name="add" size={32} color={darkColors.onPrimary} />
-      </Pressable>
+        onPress={() => setQuickAddOpen(true)}
+      />
       <QuickAddMenu visible={quickAddOpen} onClose={() => setQuickAddOpen(false)} />
     </View>
   );

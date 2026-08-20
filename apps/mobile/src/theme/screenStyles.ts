@@ -475,29 +475,17 @@ export const darkScreen = StyleSheet.create({
     color: darkColors.muted,
     fontStyle: 'italic',
   },
-  // Floating action button on a pinned-dark screen.
+  // NO `fab` HERE ANY MORE (PO decision 2026-08-20). This file used to carry a second one for the
+  // pinned-dark screens, and the note beside it asked the product owner whether to reconcile the two.
   //
-  // `borderRadius: 28` is half of 56 — the circle rule, which is why the radius ratchet allows it.
-  // NOTE for the PO: `screenChrome.fab`, the themed one, writes the same 56px circle as the `999`
-  // capsule marker and sits `spacing.md`/`spacing.xl` from the corner rather than `spacing.lg`. The
-  // two are left as they are because reconciling them would move a button; it is recorded here so
-  // the difference is a decision rather than an accident.
-  fab: {
-    position: 'absolute',
-    right: spacing.lg,
-    bottom: spacing.lg,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: darkColors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-  },
+  // The answer was yes, and the comparison that settled it is worth keeping: the two definitions had
+  // drifted on SIX values, while agreeing by coincidence on the only two that are visible at this
+  // size — `borderRadius: 28` and `borderRadius: 999` are the same circle on a 56px box, and
+  // `darkColors.primary` IS `colors.primary`. So the "two looks" were never two looks; they were one
+  // look reached twice, differing only in where the button sits and how deep its shadow falls.
+  //
+  // `screenChrome(p).fab` is now the only one, and <Fab /> is how a screen draws it — which also
+  // makes `accessibilityLabel` a required prop rather than something each caller remembers.
 
   // Label on a compact filled action — smaller than `primaryText`, used where two buttons share a row.
   primaryTextCompact: {

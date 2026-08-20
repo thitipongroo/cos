@@ -151,7 +151,25 @@ export function NotificationSettings(): React.JSX.Element {
   const setType = (eventType: string, on: boolean): void =>
     persist(CHANNELS.map((channel) => ({ event_type: eventType, channel, is_enabled: on })));
 
-  const channelOn = (channel: Channel): boolean => types.some((ty) => isOn(ty.eventType, channel));
+  /**
+   * Is this channel on?
+   *
+   * ASKED ONLY OF THE TYPES THE SWITCH CAN TURN OFF (PO 2026-08-20). `setChannel` writes to
+   * `!type.locked` types, so reading the locked one back made the switch answer a different question
+   * from the one it acts on: for the four roles that carry the §19.6 safety type — EXECUTIVE,
+   * PROJECT_MANAGER, SITE_ENGINEER, SAFETY_OFFICER — turning a channel off saved correctly and then
+   * SNAPPED THE SWITCH BACK ON, because the locked type is still enabled and always will be.
+   *
+   * The preference had saved; the control was lying about the outcome. A control the user operates
+   * and watches revert is one they stop believing, which on a notification screen means they stop
+   * believing the rest of it too.
+   *
+   * What still arrives on a channel showing "off" is the critical safety notification, which §19.6
+   * says cannot be disabled — and the group row below already carries a padlock chip saying exactly
+   * that, so the screen states it rather than hiding it.
+   */
+  const channelOn = (channel: Channel): boolean =>
+    types.filter((ty) => !ty.locked).some((ty) => isOn(ty.eventType, channel));
   const typeOn = (eventType: string): boolean => CHANNELS.some((c) => isOn(eventType, c));
 
   /** The app's switch colours (AccountSettings / system-settings use the same pair). */

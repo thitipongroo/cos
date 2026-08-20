@@ -131,20 +131,54 @@ describe('NotificationSettings', () => {
     expect(updates.every((u) => u.is_enabled === false)).toBe(true);
   });
 
-  // FOR THE PRODUCT OWNER, recorded rather than decided. `channelOn` is "any type is on for this
-  // channel", and it reads ALL types including the locked one — whose flag defaults to ON and which
-  // the switch above never writes. So switching a channel off mutes every type it can and the
-  // switch stays ON. That is arguably honest (safety mail still goes out on that channel) and
-  // arguably broken (a control that does not move when pressed). This pins TODAY's behaviour so the
-  // question is visible; it is not an endorsement of either reading.
-  it('leaves the channel switch on afterwards, because safety cannot be muted', async () => {
+  // ANSWERED BY THE PRODUCT OWNER, 2026-08-20: the switch reflects only what it can control.
+  //
+  // `channelOn` used to read ALL types including the locked §19.6 safety one — whose flag defaults to
+  // ON and which `setChannel` never writes. So on the four roles that carry it (EXECUTIVE,
+  // PROJECT_MANAGER, SITE_ENGINEER, SAFETY_OFFICER) switching a channel off SAVED CORRECTLY and then
+  // snapped the switch straight back on. The preference was right; the control was lying about the
+  // outcome — and a control someone operates and watches revert is one they stop believing, which on
+  // this screen means they stop believing the rest of it too.
+  //
+  // What still arrives on a channel reading "off" is the critical safety notification, which §19.6
+  // says cannot be disabled. The screen does not hide that: the group row carries a padlock.
+  it('turns the channel switch off, and leaves it off', async () => {
     const { getByTestId } = await renderSection();
 
     await waitFor(() => expect(getByTestId('notification-channel-EMAIL')).toBeTruthy());
     await fireEvent(getByTestId('notification-channel-EMAIL'), 'valueChange', false);
 
     await waitFor(() => expect(api.updateNotificationPreferences).toHaveBeenCalledTimes(1));
-    expect(getByTestId('notification-channel-EMAIL').props.value).toBe(true);
+    expect(getByTestId('notification-channel-EMAIL').props.value).toBe(false);
+  });
+
+  // The locked type is UNAFFECTED — the switch neither writes it nor pretends to. §19.6 is a rule
+  // about what the platform sends, not about what this control claims.
+  it('never writes the locked safety type when a channel is switched off', async () => {
+    const { getByTestId } = await renderSection();
+
+    await waitFor(() => expect(getByTestId('notification-channel-EMAIL')).toBeTruthy());
+    await fireEvent(getByTestId('notification-channel-EMAIL'), 'valueChange', false);
+
+    await waitFor(() => expect(api.updateNotificationPreferences).toHaveBeenCalledTimes(1));
+    const written = api.updateNotificationPreferences.mock.calls[0][0] as Array<{
+      event_type: string;
+    }>;
+    expect(written.map((u) => u.event_type)).not.toContain(LOCKED[0]);
+  });
+
+  // And it comes back ON when the channel is switched on again — the round trip is what proves the
+  // switch is reading the same set it writes, rather than agreeing by accident in one direction.
+  it('turns back on again', async () => {
+    const { getByTestId } = await renderSection();
+
+    await waitFor(() => expect(getByTestId('notification-channel-EMAIL')).toBeTruthy());
+    await fireEvent(getByTestId('notification-channel-EMAIL'), 'valueChange', false);
+    await waitFor(() => expect(getByTestId('notification-channel-EMAIL').props.value).toBe(false));
+
+    await fireEvent(getByTestId('notification-channel-EMAIL'), 'valueChange', true);
+
+    await waitFor(() => expect(getByTestId('notification-channel-EMAIL').props.value).toBe(true));
   });
 
   // The other bulk control: one type, every channel.

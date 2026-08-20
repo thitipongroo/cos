@@ -32,8 +32,11 @@ const SRC = join(__dirname, '..', '..');
  * (`borderRadius: 40`, half of an 80px circle); the four copies became one in
  * `screenStyles.darkScreen`. 24 -> 23 the same day: the pinned-dark FAB's `borderRadius: 28` (half
  * of 56 — the circle rule) was written out in both users.tsx and TenantAdminHome.tsx, and is now
- * `darkScreen.fab`. Lower this when literals are removed; never raise it. */
-const CEILING = 23;
+ * `darkScreen.fab`. 23 -> 22 the same day: `darkScreen.fab` itself is GONE (PO decision) — the two
+ * screens that drew it now use the shared <Fab />, whose `screenChrome.fab` reaches the same circle
+ * through the `999` capsule marker rather than a literal half-of-56. Lower this when literals are
+ * removed; never raise it. */
+const CEILING = 22;
 
 function sourceFiles(dir: string): string[] {
   const out: string[] = [];
