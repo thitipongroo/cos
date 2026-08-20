@@ -260,6 +260,12 @@ const config: Config = {
   // asserts first that both are dead when EXPO_PUBLIC_E2E is not set:
   //   statements 88.81  branches 80.14  functions 84.31  lines 90.26
   //
+  // DEPTH PASS 7 — the last four: leads, finance, invoices and PmHome. PmHome is where the rule
+  // "a failed load and an empty portfolio must not read the same" was learned: the first version
+  // swallowed the failure and the list captioned it "you are not a member of any project yet", and
+  // the very first capture of this screen photographed that for a manager with three:
+  //   statements 89.39  branches 81.56  functions 85.26  lines 90.87
+  //
   // Counted separately from the logic suite rather than merged with it: the two instrument
   // differently (ts-jest vs babel-jest) and merging their reports made files the logic suite covers
   // fully report as low as 80%.
@@ -267,9 +273,9 @@ const config: Config = {
   collectCoverageFrom: ['src/components/**/*.tsx', 'src/app/**/*.tsx'],
   coverageThreshold: {
     global: {
-      statements: 88,
-      branches: 80,
-      functions: 84,
+      statements: 89,
+      branches: 81,
+      functions: 85,
       lines: 90,
     },
   },
