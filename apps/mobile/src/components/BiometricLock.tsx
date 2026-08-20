@@ -59,6 +59,10 @@ export function BiometricLock() {
         style={[styles.primary, { backgroundColor: p.primary }]}
         disabled={busy}
         onPress={() => void prompt()}
+        accessibilityRole="button"
+        accessibilityLabel={t('profile.biometric.unlockAction')}
+        // `busy` is the prompt already being on screen — the control genuinely cannot act again.
+        accessibilityState={{ disabled: busy }}
       >
         <Text style={[styles.primaryText, { color: p.onPrimary }]}>
           {t('profile.biometric.unlockAction')}
@@ -70,6 +74,8 @@ export function BiometricLock() {
         testID="biometric-lock-signout"
         style={styles.secondary}
         onPress={() => void logout()}
+        accessibilityRole="button"
+        accessibilityLabel={t('profile.biometric.signOut')}
       >
         <Text style={[styles.secondaryText, { color: p.muted }]}>
           {t('profile.biometric.signOut')}

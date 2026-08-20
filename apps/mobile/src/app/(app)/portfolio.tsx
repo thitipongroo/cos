@@ -45,7 +45,15 @@ const PortfolioItem = memo(function PortfolioItem({
   t: TranslateFn;
 }) {
   return (
-    <TouchableOpacity testID="portfolio-item" style={screen.item} onPress={() => onOpen(project)}>
+    <TouchableOpacity
+      testID="portfolio-item"
+      style={screen.item}
+      onPress={() => onOpen(project)}
+      accessibilityRole="button"
+      // The row announces the project it opens, not "button" — the name is what distinguishes it
+      // from the twenty others in the list.
+      accessibilityLabel={project.projectName}
+    >
       <Text style={screen.itemTitle}>{project.projectName}</Text>
       <View style={styles.chips}>
         <StatusChip label={project.status} />
@@ -120,7 +128,12 @@ export default function PortfolioScreen() {
             <Text style={screen.empty}>{t('exec.portfolio.noHealth')}</Text>
           )}
         </LoadingBoundary>
-        <TouchableOpacity testID="portfolio-back" onPress={() => setSelected(null)}>
+        <TouchableOpacity
+          testID="portfolio-back"
+          onPress={() => setSelected(null)}
+          accessibilityRole="button"
+          accessibilityLabel={t('common.back')}
+        >
           <Text style={styles.back}>{t('common.back')}</Text>
         </TouchableOpacity>
       </View>

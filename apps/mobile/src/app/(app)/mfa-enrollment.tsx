@@ -146,6 +146,8 @@ export default function MfaEnrollmentScreen(): React.JSX.Element {
             testID="mfa-success-dashboard"
             style={styles.primaryButton}
             onPress={() => router.replace('/dashboard')}
+            accessibilityRole="button"
+            accessibilityLabel={t('mfa.success.done')}
           >
             <Text style={styles.primaryButtonText}>{t('mfa.success.done')}</Text>
             <MaterialIcons name="arrow-forward" size={20} color={darkColors.onPrimary} />
@@ -154,6 +156,8 @@ export default function MfaEnrollmentScreen(): React.JSX.Element {
             testID="mfa-success-security"
             style={styles.secondaryButton}
             onPress={() => router.push('/mfa-enrollment?action=recovery')}
+            accessibilityRole="button"
+            accessibilityLabel={t('mfa.success.viewSecurity')}
           >
             <Text style={styles.secondaryButtonText}>{t('mfa.success.viewSecurity')}</Text>
           </Pressable>
@@ -212,6 +216,8 @@ export default function MfaEnrollmentScreen(): React.JSX.Element {
             testID="mfa-downloaded-back"
             style={styles.primaryButton}
             onPress={() => router.back()}
+            accessibilityRole="button"
+            accessibilityLabel={t('mfa.downloaded.returnSecurity')}
           >
             <Text style={styles.primaryButtonText}>{t('mfa.downloaded.returnSecurity')}</Text>
             <MaterialIcons name="arrow-forward" size={20} color={darkColors.onPrimary} />
@@ -220,6 +226,8 @@ export default function MfaEnrollmentScreen(): React.JSX.Element {
             testID="mfa-downloaded-dashboard"
             style={styles.secondaryButton}
             onPress={() => router.replace('/dashboard')}
+            accessibilityRole="button"
+            accessibilityLabel={t('mfa.downloaded.goDashboard')}
           >
             <Text style={styles.secondaryButtonText}>{t('mfa.downloaded.goDashboard')}</Text>
           </Pressable>
@@ -269,6 +277,11 @@ export default function MfaEnrollmentScreen(): React.JSX.Element {
           style={[styles.primaryButton, (!request || busy) && styles.buttonDisabled]}
           disabled={!request || busy}
           onPress={onEnroll}
+          accessibilityRole="button"
+          accessibilityLabel={introCta}
+          // Off until the enrolment request has arrived, and while one is in flight — the button
+          // shows a micro loader then, which is a picture a screen reader cannot read.
+          accessibilityState={{ disabled: !request || busy, busy }}
         >
           {busy ? (
             <LoadingState variant="micro" theme="dark" tone="onPrimary" />

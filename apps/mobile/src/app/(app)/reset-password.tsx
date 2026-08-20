@@ -34,7 +34,7 @@ import {
 import { formatRole } from '../../lib/formatRole';
 import { shortId } from '../../lib/shortId';
 import { darkScreen } from '../../theme/screenStyles';
-import { initialsFirstTwo as initials } from '../../lib/initials';
+import { initialsOf as initials } from '../../lib/initials';
 
 export default function ResetPasswordScreen(): React.JSX.Element {
   const t = useT();
@@ -108,7 +108,11 @@ export default function ResetPasswordScreen(): React.JSX.Element {
               <Image source={{ uri: photo }} style={styles.avatar} />
             ) : (
               <View style={[styles.avatar, styles.avatarFallback]}>
-                <Text style={styles.avatarText}>{initials(name)}</Text>
+                {initials(name) === '' ? (
+                  <MaterialIcons name="person" size={32} color={darkColors.muted} />
+                ) : (
+                  <Text style={styles.avatarText}>{initials(name)}</Text>
+                )}
               </View>
             )}
             <View

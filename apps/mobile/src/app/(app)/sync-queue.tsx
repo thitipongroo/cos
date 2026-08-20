@@ -184,6 +184,11 @@ export default function SyncQueueScreen(): React.JSX.Element {
               style={[styles.chip, filter === f && styles.chipActive]}
               onPress={() => setFilter(f)}
               testID={`sync-filter-${f}`}
+              // One filter is in force at a time — a radio group, the same shape tasks.tsx and the
+              // list screens use. The dot beside the word is a colour only, so the label is the word.
+              accessibilityRole="radio"
+              accessibilityState={{ selected: filter === f }}
+              accessibilityLabel={f === 'ALL' ? t('syncQueue.filterAll') : t(TYPE_LABEL_KEY[f])}
             >
               {f !== 'ALL' ? (
                 <View style={[styles.chipDot, { backgroundColor: TYPE_COLOR[f] }]} />
@@ -279,6 +284,10 @@ export default function SyncQueueScreen(): React.JSX.Element {
                         style={styles.reviewBtn}
                         onPress={() => setOpenId(open ? null : r.conflict_id)}
                         testID={`review-${r.conflict_id}`}
+                        accessibilityRole="button"
+                        accessibilityLabel={t('syncQueue.review')}
+                        // The tap unfolds the diff in place rather than navigating.
+                        accessibilityState={{ expanded: open }}
                       >
                         <MaterialIcons name="difference" size={18} color={darkColors.onPrimary} />
                         <Text style={styles.reviewText}>{t('syncQueue.review')}</Text>
@@ -288,6 +297,10 @@ export default function SyncQueueScreen(): React.JSX.Element {
                         disabled={!isOnline}
                         onPress={() => onResolve(r.conflict_id)}
                         testID={`resolve-${r.conflict_id}`}
+                        accessibilityRole="button"
+                        accessibilityLabel={t('syncQueue.resolve')}
+                        // Resolving writes to the server, so offline it genuinely cannot act.
+                        accessibilityState={{ disabled: !isOnline }}
                       >
                         <MaterialIcons name="check" size={18} color={darkColors.success} />
                         <Text style={styles.resolveText}>{t('syncQueue.resolve')}</Text>

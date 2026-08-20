@@ -29,7 +29,7 @@ import {
 import { formatNationalPhone } from '@cos/ui-logic';
 import { shortId } from '../../lib/shortId';
 import { darkScreen } from '../../theme/screenStyles';
-import { initialsFirstTwo as initials } from '../../lib/initials';
+import { initialsOf as initials } from '../../lib/initials';
 
 function formatRole(role: string): string {
   return role
@@ -116,7 +116,11 @@ export default function UserProfileScreen(): React.JSX.Element {
               <Image source={{ uri: photo }} style={styles.avatar} />
             ) : (
               <View style={[styles.avatar, styles.avatarFallback]}>
-                <Text style={styles.avatarText}>{initials(name)}</Text>
+                {initials(name) === '' ? (
+                  <MaterialIcons name="person" size={48} color={darkColors.muted} />
+                ) : (
+                  <Text style={styles.avatarText}>{initials(name)}</Text>
+                )}
               </View>
             )}
             <View

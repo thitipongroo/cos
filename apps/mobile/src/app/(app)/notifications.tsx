@@ -29,7 +29,7 @@ import {
   type Notification,
 } from '../../api/notifications';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
-import { useI18n } from '../../i18n';
+import { useI18n, type TranslateFn } from '../../i18n';
 import {
   darkColors,
   fontFamily,
@@ -51,11 +51,15 @@ const NotificationRow = memo(function NotificationRow({
   onRead,
   styles,
   formatDate,
+  t,
 }: {
   notification: Notification;
   onRead: (n: Notification) => void;
   styles: NotificationStyles;
   formatDate: (date: Date | string) => string;
+  // Passed in rather than read from context, for the same reason `formatDate` is: both are
+  // useCallback([locale]) on the provider, so they are stable and the row's memo still holds.
+  t: TranslateFn;
 }) {
   const isUnread = notification.read_at === null;
   return (
@@ -63,6 +67,13 @@ const NotificationRow = memo(function NotificationRow({
       testID={`notification-${notification.notification_id}`}
       style={[styles.row, isUnread && styles.rowUnread]}
       onPress={() => onRead(notification)}
+      accessibilityRole="button"
+      // Unread is drawn as a dot, which a screen reader cannot see, so it goes in the words. RN has
+      // no `unread` accessibility state and `selected` would mean something else, so the label
+      // carries it — one key per case rather than a prefix glued on, so Thai can order it its way.
+      accessibilityLabel={t(isUnread ? 'notifications.itemUnread' : 'notifications.itemRead', {
+        subject: notification.subject ?? notification.event_type,
+      })}
     >
       {isUnread ? <View testID="unread-dot" style={styles.dot} /> : null}
       <View style={styles.rowBody}>
@@ -123,9 +134,10 @@ export default function NotificationsScreen() {
         onRead={onRead}
         styles={styles}
         formatDate={formatDate}
+        t={t}
       />
     ),
-    [onRead, formatDate],
+    [onRead, formatDate, t],
   );
 
   const onReadAll = async (): Promise<void> => {
@@ -143,7 +155,13 @@ export default function NotificationsScreen() {
     <View testID="notifications-screen" style={styles.container}>
       <View style={styles.header}>
         {unread > 0 ? (
-          <TouchableOpacity testID="mark-all-read" style={styles.readAll} onPress={onReadAll}>
+          <TouchableOpacity
+            testID="mark-all-read"
+            style={styles.readAll}
+            onPress={onReadAll}
+            accessibilityRole="button"
+            accessibilityLabel={t('notifications.markAllRead')}
+          >
             <Text style={styles.readAllText}>{t('notifications.markAllRead')}</Text>
           </TouchableOpacity>
         ) : null}

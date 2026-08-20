@@ -98,7 +98,40 @@ const config: Config = {
     '<rootDir>/jest.render.setup.ts',
   ],
 
+  // ── Coverage: a RATCHET over src/components and src/app ────────────────────
+  //
+  // The logic suite (jest.config.ts) holds 100% lines and branches, but only over the directories
+  // it names — sync, store, lib, i18n, two api modules and four hooks. src/components and src/app,
+  // which are 145 files and most of the product, sat outside every coverage gate until this.
+  //
+  // 100% IS NOT THE LINE HERE, and pretending it is would only mean deleting the gate on the first
+  // red build. These floors are what the render specs actually reach, rounded down to the whole
+  // percent. Same shape as the repo's jscpd and a11y ratchets: RAISE them in the change that adds
+  // the specs. Never lower one to make a build pass — a screen that lost its test is the thing this
+  // exists to catch.
+  //
+  // 2026-08-20, 25 specs, at the moment these directories entered a coverage gate at all:
+  //   statements 27.75  branches 21.15  functions 24.93  lines 28.66
+  // Same day, 29 specs — users, sync-queue, incidents and login, the four largest screens with no
+  // test, three of which had just had behaviour changed under them (the avatar fallback, the
+  // severity picker, the shared FAB):
+  //   statements 33.33  branches 27.33  functions 29.97  lines 34.25
+  //
+  // 84 of the 145 files are still at zero. That is the work this ratchet exists to pull along.
+  //
+  // Counted separately from the logic suite rather than merged with it: the two instrument
+  // differently (ts-jest vs babel-jest) and merging their reports made files the logic suite covers
+  // fully report as low as 80%.
   collectCoverage: false,
+  collectCoverageFrom: ['src/components/**/*.tsx', 'src/app/**/*.tsx'],
+  coverageThreshold: {
+    global: {
+      statements: 33,
+      branches: 27,
+      functions: 29,
+      lines: 34,
+    },
+  },
 };
 
 export default config;

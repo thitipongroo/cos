@@ -119,6 +119,10 @@ export default function MaterialRequestScreen() {
               testID={`item-${i}-remove`}
               style={styles.remove}
               onPress={() => setDrafts((prev) => prev.filter((_, j) => j !== i))}
+              accessibilityRole="button"
+              // Numbered, because a form with four identical "Remove" buttons tells a screen-reader
+              // user nothing about which line they are about to delete.
+              accessibilityLabel={t('materialRequest.removeItemAt', { number: i + 1 })}
             >
               <Text style={styles.removeText}>{t('materialRequest.removeItem')}</Text>
             </TouchableOpacity>
@@ -130,6 +134,8 @@ export default function MaterialRequestScreen() {
         testID="add-item"
         style={styles.addItem}
         onPress={() => setDrafts((prev) => [...prev, { ...EMPTY_ITEM }])}
+        accessibilityRole="button"
+        accessibilityLabel={t('materialRequest.addItem')}
       >
         <MaterialIcons name="add" size={18} color={darkColors.primary} />
         <Text style={styles.addItemText}>{t('materialRequest.addItem')}</Text>
@@ -150,6 +156,10 @@ export default function MaterialRequestScreen() {
         style={[styles.submit, !canSubmit && styles.disabled]}
         onPress={onSubmit}
         disabled={!canSubmit}
+        accessibilityRole="button"
+        accessibilityLabel={t('materialRequest.submit')}
+        // Off until the form holds a project and at least one complete line.
+        accessibilityState={{ disabled: !canSubmit }}
       >
         <Text style={styles.submitText}>{t('materialRequest.submit')}</Text>
       </TouchableOpacity>

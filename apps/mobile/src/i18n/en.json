@@ -11,11 +11,13 @@
     },
     "project": {
       "label": "Project",
-      "empty": "No projects cached — connect once to load"
+      "empty": "No projects cached — connect once to load",
+      "option": "Project {code}"
     },
     "loadingLabel": "Loading…",
     "comingSoon": "Not available yet.",
-    "onlineOnly": "This action needs a connection — it cannot be saved offline."
+    "onlineOnly": "This action needs a connection — it cannot be saved offline.",
+    "close": "Close"
   },
   "nav": {
     "tabs": {
@@ -1296,6 +1298,39 @@
     "title": "Notifications",
     "markAllRead": "Mark all read",
     "empty": "No notifications",
+    "settings": {
+      "channelsLabel": "Delivery channels",
+      "typesLabel": "Notification types",
+      "channels": {
+        "IN_APP": "In-app",
+        "EMAIL": "Email",
+        "LINE": "LINE"
+      },
+      "channelDesc": {
+        "IN_APP": "Alerts inside the app",
+        "EMAIL": "Alerts sent to your email",
+        "LINE": "Alerts sent over LINE"
+      },
+      "groups": {
+        "immediate": "Immediate",
+        "digest": "Daily & weekly digest",
+        "escalation": "Escalation"
+      },
+      "groupDesc": {
+        "IMMEDIATE": "Sent the moment the event happens.",
+        "DIGEST": "Batched into a scheduled summary.",
+        "ESCALATION": "Sent when an alert goes unacknowledged."
+      },
+      "alwaysOn": "Always on",
+      "quietLabel": "Quiet hours",
+      "quietWindow": "Mute notifications automatically",
+      "quietStart": "Start",
+      "quietEnd": "End",
+      "quietExempt": "* Critical safety notifications are always delivered.",
+      "saveFailed": "Could not save your notification settings. Check your connection and try again."
+    },
+    "itemUnread": "Unread: {subject}",
+    "itemRead": "{subject}",
     "preferences": {
       "title": "Notification Settings",
       "subtitle": "Tenant Admin control panel",
@@ -1346,37 +1381,6 @@
         "justNow": "Just now",
         "back": "Back"
       }
-    },
-    "settings": {
-      "channelsLabel": "Delivery channels",
-      "typesLabel": "Notification types",
-      "channels": {
-        "IN_APP": "In-app",
-        "EMAIL": "Email",
-        "LINE": "LINE"
-      },
-      "channelDesc": {
-        "IN_APP": "Alerts inside the app",
-        "EMAIL": "Alerts sent to your email",
-        "LINE": "Alerts sent over LINE"
-      },
-      "groups": {
-        "immediate": "Immediate",
-        "digest": "Daily & weekly digest",
-        "escalation": "Escalation"
-      },
-      "groupDesc": {
-        "IMMEDIATE": "Sent the moment the event happens.",
-        "DIGEST": "Batched into a scheduled summary.",
-        "ESCALATION": "Sent when an alert goes unacknowledged."
-      },
-      "alwaysOn": "Always on",
-      "quietLabel": "Quiet hours",
-      "quietWindow": "Mute notifications automatically",
-      "quietStart": "Start",
-      "quietEnd": "End",
-      "quietExempt": "* Critical safety notifications are always delivered.",
-      "saveFailed": "Could not save your notification settings. Check your connection and try again."
     }
   },
   "drawer": {
@@ -1450,7 +1454,8 @@
     "submit": "Send request",
     "created": "Request sent",
     "queued": "Saved — will send when online",
-    "error": "Could not send the request"
+    "error": "Could not send the request",
+    "removeItemAt": "Remove item {number}"
   },
   "profile": {
     "main": {
@@ -1906,7 +1911,8 @@
     "savedTitle": "Permissions updated",
     "savedBody": "The user's roles have been saved.",
     "errorTitle": "Couldn't save",
-    "errorBody": "Please try again."
+    "errorBody": "Please try again.",
+    "primaryRoleIs": "Primary role: {role}"
   },
   "permissionSuccess": {
     "heading": "Permissions saved",

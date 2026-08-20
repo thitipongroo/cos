@@ -11,6 +11,7 @@
     "test": "jest",
     "test:cov": "jest --coverage",
     "test:render": "jest --config jest.render.config.ts",
+    "test:render:cov": "jest --config jest.render.config.ts --coverage",
     "test:e2e": "detox test --configuration ios.sim.release",
     "test:e2e:android": "detox test --configuration android.emu.release",
     "build:e2e:ios": "detox build --configuration ios.sim.release",

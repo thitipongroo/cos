@@ -52,7 +52,13 @@ const OptimisticRow = memo(function OptimisticRow<T>({
     <View style={[styles.row, pending && styles.pending]}>
       <View style={styles.content}>{renderItem(item)}</View>
       {failed && onRetry ? (
-        <TouchableOpacity style={styles.retry} onPress={() => onRetry(item)}>
+        <TouchableOpacity
+          style={styles.retry}
+          onPress={() => onRetry(item)}
+          accessibilityRole="button"
+          // The caller supplies the word; it is already an i18n string on its side (QM-3).
+          accessibilityLabel={retryLabel}
+        >
           <Text style={styles.retryText}>{retryLabel}</Text>
         </TouchableOpacity>
       ) : null}

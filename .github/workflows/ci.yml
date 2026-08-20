@@ -346,11 +346,11 @@ jobs:
       # ESLint uses the shared root config (same rules the pre-commit hook enforces on mobile).
       - name: ESLint — apps/mobile
         run: pnpm exec eslint apps/mobile/src
-      # React Native accessibility ratchet (spec §20.8). eslint-plugin-jsx-a11y covers apps/web
-      # only — its rules are DOM-shaped and never fire on <Pressable>/<TouchableOpacity>. This
-      # warns on the 24 files that already lack accessibility props and fails only when that
-      # number grows; see the header of the script for why it is a ratchet rather than a gate.
-      - name: React Native a11y ratchet — apps/mobile
+      # React Native accessibility gate (spec §20.8). eslint-plugin-jsx-a11y covers apps/web only —
+      # its rules are DOM-shaped and never fire on <Pressable>/<TouchableOpacity>. It began as a
+      # ratchet over 24 unlabelled files; the baseline reached 0 on 2026-08-20, so it now fails on
+      # the first file that ships a tappable element with no accessibility prop.
+      - name: React Native a11y gate — apps/mobile
         run: scripts/a11y/check-rn-a11y.sh
       - name: Type-check — apps/mobile
         working-directory: apps/mobile
@@ -363,9 +363,14 @@ jobs:
       # above deliberately excludes. Run as a SEPARATE command rather than a second jest project:
       # the two instrument differently (ts-jest vs babel-jest) and merging their reports made files
       # the logic suite covers fully report as low as 80%.
-      - name: Render tests — apps/mobile
+      #
+      # `test:render:cov` since 2026-08-20: these 145 files were outside every coverage gate, so the
+      # render config now carries a RATCHET over them — the floors are what the specs actually
+      # reach, and they are raised in the change that adds specs. 100% is not the line here; see the
+      # note in jest.render.config.ts for why.
+      - name: Render tests + coverage ratchet — apps/mobile
         working-directory: apps/mobile
-        run: pnpm run test:render
+        run: pnpm run test:render:cov
 
   # ─── Step 3c: Go Worker Tests ───────────────────────────────────────────────
   # These suites existed but nothing ran them: CI's only `pytest`/`go test` invocation was
@@ -886,6 +891,109 @@ jobs:
         with:
           name: playwright-report
           path: tests/e2e/playwright-report/
+
+  # ─── Step 8b: Mobile E2E (Detox, staging only) ──────────────────────────────
+  # apps/mobile/e2e/ held five Detox specs that NO workflow ran — the `e2e-tests` job above is
+  # Playwright against apps/web. Added 2026-08-20 (PO asked for it).
+  #
+  # STAGING ONLY, for the same reason the Playwright job is: these specs log a seeded worker in
+  # over Path A (phone + a fixed test OTP), read the sync queue, and drive a real conflict — they
+  # need a live API with fixture data, not a mock. Same gate as ADR-020 / §30.5: staging deploys,
+  # E2E runs, and the result gates promotion to main.
+  #
+  # ANDROID ONLY. iOS Detox needs a macOS runner (10x the minutes) for the same three specs; the
+  # emulator covers the behaviour under test — offline queueing, reconnect sync, conflict resolve —
+  # none of which is platform-specific. Add an ios.sim.release matrix leg if a bug ever turns out
+  # to be one.
+  #
+  # THREE SPECS, NOT FIVE. capture.spec.ts and benchmark.spec.ts say in their own headers that they
+  # are not functional tests — one writes screenshots into docs/screens/, the other runs the §17.10
+  # G1/G2 harness. Both are documented as "run explicitly" and are named here so their exclusion is
+  # a decision rather than an oversight.
+  #
+  # `expo prebuild` runs because android/ is generated, not committed (.gitignore) — the APK cannot
+  # be built without it. EXPO_PUBLIC_E2E=1 is what arms `src/lib/e2e/networkOverride`, the app-level
+  # hook the specs toggle connectivity through; Detox has no cross-platform airplane mode.
+  #
+  # SECRETS THIS NEEDS, and none of them exist yet — create them before enabling:
+  #   STAGING_MOBILE_API_URL   e.g. https://staging.example/api/v1  (EXPO_PUBLIC_API_URL)
+  #   E2E_WORKER_PHONE         seeded SITE_WORKER, E.164
+  #   E2E_INSPECTOR_PHONE      seeded inspector, E.164
+  #   E2E_USER_A_PHONE         the sync-conflict fixture's first user
+  #   E2E_TEST_OTP             the fixed OTP the staging auth bypass accepts
+  #   E2E_API_TOKEN            bearer for the conflict fixture's direct API writes
+  #   E2E_TEST_TASK_ID         the task the conflict spec mutates
+  # Until they are set the job runs and fails at login, which is the honest failure — a skip would
+  # report green for a suite that never ran.
+  #
+  # NOT VERIFIED BY A RUN. This job has never executed; it is written from the Detox config, the
+  # specs' own env usage, and the existing mobile job. Expect the first staging run to need
+  # adjustment (AVD name, Gradle memory, boot timeout) rather than to pass first time.
+  mobile-e2e-tests:
+    name: Mobile E2E (Detox — Android emulator)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    needs: [update-gitops]
+    if: github.ref == 'refs/heads/staging'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      # apps/mobile is its own pnpm workspace root (own pnpm-lock.yaml) — install standalone.
+      - name: Install mobile dependencies
+        working-directory: apps/mobile
+        run: pnpm install --frozen-lockfile
+      # android/ is generated by prebuild, not committed.
+      - name: Generate the Android project
+        working-directory: apps/mobile
+        env:
+          EXPO_PUBLIC_API_URL: ${{ secrets.STAGING_MOBILE_API_URL }}
+          EXPO_PUBLIC_E2E: '1'
+        run: pnpm exec expo prebuild --platform android --no-install
+      # The DEBUG variant, deliberately: Detox's instrumentation runtime is proguard-stripped from
+      # the release APK, so its ready handshake never completes there (see .detoxrc.js).
+      - name: Build the app and the test runner
+        working-directory: apps/mobile
+        env:
+          EXPO_PUBLIC_API_URL: ${{ secrets.STAGING_MOBILE_API_URL }}
+          EXPO_PUBLIC_E2E: '1'
+        run: pnpm exec detox build --configuration android.emu.debug
+      - name: Run Detox
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          # .detoxrc.js reads this; it must name the AVD the action creates.
+          DETOX_AVD_NAME: test
+          E2E_API_URL: ${{ secrets.STAGING_MOBILE_API_URL }}
+          E2E_WORKER_PHONE: ${{ secrets.E2E_WORKER_PHONE }}
+          E2E_INSPECTOR_PHONE: ${{ secrets.E2E_INSPECTOR_PHONE }}
+          E2E_USER_A_PHONE: ${{ secrets.E2E_USER_A_PHONE }}
+          E2E_TEST_OTP: ${{ secrets.E2E_TEST_OTP }}
+          E2E_API_TOKEN: ${{ secrets.E2E_API_TOKEN }}
+          E2E_TEST_TASK_ID: ${{ secrets.E2E_TEST_TASK_ID }}
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          avd-name: test
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          working-directory: apps/mobile
+          script: >-
+            pnpm exec detox test --configuration android.emu.debug --headless --record-logs failing
+            e2e/offline-checkin.spec.ts e2e/offline-inspection.spec.ts e2e/sync-conflict.spec.ts
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: detox-artifacts
+          path: apps/mobile/artifacts/
 
   # ─── Step 9: Load Tests — MOVED to .github/workflows/load-tests.yml ─────────
   # Spec §30.9 + §30.12: load tests run weekly on staging, NOT per-deploy.

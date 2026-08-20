@@ -224,6 +224,11 @@ function ToolButton({
       testID={testID}
       disabled={disabled}
       onPress={onPress}
+      accessibilityRole="button"
+      // The label is already the visible word, and the caller passes it through i18n. `selected`
+      // carries the pen tool's on/off state, which is otherwise only a colour.
+      accessibilityLabel={label}
+      accessibilityState={{ disabled: disabled === true, selected: active === true }}
       style={{
         minHeight: 44,
         paddingHorizontal: spacing.md,

@@ -6,11 +6,21 @@
 # maintained React Native equivalent, so this script is the substitute: any file that renders a
 # tappable element must set at least one accessibility prop on something.
 #
-# RATCHET, NOT A CLEAN GATE. 24 of the 50 files with tappable elements had no accessibility props
-# at all (measured 2026-08-03). Failing on all 24 then would only have meant disabling the check, so
-# the baseline below is the line: the remainder are reported as warnings, and the build fails only
-# if the number grows. Lower BASELINE in the same PR that fixes a file — that is what makes the
-# number fall instead of drift.
+# THE BASELINE REACHED ZERO ON 2026-08-20, so this is now a clean gate: every file with a tappable
+# element carries at least one accessibility prop, and the next one that does not fails the build.
+# It began as a ratchet because 24 of the 50 such files had none (measured 2026-08-03) and failing
+# on all 24 then would only have meant disabling the check. BASELINE stays in the script rather than
+# becoming a bare `if n > 0` so the history below keeps its meaning and so a future bulk import has
+# somewhere to record a temporary line rather than deleting the gate.
+#
+# 10 -> 0 on 2026-08-20 (PO asked for the remainder). The last ten were labelled by what each
+# control IS, not "button": the project chips and the sync-queue filters became radio groups, the
+# additional-role chips checkboxes (they are independent of one another, which is what separates
+# them from the primary-role picker on the same screen), and every control that genuinely cannot act
+# — resolve while offline, save with nothing changed, enrol before the request lands — carries
+# `disabled`, with `busy` where a micro loader replaces the label. The notification row's unread dot
+# is a colour a screen reader cannot see, so it moved into the words, one i18n key per case so Thai
+# can order it its own way.
 #
 # 19 → 10 on 2026-08-19, in two parts. FOUR of them were already fixed by earlier work that never
 # lowered this number — verified by running the check against 20e4ce40, which reports the same 15
@@ -40,9 +50,9 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
-# Number of files with tappable elements but no accessibility prop, as of 2026-08-19.
-# This may only ever be lowered.
-BASELINE=10
+# Number of files with tappable elements but no accessibility prop, as of 2026-08-20.
+# This may only ever be lowered. It is 0 — the gate is clean.
+BASELINE=0
 
 python3 - "$ROOT" "$BASELINE" <<'PY'
 import pathlib
@@ -90,6 +100,10 @@ if n > baseline:
 
 if n < baseline:
     print(f'\n  ✓ Improved: {n} < baseline {baseline}. Lower BASELINE in check-rn-a11y.sh to {n}.')
+    sys.exit(0)
+
+if n == 0:
+    print(f'\n  ✓ PASSED: every file with a tappable element carries an accessibility prop.')
     sys.exit(0)
 
 print(f'\n  ⚠ WARNING: {n} files still have no accessibility props (at baseline, not failing).')

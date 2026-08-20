@@ -49,7 +49,7 @@ import {
 } from '../../theme/tokens';
 import { shortId } from '../../lib/shortId';
 import { darkScreen } from '../../theme/screenStyles';
-import { initialsFirstTwo as initials } from '../../lib/initials';
+import { initialsOf as initials } from '../../lib/initials';
 
 const AUDIT_DORMANT_DAYS = 30;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -301,7 +301,13 @@ export default function UsersScreen(): React.JSX.Element {
                     <Image source={{ uri: selected.photo_url }} style={styles.sheetAvatar} />
                   ) : (
                     <View style={styles.sheetAvatarFallback}>
-                      <Text style={styles.sheetAvatarText}>{initials(selected.display_name)}</Text>
+                      {initials(selected.display_name) === '' ? (
+                        <MaterialIcons name="person" size={26} color={darkColors.muted} />
+                      ) : (
+                        <Text style={styles.sheetAvatarText}>
+                          {initials(selected.display_name)}
+                        </Text>
+                      )}
                     </View>
                   )}
                   <View style={styles.sheetIdentity}>
@@ -433,9 +439,10 @@ function UserCard({
               <Image source={{ uri: u.photo_url }} style={styles.avatar} />
             ) : (
               <View style={styles.avatarFallback}>
-                {u.is_active ? (
+                {u.is_active && initials(u.display_name) !== '' ? (
                   <Text style={styles.avatarText}>{initials(u.display_name)}</Text>
                 ) : (
+                  // Half the 44px box, the ratio the directory and this card already drew.
                   <MaterialIcons name="person" size={22} color={darkColors.muted} />
                 )}
               </View>

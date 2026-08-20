@@ -72,6 +72,12 @@ export function ProjectPicker({
               <TouchableOpacity
                 key={p.projectId}
                 testID={`project-option-${p.projectId}`}
+                // A RADIO GROUP, not a row of buttons: exactly one project is selected and the
+                // others are the alternatives. The chip prints the project CODE, which a screen
+                // reader would spell out letter by letter, so the spoken label says what it is.
+                accessibilityRole="radio"
+                accessibilityState={{ selected: active }}
+                accessibilityLabel={t('common.project.option', { code: p.projectCode })}
                 style={[
                   styles.chip,
                   dark && styles.chipDark,

@@ -250,6 +250,11 @@ export default function EditPermissionScreen(): React.JSX.Element {
           style={styles.dropdown}
           onPress={() => setPickerOpen(true)}
           testID="primary-role"
+          // A closed picker, not a button that acts: it announces the role in force and that a tap
+          // opens the list of alternatives.
+          accessibilityRole="button"
+          accessibilityLabel={t('editPermission.primaryRoleIs', { role: formatRole(primary) })}
+          accessibilityState={{ expanded: pickerOpen }}
         >
           <Text style={styles.dropdownText}>{formatRole(primary)}</Text>
           <MaterialIcons name="expand-more" size={22} color={darkColors.muted} />
@@ -266,6 +271,11 @@ export default function EditPermissionScreen(): React.JSX.Element {
                 style={[styles.chip, on && styles.chipOn]}
                 onPress={() => toggleAdditional(r)}
                 testID={`add-role-${r}`}
+                // Additional roles are independent of one another — a checkbox each, not a radio
+                // group, which is the difference from the primary-role picker above.
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: on }}
+                accessibilityLabel={formatRole(r)}
               >
                 {on ? <MaterialIcons name="check" size={14} color={darkColors.onPrimary} /> : null}
                 <Text style={[darkScreen.chipText, on && styles.chipTextOn]}>{formatRole(r)}</Text>
@@ -277,7 +287,12 @@ export default function EditPermissionScreen(): React.JSX.Element {
         {/* Effective (union) module permissions — read-only reflection */}
         <View style={styles.matrixHead}>
           <Text style={styles.sectionLabel}>{t('editPermission.modules')}</Text>
-          <Pressable onPress={resetAll} testID="reset-all">
+          <Pressable
+            onPress={resetAll}
+            testID="reset-all"
+            accessibilityRole="button"
+            accessibilityLabel={t('editPermission.resetAll')}
+          >
             <Text style={styles.resetText}>{t('editPermission.resetAll')}</Text>
           </Pressable>
         </View>
@@ -314,6 +329,11 @@ export default function EditPermissionScreen(): React.JSX.Element {
           onPress={onSave}
           disabled={!dirty || saving}
           testID="save-roles"
+          accessibilityRole="button"
+          accessibilityLabel={t('editPermission.save')}
+          // Off until something has changed, and while the write is in flight — where the button
+          // shows a micro loader, which is a picture a screen reader cannot read.
+          accessibilityState={{ disabled: !dirty || saving, busy: saving }}
         >
           {saving ? (
             <LoadingState variant="micro" theme="dark" tone="onPrimary" />
@@ -324,7 +344,13 @@ export default function EditPermissionScreen(): React.JSX.Element {
             </>
           )}
         </Pressable>
-        <Pressable style={styles.cancelBtn} onPress={() => router.back()} testID="cancel-roles">
+        <Pressable
+          style={styles.cancelBtn}
+          onPress={() => router.back()}
+          testID="cancel-roles"
+          accessibilityRole="button"
+          accessibilityLabel={t('editPermission.cancel')}
+        >
           <Text style={styles.cancelText}>{t('editPermission.cancel')}</Text>
         </Pressable>
       </View>
@@ -336,8 +362,16 @@ export default function EditPermissionScreen(): React.JSX.Element {
         animationType="slide"
         onRequestClose={() => setPickerOpen(false)}
       >
-        <Pressable style={styles.backdrop} onPress={() => setPickerOpen(false)}>
-          <Pressable style={styles.sheet} onPress={() => {}}>
+        {/* The backdrop dismisses; the sheet swallows the tap so a press inside does not close it.
+            The backdrop is labelled because on a screen reader it is the only way out of the sheet
+            other than the system back gesture; the sheet itself is not a control and says so. */}
+        <Pressable
+          style={styles.backdrop}
+          onPress={() => setPickerOpen(false)}
+          accessibilityRole="button"
+          accessibilityLabel={t('common.close')}
+        >
+          <Pressable style={styles.sheet} onPress={() => {}} accessible={false}>
             <View style={styles.sheetHandle} />
             <Text style={styles.sheetTitle}>{t('editPermission.selectPrimary')}</Text>
             <ScrollView style={styles.sheetList}>
@@ -347,6 +381,11 @@ export default function EditPermissionScreen(): React.JSX.Element {
                   style={styles.sheetRow}
                   onPress={() => choosePrimary(r)}
                   testID={`pick-primary-${r}`}
+                  // Exactly one primary role — a radio group, and the tick beside the row is the
+                  // selected one.
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: r === primary }}
+                  accessibilityLabel={formatRole(r)}
                 >
                   <Text style={styles.sheetRowText}>{formatRole(r)}</Text>
                   {r === primary ? (
