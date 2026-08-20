@@ -210,6 +210,7 @@ const config: Config = {
   //                        There is no behaviour to assert that is not "it drew some lines".
   //
   // So the remaining climb is depth on the files already covered, not breadth.
+  // (That last sentence was false when written — see BREADTH WAS NOT DONE below.)
   //
   // DEPTH PASS, same day — 88 specs. ConflictBadge, QuickActionsMenu and PhotoCapture were the three
   // weakest by branch (25%, 25%, 29%) and each holds a rule worth the visit: a badge that reads zero
@@ -231,6 +232,13 @@ const config: Config = {
   // pinning:
   //   statements 81.88  branches 71.27  functions 75.63  lines 83.34
   //
+  // BREADTH WAS NOT DONE — the note above was wrong, and wrong because of the tool. The command used
+  // to rank the weakest files filtered `branch > 0`, which silently dropped every file that had
+  // never been rendered at all: the three role HOMES (TenantAdmin 2.6%, SafetyOfficer 4.7%,
+  // SiteEngineer 8.6%), QuickAddMenu 2.6%, VoiceCommandFab 14%, QuickActionCard 25%, and the
+  // pre-auth privacy policy at 0% branches. Seven specs later:
+  //   statements 86.79  branches 76.63  functions 81.31  lines 88.34
+  //
   // Counted separately from the logic suite rather than merged with it: the two instrument
   // differently (ts-jest vs babel-jest) and merging their reports made files the logic suite covers
   // fully report as low as 80%.
@@ -238,10 +246,10 @@ const config: Config = {
   collectCoverageFrom: ['src/components/**/*.tsx', 'src/app/**/*.tsx'],
   coverageThreshold: {
     global: {
-      statements: 81,
-      branches: 71,
-      functions: 75,
-      lines: 83,
+      statements: 86,
+      branches: 76,
+      functions: 81,
+      lines: 88,
     },
   },
 };
