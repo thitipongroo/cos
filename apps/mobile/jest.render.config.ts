@@ -217,6 +217,13 @@ const config: Config = {
   // screen it opened, and §17.7's photo-queue cap is enforced BEFORE the shutter:
   //   statements 79.55  branches 66.31  functions 73.85  lines 81.04
   //
+  // DEPTH PASS 2 — 91 specs. The next four weakest by branch (QuickActionRow 30%,
+  // transparency-session 33%, opportunities 36%, reports 42%). The reports file turned out to hold
+  // an entire untested SCREEN: /reports is the engineer's list OR the executive's AI summary,
+  // chosen on the role claim, and the executive half had no test at all — a role that fell through
+  // to the wrong branch would get a working screen, just the wrong one:
+  //   statements 80.60  branches 68.72  functions 74.61  lines 82.05
+  //
   // Counted separately from the logic suite rather than merged with it: the two instrument
   // differently (ts-jest vs babel-jest) and merging their reports made files the logic suite covers
   // fully report as low as 80%.
@@ -224,10 +231,10 @@ const config: Config = {
   collectCoverageFrom: ['src/components/**/*.tsx', 'src/app/**/*.tsx'],
   coverageThreshold: {
     global: {
-      statements: 79,
-      branches: 66,
-      functions: 73,
-      lines: 81,
+      statements: 80,
+      branches: 68,
+      functions: 74,
+      lines: 82,
     },
   },
 };

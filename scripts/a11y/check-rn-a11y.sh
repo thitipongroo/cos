@@ -54,7 +54,10 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # This may only ever be lowered. It is 0 — the gate is clean.
 BASELINE=0
 
-python3 - "$ROOT" "$BASELINE" <<'PY'
+# PYTHONIOENCODING: the report prints ✓/✗, and Python defaults its stdout to the console codepage,
+# which on a Windows shell is cp1252 — the tick raises UnicodeEncodeError and the gate dies on its
+# own PASS message. CI is UTF-8 either way; this is so the gate is runnable where it is developed.
+PYTHONIOENCODING=utf-8 python3 - "$ROOT" "$BASELINE" <<'PY'
 import pathlib
 import re
 import sys
