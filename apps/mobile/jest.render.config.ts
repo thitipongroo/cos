@@ -133,7 +133,11 @@ const config: Config = {
   // decisions landed in and neither had a test), plus report and invite-user:
   //   statements 46.69  branches 41.10  functions 41.96  lines 47.72
   //
-  // 66 of the 145 files are still at zero — counted, not subtracted, because a screen's spec also
+  // Same day, 44 specs — FetchListScreen (two thin screens are almost entirely this file),
+  // BiometricLock and SelectProjectSheet. Lines crossed 50%:
+  //   statements 49.29  branches 43.39  functions 44.57  lines 50.12
+  //
+  // 63 of the 145 files are still at zero — counted, not subtracted, because a screen's spec also
   // exercises the components it renders. That is the work this ratchet exists to pull along.
   //
   // Counted separately from the logic suite rather than merged with it: the two instrument
@@ -143,10 +147,10 @@ const config: Config = {
   collectCoverageFrom: ['src/components/**/*.tsx', 'src/app/**/*.tsx'],
   coverageThreshold: {
     global: {
-      statements: 46,
-      branches: 41,
-      functions: 41,
-      lines: 47,
+      statements: 49,
+      branches: 43,
+      functions: 44,
+      lines: 50,
     },
   },
 };
