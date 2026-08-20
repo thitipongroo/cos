@@ -70,6 +70,12 @@ a **DR drill before every Stage transition**, recorded in the drill log above.
 | [mfa-enforcement.md](mfa-enforcement.md)         | MFA Enforcement for TENANT_ADMIN / FINANCE (spec §5.4.1) | —     |
 | [mobile-cert-pinning.md](mobile-cert-pinning.md) | Mobile Certificate Pinning (security review L18)         | —     |
 
+## Testing
+
+| Runbook                                    | Covers                                                            | State                           |
+| ------------------------------------------ | ----------------------------------------------------------------- | ------------------------------- |
+| [mobile-e2e-detox.md](mobile-e2e-detox.md) | Mobile E2E (Detox) on CI — the seven secrets and the staging data | **never run** — see the runbook |
+
 ## AI
 
 | Runbook                                                | Covers                          | State |

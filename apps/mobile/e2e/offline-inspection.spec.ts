@@ -132,7 +132,12 @@ describe('Offline Inspection — Inspector', () => {
     if (await isVisible(firstInspection)) {
       await firstInspection.tap();
 
-      const addPhotoButton = element(by.id('add-photo-button'));
+      // `capture-photo-button`, not `add-photo-button` — the id this spec drove has never existed
+      // on any screen. inspections.tsx renders <PhotoCapture /> in its default `grid` layout, whose
+      // shutter is `capture-photo-button`; the `photo-upload-tile` id belongs to the `strip` layout
+      // the report form uses. The old id sat behind an isVisible guard, so the block never ran and
+      // this test passed having photographed nothing (corrected 2026-08-20).
+      const addPhotoButton = element(by.id('capture-photo-button'));
       if (await isVisible(addPhotoButton)) {
         await addPhotoButton.tap();
 

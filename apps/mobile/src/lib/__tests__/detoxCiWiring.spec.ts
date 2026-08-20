@@ -22,7 +22,7 @@
 //
 // It deliberately does NOT check that the job works. It checks that the parts refer to each other.
 
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 const MOBILE = join(__dirname, '..', '..', '..');
@@ -52,11 +52,84 @@ function suppliedVars(): Set<string> {
   return new Set([...job.matchAll(/^\s{10,}(E2E_[A-Z_]+):/gm)].map((m) => m[1]!));
 }
 
+/**
+ * Every literal `by.id('...')` a spec drives.
+ *
+ * Literal only. A spec that builds an id — `by.id(`item-${n}`)` — is matched against the app by the
+ * same template on the other side, and neither half is a string this can compare.
+ */
+function drivenIds(file: string): string[] {
+  const source = readFileSync(join(MOBILE, file), 'utf8');
+  return [...source.matchAll(/by\.id\('([^']+)'\)/g)].map((m) => m[1]!);
+}
+
+/** Everything under src/ that could carry a testID, minus the tests and mocks. */
+function appSource(): string {
+  const walk = (dir: string): string[] =>
+    readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        return entry.name === '__tests__' || entry.name === '__mocks__' ? [] : walk(full);
+      }
+      return /\.tsx?$/.test(entry.name) ? [readFileSync(full, 'utf8')] : [];
+    });
+  return walk(join(MOBILE, 'src')).join('\n');
+}
+
+/**
+ * Does the app carry this testID, literally or as the tail of a template?
+ *
+ * `country-option-th` is written `` `country-option-${item.iso2}` `` and
+ * `drawer-link-/inspections` is `` `drawer-link-${link.route}` ``, so the prefix is what exists in
+ * the source. Matching the whole id would report both as missing, which is a false alarm that
+ * teaches people to ignore this test.
+ *
+ * KNOWN LIMIT, AND IT HAS ALREADY BITTEN ONCE. A prefix match cannot tell a real id from one that
+ * merely shares a template's head: `conflict-badge` was cleared by sync-queue.tsx's
+ * `` `conflict-${r.conflict_id}` `` even though nothing rendered that id, because a conflict whose
+ * id was literally "badge" would produce it. Nothing static can settle that. It was fixed on the
+ * other side instead — <ConflictBadge /> now carries the id as a real default — and the lesson is
+ * that this check can MISS a missing id, never invent one. Treat a pass as "found nothing", not as
+ * "everything is wired".
+ */
+function appHasId(id: string, source: string): boolean {
+  if (source.includes(`'${id}'`) || source.includes(`"${id}"`)) return true;
+  for (let cut = id.length; cut > 3; cut--) {
+    if (source.includes('`' + id.slice(0, cut) + '${')) return true;
+  }
+  return false;
+}
+
 /** `E2E_*` variables a spec reads, whatever its fallback. */
 function readVars(file: string): string[] {
   const source = readFileSync(join(MOBILE, file), 'utf8');
   return [...source.matchAll(/process\.env\['(E2E_[A-Z_]+)'\]/g)].map((m) => m[1]!);
 }
+
+/**
+ * Controls a CI spec drives that the app does not render.
+ *
+ * ONLY EVER SHRINKS. Everything on this list is a spec and a product that have diverged, which is a
+ * question for the product owner rather than something to quietly delete — but it must not GROW
+ * without someone noticing, which is what pinning it exactly does.
+ *
+ *   check-in-button   SELF CHECK-IN WAS REMOVED FROM THE PRODUCT (PO decision 2026-08-09, recorded
+ *                     in components/home/FieldHome.tsx). It was on the Site Worker home, then
+ *                     briefly in the drawer, then removed outright with its project picker.
+ *                     `attendance` rows are still READ — the Shift Hours tile counts them, and they
+ *                     arrive through /sync/delta — so the data survived; the control did not.
+ *
+ *                     But `e2e/offline-checkin.spec.ts` still drives it, and spec §Phase 18 Detox
+ *                     item 1 still requires an offline check-in scenario. Two of that spec's tests
+ *                     wait on the button UNGUARDED and would fail the job; two more sit behind
+ *                     `isVisible` and pass having checked nothing.
+ *
+ *                     So the CI job cannot go green as written, and the resolution is not this
+ *                     file's to make: either the Phase 18 item is retired with the feature, or
+ *                     check-in returns. Recorded here so the answer is visible rather than
+ *                     discovered an hour into a staging run.
+ */
+const KNOWN_MISSING = ['check-in-button'];
 
 describe('the Detox CI job refers to things that exist', () => {
   it('finds the job, so an empty read cannot pass silently', () => {
@@ -80,6 +153,38 @@ describe('the Detox CI job refers to things that exist', () => {
   it('leaves the local-only specs out of CI', () => {
     expect(namedSpecs()).not.toContain('e2e/capture.spec.ts');
     expect(namedSpecs()).not.toContain('e2e/benchmark.spec.ts');
+  });
+
+  // ── THE CONTROLS THE SPECS DRIVE ─────────────────────────────────────────────────────────────
+  //
+  // A testID that no longer exists in the app is the failure this job is LEAST able to explain. Two
+  // shapes, and the quiet one is worse:
+  //
+  //   UNGUARDED  `waitFor(element(by.id('x'))).toBeVisible()` — fails after its timeout, on a
+  //              sixty-minute emulator job, reading like a product bug.
+  //   GUARDED    `if (await isVisible(x)) { … }` — the block never runs, the test PASSES, and the
+  //              thing it was written to prove is never checked again.
+  //
+  // Detox cannot see this; neither can the compiler. Reading both sides can.
+  it('drives only controls the app still renders', () => {
+    const source = appSource();
+    const missing = [...new Set(namedSpecs().flatMap(drivenIds))].filter(
+      (id) => !appHasId(id, source),
+    );
+
+    expect(missing.sort()).toEqual([...KNOWN_MISSING].sort());
+  });
+
+  // A RATCHET, like the a11y baseline and the radius ceiling: the list may only shrink. If it is
+  // longer than what is found, someone fixed a divergence and left the slack behind — and slack is
+  // room for the next one to arrive unnoticed.
+  it('carries no stale entry in its known-missing list', () => {
+    const source = appSource();
+    const driven = new Set(namedSpecs().flatMap(drivenIds));
+
+    const stale = KNOWN_MISSING.filter((id) => !driven.has(id) || appHasId(id, source));
+
+    expect(stale).toEqual([]);
   });
 
   // ── THE AVD NAME ─────────────────────────────────────────────────────────────────────────────
