@@ -188,7 +188,11 @@ const config: Config = {
   // Functions past 70%:
   //   statements 76.10  branches 63.91  functions 70.40  lines 77.30
   //
-  // 22 of the 145 files are still at zero — counted, not subtracted, because a screen's spec also
+  // Same day, 83 specs — the five privacy notices, the pre-auth support route and the
+  // account-settings frame:
+  //   statements 76.66  branches 64.14  functions 70.98  lines 77.93
+  //
+  // 15 of the 145 files are still at zero — counted, not subtracted, because a screen's spec also
   // exercises the components it renders. That is the work this ratchet exists to pull along.
   //
   // Counted separately from the logic suite rather than merged with it: the two instrument
@@ -199,7 +203,7 @@ const config: Config = {
   coverageThreshold: {
     global: {
       statements: 76,
-      branches: 63,
+      branches: 64,
       functions: 70,
       lines: 77,
     },
