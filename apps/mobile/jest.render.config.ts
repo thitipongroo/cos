@@ -156,7 +156,11 @@ const config: Config = {
   // Same day, 55 specs — NotificationSettings and network-reattest:
   //   statements 58.68  branches 51.10  functions 53.31  lines 59.40
   //
-  // 51 of the 145 files are still at zero — counted, not subtracted, because a screen's spec also
+  // Same day, 58 specs — notification-preferences, device-details and TransparencyKit. Statements
+  // past 60%:
+  //   statements 61.53  branches 52.92  functions 55.67  lines 62.36
+  //
+  // 49 of the 145 files are still at zero — counted, not subtracted, because a screen's spec also
   // exercises the components it renders. That is the work this ratchet exists to pull along.
   //
   // Counted separately from the logic suite rather than merged with it: the two instrument
@@ -166,10 +170,10 @@ const config: Config = {
   collectCoverageFrom: ['src/components/**/*.tsx', 'src/app/**/*.tsx'],
   coverageThreshold: {
     global: {
-      statements: 58,
-      branches: 51,
-      functions: 53,
-      lines: 59,
+      statements: 61,
+      branches: 52,
+      functions: 55,
+      lines: 62,
     },
   },
 };
