@@ -246,6 +246,13 @@ const config: Config = {
   // exported 'en' since the 2026-07-26 decision that overrode it:
   //   statements 87.60  branches 78.40  functions 82.46  lines 89.13
   //
+  // DEPTH PASS 5 — privacy-policy-downloaded, users and SiteInsight. The receipt screen is the one
+  // place a hash on the legal flow earns its space (the server publishes the digest BEFORE the
+  // transfer and the app recomputes it over the bytes that landed), so its tests are mostly about
+  // the MISMATCH case: the glyph and the integrity card must not disagree about whether to trust
+  // the file:
+  //   statements 88.09  branches 79.50  functions 83.41  lines 89.63
+  //
   // Counted separately from the logic suite rather than merged with it: the two instrument
   // differently (ts-jest vs babel-jest) and merging their reports made files the logic suite covers
   // fully report as low as 80%.
@@ -253,9 +260,9 @@ const config: Config = {
   collectCoverageFrom: ['src/components/**/*.tsx', 'src/app/**/*.tsx'],
   coverageThreshold: {
     global: {
-      statements: 87,
-      branches: 78,
-      functions: 82,
+      statements: 88,
+      branches: 79,
+      functions: 83,
       lines: 89,
     },
   },
