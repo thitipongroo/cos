@@ -129,7 +129,11 @@ const config: Config = {
   // and the tier rule that lets a safety officer refuse a safety permit but not grant one:
   //   statements 43.68  branches 37.82  functions 39.15  lines 44.69
   //
-  // 70 of the 145 files are still at zero — counted, not subtracted, because a screen's spec also
+  // Same day, 41 specs — Avatar and the two sync pills (the two components today's product-owner
+  // decisions landed in and neither had a test), plus report and invite-user:
+  //   statements 46.69  branches 41.10  functions 41.96  lines 47.72
+  //
+  // 66 of the 145 files are still at zero — counted, not subtracted, because a screen's spec also
   // exercises the components it renders. That is the work this ratchet exists to pull along.
   //
   // Counted separately from the logic suite rather than merged with it: the two instrument
@@ -139,10 +143,10 @@ const config: Config = {
   collectCoverageFrom: ['src/components/**/*.tsx', 'src/app/**/*.tsx'],
   coverageThreshold: {
     global: {
-      statements: 43,
-      branches: 37,
-      functions: 39,
-      lines: 44,
+      statements: 46,
+      branches: 41,
+      functions: 41,
+      lines: 47,
     },
   },
 };
