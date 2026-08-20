@@ -137,7 +137,15 @@ const config: Config = {
   // BiometricLock and SelectProjectSheet. Lines crossed 50%:
   //   statements 49.29  branches 43.39  functions 44.57  lines 50.12
   //
-  // 63 of the 145 files are still at zero — counted, not subtracted, because a screen's spec also
+  // Same day, 47 specs — the navigation shell (TopBar, NavigationDrawer) and DateField. Statements
+  // crossed 50%:
+  //   statements 50.97  branches 45.01  functions 46.23  lines 51.74
+  //
+  // MobileNav was deliberately SKIPPED rather than missed: it renders Expo Router's <Tabs>, and the
+  // role-to-tab rule it exists for is lib/roleTabs.ts, which is already at 100% in the logic suite.
+  // A render test there would mostly be testing the navigator.
+  //
+  // 59 of the 145 files are still at zero — counted, not subtracted, because a screen's spec also
   // exercises the components it renders. That is the work this ratchet exists to pull along.
   //
   // Counted separately from the logic suite rather than merged with it: the two instrument
@@ -147,10 +155,10 @@ const config: Config = {
   collectCoverageFrom: ['src/components/**/*.tsx', 'src/app/**/*.tsx'],
   coverageThreshold: {
     global: {
-      statements: 49,
-      branches: 43,
-      functions: 44,
-      lines: 50,
+      statements: 50,
+      branches: 45,
+      functions: 46,
+      lines: 51,
     },
   },
 };
