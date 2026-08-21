@@ -1,9 +1,45 @@
 # Keycloak Dual Authentication Path (Path A: OTP, Path B: OIDC)
 
 **Date:** 2026-06-09
-**Status:** Accepted
+**Status:** Accepted — **amended 2026-08-21: unified login (see Update)**
 **Deciders:** Product Owner, Engineering Lead
 **Tags:** security, architecture
+
+---
+
+## Update — 2026-08-21: the two paths stay, the role binding does not
+
+**Product-owner decision: unified login.** A user may authenticate by **either** path. The two
+mechanisms below are unchanged; what changes is that neither is reserved for a population.
+
+**One exception — `TENANT_ADMIN` and `FINANCE` are Path B only.** Two independent reasons, either
+sufficient on its own:
+
+1. **MFA cannot be enforced on Path A.** Keycloak binds the **Direct Grant** flow separately from the
+   **Browser** flow, so the role-conditional OTP that ADR-067 places in the browser flow never runs on
+   a Path A token. QM-4 makes MFA mandatory for these two roles. The Direct Grant flow therefore
+   **denies** them at the identity provider — verified against a live Keycloak 26.6.4 on 2026-08-22
+   (`docs/runbooks/mfa-enforcement.md` Step 1b: privileged Direct Grant → HTTP 401, no token).
+2. **SMS is a restricted authenticator.** NIST SP 800-63B Rev 4 classifies SMS/PSTN OTP as
+   *restricted* and it no longer satisfies AAL2; phone possession alone is a single factor. This ADR
+   was written in June 2026 against the earlier revision.
+
+**What the Context section below got right, and what it did not.** The two populations it describes
+are real, and they are still why two mechanisms exist — a field worker who cannot keep a password is
+the reason Path A was built. What does not follow is the *restriction*: nothing in the mechanism
+requires that a Project Manager may not use a phone, or that a Site Engineer may not use a password.
+The Decision section's parenthetical labels — "(field workers)", "(office users)" — read as scoping
+and were treated as such across §14.3, §20.6.1, master Phase 2 and `context.md`. They are labels for
+who each path was designed *for*, not a list of who may use it.
+
+**Authoritative statement of who may use which path is now `05-security-compliance` §5.4.4**, which
+those documents reference instead of restating.
+
+**Precondition worth stating plainly:** a path is usable by a given account only if the account
+carries the identifier it needs — a phone number for Path A, an email plus a Keycloak credential for
+Path B. `POST /api/v1/users` provisions one or the other, so unified login is a policy ("no role is
+barred"), not a guarantee that every existing account can already use both. Provisioning one user for
+both paths is not yet specified.
 
 ---
 

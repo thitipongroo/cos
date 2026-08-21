@@ -1756,16 +1756,21 @@ Constraints:
 Build Identity Service and Tenant Service.
 
 Authentication Decision (TWO PATHS — from file 01):
-  Path A — Field workers (PRIMARY for SITE_WORKER, SITE_ENGINEER):
+  Path A — Phone number + SMS OTP:
+    Who:      ANY role EXCEPT TENANT_ADMIN and FINANCE (spec §5.4.4, PO decision 2026-08-21).
+              Those two are Path B only: Direct Grant cannot carry the ADR-067 MFA condition,
+              and NIST SP 800-63B Rev 4 makes SMS a restricted authenticator below AAL2.
     Method:   Phone number + SMS OTP
     Rationale: "No password to forget" — field workers must never be required
-               to remember a password (file 01 §A)
+               to remember a password (file 01 §A). That is why the path exists; since
+               2026-08-21 it is not restricted to them.
     Session:  JWT access token (15 min) + refresh token (7 days device-stored), issued by Keycloak
               via Direct Grant (grant_type=password) after OTP verification succeeds
     Offline:  Cached token valid 7 days without internet, re-validates on reconnect
     Biometric: OPTIONAL — device-side Face ID/fingerprint unlock after first login
 
-  Path B — Office / Management (for PM, Finance, Admin, Executive):
+  Path B — Email + password via Keycloak OIDC:
+    Who:      ANY role. REQUIRED for TENANT_ADMIN and FINANCE (spec §5.4.4).
     Method:   Email + password via Keycloak
     Protocol: OpenID Connect (OIDC) over OAuth2
     Token:    JWT (RS256 signed by Keycloak)
@@ -1957,7 +1962,7 @@ Generate:
 - MFA enrollment and verification endpoints (TOTP) — required for TENANT_ADMIN and FINANCE roles:
     POST /api/v1/auth/mfa/enroll    — initiate TOTP setup (returns QR code URI)
     POST /api/v1/auth/mfa/verify    — confirm TOTP code to complete enrollment
-    POST /api/v1/auth/mfa/authenticate — verify TOTP during login (Path B office users only)
+    POST /api/v1/auth/mfa/authenticate — verify TOTP during login (TENANT_ADMIN / FINANCE; Path B only per §5.4.4)
 - Tenant isolation middleware
 - Unit tests: guards, middleware, token validation
 - Integration tests: full OTP auth flow with Testcontainers (PostgreSQL + Redis containers, real DB)
@@ -3534,10 +3539,10 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
       the navigation section but were absent from this Generate list; the mobile feature UI is owned
       by Phase 10. Wire each screen to the existing stores/hooks/Drizzle schema/API:
         * Auth: login — Path A (phone + OTP) AND Path B (email/password via Keycloak OIDC, ADR-050)
-          wired to authStore + role-based post-login routing. Path B serves office/management roles
-          (Executive, Finance, PM, Tenant Admin, Procurement, Safety) on their smartphone per §20.6.1
-          (product-owner decision 2026-07-07 — resolves the OTP-only gap; all roles use React Native on
-          smartphone, so mobile must render both auth paths, no new mechanism vs §5.4)
+          wired to authStore + role-based post-login routing. Both paths are open to every role
+          except TENANT_ADMIN and FINANCE, which are Path B only (spec §5.4.4, PO 2026-08-21;
+          §20.6.1). Product-owner decision 2026-07-07 first resolved the OTP-only gap; all roles use
+          React Native on smartphone, so mobile must render both auth paths, no new mechanism vs §5.4
         * SITE_WORKER: home (KPI) · tasks (list + detail + progress input, offline) · report
           (daily report form) · issues (quick issue + list) · profile
         * SITE_ENGINEER: reports (review + record material consumption per report — enqueues 'material'

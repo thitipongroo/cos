@@ -364,6 +364,35 @@ External vendor-network users authenticate **outside** the tenant Keycloak realm
 
 All vendor-portal traffic is rate-limited at Kong independently of tenant API quotas.
 
+### 5.4.4 Which users may use which path (authoritative)
+
+**Decision:** unified login. **Resolved:** 2026-08-21 (product owner).
+
+Both paths are open to all roles — the platform does not bind an authentication path to a role — with
+one exception.
+
+**Exception: `TENANT_ADMIN` and `FINANCE` are Path B only.** Two independent reasons, either of which
+is sufficient:
+
+1. **MFA cannot be enforced on Path A.** Path A obtains its token through Keycloak **Direct Grant**
+   (§5.4.2), and Keycloak binds the Direct Grant flow separately from the Browser flow — the
+   role-conditional OTP that ADR-067 puts in the browser flow does not run there. QM-4 makes MFA
+   mandatory for these two roles, so the Direct Grant flow **denies** them at the identity provider
+   (`docs/runbooks/mfa-enforcement.md` Step 1b; verified against a live Keycloak 2026-08-22).
+2. **SMS is a restricted authenticator.** NIST SP 800-63B Rev 4 classifies SMS/PSTN OTP as
+   *restricted* and it no longer satisfies AAL2. Phone possession alone is a single factor.
+
+Every other role may authenticate by either path. This replaces the earlier convention under which
+Path A was described as "for field workers" and Path B "for office roles"; that framing was never a
+platform restriction, and §14.3 / §20.6.1 now reference this section rather than restating it.
+
+**A path is available to a user only if that user carries the identifier it needs.** Path A needs a
+phone number on the user record; Path B needs an email plus a Keycloak password credential.
+`POST /api/v1/users` (§14.3) provisions one or the other, so an account created with a phone alone
+cannot use Path B until an email credential is added for it. Unified login is a statement about
+**policy** — no role is barred from a path — not a guarantee that every existing account can already
+use both. Provisioning a user for both paths is not yet specified.
+
 ---
 
 ## References

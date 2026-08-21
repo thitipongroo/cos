@@ -348,8 +348,9 @@ TH-specific logic is not silently applied to non-TH tenants.
 > it introduces **no new auth mechanism**. Authoritative auth spec: §5.4
 >
 > the React Native app also renders
-> **both** paths — Path A (phone + OTP) for field roles AND Path B (email/password via Keycloak OIDC)
-> for office/management roles on their smartphone. Same §5.4 mechanism, no new auth. See
+> **both** paths — Path A (phone + OTP) and Path B (email/password via Keycloak OIDC) — on the
+> smartphone. Who may use which is §5.4.4, not the platform: both are open to all roles except
+> `TENANT_ADMIN` and `FINANCE`, which are Path B only. Same §5.4 mechanism, no new auth. See
 > `context/00_master_construction_os.md` §Phase 10 Auth.
 
 ### 20.6.1 Login
@@ -358,8 +359,8 @@ The web login renders **both** authentication paths already defined in §5.4 (ma
 
 | Path                      | Users                                                                           | Mechanism                                 | Route        |
 | ------------------------- | ------------------------------------------------------------------------------- | ----------------------------------------- | ------------ |
-| Path B — email + password | Office / management (PM, Finance, Executive, Tenant Admin, Procurement, Safety) | Keycloak OIDC (OAuth2), RS256 JWT         | `/login`     |
-| Path A — phone + SMS OTP  | Field roles on tablet (Site Engineer, Site Worker)                              | Custom OTP module → Keycloak Direct Grant | `/login/otp` |
+| Path B — email + password | Any role. **Required** for `TENANT_ADMIN` and `FINANCE` (§5.4.4)                | Keycloak OIDC (OAuth2), RS256 JWT         | `/login`     |
+| Path A — phone + SMS OTP  | Any role **except** `TENANT_ADMIN` and `FINANCE` (§5.4.4)                       | Custom OTP module → Keycloak Direct Grant | `/login/otp` |
 
 - **MFA (TOTP):** required for `TENANT_ADMIN` and `FINANCE` (§5.4; master Phase 2) — MFA challenge
   page shown after primary factor succeeds.

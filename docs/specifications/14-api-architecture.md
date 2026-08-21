@@ -153,23 +153,27 @@ OpenAPI files are the machine-readable contracts derived from these patterns.
 
 Two authentication paths (authoritative spec: `05-security-compliance` §5.4):
 
-- **Path A** — SMS OTP for field workers (`SITE_WORKER`, `SITE_ENGINEER`): phone + 6-digit OTP.
-  The COS identity service performs OTP send/verify only; after verification it obtains the JWT
-  from **Keycloak via Direct Grant** (`grant_type=password`, ephemeral credential) — the token is
-  **Keycloak-signed (RS256)**. Keycloak is the single source of truth for JWT signing on both paths
-  (master Phase 2; `05-security-compliance` §5.4).
-- **Path B** — Email + password for office roles via Keycloak OIDC: JWT issued by Keycloak
-  (RS256). MFA (TOTP) required for `TENANT_ADMIN` and `FINANCE`.
+- **Path A** — phone + 6-digit SMS OTP. The COS identity service performs OTP send/verify only;
+  after verification it obtains the JWT from **Keycloak via Direct Grant** (`grant_type=password`,
+  ephemeral credential) — the token is **Keycloak-signed (RS256)**. Keycloak is the single source of
+  truth for JWT signing on both paths (master Phase 2; `05-security-compliance` §5.4).
+- **Path B** — email + password via Keycloak OIDC: JWT issued by Keycloak (RS256). MFA (TOTP)
+  required for `TENANT_ADMIN` and `FINANCE`.
+
+**Which users may use which path is `05-security-compliance` §5.4.4, not this section.** Since
+2026-08-21 both paths are open to all roles except `TENANT_ADMIN` and `FINANCE`, which are Path B
+only. The earlier "Path A for field workers / Path B for office roles" wording described a
+convention, not a restriction, and is not repeated here.
 
 | Method | Path                            | Description                                                         | Auth         |
 | ------ | ------------------------------- | ------------------------------------------------------------------- | ------------ |
-| `POST` | `/api/v1/auth/otp/request`      | Request SMS OTP — Path A field workers                              | Public       |
+| `POST` | `/api/v1/auth/otp/request`      | Request SMS OTP — Path A (any role except `TENANT_ADMIN` / `FINANCE`, §5.4.4) | Public       |
 | `POST` | `/api/v1/auth/otp/verify`       | Verify OTP; returns `access_token` + `refresh_token`                | Public       |
 | `POST` | `/api/v1/auth/refresh`          | Refresh access token using refresh token                            | Public       |
 | `POST` | `/api/v1/auth/logout`           | Revoke refresh token                                                | Bearer token |
 | `POST` | `/api/v1/auth/mfa/enroll`       | Initiate TOTP enrollment — returns `otpauth://` URI for QR code     | Bearer token |
 | `POST` | `/api/v1/auth/mfa/verify`       | Confirm TOTP code to complete enrollment; sets `mfa_enabled = true` | Bearer token |
-| `POST` | `/api/v1/auth/mfa/authenticate` | Verify TOTP during login — Path B only (`TENANT_ADMIN`, `FINANCE`)  | Bearer token |
+| `POST` | `/api/v1/auth/mfa/authenticate` | Verify TOTP during login (`TENANT_ADMIN`, `FINANCE` — Path B only per §5.4.4) | Bearer token |
 
 ---
 
@@ -495,10 +499,11 @@ Managed by **Tenant Admin** (FULL permission — see `06-rbac-permission-matrix`
 All endpoints are tenant-scoped via JWT `tenant_id` claim; a Tenant Admin can only
 manage users within their own tenant.
 
-Path A users (SITE_ENGINEER — the authoritative field-worker role per `06-rbac-permission-matrix` §6.2) are identified by
-phone number.
-Path B users (all other roles) are identified by email address and require a
-corresponding Keycloak account in the tenant's realm.
+A user is created with the identifier for the path they will use: a **phone number** for Path A, or
+an **email address** plus a Keycloak account in the tenant's realm for Path B. This is about which
+identifier the account carries, not about which roles may use which path — that is
+`05-security-compliance` §5.4.4. An account created with one identifier cannot use the other path
+until the second is added; provisioning a user for both is not yet specified.
 
 | Method  | Path                                 | Description                                                                   | Auth         |
 | ------- | ------------------------------------ | ----------------------------------------------------------------------------- | ------------ |
@@ -622,8 +627,8 @@ Kong identifies external OAuth2 client credential traffic by Consumer lookup on 
 
 | Traffic Type                     | `iss`          | `azp`                     | `session_state` | Kong Consumer           |
 | -------------------------------- | -------------- | ------------------------- | --------------- | ----------------------- |
-| Internal — Path A (field worker) | Keycloak realm | absent                    | Present         | No — anonymous consumer |
-| Internal — Path B (office user)  | Keycloak realm | `cos-web` or `cos-mobile` | Present         | No — anonymous consumer |
+| Internal — Path A (Direct Grant) | Keycloak realm | absent                    | Present         | No — anonymous consumer |
+| Internal — Path B (OIDC)         | Keycloak realm | `cos-web` or `cos-mobile` | Present         | No — anonymous consumer |
 | External — marketplace / ERP     | Keycloak realm | registered `client_id`    | Absent          | Yes — matched consumer  |
 
 `jwt` plugin is configured with:

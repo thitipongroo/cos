@@ -133,6 +133,9 @@ The custom backend TOTP module is marked **deprecated** (kept to avoid test chur
 ### Neutral
 
 - Path A (SMS OTP, field roles) is unaffected — MFA applies to Path B office roles only.
+  **Superseded by the 2026-08-22 Update above:** Path A now **denies** `TENANT_ADMIN` / `FINANCE`
+  outright, so it is affected for exactly those two roles. Every other role is unaffected, which is
+  what this line was reaching for.
 
 ## References
 
