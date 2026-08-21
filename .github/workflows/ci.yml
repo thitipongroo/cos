@@ -128,6 +128,15 @@ jobs:
       - name: Legal screens and their PDFs say the same thing
         run: node ./scripts/ci/check-legal-parity.mjs
 
+      # ADR-067. MFA is REQUIRED for TENANT_ADMIN / FINANCE (QM-4), and on 2026-08-20 the Keycloak
+      # half of that enforcement was found ENTIRELY ABSENT from the checked-in realm — the ADR said it
+      # had been applied and exported, the file said otherwise, and nothing compared the two. The ADR
+      # concluded CI could not catch it because there is no Keycloak in the harness. That holds for
+      # whether the flow WORKS; it does not hold for whether the flow is PRESENT, which is a property
+      # of the JSON and is exactly what regressed. Live behaviour stays runbook Step 2's job.
+      - name: Keycloak realm still carries MFA Layer 1
+        run: node ./scripts/ci/check-keycloak-mfa-config.mjs
+
   # ─── MLOps tests (Python / Airflow 3.x DAGs) ────────────────────────────────
   mlops-tests:
     name: MLOps Tests (Python)

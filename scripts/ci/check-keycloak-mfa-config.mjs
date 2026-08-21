@@ -1,23 +1,36 @@
 #!/usr/bin/env node
-// Keycloak realm — MFA Layer 1 configuration check (ADR-067).
+// Keycloak realm — MFA Layer 1 configuration check (ADR-067, as corrected 2026-08-22).
 //
 // WHY THIS EXISTS. QM-4 and spec §5.4.1 make MFA (TOTP) REQUIRED for TENANT_ADMIN and FINANCE.
-// ADR-067 enforces that in two layers: Layer 1 is Keycloak-native role-conditional OTP, Layer 2 is
-// the backend `acr` gate (`shared/guards/mfa-enforcement.ts`, default OFF until the realm is
-// verified). On 2026-08-20 Layer 1 was found to be ENTIRELY ABSENT from the checked-in realm — the
-// ADR's own Decision section says it was applied and exported, and the file says otherwise. Any
-// environment provisioned from that file has neither layer active for the two privileged roles.
+// ADR-067 enforces that in two layers: Layer 1 in Keycloak, Layer 2 the backend `acr` gate
+// (`shared/guards/mfa-enforcement.ts`). On 2026-08-20 Layer 1 was found ENTIRELY ABSENT from the
+// checked-in realm; any environment provisioned from that file had neither layer active. This script
+// reads the realm file so nobody has to remember to.
 //
-// ADR-067 concluded "nothing in CI can catch it: there is no Keycloak in the test harness, so the
-// only guard against a realm that silently loses Layer 1 is reading the file." That is true of
-// whether the flow WORKS — you cannot execute an authentication flow without a server. It is not
-// true of whether the flow is PRESENT, which is a property of the JSON and is exactly the failure
-// that occurred. This script reads the file so nobody has to remember to.
+// ADR-067 concluded "nothing in CI can catch it: there is no Keycloak in the test harness". That is
+// true of whether the flow WORKS — you cannot execute an authentication flow without a server. It is
+// not true of whether the flow is PRESENT, which is a property of the JSON and is exactly the failure
+// that occurred.
 //
-// WHAT IT DOES NOT DO. It does not prove a user is actually prompted for OTP, that the `acr` claim
-// is emitted, or that the import is well-formed enough for Keycloak to accept. Those need a live
-// server — `docs/runbooks/mfa-enforcement.md` Step 2. A PASS here means the realm still carries the
-// configuration that was verified live; it is a regression guard, not a substitute for that step.
+// WHAT THIS CHECKS IS NOT WHAT ADR-067 SPECIFIED, and the difference is deliberate. ADR-067 keys the
+// condition on a composite realm role `mfa-required` attached to TENANT_ADMIN / FINANCE. Verified
+// against a live realm on 2026-08-22: **no user holds a COS role as a Keycloak realm role** — all 29
+// carry it as the `role` user ATTRIBUTE, which is what the `oidc-usermodel-attribute-mapper` turns
+// into the `role` claim (spec §5.4.2). `Condition - user role` reads role mappings, so the ADR-067
+// construction would have fired for nobody even if it had been applied. The working mechanism is
+// `Condition - user attribute` on `role`, which reads the same source the JWT claim reads — so the
+// condition and the token can never disagree.
+//
+// THE acr TRAP THIS ENCODES. Keycloak emits `acr` from the realm's `acr.loa.map`. Measured on a live
+// realm: a password-only Direct Grant token already carries LoA 1. With the map `{"gold":1}` that the
+// runbook originally prescribed, EVERY token — including one that never ran OTP — reports
+// `acr=gold`, and Layer 2's default `MFA_REQUIRED_ACR=gold` then accepts everything. The map must
+// therefore separate a base level from an OTP level (`{"silver":1,"gold":2}`) and the OTP subflow
+// must carry a `Condition - Level of Authentication` at the higher level.
+//
+// WHAT IT DOES NOT DO. It does not prove a user is actually challenged, that the token carries the
+// expected `acr`, or that the import is well-formed enough for Keycloak to accept. Those need a live
+// server — `docs/runbooks/mfa-enforcement.md` Step 2.
 //
 // Run: node scripts/ci/check-keycloak-mfa-config.mjs [path-to-realm.json]
 
@@ -34,116 +47,91 @@ const DEFAULT_REALM = join(
   'construction-os-realm.json',
 );
 
-/** Roles that must be forced through OTP — mirrors MFA_REQUIRED_ROLES in mfa-enforcement.ts. */
+/** Mirrors MFA_REQUIRED_ROLES in backend/src/shared/guards/mfa-enforcement.ts. */
 const PRIVILEGED_ROLES = ['TENANT_ADMIN', 'FINANCE'];
-/** The composite role the role-condition keys on (runbook Step 1.1). */
-const MFA_ROLE = 'mfa-required';
-/** Keycloak's provider ids. `conditional-user-configured` is the one ADR-067 rejected: it runs OTP
- *  only for users who already enrolled, so a privileged user who never enrolled signs in unchallenged. */
-const COND_ROLE = 'conditional-user-role';
+/** The claim/attribute the role travels in (spec §5.4.1, §5.4.2). */
+const ROLE_ATTRIBUTE = 'role';
+
+const COND_ATTRIBUTE = 'conditional-user-attribute';
 const COND_CONFIGURED = 'conditional-user-configured';
+const COND_LOA = 'conditional-level-of-authentication';
 const OTP_BROWSER = 'auth-otp-form';
-const OTP_DIRECT_GRANT = 'direct-grant-validate-otp';
+const DENY = 'deny-access-authenticator';
 
 const failures = [];
 const notes = [];
+const fail = (check, detail) => failures.push({ check, detail });
 
-function fail(check, detail) {
-  failures.push({ check, detail });
-}
-
-/**
- * Flatten a top-level flow into every execution reachable from it, following subflows.
- * Keycloak's export misspells the subflow marker as `autheticatorFlow` — that is the wire format,
- * not a typo here.
- */
-function collectExecutions(flowsByAlias, alias, seen = new Set()) {
+/** Flatten a flow into every execution reachable from it. Keycloak's export misspells the subflow
+ *  marker as `autheticatorFlow` — that is the wire format, not a typo here. */
+function collect(flowsByAlias, alias, seen = new Set()) {
   if (seen.has(alias)) return [];
   seen.add(alias);
   const flow = flowsByAlias.get(alias);
   if (!flow) return [];
   const out = [];
-  for (const execution of flow.authenticationExecutions ?? []) {
-    if (execution.autheticatorFlow && execution.flowAlias) {
-      out.push({ ...execution, kind: 'subflow', parent: alias });
-      out.push(...collectExecutions(flowsByAlias, execution.flowAlias, seen));
+  for (const e of flow.authenticationExecutions ?? []) {
+    if (e.autheticatorFlow && e.flowAlias) {
+      out.push({ ...e, subflowOf: alias });
+      out.push(...collect(flowsByAlias, e.flowAlias, seen));
     } else {
-      out.push({ ...execution, kind: 'execution', parent: alias });
+      out.push({ ...e, subflowOf: alias });
     }
   }
   return out;
 }
 
-/** Resolve an execution's `authenticatorConfig` alias to its config object. */
-function configFor(realm, execution) {
-  if (!execution.authenticatorConfig) return null;
-  return (
-    (realm.authenticatorConfig ?? []).find((c) => c.alias === execution.authenticatorConfig) ?? null
-  );
+const configFor = (realm, e) =>
+  e.authenticatorConfig
+    ? ((realm.authenticatorConfig ?? []).find((c) => c.alias === e.authenticatorConfig) ?? null)
+    : null;
+
+/** A privileged-role condition: reads the `role` attribute and its expected value covers both roles. */
+function privilegedConditions(realm, executions) {
+  return executions.filter((e) => {
+    if (e.authenticator !== COND_ATTRIBUTE) return false;
+    const cfg = configFor(realm, e)?.config ?? {};
+    if (cfg.attribute_name !== ROLE_ATTRIBUTE) return false;
+    const expected = String(cfg.attribute_expected_value ?? '');
+    return PRIVILEGED_ROLES.every((r) => expected.includes(r));
+  });
 }
 
-/**
- * One binding (browser or direct grant): the chain must gate OTP on the ROLE condition, and the OTP
- * step itself must be REQUIRED. A CONDITIONAL subflow whose condition never fires is not enforcement.
- */
-function checkBinding(realm, flowsByAlias, { label, boundAlias, otpProvider }) {
-  if (!boundAlias) {
-    fail(`${label}: flow binding`, 'realm has no bound flow for this binding');
+function checkBinding(realm, flowsByAlias, { label, boundAlias, required }) {
+  if (!boundAlias || !flowsByAlias.has(boundAlias)) {
+    fail(`${label}: binding`, `bound flow "${boundAlias ?? '(none)'}" is not defined in this realm`);
     return;
   }
-  const flow = flowsByAlias.get(boundAlias);
-  if (!flow) {
-    fail(`${label}: flow binding`, `bound flow "${boundAlias}" is not defined in this realm file`);
-    return;
-  }
-  if (flow.builtIn) {
-    fail(
-      `${label}: flow binding`,
-      `bound flow "${boundAlias}" is builtIn — the stock flow carries no role condition ` +
-        `(runbook Step 1.3 duplicates it before editing)`,
-    );
+  if (flowsByAlias.get(boundAlias).builtIn) {
+    fail(`${label}: binding`, `bound flow "${boundAlias}" is builtIn — it carries no MFA condition`);
   }
 
-  const executions = collectExecutions(flowsByAlias, boundAlias);
+  const executions = collect(flowsByAlias, boundAlias);
 
-  const roleConditions = executions.filter((e) => e.authenticator === COND_ROLE);
-  if (roleConditions.length === 0) {
+  if (privilegedConditions(realm, executions).length === 0) {
     const usesConfigured = executions.some((e) => e.authenticator === COND_CONFIGURED);
     fail(
-      `${label}: role condition`,
-      `no "${COND_ROLE}" in the "${boundAlias}" chain` +
+      `${label}: privileged condition`,
+      `no "${COND_ATTRIBUTE}" on attribute "${ROLE_ATTRIBUTE}" covering ${PRIVILEGED_ROLES.join(' + ')}` +
         (usesConfigured
-          ? ` — it still uses "${COND_CONFIGURED}", which ADR-067 rejected because it only ` +
-            `challenges users who already enrolled`
+          ? ` — the chain relies on "${COND_CONFIGURED}", which only challenges users who already enrolled`
           : ''),
     );
-  } else {
-    const boundToMfaRole = roleConditions.some((e) => {
-      const cfg = configFor(realm, e);
-      return cfg && Object.values(cfg.config ?? {}).includes(MFA_ROLE);
-    });
-    if (!boundToMfaRole) {
-      fail(
-        `${label}: role condition`,
-        `"${COND_ROLE}" is present but no authenticatorConfig binds it to the "${MFA_ROLE}" role`,
-      );
-    }
   }
 
-  const otp = executions.filter((e) => e.authenticator === otpProvider);
-  if (otp.length === 0) {
-    fail(`${label}: OTP step`, `no "${otpProvider}" execution in the "${boundAlias}" chain`);
-  } else if (!otp.some((e) => e.requirement === 'REQUIRED')) {
-    fail(
-      `${label}: OTP step`,
-      `"${otpProvider}" is present but not REQUIRED (found: ${otp.map((e) => e.requirement).join(', ')})`,
-    );
+  for (const { provider, why } of required) {
+    const found = executions.filter((e) => e.authenticator === provider);
+    if (found.length === 0) fail(`${label}: ${provider}`, `missing — ${why}`);
+    else if (!found.some((e) => e.requirement === 'REQUIRED'))
+      fail(
+        `${label}: ${provider}`,
+        `present but not REQUIRED (${found.map((e) => e.requirement).join(', ')})`,
+      );
   }
 }
 
 function main() {
   const realmPath = process.argv[2] ? resolve(process.argv[2]) : DEFAULT_REALM;
-
   let realm;
   try {
     realm = JSON.parse(readFileSync(realmPath, 'utf8'));
@@ -151,70 +139,63 @@ function main() {
     console.error(`✖ cannot read realm file ${realmPath}: ${error.message}`);
     process.exit(1);
   }
-
   notes.push(`realm "${realm.realm}" — ${realmPath.replace(REPO_ROOT, '.')}`);
 
-  const flowsByAlias = new Map(
-    (realm.authenticationFlows ?? []).map((flow) => [flow.alias, flow]),
-  );
+  const flowsByAlias = new Map((realm.authenticationFlows ?? []).map((f) => [f.alias, f]));
 
-  // 1. The composite role the conditions key on.
-  const realmRoles = (realm.roles?.realm ?? []).map((r) => r.name);
-  if (!realmRoles.includes(MFA_ROLE)) {
-    fail('composite role', `realm role "${MFA_ROLE}" does not exist (${realmRoles.length} roles defined)`);
+  // 1. acr.loa.map must separate a base level from an OTP level — see "THE acr TRAP" above.
+  const raw = realm.attributes?.['acr.loa.map'];
+  if (!raw) {
+    fail('acr.loa.map', 'realm attribute absent — Layer 2 has no `acr` to read');
   } else {
-    // 2. Each privileged role must actually carry it, or the condition never fires for anyone.
-    for (const role of PRIVILEGED_ROLES) {
-      const definition = (realm.roles?.realm ?? []).find((r) => r.name === role);
-      if (!definition) {
-        fail('composite role', `privileged role "${role}" is not defined in this realm`);
-        continue;
-      }
-      const associated = definition.composites?.realm ?? [];
-      if (!associated.includes(MFA_ROLE)) {
-        fail('composite role', `"${role}" does not have "${MFA_ROLE}" as an associated role`);
-      }
-    }
-  }
-
-  // 3. Step-up mapping — without it the token carries no acr and Layer 2 has nothing to check.
-  const acrMap = realm.attributes?.['acr.loa.map'];
-  if (!acrMap) {
-    fail('acr.loa.map', 'realm attribute "acr.loa.map" is absent — the token cannot prove OTP ran');
-  } else {
+    let map;
     try {
-      const parsed = JSON.parse(acrMap);
-      if (!parsed || Object.keys(parsed).length === 0) {
-        fail('acr.loa.map', `realm attribute is present but empty: ${acrMap}`);
-      } else {
-        notes.push(`acr.loa.map = ${acrMap} → set MFA_REQUIRED_ACR to one of: ${Object.keys(parsed).join(', ')}`);
-      }
+      map = JSON.parse(raw);
     } catch {
-      fail('acr.loa.map', `realm attribute is not valid JSON: ${acrMap}`);
+      map = null;
+      fail('acr.loa.map', `not valid JSON: ${raw}`);
+    }
+    if (map) {
+      const levels = Object.values(map).map(Number);
+      const top = Math.max(...levels);
+      if (levels.length < 2 || top < 2) {
+        fail(
+          'acr.loa.map',
+          `${raw} maps every authentication to one level, so a token that never ran OTP reports the ` +
+            `same acr as one that did. Needs a base level and a higher OTP level, e.g. {"silver":1,"gold":2}`,
+        );
+      } else {
+        const otpAcr = Object.keys(map).find((k) => Number(map[k]) === top);
+        notes.push(`acr.loa.map = ${raw} → set MFA_REQUIRED_ACR=${otpAcr} (level ${top})`);
+      }
     }
   }
 
-  // 4. The acr client scope must be a default scope or Keycloak never emits the claim.
-  const defaultScopes = realm.defaultDefaultClientScopes ?? [];
-  if (!defaultScopes.includes('acr')) {
+  // 2. The acr client scope must be default or Keycloak never emits the claim.
+  if (!(realm.defaultDefaultClientScopes ?? []).includes('acr')) {
     fail('acr client scope', '"acr" is not in defaultDefaultClientScopes');
   }
 
-  // 5+6. Both bindings. Browser is Path B; direct grant is the path Path A tokens are minted through
-  // (spec §5.4.2 step 3), and Keycloak binds the two flows separately — a browser-flow condition does
-  // not run on a direct-grant token.
+  // 3. Path B — privileged users must be challenged for OTP, and that OTP must raise the LoA.
   checkBinding(realm, flowsByAlias, {
     label: 'browser flow (Path B)',
     boundAlias: realm.browserFlow,
-    otpProvider: OTP_BROWSER,
+    required: [
+      { provider: OTP_BROWSER, why: 'privileged users must be challenged for TOTP' },
+      { provider: COND_LOA, why: 'without it the OTP does not raise the LoA and acr cannot prove MFA' },
+    ],
   });
+
+  // 4. Path A — privileged users must not obtain a token at all (PO decision 2026-08-21).
+  //    Deny rather than challenge: the Path A exchange sends no `otp` parameter, so demanding OTP
+  //    here produced an uncaught AuthenticationFlowException (HTTP 500) instead of a refusal.
   checkBinding(realm, flowsByAlias, {
     label: 'direct grant flow (Path A)',
     boundAlias: realm.directGrantFlow,
-    otpProvider: OTP_DIRECT_GRANT,
+    required: [{ provider: DENY, why: 'privileged roles are Path B only and must be refused here' }],
   });
 
-  for (const note of notes) console.log(`  ${note}`);
+  for (const n of notes) console.log(`  ${n}`);
 
   if (failures.length === 0) {
     console.log('✔ Keycloak MFA Layer 1 present in the realm file (ADR-067)');
@@ -223,12 +204,10 @@ function main() {
   }
 
   console.error(`\n✖ Keycloak MFA Layer 1 incomplete — ${failures.length} finding(s):\n`);
-  for (const { check, detail } of failures) {
-    console.error(`  [${check}] ${detail}`);
-  }
+  for (const { check, detail } of failures) console.error(`  [${check}] ${detail}`);
   console.error(
-    '\n  Fix: docs/runbooks/mfa-enforcement.md Steps 1a/1b against a live Keycloak, then export' +
-      '\n  the realm back over this file. Do NOT hand-edit the flow JSON — a malformed' +
+    '\n  Fix: docs/runbooks/mfa-enforcement.md Steps 1a/1b/1c against a live Keycloak, then export' +
+      '\n  the realm back over this file. Do NOT hand-author the flow JSON — a malformed' +
       '\n  authentication-flow import breaks every login in the realm.\n',
   );
   process.exit(1);

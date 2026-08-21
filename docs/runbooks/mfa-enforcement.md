@@ -4,172 +4,170 @@ MFA (TOTP) is **required** for the `TENANT_ADMIN` and `FINANCE` roles (QM-4; spe
 Phase 2). ADR-067 enforces it in two layers, both keyed on **role** — not on which login path was
 used:
 
-- **Layer 1 — Keycloak (authoritative):** the login flow forces OTP for these roles, so a user in
-  one of them cannot complete login without configuring and entering a TOTP code.
+- **Layer 1 — Keycloak (authoritative):** the login flow forces OTP for these roles on Path B, and
+  refuses them outright on Path A.
 - **Layer 2 — backend (defence-in-depth):** `JwtAuthGuard` calls `enforceMfaForPrivilegedRoles`
   (`backend/src/shared/guards/mfa-enforcement.ts`), which rejects a privileged token whose `acr`
-  claim does not prove OTP. Gated by `MFA_ENFORCE` (**default off**) so it ships before Layer 1 is
-  verified — enforcing against a realm that does not yet emit the expected `acr` would lock out every
-  privileged user.
-
-> **Layer 1 covers TWO flow bindings, not one.** Keycloak binds the **Browser** flow and the
-> **Direct Grant** flow separately, and a browser-flow condition does not run on a Direct Grant
-> token. Path B logs in through the browser flow; Path A obtains its token through **Direct Grant**
-> (`grant_type=password`, spec §5.4.2 step 3). Configuring only the browser flow leaves the
-> Direct Grant path unguarded — Step 1b exists for that reason.
+  claim does not prove OTP. Gated by `MFA_ENFORCE` (**default off**).
 
 ---
 
-## Current state — verified, not assumed
+## Status
 
-Run the static check before and after any change:
+| Layer                                     | State                                                                                           |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Layer 1 — in `construction-os-realm.json` | **Present and verified** against a live Keycloak 26.6.4 on 2026-08-22 (see § What was measured) |
+| Layer 1 — in an already-running Keycloak  | **Not applied.** Import runs on first init only — see § Applying to an existing environment     |
+| Layer 2 — `MFA_ENFORCE`                   | **Off** (default `false`). Ops enables it per Step 3                                            |
+
+Guard against regression:
 
 ```bash
 node scripts/ci/check-keycloak-mfa-config.mjs
 ```
 
-As of 2026-08-21 it reports **6 findings** against
-`infrastructure/keycloak/realms/construction-os-realm.json`: no `mfa-required` role, no
-`acr.loa.map`, and both the browser and direct-grant bindings still pointing at the stock `builtIn`
-flows with `conditional-user-configured`. `MFA_ENFORCE` also defaults to `false`.
-
-**Neither layer is active in any environment provisioned from this repository.** That is the state
-this runbook exists to change.
-
-> `conditional-user-configured` is precisely the condition ADR-067's security review rejected: it
-> runs OTP only for users who have **already enrolled**, so a privileged user who never enrolled
-> signs in with a password alone.
-
-### Why Layer 1 is not a hand-edit of the realm JSON
-
-Every one of the realm's 18 authentication flows is `builtIn: true`, so the flows this runbook needs
-do not exist yet and would have to be authored by hand — and **this repository has no running
-Keycloak to validate an import against.** A malformed authentication-flow import breaks **all**
-logins in the realm. So Layer 1 is applied and verified against a live Keycloak using the steps
-below, then the corrected realm is exported back to git.
-
-> An earlier version of this note justified the rule by claiming the realm file "has no
-> `authenticatorConfig` array or realm-level `attributes` block". Both are present — two
-> `authenticatorConfig` entries and eight `attributes` keys. The rule stands on the reasons above;
-> the incorrect ones are removed rather than left to be cited.
-
-### Which realm
-
-The file in git declares `"realm": "construction-os-dev"` and `docker-compose.yml` mounts it as
-`construction-os-dev-realm.json`. Spec §7.6 names the shared realm for STARTER / PROFESSIONAL
-tenants `construction-os`, and ENTERPRISE tenants get `cos-{tenantCode}`. **Apply these steps to
-every realm that serves privileged users**, and treat the checked-in file as the dev realm it says
-it is.
+It runs in the CI lint job and asserts the realm file still carries Layer 1. It checks **presence**,
+not behaviour — no script can execute an authentication flow without a server.
 
 ---
 
-## Step 1a — Browser flow: force OTP for the two roles (Path B)
+## The mechanism is NOT the one ADR-067 specifies, and that is deliberate
 
-In the Keycloak Admin Console for the target realm:
+ADR-067 keys the condition on a composite realm role `mfa-required` attached to `TENANT_ADMIN` and
+`FINANCE`, evaluated by `Condition - user role`. Measured against the live realm on 2026-08-22:
 
-1. **Create a composite role** `mfa-required` (Realm roles → Create role).
-2. **Attach it** to `TENANT_ADMIN` and `FINANCE` (each role → Action → Add associated roles →
-   `mfa-required`). Without this the condition never fires for anyone.
-3. **Duplicate the browser flow** (Authentication → Flows → `browser` → Duplicate → `browser-mfa`).
-   - In the `forms` subflow, replace the `Browser - Conditional OTP` subflow's condition
-     `Condition - user configured` with **`Condition - user role`**, config `role = mfa-required`.
-   - Keep `OTP Form` = **REQUIRED** — this forces OTP setup on first login for users with the role.
-4. **Bind** `browser-mfa` as the realm's Browser flow (Action → Bind flow → Browser flow).
+| Measured                                     | Value                                                    |
+| -------------------------------------------- | -------------------------------------------------------- |
+| Users in the realm                           | 29                                                       |
+| Users holding a COS role as a **realm role** | **0**                                                    |
+| Users holding it as the `role` **attribute** | **29**                                                   |
+| `role` claim source                          | `oidc-usermodel-attribute-mapper`, `user.attribute=role` |
 
-## Step 1b — Direct Grant flow: refuse privileged tokens on Path A
+`Condition - user role` reads role mappings. Because no user holds `TENANT_ADMIN` as a Keycloak realm
+role, that construction **fires for nobody** — it would have enforced nothing even if it had been
+applied as the ADR claims. COS stores the role as a user attribute by design (spec §5.4.2).
 
-Path A (phone + SMS OTP) mints its token through Direct Grant. `TENANT_ADMIN` and `FINANCE` are
-**Path B only** (product-owner decision 2026-08-21), and this step is what makes that true at the
-identity provider rather than only in policy.
+The working mechanism is **`Condition - user attribute`** on `role` with
+`attribute_expected_value = ^(TENANT_ADMIN|FINANCE)$` and `regex = true`. It reads the same source the
+JWT claim reads, so the condition and the token can never disagree, and it needs no change to user
+provisioning. ADR-067 carries a matching Update entry dated 2026-08-22.
 
-1. **Duplicate the direct grant flow** (`direct grant` → Duplicate → `direct-grant-mfa`).
-   - In the `Direct Grant - Conditional OTP` subflow, replace `Condition - user configured` with
-     **`Condition - user role`**, config `role = mfa-required`.
-   - Keep `OTP` (`direct-grant-validate-otp`) = **REQUIRED**.
-2. **Bind** `direct-grant-mfa` as the realm's Direct Grant flow.
+---
 
-**Effect.** `direct-grant-validate-otp` requires an `otp` form parameter on the token request. The
-COS Path A exchange sends only `grant_type=password`, `username=<phone>`,
-`password=<ephemeralCredential>` (spec §5.4.2 step 3) — no `otp` — so a privileged user's Path A
-attempt now **fails at Keycloak** instead of yielding a token with no second factor.
+## Step 1a — Browser flow (Path B): force OTP for the two roles
 
-> **What changes and what does not.** Under the stock `conditional-user-configured`, a privileged
-> user who has **already enrolled** TOTP would already fail Path A today. Step 1b closes the case
-> that matters: the privileged user who has **never enrolled**, who currently gets a token.
->
-> **Companion change (proposed, not yet built).** Keycloak's refusal surfaces to the user as an
-> opaque token-endpoint failure. `OtpService` should decline to send an OTP to a phone whose account
-> holds `TENANT_ADMIN` or `FINANCE` and return `COS-AUTH-001` with a "use email sign-in" message, so
-> the dead end is explained where the user is. This changes real login behaviour and is therefore
-> raised here rather than applied — see `docs/technical-design/phase-02-auth-tenant-system.md` § 14.
+Applied as flow `browser-mfa`, bound as the realm Browser flow. Inside its
+`Browser - Conditional OTP` subflow:
+
+| Execution                             | Requirement | Config                                               |
+| ------------------------------------- | ----------- | ---------------------------------------------------- |
+| `Condition - user attribute`          | REQUIRED    | `role` matches `^(TENANT_ADMIN\|FINANCE)$`, regex on |
+| `Condition - Level of Authentication` | REQUIRED    | `loa-condition-level = 2`                            |
+| `OTP Form`                            | REQUIRED    | forces TOTP setup on first login for those roles     |
+
+## Step 1b — Direct Grant flow (Path A): refuse privileged roles
+
+`TENANT_ADMIN` and `FINANCE` are **Path B only** (product-owner decision 2026-08-21). Applied as flow
+`direct-grant-mfa`, bound as the realm Direct Grant flow, with a CONDITIONAL subflow
+`Path B only - privileged roles` placed **before** the stock conditional-OTP subflow:
+
+| Execution                    | Requirement | Config                                                                 |
+| ---------------------------- | ----------- | ---------------------------------------------------------------------- |
+| `Condition - user attribute` | REQUIRED    | same privileged-role match as above                                    |
+| `Deny access`                | REQUIRED    | `denyErrorMessage` = "This role must sign in with email and password." |
+
+**Deny, not challenge.** Demanding OTP here was tried first and is wrong twice over: the Path A
+exchange sends no `otp` parameter (spec §5.4.2 step 3), so it can never be satisfied, and
+`direct-grant-validate-otp` against a user with no OTP credential throws
+`AuthenticationFlowException` — the token endpoint returned **HTTP 500** with an empty body rather
+than refusing cleanly. With `Deny access` the same request returns **HTTP 401**.
+
+The stock `Direct Grant - Conditional OTP` subflow is left untouched below it, so behaviour for every
+non-privileged user is unchanged.
 
 ## Step 1c — Step-up `acr` so the token proves OTP
 
-Applies to both bindings; without it Layer 2 has nothing to read.
+Realm attribute **`acr.loa.map` = `{"silver":1,"gold":2}`**, with the `acr` client scope in
+`defaultDefaultClientScopes` (already true).
 
-1. Realm settings → set realm attribute **`acr.loa.map`** to e.g. `{"gold":1}`.
-2. On the OTP step (or its subflow) in **both** flows, set the Level of Authentication (LoA) config
-   so a session that ran OTP maps to LoA `1` → `acr = "gold"`.
-3. Confirm the `acr` client scope is a default scope — verified present in
-   `defaultDefaultClientScopes`, and the check script asserts it.
+> **Do not use `{"gold":1}`.** That is what this runbook said before 2026-08-22 and it produces a gate
+> that accepts everything. Measured: a password-only Direct Grant token already carries LoA 1, so a
+> single-level map labels **every** token `acr=gold` — including one that never ran OTP — and Layer 2's
+> default `MFA_REQUIRED_ACR=gold` then passes it. The map needs a base level and a higher OTP level,
+> and the OTP subflow needs the `Condition - Level of Authentication` at the higher level (Step 1a).
 
-## Step 2 — Verify (live — this is the part no script can do)
+## Step 2 — Verify (live — the part no script can do)
 
-1. Log in as a `TENANT_ADMIN` / `FINANCE` test user through the browser → you must be forced to set
-   up and enter TOTP.
-2. Log in as a `SITE_ENGINEER` through the browser → **no** OTP prompt.
-3. Attempt Path A (`POST /api/v1/auth/otp/request` → `verify`) as a `TENANT_ADMIN` → the Direct Grant
-   exchange must fail; confirm no access token is issued.
-4. Attempt Path A as a `SITE_ENGINEER` → succeeds unchanged.
-5. Decode the issued Path B access token and read the **`acr`** claim. Record its value for Step 3.
-6. Confirm a non-privileged token still authenticates end-to-end against the API.
+### What was measured on 2026-08-22
+
+Keycloak 26.6.4, realm `construction-os-dev`, throwaway users carrying only the `role` attribute:
+
+| Case                                    | Result                                                   |
+| --------------------------------------- | -------------------------------------------------------- |
+| `SITE_ENGINEER` — Direct Grant (Path A) | HTTP 200, token issued, `acr=silver`                     |
+| `TENANT_ADMIN` — Direct Grant (Path A)  | **HTTP 401**, no token                                   |
+| `SITE_ENGINEER` — browser (Path B)      | authorization code issued, **no OTP challenge**          |
+| `TENANT_ADMIN` — browser (Path B)       | redirected to `required-action?execution=CONFIGURE_TOTP` |
+| `TENANT_ADMIN` — after completing TOTP  | token issued with **`acr=gold`**, `role=TENANT_ADMIN`    |
+
+The exported realm was then re-imported into a **clean** Keycloak container and the Path A cases
+re-run against it: `SITE_ENGINEER` 200, `TENANT_ADMIN` 401. That is what proves the committed file is
+importable — the failure mode this runbook has always warned about is a malformed flow breaking every
+login in the realm.
+
+### Re-run these after any change
+
+1. Browser login as `TENANT_ADMIN` / `FINANCE` → forced to set up and enter TOTP.
+2. Browser login as `SITE_ENGINEER` → no OTP prompt.
+3. Path A (`/api/v1/auth/otp/request` → `verify`) as `TENANT_ADMIN` → the Direct Grant exchange fails
+   with 401; no access token is issued.
+4. Path A as `SITE_ENGINEER` → succeeds unchanged.
+5. Decode a privileged Path B token → `acr` must be the **higher** level's name (`gold`).
+6. Decode a non-privileged token → `acr` must be the base level (`silver`), never `gold`.
 
 ## Step 3 — Activate Layer 2 (backend)
 
-Set on the backend deployment:
-
-- `MFA_REQUIRED_ACR` = the exact `acr` value observed in Step 2.5 (comma-separated if more than one).
-  Default `gold`; the check script prints the value implied by `acr.loa.map`.
+- `MFA_REQUIRED_ACR=gold` — the check script prints the value implied by the realm's `acr.loa.map`.
 - `MFA_ENFORCE=true`.
 
 Before flipping `MFA_ENFORCE`, Layer 2 only logs `mfa.shortfall` (WARN) for privileged tokens missing
-the `acr`. Watch those logs after Step 1 and confirm real traffic carries the expected `acr` first.
+the `acr`. Watch those logs and confirm real traffic carries `acr=gold` first.
 
 > Layer 2 keys off the **authoritative role from `platform.tenant_memberships`**, not the token's
 > `role` claim — `KeycloakJwtStrategy` overwrites the claim with the database row (ADR-077). A stale
-> token cannot dodge the gate by carrying an old role.
+> token cannot dodge the gate by carrying an old role. `acr` reaches the guard because the strategy
+> returns `{ ...payload }`.
 
-## Step 4 — Export the realm back to git
+## Applying to an existing environment
 
-Export the updated realm (`kc.sh export` or Admin Console partial export) and commit it over
-`infrastructure/keycloak/realms/construction-os-realm.json`.
+`--import-realm` runs **only on first initialisation**. A Keycloak that already has this realm will
+not pick up the committed file. For those:
 
-## Step 5 — Close the loop so this cannot silently regress
-
-1. Re-run `node scripts/ci/check-keycloak-mfa-config.mjs` — it must exit 0.
-2. **Wire it into the CI lint job in the same PR as the corrected realm** (`.github/workflows/ci.yml`,
-   alongside `check-legal-parity.mjs`) and add the row to `30-testing-strategy` §30.12.
-   It is deliberately not wired yet: the realm is non-compliant today, so adding the gate first would
-   block every PR.
-3. Update the ADR-067 status note — it currently records the verified gap.
+1. Admin Console → Authentication → recreate `browser-mfa` and `direct-grant-mfa` per Steps 1a/1b,
+   set `acr.loa.map` per Step 1c, and bind both flows; **or** drive the Admin REST API, which is how
+   the verified configuration above was built.
+2. Re-run Step 2 against that environment. Do not assume it inherited anything.
+3. Only then Step 3.
 
 ---
 
 ## Rollback
 
 - Backend: `MFA_ENFORCE=false` (kill switch — no code redeploy).
-- Keycloak: re-bind the stock `browser` and `direct grant` flows.
+- Keycloak: re-bind the stock `browser` and `direct grant` flows. Both remain in the realm untouched.
 
 ## Notes
 
 - The custom backend TOTP module (`backend/src/modules/identity/mfa/*`, `/api/v1/auth/mfa/*`) is
   **deprecated**: it is wired into no client flow, and Keycloak-native OTP is the source of truth
   (QM-4). Enrolment goes through the Keycloak Application-Initiated Action
-  `kc_action=CONFIGURE_TOTP` (ADR-074). Left in place to avoid test churn; remove in a dedicated
-  change.
-- **Path A for non-privileged roles is unaffected.** `SITE_WORKER` / `SITE_ENGINEER` and every other
-  role without `mfa-required` see no OTP step on either binding.
+  `kc_action=CONFIGURE_TOTP` (ADR-074).
+- **Path A for non-privileged roles is unaffected** — no OTP step is added on either binding for a
+  user whose `role` attribute is not one of the two.
+- **The realm in git is `construction-os-dev`.** Spec §7.6 names the shared realm `construction-os`
+  and gives ENTERPRISE tenants `cos-{tenantCode}`. Apply these steps to every realm that serves
+  privileged users.
 - **NIST SP 800-63B Rev 4** classifies SMS/PSTN OTP as a _restricted authenticator_ that no longer
-  satisfies AAL2. That is an independent reason privileged roles do not authenticate by SMS alone,
-  and it carries its own obligations (documented risk assessment, migration roadmap, user
-  notification) for the Path A population — tracked separately.
+  satisfies AAL2 — an independent reason privileged roles do not authenticate by SMS. It carries its
+  own obligations (documented risk assessment, migration roadmap, user notification) for the Path A
+  population; tracked separately.

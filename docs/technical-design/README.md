@@ -2,7 +2,7 @@
 title: 'Construction OS — Technical Design'
 version: '0.1.0'
 status: Draft
-last_updated: '2026-08-21'
+last_updated: '2026-08-22'
 authors:
   - thitipongroo
 related_docs:
@@ -193,15 +193,15 @@ each is recorded, carried into the § 14 of the affected phase page, and left fo
 
 Phase-local questions, raised on the page named and repeated here so the register is complete:
 
-| ID    | Where                                            | What                                                                                                                                                                          | Raised on |
-| ----- | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| OQ-1a | `packages/@cos/`                                 | `@cos/schemas` and `@cos/ui-logic` exist on disk but are named in no phase `Generate:` list read so far.                                                                      | Phase 1   |
-| OQ-5  | root `pnpm-workspace.yaml` comment               | Claims `apps/mobile` hoisting is configured in `apps/mobile/.npmrc` via `--ignore-workspace`; that file and `00_master` both say `nodeLinker` lives in `pnpm-workspace.yaml`. | Phase 1   |
-| OQ-6  | `32-implementation-specifications` §32.4         | Of the 27 canonical schema names the migration table requires, 16 exist and 11 have no file; `finance.variance.alert.v1.avsc` kept its legacy name with a `.v1` suffix.       | Phase 8   |
-| OQ-7  | QM-9 / §9.7.1 vs `backend/prisma/` and CI        | 5 of 89 migrations have no rollback script; a 6th is misnamed. §9.7.1 claims a CI gate enforces this — no such gate exists, and §30.12's gate table does not list one.        | Phase 2   |
-| OQ-8  | `00_master` § PHASE 2 COMMAND vs `schema.prisma` | `users.department` and `UserAdditionalRole` exist on disk; the phase command describes a single `role` per membership and neither field.                                      | Phase 2   |
-| OQ-9  | `05-security-compliance` §5.4                    | Unified login **decided** 2026-08-21 (privileged roles stay Path B only); the role↔path binding is still written in 6 files and the spec edit is owed.                        | Phase 2   |
-| OQ-10 | ADR-067 vs the checked-in realm + `MFA_ENFORCE`  | MFA is **not enforced** for `TENANT_ADMIN` / `FINANCE`: Layer 1 absent from the realm JSON, Layer 2 defaults off. QM-4 requires it.                                           | Phase 2   |
+| ID    | Where                                            | What                                                                                                                                                                                      | Raised on |
+| ----- | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| OQ-1a | `packages/@cos/`                                 | `@cos/schemas` and `@cos/ui-logic` exist on disk but are named in no phase `Generate:` list read so far.                                                                                  | Phase 1   |
+| OQ-5  | root `pnpm-workspace.yaml` comment               | Claims `apps/mobile` hoisting is configured in `apps/mobile/.npmrc` via `--ignore-workspace`; that file and `00_master` both say `nodeLinker` lives in `pnpm-workspace.yaml`.             | Phase 1   |
+| OQ-6  | `32-implementation-specifications` §32.4         | Of the 27 canonical schema names the migration table requires, 16 exist and 11 have no file; `finance.variance.alert.v1.avsc` kept its legacy name with a `.v1` suffix.                   | Phase 8   |
+| OQ-7  | QM-9 / §9.7.1 vs `backend/prisma/` and CI        | 5 of 89 migrations have no rollback script; a 6th is misnamed. §9.7.1 claims a CI gate enforces this — no such gate exists, and §30.12's gate table does not list one.                    | Phase 2   |
+| OQ-8  | `00_master` § PHASE 2 COMMAND vs `schema.prisma` | `users.department` and `UserAdditionalRole` exist on disk; the phase command describes a single `role` per membership and neither field.                                                  | Phase 2   |
+| OQ-9  | `05-security-compliance` §5.4                    | Unified login **decided** 2026-08-21 (privileged roles stay Path B only); the role↔path binding is still written in 6 files and the spec edit is owed.                                    | Phase 2   |
+| OQ-10 | ADR-067 realm config + `MFA_ENFORCE`             | Layer 1 landed in the realm file 2026-08-22 (verified live; ADR-067's role-based mechanism was proven unusable and replaced). Layer 2 and existing Keycloak instances remain ops actions. | Phase 2   |
 
 ---
 

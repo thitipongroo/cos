@@ -2,7 +2,7 @@
 title: 'Phase 2 — Auth + Tenant System'
 version: '0.1.0'
 status: Draft
-last_updated: '2026-08-21'
+last_updated: '2026-08-22'
 authors:
   - thitipongroo
 related_docs:
@@ -244,46 +244,48 @@ QM-4 and `05-security-compliance` §5.4 require MFA (TOTP) for `TENANT_ADMIN` an
 **ADR-067 is the decision record for how**, and it enforces in two layers keyed on **role**, not on
 login path:
 
-| Layer                   | Mechanism                                                                                                                                      | Verified state                                                                                                  |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| 1 — Keycloak-native OTP | browser flow `Condition - user role` = composite role `mfa-required` → OTP Form REQUIRED, plus `acr.loa.map` so the token's `acr` proves OTP   | **Absent** from `infrastructure/keycloak/realms/construction-os-realm.json` (ADR-067 note, verified 2026-08-20) |
-| 2 — backend `acr` gate  | `JwtAuthGuard.handleRequest` → `enforceMfaForPrivilegedRoles`; a privileged token whose `acr` is not accepted is rejected `COS-AUTH-001` (403) | Present, but gated by `MFA_ENFORCE` which defaults to `false`                                                   |
+| Layer                   | Mechanism                                                                                                                                      | Verified state                                                                        |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| 1 — Keycloak-native OTP | `browser-mfa` (Path B) forces TOTP for the two roles; `direct-grant-mfa` (Path A) **denies** them; `acr.loa.map` proves OTP in the token       | **Present in the realm file and verified live** on 2026-08-22 (ADR-067 Update)        |
+| 2 — backend `acr` gate  | `JwtAuthGuard.handleRequest` → `enforceMfaForPrivilegedRoles`; a privileged token whose `acr` is not accepted is rejected `COS-AUTH-001` (403) | Present, still gated by `MFA_ENFORCE` (default `false`) — an ops step, runbook Step 3 |
 
-**Consequence, stated plainly: MFA is not enforced for privileged roles today, on either layer.**
-This is a pre-existing gap recorded in ADR-067 itself — not something introduced by any later change.
+**The condition is on the `role` user attribute, not on a Keycloak role.** ADR-067 originally
+specified `Condition - user role` against a composite realm role `mfa-required`. Measured against a
+live realm: **0 of 29 users hold a COS role as a realm role; all 29 carry it as the `role` user
+attribute** (spec §5.4.2, `oidc-usermodel-attribute-mapper`). The specified condition would have
+fired for nobody. `Condition - user attribute` on `role` reads the same source the JWT claim reads,
+so the condition and the token cannot disagree, and provisioning needs no change.
 
 Layer 2 is **method-agnostic by construction**: it reads `acr` off the token and never asks which
 path minted it. That is the same shape the industry converged on — Microsoft Entra binds a required
 _authentication strength_ to a directory role and evaluates it per sign-in, and Okta expresses the
-equivalent through assurance-level policy conditions. The gap is not the design; it is that Layer 1
-was never applied to the realm.
+equivalent through assurance-level policy conditions.
 
-**Keycloak binds Browser flow and Direct Grant flow separately**, so a browser-flow conditional OTP
-does not run on a Direct Grant token. Path A issues tokens through Direct Grant
-(`05-security-compliance` §5.4.2 step 3), which is why the Direct Grant binding needs its own
-configuration rather than inheriting the browser one.
+**Keycloak binds Browser flow and Direct Grant flow separately**, so a browser-flow condition does not
+run on a Direct Grant token. Path A issues tokens through Direct Grant
+(`05-security-compliance` §5.4.2 step 3), which is why it carries its own configuration.
 
-**Both bindings are now designed.** `docs/runbooks/mfa-enforcement.md` carries Step 1a (browser flow
-— Path B), **Step 1b (direct grant flow — Path A)** and Step 1c (`acr` / LoA), plus the live
-verification that no static check can perform. Step 1b is what makes "privileged roles are Path B
-only" true at the identity provider: `direct-grant-validate-otp` demands an `otp` form parameter that
-the Path A exchange does not send, so a privileged Path A attempt fails at Keycloak rather than
-yielding a token with no second factor.
+**Path A denies rather than challenges.** Requiring OTP there was tried first and fails twice: the
+Path A exchange sends no `otp` parameter, and `direct-grant-validate-otp` against a user with no OTP
+credential throws — the token endpoint returned **HTTP 500** rather than refusing. `Deny access`
+returns **HTTP 401**. The stock conditional-OTP subflow is left in place below it, so non-privileged
+behaviour is unchanged.
 
-Two facts about the stock realm are worth keeping in view. The `direct grant` flow **already**
-contains a `Direct Grant - Conditional OTP` subflow — it is simply gated by
-`conditional-user-configured`, so today it challenges only privileged users who already enrolled and
-lets the never-enrolled through. And `KeycloakJwtStrategy` returns `{ ...payload }`, so `acr` reaches
-`req.user` and Layer 2 reads the **authoritative role from `platform.tenant_memberships`**, not the
-token claim (ADR-077) — a stale token cannot dodge the gate with an old role.
+**The `acr` map must have two levels.** A password-only token already carries LoA 1, so the
+`{"gold":1}` the runbook originally prescribed would label **every** token `acr=gold` — including one
+that never ran OTP — and Layer 2's default `MFA_REQUIRED_ACR=gold` would accept it. Measured values:
+`{"silver":1,"gold":2}`, non-privileged token `acr=silver`, privileged token after TOTP `acr=gold`.
+
+`KeycloakJwtStrategy` returns `{ ...payload }`, so `acr` reaches `req.user`, and Layer 2 reads the
+**authoritative role from `platform.tenant_memberships`** rather than the token claim (ADR-077) — a
+stale token cannot dodge the gate with an old role.
 
 **Regression guard:** `scripts/ci/check-keycloak-mfa-config.mjs` asserts, from the realm JSON alone,
-that both bindings carry the role condition, that `mfa-required` exists and is attached to both
-roles, and that `acr.loa.map` and the `acr` client scope are present. It reports 6 findings today.
-This narrows ADR-067's statement that "nothing in CI can catch it": nothing in CI can prove the flow
-_works_ without a Keycloak, but whether the configuration is _present_ is a property of the file.
-The check is deliberately **not** wired into CI yet — the realm is non-compliant, so adding the gate
-first would block every PR; it is wired in the same change that lands the corrected realm.
+that both bindings carry the attribute condition, that Path B requires the OTP form and the LoA
+condition, that Path A denies, and that `acr.loa.map` separates a base level from an OTP level. It
+runs in the CI lint job (`30-testing-strategy` §30.12). This narrows ADR-067's statement that
+"nothing in CI can catch it": nothing in CI can prove the flow _works_ without a Keycloak, but
+whether the configuration is _present_ is a property of the file — and presence is what regressed.
 
 **`mfa_totp_secret` and `/api/v1/auth/mfa/*` are deprecated.** ADR-067 and ADR-074 record that the
 custom backend TOTP module is not wired into any real login flow; Keycloak owns TOTP, and enrolment
@@ -364,7 +366,7 @@ early-warning metrics are in `00_master` § Risk Register.
 | OQ-7  | QM-9 and `09-data-architecture` §9.7.1 require a committed rollback script for **every** migration. Five have none: `20260723000001_add_estimated_completion_date_to_projects`, `20260723000002_add_timezone_to_tenants`, `20260723000003_notification_delivery_rules`, `20260730000001_add_department_to_users`, `20260730000002_add_user_additional_roles`. A sixth, `20260605000002_file_service`, has a rollback named `_rollback.sql` instead of `.rollback.sql`. **§9.7.1 says this is "enforced by a CI gate" — no such gate exists:** `.github/workflows/` contains no migration↔rollback check, `scripts/ci/` has no such script, and §30.12's CI-gate table (21 gates) does not list one. Four of the five are `ADD COLUMN` / `CREATE TABLE` and reverse trivially; `notification_delivery_rules` contains `ALTER TYPE … ADD VALUE 'PUSH'`, which PostgreSQL cannot reverse without recreating the type. | Open — QM-9 gap            |
 | OQ-8  | `platform.users` on disk has a `department` column and a `UserAdditionalRole` model, added by migrations `20260730000001` / `20260730000002`. **Neither is in the authoritative schema**: `11-database-schema` §11.1 gives `platform.users` ten columns and `department` is not among them, `tenant_memberships` carries a single `role`, and no additional-roles table exists anywhere in §11.1. The only `department` in the specification set is on the **Employee** entity (§11.2 workforce master) — a different entity. `06-rbac-permission-matrix` and ADR-014 describe one role per membership. No ADR for multiple roles per user was found.                                                                                                                                                                                                                                                              | Open — needs a source      |
 | OQ-9  | `05-security-compliance` §5.4 assigns Path A to field roles and Path B to office roles; whether one user may use **either** path was not stated. **Decided 2026-08-21 (product owner): unified login — a user may authenticate by OTP or by email+password — EXCEPT `TENANT_ADMIN` and `FINANCE`, which remain Path B only**, because Path A is Direct Grant and cannot carry the ADR-067 Layer 1 OTP condition, and because NIST SP 800-63B Rev 4 classifies SMS/PSTN OTP as a restricted authenticator that no longer satisfies AAL2. Recorded here because the **spec has not yet been updated**: the role↔path binding is still written in `05` §5.4, `14` §14.3 (lines 156/161/166/172/498/625–626), `20-ux-flow` (351/361–362/538), `00_master` (1759/1768/1960/3537), `context.md` (207–208) and ADR-017.                                                                                                   | Decided — spec edit owed   |
-| OQ-10 | **MFA is not enforced for `TENANT_ADMIN` / `FINANCE` today.** ADR-067 Layer 1 is absent from the checked-in realm and Layer 2 (`MFA_ENFORCE`) defaults to `false`; QM-4 states MFA is REQUIRED. Re-verified 2026-08-21 by `scripts/ci/check-keycloak-mfa-config.mjs` → 6 findings. **The design is now complete** (runbook Steps 1a/1b/1c cover both flow bindings) and a regression guard exists, but **applying it needs a live Keycloak** — ADR-067 forbids a blind realm-JSON edit because a malformed flow import breaks every login, and Docker's daemon is not running on this machine. Blocked on an environment, not on a decision.                                                                                                                                                                                                                                                                       | Open — needs live Keycloak |
+| OQ-10 | **Layer 1 closed in the realm file 2026-08-22**, built against a live Keycloak 26.6.4 and re-imported into a clean container to prove the file loads; measured behaviour is in the runbook. **Two things remain open, both operational:** `MFA_ENFORCE` still defaults to `false`, so Layer 2 is inert until ops sets it with `MFA_REQUIRED_ACR=gold`; and `--import-realm` runs on first init only, so an **already-running** Keycloak has not picked the configuration up and must be updated per the runbook's "Applying to an existing environment".                                                                                                                                                                                                                                                                                                                                                           | Open — ops action          |
 | OQ-11 | **Companion change proposed, not built.** With runbook Step 1b applied, a privileged user's Path A attempt fails at Keycloak as an opaque token-endpoint error. `OtpService` should decline to send an OTP to a phone whose account holds `TENANT_ADMIN` / `FINANCE` and return `COS-AUTH-001` pointing at email sign-in. This changes real login behaviour and needs tests, so it is raised rather than applied.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Open — needs a PO decision |
 
 Recorded, not resolved — per [README § Open questions](README.md#open-questions-register).

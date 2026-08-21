@@ -1,11 +1,43 @@
 # ADR-067: MFA enforcement for TENANT_ADMIN / FINANCE — Keycloak-native OTP + backend acr gate
 
 **Date:** 2026-07-24
-**Status:** Accepted — **Layer 1 NOT PRESENT in the checked-in realm (verified 2026-08-20)**
+**Status:** Accepted — **amended 2026-08-22: Layer 1 present in the realm file, mechanism corrected**
 **Deciders:** Product owner, Security
 **Tags:** security
 
-> ## ⚠️ Verified gap — 2026-08-20
+> ## Update — 2026-08-22: gap closed in the realm file, and the Decision's mechanism was wrong
+>
+> Layer 1 is now present in `infrastructure/keycloak/realms/construction-os-realm.json`, built and
+> verified against a live Keycloak 26.6.4 and then re-imported into a clean container to prove the
+> file is loadable. `scripts/ci/check-keycloak-mfa-config.mjs` guards it in the CI lint job.
+> **`MFA_ENFORCE` is still `false`** — Layer 2 activation stays an ops step (runbook Step 3), and an
+> already-running Keycloak does not pick up the file (import runs on first init only).
+>
+> **The Decision below specifies a mechanism that cannot work here, and it has been replaced.**
+> `Condition - user role` on a composite `mfa-required` reads Keycloak **role mappings**. Measured on
+> the live realm: **0 of 29 users hold a COS role as a realm role; all 29 carry it as the `role` user
+> attribute**, which is what the `oidc-usermodel-attribute-mapper` turns into the `role` claim
+> (spec §5.4.2). The specified condition would have fired for nobody even if it had been applied — the
+> 2026-08-20 finding that it was missing understated the problem.
+>
+> What is implemented instead:
+>
+> | Concern                   | Implemented                                                                                                    |
+> | ------------------------- | -------------------------------------------------------------------------------------------------------------- |
+> | Privileged-role condition | `Condition - user attribute`, `role` matches `^(TENANT_ADMIN\|FINANCE)$` (regex) — same source as the claim    |
+> | Path B (browser)          | `browser-mfa`: attribute condition + `Condition - Level of Authentication` (level 2) + `OTP Form` REQUIRED     |
+> | Path A (direct grant)     | `direct-grant-mfa`: attribute condition + **`Deny access`** — privileged roles are Path B only (PO 2026-08-21) |
+> | `acr`                     | `acr.loa.map = {"silver":1,"gold":2}`; `MFA_REQUIRED_ACR=gold`                                                 |
+>
+> **Two corrections worth carrying forward.** Demanding OTP on Direct Grant returns **HTTP 500**
+> (`AuthenticationFlowException`) for a user with no OTP credential, not a refusal — `Deny access`
+> returns 401. And the runbook's original `acr.loa.map = {"gold":1}` would have labelled **every**
+> token `acr=gold`, including tokens that never ran OTP, making Layer 2 accept everything; a
+> password-only token already carries LoA 1. Both were found by measurement, not review.
+>
+> Measured behaviour is recorded in `docs/runbooks/mfa-enforcement.md` § What was measured.
+>
+> ## ⚠️ Verified gap — 2026-08-20 (historical — see the Update above)
 >
 > The Decision below records Layer 1 as "Applied and verified against a live Keycloak … then exported
 > to the realm JSON". **The realm JSON in git contains none of it.** Read directly from
