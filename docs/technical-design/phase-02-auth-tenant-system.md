@@ -92,10 +92,17 @@ Guard placement is fixed by `06-rbac-permission-matrix` §6.9 — vocabulary in 
 
 ## 4. Data model
 
-Four tables, all in schema `platform`, which is **cross-tenant and carries no RLS**
-(`07-multi-tenant-architecture` §7.7 schema registry; `00_master` § PHASE 2 COMMAND → Entities).
+Phase 2 creates **four** tables, all in schema `platform`, which is **cross-tenant and carries no
+RLS** (`07-multi-tenant-architecture` §7.7 schema registry; `00_master` § PHASE 2 COMMAND → Entities).
 `platform.*` always lives on the shared DB and is never replicated to a dedicated DB (§7.1 platform
 schema isolation rule).
+
+The authoritative column-level definition is `11-database-schema` §11.1, which defines **eight**
+tables in this schema. The four below are Phase 2's; the other four belong to later phases and are
+named here so the schema is not read as complete: `tenant_settings` (ADR-028, tenant configuration),
+`vendor_identities` and `vendor_trading_relationships` (ADR-030 Vendor Portal, Phase 5), and
+`sync_tombstones` (Phase 10 delta sync). `users` additionally carries `photo_url` and `is_active` in
+§11.1 — the column list below is the identity-relevant subset, not the full table.
 
 | Table                | Key columns                                                                                                                                                                                    |
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -231,6 +238,36 @@ OQ-7.
   policy in Phase 16).
 - `mfa_totp_secret` is encrypted at rest with application-layer AES-256-GCM (ADR-035).
 
+### MFA enforcement — design vs. verified state
+
+QM-4 and `05-security-compliance` §5.4 require MFA (TOTP) for `TENANT_ADMIN` and `FINANCE`.
+**ADR-067 is the decision record for how**, and it enforces in two layers keyed on **role**, not on
+login path:
+
+| Layer                   | Mechanism                                                                                                                                      | Verified state                                                                                                  |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| 1 — Keycloak-native OTP | browser flow `Condition - user role` = composite role `mfa-required` → OTP Form REQUIRED, plus `acr.loa.map` so the token's `acr` proves OTP   | **Absent** from `infrastructure/keycloak/realms/construction-os-realm.json` (ADR-067 note, verified 2026-08-20) |
+| 2 — backend `acr` gate  | `JwtAuthGuard.handleRequest` → `enforceMfaForPrivilegedRoles`; a privileged token whose `acr` is not accepted is rejected `COS-AUTH-001` (403) | Present, but gated by `MFA_ENFORCE` which defaults to `false`                                                   |
+
+**Consequence, stated plainly: MFA is not enforced for privileged roles today, on either layer.**
+This is a pre-existing gap recorded in ADR-067 itself — not something introduced by any later change.
+
+Layer 2 is **method-agnostic by construction**: it reads `acr` off the token and never asks which
+path minted it. That is the same shape the industry converged on — Microsoft Entra binds a required
+_authentication strength_ to a directory role and evaluates it per sign-in, and Okta expresses the
+equivalent through assurance-level policy conditions. The gap is not the design; it is that Layer 1
+was never applied to the realm.
+
+**Keycloak binds Browser flow and Direct Grant flow separately**, so a browser-flow conditional OTP
+does not run on a Direct Grant token. Path A issues tokens through Direct Grant
+(`05-security-compliance` §5.4.2 step 3), which is why any change that lets a privileged role
+authenticate by phone must define the Direct Grant flow's behaviour explicitly — see § 14 OQ-9.
+
+**`mfa_totp_secret` and `/api/v1/auth/mfa/*` are deprecated.** ADR-067 and ADR-074 record that the
+custom backend TOTP module is not wired into any real login flow; Keycloak owns TOTP, and enrolment
+goes through the Keycloak Application-Initiated Action `kc_action=CONFIGURE_TOTP` (ADR-074). The
+column and endpoints are retained to avoid test churn, not because they are the mechanism.
+
 ---
 
 ## 10. Observability
@@ -300,10 +337,11 @@ early-warning metrics are in `00_master` § Risk Register.
 
 ## 14. Open questions / NOT SPECIFIED
 
-| ID   | Question                                                                                                                                                                                                                                                                                                                                                                                                                              | Status                     |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
-| OQ-7 | QM-9 requires a committed rollback script for **every** migration. Five have none: `20260723000001_add_estimated_completion_date_to_projects`, `20260723000002_add_timezone_to_tenants`, `20260723000003_notification_delivery_rules`, `20260730000001_add_department_to_users`, `20260730000002_add_user_additional_roles`. A sixth, `20260605000002_file_service`, has a rollback named `_rollback.sql` instead of `.rollback.sql`. | Open — QM-9 gap            |
-| OQ-8 | `platform.users` on disk has `department` and a `UserAdditionalRole` model; `00_master` § PHASE 2 COMMAND → Entities describes neither, and `tenant_memberships` there carries a single `role`. The decision that introduced multiple roles per user was not located.                                                                                                                                                                 | Open — needs a source      |
-| OQ-9 | `05-security-compliance` §5.4 assigns Path A to field roles and Path B to office roles. Whether a single user may use **either** path is not stated either way in the specification set.                                                                                                                                                                                                                                              | Open — needs a PO decision |
+| ID    | Question                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Status                   |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------ |
+| OQ-7  | QM-9 and `09-data-architecture` §9.7.1 require a committed rollback script for **every** migration. Five have none: `20260723000001_add_estimated_completion_date_to_projects`, `20260723000002_add_timezone_to_tenants`, `20260723000003_notification_delivery_rules`, `20260730000001_add_department_to_users`, `20260730000002_add_user_additional_roles`. A sixth, `20260605000002_file_service`, has a rollback named `_rollback.sql` instead of `.rollback.sql`. **§9.7.1 says this is "enforced by a CI gate" — no such gate exists:** `.github/workflows/` contains no migration↔rollback check, `scripts/ci/` has no such script, and §30.12's CI-gate table (21 gates) does not list one. Four of the five are `ADD COLUMN` / `CREATE TABLE` and reverse trivially; `notification_delivery_rules` contains `ALTER TYPE … ADD VALUE 'PUSH'`, which PostgreSQL cannot reverse without recreating the type. | Open — QM-9 gap          |
+| OQ-8  | `platform.users` on disk has a `department` column and a `UserAdditionalRole` model, added by migrations `20260730000001` / `20260730000002`. **Neither is in the authoritative schema**: `11-database-schema` §11.1 gives `platform.users` ten columns and `department` is not among them, `tenant_memberships` carries a single `role`, and no additional-roles table exists anywhere in §11.1. The only `department` in the specification set is on the **Employee** entity (§11.2 workforce master) — a different entity. `06-rbac-permission-matrix` and ADR-014 describe one role per membership. No ADR for multiple roles per user was found.                                                                                                                                                                                                                                                              | Open — needs a source    |
+| OQ-9  | `05-security-compliance` §5.4 assigns Path A to field roles and Path B to office roles; whether one user may use **either** path was not stated. **Decided 2026-08-21 (product owner): unified login — a user may authenticate by OTP or by email+password — EXCEPT `TENANT_ADMIN` and `FINANCE`, which remain Path B only**, because Path A is Direct Grant and cannot carry the ADR-067 Layer 1 OTP condition, and because NIST SP 800-63B Rev 4 classifies SMS/PSTN OTP as a restricted authenticator that no longer satisfies AAL2. Recorded here because the **spec has not yet been updated**: the role↔path binding is still written in `05` §5.4, `14` §14.3 (lines 156/161/166/172/498/625–626), `20-ux-flow` (351/361–362/538), `00_master` (1759/1768/1960/3537), `context.md` (207–208) and ADR-017.                                                                                                   | Decided — spec edit owed |
+| OQ-10 | **MFA is not enforced for `TENANT_ADMIN` / `FINANCE` today.** ADR-067 Layer 1 is absent from the checked-in realm JSON (verified 2026-08-20) and Layer 2 (`MFA_ENFORCE`) defaults to `false`, so neither layer is active in any environment provisioned from this repository. QM-4 states MFA is REQUIRED for these roles. Pre-existing; recorded here because Phase 2 owns the auth model.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Open — security gap      |
 
 Recorded, not resolved — per [README § Open questions](README.md#open-questions-register).
