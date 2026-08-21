@@ -137,6 +137,13 @@ jobs:
       - name: Keycloak realm still carries MFA Layer 1
         run: node ./scripts/ci/check-keycloak-mfa-config.mjs
 
+      # §9.7.1 says a PR that adds a migration without a rollback "must not merge — enforced by a CI
+      # gate". There was no such gate, and it showed: 5 of 89 migrations had no rollback and a 6th had
+      # one under the wrong filename. That last one is why this pairs names rather than counting files
+      # — the directory held 89 of each while one pair was broken.
+      - name: Every migration has a rollback script
+        run: node ./scripts/ci/check-migration-rollbacks.mjs
+
   # ─── MLOps tests (Python / Airflow 3.x DAGs) ────────────────────────────────
   mlops-tests:
     name: MLOps Tests (Python)

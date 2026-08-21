@@ -493,6 +493,7 @@ CI pipeline (GitHub Actions) enforces these gates per `04-tech-stack` section 4.
 | Security SAST (Semgrep — registry rules)  | Every PR              | Alert only (code scanning) |
 | Duplication (jscpd, ratchet)              | Every PR              | PR merge                   |
 | Keycloak realm carries MFA Layer 1        | Every PR              | PR merge                   |
+| Migration↔rollback pairing (§9.7.1)       | Every PR              | PR merge                   |
 | Smoke tests (ArgoCD PostSync wave 1)      | Post-deploy (staging) | Blocks E2E wave 2          |
 | E2E tests (Playwright)                    | Merge to `staging`    | Production promotion       |
 | E2E tests (Detox — React Native mobile)   | Merge to `staging`    | Production promotion       |

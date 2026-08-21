@@ -356,8 +356,15 @@ final name up front.
 - Must be idempotent — safe to run more than once on the same database state
 - Must not drop data that cannot be recovered (use `ALTER TABLE … SET NULL` or archival before drop)
 
-A PR that adds a migration without a committed rollback script **must not merge** — enforced by a
-CI gate.
+A PR that adds a migration without a committed rollback script **must not merge** — enforced by
+`scripts/ci/check-migration-rollbacks.mjs` in the CI lint job (§30.12).
+
+> This sentence claimed a CI gate from the day it was written and no gate existed, which is how five
+> migrations reached `main` with no rollback and a sixth with one under the wrong filename
+> (`..._file_service_rollback.sql`). The gate now exists and pairs each migration directory with
+> `rollbacks/<dir>.rollback.sql` by name — counting files would not have caught the misnamed one,
+> since the directory held the right number of them. The gate checks **pairing only**; that the SQL
+> actually reverses the migration is still the human verification required below.
 
 ### 9.7.2 Backward-Compatible Migration Rules
 
