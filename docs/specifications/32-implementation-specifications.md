@@ -492,39 +492,44 @@ Non-canonical schemas MUST be migrated before Phase 8 (Multi-company Enterprise 
 4. To add a canonical event: (1) add entry to §32.4 Event Payload Specifications, (2) create `.v1.avsc` file,
    (3) migrate consumers, (4) delete legacy file.
 
-#### Required Canonical Names — Pending Spec Addition
+#### Canonical-name migration — status 2026-08-22
 
-Each legacy file below requires a canonical spec entry in §32.4 before migration can proceed.
+This section carried a 27-row table of legacy schema files awaiting a canonical rename. **Twenty-six
+of those rows are discharged and the table is removed rather than left to be re-read as outstanding
+work.** Verified against `packages/@cos/shared/src/avro/`:
 
-| Legacy File                            | Required Canonical Name                          | Notes                                                                                           |
-| -------------------------------------- | ------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
-| `procurement.rfq.created.avsc`         | `procurement.rfq.created.v1`                     | Core procurement event — high priority                                                          |
-| `procurement.rfq.alert.avsc`           | `procurement.rfq.deadline_approaching.v1`        | Rename for clarity                                                                              |
-| `procurement.po.status_changed.avsc`   | `procurement.po.status_changed.v1`               | No rename required                                                                              |
-| `procurement.delivery.delayed.avsc`    | `procurement.delivery.delayed.v1`                | Version suffix only                                                                             |
-| `procurement.inventory.low.avsc`       | `procurement.inventory.low_threshold_reached.v1` | Rename for clarity                                                                              |
-| `project.updated.avsc`                 | `construction.project.updated.v1`                | Domain prefix added                                                                             |
-| `project.status_changed.avsc`          | `construction.project.status_changed.v1`         | Domain prefix added                                                                             |
-| `boq.version.approved.avsc`            | `construction.boq.version_approved.v1`           | Domain prefix aligned                                                                           |
-| `site.report.submitted.avsc`           | `site.report.submitted.v1`                       | "submitted" is correct — reports are directly submitted; distinct from `site.report.created.v1` |
-| `site.progress.updated.avsc`           | `site.progress.updated.v1`                       | Version suffix only                                                                             |
-| `site.issue.created.avsc`              | `site.issue.created.v1`                          | Version suffix only                                                                             |
-| `site.media.uploaded.avsc`             | `site.media.uploaded.v1`                         | Version suffix only                                                                             |
-| `inspection.passed.avsc`               | `site.inspection.passed.v1`                      | Domain prefix added                                                                             |
-| `issue.status_changed.avsc`            | `site.issue.status_changed.v1`                   | Domain prefix added                                                                             |
-| `equipment.assigned.avsc`              | `equipment.unit.assigned.v1`                     | Entity name added                                                                               |
-| `equipment.returned.avsc`              | `equipment.unit.returned.v1`                     | Entity name added                                                                               |
-| `equipment.maintenance_scheduled.avsc` | `equipment.unit.maintenance_scheduled.v1`        | Entity name added                                                                               |
-| `workforce.checkout.avsc`              | `workforce.checkout.created.v1`                  | Action + version added                                                                          |
-| `workforce.timesheet_approved.avsc`    | `workforce.timesheet.approved.v1`                | Entity name added                                                                               |
-| `cost.budget.updated.avsc`             | `finance.budget.updated.v1`                      | Domain renamed cost→finance                                                                     |
-| `cost.budget.warning.avsc`             | `finance.budget.warning_threshold_reached.v1`    | Domain + name clarified                                                                         |
-| `cost.entry.created.avsc`              | `finance.cost_entry.created.v1`                  | Domain + entity added                                                                           |
-| `finance.budget.created.avsc`          | `finance.budget.created.v1`                      | Version suffix only                                                                             |
-| `finance.payment.processed.avsc`       | `finance.payment.processed.v1`                   | Version suffix only                                                                             |
-| `finance.variance.alert.avsc`          | `finance.budget.variance_detected.v1`            | Name clarified                                                                                  |
-| `ai.queue.request.avsc`                | `ai.inference.queued.v1`                         | Name clarified                                                                                  |
-| `ai.result.ready.avsc`                 | `ai.inference.completed.v1`                      | Name clarified                                                                                  |
+- **No legacy-named `.avsc` remains.** Every event schema on disk uses the canonical
+  `{domain}.{entity}.{action}.v{N}.avsc` form; the only non-`.v1` file is `base-event-envelope.avsc`,
+  which is the envelope, not an event.
+- **Ten of the canonical names the table demanded were never created, and nothing asks for them** —
+  `procurement.rfq.deadline_approaching.v1`, `procurement.delivery.delayed.v1`,
+  `procurement.inventory.low_threshold_reached.v1`, `site.progress.updated.v1`,
+  `site.media.uploaded.v1`, `finance.budget.updated.v1`,
+  `finance.budget.warning_threshold_reached.v1`, `finance.cost_entry.created.v1`,
+  `ai.inference.queued.v1`, `ai.inference.completed.v1`. Each has zero references in
+  `backend/`, `services/` and `packages/`, zero entries in `EVENT_AVSC_MAP`, and **no source outside
+  the deleted table** — no phase `Generate:` list and no other spec section names any of them. They
+  were rename targets for legacy files that no longer exist, so carrying them forward would invent
+  ten events nothing ever asked for. Add one through the §32.4 procedure above if a phase needs it.
+- **Twenty of the twenty-one events in the payload table above exist as `.avsc`.**
+
+**One row is genuinely outstanding, and it is a naming conflict rather than a missing file.**
+
+| Payload table (#16, authoritative)     | On disk + in code                                                     |
+| -------------------------------------- | --------------------------------------------------------------------- |
+| `finance.budget.variance_detected.v1`  | `finance.variance.alert.v1` — record `VarianceAlertEvent`, and the key `EVENT_AVSC_MAP` publishes under |
+
+The implemented name is also what `00_master` § Phase 7 `Generate:` and § Phase 20 notification
+triggers say, and what `20-ux-flow` §20.7 cites for the `/alerts` page. So the payload table above is
+the only place the `budget.variance_detected` form appears, while the other form is live in code and
+in three documents.
+
+**Not renamed here, deliberately.** The event type is in `EVENT_AVSC_MAP`, so it is on the wire:
+renaming it is a breaking change by this section's own Event Versioning rules, which require a new
+major version plus a migration consumer bridge — not an edit to a filename. Whether §32.4 #16 changes
+to match the implementation, or the implementation migrates to `.v2` under the spec name, is a
+product-owner decision. Recorded as OQ-16 in
+`docs/technical-design/phase-08-event-infrastructure.md`.
 
 ---
 

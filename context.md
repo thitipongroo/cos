@@ -1033,6 +1033,7 @@ docs/security/secrets-rotation-policy.md            — Rotation schedule for al
 docs/security/csp-policy.md                         — Content Security Policy definition (Phase 16)
 docs/security/cors-policy.md                        — CORS allowed origins per environment (Phase 3)
 docs/security/pentest-findings.md                   — External pentest findings and resolution status (before Stage 1→2)
+docs/security/sms-otp-restricted-authenticator.md  — NIST SP 800-63B Rev 4 obligations for Path A SMS OTP: risk assessment, migration roadmap, user notification (spec §5.4.4)
 infrastructure/terraform/aws/kms.tf                 — KMS customer-managed key definitions (Phase 17)
 infrastructure/kubernetes/external-secrets/         — ESO ExternalSecrets: AWS SM → K8s Secret cos-<svc>-secrets (cloud secret delivery; spec §08 §8.6)
 infrastructure/kubernetes/sealed-secrets/           — SealedSecrets (kubeseal): git-committed / on-prem secret path; same cos-<svc>-secrets names

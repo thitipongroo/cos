@@ -152,6 +152,24 @@ The envelope field list differs between §32.4, §15.6 and the committed Avro sc
 `decimal` with `ROUND_HALF_UP`. Round only final results, never intermediates
 (`32-implementation-specifications` §32.5).
 
+### Record lifecycle — soft delete and PII erasure
+
+`11-database-schema` §11.4 binds every table, so no phase page repeats it. Every record carries
+`tenant_id`, `created_by`, `created_at`, `updated_at` and `deleted_at`; project-scoped records add
+`project_id`.
+
+**All records soft-delete.** `deleted_at` is set; the row stays. **Hard deletes are not permitted on
+production data** — it would break the audit trail, the retention policy (`09-data-architecture`
+§9.5) and FK integrity across tenants. Every query filters `WHERE deleted_at IS NULL` unless it is
+deliberately reading deleted rows, and `30-testing-strategy` §30.4 makes "GET by id returns 404 for a
+soft-deleted record" a required integration test.
+
+**PII-bearing entities also carry `pii_erased_at`** (PDPA §37, GDPR Art. 17). Erasure nullifies the
+listed PII fields and stamps the timestamp; it never deletes the row, and it is **independent of**
+deletion — the two flags give four lifecycle states (§11.4). The PII fields subject to erasure are
+enumerated per entity in §11.4; `Contact.lead_id` is deliberately retained because it is a business
+relationship identifier, not PII.
+
 ### Security baseline
 
 OAuth2/OIDC via Keycloak; RBAC + ABAC; AES-256 at rest; TLS 1.3 on ingress; immutable audit logging
@@ -184,12 +202,12 @@ implementation.
 Contradictions found in the source material while compiling these pages. **None is resolved here** —
 each is recorded, carried into the § 14 of the affected phase page, and left for the product owner.
 
-| ID   | Where                                                                                                      | What                                                                                                                                                                                   | Affects            |
-| ---- | ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
-| OQ-1 | `03-system-design` §3.2 vs `backend/src/modules/`                                                          | §3.2 names 21 logical services; 23 NestJS modules exist on disk. Four §3.2 services have no module of that name; eight modules are not named in §3.2.                                  | Phase 1, Phase 3–7 |
-| OQ-2 | `32-implementation-specifications` §32.4 vs `15-event-driven-workflow` §15.6 vs `base-event-envelope.avsc` | Envelope has 8 fields in §32.4, 10 in §15.6, and 9 in the committed Avro schema (`trace_id` / `span_id` nullable with default `null`).                                                 | Phase 8            |
-| OQ-3 | `15-event-driven-workflow` §15.6                                                                           | The section calls the envelope "CloudEvents v1.0-**inspired** … **NOT** a strict CloudEvents-compliant envelope" and, under ECO-001, "**Envelope:** CloudEvents v1.0 (**normative**)". | Phase 8            |
-| OQ-4 | `07-multi-tenant-architecture` §7.3                                                                        | "Created on first publish, not at tenant onboarding" (topic provisioning) against "materialised per tenant, created idempotently at tenant onboarding" (creation procedure).           | Phase 8, Phase 25  |
+| ID   | Where                                                                                                      | What                                                                                                                                                                                                | Affects            |
+| ---- | ---------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| OQ-1 | `03-system-design` §3.2 vs `backend/src/modules/`                                                          | **Closed** — full mapping with sources now in `architecture/README.md` § Level 3, together with the C4 Component view. Forecasting Service turns out to be unbuilt and unspecified beyond its name. | Phase 1, Phase 3–7 |
+| OQ-2 | `32-implementation-specifications` §32.4 vs `15-event-driven-workflow` §15.6 vs `base-event-envelope.avsc` | Envelope has 8 fields in §32.4, 10 in §15.6, and 9 in the committed Avro schema (`trace_id` / `span_id` nullable with default `null`).                                                              | Phase 8            |
+| OQ-3 | `15-event-driven-workflow` §15.6                                                                           | The section calls the envelope "CloudEvents v1.0-**inspired** … **NOT** a strict CloudEvents-compliant envelope" and, under ECO-001, "**Envelope:** CloudEvents v1.0 (**normative**)".              | Phase 8            |
+| OQ-4 | `07-multi-tenant-architecture` §7.3                                                                        | "Created on first publish, not at tenant onboarding" (topic provisioning) against "materialised per tenant, created idempotently at tenant onboarding" (creation procedure).                        | Phase 8, Phase 25  |
 
 Phase-local questions, raised on the page named and repeated here so the register is complete:
 
@@ -197,14 +215,44 @@ Phase-local questions, raised on the page named and repeated here so the registe
 | ----- | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
 | OQ-1a | `packages/@cos/`                                 | `@cos/schemas` and `@cos/ui-logic` exist on disk but are named in no phase `Generate:` list read so far.                                                                                  | Phase 1   |
 | OQ-5  | root `pnpm-workspace.yaml` comment               | Claims `apps/mobile` hoisting is configured in `apps/mobile/.npmrc` via `--ignore-workspace`; that file and `00_master` both say `nodeLinker` lives in `pnpm-workspace.yaml`.             | Phase 1   |
-| OQ-6  | `32-implementation-specifications` §32.4         | Of the 27 canonical schema names the migration table requires, 16 exist and 11 have no file; `finance.variance.alert.v1.avsc` kept its legacy name with a `.v1` suffix.                   | Phase 8   |
+| OQ-6  | `32-implementation-specifications` §32.4         | **Closed** — the stale 27-row table is replaced by a verified status; 10 unreferenced rename targets dropped.                                                                             | Phase 8   |
+| OQ-16 | §32.4 #16 vs code + 3 documents                  | `finance.budget.variance_detected.v1` (spec) against `finance.variance.alert.v1` (on the wire). Aligning to the spec is a breaking `.v2`, not a rename.                                   | Phase 8   |
 | OQ-7  | QM-9 / §9.7.1 vs `backend/prisma/` and CI        | **Closed 2026-08-22** — 89/89 migrations paired, the enum rollback verified on a live database, and the CI gate §9.7.1 always claimed now actually exists.                                | Phase 2   |
 | OQ-8  | `00_master` § PHASE 2 COMMAND vs `schema.prisma` | `users.department` and `UserAdditionalRole` exist on disk; the phase command describes a single `role` per membership and neither field.                                                  | Phase 2   |
 | OQ-9  | `05-security-compliance` §5.4                    | **Closed** — unified login recorded in new §5.4.4; five documents and ADR-017 now reference it. The entry's original claim that §5.4 held the binding was itself wrong.                   | Phase 2   |
 | OQ-12 | `11-database-schema` §11.1                       | `platform.users` omits `phone_number` and its `keycloak_user_id` note describes pre-F-1 behaviour.                                                                                        | Phase 2   |
 | OQ-13 | `14-api-architecture` §14.5                      | Table says Path A carries no `azp`; measured value is `azp=cos-backend`.                                                                                                                  | Phase 2   |
 | OQ-14 | §5.4.4 vs `POST /api/v1/users`                   | Nothing provisions one user for both paths, so unified login is policy rather than capability for existing accounts.                                                                      | Phase 2   |
+| OQ-15 | `11-database-schema` §11.4 vs §11.1              | §11.4's "every record has `created_by` / `deleted_at`, all records soft-delete" contradicts §11.1's platform tables and QM-4's append-only audit log.                                     | Phase 2   |
+| OQ-17 | QM-7 vs the OTP login path                       | QM-7's "account lockout after 5 failures for 15 minutes" is not implemented on Path A; the only lockout lives in the deprecated TOTP module.                                              | Phase 2   |
 | OQ-10 | ADR-067 realm config + `MFA_ENFORCE`             | Layer 1 landed in the realm file 2026-08-22 (verified live; ADR-067's role-based mechanism was proven unusable and replaced). Layer 2 and existing Keycloak instances remain ops actions. | Phase 2   |
+
+---
+
+## Verification basis
+
+Every citation on these pages was checked against the spec file itself, not against a quotation of it
+in `00_master` or `context.md`. Read in full as of **2026-08-22**:
+
+| Spec | Lines | Spec | Lines | Spec | Lines |
+| ---- | ----- | ---- | ----- | ---- | ----- |
+| 03   | 150   | 09   | 439   | 16   | 214   |
+| 04   | 207   | 11   | 1,280 | 30   | 600   |
+| 05   | 776   | 14   | 692   | 31   | 489   |
+| 06   | 402   | 15   | 295   | 32   | 2,054 |
+| 07   | 517   |      |       |      |       |
+
+Plus `context.md`, `context/00_master_construction_os.md`, `context/01_build_priority_execution.md`,
+`context/02_build_deep_systems.md`, and ADR-014 / 017 / 050 / 067 / 074 / 078.
+
+The pass was worth running: it caught one error on these pages — § 4 of the Phase 2 page said the
+`platform` schema holds four tables because the phase command lists four, where `11-database-schema`
+§11.1 defines eight — and surfaced OQ-12 through OQ-15, none of which is visible from the compiled
+views alone. A page that cites a section nobody opened is a page that repeats whatever the last
+summary got wrong.
+
+Specs **not** read in full, because no page cites them yet: 00, 01, 02, 08, 10, 12, 13, 17–29, 33, 34.
+A phase page that needs one reads it first.
 
 ---
 

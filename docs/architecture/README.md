@@ -1,6 +1,6 @@
 ---
 title: Construction OS — Architecture
-last_updated: 2026-08-07
+last_updated: 2026-08-22
 ---
 
 # Construction OS — Architecture
@@ -38,7 +38,10 @@ them**, the Markdown block is the source. This is a **local authoring tool, not 
 (product-owner decision 2026-08-07): it pulls puppeteer's Chromium, which is why `puppeteer: true`
 sits in `pnpm-workspace.yaml` → `allowBuilds`.
 
-Verified 2026-08-07: all 13 mermaid charts across the 10 Markdown files in this repo render clean.
+Verified 2026-08-22: the **3** charts in this file (Context, Container, Component) render clean —
+the Component view was added that day. The repo-wide figure recorded here on 2026-08-07 was "13
+charts across 10 Markdown files"; that count was not re-taken, and a plain `grep` for the fence
+over-counts it because this very paragraph mentions the fence inline.
 
 > **These diagram sources moved here on 2026-08-07.** §3.4 requires that "diagram sources live in
 > `architecture/`" and that they are "referenced from `architecture/README.md`"; until then both
@@ -187,6 +190,93 @@ a NestJS **module**, not a separately deployed process. The concrete wiring — 
 table, which consumer reads which topic, and the authentication flow — is in
 [service-interaction.md](service-interaction.md).
 
+Cross-deployable edges (File Service, the AI services, the Go workers, Kafka, the datastores) are the
+Container view above; this one stays inside `backend/`.
+
+```mermaid
+flowchart TB
+    subgraph mono["backend/ — NestJS modular monolith · ONE deployable (§32.2)"]
+        subgraph core["Core (§3.2)"]
+            identity[identity]
+            tenant[tenant]
+            notification[notification]
+            files[files]
+        end
+        subgraph domain["Domain (§3.2)"]
+            project[project]
+            boq[boq]
+            procurement[procurement]
+            siteops[site-ops]
+            finance[finance]
+            equipment[equipment]
+            workforce[workforce]
+            safety[safety]
+            crm[crm]
+        end
+        subgraph intel["Intelligence (§3.2)"]
+            analytics[analytics]
+            graphmod[graph]
+        end
+        subgraph unnamed["In the tree, not named in §3.2 — see the table below"]
+            tasks[tasks]
+            sync[sync]
+            masterdata[master-data]
+            vendorportal[vendor-portal]
+            credentials[credentials]
+            compliance[compliance]
+            geo[geo]
+            platformwebhook[platform-webhook]
+        end
+        shared["src/shared/ — guards · TenantContextInterceptor · TenantPrismaService · outbox"]
+    end
+
+    core --> shared
+    domain --> shared
+    intel --> shared
+    unnamed --> shared
+```
+
+**Every module reaches every other by NestJS dependency injection, never HTTP** (§32.2), and reaches
+another module's tables only through that module's service layer or a Kafka event (master §4).
+
+#### §3.2 names 21 services; the tree holds 23 modules
+
+Neither number is wrong, and the difference is not drift — but it is not derivable from either
+document alone, so it is recorded here. Verified against the tree on 2026-08-22.
+
+**Where each §3.2 service actually lives:**
+
+| §3.2 service                                                                        | In the tree                                                                                                                                                      | Established by                                                                                                                                                                                                                                                                             |
+| ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Identity · Tenant · Notification                                                    | `identity` · `tenant` · `notification`                                                                                                                           | master § Phase 2, § Phase 20                                                                                                                                                                                                                                                               |
+| File                                                                                | `files` **+** `services/file-service`                                                                                                                            | §32.2 — I/O extracted, metadata stays in the monolith                                                                                                                                                                                                                                      |
+| Document                                                                            | **no module, by design**                                                                                                                                         | §3.2's own note: MVP is OCR (Phase 11) + storage (Phase 9); version management, format conversion and the drawing viewer are post-MVP                                                                                                                                                      |
+| CRM · Project · BOQ · Procurement · Finance · Site · Equipment · Workforce · Safety | `crm` · `project` · `boq` · `procurement` · `finance` · `site-ops` · `equipment` · `workforce` · `safety`                                                        | master § Phases 3–7, 21, 22; ADR-027, ADR-029                                                                                                                                                                                                                                              |
+| Workflow Service (Temporal)                                                         | **not a module** — workflows sit inside the owning module: `procurement/workflows`, `tenant/workflows`, `compliance/workflows`, `identity/data-export/workflows` | §3.2 defines it as "implemented using Temporal.io"; a shared workflow module would be the cross-module HTTP call §32.2 forbids                                                                                                                                                             |
+| Quality Control                                                                     | inside `site-ops` (inspections)                                                                                                                                  | master § Phase 6 `/api/v1/site/inspections`; §11.2 Inspections                                                                                                                                                                                                                             |
+| Asset Management                                                                    | inside `project` (`project/assets/`)                                                                                                                             | master § Phase 3 assets entity; §11.2 Assets                                                                                                                                                                                                                                               |
+| AI Copilot                                                                          | `services/ai-gateway` (Python, separate deployable)                                                                                                              | §32.2 — cannot run in the Node process                                                                                                                                                                                                                                                     |
+| Knowledge Graph                                                                     | `graph` **+** `services/kg-ingestion-worker`                                                                                                                     | §32.2 — read path queries Neo4j directly, write path is Kafka                                                                                                                                                                                                                              |
+| Analytics                                                                           | `analytics` **+** `services/analytics-worker`                                                                                                                    | §32.2 — same split                                                                                                                                                                                                                                                                         |
+| **Forecasting Service**                                                             | **not built**                                                                                                                                                    | The name appears in the whole specification set **only** at §3.2. The deterministic 13-week cash-flow forecast is implemented inside `finance` (ADR-024, `finance.controller.ts` `finance/cashflow-forecast/:projectId`); AI forecasting is Layer B, and §21 states Layer B/C are post-MVP |
+
+**The eight modules §3.2 does not name**, each with the decision that put it there:
+
+| Module             | Established by                                                                                                                                              |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tasks`            | §11.2 Tasks + Task Completion Gates; §14.3 `/api/v1/projects/{id}/tasks`; master § Phase 6                                                                  |
+| `sync`             | `17-offline-mobile-sync`; master § Phase 10 (`/sync/delta`, `/sync/push`)                                                                                   |
+| `master-data`      | `context/01_build_priority_execution.md` P0 §D — the controller serves materials, work-categories, issue-categories and cost-categories, which is that list |
+| `vendor-portal`    | ADR-030; §6.8b `VENDOR_PORTAL` external principal; §14 Vendor Portal                                                                                        |
+| `credentials`      | ADR-019 / ADR-058; §11.6 `credentials` schema; §5.3 BG-001 — a REST client for `services/credential-service`, no controllers                                |
+| `compliance`       | §5.3.1 Compliance Audit Workflow (Temporal); master § Phase 16                                                                                              |
+| `geo`              | [ADR-086](adr/086-self-hosted-nominatim-geocoding.md) — self-hosted Nominatim                                                                               |
+| `platform-webhook` | master § Phase 25 Generate, which names the module outright; §34.6 HMAC verification                                                                        |
+
+None of these is unsourced. What is missing is the reverse link: §3.2 has not been updated as modules
+were added by later ADRs, so reading §3.2 alone understates the monolith by eight modules and
+overstates it by one that was never built.
+
 ### What the moved diagrams gained
 
 Everything below is present in the running system and established by the source named; nothing here
@@ -240,7 +330,7 @@ work as drawn; that is a different list and still applies.
 
 ## Architecture Decision Records — [`adr/`](adr/)
 
-86 ADRs plus the template. Format and process: QM-11. Before writing `(see ADR-NNN)` anywhere,
+95 ADRs plus the template (highest number: 095). Format and process: QM-11. Before writing `(see ADR-NNN)` anywhere,
 verify the file exists — Rule 29.
 
 | ADR                                                                           | Title                                                                                      |

@@ -688,11 +688,14 @@ Target: Build a production-grade Construction Operating System.
 
 > 📎 **Derived from:** `docs/specifications/32-implementation-specifications.md §32.4`
 > Authoritative payload specs (field types, enum values) are in specs. This section is agent-executable form.
-> ⚠️ **EVENT NAMING MIGRATION REQUIRED:**
-> The canonical event naming format (spec §32.4 and §15.6) is:
-> `{domain}.{entity}.{action}.v{N}` — e.g., `construction.project.created.v1`
-> Agents MUST use the canonical format for ALL NEW events. Non-canonical legacy events
-> must be migrated per the Schema Migration Policy in spec §32.4 before Stage 2 go-live.
+> **EVENT NAMING:** the canonical format (spec §32.4 and §15.6) is
+> `{domain}.{entity}.{action}.v{N}` — e.g., `construction.project.created.v1`.
+> Agents MUST use it for ALL NEW events.
+> **The legacy-name migration this note used to demand is complete** (verified 2026-08-22): no
+> legacy-named `.avsc` remains, and §32.4's 27-row pending table has been replaced by its status.
+> One name is still contested — `finance.variance.alert.v1` on the wire against
+> `finance.budget.variance_detected.v1` in §32.4 #16 — and is a product-owner decision, not a
+> migration task, because the type is live and renaming it is a breaking change.
 > See Kafka topic naming: `{tenant_id}.{domain}.{entity}.{action}.v{N}`
 > The event names below are annotated with their canonical equivalents where known.
 

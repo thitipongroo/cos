@@ -381,6 +381,8 @@ is sufficient:
    (`docs/runbooks/mfa-enforcement.md` Step 1b; verified against a live Keycloak 2026-08-22).
 2. **SMS is a restricted authenticator.** NIST SP 800-63B Rev 4 classifies SMS/PSTN OTP as
    *restricted* and it no longer satisfies AAL2. Phone possession alone is a single factor.
+   The risk assessment, migration roadmap and user-notification obligations Rev 4 attaches to
+   continued use are discharged in `docs/security/sms-otp-restricted-authenticator.md`.
 
 Every other role may authenticate by either path. This replaces the earlier convention under which
 Path A was described as "for field workers" and Path B "for office roles"; that framing was never a
