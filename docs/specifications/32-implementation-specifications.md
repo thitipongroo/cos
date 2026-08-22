@@ -430,10 +430,29 @@ compatibility) before first producer deployment.
   actor_id:       string (UUID — user who triggered)
   occurred_at:    string (ISO 8601 UTC)
   correlation_id: string (UUID — for tracing)
+  trace_id:       string | null (OTel trace_id, 32 hex — the trace that RAISED the event)
+  span_id:        string | null (OTel span_id, 16 hex — the span within it)
   payload:        object (event-specific — see below)
 }
 ```
 
+> **`trace_id` / `span_id` added here 2026-08-23** ([OQ-2](../technical-design/README.md#open-questions-register)).
+> They were already declared in `base-event-envelope.avsc` and in every event `.avsc` as
+> `["null","string"]` with a `null` default — this section listed eight fields and
+> `15-event-driven-workflow` §15.6 listed ten, and the wire schema agreed with §15.6.
+>
+> They are populated by `EventOutboxService.publish()`, inside the operation that raised the event,
+> and **not** at delivery: `OutboxPollerService` sends minutes later in another process under its own
+> span, so a context injected there would point a reader at the delivery instead of the cause. The
+> poller lifts them back out of the envelope into the Kafka headers, which is what satisfies QM-8's
+> "all Kafka events must carry `trace_id` and `span_id` in headers". Before that change the poller
+> published with no options at all, so no backend domain event carried either — and since
+> [ADR-094](../architecture/adr/094-durable-event-outbox.md) the outbox is every backend domain event.
+>
+> Null is a real value here, not a placeholder: an event raised outside a traced request has no
+> context, and the alternative — the all-zeros id `getTraceId()` returns when no span is active — is a
+> valid-looking id that resolves to nothing.
+>
 > **Event type naming convention:** `{domain}.{entity}.{action}.{version}` — identical to the
 > canonical format defined in 15-event-driven-workflow section 15.6.
 > Example: `construction.task.created.v1`, `procurement.purchase_order.approved.v1`.

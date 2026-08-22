@@ -122,7 +122,54 @@ describe('OutboxPollerService.poll — delivery', () => {
     await svc.poll();
 
     // Unchanged is the point: KafkaConsumer dedupes on event_id, so a retry must present the SAME id.
-    expect(producerMock.publish).toHaveBeenCalledWith(envelope);
+    // The second argument is the trace context lifted out of the envelope — empty here because this
+    // envelope carries none.
+    expect(producerMock.publish).toHaveBeenCalledWith(envelope, {});
+  });
+
+  // ── Trace propagation (TDD OQ-2 / QM-8) ──────────────────────────────────
+  // QM-8: "All Kafka events must carry trace_id and span_id in headers." This poller published with
+  // no options at all until 2026-08-23, so KafkaProducer set no traceparent, no trace_id and no
+  // span_id — on every backend domain event, since ADR-094 routed them all through here.
+  describe('trace context', () => {
+    it("carries the ENVELOPE's trace context into the publish options", async () => {
+      const { svc, db } = make();
+      const envelope = {
+        event_id: 'evt-1',
+        event_type: 'x.y.v1',
+        payload: {},
+        trace_id: 'a'.repeat(32),
+        span_id: 'b'.repeat(16),
+      };
+      db.$queryRaw.mockResolvedValueOnce([row({ payload: envelope })]);
+
+      await svc.poll();
+
+      // From the envelope, NOT from the active context here: this poller runs minutes later in
+      // another process, so its own span points at the delivery rather than at what caused it.
+      expect(producerMock.publish).toHaveBeenCalledWith(envelope, {
+        traceId: 'a'.repeat(32),
+        spanId: 'b'.repeat(16),
+      });
+    });
+
+    it('omits what the envelope does not carry', async () => {
+      const { svc, db } = make();
+      const envelope = {
+        event_id: 'evt-1',
+        event_type: 'x.y.v1',
+        payload: {},
+        trace_id: 'a'.repeat(32),
+        span_id: null,
+      };
+      db.$queryRaw.mockResolvedValueOnce([row({ payload: envelope })]);
+
+      await svc.poll();
+
+      // Not `spanId: null` — ProduceOptions.spanId is `string | undefined`, and the producer's
+      // `if (options.spanId)` would skip a null anyway. Sending the key would just be noise.
+      expect(producerMock.publish).toHaveBeenCalledWith(envelope, { traceId: 'a'.repeat(32) });
+    });
   });
 
   it('marks the row published only after Kafka accepted it', async () => {

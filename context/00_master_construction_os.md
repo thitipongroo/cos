@@ -724,6 +724,12 @@ All Kafka events MUST conform to the following envelope:
 │   actor_id:      string (UUID — user who triggered)        │
 │   occurred_at:   string (ISO 8601 UTC)                     │
 │   correlation_id: string (UUID — for tracing)              │
+│   trace_id:      string | null (OTel trace_id, 32 hex —    │
+│                    the trace that RAISED the event; set    │
+│                    by EventOutboxService.publish(), NOT    │
+│                    at delivery — the poller runs later in  │
+│                    another process under its own span)     │
+│   span_id:       string | null (OTel span_id, 16 hex)      │
 │   payload:       object (event-specific — see below)       │
 │ }                                                           │
 └─────────────────────────────────────────────────────────────┘
@@ -2486,6 +2492,17 @@ Entities (PostgreSQL — schema: procurement):
     delivered_at    TIMESTAMPTZ NOT NULL
     received_by     UUID NOT NULL
     notes           TEXT
+
+  delivery_items:   -- per-PO-line receipts; what fulfilment is actually computed from (spec §11.2,
+                    -- added 2026-08-23 — the table existed but no spec defined it, TDD OQ-27)
+    delivery_item_id  UUID PK
+    delivery_id       UUID FK → deliveries NOT NULL  ON DELETE CASCADE
+    line_id           UUID FK → po_line_items NOT NULL  ON DELETE RESTRICT
+    tenant_id         UUID NOT NULL
+    quantity_received DECIMAL(10,4) NOT NULL
+    UNIQUE: (delivery_id, line_id)  -- one row per PO line per delivery; also the idempotency key
+                                    -- that stops a replayed offline sync item double-counting a
+                                    -- receipt and closing a PO on goods that arrived once (§17.4)
 
   invoices:
     invoice_id      UUID PK

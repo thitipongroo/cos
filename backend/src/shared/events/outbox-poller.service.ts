@@ -170,7 +170,17 @@ export class OutboxPollerService implements OnApplicationBootstrap, OnModuleDest
     try {
       // The stored payload IS the envelope, event_id included — publish() honours that id rather than
       // minting a new one, which is what keeps a retry recognisable as the same event downstream.
-      await this.producer.publish(row.payload as BaseEventEnvelope<unknown>);
+      const envelope = row.payload as BaseEventEnvelope<unknown>;
+      // Trace context comes OUT of the envelope and back into the Kafka headers (TDD OQ-2). It was
+      // captured by EventOutboxService.publish() inside the request that raised the event; injecting
+      // the active context here would stamp this poller's span on it instead, which points a reader
+      // at the delivery rather than the cause. Passing nothing — which is what this did until
+      // 2026-08-23 — set no trace header at all, so no backend domain event satisfied QM-8's "all
+      // Kafka events must carry trace_id and span_id in headers".
+      await this.producer.publish(envelope, {
+        ...(envelope.trace_id ? { traceId: envelope.trace_id } : {}),
+        ...(envelope.span_id ? { spanId: envelope.span_id } : {}),
+      });
       await this.prisma.$executeRaw`
         UPDATE platform.outbox_events
            SET published = true, published_at = now(), last_error = NULL

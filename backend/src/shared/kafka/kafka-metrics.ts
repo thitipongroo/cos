@@ -7,6 +7,18 @@ const _metrics = createMetrics();
  * Wraps a KafkaJS Producer.send() call to:
  * - Inject W3C trace context into message headers
  * - Increment kafka_messages_produced_total counter
+ *
+ * **Not applied to anything, and must not be applied to the outbox path.** Nothing in this repository
+ * calls `wrapProducer` — verified 2026-08-23. That looks like an oversight and is worth understanding
+ * before "fixing" it: `injectKafkaTraceContext` injects the context active AT SEND TIME, and on the
+ * outbox path the sender is `OutboxPollerService`, running minutes later in another process under its
+ * own span. Wrapping the producer there would stamp the DELIVERY's trace onto the event and overwrite
+ * the originating one that `EventOutboxService.publish()` captured and the poller passes through as
+ * `ProduceOptions` (TDD OQ-2). A reader following that header lands on the poller instead of the
+ * request that caused the event.
+ *
+ * It remains correct for a producer that sends INSIDE the traced operation — which is what
+ * `file-service` does, though it passes `{ traceId }` explicitly rather than using this wrapper.
  */
 export function wrapProducer(producer: Producer): Producer {
   const originalSend = producer.send.bind(producer);

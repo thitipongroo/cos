@@ -560,6 +560,28 @@ Procurement — Delivery :
 - status (pending / partial / complete)
 - created_at
 
+Procurement — Delivery Item :
+
+Added 2026-08-23 ([OQ-27](../technical-design/README.md#open-questions-register)). The table existed
+and was load-bearing — it is what the platform sums to decide whether a PO line is fulfilled — but
+§11 never defined it and the Phase 5 entity list omitted it; the only description anywhere was a
+passing sentence in `17-offline-mobile-sync` §17.4.
+
+- delivery_item_id
+- delivery_id (FK → Procurement — Delivery, `ON DELETE CASCADE`)
+- line_id (FK → `procurement.po_line_items`, `ON DELETE RESTRICT` — a PO line with receipts against
+  it cannot be deleted out from under them)
+- tenant_id
+- quantity_received (DECIMAL(10,4))
+
+UNIQUE: `(delivery_id, line_id)` — one row per PO line per delivery. This is also the idempotency key
+that makes a replayed offline sync item resolve to the receipt already filed instead of double-counting
+it (§17.4): a double-applied replay would close a purchase order on goods that arrived once.
+
+No `created_by`, no `deleted_at`, no `created_at`. It is a join row recording a quantity, not an actor's
+action — see §11.4 on why neither column is universal. `Delivery.quantity_delivered` is the header
+total; this table is the per-line breakdown that fulfilment is actually computed from.
+
 Procurement — Vendor Invoice :
 
 - vendor_invoice_id
@@ -1098,74 +1120,105 @@ Relationship :
 
 ## 11.4 Architectural Principle
 
-Every record includes :
+> **Corrected 2026-08-23** ([OQ-15](../technical-design/README.md#open-questions-register)). This
+> section said every record carries `created_by` and `deleted_at` and that **all** records soft-delete.
+> Measured against the live schema: of **271** tables, **22** have `created_by` and **6** have
+> `deleted_at`. The rule was never built, and stating it universally contradicted both §11.0's actual
+> per-table rules and QM-4's append-only audit log — which must not be soft-deletable at all.
+
+Every domain record includes :
 
 - tenant_id
-- created_by
 - created_at
 - updated_at
-- deleted_at (nullable — soft delete; NULL = active, non-NULL = logically deleted)
-- audit metadata
 
 Project-scoped records additionally include :
 
 - project_id
 
+`created_by` is present where the ACTOR is part of the record's meaning — who raised an issue, who
+approved a BOQ version — and absent where it is not, such as a join row like
+`procurement.delivery_items`. It is not a universal column.
+
 Soft Delete :
 
-All records use soft delete (deleted_at timestamp). Hard deletes are not permitted in
-production data. This preserves audit trail integrity, supports data retention policies
-(see 09-data-architecture section 9.5), and prevents FK cascade failures in multi-tenant
-environments.
+Soft delete is **opt-in per table**, not a platform-wide rule. A table carries `deleted_at` when a
+deleted row must remain retrievable — for restoration, for a retention window, or because a sync
+client has to learn the deletion. The tables that do, as of 2026-08-23:
 
-All queries must filter WHERE deleted_at IS NULL by default, unless explicitly
-querying deleted records (e.g., audit log replay, admin recovery).
+| Table                              | Why it soft-deletes                                                  |
+| ---------------------------------- | -------------------------------------------------------------------- |
+| `crm.leads`, `crm.contacts`, `crm.opportunities` | A deleted lead is recoverable, and the pipeline history stays intact |
+| `files.files`                      | Retention windows and legal hold — the hard delete is a scheduled job |
+| `files.photo_annotations`          | Follows the file it annotates                                        |
+| `platform.sync_tombstones`         | The record OF a deletion, so offline clients can replay it           |
+
+Everything else deletes for real, or does not delete at all. Two categories must never soft-delete:
+
+- **Append-only records** — `platform.audit_logs` (QM-4). A row that can be marked deleted is not an
+  audit trail.
+- **Rows whose deletion is the business fact** — a removed project membership, a cancelled RFQ line.
+  Keeping them with a flag means every reader must remember to filter, and one that forgets grants
+  access that was revoked.
+
+Where `deleted_at` exists, queries MUST filter `WHERE deleted_at IS NULL` by default, unless
+deliberately reading deleted rows (audit replay, admin recovery). Where it does not exist, there is
+nothing to filter — and a `WHERE deleted_at IS NULL` added defensively to such a table is a syntax
+error, not a safety net.
 
 PII Erasure :
 
-Entities that store PII fields additionally carry a `pii_erased_at` field (nullable
-timestamp). This implements the right-to-erasure requirement under **PDPA Section 37**
-and **GDPR Article 17**.
+Erasure implements **PDPA Section 33** (and GDPR Article 17) by **anonymising in place** — the PII
+columns are overwritten, the row stays. A hard delete is not used: it would break
+`crm.contacts.lead_id` out of a relationship chain Thai accounting law retains for seven years
+(ADR-090 §5). `TENANT_ADMIN` runs it through `POST /api/v1/subject-requests/{id}/erase`, optionally
+snapshotting the rows to a WORM file first under legal hold. It is irreversible by design.
 
-PII-bearing entities and the fields subject to erasure:
+> **Corrected 2026-08-23** ([OQ-48](../technical-design/README.md#open-questions-register)). This
+> section said PII-bearing entities "carry a `pii_erased_at` field (nullable timestamp)". **No table
+> in the database has that column** — the mechanism built instead overwrites the values, so there is
+> no timestamp to stamp and no second lifecycle flag. The `Employee` row below is also a
+> specification-only entity: worker PII lives in `workforce.workers`, and nothing erases it.
 
-| Entity        | PII Fields Subject to Erasure                    |
-| ------------- | ------------------------------------------------ |
-| Employee      | `full_name`, `contact_phone`                     |
-| Vendor        | `contact_name`, `contact_email`, `contact_phone` |
-| CRM — Lead    | `contact_name`                                   |
-| CRM — Contact | `name`, `email`, `phone`                         |
+| Entity                 | PII fields                                       | Erased by the endpoint?   |
+| ---------------------- | ------------------------------------------------ | ------------------------- |
+| `crm.contacts`         | `name`, `email`, `phone`                         | ✅ yes                     |
+| `crm.leads`            | `contact_name`                                   | ✅ yes                     |
+| `procurement.vendors`  | `contact_name`, `contact_email`, `contact_phone` | ✅ yes                     |
+| `workforce.workers`    | `full_name`, `contact_phone`                     | ❌ **no** — OQ-48          |
+| `platform.users`       | `display_name`, `email`, `phone_number`          | ❌ **no** — OQ-48          |
+
+The last two are not an oversight to patch blindly: a `platform.users` row anchors audit logs,
+memberships and foreign keys that must survive erasure, and whether a tenant is even the controller
+of its own workers' data is a legal question. Recorded rather than guessed at.
 
 > **Note on `lead_id` FK:** `Contact.lead_id` is intentionally retained after PII erasure.
 > It is a business relationship identifier (non-PII) required for audit trail integrity and
 > FK consistency. Only the PII fields listed above are nullified.
 
-Erasure procedure :
+Erasure procedure — **as implemented**, read from `SubjectRequestRepository`:
 
-1. Nullify all PII fields listed above for the target entity (set to `NULL`)
-2. Set `pii_erased_at = NOW()` — records the erasure timestamp for compliance audit
-3. Do NOT set `deleted_at` unless the record is also being logically deleted — erasure
-   and deletion are independent operations
-4. Do NOT delete the row — the entity `id` and `tenant_id` must remain for FK integrity
-   and audit trail
-5. Emit a structured audit log entry:
-   `{ event: "pii.erased", entity_type, entity_id, tenant_id, erased_by, erased_at }`
+The subject is matched by `subject_email` / `subject_phone` from the request, scoped to the tenant.
+Rows are then updated in place:
 
-Query behaviour after erasure :
+| Table                 | What the UPDATE does                                                                                    |
+| --------------------- | -------------------------------------------------------------------------------------------------------- |
+| `crm.contacts`        | `name = '[ERASED]'`, `email = NULL`, `phone = NULL`                                                       |
+| `crm.leads`           | `contact_name = NULL`                                                                                     |
+| `procurement.vendors` | `contact_email = NULL`, `contact_phone = NULL`; `tax_id` and `address` cleared **only** for `INDIVIDUAL` vendors — a company's are not personal data |
 
-- End-user-facing views must filter `WHERE pii_erased_at IS NULL` for any view that
-  renders PII fields — erased records are invisible to regular users
-- Admin and audit views may display erased records with `[ERASED]` placeholder values
-  in nullified fields
+`name = '[ERASED]'` rather than NULL because the column is NOT NULL and a contact list still has to
+render a row. `deleted_at` is untouched: erasure and deletion stay independent, and the row is never
+deleted — the id and `tenant_id` must survive for FK integrity and the audit trail.
 
-The four lifecycle states of a record:
-
-| `deleted_at` | `pii_erased_at` | Meaning                                                              |
-| ------------ | --------------- | -------------------------------------------------------------------- |
-| NULL         | NULL            | Active record — normal state                                         |
-| Set          | NULL            | Logically deleted — standard soft delete; PII preserved for audit    |
-| NULL         | Set             | PII erased — right-to-erasure exercised; record operationally active |
-| Set          | Set             | Fully completed lifecycle — deleted and PII erased                   |
+> **Corrected 2026-08-23** ([OQ-48](../technical-design/README.md#open-questions-register)). The
+> procedure here previously specified `pii_erased_at = NOW()`, a
+> `WHERE pii_erased_at IS NULL` filter on end-user views, a `pii.erased` audit-log entry, and a
+> four-state lifecycle table built from `deleted_at` × `pii_erased_at`. **None of it exists.** There
+> is no `pii_erased_at` column on any table, so there is no flag to stamp, nothing to filter on, and
+> only two lifecycle states rather than four. The audit-log entry is not emitted either. Whether to
+> build the column and the audit record, or to accept in-place anonymisation as the whole mechanism,
+> is part of OQ-48.
 
 See 05-security-compliance section 5.3 for the full PDPA / GDPR compliance strategy.
 

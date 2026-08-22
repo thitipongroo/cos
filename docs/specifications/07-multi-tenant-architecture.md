@@ -262,8 +262,23 @@ Topic lifecycle management :
 **Topic provisioning — creation procedure:**
 
 Topics are created **explicitly** — producers run with `allowAutoTopicCreation: false`; the broker's
-auto-create is never relied upon. The full canonical event catalogue (§32.4) is materialised per
-tenant, created idempotently at tenant onboarding:
+auto-create is never relied upon. **When** they are created differs by tier, and this procedure
+describes the enterprise one ([OQ-4](../technical-design/README.md#open-questions-register),
+corrected 2026-08-23 — it previously read as though it applied to every tenant, contradicting the
+bullet above):
+
+| Tier           | When                              | Where                                                    |
+| -------------- | --------------------------------- | -------------------------------------------------------- |
+| **Shared**     | On first publish                   | `KafkaProducer.ensureTopic` — `TenantService.createTenant` provisions no topics |
+| **Enterprise** | Eagerly, at onboarding             | `provisionKafkaTopicsActivity` → `KafkaTopicProvisioner`  |
+
+The split is the arithmetic in the bullet above: eager provisioning costs the full catalogue per
+tenant regardless of usage, so on a **shared** cluster broker capacity would scale with customer
+count instead of traffic. An **enterprise** tenant has a dedicated MSK namespace or cluster, so its
+topic count is bounded by one tenant's catalogue and that pressure does not exist — which is why
+eager provisioning is kept there and only there.
+
+The enterprise procedure, run idempotently at tenant onboarding:
 
 1. **Per-tenant topic set:** one `{tenant_id}.{domain}.{entity}.{action}.v{N}` topic per
    **non-platform** canonical event type, plus a single `{tenant_id}.dlq` for the whole tenant.

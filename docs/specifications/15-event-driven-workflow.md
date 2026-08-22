@@ -225,9 +225,22 @@ Versioning Rules :
 - **Schema registry:** Confluent Schema Registry — manages schema versions and compatibility
 - **Compatibility mode:** BACKWARD_TRANSITIVE — consumers can read older schema versions
 - **Documentation standard:** AsyncAPI 3.1 (stable as of January 31, 2026) for event catalogue
-- **Envelope:** CloudEvents v1.0 (normative) wraps Avro payloads for metadata consistency
-- **External delivery:** Avro deserialised to JSON at Kong Gateway layer for webhook subscribers
-  who cannot consume Avro directly
+- **Envelope:** the **Base Event Envelope** of §15.6 wraps Avro payloads for metadata consistency.
+  It is CloudEvents v1.0-**inspired**, not normative CloudEvents — this line said "CloudEvents
+  v1.0 (normative)" until 2026-08-23, contradicting §15.6 four paragraphs above
+  ([OQ-3](../technical-design/README.md#open-questions-register)). §15.6 is the accurate one, and
+  the committed schemas settle it: `base-event-envelope.avsc` carries `event_id`, `event_type`,
+  `event_version`, `tenant_id`, `actor_id`, `occurred_at`, `correlation_id`, `trace_id`,
+  `span_id` — and **none** of CloudEvents v1.0's four REQUIRED attributes (`id`, `source`,
+  `specversion`, `type`). Nothing on the wire would pass a CloudEvents validator, so calling it
+  normative committed the platform to a conformance it has never had
+- **External delivery:** Avro deserialised to JSON for webhook subscribers who cannot consume Avro
+  directly. **Unbuilt, and this line named a component that is not deployed** — it read "at Kong
+  Gateway layer" until 2026-08-23, and there is no deployed Kong
+  ([OQ-46](../technical-design/README.md#open-questions-register)). Nor is there a bridge elsewhere:
+  the only webhook code in the repository is `modules/platform-webhook`, an **inbound** receiver for
+  `POST /platform/webhooks/enterprise-contract-signed`. Nothing subscribes an external party to an
+  event stream, and nothing deserialises Avro for one
 
 **Schema location:** `packages/@cos/shared/src/avro/{domain}.{entity}.{action}.{version}.avsc`
 

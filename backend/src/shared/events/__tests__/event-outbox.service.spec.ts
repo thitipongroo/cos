@@ -17,6 +17,13 @@ jest.mock('@prisma/client', () => ({
   Prisma: {},
 }));
 
+const mockTraceId = jest.fn<string, []>();
+const mockSpanId = jest.fn<string, []>();
+jest.mock('@cos/tracing', () => ({
+  getTraceId: () => mockTraceId(),
+  getSpanId: () => mockSpanId(),
+}));
+
 import { EventOutboxService } from '../event-outbox.service';
 
 type Fake = { $executeRaw: jest.Mock; $disconnect: jest.Mock };
@@ -42,7 +49,62 @@ function callOf(mock: jest.Mock, nth = 0): { sql: string; values: unknown[] } {
   return { sql: (strings as string[]).join(' ? ').replace(/\s+/g, ' '), values };
 }
 
-beforeEach(() => jest.clearAllMocks());
+const TRACE = 'a'.repeat(32);
+const SPAN = 'b'.repeat(16);
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  // A live span by default — the ordinary case, inside a traced request.
+  mockTraceId.mockReturnValue(TRACE);
+  mockSpanId.mockReturnValue(SPAN);
+});
+
+/** The envelope as it was written to platform.outbox_events. */
+function storedEnvelope(db: Fake, nth = 0): Record<string, unknown> {
+  const { values } = callOf(db.$executeRaw, nth);
+  return JSON.parse(values[3] as string) as Record<string, unknown>;
+}
+
+// ── Trace context (TDD OQ-2 / QM-8) ────────────────────────────────────────
+// QM-8: "All Kafka events must carry trace_id and span_id in headers." Until 2026-08-23 nothing on
+// this path set either — and since ADR-094 this path IS every backend domain event. The context has
+// to be captured HERE rather than at delivery: OutboxPollerService publishes minutes later in
+// another process, so its own span points at the delivery instead of the cause.
+describe('EventOutboxService — trace context', () => {
+  it('stamps the ACTIVE trace and span onto the stored envelope', async () => {
+    const { svc, db } = make();
+    await svc.publish(EVENT);
+    expect(storedEnvelope(db)).toMatchObject({ trace_id: TRACE, span_id: SPAN });
+  });
+
+  it('stores null, not zeros, when no span is active', async () => {
+    // getTraceId() returns 32 zeros rather than undefined when nothing is active — a valid-LOOKING
+    // id that resolves to no trace. A reader following it finds an empty result instead of an
+    // honest absence, so it must not be stored.
+    mockTraceId.mockReturnValue('0'.repeat(32));
+    mockSpanId.mockReturnValue('0'.repeat(16));
+    const { svc, db } = make();
+    await svc.publish(EVENT);
+    expect(storedEnvelope(db)).toMatchObject({ trace_id: null, span_id: null });
+  });
+
+  it('keeps the trace when only the span id is empty', async () => {
+    mockSpanId.mockReturnValue('0'.repeat(16));
+    const { svc, db } = make();
+    await svc.publish(EVENT);
+    expect(storedEnvelope(db)).toMatchObject({ trace_id: TRACE, span_id: null });
+  });
+
+  it('stamps the transactional form too', async () => {
+    const { svc } = make();
+    const tx = { $executeRaw: jest.fn().mockResolvedValue(1) };
+    await svc.write(tx, EVENT);
+    expect(storedEnvelope(tx as unknown as Fake)).toMatchObject({
+      trace_id: TRACE,
+      span_id: SPAN,
+    });
+  });
+});
 
 describe('EventOutboxService.publish', () => {
   it('inserts the event and returns the id it was queued under', async () => {
@@ -66,7 +128,8 @@ describe('EventOutboxService.publish', () => {
     const stored = JSON.parse(values[3] as string) as Record<string, unknown>;
 
     expect(values[0]).toBe(id);
-    expect(stored).toEqual({ ...EVENT, event_id: id });
+    // trace_id/span_id ride along too (OQ-2) — asserted in their own describe below.
+    expect(stored).toEqual({ ...EVENT, event_id: id, trace_id: TRACE, span_id: SPAN });
   });
 
   it('denormalises tenant_id and event_type onto the row for operability', async () => {
@@ -115,6 +178,8 @@ describe('EventOutboxService.write (transactional form)', () => {
     expect(JSON.parse(callOf(tx.$executeRaw).values[3] as string)).toEqual({
       ...EVENT,
       event_id: id,
+      trace_id: TRACE,
+      span_id: SPAN,
     });
   });
 

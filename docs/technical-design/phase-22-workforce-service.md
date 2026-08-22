@@ -179,10 +179,16 @@ the pattern Phase 21 uses for its hypertable —
 
 Timesheet approval is role-gated to `SITE_ENGINEER` per the command.
 
-**Worker records are PII.** `full_name` and `contact_phone` sit in `workforce.workers`, so §11.4's
-`pii_erased_at` obligation applies to this table as it does to `platform.users` — see
-[README § Record lifecycle](README.md#record-lifecycle--soft-delete-and-pii-erasure) and
-[OQ-15](README.md#open-questions-register), which is about exactly that rule's uneven application.
+**Worker records are PII, and nothing erases them.** `full_name` and `contact_phone` sit in
+`workforce.workers`. §11.4 said PII-bearing entities carry `pii_erased_at` and that erasure stamps it;
+**no table in the database has that column** — read directly, 2026-08-23. What is built is
+anonymisation in place (`POST /subject-requests/:id/erase`), and it updates `crm.contacts`,
+`crm.leads` and `procurement.vendors` only. `workforce.workers` is not in that list, so a PDPA §33
+request from a site worker cannot currently be satisfied against this table. Recorded as
+[OQ-48](README.md#open-questions-register) — the fix is a product and legal call, not a code one. See
+also [README § Record lifecycle](README.md#record-lifecycle--soft-delete-and-pii-erasure) and
+[OQ-15](README.md#open-questions-register) for why §11.4's blanket rule described nothing that was
+built: 22 of 271 tables carry `created_by`, 6 carry `deleted_at`.
 
 ---
 

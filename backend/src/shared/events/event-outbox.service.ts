@@ -35,6 +35,7 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { createLogger } from '@cos/logger';
+import { getTraceId, getSpanId } from '@cos/tracing';
 import type { BaseEventEnvelope } from '@cos/types';
 import { createPrismaClient } from '../prisma/create-prisma-client';
 
@@ -43,6 +44,23 @@ const logger = createLogger('event-outbox');
 /** Minimal shape of a Prisma transaction client — enough for write(tx, …). */
 export interface OutboxTx {
   $executeRaw(query: TemplateStringsArray, ...values: unknown[]): Promise<number>;
+}
+
+/**
+ * The active W3C trace context, or nulls when there is no span.
+ *
+ * `getTraceId()` / `getSpanId()` return all-zeros rather than undefined when nothing is active — a
+ * valid-looking id that resolves to no trace. Storing that would be worse than storing nothing,
+ * because a reader following it finds an empty result instead of an honest absence.
+ */
+function currentTraceContext(): { trace_id: string | null; span_id: string | null } {
+  const traceId = getTraceId();
+  const spanId = getSpanId();
+  const active = !/^0+$/.test(traceId);
+  return {
+    trace_id: active ? traceId : null,
+    span_id: active && !/^0+$/.test(spanId) ? spanId : null,
+  };
 }
 
 @Injectable()
@@ -102,7 +120,18 @@ export class EventOutboxService implements OnModuleDestroy {
     // The stored payload is the COMPLETE envelope, event_id included, because that is exactly what
     // the poller hands to KafkaProducer.publish(). Storing the parts separately would mean rebuilding
     // the envelope at delivery time from a row that may be days old.
-    const envelope: BaseEventEnvelope<T> = { ...event, event_id: eventId };
+    //
+    // Trace context is captured HERE and not at delivery (TDD OQ-2). This runs inside the request or
+    // activity that raised the event, so the active span is the one a reader wants to follow back to.
+    // The poller runs minutes later in another process under its own span, so anything it injected
+    // would point at the delivery, not the cause. QM-8 requires every Kafka event to carry `trace_id`
+    // and `span_id` in its headers; before this, nothing on the outbox path set either, and the
+    // outbox is every backend domain event since ADR-094.
+    const envelope: BaseEventEnvelope<T> = {
+      ...event,
+      event_id: eventId,
+      ...currentTraceContext(),
+    };
     await tx.$executeRaw`
       INSERT INTO platform.outbox_events (id, tenant_id, event_type, payload, published)
       VALUES (
