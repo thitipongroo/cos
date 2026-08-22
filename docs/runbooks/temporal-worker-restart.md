@@ -1,44 +1,57 @@
 # Temporal Worker Restart and Stuck Workflow Recovery
 
 **Source:** FILE REFERENCE MAP — "Temporal.io worker restart and stuck workflow recovery"  
-**Applies to:** `enterprise-provisioning` workflow (Phase 25) and all future Temporal workflows
+**Applies to:** every Temporal task queue — `procurement`, `enterprise-provisioning`, `data-export`
+(cos-temporal-worker) and `file-cleanup`, `zip-extraction` (cos-file-service workers)
+
+> **Corrected 2026-08-22.** This runbook used to target `cos-backend`, on the assumption that the
+> workers ran inside the API pod. They did not run anywhere: five worker files existed, each a
+> standalone `require.main === module` entrypoint, and nothing launched any of them — so a restart of
+> `cos-backend` would have restarted a process that was not polling any task queue. The workers now
+> have their own Deployments (§32.2; TDD OQ-32), and the commands below target those.
 
 ---
 
 ## Worker Health Check
 
 ```bash
-# Check Temporal worker pod status
-kubectl get pods -n cos -l app.kubernetes.io/name=cos-backend
+# Backend workflows: procurement, enterprise-provisioning, data-export
+kubectl get pods -n cos -l app.kubernetes.io/name=cos-temporal-worker
 
-# Check worker is registering workflows with Temporal server
-kubectl logs -n cos <backend-pod> --tail=100 | grep -i "temporal\|workflow\|worker"
+# File Service workflows: file-cleanup, zip-extraction
+kubectl get pods -n cos   -l app.kubernetes.io/component=temporal-worker,app.kubernetes.io/name=cos-file-service
 
-# Check Temporal server connectivity
-kubectl exec -n cos <backend-pod> -- \
-  npx ts-node -e "
-    const { Connection } = require('@temporalio/client');
-    Connection.connect({ address: process.env.TEMPORAL_ADDRESS })
-      .then(() => console.log('Temporal connected'))
-      .catch(e => console.error('Connection failed:', e.message));
-  "
+# Which queues a pod believes it serves. The health endpoint reports them, so a process that came up
+# with a partial worker set is visible without reading logs.
+kubectl exec -n cos <worker-pod> -- wget -qO- localhost:8090/health/live
 ```
+
+**A worker that is running but idle looks identical to a healthy one.** The pod is Ready, the probe
+passes and nothing is logged — the only signal is task-queue depth on the Temporal server. That is
+the same blind spot that let these workers be absent entirely for months, and it is why OQ-43 (no
+alert on Kafka/queue backlog) matters here too.
 
 ---
 
 ## Restart Worker (Kubernetes Rolling Restart)
 
 ```bash
-# Rolling restart — zero downtime (minAvailable: 1 PodDisruptionBudget)
-kubectl rollout restart deployment/cos-backend -n cos
+# Backend workflows. Zero downtime at replicaCount >= 2 with minAvailable: 1.
+kubectl rollout restart deployment -n cos -l app.kubernetes.io/name=cos-temporal-worker
+kubectl rollout status  deployment -n cos -l app.kubernetes.io/name=cos-temporal-worker --timeout=300s
 
-# Monitor rollout
-kubectl rollout status deployment/cos-backend -n cos --timeout=300s
+# File Service workflows.
+kubectl rollout restart deployment/<release>-cos-file-service-workers -n cos
+kubectl rollout status  deployment/<release>-cos-file-service-workers -n cos --timeout=300s
 
-# Verify worker re-registered after restart
-kubectl logs -n cos -l app.kubernetes.io/name=cos-backend --tail=50 | \
-  grep -i "temporal worker started\|registered workflow"
+# Verify each process re-registered its queues.
+kubectl logs -n cos -l app.kubernetes.io/name=cos-temporal-worker --tail=50 | grep temporal_worker
 ```
+
+**terminationGracePeriodSeconds is 120s (backend) and 300s (file-service) on purpose.** The Temporal
+SDK installs its own SIGTERM handler and drains in-flight activities; a shorter grace period sends
+SIGKILL into a running `pg_dump`, unzip or delete batch and leaves the workflow waiting on a retry.
+Do not lower it to match the API's.
 
 ---
 

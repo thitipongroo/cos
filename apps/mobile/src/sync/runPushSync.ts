@@ -73,6 +73,31 @@ export async function runPushSync(): Promise<void> {
     onUserNotify: (messageKey) => {
       useSyncStore.getState().setError(messageKey);
     },
+    // §17.2: safety incidents, attendance, inspection results and material consumption go to the
+    // tenant-admin review queue after 5 failed retries, and the first three raise a push alert.
+    // SyncManager routed those four here correctly — and nothing supplied this callback, so a safety
+    // incident that failed to sync escalated to NOBODY. The record survived on the device and the
+    // person who filed it had no way to learn it never arrived (TDD OQ-38, wired 2026-08-22).
+    //
+    // Best-effort by design. The device has already exhausted its retries for the mutation itself,
+    // so the network is likely still down; failing loudly here would turn "we could not tell the
+    // admin yet" into a crash, and the record is preserved on the device either way. The next sync
+    // cycle re-reports, and the server is idempotent on (tenant, entity_type, entity_id).
+    onExhausted: async (item) => {
+      try {
+        await apiClient.post('/sync/exhausted', {
+          entity_type: item.entity_type,
+          entity_id: item.entity_id,
+          operation: item.operation,
+          // Stored as a JSON string in sync_queue; the server column is jsonb.
+          payload: JSON.parse(item.payload) as Record<string, unknown>,
+          client_submitted_at: item.client_submitted_at,
+          last_error: item.error_message,
+        });
+      } catch {
+        useSyncStore.getState().setError('sync.exhausted.report_failed');
+      }
+    },
   });
 
   // 1. Drain the mutation queue (includes annotations enqueued on a previous cycle's upload).

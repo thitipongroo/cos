@@ -18,7 +18,7 @@ describe('vendor classification vocabularies', () => {
   });
 
   it('keeps verification separate from the tax vocabulary', () => {
-    // procurement.wht_rules.vendor_type holds 'services' / 'rent' / 'goods'. If someone ever merges
+    // finance.wht_rules.service_type holds 'services' / 'rent' / 'royalties'. If someone ever merges
     // the two, this fails before a re-filed vendor can move a withholding-tax rate.
     expect(VENDOR_CATEGORIES as readonly string[]).not.toContain('rent');
     expect(VENDOR_CATEGORIES as readonly string[]).not.toContain('goods');

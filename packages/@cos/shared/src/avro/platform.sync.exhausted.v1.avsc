@@ -1,0 +1,28 @@
+{
+  "type": "record",
+  "name": "SyncExhaustedEvent",
+  "namespace": "com.constructionos.events.platform",
+  "doc": "platform.sync.exhausted.v1 — spec §17.2; emitted when a queued offline mutation exhausts its 5 retries and lands in the tenant-admin review queue",
+  "fields": [
+    { "name": "event_id",       "type": "string" },
+    { "name": "event_type",     "type": "string" },
+    { "name": "event_version",  "type": "string" },
+    { "name": "tenant_id",      "type": "string" },
+    { "name": "actor_id",       "type": "string", "doc": "The user whose device gave up — taken from the JWT, not the request body" },
+    { "name": "occurred_at",    "type": "string" },
+    { "name": "correlation_id", "type": "string" },
+    { "name": "trace_id",       "type": ["null", "string"], "default": null },
+    { "name": "span_id",        "type": ["null", "string"], "default": null },
+    { "name": "payload", "type": {
+      "type": "record", "name": "SyncExhaustedPayload",
+      "fields": [
+        { "name": "exhaustion_id", "type": "string", "doc": "UUID of the platform.sync_exhaustions row" },
+        { "name": "entity_type",   "type": "string", "doc": "§17.2 review-queue type: safety_incidents | workforce_attendance | inspection_results | material_consumption" },
+        { "name": "entity_id",     "type": "string", "doc": "UUID of the record that could not be synced" },
+        { "name": "reported_by",   "type": "string", "doc": "UUID of the user whose device reported the exhaustion" },
+        { "name": "retry_count",   "type": "int",    "doc": "Always 5 — the §17.2 maximum" },
+        { "name": "last_error",    "type": ["null", "string"], "default": null, "doc": "Last transport error the device saw; diagnostic only" }
+      ]
+    }}
+  ]
+}

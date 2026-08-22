@@ -1,0 +1,84 @@
+{{- /*
+File Service Temporal workers: file-cleanup and zip-extraction.
+
+A SECOND Deployment from this chart, running the same image as the API with a different command.
+The image already contains the compiled worker (services/file-service/dist/.../workers/main.js), so
+there is no second build and no separate tag to keep in step.
+
+Why not a sidecar in the API pod, and why not started inside main.ts (product-owner decision
+2026-08-22, TDD OQ-32): the cleanup worker's hard-delete pass and the extraction worker's unzip are
+long-running, CPU-and-IO heavy, and must not compete with upload throughput or take the API down
+when they fail. Before this Deployment existed neither worker ran at all — main.ts constructs an
+ExtractionClient, so uploads started workflows nothing executed, and the daily hard-delete that the
+retention_policies / legal-hold design depends on never fired.
+
+Guarded by .Values.workers.enabled so an environment that has no Temporal server (dev without the
+`full` compose profile) can turn it off rather than CrashLoop.
+*/ -}}
+{{- if .Values.workers.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "cos-file-service.fullname" . }}-workers
+  labels:
+    {{- include "cos-file-service.labels" . | nindent 4 }}
+    app.kubernetes.io/component: temporal-worker
+spec:
+  replicas: {{ .Values.workers.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "cos-file-service.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: temporal-worker
+  template:
+    metadata:
+      labels:
+        {{- include "cos-file-service.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: temporal-worker
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
+        # DO NOT REMOVE — RKE2 profile:cis rejects Pods without it while admitting the Deployment
+        # (ADR-039, Linux POC 2026-07-20).
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: file-service-workers
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: {{ toYaml .Values.workers.command | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.workers.healthPort }}
+          env:
+            {{- range $k, $v := .Values.env }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+            - name: WORKER_HEALTH_PORT
+              value: {{ .Values.workers.healthPort | quote }}
+            - name: OTEL_SERVICE_NAME
+              value: 'file-service-workers'
+          envFrom: {{ toYaml .Values.envFrom | nindent 12 }}
+          resources: {{ toYaml .Values.workers.resources | nindent 12 }}
+          livenessProbe: {{ toYaml .Values.workers.livenessProbe | nindent 12 }}
+          readinessProbe: {{ toYaml .Values.workers.readinessProbe | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          {{- if .Values.workers.volumeMounts }}
+          volumeMounts: {{ toYaml .Values.workers.volumeMounts | nindent 12 }}
+          {{- end }}
+      {{- if .Values.workers.volumes }}
+      volumes: {{ toYaml .Values.workers.volumes | nindent 8 }}
+      {{- end }}
+      # Unzipping a large archive or deleting a batch of objects must be allowed to finish. The
+      # Temporal SDK handles SIGTERM itself and drains in-flight activities; SIGKILL at 30s would
+      # abandon them mid-way and leave the workflow waiting on a retry.
+      terminationGracePeriodSeconds: {{ .Values.workers.terminationGracePeriodSeconds }}
+      affinity: {{ toYaml .Values.affinity | nindent 8 }}
+{{- end }}

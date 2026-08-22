@@ -1,0 +1,7 @@
+# Single replica in dev. Note that ONE worker still serves all three task queues — the queues are
+# multiplexed inside the process, not across pods (backend/src/workers/main.ts).
+replicaCount: 1
+autoscaling:
+  enabled: false
+podDisruptionBudget:
+  enabled: false

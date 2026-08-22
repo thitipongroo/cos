@@ -1,0 +1,92 @@
+# Temporal worker — procurement · enterprise-provisioning · data-export.
+#
+# Runs the cos-backend image with a different command (see templates/deployment.yaml). Keep
+# image.repository/tag in step with cos-backend: the GitOps image-tag update must write BOTH, or the
+# workers execute a different build of the activities than the API that signals them.
+
+replicaCount: 2
+
+image:
+  # Same image as cos-backend. Filled by the GitOps image-tag commit, like every other chart.
+  repository: ''
+  tag: 'latest'
+  pullPolicy: IfNotPresent
+
+# The only thing that distinguishes this Deployment from cos-backend.
+command:
+  - node
+  - backend/dist/workers/main
+
+service:
+  # Health only — a Temporal worker serves no traffic. 8090 matches the Go workers' convention and
+  # the port backend/src/workers/main.ts listens on (WORKER_HEALTH_PORT).
+  port: 8090
+
+resources:
+  # NestJS runtime baseline from `00_master` § PHASE 17. Higher memory limit than the API default
+  # because activities hold pooled Prisma clients for the process lifetime
+  # (procurement/workflows/activity-helpers.ts) rather than per request.
+  requests:
+    cpu: '100m'
+    memory: '256Mi'
+  limits:
+    cpu: '500m'
+    memory: '768Mi'
+
+autoscaling:
+  # Scales on CPU because Kubernetes has no native view of Temporal task-queue depth. A queue-depth
+  # HPA needs the Temporal metrics adapter, which is not deployed — until then CPU is the proxy, and
+  # minReplicas 2 is what keeps a single pod eviction from stalling every workflow.
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+terminationGracePeriodSeconds: 120
+
+env:
+  WORKER_HEALTH_PORT: '8090'
+  OTEL_SERVICE_NAME: 'temporal-worker'
+  OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector:4318'
+
+envFrom:
+  # Same secret as the API: the activities open the same database, Kafka cluster and Temporal
+  # endpoint the API does.
+  - secretRef:
+      name: cos-backend-secrets
+
+serviceAccount:
+  create: true
+  name: 'cos-temporal-worker'
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: cos-temporal-worker
+          topologyKey: kubernetes.io/hostname
+
+# Both probes hit the same path. A worker polls an outbound queue rather than accepting traffic, so
+# it has no honest readiness signal distinct from liveness — the same choice the Go worker charts
+# make. The path is the one backend/src/workers/main.ts actually serves; four charts once probed a
+# path their service did not serve and could only CrashLoop (ADR-039, Linux POC 2026-07-20).
+livenessProbe:
+  httpGet:
+    path: /health/live
+    port: 8090
+  initialDelaySeconds: 15
+  periodSeconds: 15
+readinessProbe:
+  httpGet:
+    path: /health/live
+    port: 8090
+  initialDelaySeconds: 10
+  periodSeconds: 10

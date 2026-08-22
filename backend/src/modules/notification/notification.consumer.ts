@@ -12,7 +12,12 @@ const logger = createLogger('notification-consumer');
 
 // Canonical event types (CloudEvents `type`) this service consumes. Subscribed per-tenant
 // via RegExp under the `notification.shared` group; tenant_id header validated by KafkaConsumer.
-const SUBSCRIBED_EVENT_TYPES = [
+/**
+ * Exported so tests can assert against the list itself rather than a hardcoded count. The count was
+ * inline in two assertions and drifted every time an event was added — it said 12 while the array
+ * held 13 the moment `platform.sync.exhausted.v1` joined, which is noise, not a signal.
+ */
+export const SUBSCRIBED_EVENT_TYPES = [
   'site.inspection.failed.v1',
   'site.issue.created.v1',
   'site.issue.escalated.v1',
@@ -26,6 +31,10 @@ const SUBSCRIBED_EVENT_TYPES = [
   // §19.3/§19.4 — consumed so they are notified AND armed for escalation (safety 30m, AI-risk 24h)
   'safety.incident.created.v1',
   'ai.risk_prediction.generated.v1',
+  // §17.2 — a queued offline mutation that exhausted its 5 retries (TDD OQ-38)
+  'platform.sync.exhausted.v1',
+  // §19.6/§20.2 — the second of §19.6's two un-disableable safety notifications (TDD OQ-35)
+  'safety.violation.detected.v1',
 ];
 
 @Injectable()

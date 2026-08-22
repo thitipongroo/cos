@@ -164,7 +164,7 @@ Avalara handles multi-jurisdiction tax compliance globally — the platform does
 **Other jurisdictions:** TENANT_ADMIN configures rates via WHT rules table:
 
 ```sql
--- wht_rules table schema
+-- finance.wht_rules table schema
   rule_id          UUID PK
   tenant_id        UUID NOT NULL
   jurisdiction_code VARCHAR(10) NOT NULL   — ISO 3166-1 alpha-2 (e.g. TH, SG, MY)
@@ -174,7 +174,18 @@ Avalara handles multi-jurisdiction tax compliance globally — the platform does
   UNIQUE: (tenant_id, jurisdiction_code, service_type)
 ```
 
-WHT is calculated as a hook inside the Avalara AvaTax flow. WHT certificate reference number is tracked in `payments.wht_certificate_ref`.
+WHT is calculated as a hook inside the Avalara AvaTax flow. WHT certificate reference number is tracked in `finance.payments.wht_certificate_ref`.
+
+> **The schema is `finance`, and it is named here because it once was not.** A second `wht_rules`
+> table existed in the `procurement` schema from 2026-06-04, with `jurisdiction` / `vendor_type`
+> instead of the `jurisdiction_code` / `service_type` above and no `is_active`. Nothing ever read it,
+> while `docs/api/procurement.openapi.yaml`, a `vendors.category` column comment and
+> `vendor-classification.ts` all pointed at it as authoritative — so a TENANT_ADMIN configuring a
+> jurisdiction where the documentation said to changed no tax. Consolidated onto `finance.wht_rules`
+> by migration `20260822000001_wht_rules_consolidate` (product-owner decision 2026-08-22), which also
+> added the row-level security §7.7 requires and the Thailand backfill the sentence above promises.
+> New tenants receive the two defaults from `TenantService.createTenant`, in the same transaction as
+> the tenant row.
 
 ---
 

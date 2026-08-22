@@ -608,4 +608,93 @@ describe('BoqService', () => {
       ).rejects.toThrow(NotFoundException);
     });
   });
+  describe('Version total spans the whole category tree (OQ-23)', () => {
+    // Regression guard for the defect that made this fix necessary: recalculateVersionTotal summed
+    // only the items hanging directly off ROOT categories, so every item in a sub-category was
+    // dropped from total_estimated_amount — the figure version_approved publishes and Finance
+    // generates contracts against. No test placed an item in a child category before this one, which
+    // is why 100% branch coverage never noticed.
+    const rootCat: BoqCategoryRow = {
+      ...category,
+      category_id: 'cat-root',
+      category_code: 'STR',
+      category_name: 'Structural',
+      parent_category_id: null,
+    };
+    const childCat: BoqCategoryRow = {
+      ...category,
+      category_id: 'cat-child',
+      category_code: 'STR-CONC',
+      category_name: 'Concrete',
+      parent_category_id: 'cat-root',
+    };
+
+    beforeEach(() => {
+      mockRepo.findVersionById.mockResolvedValue(draftVersion);
+      mockRepo.addItem.mockImplementation(async (p: { estimated_total: string }) => ({
+        ...item,
+        estimated_total: p.estimated_total,
+      }));
+      mockRepo.updateCategorySubtotals.mockResolvedValue(undefined);
+      mockRepo.updateVersionTotal.mockResolvedValue(undefined);
+      mockRepo.findCategoriesByVersion.mockResolvedValue([rootCat, childCat]);
+    });
+
+    it('counts items that sit only in a child category — previously reported 0', async () => {
+      mockRepo.findItemsByVersion.mockResolvedValue([
+        { ...item, item_id: 'i-1', category_id: 'cat-child', estimated_total: '5000000.0000' },
+      ]);
+
+      await service.addItem('version-uuid-001', {
+        category_id: 'cat-child',
+        description: 'Concrete C30',
+        unit: 'm3',
+        quantity: '1.0000',
+        unit_cost: '5000000.0000',
+        currency_code: 'THB',
+      });
+
+      expect(mockRepo.updateVersionTotal).toHaveBeenCalledWith('version-uuid-001', '5000000.0000');
+    });
+
+    it('adds root and child values together without double-counting', async () => {
+      mockRepo.findItemsByVersion.mockResolvedValue([
+        { ...item, item_id: 'i-1', category_id: 'cat-root', estimated_total: '1000000.0000' },
+        { ...item, item_id: 'i-2', category_id: 'cat-child', estimated_total: '250000.5000' },
+      ]);
+
+      await service.addItem('version-uuid-001', {
+        category_id: 'cat-child',
+        description: 'Rebar',
+        unit: 'kg',
+        quantity: '1.0000',
+        unit_cost: '250000.5000',
+        currency_code: 'THB',
+      });
+
+      // Each item belongs to exactly one category, so it lands in exactly one subtotal.
+      expect(mockRepo.updateVersionTotal).toHaveBeenCalledWith('version-uuid-001', '1250000.5000');
+    });
+
+    it('leaves each category subtotal as its OWN items — no roll-up into the parent', async () => {
+      mockRepo.findItemsByVersion.mockResolvedValue([
+        { ...item, item_id: 'i-1', category_id: 'cat-root', estimated_total: '1000000.0000' },
+        { ...item, item_id: 'i-2', category_id: 'cat-child', estimated_total: '250000.5000' },
+      ]);
+
+      await service.addItem('version-uuid-001', {
+        category_id: 'cat-child',
+        description: 'Rebar',
+        unit: 'kg',
+        quantity: '1.0000',
+        unit_cost: '250000.5000',
+        currency_code: 'THB',
+      });
+
+      expect(mockRepo.updateCategorySubtotals).toHaveBeenCalledWith([
+        { category_id: 'cat-root', subtotal: '1000000.0000' },
+        { category_id: 'cat-child', subtotal: '250000.5000' },
+      ]);
+    });
+  });
 });

@@ -98,8 +98,14 @@ fi
 # AUTO-04: Temporal worker replicas >= 2
 echo "  [AUTO-04] Temporal worker replicas..."
 if command -v kubectl &>/dev/null; then
-  replicas=$(kubectl get deployment temporal-worker -n "$NS" \
-    -o jsonpath='{.spec.replicas}' 2>/dev/null || echo "0")
+  # Selected by LABEL, not by name. Helm derives the Deployment name from the release
+  # ({release}-{chart}, so ArgoCD produces `cos-temporal-worker-cos-temporal-worker`), and a check
+  # hardcoding `temporal-worker` could never match any release this repo deploys — it would have
+  # reported 0 replicas forever, indistinguishable from the real absence it was written to catch.
+  replicas=$(kubectl get deployment -n "$NS" \
+    -l app.kubernetes.io/name=cos-temporal-worker \
+    -o jsonpath='{.items[0].spec.replicas}' 2>/dev/null || echo "0")
+  replicas=${replicas:-0}
   if [[ "$replicas" -ge 2 ]]; then
     pass "AUTO-04: Temporal worker has $replicas replicas (>= 2)"
   else

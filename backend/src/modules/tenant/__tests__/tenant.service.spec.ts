@@ -64,6 +64,7 @@ describe('TenantService', () => {
         async (fn: (tx: unknown) => Promise<unknown>) => {
           const tx = {
             $queryRaw: jest.fn().mockResolvedValue([mockTenant]),
+            $executeRaw: jest.fn().mockResolvedValue(1),
             $executeRawUnsafe: jest.fn().mockResolvedValue(undefined),
           };
           return fn(tx);
@@ -87,6 +88,7 @@ describe('TenantService', () => {
         async (fn: (tx: unknown) => Promise<unknown>) => {
           const tx = {
             $queryRaw: jest.fn().mockResolvedValue([mockTenant]),
+            $executeRaw: jest.fn().mockResolvedValue(1),
             $executeRawUnsafe: jest.fn().mockResolvedValue(undefined),
           };
           return fn(tx);
@@ -127,6 +129,7 @@ describe('TenantService', () => {
         async (fn: (tx: unknown) => Promise<unknown>) => {
           const tx = {
             $queryRaw: jest.fn().mockResolvedValue([mockTenant]),
+            $executeRaw: jest.fn().mockResolvedValue(1),
             $executeRawUnsafe: jest.fn().mockResolvedValue(undefined),
           };
           return fn(tx);
@@ -151,6 +154,7 @@ describe('TenantService', () => {
         async (fn: (tx: unknown) => Promise<unknown>) => {
           const tx = {
             $queryRaw: jest.fn().mockResolvedValue([mockTenant]),
+            $executeRaw: jest.fn().mockResolvedValue(1),
             $executeRawUnsafe: jest.fn().mockResolvedValue(undefined),
           };
           return fn(tx);
@@ -183,7 +187,11 @@ describe('TenantService', () => {
             capturedInsertArgs = args;
             return Promise.resolve([{ ...mockTenant, dedicated_db_url: 'postgresql://host/db' }]);
           });
-          return fn({ $queryRaw: txQueryRaw, $executeRawUnsafe: jest.fn() });
+          return fn({
+            $queryRaw: txQueryRaw,
+            $executeRaw: jest.fn().mockResolvedValue(1),
+            $executeRawUnsafe: jest.fn(),
+          });
         },
       );
 
@@ -202,6 +210,40 @@ describe('TenantService', () => {
       expect(result).toBeDefined();
     });
 
+    it('seeds the Thailand WHT defaults inside the same transaction (§13.3)', async () => {
+      // §13.3 says the Thai rates are "pre-seeded at tenant provisioning" and nothing did it, so
+      // WhtService.calculate threw NotFoundException for every tenant ever created. The seed runs
+      // on the transaction client, not the outer one: a tenant that exists without its statutory
+      // defaults is the state being fixed and must not be reachable by a partial failure.
+      let txExecuteRaw!: jest.Mock;
+      (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([]);
+      (prismaMock.$transaction as jest.Mock).mockImplementation(
+        async (fn: (tx: unknown) => Promise<unknown>) => {
+          txExecuteRaw = jest.fn().mockResolvedValue(2);
+          return fn({
+            $queryRaw: jest.fn().mockResolvedValue([mockTenant]),
+            $executeRaw: txExecuteRaw,
+            $executeRawUnsafe: jest.fn(),
+          });
+        },
+      );
+
+      await service.createTenant(
+        { tenantCode: 'seed_co', tenantName: 'Seed Co', planType: 'STARTER' as never },
+        'admin-1',
+      );
+
+      expect(txExecuteRaw).toHaveBeenCalledTimes(1);
+      const sql = (txExecuteRaw.mock.calls[0]![0] as string[]).join('?');
+      expect(sql).toContain('finance.wht_rules');
+      expect(sql).toContain("'TH', 'services', 3.00");
+      expect(sql).toContain("'TH', 'rent',     5.00");
+      // Idempotent: re-provisioning must not overwrite a TENANT_ADMIN's override.
+      expect(sql).toContain('ON CONFLICT ON CONSTRAINT wht_rules_unique DO NOTHING');
+      // Bound to the tenant just created, not to anything ambient.
+      expect(txExecuteRaw.mock.calls[0]).toContain(mockTenant.tenant_id);
+    });
+
     it('defaults data_region to ap-southeast-1 when not provided (§5.6)', async () => {
       (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([]); // no existing
       let capturedInsertArgs: unknown[] = [];
@@ -211,7 +253,11 @@ describe('TenantService', () => {
             capturedInsertArgs = args;
             return Promise.resolve([mockTenant]);
           });
-          return fn({ $queryRaw: txQueryRaw, $executeRawUnsafe: jest.fn() });
+          return fn({
+            $queryRaw: txQueryRaw,
+            $executeRaw: jest.fn().mockResolvedValue(1),
+            $executeRawUnsafe: jest.fn(),
+          });
         },
       );
 
@@ -234,7 +280,11 @@ describe('TenantService', () => {
             capturedInsertArgs = args;
             return Promise.resolve([{ ...mockTenant, data_region: 'ap-southeast-7' }]);
           });
-          return fn({ $queryRaw: txQueryRaw, $executeRawUnsafe: jest.fn() });
+          return fn({
+            $queryRaw: txQueryRaw,
+            $executeRaw: jest.fn().mockResolvedValue(1),
+            $executeRawUnsafe: jest.fn(),
+          });
         },
       );
 
@@ -267,7 +317,11 @@ describe('TenantService', () => {
             capturedInsertArgs = args;
             return Promise.resolve([mockTenant]);
           });
-          return fn({ $queryRaw: txQueryRaw, $executeRawUnsafe: jest.fn() });
+          return fn({
+            $queryRaw: txQueryRaw,
+            $executeRaw: jest.fn().mockResolvedValue(1),
+            $executeRawUnsafe: jest.fn(),
+          });
         },
       );
 
@@ -293,7 +347,11 @@ describe('TenantService', () => {
             capturedInsertArgs = args;
             return Promise.resolve([mockTenant]);
           });
-          return fn({ $queryRaw: txQueryRaw, $executeRawUnsafe: jest.fn() });
+          return fn({
+            $queryRaw: txQueryRaw,
+            $executeRaw: jest.fn().mockResolvedValue(1),
+            $executeRawUnsafe: jest.fn(),
+          });
         },
       );
 

@@ -1,0 +1,9 @@
+# 3 replicas, and Phase 19's readiness gate AUTO-04 asserts >= 2 in production: a single worker means
+# one eviction stalls every RFQ, every PO transition, every enterprise provisioning run and every
+# PDPA data export at once.
+replicaCount: 3
+autoscaling:
+  minReplicas: 3
+  maxReplicas: 10
+podDisruptionBudget:
+  minAvailable: 2

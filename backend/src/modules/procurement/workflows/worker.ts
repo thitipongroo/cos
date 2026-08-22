@@ -16,7 +16,9 @@ const TASK_QUEUE = 'procurement';
 export async function runProcurementWorker(): Promise<void> {
   const worker = await Worker.create({
     taskQueue: TASK_QUEUE,
-    workflowsPath: require.resolve('./'), // auto-discovers rfq.workflow.ts + po.workflow.ts
+    // './index' — a FILE, not the directory. `require.resolve('./')` resolved a directory with no
+    // index module and threw MODULE_NOT_FOUND, so this worker could never start (TDD OQ-32).
+    workflowsPath: require.resolve('./index'), // re-exports rfq.workflow + po.workflow
     activities: {
       ...rfqActivities,
       ...poActivities,

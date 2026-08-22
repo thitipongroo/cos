@@ -230,7 +230,16 @@ describe('SyncManager', () => {
       const manager = makeManager(http, 'tok', { onExhausted });
       const result = await manager.processQueue();
       expect(result).toEqual({ synced: 0, failed: 0, exhausted: 1, interrupted: false });
-      expect(onExhausted).toHaveBeenCalledWith('safety_incidents', 'entity-1', 'CREATE');
+      // Widened 2026-08-22 (OQ-38): the callback receives the WHOLE queue item, because the §17.2
+      // review queue stores the payload so an admin can review and manually import it.
+      expect(onExhausted).toHaveBeenCalledWith(
+        expect.objectContaining({
+          entity_type: 'safety_incidents',
+          entity_id: 'entity-1',
+          operation: 'CREATE',
+          payload: expect.any(String),
+        }),
+      );
     });
   });
 
@@ -244,7 +253,16 @@ describe('SyncManager', () => {
     it('safety_incidents → calls onExhausted', async () => {
       const onExhausted = jest.fn().mockResolvedValue(undefined);
       await exhausted('safety_incidents', { onExhausted });
-      expect(onExhausted).toHaveBeenCalledWith('safety_incidents', 'entity-1', 'CREATE');
+      // Widened 2026-08-22 (OQ-38): the callback receives the WHOLE queue item, because the §17.2
+      // review queue stores the payload so an admin can review and manually import it.
+      expect(onExhausted).toHaveBeenCalledWith(
+        expect.objectContaining({
+          entity_type: 'safety_incidents',
+          entity_id: 'entity-1',
+          operation: 'CREATE',
+          payload: expect.any(String),
+        }),
+      );
     });
 
     it('workforce_attendance → calls onExhausted', async () => {
@@ -372,7 +390,16 @@ describe('SyncManager', () => {
 
       expect(mockMarkPermanentlyFailed).toHaveBeenCalledWith(7, expect.any(String), 5);
       expect(mockMarkFailed).not.toHaveBeenCalled();
-      expect(onExhausted).toHaveBeenCalledWith('safety_incidents', 'entity-1', 'CREATE');
+      // Widened 2026-08-22 (OQ-38): the callback receives the WHOLE queue item, because the §17.2
+      // review queue stores the payload so an admin can review and manually import it.
+      expect(onExhausted).toHaveBeenCalledWith(
+        expect.objectContaining({
+          entity_type: 'safety_incidents',
+          entity_id: 'entity-1',
+          operation: 'CREATE',
+          payload: expect.any(String),
+        }),
+      );
       expect(result).toEqual({ synced: 0, failed: 0, exhausted: 1, interrupted: false });
     });
 

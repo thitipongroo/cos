@@ -165,14 +165,14 @@ Two authentication paths (authoritative spec: `05-security-compliance` §5.4):
 only. The earlier "Path A for field workers / Path B for office roles" wording described a
 convention, not a restriction, and is not repeated here.
 
-| Method | Path                            | Description                                                         | Auth         |
-| ------ | ------------------------------- | ------------------------------------------------------------------- | ------------ |
+| Method | Path                            | Description                                                                   | Auth         |
+| ------ | ------------------------------- | ----------------------------------------------------------------------------- | ------------ |
 | `POST` | `/api/v1/auth/otp/request`      | Request SMS OTP — Path A (any role except `TENANT_ADMIN` / `FINANCE`, §5.4.4) | Public       |
-| `POST` | `/api/v1/auth/otp/verify`       | Verify OTP; returns `access_token` + `refresh_token`                | Public       |
-| `POST` | `/api/v1/auth/refresh`          | Refresh access token using refresh token                            | Public       |
-| `POST` | `/api/v1/auth/logout`           | Revoke refresh token                                                | Bearer token |
-| `POST` | `/api/v1/auth/mfa/enroll`       | Initiate TOTP enrollment — returns `otpauth://` URI for QR code     | Bearer token |
-| `POST` | `/api/v1/auth/mfa/verify`       | Confirm TOTP code to complete enrollment; sets `mfa_enabled = true` | Bearer token |
+| `POST` | `/api/v1/auth/otp/verify`       | Verify OTP; returns `access_token` + `refresh_token`                          | Public       |
+| `POST` | `/api/v1/auth/refresh`          | Refresh access token using refresh token                                      | Public       |
+| `POST` | `/api/v1/auth/logout`           | Revoke refresh token                                                          | Bearer token |
+| `POST` | `/api/v1/auth/mfa/enroll`       | Initiate TOTP enrollment — returns `otpauth://` URI for QR code               | Bearer token |
+| `POST` | `/api/v1/auth/mfa/verify`       | Confirm TOTP code to complete enrollment; sets `mfa_enabled = true`           | Bearer token |
 | `POST` | `/api/v1/auth/mfa/authenticate` | Verify TOTP during login (`TENANT_ADMIN`, `FINANCE` — Path B only per §5.4.4) | Bearer token |
 
 ---

@@ -83,7 +83,7 @@ components:
           nullable: true
           description: >-
             What the vendor supplies, for directory browsing. NULL = never categorised.
-            NOT a tax classification — withholding tax uses procurement.wht_rules.vendor_type,
+            NOT a tax classification — withholding tax uses finance.wht_rules.service_type,
             a separate vocabulary (spec §13.3).
         verification_status:
           type: string

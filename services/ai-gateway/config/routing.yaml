@@ -1,17 +1,24 @@
 # LLM Gateway routing table — two-tier configurable routing
 # Source: context/00_master_construction_os.md §Phase 11 LLM Gateway
-# Rule: never hardcode model names in source code — all routing via this file
+# Rule: never hardcode model names in source code — all routing via this file.
+#
+# Loaded by providers/routing.py. It was loaded by NOTHING until 2026-08-22: model_for_hint() read an
+# empty MODEL_BY_HINT dict and returned a hardcoded "gpt-4o" for every hint, so the FAST tier never
+# activated and summarisation billed at POWERFUL rates (TDD OQ-40).
+#
+# `${VAR:-default}` — the default travels with the config, so overriding a model per environment is
+# an env change rather than a deploy, and no model name has to appear in Python.
 
 tiers:
   POWERFUL:
-    model: '${OPENAI_POWERFUL_MODEL}' # default: gpt-4o
+    model: '${OPENAI_POWERFUL_MODEL:-gpt-4o}'
     model_hints:
       - report-generation
       - risk-analysis
       - document-extraction
 
   FAST:
-    model: '${OPENAI_FAST_MODEL}' # default: gpt-4o-mini
+    model: '${OPENAI_FAST_MODEL:-gpt-4o-mini}'
     model_hints:
       - summarization
       - classification

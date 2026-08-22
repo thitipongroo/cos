@@ -2,10 +2,14 @@ import { BadRequestException } from '@nestjs/common';
 import { ClsServiceManager } from 'nestjs-cls';
 import { SyncService } from '../sync.service';
 import { PushItemDto } from '../dto/sync.dto';
-import { CLS_SYNC_ALLOWED_ENTITY_TYPES } from '../../../shared/context/cls-context';
+import {
+  CLS_SYNC_ALLOWED_ENTITY_TYPES,
+  CLS_TENANT_ID,
+  CLS_USER_ID,
+} from '../../../shared/context/cls-context';
 
 function harness() {
-  const tx = { $queryRawUnsafe: jest.fn() };
+  const tx = { $queryRawUnsafe: jest.fn(), $queryRaw: jest.fn() };
   const db = { run: jest.fn((cb: (t: typeof tx) => unknown) => cb(tx)) };
   const siteOps = {
     syncSiteReports: jest.fn(),
@@ -18,6 +22,9 @@ function harness() {
   const annotations = { applyPush: jest.fn() };
   // Delivery + purchase-request push handlers (§17.4 amendment 2026-08-19).
   const procurement = { recordDelivery: jest.fn(), createPurchaseRequest: jest.fn() };
+  // §17.2 exhaustion reporting publishes through the outbox and stamps the request's correlation id.
+  const outbox = { publish: jest.fn().mockResolvedValue('evt-1') };
+  const request = { correlationId: 'corr-1' };
   const svc = new SyncService(
     db as never,
     siteOps as never,
@@ -25,8 +32,10 @@ function harness() {
     workforce as never,
     annotations as never,
     procurement as never,
+    outbox as never,
+    request as never,
   );
-  return { svc, tx, db, siteOps, safety, workforce, annotations, procurement };
+  return { svc, tx, db, siteOps, safety, workforce, annotations, procurement, outbox };
 }
 
 const push = (over: Partial<PushItemDto>): PushItemDto => ({
@@ -521,6 +530,108 @@ describe('SyncService', () => {
         'task',
         't1',
       );
+    });
+  });
+
+  describe('retry exhaustion → tenant-admin review queue (§17.2 / OQ-38)', () => {
+    const TENANT = '11111111-1111-1111-1111-111111111111';
+    const USER = '22222222-2222-2222-2222-222222222222';
+
+    const withCls = async (fn: () => Promise<void>) => {
+      const cls = ClsServiceManager.getClsService();
+      await cls.run(async () => {
+        cls.set(CLS_TENANT_ID, TENANT);
+        cls.set(CLS_USER_ID, USER);
+        await fn();
+      });
+    };
+
+    const dto = {
+      entity_type: 'safety_incidents',
+      entity_id: '33333333-3333-3333-3333-333333333333',
+      operation: 'CREATE' as const,
+      payload: { title: 'Scaffold collapse' },
+      client_submitted_at: '2026-08-22T03:00:00Z',
+      last_error: 'Network request failed',
+    };
+
+    it('inserts the row and emits platform.sync.exhausted.v1', async () => {
+      const { svc, tx, outbox } = harness();
+      tx.$queryRaw.mockResolvedValue([{ exhaustion_id: 'ex-1', inserted: true }]);
+
+      await withCls(async () => {
+        const result = await svc.reportExhaustion(dto);
+        expect(result).toEqual({ exhaustion_id: 'ex-1', created: true });
+      });
+
+      expect(outbox.publish).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event_type: 'platform.sync.exhausted.v1',
+          tenant_id: TENANT,
+          actor_id: USER,
+          payload: expect.objectContaining({
+            exhaustion_id: 'ex-1',
+            entity_type: 'safety_incidents',
+            retry_count: 5,
+          }),
+        }),
+      );
+    });
+
+    it('a repeat report does NOT re-emit — one failed record must not become a stream of pages', async () => {
+      const { svc, tx, outbox } = harness();
+      // ON CONFLICT DO NOTHING returned no row, then the follow-up SELECT finds the existing one.
+      tx.$queryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([{ exhaustion_id: 'ex-1' }]);
+
+      await withCls(async () => {
+        const result = await svc.reportExhaustion(dto);
+        expect(result).toEqual({ exhaustion_id: 'ex-1', created: false });
+      });
+
+      expect(outbox.publish).not.toHaveBeenCalled();
+    });
+
+    it('rejects an entity type §17.2 does not send to the review queue', async () => {
+      const { svc, outbox } = harness();
+      await withCls(async () => {
+        // "discard the sync attempt, preserve on device" — handled entirely on the client. A server
+        // row would be a queue entry the admin must triage for a record §17.2 says needs no triage.
+        await expect(
+          svc.reportExhaustion({ ...dto, entity_type: 'task_progress_updates' }),
+        ).rejects.toBeInstanceOf(BadRequestException);
+      });
+      expect(outbox.publish).not.toHaveBeenCalled();
+    });
+
+    it('accepts material_consumption even though it alerts nobody', async () => {
+      // Queue membership and alerting are separate: §17.2 puts it in the queue with no push.
+      const { svc, tx } = harness();
+      tx.$queryRaw.mockResolvedValue([{ exhaustion_id: 'ex-2', inserted: true }]);
+      await withCls(async () => {
+        await expect(
+          svc.reportExhaustion({ ...dto, entity_type: 'material_consumption' }),
+        ).resolves.toEqual({ exhaustion_id: 'ex-2', created: true });
+      });
+    });
+
+    it('resolving a row that is not PENDING is rejected, not silently re-resolved', async () => {
+      const { svc, tx } = harness();
+      tx.$queryRaw.mockResolvedValue([]); // UPDATE ... AND status='PENDING' matched nothing
+      await withCls(async () => {
+        await expect(
+          svc.resolveExhaustion('ex-1', { resolution: 'IMPORTED' }),
+        ).rejects.toBeInstanceOf(BadRequestException);
+      });
+    });
+
+    it('resolve records the admin decision', async () => {
+      const { svc, tx } = harness();
+      tx.$queryRaw.mockResolvedValue([{ exhaustion_id: 'ex-1' }]);
+      await withCls(async () => {
+        await expect(
+          svc.resolveExhaustion('ex-1', { resolution: 'DISCARDED', resolution_note: 'duplicate' }),
+        ).resolves.toEqual({ resolved: true });
+      });
     });
   });
 });

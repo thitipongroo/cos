@@ -337,25 +337,35 @@ export class BoqService {
     // Update every category subtotal in one statement. This was a loop issuing one UPDATE per
     // category, each in its own transaction, so a large BOQ re-cost meant dozens of sequential round
     // trips — and a mid-loop failure left the version half-recalculated with no total written.
+    const subtotals = categories.map((cat) => ({
+      category_id: cat.category_id,
+      subtotal: sumDecimals(
+        allItems
+          .filter((i) => i.category_id === cat.category_id)
+          .map((i) => new Decimal(i.estimated_total)),
+      ),
+    }));
+
     await this.repo.updateCategorySubtotals(
-      categories.map((cat) => ({
-        category_id: cat.category_id,
-        subtotal: sumDecimals(
-          allItems
-            .filter((i) => i.category_id === cat.category_id)
-            .map((i) => new Decimal(i.estimated_total)),
-        ).toFixed(4),
-      })),
+      subtotals.map((s) => ({ category_id: s.category_id, subtotal: s.subtotal.toFixed(4) })),
     );
 
-    // Sum root-category subtotals for version total
-    const rootCategories = categories.filter((c) => !c.parent_category_id);
-    const versionTotal = sumDecimals(
-      rootCategories.map((c) => {
-        const items = allItems.filter((i) => i.category_id === c.category_id);
-        return sumDecimals(items.map((i) => new Decimal(i.estimated_total)));
-      }),
-    );
+    // Version total = SUM of EVERY category's subtotal, not just the root ones.
+    //
+    // This used to filter `categories` down to `!parent_category_id` and sum the items hanging
+    // directly off those roots, which is what the Phase 4 command says literally ("version
+    // total_estimated = SUM(category.subtotal) for all root categories") and which silently drops
+    // the value of every item in a sub-category. A BOQ with root "Structural" and child "Concrete"
+    // holding 5,000,000 THB reported a total of 0 — and that total is what
+    // construction.boq.version_approved.v1 publishes and what Finance generates contracts against.
+    //
+    // Summing every category cannot double-count: boq_items.category_id is a single FK, so an item
+    // belongs to exactly one category and appears in exactly one subtotal. Category subtotals keep
+    // their existing meaning (own items only, not rolled up into the parent) — nothing renders them
+    // hierarchically today, so widening the version total is the whole fix.
+    //
+    // Product-owner decision 2026-08-22 (TDD OQ-23).
+    const versionTotal = sumDecimals(subtotals.map((s) => s.subtotal));
 
     const totalStr = versionTotal.toFixed(4);
     await this.repo.updateVersionTotal(version_id, totalStr);

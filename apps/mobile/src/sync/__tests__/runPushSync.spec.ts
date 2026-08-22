@@ -39,7 +39,10 @@ jest.mock('../../db/annotationRepo', () => ({
   getAnnotation: jest.fn(),
   markAnnotationSynced: (...a: unknown[]) => mockMarkSynced(...a),
 }));
-jest.mock('../../api/client', () => ({ apiClient: {} }));
+const mockApiPost = jest.fn().mockResolvedValue({});
+jest.mock('../../api/client', () => ({
+  apiClient: { post: (...a: unknown[]) => mockApiPost(...a) },
+}));
 jest.mock('../../store/authStore', () => ({
   useAuthStore: { getState: () => ({ accessToken: 'tok' }) },
 }));
@@ -240,6 +243,56 @@ describe('runPushSync', () => {
     it('runs the photo queue on a normal cycle', async () => {
       await runPushSync();
       expect(mockProcessAll).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('retry exhaustion reaches the server (§17.2 / OQ-38)', () => {
+    // THE defect this guards: SyncManager routed the four review-queue entity types to
+    // `callbacks.onExhausted`, and runPushSync — the only production construction of SyncManager —
+    // supplied onConflict, onRejected and onUserNotify and NOT onExhausted. So a safety incident that
+    // failed to sync five times escalated to nobody, on a code path with 100% branch coverage.
+    const onExhausted = () =>
+      capturedManagerCallbacks['onExhausted'] as (i: typeof item) => Promise<void>;
+
+    const item = {
+      id: 7,
+      entity_type: 'safety_incidents',
+      entity_id: 'inc-1',
+      operation: 'CREATE' as const,
+      payload: JSON.stringify({ title: 'Scaffold collapse', severity: 'CRITICAL' }),
+      status: 'FAILED' as const,
+      retry_count: 5,
+      client_submitted_at: '2026-08-22T03:00:00Z',
+      last_attempt_at: '2026-08-22T04:00:00Z',
+      error_message: 'Network request failed',
+    };
+
+    it('supplies an onExhausted callback at all', async () => {
+      await runPushSync();
+      expect(capturedManagerCallbacks['onExhausted']).toBeDefined();
+    });
+
+    it('posts the whole record to /sync/exhausted, payload parsed', async () => {
+      await runPushSync();
+      await onExhausted()(item);
+
+      expect(mockApiPost).toHaveBeenCalledWith('/sync/exhausted', {
+        entity_type: 'safety_incidents',
+        entity_id: 'inc-1',
+        operation: 'CREATE',
+        // Parsed, not the raw JSON string: sync_queue stores text, the server column is jsonb.
+        payload: { title: 'Scaffold collapse', severity: 'CRITICAL' },
+        client_submitted_at: '2026-08-22T03:00:00Z',
+        last_error: 'Network request failed',
+      });
+    });
+
+    it('does not throw when the report itself fails — the device already lost the network', async () => {
+      mockApiPost.mockRejectedValueOnce(new Error('still offline'));
+      await runPushSync();
+
+      await expect(onExhausted()(item)).resolves.toBeUndefined();
+      expect(mockSetError).toHaveBeenCalledWith('sync.exhausted.report_failed');
     });
   });
 });

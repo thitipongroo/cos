@@ -4,17 +4,22 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
+  Param,
   Body,
   Query,
   HttpCode,
   HttpStatus,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { SyncService } from './sync.service';
-import { PushItemDto } from './dto/sync.dto';
+import { PushItemDto, ReportExhaustionDto, ResolveExhaustionDto } from './dto/sync.dto';
 import { JwtAuthGuard } from '../identity/guards/jwt-auth.guard';
 import { SyncAuthGuard } from './sync-auth.guard';
+import { RolesGuard } from '../../shared/guards/roles.guard';
+import { Roles } from '@cos/rbac';
+import { CosRole } from '@cos/types';
 
 @ApiTags('Sync')
 @ApiBearerAuth()
@@ -48,5 +53,55 @@ export class SyncController {
   @ApiOperation({ summary: 'Apply a server-side write with conflict resolution (same as push)' })
   resolve(@Body() dto: PushItemDto) {
     return this.service.push(dto);
+  }
+
+  // Deliberately on THIS controller, so SyncAuthGuard's push branch authorises it: reporting that a
+  // safety incident failed to sync carries the incident's payload, and should need the same role
+  // that could have pushed it. The admin-facing queue routes are a separate controller below,
+  // because the guard discriminates GET as `delta` and would try to narrow entity_types from the
+  // query string.
+  @Post('exhausted')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Report a mutation that exhausted its 5 retries — §17.2 tenant-admin review queue',
+  })
+  reportExhaustion(@Body() dto: ReportExhaustionDto) {
+    return this.service.reportExhaustion(dto);
+  }
+}
+
+/**
+ * The §17.2 review queue, for the tenant admin.
+ *
+ * §17.2: "a server-side queue visible to Tenant Admin where failed sync records can be reviewed and
+ * manually imported. Records are never deleted from the device until successfully synced or
+ * explicitly resolved by an admin."
+ *
+ * A separate controller because SyncAuthGuard resolves authorisation from the HTTP verb — GET means
+ * `delta` and would narrow `entity_types` out of the query string. These routes need an ordinary
+ * role check instead.
+ */
+@ApiTags('Sync')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(CosRole.TENANT_ADMIN)
+@Controller('sync/exhaustions')
+export class SyncExhaustionController {
+  constructor(private readonly service: SyncService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'List queued sync exhaustions for review (§17.2)' })
+  list(@Query('status') status?: string) {
+    return this.service.listExhaustions(status === 'RESOLVED' ? 'RESOLVED' : 'PENDING');
+  }
+
+  @Patch(':exhaustionId/resolve')
+  @ApiOperation({ summary: 'Mark a queued exhaustion imported or discarded (§17.2)' })
+  @ApiParam({ name: 'exhaustionId', format: 'uuid' })
+  resolveExhaustion(
+    @Param('exhaustionId') exhaustionId: string,
+    @Body() dto: ResolveExhaustionDto,
+  ) {
+    return this.service.resolveExhaustion(exhaustionId, dto);
   }
 }

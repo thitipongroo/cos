@@ -77,3 +77,50 @@ readinessProbe:
     port: 3002
   initialDelaySeconds: 10
   periodSeconds: 5
+
+# ─── Temporal workers (file-cleanup + zip-extraction) ────────────────────────
+# A second Deployment from this chart — same image, different command. See
+# templates/worker-deployment.yaml for why they are not a sidecar and not started inside main.ts.
+workers:
+  # Turn off where there is no Temporal server to poll (a dev cluster without the `full` profile),
+  # so the pod stays absent rather than CrashLooping.
+  enabled: true
+  replicaCount: 2
+  command:
+    - node
+    - services/file-service/dist/services/file-service/src/workers/main.js
+  # 8090, matching the Go workers and cos-temporal-worker. NOT 3002 — that is the Fastify API's
+  # port, and this process does not start Fastify.
+  healthPort: 8090
+  # Heavier than the API's limits: unzipping an archive and streaming a delete batch are both
+  # memory-hungry, and the zip-bomb guard bounds the input but not the peak.
+  resources:
+    requests:
+      cpu: '200m'
+      memory: '512Mi'
+    limits:
+      cpu: '1000m'
+      memory: '1536Mi'
+  terminationGracePeriodSeconds: 300
+  # The rootfs is read-only, as it is for the API, so extraction needs a writable scratch mount.
+  volumeMounts:
+    - name: tmp
+      mountPath: /tmp
+  volumes:
+    - name: tmp
+      emptyDir: {}
+  # Both probes hit the same path: a worker polls an outbound queue and has no readiness signal
+  # distinct from liveness. initialDelay is generous because each worker builds its own
+  # Db/Minio/OpenSearch clients from loadConfig() before Worker.create resolves.
+  livenessProbe:
+    httpGet:
+      path: /health/live
+      port: 8090
+    initialDelaySeconds: 30
+    periodSeconds: 15
+  readinessProbe:
+    httpGet:
+      path: /health/live
+      port: 8090
+    initialDelaySeconds: 15
+    periodSeconds: 10

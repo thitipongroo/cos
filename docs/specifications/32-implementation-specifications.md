@@ -162,27 +162,40 @@ The platform deploys as distinct units. Do **not** merge runtimes or split prema
 > build files actually present in `services/<name>/` (`go.mod` → Go, `requirements.txt` → Python,
 > `package.json` → Node) and fails CI on any mismatch.
 >
+> **Why the two worker rows were added on 2026-08-22.** They are not new code — five Temporal worker
+> files had existed for months, each exporting a `run*Worker()` and self-starting under
+> `require.main === module`, and **nothing launched any of them**: no `package.json` script, no
+> Dockerfile, no Compose service, no CI step, no Helm chart, and no row in this table. The Temporal
+> server is deployed, so every workflow the services started was accepted and recorded as Running
+> while no process polled its task queue. `POST /procurement/rfqs/:id/publish` returned 200 and the
+> RFQ stayed `DRAFT`; soft-deleted files were never hard-deleted. The workflow unit tests pass
+> because `TestWorkflowEnvironment` starts its own in-process worker — no gate in the pipeline checks
+> that a built component is reachable in production. Recorded as OQ-32 in
+> `docs/technical-design/README.md`; resolved by product-owner decision on 2026-08-22.
+>
 > **Why the rule exists.** On 2026-08-07 commit `8857bb1` added a BIM Import Worker row reading
 > **Go**, inferred from the three `*-worker` rows above it rather than from the directory — which has
 > never contained a `.go` file. `33-digital-twin-iot.md` had said Python since 2026-05-29, but that
 > file was not open in the same commit. One fact stored in three hand-maintained places, with nothing
 > comparing any of them to the repo, is the condition that made a plausible guess survive review.
 
-| Deployable                                                        | Runtime             | Contents                                                                                                                                                        |
-| ----------------------------------------------------------------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Main Application (`backend/`)                                     | NestJS (monolith)   | identity, tenant, project, boq, procurement, site-ops, finance, notification, equipment, workforce                                                              |
-| File Service (`services/file-service/`)                           | Fastify             | Multipart upload I/O (extracted for I/O throughput)                                                                                                             |
-| AI Gateway (`services/ai-gateway/`)                               | FastAPI (Python)    | LLM routing, RAG, token tracking                                                                                                                                |
-| AI Embedding Worker (`services/ai-embedding-worker/`)             | FastAPI (Python)    | Embedding generation                                                                                                                                            |
-| AI OCR Pipeline (`services/ai-ocr-pipeline/`)                     | FastAPI (Python)    | OCR processing                                                                                                                                                  |
-| Analytics Worker (`services/analytics-worker/`)                   | Go                  | ClickHouse aggregation                                                                                                                                          |
-| KG Ingestion Worker (`services/kg-ingestion-worker/`)             | Go                  | Neo4j ingestion — Kafka client: `github.com/twmb/franz-go` via coskafka (`kgo.ConsumeRegex`; consumer group: `kg-ingestion-worker.shared`)                      |
-| IoT Ingestion Worker (`services/iot-ingestion-worker/`)           | Go                  | EMQX (MQTT) → Kafka telemetry forwarding. EMQX's native/Enterprise Kafka data-bridge is a paid feature and is **not** used — see `33-digital-twin-iot.md` §33.8 |
-| BIM Import Worker (`services/bim-import-worker/`)                 | Python              | IFC parsing / quantity extraction for the BIM extension point (§13.4)                                                                                           |
-| AI Transcription Pipeline (`services/ai-transcription-pipeline/`) | FastAPI (Python)    | Voice-note transcription — the server half of the mobile capture flow (ADR-052)                                                                                 |
-| Credential Service (`services/credential-service/`)               | Node                | W3C DID/VC issuance and verification — backs contract e-signature (ADR-019, ADR-058; §5.4)                                                                      |
-| Web App (`apps/web/`)                                             | Next.js + Serwist   | Tablet/laptop browser — online + offline unified                                                                                                                |
-| Mobile (`apps/mobile/`)                                           | React Native + Expo | Smartphone native app                                                                                                                                           |
+| Deployable                                                         | Runtime                       | Contents                                                                                                                                                                                                        |
+| ------------------------------------------------------------------ | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Main Application (`backend/`)                                      | NestJS (monolith)             | identity, tenant, project, boq, procurement, site-ops, finance, notification, equipment, workforce                                                                                                              |
+| File Service (`services/file-service/`)                            | Fastify                       | Multipart upload I/O (extracted for I/O throughput)                                                                                                                                                             |
+| AI Gateway (`services/ai-gateway/`)                                | FastAPI (Python)              | LLM routing, RAG, token tracking                                                                                                                                                                                |
+| AI Embedding Worker (`services/ai-embedding-worker/`)              | FastAPI (Python)              | Embedding generation                                                                                                                                                                                            |
+| AI OCR Pipeline (`services/ai-ocr-pipeline/`)                      | FastAPI (Python)              | OCR processing                                                                                                                                                                                                  |
+| Analytics Worker (`services/analytics-worker/`)                    | Go                            | ClickHouse aggregation                                                                                                                                                                                          |
+| KG Ingestion Worker (`services/kg-ingestion-worker/`)              | Go                            | Neo4j ingestion — Kafka client: `github.com/twmb/franz-go` via coskafka (`kgo.ConsumeRegex`; consumer group: `kg-ingestion-worker.shared`)                                                                      |
+| IoT Ingestion Worker (`services/iot-ingestion-worker/`)            | Go                            | EMQX (MQTT) → Kafka telemetry forwarding. EMQX's native/Enterprise Kafka data-bridge is a paid feature and is **not** used — see `33-digital-twin-iot.md` §33.8                                                 |
+| BIM Import Worker (`services/bim-import-worker/`)                  | Python                        | IFC parsing / quantity extraction for the BIM extension point (§13.4)                                                                                                                                           |
+| AI Transcription Pipeline (`services/ai-transcription-pipeline/`)  | FastAPI (Python)              | Voice-note transcription — the server half of the mobile capture flow (ADR-052)                                                                                                                                 |
+| Credential Service (`services/credential-service/`)                | Node                          | W3C DID/VC issuance and verification — backs contract e-signature (ADR-019, ADR-058; §5.4)                                                                                                                      |
+| Temporal Worker (`backend/src/workers/main.ts`)                    | NestJS image, worker command  | Executes the backend's workflows — task queues `procurement`, `enterprise-provisioning`, `data-export`. Runs the **cos-backend image** with a different command; chart `cos-temporal-worker` (added 2026-08-22) |
+| File Service Workers (`services/file-service/src/workers/main.ts`) | Fastify image, worker command | Task queues `file-cleanup` (retention hard-delete) and `zip-extraction`. Second Deployment from the `cos-file-service` chart, same image (added 2026-08-22)                                                     |
+| Web App (`apps/web/`)                                              | Next.js + Serwist             | Tablet/laptop browser — online + offline unified                                                                                                                                                                |
+| Mobile (`apps/mobile/`)                                            | React Native + Expo           | Smartphone native app                                                                                                                                                                                           |
 
 > The last four rows were added on 2026-08-07. All four already existed under `services/` and are
 > wired in `docker-compose.yml`; this table listed only the original five, so a reader counting
@@ -463,6 +476,8 @@ compatibility) before first producer deployment.
 | 19  | `construction.boq.created.v1`            | `project_id` (UUID), `version_id` (UUID), `version_number` (integer) — emitted once when the first BOQ version (version_number = 1) is created for a project                                                                                                                                                                                                                                  |
 | 20  | `construction.boq.updated.v1`            | `version_id` (UUID), `project_id` (UUID), `changed_items_count` (integer), `new_total_estimated_amount` (DECIMAL string — never float), `new_total_estimated_currency` (ISO 4217)                                                                                                                                                                                                             |
 | 21  | `procurement.po.approval_requested.v1`   | `po_id`, `project_id`, `approver_id`, `tier` (enum: PM/FINANCE/EXECUTIVE/TENANT-ADMIN), `po_number`, `total_amount` (DECIMAL string — never float), `currency_code` (ISO 4217) — emitted by the PO approval workflow (notifyApprover activity) when a PO enters an approval tier or is escalated on the 48h timeout; consumed by the Notification Service to alert the specific `approver_id` |
+| 22  | `platform.sync.exhausted.v1`             | `exhaustion_id` (UUID of the `platform.sync_exhaustions` row), `entity_type` (enum: safety_incidents/workforce_attendance/inspection_results/material_consumption), `entity_id` (UUID), `reported_by` (UUID — from the JWT, not the request body), `retry_count` (integer, always 5), `last_error` (nullable string — diagnostic only) — emitted by `SyncService.reportExhaustion` when a device reports a queued offline mutation that exhausted its 5 retries (§17.2). Consumed by the Notification Service, which routes it **by `entity_type`**: safety incidents alert PM + Safety Officer, attendance and inspections alert PM, and material consumption enters the review queue with no alert — §17.2's table, not a single role list. |
+| 23  | `safety.violation.detected.v1`           | `violation_type` (enum: PERMIT_EXPIRED/CHECKLIST_ITEM_FAILED), `project_id` (UUID), `detected_by` (PERMIT_EXPIRY_SWEEP or CHECKLIST_SUBMISSION), `detail` (string), plus the producer-specific nullables: `permit_id`/`permit_number`/`permit_type`/`linked_task_id` for PERMIT_EXPIRED, `inspection_id`/`checklist_id`/`failed_item_count` for CHECKLIST_ITEM_FAILED — the `SafetyViolationDetected` that `19-notification-architecture` §19.6 and `16-enterprise-event-flow` §16 had always named and that nothing produced until 2026-08-22. §19.6 makes it un-disableable alongside `safety.incident.created.v1`. `PPE_NON_COMPLIANCE` is deliberately NOT a symbol: §22.6's SafetyVisionModel is its eventual third producer and is untrained (Phase 23 gates it on 10,000+ labelled photos), so the value would be one no consumer could ever see. |
 
 ### Schema Registry Rules
 
@@ -515,9 +530,9 @@ work.** Verified against `packages/@cos/shared/src/avro/`:
 
 **One row is genuinely outstanding, and it is a naming conflict rather than a missing file.**
 
-| Payload table (#16, authoritative)     | On disk + in code                                                     |
-| -------------------------------------- | --------------------------------------------------------------------- |
-| `finance.budget.variance_detected.v1`  | `finance.variance.alert.v1` — record `VarianceAlertEvent`, and the key `EVENT_AVSC_MAP` publishes under |
+| Payload table (#16, authoritative)    | On disk + in code                                                                                       |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `finance.budget.variance_detected.v1` | `finance.variance.alert.v1` — record `VarianceAlertEvent`, and the key `EVENT_AVSC_MAP` publishes under |
 
 The implemented name is also what `00_master` § Phase 7 `Generate:` and § Phase 20 notification
 triggers say, and what `20-ux-flow` §20.7 cites for the `/alerts` page. So the payload table above is

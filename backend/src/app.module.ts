@@ -40,6 +40,7 @@ import { CloudflareWafMiddleware } from './shared/middleware/cloudflare-waf.midd
 import { SecureHeadersMiddleware } from './shared/middleware/secure-headers.middleware';
 import { TracingShutdownService } from './shared/tracing-shutdown.service';
 import { PrismaPoolShutdownService } from './shared/prisma/prisma-pool-shutdown.service';
+import { KafkaLagService } from './shared/kafka/kafka-lag.service';
 import { SchedulingModule } from './shared/scheduling/scheduling.module';
 import { EventsModule } from './shared/events/events.module';
 
@@ -120,6 +121,10 @@ import { EventsModule } from './shared/events/events.module';
     // Ends the shared pg pools that back every PrismaClient. No individual client may close them
     // (they are shared by URL — see shared/prisma/create-prisma-client.ts), so this hook owns it.
     PrismaPoolShutdownService,
+    // Publishes kafka_consumer_lag and kafka_dlq_depth. Both series back a paging alert in
+    // cos-alerts.yml and neither had a producer — an alert on an absent series never fires
+    // (TDD OQ-43). Registered here because it must run once per process, not per module.
+    KafkaLagService,
   ],
 })
 export class AppModule implements NestModule {

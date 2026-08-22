@@ -357,10 +357,10 @@ TH-specific logic is not silently applied to non-TH tenants.
 
 The web login renders **both** authentication paths already defined in §5.4 (master Phase 2):
 
-| Path                      | Users                                                                           | Mechanism                                 | Route        |
-| ------------------------- | ------------------------------------------------------------------------------- | ----------------------------------------- | ------------ |
-| Path B — email + password | Any role. **Required** for `TENANT_ADMIN` and `FINANCE` (§5.4.4)                | Keycloak OIDC (OAuth2), RS256 JWT         | `/login`     |
-| Path A — phone + SMS OTP  | Any role **except** `TENANT_ADMIN` and `FINANCE` (§5.4.4)                       | Custom OTP module → Keycloak Direct Grant | `/login/otp` |
+| Path                      | Users                                                            | Mechanism                                 | Route        |
+| ------------------------- | ---------------------------------------------------------------- | ----------------------------------------- | ------------ |
+| Path B — email + password | Any role. **Required** for `TENANT_ADMIN` and `FINANCE` (§5.4.4) | Keycloak OIDC (OAuth2), RS256 JWT         | `/login`     |
+| Path A — phone + SMS OTP  | Any role **except** `TENANT_ADMIN` and `FINANCE` (§5.4.4)        | Custom OTP module → Keycloak Direct Grant | `/login/otp` |
 
 - **MFA (TOTP):** required for `TENANT_ADMIN` and `FINANCE` (§5.4; master Phase 2) — MFA challenge
   page shown after primary factor succeeds.

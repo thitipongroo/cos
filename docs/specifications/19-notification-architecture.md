@@ -149,6 +149,17 @@ Users can configure per-channel preferences per notification type :
 Preferences are stored per user in PostgreSQL.
 Critical safety notifications (SafetyIncidentReported, SafetyViolationDetected) cannot be disabled.
 
+> **Both events exist, and "cannot be disabled" is now enforced.** `SafetyIncidentReported` is
+> `safety.incident.created.v1`; `SafetyViolationDetected` is `safety.violation.detected.v1`
+> (§32.4 #23), built 2026-08-22 — before that it was named here and in `16-enterprise-event-flow`
+> §16 and nowhere else, so this sentence referred to a set of unknown size. Two producers emit it:
+> the hourly permit-expiry sweep (`PERMIT_EXPIRED`) and a failed safety checklist
+> (`CHECKLIST_ITEM_FAILED`).
+>
+> The exemption itself was also half-applied: it covered quiet hours but not the enable/disable
+> preference, so a user could switch a safety incident off on every channel through a supported API
+> call. Both rules now read one `isCriticalSafetyEvent()` predicate (TDD OQ-34, OQ-35).
+
 ---
 
 ## 19.7 Infrastructure

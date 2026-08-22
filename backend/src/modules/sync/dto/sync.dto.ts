@@ -50,3 +50,44 @@ export interface DeltaResponse {
   /** Retention window in days, sent only alongside `full_resync_required` so clients can log why. */
   retention_days?: number;
 }
+
+/**
+ * A queued mutation that exhausted its 5 retries on the device (§17.2).
+ *
+ * `entity_type` is the CLIENT's vocabulary — `safety_incidents`, `workforce_attendance`,
+ * `inspection_results`, `material_consumption` — matching SyncManager's EXHAUSTED_NOTIFY_TYPES, not
+ * the `entity_type` of PushItemDto. They are different sets on purpose: the push types name a write
+ * handler, these name a row in §17.2's exhaustion table.
+ */
+export class ReportExhaustionDto {
+  @IsString()
+  entity_type!: string;
+
+  @IsString()
+  entity_id!: string;
+
+  @IsIn(['CREATE', 'UPDATE'])
+  operation!: 'CREATE' | 'UPDATE';
+
+  @IsObject()
+  payload!: Record<string, unknown>;
+
+  @IsOptional()
+  @IsString()
+  client_submitted_at?: string;
+
+  /** Last transport error the device saw. Free text — it is diagnostic, not control flow. */
+  @IsOptional()
+  @IsString()
+  last_error?: string;
+}
+
+/** An admin resolving a queued exhaustion (§17.2 — "reviewed and manually imported"). */
+export class ResolveExhaustionDto {
+  @IsIn(['IMPORTED', 'DISCARDED'])
+  resolution!: 'IMPORTED' | 'DISCARDED';
+
+  @IsOptional()
+  @IsString()
+  resolution_note?: string;
+}

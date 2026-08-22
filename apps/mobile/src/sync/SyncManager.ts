@@ -76,7 +76,17 @@ export interface SyncManagerCallbacks {
     entityId: string,
     resolution: { localSyncStatus: LocalSyncStatus; payload: unknown },
   ) => Promise<void>;
-  onExhausted?: (entityType: string, entityId: string, operation: string) => Promise<void>;
+  /**
+   * A queued mutation that exhausted its 5 retries and belongs in the §17.2 tenant-admin review
+   * queue. Receives the WHOLE item, not just its identity: the server queue stores the payload so an
+   * admin can review and manually import it, and the device is the only place that payload exists
+   * once the mutation has failed.
+   *
+   * Widened from (entityType, entityId, operation) on 2026-08-22 (TDD OQ-38). The narrow signature
+   * dated from when nothing supplied this callback at all, so it was never exercised against what
+   * the server actually needs.
+   */
+  onExhausted?: (item: SyncQueueItem) => Promise<void>;
   /** Receives a translation KEY (see ConflictHandler.userMessageKey), never a finished sentence. */
   onUserNotify?: (messageKey: string) => void;
 }
@@ -216,7 +226,7 @@ export class SyncManager {
   private async handleExhaustion(item: SyncQueueItem): Promise<void> {
     if (EXHAUSTED_NOTIFY_TYPES.has(item.entity_type)) {
       if (this.callbacks.onExhausted) {
-        await this.callbacks.onExhausted(item.entity_type, item.entity_id, item.operation);
+        await this.callbacks.onExhausted(item);
       }
     } else if (DISCARD_NOTIFY_TYPES.has(item.entity_type)) {
       if (this.callbacks.onUserNotify) {

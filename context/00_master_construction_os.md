@@ -537,6 +537,12 @@ against the build files in services/<name>/ and fails CI on a mismatch.
 │ Credential Service             │ Node             │ W3C DID/VC issuance +      │
 │ (services/credential-service/) │                  │ verification (ADR-019/058) │
 ├────────────────────────────────┼──────────────────┼────────────────────────────┤
+│ Temporal Worker                │ backend image,   │ Executes backend workflows:│
+│ (backend/src/workers/main.ts)  │ worker command   │ procurement, enterprise-   │
+│                                │                  │ provisioning, data-export  │
+│ File Service Workers           │ file-service     │ file-cleanup (retention    │
+│ (…/file-service/src/workers/)  │ image, worker cmd│ hard-delete), zip-extract  │
+├────────────────────────────────┼──────────────────┼────────────────────────────┤
 │ Web App (apps/web/)            │ Next.js+Serwist  │ Tablet/laptop online+offline│
 │ Mobile (apps/mobile/)          │ React Native     │ Smartphone native app      │
 └────────────────────────────────┴──────────────────┴────────────────────────────┘
@@ -2465,7 +2471,11 @@ Workflow Implementation:
   Use Temporal TypeScript SDK
   RFQ Workflow: implements RFQ state machine from WORKFLOW ENGINE SPEC
   PO Workflow:  implements PO state machine from WORKFLOW ENGINE SPEC
-  Temporal Worker: dedicated worker service within procurement-service
+  Temporal Worker: runs in the cos-temporal-worker Deployment (backend image, worker command),
+                   NOT inside the API process — see §32.2 and
+                   infrastructure/helm/cos-temporal-worker/. Shares one process with the
+                   enterprise-provisioning and data-export queues (added 2026-08-22; before
+                   that no worker was launched anywhere and the RFQ/PO state machine never ran)
   Workflow compensation: on CANCELLED, emit compensation events to Finance Service
 
 Generate:
@@ -2544,7 +2554,7 @@ Do not invent:
     Tax calculation uses Avalara AvaTax API
     Interface: { calculate(amount, currency, fromAddress, toAddress, lineItems, tenantId): TaxResult }
     Trigger: on invoice creation and PO generation
-    WHT rules: Thailand default 3% services / 5% rent; TENANT_ADMIN configures other jurisdictions via wht_rules table (spec §13.3)
+    WHT rules: Thailand default 3% services / 5% rent; TENANT_ADMIN configures other jurisdictions via finance.wht_rules (spec §13.3; consolidated from procurement.wht_rules by 20260822000001)
 
 - vendor scoring/rating logic (3 criteria — see below)
 
@@ -2559,7 +2569,7 @@ Decisions in Phase 5 (documented in spec):
     VendorScore:   { vendorId: string, totalScore: number, breakdown: ScoreCriteria[], grade: ENUM(A,B,C,D,F) }
 
   WithholdingTaxRules (spec §13.3):
-    DECIDED: Thailand default (3% services, 5% rent); TENANT_ADMIN configures other jurisdictions via wht_rules table
+    DECIDED: Thailand default (3% services, 5% rent); TENANT_ADMIN configures other jurisdictions via finance.wht_rules
     Interface: { calculate(amount: Decimal, vendorType: string, jurisdiction: string): WHTResult }
     WHTResult: { whtAmount: Decimal, rate: number, certificateRef: string }
     Implementation: hook inside Avalara AvaTax flow
@@ -3000,7 +3010,7 @@ Constraints:
 
     Avalara handles VAT, GST, Sales Tax globally — pluggable per tenant jurisdiction
     WHT (Withholding Tax): Thailand default (3% services, 5% rent); TENANT_ADMIN configures per jurisdiction (spec §13.3)
-    Do NOT hardcode tax rates — use wht_rules table for all jurisdictions
+    Do NOT hardcode tax rates — use finance.wht_rules for all jurisdictions (the only WHT table; procurement.wht_rules was dropped 2026-08-22)
 
 - ERP integration: Strategy pattern; 3 sub-stubs (SAPAdapter, OracleAdapter, DynamicsAdapter); implement each when first tenant with that ERP onboards (spec §13.3)
 - Multi-currency conversion: implement via Open Exchange Rates API
@@ -3660,6 +3670,13 @@ Sync Engine Architecture:
         equipment_usage_logs:  discard sync attempt; preserve on device
     - Tenant admin review queue: server-side queue (platform schema) visible to TENANT_ADMIN;
                                  records never deleted from device until synced or admin-resolved
+                                 BUILT 2026-08-22 (TDD OQ-38) — table platform.sync_exhaustions,
+                                 event platform.sync.exhausted.v1 (spec §32.4 #22),
+                                 POST /api/v1/sync/exhausted (device reports the exhaustion),
+                                 GET /api/v1/sync/exhaustions + PATCH :id/resolve (TENANT_ADMIN).
+                                 Before that date none of it existed and SyncManager's onExhausted
+                                 callback had no provider, so an exhausted safety incident
+                                 escalated to nobody.
     - handleConflict(item, serverResponse): updates local record with conflict_status
 
   Conflict Handling (client-side):

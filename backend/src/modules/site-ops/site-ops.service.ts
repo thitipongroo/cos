@@ -531,6 +531,31 @@ export class SiteOpsService {
         inspected_by: this.userId,
         inspected_at: dto.inspected_at,
       });
+
+      // A failed required item on a safety checklist IS a safety violation (§20.2 "Violation
+      // alerts"; TDD OQ-35). `19-notification-architecture` §19.6 names SafetyViolationDetected as
+      // one of two notifications a user may not disable, and until 2026-08-22 nothing produced it —
+      // the name appeared in §19.6 and §16 and nowhere else, so the un-disableable set had an
+      // unknown size.
+      //
+      // The checklist a failed inspection references lives in `site_ops.safety_checklists`, and the
+      // Phase 6 command defines the safety route as "submit completed checklist (= inspection)" —
+      // one concept, not two. So this fires for every FAILED inspection rather than trying to
+      // distinguish a safety checklist from a QC one, a distinction the schema does not carry.
+      //
+      // Deliberately SEPARATE from site.inspection.failed.v1 rather than folded into it. They route
+      // differently and must: inspection.failed alerts SITE_ENGINEER + PROJECT_MANAGER and is
+      // ordinarily disableable, while a violation is in §19.6's critical set and is not. Merging
+      // them would make one of those two properties wrong.
+      await this.emitEvent('safety.violation.detected.v1', {
+        violation_type: 'CHECKLIST_ITEM_FAILED',
+        project_id: inspection.project_id,
+        inspection_id: inspection.inspection_id,
+        checklist_id: dto.checklist_id,
+        failed_item_count: checklistItems.length,
+        detected_by: 'CHECKLIST_SUBMISSION',
+        detail: `Safety checklist failed with ${checklistItems.length} required item(s) outstanding`,
+      });
     }
 
     logger.info({

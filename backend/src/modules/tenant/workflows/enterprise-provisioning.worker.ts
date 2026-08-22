@@ -9,7 +9,8 @@ const TASK_QUEUE = 'enterprise-provisioning';
 export async function runEnterpriseProvisioningWorker(): Promise<void> {
   const worker = await Worker.create({
     taskQueue: TASK_QUEUE,
-    workflowsPath: require.resolve('./'),
+    // The workflow FILE, not the directory — see the procurement worker for what './' did.
+    workflowsPath: require.resolve('./enterprise-provisioning.workflow'),
     activities,
   });
 

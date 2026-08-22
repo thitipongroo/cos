@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { SyncController } from './sync.controller';
+import { SyncController, SyncExhaustionController } from './sync.controller';
 import { SyncService } from './sync.service';
 import { TombstonePruneService } from './tombstone-prune.service';
 import { SyncAuthGuard } from './sync-auth.guard';
@@ -24,7 +24,7 @@ import { ProcurementModule } from '../procurement/procurement.module';
     // Delivery + purchase-request push handlers (§17.4 amendment 2026-08-19).
     ProcurementModule,
   ],
-  controllers: [SyncController],
+  controllers: [SyncController, SyncExhaustionController],
   // RolesGuard is listed explicitly because SyncAuthGuard INJECTS it (to reuse the primary +
   // additional-roles union) rather than merely naming it in @UseGuards, which is how every other
   // controller uses it — a class Nest instantiates from @UseGuards is not injectable on its own.

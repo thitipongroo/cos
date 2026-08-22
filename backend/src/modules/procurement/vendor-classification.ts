@@ -14,7 +14,7 @@
  * that drawing is withdrawn, and the vendor directory now hangs off the More menu instead. The
  * classification below outlived the drawing because it describes vendor DATA, not a screen.)
  *
- * NOT the withholding-tax classification — `procurement.wht_rules.vendor_type` is a different
+ * NOT the withholding-tax classification — `finance.wht_rules.service_type` is a different
  * vocabulary serving a different purpose (spec §13.3), and conflating them would make a tax rate move
  * when someone re-files a vendor under a friendlier heading.
  */

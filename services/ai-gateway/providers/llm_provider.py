@@ -13,11 +13,13 @@ import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
-# model_hint → concrete model. §22.5/§22.7: GPT-4o is the primary for every Layer-A hint today
-# (summarization, document-extraction). Kept as a map so a future hint can pick a cheaper model
-# without touching call sites.
-DEFAULT_MODEL = "gpt-4o"
-MODEL_BY_HINT: dict[str, str] = {}
+# model_hint → concrete model comes from config/routing.yaml, via providers/routing.py.
+#
+# There used to be a `DEFAULT_MODEL = "gpt-4o"` and an empty `MODEL_BY_HINT` here, and they WERE the
+# routing: routing.yaml was read by nothing, so every hint resolved to that constant and the FAST
+# tier never ran (TDD OQ-40). Re-exported below so existing call sites keep working; do not
+# reintroduce a model name in this module.
+from .routing import model_for_hint  # noqa: F401  (re-exported — see below)
 
 
 @dataclass
@@ -43,10 +45,6 @@ class LLMProvider(ABC):
 class StubLLMProvider(LLMProvider):
     async def complete(self, messages: list[Message], model_hint: str) -> LLMResponse:
         raise NotImplementedError("StubLLMProvider: real LLM provider not configured")
-
-
-def model_for_hint(model_hint: str) -> str:
-    return MODEL_BY_HINT.get(model_hint, DEFAULT_MODEL)
 
 
 class OpenAILLMProvider(LLMProvider):

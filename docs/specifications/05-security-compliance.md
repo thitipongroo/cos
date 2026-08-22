@@ -380,7 +380,7 @@ is sufficient:
    mandatory for these two roles, so the Direct Grant flow **denies** them at the identity provider
    (`docs/runbooks/mfa-enforcement.md` Step 1b; verified against a live Keycloak 2026-08-22).
 2. **SMS is a restricted authenticator.** NIST SP 800-63B Rev 4 classifies SMS/PSTN OTP as
-   *restricted* and it no longer satisfies AAL2. Phone possession alone is a single factor.
+   _restricted_ and it no longer satisfies AAL2. Phone possession alone is a single factor.
    The risk assessment, migration roadmap and user-notification obligations Rev 4 attaches to
    continued use are discharged in `docs/security/sms-otp-restricted-authenticator.md`.
 

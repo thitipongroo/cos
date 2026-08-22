@@ -673,6 +673,10 @@ SMS exists in the enum but has **no MVP adapter** — do not design SMS notifica
 - Digest frequency daily/weekly.
 - **Critical safety notifications (SafetyIncidentReported, SafetyViolationDetected)
   cannot be disabled** — render locked/always-on state.
+  Canonically `safety.incident.created.v1` and `safety.violation.detected.v1`. The server enforces
+  this from 2026-08-22: before then the exemption covered quiet hours only, so the preference screen
+  could switch a safety notification off for real (TDD OQ-34), and the second event did not exist at
+  all (OQ-35). The locked state is now backed by behaviour, not just by the UI.
 
 ---
 

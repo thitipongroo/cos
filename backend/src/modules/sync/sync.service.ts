@@ -16,7 +16,9 @@
 // NOTE: syncSiteReports returns conflict_status without server_payload, so site_report responses
 // omit server_payload (the server row is preserved in the site-ops conflict-record).
 
-import { Injectable, Scope, BadRequestException } from '@nestjs/common';
+import { Injectable, Scope, BadRequestException, Inject } from '@nestjs/common';
+import { REQUEST } from '@nestjs/core';
+import { randomUUID } from 'crypto';
 import { TenantPrismaService } from '../tenant/prisma/tenant-prisma.service';
 import { SiteOpsService } from '../site-ops/site-ops.service';
 import { SafetyService } from '../safety/safety.service';
@@ -31,9 +33,21 @@ import type { RecordAttendanceDto } from '../workforce/dto/attendance.dto';
 import type { RecordDeliveryDto } from '../procurement/dto/record-delivery.dto';
 import type { CreatePurchaseRequestDto } from '../procurement/dto/create-purchase-request.dto';
 import type { CreateIncidentDto } from '../safety/dto/safety.dto';
-import { PushItemDto, PushResponse, DeltaResponse, ServerSyncStatus } from './dto/sync.dto';
+import {
+  PushItemDto,
+  PushResponse,
+  DeltaResponse,
+  ServerSyncStatus,
+  ReportExhaustionDto,
+  ResolveExhaustionDto,
+} from './dto/sync.dto';
+import { EventOutboxService } from '../../shared/events/event-outbox.service';
 import { tombstoneRetentionCutoff, tombstoneRetentionDays } from './tombstone-retention';
-import { clsSyncAllowedEntityTypes } from '../../shared/context/cls-context';
+import {
+  clsSyncAllowedEntityTypes,
+  clsTenantId,
+  clsUserId,
+} from '../../shared/context/cls-context';
 
 interface EntityRegistryEntry {
   table: string; // schema-qualified
@@ -54,6 +68,33 @@ function toIso(value: unknown): string | null {
   return null;
 }
 
+/**
+ * §17.2's "Max Retry Exhaustion Behavior" table, for the four types that reach the review queue.
+ *
+ * The value is who gets the PUSH ALERT — transcribed from the table, not widened:
+ *
+ *   Safety incidents      → PM AND Safety Officer
+ *   Workforce attendance  → PM
+ *   Inspection results    → PM
+ *   Material consumption  → nobody (queue only)
+ *
+ * `material_consumption` maps to an EMPTY array on purpose. It is in the queue and it raises no
+ * alert, which is a different thing from being absent: absent means the entity type is rejected.
+ *
+ * The other three §17.2 rows — task_progress_updates, site_report_drafts, equipment_usage_logs — are
+ * "discard the sync attempt, preserve on device" and never reach the server, so they are absent here
+ * and reportExhaustion rejects them.
+ *
+ * Keys are the CLIENT's vocabulary, matching SyncManager.EXHAUSTED_NOTIFY_TYPES. They are not the
+ * push `entity_type` values — different set, different purpose (see ReportExhaustionDto).
+ */
+export const EXHAUSTION_ALERT_ROLES: Record<string, string[]> = {
+  safety_incidents: ['PROJECT_MANAGER', 'SAFETY_OFFICER'],
+  workforce_attendance: ['PROJECT_MANAGER'],
+  inspection_results: ['PROJECT_MANAGER'],
+  material_consumption: [],
+};
+
 const ENTITY_REGISTRY: Record<string, EntityRegistryEntry> = {
   task: { table: 'projects.tasks', deltaColumn: 'created_at' }, // no updated_at → delta = new tasks only (TODO: modified_at)
   site_report: { table: 'site_ops.site_reports', deltaColumn: 'modified_at' },
@@ -72,6 +113,10 @@ export class SyncService {
     private readonly workforce: WorkforceService,
     private readonly annotations: AnnotationService,
     private readonly procurement: ProcurementService,
+    private readonly outbox: EventOutboxService,
+    // Same pattern as SiteOpsService: the service is already REQUEST-scoped, and the correlation id
+    // is what ties the exhaustion report to the outbox row and the eventual notification.
+    @Inject(REQUEST) private readonly request: { correlationId?: string },
   ) {}
 
   /**
@@ -319,5 +364,149 @@ export class SyncService {
         entityId,
       ),
     );
+  }
+
+  // ── Retry exhaustion: the tenant-admin review queue (§17.2) ────────────────
+
+  /**
+   * Record a mutation the device gave up on after 5 retries, and alert per §17.2.
+   *
+   * ONLY the four entity types §17.2 sends to the review queue are accepted. The other three —
+   * task_progress_updates, site_report_drafts, equipment_usage_logs — are "discard the sync attempt,
+   * preserve on device", handled entirely on the client; a server row for them would be a queue the
+   * admin must triage for records §17.2 says need no triage.
+   *
+   * Idempotent on (tenant, entity_type, entity_id). A device that reports the same exhaustion twice —
+   * an app restart mid-report is enough — must not produce two queue entries for one record, and must
+   * not re-alert.
+   */
+  async reportExhaustion(
+    dto: ReportExhaustionDto,
+  ): Promise<{ exhaustion_id: string; created: boolean }> {
+    const alertRoles = EXHAUSTION_ALERT_ROLES[dto.entity_type];
+    if (alertRoles === undefined) {
+      throw new BadRequestException(
+        `entity_type '${dto.entity_type}' is not a review-queue type (§17.2). ` +
+          `Expected one of: ${Object.keys(EXHAUSTION_ALERT_ROLES).join(', ')}`,
+      );
+    }
+
+    const tenantId = clsTenantId();
+    const reportedBy = clsUserId();
+
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<Array<{ exhaustion_id: string; inserted: boolean }>>`
+        INSERT INTO platform.sync_exhaustions
+          (tenant_id, entity_type, entity_id, operation, payload, reported_by,
+           client_submitted_at, last_error)
+        VALUES (
+          ${tenantId}::uuid, ${dto.entity_type}, ${dto.entity_id}::uuid, ${dto.operation},
+          ${JSON.stringify(dto.payload)}::jsonb, ${reportedBy}::uuid,
+          ${dto.client_submitted_at ?? null}::timestamptz, ${dto.last_error ?? null}
+        )
+        ON CONFLICT ON CONSTRAINT sync_exhaustions_unique_entity DO NOTHING
+        RETURNING exhaustion_id, true AS inserted
+      `,
+    );
+
+    // No row back = the conflict fired, so this is a repeat report. Return the existing id and do
+    // NOT emit: re-alerting on every retry of the report would turn one failed record into a stream
+    // of pages.
+    if (!rows.length) {
+      const existing = await this.db.run(
+        (tx) =>
+          tx.$queryRaw<Array<{ exhaustion_id: string }>>`
+          SELECT exhaustion_id FROM platform.sync_exhaustions
+          WHERE tenant_id = ${tenantId}::uuid
+            AND entity_type = ${dto.entity_type}
+            AND entity_id = ${dto.entity_id}::uuid
+          LIMIT 1
+        `,
+      );
+      return { exhaustion_id: existing[0]!.exhaustion_id, created: false };
+    }
+
+    const exhaustionId = rows[0]!.exhaustion_id;
+
+    // material_consumption has an EMPTY alert-role list: §17.2 puts it in the queue with no push.
+    // The event is emitted regardless so the queue depth is observable and the audit trail complete;
+    // NotificationService resolves zero recipients and delivers nothing.
+    await this.outbox.publish({
+      event_type: 'platform.sync.exhausted.v1',
+      event_version: '1.0',
+      tenant_id: tenantId,
+      actor_id: reportedBy,
+      occurred_at: new Date().toISOString(),
+      correlation_id: this.request.correlationId ?? randomUUID(),
+      payload: {
+        exhaustion_id: exhaustionId,
+        entity_type: dto.entity_type,
+        entity_id: dto.entity_id,
+        reported_by: reportedBy,
+        retry_count: 5,
+        last_error: dto.last_error ?? null,
+      },
+    });
+
+    return { exhaustion_id: exhaustionId, created: true };
+  }
+
+  /** The admin queue. Pending first — a resolved row is history, not work. */
+  async listExhaustions(status: 'PENDING' | 'RESOLVED' = 'PENDING'): Promise<unknown[]> {
+    return this.db.run(
+      (tx) =>
+        tx.$queryRaw<unknown[]>`
+        SELECT exhaustion_id, entity_type, entity_id, operation, payload, reported_by,
+               client_submitted_at, last_error, retry_count, status, resolution,
+               resolved_by, resolved_at, resolution_note, created_at
+        FROM platform.sync_exhaustions
+        WHERE tenant_id = ${clsTenantId()}::uuid
+          AND status = ${status}
+        ORDER BY created_at DESC
+        LIMIT 200
+      `,
+    );
+  }
+
+  /**
+   * Mark one queued exhaustion reviewed.
+   *
+   * A state change, never a delete: §17.2 keeps the device's copy "until successfully synced or
+   * explicitly resolved by an admin", so the row is what tells the device it may stop holding it.
+   * Deleting it would strand the record on the phone permanently.
+   *
+   * IMPORTED vs DISCARDED is a record of the admin's judgement, not an instruction to this service —
+   * importing the payload means re-driving it through the normal write path, which an admin does
+   * through the entity's own API with the payload this queue shows them.
+   */
+  async resolveExhaustion(
+    exhaustionId: string,
+    dto: ResolveExhaustionDto,
+  ): Promise<{ resolved: boolean }> {
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<Array<{ exhaustion_id: string }>>`
+        UPDATE platform.sync_exhaustions
+        SET status = 'RESOLVED',
+            resolution = ${dto.resolution},
+            resolved_by = ${clsUserId()}::uuid,
+            resolved_at = now(),
+            resolution_note = ${dto.resolution_note ?? null}
+        WHERE tenant_id = ${clsTenantId()}::uuid
+          AND exhaustion_id = ${exhaustionId}::uuid
+          AND status = 'PENDING'
+        RETURNING exhaustion_id
+      `,
+    );
+
+    // Not found OR already resolved — the same answer either way. Re-resolving must not overwrite
+    // the first admin's decision or its timestamp.
+    if (!rows.length) {
+      throw new BadRequestException(
+        `No PENDING exhaustion ${exhaustionId} for this tenant (already resolved, or unknown)`,
+      );
+    }
+    return { resolved: true };
   }
 }

@@ -20,7 +20,8 @@ export const DATA_EXPORT_TASK_QUEUE = 'data-export';
 export async function runDataExportWorker(): Promise<void> {
   const worker = await Worker.create({
     taskQueue: DATA_EXPORT_TASK_QUEUE,
-    workflowsPath: require.resolve('./'), // auto-discovers data-export.workflow.ts
+    // The workflow FILE, not the directory — see the procurement worker for what './' did.
+    workflowsPath: require.resolve('./data-export.workflow'),
     activities: { ...exportActivities },
   });
 

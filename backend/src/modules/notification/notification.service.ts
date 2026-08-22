@@ -16,9 +16,35 @@ const logger = createLogger('notification-service');
 const CHANNELS = ['IN_APP', 'EMAIL', 'LINE'] as const;
 type Channel = (typeof CHANNELS)[number];
 
-// Critical safety notifications are NEVER quieted (§19.6 — "cannot be disabled or quieted"). Only the
-// safety-incident event qualifies; every other event's push is suppressed inside the quiet window.
-const CRITICAL_EVENT_TYPES = new Set<string>(['safety.incident.created.v1']);
+// Critical safety notifications can be neither DISABLED nor QUIETED — §19.6: "Critical safety
+// notifications (SafetyIncidentReported, SafetyViolationDetected) cannot be disabled."
+//
+// The exemption used to be applied to quiet hours only. The delivery path's preference filter was an
+// unconditional `if (disabledChannels.has(channel)) continue`, and `updatePreferences` accepts any
+// event_type with `is_enabled: false` — so a user could switch safety incidents off on every channel
+// through a supported API call and stop receiving them entirely, which is exactly what §19.6 says
+// must not be possible. Both rules now read this same set (TDD OQ-34, fixed 2026-08-22).
+//
+// §19.6 names exactly two, and both now exist:
+//   SafetyIncidentReported  → safety.incident.created.v1
+//   SafetyViolationDetected → safety.violation.detected.v1  (built 2026-08-22, TDD OQ-35; §32.4 #23)
+// The second had no producer, no consumer and no §32.4 entry until then — it was named in §19.6 and
+// §16 and nowhere else, so this set had an unknown size. Nothing else belongs here: §19.6 lists two.
+const CRITICAL_EVENT_TYPES = new Set<string>([
+  'safety.incident.created.v1',
+  'safety.violation.detected.v1',
+]);
+
+/**
+ * True when this event type may not be switched off, per §19.6.
+ *
+ * Deliberately a function rather than a bare Set lookup at each call site: there are now two rules
+ * that must agree (disable and quiet), and the last time they diverged one of them silently stopped
+ * protecting anything.
+ */
+export function isCriticalSafetyEvent(eventType: string): boolean {
+  return CRITICAL_EVENT_TYPES.has(eventType);
+}
 
 /** Minutes-since-midnight for a 'HH:MM[:SS]' string. */
 function minutesOfDay(hms: string): number {
@@ -49,15 +75,22 @@ export function isWithinQuietHours(now: Date, tz: string, start: string, end: st
     : nowMin >= startMin || nowMin < endMin; // overnight wrap
 }
 
-// Maps event_type → recipients. Three routing modes:
+// Maps event_type → recipients. Four routing modes:
 //   - string[]                 → notify all users holding any of these roles (findUsersByRole)
 //   - 'actor'                  → notify the actor_id from the event envelope
 //   - { payloadUserId: field } → notify the specific user id carried in payload[field]
+//   - { payloadRoles: {...} }  → roles chosen by a payload field's value (see below)
 // Event-type keys MUST match the canonical types emitted by producers (see @cos/shared
 // EVENT_AVSC_MAP) and subscribed in notification.consumer — 'po'/'invoice', NOT
 // 'purchase_order'/'vendor_invoice' (regression: mismatched keys silently drop notifications).
 // For platform.* events, tenant_id='platform' and routing resolves all SYSTEM_ADMIN users globally.
-const EVENT_ROLE_MAP: Record<string, string[] | 'actor' | { payloadUserId: string }> = {
+type RoleRouting =
+  | string[]
+  | 'actor'
+  | { payloadUserId: string }
+  | { payloadRoles: { field: string; map: Record<string, string[]> } };
+
+const EVENT_ROLE_MAP: Record<string, RoleRouting> = {
   'site.inspection.failed.v1': ['SITE_ENGINEER', 'PROJECT_MANAGER'],
   'site.issue.created.v1': ['SITE_ENGINEER', 'PROJECT_MANAGER'],
   'site.issue.escalated.v1': ['PROJECT_MANAGER'], // G-M12 — escalate raises the issue to the PM
@@ -69,12 +102,38 @@ const EVENT_ROLE_MAP: Record<string, string[] | 'actor' | { payloadUserId: strin
   'procurement.invoice.received.v1': ['FINANCE'],
   // §19.4 routing — safety incident (Exec/PM/Site Engineer/Safety Officer) + AI risk (Exec/PM)
   'safety.incident.created.v1': ['EXECUTIVE', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SAFETY_OFFICER'],
+  // §20.2 puts "Violation alerts" under the Safety Officer's needs, and §19.6 makes this
+  // un-disableable alongside the incident event — so it carries the same audience as an incident.
+  'safety.violation.detected.v1': [
+    'EXECUTIVE',
+    'PROJECT_MANAGER',
+    'SITE_ENGINEER',
+    'SAFETY_OFFICER',
+  ],
   'ai.risk_prediction.generated.v1': ['EXECUTIVE', 'PROJECT_MANAGER'],
   // Phase 25 — platform-level events (tenant_id='platform', routed to all SYSTEM_ADMINs)
   'platform.enterprise.contract_signed.v1': ['SYSTEM_ADMIN'],
   'platform.enterprise.db_provisioned.v1': ['SYSTEM_ADMIN'],
   // Phase 9 — file quarantine alert routed to SYSTEM_ADMIN for the affected tenant
   'file.document.quarantined.v1': ['SYSTEM_ADMIN'],
+  // §17.2 — offline sync exhaustion. The alert target depends on WHICH entity failed, which no
+  // event-level role list can express, hence the payload-driven mode. Transcribed from §17.2's
+  // "Max Retry Exhaustion Behavior" table and deliberately not widened:
+  //   safety incidents → PM AND Safety Officer · attendance → PM · inspections → PM
+  //   material consumption → NOBODY (§17.2 puts it in the review queue with no push alert)
+  // An empty list resolves zero recipients and delivers nothing, which is different from an absent
+  // key: an absent key logs "No routing config" and is a mistake.
+  'platform.sync.exhausted.v1': {
+    payloadRoles: {
+      field: 'entity_type',
+      map: {
+        safety_incidents: ['PROJECT_MANAGER', 'SAFETY_OFFICER'],
+        workforce_attendance: ['PROJECT_MANAGER'],
+        inspection_results: ['PROJECT_MANAGER'],
+        material_consumption: [],
+      },
+    },
+  },
 };
 
 @Injectable()
@@ -106,6 +165,19 @@ export class NotificationService {
       recipients = [{ user_id: event.actor_id, email: '' }];
     } else if (Array.isArray(routing)) {
       recipients = await this.repo.findUsersByRole(event.tenant_id, routing);
+    } else if ('payloadRoles' in routing) {
+      const key = String(event.payload[routing.payloadRoles.field] ?? '');
+      const roles = routing.payloadRoles.map[key];
+      if (roles === undefined) {
+        // A value the table does not cover. Log rather than guess a role set — notifying the wrong
+        // people about a failed safety record is worse than the absence this makes visible.
+        logger.warn(
+          { event_type: event.event_type, field: routing.payloadRoles.field, value: key },
+          'No payload-role mapping for value',
+        );
+        return;
+      }
+      recipients = roles.length ? await this.repo.findUsersByRole(event.tenant_id, roles) : [];
     } else {
       // Payload-targeted: notify the specific user named in the payload (e.g. approver_id).
       const targetId = event.payload[routing.payloadUserId];
@@ -144,9 +216,12 @@ export class NotificationService {
       this.repo.findTemplatesByChannel(params.tenant_id, params.event_type, CHANNELS),
     ]);
 
+    // §19.6: a critical safety notification is delivered whatever the user's preferences say.
+    const critical = isCriticalSafetyEvent(params.event_type);
+
     for (const channel of CHANNELS) {
       // Absent preference row = enabled, matching isChannelEnabled's `?? true` default.
-      if (disabledChannels.has(channel)) continue;
+      if (!critical && disabledChannels.has(channel)) continue;
 
       const template = templatesByChannel.get(channel);
       if (!template) continue;
@@ -183,7 +258,7 @@ export class NotificationService {
         // is subject to quiet hours (§19.6). Critical safety pushes are never suppressed.
         this.sse.push(userId, notif);
         const suppressPush =
-          !CRITICAL_EVENT_TYPES.has(notif.event_type) &&
+          !isCriticalSafetyEvent(notif.event_type) &&
           (await this.isInQuietHours(notif.tenant_id, userId));
         if (!suppressPush) {
           const tokens = await this.repo.findDeviceTokens(notif.tenant_id, userId);

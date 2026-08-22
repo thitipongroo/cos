@@ -263,6 +263,154 @@ describe('preference filtering', () => {
   });
 });
 
+describe('sync exhaustion routes by entity_type (§17.2 / OQ-38)', () => {
+  // §17.2 gives a DIFFERENT alert target per entity type, which no event-level role list can
+  // express — hence the payload-driven routing mode. Transcribed from the table, not widened.
+  beforeEach(() => {
+    mockRepo.findUsersByRole.mockResolvedValue([{ user_id: 'u1', email: 'a@b.com' }]);
+    mockRepo.findDisabledChannels.mockResolvedValue(new Set<string>());
+    mockRepo.findTemplatesByChannel.mockResolvedValue(
+      templatesFor({
+        template_id: 't1',
+        tenant_id: null,
+        event_type: 'platform.sync.exhausted.v1',
+        channel: 'IN_APP',
+        subject_template: 'Offline record could not be synced',
+        body_template: 'A {{entity_type}} failed to sync.',
+        is_active: true,
+      }),
+    );
+  });
+
+  const fire = (entityType: string) =>
+    svc.handleEvent({
+      event_type: 'platform.sync.exhausted.v1',
+      tenant_id: 'tenant-001',
+      actor_id: 'actor-001',
+      payload: { entity_type: entityType, exhaustion_id: 'ex-1', retry_count: 5 },
+    });
+
+  it('safety incidents alert PM AND Safety Officer', async () => {
+    await fire('safety_incidents');
+    expect(mockRepo.findUsersByRole).toHaveBeenCalledWith('tenant-001', [
+      'PROJECT_MANAGER',
+      'SAFETY_OFFICER',
+    ]);
+  });
+
+  it('attendance alerts the PM only', async () => {
+    await fire('workforce_attendance');
+    expect(mockRepo.findUsersByRole).toHaveBeenCalledWith('tenant-001', ['PROJECT_MANAGER']);
+  });
+
+  it('inspection results alert the PM only', async () => {
+    await fire('inspection_results');
+    expect(mockRepo.findUsersByRole).toHaveBeenCalledWith('tenant-001', ['PROJECT_MANAGER']);
+  });
+
+  it('material consumption alerts NOBODY — queue only, per §17.2', async () => {
+    // An empty role list is not the same as an absent one: it means "in the review queue, no push".
+    await fire('material_consumption');
+    expect(mockRepo.findUsersByRole).not.toHaveBeenCalled();
+    expect(mockRepo.createNotification).not.toHaveBeenCalled();
+  });
+
+  it('an entity_type outside the table notifies nobody rather than guessing', async () => {
+    // Notifying the wrong people about a failed safety record is worse than the absence a log makes
+    // visible.
+    await fire('something_not_in_the_table');
+    expect(mockRepo.findUsersByRole).not.toHaveBeenCalled();
+    expect(mockRepo.createNotification).not.toHaveBeenCalled();
+  });
+});
+
+describe('critical safety notifications cannot be disabled (§19.6 / OQ-34)', () => {
+  // §19.6: "Critical safety notifications (SafetyIncidentReported, SafetyViolationDetected) cannot
+  // be disabled." The exemption used to be applied to quiet hours ONLY — the delivery path's
+  // preference filter was an unconditional `if (disabledChannels.has(channel)) continue`, and
+  // updatePreferences accepts any event_type with is_enabled: false. So a user could switch safety
+  // incidents off on every channel through a supported API call and stop receiving them entirely.
+  beforeEach(() => {
+    mockRepo.findUsersByRole.mockResolvedValue([{ user_id: 'u1', email: 'a@b.com' }]);
+    mockRepo.findTemplatesByChannel.mockResolvedValue(
+      templatesFor({
+        template_id: 't1',
+        tenant_id: null,
+        event_type: 'safety.incident.created.v1',
+        channel: 'IN_APP',
+        subject_template: 'Incident',
+        body_template: 'An incident was reported.',
+        is_active: true,
+      }),
+    );
+  });
+
+  it('delivers a safety incident even with EVERY channel disabled', async () => {
+    mockRepo.findDisabledChannels.mockResolvedValue(allDisabled());
+
+    await svc.handleEvent({
+      event_type: 'safety.incident.created.v1',
+      tenant_id: 'tenant-001',
+      actor_id: 'actor-001',
+      payload: {},
+    });
+
+    expect(mockRepo.createNotification).toHaveBeenCalled();
+  });
+
+  it('delivers a safety VIOLATION even with every channel disabled (§19.6 second event)', async () => {
+    // §19.6 names two un-disableable notifications. The second, SafetyViolationDetected, had no
+    // producer until 2026-08-22 — so this half of the rule protected nothing (OQ-35).
+    mockRepo.findDisabledChannels.mockResolvedValue(allDisabled());
+    mockRepo.findTemplatesByChannel.mockResolvedValue(
+      templatesFor({
+        template_id: 't3',
+        tenant_id: null,
+        event_type: 'safety.violation.detected.v1',
+        channel: 'IN_APP',
+        subject_template: 'Safety violation detected',
+        body_template: '{{detail}}',
+        is_active: true,
+      }),
+    );
+
+    await svc.handleEvent({
+      event_type: 'safety.violation.detected.v1',
+      tenant_id: 'tenant-001',
+      actor_id: 'system',
+      payload: { violation_type: 'PERMIT_EXPIRED', detail: 'Permit WP-0001 expired' },
+    });
+
+    expect(mockRepo.createNotification).toHaveBeenCalled();
+  });
+
+  it('still honours the same opt-out for a NON-critical event', async () => {
+    // The exemption must be narrow. If it leaked to every event type the preference system would
+    // stop meaning anything, which is a different bug of the same size.
+    mockRepo.findDisabledChannels.mockResolvedValue(allDisabled());
+    mockRepo.findTemplatesByChannel.mockResolvedValue(
+      templatesFor({
+        template_id: 't2',
+        tenant_id: null,
+        event_type: 'site.inspection.failed.v1',
+        channel: 'IN_APP',
+        subject_template: 'Inspection',
+        body_template: 'An inspection failed.',
+        is_active: true,
+      }),
+    );
+
+    await svc.handleEvent({
+      event_type: 'site.inspection.failed.v1',
+      tenant_id: 'tenant-001',
+      actor_id: 'actor-001',
+      payload: {},
+    });
+
+    expect(mockRepo.createNotification).not.toHaveBeenCalled();
+  });
+});
+
 // ── IN_APP channel dispatch ────────────────────────────────────────────────
 
 describe('IN_APP channel dispatch', () => {

@@ -114,7 +114,7 @@ Safety :
 
 - SafetyIncidentReported
 - SafetyChecklistCompleted
-- SafetyViolationDetected
+- SafetyViolationDetected — canonical `safety.violation.detected.v1` (§32.4 #23), built 2026-08-22
 
 Asset :
 

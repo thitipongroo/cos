@@ -117,6 +117,23 @@ export class TenantService implements OnModuleDestroy {
                   data_region, timezone, created_at, updated_at
       `;
 
+      // Withholding-tax defaults, in the SAME transaction as the tenant row.
+      //
+      // §13.3 says the Thailand rates are "pre-seeded at tenant provisioning", and
+      // 20260608000001_wht_rules_payment_ref repeats it in its own header — but nothing anywhere
+      // did it. WhtService.calculate throws NotFoundException when no rule matches, so withholding
+      // tax could not be computed for any tenant that had ever been created.
+      //
+      // Inside the transaction on purpose: a tenant that exists without its statutory defaults is
+      // the state this is fixing, so it must not be reachable by a failure between two statements.
+      // A tenant operating outside Thailand simply never looks up jurisdiction TH.
+      await tx.$executeRaw`
+        INSERT INTO finance.wht_rules (tenant_id, jurisdiction_code, service_type, rate, is_active)
+        VALUES (${created!.tenant_id}::uuid, 'TH', 'services', 3.00, true),
+               (${created!.tenant_id}::uuid, 'TH', 'rent',     5.00, true)
+        ON CONFLICT ON CONSTRAINT wht_rules_unique DO NOTHING
+      `;
+
       logger.info({ tenantCode: dto.tenantCode, createdBy }, 'Tenant record created');
 
       return created!;

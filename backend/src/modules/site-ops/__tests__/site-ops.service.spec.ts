@@ -970,6 +970,104 @@ describe('submitInspection', () => {
     );
   });
 
+  it('a FAILED checklist ALSO raises safety.violation.detected.v1 (§19.6 / OQ-35)', async () => {
+    // `19-notification-architecture` §19.6 names SafetyViolationDetected as one of two notifications
+    // a user may not disable — and until 2026-08-22 nothing produced it, so that set had an unknown
+    // size. A failed required item on a `site_ops.safety_checklists` row is one of its two sources.
+    mockRepo.findChecklistById.mockResolvedValue(makeChecklist());
+    mockRepo.createInspection.mockResolvedValue({
+      inspection_id: 'insp-9',
+      project_id: 'project-1',
+      tenant_id: 'tenant-uuid-1',
+      checklist_id: 'checklist-1',
+      status: 'FAILED',
+      inspected_by: 'user-uuid-1',
+      inspected_at: new Date(),
+      notes: null,
+    } satisfies InspectionRow);
+
+    await service.submitInspection({
+      project_id: 'project-1',
+      checklist_id: 'checklist-1',
+      status: InspectionStatus.FAILED,
+      inspected_at: '2026-06-04T08:00:00Z',
+      issue_severity: IssueSeverity.HIGH,
+    });
+
+    const instance = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
+    expect(instance.publish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event_type: 'safety.violation.detected.v1',
+        payload: expect.objectContaining({
+          violation_type: 'CHECKLIST_ITEM_FAILED',
+          project_id: 'project-1',
+          inspection_id: 'insp-9',
+          checklist_id: 'checklist-1',
+          detected_by: 'CHECKLIST_SUBMISSION',
+        }),
+      }),
+    );
+  });
+
+  it('the violation is a SEPARATE event from inspection.failed, not a replacement', async () => {
+    // They must both fire and stay distinct: inspection.failed alerts SITE_ENGINEER + PM and is
+    // ordinarily disableable; the violation is in §19.6's critical set and is not. Merging them
+    // would make one of those two properties wrong.
+    mockRepo.findChecklistById.mockResolvedValue(makeChecklist());
+    mockRepo.createInspection.mockResolvedValue({
+      inspection_id: 'insp-10',
+      project_id: 'project-1',
+      tenant_id: 'tenant-uuid-1',
+      checklist_id: 'checklist-1',
+      status: 'FAILED',
+      inspected_by: 'user-uuid-1',
+      inspected_at: new Date(),
+      notes: null,
+    } satisfies InspectionRow);
+
+    await service.submitInspection({
+      project_id: 'project-1',
+      checklist_id: 'checklist-1',
+      status: InspectionStatus.FAILED,
+      inspected_at: '2026-06-04T08:00:00Z',
+      issue_severity: IssueSeverity.HIGH,
+    });
+
+    const instance = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
+    const emitted = instance.publish.mock.calls.map(
+      (c) => (c[0] as { event_type: string }).event_type,
+    );
+    expect(emitted).toContain('site.inspection.failed.v1');
+    expect(emitted).toContain('safety.violation.detected.v1');
+  });
+
+  it('a PASSED checklist raises no violation', async () => {
+    mockRepo.findChecklistById.mockResolvedValue(makeChecklist());
+    mockRepo.createInspection.mockResolvedValue({
+      inspection_id: 'insp-11',
+      project_id: 'project-1',
+      tenant_id: 'tenant-uuid-1',
+      checklist_id: 'checklist-1',
+      status: 'PASSED',
+      inspected_by: 'user-uuid-1',
+      inspected_at: new Date(),
+      notes: null,
+    } satisfies InspectionRow);
+
+    await service.submitInspection({
+      project_id: 'project-1',
+      checklist_id: 'checklist-1',
+      status: InspectionStatus.PASSED,
+      inspected_at: '2026-06-04T08:00:00Z',
+    });
+
+    const instance = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
+    const emitted = instance.publish.mock.calls.map(
+      (c) => (c[0] as { event_type: string }).event_type,
+    );
+    expect(emitted).not.toContain('safety.violation.detected.v1');
+  });
+
   it('emits neither passed nor failed event when status is REQUIRES_REINSPECTION', async () => {
     // Covers the falsy branch of `else if (dto.status === 'FAILED')` — a third status
     // (REQUIRES_REINSPECTION) matches neither PASSED nor FAILED.

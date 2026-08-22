@@ -1,0 +1,66 @@
+{{- /*
+Temporal worker for the backend's three task queues: procurement, enterprise-provisioning,
+data-export.
+
+Runs the SAME IMAGE as cos-backend with a different command. The image already contains the whole
+compiled `backend/dist` (backend/Dockerfile: `CMD ["node", "backend/dist/main"]`), so the worker
+needs no second build, no second registry entry and no separate image tag to keep in step — set
+image.repository/tag to whatever cos-backend is running.
+
+Why its own Deployment rather than a sidecar or an in-process start inside the API (product-owner
+decision 2026-08-22, TDD OQ-32): a worker that crash-loops must not take the request path with it,
+and worker replicas scale on task-queue depth, not on HTTP load.
+*/ -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "cos-temporal-worker.fullname" . }}
+  labels: {{ include "cos-temporal-worker.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels: {{ include "cos-temporal-worker.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels: {{ include "cos-temporal-worker.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      securityContext:
+        # 1001 = cosuser in backend/Dockerfile. NOT 65534: this is the backend image, not a
+        # scratch/distroless Go image, and its files are chowned to 1001.
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
+        # DO NOT REMOVE. RKE2 profile:cis enforces PodSecurity `restricted`; without this the
+        # Deployment is admitted and every Pod is rejected — a silent failure only a real deploy
+        # catches (ADR-039, Linux POC 2026-07-20).
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: temporal-worker
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          # The one difference from cos-backend: run the worker entrypoint instead of the API.
+          command: {{ toYaml .Values.command | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+          env:
+            {{- range $k, $v := .Values.env }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+          envFrom: {{ toYaml .Values.envFrom | nindent 12 }}
+          resources: {{ toYaml .Values.resources | nindent 12 }}
+          livenessProbe: {{ toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe: {{ toYaml .Values.readinessProbe | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+      # A worker draining in-flight activities needs longer than the 30s default. The Temporal SDK
+      # registers its own SIGTERM handler and shuts each Worker down gracefully; cutting that short
+      # with SIGKILL abandons activities mid-flight and leaves the workflow waiting for a retry.
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      affinity: {{ toYaml .Values.affinity | nindent 8 }}
