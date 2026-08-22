@@ -44,7 +44,7 @@ export interface SubjectMatchResult {
 
 export interface ErasureResult {
   request_id: string;
-  anonymised: { contacts: number; leads: number; vendors: number };
+  anonymised: { contacts: number; leads: number; vendors: number; workers: number };
   total: number;
   /** File id of the pre-anonymisation snapshot, when a legal hold was asked for. */
   archived_file_id: string | null;
@@ -152,7 +152,7 @@ export class SubjectRequestService {
         : null;
 
     const anonymised = await this.repo.anonymise(request.subject_email, request.subject_phone);
-    const total = anonymised.contacts + anonymised.leads + anonymised.vendors;
+    const total = anonymised.contacts + anonymised.leads + anonymised.vendors + anonymised.workers;
 
     await this.repo.writeAudit({
       actorId,

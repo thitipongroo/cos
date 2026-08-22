@@ -82,7 +82,7 @@ describe('SubjectRequestRepository', () => {
     await expect(repo.close(REQUEST_ID, 'REJECTED', 'refused')).resolves.toBeNull();
   });
 
-  it('findMatches() maps all three sources into one shape', async () => {
+  it('findMatches() maps all FOUR sources into one shape', async () => {
     mockPrisma.$queryRaw
       .mockResolvedValueOnce([{ contact_id: 'c1', name: 'Somchai', email: 'a@b.co', phone: null }])
       .mockResolvedValueOnce([{ lead_id: 'l1', contact_name: 'Somchai' }])
@@ -95,6 +95,11 @@ describe('SubjectRequestRepository', () => {
           tax_id: null,
           address: null,
         },
+      ])
+      // workforce.workers — §11.4's "Employee". Absent from this method until 2026-08-23 (OQ-48),
+      // so a site worker's own record was invisible to their own PDPA request.
+      .mockResolvedValueOnce([
+        { worker_id: 'w1', full_name: 'Somchai', contact_phone: '+66800000001' },
       ]);
 
     const matches = await repo.findMatches('a@b.co', null);
@@ -117,7 +122,23 @@ describe('SubjectRequestRepository', () => {
           address: null,
         },
       },
+      {
+        source: 'workforce.workers',
+        id: 'w1',
+        // employee_code and trade_type are the tenant's employment record, not the subject's
+        // personal data — §11.4 lists these two fields and no others.
+        fields: { full_name: 'Somchai', contact_phone: '+66800000001' },
+      },
     ]);
+  });
+
+  it('findMatches() reaches a worker by EMAIL through user_id, since the row has no email column', () => {
+    // Asserted on the SQL because the join is the whole mechanism: a worker matched only by phone
+    // would leave every Path B employee unreachable by an email-based request.
+    const sql = String(SubjectRequestRepository.prototype.findMatches.toString());
+    expect(sql).toContain('workforce.workers');
+    expect(sql).toContain('w.user_id IN (');
+    expect(sql).toContain('platform.users');
   });
 
   it('findMatches() asks the database to withhold tax_id/address unless the vendor is INDIVIDUAL', () => {
@@ -137,13 +158,16 @@ describe('SubjectRequestRepository', () => {
     mockPrisma.$executeRaw
       .mockResolvedValueOnce(2)
       .mockResolvedValueOnce(1)
-      .mockResolvedValueOnce(0);
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(1);
     await expect(repo.anonymise('a@b.co', null)).resolves.toEqual({
       contacts: 2,
       leads: 1,
       vendors: 0,
+      workers: 1,
     });
-    expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(3);
+    // Four tables now, not three — workforce.workers joined the list (OQ-48).
+    expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(4);
   });
 
   it('writeAudit() records the count and never the matches themselves', async () => {

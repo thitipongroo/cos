@@ -260,6 +260,10 @@ alerts that observe these controls).
 None new. Three existing entries land squarely in this phase and are tracked in the register rather
 than duplicated here:
 
+- [OQ-48](README.md#open-questions-register) — PDPA §33 erasure anonymises in place across four
+  tables; `workforce.workers` was added 2026-08-23 because §11.4 had specified it all along.
+  `platform.users` remains unreached, and §11.4's `pii_erased_at` column exists on no table —
+  the audit trail for an erasure is one record per REQUEST, not one per erased row.
 - [OQ-46](README.md#open-questions-register) — **closed 2026-08-22.** The API gateway that three
   services' auth layers named as their first line of defence is deployed nowhere, and two of them
   accepted `x-tenant-id` — and, in file-service's case, `x-user-role` — with no bearer token at

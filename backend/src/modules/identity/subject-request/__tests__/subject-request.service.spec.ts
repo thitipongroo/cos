@@ -203,11 +203,11 @@ describe('SubjectRequestService', () => {
       repo.findById.mockResolvedValue(
         openRequest({ request_type: 'ERASURE', verified_at: new Date('2026-08-15T00:00:00.000Z') }),
       );
-      repo.anonymise.mockResolvedValue({ contacts: 2, leads: 1, vendors: 1 });
+      repo.anonymise.mockResolvedValue({ contacts: 2, leads: 1, vendors: 1, workers: 0 });
 
       await expect(service.erase(REQUEST_ID, {}, ACTOR)).resolves.toEqual({
         request_id: REQUEST_ID,
-        anonymised: { contacts: 2, leads: 1, vendors: 1 },
+        anonymised: { contacts: 2, leads: 1, vendors: 1, workers: 0 },
         total: 4,
         archived_file_id: null,
       });
@@ -231,7 +231,7 @@ describe('SubjectRequestService', () => {
       repo.findById.mockResolvedValue(
         openRequest({ request_type: 'ERASURE', verified_at: new Date('2026-08-15T00:00:00.000Z') }),
       );
-      repo.anonymise.mockResolvedValue({ contacts: 1, leads: 0, vendors: 0 });
+      repo.anonymise.mockResolvedValue({ contacts: 1, leads: 0, vendors: 0, workers: 0 });
 
       const result = await service.erase(REQUEST_ID, {}, ACTOR);
 
@@ -249,7 +249,7 @@ describe('SubjectRequestService', () => {
       ]);
       files.upload.mockResolvedValue({ file_id: 'file-1' });
       legalHold.place.mockResolvedValue(true);
-      repo.anonymise.mockResolvedValue({ contacts: 1, leads: 0, vendors: 0 });
+      repo.anonymise.mockResolvedValue({ contacts: 1, leads: 0, vendors: 0, workers: 0 });
 
       const result = await service.erase(
         REQUEST_ID,

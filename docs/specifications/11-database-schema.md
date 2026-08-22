@@ -1185,7 +1185,7 @@ snapshotting the rows to a WORM file first under legal hold. It is irreversible 
 | `crm.contacts`         | `name`, `email`, `phone`                         | ✅ yes                     |
 | `crm.leads`            | `contact_name`                                   | ✅ yes                     |
 | `procurement.vendors`  | `contact_name`, `contact_email`, `contact_phone` | ✅ yes                     |
-| `workforce.workers`    | `full_name`, `contact_phone`                     | ❌ **no** — OQ-48          |
+| `workforce.workers`    | `full_name`, `contact_phone`                     | ✅ yes (added 2026-08-23)  |
 | `platform.users`       | `display_name`, `email`, `phone_number`          | ❌ **no** — OQ-48          |
 
 The last two are not an oversight to patch blindly: a `platform.users` row anchors audit logs,
@@ -1206,19 +1206,26 @@ Rows are then updated in place:
 | `crm.contacts`        | `name = '[ERASED]'`, `email = NULL`, `phone = NULL`                                                       |
 | `crm.leads`           | `contact_name = NULL`                                                                                     |
 | `procurement.vendors` | `contact_email = NULL`, `contact_phone = NULL`; `tax_id` and `address` cleared **only** for `INDIVIDUAL` vendors — a company's are not personal data |
+| `workforce.workers`   | `full_name = '[ERASED]'`, `contact_phone = NULL`. `employee_code`, `trade_type` and `is_active` are untouched: they are the tenant's employment record, and a rights request is not a resignation |
 
 `name = '[ERASED]'` rather than NULL because the column is NOT NULL and a contact list still has to
 render a row. `deleted_at` is untouched: erasure and deletion stay independent, and the row is never
 deleted — the id and `tenant_id` must survive for FK integrity and the audit trail.
 
 > **Corrected 2026-08-23** ([OQ-48](../technical-design/README.md#open-questions-register)). The
-> procedure here previously specified `pii_erased_at = NOW()`, a
-> `WHERE pii_erased_at IS NULL` filter on end-user views, a `pii.erased` audit-log entry, and a
-> four-state lifecycle table built from `deleted_at` × `pii_erased_at`. **None of it exists.** There
-> is no `pii_erased_at` column on any table, so there is no flag to stamp, nothing to filter on, and
-> only two lifecycle states rather than four. The audit-log entry is not emitted either. Whether to
-> build the column and the audit record, or to accept in-place anonymisation as the whole mechanism,
-> is part of OQ-48.
+> procedure here previously specified `pii_erased_at = NOW()`, a `WHERE pii_erased_at IS NULL` filter
+> on end-user views, and a four-state lifecycle table built from `deleted_at` × `pii_erased_at`.
+> **No table in the database has that column**, so there is no flag to stamp, nothing to filter on,
+> and two lifecycle states rather than four.
+>
+> An audit record IS written — `platform.audit_logs` with `resource_type = 'subject_requests'`,
+> `resource_id` = the request id and `metadata = {"matches": n}` — but not in the
+> `{ event: "pii.erased", entity_type, entity_id, … }` per-entity shape specified above: it records
+> the REQUEST that was fulfilled and how many rows it touched, not one entry per erased row.
+>
+> Whether to add the column and the per-entity audit entry, or to accept in-place anonymisation and
+> a per-request audit record as the whole mechanism, is what remains of OQ-48 — together with
+> `platform.users`, the one entity in the table above still not reached.
 
 See 05-security-compliance section 5.3 for the full PDPA / GDPR compliance strategy.
 

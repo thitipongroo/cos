@@ -43,7 +43,7 @@ export interface SubjectRequestRow {
  * business data (a lead's company, a vendor's purchase history) and is not the subject's to receive.
  */
 export interface SubjectMatch {
-  source: 'crm.contacts' | 'crm.leads' | 'procurement.vendors';
+  source: 'crm.contacts' | 'crm.leads' | 'procurement.vendors' | 'workforce.workers';
   id: string;
   fields: Record<string, string | null>;
 }
@@ -215,6 +215,35 @@ export class SubjectRequestRepository {
       `,
     );
 
+    // `workforce.workers` — the entity §11.4 calls "Employee" (`full_name`, `contact_phone`). It
+    // was in the specification's erasure table from the start and in neither this search nor the
+    // anonymisation until 2026-08-23 (TDD OQ-48), so a site worker's own record was invisible to
+    // their PDPA request against the tenant that employs them.
+    //
+    // Two ways in, because the row holds only ONE of the two identifiers a subject can give:
+    //   phone — `contact_phone`, matched directly, like every other table here.
+    //   email — the worker row has no email column at all. It is reached through `user_id`, the
+    //           same shape `crm.leads` uses to reach itself through its contacts. This cannot
+    //           over-match: `uq_workers_user_id` is unique per tenant and `platform.users.email` is
+    //           one row, so an email resolves to at most one worker.
+    //
+    // Reading `platform.users` to MATCH is not the same as erasing it — that half is still open
+    // (OQ-48), and this query only ever selects the worker's own two columns.
+    const workers = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<{ worker_id: string; full_name: string; contact_phone: string | null }[]>`
+        SELECT w.worker_id, w.full_name, w.contact_phone
+          FROM workforce.workers w
+         WHERE w.tenant_id = ${this.tenantId}::uuid
+           AND ((${phone}::text IS NOT NULL AND w.contact_phone = ${phone}::text)
+             OR (${email}::text IS NOT NULL AND w.user_id IN (
+                   SELECT u.user_id FROM platform.users u
+                    WHERE u.tenant_id = ${this.tenantId}::uuid
+                      AND lower(u.email) = lower(${email}::text)
+                 )))
+      `,
+    );
+
     return [
       ...contacts.map((c) => ({
         source: 'crm.contacts' as const,
@@ -236,6 +265,13 @@ export class SubjectRequestRepository {
           tax_id: v.tax_id,
           address: v.address,
         },
+      })),
+      // `employee_code` and `trade_type` are deliberately absent: they are the tenant's employment
+      // record, not the subject's personal data, and §11.4 lists only these two fields.
+      ...workers.map((w) => ({
+        source: 'workforce.workers' as const,
+        id: w.worker_id,
+        fields: { full_name: w.full_name, contact_phone: w.contact_phone },
       })),
     ];
   }
@@ -262,7 +298,7 @@ export class SubjectRequestRepository {
   async anonymise(
     email: string | null,
     phone: string | null,
-  ): Promise<{ contacts: number; leads: number; vendors: number }> {
+  ): Promise<{ contacts: number; leads: number; vendors: number; workers: number }> {
     const contacts = await this.db.run(
       (tx) =>
         tx.$executeRaw`
@@ -307,7 +343,37 @@ export class SubjectRequestRepository {
       `,
     );
 
-    return { contacts, leads, vendors };
+    // `workforce.workers` — §11.4's "Employee" row, in the specification's erasure table since it was
+    // written and in this method until 2026-08-23 (TDD OQ-48).
+    //
+    // `full_name = '[ERASED]'`, not NULL: the column is NOT NULL, the same reason `crm.contacts.name`
+    // takes a placeholder rather than a null. `contact_phone` is nullable and goes to NULL.
+    //
+    // Nothing else on the row is touched. `employee_code` and `trade_type` are the tenant's
+    // employment record rather than the subject's personal data, and `is_active` is not flipped: a
+    // rights request is not a resignation, and turning a worker inactive would silently change site
+    // rosters and attendance. Erasure clears what identifies the person, and stops.
+    //
+    // No `updated_at` in the SET clause — unlike the three tables above, this table has no such
+    // column. The row's identity and `created_at` survive, which is what keeps
+    // `workforce.project_workforce` referentially intact.
+    const workers = await this.db.run(
+      (tx) =>
+        tx.$executeRaw`
+        UPDATE workforce.workers
+           SET full_name = '[ERASED]',
+               contact_phone = NULL
+         WHERE tenant_id = ${this.tenantId}::uuid
+           AND ((${phone}::text IS NOT NULL AND contact_phone = ${phone}::text)
+             OR (${email}::text IS NOT NULL AND user_id IN (
+                   SELECT u.user_id FROM platform.users u
+                    WHERE u.tenant_id = ${this.tenantId}::uuid
+                      AND lower(u.email) = lower(${email}::text)
+                 )))
+      `,
+    );
+
+    return { contacts, leads, vendors, workers };
   }
 
   // ── Verification (ADR-090 §6) ───────────────────────────────────────────────
