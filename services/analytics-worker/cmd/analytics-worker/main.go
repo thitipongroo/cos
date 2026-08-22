@@ -93,15 +93,15 @@ func main() {
 		log.Printf("carbon consumer started (brokers=%v registry=%s)", cfg.Brokers, cfg.RegistryURL)
 	}
 
-	http.HandleFunc("/health/live", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprintf(w, `{"status":"ok","service":"analytics-worker"}`)
-	})
-
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8091"
-	}
+	// healthHandler() and defaultHTTPPort, not a second inline copy and a second default. Until
+	// 2026-08-23 this block registered its own handler on http.DefaultServeMux and fell back to
+	// "8091" — while the constant above, the Dockerfile EXPOSE, the compose healthcheck and the Helm
+	// chart all said 8090, and main_test.go asserted 8090 against getEnv/healthHandler that main()
+	// never called. So the tests passed on a contract main() did not honour: a deployment that left
+	// PORT unset would listen on 8091 while its probe hit 8090, which is precisely the CrashLoop the
+	// constant's own comment describes as already fixed (TDD OQ-47, found while working in this file).
+	mux := healthHandler()
+	port := getEnv("PORT", defaultHTTPPort)
 
 	// Explicit server, not http.ListenAndServe: the package-level helper has no timeouts at all,
 	// so a client that opens a connection and never finishes its request headers holds a goroutine
@@ -117,6 +117,7 @@ func main() {
 	// having been addressed.
 	srv := &http.Server{
 		Addr:              ":" + port,
+		Handler:           mux,
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 	go func() {

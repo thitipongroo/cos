@@ -144,6 +144,14 @@ jobs:
       - name: Every migration has a rollback script
         run: node ./scripts/ci/check-migration-rollbacks.mjs
 
+      # The three ClickHouse tables the executive and PM dashboards read had been empty since they
+      # were created (TDD OQ-47). One cause was a payload Tuple that declared 2 of 8 fields: the
+      # AvroConfluent reader does not project a partial Tuple, it mis-reads the record — and
+      # kafka_skip_broken_messages then discards it with no exception and no metric. This gate pairs
+      # each table against the .avsc it reads so the next schema change cannot repeat it silently.
+      - name: ClickHouse Kafka tables match their Avro schemas
+        run: node ./scripts/ci/check-clickhouse-avro-columns.mjs
+
   # ─── MLOps tests (Python / Airflow 3.x DAGs) ────────────────────────────────
   mlops-tests:
     name: MLOps Tests (Python)
