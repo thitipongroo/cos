@@ -218,3 +218,31 @@ describe('Project State Machine', () => {
     });
   });
 });
+
+/**
+ * Regression: `$queryRaw` returns a JS Date for the DATE column even though ProjectRow types
+ * end_date as `string`, and `Date > 'YYYY-MM-DD'` coerces both to numbers — the string becomes NaN
+ * and every NaN comparison is false, so the master:2060 gate silently never fired on a real
+ * request. Found by the spec-derived integration suite; these two cases pin BOTH input shapes.
+ */
+describe('validateTransition — end_date arriving as a Date (master:2060)', () => {
+  const base = {
+    currentStatus: 'ACTIVE' as const,
+    toStatus: 'COMPLETED' as const,
+    actorRole: 'TENANT_ADMIN',
+  };
+
+  it('refuses completion when a Date end_date is in the future', () => {
+    const result = validateTransition({ ...base, endDate: new Date('2099-12-31') });
+    expect(result.allowed).toBe(false);
+    expect(result.reason).toContain('2099-12-31');
+  });
+
+  it('allows completion when a Date end_date is in the past', () => {
+    expect(validateTransition({ ...base, endDate: new Date('2020-01-01') }).allowed).toBe(true);
+  });
+
+  it('still refuses a future end_date supplied as a string', () => {
+    expect(validateTransition({ ...base, endDate: '2099-12-31' }).allowed).toBe(false);
+  });
+});

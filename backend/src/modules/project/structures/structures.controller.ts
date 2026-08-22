@@ -21,12 +21,13 @@ import { CreateStructureDto } from './dto/create-structure.dto';
 import { UpdateStructureDto } from './dto/update-structure.dto';
 import { ListStructuresDto } from './dto/list-structures.dto';
 import { JwtAuthGuard } from '../../identity/guards/jwt-auth.guard';
+import { RolesGuard } from '../../../shared/guards/roles.guard';
 import { Roles } from '@cos/rbac';
 import { CosRole } from '@cos/types';
 
 @ApiTags('Structures')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller()
 export class StructuresController {
   constructor(private readonly service: StructuresService) {}

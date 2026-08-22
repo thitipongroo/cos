@@ -21,12 +21,13 @@ import { CreateUnitDto } from './dto/create-unit.dto';
 import { UpdateUnitDto } from './dto/update-unit.dto';
 import { ListUnitsDto } from './dto/list-units.dto';
 import { JwtAuthGuard } from '../../identity/guards/jwt-auth.guard';
+import { RolesGuard } from '../../../shared/guards/roles.guard';
 import { Roles } from '@cos/rbac';
 import { CosRole } from '@cos/types';
 
 @ApiTags('Units')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller()
 export class UnitsController {
   constructor(private readonly service: UnitsService) {}

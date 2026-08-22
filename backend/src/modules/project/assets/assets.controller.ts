@@ -21,12 +21,13 @@ import { CreateAssetDto } from './dto/create-asset.dto';
 import { UpdateAssetDto } from './dto/update-asset.dto';
 import { ListAssetsDto } from './dto/list-assets.dto';
 import { JwtAuthGuard } from '../../identity/guards/jwt-auth.guard';
+import { RolesGuard } from '../../../shared/guards/roles.guard';
 import { Roles } from '@cos/rbac';
 import { CosRole } from '@cos/types';
 
 @ApiTags('Assets')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller()
 export class AssetsController {
   constructor(private readonly service: AssetsService) {}
