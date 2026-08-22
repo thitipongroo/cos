@@ -66,7 +66,13 @@ from `00_master` § FINAL EXECUTION ORDER, which is why the numbering below is n
 | ----- | ---------------------------------------------------------- | ----- | ----------- |
 | 1     | [Foundation Repository](phase-01-foundation-repository.md) | 1     | Drafted     |
 | 2     | [Auth + Tenant System](phase-02-auth-tenant-system.md)     | 1     | Drafted     |
+| 3     | [Project Service](phase-03-project-service.md)             | 2     | Drafted     |
+| 4     | [BOQ Service](phase-04-boq-service.md)                     | 2     | Drafted     |
+| 5     | [Procurement Service](phase-05-procurement-service.md)     | 2     | Drafted     |
+| 6     | [Site Operations](phase-06-site-operations.md)             | 2     | Drafted     |
+| 7     | [Finance Service](phase-07-finance-service.md)             | 2     | Drafted     |
 | 8     | [Event Infrastructure](phase-08-event-infrastructure.md)   | 3\*   | Drafted     |
+| 9     | [File + Document System](phase-09-file-document-system.md) | 3     | Drafted     |
 | 3     | Project Service                                            | 2     | Not written |
 | 4     | BOQ Service                                                | 2     | Not written |
 | 5     | Procurement Service                                        | 2     | Not written |
@@ -170,6 +176,26 @@ deletion — the two flags give four lifecycle states (§11.4). The PII fields s
 enumerated per entity in §11.4; `Contact.lead_id` is deliberately retained because it is a business
 relationship identifier, not PII.
 
+### Workflow execution
+
+Temporal is the workflow engine (`04-tech-stack` §4.4). Two phases put business-critical state
+changes inside workflows rather than in a service method: **Phase 5** (the entire RFQ and PO state
+machine) and **Phase 9** (retention hard-delete and ZIP extraction). `dataExportWorkflow` (PDPA) is a
+third caller.
+
+A workflow only runs when a worker polls its task queue. As of 2026-08-22 no worker is launched in any
+environment, and one workflow has no worker file at all — see
+[OQ-32](#open-questions-register). Read that before treating any workflow-backed behaviour on a phase
+page as operational.
+
+### Data access
+
+Domain tables are **raw SQL migrations reached through `$queryRaw` on `TenantPrismaService`**, not
+Prisma models. `backend/prisma/schema.prisma` declares `schemas = ["platform", "files"]` only;
+`11-database-schema` §11.6 states the convention ("raw SQL, like the other domain schemas — not
+Prisma-modelled"). All 13 domain repositories across `project`, `boq`, `procurement`, `site-ops` and
+`finance` follow it. The `files` schema is the single exception, and Phase 9 says why.
+
 ### Security baseline
 
 OAuth2/OIDC via Keycloak; RBAC + ABAC; AES-256 at rest; TLS 1.3 on ingress; immutable audit logging
@@ -211,22 +237,38 @@ each is recorded, carried into the § 14 of the affected phase page, and left fo
 
 Phase-local questions, raised on the page named and repeated here so the register is complete:
 
-| ID    | Where                                            | What                                                                                                                                                                                                           | Raised on |
-| ----- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| OQ-1a | `packages/@cos/`                                 | `@cos/schemas` and `@cos/ui-logic` exist on disk but are named in no phase `Generate:` list read so far.                                                                                                       | Phase 1   |
-| OQ-5  | root `pnpm-workspace.yaml` comment               | Claims `apps/mobile` hoisting is configured in `apps/mobile/.npmrc` via `--ignore-workspace`; that file and `00_master` both say `nodeLinker` lives in `pnpm-workspace.yaml`.                                  | Phase 1   |
-| OQ-6  | `32-implementation-specifications` §32.4         | **Closed** — the stale 27-row table is replaced by a verified status; 10 unreferenced rename targets dropped.                                                                                                  | Phase 8   |
-| OQ-16 | §32.4 #16 vs code + 3 documents                  | `finance.budget.variance_detected.v1` (spec) against `finance.variance.alert.v1` (on the wire). Aligning to the spec is a breaking `.v2`, not a rename.                                                        | Phase 8   |
-| OQ-7  | QM-9 / §9.7.1 vs `backend/prisma/` and CI        | **Closed 2026-08-22** — 89/89 migrations paired, the enum rollback verified on a live database, and the CI gate §9.7.1 always claimed now actually exists.                                                     | Phase 2   |
-| OQ-8  | `00_master` § PHASE 2 COMMAND vs `schema.prisma` | `users.department` and `UserAdditionalRole` exist on disk; the phase command describes a single `role` per membership and neither field.                                                                       | Phase 2   |
-| OQ-9  | `05-security-compliance` §5.4                    | **Closed** — unified login recorded in new §5.4.4; five documents and ADR-017 now reference it. The entry's original claim that §5.4 held the binding was itself wrong.                                        | Phase 2   |
-| OQ-12 | `11-database-schema` §11.1                       | `platform.users` omits `phone_number` and its `keycloak_user_id` note describes pre-F-1 behaviour.                                                                                                             | Phase 2   |
-| OQ-13 | `14-api-architecture` §14.5                      | Table says Path A carries no `azp`; measured value is `azp=cos-backend`.                                                                                                                                       | Phase 2   |
-| OQ-14 | §5.4.4 vs `POST /api/v1/users`                   | Nothing provisions one user for both paths, so unified login is policy rather than capability for existing accounts.                                                                                           | Phase 2   |
-| OQ-15 | `11-database-schema` §11.4 vs §11.1              | §11.4's "every record has `created_by` / `deleted_at`, all records soft-delete" contradicts §11.1's platform tables and QM-4's append-only audit log.                                                          | Phase 2   |
-| OQ-17 | QM-7 vs the OTP login path                       | QM-7's "account lockout after 5 failures for 15 minutes" is not implemented on Path A; the only lockout lives in the deprecated TOTP module.                                                                   | Phase 2   |
-| OQ-11 | `OtpService` vs the Path A denial                | With privileged roles denied at Keycloak, `OtpService` still sends them an OTP and the failure surfaces as an opaque token-endpoint error. A pre-send decline returning `COS-AUTH-001` is proposed, not built. | Phase 2   |
-| OQ-10 | ADR-067 realm config + `MFA_ENFORCE`             | Layer 1 landed in the realm file 2026-08-22 (verified live; ADR-067's role-based mechanism was proven unusable and replaced). Layer 2 and existing Keycloak instances remain ops actions.                      | Phase 2   |
+| ID    | Where                                                                        | What                                                                                                                                                                                                           | Raised on                  |
+| ----- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| OQ-1a | `packages/@cos/`                                                             | `@cos/schemas` and `@cos/ui-logic` exist on disk but are named in no phase `Generate:` list read so far.                                                                                                       | Phase 1                    |
+| OQ-5  | root `pnpm-workspace.yaml` comment                                           | Claims `apps/mobile` hoisting is configured in `apps/mobile/.npmrc` via `--ignore-workspace`; that file and `00_master` both say `nodeLinker` lives in `pnpm-workspace.yaml`.                                  | Phase 1                    |
+| OQ-6  | `32-implementation-specifications` §32.4                                     | **Closed** — the stale 27-row table is replaced by a verified status; 10 unreferenced rename targets dropped.                                                                                                  | Phase 8                    |
+| OQ-16 | §32.4 #16 vs code + 3 documents                                              | `finance.budget.variance_detected.v1` (spec) against `finance.variance.alert.v1` (on the wire). Aligning to the spec is a breaking `.v2`, not a rename.                                                        | Phase 8                    |
+| OQ-18 | `00_master` § PHASE 8 + `15-event-driven-workflow` §15.65 vs ADR-094         | Both specs say the outbox writes in the same transaction as the business row; ADR-094 records that the built system does not, and why. Durability is unaffected; atomicity is not what ships.                  | Phase 8                    |
+| OQ-19 | `00_master` § PHASE 3 COMMAND, internally                                    | The `States:` block allows `CANCELLED` only from `DRAFT`/`ACTIVE`/`ON_HOLD`; the `Transition rules:` block in the same code block says `ANY → CANCELLED`.                                                      | Phase 3                    |
+| OQ-20 | ADR-065 implementation note + `21-mvp-scope` §21 vs `modules/project/risks/` | Both call the AI-suggested feed and/or the register unbuilt; `RisksConsumer` is built, registered and tested.                                                                                                  | Phase 3                    |
+| OQ-21 | `GET /projects/user/:userId`                                                 | On the API surface with OpenAPI docs and a `TENANT_ADMIN` gate, but in no spec, ADR or phase command.                                                                                                          | Phase 3                    |
+| OQ-22 | `indexProject` vs the absence of any reindex path                            | A swallowed OpenSearch write drifts the search index permanently; no backfill job, script or runbook exists.                                                                                                   | Phase 3                    |
+| OQ-23 | `00_master` § PHASE 4 calculation rules vs the hierarchy it defines          | The version total sums only items attached directly to root categories, so a BOQ that uses sub-categories under-reports — potentially to zero. Implementation is faithful to the rule as written.              | Phase 4                    |
+| OQ-24 | `copyVersionContents` vs an unconstrained `parent_category_id`               | Copying a version forward reproduces two levels of categories; anything deeper is dropped by an inner join, along with its items. Nothing caps depth at write time.                                            | Phase 4                    |
+| OQ-25 | `workflows/worker.ts` vs every deployment surface                            | The whole RFQ/PO state machine executes in Temporal activities, and nothing in scripts, Compose, Dockerfiles, CI, Helm or §32.2 starts the worker. Workflow tests pass on their own in-process worker.         | Phase 5                    |
+| OQ-26 | `vendor-scoring.ts` vs the spec                                              | The scoring adapter is built, but how `quality` and `price` criterion values are derived from data is defined nowhere. The score endpoint is live.                                                             | Phase 5                    |
+| OQ-27 | `procurement.delivery_items` vs `11-database-schema`                         | The table decides whether a PO line is fulfilled, yet is described only in passing by `17-offline-mobile-sync` §17.4 — no §11 definition, not in the Phase 5 entity list.                                      | Phase 5                    |
+| OQ-28 | Phase 6 `LAST_WRITE_WINS` vs an unbounded device clock                       | `client_submitted_at` from the handset is the ordering key; no skew bound is specified anywhere, so a fast clock wins every merge until corrected.                                                             | Phase 6                    |
+| OQ-29 | `site-ops/ep/file-service.stub.ts`                                           | Throws `NotImplementedException`, has zero callers, and promises a Phase 9 activation that never happened — photo linkage went the other way, via `files.stored_files.entity_id`.                              | Phase 6                    |
+| OQ-30 | `procurement.wht_rules` vs `finance.wht_rules`                               | Two WHT rate tables in two schemas; only the finance one is read, while the OpenAPI spec and two code comments name the procurement one as authoritative.                                                      | Phase 5, Phase 7           |
+| OQ-31 | Phase 7's Kafka-only rule vs [OQ-18](#open-questions-register)               | A dropped `po.created` silently under-commits a budget, and the no-direct-query rule forbids the reconciliation that would catch it.                                                                           | Phase 7                    |
+| OQ-32 | Every Temporal worker vs every deployment surface                            | Three production workers exist (procurement, file cleanup, file zip-extraction); none is launched anywhere. `dataExportWorkflow` is started in production with no worker file at all. Supersedes OQ-25.        | Phase 5, Phase 9, Phase 25 |
+| OQ-33 | Phase 9 command's ClamAV deferral vs the same command block                  | "Do not implement until spec defines it" contradicts the quarantine bucket, retention, event and recovery path specified a few lines above; antivirus is built and correct.                                    | Phase 9                    |
+| OQ-7  | QM-9 / §9.7.1 vs `backend/prisma/` and CI                                    | **Closed 2026-08-22** — 89/89 migrations paired, the enum rollback verified on a live database, and the CI gate §9.7.1 always claimed now actually exists.                                                     | Phase 2                    |
+| OQ-8  | `00_master` § PHASE 2 COMMAND vs `schema.prisma`                             | `users.department` and `UserAdditionalRole` exist on disk; the phase command describes a single `role` per membership and neither field.                                                                       | Phase 2                    |
+| OQ-9  | `05-security-compliance` §5.4                                                | **Closed** — unified login recorded in new §5.4.4; five documents and ADR-017 now reference it. The entry's original claim that §5.4 held the binding was itself wrong.                                        | Phase 2                    |
+| OQ-12 | `11-database-schema` §11.1                                                   | `platform.users` omits `phone_number` and its `keycloak_user_id` note describes pre-F-1 behaviour.                                                                                                             | Phase 2                    |
+| OQ-13 | `14-api-architecture` §14.5                                                  | Table says Path A carries no `azp`; measured value is `azp=cos-backend`.                                                                                                                                       | Phase 2                    |
+| OQ-14 | §5.4.4 vs `POST /api/v1/users`                                               | Nothing provisions one user for both paths, so unified login is policy rather than capability for existing accounts.                                                                                           | Phase 2                    |
+| OQ-15 | `11-database-schema` §11.4 vs §11.1                                          | §11.4's "every record has `created_by` / `deleted_at`, all records soft-delete" contradicts §11.1's platform tables and QM-4's append-only audit log.                                                          | Phase 2                    |
+| OQ-17 | QM-7 vs the OTP login path                                                   | QM-7's "account lockout after 5 failures for 15 minutes" is not implemented on Path A; the only lockout lives in the deprecated TOTP module.                                                                   | Phase 2                    |
+| OQ-11 | `OtpService` vs the Path A denial                                            | With privileged roles denied at Keycloak, `OtpService` still sends them an OTP and the failure surfaces as an opaque token-endpoint error. A pre-send decline returning `COS-AUTH-001` is proposed, not built. | Phase 2                    |
+| OQ-10 | ADR-067 realm config + `MFA_ENFORCE`                                         | Layer 1 landed in the realm file 2026-08-22 (verified live; ADR-067's role-based mechanism was proven unusable and replaced). Layer 2 and existing Keycloak instances remain ops actions.                      | Phase 2                    |
 
 ---
 
@@ -252,7 +294,10 @@ The pass was worth running: it caught one error on these pages — § 4 of the P
 views alone. A page that cites a section nobody opened is a page that repeats whatever the last
 summary got wrong.
 
-Specs **not** read in full, because no page cites them yet: 00, 01, 02, 08, 10, 12, 13, 17–29, 33, 34.
+Specs **not** read in full, because no page cites them yet: 00, 01, 02, 08, 10, 12, 13, 18–29, 33, 34.
+
+Batch B (Phases 3–7, 9) additionally read `17-offline-mobile-sync` §17.4–17.5 and the Phase 3–9 command
+blocks of `00_master` line by line, plus ADRs 022, 023, 024, 030, 055, 056, 058, 065, 070, 072, 094.
 A phase page that needs one reads it first.
 
 ---

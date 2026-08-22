@@ -68,15 +68,15 @@ Two independent data paths (`09-data-architecture` §9.4, restated in `00_master
 
 ```text
 Path 1 — business events (THIS PHASE)
-  app → PostgreSQL (same transaction writes outbox_events) → OutboxPoller → Kafka → consumers
+  app → PostgreSQL (business write, then an outbox_events INSERT) → OutboxPoller → Kafka → consumers
 
 Path 2 — data replication (Phase 17, deferred)
   PostgreSQL WAL → Debezium CDC → Kafka → Kafka Connect S3 sink → S3 + Iceberg → ClickHouse
 ```
 
-They are not the same mechanism and must not be conflated: the outbox guarantees delivery atomically
-with a business write; Debezium captures every row change including writes that never went through
-the event bus.
+They are not the same mechanism and must not be conflated: the outbox makes delivery **durable** for
+writes that go through a domain service; Debezium captures every row change including writes that
+never went through the event bus. Note the word — durable, not atomic; see § 4.
 
 Topic and subject model (`07-multi-tenant-architecture` §7.3; `15-event-driven-workflow` §15.6;
 `32-implementation-specifications` §32.4):
@@ -116,9 +116,31 @@ One table, replicated into each service's PostgreSQL schema
 | `created_at`    | TIMESTAMPTZ |                                           |
 | `published_at`  | TIMESTAMPTZ |                                           |
 
-The service writes to `outbox_events` **in the same transaction** as the business entity;
 `OutboxPoller` polls every 500 ms and publishes unpublished rows. Consumer idempotency is a Redis
 check on `event_id` with a 24-hour TTL.
+
+**The as-built guarantee is weaker than the specification states, deliberately.** `00_master`
+§ PHASE 8 COMMAND says "write to outbox_events in same transaction as business entity" and
+`15-event-driven-workflow` §15.65 says the outbox "guarantees event delivery atomically with the DB
+write". **ADR-094 (2026-08-19) records that the built system does not do this**, and says why: the
+textbook form threads `tx` from the repository into the publish call, and "this codebase's
+repositories own their transactions internally, so that is a refactor of every write path".
+`EventOutboxService.publish()` therefore issues its INSERT on its own connection **after** the
+business write has committed, and never throws — a failed insert is logged and the event is dropped.
+
+|                                     | Specified       | As built                  |
+| ----------------------------------- | --------------- | ------------------------- |
+| Business write + outbox insert      | one transaction | two, business write first |
+| Process dies between them           | impossible      | **event lost**            |
+| Broker / registry / publish failure | recoverable     | recoverable               |
+
+The residual gap is narrow and one-directional, and ADR-094 notes it "was equally true of the inline
+publish it replaces". `EventOutboxService.write(tx, event)` exists for a caller that does hold a
+transaction, and always throws — it is the migration path if a domain needs the stronger property.
+No production caller uses it today — only its own unit tests (`shared/events/__tests__/event-outbox.service.spec.ts`).
+
+This is the divergence recorded as [OQ-18](README.md#open-questions-register): the two specification
+sentences above still assert atomicity that the accepted ADR removed.
 
 Kafka configuration (`00_master` § PHASE 8 COMMAND → Kafka Configuration):
 
@@ -301,12 +323,13 @@ early-warning metric are in `00_master` § Risk Register.
 
 ## 14. Open questions / NOT SPECIFIED
 
-| ID    | Question                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Status                     |
-| ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
-| OQ-2  | The Base Event Envelope has **8** fields in `32-implementation-specifications` §32.4, **10** in `15-event-driven-workflow` §15.6 (adding `trace_id`, `span_id`), and **9** in the committed `base-event-envelope.avsc`, where `trace_id` and `span_id` are `["null","string"]` with default `null`. §32 declares itself the winner on conflict. Because the two extra fields are nullable with defaults, the Avro schema stays `BACKWARD_TRANSITIVE`-compatible with the 8-field shape — the divergence is additive, not breaking.                                                            | Open — needs a PO ruling   |
-| OQ-3  | `15-event-driven-workflow` §15.6 contradicts itself within one section: the envelope is "CloudEvents v1.0-**inspired** … **NOT** a strict CloudEvents-compliant envelope", while ECO-001 in the same section reads "**Envelope:** CloudEvents v1.0 (**normative**)".                                                                                                                                                                                                                                                                                                                          | Open — spec self-conflict  |
-| OQ-4  | `07-multi-tenant-architecture` §7.3 states both "**Created on first publish, not at tenant onboarding**" and "the full canonical event catalogue is **materialised per tenant, created idempotently at tenant onboarding**". Its own step 3 then repeats the first-publish rule for SMB / mid-market. `00_master` § Always agrees with first-publish, so the onboarding sentence reads as stale text.                                                                                                                                                                                         | Open — spec self-conflict  |
-| OQ-6  | **Closed 2026-08-22.** §32.4's 27-row "Required Canonical Names" table is replaced by a verified status: no legacy-named `.avsc` remains, and the ten canonical names that were never created have zero references in code, zero `EVENT_AVSC_MAP` entries and no source outside that table — so they were dropped rather than carried as pending work.                                                                                                                                                                                                                                        | Closed                     |
-| OQ-16 | **One event name is contested.** §32.4's payload table (#16) calls it `finance.budget.variance_detected.v1`; the schema on disk, the `EVENT_AVSC_MAP` key, `00_master` § Phase 7 `Generate:`, § Phase 20 notification triggers and `20-ux-flow` §20.7 all call it `finance.variance.alert.v1`. Specs win by the authority rule, but the type is on the wire, so aligning to the spec is a **breaking change** needing a `.v2` plus a migration consumer bridge (§32.4 Event Versioning) — not a rename. Either §32.4 #16 changes to match the implementation, or the implementation migrates. | Open — needs a PO decision |
+| ID    | Question                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Status                     |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| OQ-2  | The Base Event Envelope has **8** fields in `32-implementation-specifications` §32.4, **10** in `15-event-driven-workflow` §15.6 (adding `trace_id`, `span_id`), and **9** in the committed `base-event-envelope.avsc`, where `trace_id` and `span_id` are `["null","string"]` with default `null`. §32 declares itself the winner on conflict. Because the two extra fields are nullable with defaults, the Avro schema stays `BACKWARD_TRANSITIVE`-compatible with the 8-field shape — the divergence is additive, not breaking.                                                                                     | Open — needs a PO ruling   |
+| OQ-3  | `15-event-driven-workflow` §15.6 contradicts itself within one section: the envelope is "CloudEvents v1.0-**inspired** … **NOT** a strict CloudEvents-compliant envelope", while ECO-001 in the same section reads "**Envelope:** CloudEvents v1.0 (**normative**)".                                                                                                                                                                                                                                                                                                                                                   | Open — spec self-conflict  |
+| OQ-4  | `07-multi-tenant-architecture` §7.3 states both "**Created on first publish, not at tenant onboarding**" and "the full canonical event catalogue is **materialised per tenant, created idempotently at tenant onboarding**". Its own step 3 then repeats the first-publish rule for SMB / mid-market. `00_master` § Always agrees with first-publish, so the onboarding sentence reads as stale text.                                                                                                                                                                                                                  | Open — spec self-conflict  |
+| OQ-6  | **Closed 2026-08-22.** §32.4's 27-row "Required Canonical Names" table is replaced by a verified status: no legacy-named `.avsc` remains, and the ten canonical names that were never created have zero references in code, zero `EVENT_AVSC_MAP` entries and no source outside that table — so they were dropped rather than carried as pending work.                                                                                                                                                                                                                                                                 | Closed                     |
+| OQ-16 | **One event name is contested.** §32.4's payload table (#16) calls it `finance.budget.variance_detected.v1`; the schema on disk, the `EVENT_AVSC_MAP` key, `00_master` § Phase 7 `Generate:`, § Phase 20 notification triggers and `20-ux-flow` §20.7 all call it `finance.variance.alert.v1`. Specs win by the authority rule, but the type is on the wire, so aligning to the spec is a **breaking change** needing a `.v2` plus a migration consumer bridge (§32.4 Event Versioning) — not a rename. Either §32.4 #16 changes to match the implementation, or the implementation migrates.                          | Open — needs a PO decision |
+| OQ-18 | **The outbox is durable, not atomic — two specification sentences still say otherwise.** `00_master` § PHASE 8 COMMAND ("write to outbox_events in same transaction as business entity") and `15-event-driven-workflow` §15.65 ("guarantees event delivery atomically with the DB write") both assert a property ADR-094 (2026-08-19, Accepted) deliberately did not build, and explains why. Either the two sentences are amended to match ADR-094, or the write paths are refactored to thread `tx`. Until one happens, the authoritative spec and the accepted ADR contradict each other on a durability guarantee. | Open — needs a PO decision |
 
 Recorded, not resolved — per [README § Open questions](README.md#open-questions-register).
