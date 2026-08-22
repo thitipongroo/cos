@@ -1,6 +1,6 @@
 // Canonical event: identity.user.created.v1
 
-import { BaseEventEnvelope } from '@cos/types';
+import type { BaseEventEnvelope } from '@cos/types';
 
 export interface UserCreatedPayload {
   tenant_id: string; // UUID

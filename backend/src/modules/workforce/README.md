@@ -30,7 +30,8 @@ GET  /api/v1/projects/:projectId/workforce/summary — manpower summary for anal
 - `@cos/database` — `TenantPrismaService`
 - `@cos/financial` — `Decimal` for `daily_rate` fields
 - `@cos/rbac` — `SITE_ENGINEER`, `PROJECT_MANAGER` guards
-- `@cos/shared` — Kafka event contracts
+- `@cos/kafka` — KafkaProducer (SDK)
+- `@cos/shared` — typed event payload contracts
 - TimescaleDB — hypertables for `attendance_logs` and `timesheets`
 
 ## Configuration

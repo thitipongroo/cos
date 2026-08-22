@@ -1,7 +1,7 @@
 // Canonical event: construction.project.created.v1
 // Source: context/00_master_construction_os.md §6 Event #1
 
-import { BaseEventEnvelope } from '@cos/types';
+import type { BaseEventEnvelope } from '@cos/types';
 
 export interface ProjectCreatedPayload {
   project_id: string; // UUID

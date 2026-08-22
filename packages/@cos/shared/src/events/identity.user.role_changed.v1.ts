@@ -1,6 +1,6 @@
 // Canonical event: identity.user.role_changed.v1
 
-import { BaseEventEnvelope } from '@cos/types';
+import type { BaseEventEnvelope } from '@cos/types';
 
 export interface UserRoleChangedPayload {
   tenant_id: string; // UUID

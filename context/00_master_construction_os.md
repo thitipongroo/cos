@@ -1,8 +1,8 @@
 ---
 title: Construction OS — Master Specification
 role: master
-version: 1.17.0
-last_updated: 2026-05-31
+version: 1.17.1
+last_updated: 2026-08-22
 previous: null
 next: 01_build_priority_execution.md
 authority: master — all stage files defer to this document
@@ -1376,7 +1376,13 @@ services/                 — Separately deployed services (non-monolith)
   kg-ingestion-worker/    — Go Knowledge Graph Ingestion (@cos/kg-worker)
 
 packages/                 — Shared packages (ONLY code used by 2+ apps/services)
-  @cos/shared             — Typed Kafka event interfaces (Phase 1); Avro schemas added in Phase 8 alongside KafkaProducer/Consumer/OutboxPublisher
+  @cos/shared             — Typed Kafka event interfaces ONLY (TypeScript types; mobile-safe, Rule 34).
+                            Corrected 2026-08-22 (ADR-055): the Kafka SDK and the Avro schemas moved
+                            to @cos/kafka — a package imported by React Native cannot hold kafkajs.
+  @cos/kafka/             — Node-only Kafka SDK (Phase 8): KafkaProducer, KafkaConsumer,
+                            OutboxPublisher + OutboxPoller, DlqPublisher, KafkaTopicProvisioner,
+                            topic catalog, Prometheus metrics, Schema Registry client, Avro .avsc
+                            schemas. Server-side only — NEVER aliased into apps/mobile (ADR-055)
   @cos/database/          — Prisma pagination utilities, ID generation, retry helpers
   @cos/rbac/              — RBAC + ABAC role definitions, guard decorators and metadata keys (NOT concrete CanActivate guards — those live in backend/src/shared/guards/; see spec §06 §6.9)
   @cos/validation/        — Shared DTO validators (class-validator decorators)
@@ -1483,7 +1489,10 @@ Generate:
     moduleNameMapper: map all @cos/* workspace paths to source (not dist)
     packages requiring jest.config (Rule 35 — all packages with executable logic):
       backend/
-      packages/@cos/shared/         — kafka SDK, event types
+      packages/@cos/shared/         — event payload types only (type-only; Rule 35 EXEMPT since
+                                      ADR-055 — no executable logic, no jest config)
+      packages/@cos/kafka/          — kafka SDK (producer, consumer, outbox, dlq, metrics,
+                                      schema registry, topic catalog) — added by ADR-055
       packages/@cos/database/        — retry, pagination, id
       packages/@cos/financial/       — calculateLineTotal, convertCurrency (QM-1: mutation testing required)
       packages/@cos/rbac/            — ROLE_PERMISSIONS, decorators
@@ -2881,9 +2890,10 @@ Generate:
 - Prometheus metrics for producer, consumer, DLQ
 - Confluent Schema Registry client integration
 - Unit tests: producer, consumer, outbox pattern, idempotency
-- Integration tests: packages/@cos/shared/test/kafka/kafka.integration.spec.ts
-    - Add to @cos/shared devDependencies: testcontainers ^10.9.0, @testcontainers/kafka ^10.9.0 (Rule 26)
-    - Add script to @cos/shared package.json: "test:integration": "jest --testPathPattern='test/'" (Rule 27)
+- Integration tests: packages/@cos/kafka/test/kafka/kafka.integration.spec.ts (moved from
+    @cos/shared by ADR-055)
+    - Add to @cos/kafka devDependencies: testcontainers ^10.9.0, @testcontainers/kafka ^10.9.0 (Rule 26)
+    - Add script to @cos/kafka package.json: "test:integration": "jest --testPathPatterns='test/'" (Rule 27)
       Note: turbo.json test:integration task already exists — no change needed
     - Use @testcontainers/kafka KafkaContainer for a real single-broker Kafka instance
     - Mock Schema Registry (Avro encoding covered in src/kafka/__tests__/schema-registry.client.spec.ts)
@@ -3007,7 +3017,13 @@ Generate:
 - Fastify application with multipart plugin (@fastify/multipart)
 - MinIO client integration (minio npm package)
 - File validation middleware (size, MIME type, extension check)
-- Antivirus hook (ClamAV integration — deferred to Phase 9 spec; do not implement until spec defines it)
+- Antivirus hook (ClamAV integration — IN SCOPE; implement per the File Constraints "Antivirus
+  scanning" block above: scan every upload before marking CLEAN, QUARANTINE on threat detected,
+  move infected objects to cos-quarantine/{tenant_id}/ (30-day retention), emit
+  file.document.quarantined.v1, notify SYSTEM_ADMIN, SYSTEM_ADMIN-only recovery.
+  Corrected 2026-08-22 — the previous "deferred to Phase 9 spec" wording contradicted the fully
+  specified behaviour in the same Phase 9 block and the shipped implementation; test design in
+  docs/specifications/35-test-design.md §35.10.9 / §35.13 ESC-07)
 - Signed URL generation service
 - OpenSearch indexing on upload complete
 - PostgreSQL migration files
@@ -3607,7 +3623,12 @@ Orchestration:
 
 Generate:
 
-- LangGraph orchestration chain for each report type
+- Plain Python sequential orchestration pipeline for each report type (the 6 steps in the
+  Orchestration section above). Corrected 2026-08-22: this line previously said "LangGraph
+  orchestration chain", contradicting BOTH the Orchestration section in this same phase block
+  ("plain Python sequential pipeline — no Agent Orchestrator; LangGraph deferred to LAYER-C-001")
+  AND the context.md Never rule "Implement LangGraph in Phase 11–12". Authoritative: spec
+  §22-ai-architecture §22.3. See docs/specifications/35-test-design.md §35.13 ESC-09.
 - HallucinationGuard class with all 5 checks above
 - Structured output Pydantic models for each report type
 - Prompt templates (ai/prompts/): one per report type
@@ -3802,9 +3823,13 @@ Constraints:
 ```text
 Build Analytics Service and dashboards.
 
-Performance SLA (authoritative — all dashboard queries must meet these):
-  Executive Dashboard:   P95 < 3 seconds
-  PM Dashboard:          P95 < 2 seconds
+Performance SLA (source of truth: docs/specifications/31-monitoring-observability.md §31.6 + QM-6):
+  Executive Dashboard:   P95 < 1 second
+  PM Dashboard:          P95 < 1 second
+  — Corrected 2026-08-22: the former "Executive 3s / PM 2s" split conflicted with the §31.6 SLO
+    (dashboard/analytics p95 < 1s) and with §30.9 (p95 < 1s, ClickHouse query < 200ms).
+    §31.6 wins per the authority hierarchy (specs beat context files). See
+    docs/specifications/35-test-design.md §35.13 ESC-10.
   Data freshness:        15 minutes (acceptable lag from transaction to dashboard)
   Real-time metrics:     < 30 seconds lag (for critical alerts only)
 
@@ -3881,7 +3906,7 @@ Generate:
 - Frontend Next.js dashboard components (use Recharts)
 - Unit tests: cache logic, aggregation query building
 - Integration tests: Kafka → ClickHouse → API flow
-- Load tests: verify P95 < 3s SLA under 100 concurrent dashboard loads
+- Load tests: verify P95 < 1s SLA under 100 concurrent dashboard loads (§31.6)
 - OpenAPI 3.1 spec: docs/api/analytics.openapi.yaml (per spec §14.3 canonical table — Analytics, MVP Phase 14)
 
 
@@ -4321,7 +4346,7 @@ Required Unit Test Coverage:
 k6 Load Test Scenarios:
   Scenario 1: Dashboard SLA validation
     Target: GET /api/v1/analytics/executive — 100 VUs, 5 min
-    Pass criteria: P95 < 3s, error rate < 0.1%
+    Pass criteria: P95 < 1s, error rate < 0.1% (§31.6 dashboard SLO)
 
   Scenario 2: Concurrent file uploads
     Target: POST /api/v1/files/upload — 20 VUs, 5 MB file, 5 min
@@ -4364,7 +4389,7 @@ Generate:
     1. login — user authentication via SMS OTP and email/password flows; JWT issued; protected route accessible
     2. project create — PM creates project; status transitions DRAFT → ACTIVE
     3. report submit — Site Engineer submits daily site report; Kafka event emitted; PM notified
-    4. dashboard view — Executive loads analytics dashboard; ClickHouse queries complete within P95 < 3s SLA
+    4. dashboard view — Executive loads analytics dashboard; ClickHouse queries complete within P95 < 1s SLA
     5. Procurement flow — Create PR → generate RFQ → receive quotation → approve PO → record delivery → approve vendor invoice
     6. Daily site report — Site Engineer submits report with manpower count and blockers
     7. Budget exceeded alert — Cost transaction pushes project over budget → Executive receives push notification
@@ -4928,6 +4953,11 @@ Model Types (from source §19.3):
   Computer vision (SafetyVisionModel):       XGBoost classifier on ViT image embeddings; requires 10,000+ labeled site photos (see spec §22.6)
   Graph ML (GraphMLModel):              XGBoost on Neo4j graph-derived features (PageRank, centrality); requires 6+ months data (see spec §22.6)
   Classification (RiskClassifier):        XGBoost multi-class (LOW/MEDIUM/HIGH/CRITICAL); features: budget variance, schedule delay, procurement, safety incidents; requires 50+ projects (see spec §22.6)
+  Anomaly detection (CostAnomalyModel):   flags unusual cost entries and procurement patterns.
+    Added 2026-08-22 — it had an evaluation threshold in spec §30.11 (Precision ≥ 0.85, secondary
+    Recall) but was missing from this phase and from §22.6. Algorithm, input features and minimum
+    training data are UNSPECIFIED — do NOT infer them; owner AI/Platform Lead, decided when Layer B
+    enters an active development sprint. See docs/specifications/35-test-design.md §35.13 ESC-03.
 
 Feature Store (Feast):
   Feature views:
@@ -5269,6 +5299,12 @@ ROOT CAUSE PREVENTION RULES (prevent recurring bugs):
     using Fastify, any server-only type in packages imported by mobile.
 
   Rule 34 — @cos/shared must remain framework-agnostic (prevents mobile bundle failures):
+    ENFORCED STRUCTURALLY since 2026-08-22 (ADR-055): @cos/shared holds event payload TYPES ONLY
+    (every import is `import type`; sole dependency @cos/types). All Node-only Kafka code and the
+    Avro schemas live in @cos/kafka, which is never aliased into apps/mobile. Clause (c) below
+    ("move OutboxPoller to backend/src") is SUPERSEDED by that split — moving only the outbox would
+    have left kafkajs/ioredis/prom-client as runtime deps of @cos/shared, so the package would still
+    not have been mobile-safe.
     @cos/shared is imported by ALL platforms: mobile (React Native/Metro), PWA (Service Worker),
     and Node.js services. Therefore:
     (a) NO runtime import of Node.js-only packages (PrismaClient, native addons, file system).

@@ -16,7 +16,7 @@ jest.mock('@opensearch-project/opensearch', () => ({
   })),
 }));
 
-jest.mock('@cos/shared', () => ({
+jest.mock('@cos/kafka', () => ({
   KafkaProducer: jest.fn().mockImplementation(() => ({
     connect: jest.fn().mockResolvedValue(undefined),
     publish: jest.fn().mockResolvedValue(undefined),
@@ -122,6 +122,69 @@ describe('ProjectService', () => {
       });
       expect(result.project_code).toBe('PROJ-001');
       expect(repo.create).toHaveBeenCalledTimes(1);
+    });
+
+    // Phase 8 Outbox Pattern (§35.13 ESC-13): create() no longer publishes to Kafka directly — it
+    // hands the repository a builder so the event is written in the same transaction as the row.
+    it('passes an outbox builder that derives the envelope from the inserted row', async () => {
+      const repo = makeRepo();
+      const service = await buildService(repo);
+      await service.create({
+        project_code: 'PROJ-001',
+        project_name: 'Test Project',
+        project_type: 'COMMERCIAL' as never,
+        budget_amount: '1000000.0000',
+        budget_currency: 'THB',
+        start_date: '2026-06-01',
+        end_date: '2027-12-31',
+      });
+
+      const createMock = repo.create as unknown as jest.Mock;
+      const builder = createMock.mock.calls[0][2] as (row: typeof baseProject) => {
+        event_type: string;
+        tenant_id: string;
+        payload: Record<string, unknown>;
+      };
+      expect(typeof builder).toBe('function');
+
+      const envelope = builder(baseProject);
+      expect(envelope.event_type).toBe('construction.project.created.v1');
+      expect(envelope.payload).toMatchObject({
+        project_id: baseProject.project_id,
+        project_code: baseProject.project_code,
+        budget: { amount: '1000000.0000', currency_code: 'THB' },
+        created_by: baseProject.created_by,
+      });
+    });
+
+    it('outbox payload falls back when the row has null budget and dates', async () => {
+      const repo = makeRepo();
+      const service = await buildService(repo);
+      await service.create({
+        project_code: 'P-NULL',
+        project_name: 'Null Budget',
+        project_type: 'COMMERCIAL' as never,
+      });
+
+      const createMock = repo.create as unknown as jest.Mock;
+      const builder = createMock.mock.calls[0][2] as (row: unknown) => {
+        payload: {
+          budget: { amount: string; currency_code: string };
+          start_date: string;
+          end_date: string;
+        };
+      };
+      const envelope = builder({
+        ...baseProject,
+        budget_amount: null,
+        budget_currency: null,
+        start_date: null,
+        end_date: null,
+      });
+
+      expect(envelope.payload.budget).toEqual({ amount: '0.0000', currency_code: 'THB' });
+      expect(envelope.payload.start_date).toBe('');
+      expect(envelope.payload.end_date).toBe('');
     });
   });
 
@@ -446,20 +509,17 @@ describe('ProjectService', () => {
 
   describe('publishEvent — error path (line 335)', () => {
     it('logs error when Kafka publish throws (non-fatal)', async () => {
-      const { KafkaProducer } = jest.requireMock('@cos/shared') as { KafkaProducer: jest.Mock };
+      const { KafkaProducer } = jest.requireMock('@cos/kafka') as { KafkaProducer: jest.Mock };
       KafkaProducer.mockImplementationOnce(() => ({
         connect: jest.fn().mockRejectedValue(new Error('Kafka down')),
         publish: jest.fn(),
         disconnect: jest.fn(),
       }));
       const service = await buildService(makeRepo());
-      // create() calls publishEvent internally — Kafka failure must not throw
+      // create() now writes to the outbox instead of publishing (§35.13 ESC-13), so the direct
+      // publish path is reached through update(), which is not yet converted.
       await expect(
-        service.create({
-          project_code: 'P2',
-          project_name: 'P2',
-          project_type: 'COMMERCIAL' as never,
-        }),
+        service.update('proj-uuid-001', { project_name: 'Renamed' }),
       ).resolves.toBeDefined();
     });
   });

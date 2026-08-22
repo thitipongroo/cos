@@ -52,8 +52,12 @@ export class OutboxPublisher {
     const eventId = event.event_id ?? randomUUID();
     const envelope = { ...event, event_id: eventId };
 
+    // Schema-qualified name is MANDATORY (QM-4 / spec §11.0 rule 2): an unqualified
+    // `outbox_events` resolves through `search_path`, which is not deterministic under the
+    // multi-schema tenant model. The poller below already reads `platform.outbox_events`;
+    // this INSERT was the one unqualified reference. Corrected 2026-08-22.
     await (tx as unknown as OutboxPrismaClient).$executeRaw`
-      INSERT INTO outbox_events (id, event_type, payload, published)
+      INSERT INTO platform.outbox_events (id, event_type, payload, published)
       VALUES (${eventId}::uuid, ${envelope.event_type}, ${JSON.stringify(envelope)}::jsonb, false)
     `;
   }

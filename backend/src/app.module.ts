@@ -35,6 +35,7 @@ import { TenantContextInterceptor } from './shared/interceptors/tenant-context.i
 import { CloudflareWafMiddleware } from './shared/middleware/cloudflare-waf.middleware';
 import { SecureHeadersMiddleware } from './shared/middleware/secure-headers.middleware';
 import { TracingShutdownService } from './shared/tracing-shutdown.service';
+import { OutboxPollerService } from './shared/outbox/outbox-poller.service';
 
 @Module({
   imports: [
@@ -102,6 +103,8 @@ import { TracingShutdownService } from './shared/tracing-shutdown.service';
     { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },
     // Closes the OpenTelemetry SDK (Prometheus exporter) on graceful shutdown (enableShutdownHooks)
     TracingShutdownService,
+    // Phase 8 Outbox Pattern relay — starts on bootstrap, stops on SIGTERM (Rule 39 / §35.13 ESC-13)
+    OutboxPollerService,
   ],
 })
 export class AppModule implements NestModule {

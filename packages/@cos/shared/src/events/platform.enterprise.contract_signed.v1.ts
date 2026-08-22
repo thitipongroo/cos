@@ -2,7 +2,7 @@
 // Source: context/00_master_construction_os.md §Phase 2 Kafka events
 // Triggered by: Admin Panel OR CRM webhook (Phase 25)
 
-import { BaseEventEnvelope } from '@cos/types';
+import type { BaseEventEnvelope } from '@cos/types';
 
 export interface EnterpriseContractSignedPayload {
   tenant_id: string; // UUID

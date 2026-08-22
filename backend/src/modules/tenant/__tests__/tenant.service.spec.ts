@@ -9,7 +9,7 @@ jest.mock('@prisma/client', () => ({
   })),
 }));
 
-jest.mock('@cos/shared', () => ({
+jest.mock('@cos/kafka', () => ({
   KafkaProducer: jest.fn().mockImplementation(() => ({
     connect: jest.fn().mockResolvedValue(undefined),
     publish: jest.fn().mockResolvedValue(undefined),
@@ -31,7 +31,7 @@ jest.mock('@temporalio/client', () => ({
 
 import { TenantService } from '../tenant.service';
 import { PrismaClient } from '@prisma/client';
-import { KafkaTopicProvisioner } from '@cos/shared';
+import { KafkaTopicProvisioner } from '@cos/kafka';
 import { Connection, Client } from '@temporalio/client';
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 

@@ -71,6 +71,8 @@ module.exports = {
   ],
   moduleNameMapper: {
     '^@keycloak/keycloak-admin-client$': '<rootDir>/src/__mocks__/keycloak-admin-client.js',
+    '^@cos/kafka$': '<rootDir>/../packages/@cos/kafka/src/index.ts',
+    '^@cos/kafka/(.*)$': '<rootDir>/../packages/@cos/kafka/src/$1',
     '^@cos/shared$': '<rootDir>/../packages/@cos/shared/src/index.ts',
     '^@cos/shared/(.*)$': '<rootDir>/../packages/@cos/shared/src/$1',
     '^@cos/rbac$': '<rootDir>/../packages/@cos/rbac/src/index.ts',

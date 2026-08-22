@@ -1,44 +1,12 @@
-// @cos/shared — Typed Kafka event interfaces + Avro schemas + Kafka SDK
-// All cross-service event contracts are defined here.
-// Source: context/00_master_construction_os.md §6 CROSS-SERVICE EVENT CONTRACT SPEC
+// @cos/shared — typed cross-service event contracts (TypeScript types only).
+// Source: context/00_master_construction_os.md §CROSS-SERVICE EVENT CONTRACT SPEC; spec §32.4.
+//
+// MOBILE-SAFE BY CONTRACT (Rule 34): this package is imported by React Native (Metro) and by the
+// web Service Worker as well as by Node services, so it must contain NO runtime import of a
+// Node-only package. The Kafka SDK (producer, consumer, outbox, DLQ, metrics, schema registry)
+// and the Avro schema files moved to @cos/kafka on 2026-08-22 — see ADR-055.
 
 export type { BaseEventEnvelope } from '@cos/types';
-
-// Phase 8 — Kafka SDK (KafkaProducer, KafkaConsumer, OutboxPublisher, DlqPublisher)
-export { KafkaProducer } from './kafka/producer';
-export { KafkaConsumer } from './kafka/consumer';
-export type { MessageHandler, ConsumerOptions } from './kafka/consumer';
-export { OutboxPublisher, OutboxPoller } from './kafka/outbox';
-export { DlqPublisher } from './kafka/dlq';
-// Per-tenant topic model + provisioning (spec §7.3, §15.6/15.7, §32.4)
-export { KafkaTopicProvisioner, tenantTopicSuffixes } from './kafka/topic-provisioner';
-export type { ProvisionerOptions } from './kafka/topic-provisioner';
-export {
-  EVENT_AVSC_MAP,
-  CANONICAL_EVENT_TYPES,
-  PLATFORM_EVENTS_TOPIC,
-  PLATFORM_DLQ_TOPIC,
-  isPlatformEvent,
-  domainOf,
-  topicForEvent,
-  subjectForEvent,
-  tenantTopicPattern,
-  dlqTopicFor,
-} from './kafka/topic-catalog';
-export {
-  initKafkaMetrics,
-  recordProduced,
-  recordConsumed,
-  recordProducerError,
-  setConsumerLag,
-  setDlqDepth,
-} from './kafka/metrics';
-export {
-  getSchemaRegistry,
-  registerSchema,
-  encodeAvro,
-  decodeAvro,
-} from './kafka/schema-registry.client';
 
 // Event payload types (canonical names — spec §32.4)
 export type * from './events/construction.project.created.v1';

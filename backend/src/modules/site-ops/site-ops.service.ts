@@ -1,7 +1,7 @@
 // SiteOps Service — Phase 6
 // Business logic: site reports, offline sync, issue tracking, inspections, conflict resolution.
 // Conflict strategies per spec §Phase 6 (QM-9): LAST_WRITE_WINS, FIELD_LEVEL_MERGE, SERVER_WINS.
-// Emits typed Kafka events via @cos/shared KafkaProducer.
+// Emits typed Kafka events via @cos/kafka KafkaProducer.
 
 import {
   Injectable,
@@ -14,7 +14,7 @@ import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
 import { randomUUID } from 'crypto';
 import { Client as OpenSearchClient } from '@opensearch-project/opensearch';
-import { KafkaProducer } from '@cos/shared';
+import { KafkaProducer } from '@cos/kafka';
 import { createLogger } from '@cos/logger';
 import { SiteOpsRepository } from './site-ops.repository';
 import type { IssueRow, SiteReportRow, InspectionRow } from './site-ops.repository';

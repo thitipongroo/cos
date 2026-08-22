@@ -8,11 +8,11 @@ jest.mock('@opensearch-project/opensearch', () => ({
   })),
 }));
 
-// Keep real @cos/shared exports (event types, topic catalog, etc.); stub only the Kafka
+// Keep real @cos/kafka exports (topic catalog, etc.); stub only the Kafka
 // network clients so AppModule boots without a broker. KafkaConsumer is used by the
 // notification/event consumers wired into AppModule.
-jest.mock('@cos/shared', () => {
-  const actual = jest.requireActual('@cos/shared');
+jest.mock('@cos/kafka', () => {
+  const actual = jest.requireActual('@cos/kafka');
   const noopKafka = {
     connect: jest.fn().mockResolvedValue(undefined),
     publish: jest.fn().mockResolvedValue(undefined),

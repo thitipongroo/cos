@@ -1,6 +1,6 @@
 // Project Service — Phase 3
 // Business logic: create, read, update, status transitions, membership, documents.
-// Emits typed Kafka events via @cos/shared KafkaProducer (QM-8, WORKFLOW ENGINE SPEC).
+// Emits typed Kafka events via @cos/kafka KafkaProducer (QM-8, WORKFLOW ENGINE SPEC).
 // OpenSearch used for full-text project search (QM-6 — kept async, non-blocking).
 
 import {
@@ -14,7 +14,8 @@ import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
 import { randomUUID } from 'crypto';
 import { Client as OpenSearchClient } from '@opensearch-project/opensearch';
-import { KafkaProducer } from '@cos/shared';
+import { KafkaProducer } from '@cos/kafka';
+import { buildOutboxEvent } from '../../shared/outbox/outbox.types';
 import { createLogger } from '@cos/logger';
 import type { CosRole } from '@cos/types';
 import { ProjectRepository } from './project.repository';
@@ -70,23 +71,35 @@ export class ProjectService {
       'project.create',
     );
 
-    const project = await this.repo.create(dto, this.userId);
+    // Phase 8 Outbox Pattern: the event is written in the SAME transaction as the project row, so a
+    // rollback emits nothing and a committed write can never lose its event. The OutboxPoller
+    // (shared/outbox/outbox-poller.service.ts) relays it to Kafka. Replaces the previous
+    // fire-and-forget publish, which was neither atomic nor retried (§35.13 ESC-13).
+    // The builder receives the INSERTed row, so the payload carries the real generated ids.
+    const project = await this.repo.create(dto, this.userId, (row) =>
+      buildOutboxEvent({
+        eventType: 'construction.project.created.v1',
+        tenantId: this.tenantId,
+        actorId: this.userId,
+        correlationId: this.correlationId,
+        payload: {
+          project_id: row.project_id,
+          project_code: row.project_code,
+          project_name: row.project_name,
+          project_type: row.project_type as
+            'RESIDENTIAL' | 'COMMERCIAL' | 'INFRASTRUCTURE' | 'INDUSTRIAL',
+          budget: {
+            amount: row.budget_amount ?? '0.0000',
+            currency_code: row.budget_currency ?? 'THB',
+          },
+          start_date: row.start_date ?? '',
+          end_date: row.end_date ?? '',
+          created_by: row.created_by,
+        },
+      }),
+    );
 
     await this.indexProject(project);
-    await this.publishEvent('construction.project.created.v1', {
-      project_id: project.project_id,
-      project_code: project.project_code,
-      project_name: project.project_name,
-      project_type: project.project_type as
-        'RESIDENTIAL' | 'COMMERCIAL' | 'INFRASTRUCTURE' | 'INDUSTRIAL',
-      budget: {
-        amount: project.budget_amount ?? '0.0000',
-        currency_code: project.budget_currency ?? 'THB',
-      },
-      start_date: project.start_date ?? '',
-      end_date: project.end_date ?? '',
-      created_by: project.created_by,
-    });
 
     return project;
   }
@@ -330,7 +343,11 @@ export class ProjectService {
       });
       await this.kafka.disconnect();
     } catch (err) {
-      // Non-fatal in MVP: log and continue — outbox pattern picks up failures (Phase 8)
+      // Direct-publish path (update / transition / archive — NOT yet converted to the outbox).
+      // A failure here is logged and swallowed: the event is LOST, it is not retried. The earlier
+      // comment claimed "outbox pattern picks up failures", which was never true — nothing wrote to
+      // the outbox. create() is already converted; converting the rest removes this path entirely
+      // (docs/specifications/35-test-design.md §35.13 ESC-13).
       logger.error(
         { event_type: eventType, err, correlation_id: this.correlationId },
         'kafka.publish.failed',

@@ -2,7 +2,7 @@
 // Business logic: vendor management, PR, RFQ lifecycle, quotation comparison,
 //                 PO approval chain, delivery recording, invoice receipt.
 // Financial precision: decimal.js ROUND_HALF_UP throughout (spec §FINANCIAL PRECISION SPEC).
-// Emits typed Kafka events via @cos/shared KafkaProducer (QM-8).
+// Emits typed Kafka events via @cos/kafka KafkaProducer (QM-8).
 // Temporal workflows started via @temporalio/client — NestJS does NOT inject workflow state.
 
 import {
@@ -17,7 +17,7 @@ import type { Request } from 'express';
 import { randomUUID } from 'crypto';
 import { Connection, Client } from '@temporalio/client';
 import { Decimal, calculateLineTotal, sumDecimals } from '@cos/financial';
-import { KafkaProducer } from '@cos/shared';
+import { KafkaProducer } from '@cos/kafka';
 import { createLogger } from '@cos/logger';
 import { ProcurementRepository } from './procurement.repository';
 import { VendorScoring } from './vendor-scoring';

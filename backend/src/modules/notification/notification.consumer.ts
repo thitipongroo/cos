@@ -3,7 +3,7 @@
 // Subscribes to 8 event topics and routes to NotificationService.
 
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
-import { KafkaConsumer } from '@cos/shared';
+import { KafkaConsumer } from '@cos/kafka';
 import { createLogger } from '@cos/logger';
 import { NotificationService } from './notification.service';
 import type { BaseEventEnvelope } from '@cos/types';

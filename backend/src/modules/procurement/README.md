@@ -46,7 +46,8 @@ Vendor invoices: POST/GET  /api/v1/procurement/vendor-invoices        (po_id in 
 - `@cos/database` — `TenantPrismaService`
 - `@cos/financial` — `calculateLineTotal` for line item totals
 - `@cos/rbac` — `PROCUREMENT_OFFICER`, `PROC_MANAGER` guards
-- `@cos/shared` — Kafka event contracts
+- `@cos/kafka` — KafkaProducer (SDK)
+- `@cos/shared` — typed event payload contracts
 - `@temporalio/client`, `@temporalio/worker` — Temporal RFQ + PO workflows
 
 ## Configuration

@@ -158,8 +158,11 @@ jobs:
       - name: Temporal workflow tests (serial) — backend
         working-directory: backend
         run: pnpm run test:workflows
-      - name: Unit tests + coverage — @cos/shared
-        working-directory: packages/@cos/shared
+      # @cos/shared is type-only since the 2026-08-22 split (ADR-055) — Rule 35 exempts packages
+      # with no executable logic, so it has no jest config and no coverage step. The Kafka SDK it
+      # used to hold now lives in @cos/kafka, tested below.
+      - name: Unit tests + coverage — @cos/kafka
+        working-directory: packages/@cos/kafka
         run: pnpm run test:cov
       - name: Unit tests + coverage — @cos/database
         working-directory: packages/@cos/database
@@ -183,6 +186,12 @@ jobs:
       - name: Unit tests + coverage — @cos/config
         working-directory: packages/@cos/config
         run: pnpm run test:cov
+      # services/file-service is a separate deployable (Fastify) with its own jest.config.js
+      # enforcing the same 100% lines / 100% branches gate (QM-1). It was previously built and
+      # scanned by CI but never tested — wired in 2026-08-22 (§35.13 ESC-05).
+      - name: Unit tests + coverage — services/file-service
+        working-directory: services/file-service
+        run: pnpm run test:cov
       - name: Upload coverage reports
         uses: actions/upload-artifact@v4
         if: always()
@@ -190,7 +199,7 @@ jobs:
           name: coverage
           path: |
             backend/coverage/
-            packages/@cos/shared/coverage/
+            packages/@cos/kafka/coverage/
             packages/@cos/database/coverage/
             packages/@cos/financial/coverage/
             packages/@cos/rbac/coverage/
@@ -198,6 +207,7 @@ jobs:
             packages/@cos/logger/coverage/
             packages/@cos/tracing/coverage/
             packages/@cos/config/coverage/
+            services/file-service/coverage/
 
   # ─── Step 3b: Mobile Tests (apps/mobile — standalone Expo/RN workspace) ──────
   # apps/mobile is EXCLUDED from the repo-root pnpm workspace (React Native + Metro
@@ -331,6 +341,59 @@ jobs:
 
   # ─── Step 5a: Dependency Audit (OWASP / pnpm audit) ────────────────────────
   # Source: spec §Phase 16 — "OWASP dependency check in CI pipeline"
+  # ─── Step 3c: Go worker tests ───────────────────────────────────────────────
+  # Source: spec §30.2 (Unit tooling — Go: testing + testify), QM-1. The Go workers had unit and
+  # integration tests on disk but no workflow executed them; only govulncheck ran. Wired
+  # 2026-08-22 (§35.13 ESC-05). Correctness gate only — no coverage threshold is defined for Go
+  # in any spec file, so none is asserted here (recorded as UNSPECIFIED in §35.13).
+  go-tests:
+    name: Go Worker Tests (analytics-worker + kg-ingestion-worker)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [analytics-worker, kg-ingestion-worker]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: services/${{ matrix.service }}/go.mod
+          cache-dependency-path: services/${{ matrix.service }}/go.sum
+      - name: go test — ${{ matrix.service }}
+        working-directory: services/${{ matrix.service }}
+        run: go test ./... -v
+
+  # ─── Step 3d: AI service tests (Python) ─────────────────────────────────────
+  # Source: spec §30.2 (Unit tooling — Python: pytest), QM-1. The four AI services ship pytest
+  # suites and a pytest.ini each, but CI ran pytest only for mlops/tests/. Wired 2026-08-22
+  # (§35.13 ESC-05). Correctness gate first; the QM-1 `--cov-fail-under=99` line-coverage gate is
+  # added in a follow-up once actual coverage has been measured (product-owner decision).
+  ai-service-tests:
+    name: AI Service Tests (Python)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - ai-gateway
+          - ai-embedding-worker
+          - ai-ocr-pipeline
+          - ai-transcription-pipeline
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies — ${{ matrix.service }}
+        working-directory: services/${{ matrix.service }}
+        run: |
+          pip install -r requirements.txt
+          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+      - name: pytest — ${{ matrix.service }}
+        working-directory: services/${{ matrix.service }}
+        run: pytest
+
   dependency-audit:
     name: Dependency Audit (pnpm audit + govulncheck)
     runs-on: ubuntu-latest

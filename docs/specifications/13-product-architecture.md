@@ -359,6 +359,25 @@ type BiometricMethod = 'FINGERPRINT' | 'FACE_ID' | 'IRIS';
 Vendor SDK is injected via DI at deployment time. No vendor is selected at the platform level — each site configures their
 vendor adapter. Credentials and SDK config stored per-site in AWS Secrets Manager / Vault.
 
+#### Platform-side acceptance criteria
+
+**Resolved 2026-08-22 (product owner).** The interface above previously defined only the signature and
+return type, so no acceptance behaviour could be tested (see `35-test-design.md` §35.13 ESC-04). The
+platform now owns these criteria; biometric accuracy itself remains the vendor's SLA:
+
+| Criterion            | Value                                                                             |
+| -------------------- | --------------------------------------------------------------------------------- |
+| Timeout              | **5 seconds** per `verifyCheckIn` call                                            |
+| On timeout           | Fall back to `MANUAL` check-in — the worker is never blocked from checking in     |
+| Fallback recording   | The resulting attendance record stores `method = MANUAL` and flags the fallback   |
+| No adapter bound     | Log WARN + throw a typed exception (Type A fail-fast, `32-implementation-specifications` §32.9) |
+| Audit                | Every attempt (success, failure, timeout-fallback) is written to the audit log     |
+| Accuracy (FAR / FRR) | Vendor SLA per site — **not** a platform gate                                     |
+
+Rationale: the biometric device at a site entrance is external hardware whose response time the
+platform cannot control, and a queue of workers at shift start must never be blocked by a slow or
+offline scanner.
+
 ---
 
 ### IoT Device Integration

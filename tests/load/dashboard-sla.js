@@ -16,7 +16,7 @@ export const options = {
     { duration: '1m', target: 0 },
   ],
   thresholds: {
-    http_req_duration: ['p(95)<3000'],
+    http_req_duration: ['p(95)<1000'],
     errors: ['rate<0.001'],
     http_req_failed: ['rate<0.001'],
   },
@@ -34,7 +34,7 @@ export default function () {
 
   const ok = check(res, {
     'status is 200': (r) => r.status === 200,
-    'response time < 3s': (r) => r.timings.duration < 3000,
+    'response time < 1s': (r) => r.timings.duration < 1000,
     'has data key': (r) => {
       try {
         const body = JSON.parse(r.body);

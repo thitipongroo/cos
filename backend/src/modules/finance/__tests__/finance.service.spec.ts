@@ -1,7 +1,7 @@
 // Unit tests — Finance Service (Phase 7)
 // Focus: budget aggregation accuracy, variance calculation, Kafka consumer handlers.
 
-jest.mock('@cos/shared', () => ({
+jest.mock('@cos/kafka', () => ({
   KafkaProducer: jest.fn().mockImplementation(() => ({
     connect: jest.fn().mockResolvedValue(undefined),
     publish: jest.fn().mockResolvedValue(undefined),
@@ -424,7 +424,7 @@ describe('variance alert', () => {
       total_amount: { amount: '80.0000', currency_code: 'THB' },
     });
 
-    const { KafkaProducer } = jest.requireMock('@cos/shared') as { KafkaProducer: jest.Mock };
+    const { KafkaProducer } = jest.requireMock('@cos/kafka') as { KafkaProducer: jest.Mock };
     const instance = KafkaProducer.mock.results[0]?.value as { publish: jest.Mock };
     expect(instance.publish).toHaveBeenCalledWith(
       expect.objectContaining({ event_type: expect.stringContaining('variance.alert') }),
@@ -452,7 +452,7 @@ describe('variance alert', () => {
       total_amount: { amount: '80.0000', currency_code: 'THB' },
     });
 
-    const { KafkaProducer } = jest.requireMock('@cos/shared') as { KafkaProducer: jest.Mock };
+    const { KafkaProducer } = jest.requireMock('@cos/kafka') as { KafkaProducer: jest.Mock };
     const instance = KafkaProducer.mock.results[0]?.value as { publish: jest.Mock };
     expect(instance.publish).not.toHaveBeenCalledWith(
       expect.objectContaining({ event_type: expect.stringContaining('variance.alert') }),
@@ -488,7 +488,7 @@ describe('recordPayment', () => {
     });
     expect(result.payment_id).toBe('pay-uuid-001');
 
-    const { KafkaProducer } = jest.requireMock('@cos/shared') as { KafkaProducer: jest.Mock };
+    const { KafkaProducer } = jest.requireMock('@cos/kafka') as { KafkaProducer: jest.Mock };
     const instance = KafkaProducer.mock.results[0]?.value as { publish: jest.Mock };
     expect(instance.publish).toHaveBeenCalledWith(
       expect.objectContaining({ event_type: expect.stringContaining('payment.processed') }),

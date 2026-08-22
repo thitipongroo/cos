@@ -70,7 +70,8 @@ conflict_status ∈ { ACCEPTED | CONFLICT_FLAGGED | CONFLICT_REJECTED }
 ## Dependencies
 
 - `TenantModule` — `TenantPrismaService` for tenant-isolated DB access (ADR-008: tenant_id + RLS)
-- `@cos/shared` — `KafkaProducer`, typed event interfaces
+- `@cos/kafka` — `KafkaProducer` (SDK)
+- `@cos/shared` — typed event payload contracts
 - `@cos/logger` — structured logging
 - `@cos/rbac` — `@Roles` decorator, `RolesGuard`
 

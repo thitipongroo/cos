@@ -1,6 +1,6 @@
 // Canonical event: identity.tenant.deactivated.v1
 
-import { BaseEventEnvelope } from '@cos/types';
+import type { BaseEventEnvelope } from '@cos/types';
 
 export interface TenantDeactivatedPayload {
   tenant_id: string; // UUID

@@ -45,7 +45,8 @@ GET   /api/v1/notifications/stream          — SSE stream (in-app channel)
 
 - `@cos/database` — `TenantPrismaService`
 - `@cos/rbac` — auth guards
-- `@cos/shared` — Kafka consumer
+- `@cos/kafka` — KafkaConsumer (SDK)
+- `@cos/shared` — typed event payload contracts
 - `expo-server-sdk` — push notifications (APNs + FCM)
 - SendGrid SDK — email (MVP)
 

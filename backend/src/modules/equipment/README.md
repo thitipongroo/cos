@@ -33,7 +33,8 @@ GET    /api/v1/projects/:projectId/equipment               — equipment on proj
 - `@cos/database` — `TenantPrismaService` (PostgreSQL for equipment entities)
 - `@cos/financial` — `Decimal` for cost fields (`purchase_cost`, maintenance `cost`)
 - `@cos/rbac` — role guards
-- `@cos/shared` — Kafka event contracts
+- `@cos/kafka` — KafkaProducer (SDK)
+- `@cos/shared` — typed event payload contracts
 - TimescaleDB — hypertable for `equipment_utilization` time-series data
 
 ## Configuration

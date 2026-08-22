@@ -1,7 +1,7 @@
 // Equipment Service — Phase 21
 // Business logic: equipment CRUD, assignment lifecycle, maintenance logging, utilization recording.
 // Status transitions: AVAILABLE → IN_USE → AVAILABLE | AVAILABLE → MAINTENANCE → AVAILABLE
-// Emits typed Kafka events via @cos/shared KafkaProducer (QM-8).
+// Emits typed Kafka events via the @cos/kafka KafkaProducer (QM-8).
 
 import {
   Injectable,
@@ -13,8 +13,9 @@ import {
 import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
 import { randomUUID } from 'crypto';
-import { KafkaProducer } from '@cos/shared';
+import { KafkaProducer } from '@cos/kafka';
 import { createLogger } from '@cos/logger';
+import { clsTenantId, clsUserId } from '../../shared/context/cls-context';
 import { EquipmentRepository } from './equipment.repository';
 import type { EquipmentRow, AssignmentRow, MaintenanceRow } from './equipment.repository';
 import type { CreateEquipmentDto } from './dto/create-equipment.dto';
@@ -42,12 +43,18 @@ export class EquipmentService {
     this.kafka = new KafkaProducer();
   }
 
+  // ADR-031 context sources. Corrected 2026-08-22 (35-test-design.md §35.13 ESC-16): both getters
+  // previously read the Passport projection (`req.user?.sub`), which nothing in this codebase ever
+  // sets — JwtAuthGuard publishes `userId` (from `user_id`) into CLS, and TenantContextInterceptor
+  // projects `req.userId`/`req.tenantId`. `user?.sub` therefore always fell through to the literal
+  // 'system', which is not a UUID and fails `assigned_by UUID NOT NULL` with Postgres 22P02.
+  // Read in a getter (not the constructor) so CLS is active at call time.
   private get tenantId(): string {
-    return (this.req as Request & { tenantId: string }).tenantId;
+    return (this.req as Request & { tenantId?: string }).tenantId ?? clsTenantId();
   }
 
   private get userId(): string {
-    return (this.req as Request & { user?: { sub: string } }).user?.sub ?? 'system';
+    return (this.req as Request & { userId?: string }).userId ?? clsUserId();
   }
 
   async createEquipment(dto: CreateEquipmentDto): Promise<EquipmentRow> {

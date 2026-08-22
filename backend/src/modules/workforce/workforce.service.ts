@@ -1,14 +1,15 @@
 // Workforce Service — Phase 22
 // Business logic: worker management, project allocation, attendance, timesheets.
-// Emits typed Kafka events via @cos/shared KafkaProducer.
+// Emits typed Kafka events via @cos/kafka KafkaProducer.
 
 import { Injectable, Scope, Inject, NotFoundException } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
 import { randomUUID } from 'crypto';
 import { Decimal } from '@cos/financial';
-import { KafkaProducer } from '@cos/shared';
+import { KafkaProducer } from '@cos/kafka';
 import { createLogger } from '@cos/logger';
+import { clsTenantId, clsUserId } from '../../shared/context/cls-context';
 import { WorkforceRepository } from './workforce.repository';
 import type { WorkerRow, AllocationRow, AttendanceRow, TimesheetRow } from './workforce.repository';
 import type { CreateWorkerDto } from './dto/create-worker.dto';
@@ -29,12 +30,17 @@ export class WorkforceService {
     this.kafka = new KafkaProducer();
   }
 
+  // ADR-031 context sources. Corrected 2026-08-22 (35-test-design.md §35.13 ESC-16): both getters
+  // previously read the Passport projection (`req.user?.sub`), which nothing in this codebase ever
+  // sets — JwtAuthGuard publishes `userId` (from `user_id`) into CLS, and TenantContextInterceptor
+  // projects `req.userId`/`req.tenantId`. `user?.sub` therefore always fell through to the literal
+  // 'system'. Read in a getter (not the constructor) so CLS is active at call time.
   private get tenantId(): string {
-    return (this.req as Request & { tenantId: string }).tenantId;
+    return (this.req as Request & { tenantId?: string }).tenantId ?? clsTenantId();
   }
 
   private get userId(): string {
-    return (this.req as Request & { user?: { sub: string } }).user?.sub ?? 'system';
+    return (this.req as Request & { userId?: string }).userId ?? clsUserId();
   }
 
   async createWorker(dto: CreateWorkerDto): Promise<WorkerRow> {

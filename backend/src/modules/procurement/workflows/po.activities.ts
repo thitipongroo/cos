@@ -5,7 +5,7 @@
 
 import { PrismaClient } from '@prisma/client';
 import { createPrismaClient } from '../../../shared/prisma/create-prisma-client';
-import { KafkaProducer } from '@cos/shared';
+import { KafkaProducer } from '@cos/kafka';
 import { createLogger } from '@cos/logger';
 
 import { getDbUrlForTenant } from '../../tenant/utils/get-db-url';

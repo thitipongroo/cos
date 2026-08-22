@@ -9,8 +9,8 @@ jest.mock('@opensearch-project/opensearch', () => ({
   })),
 }));
 
-jest.mock('@cos/shared', () => {
-  const actual = jest.requireActual('@cos/shared');
+jest.mock('@cos/kafka', () => {
+  const actual = jest.requireActual('@cos/kafka');
   const noopKafka = {
     connect: jest.fn().mockResolvedValue(undefined),
     publish: jest.fn().mockResolvedValue(undefined),

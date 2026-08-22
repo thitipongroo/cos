@@ -151,7 +151,7 @@ Before starting any implementation task:
     1. login — user authentication via SMS OTP and email/password flows; JWT issued; protected route accessible
     2. project create — PM creates project; status transitions DRAFT → ACTIVE
     3. report submit — Site Engineer submits daily site report; Kafka event emitted; PM notified
-    4. dashboard view — Executive loads analytics dashboard; ClickHouse queries complete within P95 < 3s SLA
+    4. dashboard view — Executive loads analytics dashboard; ClickHouse queries complete within P95 < 1s SLA
     5. Procurement flow — Create PR → generate RFQ → receive quotation → approve PO →
        record delivery → approve vendor invoice
     6. Daily site report — Site Engineer submits report with manpower count and blockers
@@ -238,8 +238,8 @@ Before starting any implementation task:
   - **On-premise deployments**: Cloudflare WAF is NOT applicable — Kong Gateway provides rate limiting; customer-provided WAF MUST meet OWASP CRS paranoia level 2 minimum (see spec §08-enterprise-deployment §8.7)
 - **Data encryption at rest** — algorithm: **AES-256** minimum on all persistent storage (source: spec §5.2); all S3 buckets + RDS/Aurora: SSE-KMS with **customer-managed key (CMK)**; all ElastiCache nodes: AWS-managed key (`at_rest_encryption_enabled`); one CMK per storage-type per env with alias `cos/{env}/rds|s3|elasticache`; **annual KMS rotation**; key policy grants use to the app service role + SYSTEM_ADMIN only; CMK definitions in `infrastructure/terraform/aws/kms.tf` (source: spec §5.2.1). On-prem = Vault Transit envelope encryption.
 - **Penetration testing** — external pentest required before Stage 1→2 and Stage 2→3 transitions; findings tracked in `docs/security/pentest-findings.md`; all HIGH/CRITICAL findings resolved before advancing stage
-- SAST and code quality scan must pass in CI via **SonarQube** before merge — spec §30.10 and §30.12 mandate SonarQube; SonarQube Community Edition self-hosted on EKS; quality gate thresholds: 0 new bugs, 0 new vulnerabilities, 100% line coverage, 100% branch coverage, 0% duplication on new code; command: `sonar-scanner -Dsonar.projectKey=construction-os -Dsonar.sources=. -Dsonar.host.url=$SONAR_HOST_URL`
-  **⏸ DEFERRED:** SonarQube CI gate deferred pending EKS server setup. Trivy container scan + `pnpm audit` + `pip-audit` + `govulncheck` cover security scanning in interim. Must be operational before Phase 19 automated check #4 runs (Stage 1→2 gate).
+- SAST must pass in CI via **CodeQL** (`github/codeql-action`) before merge — spec §30.10 and §30.12; blocks merge on any alert of severity High or above; languages: JavaScript/TypeScript, Python, Go; workflow `.github/workflows/codeql.yml`; no server required (free for this public repository)
+  **Replaced SonarQube 2026-08-22 — ADR-054.** SonarQube Community Edition required a self-hosted EKS server that was never provisioned, so its gate stayed ⏸ DEFERRED and blocked Phase 19 automated check #4 (Stage 1→2). Coverage thresholds (100% lines / 100% branches per QM-1) are enforced in each package's `jest.config.js`, not by the SAST tool. The former "0% duplication on new code" clause is dropped — CodeQL does not measure duplication. Trivy + `pnpm audit` + `pip-audit` + `govulncheck` + GitLeaks are retained alongside it. If the repository becomes private, GitHub Advanced Security is required — revisit ADR-054.
 - Dependency vulnerability scan in CI (`npm audit --audit-level=high` / `pip-audit`) — no HIGH/CRITICAL unresolved
 - Rate limiting required on all public-facing endpoints (see QM-7)
 - CORS policy must be explicit — never use `*` in production; allowed origins defined in `docs/security/cors-policy.md`
@@ -627,13 +627,13 @@ npm audit --audit-level=high
 # 3. Python dependency vulnerability check
 pip-audit --requirement ai/requirements.txt
 
-# 4. SAST + code quality scan
-sonar-scanner \
-  -Dsonar.projectKey=construction-os \
-  -Dsonar.sources=. \
-  -Dsonar.host.url=$SONAR_HOST_URL \
-  -Dsonar.login=$SONAR_TOKEN
-# Quality gate must be GREEN (0 bugs, 0 vulnerabilities, 100% line coverage, 100% branch coverage)
+# 4. SAST scan — CodeQL (ADR-054; replaced SonarQube 2026-08-22)
+#    Runs in GitHub Actions (.github/workflows/codeql.yml) across javascript-typescript, python, go.
+#    Gate: zero open CodeQL alerts of severity High or above on the branch under review.
+gh api "repos/:owner/:repo/code-scanning/alerts?state=open&severity=high" --jq 'length'   # expect 0
+gh api "repos/:owner/:repo/code-scanning/alerts?state=open&severity=critical" --jq 'length' # expect 0
+# Coverage (100% lines / 100% branches) is enforced by each package's jest.config.js — check #1 above,
+# NOT by the SAST tool. The former SonarQube "0% duplication on new code" clause is dropped.
 
 # 5. OpenAPI spec freshness
 ./scripts/readiness/check-openapi-freshness.sh
@@ -774,6 +774,7 @@ If any check fails → list what needs to be fixed before re-running. Do not adv
 - Rule 32 — `jest.config.js` is the single source of truth per package. Never add a `"jest"` key to `package.json` when `jest.config.js` exists in the same package. (prevents duplicate/conflicting jest config)
 - Rule 33 — Use `import type { X } from 'pkg'` when X is only used for TypeScript type annotations (not runtime). Prevents Metro/webpack from bundling Node.js-only packages into mobile/browser builds. (prevents mobile bundle failures)
 - Rule 34 — `@cos/shared` is imported by ALL platforms (mobile, Web/PWA, Node.js). Never add a runtime import of any Node.js-only package (PrismaClient, native addons, server frameworks). Use `import type` for type-only references. (prevents mobile bundle failures)
+  **Enforced structurally since 2026-08-22 (ADR-055):** `@cos/shared` now contains event payload **types only** — every import in it is `import type` and its only dependency is `@cos/types`. All Node-only Kafka code (KafkaProducer/Consumer, OutboxPublisher + OutboxPoller, DlqPublisher, topic provisioner, Prometheus metrics, Schema Registry client) and the Avro `.avsc` schemas live in **`@cos/kafka`**, which is never aliased into `apps/mobile`. Rule 34(c)'s "move OutboxPoller to backend/src" is superseded by the package split, which also removes `kafkajs`/`ioredis`/`prom-client` from `@cos/shared`.
 - Rule 35 — Every `@cos/*` package with executable logic (functions/methods with a body) must have: `jest.config.js`, `test:cov` script, `jest`+`ts-jest` in devDeps, unit tests, and CI coverage. Packages with only types/interfaces are exempt. (prevents untested logic in shared packages)
 - Rule 36 — **Exhaustive verification before claiming completion** — Before reporting any Phase, task, or bug-fix set as "complete" or "all done":
   (a) Read the relevant spec section (Generate / Constraints / Exit Criteria) **line by line**
@@ -937,6 +938,7 @@ docs/specifications/20-ux-flow.md §20.8              — Accessibility (WCAG 2.
 docs/specifications/22-ai-architecture.md §22.7      — AI integration decisions (registry); §22.8 AI security (OWASP LLM Top 10); §22.9 model governance; §22.10 RAG-eval/prompt-registry/token-cap/semantic-cache
 docs/specifications/23-ai-native-operating-model.md §23.5 — Human-AI governance structure (STEW-001)
 docs/specifications/30-testing-strategy.md §30.9     — Lighthouse CI frontend gate (Core Web Vitals + bundle budget)
+docs/specifications/35-test-design.md                — Test Design: per-phase test case catalogue (Phase 1–25); TC ID convention `TC-P{NN}-{LEVEL}-{NNN}`; cross-cutting suites; traceability matrix; §35.13 UNSPECIFIED/escalation register (derived from §30 — on conflict §30 wins)
 docs/specifications/31-monitoring-observability.md §31.6 — SLO/error-budget + Frontend Web Vitals (LCP/INP/CLS); §31.9 incident/SEV/postmortem; §31.11 chaos/game-day; §31.12 DORA
 
 # Readiness & Verification

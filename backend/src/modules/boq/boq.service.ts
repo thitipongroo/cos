@@ -1,7 +1,7 @@
 // BOQ Service — Phase 4
 // Business logic: versioning, calculation, approval.
 // Financial precision: decimal.js ROUND_HALF_UP throughout (spec §FINANCIAL PRECISION SPEC).
-// Emits typed Kafka events via @cos/shared KafkaProducer (QM-8).
+// Emits typed Kafka events via the @cos/kafka KafkaProducer (QM-8).
 
 import {
   Injectable,
@@ -17,7 +17,7 @@ import type { Request } from 'express';
 import { randomUUID } from 'crypto';
 import { Decimal, calculateLineTotal, sumDecimals } from '@cos/financial';
 import { toBoqCsv } from './boq-csv.util';
-import { KafkaProducer } from '@cos/shared';
+import { KafkaProducer } from '@cos/kafka';
 import { createLogger } from '@cos/logger';
 import { BoqRepository } from './boq.repository';
 import type { BoqVersionRow, BoqCategoryRow, BoqItemRow } from './boq.repository';

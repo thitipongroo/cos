@@ -7,7 +7,9 @@
 import { Injectable, Scope, Inject } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
+import { OutboxPublisher } from '@cos/kafka';
 import { TenantPrismaService } from '../tenant/prisma/tenant-prisma.service';
+import type { OutboxEventInput } from '../../shared/outbox/outbox.types';
 import type { CreateProjectDto } from './dto/create-project.dto';
 import type { UpdateProjectDto } from './dto/update-project.dto';
 import type { ProjectStatus } from './project.state-machine';
@@ -89,10 +91,22 @@ export class ProjectRepository {
     @Inject(REQUEST) private readonly request: Request & { tenantId?: string },
   ) {}
 
-  async create(dto: CreateProjectDto, createdBy: string): Promise<ProjectRow> {
-    const rows = await this.tenantPrisma.run(
-      async (tx) =>
-        await tx.$queryRaw<ProjectRow[]>`
+  /**
+   * Insert a project. When `buildOutboxEvent` is supplied the outbox row is written inside the SAME
+   * transaction as the business row (Phase 8 Outbox Pattern) — a rollback therefore emits no event.
+   * `TenantPrismaService.run` already wraps the callback in `prisma.$transaction`.
+   *
+   * The parameter is a **builder**, not a pre-built envelope: `project_id`, `created_at` and the
+   * other server-generated columns only exist after the INSERT returns, so the event payload must
+   * be derived from the inserted row — otherwise the relayed event would carry ids that match no row.
+   */
+  async create(
+    dto: CreateProjectDto,
+    createdBy: string,
+    buildOutboxEvent?: (row: ProjectRow) => OutboxEventInput,
+  ): Promise<ProjectRow> {
+    const rows = await this.tenantPrisma.run(async (tx) => {
+      const inserted = await tx.$queryRaw<ProjectRow[]>`
         INSERT INTO projects.projects (
           tenant_id, project_code, project_name, project_type,
           budget_amount, budget_currency, start_date, end_date, created_by
@@ -106,8 +120,12 @@ export class ProjectRepository {
           ${createdBy}::uuid
         )
         RETURNING *
-      `,
-    );
+      `;
+      if (buildOutboxEvent && inserted[0]) {
+        await OutboxPublisher.write(tx, buildOutboxEvent(inserted[0]));
+      }
+      return inserted;
+    });
     return rows[0]!;
   }
 

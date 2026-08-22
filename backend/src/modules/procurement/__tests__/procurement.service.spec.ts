@@ -52,7 +52,7 @@ const mockKafkaConnect = jest.fn().mockResolvedValue(undefined);
 const mockKafkaPublish = jest.fn().mockResolvedValue(undefined);
 const mockKafkaDisconnect = jest.fn().mockResolvedValue(undefined);
 
-jest.mock('@cos/shared', () => ({
+jest.mock('@cos/kafka', () => ({
   KafkaProducer: jest.fn().mockImplementation(() => ({
     connect: mockKafkaConnect,
     publish: mockKafkaPublish,

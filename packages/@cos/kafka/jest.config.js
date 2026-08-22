@@ -1,13 +1,14 @@
-// @cos/shared jest.config.js — Phase 1 deliverable
-// Excludes: event interface files (pure TypeScript types, no executable code)
+// @cos/kafka jest.config.js — Rule 35 (every package with executable logic has a 100/100 gate).
+// Split out of @cos/shared 2026-08-22 (ADR-055): the Kafka SDK is Node-only and must not sit in a
+// package that React Native/Metro bundles (Rule 34).
 
 /** @type {import('jest').Config} */
 module.exports = {
   moduleFileExtensions: ['js', 'json', 'ts'],
   rootDir: '.',
-  testRegex: '.*\\.spec\\.ts$',
+  testRegex: '.*\.spec\.ts$',
   transform: {
-    '^.+\\.(t|j)s$': [
+    '^.+\.(t|j)s$': [
       'ts-jest',
       {
         tsconfig: {
@@ -17,13 +18,7 @@ module.exports = {
       },
     ],
   },
-  collectCoverageFrom: [
-    'src/**/*.ts',
-    // Exclude pure TypeScript interface files — no executable code
-    '!src/events/**',
-    '!src/index.ts',
-    '!src/**/*.interface.ts',
-  ],
+  collectCoverageFrom: ['src/**/*.ts', '!src/index.ts'],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'json-summary'],
   coverageThreshold: {
@@ -33,10 +28,8 @@ module.exports = {
     },
   },
   testEnvironment: 'node',
-  // Only node_modules excluded globally. test/ exclusion is handled per-script via
-  // --testPathPattern='src/' (unit) and --testPathPattern='test/' (integration).
-  // testPathIgnorePatterns takes precedence over --testPathPattern, so test/ must
-  // NOT be listed here or the test:integration command would silently run nothing.
+  // test/ exclusion is handled per-script via --testPathPatterns='src/' (unit) and
+  // --testPathPatterns='test/' (integration); testPathIgnorePatterns would override those.
   testPathIgnorePatterns: ['<rootDir>/node_modules/'],
   // testcontainers containers take time to stop — force exit after all tests pass.
   forceExit: true,

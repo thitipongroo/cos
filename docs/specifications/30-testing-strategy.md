@@ -167,7 +167,7 @@ Scenarios for MVP:
 7. **Login** — User authentication via SMS OTP and email/password flows; JWT issued; protected route accessible
 8. **Project create** — PM creates a new project; status transitions from DRAFT → ACTIVE
 9. **Report submit** — Site Engineer submits daily site report; Kafka event emitted; notification received by PM
-10. **Dashboard view** — Executive loads analytics dashboard; ClickHouse queries complete within P95 < 3s SLA
+10. **Dashboard view** — Executive loads analytics dashboard; ClickHouse queries complete within P95 < 1s SLA (§31.6)
 
 ### Mobile E2E (Detox)
 
@@ -296,6 +296,24 @@ using **Pact.io** (consumer-driven contract testing).
 | Kafka consumer throughput     | 10,000 events/second sustained                                   | Consumer lag < 5 seconds                            |
 | Mobile sync burst             | 500 devices syncing simultaneously on connectivity restore       | Zero data loss; sync completes in < 30 s per device |
 
+### Script inventory — two suites, two purposes
+
+**Clarified 2026-08-22 (product owner).** Two k6 script sets exist and they are **not** duplicates.
+The table above is the scenario catalogue; the table below is what is executable today
+(see `35-test-design.md` §35.13 ESC-06).
+
+| Suite               | Purpose                                                                 | Scripts                                                            |
+| ------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `tests/load/`       | Phase 18 acceptance suite — the four scenarios in `00_master` Phase 18  | `dashboard-sla.js`, `file-upload.js`, `api-baseline.js`, `ai-report.js` |
+| `scripts/loadtest/` | QM-6 weekly staging run **and** the Phase 19 one-time readiness gate    | `api-baseline.js` (QM-6 100 VU × 5 min gate), `analytics-sla.js`, `file-upload.js`, `mixed-api.js` |
+
+Scenarios in the §30.9 table with **no script yet** — to be written before the Phase 19 gate is
+claimed complete:
+
+- Daily site report bulk submit (100 concurrent Site Engineers at 07:00, p95 < 500 ms)
+- Procurement PO approval (20 concurrent Finance + PM approvals, p95 < 300 ms)
+- Kafka consumer throughput (10,000 events/second sustained, consumer lag < 5 s)
+
 ### Schedule
 
 - Load tests run weekly on staging, not per-PR
@@ -320,10 +338,17 @@ The k6 tests above cover the backend; the web app's user-perceived performance i
 
 ### SAST (Static Analysis)
 
-- **SonarQube** — code quality and security vulnerability scanning on every PR
-  > ⏸ **DEFERRED:** SonarQube CI gate deferred pending EKS server setup.
-  > Trivy container scan + `pnpm audit` + `pip-audit` + `govulncheck` cover security scanning in interim.
-  > Must be operational before Phase 19 automated check #4 runs (Stage 1→2 gate).
+- **CodeQL** (`github/codeql-action`) — security scanning on every PR; blocks merge on any alert of
+  severity **High** or above. Languages analysed: JavaScript/TypeScript, Python, Go.
+  Workflow: `.github/workflows/codeql.yml`.
+  > **Replaced SonarQube 2026-08-22 — ADR-054.** SonarQube required a self-hosted EKS server that was
+  > never provisioned, so the gate had been ⏸ DEFERRED and was blocking Phase 19 automated check #4
+  > (the Stage 1→2 gate). CodeQL runs server-free in GitHub Actions and is free for this public
+  > repository. Coverage thresholds (100% lines / 100% branches, QM-1) remain enforced where they
+  > always were — in each package's `jest.config.js` — not by the SAST tool. The
+  > "0% duplication on new code" clause of the former SonarQube quality gate is **dropped**: CodeQL
+  > does not measure duplication, and it is not claimed elsewhere.
+  > If the repository ever becomes private, GitHub Advanced Security is required — revisit ADR-054.
 - **ESLint security plugin** — SQL injection, XSS patterns
 - **npm audit / pip-audit** — dependency vulnerability scanning in CI
 
@@ -386,7 +411,17 @@ unit tests. Integration tests against a real Redis are covered in the e2e test s
 | ------------------ | -------------- | ---------------- | ---------------- |
 | DelayForecastModel | RMSE (days)    | MAE (days)       | RMSE ≤ 5 days    |
 | RiskClassifier     | F1-score       | AUC-ROC          | F1 ≥ 0.80        |
+| SafetyVisionModel  | Precision      | Recall           | Precision ≥ 0.85 |
+| GraphMLModel       | F1-score       | AUC-ROC          | F1 ≥ 0.80        |
 | CostAnomalyModel   | Precision      | Recall           | Precision ≥ 0.85 |
+
+> **Resolved 2026-08-22 (product owner).** `SafetyVisionModel` and `GraphMLModel` previously had no
+> primary metric, secondary metric or pass threshold in any spec file, so their evaluation could not
+> be designed (see `35-test-design.md` §35.13 ESC-02). `CostAnomalyModel` carried a threshold here
+> but did not exist in `00_master` Phase 23 or §22.6 — it is a **missing model**, now added to both
+> (ESC-03). Its use case and metric are defined; its algorithm, input features and minimum training
+> data remain `UNSPECIFIED` until Layer B enters an active development sprint (owner: AI/Platform
+> Lead — same trigger as this section).
 
 **Test methodology:**
 
@@ -430,7 +465,7 @@ CI pipeline (GitHub Actions) enforces these gates per `04-tech-stack` section 4.
 | Multi-tenant isolation tests              | Every PR              | PR merge                              |
 | API contract tests (Pact)                 | Every PR              | PR merge                              |
 | Dependency audit (pnpm/govulncheck/pip)   | Every PR              | PR merge (High/Critical)              |
-| Security SAST (SonarQube)                 | Every PR              | PR merge (High severity) — ⏸ DEFERRED |
+| Security SAST (CodeQL — ADR-054)          | Every PR              | PR merge (High severity)              |
 | Smoke tests (ArgoCD PostSync wave 1)      | Post-deploy (staging) | Blocks E2E wave 2                     |
 | E2E tests (Playwright)                    | Merge to `staging`    | Production promotion                  |
 | E2E tests (Detox — React Native mobile)   | Merge to `staging`    | Production promotion                  |

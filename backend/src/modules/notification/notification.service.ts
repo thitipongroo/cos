@@ -20,7 +20,7 @@ type Channel = (typeof CHANNELS)[number];
 //   - string[]                 → notify all users holding any of these roles (findUsersByRole)
 //   - 'actor'                  → notify the actor_id from the event envelope
 //   - { payloadUserId: field } → notify the specific user id carried in payload[field]
-// Event-type keys MUST match the canonical types emitted by producers (see @cos/shared
+// Event-type keys MUST match the canonical types emitted by producers (see @cos/kafka
 // EVENT_AVSC_MAP) and subscribed in notification.consumer — 'po'/'invoice', NOT
 // 'purchase_order'/'vendor_invoice' (regression: mismatched keys silently drop notifications).
 // For platform.* events, tenant_id='platform' and routing resolves all SYSTEM_ADMIN users globally.

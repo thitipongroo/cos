@@ -52,7 +52,8 @@ GET  /api/v1/finance/reports/variance                — portfolio budget varian
 - `@cos/database` — `TenantPrismaService`
 - `@cos/financial` — `Decimal` for all monetary calculations — never float
 - `@cos/rbac` — `FINANCE`, `PROJECT_MANAGER` guards
-- `@cos/shared` — Kafka consumer + event contracts
+- `@cos/kafka` — KafkaConsumer (SDK)
+- `@cos/shared` — typed event payload contracts
 - Multi-currency: Open Exchange Rates API (EP-FINANCE-003 — resolved; rates cached in Redis 24h)
 
 ## Configuration

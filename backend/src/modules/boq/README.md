@@ -37,7 +37,8 @@ version.total = SUM(category.subtotal)
 - `@cos/database` — `TenantPrismaService`
 - `@cos/financial` — `calculateLineTotal`, `Decimal` — never native float
 - `@cos/rbac` — `PROJECT_MANAGER`, `TENANT_ADMIN` guards
-- `@cos/shared` — Kafka event contracts
+- `@cos/kafka` — KafkaProducer (SDK)
+- `@cos/shared` — typed event payload contracts
 
 ## Configuration
 

@@ -13,6 +13,7 @@
     "clean": "node ../../scripts/rimraf-dist.mjs"
   },
   "dependencies": {
+    "@cos/kafka": "workspace:*",
     "@cos/logger": "workspace:*",
     "@cos/shared": "workspace:*",
     "@cos/types": "workspace:*",

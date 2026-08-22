@@ -1,7 +1,7 @@
 // Global mocks for integration specs (wired via jest.integration.config.js setupFilesAfterEnv).
 // AppModule boots NotificationConsumer.onModuleInit → KafkaConsumer.on(), and several services
 // construct a KafkaProducer / OpenSearch Client. Integration tests run without a broker or
-// OpenSearch, so stub those network clients here once for every integration spec. Real @cos/shared
+// OpenSearch, so stub those network clients here once for every integration spec. Real @cos/kafka
 // exports (event types, topic catalog, etc.) are preserved via requireActual.
 
 // AppModule also boots graph.module (neo4j.driver) and analytics.module (ClickHouse createClient),
@@ -18,8 +18,8 @@ process.env['CLICKHOUSE_URL'] ??= 'http://localhost:8123';
 process.env['CLICKHOUSE_USER'] ??= 'test';
 process.env['CLICKHOUSE_PASSWORD'] ??= 'test_ch_password';
 
-jest.mock('@cos/shared', () => {
-  const actual = jest.requireActual('@cos/shared');
+jest.mock('@cos/kafka', () => {
+  const actual = jest.requireActual('@cos/kafka');
   const noopKafka = {
     connect: jest.fn().mockResolvedValue(undefined),
     publish: jest.fn().mockResolvedValue(undefined),

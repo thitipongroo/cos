@@ -69,6 +69,80 @@ describe('ProjectRepository', () => {
       );
       expect(result.project_id).toBe(PROJECT_ID);
     });
+
+    // Phase 8 Outbox Pattern (§35.13 ESC-13): the outbox row must be written inside the SAME
+    // transaction as the business row, and the builder must receive the INSERTed row so the event
+    // carries the real generated ids.
+    it('writes the outbox row in the same transaction, from the inserted row', async () => {
+      const txMock = {
+        $queryRaw: jest.fn().mockResolvedValue([baseRow]),
+        $executeRaw: jest.fn().mockResolvedValue(1),
+      };
+      const tenantPrisma = {
+        run: jest.fn((fn: (tx: typeof txMock) => Promise<unknown>) => fn(txMock)),
+      };
+      const repo = new ProjectRepository(tenantPrisma as never, { tenantId: TENANT_ID } as never);
+      const builder = jest.fn((row: { project_id: string }) => ({
+        event_type: 'construction.project.created.v1',
+        event_version: '1.0',
+        tenant_id: TENANT_ID,
+        actor_id: USER_ID,
+        occurred_at: '2026-08-22T00:00:00.000Z',
+        correlation_id: 'corr-1',
+        payload: { project_id: row.project_id },
+      }));
+
+      await repo.create(
+        { project_code: 'PROJ-001', project_name: 'Test', project_type: 'COMMERCIAL' as never },
+        USER_ID,
+        builder as never,
+      );
+
+      // builder saw the inserted row, not the DTO
+      expect(builder).toHaveBeenCalledWith(baseRow);
+      // outbox INSERT went through the same tx handle as the business INSERT
+      expect(txMock.$executeRaw).toHaveBeenCalledTimes(1);
+      expect(tenantPrisma.run).toHaveBeenCalledTimes(1);
+    });
+
+    it('writes no outbox row when no builder is supplied', async () => {
+      const txMock = {
+        $queryRaw: jest.fn().mockResolvedValue([baseRow]),
+        $executeRaw: jest.fn().mockResolvedValue(1),
+      };
+      const tenantPrisma = {
+        run: jest.fn((fn: (tx: typeof txMock) => Promise<unknown>) => fn(txMock)),
+      };
+      const repo = new ProjectRepository(tenantPrisma as never, { tenantId: TENANT_ID } as never);
+
+      await repo.create(
+        { project_code: 'PROJ-001', project_name: 'Test', project_type: 'COMMERCIAL' as never },
+        USER_ID,
+      );
+
+      expect(txMock.$executeRaw).not.toHaveBeenCalled();
+    });
+
+    it('writes no outbox row when the INSERT returns nothing', async () => {
+      const txMock = {
+        $queryRaw: jest.fn().mockResolvedValue([]),
+        $executeRaw: jest.fn().mockResolvedValue(1),
+      };
+      const tenantPrisma = {
+        run: jest.fn((fn: (tx: typeof txMock) => Promise<unknown>) => fn(txMock)),
+      };
+      const repo = new ProjectRepository(tenantPrisma as never, { tenantId: TENANT_ID } as never);
+      const builder = jest.fn();
+
+      await repo.create(
+        { project_code: 'PROJ-001', project_name: 'Test', project_type: 'COMMERCIAL' as never },
+        USER_ID,
+        builder as never,
+      );
+
+      expect(builder).not.toHaveBeenCalled();
+      expect(txMock.$executeRaw).not.toHaveBeenCalled();
+    });
   });
 
   describe('findById()', () => {

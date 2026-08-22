@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { Tenant } from '@prisma/client';
 import { createPrismaClient } from '../../shared/prisma/create-prisma-client';
-import { KafkaProducer, KafkaTopicProvisioner } from '@cos/shared';
+import { KafkaProducer, KafkaTopicProvisioner } from '@cos/kafka';
 import { createLogger } from '@cos/logger';
 import { Connection, Client } from '@temporalio/client';
 import { CreateTenantDto } from './dto/create-tenant.dto';

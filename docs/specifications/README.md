@@ -99,13 +99,15 @@ their role. Developers building the MVP should read [03-system-design](03-system
 | 31  | Monitoring & Observability    | [31-monitoring-observability](31-monitoring-observability.md)           | Metrics, logging, tracing, SLOs, alerting                                                                                                | Active |
 | 32  | Implementation Specifications | [32-implementation-specifications](32-implementation-specifications.md) | Phase Dependency Graph, Deployable Units, Extension Points, Event Contracts, Financial Precision, Workflow State Machines, Design Tokens | Active |
 | 33  | Digital Twin and IoT Layer    | [33-digital-twin-iot](33-digital-twin-iot.md)                           | Phase 24 spec — IoT integration, digital twins, carbon analytics, smart city                                                             | Active |
+| 34  | Enterprise Tenant Provisioning | [34-enterprise-tenant-provisioning](34-enterprise-tenant-provisioning.md) | Phase 25 spec — trigger paths, Temporal workflow state machine, activities, human gate, CRM webhook HMAC verification, idempotency, IaC, schema isolation | Active |
+| 35  | Test Design                   | [35-test-design](35-test-design.md)                                     | Per-phase test case catalogue (Phase 1–25), test case ID convention, cross-cutting suites, traceability matrix, escalation register      | Active |
 
 ---
 
 ## Reading and Development Order
 
 Files are numbered to match the recommended reading sequence for understanding the full architecture.
-Reading 00 → 33 in order is the intended path for new team members.
+Reading 00 → 35 in order is the intended path for new team members.
 
 Note : This is a **documentation reading order**, not a build sequence. Engineers building MVP
 should read file [21](21-mvp-scope.md) (MVP Scope) immediately after [03](03-system-design.md)

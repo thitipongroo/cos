@@ -1,7 +1,7 @@
 // Canonical event: file.document.quarantined.v1
 // Source: context/00_master_construction_os.md §Phase 9
 
-import { BaseEventEnvelope } from '@cos/types';
+import type { BaseEventEnvelope } from '@cos/types';
 
 export interface FileDocumentQuarantinedPayload {
   file_id: string; // UUID

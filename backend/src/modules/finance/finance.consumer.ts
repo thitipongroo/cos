@@ -5,7 +5,7 @@
 
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { ModuleRef, ContextIdFactory } from '@nestjs/core';
-import { KafkaConsumer } from '@cos/shared';
+import { KafkaConsumer } from '@cos/kafka';
 import { createLogger } from '@cos/logger';
 import type { BaseEventEnvelope } from '@cos/types';
 import { FinanceService } from './finance.service';

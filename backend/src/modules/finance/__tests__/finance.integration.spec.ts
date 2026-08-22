@@ -2,7 +2,7 @@
 // Full budget lifecycle + procurement event consumption.
 // Uses in-memory mock repository to test the Service layer end-to-end.
 
-jest.mock('@cos/shared', () => ({
+jest.mock('@cos/kafka', () => ({
   KafkaProducer: jest.fn().mockImplementation(() => ({
     connect: jest.fn().mockResolvedValue(undefined),
     publish: jest.fn().mockResolvedValue(undefined),

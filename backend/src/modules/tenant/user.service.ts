@@ -12,7 +12,7 @@ import {
   OnModuleDestroy,
 } from '@nestjs/common';
 import { createPrismaClient } from '../../shared/prisma/create-prisma-client';
-import { KafkaProducer } from '@cos/shared';
+import { KafkaProducer } from '@cos/kafka';
 import { createLogger } from '@cos/logger';
 import { KeycloakAdminService } from '../identity/keycloak-admin.service';
 import type { CreateUserDto } from './dto/create-user.dto';

@@ -9,7 +9,7 @@ jest.mock('@prisma/client', () => ({
   PrismaClient: jest.fn(),
 }));
 
-jest.mock('@cos/shared', () => ({
+jest.mock('@cos/kafka', () => ({
   KafkaProducer: jest.fn(),
 }));
 
@@ -27,7 +27,7 @@ jest.mock('@cos/logger', () => {
 const { __loggerMock: loggerMock } = jest.requireMock('@cos/logger');
 
 import { PrismaClient } from '@prisma/client';
-import { KafkaProducer } from '@cos/shared';
+import { KafkaProducer } from '@cos/kafka';
 import { updatePoStatus, notifyApprover, compensateCancelledPo } from '../po.activities';
 
 const mockExecuteRaw = jest.fn().mockResolvedValue(1);

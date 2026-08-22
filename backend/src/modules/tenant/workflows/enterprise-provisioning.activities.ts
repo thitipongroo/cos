@@ -1,5 +1,5 @@
 import { createPrismaClient } from '../../../shared/prisma/create-prisma-client';
-import { KafkaProducer, KafkaTopicProvisioner } from '@cos/shared';
+import { KafkaProducer, KafkaTopicProvisioner } from '@cos/kafka';
 import { createLogger } from '@cos/logger';
 import { randomUUID } from 'crypto';
 

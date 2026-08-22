@@ -1,0 +1,61 @@
+---
+# CodeQL SAST gate — ADR-054 (replaces the never-provisioned self-hosted SonarQube).
+# Source: docs/specifications/30-testing-strategy.md 30.10 + 30.12; context.md QM-4.
+# Blocks PR merge on any alert of severity High or above.
+# Free for this public repository; if the repo becomes private, GitHub Advanced Security is
+# required - revisit ADR-054.
+name: CodeQL
+
+on:
+  push:
+    branches: [main, staging, develop]
+  pull_request:
+    branches: [main, staging, develop]
+  schedule:
+    # Weekly full scan so newly published queries reach the default branch even without a push.
+    - cron: '0 3 * * 1'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      packages: read
+      actions: read
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # backend, apps/web, apps/mobile, packages/@cos/*, services/file-service
+          - language: javascript-typescript
+            build-mode: none
+          # services/ai-gateway, ai-embedding-worker, ai-ocr-pipeline,
+          # ai-transcription-pipeline, mlops/
+          - language: python
+            build-mode: none
+          # services/analytics-worker, services/kg-ingestion-worker
+          - language: go
+            build-mode: autobuild
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+          queries: security-extended
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:${{ matrix.language }}

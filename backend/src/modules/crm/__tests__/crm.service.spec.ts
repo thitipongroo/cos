@@ -32,7 +32,7 @@ beforeEach(async () => {
     providers: [
       CrmService,
       { provide: CrmRepository, useValue: mockRepo },
-      { provide: REQUEST, useValue: { user: { user_id: 'user-1' } } },
+      { provide: REQUEST, useValue: { userId: 'user-1' } },
     ],
   }).compile();
   service = await moduleRef.resolve<CrmService>(CrmService);
@@ -46,7 +46,11 @@ it('constructor tolerates missing request context', async () => {
       { provide: REQUEST, useValue: {} },
     ],
   }).compile();
-  expect(await m.resolve<CrmService>(CrmService)).toBeDefined();
+  const svc = await m.resolve<CrmService>(CrmService);
+  expect(svc).toBeDefined();
+  // Invoke the lazy getter — constructing the service alone does NOT exercise the
+  // `|| clsUserId()` fallback branch (context.md QM-1; ADR-031).
+  expect((svc as unknown as { userId: string }).userId).toBe('');
 });
 
 it('createLead sets created_by (all fields); listLeads delegates', async () => {

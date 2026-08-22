@@ -5,9 +5,9 @@ import { NotFoundException, UnprocessableEntityException } from '@nestjs/common'
 import { MaintenanceType } from '../dto/log-maintenance.dto';
 import type { EquipmentRepository } from '../equipment.repository';
 
-type MockRequest = { tenantId: string; user: { sub: string } };
+type MockRequest = { tenantId: string; userId: string };
 
-jest.mock('@cos/shared', () => ({
+jest.mock('@cos/kafka', () => ({
   KafkaProducer: jest.fn().mockImplementation(() => ({
     connect: jest.fn().mockResolvedValue(undefined),
     publish: jest.fn().mockResolvedValue(undefined),
@@ -32,7 +32,7 @@ const makeRepo = () => ({
 
 const makeReq = (userId = 'user-1', tenantId = 'tenant-1'): MockRequest => ({
   tenantId,
-  user: { sub: userId },
+  userId,
 });
 
 import { EquipmentService } from '../equipment.service';
@@ -200,7 +200,7 @@ describe('EquipmentService', () => {
 
   describe('emitEvent error path', () => {
     it('does not throw when Kafka publish fails', async () => {
-      const { KafkaProducer } = jest.requireMock('@cos/shared');
+      const { KafkaProducer } = jest.requireMock('@cos/kafka');
       KafkaProducer.mockImplementation(() => ({
         connect: jest.fn().mockResolvedValue(undefined),
         publish: jest.fn().mockRejectedValue(new Error('Kafka down')),
@@ -220,9 +220,12 @@ describe('EquipmentService', () => {
     });
   });
 
-  describe('userId fallback to system', () => {
-    it('uses "system" as actor_id when req.user is undefined', async () => {
-      const { KafkaProducer } = jest.requireMock('@cos/shared');
+  // ADR-031 / §35.13 ESC-16: the service previously read `req.user?.sub`, which nothing sets, so it
+  // always produced the literal 'system' — a non-UUID that fails `assigned_by UUID NOT NULL`
+  // (Postgres 22P02). It now reads `req.userId` with a CLS fallback, matching every other service.
+  describe('userId falls back to CLS when the request carries no context', () => {
+    it('emits an empty actor_id outside a CLS context', async () => {
+      const { KafkaProducer } = jest.requireMock('@cos/kafka');
       const kafkaMock = {
         connect: jest.fn().mockResolvedValue(undefined),
         publish: jest.fn().mockResolvedValue(undefined),
@@ -240,9 +243,19 @@ describe('EquipmentService', () => {
 
       await service.assignToProject('eq-1', { project_id: 'p-1' } as never);
 
-      expect(kafkaMock.publish).toHaveBeenCalledWith(
-        expect.objectContaining({ actor_id: 'system' }),
+      expect(kafkaMock.publish).toHaveBeenCalledWith(expect.objectContaining({ actor_id: '' }));
+    });
+
+    it('tenantId also falls back to CLS on an empty request', () => {
+      // Invoking the getter is required — constructing the service does not exercise the
+      // `?? clsTenantId()` branch (context.md QM-1; ADR-031).
+      const emptyReq = {};
+      const svc = new EquipmentService(
+        emptyReq as unknown as ConstructorParameters<typeof EquipmentService>[0],
+        makeRepo() as unknown as EquipmentRepository,
       );
+      expect((svc as unknown as { tenantId: string }).tenantId).toBe('');
+      expect((svc as unknown as { userId: string }).userId).toBe('');
     });
   });
 

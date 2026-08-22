@@ -30,6 +30,7 @@
     "@cos/config": "workspace:*",
     "@cos/database": "workspace:*",
     "@cos/financial": "workspace:*",
+    "@cos/kafka": "workspace:*",
     "@cos/logger": "workspace:*",
     "@cos/rbac": "workspace:*",
     "@cos/shared": "workspace:*",

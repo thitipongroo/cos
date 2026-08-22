@@ -6,7 +6,7 @@
 //     k6 run scripts/loadtest/analytics-sla.js
 //
 // Success criteria (hardcoded as k6 thresholds):
-//   - http_req_duration{p(95)} < 3000 ms  (SLA)
+//   - http_req_duration{p(95)} < 1000 ms  (SLA - 31-monitoring-observability 31.6 + QM-6; corrected 2026-08-22)
 //   - http_req_failed rate < 1%
 
 import http from 'k6/http';
@@ -29,13 +29,13 @@ export const options = {
   ],
   thresholds: {
     // SLA: P95 < 3 000 ms across ALL analytics endpoints
-    http_req_duration: ['p(95)<3000'],
+    http_req_duration: ['p(95)<1000'],
     // Per-endpoint P95 thresholds
-    'http_req_duration{endpoint:executive}': ['p(95)<3000'],
-    'http_req_duration{endpoint:pm}': ['p(95)<3000'],
-    'http_req_duration{endpoint:cost-trend}': ['p(95)<3000'],
-    'http_req_duration{endpoint:procurement-trend}': ['p(95)<3000'],
-    'http_req_duration{endpoint:site-trend}': ['p(95)<3000'],
+    'http_req_duration{endpoint:executive}': ['p(95)<1000'],
+    'http_req_duration{endpoint:pm}': ['p(95)<1000'],
+    'http_req_duration{endpoint:cost-trend}': ['p(95)<1000'],
+    'http_req_duration{endpoint:procurement-trend}': ['p(95)<1000'],
+    'http_req_duration{endpoint:site-trend}': ['p(95)<1000'],
     // Error rate < 1%
     http_req_failed: ['rate<0.01'],
   },

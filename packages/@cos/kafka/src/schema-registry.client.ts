@@ -16,7 +16,9 @@ export function getSchemaRegistry(): SchemaRegistry {
   return _registry;
 }
 
-const AVRO_DIR = join(__dirname, '../avro');
+// Avro schemas ship inside this package (src/avro -> dist/avro via scripts/copy-avro.mjs).
+// __dirname is <pkg>/src at test time and <pkg>/dist after build; 'avro' resolves under both.
+const AVRO_DIR = join(__dirname, 'avro');
 
 /**
  * Set global Schema Registry compatibility mode to BACKWARD_TRANSITIVE.
