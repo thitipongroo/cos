@@ -165,7 +165,9 @@ rows (§30.6).
 version of its tooling list "also claimed an ESLint security plugin" that was never installed. The
 claim has been removed rather than quietly fixed, which is the right precedent — and the same
 precedent [OQ-17](README.md#open-questions-register) and
-[OQ-37](README.md#open-questions-register) follow.
+[OQ-37](README.md#open-questions-register) follow. OQ-17 went on to need the correction applied to
+itself: the entry asserted an absence concluded from too narrow a search, and the realm file it had
+not read carried the control.
 
 ---
 

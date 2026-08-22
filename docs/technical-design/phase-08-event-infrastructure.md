@@ -119,28 +119,31 @@ One table, replicated into each service's PostgreSQL schema
 `OutboxPoller` polls every 500 ms and publishes unpublished rows. Consumer idempotency is a Redis
 check on `event_id` with a 24-hour TTL.
 
-**The as-built guarantee is weaker than the specification states, deliberately.** `00_master`
-§ PHASE 8 COMMAND says "write to outbox_events in same transaction as business entity" and
-`15-event-driven-workflow` §15.65 says the outbox "guarantees event delivery atomically with the DB
-write". **ADR-094 (2026-08-19) records that the built system does not do this**, and says why: the
-textbook form threads `tx` from the repository into the publish call, and "this codebase's
-repositories own their transactions internally, so that is a refactor of every write path".
-`EventOutboxService.publish()` therefore issues its INSERT on its own connection **after** the
-business write has committed, and never throws — a failed insert is logged and the event is dropped.
+**The guarantee is durability, not atomicity — deliberately, and the specifications now say so.**
+Until 2026-08-22 they did not: `00_master` § PHASE 8 COMMAND said "write to outbox_events in same
+transaction as business entity" and `15-event-driven-workflow` §15.3 said the outbox "guarantees
+event delivery atomically with the DB write", both describing a property ADR-094 (2026-08-19)
+deliberately did not build. The ADR gives the reason — the textbook form threads `tx` from the
+repository into the publish call, and "this codebase's repositories own their transactions
+internally, so that is a refactor of every write path" — and the product owner chose to amend the
+sentences rather than undertake that refactor (OQ-18). `EventOutboxService.publish()` issues its
+INSERT on its own connection **after** the business write has committed, and never throws — a failed
+insert is logged and the event is dropped.
 
-|                                     | Specified       | As built                  |
-| ----------------------------------- | --------------- | ------------------------- |
-| Business write + outbox insert      | one transaction | two, business write first |
-| Process dies between them           | impossible      | **event lost**            |
-| Broker / registry / publish failure | recoverable     | recoverable               |
+|                                     | Textbook outbox | COS, as built and as now specified |
+| ----------------------------------- | --------------- | ---------------------------------- |
+| Business write + outbox insert      | one transaction | two, business write first          |
+| Process dies between them           | impossible      | **event lost**                     |
+| Broker / registry / publish failure | recoverable     | recoverable                        |
 
 The residual gap is narrow and one-directional, and ADR-094 notes it "was equally true of the inline
 publish it replaces". `EventOutboxService.write(tx, event)` exists for a caller that does hold a
 transaction, and always throws — it is the migration path if a domain needs the stronger property.
 No production caller uses it today — only its own unit tests (`shared/events/__tests__/event-outbox.service.spec.ts`).
 
-This is the divergence recorded as [OQ-18](README.md#open-questions-register): the two specification
-sentences above still assert atomicity that the accepted ADR removed.
+This divergence was recorded as [OQ-18](README.md#open-questions-register) and closed on 2026-08-22
+by correcting four places — the two sentences above, `00-glossary` § Outbox Pattern, and
+`30-testing-strategy`'s outbox row, which had carried the atomicity claim as a test obligation.
 
 Kafka configuration (`00_master` § PHASE 8 COMMAND → Kafka Configuration):
 
@@ -330,6 +333,7 @@ early-warning metric are in `00_master` § Risk Register.
 | OQ-4  | `07-multi-tenant-architecture` §7.3 states both "**Created on first publish, not at tenant onboarding**" and "the full canonical event catalogue is **materialised per tenant, created idempotently at tenant onboarding**". Its own step 3 then repeats the first-publish rule for SMB / mid-market. `00_master` § Always agrees with first-publish, so the onboarding sentence reads as stale text.                                                                                                                                                                                                                  | Open — spec self-conflict  |
 | OQ-6  | **Closed 2026-08-22.** §32.4's 27-row "Required Canonical Names" table is replaced by a verified status: no legacy-named `.avsc` remains, and the ten canonical names that were never created have zero references in code, zero `EVENT_AVSC_MAP` entries and no source outside that table — so they were dropped rather than carried as pending work.                                                                                                                                                                                                                                                                 | Closed                     |
 | OQ-16 | **One event name is contested.** §32.4's payload table (#16) calls it `finance.budget.variance_detected.v1`; the schema on disk, the `EVENT_AVSC_MAP` key, `00_master` § Phase 7 `Generate:`, § Phase 20 notification triggers and `20-ux-flow` §20.7 all call it `finance.variance.alert.v1`. Specs win by the authority rule, but the type is on the wire, so aligning to the spec is a **breaking change** needing a `.v2` plus a migration consumer bridge (§32.4 Event Versioning) — not a rename. Either §32.4 #16 changes to match the implementation, or the implementation migrates.                          | Open — needs a PO decision |
-| OQ-18 | **The outbox is durable, not atomic — two specification sentences still say otherwise.** `00_master` § PHASE 8 COMMAND ("write to outbox_events in same transaction as business entity") and `15-event-driven-workflow` §15.65 ("guarantees event delivery atomically with the DB write") both assert a property ADR-094 (2026-08-19, Accepted) deliberately did not build, and explains why. Either the two sentences are amended to match ADR-094, or the write paths are refactored to thread `tx`. Until one happens, the authoritative spec and the accepted ADR contradict each other on a durability guarantee. | Open — needs a PO decision |
+| OQ-18 | **Closed 2026-08-22 — the specifications were amended to match ADR-094.** `00_master` § PHASE 8 COMMAND ("write to outbox_events in same transaction as business entity") and `15-event-driven-workflow` §15.3 ("guarantees event delivery atomically with the DB write") both asserted a property ADR-094 (2026-08-19, Accepted) deliberately did not build and explains at length. Product-owner decision: amend the sentences, not the write paths — threading `tx` out of every repository is a larger change than the gap it closes, and the gap is the same one the inline publish it replaced also had. Four places corrected: those two, plus `00-glossary` § Outbox Pattern and `30-testing-strategy`'s outbox row, which asserted atomicity as a test obligation. The atomic form remains available as `EventOutboxService.write(tx, event)` and still has no caller. | Closed 2026-08-22 |
+| OQ-45 | **Closed 2026-08-22 — no Kafka consumer could reach a tenant-scoped table, and the code read as though it could.** `FinanceConsumer` and `RisksConsumer` resolved their request-scoped service through `moduleRef.registerRequestByContextId({ tenantId }, contextId)`, which hands the tenant to the SERVICE — but `TenantPrismaService` is a singleton that resolves the tenant from CLS and never inspects the request object, and a Kafka handler runs on an async chain rooted at bootstrap where no CLS context exists. So the first `db.run()` in each threw `Tenant context missing from request`: `handlePoCreated` → `createTransaction` never wrote a cost transaction for a PO, an invoice or a BOQ publication, and no AI-suggested risk was ever created from a delay forecast. This trap has bitten twice before — see the headers of `vendor-auth.guard.ts` and `privacy-inquiry.service.ts`. Fixed with `runInTenantContext`, which uses `cls.run` and not `enterWith`, so two events in flight cannot inherit each other's tenant. Guarded in all three consumer specs, each proven to fail against the old code. | Closed 2026-08-22 |
 
 Recorded, not resolved — per [README § Open questions](README.md#open-questions-register).

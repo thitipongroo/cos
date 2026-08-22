@@ -62,7 +62,9 @@ Stack :
 
 - Kafka
 - Event sourcing for critical workflows
-- Outbox pattern — guarantees event delivery atomically with the DB write
+- Outbox pattern — the event is written as a local DB row and delivered by a background poller that
+  retries until Kafka accepts it, so delivery survives a broker outage. Durable, NOT atomic with the
+  business write — see [ADR-094](../architecture/adr/094-durable-event-outbox.md)
 - Retry queues — failed processing retried with exponential backoff before dead-lettering
 - Dead-letter queues — exhausted messages routed to a DLQ topic with an observability alert
 - Consumer idempotency — consumers de-duplicate by `event_id`

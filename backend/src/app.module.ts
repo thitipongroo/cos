@@ -14,6 +14,7 @@ import { BoqModule } from './modules/boq/boq.module';
 import { ProcurementModule } from './modules/procurement/procurement.module';
 import { FinanceModule } from './modules/finance/finance.module';
 import { SiteOpsModule } from './modules/site-ops/site-ops.module';
+import { SearchModule } from './modules/search/search.module';
 import { FilesModule } from './modules/files/files.module';
 import { TasksModule } from './modules/tasks/tasks.module';
 import { SafetyModule } from './modules/safety/safety.module';
@@ -82,6 +83,7 @@ import { EventsModule } from './shared/events/events.module';
     ProcurementModule,
     FinanceModule,
     SiteOpsModule,
+    SearchModule, // OQ-22 — OpenSearch index writes, off the request path and onto the outbox
     FilesModule, // Photo annotations — GET endpoint; write path via SyncModule (ADR-056)
     TasksModule,
     SafetyModule,

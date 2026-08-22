@@ -1,7 +1,9 @@
 // Project Service — Phase 3
 // Business logic: create, read, update, status transitions, membership, documents.
 // Emits typed Kafka events via @cos/shared KafkaProducer (QM-8, WORKFLOW ENGINE SPEC).
-// OpenSearch used for full-text project search (QM-6 — kept async, non-blocking).
+// OpenSearch is READ-ONLY here: full-text project search (QM-6). Index WRITES moved to
+// SearchIndexerConsumer, which consumes the same construction.project.* events this service
+// publishes — see modules/search/search-indexer.consumer.ts (TDD OQ-22).
 
 import {
   Injectable,
@@ -71,7 +73,6 @@ export class ProjectService {
 
     const project = await this.repo.create(dto, this.userId);
 
-    await this.indexProject(project);
     await this.publishEvent('construction.project.created.v1', {
       project_id: project.project_id,
       project_code: project.project_code,
@@ -155,7 +156,6 @@ export class ProjectService {
 
     const updated = await this.repo.update(projectId, dto);
 
-    await this.indexProject(updated);
     await this.publishEvent('construction.project.updated.v1', {
       project_id: updated.project_id,
       changed_fields: changedFields,
@@ -208,7 +208,6 @@ export class ProjectService {
 
     const updated = await this.repo.updateStatus(projectId, dto.to as ProjectStatus, meta);
 
-    await this.indexProject(updated);
     await this.publishEvent('construction.project.status_changed.v1', {
       project_id: updated.project_id,
       from_status: existing.status,
@@ -268,26 +267,6 @@ export class ProjectService {
   }
 
   // ─── Private ──────────────────────────────────────────────────────────────
-
-  private async indexProject(project: ProjectRow): Promise<void> {
-    try {
-      await this.openSearch.index({
-        index: OS_INDEX,
-        id: project.project_id,
-        body: {
-          tenant_id: project.tenant_id,
-          project_code: project.project_code,
-          project_name: project.project_name,
-          project_type: project.project_type,
-          status: project.status,
-          updated_at: project.updated_at,
-        },
-      });
-    } catch (err) {
-      // Non-fatal: search index failure must not block the primary write path
-      logger.warn({ project_id: project.project_id, err }, 'opensearch.index.failed');
-    }
-  }
 
   private async searchProjects(
     q: string,

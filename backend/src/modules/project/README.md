@@ -36,7 +36,10 @@ ANY    → CANCELLED  (TENANT_ADMIN only; terminal state)
 - `@cos/rbac` — `PROJECT_MANAGER`, `TENANT_ADMIN` role guards
 - `@cos/shared` — Kafka event types and `KafkaProducer`
 - `@cos/logger`, `@cos/tracing` — observability
-- OpenSearch — full-text search on `project_name`, `project_code`
+- OpenSearch — full-text search on `project_name`, `project_code`. READ only: this module queries
+  the index, it no longer writes to it. `SearchIndexerConsumer` (`modules/search`) keeps
+  `cos_projects` current off the `construction.project.*` events published here, so a failed index
+  write is retried and then lands in the DLQ instead of being logged and lost (TDD OQ-22).
 
 ## Configuration
 
@@ -70,4 +73,7 @@ Kafka events emitted:
 - `CANCELLED` is a terminal state — no further transitions
 - `ON_HOLD` requires `on_hold_reason` in request body
 - Pagination uses cursor-based strategy (preferred over offset)
-- Full-text search via OpenSearch on `project_name` and `project_code`
+- Full-text search via OpenSearch on `project_name` and `project_code`. The index is updated
+  asynchronously by `modules/search`, so a document appears shortly after the write commits rather
+  than during it; `searchProjects` falls back to the paged database list when the index cannot
+  answer.

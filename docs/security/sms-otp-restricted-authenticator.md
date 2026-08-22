@@ -91,35 +91,67 @@ restricted.**
   device and never blocks a login, and until the model beats its rule-based baseline the score is not
   even AI-derived. It may inform review; it does not stop T1.
 
-### 3.3 Gap — a control QM-7 specifies that this path does not have
+### 3.3 QM-7's account lockout — where it applies, and where it does not
 
 QM-7 (`context.md` § QM-7) requires of authentication endpoints: "10 req/min per IP (brute force
-protection); **account lockout after 5 consecutive failures for 15 minutes**". The rate limit is
-implemented. **The lockout is not — on any authentication path.**
+protection); account lockout after 5 consecutive failures for 15 minutes."
 
-Two distinct findings, and it is worth keeping them apart:
+**On Path B the lockout exists**, in the place that owns the credential.
+`infrastructure/keycloak/realms/construction-os-realm.json` sets:
 
-1. **The specification set never carries the requirement.** `05-security-compliance` §5.5's
-   rate-limiting tables give the 10 req/min and nothing else; the only use of "lockout" in the whole
-   of `docs/specifications/` is §5.9.2's STRIDE row, which applies the word to the **per-code** 3-try
-   cap — a different control at a different scope. So QM-7 states an account lockout that the
-   authoritative spec never restates.
-2. **No implementation exists.** Searching the backend for lockout state turns up prose comments on
-   the OTP path and one real constant, `MFA_LOCKOUT_TTL_SECONDS = 900` in
-   `identity/mfa/mfa.service.ts` — which belongs to the **deprecated** custom TOTP module that
-   ADR-067 and ADR-074 record as wired into no login flow. There is no `locked_until` column, no
-   consecutive-failure counter, and no lockout branch on either path.
+| Realm setting           | Value   | QM-7 clause                  |
+| ----------------------- | ------- | ---------------------------- |
+| `bruteForceProtected`   | `true`  | account lockout              |
+| `failureFactor`         | `5`     | after 5 consecutive failures |
+| `maxFailureWaitSeconds` | `900`   | for 15 minutes               |
+| `waitIncrementSeconds`  | `60`    | —                            |
+| `permanentLockout`      | `false` | temporary, not permanent     |
 
-The per-code cap and the rate limits bound a single code and a single burst; neither locks an account
-after repeated failed sessions, which is what QM-7 asks for.
+One detail worth stating exactly rather than rounding: with `waitIncrementSeconds: 60`, the lock
+begins at the fifth failure and the wait _grows_ from 60 s, capping at the 900 s `maxFailureWait`.
+That is not literally "15 minutes on the fifth failure", but it is a faithful implementation of the
+clause and a stricter one early on.
 
-Listed here as a **gap, not a control**, following the precedent `30-testing-strategy` §30.10 set for
-the ESLint security plugin that was claimed and never installed. Tracked as **OQ-17** in
-`docs/technical-design/phase-02-auth-tenant-system.md` § 14 — the product owner has to decide whether
-QM-7's lockout is the requirement (and the spec gains it) or QM-7 is stale (and it loses it). Note
-that a naive per-account lockout on Path A is itself a denial-of-service lever, since SMS OTP is the
-only login a `SITE_WORKER` has — the same hazard `otp.service.ts` already reasons about in its
-daily-limit refund.
+**On Path A it does not apply, and the reason is structural.** A wrong OTP never reaches Keycloak:
+`OtpService.verifyOtp` compares against the Redis-held value and throws locally, and
+`KeycloakAdminService` is called only _after_ a verification succeeds, to mint the token. So no
+Keycloak failure counter increments for a failed SMS OTP, and no account lock follows from one.
+
+What bounds Path A instead is the arithmetic in § 3.2: 3 attempts per code × 10 codes per day = **30
+guesses per day per number** against a 10⁶ space, each requiring a fresh code the attacker cannot
+read. QM-7's other clause — 10 req/min per IP — **is** enforced on Path A, by the `@Throttle` on
+`IdentityController`.
+
+#### Risk accepted — Path A gets no account lockout of its own
+
+**Product-owner decision, 2026-08-22 ([OQ-17](../technical-design/README.md), now closed).** Path A
+keeps the controls it has. No per-account lock will be added.
+
+The reasoning, recorded so a later reviewer does not have to reconstruct it:
+
+- **The clause's purpose is already served.** A lockout exists to stop guessing being profitable. Here
+  guessing is bounded at 30 attempts per day per number against a 10⁶ space — about 3 × 10⁻⁵ per day
+  — and, unlike a password, **each attempt needs a fresh code the attacker cannot read**. A lock would
+  reduce an already negligible number.
+- **A lock would create a worse risk than it removes.** Locking an account after five wrong OTPs means
+  anyone who knows a worker's phone number can lock them out for fifteen minutes, repeatedly, from
+  anywhere. SMS OTP is the **only** login a `SITE_WORKER` has (§ 5.4.4), so that is not a degraded
+  session — it is no access to the site app at all, for a population that uses it to report safety
+  incidents and log attendance. The attacker needs no secret and takes no risk.
+- **What is actually at stake is unchanged.** The threats SMS is restricted _for_ are T1 (SIM swap)
+  and T3 (SS7 / operator interception), and a lockout does nothing about either — an attacker
+  receiving the victim's messages enters the correct code on the first try. § 3.4's residual risk is
+  the honest statement of the exposure, and it is untouched by this decision.
+
+**This acceptance is bounded, not permanent.** It is scoped to Path A, to a population that excludes
+`TENANT_ADMIN` and `FINANCE` (§ 3.2), and to the current limits — if `OTP_MAX_ATTEMPTS` or the daily
+budget is raised, the arithmetic above no longer holds and this must be revisited. § 6's review
+schedule covers it, and the migration in § 4 supersedes it.
+
+> **Correction, 2026-08-22.** This section previously said the lockout was "not implemented — on any
+> authentication path". That was wrong: it was concluded from a search of `backend/src`, which is not
+> where Path B authentication happens. The realm file was not checked. The Path A half of the finding
+> stands; the Path B half did not.
 
 ### 3.4 Residual risk
 
@@ -151,7 +183,9 @@ new authentication machinery.
    ADR-017's Context is the record of why passwords were rejected for these users; the same analysis
    has not been done for TOTP or passkeys.
 3. **Sequencing.** Whether SMS becomes the fallback behind a stronger factor, or is retired.
-4. **Interim hardening**, which does not depend on 1–3: close the § 3.3 lockout gap.
+4. **Interim hardening**, which does not depend on 1–3. The § 3.3 lockout gap is NOT part of this:
+   it was assessed and accepted on 2026-08-22, for the reasons recorded there. What remains open is
+   the § 5 user notification, which NIST requires and which does not exist yet.
 
 ## 5. User notification
 

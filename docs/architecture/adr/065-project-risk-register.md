@@ -6,10 +6,21 @@ Date: 2026-07-20
 
 Accepted
 
-**Implementation note (2026-07-25):** the register itself — `projects.project_risk`, the four
-`/projects/{id}/risks` endpoints, RBAC, and the `RiskRaised` / `RiskStatusChanged` events — was pulled
-forward and built by product-owner decision. The **AI-suggested feed** (`source = AI_SUGGESTED`, from
-the Layer B delay-risk model) and the **web UX** (`/projects/{id}/risks` heat map) remain follow-ups.
+**Implementation note (2026-07-25, corrected 2026-08-22):** the register itself —
+`projects.project_risk`, the four `/projects/{id}/risks` endpoints, RBAC, and the `RiskRaised` /
+`RiskStatusChanged` events — was pulled forward and built by product-owner decision.
+
+The two items this note listed as remaining follow-ups are **both built as well**, and the note was
+simply never updated (TDD OQ-20):
+
+- **AI-suggested feed** — `RisksConsumer` subscribes to `ai.risk_prediction.generated.v1`, maps the
+  forecast through `ai-risk-mapping.ts`, and `RisksService` writes the risk with
+  `source = 'AI_SUGGESTED'` and a system actor (`risks.service.ts`). It is registered as a provider
+  in `project.module.ts`, so it runs.
+- **Web UX** — `apps/web/src/components/project/RiskHeatMap.tsx`, rendered by
+  `app/(app)/projects/[id]/risks/page.tsx`.
+
+Nothing about this ADR's Decision changes; only the status of its follow-ups.
 
 ## Context
 

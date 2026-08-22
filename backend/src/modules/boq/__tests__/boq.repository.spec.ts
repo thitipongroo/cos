@@ -437,9 +437,35 @@ describe('BoqRepository', () => {
     expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(1);
   });
 
-  it('copyVersionContents calls $executeRaw three times (root cats, child cats, items)', async () => {
+  // ── copyVersionContents (TDD OQ-24) ──────────────────────────────────────
+  //
+  // These guard the two properties the old three-statement, code-matching copy violated. The
+  // behaviour itself was verified against PostgreSQL as `app_user` under FORCE ROW LEVEL SECURITY —
+  // a five-category source totalling 500.0000 copied to 4 categories and 600.0000 before the fix,
+  // and to 5 / 5 / 500.0000 with depth 4 intact after it. A mocked Prisma cannot re-run that, so
+  // what is asserted here is the SQL shape that made it possible.
+
+  it('copyVersionContents issues exactly ONE statement', async () => {
     mockPrisma.$executeRaw.mockResolvedValue(0);
     await repo.copyVersionContents('from-v', 'to-v');
-    expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(3);
+    // Two statements cannot share the ids gen_random_uuid() mints, so the items would attach to
+    // nothing. Splitting this up is the regression, not a refactor.
+    expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+  });
+
+  it('copyVersionContents rebuilds the hierarchy by id, never by category_code', async () => {
+    mockPrisma.$executeRaw.mockResolvedValue(0);
+    await repo.copyVersionContents('from-v', 'to-v');
+
+    const sql = (mockPrisma.$executeRaw.mock.calls[0][0] as string[]).join(' ');
+
+    // (version_id, category_code) has no unique constraint and addCategory does not enforce one,
+    // so joining on the code fans out across duplicates — extra categories, duplicated items, and
+    // a copied BOQ worth more than its source.
+    expect(sql).not.toMatch(/category_code\s*=/);
+    // The parent is resolved through the same old-id → new-id map that minted the child, which is
+    // what makes the copy depth-independent.
+    expect(sql).toContain('id_map');
+    expect(sql).toMatch(/LEFT JOIN id_map pm\s+ON pm\.old_id = s\.parent_category_id/);
   });
 });

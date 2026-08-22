@@ -2,9 +2,16 @@ packages:
   - 'apps/*'
   # apps/mobile is intentionally EXCLUDED from the pnpm workspace: React Native + Expo + Metro +
   # CocoaPods assume a flat (hoisted) node_modules, which pnpm's isolated linker breaks (Metro cannot
-  # resolve transitive expo-*/@react-native/* packages). It installs standalone with
-  # node-linker=hoisted (apps/mobile/.npmrc) via `pnpm install --ignore-workspace`, consuming
-  # @cos/types as a file: dependency. Nothing in turbo/CI references @cos/mobile.
+  # resolve transitive expo-*/@react-native/* packages). Excluding it here makes apps/mobile its OWN
+  # workspace root, so hoisting is configured in `apps/mobile/pnpm-workspace.yaml`
+  # (`nodeLinker: hoisted`) and the install is simply `cd apps/mobile && pnpm install`.
+  #
+  # This comment used to say the linker lived in `apps/mobile/.npmrc` and that the install needed
+  # `--ignore-workspace`. Both were wrong, and `apps/mobile/.npmrc` says so itself: pnpm 10/11 reads
+  # `nodeLinker` from pnpm-workspace.yaml, not .npmrc, and a directory with its own workspace file
+  # needs no flag to be treated as a root. Corrected 2026-08-22 (TDD OQ-5).
+  #
+  # It consumes @cos/types as a file: dependency. Nothing in turbo/CI references @cos/mobile.
   - '!apps/mobile'
   - 'backend'
   - 'packages/@cos/*'

@@ -32,6 +32,7 @@ jest.mock('@nestjs/core', () => {
 });
 
 import { FinanceConsumer } from '../finance.consumer';
+import { clsTenantId, clsUserId } from '../../../shared/context/cls-context';
 import { FinanceService } from '../finance.service';
 
 // ── Mock FinanceService ─────────────────────────────────────────────────────
@@ -221,6 +222,42 @@ describe('onModuleInit', () => {
       expect.objectContaining({ tenantId: 'tenant-xyz' }),
       expect.anything(),
     );
+  });
+
+  // OQ-45. registerRequestByContextId above is NOT enough on its own, and reads as though it is.
+  // TenantPrismaService is a singleton that resolves the tenant from CLS and never looks at the
+  // request object, so before the handler entered CLS the chain
+  //   handlePoCreated → FinanceRepository.createTransaction → db.run()
+  // threw "Tenant context missing from request" and no cost transaction was ever written for a PO.
+  it('runs the handler inside the event tenant CLS context', async () => {
+    let seenTenant: string | undefined;
+    let seenUser: string | undefined;
+    mockHandlePoCreated.mockImplementationOnce(async () => {
+      seenTenant = clsTenantId();
+      seenUser = clsUserId();
+    });
+
+    await consumer.onModuleInit();
+    const call = (mockOn.mock.calls as unknown[]).find(
+      (c) => (c as unknown[])[0] === 'procurement.po.created.v1',
+    ) as unknown[];
+    const handler = call[1] as (e: unknown) => Promise<void>;
+
+    await handler({
+      event_type: 'procurement.po.created.v1',
+      tenant_id: 'tenant-xyz',
+      actor_id: 'actor-001',
+      payload: {
+        po_id: 'po-001',
+        project_id: 'proj-001',
+        total_amount: { amount: '100', currency_code: 'THB' },
+      },
+    });
+
+    expect(seenTenant).toBe('tenant-xyz');
+    expect(seenUser).toBe('actor-001');
+    // Scoped to the callback: the next event, from another tenant, must not inherit this one.
+    expect(clsTenantId()).toBe('');
   });
 });
 

@@ -6,9 +6,14 @@ NestJS module for workforce management, attendance tracking, and timesheets.
 
 Manages workers, project allocations, attendance check-in/check-out, and timesheet approval (Phase 22).
 Attendance logs and timesheets are stored as TimescaleDB hypertables.
-Biometric / QR check-in available via EP-DOMAIN-008.
 
-**Status:** Module scaffolded. Full implementation in Phase 22.
+**Status:** Implemented. Every endpoint in the Phase 22 command exists, plus `GET /workers/me` and
+the project workforce directory.
+
+**Biometric / QR check-in is NOT implemented**, and there is no stub for it. The Phase 22 command
+defers it — "do not implement until spec defines it" — and no spec has. This file used to claim a
+`BiometricCheckIn` stub under `EP-DOMAIN-008`; that identifier appears nowhere else in the
+repository (TDD OQ-37, corrected 2026-08-22).
 
 ## Public API
 
@@ -23,7 +28,11 @@ GET  /api/v1/workers/:id/attendance                — attendance history (date 
 POST /api/v1/timesheets                            — submit timesheet
 PATCH /api/v1/timesheets/:id/approve               — approve timesheet (SITE_ENGINEER)
 GET  /api/v1/projects/:projectId/workforce/summary — manpower summary for analytics
+GET  /api/v1/workers/me                            — the signed-in worker's own record
+GET  /api/v1/projects/:projectId/workforce/directory — project directory (docs/api/workforce.openapi.yaml)
 ```
+
+`GET /workers/me` is declared BEFORE `@Get(':id')` so the literal segment is not captured as a UUID.
 
 ## Dependencies
 
@@ -47,9 +56,10 @@ GET  /api/v1/projects/:projectId/workforce/summary — manpower summary for anal
 POST /api/v1/workers/uuid/attendance
 { "project_id": "uuid", "check_in_at": "2026-06-01T07:30:00Z" }
 
-// Record check-out
-PATCH /api/v1/workers/uuid/attendance/latest
-{ "check_out_at": "2026-06-01T17:00:00Z" }
+// Record check-out — the SAME endpoint. Check-in and check-out are distinguished by which
+// timestamp the body carries, not by separate routes; there is no PATCH .../attendance/latest.
+POST /api/v1/workers/uuid/attendance
+{ "project_id": "uuid", "check_out_at": "2026-06-01T17:00:00Z" }
 ```
 
 Kafka events emitted: `workforce.checkin.created.v1`, `workforce.checkout.created.v1`, `workforce.timesheet.approved.v1`
@@ -59,5 +69,7 @@ Kafka events emitted: `workforce.checkin.created.v1`, `workforce.checkout.create
 - `attendance_logs` hypertable: chunk interval = 1 week; chunk compression after 30 days
 - `timesheets` hypertable: partitioned by `period_date` (monthly)
 - Employment types: PERMANENT, CONTRACT, SUBCONTRACT
-- Biometric / QR check-in: EP-DOMAIN-008 `BiometricCheckIn` stub
-- Check-in methods: QR_CODE, GPS, BIOMETRIC, MANUAL
+- Biometric / QR check-in: deferred by the Phase 22 command; not implemented and not stubbed
+- `RecordAttendanceDto` accepts `project_id`, `check_in_at`, `check_out_at` only. §32.4 #9 also
+  specifies `method` (QR_CODE/GPS/BIOMETRIC/MANUAL) and `location` on the check-in event; neither is
+  captured or emitted — see TDD OQ-36, still open

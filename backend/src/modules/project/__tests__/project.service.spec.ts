@@ -516,18 +516,32 @@ describe('ProjectService', () => {
     });
   });
 
-  describe('indexProject — error path (line 274)', () => {
-    it('logs warn when OpenSearch index throws (non-fatal)', async () => {
+  // OQ-22 — the write path no longer indexes. It used to call OpenSearch inline and swallow the
+  // failure, which meant a document lost to a restarting node was lost for good: there was no
+  // reindex job, script or runbook anywhere. Indexing now happens in SearchIndexerConsumer off the
+  // construction.project.* events, where a failure is retried and then lands in the DLQ.
+  describe('write path does not touch OpenSearch', () => {
+    it('create, update and transition issue no index call', async () => {
+      const index = jest.fn().mockResolvedValue({});
       const { Client } = jest.requireMock('@opensearch-project/opensearch') as {
         Client: jest.Mock;
       };
       Client.mockImplementationOnce(() => ({
-        index: jest.fn().mockRejectedValue(new Error('OpenSearch down')),
+        index,
         search: jest.fn().mockResolvedValue({ body: { hits: { hits: [] } } }),
       }));
-      const service = await buildService(makeRepo());
-      // update() calls indexProject — failure must not throw
-      await expect(service.update('proj-uuid-001', { project_name: 'X' })).resolves.toBeDefined();
+
+      const service = await buildService(
+        makeRepo({ findById: jest.fn().mockResolvedValue({ ...baseProject, status: 'ACTIVE' }) }),
+      );
+      await service.create({ project_code: 'P-1', project_name: 'N' } as never);
+      await service.update('proj-uuid-001', { project_name: 'X' });
+      await service.transition('proj-uuid-001', {
+        to: 'ON_HOLD',
+        reason: 'Funding pause',
+      } as never);
+
+      expect(index).not.toHaveBeenCalled();
     });
   });
 

@@ -12,6 +12,7 @@ import { createLogger } from '@cos/logger';
 import type { BaseEventEnvelope } from '@cos/types';
 import { RisksService } from './risks.service';
 import { mapDelayForecast, type DelayForecast } from './ai-risk-mapping';
+import { runInTenantContext } from '../../../shared/context/run-in-tenant-context';
 
 const logger = createLogger('risks-consumer');
 
@@ -66,11 +67,15 @@ export class RisksConsumer implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
-    const svc = await this.resolveSvc(event.tenant_id);
-    const risk = await svc.createSuggested(payload['project_id'] as string, input);
-    if (!risk) {
-      logger.info({ tenant_id: event.tenant_id }, 'risk-prediction: project not found, skipped');
-    }
+    // CLS, not just the request object: TenantPrismaService reads the tenant from CLS alone, so
+    // without this RisksRepository's first db.run() throws "Tenant context missing" (OQ-45).
+    await runInTenantContext({ tenantId: event.tenant_id, userId: event.actor_id }, async () => {
+      const svc = await this.resolveSvc(event.tenant_id);
+      const risk = await svc.createSuggested(payload['project_id'] as string, input);
+      if (!risk) {
+        logger.info({ tenant_id: event.tenant_id }, 'risk-prediction: project not found, skipped');
+      }
+    });
   }
 
   /** Resolve a per-event RisksService instance with the event's tenant context. */

@@ -112,7 +112,11 @@ None added. What changes is what every existing endpoint carries:
 
 **Rate limits** (§5.5, and the same table QM-7 states): auth 10 req/min per IP, general 100 req/min per
 user, file upload 20 req/min per user, health/metrics 60 req/min per IP. See
-[OQ-17](README.md#open-questions-register) for the one QM-7 clause with no implementation.
+[OQ-17](README.md#open-questions-register), closed 2026-08-22, for the one QM-7 clause that reaches
+only Path B — the account lockout is Keycloak's (`bruteForceProtected`, `failureFactor: 5`,
+`maxFailureWaitSeconds: 900` in the realm file), and a failed SMS OTP never reaches that counter. The
+product owner accepted Path A without a lock of its own; the reasoning and its bounds are in
+`docs/security/sms-otp-restricted-authenticator.md` §3.3.
 
 ---
 
@@ -256,8 +260,11 @@ alerts that observe these controls).
 None new. Three existing entries land squarely in this phase and are tracked in the register rather
 than duplicated here:
 
-- [OQ-17](README.md#open-questions-register) — QM-7's account lockout has no implementation on any
-  authentication path.
+- [OQ-17](README.md#open-questions-register) — **closed 2026-08-22, risk accepted.** QM-7's account
+  lockout is implemented at Keycloak and therefore covers Path B only; a failed SMS OTP is checked in
+  `OtpService` against Redis and never increments a Keycloak failure counter. Path A keeps the
+  controls it has, because a per-account lock is a denial-of-service lever against the only login a
+  `SITE_WORKER` has and does nothing about the SIM-swap and SS7 threats that make SMS restricted.
 - [OQ-32](README.md#open-questions-register) — `ComplianceAuditWorkflow` is a fifth Temporal workflow
   whose worker is never launched.
 - [OQ-10](README.md#open-questions-register) — `MFA_ENFORCE` still defaults to `false`, so Layer 2 of

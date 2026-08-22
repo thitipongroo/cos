@@ -25,6 +25,7 @@ jest.mock('@nestjs/core', () => {
 });
 
 import { RisksConsumer } from '../risks.consumer';
+import { clsTenantId, clsUserId } from '../../../../shared/context/cls-context';
 import type { RisksService } from '../risks.service';
 
 const mockCreateSuggested = jest.fn().mockResolvedValue({ risk_id: 'risk-1' });
@@ -128,6 +129,26 @@ describe('handle()', () => {
   it('tolerates the project being gone (createSuggested → null)', async () => {
     mockCreateSuggested.mockResolvedValueOnce(null);
     await expect(consumer.handle(forecastEvent())).resolves.not.toThrow();
+  });
+
+  // OQ-45. registerRequestByContextId gives the request-scoped SERVICE a tenant; it does not give
+  // TenantPrismaService one, because that is a singleton reading CLS. Without the CLS context here,
+  // RisksRepository's first db.run() threw "Tenant context missing from request" and no AI-suggested
+  // risk was ever written.
+  it('runs the handler inside the event tenant CLS context', async () => {
+    let seenTenant: string | undefined;
+    let seenUser: string | undefined;
+    mockCreateSuggested.mockImplementationOnce(async () => {
+      seenTenant = clsTenantId();
+      seenUser = clsUserId();
+      return { risk_id: 'risk-1' };
+    });
+
+    await consumer.handle(forecastEvent());
+
+    expect(seenTenant).toBe('tenant-001');
+    expect(seenUser).toBe('ai-gateway');
+    expect(clsTenantId()).toBe('');
   });
 });
 

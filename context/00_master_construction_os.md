@@ -1738,6 +1738,13 @@ Generate:
       packages/@cos/logger/          — createLogger
       packages/@cos/tracing/         — initTracing, shutdownTracing, getTraceId
       packages/@cos/config/          — loadConfig, getConfig
+      packages/@cos/ui-logic/        — platform-agnostic client helpers, extracted 2026-07-24 (92d4e542)
+      packages/@cos/schemas/         — shared client-side validation schemas, added 2026-08-03 (598c8b11)
+      packages/@cos/test-utils/      — Phase 18 deliverable (testcontainers, factories, db-reset)
+    NOTE (2026-08-22, TDD OQ-1a): the last three postdate this Phase 1 list. Rule 31(a) binds "every
+    package listed in the Directory Structure section above it", so a package extracted later is not
+    retroactively a Phase 1 deliverable — but leaving it unlisted made the inventory read as
+    incomplete. All twelve packages/@cos/* carry the README Rule 31 requires; verified 2026-08-22.
     packages EXEMPT (no executable logic — types/interfaces only):
       packages/@cos/types/
     Note: Phase 18 adds testcontainers setup and @cos/test-utils — jest.config is a Phase 1 deliverable
@@ -3114,12 +3121,21 @@ Shared Event SDK (@construction-os/shared package):
     - OutboxPublisher (for outbox pattern — see below)
 
 Outbox Pattern:
-  Purpose: guarantee event delivery with database transaction atomicity
+  Purpose: guarantee event DELIVERY — a queued event survives a broker, registry or
+           network outage instead of being logged and dropped
+  Guarantee: DURABLE, not transactionally atomic (ADR-094, accepted 2026-08-19). The
+           outbox INSERT is its own transaction, not the business row's, so a process
+           that dies between the two loses the event — as the inline publish it replaced
+           also did. Every other failure mode is now recoverable.
   Implementation:
     - outbox_events table in each service's PostgreSQL schema
     - outbox_events: { id UUID, event_type, payload JSONB, published BOOLEAN,
                        created_at TIMESTAMPTZ, published_at TIMESTAMPTZ }
-    - Service: write to outbox_events in same transaction as business entity
+    - Service: EventOutboxService.publish(event) — one INSERT into platform.outbox_events,
+               immediately after the business write commits. publish() never throws.
+    - Atomic form: EventOutboxService.write(tx, event) writes inside a caller-supplied
+               transaction and DOES throw. Available for a domain that needs it; no
+               caller uses it yet (ADR-094 §Decision).
     - OutboxPoller: background process, polls every 500ms, publishes unpublished
     - OutboxPoller: marks published=true after successful Kafka produce
     - Idempotency: consumers check event_id in Redis (TTL 24h) before processing
@@ -3294,7 +3310,13 @@ Generate:
 - Fastify application with multipart plugin (@fastify/multipart)
 - MinIO client integration (minio npm package)
 - File validation middleware (size, MIME type, extension check)
-- Antivirus hook (ClamAV integration — deferred to Phase 9 spec; do not implement until spec defines it)
+- Antivirus hook (ClamAV integration) — BUILT. `clamscan` is a dependency, `services/antivirus.service.ts`
+  and `services/scan-runner.ts` implement the scan, and quarantine has its own bucket, event and
+  SYSTEM_ADMIN recovery route. This line used to read "deferred to Phase 9 spec; do not implement
+  until spec defines it", which contradicted the File Constraints block a few lines above in this
+  same command — that block already specifies the quarantine bucket, the 30-day retention, the
+  `file.document.quarantined.v1` event and the recovery path. The deferral predated it. Corrected
+  2026-08-22 so a future reader does not mistake working antivirus for scope creep (TDD OQ-33).
 - Signed URL generation service
 - OpenSearch indexing on upload complete
 - PostgreSQL migration files
@@ -3587,9 +3609,12 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
 
   Generate (Web App — apps/web/):
     - Serwist configuration (@serwist/turbopack: withSerwist + createSerwistRoute) with runtime caching strategies
-      createSerwistRoute MUST pass `useNativeEsbuild: false` — it defaults to `platform === 'win32'`, which
-      imports the native `esbuild` (not a dependency; only `esbuild-wasm` is) and breaks `next build` on
-      Windows while Linux CI stays green. Authoritative: spec §32.7 → Web Implementation build constraints.
+      createSerwistRoute keeps `useNativeEsbuild` at its platform default (`platform === 'win32'`).
+      This line used to say it MUST be `false`, because native `esbuild` was "not a dependency; only
+      esbuild-wasm is" — that is no longer true: apps/web pins both at the same version and
+      pnpm-workspace.yaml allows esbuild's postinstall. The wasm build rejects a Windows working
+      directory, so pinning `false` broke the very build it was meant to protect. Corrected
+      2026-08-22 (TDD OQ-39). Authoritative: spec §32.7 → Web Implementation build constraints.
     - IndexedDB schema using idb library (typed, versioned)
     - PWA sync service using Background Sync API + IndexedDB queue
     - Service worker registration via SerwistProvider in the Next.js App Router root layout (app/layout.tsx)

@@ -128,7 +128,6 @@ export class SiteOpsService {
       trace_id: this.correlationId,
     });
 
-    await this.indexSiteReport(report);
     return report;
   }
 
@@ -374,7 +373,6 @@ export class SiteOpsService {
       trace_id: this.correlationId,
     });
 
-    await this.indexIssue(issue);
     return issue;
   }
 
@@ -800,47 +798,6 @@ export class SiteOpsService {
   }
 
   // ── OpenSearch indexing (non-blocking — failure must not block primary write path) ──
-
-  private async indexSiteReport(report: SiteReportRow): Promise<void> {
-    try {
-      await this.openSearch.index({
-        index: OS_REPORTS_INDEX,
-        id: report.report_id,
-        body: {
-          report_id: report.report_id,
-          project_id: report.project_id,
-          tenant_id: this.tenantId,
-          report_date: report.report_date,
-          summary: report.summary,
-          weather: report.weather,
-          submitted_by: report.submitted_by,
-          status: report.status,
-        },
-      });
-    } catch (err) {
-      logger.warn({ report_id: report.report_id, err }, 'opensearch.index.failed');
-    }
-  }
-
-  private async indexIssue(issue: IssueRow): Promise<void> {
-    try {
-      await this.openSearch.index({
-        index: OS_ISSUES_INDEX,
-        id: issue.issue_id,
-        body: {
-          issue_id: issue.issue_id,
-          project_id: issue.project_id,
-          tenant_id: this.tenantId,
-          title: issue.title,
-          description: issue.description,
-          severity: issue.severity,
-          status: issue.status,
-        },
-      });
-    } catch (err) {
-      logger.warn({ issue_id: issue.issue_id, err }, 'opensearch.index.failed');
-    }
-  }
 
   private async searchSiteReports(
     q: string,

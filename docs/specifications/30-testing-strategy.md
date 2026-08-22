@@ -139,7 +139,7 @@ Target coverage by layer:
 | Test                         | What It Validates                                                            |
 | ---------------------------- | ---------------------------------------------------------------------------- |
 | Tenant isolation at DB layer | Cross-tenant query returns zero results                                      |
-| Outbox pattern               | DB write + event publish succeed atomically; no event emitted on DB rollback |
+| Outbox pattern               | A queued event is delivered exactly once per `event_id` and survives a broker outage; a poison row retires after 10 attempts rather than blocking the queue (ADR-094) |
 | Approval workflow step       | Temporal.io activity correctly transitions workflow state                    |
 | RBAC middleware              | Requests without valid `tenant_id` in JWT return 403                         |
 | Soft delete                  | Deleted records excluded from all queries; GET by ID returns 404             |

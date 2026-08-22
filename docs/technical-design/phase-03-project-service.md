@@ -244,16 +244,18 @@ the state machine, the search index and the events: guard → parent-existence c
 
 Two of these deserve more than a table row.
 
-**The search index has no reconciliation path.** `indexProject` swallows its error by design — the
-comment says "search index failure must not block the primary write path", which is the right call for
-the request. What is missing is the other half: no reindex job, backfill script or repair runbook
-exists anywhere in `backend/src`, `scripts/` or `services/`. A single OpenSearch blip therefore
-removes a project from search results permanently, with nothing but a `warn` line to say so. Raised as
-§ 14 OQ-22.
+**The search index had no reconciliation path — fixed 2026-08-22.** `indexProject` swallowed its
+error by design, and the comment was right that "search index failure must not block the primary write
+path". What was missing was the other half: no reindex job, backfill script or repair runbook existed
+anywhere in `backend/src`, `scripts/` or `services/`, so a single OpenSearch blip removed a project
+from search results permanently, with nothing but a `warn` line to say so. Indexing now happens in
+`SearchIndexerConsumer` off the events this service already publishes, where a failure is retried
+three times and then dead-lettered, and a topic replay rebuilds the index. See § 14 OQ-22.
 
 **The outbox is durable, not atomic.** This is not specific to Phase 3 — it is the cross-cutting
 property recorded in [phase-08 § 4](phase-08-event-infrastructure.md) and
-[OQ-18](README.md#open-questions-register). Phase 3 is simply the phase where it is most visible,
+[OQ-18](README.md#open-questions-register), which is now closed by amending the two specification
+sentences that claimed otherwise. Phase 3 is simply the phase where it is most visible,
 because a lost `status_changed` leaves Finance and Analytics reading a stale status with no signal
 that they are wrong.
 
@@ -378,4 +380,4 @@ here.
 | OQ-19 | **Can a `COMPLETED` project be cancelled?** The command's `States:` block lists exactly three paths into `CANCELLED` — from `DRAFT`, `ACTIVE` and `ON_HOLD` — while its `Transition rules:` block says `ANY → CANCELLED`. The two disagree about `COMPLETED`. The implementation follows the `States:` block (`COMPLETED: []`), which is also what "Do NOT invent additional states or transitions" points to, but the command contradicts itself in the same code block. | Open — needs a PO decision |
 | OQ-20 | **ADR-065's implementation note is stale, and `21-mvp-scope` §21 with it.** The note says the AI-suggested feed "remain[s] a follow-up", but `RisksConsumer` is built, registered as a provider in `project.module.ts`, subscribes to `ai.risk_prediction.generated.v1` and has `ai-risk-mapping.ts` plus two spec files behind it. §21's row still reads "**Designed — ADR-065** … still post-MVP" for a register that is fully built.                                   | Open — documentation drift |
 | OQ-21 | **`GET /projects/user/:userId` has no establishing record.** It is `TENANT_ADMIN`-gated and OpenAPI-documented, so this is not a security gap — but it appears in no specification, ADR or phase command searched. Either it gains a record or it is an undocumented API surface.                                                                                                                                                                                         | Open — needs a PO decision |
-| OQ-22 | **A dropped OpenSearch write is unrecoverable.** `indexProject` catches and logs, correctly refusing to fail the business write; but no reindex job, backfill script or repair runbook exists in `backend/src`, `scripts/` or `services/`. One index failure removes a project from search permanently. Does the platform need a reconciliation path, or is search treated as best-effort?                                                                                | Open — needs a PO decision |
+| OQ-22 | **Closed 2026-08-22 — indexing moved onto the outbox.** `indexProject` caught and logged, correctly refusing to fail the business write, but there was nowhere for the failure to go: no reindex job, backfill script or repair runbook existed in `backend/src`, `scripts/` or `services/`, so one index failure removed a project from search permanently. `SearchIndexerConsumer` (`modules/search`) now consumes `construction.project.created/updated/status_changed.v1` and re-reads the CURRENT row before indexing it, so a failure gets KafkaConsumer's three retries and then the DLQ, and replaying the topic rebuilds the index. The inline call is gone, guarded by a test that fails against the old code. The write path no longer waits on OpenSearch; `searchProjects` already falls back to the paged database list. Building this surfaced [OQ-45](README.md#open-questions-register). | Closed 2026-08-22 |

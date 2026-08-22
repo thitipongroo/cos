@@ -440,59 +440,88 @@ export class BoqRepository {
     });
   }
 
-  /** Copy all categories and items from source version to target version. */
+  /**
+   * Copy every category and item of `from_version_id` into `to_version_id`.
+   *
+   * WHAT WAS WRONG (TDD OQ-24)
+   * --------------------------
+   * The previous implementation was three statements that rebuilt the hierarchy by MATCHING
+   * `category_code`, and it was wrong in two independent ways. Both were reproduced against
+   * PostgreSQL on a five-category source totalling 500.0000:
+   *
+   *   Depth. Root categories were copied by one statement and children by the next, so the child
+   *   statement could only find parents that already existed in the target — the roots. A category
+   *   at depth 3 had no copied parent to join to and was dropped, silently, together with every
+   *   item beneath it and every descendant below that. `boq_categories.parent_category_id` is
+   *   self-referencing with no depth limit, `addCategory` accepts any `parent_category_id`, and
+   *   §13.2 says only "self-ref, nullable — for hierarchy", so nothing anywhere caps a BOQ at two
+   *   levels. Anything deeper simply did not survive a new version.
+   *
+   *   Duplicates. There is no unique constraint on (version_id, category_code) — see the DDL in
+   *   20260604000001 — and `addCategory` does not check for one either. Two categories sharing a
+   *   code made the join fan out: each child was inserted once per matching parent, each item once
+   *   per matching category, and the copy came out with MORE money in it than the version it was
+   *   copied from. The reproduction returned 4 categories and 600.0000 where the source had 5 and
+   *   500.0000 — a 20% overstatement on a document that priced work.
+   *
+   * Product-owner decision 2026-08-22: make the copy recursive rather than cap the depth. The
+   * hierarchy the schema allows is the hierarchy the copy must preserve.
+   *
+   * HOW THIS WORKS
+   * --------------
+   * Categories are matched by IDENTITY, not by code. `id_map` mints one new UUID per source
+   * category up front, so a category's new parent is looked up through the same map that produced
+   * it — `category_code` never enters the join, which removes the fan-out and the mis-parenting
+   * along with it. Because the mapping is a flat old-id → new-id table rather than a walk down the
+   * tree, depth is irrelevant: one statement copies four levels or forty, and a cycle in the source
+   * data (reachable through an UPDATE, which no constraint prevents) is copied faithfully instead
+   * of hanging.
+   *
+   * It has to be ONE statement. `gen_random_uuid()` is volatile, so a second statement would mint a
+   * different set of ids and the items would have nothing to attach to. Both inserts therefore live
+   * in the same statement as data-modifying CTEs, which is also what makes them legal: PostgreSQL
+   * queues foreign-key checks as after-row triggers and fires them at the END of the statement, so
+   * `parent_category_id` pointing at a sibling row of the same INSERT, and `boq_items.category_id`
+   * pointing at a category inserted by an earlier CTE, both resolve. Verified end to end as
+   * `app_user` under FORCE ROW LEVEL SECURITY with `app.current_tenant_id` set: 5 categories, 5
+   * items, 500.0000, depth 4 intact, and invisible to a second tenant.
+   */
   async copyVersionContents(from_version_id: string, to_version_id: string): Promise<void> {
     await this.db.run(async (prisma) => {
-      // Copy root categories first (parent_category_id IS NULL)
       await prisma.$executeRaw`
-        INSERT INTO boq.boq_categories (
-          version_id, tenant_id, parent_category_id,
-          category_code, category_name, sort_order, subtotal_amount
+        WITH src AS (
+          SELECT category_id, parent_category_id, tenant_id,
+                 category_code, category_name, sort_order, subtotal_amount
+          FROM boq.boq_categories
+          WHERE version_id = ${from_version_id}::uuid
+            AND tenant_id  = ${this.tenantId}::uuid
+        ), id_map AS (
+          SELECT category_id AS old_id, gen_random_uuid() AS new_id FROM src
+        ), copied_categories AS (
+          INSERT INTO boq.boq_categories (
+            category_id, version_id, tenant_id, parent_category_id,
+            category_code, category_name, sort_order, subtotal_amount
+          )
+          SELECT m.new_id, ${to_version_id}::uuid, s.tenant_id, pm.new_id,
+                 s.category_code, s.category_name, s.sort_order, s.subtotal_amount
+          FROM src s
+          JOIN id_map m       ON m.old_id  = s.category_id
+          -- LEFT, not INNER: a root category has no parent, and an INNER join would drop it.
+          LEFT JOIN id_map pm ON pm.old_id = s.parent_category_id
+          RETURNING 1
         )
-        SELECT ${to_version_id}::uuid, tenant_id, NULL,
-               category_code, category_name, sort_order, subtotal_amount
-        FROM boq.boq_categories
-        WHERE version_id          = ${from_version_id}::uuid
-          AND tenant_id           = ${this.tenantId}::uuid
-          AND parent_category_id IS NULL
-      `;
-      // Copy child categories (simple 1-level hierarchy copy)
-      await prisma.$executeRaw`
-        INSERT INTO boq.boq_categories (
-          version_id, tenant_id, parent_category_id,
-          category_code, category_name, sort_order, subtotal_amount
-        )
-        SELECT ${to_version_id}::uuid, child.tenant_id,
-               new_parent.category_id,
-               child.category_code, child.category_name,
-               child.sort_order, child.subtotal_amount
-        FROM boq.boq_categories child
-        JOIN boq.boq_categories old_parent
-          ON child.parent_category_id = old_parent.category_id
-        JOIN boq.boq_categories new_parent
-          ON new_parent.version_id  = ${to_version_id}::uuid
-         AND new_parent.category_code = old_parent.category_code
-        WHERE child.version_id = ${from_version_id}::uuid
-          AND child.tenant_id  = ${this.tenantId}::uuid
-          AND child.parent_category_id IS NOT NULL
-      `;
-      // Copy items
-      await prisma.$executeRaw`
         INSERT INTO boq.boq_items (
           category_id, version_id, tenant_id,
           item_code, description, unit,
           quantity, unit_cost, estimated_total, currency_code,
           sort_order, carbon_factor_kg_co2e, carbon_total_kg_co2e
         )
-        SELECT new_cat.category_id, ${to_version_id}::uuid, i.tenant_id,
+        SELECT m.new_id, ${to_version_id}::uuid, i.tenant_id,
                i.item_code, i.description, i.unit,
                i.quantity, i.unit_cost, i.estimated_total, i.currency_code,
                i.sort_order, i.carbon_factor_kg_co2e, i.carbon_total_kg_co2e
         FROM boq.boq_items i
-        JOIN boq.boq_categories old_cat ON i.category_id = old_cat.category_id
-        JOIN boq.boq_categories new_cat
-          ON new_cat.version_id   = ${to_version_id}::uuid
-         AND new_cat.category_code = old_cat.category_code
+        JOIN id_map m ON m.old_id = i.category_id
         WHERE i.version_id = ${from_version_id}::uuid
           AND i.tenant_id  = ${this.tenantId}::uuid
       `;
