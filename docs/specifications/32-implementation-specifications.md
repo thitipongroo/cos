@@ -457,7 +457,7 @@ compatibility) before first producer deployment.
 | 13  | `procurement.vendor_invoice.approved.v1` | `invoice_id`, `po_id`, `project_id`, `vendor_id`, `amount` {amount, currency_code}, `approved_by`, `approved_at`, `payment_due`                                                                                                                                                                                                                                                               |
 | 14  | `finance.cashflow_risk.detected.v1`      | `project_id`, `risk_level` (enum: LOW/MEDIUM/HIGH/CRITICAL), `projected_shortfall` {amount, currency_code}, `projected_at`, `detected_by` (enum: AI_FORECAST/RULE_ENGINE)                                                                                                                                                                                                                     |
 | 15  | `ai.risk_prediction.generated.v1`        | `prediction_id`, `project_id`, `model_type` (enum: DELAY_FORECAST/COST_OVERRUN/SAFETY_VISION/RISK_CLASSIFIER), `prediction` (model-specific object), `confidence`: DECIMAL(5,4), `generated_at`, `model_version`                                                                                                                                                                              |
-| 16  | `finance.budget.variance_detected.v1`    | `project_id`, `variance_percentage`: DECIMAL(5,2), `threshold_exceeded`: DECIMAL(5,2) (the configured threshold that was crossed; default 10%), `budget_amount` {amount, currency_code}, `actual_amount` {amount, currency_code}, `detected_at`                                                                                                                                               |
+| 16  | `finance.variance.alert.v1`              | `project_id`, `budget_id`, `variance_percentage` (DECIMAL string), `threshold_exceeded` (DECIMAL string — the configured threshold that was crossed; default 10%), `actual_amount`, `committed_amount`, `allocated_amount` (all DECIMAL strings), `currency_code` (ISO 4217). Corrected 2026-08-22 — see the note under the migration table below                                                                                                                                               |
 | 17  | `file.document.uploaded.v1`              | `file_id`, `tenant_id`, `entity_type` (nullable — e.g. "site_report", "purchase_order"), `entity_id` (nullable UUID), `mime_type`                                                                                                                                                                                                                                                             |
 | 18  | `file.document.quarantined.v1`           | `file_id`, `tenant_id`, `threat_type` (nullable string — ClamAV threat name, null if unknown)                                                                                                                                                                                                                                                                                                 |
 | 19  | `construction.boq.created.v1`            | `project_id` (UUID), `version_id` (UUID), `version_number` (integer) — emitted once when the first BOQ version (version_number = 1) is created for a project                                                                                                                                                                                                                                  |
@@ -522,9 +522,29 @@ Each legacy file below requires a canonical spec entry in §32.4 before migratio
 | `cost.entry.created.avsc`              | `finance.cost_entry.created.v1`                  | Domain + entity added                                                                           |
 | `finance.budget.created.avsc`          | `finance.budget.created.v1`                      | Version suffix only                                                                             |
 | `finance.payment.processed.avsc`       | `finance.payment.processed.v1`                   | Version suffix only                                                                             |
-| `finance.variance.alert.avsc`          | `finance.budget.variance_detected.v1`            | Name clarified                                                                                  |
+| `finance.variance.alert.v1.avsc`       | `finance.variance.alert.v1`                      | MIGRATED — kept its name; see the note below                                                    |
 | `ai.queue.request.avsc`                | `ai.inference.queued.v1`                         | Name clarified                                                                                  |
 | `ai.result.ready.avsc`                 | `ai.inference.completed.v1`                      | Name clarified                                                                                  |
+
+> **`finance.variance.alert.v1` — corrected 2026-08-22.** This row used to require a rename to
+> `finance.budget.variance_detected.v1` ("Name clarified"), and row 16 of the payload table above
+> was written against that name with a `budget_amount` / `detected_at` shape. Neither was ever
+> adopted, and by the time it was checked the platform had converged on the original name across
+> every layer that carries it: `finance.variance.alert.v1.avsc`, the topic catalogue key, the typed
+> contract exported from `@cos/shared`, the emitter in FinanceService, the NotificationConsumer
+> subscription, the escalation rule, and three screens in the mobile app — eleven production files,
+> plus master:2989 and `20-ux-flow` §Alerts, which both call it by this name.
+>
+> The other renames in this table WERE applied wherever the event exists (`equipment.unit.assigned.v1`,
+> `workforce.checkout.created.v1` — schema file, catalogue and emitter all agree), so this is the one
+> that was left behind rather than a table nobody acted on. It is recorded as migrated-in-place
+> because renaming it now would be a breaking change across three surfaces, including a live
+> notification and escalation path, in exchange for nothing but the name.
+>
+> Row 16 above now states the payload the schema actually enforces. `detected_at` is not among the
+> payload fields because the envelope's `occurred_at` already carries it, and `budget_amount` was
+> split into `allocated_amount` + `currency_code`, alongside `committed_amount` and `budget_id`,
+> which the alert needs in order to be actionable without a follow-up read.
 
 ---
 

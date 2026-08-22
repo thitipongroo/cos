@@ -471,3 +471,198 @@ paths:
       responses:
         '200':
           description: Weekly forecast periods (inflow, outflow, net, cumulative)
+  /finance/payments/{paymentId}/approve:
+    patch:
+      tags:
+        - finance
+      summary: Approve a pending payment (PENDING → PROCESSED)
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Payment approved
+        '422':
+          description: Payment is not PENDING
+  /finance/contracts/{id}/document:
+    post:
+      tags:
+        - finance
+      summary: Attach a contract document — uploaded or generated in-app (ADR-058)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - mode
+              properties:
+                mode:
+                  type: string
+                  enum:
+                    - upload
+                    - generate
+                  description: >-
+                    upload attaches a file already in the File Service; generate builds the PDF
+                    in-app from the contract and the latest BOQ snapshot.
+                file_id:
+                  type: string
+                  format: uuid
+                  description: Required when mode is upload.
+      responses:
+        '201':
+          description: Document attached; contract.signed_document_id set
+        '400':
+          description: file_id missing or unknown
+  /finance/contracts/{id}/sign:
+    post:
+      tags:
+        - finance
+      summary: Contractor-side signature, PKI/VC via CredentialService (ADR-058)
+      description: >-
+        Records an INTERNAL signature bound to the document's sha256. The contract becomes SIGNED
+        only once both an INTERNAL and a CLIENT signature have verified.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '201':
+          description: Signature recorded
+        '400':
+          description: Contract has no document to sign
+  /finance/contracts/{id}/sign-links:
+    post:
+      tags:
+        - finance
+      summary: Issue a single-use magic link for the client to sign (ADR-030, ADR-058)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                client_name:
+                  type: string
+                client_email:
+                  type: string
+                  format: email
+      responses:
+        '201':
+          description: >-
+            Signing URL and its expiry. The raw token appears only in this response — only its
+            sha256 is persisted — so the link cannot be retrieved again afterwards.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                  expires_at:
+                    type: string
+                    format: date-time
+  /finance/contracts/sign/{token}:
+    post:
+      tags:
+        - finance
+      summary: External client signs via magic link (ADR-058)
+      description: >-
+        Authenticated by the magic-link token alone, not a Keycloak JWT — the signer is a client
+        with no tenant login, so the tenant middleware is excluded from this route.
+      security: []
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                client_name:
+                  type: string
+                client_email:
+                  type: string
+                  format: email
+      responses:
+        '201':
+          description: CLIENT signature recorded
+        '401':
+          description: Token invalid, expired or already used
+  /finance/contracts/{id}/signatures:
+    get:
+      tags:
+        - finance
+      summary: Signature audit trail for a contract (ADR-058)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Signature rows, each bound to the signed document's hash
+  /finance/contracts/{id}/activate:
+    post:
+      tags:
+        - finance
+      summary: Put a fully-signed contract into force (SIGNED → ACTIVE) — ADR-058
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '201':
+          description: Contract active
+        '422':
+          description: Contract is not SIGNED
+  /finance/contracts/{id}/terminate:
+    post:
+      tags:
+        - finance
+      summary: Terminate a contract (SIGNED | ACTIVE → TERMINATED) — ADR-058
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '201':
+          description: Contract terminated
+        '422':
+          description: Contract is neither SIGNED nor ACTIVE

@@ -9,7 +9,12 @@ import { randomUUID } from 'crypto';
 import { registerSchema, encodeAvro, ensureCompatibilityMode } from './schema-registry.client';
 import { createLogger } from '@cos/logger';
 import type { BaseEventEnvelope } from '@cos/types';
-import { EVENT_AVSC_MAP, topicForEvent, subjectForEvent } from './topic-catalog';
+import {
+  EVENT_AVSC_MAP,
+  topicForEvent,
+  subjectForEvent,
+  entityStateKeyField,
+} from './topic-catalog';
 
 const logger = createLogger('kafka-producer');
 
@@ -26,6 +31,35 @@ export interface ProduceOptions {
  */
 const TOPIC_PARTITIONS = parseInt(process.env['KAFKA_TOPIC_PARTITIONS'] ?? '3', 10);
 const TOPIC_REPLICATION_FACTOR = parseInt(process.env['KAFKA_TOPIC_REPLICATION_FACTOR'] ?? '1', 10);
+
+/**
+ * The Kafka message key.
+ *
+ * `tenant_id` for ordinary topics: every event of a tenant lands in one partition, so a tenant's
+ * events of a given type stay ordered relative to each other.
+ *
+ * For an entity state topic (master:3104) it is the ENTITY id instead, because those topics are
+ * log-compacted and compaction keeps only the newest message per key. Keyed by tenant, compaction
+ * would leave exactly one event per tenant and delete everything before it; keyed by entity, it
+ * leaves the current state of each entity, which is the point.
+ *
+ * Missing id throws rather than defaulting. A message with no key is spread round-robin across
+ * partitions, which makes compaction unable to pair old and new versions of the same entity — the
+ * topic would keep growing while appearing to be compacted, and nothing would report it.
+ */
+function messageKeyFor(envelope: BaseEventEnvelope<unknown>): string {
+  const field = entityStateKeyField(envelope.event_type);
+  if (!field) return envelope.tenant_id;
+
+  const payload = envelope.payload as Record<string, unknown> | null | undefined;
+  const id = payload?.[field];
+  if (typeof id !== 'string' || id === '') {
+    throw new Error(
+      `${envelope.event_type} is an entity state topic keyed by "${field}", but the payload carries no such id`,
+    );
+  }
+  return id;
+}
 
 export class KafkaProducer {
   private readonly kafka: Kafka;
@@ -89,7 +123,10 @@ export class KafkaProducer {
     // Per-tenant topic name (§7.3): {tenant_id}.{event_type}; platform events use the
     // shared platform.events topic. The event_type (CloudEvents `type`) keeps no prefix.
     const topic = topicForEvent(envelope.event_type, envelope.tenant_id);
-    await this.ensureTopic(topic);
+    // Resolved before anything is created: it is a pure check on the envelope, and letting it fail
+    // afterwards would leave an empty compacted topic behind for a publish that never happened.
+    const key = messageKeyFor(envelope);
+    await this.ensureTopic(topic, envelope.event_type);
     const schemaId = await this.getOrRegisterSchema(envelope.event_type);
     const encoded = await encodeAvro(schemaId, envelope);
 
@@ -105,7 +142,7 @@ export class KafkaProducer {
     if (options.spanId) headers['span_id'] = options.spanId;
 
     const message: Message = {
-      key: envelope.tenant_id,
+      key,
       value: encoded,
       headers,
     };
@@ -135,7 +172,7 @@ export class KafkaProducer {
    * services publishing a tenant's first event concurrently is safe. Failure is NOT swallowed —
    * publishing to a topic that does not exist would fail anyway, and the outbox poller retries.
    */
-  private async ensureTopic(topic: string): Promise<void> {
+  private async ensureTopic(topic: string, eventType: string): Promise<void> {
     if (this.knownTopics.has(topic)) return;
 
     const admin = this.kafka.admin();
@@ -147,6 +184,13 @@ export class KafkaProducer {
             topic,
             numPartitions: TOPIC_PARTITIONS,
             replicationFactor: TOPIC_REPLICATION_FACTOR,
+            // Log compaction for entity state topics (master:3104). Set at creation, alongside the
+            // entity key above — a compacted topic that is still tenant-keyed would collapse to one
+            // event per tenant, so the two settings are read from the same declaration and can
+            // never be applied one without the other.
+            ...(entityStateKeyField(eventType)
+              ? { configEntries: [{ name: 'cleanup.policy', value: 'compact' }] }
+              : {}),
           },
         ],
         waitForLeaders: true,

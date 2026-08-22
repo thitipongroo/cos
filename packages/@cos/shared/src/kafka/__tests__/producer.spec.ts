@@ -69,7 +69,10 @@ describe('KafkaProducer', () => {
     const call = sendMock.mock.calls[0][0];
     // Per-tenant topic name (§7.3): {tenant_id}.{event_type} (version retained).
     expect(call.topic).toBe('tenant-1.construction.project.created.v1');
-    expect(call.messages[0].key).toBe('tenant-1');
+    // construction.project.* is an entity state topic (master:3104), so the key is the PROJECT id,
+    // not the tenant: those topics are log-compacted, and compaction keyed by tenant would leave
+    // one surviving event per tenant. Ordinary topics stay tenant-keyed — asserted below.
+    expect(call.messages[0].key).toBe('p-1');
   });
 
   // The outbox stores a complete envelope and republishes it until Kafka accepts it. KafkaConsumer
@@ -167,7 +170,7 @@ describe('KafkaProducer', () => {
       actor_id: 'user-1',
       occurred_at: new Date().toISOString(),
       correlation_id: 'corr-1',
-      payload: {},
+      payload: { project_id: 'p-1' },
     };
     // First publish: registers schema (cache miss)
     await producer.publish(envelope);
@@ -190,7 +193,7 @@ describe('KafkaProducer', () => {
         actor_id: 'u',
         occurred_at: '',
         correlation_id: 'c',
-        payload: {},
+        payload: { project_id: 'p-1' },
       }),
     ).rejects.toThrow('not connected');
   });
@@ -279,7 +282,9 @@ describe('EVENT_AVSC_MAP completeness — regression for Phase 5/6/7 shorthand e
 describe('KafkaProducer topic creation', () => {
   let producer: KafkaProducer;
 
-  const event = (tenantId: string, eventType = 'construction.project.created.v1') => ({
+  // An ordinary (tenant-keyed, uncompacted) event type: these tests are about topic creation and
+  // caching, not about the entity state rule, and an entity state topic refuses an empty payload.
+  const event = (tenantId: string, eventType = 'site.report.created.v1') => ({
     event_type: eventType,
     event_version: '1.0',
     tenant_id: tenantId,
@@ -304,7 +309,7 @@ describe('KafkaProducer topic creation', () => {
 
     expect(createTopicsMock).toHaveBeenCalledTimes(1);
     const arg = createTopicsMock.mock.calls[0][0] as { topics: Array<{ topic: string }> };
-    expect(arg.topics[0].topic).toBe('tenant-1.construction.project.created.v1');
+    expect(arg.topics[0].topic).toBe('tenant-1.site.report.created.v1');
   });
 
   // The cache is what keeps this to one admin round-trip per topic rather than one per message.
@@ -317,6 +322,47 @@ describe('KafkaProducer topic creation', () => {
     expect(sendMock).toHaveBeenCalledTimes(3);
   });
 
+  it('refuses to publish an entity state event with no entity id', async () => {
+    // A keyless message is spread round-robin, so compaction can never pair an entity's old and new
+    // versions: the topic grows forever while reporting itself compacted, and nothing complains.
+    // Failing at the publish makes it a programming error caught at once instead.
+    await expect(
+      producer.publish({
+        event_type: 'construction.project.created.v1',
+        event_version: '1.0',
+        tenant_id: 'tenant-1',
+        actor_id: 'u-1',
+        occurred_at: new Date(0).toISOString(),
+        correlation_id: 'c-1',
+        payload: {},
+      } as never),
+    ).rejects.toThrow(/entity state topic keyed by "project_id"/);
+  });
+
+  it('creates entity state topics compacted (master:3104)', async () => {
+    // The compaction setting and the entity key are read from one declaration precisely so they
+    // cannot be applied one without the other: a compacted topic still keyed by tenant would keep
+    // one event per tenant and delete the rest.
+    await producer.publish({
+      ...event('tenant-1', 'construction.project.created.v1'),
+      payload: { project_id: 'p-1' },
+    } as never);
+    const arg = createTopicsMock.mock.calls[0]![0] as {
+      topics: Array<{ topic: string; configEntries?: Array<{ name: string; value: string }> }>;
+    };
+    expect(arg.topics[0].configEntries).toEqual([{ name: 'cleanup.policy', value: 'compact' }]);
+  });
+
+  it('leaves ordinary topics uncompacted', async () => {
+    // The control. Every other topic is a record of occurrences — compacting one would delete
+    // history that has no newer version to replace it.
+    await producer.publish(event('tenant-1'));
+    const arg = createTopicsMock.mock.calls[0]![0] as {
+      topics: Array<{ configEntries?: unknown }>;
+    };
+    expect(arg.topics[0].configEntries).toBeUndefined();
+  });
+
   it('creates a separate topic per tenant and per event type', async () => {
     await producer.publish(event('tenant-1'));
     await producer.publish(event('tenant-2'));
@@ -326,8 +372,8 @@ describe('KafkaProducer topic creation', () => {
       (c) => (c[0] as { topics: Array<{ topic: string }> }).topics[0].topic,
     );
     expect(created).toEqual([
-      'tenant-1.construction.project.created.v1',
-      'tenant-2.construction.project.created.v1',
+      'tenant-1.site.report.created.v1',
+      'tenant-2.site.report.created.v1',
       'tenant-1.finance.payment.processed.v1',
     ]);
   });

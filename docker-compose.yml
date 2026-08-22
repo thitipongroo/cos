@@ -142,9 +142,19 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_LOG_RETENTION_HOURS: 2160
+      # 168h = the 7 days master:3103 states. It carries no dev/prod split, unlike the broker
+      # count and replication factor two lines above it, so the one value applies here too.
+      # The previous 2160 (90 days) arrived with the file's first commit and was never
+      # justified; nothing replays from the beginning (every consumer sets fromBeginning:
+      # false), so the only thing the extra 83 days bought was disk.
+      KAFKA_LOG_RETENTION_HOURS: 168
       KAFKA_LOG_RETENTION_BYTES: -1
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      # false on EVERY real broker (master:3093-3095): topics are created explicitly, by
+      # KafkaProducer.ensureTopic on first publish and by the DLQ publisher on first failure.
+      # Left on, a wrong tenant prefix or a stale .vN silently produced into a brand-new topic
+      # nothing consumes — a bug that looks like "the consumer never fired" and reproduces
+      # nowhere, because production has always had this false and rejects the publish outright.
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'false'
       KAFKA_LOG_DIRS: /var/lib/kafka/data
       CLUSTER_ID: h-CJFTy_TE2EQva8gyOGJA
     ports:

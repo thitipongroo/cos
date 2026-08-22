@@ -45,7 +45,7 @@ jest.mock('../schema-registry.client', () => ({
 
 import { KafkaConsumer } from '../consumer';
 import { decodeAvro } from '../schema-registry.client';
-import { tenantTopicPattern, PLATFORM_EVENTS_TOPIC } from '../topic-catalog';
+import { tenantTopicPattern, PLATFORM_EVENTS_TOPIC, exactTopicPattern } from '../topic-catalog';
 
 type HandleMessage = (p: unknown) => Promise<void>;
 
@@ -137,11 +137,20 @@ describe('KafkaConsumer connect/disconnect (lines 54-72)', () => {
       eventTypes: ['platform.enterprise.contract_signed.v1'],
     });
 
-    // Platform events live on the shared platform.events topic, not a per-tenant RegExp (§7.3).
+    // Platform events live on the ONE shared platform.events topic, not a per-tenant topic (§7.3) —
+    // but subscribed by an exact-match pattern rather than the literal name. A literal subscription
+    // throws when the topic does not exist yet, and nothing creates platform.events ahead of the
+    // first publish (master:3093-3100 gives topic creation to the producer). Now that no broker
+    // auto-creates topics, a consumer that starts before any platform event has ever been published
+    // would have failed to connect at all.
     expect(consumerMock.subscribe).toHaveBeenCalledWith({
-      topic: PLATFORM_EVENTS_TOPIC,
+      topic: exactTopicPattern(PLATFORM_EVENTS_TOPIC),
       fromBeginning: false,
     });
+    // Still exactly the one topic, and still not a per-tenant pattern.
+    const [{ topic }] = consumerMock.subscribe.mock.calls[0] as [{ topic: RegExp }];
+    expect(topic.test(PLATFORM_EVENTS_TOPIC)).toBe(true);
+    expect(topic.test(`tenant-abc.${PLATFORM_EVENTS_TOPIC}`)).toBe(false);
   });
 
   it('disconnect() disconnects the underlying consumer', async () => {

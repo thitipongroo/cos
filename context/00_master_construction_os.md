@@ -2971,7 +2971,18 @@ Generate:
 - PostgreSQL migration files for all entities
 - NestJS module with Kafka consumer handlers for procurement events
 - Budget aggregation service (recalculates on each transaction)
-- Variance calculation: (actual + committed) vs allocated per budget_line
+- Variance calculation: (actual + committed) vs allocated, per PROJECT.
+  Corrected 2026-08-22: this line used to read "per budget_line". Finance cannot attribute a cost to
+  a budget line with anything the specs give it — the Event Contract (spec `32 §Event payloads`,
+  rows 3 and 4) defines `procurement.po.created.v1` and `procurement.invoice.received.v1` with no
+  `boq_item_id` and no budget-line reference, and the Constraints below forbid Finance from querying
+  Procurement's tables directly. `cost_transactions.budget_line_id` above stays as declared, a
+  nullable column for manual assignment; no spec file defines an endpoint that performs that
+  assignment, so nothing populates it today and a per-line figure would read 0.0000 for every line
+  in every project.
+  To make per-line variance real, the Event Contract has to carry the attribution first — that is a
+  change to spec 32 and to Procurement's emitter (a new event version), not something the Finance
+  service can derive on its own.
 - Decimal.js used for all calculations
 - DTOs with validation
 - OpenAPI 3.1 spec
@@ -3090,7 +3101,28 @@ Kafka Configuration:
   Consumer subscription: shared group {service}.shared subscribes per-tenant topics via RegExp
                 (^[^.]+\.{event_type}$) + validates tenant_id header before processing (§7.3)
   Default retention: 7 days
-  Log compaction: enabled for entity state topics (project.project.*, etc.)
+  Log compaction: enabled for entity state topics — defined 2026-08-23.
+                An ENTITY STATE TOPIC is one whose events describe the current state of a single
+                durable entity, named by a stable id in the payload, such that keeping only the
+                LATEST message per entity still leaves a correct picture. That is exactly the trade
+                compaction makes, so it is the only shape of topic that can survive it. Records of
+                occurrences — a delivery received, a safety incident, a daily report, a check-in —
+                are the opposite and must never be compacted: each is a separate fact with no newer
+                version to replace it.
+                Such a topic is KEYED BY THAT ENTITY ID, not by tenant_id as every other topic is.
+                The two settings are inseparable and are declared together in ENTITY_STATE_TOPICS
+                (packages/@cos/shared/src/kafka/topic-catalog.ts), because compacting a
+                tenant-keyed topic would leave ONE surviving event per tenant and delete the rest.
+                A publish whose payload lacks the id is refused rather than sent unkeyed: an unkeyed
+                message is spread round-robin, so compaction could never pair an entity's old and
+                new versions, and the topic would grow forever while reporting itself compacted.
+                The list is explicit and short. This line previously read "project.project.*, etc.";
+                the project family is the canonical construction.project.* (see the numbered event
+                mapping above, project.created -> [construction.project.created.v1]) and "etc."
+                named nothing. Adding a topic is a data-retention decision, made one entry at a
+                time. construction.project.risk_raised.v1 and .risk_status_changed.v1 are
+                deliberately excluded: they carry project_id but are events about a RISK, and keying
+                them by project would collapse every risk on a project into the last one raised.
   Max message size: 1MB (large payloads → store in S3, reference in event)
 
 Shared Event SDK (@construction-os/shared package):
@@ -3118,7 +3150,12 @@ Dead Letter Queue (DLQ):
   After max retries: publish to DLQ topic + alert via observability
 
 Monitoring:
-  - Consumer lag: Prometheus consumer_group_lag metric
+  - Consumer lag: Prometheus kafka_consumer_lag gauge
+    (corrected 2026-08-23: this line named `consumer_group_lag`, which is not a metric — it
+     reads as the `consumer_group` LABEL on kafka_messages_consumed_total conflated with the
+     lag gauge. The Phase 15 metric catalogue at §Phase 15 Metrics has always listed
+     `kafka_consumer_lag (gauge)`, and that is the name @cos/tracing, @cos/shared/kafka/metrics,
+     both Grafana dashboards and the Prometheus alert rule all use.)
   - Producer errors: Prometheus kafka_producer_error_total counter
   - DLQ depth: alert when DLQ topic message count > 0
 

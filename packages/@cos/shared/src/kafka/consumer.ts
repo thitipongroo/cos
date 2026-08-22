@@ -10,7 +10,12 @@ import { decodeAvro } from './schema-registry.client';
 import { DlqPublisher } from './dlq';
 import { createLogger } from '@cos/logger';
 import type { BaseEventEnvelope } from '@cos/types';
-import { isPlatformEvent, tenantTopicPattern, PLATFORM_EVENTS_TOPIC } from './topic-catalog';
+import {
+  isPlatformEvent,
+  tenantTopicPattern,
+  exactTopicPattern,
+  PLATFORM_EVENTS_TOPIC,
+} from './topic-catalog';
 
 const logger = createLogger('kafka-consumer');
 
@@ -70,7 +75,7 @@ export class KafkaConsumer {
       // also picks up topics provisioned for tenants onboarded after startup, and
       // never throws when no topic exists yet (unlike a literal-name subscription).
       const topic = isPlatformEvent(eventType)
-        ? PLATFORM_EVENTS_TOPIC
+        ? exactTopicPattern(PLATFORM_EVENTS_TOPIC)
         : tenantTopicPattern(eventType);
       await this.consumer.subscribe({ topic, fromBeginning });
     }

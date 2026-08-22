@@ -37,20 +37,30 @@ export class WhtService {
       );
     }
 
-    const rate = Number(rule.rate);
-    const whtAmount = amount
-      .times(new Decimal(rate.toString()))
-      .dividedBy(new Decimal('100'))
-      .toDecimalPlaces(4);
+    // Straight from the stored value into Decimal. The previous form went through
+    // `Number(rule.rate)` and back out via `.toString()`; for a numeric(5,2) column that round-trip
+    // is in fact lossless across the column's entire range, but master:991 asks that money never
+    // touch a JS number at all, and a rule that has to be defended with a range proof every time it
+    // is read is a rule that will eventually be read wrong.
+    const rate = new Decimal(rule.rate);
+    const whtAmount = amount.times(rate).dividedBy(new Decimal('100')).toDecimalPlaces(4);
 
     // globalThis.crypto.randomUUID() is available in Node.js ≥19 without imports.
     const certificateRef = `WHT-${globalThis.crypto.randomUUID()}`;
 
     logger.info(
-      { jurisdiction, vendorType, rate, whtAmount: whtAmount.toFixed(4), certificateRef },
+      {
+        jurisdiction,
+        vendorType,
+        rate: rate.toString(),
+        whtAmount: whtAmount.toFixed(4),
+        certificateRef,
+      },
       'wht.calculated',
     );
 
-    return { whtAmount, rate, certificateRef };
+    // WHTResult.rate stays a number for its callers; it is derived from the Decimal rather than
+    // being the source the arithmetic ran on.
+    return { whtAmount, rate: rate.toNumber(), certificateRef };
   }
 }
