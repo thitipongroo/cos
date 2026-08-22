@@ -26,6 +26,10 @@ import {
   defineQuery,
   log,
 } from '@temporalio/workflow';
+// decimal.js is a direct backend dependency and pure/deterministic, so it is safe inside the
+// workflow sandbox. Imported from the npm package rather than the @cos/financial workspace
+// package so the Temporal workflow bundler resolves it like any other node_modules import.
+import Decimal from 'decimal.js';
 import type { updatePoStatus, notifyApprover, compensateCancelledPo } from './po.activities';
 
 // ── Activity proxy ────────────────────────────────────────────────────────
@@ -109,14 +113,24 @@ type PoStatus =
 
 // ── Approval tier builder ─────────────────────────────────────────────────
 
+/**
+ * Which approval tiers a PO must clear, from its total (master:1513-1518).
+ *
+ * The amount stays a DECIMAL end to end: it arrives as the DECIMAL(19,4) string the database holds
+ * and is compared with decimal.js. It was previously parseFloat-ed into a JS number, which the
+ * Financial Precision spec forbids outright — "Never use JavaScript Number for monetary
+ * calculations" (master:991) — and this is the approval chain, one of the three areas QM-1 singles
+ * out as high-risk enough to require mutation testing.
+ */
 function buildApprovalTiers(
-  totalThb: number,
+  totalAmountThb: string,
   thresholds: PoWorkflowParams['approval_thresholds'],
   approvers: PoWorkflowParams['approvers'],
 ): Array<{ tier: string; approver_id: string }> {
-  if (totalThb <= thresholds.pm_only_max) {
+  const totalThb = new Decimal(totalAmountThb);
+  if (totalThb.lte(thresholds.pm_only_max)) {
     return [{ tier: 'PM', approver_id: approvers.pm_id }];
-  } else if (totalThb <= thresholds.pm_finance_max) {
+  } else if (totalThb.lte(thresholds.pm_finance_max)) {
     return [
       { tier: 'PM', approver_id: approvers.pm_id },
       { tier: 'FINANCE', approver_id: approvers.finance_id },
@@ -153,7 +167,7 @@ export async function poWorkflow(params: PoWorkflowParams): Promise<void> {
 
   // Approval tracking
   const approvalTiers = buildApprovalTiers(
-    parseFloat(params.total_amount_thb),
+    params.total_amount_thb,
     params.approval_thresholds,
     params.approvers,
   );
