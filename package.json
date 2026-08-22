@@ -17,7 +17,7 @@
     "test:integration": "turbo run test:integration",
     "test:contract": "jest --config jest.contract.config.js",
     "test:spec-derived": "jest --config jest.spec-derived.config.js",
-    "test:spec-derived:integration": "jest --config jest.spec-derived-integration.config.js --runInBand",
+    "test:spec-derived:integration": "node --max-old-space-size=8192 ./node_modules/jest/bin/jest.js --config jest.spec-derived-integration.config.js --runInBand",
     "lint": "turbo run lint",
     "lint:fix": "turbo run lint:fix",
     "type-check": "turbo run type-check",

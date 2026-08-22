@@ -310,6 +310,11 @@ describe('SiteOps Integration (Phase 6)', () => {
         .send({
           status: 'OPEN', // client wants OPEN
           client_submitted_at: '2026-06-11T07:00:00Z', // client was offline before server changed at 09:00
+          // The state the client edited against. Its absence is what used to make this test pass for
+          // the wrong reason: without it EVERY update looked like a status conflict, including a
+          // plain online status change, so an issue's status could never move at all. master:2591
+          // requires both halves — the server changed status AND the client held an offline edit.
+          last_known_modified_at: '2026-06-11T06:00:00Z',
         });
 
       // Server status (IN_PROGRESS) wins per FIELD_LEVEL_MERGE; ConflictRecord created

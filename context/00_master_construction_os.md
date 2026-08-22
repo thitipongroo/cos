@@ -2648,8 +2648,14 @@ Task Completion Gates (server-side validation — not enforced offline):
                       status = 'OPEN' and severity IN ('HIGH','CRITICAL')
     6. Delay        — task.status != 'BLOCKED'
                       (construction.delay.detected.v1 event auto-sets task.status = BLOCKED)
-    7. Material     — linked BOQ item's purchase order has at least one delivery record
-                      with status != 'PENDING' (partial or complete delivery required)
+    7. Material     — linked BOQ item's purchase order has at least one delivery record.
+                      Corrected 2026-08-22: this line used to read "with status != 'PENDING'",
+                      but `deliveries` has no status column and the entity definition above
+                      (§Phase 5 procurement entities) never declared one. A deliveries row carries
+                      delivered_at and received_by, both NOT NULL, so filing one IS recording
+                      receipt — there is no pending state for it to be in. If partial-vs-complete
+                      receipt ever has to be distinguished, that is a delivery-status feature to
+                      spec, not a condition this gate can already evaluate.
 
   Warn only — HTTP 200 returned; response includes warnings[] array:
     8. Budget 85%–99%  — BOQ item actual_cost >= 85% of budget → warning level: ORANGE
@@ -3518,9 +3524,10 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
       deleted_at TIMESTAMPTZ DEFAULT now(); INDEX (tenant_id, entity_type, deleted_at). Per-entity
       delete→tombstone wiring is deferred (contract complete; `deleted[]` stays empty until each entity records here).
     - Entity offline scope (enforce per spec `17 §17.4` — do NOT allow offline writes outside this list):
-        * Offline read/write: tasks, site reports, inspections, workforce attendance, material consumption, safety checklists + incidents, equipment usage
-        * Online-required (read-cache only, no offline write): POs, vendor invoices / AR / receipts / payments, budget-line mutations, vendor master, permissions/roles
+        * Offline read/write: tasks, site reports, inspections, workforce attendance, material consumption, safety checklists + incidents, equipment usage, deliveries received against a PO (amended 2026-08-19), purchase requests (amended 2026-08-19)
+        * Online-required (read-cache only, no offline write): POs, vendor invoices / AR / receipts / payments, budget-line mutations, vendor master, permissions/roles, tenant settings/configuration, sync conflict resolution (§17.5)
         * Read-only SWR cache: project master, BOQ lines, room/floor reference, drawings (size-limited), vendor directory
+        * Pushable types are declared once as `SYNC_PUSHABLE_ENTITY_TYPES` in `@cos/types`, imported by both the API and the mobile client; a backend contract test asserts `SyncService.push()` handles exactly those
     - Sync priority order on reconnect (spec `17 §17.6`): 1 safety incidents → 2 attendance → 3 inspections → 4 task progress → 5 site reports → 6 material → 7 equipment usage → 8 photo/media (deferred last)
     - Data size limits (spec `17 §17.7`): local DB ≤ 500 MB · drawing cache ≤ 200 MB (LRU eviction) · photo queue ≤ 100 (warn user at 80) · sync batch ≤ 500 records/cycle
     - BackgroundSyncTask (expo-task-manager registration)

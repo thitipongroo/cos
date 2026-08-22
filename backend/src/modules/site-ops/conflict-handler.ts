@@ -81,14 +81,34 @@ export function resolveIssueConflict(
   const serverModifiedAt = serverRow['modified_at'] as string | Date | undefined;
   const serverTs = serverModifiedAt ? new Date(serverModifiedAt).getTime() : 0;
 
-  // Server status is always authoritative
-  const resolvedStatus = serverRow['status'];
+  // master:2591 states TWO conditions, and both have to hold: "if status was changed SERVER-SIDE
+  // while client had OFFLINE EDIT". `last_known_modified_at` is what carries the second one — it is
+  // the client saying "this is the state I was working from". Absent, the caller is editing what it
+  // is currently looking at, which is an ordinary update with nothing to reconcile.
+  //
+  // This gate used to be missing, and the resolver flagged on `serverRow.status !== client.status`
+  // alone. That is true of any ordinary status change, and also of any PATCH that simply omits
+  // `status` (undefined !== 'OPEN'), so every edit filed a STATUS_CONFLICT and paged three roles
+  // about it — while the status itself was written back unchanged, leaving no route in the service
+  // able to move an issue at all and `site.issue.status_changed` (master:2810) unreachable.
+  //
+  // resolveReportConflict above has always had the equivalent gate (`lastKnownTs > 0`); this is the
+  // same rule, not a new one.
+  const lastKnownModifiedAt = clientPayload['last_known_modified_at'] as string | undefined;
+  const lastKnownTs = lastKnownModifiedAt ? new Date(lastKnownModifiedAt).getTime() : 0;
+  const serverMovedSinceClientLooked = serverTs > lastKnownTs && lastKnownTs > 0;
 
-  // Detect status conflict: server changed status while client was offline
+  // A field the client did not send is untouched, NOT cleared: undefined reaches the repository,
+  // which COALESCEs it back to the stored value.
   const clientStatus = clientPayload['status'];
-  const statusChangedServerSide = resolvedStatus !== clientStatus;
 
-  // Text fields: last writer wins
+  // Server status is authoritative in a genuine conflict (master:2586) — the offline device cannot
+  // know what happened while it was away. With no conflict, the client's status is simply applied.
+  const resolvedStatus = serverMovedSinceClientLooked
+    ? serverRow['status']
+    : (clientStatus ?? serverRow['status']);
+
+  // Text fields: last writer wins on client_submitted_at.
   const resolvedDescription =
     clientTs >= serverTs ? clientPayload['description'] : serverRow['description'];
   const resolvedResolutionNote =
@@ -102,7 +122,14 @@ export function resolveIssueConflict(
     modified_at: new Date().toISOString(),
   };
 
-  const conflictStatus: ConflictStatus = statusChangedServerSide ? 'CONFLICT_FLAGGED' : 'ACCEPTED';
+  // Flagged only when the server actually overrode a status the client had set for itself. A client
+  // that agrees with the server, or that never mentioned status, has not conflicted with anybody.
+  const statusOverriddenServerSide =
+    serverMovedSinceClientLooked && clientStatus !== undefined && clientStatus !== resolvedStatus;
+
+  const conflictStatus: ConflictStatus = statusOverriddenServerSide
+    ? 'CONFLICT_FLAGGED'
+    : 'ACCEPTED';
 
   return {
     resolved_payload: resolvedPayload,

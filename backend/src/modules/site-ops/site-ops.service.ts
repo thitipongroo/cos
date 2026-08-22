@@ -420,9 +420,17 @@ export class SiteOpsService {
     const resolved = resolution.resolved_payload;
     const updated = await this.repo.updateIssue(issueId, {
       description: resolved['description'] as string | null,
-      severity: resolved['severity'] as string,
+      // severity is NOT one of the fields master:2583-2589 merges, so nothing makes the server
+      // authoritative over it. Taking it off `resolved` — which is built from the server row —
+      // fed the stored value straight back, and the repository's COALESCE turned every severity
+      // change into a no-op. It comes from the client, like any ordinary update field.
+      severity: dto.severity,
       status: resolved['status'] as string,
-      assigned_to: dto.assigned_to ?? null,
+      // Passed through UNTOUCHED. The repository distinguishes "not mentioned" (keep) from an
+      // explicit value via `patch.assigned_to !== undefined`, and `?? null` here made that test
+      // permanently true — so any edit that did not name an assignee silently un-assigned the
+      // issue, with nobody told the work now had no owner.
+      assigned_to: dto.assigned_to,
       resolution_note: resolved['resolution_note'] as string | null,
       client_submitted_at: dto.client_submitted_at ?? null,
     });
@@ -445,10 +453,14 @@ export class SiteOpsService {
       });
     }
 
+    // Both branches are reachable now that a client may actually move an issue's status. They were
+    // marked `istanbul ignore next` while resolveIssueConflict wrote the server's own status back on
+    // every request, which made `fromStatus !== toStatus` permanently false — the ignore silenced the
+    // coverage gate that would otherwise have reported this event as dead code.
     const fromStatus = existing.status;
-    /* istanbul ignore next */
-    const toStatus = (resolved['status'] as IssueRow['status']) ?? existing.status;
-    /* istanbul ignore next */
+    // resolveIssueConflict always sets `status` on the payload it returns — either the server's or
+    // the client's — so there is no absent case left to fall back from.
+    const toStatus = resolved['status'] as IssueRow['status'];
     if (fromStatus !== toStatus) {
       await this.emitEvent('site.issue.status_changed.v1', {
         issue_id: issueId,
@@ -846,7 +858,11 @@ export class SiteOpsService {
     } catch (err) {
       logger.warn({ q, err }, 'opensearch.search.failed — falling back to DB list');
       const { rows } = await this.repo.listSiteReports({ ...params, page: 1, limit: 50 });
-      return rows;
+      // `minimal` is the CALLER's contract (master:2797), not a property of the search backend. A
+      // client asks for the reduced payload because of the link it is on; handing it the full one
+      // because a server-side dependency was unavailable is the opposite of what it asked for, at
+      // the moment it can least afford it. The two branches above already apply it.
+      return params.minimal ? (rows.map(this.toMinimalReport) as unknown as SiteReportRow[]) : rows;
     }
   }
 

@@ -766,7 +766,7 @@ describe('updateIssue', () => {
     );
   });
 
-  it('server status always wins in field-level merge', async () => {
+  it('server status wins in a field-level merge once the server has moved', async () => {
     const serverIssue = makeIssue({ status: 'IN_PROGRESS' });
     mockRepo.findIssueById.mockResolvedValue(serverIssue);
     mockRepo.updateIssue.mockResolvedValue({ ...serverIssue, description: 'updated' });
@@ -775,6 +775,10 @@ describe('updateIssue', () => {
       status: IssueStatus.RESOLVED, // client wants RESOLVED
       description: 'updated',
       client_submitted_at: '2026-06-04T09:00:00Z',
+      // The client is replaying an edit made against a state older than the server row — master:2591's
+      // "while client had offline edit". Without this the call is an ordinary update and the client's
+      // status simply applies.
+      last_known_modified_at: '2026-06-04T07:00:00Z',
     });
 
     // updateIssue called with status = server status (IN_PROGRESS) not client (RESOLVED)
@@ -794,6 +798,7 @@ describe('updateIssue', () => {
       status: IssueStatus.OPEN, // client thought it was still OPEN
       description: 'my update',
       client_submitted_at: '2026-06-04T09:00:00Z',
+      last_known_modified_at: '2026-06-04T07:00:00Z',
     });
 
     expect(mockRepo.createConflictRecord).toHaveBeenCalledTimes(1);
@@ -1078,10 +1083,11 @@ describe('listConflictRecords', () => {
 });
 
 describe('updateIssue — status_changed event emission', () => {
-  it('does NOT emit status_changed when server status wins (fromStatus === toStatus)', async () => {
-    // Server status is always authoritative in FIELD_LEVEL_MERGE.
-    // Client sends status='IN_PROGRESS' but server has 'OPEN' → resolved = 'OPEN' = fromStatus.
-    // Therefore fromStatus === toStatus → no status_changed event.
+  it('does NOT emit status_changed when the status did not move', async () => {
+    // The client sends the status the server already holds, so resolved === fromStatus and there is
+    // nothing to announce. (This used to be true of EVERY update, because the resolver wrote the
+    // server's status back unconditionally — which is why the event's branch was marked
+    // `istanbul ignore next` rather than tested.)
     const serverIssue = makeIssue({ status: 'OPEN' });
     mockRepo.findIssueById.mockResolvedValue(serverIssue);
     mockRepo.updateIssue.mockResolvedValue({ ...serverIssue, status: 'OPEN' });
@@ -1090,6 +1096,31 @@ describe('updateIssue — status_changed event emission', () => {
     const instance = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
     expect(instance.publish).not.toHaveBeenCalledWith(
       expect.objectContaining({ event_type: expect.stringContaining('status_changed') }),
+    );
+  });
+});
+
+describe('updateIssue — an ordinary status change', () => {
+  it('applies the client status and announces it (master:2810)', async () => {
+    const serverIssue = makeIssue({ status: 'OPEN' });
+    mockRepo.findIssueById.mockResolvedValue(serverIssue);
+    mockRepo.updateIssue.mockResolvedValue({ ...serverIssue, status: 'IN_PROGRESS' });
+
+    await service.updateIssue('issue-1', { status: IssueStatus.IN_PROGRESS });
+
+    expect(mockRepo.updateIssue).toHaveBeenCalledWith(
+      'issue-1',
+      expect.objectContaining({ status: 'IN_PROGRESS' }),
+    );
+    // No conflict: the caller is editing the state it is looking at.
+    expect(mockRepo.createConflictRecord).not.toHaveBeenCalled();
+
+    const instance = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
+    expect(instance.publish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event_type: 'site.issue.status_changed.v1',
+        payload: expect.objectContaining({ from_status: 'OPEN', to_status: 'IN_PROGRESS' }),
+      }),
     );
   });
 });

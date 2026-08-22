@@ -9,8 +9,14 @@ import {
   resolveAnnotationConflict,
 } from '../conflict-handler';
 
+const OLDEST_TS = '2026-06-04T07:00:00.000Z';
 const OLDER_TS = '2026-06-04T08:00:00.000Z';
 const NEWER_TS = '2026-06-04T09:00:00.000Z';
+
+// What the client last saw. Its presence is what tells resolveIssueConflict that the caller is
+// replaying an edit made against a state it can no longer see — master:2591's "while client had
+// offline edit". Without it there is no conflict to resolve, only an ordinary update.
+const CLIENT_LAST_SAW_BEFORE_EVERYTHING = { last_known_modified_at: OLDEST_TS };
 
 // ── site_reports: LAST_WRITE_WINS ─────────────────────────────────────────
 
@@ -112,8 +118,13 @@ describe('resolveIssueConflict — FIELD_LEVEL_MERGE', () => {
     expect(result.resolved_payload['description']).toBe('updated desc');
   });
 
-  it('server status always wins', () => {
-    const client = { description: 'x', status: 'RESOLVED', resolution_note: null };
+  it('server status wins when the server moved while the client was away', () => {
+    const client = {
+      description: 'x',
+      status: 'RESOLVED',
+      resolution_note: null,
+      ...CLIENT_LAST_SAW_BEFORE_EVERYTHING,
+    };
     const server = {
       description: 'x',
       status: 'IN_PROGRESS',
@@ -125,7 +136,12 @@ describe('resolveIssueConflict — FIELD_LEVEL_MERGE', () => {
   });
 
   it('CONFLICT_FLAGGED when server changed status while client was offline', () => {
-    const client = { description: 'update', status: 'OPEN', resolution_note: null };
+    const client = {
+      description: 'update',
+      status: 'OPEN',
+      resolution_note: null,
+      ...CLIENT_LAST_SAW_BEFORE_EVERYTHING,
+    };
     const server = {
       description: 'original',
       status: 'RESOLVED',
@@ -134,6 +150,44 @@ describe('resolveIssueConflict — FIELD_LEVEL_MERGE', () => {
     };
     const result = resolveIssueConflict(client, server, OLDER_TS);
     expect(result.conflict_status).toBe('CONFLICT_FLAGGED');
+  });
+
+  it('applies the client status on an ordinary update and flags nothing', () => {
+    // No last_known_modified_at: the caller is editing what it is looking at. This is the case the
+    // resolver used to get wrong in both directions — the status was reverted to the server's and a
+    // STATUS_CONFLICT was filed against a caller who had not conflicted with anyone.
+    const client = { description: 'x', status: 'IN_PROGRESS', resolution_note: null };
+    const server = {
+      description: 'x',
+      status: 'OPEN',
+      resolution_note: null,
+      modified_at: OLDER_TS,
+    };
+    const result = resolveIssueConflict(client, server, NEWER_TS);
+    expect(result.resolved_payload['status']).toBe('IN_PROGRESS');
+    expect(result.conflict_status).toBe('ACCEPTED');
+  });
+
+  it('leaves the status alone when the client does not mention it', () => {
+    // `undefined !== 'OPEN'` used to be read as a status conflict, so editing a description alone
+    // paged SITE_ENGINEER, PROJECT_MANAGER and TENANT_ADMIN.
+    const client = { description: 'typo fixed' };
+    const server = {
+      description: 'typo',
+      status: 'OPEN',
+      resolution_note: null,
+      modified_at: OLDER_TS,
+    };
+    const result = resolveIssueConflict(client, server, NEWER_TS);
+    expect(result.resolved_payload['status']).toBe('OPEN');
+    expect(result.conflict_status).toBe('ACCEPTED');
+  });
+
+  it('does not flag a client that agrees with the server status', () => {
+    const client = { status: 'RESOLVED', ...CLIENT_LAST_SAW_BEFORE_EVERYTHING };
+    const server = { status: 'RESOLVED', modified_at: NEWER_TS };
+    const result = resolveIssueConflict(client, server, OLDER_TS);
+    expect(result.conflict_status).toBe('ACCEPTED');
   });
 
   it('description: last writer wins — client newer takes client description', () => {
@@ -172,8 +226,13 @@ describe('resolveIssueConflict — FIELD_LEVEL_MERGE', () => {
     expect(result.resolved_payload['resolution_note']).toBe('fixed it');
   });
 
-  it('resolved_payload always contains server status', () => {
-    const client = { description: 'x', status: 'CLOSED', resolution_note: null };
+  it('resolved_payload carries the server status once a conflict is detected', () => {
+    const client = {
+      description: 'x',
+      status: 'CLOSED',
+      resolution_note: null,
+      ...CLIENT_LAST_SAW_BEFORE_EVERYTHING,
+    };
     const server = {
       description: 'y',
       status: 'OPEN',
@@ -190,7 +249,12 @@ describe('resolveIssueConflict — FIELD_LEVEL_MERGE', () => {
     ['unflagged', 'OPEN', 'ACCEPTED'],
     ['flagged', 'RESOLVED', 'CONFLICT_FLAGGED'],
   ])('should_persist is true for a %s merge', (_label, serverStatus, expectedStatus) => {
-    const client = { description: 'update', status: 'OPEN', resolution_note: null };
+    const client = {
+      description: 'update',
+      status: 'OPEN',
+      resolution_note: null,
+      ...CLIENT_LAST_SAW_BEFORE_EVERYTHING,
+    };
     const server = {
       description: 'original',
       status: serverStatus,
