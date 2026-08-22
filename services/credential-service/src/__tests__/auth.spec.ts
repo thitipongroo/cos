@@ -1,3 +1,11 @@
+// TDD OQ-46. This suite exercises registerAuth with the REAL verifyBearer, which returns null for
+// a request carrying no Authorization header. Two cases here used to pass BECAUSE of that: a
+// protected route reached with identity headers alone was honoured. They are now 401s.
+//
+// The token paths — user token, service token, header disagreement — are in auth-jwt.spec.ts,
+// which mocks verifyBearer. This file keeps what it can test without one: the public-path
+// exemptions and the refusals.
+
 import Fastify from 'fastify';
 import { registerTrace } from '../plugins/trace.js';
 import { registerAuth, isPublicPath } from '../plugins/auth.js';
@@ -32,11 +40,13 @@ describe('auth (CS-8)', () => {
     await app.close();
   });
 
-  it('rejects a protected route without identity headers (401)', async () => {
+  it('rejects a protected route without a token (401)', async () => {
     const app = await appWithAuth();
     const res = await app.inject({ method: 'GET', url: '/secure' });
     expect(res.statusCode).toBe(401);
-    expect(res.json().error.code).toBe('MISSING_TENANT_HEADER');
+    // INVALID_TOKEN, not MISSING_TENANT_HEADER: the request fails at "no credential" now, before
+    // anything looks at headers at all.
+    expect(res.json().error.code).toBe('INVALID_TOKEN');
     await app.close();
   });
 
@@ -74,14 +84,17 @@ describe('auth (CS-8)', () => {
     await app.close();
   });
 
-  it('populates identity from Kong headers (role defaults to empty)', async () => {
+  it('REFUSES identity headers with no token — the OQ-46 hole', async () => {
+    // This returned 200 with tenant t1. credential-service holds every tenant's issuer key material
+    // and was ClusterIP with no NetworkPolicy, no mesh, and no gateway in front of it.
     const app = await appWithAuth();
     const res = await app.inject({
       method: 'GET',
       url: '/secure',
       headers: { 'x-tenant-id': 't1', 'x-user-id': 'u1', traceparent: '00-abc-def-01' },
     });
-    expect(res.json()).toEqual({ tenantId: 't1', userId: 'u1', role: '' });
+    expect(res.statusCode).toBe(401);
+    expect(res.json().error.code).toBe('INVALID_TOKEN');
     await app.close();
   });
 });

@@ -10,7 +10,8 @@ import type { AiReportResponse } from '../../../lib/api/types';
 
 /**
  * Executive AI reports (§20.7.1) — POST /api/v1/ai/reports/executive-summary
- * (Kong routes /api/v1/ai → ai-gateway). When the LLM provider is the Phase 11
+ * (the backend proxies /api/v1/ai → ai-gateway — TDD OQ-46; Kong never routed it, because the Kong
+ * config carrying that route is applied by nothing). When the LLM provider is the Phase 11
  * stub the endpoint returns 503; that is surfaced as an honest "unavailable"
  * state rather than an error dump.
  */

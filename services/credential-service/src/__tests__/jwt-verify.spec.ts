@@ -61,6 +61,7 @@ describe('verifyBearer', () => {
     mockDecode.mockReturnValue({ header: { kid: 'k1' } });
     mockVerify.mockReturnValue({ tenant_id: 't1', user_id: 'u1', role: 'FINANCE' });
     expect(await verifyBearer('Bearer a')).toEqual({
+      kind: 'user',
       tenantId: 't1',
       userId: 'u1',
       role: 'FINANCE',
@@ -70,9 +71,67 @@ describe('verifyBearer', () => {
   it('falls back to sub for userId, empty role, and empty userId when all absent', async () => {
     mockDecode.mockReturnValue({ header: { kid: 'k1' } });
     mockVerify.mockReturnValueOnce({ tenant_id: 't1', sub: 'sub-1' });
-    expect(await verifyBearer('Bearer a')).toEqual({ tenantId: 't1', userId: 'sub-1', role: '' });
+    expect(await verifyBearer('Bearer a')).toEqual({
+      kind: 'user',
+      tenantId: 't1',
+      userId: 'sub-1',
+      role: '',
+    });
     mockVerify.mockReturnValueOnce({ tenant_id: 't1' });
-    expect((await verifyBearer('Bearer a'))?.userId).toBe('');
+    expect(await verifyBearer('Bearer a')).toEqual({
+      kind: 'user',
+      tenantId: 't1',
+      userId: '',
+      role: '',
+    });
+  });
+
+  // ── Service tokens (TDD OQ-46) ─────────────────────────────────────────────
+  // `azp` is NOT the discriminator: both kinds were fetched from a live Keycloak 26.6.4 and it reads
+  // `cos-backend` on both, because Path A users authenticate through that same client.
+  describe('service account tokens', () => {
+    it('recognises the backend service account when both signals match', async () => {
+      mockDecode.mockReturnValue({ header: { kid: 'k1' } });
+      mockVerify.mockReturnValue({
+        azp: 'cos-backend',
+        preferred_username: 'service-account-cos-backend',
+      });
+      expect(await verifyBearer('Bearer a')).toEqual({ kind: 'service', clientId: 'cos-backend' });
+    });
+
+    it('REFUSES the right azp with a human username', async () => {
+      // A user token whose tenant_id mapper failed. Keying on azp alone would promote it to the
+      // trusted-subsystem path, and with it the freedom to set x-user-role.
+      mockDecode.mockReturnValue({ header: { kid: 'k1' } });
+      mockVerify.mockReturnValue({ azp: 'cos-backend', preferred_username: '+66800000001' });
+      await expect(verifyBearer('Bearer a')).rejects.toThrow(/tenant_id/);
+    });
+
+    it('REFUSES the right username under another azp', async () => {
+      mockDecode.mockReturnValue({ header: { kid: 'k1' } });
+      mockVerify.mockReturnValue({
+        azp: 'cos-web',
+        preferred_username: 'service-account-cos-backend',
+      });
+      await expect(verifyBearer('Bearer a')).rejects.toThrow(/tenant_id/);
+    });
+
+    it('follows SERVICE_CLIENT_ID when it is set explicitly', async () => {
+      process.env['SERVICE_CLIENT_ID'] = 'cos-internal';
+      try {
+        mockDecode.mockReturnValue({ header: { kid: 'k1' } });
+        mockVerify.mockReturnValue({
+          azp: 'cos-internal',
+          preferred_username: 'service-account-cos-internal',
+        });
+        expect(await verifyBearer('Bearer a')).toEqual({
+          kind: 'service',
+          clientId: 'cos-internal',
+        });
+      } finally {
+        delete process.env['SERVICE_CLIENT_ID'];
+      }
+    });
   });
 
   it('rebuilds the JWKS client when the URI changes and reuses it otherwise (env override)', async () => {

@@ -74,23 +74,37 @@ async def test_openai_maps_content_and_usage():
     assert (resp.prompt_tokens, resp.completion_tokens, resp.total_tokens) == (10, 20, 30)
 
 
+# These two tests asserted the behaviour OQ-40 removed: model_for_hint() returned a hardcoded
+# "gpt-4o" for every hint because MODEL_BY_HINT was an empty dict and config/routing.yaml was loaded
+# by nothing. They were left behind when that was fixed, and kept passing only in the sense that
+# nobody ran this file — the closure verified tests/test_routing.py alone. They now assert the
+# routing table, so a regression to a hardcoded name fails here as well as there.
 @pytest.mark.asyncio
-async def test_openai_uses_gpt_4o_and_shapes_messages():
+async def test_openai_routes_the_hint_through_the_routing_table():
     client = _FakeOpenAIClient()
     provider = OpenAILLMProvider(client=client)
 
-    await provider.complete([Message("system", "sys"), Message("user", "hi")], "any-hint")
+    await provider.complete([Message("system", "sys"), Message("user", "hi")], "report-generation")
 
-    assert client.capture["model"] == "gpt-4o"
+    # POWERFUL tier — the model the provider sends is whatever routing.yaml resolves, never a literal.
+    assert client.capture["model"] == model_for_hint("report-generation")
     assert client.capture["messages"] == [
         {"role": "system", "content": "sys"},
         {"role": "user", "content": "hi"},
     ]
 
 
-def test_model_for_hint_defaults_to_gpt_4o():
-    assert model_for_hint("summarization") == "gpt-4o"
-    assert model_for_hint("unknown-hint") == "gpt-4o"
+def test_model_for_hint_separates_the_two_tiers():
+    # The whole point of OQ-40: a cheap hint must not bill at POWERFUL rates.
+    assert model_for_hint("summarization") == "gpt-4o-mini"
+    assert model_for_hint("report-generation") == "gpt-4o"
+    assert model_for_hint("summarization") != model_for_hint("report-generation")
+
+
+def test_unknown_hint_falls_back_to_the_configured_tier():
+    # defaults.fallback_tier is FAST, so an unrecognised hint gets the cheap model — not GPT-4o,
+    # which is what the removed behaviour did for every hint including this one.
+    assert model_for_hint("unknown-hint") == model_for_hint("summarization")
 
 
 # ── Claude fallback ─────────────────────────────────────────────────────────────

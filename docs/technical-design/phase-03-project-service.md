@@ -154,8 +154,8 @@ groups named in the phase command exists.
 | 4 routes — `project_risk`                                           | ADR-065   | ✅    | raise: `+SITE_ENGINEER`                                          |
 
 `GET /projects/mine` is referenced by ADR-055 (the universal loading component counts it as one of its
-load steps). `GET /projects/user/:userId` appears in no specification, ADR or master command — see
-§ 14 OQ-21.
+load steps). `GET /projects/user/:userId` appeared in no specification, ADR or master command until 2026-08-22,
+when the product owner had both written into `14-api-architecture` §14.4 — see § 14 OQ-21.
 
 Route-ordering detail worth keeping: `mine` and `user/:userId` are declared **before** `@Get(':id')`
 so the literal segments are not captured as a UUID param. Both carry that reason as a code comment.
@@ -357,7 +357,7 @@ Verified on **2026-08-22** against this working tree (Rule 36 — commands run, 
 - `phases/` — ADR-070, `11-database-schema` §11 (`projects.project_phases`)
 - `risks/` — ADR-065, four endpoints and two events, pulled forward by product-owner decision
 - `GET /projects/mine` — ADR-055
-- `GET /projects/user/:userId` — **no establishing record found** (§ 14 OQ-21)
+- `GET /projects/user/:userId` — `14-api-architecture` §14.4, added 2026-08-22 (§ 14 OQ-21)
 - `projects.tasks` — Phase 6, hosted in this schema
 
 ---
@@ -379,5 +379,5 @@ here.
 | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
 | OQ-19 | **Can a `COMPLETED` project be cancelled?** The command's `States:` block lists exactly three paths into `CANCELLED` — from `DRAFT`, `ACTIVE` and `ON_HOLD` — while its `Transition rules:` block says `ANY → CANCELLED`. The two disagree about `COMPLETED`. The implementation follows the `States:` block (`COMPLETED: []`), which is also what "Do NOT invent additional states or transitions" points to, but the command contradicts itself in the same code block. | Open — needs a PO decision |
 | OQ-20 | **ADR-065's implementation note is stale, and `21-mvp-scope` §21 with it.** The note says the AI-suggested feed "remain[s] a follow-up", but `RisksConsumer` is built, registered as a provider in `project.module.ts`, subscribes to `ai.risk_prediction.generated.v1` and has `ai-risk-mapping.ts` plus two spec files behind it. §21's row still reads "**Designed — ADR-065** … still post-MVP" for a register that is fully built.                                   | Open — documentation drift |
-| OQ-21 | **`GET /projects/user/:userId` has no establishing record.** It is `TENANT_ADMIN`-gated and OpenAPI-documented, so this is not a security gap — but it appears in no specification, ADR or phase command searched. Either it gains a record or it is an undocumented API surface.                                                                                                                                                                                         | Open — needs a PO decision |
+| OQ-21 | **Closed 2026-08-22 — documented rather than removed.** The endpoint had no establishing record: it is on the API surface with OpenAPI annotations and a `TENANT_ADMIN` gate, and appeared in no specification, ADR or phase command. Product-owner decision: write it into the spec. `14-api-architecture` §14.4 now lists both `GET /projects/mine` (JWT-scoped, any role) and `GET /projects/user/{user_id}` (`TENANT_ADMIN`), with the reason they are separate endpoints rather than one taking an optional `?user_id` — the authorisation differs, and a query parameter that silently changes whom you are asking about is the shape that ships without a guard. The use case is offboarding: before deactivating a user, a tenant admin has to know what they are still on. | Closed 2026-08-22 |
 | OQ-22 | **Closed 2026-08-22 — indexing moved onto the outbox.** `indexProject` caught and logged, correctly refusing to fail the business write, but there was nowhere for the failure to go: no reindex job, backfill script or repair runbook existed in `backend/src`, `scripts/` or `services/`, so one index failure removed a project from search permanently. `SearchIndexerConsumer` (`modules/search`) now consumes `construction.project.created/updated/status_changed.v1` and re-reads the CURRENT row before indexing it, so a failure gets KafkaConsumer's three retries and then the DLQ, and replaying the topic rebuilds the index. The inline call is gone, guarded by a test that fails against the old code. The write path no longer waits on OpenSearch; `searchProjects` already falls back to the paged database list. Building this surfaced [OQ-45](README.md#open-questions-register). | Closed 2026-08-22 |

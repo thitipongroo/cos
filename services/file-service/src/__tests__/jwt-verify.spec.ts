@@ -57,6 +57,7 @@ describe('verifyBearer', () => {
     mockDecode.mockReturnValue({ header: { kid: 'k1' } });
     mockVerify.mockReturnValue({ tenant_id: 't1', user_id: 'u1', role: 'FINANCE' });
     expect(await verifyBearer('Bearer a')).toEqual({
+      kind: 'user',
       tenantId: 't1',
       userId: 'u1',
       role: 'FINANCE',
@@ -66,14 +67,56 @@ describe('verifyBearer', () => {
   it('falls back to sub for userId and empty role when absent', async () => {
     mockDecode.mockReturnValue({ header: { kid: 'k1' } });
     mockVerify.mockReturnValue({ tenant_id: 't1', sub: 'sub-1' });
-    expect(await verifyBearer('Bearer a')).toEqual({ tenantId: 't1', userId: 'sub-1', role: '' });
+    expect(await verifyBearer('Bearer a')).toEqual({
+      kind: 'user',
+      tenantId: 't1',
+      userId: 'sub-1',
+      role: '',
+    });
   });
 
   it('yields empty userId when neither user_id nor sub is present', async () => {
     mockDecode.mockReturnValue({ header: { kid: 'k1' } });
     mockVerify.mockReturnValue({ tenant_id: 't1' });
     const identity = await verifyBearer('Bearer a');
-    expect(identity?.userId).toBe('');
+    expect(identity).toEqual({ kind: 'user', tenantId: 't1', userId: '', role: '' });
+  });
+
+  // ── Service tokens (TDD OQ-46) ─────────────────────────────────────────────
+  // `azp` is NOT the discriminator. Both kinds were fetched from a live Keycloak 26.6.4 and it reads
+  // `cos-backend` on both, because Path A users authenticate through that same client.
+  describe('service account tokens', () => {
+    it('recognises the backend service account when both signals match', async () => {
+      mockDecode.mockReturnValue({ header: { kid: 'k1' } });
+      mockVerify.mockReturnValue({
+        azp: 'cos-backend',
+        preferred_username: 'service-account-cos-backend',
+      });
+      expect(await verifyBearer('Bearer a')).toEqual({ kind: 'service', clientId: 'cos-backend' });
+    });
+
+    it('REFUSES a token with the right azp but a human username', async () => {
+      // A Path A user token whose tenant_id mapper failed. Keying on azp alone would hand it the
+      // trusted-subsystem path, and with it the freedom to set x-user-role.
+      mockDecode.mockReturnValue({ header: { kid: 'k1' } });
+      mockVerify.mockReturnValue({ azp: 'cos-backend', preferred_username: '+66800000001' });
+      await expect(verifyBearer('Bearer a')).rejects.toThrow(/tenant_id/);
+    });
+
+    it('REFUSES a token with the right username but another azp', async () => {
+      mockDecode.mockReturnValue({ header: { kid: 'k1' } });
+      mockVerify.mockReturnValue({
+        azp: 'cos-web',
+        preferred_username: 'service-account-cos-backend',
+      });
+      await expect(verifyBearer('Bearer a')).rejects.toThrow(/tenant_id/);
+    });
+
+    it('REFUSES a token with neither', async () => {
+      mockDecode.mockReturnValue({ header: { kid: 'k1' } });
+      mockVerify.mockReturnValue({ sub: 'whoever' });
+      await expect(verifyBearer('Bearer a')).rejects.toThrow(/tenant_id/);
+    });
   });
 
   it('loads with explicit Keycloak env overrides (non-default config branches)', async () => {
@@ -87,6 +130,7 @@ describe('verifyBearer', () => {
       mockDecode.mockReturnValue({ header: { kid: 'k1' } });
       mockVerify.mockReturnValue({ tenant_id: 't1', user_id: 'u1', role: 'R' });
       expect(await mod.verifyBearer('Bearer a')).toEqual({
+        kind: 'user',
         tenantId: 't1',
         userId: 'u1',
         role: 'R',

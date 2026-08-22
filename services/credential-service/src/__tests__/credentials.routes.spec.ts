@@ -1,12 +1,32 @@
-import Fastify, { type FastifyInstance } from 'fastify';
+// TDD OQ-46 — these requests now carry the credential the backend actually sends: a bearer token for
+// the `cos-backend` service account, with the principal in the identity headers. They used to send
+// headers alone, which registerAuth honoured; that was the hole. verifyBearer is mocked because this
+// suite tests routes, not JWKS.
+import type { FastifyInstance } from 'fastify';
 import type { Pool } from 'pg';
 import { jest } from '@jest/globals';
-import { credentialRoutes } from '../routes/credentials.routes.js';
-import { registerTrace } from '../plugins/trace.js';
-import { registerAuth } from '../plugins/auth.js';
-import { buildDidKeySuite, issueCredential, verifyCredential } from '../vc-service.js';
-import { generateEphemeralSignerKey } from '../key-manager.js';
-import { isRevoked } from '../status-list.js';
+
+// unstable_mockModule only takes effect for modules loaded AFTER it runs, so every local module here
+// is imported dynamically below. A static `import` is hoisted above the mock registration and would
+// silently load the real plugins/jwt-verify.js — which returns null for a request with no token, so
+// every request in this file would 401 and the failures would read as route bugs.
+const mockVerifyBearer = jest.fn<(h: unknown) => Promise<unknown>>();
+jest.unstable_mockModule('../plugins/jwt-verify.js', () => ({
+  verifyBearer: mockVerifyBearer,
+  InvalidTokenError: class InvalidTokenError extends Error {},
+}));
+mockVerifyBearer.mockResolvedValue({ kind: 'service', clientId: 'cos-backend' });
+
+/** The backend's service token — every authenticated request in this file carries it. */
+const SERVICE_AUTH = { authorization: 'Bearer service-token' };
+
+const Fastify = (await import('fastify')).default;
+const { credentialRoutes } = await import('../routes/credentials.routes.js');
+const { registerTrace } = await import('../plugins/trace.js');
+const { registerAuth } = await import('../plugins/auth.js');
+const { buildDidKeySuite, issueCredential, verifyCredential } = await import('../vc-service.js');
+const { generateEphemeralSignerKey } = await import('../key-manager.js');
+const { isRevoked } = await import('../status-list.js');
 
 interface FakeOpts {
   issuerRows?: unknown[];
@@ -98,8 +118,18 @@ const CONFIG = {
   database: { url: '' },
   issuer: { didWebBaseDomain: 'cos.dev' },
 };
-const ADMIN = { 'x-tenant-id': 't1', 'x-user-id': 'u1', 'x-user-role': 'TENANT_ADMIN' };
-const PM = { 'x-tenant-id': 't1', 'x-user-id': 'u2', 'x-user-role': 'PROJECT_MANAGER' };
+const ADMIN = {
+  ...SERVICE_AUTH,
+  'x-tenant-id': 't1',
+  'x-user-id': 'u1',
+  'x-user-role': 'TENANT_ADMIN',
+};
+const PM = {
+  ...SERVICE_AUTH,
+  'x-tenant-id': 't1',
+  'x-user-id': 'u2',
+  'x-user-role': 'PROJECT_MANAGER',
+};
 
 async function appPublic(pool: unknown): Promise<FastifyInstance> {
   const app = Fastify();

@@ -3,6 +3,13 @@ import { ClsServiceManager } from 'nestjs-cls';
 import { CredentialClientService, type IssueCredentialRequest } from '../credential-client.service';
 import { CLS_TENANT_ID, CLS_USER_ID, CLS_USER_ROLE } from '../../../shared/context/cls-context';
 
+// OQ-46 — every internal call now carries the backend's own client-credentials token alongside
+// the identity headers. The tests do not exercise Keycloak; they only need the client to be
+// constructible and to produce an Authorization header.
+function serviceTokenDouble() {
+  return { getToken: jest.fn().mockResolvedValue('service-token'), invalidate: jest.fn() } as never;
+}
+
 /** Run fn inside an active CLS context with the given store (null = active but empty). */
 function inCls<T>(store: Record<string, string> | null, fn: () => T | Promise<T>): Promise<T> {
   const cls = ClsServiceManager.getClsService();
@@ -31,7 +38,7 @@ describe('CredentialClientService', () => {
 
   beforeEach(() => {
     process.env['CREDENTIAL_SERVICE_URL'] = 'http://credential-service:3009';
-    service = new CredentialClientService();
+    service = new CredentialClientService(serviceTokenDouble());
   });
   afterEach(() => {
     global.fetch = originalFetch;
@@ -86,7 +93,7 @@ describe('CredentialClientService', () => {
 
   it('falls back to the internal default URL when the env var is unset', async () => {
     delete process.env['CREDENTIAL_SERVICE_URL'];
-    const svc = new CredentialClientService();
+    const svc = new CredentialClientService(serviceTokenDouble());
     const fetchMock = mockFetchOnce({ ok: true, json: async () => ({ verified: false }) });
     await inCls(ADMIN_CTX, () => svc.verify({}));
     const [url] = fetchMock.mock.calls[0] as [string];

@@ -260,6 +260,13 @@ alerts that observe these controls).
 None new. Three existing entries land squarely in this phase and are tracked in the register rather
 than duplicated here:
 
+- [OQ-46](README.md#open-questions-register) — **closed 2026-08-22.** The API gateway that three
+  services' auth layers named as their first line of defence is deployed nowhere, and two of them
+  accepted `x-tenant-id` — and, in file-service's case, `x-user-role` — with no bearer token at
+  all. On ClusterIP Services with no NetworkPolicy and no mesh, any pod in the namespace could
+  act as `SYSTEM_ADMIN` in any tenant. All three now require a verified token; the backend
+  authenticates with a `client_credentials` service token and the headers name only the
+  principal. NetworkPolicies added as the second layer.
 - [OQ-17](README.md#open-questions-register) — **closed 2026-08-22, risk accepted.** QM-7's account
   lockout is implemented at Keycloak and therefore covers Path B only; a failed SMS OTP is checked in
   `OtpService` against Redis and never increments a Keycloak failure counter. Path A keeps the

@@ -72,9 +72,24 @@ class TestGetVerifiedTenant:
         monkeypatch.setattr(auth.jwt, "decode", lambda *a, **k: {"tenant_id": "t-1"})
         assert auth.get_verified_tenant(_Req(authorization="Bearer x")) == "t-1"
 
-    def test_header_only_when_no_bearer(self):
-        # No token → fall back to the Kong-verified x-tenant-id header.
-        assert auth.get_verified_tenant(_Req(**{"x-tenant-id": "t-2"})) == "t-2"
+    def test_header_alone_is_refused(self):
+        # TDD OQ-46. This used to return "t-2". The justification was that Kong verified the token at
+        # the edge and injected the header itself — but the Kong config that does the strip-and-inject
+        # is applied by no ArgoCD Application, exists as no KongPlugin CRD, and the only charts naming
+        # `className: kong` do so on an Ingress defaulting to disabled. With the gateway absent, this
+        # branch let any pod in the cluster name its own tenant with no credential whatsoever.
+        with pytest.raises(HTTPException) as exc:
+            auth.get_verified_tenant(_Req(**{"x-tenant-id": "t-2"}))
+        assert exc.value.status_code == 401
+
+    def test_header_alone_is_refused_even_for_a_plausible_tenant(self, monkeypatch):
+        # And it is refused because there is no token, not because the value looked wrong: a working
+        # JWKS changes nothing when the request carries no Authorization header to verify.
+        _fake_jwks(monkeypatch)
+        monkeypatch.setattr(auth.jwt, "decode", lambda *a, **k: {"tenant_id": "t-2"})
+        with pytest.raises(HTTPException) as exc:
+            auth.get_verified_tenant(_Req(**{"x-tenant-id": "t-2"}))
+        assert exc.value.status_code == 401
 
     def test_token_and_header_agree(self, monkeypatch):
         _fake_jwks(monkeypatch)

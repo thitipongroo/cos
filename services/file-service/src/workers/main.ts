@@ -70,6 +70,12 @@ export async function runAllFileServiceWorkers(): Promise<void> {
   logger.info({ queues: QUEUES }, 'file_service.workers.stopped');
 }
 
+/* istanbul ignore next -- process bootstrap: only runs when node executes this file directly, which
+   a test runner that requires the module never does. The sibling bootstraps (src/main.ts,
+   cleanup/worker.ts, extraction/worker.ts) are excluded from coverage wholesale in jest.config.js;
+   this file is NOT, because runAllFileServiceWorkers() below it carries real behaviour worth
+   testing — see __tests__/workers-main.spec.ts. Only the three lines node itself reaches are
+   ignored. */
 if (require.main === module) {
   runAllFileServiceWorkers().catch((err) => {
     logger.error({ err }, 'file_service.workers.fatal');

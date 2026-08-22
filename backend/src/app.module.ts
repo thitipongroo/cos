@@ -15,6 +15,7 @@ import { ProcurementModule } from './modules/procurement/procurement.module';
 import { FinanceModule } from './modules/finance/finance.module';
 import { SiteOpsModule } from './modules/site-ops/site-ops.module';
 import { SearchModule } from './modules/search/search.module';
+import { AiProxyModule } from './modules/ai-proxy/ai-proxy.module';
 import { FilesModule } from './modules/files/files.module';
 import { TasksModule } from './modules/tasks/tasks.module';
 import { SafetyModule } from './modules/safety/safety.module';
@@ -44,6 +45,7 @@ import { PrismaPoolShutdownService } from './shared/prisma/prisma-pool-shutdown.
 import { KafkaLagService } from './shared/kafka/kafka-lag.service';
 import { SchedulingModule } from './shared/scheduling/scheduling.module';
 import { EventsModule } from './shared/events/events.module';
+import { ServiceAuthModule } from './shared/auth/auth.module';
 
 @Module({
   imports: [
@@ -75,6 +77,7 @@ import { EventsModule } from './shared/events/events.module';
     LastSeenModule, // @Global — last_seen_at touch used by JwtAuthGuard in every module (User Audit)
     SchedulingModule, // @Global — leader election for @Cron jobs, so they run on ONE replica not all
     EventsModule, // @Global — durable event outbox + its poller (replaces per-request Kafka producers)
+    ServiceAuthModule, // @Global — OQ-46: the backend's client-credentials token for internal calls
 
     IdentityModule,
     TenantModule,
@@ -84,6 +87,7 @@ import { EventsModule } from './shared/events/events.module';
     FinanceModule,
     SiteOpsModule,
     SearchModule, // OQ-22 — OpenSearch index writes, off the request path and onto the outbox
+    AiProxyModule, // OQ-46 — /api/v1/ai and /api/v1/rag reach the AI Gateway through here, not Kong
     FilesModule, // Photo annotations — GET endpoint; write path via SyncModule (ADR-056)
     TasksModule,
     SafetyModule,

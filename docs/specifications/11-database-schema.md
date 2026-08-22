@@ -126,17 +126,26 @@ See `07-multi-tenant-architecture §7.1` and `docs/runbooks/dedicated-db-provisi
 | ------------------ | ------------ | ---------------------------- | ------------------------------------------------------------------------------------------- |
 | `user_id`          | UUID         | PK DEFAULT gen_random_uuid() |                                                                                             |
 | `tenant_id`        | UUID         | FK → tenants NOT NULL        |                                                                                             |
-| `keycloak_user_id` | VARCHAR(255) | UNIQUE NOT NULL              | Path A: phone_number; Path B: Keycloak UUID                                                 |
+| `keycloak_user_id` | VARCHAR(255) | UNIQUE NOT NULL              | A Keycloak UUID on **both** paths. `UserService.create` provisions the Keycloak user first — `provisionPhoneUser` for Path A, `createEmailUser` for Path B — and stores the UUID it returns |
 | `email`            | VARCHAR(255) | NOT NULL                     | Path A: empty string; Path B: actual email                                                  |
+| `phone_number`     | VARCHAR(20)  | NULL                         | Path A's identifier, and where the phone actually lives. NULL on Path B. Uniqueness is a **partial** index (`WHERE phone_number IS NOT NULL`), so many Path B users can leave it NULL |
 | `display_name`     | VARCHAR(255) | NOT NULL                     |                                                                                             |
+| `department`       | VARCHAR(255) | NULL                         | Free text, for directory display and filtering. Not a role and not an authorisation input   |
 | `photo_url`        | TEXT         | NULL                         | Profile photo, uploaded via the file service. NULL → clients show the user's initials       |
 | `is_active`        | BOOLEAN      | NOT NULL DEFAULT true        |                                                                                             |
 | `mfa_enabled`      | BOOLEAN      | NOT NULL DEFAULT false       |                                                                                             |
 | `mfa_totp_secret`  | VARCHAR(255) | NULL                         | TOTP secret, encrypted at rest (app-layer AES-256-GCM); NULL until MFA enrollment completes |
+| `last_seen_at`     | TIMESTAMPTZ  | NOT NULL DEFAULT now()       | Touched by `JwtAuthGuard` on each authenticated request (User Audit). NOT NULL, so a user who has never returned reads as last seen at creation |
 | `created_at`       | TIMESTAMPTZ  | NOT NULL DEFAULT now()       |                                                                                             |
 | `updated_at`       | TIMESTAMPTZ  | NOT NULL DEFAULT now()       |                                                                                             |
 
 INDEX: `(tenant_id, email)`
+UNIQUE: `(phone_number) WHERE phone_number IS NOT NULL`
+
+> One user is provisioned for **one** path. `UserService.create` rejects a request carrying both
+> `phone_number` and `email` ("Provide either phone_number or email — not both"), so the unified-login
+> policy of `05-security-compliance` §5.4.4 is not yet reachable for an account created this way — see
+> [OQ-14](../technical-design/README.md#open-questions-register).
 
 ---
 
@@ -151,6 +160,32 @@ INDEX: `(tenant_id, email)`
 | `assigned_at`   | TIMESTAMPTZ | NOT NULL DEFAULT now()       |       |
 
 UNIQUE: `(tenant_id, user_id)`
+
+Carries the user's **primary** role — one per tenant. Additional roles live in the table below.
+
+---
+
+### platform.user_additional_roles
+
+Roles a user holds **alongside** their primary one. Migration `20260730000002`.
+
+| Column        | Type        | Constraints            | Notes                                          |
+| ------------- | ----------- | ---------------------- | ---------------------------------------------- |
+| `user_id`     | UUID        | FK → users NOT NULL    |                                                |
+| `tenant_id`   | UUID        | FK → tenants NOT NULL  |                                                |
+| `role`        | CosRoleEnum | NOT NULL               | Never duplicates the primary role              |
+| `assigned_by` | UUID        | NULL                   | The `TENANT_ADMIN` who granted it              |
+| `assigned_at` | TIMESTAMPTZ | NOT NULL DEFAULT now() |                                                |
+
+PRIMARY KEY: `(user_id, tenant_id, role)` — the grant itself is the identity, so re-granting is a
+no-op rather than a duplicate row.
+INDEX: `(user_id, tenant_id)`
+
+**Effective permissions are the UNION of the primary role and these** — the NIST RBAC and Keycloak
+model. `RolesGuard` falls back to this table when the JWT's primary role does not satisfy an endpoint,
+and `PermissionsGuard` unions `ROLE_PERMISSIONS` across all of them; both keep a fast path on the
+primary role alone, so the common request never reads this table. Set through
+`PUT /api/v1/users/:userId/roles`, which replaces the whole set atomically.
 
 ---
 

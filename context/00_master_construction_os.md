@@ -1911,23 +1911,41 @@ Entities (PostgreSQL — all in schema: platform):
   users:
     user_id         UUID PK DEFAULT gen_random_uuid()
     tenant_id       UUID FK → tenants NOT NULL
-    keycloak_user_id VARCHAR(255) UNIQUE NOT NULL
-    email           VARCHAR(255) NOT NULL
+    keycloak_user_id VARCHAR(255) UNIQUE NOT NULL  -- a Keycloak UUID on BOTH paths; the phone lives in phone_number, not here
+    email           VARCHAR(255) NOT NULL  -- Path A: empty string
+    phone_number    VARCHAR(20) NULL  -- Path A identifier; UNIQUE only WHERE NOT NULL, so Path B users all leave it NULL
     display_name    VARCHAR(255) NOT NULL
+    department      VARCHAR(255) NULL  -- free text for directory display; NOT a role and not an authorisation input
+    photo_url       TEXT NULL  -- profile photo via the file service; NULL → clients show initials
     is_active       BOOLEAN DEFAULT true
     mfa_enabled     BOOLEAN DEFAULT false
     mfa_totp_secret VARCHAR(255) NULL  -- encrypted at rest (app-layer AES-256-GCM, ADR-035)
+    last_seen_at    TIMESTAMPTZ NOT NULL DEFAULT now()  -- touched by JwtAuthGuard per authenticated request
     created_at      TIMESTAMPTZ DEFAULT now()
     updated_at      TIMESTAMPTZ DEFAULT now()
     INDEX: (tenant_id, email)
+    UNIQUE: (phone_number) WHERE phone_number IS NOT NULL
 
   tenant_memberships:
     membership_id   UUID PK
     tenant_id       UUID FK NOT NULL
     user_id         UUID FK NOT NULL
-    role            ENUM(role list above) NOT NULL
+    role            ENUM(role list above) NOT NULL  -- the PRIMARY role; additional roles live in the next table
     assigned_at     TIMESTAMPTZ DEFAULT now()
     UNIQUE: (tenant_id, user_id)
+
+  user_additional_roles:   -- roles held ALONGSIDE the primary; effective permissions are the UNION (spec §6.4.1)
+    user_id         UUID FK → users NOT NULL
+    tenant_id       UUID FK → tenants NOT NULL
+    role            ENUM(role list above) NOT NULL  -- never duplicates the primary
+    assigned_by     UUID NULL
+    assigned_at     TIMESTAMPTZ DEFAULT now()
+    PK: (user_id, tenant_id, role)
+    INDEX: (user_id, tenant_id)
+    Enforcement: RolesGuard falls back to this table when the JWT's primary role does not
+                 satisfy an endpoint; PermissionsGuard unions ROLE_PERMISSIONS across all
+                 roles held. Both keep a primary-role fast path, so the common request
+                 never reads it. There are NO per-user permission overrides.
 
   audit_logs:
     log_id          UUID PK
@@ -1990,7 +2008,9 @@ Generate:
     Endpoints:
       GET    /api/v1/users                    — list users in tenant (paginated)
       POST   /api/v1/users                    — create user (Path A: phone; Path B: email+Keycloak)
-      PATCH  /api/v1/users/:userId/role       — change user role
+      PATCH  /api/v1/users/:userId/role       — change the PRIMARY role (leaves additional roles untouched)
+      GET    /api/v1/users/:userId/roles      — primary + additional roles
+      PUT    /api/v1/users/:userId/roles      — set primary + additional set, replaced atomically
       PATCH  /api/v1/users/:userId/deactivate — deactivate user
     Service:  UserService (new — separate from TenantService)
     Guards:   JwtAuthGuard + RolesGuard (TENANT_ADMIN only)
@@ -2079,9 +2099,15 @@ Project Status State Machine (authoritative):
     ON_HOLD → ACTIVE:   requires ROLE: PROJECT_MANAGER or TENANT_ADMIN
     ACTIVE → COMPLETED: requires ROLE: TENANT_ADMIN only
                         requires: end_date must be <= today
-    ANY → CANCELLED:    requires ROLE: TENANT_ADMIN only
+    DRAFT | ACTIVE | ON_HOLD → CANCELLED:
+                        requires ROLE: TENANT_ADMIN only
                         must record: cancellation_reason (VARCHAR 500), cancelled_at
                         CANCELLED is terminal — no further transitions allowed
+                        NOT from COMPLETED, which is terminal too. This line previously read
+                        "ANY → CANCELLED", which contradicted both the States: block above and
+                        its own next line (ANY would include CANCELLED). The enumeration above
+                        and project.state-machine.ts agree; the shorthand was the outlier
+                        (TDD OQ-19, corrected 2026-08-22).
 
   Do NOT invent additional states or transitions.
 

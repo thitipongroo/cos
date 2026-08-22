@@ -2,7 +2,9 @@
 //
 // Transport (ADR-019, decision 2026-07-21, option A): the backend calls CredentialService directly on
 // the internal network (CREDENTIAL_SERVICE_URL) and forwards the acting principal as the identity
-// headers the service's auth plugin trusts (x-tenant-id / x-user-id / x-user-role). Trust boundary is
+// headers the service's auth plugin reads (x-tenant-id / x-user-id / x-user-role), now alongside a
+// client-credentials bearer token for the `cos-backend` service account — the Kong that was supposed
+// to verify and inject those headers is deployed nowhere (ServiceTokenService, TDD OQ-46). Trust boundary is
 // the internal mesh — mTLS at the infra layer (05 §5.4); CredentialService is not exposed to the edge
 // for these routes. Identity is read from the ambient request context (CLS, ADR-031); a call with no
 // tenant context fails closed (401) rather than issuing/revoking without a principal.
@@ -15,6 +17,7 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { createLogger } from '@cos/logger';
 import { clsTenantId, clsUserId, clsUserRole } from '../../shared/context/cls-context';
+import { ServiceTokenService } from '../../shared/auth/service-token.service';
 
 const logger = createLogger('credential-client');
 
@@ -53,6 +56,18 @@ const REQUEST_TIMEOUT_MS = 10_000;
 
 @Injectable()
 export class CredentialClientService {
+  constructor(private readonly serviceToken: ServiceTokenService) {}
+
+  /** The backend's own credential plus the principal it is acting for — see OQ-46. */
+  private async identityHeaders(tenantId: string): Promise<Record<string, string>> {
+    return {
+      authorization: `Bearer ${await this.serviceToken.getToken()}`,
+      'x-tenant-id': tenantId,
+      'x-user-id': clsUserId(),
+      'x-user-role': clsUserRole(),
+    };
+  }
+
   private readonly baseUrl =
     process.env['CREDENTIAL_SERVICE_URL'] ?? 'http://credential-service:3009';
 
@@ -88,9 +103,7 @@ export class CredentialClientService {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
-          'x-tenant-id': tenantId,
-          'x-user-id': clsUserId(),
-          'x-user-role': clsUserRole(),
+          ...(await this.identityHeaders(tenantId)),
         },
         body: JSON.stringify(body),
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),

@@ -3,6 +3,13 @@ import { ClsServiceManager } from 'nestjs-cls';
 import { FileServiceClient } from '../file-service-client.service';
 import { CLS_TENANT_ID, CLS_USER_ID, CLS_USER_ROLE } from '../../../shared/context/cls-context';
 
+// OQ-46 — every internal call now carries the backend's own client-credentials token alongside
+// the identity headers. The tests do not exercise Keycloak; they only need the client to be
+// constructible and to produce an Authorization header.
+function serviceTokenDouble() {
+  return { getToken: jest.fn().mockResolvedValue('service-token'), invalidate: jest.fn() } as never;
+}
+
 function inCls<T>(store: Record<string, string> | null, fn: () => T | Promise<T>): Promise<T> {
   const cls = ClsServiceManager.getClsService();
   return cls.run(async () => {
@@ -42,7 +49,7 @@ describe('FileServiceClient', () => {
 
   beforeEach(() => {
     process.env['FILE_SERVICE_URL'] = 'http://file-service:3002';
-    service = new FileServiceClient();
+    service = new FileServiceClient(serviceTokenDouble());
   });
   afterEach(() => {
     global.fetch = originalFetch;
@@ -146,7 +153,7 @@ describe('FileServiceClient', () => {
 
   it('falls back to the internal default URL when the env var is unset', async () => {
     delete process.env['FILE_SERVICE_URL'];
-    const svc = new FileServiceClient();
+    const svc = new FileServiceClient(serviceTokenDouble());
     const fetchMock = mockFetch({ ok: true, status: 200, json: async () => META });
     await inCls(CTX, () => svc.getFileMetadata('file-1'));
     expect((fetchMock.mock.calls[0] as [string])[0]).toBe(

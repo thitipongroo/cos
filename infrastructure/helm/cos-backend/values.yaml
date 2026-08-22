@@ -40,6 +40,10 @@ env:
   PORT: '3000'
   OTEL_SERVICE_NAME: 'cos-backend'
   OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector:4318'
+  # /api/v1/ai and /api/v1/rag reach the AI Gateway through this Deployment (TDD OQ-46). The gateway
+  # is ClusterIP with no Ingress and the Kong route that was supposed to reach it is applied by no
+  # ArgoCD Application, so without this the whole Phase 11/12 AI surface has no route.
+  AI_GATEWAY_URL: 'http://cos-ai-gateway.cos.svc.cluster.local:8000'
 
 envFrom:
   - secretRef:

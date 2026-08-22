@@ -1,8 +1,13 @@
 // FileServiceClient — backend → File Service (services/file-service/) REST client.
 //
 // Same transport model as CredentialClientService (ADR-019 option A): a direct internal call over the
-// mesh, forwarding the acting principal as the Kong-style identity headers the file-service auth plugin
-// trusts (x-tenant-id / x-user-id / x-user-role), read from the ambient request context (CLS, ADR-031).
+// mesh, forwarding the acting principal as the identity headers the file-service auth plugin reads
+// (x-tenant-id / x-user-id / x-user-role) from the ambient request context (CLS, ADR-031).
+//
+// Those headers no longer travel alone. Every call now carries a client-credentials bearer token for
+// the `cos-backend` service account, because the Kong that was supposed to verify and inject the
+// headers is deployed nowhere — see ServiceTokenService and TDD OQ-46. The token says WHO is calling;
+// the headers still say ON WHOSE BEHALF.
 // File Service owns all uploads; the backend references files by file_id. Contract signing (ADR-058)
 // uses this to validate that an attached document exists for the tenant before binding it to a contract.
 //
@@ -12,6 +17,7 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { createLogger } from '@cos/logger';
 import { clsTenantId, clsUserId, clsUserRole } from '../../shared/context/cls-context';
+import { ServiceTokenService } from '../../shared/auth/service-token.service';
 
 const logger = createLogger('file-service-client');
 const REQUEST_TIMEOUT_MS = 10_000;
@@ -38,6 +44,22 @@ export interface UploadFileParams {
 
 @Injectable()
 export class FileServiceClient {
+  constructor(private readonly serviceToken: ServiceTokenService) {}
+
+  /**
+   * The identity of this call: the backend's own credential plus the principal it is acting for.
+   * One place, so a new call site cannot forget the token and silently fall back to headers —
+   * which is precisely the state OQ-46 found.
+   */
+  private async identityHeaders(tenantId: string): Promise<Record<string, string>> {
+    return {
+      authorization: `Bearer ${await this.serviceToken.getToken()}`,
+      'x-tenant-id': tenantId,
+      'x-user-id': clsUserId(),
+      'x-user-role': clsUserRole(),
+    };
+  }
+
   private readonly baseUrl = process.env['FILE_SERVICE_URL'] ?? 'http://file-service:3002';
 
   /** Fetch a file's metadata (tenant-scoped). Returns null when it does not exist for this tenant. */
@@ -55,11 +77,7 @@ export class FileServiceClient {
     try {
       res = await fetch(url, {
         method: 'GET',
-        headers: {
-          'x-tenant-id': tenantId,
-          'x-user-id': clsUserId(),
-          'x-user-role': clsUserRole(),
-        },
+        headers: await this.identityHeaders(tenantId),
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       });
     } catch (err) {
@@ -102,11 +120,7 @@ export class FileServiceClient {
       // No content-type header — fetch derives the multipart boundary from the FormData body.
       res = await fetch(url, {
         method: 'POST',
-        headers: {
-          'x-tenant-id': tenantId,
-          'x-user-id': clsUserId(),
-          'x-user-role': clsUserRole(),
-        },
+        headers: await this.identityHeaders(tenantId),
         body: form,
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       });
@@ -154,11 +168,7 @@ export class FileServiceClient {
     try {
       res = await fetch(url, {
         method: 'GET',
-        headers: {
-          'x-tenant-id': tenantId,
-          'x-user-id': clsUserId(),
-          'x-user-role': clsUserRole(),
-        },
+        headers: await this.identityHeaders(tenantId),
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       });
     } catch (err) {

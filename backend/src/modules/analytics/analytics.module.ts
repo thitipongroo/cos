@@ -6,6 +6,7 @@ import { redisInsStore } from 'cache-manager-ioredis-yet';
 import Redis from 'ioredis';
 import { AnalyticsService } from './analytics.service';
 import { AnalyticsProjectScopeService } from './analytics-project-scope.service';
+import { AnalyticsInvalidationConsumer } from './analytics-invalidation.consumer';
 import { TenantModule } from '../tenant/tenant.module';
 import { AnalyticsExecutiveController } from './analytics.executive.controller';
 import { AnalyticsPmController } from './analytics.pm.controller';
@@ -72,6 +73,8 @@ class CacheRedisModule {}
     },
     AnalyticsService,
     AnalyticsProjectScopeService,
+    // OQ-42 — drops a project's cached dashboards when the events behind them arrive.
+    AnalyticsInvalidationConsumer,
   ],
   exports: [AnalyticsService],
 })

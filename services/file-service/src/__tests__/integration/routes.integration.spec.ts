@@ -1,5 +1,16 @@
 // Integration test — full HTTP layer with all services mocked.
 // Verifies the complete request/response cycle for every route.
+//
+// AUTH (TDD OQ-46). This suite registers the REAL authPlugin, and every request used to carry
+// `x-tenant-id` / `x-user-id` and nothing else — which passed, because the plugin accepted identity
+// headers with no token at all. That is the hole OQ-46 closed. The requests now carry what the
+// backend actually sends: a bearer token for the `cos-backend` service account, with the principal
+// in the headers. `verifyBearer` is mocked so the suite still tests routes rather than JWKS.
+
+const mockVerifyBearer = jest.fn();
+jest.mock('../../plugins/jwt-verify', () => ({
+  verifyBearer: (...a: unknown[]) => mockVerifyBearer(...a),
+}));
 
 import Fastify from 'fastify';
 import multipart from '@fastify/multipart';
@@ -116,7 +127,18 @@ async function buildTestApp() {
   return { app, mocks: { db, minio, antivirus, opensearch, kafka, extraction } };
 }
 
-const AUTH_HEADERS = { 'x-tenant-id': TENANT, 'x-user-id': USER };
+const AUTH_HEADERS = {
+  authorization: 'Bearer service-token',
+  'x-tenant-id': TENANT,
+  'x-user-id': USER,
+};
+
+// The backend's service account: authenticated as the caller, silent on whose behalf — the headers
+// above say that. A `null` here (no token) is a 401 now, which is the point of the change.
+beforeEach(() => {
+  mockVerifyBearer.mockReset();
+  mockVerifyBearer.mockResolvedValue({ kind: 'service', clientId: 'cos-backend' });
+});
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 

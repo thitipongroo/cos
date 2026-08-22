@@ -12,6 +12,7 @@
 // trace (QM-10), which would leak schema and table names to whoever they forward the mail to.
 
 import { ClsServiceManager } from 'nestjs-cls';
+import { ServiceTokenService } from '../../../../shared/auth/service-token.service';
 import type { PrismaClient } from '@prisma/client';
 import { createLogger } from '@cos/logger';
 
@@ -27,6 +28,12 @@ import { buildEnvelope, toCsvFiles, toJson } from '../data-export.serializer';
 import { archiveContentType, archiveFilename, zipFiles } from '../data-export.archive';
 
 const logger = createLogger('data-export-activities');
+
+// A Temporal activity runs outside Nest DI, so it builds FileServiceClient by hand and must
+// supply its dependency the same way. Module-scoped rather than per call: ServiceTokenService
+// caches one token for ~14 minutes, and a fresh instance per export would fetch a new one from
+// Keycloak every time (OQ-46).
+const serviceToken = new ServiceTokenService();
 
 export interface ExportJobParams {
   export_id: string;
@@ -161,7 +168,7 @@ export async function collectAndUploadActivity(params: ExportJobParams): Promise
     cls.set(CLS_TENANT_ID, params.tenant_id);
     cls.set(CLS_USER_ID, params.user_id);
     cls.set(CLS_USER_ROLE, 'SITE_WORKER');
-    return new FileServiceClient().upload({
+    return new FileServiceClient(serviceToken).upload({
       buffer,
       filename: archiveFilename(params.export_id, spec.format),
       contentType: archiveContentType(spec.format),

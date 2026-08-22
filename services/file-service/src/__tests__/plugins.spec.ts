@@ -1,7 +1,6 @@
 // Tests for auth, trace, security, and swagger plugins
 
 import Fastify from 'fastify';
-import { authPlugin } from '../plugins/auth';
 import { tracePlugin } from '../plugins/trace';
 import { securityPlugin } from '../plugins/security';
 import { swaggerPlugin } from '../plugins/swagger';
@@ -58,117 +57,11 @@ describe('tracePlugin', () => {
 });
 
 // ── Auth plugin ─────────────────────────────────────────────────────────────
-
-describe('authPlugin', () => {
-  it('passes when both tenant headers are present and reads userRole', async () => {
-    const app = Fastify();
-    await app.register(tracePlugin);
-    await app.register(authPlugin);
-    app.get('/test', async (req) => ({
-      tenantId: req.tenantId,
-      userId: req.userId,
-      userRole: req.userRole,
-    }));
-
-    const res = await app.inject({
-      method: 'GET',
-      url: '/test',
-      headers: { 'x-tenant-id': 'tid-1', 'x-user-id': 'uid-1', 'x-user-role': 'SYSTEM_ADMIN' },
-    });
-    expect(res.statusCode).toBe(200);
-    const body = JSON.parse(res.body);
-    expect(body.tenantId).toBe('tid-1');
-    expect(body.userId).toBe('uid-1');
-    expect(body.userRole).toBe('SYSTEM_ADMIN');
-  });
-
-  it('sets userRole to empty string when x-user-role header is absent', async () => {
-    const app = Fastify();
-    await app.register(tracePlugin);
-    await app.register(authPlugin);
-    app.get('/test', async (req) => ({ userRole: req.userRole }));
-
-    const res = await app.inject({
-      method: 'GET',
-      url: '/test',
-      headers: { 'x-tenant-id': 'tid-1', 'x-user-id': 'uid-1' },
-    });
-    expect(res.statusCode).toBe(200);
-    expect(JSON.parse(res.body).userRole).toBe('');
-  });
-
-  it('returns 401 when X-Tenant-ID is missing', async () => {
-    const app = Fastify();
-    await app.register(tracePlugin);
-    await app.register(authPlugin);
-    app.get('/test', async () => ({}));
-
-    const res = await app.inject({
-      method: 'GET',
-      url: '/test',
-      headers: { 'x-user-id': 'uid-1' },
-    });
-    expect(res.statusCode).toBe(401);
-    expect(JSON.parse(res.body).error.code).toBe('COS-FILE-001');
-  });
-
-  it('returns 401 when X-User-ID is missing', async () => {
-    const app = Fastify();
-    await app.register(tracePlugin);
-    await app.register(authPlugin);
-    app.get('/test', async () => ({}));
-
-    const res = await app.inject({
-      method: 'GET',
-      url: '/test',
-      headers: { 'x-tenant-id': 'tid-1' },
-    });
-    expect(res.statusCode).toBe(401);
-  });
-
-  it('returns 401 when both headers are missing', async () => {
-    const app = Fastify();
-    await app.register(tracePlugin);
-    await app.register(authPlugin);
-    app.get('/test', async () => ({}));
-
-    const res = await app.inject({ method: 'GET', url: '/test' });
-    expect(res.statusCode).toBe(401);
-  });
-
-  it('uses "unknown" as traceId fallback when tracePlugin is not registered', async () => {
-    // Covers the `request.traceId ?? 'unknown'` branch in auth.ts
-    const app = Fastify();
-    // Register auth WITHOUT trace — traceId will be undefined
-    await app.register(authPlugin);
-    app.get('/test', async () => ({}));
-
-    const res = await app.inject({ method: 'GET', url: '/test' });
-    expect(res.statusCode).toBe(401);
-    expect(JSON.parse(res.body).error.traceId).toBe('unknown');
-  });
-
-  it('skips auth for /health/live — early return, no tenant headers required', async () => {
-    // Covers the health-path early-return branch in auth.ts (left operand of the ||)
-    const app = Fastify();
-    await app.register(authPlugin);
-    app.get('/health/live', async () => ({ status: 'ok' }));
-
-    const res = await app.inject({ method: 'GET', url: '/health/live' });
-    expect(res.statusCode).toBe(200);
-    expect(JSON.parse(res.body).status).toBe('ok');
-  });
-
-  it('skips auth for /health/ready — covers the second health-path branch', async () => {
-    // Covers the right operand of the || (url === '/health/ready')
-    const app = Fastify();
-    await app.register(authPlugin);
-    app.get('/health/ready', async () => ({ status: 'ok' }));
-
-    const res = await app.inject({ method: 'GET', url: '/health/ready' });
-    expect(res.statusCode).toBe(200);
-  });
-});
+//
+// Covered by auth.plugin.spec.ts, which is the only home for it. The six cases that lived here
+// asserted identity headers with no bearer token — the behaviour TDD OQ-46 removed — and keeping a
+// second, thinner copy of an authorisation suite is how one of them gets updated and the other
+// does not.
 
 // ── Security plugin ─────────────────────────────────────────────────────────
 

@@ -124,3 +124,13 @@ workers:
       port: 8090
     initialDelaySeconds: 15
     periodSeconds: 10
+
+networkPolicy:
+  # Off by default: these rules are schema-valid but have never been enforced in a live cluster.
+  # Read templates/networkpolicy.yaml before turning this on — the caveats are specific, and one of
+  # them (httpGet probes vs the CNI) CrashLoops the pods if it does not hold.
+  enabled: false
+  # Pod label of the only in-repository caller.
+  backendPodLabel: 'cos-backend'
+  # Pod label selector for the Prometheus that scrapes the metrics port.
+  prometheusPodLabel: 'prometheus'

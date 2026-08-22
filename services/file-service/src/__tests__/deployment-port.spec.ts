@@ -47,17 +47,41 @@ describe('deployed port contract', () => {
     expect(readFileSync(dockerfile, 'utf8')).toContain(`EXPOSE ${defaultPort()}`);
   });
 
-  it('Helm chart probes the port the service listens on', () => {
+  it('Helm chart probes the port the API listens on', () => {
     const values = readFileSync(chartValues, 'utf8');
     const port = defaultPort();
 
-    // Every probe port must be the port the service actually listens on.
-    const probePorts = [...values.matchAll(/^\s+port:\s*(\d+)/gm)].map((m) => Number(m[1]));
+    // This chart deploys TWO workloads: the API, and the Temporal workers added for OQ-32, which
+    // serve only a liveness endpoint on their own `workers.healthPort`. The assertion used to be
+    // "every `port:` in values.yaml is the API port", which stopped being true the moment the second
+    // Deployment landed — and the test has been red since, because the whole suite was never run.
+    // Scope it to the API's own block instead of loosening it.
+    const apiBlock = values.slice(0, values.indexOf('\nworkers:'));
+    expect(apiBlock).not.toContain('healthPort');
+
+    const probePorts = [...apiBlock.matchAll(/^\s+port:\s*(\d+)/gm)].map((m) => Number(m[1]));
     expect(probePorts.length).toBeGreaterThan(0);
     probePorts.forEach((p) => expect(p).toBe(port));
 
     // ...and the chart must pin it explicitly. NOTE the variable is FILE_SERVICE_PORT, not PORT.
     expect(values).toContain(`FILE_SERVICE_PORT: '${port}'`);
+  });
+
+  it('the worker Deployment probes the port its own entrypoint listens on', () => {
+    const values = readFileSync(chartValues, 'utf8');
+    const workerMain = readFileSync(join(__dirname, '..', 'workers', 'main.ts'), 'utf8');
+
+    const workersBlock = values.slice(values.indexOf('\nworkers:'));
+    const declared = /healthPort:\s*(\d+)/.exec(workersBlock);
+    expect(declared).not.toBeNull();
+
+    // Every probe in the workers block hits that port, and nothing else.
+    const probePorts = [...workersBlock.matchAll(/^\s+port:\s*(\d+)/gm)].map((m) => Number(m[1]));
+    expect(probePorts.length).toBeGreaterThan(0);
+    probePorts.forEach((p) => expect(String(p)).toBe(declared![1]));
+
+    // And the entrypoint defaults to it, so a chart that sets no WORKER_HEALTH_PORT still matches.
+    expect(workerMain).toContain(`?? ${declared![1]}`);
   });
 
   it('Helm chart probes paths that main.ts actually serves', () => {

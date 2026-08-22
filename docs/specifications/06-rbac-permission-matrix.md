@@ -20,6 +20,7 @@ related_docs:
 - [6.2 Roles](#62-roles)
 - [6.3 Permission Levels](#63-permission-levels)
 - [6.4 Module Permission Matrix](#64-module-permission-matrix)
+- [6.4.1 How many roles a user holds](#641-how-many-roles-a-user-holds)
 - [6.5 ABAC Supplementary Rules](#65-abac-supplementary-rules)
 - [6.6 Default Role Seeding at Tenant Provisioning](#66-default-role-seeding-at-tenant-provisioning)
 - [6.7 System Admin — Platform-level Permissions](#67-system-admin--platform-level-permissions)
@@ -180,6 +181,29 @@ Security controls (RBAC/ABAC) are defined in 05-security-compliance section 5.2.
 | Forecasting reports    | R         | R   | —             | R           | R       | —      | —         | FULL         |
 | Knowledge graph (read) | R         | R   | —             | —           | —       | —      | —         | FULL         |
 | AI copilot             | R         | R   | R             | R           | R       | R      | R         | FULL         |
+
+---
+
+## 6.4.1 How many roles a user holds
+
+A user has **one primary role per tenant** (`platform.tenant_memberships.role`) and **any number of
+additional roles** (`platform.user_additional_roles`). Their effective permissions are the **union**
+across all of them — the NIST RBAC and Keycloak model — so the matrix in §6.4 is read once per role
+held and the results combined, never intersected.
+
+This exists because real people hold more than one job: a Project Manager who also runs site safety
+needs the `SAFETY_OFFICER` grade of APPROVE on inspections that `PROJECT_MANAGER` alone does not
+carry. The alternative — per-user permission overrides — was rejected: authorisation throughout the
+platform is by role membership (`@Roles`, ~156 endpoints), and per-user grants would have no backing
+store and no audit story.
+
+There are **no per-user permission overrides**, in either direction. A role cannot be subtracted from
+for one person, and a permission cannot be granted to one person without granting them a role that
+carries it. What §6.4 says a role can do, every holder of that role can do.
+
+Managed through `PUT /api/v1/users/:userId/roles` (primary + additional set, replaced atomically) and
+read through `GET /api/v1/users/:userId/roles`. `PATCH /api/v1/users/:userId/role` changes the primary
+role alone and leaves the additional set untouched.
 
 ---
 

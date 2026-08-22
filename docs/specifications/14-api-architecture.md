@@ -183,11 +183,25 @@ convention, not a restriction, and is not repeated here.
 | ------- | ------------------------------------- | -------------------------------------- | --------------------------- |
 | `GET`   | `/api/v1/projects`                    | List projects for tenant (paginated)   | Any role                    |
 | `POST`  | `/api/v1/projects`                    | Create project                         | Executive, PM, Tenant Admin |
+| `GET`   | `/api/v1/projects/mine`               | The caller's own project memberships   | Any role                    |
+| `GET`   | `/api/v1/projects/user/{user_id}`     | A named user's project memberships     | Tenant Admin                |
 | `GET`   | `/api/v1/projects/{project_id}`       | Get project detail                     | Any role                    |
 | `PATCH` | `/api/v1/projects/{project_id}`       | Update project (status, budget, dates) | PM, Executive               |
 | `GET`   | `/api/v1/projects/{project_id}/tasks` | List tasks for project                 | Any role                    |
 | `POST`  | `/api/v1/projects/{project_id}/tasks` | Create task                            | PM, Site Engineer           |
 | `PATCH` | `/api/v1/tasks/{task_id}`             | Update task progress / status          | SW, SE, PM, Admin           |
+
+`/projects/mine` and `/projects/user/{user_id}` answer the same question from two directions — which
+projects a person belongs to. They are separate endpoints because the authorisation differs, not the
+data: `mine` is scoped by the JWT and needs no role, while asking about **another** person is a
+`TENANT_ADMIN` action. That is why it is a gated path rather than an optional `?user_id` on
+`/projects/mine` — a query parameter that silently changes who you are asking about is the shape that
+gets shipped without a guard. A tenant admin needs it to offboard someone: before deactivating a user
+you have to know what they are still on. Both are tenant-scoped like every other read, so an admin
+cannot ask about a user in another tenant.
+
+Recorded here 2026-08-22. Both were built, documented in OpenAPI and gated, but named in no
+specification — [OQ-21](../technical-design/README.md#open-questions-register).
 
 Example request — create project:
 
@@ -622,21 +636,40 @@ and `revoke` are **not** routed at the edge at all — they are mesh-only (§5.9
 
 ### Traffic Type Distinction
 
+> ⚠️ **This subsection describes a gateway that is not deployed.** Verified 2026-08-22 —
+> [OQ-46](../technical-design/README.md#open-questions-register).
+> `infrastructure/kubernetes/kong/kong-declarative.yml` is referenced by no ArgoCD Application (every
+> one targets a Helm chart or the otel overlays), there are no `KongPlugin` CRDs anywhere, no chart
+> carries an Ingress template at all, and the repository's only `kind: Ingress` uses
+> `ingressClassName: nginx`. Product-owner decision 2026-08-22: `/api/v1/ai` is routed by the backend
+> rather than by Kong. This text is kept because it remains the only written statement of the
+> intended external-API metering model.
+
 Kong identifies external OAuth2 client credential traffic by Consumer lookup on the `azp`
 (Authorized Party) claim:
 
 | Traffic Type                     | `iss`          | `azp`                     | `session_state` | Kong Consumer           |
 | -------------------------------- | -------------- | ------------------------- | --------------- | ----------------------- |
-| Internal — Path A (Direct Grant) | Keycloak realm | absent                    | Present         | No — anonymous consumer |
+| Internal — Path A (Direct Grant) | Keycloak realm | `cos-backend`             | Present         | No — anonymous consumer |
 | Internal — Path B (OIDC)         | Keycloak realm | `cos-web` or `cos-mobile` | Present         | No — anonymous consumer |
 | External — marketplace / ERP     | Keycloak realm | registered `client_id`    | Absent          | Yes — matched consumer  |
 
-`jwt` plugin is configured with:
+`azp=cos-backend` on Path A is a **measured** value, not a specified one — `KeycloakAdminService`
+mints the token with that client. The row previously read "absent". It matters here because it means
+`cos-backend` must never be registered as a Kong Consumer: if it were, every Path A field worker would
+be matched to a consumer and metered by the monthly quota plugin as though they were an external API
+integration ([OQ-13](../technical-design/README.md#open-questions-register)).
+
+`jwt` plugin is intended to be configured with:
 
 ```yaml
 key_claim_name: azp
 anonymous: <anonymous-consumer-id>
 ```
+
+Neither line is present in `kong-declarative.yml` today — its `jwt` plugin blocks set
+`claims_to_verify`, `header_names` and `secret_is_base64` only, leaving `key_claim_name` at its
+default of `iss` and no anonymous consumer configured.
 
 When `azp` is absent or does not match a registered Kong Consumer, Kong assigns the request
 to the anonymous consumer. The anonymous consumer has per-minute rate limiting only —

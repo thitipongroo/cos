@@ -1,0 +1,58 @@
+{{- if .Values.networkPolicy.enabled }}
+# Ingress policy for cos-file-service (TDD OQ-46).
+#
+# WHY THIS EXISTS
+# ---------------
+# It receives every upload, serves every download, and its auth plugin trusts `x-tenant-id` / `x-user-id` / `x-user-role` from a caller that sends no bearer token — `FileServiceClient` in the backend is exactly that caller. A pod that can reach this Service can therefore name its own tenant AND its own role, `SYSTEM_ADMIN` included.
+#
+# The stated defence was Kong: verify the JWT at the edge, strip any client-supplied identity headers,
+# inject the verified ones. **Kong is deployed nowhere.** `infrastructure/kubernetes/kong/kong-declarative.yml`
+# is referenced by no ArgoCD Application, there are no `KongPlugin` CRDs, no chart carries an Ingress
+# template, and the repository's only `kind: Ingress` names `ingressClassName: nginx`. So the header
+# trust had no verifier in front of it, and this Service — ClusterIP, no Ingress, no NetworkPolicy, no
+# service mesh — was reachable by every pod in the namespace.
+#
+# Product-owner decision 2026-08-22: close it at BOTH layers. This is the network half; the identity
+# half is the service token the backend now sends (`ServiceTokenService`), and neither is sufficient
+# alone. A NetworkPolicy answers "which pods may connect" — it does not authenticate them, and spec
+# §5.4's Istio mTLS still exists nowhere.
+#
+# OFF BY DEFAULT (`networkPolicy.enabled`), for the reason the kg-ingestion-worker policy gives: these
+# rules are schema-valid but have never been enforced in a live cluster. Two things to check first:
+#
+#   1. **Probes.** This chart's probes are `httpGet`, so the kubelet connects to the pod over the
+#      network from the NODE address, which is not a pod and matches no `podSelector`. Whether that is
+#      implicitly allowed depends on the CNI. Verify before enabling, or the pods CrashLoop.
+#   2. **The allow-list is what this repository can see.** A port-forward, a debugging sidecar or a
+#      caller added outside the repo will be denied. That is the point, but it must be a decision
+#      rather than a surprise.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "cos-file-service.fullname" . }}
+  labels: {{ include "cos-file-service.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels: {{ include "cos-file-service.selectorLabels" . | nindent 6 }}
+  # The Temporal workers in this chart open connections OUT (Temporal, MinIO, Postgres);
+  # nothing connects IN to them, so they are not selected here.
+  policyTypes:
+    - Ingress
+  ingress:
+    # The backend is the only in-repository caller.
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: {{ .Values.networkPolicy.backendPodLabel }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.service.port }}
+    # Prometheus scrapes the metrics port (infrastructure/monitoring/prometheus/prometheus.yml).
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: {{ .Values.networkPolicy.prometheusPodLabel }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.service.metricsPort }}
+{{- end }}

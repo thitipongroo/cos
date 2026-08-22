@@ -1,3 +1,7 @@
+// TDD OQ-46 — these requests now carry the credential the backend actually sends: a bearer token for
+// the `cos-backend` service account, with the principal in the identity headers. They used to send
+// headers alone, which registerAuth honoured; that was the hole. verifyBearer is mocked because this
+// suite tests routes, not JWKS.
 // What the routes are allowed to log (QM-8 + §5.9.8 Information Disclosure). The service handles
 // issuer private keys, signed credentials and subject claims, so this asserts the *contents* of every
 // log call: an allowlist of id/enum/boolean fields, and nothing that appears in the credential itself.
@@ -5,6 +9,16 @@
 import { jest } from '@jest/globals';
 import Fastify, { type FastifyInstance } from 'fastify';
 import type { Pool } from 'pg';
+
+const mockVerifyBearer = jest.fn<(h: unknown) => Promise<unknown>>();
+jest.unstable_mockModule('../plugins/jwt-verify.js', () => ({
+  verifyBearer: mockVerifyBearer,
+  InvalidTokenError: class InvalidTokenError extends Error {},
+}));
+mockVerifyBearer.mockResolvedValue({ kind: 'service', clientId: 'cos-backend' });
+
+/** The backend's service token — every authenticated request in this file carries it. */
+const SERVICE_AUTH = { authorization: 'Bearer service-token' };
 
 interface LogCall {
   ctx: Record<string, unknown>;
@@ -23,7 +37,12 @@ const { credentialRoutes } = await import('../routes/credentials.routes.js');
 const { registerTrace } = await import('../plugins/trace.js');
 const { registerAuth } = await import('../plugins/auth.js');
 
-const ADMIN = { 'x-tenant-id': 't1', 'x-user-id': 'u1', 'x-user-role': 'TENANT_ADMIN' };
+const ADMIN = {
+  ...SERVICE_AUTH,
+  'x-tenant-id': 't1',
+  'x-user-id': 'u1',
+  'x-user-role': 'TENANT_ADMIN',
+};
 const CONFIG = {
   port: 0,
   nodeEnv: 'test',

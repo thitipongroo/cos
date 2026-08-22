@@ -1,8 +1,18 @@
-// Auth — establishes tenant/user identity with in-service JWT verification (defense-in-depth,
-// spec §5.9.4), like file-service. Kong verifies + injects identity headers at ingress; this service
-// ALSO verifies the bearer token itself and derives tenant from the claim — never trusting a header
-// alone (credential-service holds tenant issuer keys). Public paths (health + did:web + status-list
-// resolution) are exempt: those are fetched by third parties with no platform identity (BG-001).
+// Auth — establishes tenant/user identity from a verified token (spec §5.9.4), like file-service.
+//
+// **A verified bearer token is required** (TDD OQ-46). It was optional: `verifyBearer` returns null
+// when there is no Authorization header, and this hook fell through to
+// `verified?.tenantId ?? headerTenant` and `verified?.role || header['x-user-role']`. The premise was
+// that Kong verified at ingress and stripped client-supplied copies; Kong is deployed nowhere (see
+// jwt-verify.ts), and this service is ClusterIP with no NetworkPolicy and no mesh. It holds every
+// tenant's issuer key material.
+//
+//   no token      → 401.
+//   user token    → identity from the CLAIMS; an x-tenant-id header may only agree with it.
+//   service token → authenticated as the backend; the identity headers say on whose behalf.
+//
+// Public paths (health + did:web + status-list resolution) stay exempt: those are fetched by third
+// parties with no platform identity at all (BG-001).
 import type { FastifyInstance } from 'fastify';
 import { buildError } from '../errors.js';
 import { verifyBearer } from './jwt-verify.js';
@@ -29,15 +39,32 @@ export function registerAuth(app: FastifyInstance): void {
       return reply.status(401).send(buildError('INVALID_TOKEN', request.traceId ?? 'unknown'));
     }
 
-    const headerTenant = request.headers['x-tenant-id'];
-    // The token is authoritative; a Kong-injected header must agree with it (fail closed).
-    if (verified && typeof headerTenant === 'string' && verified.tenantId !== headerTenant) {
+    if (!verified) {
+      // No bearer token. There is no gateway behind which this could be safe.
       return reply.status(401).send(buildError('INVALID_TOKEN', request.traceId ?? 'unknown'));
     }
 
+    const headerTenant = request.headers['x-tenant-id'];
     const headerUser = request.headers['x-user-id'];
-    const tenantId = verified?.tenantId ?? (typeof headerTenant === 'string' ? headerTenant : '');
-    const userId = verified?.userId || (typeof headerUser === 'string' ? headerUser : '');
+    let tenantId: string;
+    let userId: string;
+    let userRole: string;
+
+    if (verified.kind === 'user') {
+      // Claims win outright. A header may accompany them but may not change them.
+      if (typeof headerTenant === 'string' && verified.tenantId !== headerTenant) {
+        return reply.status(401).send(buildError('INVALID_TOKEN', request.traceId ?? 'unknown'));
+      }
+      tenantId = verified.tenantId;
+      userId = verified.userId;
+      userRole = verified.role;
+    } else {
+      // Trusted subsystem: authenticated as the backend, acting for the principal in the headers.
+      tenantId = typeof headerTenant === 'string' ? headerTenant : '';
+      userId = typeof headerUser === 'string' ? headerUser : '';
+      userRole = (request.headers['x-user-role'] as string | undefined) ?? '';
+    }
+
     if (!tenantId || !userId) {
       return reply
         .status(401)
@@ -45,7 +72,6 @@ export function registerAuth(app: FastifyInstance): void {
     }
     request.tenantId = tenantId;
     request.userId = userId;
-    request.userRole =
-      verified?.role || ((request.headers['x-user-role'] as string | undefined) ?? '');
+    request.userRole = userRole;
   });
 }

@@ -1,8 +1,30 @@
-// In-service Keycloak JWT verification (defense-in-depth, spec §5.9.4) — mirrors ai-gateway/auth.py
-// and services/file-service. Kong verifies + injects identity headers at the edge; this service ALSO
-// verifies the RS256 token itself (JWKS, iss/aud/exp) and derives the tenant from the claim, so it
-// never trusts a header alone. credential-service holds each tenant's issuer key material, so a spoofed
-// x-tenant-id reaching the pod off-mesh would be high-impact — the token/header agreement fails closed.
+// In-service Keycloak JWT verification (spec §5.9.4) — mirrors services/file-service.
+// **A verified token is now required.**
+//
+// WHAT CHANGED, AND WHY (TDD OQ-46)
+// ---------------------------------
+// The old header said Kong verifies and injects the identity headers at the edge and that this is the
+// second of two layers. Kong is deployed nowhere: no ArgoCD Application references
+// `infrastructure/kubernetes/kong/`, there are no `KongPlugin` CRDs, no chart has an Ingress template,
+// and the repository's only `kind: Ingress` names `ingressClassName: nginx`. It also warned that "a
+// spoofed x-tenant-id reaching the pod off-mesh would be high-impact" — with this Service on
+// ClusterIP, no NetworkPolicy and no mesh, and `verifyBearer` returning null for a request with no
+// Authorization header at all, that was reachable from any pod in the namespace. This service holds
+// every tenant's issuer key material.
+//
+// TWO KINDS OF TOKEN
+// ------------------
+// A user token carries `tenant_id` and is authoritative for identity. A **service** token — the
+// backend's `client_credentials` grant — carries none, because it acts for no user: it authenticates
+// the CALLER, and the identity headers say on whose behalf (the trusted-subsystem pattern, needed
+// because the backend also calls from Temporal activities and Kafka consumers with no user token to
+// forward).
+//
+// Told apart by `preferred_username`, NOT `azp`. Both kinds were fetched from a live Keycloak 26.6.4
+// and compared: `azp` is `cos-backend` on BOTH, because Path A users authenticate through that same
+// client. Keying on it would promote any user token whose `tenant_id` mapper failed to trusted-caller
+// status. Keycloak names a service account `service-account-{clientId}` and realm usernames are
+// unique, so no human can hold that name.
 
 import jwt from 'jsonwebtoken';
 import jwksRsa from 'jwks-rsa';
@@ -37,10 +59,28 @@ function jwksClient(jwksUri: string): ReturnType<typeof jwksRsa> {
   return cachedClient;
 }
 
-export interface VerifiedIdentity {
+/** A human's token: authoritative for tenant, user and role. */
+export interface VerifiedUser {
+  kind: 'user';
   tenantId: string;
   userId: string;
   role: string;
+}
+
+/** The backend's own token: authoritative for WHO is calling, silent on whose behalf. */
+export interface VerifiedService {
+  kind: 'service';
+  clientId: string;
+}
+
+export type VerifiedIdentity = VerifiedUser | VerifiedService;
+
+/**
+ * The client whose service account may act as the trusted subsystem. Defaults to the audience this
+ * service already verifies, so a deployment that changes one and not the other cannot open a hole.
+ */
+function serviceClientId(): string {
+  return process.env['SERVICE_CLIENT_ID'] ?? process.env['KEYCLOAK_AUDIENCE'] ?? 'cos-backend';
 }
 
 export class InvalidTokenError extends Error {}
@@ -73,13 +113,25 @@ export async function verifyBearer(authHeader: unknown): Promise<VerifiedIdentit
   }
 
   const tenantId = claims['tenant_id'];
-  if (typeof tenantId !== 'string' || !tenantId) {
-    throw new InvalidTokenError('Token missing tenant_id claim');
+  if (typeof tenantId === 'string' && tenantId) {
+    const userId = claims['user_id'] ?? claims.sub;
+    return {
+      kind: 'user',
+      tenantId,
+      userId: typeof userId === 'string' ? userId : '',
+      role: typeof claims['role'] === 'string' ? claims['role'] : '',
+    };
   }
-  const userId = claims['user_id'] ?? claims.sub;
-  return {
-    tenantId,
-    userId: typeof userId === 'string' ? userId : '',
-    role: typeof claims['role'] === 'string' ? claims['role'] : '',
-  };
+
+  // No tenant_id. Either the backend's service account, or a user token whose tenant_id mapper did
+  // not fire — and those must not be confused, so both signals are required.
+  const clientId = serviceClientId();
+  if (
+    claims['azp'] === clientId &&
+    claims['preferred_username'] === `service-account-${clientId}`
+  ) {
+    return { kind: 'service', clientId };
+  }
+
+  throw new InvalidTokenError('Token missing tenant_id claim');
 }
