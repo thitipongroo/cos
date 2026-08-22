@@ -664,10 +664,18 @@ services:
       KAFKA_BROKERS: kafka:9092
       REDIS_URL: redis://:${REDIS_PASSWORD:-cos_redis_password}@redis:6379
       OTEL_SERVICE_NAME: ai-gateway
-      # Delay-risk context assembly (F4b B, ADR-072/§22.4). Connects as the RLS-exempt owner role
-      # (cos) — tenant isolation is by explicit WHERE tenant_id, matching reports/persistence.py.
+      # Delay-risk context assembly (F4b B). Routed through PgBouncer like every other app
+      # service — QM-18: "never directly to PostgreSQL port 5432". This was the last service
+      # still pointing at postgres:5432 (found by tests/spec-derived/phase-01-foundation).
+      # Connects as the NON-SUPERUSER app_user, so PostgreSQL RLS actually applies (ADR-031).
+      # It used to connect as the owner role `cos`, which is a superuser and therefore bypasses
+      # RLS outright; the app-layer `WHERE tenant_id` filter was carrying isolation on its own,
+      # which master §Never forbids ("secondary defence-in-depth, not a replacement for RLS").
+      # Every ai-gateway query now runs through db/tenant_scope.py, which sets
+      # app.current_tenant_id inside the statement's own transaction — required because the
+      # policy is `TO app_user ... USING (tenant_id = NULLIF(current_setting(...), '')::uuid)`.
       # Unset → _wire_db leaves the pool None and delay-risk falls back to an empty context.
-      DATABASE_URL: postgresql://cos:${POSTGRES_PASSWORD:-cos_dev_password}@postgres:5432/construction_os
+      DATABASE_URL: postgresql://app_user:app_user_dev_password@pgbouncer:5432/${POSTGRES_DB:-construction_os}
       # OpenWeather key for the delay-risk weather input (degrades to no weather when unset).
       WEATHER_API_KEY: ${WEATHER_API_KEY:-}
       # Internal transcription pipeline the gateway delegates /api/v1/ai/transcribe to.
@@ -682,6 +690,7 @@ services:
     depends_on:
       kafka: { condition: service_healthy }
       redis: { condition: service_healthy }
+      pgbouncer: { condition: service_started }
     healthcheck:
       test:
         [

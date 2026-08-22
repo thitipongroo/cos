@@ -20,6 +20,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from tests.fake_pool import TenantScopedPoolMixin  # noqa: E402
+
 import pytest
 from reports import pipeline as pipeline_module
 from reports.guard import GuardResult
@@ -46,11 +48,11 @@ class _FakeProvider:
         return self.response
 
 
-class _FakePool:
+class _FakePool(TenantScopedPoolMixin):
     def __init__(self):
         self.execute_calls: list = []
 
-    async def execute(self, query, *params):
+    async def _on_execute(self, query, *params):
         self.execute_calls.append((query, params))
 
 

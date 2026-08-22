@@ -16,6 +16,8 @@
     "test:cov": "turbo run test:cov",
     "test:integration": "turbo run test:integration",
     "test:contract": "jest --config jest.contract.config.js",
+    "test:spec-derived": "jest --config jest.spec-derived.config.js",
+    "test:spec-derived:integration": "jest --config jest.spec-derived-integration.config.js --runInBand",
     "lint": "turbo run lint",
     "lint:fix": "turbo run lint:fix",
     "type-check": "turbo run type-check",
@@ -46,7 +48,8 @@
     "ts-jest": "^29.4.11",
     "ts-node": "^10.9.2",
     "turbo": "^2.10.5",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "yaml": "^2.9.0"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [

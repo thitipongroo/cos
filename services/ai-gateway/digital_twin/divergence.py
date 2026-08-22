@@ -13,6 +13,8 @@ from uuid import UUID
 
 import asyncpg
 
+from db import tenant_scoped
+
 from .models import (
     Divergence,
     DivergenceReport,
@@ -95,16 +97,33 @@ async def generate_divergence_report(
     Scheduled job entry point — compare latest actual twin state vs planned state.
     Planned state sourced from BIM/schedule data (digital_ref attributes).
     """
-    entities = await db_pool.fetch(
-        """
-        SELECT entity_id, entity_type, digital_ref, confidence
-        FROM digital_twin.twin_entities
-        WHERE project_id = $1::uuid
-          AND tenant_id = $2::uuid
-        """,
-        project_id,
-        tenant_id,
-    )
+    # RLS (app_user): the entity list and every per-entity state lookup share one
+    # tenant-scoped transaction — see db/tenant_scope.py.
+    async with tenant_scoped(db_pool, tenant_id) as conn:
+        entities = await conn.fetch(
+            """
+            SELECT entity_id, entity_type, digital_ref, confidence
+            FROM digital_twin.twin_entities
+            WHERE project_id = $1::uuid
+              AND tenant_id = $2::uuid
+            """,
+            project_id,
+            tenant_id,
+        )
+        state_rows: dict[str, Any] = {}
+        for entity_row in entities:
+            state_rows[str(entity_row["entity_id"])] = await conn.fetchrow(
+                """
+                SELECT attributes
+                FROM digital_twin.twin_states
+                WHERE entity_id = $1::uuid
+                  AND tenant_id = $2::uuid
+                ORDER BY recorded_at DESC
+                LIMIT 1
+                """,
+                str(entity_row["entity_id"]),
+                tenant_id,
+            )
 
     divergences: list[Divergence] = []
 
@@ -112,18 +131,7 @@ async def generate_divergence_report(
         entity_id = str(entity_row["entity_id"])
         entity_type = entity_row["entity_type"]
 
-        latest_state_row = await db_pool.fetchrow(
-            """
-            SELECT attributes
-            FROM digital_twin.twin_states
-            WHERE entity_id = $1::uuid
-              AND tenant_id = $2::uuid
-            ORDER BY recorded_at DESC
-            LIMIT 1
-            """,
-            entity_id,
-            tenant_id,
-        )
+        latest_state_row = state_rows.get(entity_id)
         if not latest_state_row:
             continue
 

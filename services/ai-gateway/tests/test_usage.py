@@ -6,6 +6,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from tests.fake_pool import TenantScopedPoolMixin  # noqa: E402
+
 from usage import get_usage_summary, summarize_usage
 
 
@@ -59,7 +61,7 @@ def test_unknown_plan_is_uncapped():
     assert out["percentUsed"] is None
 
 
-class _FakePool:
+class _FakePool(TenantScopedPoolMixin):
     """Minimal asyncpg-pool stand-in: fetchval returns the token sum then the plan, in call order."""
 
     def __init__(self, values):

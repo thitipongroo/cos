@@ -10,6 +10,7 @@ from uuid import uuid4, UUID
 
 from digital_twin.models import StateSource
 from digital_twin.sync_service import handle_iot_telemetry_event
+from tests.fake_pool import asyncmock_pool
 
 # Production tenant_id / project_id are always UUIDs — the handler and divergence report
 # cast them via UUID(...) / ::uuid, so the mocks must use real UUIDs, not "tenant-1"/"proj-1".
@@ -22,12 +23,16 @@ PROJECT_ID = "22222222-2222-2222-2222-222222222222"
 class TestHandleIoTTelemetryEvent:
     @pytest.fixture
     def mock_db(self):
-        db = AsyncMock()
+        conn = AsyncMock()
         entity_id = uuid4()
         # fetchrow returns entity lookup
-        db.fetchrow.return_value = {"entity_id": entity_id}
+        conn.fetchrow.return_value = {"entity_id": entity_id}
         # execute for INSERT and UPDATE always succeeds
-        db.execute.return_value = None
+        conn.execute.return_value = None
+        # The handler acquires a connection and opens a transaction so it can set
+        # app.current_tenant_id for RLS (db/tenant_scope.py) — hand it a pool that does that.
+        db = asyncmock_pool(conn)
+        db.conn = conn
         return db, entity_id
 
     @pytest.fixture
@@ -59,8 +64,9 @@ class TestHandleIoTTelemetryEvent:
 
     @pytest.mark.asyncio
     async def test_returns_none_when_entity_not_found(self, mock_redis):
-        db = AsyncMock()
-        db.fetchrow.return_value = None  # no entity found for physical_ref
+        conn = AsyncMock()
+        conn.fetchrow.return_value = None  # no entity found for physical_ref
+        db = asyncmock_pool(conn)
 
         event = {"equipment_id": "unknown-device", "tenant_id": TENANT_ID}
         result = await handle_iot_telemetry_event(event, db_pool=db, redis_client=mock_redis)
@@ -122,10 +128,10 @@ class TestEndToEndTwinFlow:
         """
         from digital_twin.divergence import generate_divergence_report
 
-        db = AsyncMock()
+        conn = AsyncMock()
         # Entity list: 1 EQUIPMENT entity
         entity_id = uuid4()
-        db.fetch.return_value = [
+        conn.fetch.return_value = [
             {
                 "entity_id": entity_id,
                 "entity_type": "EQUIPMENT",
@@ -134,7 +140,8 @@ class TestEndToEndTwinFlow:
             }
         ]
         # Latest state: fuel_level 0.2 (low)
-        db.fetchrow.return_value = {"attributes": json.dumps({"fuel_level": 0.2})}
+        conn.fetchrow.return_value = {"attributes": json.dumps({"fuel_level": 0.2})}
+        db = asyncmock_pool(conn)
 
         report = await generate_divergence_report(PROJECT_ID, TENANT_ID, db_pool=db)
 

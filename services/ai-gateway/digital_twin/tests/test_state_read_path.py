@@ -19,6 +19,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
+from tests.fake_pool import TenantScopedPoolMixin  # noqa: E402
+
 import pytest
 from digital_twin.divergence import _risk_level_from_divergences, generate_divergence_report
 from digital_twin.models import SeverityLevel, StateSource
@@ -42,7 +44,7 @@ class _FakeRedis:
         self.setex_calls.append((key, ttl, value))
 
 
-class _FakePool:
+class _FakePool(TenantScopedPoolMixin):
     def __init__(self, row=None, rows=None):
         self._row = row
         self._rows = rows if rows is not None else []

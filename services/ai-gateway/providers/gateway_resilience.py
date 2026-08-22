@@ -21,6 +21,8 @@ from enum import Enum
 
 from .llm_provider import LLMProvider, LLMResponse, Message
 
+from db import tenant_scoped
+
 # Alert threshold (§31.3 "AI token budget near limit" — > 80% of monthly quota).
 BUDGET_ALERT_FRACTION = 0.80
 
@@ -56,19 +58,24 @@ class BudgetExceededError(Exception):
 async def current_month_tokens(db_pool, tenant_id: str) -> int:
     """Sum a tenant's total_tokens for the current calendar month from ai.ai_usage_logs.
 
-    Uses date_trunc('month', now()) so the window rolls over automatically. The tenant filter is
-    explicit here (not RLS-dependent) because the gateway runs this as an operational check, not
-    inside a tenant-scoped request transaction.
+    Uses date_trunc('month', now()) so the window rolls over automatically.
+
+    RLS (app_user): this runs inside a tenant-scoped transaction. It previously relied on the
+    explicit WHERE alone, on the reasoning that a budget check is an operational read rather than
+    a tenant request — that reasoning does not survive the move off the RLS-exempt owner role.
+    Without the GUC the SUM would come back 0 for every tenant, so no tenant would ever be found
+    over budget and the COST-001 cap would silently stop blocking. See db/tenant_scope.py.
     """
-    row = await db_pool.fetchrow(
-        """
-        SELECT COALESCE(SUM(total_tokens), 0) AS used
-        FROM ai.ai_usage_logs
-        WHERE tenant_id = $1::uuid
-          AND created_at >= date_trunc('month', now())
-        """,
-        tenant_id,
-    )
+    async with tenant_scoped(db_pool, tenant_id) as conn:
+        row = await conn.fetchrow(
+            """
+            SELECT COALESCE(SUM(total_tokens), 0) AS used
+            FROM ai.ai_usage_logs
+            WHERE tenant_id = $1::uuid
+              AND created_at >= date_trunc('month', now())
+            """,
+            tenant_id,
+        )
     return int(row["used"])
 
 

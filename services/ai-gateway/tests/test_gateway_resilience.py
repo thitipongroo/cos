@@ -10,6 +10,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from tests.fake_pool import TenantScopedPoolMixin  # noqa: E402
+
 import pytest
 from providers.llm_provider import LLMResponse, Message, StubLLMProvider
 from providers.gateway_resilience import (
@@ -40,7 +42,7 @@ def test_budget_with_zero_quota_is_over_and_alerting():
     assert status.fraction == 1.0
 
 
-class _FakePool:
+class _FakePool(TenantScopedPoolMixin):
     def __init__(self, used):
         self._used = used
         self.captured = {}

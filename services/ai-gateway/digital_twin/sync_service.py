@@ -17,6 +17,8 @@ import redis.asyncio as redis
 
 from .models import StateSource, TwinState
 
+from db import tenant_scoped
+
 # Confidence scoring per spec §33.3
 _IOT_LIVE_CONFIDENCE = 1.0     # sensor reading ≤ 60 seconds old
 _IOT_RECENT_CONFIDENCE = 0.8   # last known reading, not yet stale
@@ -53,52 +55,55 @@ async def handle_iot_telemetry_event(
     if not equipment_id or not tenant_id:
         return None
 
-    row = await db_pool.fetchrow(
-        """
-        SELECT entity_id
-        FROM digital_twin.twin_entities
-        WHERE physical_ref = $1
-          AND tenant_id = $2::uuid
-        """,
-        equipment_id,
-        tenant_id,
-    )
-    if not row:
-        return None
+    # RLS (app_user): read AND both writes run in one tenant-scoped transaction, so the
+    # state insert and the entity update cannot half-apply — see db/tenant_scope.py.
+    async with tenant_scoped(db_pool, tenant_id) as conn:
+        row = await conn.fetchrow(
+            """
+            SELECT entity_id
+            FROM digital_twin.twin_entities
+            WHERE physical_ref = $1
+              AND tenant_id = $2::uuid
+            """,
+            equipment_id,
+            tenant_id,
+        )
+        if not row:
+            return None
 
-    entity_id = row["entity_id"]
-    recorded_at = datetime.now(timezone.utc)
-    confidence = compute_confidence(StateSource.IOT, recorded_at)
+        entity_id = row["entity_id"]
+        recorded_at = datetime.now(timezone.utc)
+        confidence = compute_confidence(StateSource.IOT, recorded_at)
 
-    attributes: dict[str, Any] = {
-        k: v for k, v in event.items()
-        if k not in ("equipment_id", "tenant_id", "event_type", "event_version", "occurred_at")
-    }
+        attributes: dict[str, Any] = {
+            k: v for k, v in event.items()
+            if k not in ("equipment_id", "tenant_id", "event_type", "event_version", "occurred_at")
+        }
 
-    await db_pool.execute(
-        """
-        INSERT INTO digital_twin.twin_states
-          (entity_id, tenant_id, recorded_at, attributes, source, confidence)
-        VALUES ($1::uuid, $2::uuid, $3, $4::jsonb, $5, $6)
-        """,
-        entity_id,
-        tenant_id,
-        recorded_at,
-        json.dumps(attributes),
-        StateSource.IOT.value,
-        confidence,
-    )
+        await conn.execute(
+            """
+            INSERT INTO digital_twin.twin_states
+              (entity_id, tenant_id, recorded_at, attributes, source, confidence)
+            VALUES ($1::uuid, $2::uuid, $3, $4::jsonb, $5, $6)
+            """,
+            entity_id,
+            tenant_id,
+            recorded_at,
+            json.dumps(attributes),
+            StateSource.IOT.value,
+            confidence,
+        )
 
-    await db_pool.execute(
-        """
-        UPDATE digital_twin.twin_entities
-        SET last_synced_at = $1, confidence = $2, updated_at = $1
-        WHERE entity_id = $3::uuid
-        """,
-        recorded_at,
-        confidence,
-        entity_id,
-    )
+        await conn.execute(
+            """
+            UPDATE digital_twin.twin_entities
+            SET last_synced_at = $1, confidence = $2, updated_at = $1
+            WHERE entity_id = $3::uuid
+            """,
+            recorded_at,
+            confidence,
+            entity_id,
+        )
 
     cache_key = f"twin:state:{tenant_id}:{entity_id}"
     await redis_client.setex(
@@ -132,18 +137,20 @@ async def get_current_state(
     if cached:
         return json.loads(cached)
 
-    row = await db_pool.fetchrow(
-        """
-        SELECT attributes, confidence, recorded_at
-        FROM digital_twin.twin_states
-        WHERE entity_id = $1::uuid
-          AND tenant_id = $2::uuid
-        ORDER BY recorded_at DESC
-        LIMIT 1
-        """,
-        entity_id,
-        tenant_id,
-    )
+    # RLS (app_user): cache miss falls through to TimescaleDB, which needs the tenant GUC.
+    async with tenant_scoped(db_pool, tenant_id) as conn:
+        row = await conn.fetchrow(
+            """
+            SELECT attributes, confidence, recorded_at
+            FROM digital_twin.twin_states
+            WHERE entity_id = $1::uuid
+              AND tenant_id = $2::uuid
+            ORDER BY recorded_at DESC
+            LIMIT 1
+            """,
+            entity_id,
+            tenant_id,
+        )
     if not row:
         return None
 

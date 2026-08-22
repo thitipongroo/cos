@@ -12,6 +12,8 @@ reports/persistence.py + middleware/token_logger.py).
 
 from datetime import datetime, timezone
 
+from db import tenant_scoped
+
 # §26 "Included Quota" per plan tier. ENTERPRISE is contract-custom → uncapped in-app (None).
 QUOTA_BY_PLAN: dict[str, int | None] = {
     "STARTER": 500_000,
@@ -52,17 +54,21 @@ async def get_usage_summary(db_pool, tenant_id: str) -> dict:
     month_start = datetime(now.year, now.month, 1, tzinfo=timezone.utc)
     period_month = f"{now.year:04d}-{now.month:02d}"
 
-    tokens_used = await db_pool.fetchval(
-        """
-        SELECT COALESCE(SUM(total_tokens), 0)::bigint
-        FROM ai.ai_usage_logs
-        WHERE tenant_id = $1 AND created_at >= $2
-        """,
-        tenant_id,
-        month_start,
-    )
-    plan_type = await db_pool.fetchval(
-        "SELECT plan_type FROM platform.tenants WHERE tenant_id = $1",
-        tenant_id,
-    )
+    # RLS (app_user): ai.ai_usage_logs and platform.tenants BOTH scope on the tenant GUC
+    # (the latter since 20260804000001_restrict_tenants_read_policy) — without it both
+    # reads return NULL/None. See db/tenant_scope.py.
+    async with tenant_scoped(db_pool, tenant_id) as conn:
+        tokens_used = await conn.fetchval(
+            """
+            SELECT COALESCE(SUM(total_tokens), 0)::bigint
+            FROM ai.ai_usage_logs
+            WHERE tenant_id = $1 AND created_at >= $2
+            """,
+            tenant_id,
+            month_start,
+        )
+        plan_type = await conn.fetchval(
+            "SELECT plan_type FROM platform.tenants WHERE tenant_id = $1",
+            tenant_id,
+        )
     return summarize_usage(int(tokens_used or 0), plan_type, period_month)
