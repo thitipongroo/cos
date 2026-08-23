@@ -158,6 +158,13 @@ jobs:
       - name: Every Avro event schema has a producer
         run: node ./scripts/ci/check-event-producers.mjs
 
+      # Production promotion is a manual sync gate (QM-16). This property was prose in two places and
+      # drifted in both: the deployment runbook warned that production auto-synced long after the
+      # staging split fixed it, and the readiness check told an operator to inspect an Application
+      # named cos-production that has never existed. Prose nobody executes goes stale (TDD sweep).
+      - name: Production ArgoCD Applications do not auto-sync
+        run: node ./scripts/ci/check-argocd-sync-policy.mjs
+
   # ─── MLOps tests (Python / Airflow 3.x DAGs) ────────────────────────────────
   mlops-tests:
     name: MLOps Tests (Python)

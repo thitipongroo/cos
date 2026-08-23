@@ -346,41 +346,71 @@ fi
 
 section "Tenant Isolation"
 
-# AUTO-29: Cross-tenant isolation integration test
-echo "  [AUTO-29] Cross-tenant isolation test..."
-if command -v pytest &>/dev/null && [[ -f "$ROOT/tests/integration/test_tenant_isolation.py" ]]; then
-  if pytest "$ROOT/tests/integration/test_tenant_isolation.py" --env=staging -q 2>/dev/null; then
-    pass "AUTO-29: Cross-tenant isolation integration test passed"
+# AUTO-29/30/31 — REPOINTED 2026-08-23.
+#
+# All three used to run pytest files under tests/integration/ — a directory that has never existed in
+# this repository (tests/ holds contract/, e2e/ and load/). Each fell through to `skip`, which reads
+# in the report as "tool not available" and is what every other skip in this file means. These three
+# were different: no environment could ever have satisfied them, so three checks covering the tenant
+# isolation boundary reported as skipped rather than as never written.
+#
+# They now run what actually covers this. Where nothing covers it, the check says so and FAILS —
+# a readiness report that stays silent about a missing control is the failure mode being fixed.
+
+# AUTO-29: Cross-tenant isolation — the live probe
+echo "  [AUTO-29] Cross-tenant isolation probe..."
+# infrastructure/monitoring/isolation-probe/ is the CronJob that reads ACROSS tenants on five
+# surfaces (postgresql, neo4j, kafka, s3, api) and publishes tenant_isolation_check_result per
+# surface; the TenantIsolationBreach alert fires on a 0. That is a live assertion against the running
+# system, which is strictly more than a pytest file would have proved.
+# `command -v kubectl` is not enough: kubectl installed but pointed at no cluster would report the
+# CronJob as absent, which is a very different statement from "the probe is not deployed". Reach the
+# API server first, and skip if that fails.
+if command -v kubectl &>/dev/null && kubectl cluster-info &>/dev/null; then
+  if kubectl get cronjob tenant-isolation-probe -n "${NAMESPACE:-cos}" &>/dev/null; then
+    LAST_PROBE=$(kubectl get cronjob tenant-isolation-probe -n "${NAMESPACE:-cos}" \
+      -o jsonpath='{.status.lastSuccessfulTime}' 2>/dev/null)
+    if [[ -n "$LAST_PROBE" ]]; then
+      pass "AUTO-29: tenant-isolation-probe CronJob present, last success $LAST_PROBE"
+    else
+      fail "AUTO-29: tenant-isolation-probe exists but has NEVER completed successfully"
+    fi
   else
-    fail "AUTO-29: Cross-tenant isolation test FAILED"
+    fail "AUTO-29: tenant-isolation-probe CronJob is not deployed in namespace ${NAMESPACE:-cos}"
   fi
 else
-  skip "AUTO-29: pytest not available or test file missing"
+  skip "AUTO-29: kubectl not available or no cluster reachable"
 fi
 
-# AUTO-30: PostgreSQL RLS policies integration test
-echo "  [AUTO-30] PostgreSQL RLS policies test..."
-if command -v pytest &>/dev/null && [[ -f "$ROOT/tests/integration/test_rls_policies.py" ]]; then
-  if pytest "$ROOT/tests/integration/test_rls_policies.py" -q 2>/dev/null; then
-    pass "AUTO-30: PostgreSQL RLS policies integration test passed"
+# AUTO-30: PostgreSQL RLS — the unit coverage of the mechanism
+echo "  [AUTO-30] PostgreSQL RLS enforcement..."
+# TenantPrismaService is the ONLY path a tenant-scoped query takes, and it is what issues
+# SET LOCAL app.current_tenant_id — the value every RLS policy reads. Its spec plus
+# assert-safe-tenant-id (which stops a crafted tenant id reaching that statement) are what cover the
+# mechanism. The POLICIES themselves are checked against a live database by MANUAL-04, not here.
+if [[ -f "$ROOT/backend/package.json" ]] && command -v npx &>/dev/null; then
+  if (cd "$ROOT/backend" && npx jest \
+        src/modules/tenant/__tests__/tenant-prisma.service.spec.ts \
+        src/shared/prisma/__tests__/assert-safe-tenant-id.spec.ts --silent) &>/dev/null; then
+    pass "AUTO-30: RLS tenant-context enforcement tests passed"
   else
-    fail "AUTO-30: PostgreSQL RLS policies test FAILED"
+    fail "AUTO-30: RLS tenant-context enforcement tests FAILED"
   fi
 else
-  skip "AUTO-30: pytest not available or test file missing"
+  skip "AUTO-30: npx/backend not available"
 fi
 
-# AUTO-31: Keycloak realm isolation
-echo "  [AUTO-31] Keycloak realm isolation test..."
-if command -v pytest &>/dev/null && [[ -f "$ROOT/tests/integration/test_keycloak_isolation.py" ]]; then
-  if pytest "$ROOT/tests/integration/test_keycloak_isolation.py" -q 2>/dev/null; then
-    pass "AUTO-31: Keycloak realm isolation test passed"
-  else
-    fail "AUTO-31: Keycloak realm isolation test FAILED"
-  fi
-else
-  skip "AUTO-31: pytest not available or test file missing"
-fi
+# AUTO-31: Keycloak realm isolation — NOT COVERED, and saying so is the point
+echo "  [AUTO-31] Keycloak realm isolation..."
+# Verified 2026-08-23: nothing in this repository tests that one tenant's realm cannot read or
+# authenticate into another's. The specs that mention keycloak_realm exercise user and tenant service
+# logic, not realm isolation, and the live probe's five surfaces do not include Keycloak.
+#
+# This is a real gap in a real boundary (spec §7.6 gives ENTERPRISE tenants their own realm), so it
+# fails rather than skips. Close it by adding a Keycloak surface to the isolation probe — that is
+# where the other four cross-tenant reads already live — or by writing the test this check used to
+# point at. Do not silence it by deleting the check.
+fail "AUTO-31: Keycloak realm isolation has NO test — see the note above this check"
 
 # ── Summary ────────────────────────────────────────────────────────────────────
 

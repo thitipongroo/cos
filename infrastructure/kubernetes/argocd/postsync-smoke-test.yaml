@@ -11,9 +11,10 @@
 # after every ArgoCD sync" — staging is `cos-staging`. Both are placement decisions that belong with
 # the staging run that closes docs/runbooks/deployment.md, so nothing is moved here unilaterally.
 #
-# The auth step also calls an endpoint that has never existed — see the header of
-# scripts/deploy/smoke-test.sh for the measurements and why it cannot be repointed without a
-# decision.
+# The auth step now goes to Keycloak's token endpoint with a NON-PRIVILEGED smoke user; it used to
+# POST /api/v1/auth/login, which has never existed. See the header of scripts/deploy/smoke-test.sh —
+# a privileged user cannot be used, because the realm denies TENANT_ADMIN and FINANCE on Direct
+# Grant.
 ---
 apiVersion: batch/v1
 kind: Job
@@ -52,13 +53,19 @@ spec:
               echo "  ✓ /api/v1/health/ready → 200"
 
               echo "→ [2/3] Auth check"
-              AUTH=$(curl -sf --max-time 10 -X POST "${BASE_URL}/api/v1/auth/login" \
-                -H "Content-Type: application/json" \
-                -d "{\"email\":\"${E2E_EMAIL}\",\"password\":\"${E2E_PASSWORD}\"}") \
-                || fail "auth endpoint unreachable"
-              TOKEN=$(echo "$AUTH" | grep -o '"accessToken":"[^"]*"' | cut -d'"' -f4)
-              [ -n "$TOKEN" ] || fail "auth did not return accessToken"
-              echo "  ✓ /auth/login → accessToken obtained"
+              # --data-urlencode, not -d: an E.164 username starts with '+', which -d sends literally
+              # and the server decodes as a SPACE.
+              AUTH=$(curl -sf --max-time 10 -X POST \
+                "${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token" \
+                --data-urlencode "grant_type=password" \
+                --data-urlencode "client_id=${KEYCLOAK_CLIENT_ID}" \
+                --data-urlencode "client_secret=${KEYCLOAK_CLIENT_SECRET}" \
+                --data-urlencode "username=${SMOKE_USER}" \
+                --data-urlencode "password=${SMOKE_PASSWORD}") \
+                || fail "Keycloak refused the grant (is SMOKE_USER privileged?)"
+              TOKEN=$(echo "$AUTH" | grep -o '"access_token":"[^"]*"' | cut -d'"' -f4)
+              [ -n "$TOKEN" ] || fail "Keycloak did not return an access_token"
+              echo "  ✓ Keycloak token endpoint → access_token obtained"
 
               echo "→ [3/3] Core read check"
               P_STATUS=$(curl -sf -o /dev/null -w "%{http_code}" --max-time 10 \
@@ -78,13 +85,23 @@ spec:
                 secretKeyRef:
                   name: cos-smoke-test-config
                   key: BASE_URL
-            - name: E2E_EMAIL
+            # SMOKE_USER must be NON-PRIVILEGED. E2E_EMAIL (a TENANT_ADMIN) used to be wired here and
+            # cannot work: the realm denies TENANT_ADMIN and FINANCE on Direct Grant.
+            - name: SMOKE_USER
               valueFrom:
-                secretKeyRef:
-                  name: cos-smoke-test-config
-                  key: E2E_EMAIL
-            - name: E2E_PASSWORD
+                secretKeyRef: { name: cos-smoke-test-config, key: SMOKE_USER }
+            - name: SMOKE_PASSWORD
               valueFrom:
-                secretKeyRef:
-                  name: cos-smoke-test-config
-                  key: E2E_PASSWORD
+                secretKeyRef: { name: cos-smoke-test-config, key: SMOKE_PASSWORD }
+            - name: KEYCLOAK_URL
+              valueFrom:
+                secretKeyRef: { name: cos-smoke-test-config, key: KEYCLOAK_URL }
+            - name: KEYCLOAK_REALM
+              valueFrom:
+                secretKeyRef: { name: cos-smoke-test-config, key: KEYCLOAK_REALM }
+            - name: KEYCLOAK_CLIENT_ID
+              valueFrom:
+                secretKeyRef: { name: cos-smoke-test-config, key: KEYCLOAK_CLIENT_ID }
+            - name: KEYCLOAK_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef: { name: cos-smoke-test-config, key: KEYCLOAK_CLIENT_SECRET }

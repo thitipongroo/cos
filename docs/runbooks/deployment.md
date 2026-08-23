@@ -55,10 +55,12 @@ Both sets track `targetRevision: main`, which is the intended shape: staging fol
 continuously, and production is promoted by a human clicking Sync. That satisfies QM-16 and the
 Phase 19 checklist.
 
-> `scripts/readiness/run-all-checks.sh` still describes this as "verify `cos-production` app does NOT
-> have syncPolicy.automated". No Application is named `cos-production` — the production set is the 11
-> unsuffixed names above. The check is manual prose, not an executed assertion, so it does not fail;
-> it just points at a name that does not exist.
+> **This is asserted in CI since 2026-08-23** — `scripts/ci/check-argocd-sync-policy.mjs` fails if any
+> production Application gains `syncPolicy.automated`, and also if a staging one loses it. It exists
+> because this property was prose in two places and drifted in both: the warning above said production
+> auto-synced long after the split fixed it, and `run-all-checks.sh` MANUAL-11 told an operator to
+> inspect an Application named `cos-production` that has never existed. Both are corrected; the gate
+> is what keeps them corrected.
 
 ## Pre-deployment checklist
 

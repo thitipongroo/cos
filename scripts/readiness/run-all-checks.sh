@@ -23,7 +23,12 @@ mkdir -p "$AUDIT_DIR"
 PASS=0
 FAIL=0
 SKIP=0
-TOTAL=22
+# 19 checks: MANUAL-01..06, MANUAL-09..13, GLOBAL-01..08.
+#
+# Was 22 while the file actually held 21 — the counter has been off since before MANUAL-07/08 were
+# moved out on 2026-08-23, so the progress line printed "[21/22]" on the last check and no run ever
+# reached the declared total. Counted from the calls, not carried forward.
+TOTAL=19
 
 # ── Logging ────────────────────────────────────────────────────────────────────
 
@@ -98,8 +103,8 @@ manual_check \
 
 manual_check \
   "MANUAL-02" "Architecture" \
-  "No direct DB cross-service queries — all inter-service data access goes via Kafka or API." \
-  "Verify no service imports another module's Prisma client or connects to another service's DB directly."
+  "No direct DB cross-service queries — all inter-service data access goes via Kafka or API, with ONE carved exception." \
+  "Verify no service imports another module's Prisma client or connects to another service's DB directly. THE EXCEPTION (2026-08-23, TDD OQ-31): backend/src/modules/finance/ledger-reconciliation.service.ts reads procurement.purchase_orders and procurement.invoices, because a ledger built from events cannot detect its own gaps. It is read-only, never answers a request, and never writes a cost transaction. Confirm it is still the ONLY one and still has those three properties."
 
 manual_check \
   "MANUAL-03" "Architecture" \
@@ -126,7 +131,7 @@ manual_check \
 manual_check \
   "MANUAL-06" "Security" \
   "MFA (TOTP) enforced for TENANT_ADMIN and FINANCE roles in Keycloak." \
-  "In Keycloak admin console: Authentication → Required Actions → CONFIGURE_TOTP set as Required for TENANT_ADMIN and FINANCE roles."
+  "CORRECTED 2026-08-23 — the old hint said 'Authentication -> Required Actions -> CONFIGURE_TOTP set as Required for TENANT_ADMIN and FINANCE roles'. Keycloak required actions are REALM-WIDE, not role-scoped, so that cannot be done and is not how this is built: the realm binds a browser-mfa flow whose Conditional OTP subflow is gated by 'Condition - user attribute' on role ^(TENANT_ADMIN|FINANCE)\$ (CONFIGURE_TOTP is enabled with defaultAction=false, i.e. not required of anyone by default). Verify with: node scripts/ops/verify-keycloak-mfa-live.mjs --realm <realm> --probe"
 
 # ── SECTION C: Data (2 manual) ────────────────────────────────────────────────
 
@@ -135,22 +140,26 @@ log "═════════════════════════
 log "  SECTION C — Data"
 log "══════════════════════════════════"
 
-manual_check \
-  "MANUAL-07" "Data" \
-  "Neo4j backup: neo4j-admin database backup runs daily and stores to S3 with 7-day retention." \
-  "Check CronJob: kubectl get cronjob neo4j-backup -n \$NAMESPACE. Verify last backup exists in S3: aws s3 ls s3://cos-backups/neo4j/"
-
-manual_check \
-  "MANUAL-08" "Data" \
-  "MinIO replication configured with at least 3 drives (erasure coding minimum)." \
-  "Run: mc admin info minio-alias and verify drive count >= 3. Check mc admin heal minio-alias/cos-prod reports no issues."
-
-# ── SECTION D: Disaster Recovery (2 manual) ───────────────────────────────────
-
-log ""
-log "══════════════════════════════════"
-log "  SECTION D — Disaster Recovery"
-log "══════════════════════════════════"
+# ── MANUAL-07 / MANUAL-08 MOVED OUT 2026-08-23 (PO decision) ──────────────────
+#
+# They checked the Neo4j backup CronJob and MinIO erasure coding. Measured on 2026-08-23: NEITHER
+# DATASTORE IS DEPLOYED ANYWHERE. Neo4j and MinIO exist only in docker-compose.yml (development) —
+# no Helm chart, no Kubernetes manifest, no Terraform, and nothing in infrastructure/onprem/. The
+# string `neo4j-backup` appeared in exactly one file in the repository: this one.
+#
+# So both were Stage 1→2 gates on properties of systems that have no production deployment to have
+# properties. They cannot pass in any environment, and a checklist carrying items with no possible
+# answer is a checklist people learn to skim.
+#
+# Neither is dropped as a concern — they move to the phase that owns them:
+#   * Neo4j backup      → Phase 13 (knowledge graph). When Neo4j gains a deployment manifest, it
+#                         needs a backup CronJob before it holds anything, and the gap the Keycloak
+#                         backup had (a CronJob that existed only as prose) is the one to avoid.
+#   * MinIO erasure coding → the on-premise track (ADR-013: S3 in cloud, MinIO on-prem). It belongs
+#                         with infrastructure/onprem/, which today has RKE2 install and CIS scan
+#                         scripts and no object store.
+#
+# Re-add them here when the corresponding deployment lands.
 
 manual_check \
   "MANUAL-09" "Disaster Recovery" \
@@ -172,7 +181,7 @@ log "═════════════════════════
 manual_check \
   "MANUAL-11" "CI/CD" \
   "Production promotion requires manual sync gate in ArgoCD UI — tested and documented." \
-  "In ArgoCD UI: verify cos-production app does NOT have syncPolicy.automated set. Confirm manual sync required."
+  "CORRECTED 2026-08-23 — there is no Application named cos-production. The production set is the 11 UNSUFFIXED Applications in infrastructure/kubernetes/argocd/argocd-apps.yaml; the 10 -staging ones are the automated set. This is now asserted in CI, so run the gate rather than reading YAML by eye: node scripts/ci/check-argocd-sync-policy.mjs — it fails if any production Application gains syncPolicy.automated, and also if a staging one loses it. Then confirm the LIVE cluster agrees with git (argocd app list --output=wide), which is the part the gate cannot see."
 
 manual_check \
   "MANUAL-12" "CI/CD" \
