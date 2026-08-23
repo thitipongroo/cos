@@ -22,9 +22,12 @@ post-deploy verification that ArgoCD mirrors as a PostSync hook (smoke test).
 # Roll cos-backend back to a specific revision
 ./scripts/deploy/rollback.sh cos-backend 3
 
-# Run the smoke test against a target environment
+# Run the smoke test against a target environment.
+# SMOKE_USER must be NON-PRIVILEGED — the realm denies TENANT_ADMIN and FINANCE on Direct Grant.
 BASE_URL=https://staging.example \
-E2E_EMAIL=... E2E_PASSWORD=... \
+KEYCLOAK_URL=https://keycloak.example KEYCLOAK_REALM=construction-os \
+KEYCLOAK_CLIENT_SECRET=... \
+SMOKE_USER=... SMOKE_PASSWORD=... \
   ./scripts/deploy/smoke-test.sh
 ```
 
@@ -32,8 +35,16 @@ E2E_EMAIL=... E2E_PASSWORD=... \
 
 - `NAMESPACE` (`rollback.sh`) — Kubernetes namespace of the release (default: `cos`).
 - `BASE_URL` (`smoke-test.sh`) — Base URL of the target environment (required).
-- `E2E_EMAIL` (`smoke-test.sh`) — Login email for the auth probe (required).
-- `E2E_PASSWORD` (`smoke-test.sh`) — Login password for the auth probe (required).
+- `KEYCLOAK_URL`, `KEYCLOAK_REALM`, `KEYCLOAK_CLIENT_SECRET` (`smoke-test.sh`) — required.
+  `KEYCLOAK_CLIENT_ID` defaults to `cos-backend`, the only client with the password grant enabled.
+- `SMOKE_USER`, `SMOKE_PASSWORD` (`smoke-test.sh`) — required, and the account **must not be
+  `TENANT_ADMIN` or `FINANCE`**: those are Path B only and the realm refuses them on Direct Grant
+  (measured against Keycloak 26.6.4). Keep it non-privileged for a second reason too — this
+  credential sits in a Secret a PostSync hook reads on every deploy.
+
+> **Corrected 2026-08-23.** This section said `E2E_EMAIL` / `E2E_PASSWORD`, matching a smoke test that
+> POSTed `/api/v1/auth/login`. That endpoint has never existed, and `E2E_EMAIL` is a TENANT_ADMIN that
+> Keycloak would refuse anyway. The auth probe now goes to Keycloak's token endpoint.
 
 ## Dependencies
 
@@ -42,8 +53,10 @@ E2E_EMAIL=... E2E_PASSWORD=... \
 
 ## Related
 
-- `infrastructure/kubernetes/argocd/postsync-smoke-test.yaml` — ArgoCD PostSync
-  hook (wave 1) that mirrors `smoke-test.sh` inline and blocks E2E wave 2 on failure.
+- `infrastructure/kubernetes/argocd/postsync-smoke-test.yaml` — the Job that mirrors this script
+  inline. **It does not currently run**: an ArgoCD hook only fires for manifests inside the synced
+  Application's path, and no Application syncs `infrastructure/kubernetes/argocd/`. There is also no
+  wave 2 — `sync-wave` appears once in the whole tree. See `docs/runbooks/deployment.md` § ⚠️.
 - `docs/runbooks/rollback.md` — the rollback runbook.
 - `docs/runbooks/production-readiness.md` — cites `./scripts/deploy/rollback.sh`
   in the rollback readiness check.

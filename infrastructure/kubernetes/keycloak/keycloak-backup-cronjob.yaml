@@ -43,7 +43,14 @@
 #     `cos-keycloak-backups`, and neither is provably right.
 #   - Whether the ServiceAccount below has the IRSA annotation it needs. That is an ops step.
 #
-# This manifest is NOT in any ArgoCD Application path yet — see the note in the runbook.
+# HOW IT GETS DEPLOYED. By hand, like the rest of infrastructure/kubernetes/ — no ArgoCD Application
+# syncs that tree (measured: the 21 Applications point at infrastructure/helm/cos-* and the otel
+# overlays only). Of the 15 manifests there, 3 carry a "# Deploy:" line and 12 do not, so nothing
+# records whether any of them was ever applied. That is worth fixing as a class; this file at least
+# says its own procedure:
+#
+#   kubectl apply -f infrastructure/kubernetes/keycloak/keycloak-backup-cronjob.yaml
+#   kubectl -n cos create job --from=cronjob/keycloak-realm-backup keycloak-backup-manual  # verify once
 ---
 apiVersion: v1
 kind: ConfigMap
