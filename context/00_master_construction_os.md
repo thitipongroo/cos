@@ -2647,7 +2647,13 @@ Task Completion Gates (server-side validation — not enforced offline):
     5. Safety       — no linked safety incident (task_id = task.task_id) with
                       status = 'OPEN' and severity IN ('HIGH','CRITICAL')
     6. Delay        — task.status != 'BLOCKED'
-                      (construction.delay.detected.v1 event auto-sets task.status = BLOCKED)
+                      The gate itself is live: tasks.service.ts reads the status, and BLOCKED is a
+                      valid value a PM can set by hand via PATCH /tasks/:id.
+                      The AUTOMATIC path is NOT built (recorded 2026-08-23). This line used to read
+                      "(construction.delay.detected.v1 event auto-sets task.status = BLOCKED)" as
+                      though it were in place; nothing consumes that event to set the status, and
+                      nothing publishes it either. Both halves are Phase 23 work — see the PRODUCER
+                      item in that phase's Generate list.
     7. Material     — linked BOQ item's purchase order has at least one delivery record.
                       Corrected 2026-08-22: this line used to read "with status != 'PENDING'",
                       but `deliveries` has no status column and the entity definition above
@@ -5412,6 +5418,22 @@ Generate:
 - AI provider decisions documented in docs/specifications/22-ai-architecture.md §22.6
 - Unit tests: DAG task functions (with mocked data sources)
 - Integration tests: end-to-end Airflow DAG run with test data
+- PRODUCER for `construction.delay.detected.v1` — added 2026-08-23 after an audit found the event has
+  a schema, a topic, a catalogue entry and TWO documented consumers, but nothing anywhere in the
+  repository publishes it. `DelayForecastModel` below is the AI_FORECAST source the payload's
+  `detected_by` names, which is why the producer belongs to this phase rather than to Phase 12
+  (whose delay-risk report emits `ai.risk_prediction.generated.v1`, a different event).
+  Payload and severity bands: spec `32 §Event payloads` row 8 — LOW=1-2 days, MEDIUM=3-6, HIGH=7-13,
+  CRITICAL=14+, identical to the Phase 12 delay-risk bands.
+  Ship it together with BOTH consumers, or the event is unobservable and the gap simply moves:
+    1. Knowledge Graph — already built and waiting (`kg-ingestion-worker` maps it to `(:Delay)` and
+       `[:IMPACTS]`; §Phase 13). Until the producer exists, graph queries 7 and 8 return nothing.
+    2. Task auto-block — `task.status = BLOCKED` on receipt, which §Phase 6 completion gate 6 states
+       as fact ("event auto-sets task.status = BLOCKED") and which NO code performs today. The gate
+       itself works: `tasks.service.ts` reads the status, and a PM can set BLOCKED by hand via
+       PATCH /tasks/:id. What is missing is only the automatic path.
+  Product-owner decision 2026-08-23: deferred here rather than stubbed earlier, because a producer
+  built before the forecasting model would have to be rewritten once the model exists.
 
 Stubs in Phase 23 (generate stub — algorithms RESOLVED in spec §22-ai-architecture §22.6, implement when data thresholds met):
 
