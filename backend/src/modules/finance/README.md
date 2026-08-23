@@ -41,11 +41,24 @@ GET  /api/v1/finance/reports/variance                — portfolio budget varian
 
 ## Kafka Consumers
 
-| Event                                    | Action                                  |
-| ---------------------------------------- | --------------------------------------- |
-| `procurement.purchase_order.created.v1`  | Create committed cost_transaction       |
-| `procurement.vendor_invoice.received.v1` | Create actual cost_transaction          |
-| `procurement.po.status_changed`          | Update committed_amount if PO CANCELLED |
+Consumer group `finance.shared`; the authoritative list is `SUBSCRIBED_EVENT_TYPES` in
+`finance.consumer.ts`.
+
+| Event                                  | Action                                          |
+| -------------------------------------- | ----------------------------------------------- |
+| `procurement.po.created.v1`            | Create committed cost_transaction               |
+| `procurement.invoice.received.v1`      | Create actual cost_transaction                  |
+| `procurement.po.status_changed.v1`     | Update committed_amount if PO CANCELLED         |
+| `construction.boq.items_published.v1`  | Replace the materialized BOQ line snapshot      |
+
+## Scheduled jobs
+
+| Job                              | Schedule           | What it does                                     |
+| -------------------------------- | ------------------ | ------------------------------------------------ |
+| `exchange-rate-refresh`          | `0 0 * * *` UTC    | Refresh Open Exchange Rates into Redis (24h TTL) |
+| `finance-ledger-reconciliation`  | `37 * * * *` UTC   | Compare the ledger against procurement (OQ-31)   |
+
+Both lease through `ScheduledJobLockService`, so one replica runs them rather than all three.
 
 ## Dependencies
 
@@ -73,10 +86,23 @@ GET /api/v1/projects/uuid/finance/summary
     variance_percent: "84.00", currency_code: "THB" }
 ```
 
-Kafka events emitted: `finance.budget.created`, `finance.payment.processed`, `finance.variance.alert`, `finance.cashflow_risk.detected.v1`, `finance.budget.exceeded.v1`
+Kafka events emitted: `finance.budget.created.v1`, `finance.payment.processed.v1`,
+`finance.variance.alert.v1`, `finance.ar_receipt.recorded.v1`, `finance.billing.approved.v1`,
+`finance.contract.signed.v1`, `finance.contract.document_attached.v1`,
+`finance.contract.signature_recorded.v1`.
+
+`finance.cashflow_risk.detected.v1` and `finance.budget.exceeded.v1` have committed Avro schemas and
+topic-catalog entries but **no producer anywhere in the repository** (verified 2026-08-23) — see
+TDD OQ-50. They are listed here as declared, not as emitted.
 
 ## Notes
 
 - All amounts stored as `DECIMAL(19,4)` in PostgreSQL — never float
 - Currency stored as ISO 4217 code (e.g. `THB`, `USD`)
-- Cross-service data arrives exclusively via Kafka — no direct DB queries to procurement
+- Cross-service data arrives exclusively via Kafka — no direct DB queries to procurement, with
+  **one exception**: `LedgerReconciliationService`. A ledger built from a stream cannot detect its
+  own gaps, and the outbox is durable rather than transactional (ADR-094), so a dropped
+  `procurement.po.created.v1` leaves a budget silently under-committed. The sweep is read-only, never
+  writes a cost transaction (repair is re-publishing the event, so `FinanceConsumer` stays the single
+  writer), and its output is a log line plus the `finance_ledger_drift` gauge. See
+  [`docs/runbooks/finance-ledger-drift.md`](../../../../docs/runbooks/finance-ledger-drift.md).

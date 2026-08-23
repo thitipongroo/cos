@@ -188,6 +188,31 @@ These entities are cached for offline reference but not mutated offline :
 | Photo set on an entity | Union (additive)                                        | Adding a photo never conflicts — the set only grows. This row covers WHICH photos are attached, not their contents (master Phase 6; QM-9)                                                                                                                                                              |
 | Photo annotation       | `CONFLICT_FLAGGED` — no auto-resolution                 | A photo's annotation is editable after sync, so two people can mark up the same photo offline. Auto-merging strokes would silently blend two readings of the same defect, and last-write-wins would silently discard one. Flag for `SITE_ENGINEER` review (product-owner decision 2026-07-17; ADR-056) |
 
+### Clock skew on `client_submitted_at`
+
+**A client's timestamp is capped at the server's clock, with five minutes of tolerance.** Added
+2026-08-23 ([OQ-28](../technical-design/README.md#open-questions-register)); before it, nothing
+bounded the value, so a handset running fast won every last-write-wins merge until someone noticed
+and corrected it — and a phone that has been offline on a site for a week is exactly the device whose
+clock has drifted.
+
+Five minutes is the same window a signed platform webhook is allowed for replay protection: one
+number for "ordinary skew plus delivery latency" rather than two that drift apart.
+
+**The cap is forward-only, and that asymmetry is the point.** A timestamp in the past is honoured
+however old it is — a report written on Tuesday and synced on Friday genuinely happened on Tuesday,
+and rewriting it to Friday would let a stale offline edit overwrite a correction someone made on the
+server in between. Only the future is impossible: a client cannot have written something later than
+the moment it reached the server. Capping there still lets an honest client win against rows modified
+before its sync, which is what last-write-wins means, while removing its ability to win against rows
+modified after it.
+
+An unparseable timestamp is ordered as the oldest possible value, so the server row wins.
+
+Both cases raise `sync.clock_skew_clamped` in the application log with the entity and the offending
+value. It is not a conflict and needs no review queue — but a device that produces one will keep
+producing them, and the repair is on the device.
+
 ---
 
 ## 17.6 Sync Priority Order

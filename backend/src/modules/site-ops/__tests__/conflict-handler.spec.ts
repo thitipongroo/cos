@@ -7,6 +7,8 @@ import {
   resolveIssueConflict,
   resolveChecklistConflict,
   resolveAnnotationConflict,
+  clampClientTimestamp,
+  CLOCK_SKEW_TOLERANCE_MS,
 } from '../conflict-handler';
 
 const OLDER_TS = '2026-06-04T08:00:00.000Z';
@@ -338,5 +340,94 @@ describe('resolveAnnotationConflict', () => {
 
     expect(result.conflict_status).toBe('CONFLICT_FLAGGED');
     expect(result.server_version).toBe(1);
+  });
+});
+
+// ── Clock skew (TDD OQ-28) ────────────────────────────────────────────────
+//
+// LAST_WRITE_WINS ordered edits by `client_submitted_at` with nothing bounding it, so a handset
+// running fast won every merge until someone noticed and corrected the clock. A phone that has been
+// offline on a site for a week is exactly the device whose clock has drifted.
+
+describe('clampClientTimestamp', () => {
+  const NOW = Date.parse('2026-06-04T09:00:00.000Z');
+
+  it('leaves an honest timestamp exactly as it is', () => {
+    const t = '2026-06-04T08:59:00.000Z';
+    expect(clampClientTimestamp(t, NOW)).toEqual({ ts: Date.parse(t), clamped: false });
+  });
+
+  it('leaves the PAST alone, however old', () => {
+    // A report written on Tuesday and synced on Friday genuinely happened on Tuesday. Rewriting it
+    // to "now" would let a stale offline edit beat a correction made on the server in between —
+    // the exact case offline-first exists to get right.
+    const lastWeek = '2026-05-28T06:00:00.000Z';
+    expect(clampClientTimestamp(lastWeek, NOW)).toEqual({
+      ts: Date.parse(lastWeek),
+      clamped: false,
+    });
+  });
+
+  it('accepts a small lead without clamping — real devices are never exactly right', () => {
+    const slightlyAhead = new Date(NOW + CLOCK_SKEW_TOLERANCE_MS - 1000).toISOString();
+    expect(clampClientTimestamp(slightlyAhead, NOW).clamped).toBe(false);
+  });
+
+  it('caps a timestamp beyond the tolerance at the server clock', () => {
+    const threeDaysFast = new Date(NOW + 3 * 24 * 60 * 60 * 1000).toISOString();
+    expect(clampClientTimestamp(threeDaysFast, NOW)).toEqual({ ts: NOW, clamped: true });
+  });
+
+  it('orders an unparseable timestamp as the oldest possible, and says so', () => {
+    // NaN would have made every comparison false and reached the same outcome by accident. Doing it
+    // deliberately is what lets a caller SEE that it happened.
+    expect(clampClientTimestamp('not-a-timestamp', NOW)).toEqual({ ts: 0, clamped: true });
+  });
+});
+
+describe('LAST_WRITE_WINS with a fast clock', () => {
+  it('a device days fast no longer beats a server edit made after it', () => {
+    const serverEditedAfter = new Date(Date.now() + 60_000).toISOString();
+    const client = { summary: 'from the fast phone', last_known_modified_at: OLDER_TS };
+    const server = { summary: 'server truth', modified_at: serverEditedAfter, version: 3 };
+    const threeDaysFast = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+
+    const result = resolveReportConflict(client, server, threeDaysFast);
+
+    // Clamped to the server's now, which is BEFORE the server's own edit — so the server row wins.
+    expect(result.resolved_payload['summary']).toBe('server truth');
+    expect(result.should_persist).toBe(false);
+    expect(result.clock_skew_clamped).toBe(true);
+  });
+
+  it('still lets an honest client win against an older server row', () => {
+    // The clamp must not break the ordinary case: capping at "now" leaves the client later than a
+    // row modified before this sync, which is what LAST_WRITE_WINS means.
+    const client = { summary: 'client summary', last_known_modified_at: OLDER_TS };
+    const server = { summary: 'server summary', modified_at: OLDER_TS, version: 1 };
+
+    const result = resolveReportConflict(client, server, new Date().toISOString());
+
+    expect(result.resolved_payload['summary']).toBe('client summary');
+    expect(result.clock_skew_clamped).toBe(false);
+  });
+
+  it('applies to the issue merge too — text fields follow the same clock', () => {
+    const serverEditedAfter = new Date(Date.now() + 60_000).toISOString();
+    const client = { description: 'from the fast phone', status: 'OPEN' };
+    const server = { description: 'server truth', status: 'OPEN', modified_at: serverEditedAfter };
+    const threeDaysFast = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+
+    const result = resolveIssueConflict(client, server, threeDaysFast);
+
+    expect(result.resolved_payload['description']).toBe('server truth');
+    expect(result.clock_skew_clamped).toBe(true);
+  });
+});
+
+describe('strategies that do not read a clock', () => {
+  it('SERVER_WINS and the annotation merge never report a clamp', () => {
+    expect(resolveChecklistConflict({ version: 2 }).clock_skew_clamped).toBe(false);
+    expect(resolveAnnotationConflict({ strokes: [] }, null).clock_skew_clamped).toBe(false);
   });
 });

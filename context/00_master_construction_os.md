@@ -699,9 +699,11 @@ Target: Build a production-grade Construction Operating System.
 > Agents MUST use it for ALL NEW events.
 > **The legacy-name migration this note used to demand is complete** (verified 2026-08-22): no
 > legacy-named `.avsc` remains, and §32.4's 27-row pending table has been replaced by its status.
-> One name is still contested — `finance.variance.alert.v1` on the wire against
-> `finance.budget.variance_detected.v1` in §32.4 #16 — and is a product-owner decision, not a
-> migration task, because the type is live and renaming it is a breaking change.
+> The one contested name was settled on 2026-08-23 (TDD OQ-16): §32.4 #16 now reads
+> `finance.variance.alert.v1`, the name on the wire. The spec form had no producer, consumer or
+> `.avsc` anywhere, so aligning the code to it would have been a breaking `.v2` for a name nothing
+> had ever emitted. Note the cost: `variance.alert` does not parse as `{domain}.{entity}.{action}`,
+> so this event is the convention's one live exception.
 > See Kafka topic naming: `{tenant_id}.{domain}.{entity}.{action}.v{N}`
 > The event names below are annotated with their canonical equivalents where known.
 
@@ -2617,6 +2619,30 @@ Decisions in Phase 5 (documented in spec):
     Interface: { score(vendorId: string, criteria: ScoreCriteria[]): VendorScore }
     ScoreCriteria: { name: 'on_time_delivery'|'quality'|'price', weight: number, value: number }
     VendorScore:   { vendorId: string, totalScore: number, breakdown: ScoreCriteria[], grade: ENUM(A,B,C,D,F) }
+    Grade thresholds: A >= 90, B >= 75, C >= 60, D >= 45, F < 45
+
+    HOW EACH CRITERION VALUE IS DERIVED (recorded 2026-08-23 — TDD OQ-26). The adapter takes the
+    three values as INPUT and computes only the weighted sum; the derivation lives in
+    ProcurementRepository and was previously written down nowhere, while vendor-scoring.ts still
+    carried a note escalating it as UNSPECIFIED. The endpoint has been serving grades all along.
+
+      on_time_delivery = deliveries received on or before (po.delivery_date + 2 days) / all deliveries
+                         The 2-day grace is deliberate: a delivery note dated the day it left the
+                         depot routinely lands the next working day, and counting that as late would
+                         grade the logistics calendar rather than the vendor.
+      quality          = 1 - (invoices with status DISPUTED / all invoices)
+                         A PROXY, and the weakest of the three: it measures billing disputes, not
+                         the condition of what arrived. It is what the platform records today —
+                         there is no goods-inspection score to draw on. Treat a change here as a
+                         change to what the grade MEANS.
+      price            = mean over the vendor's quotations of
+                         (lowest quote on that RFQ / this vendor's quote) x 100
+                         100 = always the cheapest bid; 50 = consistently twice the best price.
+                         Scored per RFQ, so it compares like with like rather than across baskets.
+
+    Weights are re-normalised over the criteria that HAVE data: a vendor with no quotations is
+    scored on the other two at 1/2 each rather than being penalised for an empty input. A vendor
+    with no data at all returns grade = null, not F.
 
   WithholdingTaxRules (spec §13.3):
     DECIDED: Thailand default (3% services, 5% rent); TENANT_ADMIN configures other jurisdictions via finance.wht_rules
@@ -2639,6 +2665,17 @@ Constraints:
 Build Site Operations Service.
 
 Offline Conflict Resolution Strategy (authoritative):
+
+  CLOCK SKEW (added 2026-08-23 — TDD OQ-28). client_submitted_at comes from the DEVICE clock and
+  nothing bounded it, so a handset running fast won every LAST_WRITE_WINS merge until the clock was
+  corrected. It is now capped at the server's clock with 5 minutes of tolerance (the same window
+  platform-webhook allows a signed request for replay protection). FORWARD ONLY: a timestamp in the
+  past is honoured however old — a report written Tuesday and synced Friday happened on Tuesday, and
+  rewriting it would let a stale offline edit overwrite a server-side correction made in between.
+  An unparseable value is ordered oldest, so the server row wins. Both cases log
+  sync.clock_skew_clamped: not a conflict, but the device that produced it will keep producing them.
+  Implementation: clampClientTimestamp in site-ops/conflict-handler.ts; spec §17.5.
+
   Entity: site_reports
     Strategy: LAST_WRITE_WINS based on client_submitted_at timestamp
     Rationale: one report per day per submitter — concurrent edits are rare
@@ -2735,7 +2772,7 @@ Entities (PostgreSQL — schema: site_ops):
     summary         TEXT   — max 2000 chars, enforced in DTO
     weather         VARCHAR(100)
     manpower_count  INTEGER
-    client_submitted_at TIMESTAMPTZ  — from device clock
+    client_submitted_at TIMESTAMPTZ  — from device clock; capped at the server's on sync (OQ-28)
     server_received_at  TIMESTAMPTZ DEFAULT now()
     modified_at         TIMESTAMPTZ DEFAULT now()
     UNIQUE: (project_id, report_date, submitted_by)
@@ -3071,6 +3108,24 @@ Constraints:
 
 - All cross-service data arrives via Kafka — no direct DB queries to Procurement
 
+    ONE EXCEPTION (decided 2026-08-23, TDD OQ-31): the reconciliation sweep,
+    LedgerReconciliationService. A ledger derived from a stream cannot detect its own
+    gaps — the outbox is durable, not transactional (ADR-094), so a dropped
+    procurement.po.created.v1 leaves the budget silently under-committed and nothing in
+    the system disagrees with anything else. The sweep compares
+    finance.cost_transactions against procurement.purchase_orders / procurement.invoices
+    hourly and reports three drift kinds (missing / duplicate / orphan) via
+    finance_ledger_drift (spec 31 §31.3) plus a `finance.ledger.drift` error log.
+
+    The exception is narrow and the shape of the service is the boundary:
+      - READ ONLY — identity + amount columns only. Enforced by test.
+      - Never feeds a request, an API response, or a business decision. Output is a log
+        line and a gauge.
+      - Never WRITES a cost transaction. Repair is re-publishing the missing event, so
+        FinanceConsumer stays the single writer and the ledger stays replayable.
+    Anything beyond this — reading Procurement to answer a query, to fill a report, or to
+    make a decision — is still forbidden.
+
 Decisions in Phase 7 (documented in spec):
 
   ERPIntegration (spec §13.3):
@@ -3181,7 +3236,10 @@ Outbox Pattern:
                caller uses it yet (ADR-094 §Decision).
     - OutboxPoller: background process, polls every 500ms, publishes unpublished
     - OutboxPoller: marks published=true after successful Kafka produce
-    - Idempotency: consumers check event_id in Redis (TTL 24h) before processing
+    - Idempotency: a consumer claims kafka:processed:{groupId}:{event_id} in Redis
+      (SET NX, TTL 24h) before processing. The GROUP is part of the key — several
+      event types have two or three subscribing groups, and a key without the group
+      lets the first claimer suppress the event for every other group (TDD OQ-49).
 
 Dead Letter Queue (DLQ):
   Pattern: failed messages → {original-topic}.dlq topic
@@ -3982,6 +4040,12 @@ Hallucination Guard (mandatory — all AI outputs must pass through):
     1. Length check: summary must be 50–500 words
     2. Source attribution: every factual claim must be traceable to input context
        (implementation: require LLM to cite source in structured output)
+       Implemented 2026-08-23 as `sources: string[]` on every report output model —
+       non-empty, and every entry must appear verbatim in the retrieval context after
+       whitespace normalisation (spec 22 §22.3 "Note on HallucinationGuard source
+       attribution"). Until then this check tested `confidence == 0.0`, which check 4
+       already subsumed and which no fabrication would ever trip. An empty retrieval
+       context now yields the check-4 fallback instead of an ungrounded narrative.
     3. Confidence score: LLM returns confidence field (0.0–1.0) via structured output
     4. Low confidence threshold: if confidence < 0.7 → return fallback response
        Fallback response: { status: "LOW_CONFIDENCE", summary: null,

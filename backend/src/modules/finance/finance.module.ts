@@ -10,6 +10,7 @@ import { ContractSignLinkService } from './contract-sign-link.service';
 import { ContractSignTokenGuard } from './contract-sign-token.guard';
 import { WhtService } from './wht.service';
 import { ExchangeRateService } from './exchange-rate.service';
+import { LedgerReconciliationService } from './ledger-reconciliation.service';
 import { TenantModule } from '../tenant/tenant.module';
 import { FilesModule } from '../files/files.module';
 import { CredentialsModule } from '../credentials/credentials.module';
@@ -25,7 +26,10 @@ import { CredentialsModule } from '../credentials/credentials.module';
     ContractSignTokenGuard,
     WhtService,
     ExchangeRateService,
+    // Read-only cross-schema sweep; its @Cron is discovered by the ScheduleModule.forRoot() above,
+    // and the ScheduledJobLockService it leases against comes from the @Global SchedulingModule.
+    LedgerReconciliationService,
   ],
-  exports: [FinanceService, WhtService, ExchangeRateService],
+  exports: [FinanceService, WhtService, ExchangeRateService, LedgerReconciliationService],
 })
 export class FinanceModule {}

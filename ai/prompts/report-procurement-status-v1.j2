@@ -11,7 +11,8 @@ Respond ONLY with a valid JSON object matching this exact schema — no markdown
   "risk_items": ["<risk item 1>", "<risk item 2>"],
   "confidence": <0.0–1.0 based on data completeness>,
   "data_points_used": <integer count of data points found in context>,
-  "data_gaps": ["<missing data item 1>"]
+  "data_gaps": ["<missing data item 1>"],
+  "sources": ["<verbatim line from CONTEXT>", "<another>"]
 }
 
 Rules:
@@ -19,3 +20,7 @@ Rules:
 - overdue_count must be derived from context — do NOT estimate
 - confidence reflects how complete the procurement data is
 - Do NOT fabricate vendor names, amounts, or dates not present in the context above
+- For every claim you make, quote the exact line(s) from CONTEXT you drew it from in
+  "sources". Copy them VERBATIM — they are checked against the context, and a source that
+  is not found there fails the report. If CONTEXT is empty, return an empty "sources" list
+  rather than inventing one.

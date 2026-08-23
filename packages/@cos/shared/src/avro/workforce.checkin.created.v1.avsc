@@ -20,8 +20,8 @@
         { "name": "worker_id",   "type": "string" },
         { "name": "project_id",  "type": "string" },
         { "name": "checkin_at",  "type": "string" },
-        { "name": "method", "type": { "type": "enum", "name": "CheckinMethod",
-            "symbols": ["QR_CODE", "GPS", "BIOMETRIC", "MANUAL"] } },
+        { "name": "method", "type": ["null", { "type": "enum", "name": "CheckinMethod",
+            "symbols": ["QR_CODE", "GPS", "BIOMETRIC", "MANUAL"] }], "default": null },
         { "name": "location", "type": ["null", {
           "type": "record", "name": "GpsLocation",
           "fields": [{ "name": "lat", "type": "double" }, { "name": "lng", "type": "double" }]

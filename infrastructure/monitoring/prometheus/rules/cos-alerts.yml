@@ -203,3 +203,23 @@ groups:
           summary: 'Pod memory > 85% of limit: {{ $labels.pod }} / {{ $labels.container }}'
           description: 'Container {{ $labels.container }} in pod {{ $labels.pod }} is using {{ $value | humanizePercentage }} of its memory limit for > 10 minutes. Risk of OOMKill.'
           runbook: 'https://docs.construction-os.internal/runbooks/memory-pressure'
+
+      # ── FinanceLedgerDrift ────────────────────────────────────────────────────
+      # Source: spec §31.7 warning alerts + TDD OQ-31.
+      # Every unit is money a project budget is wrong about: a purchase order or invoice with no cost
+      # transaction (under-committed), a source counted twice (over-committed), or a transaction
+      # charged against a source that no longer exists. LedgerReconciliationService sweeps hourly and
+      # publishes the LAST sweep's counts, so `for: 15m` outlives a scrape gap without outliving the
+      # sweep interval. Absent ≠ 0 here: the gauge reports nothing until the first sweep completes,
+      # so this alert cannot fire on a service that has never reconciled — check the
+      # `finance.ledger.reconciled` log line to confirm the sweep is running at all.
+      - alert: FinanceLedgerDrift
+        expr: finance_ledger_drift > 0
+        for: 15m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: 'Cost ledger disagrees with procurement ({{ $labels.kind }} / {{ $labels.source }})'
+          description: '{{ $value }} {{ $labels.source }} row(s) of kind {{ $labels.kind }}. A project budget is wrong by this much. Repair is re-publishing the missing event — never a direct INSERT.'
+          runbook: 'https://docs.construction-os.internal/runbooks/finance-ledger-drift'

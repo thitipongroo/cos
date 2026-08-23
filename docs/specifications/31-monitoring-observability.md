@@ -97,6 +97,7 @@ Every NestJS service must expose:
 | `active_sessions_total`                  | Gauge     | tenant_id                                           |
 | `storage_used_bytes`                     | Gauge     | tenant_id, storage_type (postgresql \| s3)          |
 | `tenant_isolation_check_result`          | Gauge     | check_name                                          |
+| `finance_ledger_drift`                   | Gauge     | kind (missing \| duplicate \| orphan), source       |
 
 **Metric emitters:**
 
@@ -106,6 +107,11 @@ Every NestJS service must expose:
 - `storage_used_bytes` — backend telemetry job; `storage_type=postgresql` from
   pg_relation_size per tenant, `storage_type=s3` from file-service bucket scan.
 - `tenant_isolation_check_result` — synthetic probe CronJob (see §31.7); 1 = pass, 0 = fail.
+- `finance_ledger_drift` — `LedgerReconciliationService` (backend, hourly `@Cron`); cost
+  transactions that disagree with the purchase orders and invoices they were derived from.
+  Reports the LAST completed sweep, not a live query. **Absent is not zero:** nothing is reported
+  until the first sweep completes, because a gauge reading 0 before anything was compared is an
+  all-clear nobody earned.
 
 ### AI Service Metrics
 
@@ -302,6 +308,7 @@ Alerts are routed via **Alertmanager** (bundled with Prometheus) to the on-call 
 | High latency               | p95 API latency > 1 s for > 5 minutes           |
 | High error rate            | HTTP 5xx rate > 1% for > 5 minutes              |
 | Kafka consumer lag warning | Lag > 5,000 on any topic for > 2 minutes        |
+| Finance ledger drift       | `finance_ledger_drift > 0` — a project budget disagrees with procurement |
 | AI token budget near limit | Tenant token consumption > 80% of monthly quota |
 | Disk usage high            | Any PV > 80% full                               |
 | Memory pressure            | Pod memory > 85% of limit for > 10 minutes      |

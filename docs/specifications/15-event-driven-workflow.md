@@ -67,7 +67,12 @@ Stack :
   business write — see [ADR-094](../architecture/adr/094-durable-event-outbox.md)
 - Retry queues — failed processing retried with exponential backoff before dead-lettering
 - Dead-letter queues — exhausted messages routed to a DLQ topic with an observability alert
-- Consumer idempotency — consumers de-duplicate by `event_id`
+- Consumer idempotency — a consumer de-duplicates by `event_id` **within its own consumer group**.
+  The Redis claim is `kafka:processed:{groupId}:{event_id}` (SET NX, 24 h TTL). The group is part
+  of the key because several event types are subscribed by two or three different groups; a key
+  without it lets whichever group claims first suppress the event for all the others, which is
+  dropping rather than de-duplication (TDD OQ-49). Both the TypeScript consumer
+  (`@cos/shared/src/kafka/consumer.ts`) and the Go one (`libs/go/coskafka`) build the same key.
 
 ---
 

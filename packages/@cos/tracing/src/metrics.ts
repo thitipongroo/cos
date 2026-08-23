@@ -106,6 +106,14 @@ export function createMetrics() {
       description: 'Storage consumed per tenant per storage type (postgresql|s3)',
     }),
 
+    // Finance ledger reconciliation — TDD OQ-31. Labels: kind=missing|duplicate|orphan,
+    // source=PURCHASE_ORDER|INVOICE. Reports the LAST completed sweep, not a live query, and
+    // reports nothing at all until the first sweep — absent is "not yet compared", 0 is "compared
+    // and clean". Alert on > 0: every unit is money a project budget is wrong about.
+    financeLedgerDrift: meter.createObservableGauge('finance_ledger_drift', {
+      description: 'Cost transactions that disagree with their procurement source — alert if > 0',
+    }),
+
     // Synthetic tenant isolation probe — spec §31.3 + §30.6
     tenantIsolationCheckResult: meter.createObservableGauge('tenant_isolation_check_result', {
       description: 'Tenant isolation probe result: 1=pass, 0=fail',

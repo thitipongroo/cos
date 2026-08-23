@@ -75,12 +75,17 @@ describe('AnalyticsInvalidationConsumer', () => {
       'utf8',
     );
 
-    const topics = [...ddl.matchAll(/kafka_topic_list\s*=\s*'([^']+)'/g)].map((m) => m[1]);
-    expect(topics.length).toBeGreaterThan(0);
+    // Since OQ-47 the DDL subscribes by PATTERN — `^[^.]+\.{event_type}$`, where the leading group
+    // is the per-tenant prefix (§7.3). Unwrap it back to the canonical event type. Before OQ-47 these
+    // were bare literal names that matched no real topic, which is why the warehouse was empty.
+    const events = [...ddl.matchAll(/kafka_topic_list\s*=\s*'([^']+)'/g)]
+      .map((m) => /^\^\[\^\.\]\+\\\.(.+)\$$/.exec(m[1]))
+      .map((m) => {
+        expect(m).not.toBeNull();
+        return m![1].replaceAll('\\.', '.');
+      });
+    expect(events.length).toBeGreaterThan(0);
 
-    // The DDL names topics without the tenant prefix or the version suffix (OQ-47 — which is why
-    // none of them ever matches a real topic). Compare on the event name itself.
-    const subscribed = INVALIDATING_EVENT_TYPES.map((t) => t.replace(/\.v\d+$/, '')).sort();
-    expect(subscribed).toEqual([...topics].sort());
+    expect([...INVALIDATING_EVENT_TYPES].sort()).toEqual([...events].sort());
   });
 });

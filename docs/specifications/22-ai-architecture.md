@@ -81,6 +81,7 @@ Layer C — Autonomous AI :
 | Feature Store      | ML features                                                                                                                                                                           |
 | Training Pipeline  | Continuous learning                                                                                                                                                                   |
 | Agent Orchestrator | Multi-step AI workflows — see note below                                                                                                                                              |
+| HallucinationGuard | Output gate before persist — rejects an ungrounded report; source attribution per the note below (LLM09, §22.8)                                                                       |
 
 Note on Agent Orchestrator :
 
@@ -99,6 +100,24 @@ agent must plan, invoke tools, and act across multiple services.
   steps — the same engine used for approval workflows.
 - Full autonomous multi-agent framework (Layer C) : framework selection deferred until
   post-Stage 2, when Layer B capabilities are validated in production.
+
+Note on HallucinationGuard source attribution :
+
+The `guard` step rejects an output that is not attributable to the retrieved context. Attribution is
+checked against what the model actually cited, not against how confident it says it is:
+
+- Every report output model carries **`sources: string[]`** — verbatim lines the model drew its
+  claims from. The four report prompts (`ai/prompts/report-*-v1.j2`) instruct the model to copy them
+  exactly and to return an empty list rather than invent one.
+- The guard **fails** the output when `sources` is absent or empty, when any entry is blank, or when
+  any entry is not found in the retrieval context after whitespace normalisation. A re-wrapped quote
+  still counts as cited; a fabricated one does not.
+- An empty retrieval context therefore **cannot** produce a passing narrative report. This is
+  deliberate: a narrative written from no project data is fabrication by construction. The caller
+  returns the low-confidence fallback with `raw_data_available`, and the client shows raw data.
+- A confidence score is **not** an attribution signal and never was — a model that fabricates a
+  narrative reports high confidence for it. Confidence is checked separately against the
+  `AI_CONFIDENCE_THRESHOLD` (§22.7).
 
 > 🟡 **PROVISIONALLY RESOLVED [LAYER-C-001]**:
 > **Temporal.io is pre-selected as the provisional agent orchestration framework for

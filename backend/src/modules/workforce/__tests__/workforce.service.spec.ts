@@ -108,6 +108,64 @@ describe('WorkforceService', () => {
       );
     });
 
+    // TDD OQ-36. The payload was `{ worker_id, project_id, checked_in_at }` against a schema
+    // declaring six fields, so it could not be Avro-encoded at all — `invalid "string": undefined`.
+    // Since ADR-094 that failure happens in the outbox poller, which retries ten times and retires
+    // the row, so NOT ONE check-in event had ever reached Kafka. Asserting the event "was emitted"
+    // is what let that hide: it was emitted into the outbox and died there.
+    it('emits a checkin payload that satisfies every REQUIRED field of the schema', async () => {
+      const outboxMock = makeOutboxDouble();
+      repo = makeRepo();
+      service = new WorkforceService(
+        req as unknown as ConstructorParameters<typeof WorkforceService>[0],
+        repo as unknown as WorkforceRepository,
+        outboxMock.service,
+      );
+      repo.findWorkerById.mockResolvedValue({ worker_id: 'w1' });
+      repo.recordAttendance.mockResolvedValue({ log_id: 'log-42' });
+
+      await service.recordAttendance('w1', {
+        project_id: 'proj-1',
+        check_in_at: '2026-06-08T08:00:00Z',
+        latitude: 13.7563,
+        longitude: 100.5018,
+      });
+
+      const published = outboxMock.publish.mock.calls[0][0] as { payload: Record<string, unknown> };
+      expect(published.payload).toEqual({
+        // checkin_id is the attendance log's own id — available all along, never sent.
+        checkin_id: 'log-42',
+        worker_id: 'w1',
+        project_id: 'proj-1',
+        // `checkin_at`, not `checked_in_at`: the schema's name, not the service's.
+        checkin_at: '2026-06-08T08:00:00Z',
+        // Null because the API cannot capture it — no DTO field, no column. Deriving GPS from the
+        // presence of coordinates would put a value a consumer could not tell from a real one.
+        method: null,
+        location: { lat: 13.7563, lng: 100.5018 },
+      });
+    });
+
+    it('sends location null when the check-in carried no coordinates', async () => {
+      const outboxMock = makeOutboxDouble();
+      repo = makeRepo();
+      service = new WorkforceService(
+        req as unknown as ConstructorParameters<typeof WorkforceService>[0],
+        repo as unknown as WorkforceRepository,
+        outboxMock.service,
+      );
+      repo.findWorkerById.mockResolvedValue({ worker_id: 'w1' });
+      repo.recordAttendance.mockResolvedValue({ log_id: 'log-43' });
+
+      await service.recordAttendance('w1', {
+        project_id: 'proj-1',
+        check_in_at: '2026-06-08T08:00:00Z',
+      });
+
+      const published = outboxMock.publish.mock.calls[0][0] as { payload: Record<string, unknown> };
+      expect(published.payload).toMatchObject({ checkin_id: 'log-43', location: null });
+    });
+
     it('throws if worker not found', async () => {
       repo.findWorkerById.mockResolvedValue(null);
       await expect(

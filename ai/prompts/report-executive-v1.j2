@@ -10,7 +10,8 @@ Respond ONLY with a valid JSON object matching this exact schema — no markdown
   "risk_flags": ["<risk flag 1>", "<risk flag 2>"],
   "recommendations": ["<recommendation 1>", "<recommendation 2>"],
   "confidence": <0.0–1.0 based on data completeness>,
-  "data_points_used": <integer count of data points found in context>
+  "data_points_used": <integer count of data points found in context>,
+  "sources": ["<verbatim line from CONTEXT>", "<another>"]
 }
 
 Rules:
@@ -18,3 +19,7 @@ Rules:
 - risk_flags and recommendations must be traceable to data in the context
 - confidence reflects how complete the cross-domain data is
 - Do NOT fabricate budget figures, percentages, or dates not present in the context above
+- For every claim you make, quote the exact line(s) from CONTEXT you drew it from in
+  "sources". Copy them VERBATIM — they are checked against the context, and a source that
+  is not found there fails the report. If CONTEXT is empty, return an empty "sources" list
+  rather than inventing one.

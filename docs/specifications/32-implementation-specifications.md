@@ -461,6 +461,23 @@ compatibility) before first producer deployment.
 > `"1.1"`) for non-breaking additions within the same major version.
 > Kafka topic names include a `{tenant_id}.` prefix per 07-multi-tenant-architecture section 7.3.
 
+**Event #9 — `method` was made nullable on 2026-08-23**
+([OQ-36](../technical-design/README.md#open-questions-register)). The service emitted
+`{ worker_id, project_id, checked_in_at }` — three fields, one misnamed, against the six this row
+declares. It could not be Avro-encoded at all (`invalid "string": undefined`), and since
+[ADR-094](../architecture/adr/094-durable-event-outbox.md) that failure lands in the outbox poller,
+which retries ten times and retires the row. **No check-in event had ever reached Kafka**, visible
+only to someone querying `platform.outbox_events` for `attempts >= 10`.
+
+`checkin_id` (the attendance log's own id) and `location` (already captured by
+`RecordAttendanceDto` and stored on the row) were available all along and are now sent. `method`
+was not: there is no field for it on the DTO and no column on
+`workforce_telemetry.attendance_logs`, so the enum became `["null", …]` with a `null` default
+rather than being guessed at. Schema Registry accepted it as v2 under `BACKWARD_TRANSITIVE`.
+
+Null means "not recorded". When the capture is built — a DTO field, a column, and a way for the
+app to say how someone checked in — the field carries a real value and this note goes away.
+
 ### Enum Casing Convention
 
 > **PostgreSQL vs Avro enum casing:** PostgreSQL enum values in `11-database-schema.md` use
@@ -482,14 +499,14 @@ compatibility) before first producer deployment.
 | 6   | `site.inspection.failed.v1`              | `inspection_id`, `project_id`, `checklist_id`, `failed_items[]` {item_id, description}, `inspected_by`, `inspected_at`                                                                                                                                                                                                                                                                        |
 | 7   | `construction.task.completed.v1`         | `task_id`, `project_id`, `boq_item_id`, `completed_by`, `completed_at`, `progress_percent` (100 at completion), `actual_duration_days`                                                                                                                                                                                                                                                        |
 | 8   | `construction.delay.detected.v1`         | `project_id`, `task_id` (nullable), `delay_days`, `cause` (enum: PROCUREMENT/WEATHER/WORKFORCE/EQUIPMENT/SCOPE_CHANGE/OTHER), `detected_by` (enum: AI_FORECAST/MANUAL_REPORT), `severity` (enum: LOW/MEDIUM/HIGH/CRITICAL — thresholds: LOW=1-2 days, MEDIUM=3-6, HIGH=7-13, CRITICAL=14+)                                                                                                    |
-| 9   | `workforce.checkin.created.v1`           | `checkin_id`, `worker_id`, `project_id`, `checkin_at`, `method` (enum: QR_CODE/GPS/BIOMETRIC/MANUAL), `location` {lat, lng} (nullable)                                                                                                                                                                                                                                                        |
+| 9   | `workforce.checkin.created.v1`           | `checkin_id`, `worker_id`, `project_id`, `checkin_at`, `method` (enum: QR_CODE/GPS/BIOMETRIC/MANUAL — **nullable until the API can capture it**, see below), `location` {lat, lng} (nullable)                                                                                                                                                                                                                                                        |
 | 10  | `site.material.consumed.v1`              | `consumption_id`, `project_id`, `task_id`, `material_id`, `quantity`: DECIMAL(10,4), `unit`, `consumed_by`, `consumed_at`                                                                                                                                                                                                                                                                     |
 | 11  | `procurement.delivery.received.v1`       | `delivery_id`, `po_id`, `project_id`, `vendor_id`, `received_by`, `received_at`, `items_received[]` {item_id, quantity_received: DECIMAL(10,4)}, `partial`: boolean                                                                                                                                                                                                                           |
 | 12  | `finance.budget.exceeded.v1`             | `project_id`, `cost_category`, `budget_amount` {amount, currency_code}, `actual_amount` {amount, currency_code}, `overage_percent`: DECIMAL(5,2), `detected_at`                                                                                                                                                                                                                               |
 | 13  | `procurement.vendor_invoice.approved.v1` | `invoice_id`, `po_id`, `project_id`, `vendor_id`, `amount` {amount, currency_code}, `approved_by`, `approved_at`, `payment_due`                                                                                                                                                                                                                                                               |
 | 14  | `finance.cashflow_risk.detected.v1`      | `project_id`, `risk_level` (enum: LOW/MEDIUM/HIGH/CRITICAL), `projected_shortfall` {amount, currency_code}, `projected_at`, `detected_by` (enum: AI_FORECAST/RULE_ENGINE)                                                                                                                                                                                                                     |
 | 15  | `ai.risk_prediction.generated.v1`        | `prediction_id`, `project_id`, `model_type` (enum: DELAY_FORECAST/COST_OVERRUN/SAFETY_VISION/RISK_CLASSIFIER), `prediction` (model-specific object), `confidence`: DECIMAL(5,4), `generated_at`, `model_version`                                                                                                                                                                              |
-| 16  | `finance.budget.variance_detected.v1`    | `project_id`, `variance_percentage`: DECIMAL(5,2), `threshold_exceeded`: DECIMAL(5,2) (the configured threshold that was crossed; default 10%), `budget_amount` {amount, currency_code}, `actual_amount` {amount, currency_code}, `detected_at`                                                                                                                                               |
+| 16  | `finance.variance.alert.v1`              | `project_id`, `variance_percentage`: DECIMAL(5,2), `threshold_exceeded`: DECIMAL(5,2) (the configured threshold that was crossed; default 10%), `budget_amount` {amount, currency_code}, `actual_amount` {amount, currency_code}, `detected_at`                                                                                                                                               |
 | 17  | `file.document.uploaded.v1`              | `file_id`, `tenant_id`, `entity_type` (nullable — e.g. "site_report", "purchase_order"), `entity_id` (nullable UUID), `mime_type`                                                                                                                                                                                                                                                             |
 | 18  | `file.document.quarantined.v1`           | `file_id`, `tenant_id`, `threat_type` (nullable string — ClamAV threat name, null if unknown)                                                                                                                                                                                                                                                                                                 |
 | 19  | `construction.boq.created.v1`            | `project_id` (UUID), `version_id` (UUID), `version_number` (integer) — emitted once when the first BOQ version (version_number = 1) is created for a project                                                                                                                                                                                                                                  |
@@ -547,16 +564,23 @@ work.** Verified against `packages/@cos/shared/src/avro/`:
   ten events nothing ever asked for. Add one through the §32.4 procedure above if a phase needs it.
 - **Twenty of the twenty-one events in the payload table above exist as `.avsc`.**
 
-**One row is genuinely outstanding, and it is a naming conflict rather than a missing file.**
+**The one naming conflict is resolved.** Row #16 read `finance.budget.variance_detected.v1` until
+2026-08-23; the name on the wire is `finance.variance.alert.v1`, and the table now says so
+([OQ-16](../technical-design/README.md#open-questions-register)).
 
-| Payload table (#16, authoritative)    | On disk + in code                                                                                       |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `finance.budget.variance_detected.v1` | `finance.variance.alert.v1` — record `VarianceAlertEvent`, and the key `EVENT_AVSC_MAP` publishes under |
+The spec name had **no implementation at all** — no producer, no consumer, no `.avsc`, no
+`EVENT_AVSC_MAP` entry — so aligning the code to it would have been a breaking `.v2` migration
+undertaken for a name nothing had ever emitted or read. The implemented name is live at every point:
+emitted by `FinanceService`, subscribed by `NotificationConsumer`, routed in `notification.service.ts`
+to `FINANCE` / `TENANT_ADMIN`, documented in the notification README, and committed as
+`finance.variance.alert.v1.avsc`. It is also what `00_master` § Phase 7 `Generate:` and § Phase 20
+notification triggers say, and what `20-ux-flow` §20.7 cites for the `/alerts` page.
 
-The implemented name is also what `00_master` § Phase 7 `Generate:` and § Phase 20 notification
-triggers say, and what `20-ux-flow` §20.7 cites for the `/alerts` page. So the payload table above is
-the only place the `budget.variance_detected` form appears, while the other form is live in code and
-in three documents.
+> **Worth stating plainly, because the naming convention is otherwise strict:** `variance.alert` does
+> not parse as `{domain}.{entity}.{action}` — `variance` is not an entity and `alert` is not an
+> action, where `budget.variance_detected` is exactly that shape. The convention lost this one to the
+> cost of a breaking rename on a live event. A future `.v2` of this event, if the payload ever forces
+> one, is the moment to take the name back.
 
 **Not renamed here, deliberately.** The event type is in `EVENT_AVSC_MAP`, so it is on the wire:
 renaming it is a breaking change by this section's own Event Versioning rules, which require a new

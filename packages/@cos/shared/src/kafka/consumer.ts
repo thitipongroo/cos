@@ -1,6 +1,6 @@
 // KafkaConsumer — wraps KafkaJS with:
 //   - Avro decoding via Schema Registry
-//   - Idempotency: checks event_id in Redis (TTL 24h) before processing
+//   - Idempotency: checks {consumer group, event_id} in Redis (TTL 24h) before processing
 //   - OTel trace context extraction from Kafka headers
 //   - DLQ forwarding after max retries (3 attempts, exponential backoff)
 
@@ -39,6 +39,8 @@ export interface ConsumerOptions {
 export class KafkaConsumer {
   private readonly kafka: Kafka;
   private consumer: Consumer | null = null;
+  /** Set by connect(); part of the idempotency key — see idempotencyKey(). */
+  private groupId: string | null = null;
   private readonly redis: Redis;
   private readonly dlqPublisher: DlqPublisher;
   private readonly handlers = new Map<string, MessageHandler>();
@@ -60,6 +62,7 @@ export class KafkaConsumer {
 
   async connect(options: ConsumerOptions): Promise<void> {
     await this.dlqPublisher.connect();
+    this.groupId = options.groupId;
     this.consumer = this.kafka.consumer({ groupId: options.groupId });
     await this.consumer.connect();
 
@@ -121,7 +124,7 @@ export class KafkaConsumer {
     }
 
     // Idempotency check (QM-9 — Kafka idempotency via Redis)
-    const idempKey = `kafka:processed:${event.event_id}`;
+    const idempKey = this.idempotencyKey(event.event_id);
     const alreadyProcessed = await this.redis.set(
       idempKey,
       '1',
@@ -183,6 +186,33 @@ export class KafkaConsumer {
       failedAt: new Date().toISOString(),
       retryCount: MAX_RETRIES,
     });
+  }
+
+  /**
+   * The Redis key that claims one event for ONE consumer group.
+   *
+   * The group is part of the key, and that is the whole point. Until 2026-08-23 the key was
+   * `kafka:processed:{event_id}` with no group in it, against a single shared Redis — and eight event
+   * types are subscribed by two or three different groups (`procurement.po.created.v1` by both
+   * finance and analytics-invalidation, `site.issue.created.v1` by three). Whichever group reached
+   * SET NX first claimed the event; every other group logged `Duplicate event skipped` at DEBUG and
+   * returned. So a purchase order created a cost transaction OR invalidated the analytics cache,
+   * nondeterministically, never both — and nothing above DEBUG said so (TDD OQ-49).
+   *
+   * `libs/go/coskafka/idempotency.go` builds the same key and used to document the collision as
+   * intentional ("an event processed by either side is not reprocessed by the other"). Sharing a
+   * keyspace across LANGUAGES is only correct when the consumers also share a group; across groups it
+   * is not deduplication, it is dropping. Both sides now key on the group.
+   *
+   * DEPLOY NOTE: this changes the key namespace, so claims held under the old key are not seen. Their
+   * only effect is that a redelivery arriving within the 24h TTL and across the deploy boundary can be
+   * processed a second time. Handlers are idempotent by construction; the alternative — keeping the
+   * old key — is the bug.
+   */
+  private idempotencyKey(eventId: string): string {
+    // `unbound` cannot occur through connect(); it exists so a direct handleMessage() call in a test
+    // produces a key that is obviously not a real group rather than one that silently reads as one.
+    return `kafka:processed:${this.groupId ?? 'unbound'}:${eventId}`;
   }
 
   private headerToString(

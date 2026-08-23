@@ -229,6 +229,22 @@ export class SiteOpsService {
         item.client_submitted_at ?? new Date().toISOString(),
       );
 
+      // A clamped timestamp is not a conflict — the merge resolved — but the device that produced it
+      // will keep producing them, and the fix is on the device rather than here. Logged so a clock
+      // that is out by days is visible to someone instead of only changing merge outcomes (OQ-28).
+      if (resolution.clock_skew_clamped) {
+        logger.warn(
+          {
+            event: 'sync.clock_skew_clamped',
+            entity_type: 'site_reports',
+            entity_id: existing.report_id,
+            client_submitted_at: item.client_submitted_at ?? null,
+            tenant_id: this.tenantId,
+          },
+          'client_submitted_at was ahead of the server clock or unparseable — capped for ordering',
+        );
+      }
+
       // Persist the resolved row. This write used to be missing entirely: the branch computed a
       // resolution, wrote a conflict record when flagged, and returned ACCEPTED without ever
       // touching the report — so every offline EDIT of an existing report was acknowledged and
@@ -414,6 +430,20 @@ export class SiteOpsService {
       serverRow,
       dto.client_submitted_at ?? new Date().toISOString(),
     );
+
+    // Same reason as the site-report path — see OQ-28.
+    if (resolution.clock_skew_clamped) {
+      logger.warn(
+        {
+          event: 'sync.clock_skew_clamped',
+          entity_type: 'issues',
+          entity_id: issueId,
+          client_submitted_at: dto.client_submitted_at ?? null,
+          tenant_id: this.tenantId,
+        },
+        'client_submitted_at was ahead of the server clock or unparseable — capped for ordering',
+      );
+    }
 
     const resolved = resolution.resolved_payload;
     const updated = await this.repo.updateIssue(issueId, {

@@ -3,6 +3,18 @@ from pydantic import BaseModel
 
 
 # ── Structured output models (LLM JSON mode) ──────────────────────────────────
+#
+# `sources` — TDD OQ-41. Every report model carries it, and the hallucination guard's "source
+# attribution" check is now this field rather than `confidence != 0`.
+#
+# The old check tested `confidence == 0.0 → fail`, which check 4 (`confidence < 0.7 → fail`) already
+# subsumed: a model returning 0.9 for a wholly fabricated narrative passed both. No output model had
+# anywhere to put a citation, so nothing in the pipeline could tell a grounded claim from an
+# invented one — the spec called that check "source attribution" and it attributed nothing.
+#
+# Each entry is a verbatim snippet of the retrieval context the report drew on. The guard checks the
+# snippets ARE in the context, so a model cannot satisfy the check by inventing a plausible-looking
+# citation.
 
 class SiteSummaryOutput(BaseModel):
     summary: str
@@ -11,6 +23,7 @@ class SiteSummaryOutput(BaseModel):
     confidence: float
     data_points_used: int
     data_gaps: list[str]
+    sources: list[str] = []
 
 
 class ProcurementSummaryOutput(BaseModel):
@@ -20,6 +33,7 @@ class ProcurementSummaryOutput(BaseModel):
     confidence: float
     data_points_used: int
     data_gaps: list[str]
+    sources: list[str] = []
 
 
 class ExecutiveSummaryOutput(BaseModel):
@@ -28,6 +42,7 @@ class ExecutiveSummaryOutput(BaseModel):
     recommendations: list[str]
     confidence: float
     data_points_used: int
+    sources: list[str] = []
 
 
 class DelayRiskOutput(BaseModel):
@@ -36,6 +51,7 @@ class DelayRiskOutput(BaseModel):
     confidence: float
     data_points_used: int
     disclaimer: str = "AI-generated estimate — verify with project schedule"
+    sources: list[str] = []
 
 
 # ── Fallback response (low confidence or guard failure) ───────────────────────

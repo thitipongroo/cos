@@ -2,8 +2,60 @@
 // Implements exactly the three strategies from spec §Phase 6 Offline Conflict Resolution Strategy.
 // Called by SiteOpsService.syncSiteReports() and SiteOpsService.syncIssues().
 // Strategy selection is entity-scoped — NEVER invent additional strategies (QM-9).
+//
+// CLOCK SKEW (TDD OQ-28, 2026-08-23). LAST_WRITE_WINS orders edits by `client_submitted_at`, which
+// is whatever the handset's clock said. No specification bounded it, so a device running fast won
+// every merge until someone corrected it — and a phone that has been offline on a site for a week is
+// exactly the device whose clock has drifted. Nothing in the codebase validated the value.
+//
+// `clampClientTimestamp` now caps it at the server's clock. See its comment for why capping is the
+// whole fix and why the past is deliberately left alone.
 
 export type ConflictStatus = 'ACCEPTED' | 'CONFLICT_FLAGGED' | 'CONFLICT_REJECTED';
+
+/**
+ * How far ahead of the server a client's timestamp may be before it is capped.
+ *
+ * Five minutes, the same window `PlatformWebhookService.REPLAY_WINDOW_MS` allows a signed webhook —
+ * one number for "ordinary clock skew plus delivery latency" rather than two that drift apart. Wide
+ * enough that an honest handset is never clamped, narrow enough that a device days fast cannot
+ * outrank an edit made after it.
+ */
+export const CLOCK_SKEW_TOLERANCE_MS = 5 * 60 * 1000;
+
+export interface ClampedTimestamp {
+  /** Epoch millis to order by. */
+  ts: number;
+  /** True when the client's own value was not usable as given. */
+  clamped: boolean;
+}
+
+/**
+ * The client's submission time, capped at the server's.
+ *
+ * FORWARD ONLY. A timestamp in the past is left exactly as it is: a report written on Tuesday and
+ * synced on Friday genuinely happened on Tuesday, and rewriting it to Friday would make a stale
+ * offline edit beat a deliberate correction someone made on the server in between. That is the case
+ * offline-first exists to get right.
+ *
+ * Ahead of the server is different. A client cannot have written something later than the moment it
+ * reached the server, so anything beyond the tolerance is capped at `now`. That still lets the
+ * client win against rows modified before this sync — which is what LAST_WRITE_WINS means — while
+ * taking away its ability to win against rows modified after it.
+ *
+ * An unparseable value is ordered as the OLDEST possible (0), so the server row wins. `NaN` would
+ * have made every comparison false and produced the same outcome by accident; doing it deliberately
+ * means the `clamped` flag is set and a caller can see it happened.
+ */
+export function clampClientTimestamp(
+  clientSubmittedAt: string,
+  now = Date.now(),
+): ClampedTimestamp {
+  const parsed = new Date(clientSubmittedAt).getTime();
+  if (Number.isNaN(parsed)) return { ts: 0, clamped: true };
+  if (parsed > now + CLOCK_SKEW_TOLERANCE_MS) return { ts: now, clamped: true };
+  return { ts: parsed, clamped: false };
+}
 
 export interface SyncRequest {
   entity_type: string;
@@ -30,6 +82,15 @@ export interface SyncResult {
    * that still bumps `modified_at`, resurfacing the row in every client's next delta page.
    */
   should_persist: boolean;
+
+  /**
+   * The client's `client_submitted_at` was capped or rejected as unusable (OQ-28).
+   *
+   * Not a conflict on its own — the merge still resolved — but a device whose clock is out by more
+   * than five minutes will keep producing them, and the fix is on the device. Surfaced so the caller
+   * can log it rather than have it disappear inside the comparison.
+   */
+  clock_skew_clamped: boolean;
 }
 
 // ── site_reports: LAST_WRITE_WINS on client_submitted_at ──────────────────
@@ -38,7 +99,7 @@ export function resolveReportConflict(
   serverRow: Record<string, unknown>,
   clientSubmittedAt: string,
 ): SyncResult {
-  const clientTs = new Date(clientSubmittedAt).getTime();
+  const { ts: clientTs, clamped } = clampClientTimestamp(clientSubmittedAt);
   const serverModifiedAt = serverRow['modified_at'] as string | Date | undefined;
   const serverTs = serverModifiedAt ? new Date(serverModifiedAt).getTime() : 0;
 
@@ -55,6 +116,7 @@ export function resolveReportConflict(
       conflict_status: hasConflict ? 'CONFLICT_FLAGGED' : 'ACCEPTED',
       server_version: (serverRow['version'] as number | undefined) ?? 1,
       should_persist: true,
+      clock_skew_clamped: clamped,
     };
   }
 
@@ -64,6 +126,7 @@ export function resolveReportConflict(
     conflict_status: 'CONFLICT_FLAGGED',
     server_version: (serverRow['version'] as number | undefined) ?? 1,
     should_persist: false,
+    clock_skew_clamped: clamped,
   };
 }
 
@@ -77,7 +140,7 @@ export function resolveIssueConflict(
   serverRow: Record<string, unknown>,
   clientSubmittedAt: string,
 ): SyncResult {
-  const clientTs = new Date(clientSubmittedAt).getTime();
+  const { ts: clientTs, clamped } = clampClientTimestamp(clientSubmittedAt);
   const serverModifiedAt = serverRow['modified_at'] as string | Date | undefined;
   const serverTs = serverModifiedAt ? new Date(serverModifiedAt).getTime() : 0;
 
@@ -110,6 +173,7 @@ export function resolveIssueConflict(
     server_version: (serverRow['version'] as number | undefined) ?? 1,
     // A field-level merge is never the untouched server row — the merged result is always written.
     should_persist: true,
+    clock_skew_clamped: clamped,
   };
 }
 
@@ -122,6 +186,8 @@ export function resolveChecklistConflict(serverRow: Record<string, unknown>): Sy
     server_version: (serverRow['version'] as number | undefined) ?? 1,
     // Unconditional rejection — the client version is discarded, the server row stands.
     should_persist: false,
+    // SERVER_WINS never consults a timestamp, so no clamp can have applied.
+    clock_skew_clamped: false,
   };
 }
 
@@ -143,6 +209,8 @@ export function resolveAnnotationConflict(
       conflict_status: 'ACCEPTED',
       server_version: 1,
       should_persist: true,
+      // Ordered by `version`, not by a clock — nothing here reads client_submitted_at (OQ-28).
+      clock_skew_clamped: false,
     };
   }
 
@@ -156,6 +224,7 @@ export function resolveAnnotationConflict(
       conflict_status: 'CONFLICT_FLAGGED',
       server_version: serverVersion,
       should_persist: false,
+      clock_skew_clamped: false,
     };
   }
 
@@ -171,5 +240,6 @@ export function resolveAnnotationConflict(
     conflict_status: 'ACCEPTED',
     server_version: nextVersion,
     should_persist: true,
+    clock_skew_clamped: false,
   };
 }

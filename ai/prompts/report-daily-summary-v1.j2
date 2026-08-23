@@ -11,7 +11,8 @@ Respond ONLY with a valid JSON object matching this exact schema — no markdown
   "manpower_trend": "<one sentence describing manpower trend>",
   "confidence": <0.0–1.0 based on data completeness>,
   "data_points_used": <integer count of data points found in context>,
-  "data_gaps": ["<missing data item 1>", "<missing data item 2>"]
+  "data_gaps": ["<missing data item 1>", "<missing data item 2>"],
+  "sources": ["<verbatim line from CONTEXT>", "<another>"]
 }
 
 Rules:
@@ -19,3 +20,7 @@ Rules:
 - confidence reflects how complete the input data is (1.0 = all expected data present)
 - data_gaps lists explicitly what data was absent or insufficient
 - Do NOT fabricate numbers not present in the context above
+- For every claim you make, quote the exact line(s) from CONTEXT you drew it from in
+  "sources". Copy them VERBATIM — they are checked against the context, and a source that
+  is not found there fails the report. If CONTEXT is empty, return an empty "sources" list
+  rather than inventing one.

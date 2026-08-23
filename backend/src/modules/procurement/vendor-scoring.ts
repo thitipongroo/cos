@@ -3,10 +3,19 @@
 //   (weights sum to 1; TENANT_ADMIN configures via vendor_score_weights, default 1/3 each).
 //   Grade thresholds (platform defaults): A ≥ 90, B ≥ 75, C ≥ 60, D ≥ 45, F < 45.
 //
-// SCOPE NOTE (G-W5): this adapter computes the score FROM the criterion values it is given. How each
-// criterion VALUE is derived from data (esp. `quality` and `price`) is NOT defined in the spec and is
-// escalated to the product owner — this adapter therefore takes the values as input and does not
-// invent a data-aggregation formula (context.md: UNSPECIFIED → do not guess).
+// SCOPE NOTE (G-W5): this adapter computes the score FROM the criterion values it is given. It does
+// not derive them, and that separation is deliberate — the weighted sum is arithmetic, the
+// derivations are judgements about what a vendor's record means.
+//
+// Those judgements are now written down. `00_master` § PHASE 5 Decisions → VendorScoring records all
+// three, alongside the implementations in `ProcurementRepository.vendorOtdStats` /
+// `vendorDisputeStats` / `vendorPriceStats`. Until 2026-08-23 this note said they were UNSPECIFIED
+// and escalated — which had stopped being true: the formulas were implemented and the score endpoint
+// was live, so the note was directing a reader away from code that existed (TDD OQ-26).
+//
+// The one worth knowing before you trust a grade: `quality` is a PROXY. It is
+// 1 − (disputed invoices / all invoices), which measures billing disputes rather than the condition
+// of what arrived, because no goods-inspection score exists to draw on.
 
 export interface ScoreCriteria {
   name: 'on_time_delivery' | 'quality' | 'price';

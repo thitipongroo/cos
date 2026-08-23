@@ -317,7 +317,8 @@ describe('KafkaConsumer idempotency', () => {
     });
 
     expect(handler).toHaveBeenCalledTimes(1);
-    expect(redisMock[`kafka:processed:evt-001`]).toBe('1');
+    // No connect() in this test, so the key carries the `unbound` sentinel rather than a group.
+    expect(redisMock[`kafka:processed:unbound:evt-001`]).toBe('1');
   });
 
   it('skips a duplicate event_id', async () => {
@@ -337,7 +338,7 @@ describe('KafkaConsumer idempotency', () => {
     };
 
     // Pre-populate Redis to simulate already-processed
-    redisMock['kafka:processed:evt-002'] = '1';
+    redisMock['kafka:processed:unbound:evt-002'] = '1';
 
     (decodeAvro as jest.Mock).mockResolvedValue(event);
 
@@ -563,4 +564,117 @@ describe('KafkaConsumer — error branches', () => {
 
     expect(handler).toHaveBeenCalledWith(event, { traceId: 'arr-trace-str', spanId: undefined });
   });
+});
+
+// ── Cross-group idempotency (TDD OQ-49) ─────────────────────────────────────
+//
+// Eight event types are subscribed by two or three DIFFERENT consumer groups. With one shared Redis
+// and no group in the idempotency key, the first group to claim an event silenced every other one —
+// a purchase order created a cost transaction OR invalidated the analytics cache, never both, and
+// the loss was logged at DEBUG as "Duplicate event skipped". These tests are what stops that
+// returning: the key namespace is the fix, so the tests assert on the key AND on the behaviour.
+
+describe('KafkaConsumer idempotency is scoped to the consumer group', () => {
+  const EVENT = {
+    event_id: 'evt-shared',
+    event_type: 'procurement.po.created.v1',
+    tenant_id: 't1',
+    actor_id: 'u1',
+    occurred_at: '2026-08-23T00:00:00.000Z',
+    correlation_id: 'c1',
+    event_version: '1.0',
+    payload: {},
+  };
+
+  async function consumerFor(groupId: string, handler: jest.Mock): Promise<KafkaConsumer> {
+    const consumer = new KafkaConsumer();
+    consumer.on(EVENT.event_type, handler);
+    await consumer.connect({ groupId, eventTypes: [EVENT.event_type] });
+    return consumer;
+  }
+
+  function deliver(consumer: KafkaConsumer): Promise<void> {
+    return (consumer as unknown as { handleMessage: HandleMessage }).handleMessage(
+      makeMessage(Buffer.from('encoded'), { tenant_id: Buffer.from('t1') }),
+    );
+  }
+
+  beforeEach(() => {
+    Object.keys(redisMock).forEach((k) => delete redisMock[k]);
+    jest.clearAllMocks();
+    (decodeAvro as jest.Mock).mockResolvedValue(EVENT);
+  });
+
+  it('delivers one event to every subscribing group', async () => {
+    const finance = jest.fn().mockResolvedValue(undefined);
+    const analytics = jest.fn().mockResolvedValue(undefined);
+
+    await deliver(await consumerFor('finance.shared', finance));
+    await deliver(await consumerFor('analytics-invalidation.shared', analytics));
+
+    expect(finance).toHaveBeenCalledTimes(1);
+    expect(analytics).toHaveBeenCalledTimes(1);
+  });
+
+  it('scales to three subscribing groups — site.issue.created.v1 has that many', async () => {
+    const handlers = [
+      'analytics-invalidation.shared',
+      'notification.shared',
+      'search-indexer.shared',
+    ].map(() => jest.fn().mockResolvedValue(undefined));
+    const groups = [
+      'analytics-invalidation.shared',
+      'notification.shared',
+      'search-indexer.shared',
+    ];
+    for (let i = 0; i < groups.length; i++) {
+      await deliver(await consumerFor(groups[i]!, handlers[i]!));
+    }
+    for (const h of handlers) expect(h).toHaveBeenCalledTimes(1);
+  });
+
+  it('still skips a redelivery WITHIN one group', async () => {
+    const handler = jest.fn().mockResolvedValue(undefined);
+    const consumer = await consumerFor('finance.shared', handler);
+
+    await deliver(consumer);
+    await deliver(consumer);
+
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  it('skips a redelivery across two REPLICAS of one group', async () => {
+    // Two pods, same group, same Redis — the claim must be shared between them. This is the case the
+    // key exists for, and the one a per-instance in-memory cache would get wrong.
+    const a = jest.fn().mockResolvedValue(undefined);
+    const b = jest.fn().mockResolvedValue(undefined);
+
+    await deliver(await consumerFor('finance.shared', a));
+    await deliver(await consumerFor('finance.shared', b));
+
+    expect(a).toHaveBeenCalledTimes(1);
+    expect(b).not.toHaveBeenCalled();
+  });
+
+  it('writes one key per group, each naming its group', async () => {
+    await deliver(await consumerFor('finance.shared', jest.fn().mockResolvedValue(undefined)));
+    await deliver(await consumerFor('notification.shared', jest.fn().mockResolvedValue(undefined)));
+
+    expect(Object.keys(redisMock).sort()).toEqual([
+      'kafka:processed:finance.shared:evt-shared',
+      'kafka:processed:notification.shared:evt-shared',
+    ]);
+  });
+
+  it('releases only its own claim when it dead-letters', async () => {
+    // The DLQ path deletes the claim so an operator replay is not deduped away. It must not delete
+    // another group's claim — that would silently re-run a handler that already succeeded.
+    const ok = jest.fn().mockResolvedValue(undefined);
+    await deliver(await consumerFor('notification.shared', ok));
+
+    const failing = jest.fn().mockRejectedValue(new Error('boom'));
+    await deliver(await consumerFor('finance.shared', failing));
+
+    expect(Object.keys(redisMock)).toEqual(['kafka:processed:notification.shared:evt-shared']);
+  }, 60_000);
 });

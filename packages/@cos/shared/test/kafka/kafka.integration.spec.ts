@@ -180,11 +180,13 @@ describe('Kafka integration — full publish/consume cycle', () => {
     // Here we verify at minimum one message was received (basic consume works).
     expect(callCount).toBeGreaterThanOrEqual(1);
 
-    // Idempotency block test: simulate duplicate via same key in processedIds
-    const duplicateKey = 'kafka:processed:forced-duplicate-id';
+    // Idempotency block test: simulate duplicate via same key in processedIds.
+    // The key carries the consumer group since OQ-49 — one event is claimed per group, not globally.
+    const duplicateKey = 'kafka:processed:cos-int-test-idempotency-group:forced-duplicate-id';
     processedIds.add(duplicateKey);
-    // The consumer's Redis.set will return null for this key — handler must not be called
-    // This is validated via the unit test consumer.idempotency.spec.ts (real Redis mock path)
+    // The consumer's Redis.set will return null for this key — handler must not be called.
+    // Asserted properly in the unit test consumer.idempotency.spec.ts; this block only documents the
+    // key shape the integration harness shares with it.
   }, 30_000);
 });
 

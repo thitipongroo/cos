@@ -16,7 +16,8 @@ Respond ONLY with a valid JSON object matching this exact schema — no markdown
   "risk_factors": ["<factor 1>", "<factor 2>"],
   "confidence": <0.0–1.0 based on data completeness>,
   "data_points_used": <integer count of data points found in context>,
-  "disclaimer": "AI-generated estimate — verify with project schedule"
+  "disclaimer": "AI-generated estimate — verify with project schedule",
+  "sources": ["<verbatim line from CONTEXT>", "<another>"]
 }
 
 Rules:
@@ -25,3 +26,7 @@ Rules:
 - confidence reflects how complete the schedule/procurement data is
 - Do NOT fabricate dates, durations, or vendor commitments not present in the context above
 - Always include the disclaimer field verbatim
+- For every claim you make, quote the exact line(s) from CONTEXT you drew it from in
+  "sources". Copy them VERBATIM — they are checked against the context, and a source that
+  is not found there fails the report. If CONTEXT is empty, return an empty "sources" list
+  rather than inventing one.

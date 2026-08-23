@@ -80,12 +80,21 @@ conflict_status ∈ { ACCEPTED | CONFLICT_FLAGGED | CONFLICT_REJECTED }
 | ------------------ | ---------------------------------------------------- |
 | `DATABASE_URL`     | PostgreSQL connection string (via PgBouncer — QM-18) |
 | `KAFKA_BROKERS`    | Comma-separated broker list                          |
-| `FILE_SERVICE_URL` | Internal URL of the file service (Phase 9)           |
 
 ## Extension Points
 
 - `ep/carbon-calculation.stub.ts` — CarbonCalculationEngine (EN 15804 + GHG Protocol); trigger: tenant requests carbon reporting
-- `ep/file-service.stub.ts` — Photo upload via File Service (Phase 9)
+
+`ep/file-service.stub.ts` was removed on 2026-08-23 (TDD OQ-29). It threw `NotImplementedException`,
+had no callers anywhere in the repository, and promised an activation "in Phase 9 when File Service is
+built" that never came — because photo linkage was built the other way round. **This module does not
+call the File Service at all.** The mobile app queues a photo with an `entity_type` / `entity_id`,
+uploads it to the File Service directly, and the link lands in `files.file_metadata`. Nothing in
+site-ops sits in that path.
+
+A stub that describes an integration the system does not have is the shape that has twice been
+mistaken here for a control that exists — see OQ-37, where a README advertised a `BiometricCheckIn`
+extension point that was never written.
 
 ## Usage Example
 

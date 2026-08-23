@@ -140,14 +140,20 @@ sequenceDiagram
 | --- | ---------------------------- | ------------------------------------------------------------ |
 | 1   | Length                       | 50 ≤ words ≤ 500                                             |
 | 3   | Confidence present and valid | present, numeric, within `[0.0, 1.0]`                        |
-| 2   | Source attribution           | `confidence == 0.0` → fail                                   |
+| 2   | Source attribution           | `sources[]` non-empty and every entry present in the context |
 | 4   | Low-confidence threshold     | `confidence < 0.7` → `LOW_CONFIDENCE`                        |
 | 5   | Contradiction                | numbers in the summary absent from context → flagged, logged |
 
-Check 2 runs **after** check 3 and **before** check 4, and the code explains why: placed after the
-threshold, `< 0.7` would swallow the zero case and check 2 would be dead code. That ordering is
-deliberate and worth preserving through any refactor — but what check 2 actually verifies is narrower
-than the specification asks; see § 14 OQ-41.
+Check 2 was `confidence == 0.0 → fail` until 2026-08-23. The ordering note in the code — run it
+before check 4 or `< 0.7` swallows the zero case — was a symptom: a check that only fires on a value
+another check already rejects is dead code either way, and it could never catch a fabrication,
+because a model that invents a narrative reports high confidence for it. It now verifies citations
+against the context (OQ-41), so the ordering constraint is gone.
+
+Consequence to know: `main.py` passes `context_data=""` for SITE_SUMMARY, PROCUREMENT_SUMMARY and
+EXECUTIVE_SUMMARY — only delay-risk assembles real context, and only when the DB pool is wired. With
+a real attribution check those three endpoints return the `LOW_CONFIDENCE` fallback (with
+`raw_data_available: true`) rather than a narrative. Grounding them is separate work.
 
 Check 5 is flag-only: a `POTENTIAL_HALLUCINATION` is logged and the report is still returned, exactly
 as the command specifies ("logged, not returned to user").
@@ -222,7 +228,7 @@ Verified on **2026-08-22** against this working tree (Rule 36 — commands run, 
 | Unit tests per guard check                     | ✅ present                     | `test_hallucination_guard.py`                                         |
 | Integration tests on `StubLLMProvider`         | ✅ present                     | `test_integration_reports.py`                                         |
 | `CrossEncoderReranking` stub                   | ✅ present                     | `providers/cross_encoder_reranking.py` (Phase 11 tree)                |
-| Source attribution (guard check 2)             | ⚠️ **narrower than specified** | `confidence == 0.0` stands in for citation — OQ-41                    |
+| Source attribution (guard check 2)             | ✅ present                     | `sources[]` verified against the retrieval context — OQ-41            |
 
 ---
 
@@ -242,4 +248,4 @@ field Phase 3 added by `20260723000001`.
 
 | #     | Question                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Status                     |
 | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
-| OQ-41 | **The guard's source-attribution check does not check source attribution.** The command's check 2 is "every factual claim must be traceable to input context (implementation: **require LLM to cite source in structured output**)". `guard.py` implements it as `confidence == 0.0 → fail`, and its own docstring says so: "Source attribution: confidence > 0 confirms LLM cited context". No output model in `reports/models.py` carries a citation, source or reference field — the four shapes have `data_points_used` and `data_gaps`, which are counts and absences, not traceable references. So a confident, entirely fabricated summary passes check 2 by construction; only check 5's numeric contradiction test would catch it, and only if the fabrication contains numbers. Either the structured output gains a citations field the guard can verify against context, or check 2 should be renamed to what it measures. | Open — needs a PO decision |
+| OQ-41 | **Closed 2026-08-23 — the guard's source-attribution check now checks source attribution.** The command's check 2 is "every factual claim must be traceable to input context (implementation: **require LLM to cite source in structured output**)"; `guard.py` implemented it as `confidence == 0.0 → fail`, and no output model carried a citation field at all. All four output models now carry `sources: string[]`, the four prompts instruct the model to copy the lines it drew on verbatim, and the guard fails an output whose sources are missing, empty, blank, or absent from the retrieval context after whitespace normalisation. Written into spec 22 §22.3 and `00_master` § PHASE 12 check 2. | Closed |

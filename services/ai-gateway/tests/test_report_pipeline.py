@@ -70,6 +70,9 @@ def _valid_output(**overrides) -> dict:
         "confidence": 0.9,
         "data_points_used": 12,
         "data_gaps": [],
+        # OQ-41: the guard now requires the report to quote the context it drew on, and checks the
+        # quote is IN it. `_run`'s default context is "context text.".
+        "sources": ["context text."],
     }
     payload.update(overrides)
     return payload

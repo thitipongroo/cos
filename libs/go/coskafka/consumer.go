@@ -34,8 +34,9 @@ type Consumer struct {
 	idempotency *Idempotency
 	handler     Handler
 	logger      *slog.Logger
-	// group is captured in Run so consumed-message metrics carry the consumer_group label the
-	// TypeScript metrics (and the Grafana panels built on them) use.
+	// group is captured in Run. It labels consumed-message metrics (matching the TypeScript metrics
+	// and the Grafana panels built on them) and, since OQ-49, scopes the idempotency claim — without
+	// it one event is claimed by whichever group gets there first and skipped by all the others.
 	group string
 }
 
@@ -133,7 +134,7 @@ func (c *Consumer) Handle(ctx context.Context, record *kgo.Record) {
 	}
 
 	if c.idempotency != nil {
-		claimed, err := c.idempotency.Claim(ctx, envelope.EventID)
+		claimed, err := c.idempotency.Claim(ctx, c.group, envelope.EventID)
 		if err != nil {
 			// Redis is unreachable. Processing anyway risks a duplicate; skipping risks losing the
 			// event entirely. At-least-once is the weaker failure, and the handlers downstream are
@@ -180,7 +181,7 @@ func (c *Consumer) Handle(ctx context.Context, record *kgo.Record) {
 
 	// Drop the claim so an operator replaying from the DLQ is not silently deduped away.
 	if c.idempotency != nil {
-		if err := c.idempotency.Release(ctx, envelope.EventID); err != nil {
+		if err := c.idempotency.Release(ctx, c.group, envelope.EventID); err != nil {
 			c.logger.Warn("failed to release idempotency claim — a DLQ replay of this event will be skipped as a duplicate",
 				"error", err, "event_id", envelope.EventID)
 		}
