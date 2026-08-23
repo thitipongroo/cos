@@ -774,6 +774,14 @@ spec:
 ---
 # QM-18 puts PgBouncer between every service and PostgreSQL, and db-failover.md tells an operator
 # to "kubectl -n cos rollout restart deployment/pgbouncer" after a failover. Nothing deployed it.
+#
+# The missing `userlist.txt` is gone as a problem: pgbouncer.ini now uses `auth_query` through a
+# SECURITY DEFINER function instead of an auth file it had no way to mount (TDD OQ-53).
+#
+# ⚠️ STILL NEEDS OPS BEFORE IT WILL START. `pgbouncer-secrets` exists nowhere in this repository —
+# the Deployment reads `db-host` and `db-name` from it — and the `pgbouncer_auth` role ships NOLOGIN
+# on purpose, so it needs a password from the secret store. Both are cluster-specific and neither
+# can be committed. See infrastructure/kubernetes/pgbouncer/configmap.yaml.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -884,6 +892,14 @@ spec:
         factor: 2
 ---
 # MLflow tracking server (Phase 23).
+#
+# ⚠️ WILL NOT COME UP UNTIL A SECRET IS SEALED. deployment.yaml carries a SealedSecret whose
+# encryptedData is the literal string `REPLACE_WITH_SEALED_VALUE`, and the Deployment reads
+# MLFLOW_BACKEND_STORE_URI from it via secretKeyRef. The controller cannot decrypt a placeholder, so
+# no `mlflow-secrets` Secret is created and the pod stays in CreateContainerConfigError. That is
+# correct-by-design for a committed seal — a sealing key is cluster-specific — but it means this
+# Application is expected to sit Degraded until someone runs kubeseal against the target cluster.
+# Under ArgoCD that at least SHOWS; hand-applied it was invisible.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

@@ -246,6 +246,15 @@ probes are still unverified against a real cluster.
 
 ## 14. Open questions / NOT SPECIFIED
 
+**OQ-53 — closed 2026-08-23.** [PgBouncer could not start as committed](README.md#open-questions-register).
+QM-18 makes it mandatory between every service and PostgreSQL and `db-failover.md` restarts it after
+a failover, but the Deployment reads a `pgbouncer-secrets` Secret that exists nowhere in the
+repository, and `auth_file = /etc/pgbouncer/userlist.txt` points into a ConfigMap mount whose only
+key is `pgbouncer.ini` — so the auth file will not exist and PgBouncer can authenticate nobody.
+Surfaced by wiring `cos-pgbouncer` into ArgoCD. Resolved with `auth_query` through a SECURITY
+DEFINER function — no auth file to mount, and adding an application role needs no config change.
+`pgbouncer_auth` can execute that one function and read nothing else, verified on a live database.
+The `pgbouncer-secrets` Secret and the role's password remain ops.
 None new. Two items carried from elsewhere land here operationally:
 
 - [OQ-32](README.md#open-questions-register) — five Temporal workers have no Helm chart, no Compose

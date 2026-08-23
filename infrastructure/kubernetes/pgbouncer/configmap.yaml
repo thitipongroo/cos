@@ -16,7 +16,32 @@ data:
     listen_addr = 0.0.0.0
     listen_port = 5432
     auth_type = scram-sha-256
-    auth_file = /etc/pgbouncer/userlist.txt
+
+    ; AUTH BY QUERY, NOT BY FILE (TDD OQ-53, PO decision 2026-08-23).
+    ;
+    ; This used to be `auth_file = /etc/pgbouncer/userlist.txt`, and that file could never exist:
+    ; /etc/pgbouncer is mounted read-only from this ConfigMap, whose only key is pgbouncer.ini. So
+    ; PgBouncer could authenticate nobody — while QM-18 requires it in front of every service and
+    ; db-failover.md restarts it after a failover. A userlist holds password hashes and is
+    ; cluster-specific, so committing one was never an option either.
+    ;
+    ; auth_query removes the file entirely: PgBouncer connects as auth_user and asks PostgreSQL for
+    ; the hash of whoever is connecting. Adding an application role then needs no config change and
+    ; no redeploy — which matters here, where `app_user` and `cos` are already two roles and every
+    ; dedicated ENTERPRISE database adds more.
+    ;
+    ; It goes through a SECURITY DEFINER function, not straight at pg_shadow: reading pg_shadow
+    ; requires superuser, and a superuser pooler would undo the reason app_user exists (owners and
+    ; superusers bypass RLS — migration 20260623000001). pgbouncer_auth can execute exactly this one
+    ; function and read nothing else; verified 2026-08-23 that it cannot read pg_shadow directly
+    ; ("permission denied for view pg_shadow") nor any application schema.
+    ;
+    ; Migration: backend/prisma/migrations/20260823000001_pgbouncer_auth_query.
+    ; OPS: the role ships NOLOGIN. Give it a password from the secret store before deploying —
+    ;   ALTER ROLE pgbouncer_auth WITH LOGIN PASSWORD '<from Vault / AWS Secrets Manager>';
+    ; and put the same value in the `pgbouncer-secrets` Secret as `auth-password`.
+    auth_user = pgbouncer_auth
+    auth_query = SELECT usename, passwd FROM public.pgbouncer_get_auth($1)
 
     ; QM-18: transaction mode — REQUIRED; session/statement PROHIBITED
     pool_mode = transaction

@@ -93,6 +93,13 @@ aws rds reboot-db-instance \
    PostgreSQL (`infrastructure/kubernetes/pgbouncer/`), so it holds the stale server connections; the
    app pods alone are not enough.
 
+   > **Confirm PgBouncer is actually deployed first (TDD OQ-53).** Until 2026-08-23 it could not
+   > start at all: `auth_file` pointed into a ConfigMap mount that would never contain it. That is
+   > fixed (`auth_query`), but it still needs two things ops supplies and the repository cannot —
+   > the `pgbouncer-secrets` Secret, and a password for the NOLOGIN `pgbouncer_auth` role. If this
+   > step finds no `deployment/pgbouncer`, the connections you are trying to cycle are going
+   > straight to PostgreSQL, and QM-18 is not being met either.
+
    ```bash
    kubectl -n cos rollout restart deployment/pgbouncer
    kubectl -n cos rollout restart deployment/cos-backend
