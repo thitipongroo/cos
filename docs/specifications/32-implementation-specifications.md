@@ -578,7 +578,8 @@ work.** Verified against `packages/@cos/shared/src/avro/`:
   the deleted table** — no phase `Generate:` list and no other spec section names any of them. They
   were rename targets for legacy files that no longer exist, so carrying them forward would invent
   ten events nothing ever asked for. Add one through the §32.4 procedure above if a phase needs it.
-- **Twenty of the twenty-one events in the payload table above exist as `.avsc`.**
+- **Every event named in the payload table above exists as `.avsc`** — re-verified 2026-08-23 by
+  diffing the table against `packages/@cos/shared/src/avro/`.
 
 **The one naming conflict is resolved.** Row #16 read `finance.budget.variance_detected.v1` until
 2026-08-23; the name on the wire is `finance.variance.alert.v1`, and the table now says so

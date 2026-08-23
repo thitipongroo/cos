@@ -167,16 +167,16 @@ would move customer data without anyone deciding to.
 
 ## 8. Failure modes & rollback
 
-| Failure                                              | Behaviour today                                                                                      |
-| ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| Second trigger for the same tenant                   | `409 Conflict` — Temporal rejects the duplicate workflow id                                          |
-| RDS creation fails                                   | `compensateCreateRdsActivity` → `DeleteDBInstance`                                                   |
-| Assignment succeeds, later step fails                | `compensateAssignDedicatedDbActivity` → `dedicated_db_url = NULL`                                    |
-| Data migration fails                                 | **No auto-rollback** — `SYSTEM_ADMIN` coordinates manually, by design                                |
-| Tenant has no existing data                          | `migrateDataActivity` skips — `migrate_data.skipped.no_existing_data`                                |
-| Webhook signature missing or wrong                   | `401`                                                                                                |
-| `PLATFORM_WEBHOOK_SECRET` or raw body missing        | `500` — a configuration fault, not an authentication one                                             |
-| **No worker on the `enterprise-provisioning` queue** | **The workflow never advances past the first activity** — [OQ-32](README.md#open-questions-register) |
+| Failure                                              | Behaviour today                                                                                                                                       |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Second trigger for the same tenant                   | `409 Conflict` — Temporal rejects the duplicate workflow id                                                                                           |
+| RDS creation fails                                   | `compensateCreateRdsActivity` → `DeleteDBInstance`                                                                                                    |
+| Assignment succeeds, later step fails                | `compensateAssignDedicatedDbActivity` → `dedicated_db_url = NULL`                                                                                     |
+| Data migration fails                                 | **No auto-rollback** — `SYSTEM_ADMIN` coordinates manually, by design                                                                                 |
+| Tenant has no existing data                          | `migrateDataActivity` skips — `migrate_data.skipped.no_existing_data`                                                                                 |
+| Webhook signature missing or wrong                   | `401`                                                                                                                                                 |
+| `PLATFORM_WEBHOOK_SECRET` or raw body missing        | `500` — a configuration fault, not an authentication one                                                                                              |
+| **No worker on the `enterprise-provisioning` queue** | Would stall the workflow at its first activity; `workers/main.ts` polls this queue since [OQ-32](README.md#open-questions-register) closed 2026-08-22 |
 
 The 401/500 split is worth preserving: a missing secret is the operator's mistake and must not read as
 "the caller sent a bad signature", because the two demand different responses.
@@ -218,8 +218,10 @@ The activities log at each step (`tenant.dedicated_db_url.assigned`,
 `tenant.dedicated_db_url.compensated_to_null`, `migrate_data.skipped.no_existing_data`), which makes a
 provisioning run reconstructable from logs alone.
 
-Given § 8, the operational signal that matters most is a workflow sitting at its first activity — the
-symptom of OQ-32 — which looks identical to a slow RDS creation unless the task queue is watched.
+The operational signal that matters most is a workflow sitting at its first activity. That was the
+symptom of OQ-32 while nothing polled the queue, and it looks identical to a slow RDS creation
+unless the task queue itself is watched — so it stays worth alerting on now that a worker does poll:
+the same silence means something different, and neither cause announces itself.
 
 ---
 
@@ -238,26 +240,26 @@ Phase 1's.
 
 Verified on **2026-08-22** against this working tree (Rule 36 — commands run, output summarised).
 
-| Generate item                                             | Status           | Evidence                                                                                                                            |
-| --------------------------------------------------------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `PATCH /admin/tenants/:tenantId/mark-contracted`          | ✅ present       | `tenant.controller.ts:62`, `@Controller('admin/tenants')`                                                                           |
-| `POST /platform/webhooks/enterprise-contract-signed`      | ✅ present       | new `platform-webhook` module                                                                                                       |
-| HMAC-SHA256 verification per §34.6                        | ✅ present       | `sha256=` prefix, `timingSafeEqual`, length pre-check, 401/500 split                                                                |
-| `EnterpriseProvisioningWorkflow` + 5 activities           | ✅ present       | 11 exported activities — the 5 specified plus compensation, notify, `secureAppUser`, `provisionKafkaTopics`, `emitProvisionedEvent` |
-| Compensation activities                                   | ✅ present       | `compensateCreateRdsActivity`, `compensateAssignDedicatedDbActivity`                                                                |
-| Human gate, no timeout                                    | ✅ present       | `await condition(() => approved \|\| aborted)`                                                                                      |
-| Worker (`enterprise-provisioning` queue)                  | ⚠️ **code only** | `enterprise-provisioning.worker.ts` exists and self-starts; nothing launches it — [OQ-32](README.md#open-questions-register)        |
-| TypeScript interfaces for both events                     | ✅ present       | `packages/@cos/shared/src/events/`                                                                                                  |
-| Avro schemas for both events                              | ✅ present       | `packages/@cos/shared/src/avro/`                                                                                                    |
-| Terraform module `rds-tenant`                             | ✅ present       | `main.tf`, `variables.tf`, `outputs.tf`, `README.md`                                                                                |
-| `@aws-sdk/client-rds` in `backend/package.json` (Rule 26) | ✅ present       | `^3.600.0`                                                                                                                          |
-| Idempotency constraint                                    | ✅ present       | deterministic workflow id + `dedicated_db_url` pre-check → 409                                                                      |
-| `platform.*` stays shared                                 | ✅ present       | nothing in the activities moves a `platform` table                                                                                  |
-| Generic CRM payload only                                  | ✅ present       | `{ tenant_id, contract_reference? }`, no adapter                                                                                    |
-| Unit tests                                                | ✅ present       | 18 spec files                                                                                                                       |
+| Generate item                                             | Status     | Evidence                                                                                                                                                        |
+| --------------------------------------------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PATCH /admin/tenants/:tenantId/mark-contracted`          | ✅ present | `tenant.controller.ts:62`, `@Controller('admin/tenants')`                                                                                                       |
+| `POST /platform/webhooks/enterprise-contract-signed`      | ✅ present | new `platform-webhook` module                                                                                                                                   |
+| HMAC-SHA256 verification per §34.6                        | ✅ present | `sha256=` prefix, `timingSafeEqual`, length pre-check, 401/500 split                                                                                            |
+| `EnterpriseProvisioningWorkflow` + 5 activities           | ✅ present | 11 exported activities — the 5 specified plus compensation, notify, `secureAppUser`, `provisionKafkaTopics`, `emitProvisionedEvent`                             |
+| Compensation activities                                   | ✅ present | `compensateCreateRdsActivity`, `compensateAssignDedicatedDbActivity`                                                                                            |
+| Human gate, no timeout                                    | ✅ present | `await condition(() => approved \|\| aborted)`                                                                                                                  |
+| Worker (`enterprise-provisioning` queue)                  | ✅ present | `enterprise-provisioning.worker.ts`, one of three queues `workers/main.ts` runs in the `cos-temporal-worker` chart ([OQ-32](README.md#open-questions-register)) |
+| TypeScript interfaces for both events                     | ✅ present | `packages/@cos/shared/src/events/`                                                                                                                              |
+| Avro schemas for both events                              | ✅ present | `packages/@cos/shared/src/avro/`                                                                                                                                |
+| Terraform module `rds-tenant`                             | ✅ present | `main.tf`, `variables.tf`, `outputs.tf`, `README.md`                                                                                                            |
+| `@aws-sdk/client-rds` in `backend/package.json` (Rule 26) | ✅ present | `^3.600.0`                                                                                                                                                      |
+| Idempotency constraint                                    | ✅ present | deterministic workflow id + `dedicated_db_url` pre-check → 409                                                                                                  |
+| `platform.*` stays shared                                 | ✅ present | nothing in the activities moves a `platform` table                                                                                                              |
+| Generic CRM payload only                                  | ✅ present | `{ tenant_id, contract_reference? }`, no adapter                                                                                                                |
+| Unit tests                                                | ✅ present | 18 spec files                                                                                                                                                   |
 
-Every Generate item exists. The single qualification is the worker's launch, which is the
-platform-wide issue in OQ-32 rather than anything this phase did differently.
+Every Generate item exists, and the one qualification — that nothing launched the worker — was a
+platform-wide issue rather than anything this phase did differently. OQ-32 closed it on 2026-08-22.
 
 ---
 
@@ -274,8 +276,9 @@ Runtime: Temporal, AWS RDS, AWS Secrets Manager, AWS KMS.
 
 Two, both recorded in the register rather than duplicated here:
 
-- [OQ-32](README.md#open-questions-register) — the `enterprise-provisioning` worker is never
-  launched. Spans Phases 5, 9 and 25.
+- [OQ-32](README.md#open-questions-register) — **closed 2026-08-22.** The
+  `enterprise-provisioning` worker was never launched; it is now one of three queues
+  `workers/main.ts` polls. Spanned Phases 5, 9 and 25.
 - [OQ-51](README.md#open-questions-register) — **closed 2026-08-23.** The dedicated realm this phase
   provisions could not be used. Provisioning writes a per-tenant `cos-{tenantCode}` realm (§7.6) and
   `platform.tenants.keycloak_realm` is `NOT NULL UNIQUE`, but `KeycloakJwtStrategy` validates against

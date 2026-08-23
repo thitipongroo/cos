@@ -67,8 +67,9 @@ services/file-service/src/
 ```
 
 Three processes are designed here, not one: the Fastify API, a **cleanup worker** (hard delete after
-the retention window) and an **extraction worker** (ZIP unpacking). Only the API is launched — see
-§ 8 and OQ-32.
+the retention window) and an **extraction worker** (ZIP unpacking). Until [OQ-32](README.md#open-questions-register)
+closed on 2026-08-22 only the API was launched; the chart now ships a second Deployment
+(`worker-deployment.yaml`) that runs both workers — see § 8.
 
 ---
 
@@ -170,14 +171,14 @@ deletes 30 days later. That second stage is the one § 8 is about.
 
 ## 8. Failure modes & rollback
 
-| Failure                                 | Behaviour today                                                                             |
-| --------------------------------------- | ------------------------------------------------------------------------------------------- |
-| Executable or disallowed MIME uploaded  | Blocked at upload by `middleware/validation.ts`                                             |
-| Oversized file                          | Blocked — per-category limits (20 MB images … 1 GB video)                                   |
-| Infected file                           | Quarantined to a separate bucket, event emitted, `SYSTEM_ADMIN` notified                    |
-| Zip bomb / path traversal in an archive | Guards specified in the extraction workflow — decompression-ratio, entry-count, path checks |
-| **Soft-deleted file reaching 30 days**  | **Never hard-deleted — the cleanup worker does not run** — OQ-32                            |
-| **ZIP uploaded for bulk extraction**    | **Never extracted — the extraction worker does not run** — OQ-32                            |
+| Failure                                 | Behaviour today                                                                                                                    |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Executable or disallowed MIME uploaded  | Blocked at upload by `middleware/validation.ts`                                                                                    |
+| Oversized file                          | Blocked — per-category limits (20 MB images … 1 GB video)                                                                          |
+| Infected file                           | Quarantined to a separate bucket, event emitted, `SYSTEM_ADMIN` notified                                                           |
+| Zip bomb / path traversal in an archive | Guards specified in the extraction workflow — decompression-ratio, entry-count, path checks                                        |
+| **Soft-deleted file reaching 30 days**  | Hard-deleted by the cleanup workflow; its worker ships in `cos-file-service`'s `worker-deployment.yaml` (OQ-32, closed 2026-08-22) |
+| **ZIP uploaded for bulk extraction**    | Extracted in the sandbox workflow, on the same Deployment (OQ-32, closed 2026-08-22)                                               |
 
 **The worker gap here is the same one Phase 5 has, and the two are one problem.** Verified across the
 whole repository: **five** production `Worker.create` call sites exist, one per workflow family —
@@ -248,22 +249,22 @@ integration tests on the full upload → MinIO → metadata → signed URL flow.
 
 Verified on **2026-08-22** against this working tree (Rule 36 — commands run, output summarised).
 
-| Generate item                            | Status             | Evidence                                                                                |
-| ---------------------------------------- | ------------------ | --------------------------------------------------------------------------------------- |
-| Fastify app with multipart plugin        | ✅ present         | `fastify 5.9.0`, `@fastify/multipart ^10.0.0`                                           |
-| MinIO client integration                 | ✅ present         | `minio ^7.1.0`; `services/minio.service.ts`                                             |
-| File validation middleware               | ✅ present         | `middleware/validation.ts` — size, MIME, extension                                      |
-| Antivirus hook (ClamAV)                  | ✅ present         | `clamscan ^2.1.3`; `services/antivirus.service.ts` + `scan-runner.ts`                   |
-| Signed URL generation                    | ✅ present         | `presignedGetObject`, TTL 3600 s configurable                                           |
-| OpenSearch indexing on upload            | ✅ present         | index `files-{tenantId}`                                                                |
-| PostgreSQL migrations                    | ✅ present         | 4 migrations; `files.files`, `file_metadata`, `photo_annotations`, `retention_policies` |
-| OpenAPI 3.1                              | ✅ present         | `plugins/swagger.ts`                                                                    |
-| Unit + integration tests                 | ✅ present         | 19 test files                                                                           |
-| `file.document.uploaded.v1`              | ✅ present         | —                                                                                       |
-| `file.document.quarantined.v1`           | ✅ present         | —                                                                                       |
-| Bucket / key layout                      | ✅ present         | `cos-{tenant_id}` + `{year}/{month}/{file_id}/{filename}`                               |
-| ZIP sandboxed extraction workflow        | ⚠️ **not running** | workflow + activities + worker exist; worker never launched — OQ-32                     |
-| Retention / hard-delete cleanup workflow | ⚠️ **not running** | same — OQ-32                                                                            |
+| Generate item                            | Status     | Evidence                                                                                |
+| ---------------------------------------- | ---------- | --------------------------------------------------------------------------------------- |
+| Fastify app with multipart plugin        | ✅ present | `fastify 5.9.0`, `@fastify/multipart ^10.0.0`                                           |
+| MinIO client integration                 | ✅ present | `minio ^7.1.0`; `services/minio.service.ts`                                             |
+| File validation middleware               | ✅ present | `middleware/validation.ts` — size, MIME, extension                                      |
+| Antivirus hook (ClamAV)                  | ✅ present | `clamscan ^2.1.3`; `services/antivirus.service.ts` + `scan-runner.ts`                   |
+| Signed URL generation                    | ✅ present | `presignedGetObject`, TTL 3600 s configurable                                           |
+| OpenSearch indexing on upload            | ✅ present | index `files-{tenantId}`                                                                |
+| PostgreSQL migrations                    | ✅ present | 4 migrations; `files.files`, `file_metadata`, `photo_annotations`, `retention_policies` |
+| OpenAPI 3.1                              | ✅ present | `plugins/swagger.ts`                                                                    |
+| Unit + integration tests                 | ✅ present | 19 test files                                                                           |
+| `file.document.uploaded.v1`              | ✅ present | —                                                                                       |
+| `file.document.quarantined.v1`           | ✅ present | —                                                                                       |
+| Bucket / key layout                      | ✅ present | `cos-{tenant_id}` + `{year}/{month}/{file_id}/{filename}`                               |
+| ZIP sandboxed extraction workflow        | ✅ present | workflow + activities + worker, launched by `worker-deployment.yaml` (OQ-32)            |
+| Retention / hard-delete cleanup workflow | ✅ present | same Deployment, second task queue (OQ-32)                                              |
 
 **On the antivirus deferral.** The command says "ClamAV integration — deferred to Phase 9 spec; do not
 implement until spec defines it". It is implemented: the dependency is installed, the service and
@@ -280,13 +281,13 @@ that block was written.
 reference `file_id`, and Phase 6's photo flow does not work without it.
 
 Runtime dependencies beyond PostgreSQL: MinIO, ClamAV, OpenSearch, Kafka and **Temporal** — the last
-of which is why OQ-32 applies here.
+of which is why OQ-32 applied here.
 
 ---
 
 ## 14. Open questions / NOT SPECIFIED
 
-| #     | Question                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Status                     |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
-| OQ-32 | **Five Temporal workers are written; nothing launches any of them.** One worker file exists per workflow family — procurement, enterprise provisioning, PDPA data export, file cleanup, file zip-extraction — each a standalone `require.main === module` entrypoint exporting a `run*Worker()`. No other file in the repository references any of those five runners: no `package.json` script, Dockerfile, Compose service, CI step or Helm chart, and none is listed in `32-implementation-specifications` §32.2. Meanwhile the Temporal **server** is in `docker-compose.yml`, so every workflow these services start is accepted and recorded as running while no worker polls its task queue. This supersedes the phase-local framing in [OQ-25](README.md#open-questions-register). Verified statically across the repository. | Open — needs a PO decision |
-| OQ-33 | **The ClamAV deferral in the Phase 9 command is stale.** "Do not implement until spec defines it" sits in the same command block that already specifies the quarantine bucket, 30-day retention, the event and the `SYSTEM_ADMIN` recovery path. The implementation follows the specification, not the deferral. The sentence should be removed so a future reader does not treat working antivirus as scope creep.                                                                                                                                                                                                                                                                                                                                                                                                                   | Open — documentation drift |
+| #     | Question                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Status                                                                              |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
+| OQ-32 | **Five Temporal workers are written; nothing launches any of them.** One worker file exists per workflow family — procurement, enterprise provisioning, PDPA data export, file cleanup, file zip-extraction — each a standalone `require.main === module` entrypoint exporting a `run*Worker()`. No other file in the repository references any of those five runners: no `package.json` script, Dockerfile, Compose service, CI step or Helm chart, and none is listed in `32-implementation-specifications` §32.2. Meanwhile the Temporal **server** is in `docker-compose.yml`, so every workflow these services start is accepted and recorded as running while no worker polls its task queue. This supersedes the phase-local framing in [OQ-25](README.md#open-questions-register). Verified statically across the repository. **Closed 2026-08-22** — two Deployments now run all five queues: `cos-temporal-worker` for the backend’s three, a second Deployment in the `cos-file-service` chart for its two, wired into ArgoCD, Compose and §32.2. | Closed 2026-08-22                                                                   |
+| OQ-33 | **The ClamAV deferral in the Phase 9 command is stale.** "Do not implement until spec defines it" sits in the same command block that already specifies the quarantine bucket, 30-day retention, the event and the `SYSTEM_ADMIN` recovery path. The implementation follows the specification, not the deferral. The sentence should be removed so a future reader does not treat working antivirus as scope creep.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Closed 2026-08-22 — resolution in the [register](README.md#open-questions-register) |
