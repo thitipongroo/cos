@@ -270,6 +270,12 @@ jobs:
       - name: Run integration tests
         working-directory: backend
         run: pnpm run test:integration
+      # services/file-service owns object-storage tenant isolation (TC-P09-ISO-001): a presigned
+      # URL must be bound to one tenant bucket + key. Only a real MinIO can show that — a mocked
+      # client returns whatever it is told. Wired 2026-08-23 (§35.13 ESC-30).
+      - name: Run integration tests — services/file-service (MinIO)
+        working-directory: services/file-service
+        run: pnpm run test:integration
 
   # ─── Step 4b: Multi-tenant Isolation Tests ──────────────────────────────────
   # Source: spec §30.6 — Cross-tenant data access is a Critical Security Defect; blocks PR merge

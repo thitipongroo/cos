@@ -683,11 +683,14 @@ export class SiteOpsService {
     params: { project_id?: string; minimal?: boolean },
   ): Promise<SiteReportRow[]> {
     try {
+      // §35.13 ESC-32: .keyword, not the bare field — dynamic mapping stores these strings as
+      // analyzed `text` with a `.keyword` sub-field, and a `term` on the analyzed field never
+      // matches a UUID. See the fuller note in project.service.ts.
       const must: Record<string, unknown>[] = [
         { multi_match: { query: q, fields: ['summary', 'weather'] } },
-        { term: { tenant_id: this.tenantId } },
+        { term: { 'tenant_id.keyword': this.tenantId } },
       ];
-      if (params.project_id) must.push({ term: { project_id: params.project_id } });
+      if (params.project_id) must.push({ term: { 'project_id.keyword': params.project_id } });
 
       const response = await this.openSearch.search({
         index: OS_REPORTS_INDEX,
@@ -718,9 +721,9 @@ export class SiteOpsService {
     try {
       const must: Record<string, unknown>[] = [
         { multi_match: { query: q, fields: ['title', 'description'] } },
-        { term: { tenant_id: this.tenantId } },
+        { term: { 'tenant_id.keyword': this.tenantId } },
       ];
-      if (params.project_id) must.push({ term: { project_id: params.project_id } });
+      if (params.project_id) must.push({ term: { 'project_id.keyword': params.project_id } });
 
       const response = await this.openSearch.search({
         index: OS_ISSUES_INDEX,

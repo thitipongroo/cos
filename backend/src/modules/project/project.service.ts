@@ -324,7 +324,12 @@ export class ProjectService {
   ): Promise<{ items: ProjectRow[]; nextCursor: string | null }> {
     try {
       const must: unknown[] = [
-        { term: { tenant_id: this.tenantId } },
+        // §35.13 ESC-32: .keyword, not the bare field. Nothing in the repo creates an index
+        // mapping, so OpenSearch maps these strings dynamically as analyzed `text` with a
+        // `.keyword` sub-field. A `term` query on the analyzed field never matches a UUID or an
+        // enum value, which made every search silently return nothing. All values here are far
+        // below the 256-char `ignore_above`, so `.keyword` is always populated.
+        { term: { 'tenant_id.keyword': this.tenantId } },
         {
           multi_match: {
             query: q,
@@ -333,8 +338,8 @@ export class ProjectService {
           },
         },
       ];
-      if (dto.status) must.push({ term: { status: dto.status } });
-      if (dto.type) must.push({ term: { project_type: dto.type } });
+      if (dto.status) must.push({ term: { 'status.keyword': dto.status } });
+      if (dto.type) must.push({ term: { 'project_type.keyword': dto.type } });
 
       const response = await this.openSearch.search({
         index: OS_INDEX,
