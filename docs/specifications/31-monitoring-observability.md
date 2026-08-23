@@ -167,14 +167,27 @@ Mandatory fields in every log line:
 
 Audit logs (approval decisions, System Admin actions, cross-tenant access) are
 separate from application logs. They are written to an **immutable append-only store**
-per `05-security-compliance` section 5.2. Audit logs are never deleted.
+per `05-security-compliance` section 5.2, and remain immutable for as long as they are held:
+nothing may edit or delete an individual record, and the compliance archive is WORM.
+
+**Retention is seven years, then deletion** — corrected 2026-08-23. This paragraph used to end
+"Audit logs are never deleted", and the table below carried "Indefinite", while the schedule this
+section itself names as authoritative — `docs/compliance/log-retention-policy.md` — has always
+specified expiry on day 2557, as does `docs/compliance/data-retention-policy.md`, both citing SOC 2
+and the PDPA audit trail. Product-owner decision: the operational schedule is right. PDPA rests on
+storage limitation, so keeping personal data in an audit record forever is itself a compliance
+problem; seven years is the period the obligations those documents cite actually require.
+
+Immutability and indefiniteness are different guarantees, and only the first is claimed here: a
+record cannot be altered or removed while it is retained, and it leaves only by the scheduled
+expiry that applies to every record of its age.
 
 ### Log Retention
 
-| Log type         | Hot storage | Cold archive | Compliance archive |
-| ---------------- | ----------- | ------------ | ------------------ |
-| Application logs | 30 days     | 1 year       | —                  |
-| Audit logs       | Indefinite  | —            | 7 years (WORM)     |
+| Log type         | Hot storage | Cold archive | Compliance archive        |
+| ---------------- | ----------- | ------------ | ------------------------- |
+| Application logs | 30 days     | 1 year       | —                         |
+| Audit logs       | 30 days     | 1 year       | 7 years (WORM), then delete |
 
 Authoritative retention schedule: `docs/compliance/log-retention-policy.md`
 

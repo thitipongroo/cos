@@ -37,6 +37,7 @@ import { HttpMetricsInterceptor } from './shared/interceptors/http-metrics.inter
 import { RequestIdInterceptor } from './shared/interceptors/request-id.interceptor';
 import { TenantContextInterceptor } from './shared/interceptors/tenant-context.interceptor';
 import { CloudflareWafMiddleware } from './shared/middleware/cloudflare-waf.middleware';
+import { UnmatchedRouteMetricsMiddleware } from './shared/middleware/unmatched-route-metrics.middleware';
 import { SecureHeadersMiddleware } from './shared/middleware/secure-headers.middleware';
 import { TracingShutdownService } from './shared/tracing-shutdown.service';
 import { PrismaPoolShutdownService } from './shared/prisma/prisma-pool-shutdown.service';
@@ -126,5 +127,10 @@ export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
     consumer.apply(SecureHeadersMiddleware).forRoutes({ path: '*', method: RequestMethod.ALL });
     consumer.apply(CloudflareWafMiddleware).forRoutes({ path: '*', method: RequestMethod.ALL });
+    // Counts requests that reach NO route — a global interceptor never sees those, so without this
+    // a flood of 404s is invisible in http_requests_total (master:4357).
+    consumer
+      .apply(UnmatchedRouteMetricsMiddleware)
+      .forRoutes({ path: '*', method: RequestMethod.ALL });
   }
 }
