@@ -57,6 +57,9 @@ export const EVENT_AVSC_MAP: Record<string, string> = {
   // Safety (Phase 6) — consumed by Notification Service for §19.3 escalation
   'safety.incident.created.v1': 'safety.incident.created.v1.avsc',
   // Finance
+  // Offline sync engine (§17.2): a device gave up delivering a queued mutation. A platform.*
+  // event, so it rides the shared platform.events topic rather than a per-tenant one.
+  'platform.sync.exhausted.v1': 'platform.sync.exhausted.v1.avsc',
   'finance.budget.created.v1': 'finance.budget.created.v1.avsc',
   'finance.budget.exceeded.v1': 'finance.budget.exceeded.v1.avsc',
   'finance.payment.processed.v1': 'finance.payment.processed.v1.avsc',

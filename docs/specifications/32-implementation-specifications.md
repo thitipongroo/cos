@@ -1093,11 +1093,25 @@ These constraints are enforced by the CI `build` gate (`turbo run build`), not b
   The client registers it via `<SerwistProvider swUrl="/serwist/sw.js">` in `app/layout.tsx`, and `next.config.mjs`
   wraps the config with `withSerwist`. Unlike next-pwa (`dest: 'public'`), **no `sw.js` / `workbox-*.js` artifacts land
   in `apps/web/public/`** — the SW is part of the `.next` build output, so there is nothing to git-ignore under `public/`.
-- **`createSerwistRoute` MUST pass `useNativeEsbuild: false`.** The option defaults to
-  `process.platform === 'win32'`, so on a Windows dev machine Serwist imports the **native** `esbuild` package —
-  which is not a dependency here (only `esbuild-wasm` is, per the line above). Left at the default, `next build`
-  fails on Windows with `Cannot find package 'esbuild'` / `ERR_MODULE_NOT_FOUND` while passing on Linux CI, so the
-  gate cannot catch it. Pinning the option keeps one bundler on every platform and matches the declared dependency.
+- **`createSerwistRoute` keeps `useNativeEsbuild` at its `process.platform === 'win32'` default** — corrected
+  2026-08-23; this rule previously read "MUST pass `useNativeEsbuild: false`".
+
+  The original reasoning held at the time: the option defaults to `process.platform === 'win32'`, `esbuild` was not
+  a dependency, and `next build` therefore failed on a Windows dev machine with `Cannot find package 'esbuild'`
+  while Linux CI stayed green. Forcing the option to `false` made both platforms use the one declared bundler.
+
+  It stopped holding once that fix was tried. `esbuild-wasm` validates the working directory it is handed and
+  rejects a Windows absolute path (`C:\...`), so pinning the option to `false` moves the failure rather than
+  removing it, and the working directory cannot be overridden from the route: `absWorkingDir` is absent from
+  `@serwist/turbopack`'s 55-entry `SUPPORTED_ESBUILD_OPTIONS` allowlist, whose zod schema drops any key outside
+  the list, and the `cwd` option feeds `outdir` instead. Using the native binary on Windows sidesteps the path
+  validation entirely, which is why upstream defaults to it there.
+
+  What the premise above got wrong is now fixed at the source: `esbuild` IS a declared devDependency of
+  `apps/web`, **pinned to the same version as `esbuild-wasm`** so the two can never disagree on the service
+  protocol, and `allowBuilds.esbuild: true` in `pnpm-workspace.yaml` lets its postinstall link the platform
+  binary. Keep those two versions equal whenever either is bumped. See commit `332e75a7` and the comment in
+  `apps/web/src/app/serwist/[path]/route.ts`, which records the investigation.
 
 #### Mobile Spacing
 

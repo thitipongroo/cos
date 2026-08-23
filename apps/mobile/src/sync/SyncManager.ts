@@ -18,19 +18,41 @@ import { isNetworkError, isPermanentFailure } from './httpFailure';
 const MAX_RETRIES = 5;
 const BATCH_SIZE = 20;
 
-// Per spec §17.2 — entity types that emit platform.sync.exhausted event on retry exhaustion
-const EXHAUSTED_NOTIFY_TYPES = new Set([
-  'safety_incidents',
-  'workforce_attendance',
-  'inspection_results',
-  'material_consumption',
+// §17.2 retry exhaustion, keyed on THE VALUE THE QUEUE ACTUALLY HOLDS.
+//
+// These sets used to spell the spec's category names — `safety_incidents`, `workforce_attendance`,
+// `task_progress_updates` and so on. Nothing ever produced them: every enqueue in the app passes a
+// PUSHABLE type (`safety`, `material`, `issue`, `site_report`, `photo_annotation` directly;
+// `task`, `inspection`, `delivery`, `purchase-request` through mutate()), and db/sync-queue.ts
+// stores that value verbatim. So every exhausted item fell through to the final `else` — "no
+// action" — and the whole of §17.2 was dead: a safety incident that failed five times was abandoned
+// with nobody told, and the unit tests passed because their fixtures fed the category names in by
+// hand. The mapping below is 1:1 with the spec's list; only the vocabulary changed.
+//
+// The spec categories map: safety_incidents→safety · workforce_attendance→attendance ·
+// inspection_results→inspection · material_consumption→material · task_progress_updates→task ·
+// site_report_drafts→site_report · equipment_usage_logs→equipment.
+
+// Escalated: publish platform.sync.exhausted → tenant-admin review queue, and alert the roles
+// §17.2 names per type. Preserved on device either way.
+const EXHAUSTED_NOTIFY_TYPES = new Set(['safety', 'attendance', 'inspection', 'material']);
+
+// Discarded, but the user is told. `task` and `site_report` are §17.2's own two; `issue`,
+// `photo_annotation`, `delivery` and `purchase-request` are queueable types §17.2 never covered —
+// `delivery` and `purchase-request` were admitted to the offline set on 2026-08-19 without §17.2
+// being revisited. Product-owner decision 2026-08-23: treat all four as discard-and-tell. Failing
+// silently is the one outcome nothing justifies.
+const DISCARD_NOTIFY_TYPES = new Set([
+  'task',
+  'site_report',
+  'issue',
+  'photo_annotation',
+  'delivery',
+  'purchase-request',
 ]);
 
-// Per spec §17.2 — discard + notify user in-app on exhaustion
-const DISCARD_NOTIFY_TYPES = new Set(['task_progress_updates', 'site_report_drafts']);
-
-// Per spec §17.2 — silent discard on exhaustion
-const SILENT_DISCARD_TYPES = new Set(['equipment_usage_logs']);
+// Per spec §17.2 — silent discard on exhaustion. No writer enqueues this yet (see syncPriority.ts).
+const SILENT_DISCARD_TYPES = new Set(['equipment']);
 
 export interface SyncServerResponse {
   status: ServerSyncStatus;

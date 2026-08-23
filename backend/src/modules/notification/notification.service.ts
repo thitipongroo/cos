@@ -57,7 +57,20 @@ export function isWithinQuietHours(now: Date, tz: string, start: string, end: st
 // EVENT_AVSC_MAP) and subscribed in notification.consumer — 'po'/'invoice', NOT
 // 'purchase_order'/'vendor_invoice' (regression: mismatched keys silently drop notifications).
 // For platform.* events, tenant_id='platform' and routing resolves all SYSTEM_ADMIN users globally.
-const EVENT_ROLE_MAP: Record<string, string[] | 'actor' | { payloadUserId: string }> = {
+/**
+ * A routing rule that reads the payload to decide WHICH roles to tell.
+ *
+ * Needed for platform.sync.exhausted.v1, where §17.2 gives a different audience per entity type: a
+ * lost safety incident alerts the PM and the Safety Officer, a lost attendance or inspection alerts
+ * the PM, and a lost material log alerts nobody — it goes to the review queue and no further. One
+ * static role list per event type cannot express that without over-notifying three of the four.
+ */
+type PayloadRoleSelector = { rolesFromPayload: (payload: Record<string, unknown>) => string[] };
+
+const EVENT_ROLE_MAP: Record<
+  string,
+  string[] | 'actor' | { payloadUserId: string } | PayloadRoleSelector
+> = {
   'site.inspection.failed.v1': ['SITE_ENGINEER', 'PROJECT_MANAGER'],
   'site.issue.created.v1': ['SITE_ENGINEER', 'PROJECT_MANAGER'],
   'site.issue.escalated.v1': ['PROJECT_MANAGER'], // G-M12 — escalate raises the issue to the PM
@@ -65,6 +78,20 @@ const EVENT_ROLE_MAP: Record<string, string[] | 'actor' | { payloadUserId: strin
   'procurement.po.status_changed.v1': 'actor',
   'procurement.po.approval_requested.v1': { payloadUserId: 'approver_id' },
   'finance.variance.alert.v1': ['FINANCE', 'TENANT_ADMIN'],
+  // §17.2 retry exhaustion. The review queue itself is TENANT_ADMIN's (master §Phase 10 "Tenant
+  // admin review queue"), so they are told for every type; the operational alert is per entity.
+  'platform.sync.exhausted.v1': {
+    rolesFromPayload: (payload): string[] => {
+      const entityType = String(payload['entity_type'] ?? '');
+      const base = ['TENANT_ADMIN'];
+      if (entityType === 'safety') return [...base, 'PROJECT_MANAGER', 'SAFETY_OFFICER'];
+      if (entityType === 'attendance' || entityType === 'inspection') {
+        return [...base, 'PROJECT_MANAGER'];
+      }
+      // material_consumption: review queue only — §17.2 asks for no alert.
+      return base;
+    },
+  },
   'site.report.created.v1': ['PROJECT_MANAGER'],
   'procurement.invoice.received.v1': ['FINANCE'],
   // §19.4 routing — safety incident (Exec/PM/Site Engineer/Safety Officer) + AI risk (Exec/PM)
@@ -106,6 +133,9 @@ export class NotificationService {
       recipients = [{ user_id: event.actor_id, email: '' }];
     } else if (Array.isArray(routing)) {
       recipients = await this.repo.findUsersByRole(event.tenant_id, routing);
+    } else if ('rolesFromPayload' in routing) {
+      const roles = routing.rolesFromPayload(event.payload);
+      recipients = roles.length ? await this.repo.findUsersByRole(event.tenant_id, roles) : [];
     } else {
       // Payload-targeted: notify the specific user named in the payload (e.g. approver_id).
       const targetId = event.payload[routing.payloadUserId];

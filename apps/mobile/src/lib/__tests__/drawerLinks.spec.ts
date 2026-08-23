@@ -164,11 +164,14 @@ describe('the bar is four wide, and the fifth entry goes to the drawer', () => {
       visibleTabsFor(CosRole.SAFETY_OFFICER).find((tab) => tab.name === 'inspections')?.titleKey,
     ).toBe('nav.tabs.checklists');
     // Moving the row must not have disturbed the two roles that share the ones around it.
+    // EXECUTIVE's order changed on 2026-08-23, by product-owner decision, and this expectation moved
+    // with it: `reports` was relocated after `alerts` so the bar matches master:3462 — the only
+    // source that states an order for this role — which reads Home | Portfolio | Alerts | Reports.
     expect(visibleTabsFor(CosRole.EXECUTIVE).map((tab) => tab.name)).toEqual([
       'home',
-      'reports',
       'portfolio',
       'alerts',
+      'reports',
     ]);
   });
 

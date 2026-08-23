@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
-import { useApi } from './client';
+import { useApi, useOfflineApi } from './client';
 import type {
   BoqVersionRow,
   CreateProjectInput,
@@ -253,14 +253,17 @@ export function useVendorScore(vendorId: string) {
 }
 
 export function useCreatePurchaseRequest() {
-  const api = useApi();
+  const offlineApi = useOfflineApi();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: CreatePurchaseRequestInput) =>
-      api<PurchaseRequestRow>('/procurement/purchase-requests', {
-        method: 'POST',
-        body: JSON.stringify(input),
-      }),
+      offlineApi<PurchaseRequestRow>(
+        '/procurement/purchase-requests',
+        { method: 'POST', body: JSON.stringify(input) },
+        // Offline-capable since the 2026-08-19 amendment to spec 17 §17.4: a request is raised the
+        // moment someone notices the material has run out, which is on site, without signal.
+        { type: 'purchase-request', id: crypto.randomUUID() },
+      ),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['purchase-requests'] }),
   });
 }
@@ -368,14 +371,17 @@ export function usePurchaseOrder(poId: string) {
 
 /** Record/receive a delivery against a PO (§20.7.3 → POST /procurement/deliveries). */
 export function useRecordDelivery() {
-  const api = useApi();
+  const offlineApi = useOfflineApi();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: RecordDeliveryInput) =>
-      api<DeliveryRow>('/procurement/deliveries', {
-        method: 'POST',
-        body: JSON.stringify(input),
-      }),
+      offlineApi<DeliveryRow>(
+        '/procurement/deliveries',
+        { method: 'POST', body: JSON.stringify(input) },
+        // Also amended in 2026-08-19: a delivery is signed for at the gate. The server handler is
+        // idempotent on client_id, which is what makes a replayed receipt safe.
+        { type: 'delivery', id: crypto.randomUUID() },
+      ),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['deliveries'] }),
   });
 }
@@ -592,21 +598,29 @@ export function useUpdateTask() {
 }
 
 export function useCreateSiteReport() {
-  const api = useApi();
+  const offlineApi = useOfflineApi();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: CreateSiteReportInput) =>
-      api<SiteReportRow>('/site/reports', { method: 'POST', body: JSON.stringify(input) }),
+      offlineApi<SiteReportRow>(
+        '/site/reports',
+        { method: 'POST', body: JSON.stringify(input) },
+        { type: 'site_report', id: crypto.randomUUID() },
+      ),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['site', 'reports'] }),
   });
 }
 
 export function useCreateIssue() {
-  const api = useApi();
+  const offlineApi = useOfflineApi();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: CreateIssueInput) =>
-      api<IssueRow>('/site/issues', { method: 'POST', body: JSON.stringify(input) }),
+      offlineApi<IssueRow>(
+        '/site/issues',
+        { method: 'POST', body: JSON.stringify(input) },
+        { type: 'issue', id: crypto.randomUUID() },
+      ),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['site', 'issues'] }),
   });
 }
@@ -632,11 +646,17 @@ export function useIncidents(status?: string) {
 }
 
 export function useReportIncident() {
-  const api = useApi();
+  const offlineApi = useOfflineApi();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: CreateIncidentInput) =>
-      api<IncidentRow>('/safety/incidents', { method: 'POST', body: JSON.stringify(input) }),
+      offlineApi<IncidentRow>(
+        '/safety/incidents',
+        { method: 'POST', body: JSON.stringify(input) },
+        // First in the §17.6 flush order — a safety incident is the one record that must never wait
+        // on a signal.
+        { type: 'safety', id: crypto.randomUUID() },
+      ),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['safety', 'incidents'] }),
   });
 }

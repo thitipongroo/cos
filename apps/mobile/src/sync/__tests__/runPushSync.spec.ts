@@ -39,7 +39,7 @@ jest.mock('../../db/annotationRepo', () => ({
   getAnnotation: jest.fn(),
   markAnnotationSynced: (...a: unknown[]) => mockMarkSynced(...a),
 }));
-jest.mock('../../api/client', () => ({ apiClient: {} }));
+jest.mock('../../api/client', () => ({ apiClient: {}, post: jest.fn() }));
 jest.mock('../../store/authStore', () => ({
   useAuthStore: { getState: () => ({ accessToken: 'tok' }) },
 }));
@@ -241,5 +241,55 @@ describe('runPushSync', () => {
       await runPushSync();
       expect(mockProcessAll).toHaveBeenCalledTimes(1);
     });
+  });
+});
+
+describe('runPushSync — §17.2 exhaustion reporting', () => {
+  const getPost = (): jest.Mock =>
+    (jest.requireMock('../../api/client') as { post: jest.Mock }).post;
+
+  beforeEach(() => {
+    getPost().mockReset();
+    getPost().mockResolvedValue({ item_id: 'row-1' });
+  });
+
+  it('reports an exhausted item to the server', async () => {
+    // The callback had no implementation at all before 2026-08-23: SyncManager guarded every call
+    // with `if (this.callbacks.onExhausted)`, so a safety incident abandoned after five attempts
+    // told nobody — not the device, not the review queue, not the PM.
+    await runPushSync();
+    const onExhausted = capturedManagerCallbacks['onExhausted'] as (
+      a: string,
+      b: string,
+      c: string,
+    ) => Promise<void>;
+    expect(onExhausted).toBeDefined();
+
+    await onExhausted('safety', 'entity-1', 'CREATE');
+
+    expect(getPost()).toHaveBeenCalledWith(
+      '/sync/exhausted',
+      expect.objectContaining({
+        entity_type: 'safety',
+        entity_id: 'entity-1',
+        operation: 'CREATE',
+        client_id: 'entity-1',
+      }),
+    );
+  });
+
+  it('swallows a failed report rather than aborting the queue drain', async () => {
+    // The device is offline — which is WHY the item exhausted. Throwing here would abandon the rest
+    // of the queue over a notification, and the row is preserved either way, so the next cycle
+    // reports it again.
+    getPost().mockRejectedValue(new Error('offline'));
+    await runPushSync();
+    const onExhausted = capturedManagerCallbacks['onExhausted'] as (
+      a: string,
+      b: string,
+      c: string,
+    ) => Promise<void>;
+
+    await expect(onExhausted('safety', 'entity-1', 'CREATE')).resolves.toBeUndefined();
   });
 });

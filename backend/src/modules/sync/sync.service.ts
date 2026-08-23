@@ -16,6 +16,7 @@
 // NOTE: syncSiteReports returns conflict_status without server_payload, so site_report responses
 // omit server_payload (the server row is preserved in the site-ops conflict-record).
 
+import { randomUUID } from 'node:crypto';
 import { Injectable, Scope, BadRequestException } from '@nestjs/common';
 import { TenantPrismaService } from '../tenant/prisma/tenant-prisma.service';
 import { SiteOpsService } from '../site-ops/site-ops.service';
@@ -23,6 +24,7 @@ import { SafetyService } from '../safety/safety.service';
 import { WorkforceService } from '../workforce/workforce.service';
 import { AnnotationService } from '../files/annotation.service';
 import { ProcurementService } from '../procurement/procurement.service';
+import { EventOutboxService } from '../../shared/events/event-outbox.service';
 import type { CreateIssueDto } from '../site-ops/dto/create-issue.dto';
 import type { CreateMaterialConsumptionDto } from '../site-ops/dto/create-material-consumption.dto';
 import type { SubmitInspectionDto } from '../site-ops/dto/submit-inspection.dto';
@@ -31,7 +33,13 @@ import type { RecordAttendanceDto } from '../workforce/dto/attendance.dto';
 import type { RecordDeliveryDto } from '../procurement/dto/record-delivery.dto';
 import type { CreatePurchaseRequestDto } from '../procurement/dto/create-purchase-request.dto';
 import type { CreateIncidentDto } from '../safety/dto/safety.dto';
-import { PushItemDto, PushResponse, DeltaResponse, ServerSyncStatus } from './dto/sync.dto';
+import {
+  PushItemDto,
+  ReportExhaustedDto,
+  PushResponse,
+  DeltaResponse,
+  ServerSyncStatus,
+} from './dto/sync.dto';
 import { tombstoneRetentionCutoff, tombstoneRetentionDays } from './tombstone-retention';
 import { clsSyncAllowedEntityTypes } from '../../shared/context/cls-context';
 
@@ -72,6 +80,8 @@ export class SyncService {
     private readonly workforce: WorkforceService,
     private readonly annotations: AnnotationService,
     private readonly procurement: ProcurementService,
+    // EventsModule is @Global, so no import is needed in SyncModule to inject this.
+    private readonly outbox: EventOutboxService,
   ) {}
 
   /**
@@ -160,8 +170,16 @@ export class SyncService {
         ? []
         : await this.db.run((tx) =>
             tx.$queryRawUnsafe<{ entity_id: string; deleted_at: unknown }[]>(
+              // The tenant predicate is defense-in-depth, exactly as on the write path below and in
+              // pushTask above: RLS is FORCEd on platform.sync_tombstones and db.run connects as
+              // app_user, so another tenant's rows already match nothing. This read was the one
+              // query in the module carrying neither the predicate nor a note saying why — and a
+              // read that reads differently from its neighbours is the one a future reader trusts
+              // least. NULLIF mirrors the policy: an unset GUC becomes NULL, matching no row rather
+              // than every row.
               `SELECT entity_id, deleted_at FROM platform.sync_tombstones
-               WHERE entity_type = ANY($1::text[]) AND deleted_at > $2::timestamptz
+               WHERE tenant_id = NULLIF(current_setting('app.current_tenant_id', TRUE), '')::uuid
+                 AND entity_type = ANY($1::text[]) AND deleted_at > $2::timestamptz
                ORDER BY deleted_at ASC
                LIMIT $3`,
               types,
@@ -307,6 +325,66 @@ export class SyncService {
       ),
     );
     return { status: 'ACCEPTED', server_payload: rows[0] ?? null };
+  }
+
+  /**
+   * A device has stopped retrying a queued mutation (spec §17.2).
+   *
+   * Two things have to happen and neither is optional: the captured work lands on the tenant-admin
+   * review queue, and an event goes out so the people §17.2 names are told. Before this existed the
+   * device simply gave up after five attempts and nobody learned that an incident recorded on site
+   * had never arrived.
+   *
+   * Idempotent on (tenant_id, client_id): a device that reports the same lost record on two cycles
+   * must not fill the queue with duplicates of one failure. `ON CONFLICT DO NOTHING` returns no row
+   * on the repeat, and no second event is emitted.
+   *
+   * The tenant comes from the GUC inside the INSERT and is RETURNED, rather than read separately in
+   * TypeScript — one source of truth for which tenant this row belongs to, and the one RLS already
+   * enforces the row against.
+   */
+  async reportExhausted(dto: ReportExhaustedDto): Promise<{ item_id: string | null }> {
+    const rows = await this.db.run((tx) =>
+      tx.$queryRawUnsafe<Array<{ item_id: string; tenant_id: string }>>(
+        `INSERT INTO platform.sync_exhausted_items
+           (tenant_id, entity_type, entity_id, operation, client_id, payload, retry_count, reported_by)
+         VALUES (NULLIF(current_setting('app.current_tenant_id', TRUE), '')::uuid,
+                 $1, $2::uuid, $3, $4, $5::jsonb, $6,
+                 NULLIF(current_setting('app.current_user_id', TRUE), '')::uuid)
+         ON CONFLICT (tenant_id, client_id) DO NOTHING
+         RETURNING item_id, tenant_id`,
+        dto.entity_type,
+        dto.entity_id,
+        dto.operation,
+        dto.client_id,
+        JSON.stringify(dto.payload ?? {}),
+        dto.retry_count ?? 0,
+      ),
+    );
+
+    const row = rows[0];
+    // Already reported. Answer the device the same way either time so it can stop resending.
+    if (!row) return { item_id: null };
+
+    await this.outbox.publish({
+      event_type: 'platform.sync.exhausted.v1',
+      event_version: '1.0',
+      tenant_id: row.tenant_id,
+      actor_id: dto.entity_id,
+      occurred_at: new Date().toISOString(),
+      correlation_id: randomUUID(),
+      payload: {
+        item_id: row.item_id,
+        entity_type: dto.entity_type,
+        entity_id: dto.entity_id,
+        operation: dto.operation,
+        client_id: dto.client_id,
+        retry_count: dto.retry_count ?? 0,
+        reported_by: null,
+      },
+    });
+
+    return { item_id: row.item_id };
   }
 
   /** Record a deletion so /sync/delta can report it (mixed i+iii). Wire from entity delete paths. */

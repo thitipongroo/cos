@@ -18,6 +18,7 @@ function harness() {
   const annotations = { applyPush: jest.fn() };
   // Delivery + purchase-request push handlers (§17.4 amendment 2026-08-19).
   const procurement = { recordDelivery: jest.fn(), createPurchaseRequest: jest.fn() };
+  const outbox = { publish: jest.fn().mockResolvedValue('evt-1') };
   const svc = new SyncService(
     db as never,
     siteOps as never,
@@ -25,8 +26,10 @@ function harness() {
     workforce as never,
     annotations as never,
     procurement as never,
+    // §17.2 exhaustion reports publish through the outbox; every other path here ignores it.
+    outbox as never,
   );
-  return { svc, tx, db, siteOps, safety, workforce, annotations, procurement };
+  return { svc, tx, db, siteOps, safety, workforce, annotations, procurement, outbox };
 }
 
 const push = (over: Partial<PushItemDto>): PushItemDto => ({

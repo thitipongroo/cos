@@ -3454,7 +3454,15 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
                   gives the role RW on "Purchase requests", and a shortage is noticed on site.
 
     PROJECT_MANAGER:
-      Bottom nav: Home | Projects | Procurement | Dashboard | Profile
+      Bottom nav: Home | Procurement | Finance | More  (corrected 2026-08-23; this line read
+                  "Home | Projects | Procurement | Dashboard | Profile")
+                  The corrected mockup set of 2026-08-10 settles it — mockup/mobile/06_project_manager
+                  carries exactly 01_home, 02_procurement, 03_finance, 04_more_option, and the bar
+                  follows those four. `dashboard` is a tab for NO role now: its content IS the Home
+                  screen for this role (01_home draws the dashboard as the first tab), so a second tab
+                  would show the same page twice; it stays mountable and pushable. `projects` moved
+                  into More. Profile had already left every role's bar on 2026-08-09, when the
+                  navigation drawer became the profile — see the SITE_ENGINEER note above.
       Workflows:  project status, procurement status, budget variance (read),
                   site report summary, issue triage
 
@@ -3613,9 +3621,13 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
 
   Generate (Web App — apps/web/):
     - Serwist configuration (@serwist/turbopack: withSerwist + createSerwistRoute) with runtime caching strategies
-      createSerwistRoute MUST pass `useNativeEsbuild: false` — it defaults to `platform === 'win32'`, which
-      imports the native `esbuild` (not a dependency; only `esbuild-wasm` is) and breaks `next build` on
-      Windows while Linux CI stays green. Authoritative: spec §32.7 → Web Implementation build constraints.
+      createSerwistRoute LEAVES `useNativeEsbuild` at its `platform === 'win32'` default — corrected
+      2026-08-23; this line used to read "MUST pass `useNativeEsbuild: false`" on the premise that `esbuild`
+      was not a dependency. It is one now: a devDependency of apps/web pinned to the same version as
+      `esbuild-wasm`, with `allowBuilds.esbuild: true` in pnpm-workspace.yaml. Forcing the option to false
+      does not work anyway — `esbuild-wasm` rejects a Windows absolute working directory and that directory
+      cannot be overridden through @serwist/turbopack's option allowlist. Authoritative: spec §32.7 → Web
+      Implementation build constraints, which carries the full account.
     - IndexedDB schema using idb library (typed, versioned)
     - PWA sync service using Background Sync API + IndexedDB queue
     - Service worker registration via SerwistProvider in the Next.js App Router root layout (app/layout.tsx)

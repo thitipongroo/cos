@@ -12,7 +12,8 @@ const logger = createLogger('notification-consumer');
 
 // Canonical event types (CloudEvents `type`) this service consumes. Subscribed per-tenant
 // via RegExp under the `notification.shared` group; tenant_id header validated by KafkaConsumer.
-const SUBSCRIBED_EVENT_TYPES = [
+/** Exported so tests assert against the real subscription list rather than a hand-counted total. */
+export const SUBSCRIBED_EVENT_TYPES = [
   'site.inspection.failed.v1',
   'site.issue.created.v1',
   'site.issue.escalated.v1',
@@ -20,6 +21,7 @@ const SUBSCRIBED_EVENT_TYPES = [
   'procurement.po.status_changed.v1',
   'procurement.po.approval_requested.v1',
   'finance.variance.alert.v1',
+  'platform.sync.exhausted.v1',
   'site.report.created.v1',
   'procurement.invoice.received.v1',
   'file.document.quarantined.v1',
