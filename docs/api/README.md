@@ -62,8 +62,14 @@ prefix, not this field.
 
 ## When you change an API
 
-1. Update the service's `.openapi.yaml` in the same PR as the code — CI fails if the spec is stale
-   (`scripts/readiness/check-openapi-freshness.sh`).
+1. Update the service's `.openapi.yaml` in the same PR as the code. **Nothing enforces this today**
+   — `scripts/readiness/check-openapi-freshness.sh` exists and compares the spec's last commit
+   against its module's, but it runs in no workflow, and this line claimed CI failed on a stale spec
+   until 2026-08-23. Run today it reports **12 of 12 documents stale**, and a route-level comparison
+   finds **62 of 276 controller routes documented in no file at all** — `/sync/*` entirely,
+   `/geo/reverse`, most of `/materials`, and seven of the contract endpoints among them. Wiring the
+   script in would block every merge until those are written, which is why it is a decision and not
+   a fix.
 2. New error code → add it to [error-codes.md](error-codes.md).
 3. Breaking change → new version, plus a `BREAKING CHANGE:` entry in the root `CHANGELOG.md`.
 4. Sunsetting a version → record the date in [deprecation-schedule.md](deprecation-schedule.md).

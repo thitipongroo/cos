@@ -23,7 +23,12 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
-python3 - "$ROOT" <<'PY'
+# PYTHONIOENCODING: the report ends in a ✓, and Python defaults stdout to the console codepage —
+# cp1252 on a Windows shell, where that character raises UnicodeEncodeError AFTER all 21 pairs have
+# been checked. The gate died on its own PASS line, which reads as a failing contract check to
+# anyone running it locally. Same fix, same reason, as scripts/a11y/check-rn-a11y.sh; CI is UTF-8
+# either way and never saw it.
+PYTHONIOENCODING=utf-8 python3 - "$ROOT" <<'PY'
 import pathlib
 import re
 import sys
