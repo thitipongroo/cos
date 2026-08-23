@@ -42,7 +42,7 @@ const EXECUTIVE_ROWS = [
     totalActual: '85000',
     totalBudget: '200000',
     utilizationPct: 42.5,
-    atRisk: false,
+    atRisk: 0 as const,
     overdueInvoiceCount: 0,
   },
 ];

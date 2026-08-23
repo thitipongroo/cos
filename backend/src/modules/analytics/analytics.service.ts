@@ -21,7 +21,11 @@ export interface ExecutiveDashboardRow {
   totalActual: string;
   totalBudget: string;
   utilizationPct: number;
-  atRisk: boolean;
+  // §35.13 ESC-34: 0 | 1, not boolean. This comes from a ClickHouse `if(...)`, which returns
+  // UInt8 — the value on the wire is 0 or 1 and never false or true. Declaring it `boolean` was
+  // a lie the compiler could not catch, and it hid a rendering bug in the web portfolio table
+  // (ESC-36). Every client interface below mirrors this type deliberately.
+  atRisk: 0 | 1;
   overdueInvoiceCount: number;
 }
 

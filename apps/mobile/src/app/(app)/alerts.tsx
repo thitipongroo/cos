@@ -13,7 +13,8 @@ interface ExecutiveDashboardRow {
   totalActual: string;
   totalBudget: string;
   utilizationPct: number;
-  atRisk: boolean;
+  /** 0 | 1, not boolean — ClickHouse `if()` returns UInt8. See §35.13 ESC-34. */
+  atRisk: 0 | 1;
   overdueInvoiceCount: number;
 }
 
@@ -54,7 +55,10 @@ export default function AlertsScreen() {
         keyExtractor={(r, i) => r.projectId || String(i)}
         ListEmptyComponent={<Text style={styles.empty}>{t('exec.alerts.empty')}</Text>}
         renderItem={({ item }) => (
-          <View testID="alert-item" style={[styles.card, item.atRisk && styles.cardRisk]}>
+          <View
+            testID="alert-item"
+            style={[styles.card, item.atRisk === 1 ? styles.cardRisk : null]}
+          >
             <View style={styles.row}>
               <Text style={styles.project}>{item.projectId.slice(0, 8)}</Text>
               <Text

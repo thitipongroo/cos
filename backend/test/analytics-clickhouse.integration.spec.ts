@@ -209,11 +209,10 @@ describe('Analytics query layer (Testcontainers — ClickHouse)', () => {
         '2026-06-01,2026-06-30',
         60,
       );
-      // ESC-34: atRisk is declared `boolean` but ClickHouse's if() is UInt8, so the wire value is
-      // 0/1. Every consumer today uses truthiness (apps/web alerts page filters on it), so the
-      // behaviour is right and only the type annotation overstates — asserted as truthiness here
-      // rather than silently changing the response shape.
-      expect(Boolean(lenient[0]!.atRisk)).toBe(false);
+      // ESC-34, resolved: atRisk is UInt8 on the wire, and the declared type now says so. Asserted
+      // as the exact 0/1 it is — a Boolean() coercion here would pass even if the value silently
+      // became a string, which is the failure this case exists to catch.
+      expect(lenient[0]!.atRisk).toBe(0);
 
       const strict = await service.getExecutiveDashboard(
         TENANT_A,
@@ -221,7 +220,7 @@ describe('Analytics query layer (Testcontainers — ClickHouse)', () => {
         '2026-06-01,2026-06-30',
         10,
       );
-      expect(Boolean(strict[0]!.atRisk)).toBe(true);
+      expect(strict[0]!.atRisk).toBe(1);
     });
 
     it('never returns another tenant’s figures', async () => {
@@ -270,7 +269,7 @@ describe('Analytics query layer (Testcontainers — ClickHouse)', () => {
         '2026-06-01,2026-06-30',
       );
       expect(rows[0]!.utilizationPct).toBe(0);
-      expect(Boolean(rows[0]!.atRisk)).toBe(false);
+      expect(rows[0]!.atRisk).toBe(0);
     });
   });
 

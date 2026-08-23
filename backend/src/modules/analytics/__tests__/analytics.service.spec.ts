@@ -243,7 +243,7 @@ describe('AnalyticsService — getSiteTrend success path', () => {
 // ── Executive dashboard — cache hit ──────────────────────────────────────────
 describe('AnalyticsService — getExecutiveDashboard cache hit', () => {
   it('returns cached value without querying ClickHouse', async () => {
-    const cached = [{ projectId: 'p1', atRisk: false }];
+    const cached = [{ projectId: 'p1', atRisk: 0 }];
     const cache = makeCacheManager(cached);
     const ch = makeClickHouseClient();
     const svc = await buildService(ch, cache);

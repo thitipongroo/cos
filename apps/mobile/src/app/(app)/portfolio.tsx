@@ -19,7 +19,8 @@ interface ExecRow {
   totalActual: string;
   totalCommitted: string;
   utilizationPct: number;
-  atRisk: boolean;
+  /** 0 | 1, not boolean — ClickHouse `if()` returns UInt8. See §35.13 ESC-34. */
+  atRisk: 0 | 1;
   overdueInvoiceCount: number;
 }
 
