@@ -255,9 +255,12 @@ Surfaced by wiring `cos-pgbouncer` into ArgoCD. Resolved with `auth_query` throu
 DEFINER function — no auth file to mount, and adding an application role needs no config change.
 `pgbouncer_auth` can execute that one function and read nothing else, verified on a live database.
 The `pgbouncer-secrets` Secret and the role's password remain ops.
-None new. Two items carried from elsewhere land here operationally:
 
-- [OQ-32](README.md#open-questions-register) — five Temporal workers have no Helm chart, no Compose
-  service and no row in §32.2's deployable table. This is the phase where that would be fixed.
+No NEW open questions. One item carried from elsewhere lands here operationally:
+
 - The unverified `cos-file-service` / `cos-web` probes are a **known** gap the POC recorded, not an
   open question — the answer is a real deploy, not a decision.
+
+[OQ-32](README.md#open-questions-register) — the five Temporal workers that had no Helm chart, no
+Compose service and no row in §32.2 — was fixed in this phase on 2026-08-22: two Deployments now
+run all five queues, wired into ArgoCD, Compose and the deployable table.

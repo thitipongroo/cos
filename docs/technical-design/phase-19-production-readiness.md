@@ -138,16 +138,24 @@ The runbook set is the failure-mode documentation for the whole platform, not ju
 `kafka-partition-rebalance.md`, `keycloak-realm-recovery.md`, `postmortem-template.md`,
 `on-call-rotation.md`.
 
-**One checklist item cannot pass today**, and it is worth stating here because Section A is where it
-would be caught:
+**One checklist item is worth tracing end to end**, because it shows both what this gate catches and
+what it cannot:
 
 > `[AUTO] Temporal worker has at least 2 replicas in production`
 > `→ kubectl get deployment temporal-worker -o jsonpath='{.spec.replicas}'`
 
-`scripts/readiness/verify-production-readiness.sh:101` implements exactly that query. There is no
-`temporal-worker` Deployment — see [OQ-32](README.md#open-questions-register). The readiness gate is
-therefore already designed to catch the platform's largest wiring gap; it has simply never been run
-against a cluster where it could.
+The checklist names the Deployment `temporal-worker`, and no release of this repository ever
+produces that name: Helm derives it from the release and chart, so ArgoCD deploys
+`cos-temporal-worker-cos-temporal-worker`. A check written the way the checklist reads would have
+returned 0 replicas forever — indistinguishable from the real absence it exists to catch, and
+FAILING SILENTLY IN THE SAFE DIRECTION is the worse half: the gate would have reported a genuine
+problem for the wrong reason and been "fixed" by someone renaming a Deployment.
+`scripts/readiness/verify-production-readiness.sh` therefore selects by
+`app.kubernetes.io/name=cos-temporal-worker` instead.
+
+The Deployment itself now exists — [OQ-32](README.md#open-questions-register), closed 2026-08-22,
+put all five queues behind two Deployments. What remains is that this script **has never been run
+against a cluster where it could report anything**, so every AUTO item in Section A is unexercised.
 
 ---
 

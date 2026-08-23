@@ -7,9 +7,9 @@ last_updated: 2026-08-07
 
 Step-by-step operational procedures. On-call starts here.
 
-> **Five of these are still marked `**STUB** — detailed procedures to be defined before Stage 1→2
+> **Six of these are still marked `**STUB** — detailed procedures to be defined before Stage 1→2
 transition`**: `deployment.md`, `rollback.md`, `incident-response.md`, `db-failover.md`,
-> `keycloak-realm-recovery.md`, plus `disaster-recovery/README.md`. They are flagged in the tables
+> `keycloak-realm-recovery.md` and `disaster-recovery/README.md`. They are flagged in the tables
 > below. Do not page someone into a stub expecting a procedure. QM-11 requires every runbook to be
 > **executed end-to-end in staging within 30 days before its Stage transition** — a stub cannot pass
 > that gate.
@@ -37,15 +37,15 @@ in QM-17, not repeated here.
 
 ## Infrastructure recovery
 
-| Runbook                                                      | Covers                                                 | State |
-| ------------------------------------------------------------ | ------------------------------------------------------ | ----- |
-| [db-failover.md](db-failover.md)                             | DB Failover Runbook (PostgreSQL RDS Multi-AZ)          | STUB  |
-| [kafka-partition-rebalance.md](kafka-partition-rebalance.md) | Kafka Consumer Lag and Partition Rebalance Runbook     | —     |
-| [temporal-worker-restart.md](temporal-worker-restart.md)     | Temporal Worker Restart and Stuck Workflow Recovery    | —     |
+| Runbook                                                      | Covers                                                    | State |
+| ------------------------------------------------------------ | --------------------------------------------------------- | ----- |
+| [db-failover.md](db-failover.md)                             | DB Failover Runbook (PostgreSQL RDS Multi-AZ)             | STUB  |
+| [kafka-partition-rebalance.md](kafka-partition-rebalance.md) | Kafka Consumer Lag and Partition Rebalance Runbook        | —     |
+| [temporal-worker-restart.md](temporal-worker-restart.md)     | Temporal Worker Restart and Stuck Workflow Recovery       | —     |
 | [finance-ledger-drift.md](finance-ledger-drift.md)           | Finance Ledger Drift — cost ledger vs procurement (OQ-31) | —     |
-| [keycloak-realm-backup.md](keycloak-realm-backup.md)         | Keycloak Realm Daily Backup Runbook                    | —     |
-| [keycloak-realm-recovery.md](keycloak-realm-recovery.md)     | Keycloak Realm Recovery Runbook                        | STUB  |
-| [dedicated-db-provisioning.md](dedicated-db-provisioning.md) | Dedicated DB Provisioning Runbook (ENTERPRISE tenants) | —     |
+| [keycloak-realm-backup.md](keycloak-realm-backup.md)         | Keycloak Realm Daily Backup Runbook                       | —     |
+| [keycloak-realm-recovery.md](keycloak-realm-recovery.md)     | Keycloak Realm Recovery Runbook                           | STUB  |
+| [dedicated-db-provisioning.md](dedicated-db-provisioning.md) | Dedicated DB Provisioning Runbook (ENTERPRISE tenants)    | —     |
 
 ## Disaster recovery — [`disaster-recovery/`](disaster-recovery/)
 
@@ -66,10 +66,10 @@ a **DR drill before every Stage transition**, recorded in the drill log above.
 
 ## Security and compliance
 
-| Runbook                                          | Covers                                                   | State |
-| ------------------------------------------------ | -------------------------------------------------------- | ----- |
+| Runbook                                          | Covers                                                                                                                    | State |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- | ----- |
 | [mfa-enforcement.md](mfa-enforcement.md)         | MFA Enforcement for TENANT_ADMIN / FINANCE (spec §5.4.1) — Step 2 is scripted: `scripts/ops/verify-keycloak-mfa-live.mjs` | —     |
-| [mobile-cert-pinning.md](mobile-cert-pinning.md) | Mobile Certificate Pinning (security review L18)         | —     |
+| [mobile-cert-pinning.md](mobile-cert-pinning.md) | Mobile Certificate Pinning (security review L18)                                                                          | —     |
 
 ## Testing
 
