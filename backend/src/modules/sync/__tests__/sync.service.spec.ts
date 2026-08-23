@@ -65,6 +65,24 @@ describe('SyncService', () => {
       );
     });
 
+    // The bump is what makes a pushed progress value reach OTHER devices. Without it the row is
+    // updated on the server and /sync/delta — which pages `task` on modified_at — never mentions it
+    // again, so every other handset keeps the number it already had.
+    it('bumps modified_at so the change reaches every other device', async () => {
+      const { svc, tx } = harness();
+      tx.$queryRawUnsafe.mockResolvedValue([{ task_id: 't1', progress_percent: 70 }]);
+
+      await svc.push(
+        push({ entity_type: 'task', entity_id: 't1', payload: { progress_percent: 40 } }),
+      );
+
+      const sql = String(tx.$queryRawUnsafe.mock.calls[0]![0]).replace(/\s+/g, ' ');
+      expect(sql).toContain('modified_at = now()');
+      // Unconditionally, not inside the GREATEST: the row was written either way, and a device that
+      // pushed a lower number is exactly the one that needs the higher one back.
+      expect(sql).not.toMatch(/GREATEST\([^)]*modified_at/);
+    });
+
     it('clamps out-of-range and defaults non-numeric progress', async () => {
       const { svc, tx } = harness();
       tx.$queryRawUnsafe.mockResolvedValue([]);
@@ -332,7 +350,7 @@ describe('SyncService', () => {
       const lastSeen = new Date('2026-02-01T00:00:00.000Z');
       const page = Array.from({ length: 500 }, (_, i) => ({
         task_id: `t${i}`,
-        created_at: i === 499 ? lastSeen : new Date('2026-01-15T00:00:00.000Z'),
+        modified_at: i === 499 ? lastSeen : new Date('2026-01-15T00:00:00.000Z'),
       }));
       tx.$queryRawUnsafe.mockResolvedValueOnce(page).mockResolvedValueOnce([]);
 
@@ -351,7 +369,7 @@ describe('SyncService', () => {
       const { svc, tx } = harness();
       const page = Array.from({ length: 500 }, (_, i) => ({
         task_id: `t${i}`,
-        created_at: i === 499 ? '2026-02-01T00:00:00.000Z' : '2026-01-15T00:00:00.000Z',
+        modified_at: i === 499 ? '2026-02-01T00:00:00.000Z' : '2026-01-15T00:00:00.000Z',
       }));
       tx.$queryRawUnsafe.mockResolvedValueOnce(page).mockResolvedValueOnce([]);
 
@@ -364,7 +382,7 @@ describe('SyncService', () => {
       const { svc, tx } = harness();
       const page = Array.from({ length: 500 }, (_, i) => ({
         task_id: `t${i}`,
-        created_at: 'not-a-date',
+        modified_at: 'not-a-date',
       }));
       tx.$queryRawUnsafe.mockResolvedValueOnce(page).mockResolvedValueOnce([]);
 
@@ -376,7 +394,7 @@ describe('SyncService', () => {
 
     it('ignores a delta column that is neither Date nor string', async () => {
       const { svc, tx } = harness();
-      const page = Array.from({ length: 500 }, (_, i) => ({ task_id: `t${i}`, created_at: null }));
+      const page = Array.from({ length: 500 }, (_, i) => ({ task_id: `t${i}`, modified_at: null }));
       tx.$queryRawUnsafe.mockResolvedValueOnce(page).mockResolvedValueOnce([]);
       expect((await svc.delta('2026-01-01T00:00:00Z', ['task'])).has_more).toBe(false);
     });
@@ -445,7 +463,7 @@ describe('SyncService', () => {
     it('reports has_more false and a fresh timestamp when everything fit', async () => {
       const { svc, tx } = harness();
       tx.$queryRawUnsafe
-        .mockResolvedValueOnce([{ task_id: 't1', created_at: new Date('2026-01-02T00:00:00Z') }])
+        .mockResolvedValueOnce([{ task_id: 't1', modified_at: new Date('2026-01-02T00:00:00Z') }])
         .mockResolvedValueOnce([]);
 
       const before = Date.now();

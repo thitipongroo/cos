@@ -96,11 +96,19 @@ export const EXHAUSTION_ALERT_ROLES: Record<string, string[]> = {
 };
 
 const ENTITY_REGISTRY: Record<string, EntityRegistryEntry> = {
-  task: { table: 'projects.tasks', deltaColumn: 'created_at' }, // no updated_at → delta = new tasks only (TODO: modified_at)
+  // `task` and `safety` paged on created_at until 2026-08-23, which made `updated[]` a list that
+  // could only ever contain insertions: an edited task and an acknowledged incident were invisible
+  // to every device. Both tables now carry modified_at (migration 20260823000002).
+  //
+  // `attendance` and `material` stay on their insertion timestamps because they have no UPDATE path
+  // anywhere in the source — §17.5 calls material append-only and attendance server-wins-on-check-in
+  // — so for them the insertion time IS the modification time. Adding a modified_at they would never
+  // move would be ceremony that reads like a guarantee.
+  task: { table: 'projects.tasks', deltaColumn: 'modified_at' },
   site_report: { table: 'site_ops.site_reports', deltaColumn: 'modified_at' },
   issue: { table: 'site_ops.issues', deltaColumn: 'modified_at' },
   attendance: { table: 'workforce_telemetry.attendance_logs', deltaColumn: 'recorded_at' },
-  safety: { table: 'site_ops.incidents', deltaColumn: 'created_at' },
+  safety: { table: 'site_ops.incidents', deltaColumn: 'modified_at' },
   material: { table: 'site_ops.material_consumptions', deltaColumn: 'created_at' },
 };
 
@@ -343,7 +351,13 @@ export class SyncService {
         // tasks.repository.ts), and a write path that reads differently from its neighbours is the
         // one a future reader trusts least. NULLIF mirrors the RLS policy: an unset GUC becomes NULL,
         // which matches no row rather than every row.
-        `UPDATE projects.tasks SET progress_percent = GREATEST(progress_percent, $1)
+        // modified_at is bumped unconditionally, even when GREATEST keeps the server's value:
+        // the row was written, and a device that pushed a lower number still needs the higher one
+        // back. Bumping it also re-delivers the row to the pushing device, which is harmless — the
+        // client upserts by id.
+        `UPDATE projects.tasks
+            SET progress_percent = GREATEST(progress_percent, $1),
+                modified_at = now()
          WHERE task_id = $2::uuid
            AND tenant_id = NULLIF(current_setting('app.current_tenant_id', TRUE), '')::uuid
          RETURNING *`,

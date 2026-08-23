@@ -171,6 +171,15 @@ jobs:
       - name: Isolation probe ConfigMap matches its script
         run: node ./scripts/ci/check-isolation-probe-configmap.mjs
 
+      # A row that changes without its modified_at moving is invisible to /sync/delta forever: the
+      # pull pages on that column, so the API returns 200, the database is correct, and no handset
+      # ever hears about it. projects.tasks and site_ops.incidents had no such column at all until
+      # 2026-08-23, which is why an edited task and an acknowledged safety incident never left the
+      # server. The product owner kept the column in application code rather than adding this
+      # schema'''s first trigger — on the condition that CI enforces it. This is that condition.
+      - name: Every UPDATE sets modified_at (sync delta correctness)
+        run: node ./scripts/ci/check-modified-at-writes.mjs
+
   # ─── MLOps tests (Python / Airflow 3.x DAGs) ────────────────────────────────
   mlops-tests:
     name: MLOps Tests (Python)

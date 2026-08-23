@@ -265,6 +265,24 @@ server-side changes down to the device:
   to the response's `server_timestamp`.
 - **Trigger:** invoked from `(app)/_layout` on entering the authenticated app (best-effort; offline is ignored, local
   cache is kept). The previously-unused `DeltaSyncClient` class is superseded by this caller.
+- **What each type is paged on** (`ENTITY_REGISTRY`, `sync.service.ts`). `task` and `safety` moved
+  from `created_at` to `modified_at` on 2026-08-23: neither table had a modification column, so
+  `updated[]` could only ever carry insertions. An edited task and an **acknowledged safety
+  incident** never left the server — the officer's acknowledgement was recorded and every other
+  handset kept showing the incident as OPEN. `attendance` and `material` stay on their insertion
+  timestamps deliberately: they have no UPDATE path anywhere in the source (§17.5 calls material
+  append-only), so for them the insertion time IS the modification time, and adding a column that
+  would never move would read as a guarantee nobody keeps.
+
+  | Type          | Table                                 | Delta column  |
+  | ------------- | ------------------------------------- | ------------- |
+  | `task`        | `projects.tasks`                      | `modified_at` |
+  | `site_report` | `site_ops.site_reports`               | `modified_at` |
+  | `issue`       | `site_ops.issues`                     | `modified_at` |
+  | `safety`      | `site_ops.incidents`                  | `modified_at` |
+  | `attendance`  | `workforce_telemetry.attendance_logs` | `recorded_at` |
+  | `material`    | `site_ops.material_consumptions`      | `created_at`  |
+
 - **Entity types applied → local tables** (all six the server's delta registry emits):
 
   | Server entity type | Local table                   | Schema |

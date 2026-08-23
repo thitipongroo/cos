@@ -162,7 +162,10 @@ export class SafetyRepository {
         UPDATE site_ops.incidents SET
           status = 'IN_PROGRESS',
           acknowledged_by = ${acknowledgedBy}::uuid,
-          acknowledged_at = now()
+          acknowledged_at = now(),
+          -- /sync/delta pages safety on this column. Without it the acknowledgement stays on the
+          -- server and every other handset keeps showing the incident as OPEN.
+          modified_at = now()
         WHERE incident_id = ${incidentId}::uuid AND tenant_id = ${this.tenantId}::uuid
         RETURNING *
       `,

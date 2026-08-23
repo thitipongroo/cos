@@ -2765,6 +2765,12 @@ Offline Conflict Resolution Strategy (authoritative):
     Rationale: progress_percent must never decrease; a worker cannot un-complete work
     Implementation: compare client progress_percent vs server progress_percent; apply max(client, server)
     Conflict flag: none — Max-wins resolves silently (no human review required)
+    The resolving UPDATE must also stamp projects.tasks.modified_at: /sync/delta pages `task`
+    on that column, so a write that leaves it alone resolves the conflict on the server and
+    tells no other device. Same for site_ops.incidents on acknowledge. Both columns were
+    ADDED 2026-08-23 — until then the delta paged on created_at and could only ever report
+    NEW rows, which is why an acknowledged safety incident kept reading OPEN everywhere.
+    Enforced by scripts/ci/check-modified-at-writes.mjs, not by a trigger (PO decision).
 
   Financial entities — ONLINE-REQUIRED, not offline-writable (spec §17.4):
     Entities: POs, vendor invoices / AR / AP, payments, budget-line mutations.

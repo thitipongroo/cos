@@ -98,6 +98,18 @@ describe('SafetyRepository', () => {
     expect((await repo.acknowledgeIncident('inc-1', 'u1')).status).toBe('IN_PROGRESS');
   });
 
+  // The sharpest case of the same defect: an incident acknowledged by a safety officer kept showing
+  // as OPEN on every other handset, because /sync/delta pages `safety` on modified_at and this
+  // UPDATE did not move it — the column did not exist until 2026-08-23.
+  it('acknowledgeIncident stamps modified_at so other handsets stop showing OPEN', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([{ ...incidentRow, status: 'IN_PROGRESS' }]);
+
+    await repo.acknowledgeIncident('inc-1', 'u1');
+
+    const sql = (mockPrisma.$queryRaw.mock.calls[0]![0] as unknown as string[]).join('?');
+    expect(sql.replace(/\s+/g, ' ')).toContain('modified_at = now()');
+  });
+
   it('createPermit with and without optionals', async () => {
     mockPrisma.$queryRaw.mockResolvedValue([permitRow]);
     expect(

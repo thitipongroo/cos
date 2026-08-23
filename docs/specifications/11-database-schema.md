@@ -122,22 +122,22 @@ See `07-multi-tenant-architecture §7.1` and `docs/runbooks/dedicated-db-provisi
 
 ### platform.users
 
-| Column             | Type         | Constraints                  | Notes                                                                                       |
-| ------------------ | ------------ | ---------------------------- | ------------------------------------------------------------------------------------------- |
-| `user_id`          | UUID         | PK DEFAULT gen_random_uuid() |                                                                                             |
-| `tenant_id`        | UUID         | FK → tenants NOT NULL        |                                                                                             |
+| Column             | Type         | Constraints                  | Notes                                                                                                                                                                                       |
+| ------------------ | ------------ | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `user_id`          | UUID         | PK DEFAULT gen_random_uuid() |                                                                                                                                                                                             |
+| `tenant_id`        | UUID         | FK → tenants NOT NULL        |                                                                                                                                                                                             |
 | `keycloak_user_id` | VARCHAR(255) | UNIQUE NOT NULL              | A Keycloak UUID on **both** paths. `UserService.create` provisions the Keycloak user first — `provisionPhoneUser` for Path A, `createEmailUser` for Path B — and stores the UUID it returns |
-| `email`            | VARCHAR(255) | NOT NULL                     | Path A: empty string; Path B: actual email                                                  |
-| `phone_number`     | VARCHAR(20)  | NULL                         | Path A's identifier, and where the phone actually lives. NULL on Path B. Uniqueness is a **partial** index (`WHERE phone_number IS NOT NULL`), so many Path B users can leave it NULL |
-| `display_name`     | VARCHAR(255) | NOT NULL                     |                                                                                             |
-| `department`       | VARCHAR(255) | NULL                         | Free text, for directory display and filtering. Not a role and not an authorisation input   |
-| `photo_url`        | TEXT         | NULL                         | Profile photo, uploaded via the file service. NULL → clients show the user's initials       |
-| `is_active`        | BOOLEAN      | NOT NULL DEFAULT true        |                                                                                             |
-| `mfa_enabled`      | BOOLEAN      | NOT NULL DEFAULT false       |                                                                                             |
-| `mfa_totp_secret`  | VARCHAR(255) | NULL                         | TOTP secret, encrypted at rest (app-layer AES-256-GCM); NULL until MFA enrollment completes |
-| `last_seen_at`     | TIMESTAMPTZ  | NOT NULL DEFAULT now()       | Touched by `JwtAuthGuard` on each authenticated request (User Audit). NOT NULL, so a user who has never returned reads as last seen at creation |
-| `created_at`       | TIMESTAMPTZ  | NOT NULL DEFAULT now()       |                                                                                             |
-| `updated_at`       | TIMESTAMPTZ  | NOT NULL DEFAULT now()       |                                                                                             |
+| `email`            | VARCHAR(255) | NOT NULL                     | Path A: empty string; Path B: actual email                                                                                                                                                  |
+| `phone_number`     | VARCHAR(20)  | NULL                         | Path A's identifier, and where the phone actually lives. NULL on Path B. Uniqueness is a **partial** index (`WHERE phone_number IS NOT NULL`), so many Path B users can leave it NULL       |
+| `display_name`     | VARCHAR(255) | NOT NULL                     |                                                                                                                                                                                             |
+| `department`       | VARCHAR(255) | NULL                         | Free text, for directory display and filtering. Not a role and not an authorisation input                                                                                                   |
+| `photo_url`        | TEXT         | NULL                         | Profile photo, uploaded via the file service. NULL → clients show the user's initials                                                                                                       |
+| `is_active`        | BOOLEAN      | NOT NULL DEFAULT true        |                                                                                                                                                                                             |
+| `mfa_enabled`      | BOOLEAN      | NOT NULL DEFAULT false       |                                                                                                                                                                                             |
+| `mfa_totp_secret`  | VARCHAR(255) | NULL                         | TOTP secret, encrypted at rest (app-layer AES-256-GCM); NULL until MFA enrollment completes                                                                                                 |
+| `last_seen_at`     | TIMESTAMPTZ  | NOT NULL DEFAULT now()       | Touched by `JwtAuthGuard` on each authenticated request (User Audit). NOT NULL, so a user who has never returned reads as last seen at creation                                             |
+| `created_at`       | TIMESTAMPTZ  | NOT NULL DEFAULT now()       |                                                                                                                                                                                             |
+| `updated_at`       | TIMESTAMPTZ  | NOT NULL DEFAULT now()       |                                                                                                                                                                                             |
 
 INDEX: `(tenant_id, email)`
 UNIQUE: `(phone_number) WHERE phone_number IS NOT NULL`
@@ -172,13 +172,13 @@ Carries the user's **primary** role — one per tenant. Additional roles live in
 
 Roles a user holds **alongside** their primary one. Migration `20260730000002`.
 
-| Column        | Type        | Constraints            | Notes                                          |
-| ------------- | ----------- | ---------------------- | ---------------------------------------------- |
-| `user_id`     | UUID        | FK → users NOT NULL    |                                                |
-| `tenant_id`   | UUID        | FK → tenants NOT NULL  |                                                |
-| `role`        | CosRoleEnum | NOT NULL               | Never duplicates the primary role              |
-| `assigned_by` | UUID        | NULL                   | The `TENANT_ADMIN` who granted it              |
-| `assigned_at` | TIMESTAMPTZ | NOT NULL DEFAULT now() |                                                |
+| Column        | Type        | Constraints            | Notes                             |
+| ------------- | ----------- | ---------------------- | --------------------------------- |
+| `user_id`     | UUID        | FK → users NOT NULL    |                                   |
+| `tenant_id`   | UUID        | FK → tenants NOT NULL  |                                   |
+| `role`        | CosRoleEnum | NOT NULL               | Never duplicates the primary role |
+| `assigned_by` | UUID        | NULL                   | The `TENANT_ADMIN` who granted it |
+| `assigned_at` | TIMESTAMPTZ | NOT NULL DEFAULT now() |                                   |
 
 PRIMARY KEY: `(user_id, tenant_id, role)` — the grant itself is the identity, so re-granting is a
 no-op rather than a duplicate row.
@@ -412,6 +412,11 @@ Tasks :
 - actual_start
 - progress_percent (INTEGER 0–100; conflict resolution: Max-wins — see §17.5)
 - qc_status (ENUM: none / qc_hold / qc_passed — default none)
+- modified_at (TIMESTAMPTZ NOT NULL DEFAULT now() — the column `GET /sync/delta` pages `task` on.
+  Added 2026-08-23; before it the table had only `created_at`, so the delta could report a NEW task
+  and never an edited one, and a status change, a reassignment or a progress update stayed on the
+  server. Maintained in application code, like every other `modified_at` here, and enforced by
+  `scripts/ci/check-modified-at-writes.mjs` — a write that forgets it is invisible, not broken.)
 
 Note on Task Completion Gates : A task may only transition to status = completed when ALL
 of the following gates pass (server-side validation — not enforced offline).
@@ -1149,12 +1154,12 @@ Soft delete is **opt-in per table**, not a platform-wide rule. A table carries `
 deleted row must remain retrievable — for restoration, for a retention window, or because a sync
 client has to learn the deletion. The tables that do, as of 2026-08-23:
 
-| Table                              | Why it soft-deletes                                                  |
-| ---------------------------------- | -------------------------------------------------------------------- |
-| `crm.leads`, `crm.contacts`, `crm.opportunities` | A deleted lead is recoverable, and the pipeline history stays intact |
-| `files.files`                      | Retention windows and legal hold — the hard delete is a scheduled job |
-| `files.photo_annotations`          | Follows the file it annotates                                        |
-| `platform.sync_tombstones`         | The record OF a deletion, so offline clients can replay it           |
+| Table                                            | Why it soft-deletes                                                   |
+| ------------------------------------------------ | --------------------------------------------------------------------- |
+| `crm.leads`, `crm.contacts`, `crm.opportunities` | A deleted lead is recoverable, and the pipeline history stays intact  |
+| `files.files`                                    | Retention windows and legal hold — the hard delete is a scheduled job |
+| `files.photo_annotations`                        | Follows the file it annotates                                         |
+| `platform.sync_tombstones`                       | The record OF a deletion, so offline clients can replay it            |
 
 Everything else deletes for real, or does not delete at all. Two categories must never soft-delete:
 
@@ -1183,13 +1188,13 @@ snapshotting the rows to a WORM file first under legal hold. It is irreversible 
 > no timestamp to stamp and no second lifecycle flag. The `Employee` row below is also a
 > specification-only entity: worker PII lives in `workforce.workers`, and nothing erases it.
 
-| Entity                 | PII fields                                       | Erased by the endpoint?   |
-| ---------------------- | ------------------------------------------------ | ------------------------- |
-| `crm.contacts`         | `name`, `email`, `phone`                         | ✅ yes                     |
-| `crm.leads`            | `contact_name`                                   | ✅ yes                     |
-| `procurement.vendors`  | `contact_name`, `contact_email`, `contact_phone` | ✅ yes                     |
-| `workforce.workers`    | `full_name`, `contact_phone`                     | ✅ yes (added 2026-08-23)  |
-| `platform.users`       | `display_name`, `email`, `phone_number`          | ✅ yes (added 2026-08-23)  |
+| Entity                | PII fields                                       | Erased by the endpoint?   |
+| --------------------- | ------------------------------------------------ | ------------------------- |
+| `crm.contacts`        | `name`, `email`, `phone`                         | ✅ yes                    |
+| `crm.leads`           | `contact_name`                                   | ✅ yes                    |
+| `procurement.vendors` | `contact_name`, `contact_email`, `contact_phone` | ✅ yes                    |
+| `workforce.workers`   | `full_name`, `contact_phone`                     | ✅ yes (added 2026-08-23) |
+| `platform.users`      | `display_name`, `email`, `phone_number`          | ✅ yes (added 2026-08-23) |
 
 A `platform.users` row anchors audit logs, memberships and foreign keys that must survive erasure,
 so the ROW survives and only its personal columns are cleared — the same rule as everywhere else in
@@ -1207,12 +1212,12 @@ Erasure procedure — **as implemented**, read from `SubjectRequestRepository`:
 The subject is matched by `subject_email` / `subject_phone` from the request, scoped to the tenant.
 Rows are then updated in place:
 
-| Table                 | What the UPDATE does                                                                                    |
-| --------------------- | -------------------------------------------------------------------------------------------------------- |
-| `crm.contacts`        | `name = '[ERASED]'`, `email = NULL`, `phone = NULL`                                                       |
-| `crm.leads`           | `contact_name = NULL`                                                                                     |
-| `procurement.vendors` | `contact_email = NULL`, `contact_phone = NULL`; `tax_id` and `address` cleared **only** for `INDIVIDUAL` vendors — a company's are not personal data |
-| `workforce.workers`   | `full_name = '[ERASED]'`, `contact_phone = NULL`. `employee_code`, `trade_type` and `is_active` are untouched: they are the tenant's employment record, and a rights request is not a resignation |
+| Table                 | What the UPDATE does                                                                                                                                                                                                                                                                                                                                                 |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `crm.contacts`        | `name = '[ERASED]'`, `email = NULL`, `phone = NULL`                                                                                                                                                                                                                                                                                                                  |
+| `crm.leads`           | `contact_name = NULL`                                                                                                                                                                                                                                                                                                                                                |
+| `procurement.vendors` | `contact_email = NULL`, `contact_phone = NULL`; `tax_id` and `address` cleared **only** for `INDIVIDUAL` vendors — a company's are not personal data                                                                                                                                                                                                                 |
+| `workforce.workers`   | `full_name = '[ERASED]'`, `contact_phone = NULL`. `employee_code`, `trade_type` and `is_active` are untouched: they are the tenant's employment record, and a rights request is not a resignation                                                                                                                                                                    |
 | `platform.users`      | `display_name = '[ERASED]'`, `email = ''`, `phone_number = NULL`, `is_active = false`. `email` is `NOT NULL` and its index is not unique, so `''` is safe for any number of erased accounts; `phone_number` must go to NULL because its unique index is PARTIAL (`WHERE phone_number IS NOT NULL`) and a placeholder would collide on the second erasure in a tenant |
 
 `name = '[ERASED]'` rather than NULL because the column is NOT NULL and a contact list still has to
@@ -1232,11 +1237,11 @@ enabled, so they can still complete a fresh login. `KeycloakAdminService.eraseUs
 account, logs out every live session, and overwrites those fields. Three constraints of the realm's
 declarative user profile shape what it can write, all measured against Keycloak 26.6.4:
 
-| Field                | Constraint                                                   | What erasure writes                |
-| -------------------- | ------------------------------------------------------------ | ---------------------------------- |
-| `username`           | Editable only when the realm sets `editUsernameAllowed: true` | `erased-{user_id}`                 |
-| `email`              | `required: true` — cannot be cleared; an omitted field is left UNCHANGED | `erased-{user_id}@erased.invalid` (RFC 2606 reserved TLD — unroutable) |
-| `firstName`/`lastName` | `required: true`, and `person-name-prohibited-characters` rejects `[` `]` | `ERASED` — deliberately NOT the `[ERASED]` the database uses |
+| Field                  | Constraint                                                                | What erasure writes                                                    |
+| ---------------------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `username`             | Editable only when the realm sets `editUsernameAllowed: true`             | `erased-{user_id}`                                                     |
+| `email`                | `required: true` — cannot be cleared; an omitted field is left UNCHANGED  | `erased-{user_id}@erased.invalid` (RFC 2606 reserved TLD — unroutable) |
+| `firstName`/`lastName` | `required: true`, and `person-name-prohibited-characters` rejects `[` `]` | `ERASED` — deliberately NOT the `[ERASED]` the database uses           |
 
 The realm therefore sets **`editUsernameAllowed: true`** (PO decision 2026-08-23). Without it the
 subject's own email or phone number stays in the identity provider permanently and the erasure is
@@ -1263,10 +1268,10 @@ account that is erased in Construction OS but still live in the identity provide
 
 **Audit trail.** Two levels, one describing the request and one describing what it reached:
 
-| Level        | `action`     | `resource_type`     | `resource_id` | `metadata`                                   |
-| ------------ | ------------ | ------------------- | ------------- | -------------------------------------------- |
-| Per request  | `ERASE …`    | `subject_requests`  | request id    | `{"matches": n}`                             |
-| Per record   | `PII_ERASED` | the table name      | the row's id  | `{"event": "pii.erased", "request_id": "…"}` |
+| Level       | `action`     | `resource_type`    | `resource_id` | `metadata`                                   |
+| ----------- | ------------ | ------------------ | ------------- | -------------------------------------------- |
+| Per request | `ERASE …`    | `subject_requests` | request id    | `{"matches": n}`                             |
+| Per record  | `PII_ERASED` | the table name     | the row's id  | `{"event": "pii.erased", "request_id": "…"}` |
 
 The per-request row alone could say four records were erased but never WHICH four, so an auditor
 asking "was this person's worker record erased?" had no answer the trail could give — the erased

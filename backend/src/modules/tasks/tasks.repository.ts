@@ -261,7 +261,11 @@ export class TasksRepository {
           assigned_to = COALESCE(${params.assigned_to ?? null}::uuid, assigned_to),
           actual_start = CASE
             WHEN ${params.status ?? null} = 'IN_PROGRESS' AND actual_start IS NULL THEN now()::date
-            ELSE actual_start END
+            ELSE actual_start END,
+          -- Every UPDATE here must set this: it is the column /sync/delta pages task on, so a
+          -- write that leaves it stale is a write no device ever sees. Guarded by
+          -- scripts/ci/check-modified-at-writes.mjs.
+          modified_at = now()
         WHERE task_id = ${params.task_id}::uuid AND tenant_id = ${this.tenantId}::uuid
         RETURNING *
       `,

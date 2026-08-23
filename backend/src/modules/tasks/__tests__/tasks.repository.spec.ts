@@ -99,6 +99,18 @@ describe('TasksRepository', () => {
     expect(r.status).toBe('IN_PROGRESS');
   });
 
+  // /sync/delta pages `task` on modified_at. An UPDATE that leaves it alone is a change no device
+  // ever hears about: the API returns 200, the row is right, and the handset keeps its stale copy
+  // forever. That was the state of this table until 2026-08-23, when it had no such column at all.
+  it('updateTask stamps modified_at so the edit reaches devices', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([taskRow]);
+
+    await repo.updateTask({ task_id: 'task-1', status: 'BLOCKED' });
+
+    const sql = (mockPrisma.$queryRaw.mock.calls[0]![0] as unknown as string[]).join('?');
+    expect(sql.replace(/\s+/g, ' ')).toContain('modified_at = now()');
+  });
+
   it('updateTask with only task_id (null branches)', async () => {
     mockPrisma.$queryRaw.mockResolvedValue([taskRow]);
     const r = await repo.updateTask({ task_id: 'task-1' });
