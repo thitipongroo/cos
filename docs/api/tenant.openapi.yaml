@@ -32,8 +32,7 @@ components:
           type: string
           description: DECIMAL string (%)
         line_channel_token:
-          type: string
-          nullable: true
+          type: [string, 'null']
         notifications_enabled:
           type: boolean
     CreateTenantRequest:
@@ -267,6 +266,8 @@ paths:
   # implemented surface is the multi-role pair below, which OQ-8 introduced.
   /tenant:
     get:
+      security:
+        - bearerAuth: []
       summary: The signed-in user's own tenant
       description: |
         Name, code and plan for the tenant in the caller's JWT. Any authenticated role — it answers
@@ -281,6 +282,8 @@ paths:
 
   /users/me:
     get:
+      security:
+        - bearerAuth: []
       summary: The signed-in user's own record
       description: Any authenticated role. Scoped by the JWT, so there is nothing to authorise.
       operationId: getMe
@@ -293,6 +296,8 @@ paths:
 
   /users/me/photo:
     patch:
+      security:
+        - bearerAuth: []
       summary: Set or clear the signed-in user's profile photo
       description: |
         Takes a File Service URL for an image already uploaded there, or `null` to clear it. The
@@ -318,6 +323,8 @@ paths:
 
   /users/{userId}/roles:
     get:
+      security:
+        - bearerAuth: []
       summary: A user's primary and additional roles
       description: |
         TENANT_ADMIN only. Effective permissions are the UNION of `ROLE_PERMISSIONS` across the
@@ -340,6 +347,8 @@ paths:
           description: User not found in this tenant
 
     put:
+      security:
+        - bearerAuth: []
       summary: Set a user's primary and additional roles
       description: |
         TENANT_ADMIN only. A full replacement, not a patch — the additional-role set sent here
@@ -378,6 +387,8 @@ paths:
 
   /users/{userId}/reset-password:
     post:
+      security:
+        - bearerAuth: []
       summary: Issue a one-time temporary password
       description: |
         TENANT_ADMIN only. Sets a temporary password on the Keycloak account — the user must change
@@ -405,6 +416,8 @@ paths:
 
   /users/{userId}/reset-password/email:
     post:
+      security:
+        - bearerAuth: []
       summary: Email the user a password-reset link
       description: |
         TENANT_ADMIN only. Sends a single-use, 15-minute Keycloak `UPDATE_PASSWORD` action-token

@@ -212,19 +212,16 @@ components:
         entity_type:
           $ref: '#/components/schemas/EntityType'
         physical_ref:
-          type: string
-          nullable: true
+          type: [string, 'null']
           description: IoT device ID, GPS tracker ID, or sensor ID
           example: equip-crane-01
         digital_ref:
-          type: string
-          nullable: true
+          type: [string, 'null']
           description: IFC GlobalId (22-char base64 GUID per ISO 16739-1:2018) or WBS node ID
           example: 2O2Fr$t4X7Zf8NOew3FLOH
         last_synced_at:
-          type: string
+          type: [string, 'null']
           format: date-time
-          nullable: true
         confidence:
           type: number
           format: double

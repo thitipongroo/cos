@@ -63,32 +63,26 @@ components:
           type: string
           maxLength: 255
         tax_id:
-          type: string
-          nullable: true
+          type: [string, 'null']
         contact_email:
-          type: string
+          type: [string, 'null']
           format: email
-          nullable: true
         contact_phone:
-          type: string
-          nullable: true
+          type: [string, 'null']
         address:
-          type: string
-          nullable: true
+          type: [string, 'null']
         is_active:
           type: boolean
         category:
-          type: string
+          type: [string, 'null']
           enum: [MATERIALS, LOGISTICS, SERVICES, EQUIPMENT]
-          nullable: true
           description: >-
             What the vendor supplies, for directory browsing. NULL = never categorised.
             NOT a tax classification — withholding tax uses finance.wht_rules.service_type,
             a separate vocabulary (spec §13.3).
         verification_status:
-          type: string
+          type: [string, 'null']
           enum: [PENDING, VERIFIED, REJECTED]
-          nullable: true
           description: >-
             Document-check state only. NULL = never submitted for review. NOT a performance
             rating — that is the vendor score (GET /procurement/vendors/{vendorId}/score).
@@ -124,9 +118,8 @@ components:
           type: string
           maxLength: 255
         tax_id:
-          type: string
+          type: [string, 'null']
           maxLength: 100
-          nullable: true
         contact_email:
           type: string
           format: email
@@ -158,9 +151,8 @@ components:
           type: string
           format: uuid
         required_date:
-          type: string
+          type: [string, 'null']
           format: date
-          nullable: true
         created_at:
           type: string
           format: date-time
@@ -186,9 +178,8 @@ components:
           type: string
           format: uuid
         pr_id:
-          type: string
+          type: [string, 'null']
           format: uuid
-          nullable: true
         project_id:
           type: string
           format: uuid
@@ -207,8 +198,7 @@ components:
           type: string
           format: date-time
         temporal_workflow_id:
-          type: string
-          nullable: true
+          type: [string, 'null']
         created_by:
           type: string
           format: uuid
@@ -315,9 +305,8 @@ components:
           type: string
           format: uuid
         boq_item_id:
-          type: string
+          type: [string, 'null']
           format: uuid
-          nullable: true
         description:
           type: string
         quantity:
@@ -372,9 +361,8 @@ components:
           type: string
           format: uuid
         rfq_id:
-          type: string
+          type: [string, 'null']
           format: uuid
-          nullable: true
         vendor_id:
           type: string
           format: uuid
@@ -404,8 +392,7 @@ components:
           type: string
           format: date
         temporal_workflow_id:
-          type: string
-          nullable: true
+          type: [string, 'null']
         created_by:
           type: string
           format: uuid
@@ -458,8 +445,7 @@ components:
           type: string
           format: uuid
         delivery_note:
-          type: string
-          nullable: true
+          type: [string, 'null']
         delivered_at:
           type: string
           format: date-time
@@ -467,8 +453,7 @@ components:
           type: string
           format: uuid
         notes:
-          type: string
-          nullable: true
+          type: [string, 'null']
     ReceiveInvoiceDto:
       type: object
       required:
@@ -534,9 +519,8 @@ components:
             - PAID
             - DISPUTED
         file_id:
-          type: string
+          type: [string, 'null']
           format: uuid
-          nullable: true
     ErrorResponse:
       type: object
       properties:
@@ -756,6 +740,7 @@ paths:
             format: uuid
       responses:
         '200':
+          description: The vendor, with its rating
           content:
             application/json:
               schema:
@@ -835,6 +820,7 @@ paths:
             default: 20
       responses:
         '200':
+          description: RFQs for the tenant
           content:
             application/json:
               schema:
@@ -863,6 +849,7 @@ paths:
               $ref: '#/components/schemas/CreateRfqDto'
       responses:
         '201':
+          description: RFQ created (DRAFT)
           content:
             application/json:
               schema:
@@ -968,6 +955,7 @@ paths:
               $ref: '#/components/schemas/SubmitQuotationDto'
       responses:
         '201':
+          description: Quotation submitted
           content:
             application/json:
               schema:
@@ -988,6 +976,7 @@ paths:
             format: uuid
       responses:
         '200':
+          description: Quotations submitted against this RFQ
           content:
             application/json:
               schema:
@@ -1028,6 +1017,7 @@ paths:
             default: 20
       responses:
         '200':
+          description: Purchase orders for the tenant
           content:
             application/json:
               schema:
@@ -1056,6 +1046,7 @@ paths:
               $ref: '#/components/schemas/CreatePurchaseOrderDto'
       responses:
         '201':
+          description: Purchase order created
           content:
             application/json:
               schema:
@@ -1084,6 +1075,7 @@ paths:
             format: uuid
       responses:
         '200':
+          description: The purchase order, with its line items
           content:
             application/json:
               schema:
@@ -1261,6 +1253,7 @@ paths:
             default: 20
       responses:
         '200':
+          description: Purchase requests for the tenant
           content:
             application/json:
               schema:
@@ -1289,6 +1282,7 @@ paths:
               $ref: '#/components/schemas/CreatePurchaseRequestDto'
       responses:
         '201':
+          description: Purchase request created
           content:
             application/json:
               schema:
@@ -1320,6 +1314,7 @@ paths:
             default: 20
       responses:
         '200':
+          description: Recorded deliveries
           content:
             application/json:
               schema:
@@ -1348,6 +1343,7 @@ paths:
               $ref: '#/components/schemas/RecordDeliveryDto'
       responses:
         '201':
+          description: Delivery recorded against a purchase order
           content:
             application/json:
               schema:
@@ -1372,6 +1368,7 @@ paths:
             format: uuid
       responses:
         '200':
+          description: Deliveries recorded against this purchase order
           content:
             application/json:
               schema:
@@ -1392,6 +1389,7 @@ paths:
               $ref: '#/components/schemas/ReceiveInvoiceDto'
       responses:
         '201':
+          description: Vendor invoice created against a purchase order
           content:
             application/json:
               schema:
@@ -1427,6 +1425,7 @@ paths:
             default: 20
       responses:
         '200':
+          description: Vendor invoices for the tenant
           content:
             application/json:
               schema:
@@ -1457,6 +1456,7 @@ paths:
             format: uuid
       responses:
         '200':
+          description: The invoice after approval
           content:
             application/json:
               schema:

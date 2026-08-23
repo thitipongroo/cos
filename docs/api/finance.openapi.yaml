@@ -9,6 +9,16 @@ info:
     '
 servers:
   - url: /api/v1
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
 tags:
   - name: finance
     description: Budget, cost tracking, payments, variance reporting
@@ -346,18 +356,6 @@ paths:
             type: integer
             default: 20
             maximum: 100
-        - name: page
-          in: query
-          required: false
-          schema:
-            type: integer
-            default: 1
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: integer
-            default: 20
       responses:
         '200':
           description: Paginated cost transactions

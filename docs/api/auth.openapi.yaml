@@ -124,8 +124,7 @@ components:
         senderEmail:
           type: string
         senderPhone:
-          type: string
-          nullable: true
+          type: [string, 'null']
         category:
           type: string
           enum: [GENERAL, DATA_ACCESS, DATA_CORRECTION, DATA_DELETION, SECURITY_CONCERN]
@@ -140,17 +139,14 @@ components:
           type: string
           format: date-time
         linkedRequestId:
-          type: string
+          type: [string, 'null']
           format: uuid
-          nullable: true
           description: The `subject_requests` row this was routed into, once matched to a tenant.
         closedAt:
-          type: string
+          type: [string, 'null']
           format: date-time
-          nullable: true
         outcomeNote:
-          type: string
-          nullable: true
+          type: [string, 'null']
 
     # ─── Subject requests (ADR-090; PDPA-48) ────────────────────────────────────
     CreateSubjectRequest:
@@ -367,8 +363,7 @@ components:
         platform:
           type: string
         model:
-          type: string
-          nullable: true
+          type: [string, 'null']
         lastSeenAt:
           type: string
           format: date-time
@@ -431,6 +426,9 @@ components:
 paths:
   /auth/otp/request:
     post:
+      # PUBLIC — no credential. Stated rather than left silent, so a generated
+      # client does not attach a token to a route that must work without one.
+      security: []
       summary: Request SMS OTP (Path A — field workers)
       tags: [auth]
       requestBody:
@@ -467,6 +465,9 @@ paths:
 
   /auth/otp/verify:
     post:
+      # PUBLIC — no credential. Stated rather than left silent, so a generated
+      # client does not attach a token to a route that must work without one.
+      security: []
       summary: Verify OTP and receive JWT tokens (Path A)
       tags: [auth]
       requestBody:
@@ -497,6 +498,9 @@ paths:
 
   /auth/otp/attest:
     post:
+      # PUBLIC — no credential. Stated rather than left silent, so a generated
+      # client does not attach a token to a route that must work without one.
+      security: []
       summary: Attest device trust before OTP (§20.6.1)
       description: |
         Verifies the device signed the challenge from `/auth/otp/request` with its registered key, and
@@ -577,6 +581,9 @@ paths:
 
   /auth/refresh:
     post:
+      # PUBLIC — no credential. Stated rather than left silent, so a generated
+      # client does not attach a token to a route that must work without one.
+      security: []
       summary: Refresh access token
       tags: [auth]
       requestBody:
@@ -1108,6 +1115,9 @@ paths:
 
   /subject-requests/verify/{token}:
     post:
+      # PUBLIC — no credential. Stated rather than left silent, so a generated
+      # client does not attach a token to a route that must work without one.
+      security: []
       summary: A data subject confirms a verification link (single use, no account)
       description: |
         PUBLIC — no bearer token. The person has no account at all and authenticates solely with the

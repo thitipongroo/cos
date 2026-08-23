@@ -29,6 +29,8 @@ paths:
   # precisely so one vendor cannot ask about another.
   /vendor/rfqs:
     get:
+      security:
+        - vendorSession: []
       summary: List the RFQs this vendor was invited to
       operationId: listInvitedRfqs
       tags: [vendor]
@@ -40,6 +42,8 @@ paths:
 
   /vendor/quotations:
     get:
+      security:
+        - vendorSession: []
       summary: List the vendor's own submitted quotations
       operationId: listVendorQuotations
       tags: [vendor]

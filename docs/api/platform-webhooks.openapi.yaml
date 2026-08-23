@@ -21,9 +21,12 @@ components:
       in: header
       name: X-Webhook-Signature
       description: |
-        HMAC-SHA256 signature of the raw request body, hex-encoded.
-        Secret is configured in PLATFORM_WEBHOOK_SECRET environment variable.
-        Format: `sha256=<hex-digest>`
+        HMAC-SHA256 over `"<X-Webhook-Timestamp>." + rawBody`, hex-encoded, with the secret from
+        `PLATFORM_WEBHOOK_SECRET`. Format: `sha256=<hex-digest>`.
+
+        The paired `X-Webhook-Timestamp` header is not a second scheme — it is part of what this
+        signature covers, which is why it cannot be tampered with independently. See the endpoint
+        description for the accepted window and the rollout gate.
 
   schemas:
     EnterpriseContractSignedPayload:
@@ -91,9 +94,24 @@ paths:
         Behavior is identical to calling `PATCH /api/v1/admin/tenants/{tenantId}/mark-contracted`
         via the Admin Panel — both paths start the same workflow.
 
-        **Authentication:** HMAC-SHA256 signature verification.
-        Header: `X-Webhook-Signature: sha256=<hex(HMAC-SHA256(body, PLATFORM_WEBHOOK_SECRET))>`
-        Server rejects requests where the signature does not match.
+        **Authentication:** HMAC-SHA256 signature verification over `timestamp.body`.
+
+        ```
+        X-Webhook-Timestamp: 1787500000000            # epoch ms, or an ISO-8601 instant
+        X-Webhook-Signature: sha256=<hex(HMAC-SHA256("<timestamp>." + body, PLATFORM_WEBHOOK_SECRET))>
+        ```
+
+        The timestamp is inside the signed payload deliberately: signing the body alone would let an
+        attacker replay a captured request forever, and signing them separately would let the
+        timestamp be edited without breaking the signature. A stamped request is rejected when the
+        timestamp is more than **5 minutes** from the server's clock in EITHER direction — one far
+        in the future is as suspect as one far in the past.
+
+        **Rollout.** An unstamped request still verifies against the legacy body-only form while
+        `WEBHOOK_REPLAY_PROTECTION` is off, and the server logs
+        `webhook.replay-protection.unstamped` each time. With the flag on, a missing
+        `X-Webhook-Timestamp` is a 401. Send the header now — the legacy form exists to keep senders
+        working across the switch, not as a supported mode.
 
         **Idempotency:** Temporal rejects duplicate workflow starts for the same tenant_id.
         Returns 409 if a workflow is already running or completed.
@@ -132,7 +150,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '401':
-          description: Missing or invalid X-Webhook-Signature header
+          description: |
+            Missing or invalid `X-Webhook-Signature`; or, with replay protection enabled, a missing,
+            malformed, or out-of-window `X-Webhook-Timestamp`.
           content:
             application/json:
               schema:

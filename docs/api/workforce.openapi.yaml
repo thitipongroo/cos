@@ -409,12 +409,10 @@ components:
           type: string
           example: Carpenter
         contact_phone:
-          type: string
-          nullable: true
+          type: [string, 'null']
           example: '+66812345678'
         role_on_project:
-          type: string
-          nullable: true
+          type: [string, 'null']
           description: From the allocation, not the worker — the same person can be a foreman here
             and a fitter elsewhere.
           example: Site Foreman
@@ -457,8 +455,7 @@ components:
         employment_type:
           $ref: '#/components/schemas/EmploymentType'
         contact_phone:
-          type: string
-          nullable: true
+          type: [string, 'null']
           example: '+66812345678'
         is_active:
           type: boolean
@@ -483,24 +480,20 @@ components:
           type: string
           format: uuid
         role_on_project:
-          type: string
-          nullable: true
+          type: [string, 'null']
           example: Foreman
         start_date:
           type: string
           format: date
         end_date:
-          type: string
+          type: [string, 'null']
           format: date
-          nullable: true
         daily_rate:
-          type: number
+          type: [number, 'null']
           format: double
-          nullable: true
           example: 850.00
         currency_code:
-          type: string
-          nullable: true
+          type: [string, 'null']
           example: THB
 
     AttendanceLog:
@@ -523,17 +516,14 @@ components:
           type: string
           format: uuid
         check_in_at:
-          type: string
+          type: [string, 'null']
           format: date-time
-          nullable: true
         check_out_at:
-          type: string
+          type: [string, 'null']
           format: date-time
-          nullable: true
         hours_worked:
-          type: number
+          type: [number, 'null']
           format: double
-          nullable: true
           example: 9.00
 
     Timesheet:

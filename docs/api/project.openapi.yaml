@@ -80,44 +80,35 @@ components:
         status:
           $ref: '#/components/schemas/ProjectStatus'
         budget_amount:
-          type: string
-          nullable: true
+          type: [string, 'null']
           description: 'DECIMAL(19,4) as string — use decimal.js on client'
           example: '5000000.0000'
         budget_currency:
-          type: string
-          nullable: true
+          type: [string, 'null']
           description: 'ISO 4217 code'
           example: 'THB'
         start_date:
-          type: string
+          type: [string, 'null']
           format: date
-          nullable: true
         end_date:
-          type: string
+          type: [string, 'null']
           format: date
-          nullable: true
         estimated_completion_date:
-          type: string
+          type: [string, 'null']
           format: date
-          nullable: true
           description: 'PM-entered projected completion; feeds AI delay-risk, falls back to end_date when null'
         on_hold_reason:
-          type: string
-          nullable: true
+          type: [string, 'null']
           maxLength: 500
         on_hold_at:
-          type: string
+          type: [string, 'null']
           format: date-time
-          nullable: true
         cancellation_reason:
-          type: string
-          nullable: true
+          type: [string, 'null']
           maxLength: 500
         cancelled_at:
-          type: string
+          type: [string, 'null']
           format: date-time
-          nullable: true
         created_by:
           type: string
           format: uuid
@@ -256,12 +247,10 @@ components:
           type: string
           format: uuid
         file_id:
-          type: string
+          type: [string, 'null']
           format: uuid
-          nullable: true
         document_type:
-          type: string
-          nullable: true
+          type: [string, 'null']
         uploaded_by:
           type: string
           format: uuid
@@ -279,8 +268,7 @@ components:
           items:
             $ref: '#/components/schemas/Project'
         nextCursor:
-          type: string
-          nullable: true
+          type: [string, 'null']
           description: 'Base64 cursor for the next page; null when no more pages'
 
     CosError:
@@ -315,8 +303,7 @@ components:
       type: object
       properties:
         nextCursor:
-          type: string
-          nullable: true
+          type: [string, 'null']
 
     Building:
       type: object
@@ -325,10 +312,10 @@ components:
         project_id: { type: string, format: uuid }
         tenant_id: { type: string, format: uuid }
         building_name: { type: string, maxLength: 255 }
-        building_type: { type: string, maxLength: 100, nullable: true }
-        total_floors: { type: integer, nullable: true }
-        location: { type: string, maxLength: 255, nullable: true }
-        status: { type: string, maxLength: 50, nullable: true }
+        building_type: { type: [string, 'null'], maxLength: 100 }
+        total_floors: { type: [integer, 'null'] }
+        location: { type: [string, 'null'], maxLength: 255 }
+        status: { type: [string, 'null'], maxLength: 50 }
         created_by: { type: string, format: uuid }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
@@ -357,7 +344,7 @@ components:
         building_id: { type: string, format: uuid }
         tenant_id: { type: string, format: uuid }
         floor_number: { type: integer }
-        gross_area_sqm: { type: string, nullable: true }
+        gross_area_sqm: { type: [string, 'null'] }
         created_by: { type: string, format: uuid }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
@@ -380,8 +367,8 @@ components:
         floor_id: { type: string, format: uuid }
         tenant_id: { type: string, format: uuid }
         room_number: { type: string, maxLength: 50 }
-        room_type: { type: string, maxLength: 100, nullable: true }
-        area_sqm: { type: string, nullable: true }
+        room_type: { type: [string, 'null'], maxLength: 100 }
+        area_sqm: { type: [string, 'null'] }
         created_by: { type: string, format: uuid }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
@@ -409,7 +396,7 @@ components:
         building_id: { type: string, format: uuid }
         tenant_id: { type: string, format: uuid }
         structure_type: { $ref: '#/components/schemas/StructureType' }
-        material_type: { type: string, maxLength: 100, nullable: true }
+        material_type: { type: [string, 'null'], maxLength: 100 }
         created_by: { type: string, format: uuid }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
@@ -433,8 +420,8 @@ components:
         building_id: { type: string, format: uuid }
         project_id: { type: string, format: uuid }
         unit_number: { type: string, maxLength: 50 }
-        unit_type: { type: string, maxLength: 100, nullable: true }
-        status: { type: string, maxLength: 50, nullable: true }
+        unit_type: { type: [string, 'null'], maxLength: 100 }
+        status: { type: [string, 'null'], maxLength: 50 }
         created_by: { type: string, format: uuid }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
@@ -458,10 +445,10 @@ components:
         asset_id: { type: string, format: uuid }
         tenant_id: { type: string, format: uuid }
         project_id: { type: string, format: uuid }
-        asset_type: { type: string, maxLength: 100, nullable: true }
-        handover_date: { type: string, format: date, nullable: true }
-        warranty_expiry: { type: string, format: date, nullable: true }
-        maintenance_status: { type: string, maxLength: 50, nullable: true }
+        asset_type: { type: [string, 'null'], maxLength: 100 }
+        handover_date: { type: [string, 'null'], format: date }
+        warranty_expiry: { type: [string, 'null'], format: date }
+        maintenance_status: { type: [string, 'null'], maxLength: 50 }
         created_by: { type: string, format: uuid }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
@@ -1249,33 +1236,28 @@ paths:
                 required: [percentComplete, plannedPercent, spi, status, scheduleDaysBehind]
                 properties:
                   percentComplete:
-                    type: number
-                    nullable: true
+                    type: [number, 'null']
                     minimum: 0
                     maximum: 100
                     description: Earned percent (EV%). Null when no BOQ-linked task exists.
                     example: 65.4
                   plannedPercent:
-                    type: number
-                    nullable: true
+                    type: [number, 'null']
                     minimum: 0
                     maximum: 100
                     description: Planned percent (PV%) as of now. Null when no BOQ-linked task has planned dates.
                     example: 60.1
                   spi:
-                    type: number
-                    nullable: true
+                    type: [number, 'null']
                     description: Schedule Performance Index (EV% / PV%). Null when plannedPercent is null or 0.
                     example: 1.088
                   status:
-                    type: string
-                    nullable: true
+                    type: [string, 'null']
                     enum: [ahead, on_track, behind]
                     description: SPI verdict — >1.05 ahead, 0.95–1.05 on_track, <0.95 behind. Null when spi is null.
                     example: ahead
                   scheduleDaysBehind:
-                    type: integer
-                    nullable: true
+                    type: [integer, 'null']
                     description: >-
                       Earned Schedule day-variance (§32.12): positive = days behind, negative = days
                       ahead. The date the plan expected today's earned percent, versus today. Null when

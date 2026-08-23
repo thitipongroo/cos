@@ -198,8 +198,7 @@ components:
           type: string
           example: site.inspection.failed.v1
         subject:
-          type: string
-          nullable: true
+          type: [string, 'null']
           example: Inspection Failed
         body:
           type: string
@@ -207,13 +206,11 @@ components:
         status:
           $ref: '#/components/schemas/NotificationStatus'
         sent_at:
-          type: string
+          type: [string, 'null']
           format: date-time
-          nullable: true
         read_at:
-          type: string
+          type: [string, 'null']
           format: date-time
-          nullable: true
         created_at:
           type: string
           format: date-time

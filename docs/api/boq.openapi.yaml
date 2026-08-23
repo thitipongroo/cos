@@ -275,8 +275,7 @@ components:
           type: integer
           minimum: 1
         version_name:
-          type: string
-          nullable: true
+          type: [string, 'null']
         status:
           type: string
           enum: [DRAFT, APPROVED, SUPERSEDED]
@@ -288,13 +287,11 @@ components:
           type: string
           example: THB
         approved_by:
-          type: string
+          type: [string, 'null']
           format: uuid
-          nullable: true
         approved_at:
-          type: string
+          type: [string, 'null']
           format: date-time
-          nullable: true
         created_by:
           type: string
           format: uuid
@@ -328,9 +325,8 @@ components:
           type: string
           format: uuid
         parent_category_id:
-          type: string
+          type: [string, 'null']
           format: uuid
-          nullable: true
         category_code:
           type: string
         category_name:
@@ -368,8 +364,7 @@ components:
           type: string
           format: uuid
         item_code:
-          type: string
-          nullable: true
+          type: [string, 'null']
         description:
           type: string
         unit:
@@ -392,12 +387,10 @@ components:
         sort_order:
           type: integer
         carbon_factor_kg_co2e:
-          type: string
-          nullable: true
+          type: [string, 'null']
           description: kgCO2e per unit; NULL until CarbonCalculationEngine activated
         carbon_total_kg_co2e:
-          type: string
-          nullable: true
+          type: [string, 'null']
           description: ROUND(quantity × carbon_factor, 4); NULL if factor is NULL
         created_at:
           type: string
@@ -438,9 +431,8 @@ components:
       required: [category_code, category_name]
       properties:
         parent_category_id:
-          type: string
+          type: [string, 'null']
           format: uuid
-          nullable: true
         category_code:
           type: string
           maxLength: 50
@@ -462,9 +454,8 @@ components:
           type: string
           format: uuid
         item_code:
-          type: string
+          type: [string, 'null']
           maxLength: 100
-          nullable: true
         description:
           type: string
         unit:

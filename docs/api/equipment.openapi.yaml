@@ -34,9 +34,9 @@ components:
             enum: [CRANE, EXCAVATOR, CONCRETE_MIXER, GENERATOR, SCAFFOLD, VEHICLE, OTHER],
           }
         status: { type: string, enum: [AVAILABLE, IN_USE, MAINTENANCE, RETIRED] }
-        purchase_date: { type: string, format: date, nullable: true }
-        purchase_cost: { type: string, nullable: true }
-        currency_code: { type: string, nullable: true }
+        purchase_date: { type: [string, 'null'], format: date }
+        purchase_cost: { type: [string, 'null'] }
+        currency_code: { type: [string, 'null'] }
         created_at: { type: string, format: date-time }
 
     CreateEquipmentRequest:
