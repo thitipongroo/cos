@@ -344,15 +344,35 @@ jobs:
   # ─── Step 3c: Go worker tests ───────────────────────────────────────────────
   # Source: spec §30.2 (Unit tooling — Go: testing + testify), QM-1. The Go workers had unit and
   # integration tests on disk but no workflow executed them; only govulncheck ran. Wired
-  # 2026-08-22 (§35.13 ESC-05). Correctness gate only — no coverage threshold is defined for Go
-  # in any spec file, so none is asserted here (recorded as UNSPECIFIED in §35.13).
+  # 2026-08-22 (§35.13 ESC-05).
+  #
+  # COVERAGE (§35.13 ESC-23, product-owner decision 2026-08-23): QM-1 fixes a threshold for Jest
+  # (100/100) and pytest (--cov-fail-under=99) but names no figure for Go, so this gate starts at
+  # each module's MEASURED baseline and ratchets up — it blocks regressions today without turning
+  # CI red for coverage that was never written.
+  #
+  #   -coverpkg=./... is required, not cosmetic: both modules keep their tests in a separate
+  #   tests/ package, and "go test" measures each package against its OWN tests only. Without it
+  #   both modules report 0.0% however much the tests actually exercise.
+  #
+  #   Baselines measured 2026-08-23 (go 1.26, -coverpkg=./...):
+  #     kg-ingestion-worker  86.0%  (tests/unit; tests/integration needs a Docker socket — CI has one)
+  #     analytics-worker      0.0%  — its one test (internal/carbon/consumer_test.go) only unmarshals
+  #                                  a struct literal and calls nothing in consumer.go, so not one
+  #                                  statement in the module is executed. 0 is a placeholder floor,
+  #                                  not an endorsement: raise it as soon as real tests land.
+  #   Raise coverage_min whenever the printed total exceeds it. Never lower it.
   go-tests:
     name: Go Worker Tests (analytics-worker + kg-ingestion-worker)
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        service: [analytics-worker, kg-ingestion-worker]
+        include:
+          - service: analytics-worker
+            coverage_min: '0.0'
+          - service: kg-ingestion-worker
+            coverage_min: '86.0'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -361,13 +381,36 @@ jobs:
           cache-dependency-path: services/${{ matrix.service }}/go.sum
       - name: go test — ${{ matrix.service }}
         working-directory: services/${{ matrix.service }}
-        run: go test ./... -v
+        run: go test ./... -v -coverpkg=./... -coverprofile=coverage.out
+      - name: Coverage gate — ${{ matrix.service }} (floor ${{ matrix.coverage_min }}%)
+        working-directory: services/${{ matrix.service }}
+        run: |
+          go tool cover -func=coverage.out | tail -20
+          TOTAL=$(go tool cover -func=coverage.out | awk '/^total:/ {print $NF}' | tr -d '%')
+          MIN='${{ matrix.coverage_min }}'
+          echo "coverage: ${TOTAL}%  (floor ${MIN}%)"
+          awk -v t="$TOTAL" -v m="$MIN" 'BEGIN { if (t + 0 < m + 0) { printf "FAIL: coverage %.1f%% is below the %.1f%% floor\n", t, m; exit 1 } }'
 
   # ─── Step 3d: AI service tests (Python) ─────────────────────────────────────
   # Source: spec §30.2 (Unit tooling — Python: pytest), QM-1. The four AI services ship pytest
   # suites and a pytest.ini each, but CI ran pytest only for mlops/tests/. Wired 2026-08-22
-  # (§35.13 ESC-05). Correctness gate first; the QM-1 `--cov-fail-under=99` line-coverage gate is
-  # added in a follow-up once actual coverage has been measured (product-owner decision).
+  # (§35.13 ESC-05).
+  #
+  # COVERAGE (§35.13 ESC-24, product-owner decision 2026-08-23): QM-1 states the Python gate
+  # explicitly — "pytest --cov with --cov-fail-under=99 for lines" — so unlike Go this needed no
+  # new threshold, only wiring. Each service carries a .coveragerc that omits tests/: measuring a
+  # suite against itself inflates the figure badly here (with tests/ included the four report
+  # 64/87/73/52%; the source alone is 45/73/46/35%).
+  #
+  #   Measured 2026-08-23 (python:3.12-slim, source only):
+  #     ai-embedding-worker        73%
+  #     ai-ocr-pipeline            46%
+  #     ai-gateway                 45%
+  #     ai-transcription-pipeline  35%
+  #
+  #   All four are BELOW the 99% floor, so this gate fails until the missing tests are written.
+  #   That is the intended reading of QM-1: the gate states the requirement, and the shortfall is
+  #   visible instead of silent. fail-fast is false so every service reports its own number.
   ai-service-tests:
     name: AI Service Tests (Python)
     runs-on: ubuntu-latest
@@ -390,9 +433,9 @@ jobs:
         run: |
           pip install -r requirements.txt
           if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
-      - name: pytest — ${{ matrix.service }}
+      - name: pytest + coverage — ${{ matrix.service }}
         working-directory: services/${{ matrix.service }}
-        run: pytest
+        run: pytest --cov=. --cov-config=.coveragerc --cov-report=term-missing --cov-fail-under=99
 
   dependency-audit:
     name: Dependency Audit (pnpm audit + govulncheck)

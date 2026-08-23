@@ -19,6 +19,14 @@ describe('countries — OTP phone split/combine', () => {
     expect(findCountry('th').dialCode).toBe('+66');
   });
 
+  // The `?? COUNTRIES[0]` fallback: an iso2 the list does not carry must still yield a country,
+  // never `undefined` — the picker renders `findCountry(...).dialCode` unconditionally.
+  it('falls back to the first country for an unknown iso2', () => {
+    const fallback = findCountry('zz');
+    expect(fallback).toBe(COUNTRIES[0]);
+    expect(fallback.iso2).toBe(DEFAULT_COUNTRY_ISO2);
+  });
+
   describe('toE164', () => {
     it('prefixes the dial code and strips a leading trunk 0 + separators (TH)', () => {
       expect(toE164('+66', '081-234-5678')).toBe('+66812345678');

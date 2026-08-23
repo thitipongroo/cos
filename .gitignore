@@ -9,6 +9,12 @@ build
 out
 coverage
 
+# Coverage data files written by the QM-1 gates (§35.13 ESC-23, ESC-24): coverage.py drops
+# `.coverage` next to each AI service's pytest run, and `go test -coverprofile` drops
+# `coverage.out` in each Go module. Both are per-run artifacts — the numbers live in CI output.
+.coverage
+coverage.out
+
 # Expo local state/cache (apps/mobile) — regenerated per machine, must not be committed (expo-doctor)
 .expo/
 

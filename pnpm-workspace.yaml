@@ -2,9 +2,13 @@ packages:
   - 'apps/*'
   # apps/mobile is intentionally EXCLUDED from the pnpm workspace: React Native + Expo + Metro +
   # CocoaPods assume a flat (hoisted) node_modules, which pnpm's isolated linker breaks (Metro cannot
-  # resolve transitive expo-*/@react-native/* packages). It installs standalone with
-  # node-linker=hoisted (apps/mobile/.npmrc) via `pnpm install --ignore-workspace`, consuming
-  # @cos/types as a file: dependency. Nothing in turbo/CI references @cos/mobile.
+  # resolve transitive expo-*/@react-native/* packages). Being excluded makes apps/mobile its own
+  # workspace root, so it installs with a plain `cd apps/mobile && pnpm install` — its settings live
+  # in apps/mobile/pnpm-workspace.yaml (`nodeLinker: hoisted`, `patchedDependencies`), NOT in .npmrc.
+  # Do NOT pass `--ignore-workspace`: that hides those settings, and pnpm then fails with
+  # ERR_PNPM_LOCKFILE_CONFIG_MISMATCH against the patchedDependencies recorded in its lockfile.
+  # It consumes @cos/types as a file: dependency. Turbo does not reference apps/mobile; CI runs it
+  # in the dedicated `mobile-tests` job (.github/workflows/ci.yml).
   - '!apps/mobile'
   - 'backend'
   - 'services/*'
