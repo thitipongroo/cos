@@ -4,7 +4,19 @@ Date: 2026-07-20
 
 ## Status
 
-Accepted
+Accepted — **amended 2026-08-24: the two mutation endpoints are flat, not nested.**
+
+This ADR specified `PATCH /{id}/risks/{riskId}` and `/{id}/risks/{riskId}/status`. The service has
+always served `PATCH /risks/{riskId}` and `/risks/{riskId}/status`, `apps/web` has always called
+those, and no other client calls them at all. The ADR and `14-api-architecture` §14 were corrected
+to the implemented form rather than the code to theirs, because the flat shape is the platform's
+convention and not an oversight: **21 child-resource mutation routes exist and every one is flat**
+— buildings, floors, rooms, structures, units, assets, phases, BOQ items, materials, work
+categories. Moving risks to nested would have made it the only exception and broken the web app for
+the length of a two-sided deploy, to satisfy a line no client had ever followed.
+
+Nesting would also not have bought an authorisation check: there is no project-membership guard in
+this codebase, and the write is scoped by `tenant_id` under RLS.
 
 **Implementation note (2026-07-25, corrected 2026-08-22):** the register itself —
 `projects.project_risk`, the four `/projects/{id}/risks` endpoints, RBAC, and the `RiskRaised` /
@@ -54,7 +66,8 @@ ENUM(`OPEN` / `MITIGATING` / `CLOSED` / `ACCEPTED`), `source` ENUM(`MANUAL` / `A
 ### API (§14, `/api/v1/projects`)
 
 - `GET /{id}/risks` (list; `?status` / `?category`) · `POST /{id}/risks` (raise)
-- `PATCH /{id}/risks/{riskId}` (edit) · `PATCH /{id}/risks/{riskId}/status`
+- `PATCH /risks/{riskId}` (edit) · `PATCH /risks/{riskId}/status` — flat by the risk's own id;
+  see the amendment note under Status.
 
 ### RBAC (§6)
 

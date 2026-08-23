@@ -487,12 +487,27 @@ team that talks to them.
 
 #### Project Risk Register APIs — ADR-065
 
-| Method  | Path                                          | Description                                | Auth                     |
-| ------- | --------------------------------------------- | ------------------------------------------ | ------------------------ |
-| `GET`   | `/api/v1/projects/{id}/risks`                 | List risks (`?status` / `?category`)       | Any role                 |
-| `POST`  | `/api/v1/projects/{id}/risks`                 | Raise a risk — ADR-065                     | PM, Site Engineer, ADMIN |
-| `PATCH` | `/api/v1/projects/{id}/risks/{riskId}`        | Edit a risk (likelihood/impact/mitigation) | PM, ADMIN                |
-| `PATCH` | `/api/v1/projects/{id}/risks/{riskId}/status` | Transition OPEN/MITIGATING/CLOSED/ACCEPTED | PM, ADMIN                |
+| Method  | Path                            | Description                                | Auth                     |
+| ------- | ------------------------------- | ------------------------------------------ | ------------------------ |
+| `GET`   | `/api/v1/projects/{id}/risks`   | List risks (`?status` / `?category`)       | Any role                 |
+| `POST`  | `/api/v1/projects/{id}/risks`   | Raise a risk — ADR-065                     | PM, Site Engineer, ADMIN |
+| `PATCH` | `/api/v1/risks/{riskId}`        | Edit a risk (likelihood/impact/mitigation) | PM, ADMIN                |
+| `PATCH` | `/api/v1/risks/{riskId}/status` | Transition OPEN/MITIGATING/CLOSED/ACCEPTED | PM, ADMIN                |
+
+**The two mutation paths are flat, and were nested here until 2026-08-24.** A risk is created and
+listed under its project, then edited and closed by its own id — the same shape every other child
+resource in this platform uses. There are **21 such mutation routes and every one of them is flat**:
+buildings, floors, rooms, structures, units, assets, phases, BOQ items, materials, work categories.
+This table said `/projects/{id}/risks/{riskId}` while the code has always served `/risks/{riskId}`,
+so a client written from the specification would have received a 404.
+
+Nesting buys nothing here. The usual argument for it is that the path carries the parent id for an
+authorisation check — but there is no project-membership guard anywhere in this codebase, and the
+write is scoped by `tenant_id` and RLS in the repository. The parent id in the URL would be
+decoration that a caller could get wrong.
+
+Corrected together with [ADR-065](../architecture/adr/065-project-risk-register.md), which specified
+the same nested form.
 
 ---
 
