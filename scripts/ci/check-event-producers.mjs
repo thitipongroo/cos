@@ -12,9 +12,9 @@
 // listed in a READINESS GATE that refuses to pass until they are registered in the Schema Registry —
 // for events that nothing has ever published. Measured 2026-08-23: 2 of 61.
 //
-// `finance.budget.exceeded.v1` was built later the same day and came off the list — which the
-// bidirectional half of this check caught before a human did: it failed with "listed in DECLARED_ONLY
-// but now HAS a producer".
+// BOTH were built later the same day and came off the list — each time, the bidirectional half of
+// this check is what noticed, failing with "listed in DECLARED_ONLY but now HAS a producer" rather
+// than leaving a note that quietly stopped being true.
 //
 // The failure mode is not a crash. It is a topic that exists, a schema that validates, a consumer
 // that could be written against it, and a dashboard row that stays at zero forever with nothing to
@@ -56,12 +56,12 @@ const SKIP_DIRS = new Set(['node_modules', 'dist', 'build', '__tests__', 'covera
  * to silence the check.
  */
 const DECLARED_ONLY = new Map([
-  [
-    'finance.cashflow_risk.detected.v1',
-    'Rule DECIDED 2026-08-23, producer not yet built: RULE_ENGINE grades by how soon ' +
-      'cumulative_net first goes negative across the 13-week forecast (9-13 LOW, 5-8 MEDIUM, ' +
-      '2-4 HIGH, 0-1 CRITICAL); projected_shortfall is the most negative bucket. See spec §32.4 #14.',
-  ],
+  // Empty since 2026-08-23: both original entries grew producers the same day, and this check
+  // caught each transition before a human did — "listed in DECLARED_ONLY but now HAS a producer".
+  //
+  // Keep the mechanism. A schema with no producer still gets a topic, a generated type and a slot in
+  // the Schema Registry readiness gate, so it is indistinguishable from a live event everywhere
+  // except here; the next one added without a producer must say why, in this list, or fail.
 ]);
 
 /** `base-event-envelope` is the shared envelope, not an event — it has no producer by definition. */

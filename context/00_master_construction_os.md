@@ -908,14 +908,18 @@ Note: Legacy names shown first → canonical name in brackets. New events use ca
 
 14. finance.cashflow_risk.detected → [finance.cashflow_risk.detected.v1]
 
-    DECLARED — rule DECIDED 2026-08-23, producer not yet built (TDD OQ-50). The forecast is a
+    BUILT 2026-08-23 (TDD OQ-50) — CashflowRiskService, a daily leased @Cron. The forecast is a
     PULL endpoint (GET /api/v1/finance/cashflow-forecast/:projectId) returning 13 weekly
     buckets of inflow/outflow/net_flow/cumulative_net. RULE_ENGINE grades by HOW SOON
     cumulative_net first goes negative: never in 13 weeks -> no event; weeks 9-13 LOW;
     5-8 MEDIUM; 2-4 HIGH; 0-1 CRITICAL. projected_shortfall = the most negative
     cumulative_net across the horizon. Nothing new is invented — every figure already exists.
     AI_FORECAST is a second, later producer.
-    scripts/ci/check-event-producers.mjs holds the line in CI until it is built.
+    A SWEEP, not a write hook: the risk moves on the calendar — nothing changes in the data,
+    a week passes, and a shortfall five weeks out is now one week out. It does not emit from
+    the pull endpoint either, or the alert would depend on somebody opening a screen. It calls
+    the SAME buildForecast the endpoint uses, so the alert cannot disagree with the screen an
+    operator opens to check it. AI_FORECAST stays a second, later producer.
 
 
     payload: {

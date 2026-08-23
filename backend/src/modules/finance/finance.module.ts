@@ -11,6 +11,7 @@ import { ContractSignTokenGuard } from './contract-sign-token.guard';
 import { WhtService } from './wht.service';
 import { ExchangeRateService } from './exchange-rate.service';
 import { LedgerReconciliationService } from './ledger-reconciliation.service';
+import { CashflowRiskService } from './cashflow-risk.service';
 import { TenantModule } from '../tenant/tenant.module';
 import { FilesModule } from '../files/files.module';
 import { CredentialsModule } from '../credentials/credentials.module';
@@ -29,7 +30,16 @@ import { CredentialsModule } from '../credentials/credentials.module';
     // Read-only cross-schema sweep; its @Cron is discovered by the ScheduleModule.forRoot() above,
     // and the ScheduledJobLockService it leases against comes from the @Global SchedulingModule.
     LedgerReconciliationService,
+    // Daily @Cron; grades the SAME buildForecast the pull endpoint uses so an alert cannot disagree
+    // with the screen an operator opens to check it (TDD OQ-50).
+    CashflowRiskService,
   ],
-  exports: [FinanceService, WhtService, ExchangeRateService, LedgerReconciliationService],
+  exports: [
+    FinanceService,
+    WhtService,
+    ExchangeRateService,
+    LedgerReconciliationService,
+    CashflowRiskService,
+  ],
 })
 export class FinanceModule {}

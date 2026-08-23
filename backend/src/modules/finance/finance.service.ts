@@ -74,6 +74,59 @@ export interface CashflowPeriod {
   cumulative_net: string;
 }
 
+/**
+ * The 13-week direct-method forecast, as a pure function.
+ *
+ * Lifted out of `FinanceService` on 2026-08-23 so `CashflowRiskService` — a cross-tenant scheduled
+ * sweep with no request context, and therefore no request-scoped service — grades the SAME numbers
+ * the `GET /finance/cashflow-forecast/:projectId` screen shows. An alert that disagrees with the
+ * screen an operator opens to check it is worse than no alert.
+ */
+export function buildForecast(
+  inflows: CashflowDueRow[],
+  outflows: CashflowDueRow[],
+): CashflowPeriod[] {
+  const start = new Date();
+  start.setUTCHours(0, 0, 0, 0);
+  const startMs = start.getTime();
+
+  const inflowByBucket = Array.from({ length: FORECAST_WEEKS }, () => new Decimal(0));
+  const outflowByBucket = Array.from({ length: FORECAST_WEEKS }, () => new Decimal(0));
+
+  const bucketIndex = (due: Date): number => {
+    const dueMs = due.getTime();
+    if (dueMs < startMs) return 0; // overdue collapses into the first bucket
+    return Math.floor((dueMs - startMs) / MS_PER_WEEK);
+  };
+
+  for (const row of inflows) {
+    const idx = bucketIndex(row.due_date);
+    if (idx < FORECAST_WEEKS) inflowByBucket[idx] = inflowByBucket[idx]!.plus(row.amount);
+  }
+  for (const row of outflows) {
+    const idx = bucketIndex(row.due_date);
+    if (idx < FORECAST_WEEKS) outflowByBucket[idx] = outflowByBucket[idx]!.plus(row.amount);
+  }
+
+  let cumulative = new Decimal(0);
+  const periods: CashflowPeriod[] = [];
+  for (let i = 0; i < FORECAST_WEEKS; i++) {
+    const inflow = inflowByBucket[i]!;
+    const outflow = outflowByBucket[i]!;
+    const net = inflow.minus(outflow);
+    cumulative = cumulative.plus(net);
+    periods.push({
+      period_start: new Date(startMs + i * MS_PER_WEEK).toISOString().slice(0, 10),
+      period_end: new Date(startMs + (i + 1) * MS_PER_WEEK).toISOString().slice(0, 10),
+      inflow: inflow.toFixed(4),
+      outflow: outflow.toFixed(4),
+      net_flow: net.toFixed(4),
+      cumulative_net: cumulative.toFixed(4),
+    });
+  }
+  return periods;
+}
+
 @Injectable({ scope: Scope.REQUEST })
 export class FinanceService {
   private get tenantId(): string {
@@ -838,49 +891,7 @@ export class FinanceService {
       this.repo.findUnpaidBillingsDue(project_id),
       this.repo.findPendingPaymentsDue(project_id),
     ]);
-    return this.buildForecast(inflows, outflows);
-  }
-
-  private buildForecast(inflows: CashflowDueRow[], outflows: CashflowDueRow[]): CashflowPeriod[] {
-    const start = new Date();
-    start.setUTCHours(0, 0, 0, 0);
-    const startMs = start.getTime();
-
-    const inflowByBucket = Array.from({ length: FORECAST_WEEKS }, () => new Decimal(0));
-    const outflowByBucket = Array.from({ length: FORECAST_WEEKS }, () => new Decimal(0));
-
-    const bucketIndex = (due: Date): number => {
-      const dueMs = due.getTime();
-      if (dueMs < startMs) return 0; // overdue collapses into the first bucket
-      return Math.floor((dueMs - startMs) / MS_PER_WEEK);
-    };
-
-    for (const row of inflows) {
-      const idx = bucketIndex(row.due_date);
-      if (idx < FORECAST_WEEKS) inflowByBucket[idx] = inflowByBucket[idx]!.plus(row.amount);
-    }
-    for (const row of outflows) {
-      const idx = bucketIndex(row.due_date);
-      if (idx < FORECAST_WEEKS) outflowByBucket[idx] = outflowByBucket[idx]!.plus(row.amount);
-    }
-
-    let cumulative = new Decimal(0);
-    const periods: CashflowPeriod[] = [];
-    for (let i = 0; i < FORECAST_WEEKS; i++) {
-      const inflow = inflowByBucket[i]!;
-      const outflow = outflowByBucket[i]!;
-      const net = inflow.minus(outflow);
-      cumulative = cumulative.plus(net);
-      periods.push({
-        period_start: new Date(startMs + i * MS_PER_WEEK).toISOString().slice(0, 10),
-        period_end: new Date(startMs + (i + 1) * MS_PER_WEEK).toISOString().slice(0, 10),
-        inflow: inflow.toFixed(4),
-        outflow: outflow.toFixed(4),
-        net_flow: net.toFixed(4),
-        cumulative_net: cumulative.toFixed(4),
-      });
-    }
-    return periods;
+    return buildForecast(inflows, outflows);
   }
 
   /** Queue a domain event. Durable and off the request path — see EventOutboxService. */
