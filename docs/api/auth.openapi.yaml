@@ -1134,3 +1134,503 @@ paths:
           description: Link already used or no longer current
         '401':
           description: Bad signature or expired link
+
+  # ── Step-up verification (ADR-078) ────────────────────────────────────────
+  # Written 2026-08-24. These five auth routes and the six /users/me/* routes below had run with no
+  # entry in this document and no row in §14 — see the "Offline Sync"/"Master Data" note in §14.3
+  # for the same class of gap.
+  /auth/step-up/request:
+    post:
+      summary: Send a step-up verification code for a high-value action
+      description: |
+        Re-proves possession before a high-value action. Delivers a 6-digit code to the account's
+        registered channel — SMS when the account has a phone number, otherwise email (every
+        account has an email; only Path A accounts have a phone). The response carries the channel
+        and a MASKED destination; the full address is never echoed back.
+
+        A step-up CONFIRMS an already-authenticated caller — it never authenticates one, which is
+        why it sits behind the bearer guard. It inherits the controller's auth-tier throttle
+        (10 requests per minute, QM-7).
+      operationId: requestStepUp
+      tags: [step-up]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action:
+                  type: string
+                  enum: [data-export]
+                  description: The high-value action being confirmed.
+      responses:
+        '201':
+          description: Code sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  channel:
+                    type: string
+                    enum: [SMS, EMAIL]
+                  destinationHint:
+                    type: string
+                    description: Masked, so the UI can say "ending 4321" without holding the address.
+                  expiresInSeconds:
+                    type: integer
+        '401':
+          description: Authentication required
+        '429':
+          description: Daily verification limit exceeded
+
+  /auth/step-up/verify:
+    post:
+      summary: Exchange a step-up code for a single-use action token
+      description: |
+        The action token is NOT a session and can never be exchanged for one. It is bound to this
+        user and this action, lives 5 minutes, and is consumed the first time it is presented.
+      operationId: verifyStepUp
+      tags: [step-up]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action, code]
+              properties:
+                action:
+                  type: string
+                  enum: [data-export]
+                code:
+                  type: string
+                  pattern: '^\d{6}$'
+                  example: '123456'
+      responses:
+        '201':
+          description: Action token issued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  actionToken:
+                    type: string
+        '400':
+          description: Invalid or expired code
+        '401':
+          description: Authentication required
+        '429':
+          description: Maximum verification attempts exceeded
+
+  # ── Device attestation and trust (ADR-081/082/083) ────────────────────────
+  /auth/devices/attestation-challenge:
+    post:
+      summary: Mint a single-use challenge for platform attestation
+      description: |
+        Both Play Integrity and App Attest are challenge-response (ADR-083): the client fetches a
+        nonce, feeds it to the platform API, and returns it alongside the resulting token in
+        `POST /auth/devices`. A token not bound to a nonce this server issued is replayable
+        indefinitely, so the challenge is consumed on use — and a mismatch simply records no
+        attestation. Enrolment still succeeds, because attestation never blocks (ADR-054).
+      operationId: attestationChallenge
+      tags: [devices]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [deviceId]
+              properties:
+                deviceId:
+                  type: string
+      responses:
+        '200':
+          description: A single-use, short-lived challenge
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  challenge:
+                    type: string
+        '401':
+          description: Authentication required
+
+  /auth/devices/{deviceId}/trust:
+    get:
+      summary: The trust score for one of the caller's own devices (ADR-081)
+      description: |
+        **ADVISORY ONLY.** It never revokes a device and never blocks a login: §22.3 bars a model
+        from executing a transition that requires a human, and ADR-081 keeps that property while
+        the scorer is rule-based, so a regression here cannot become a lockout.
+
+        `scoredBy` says which scorer produced the number — `RULES` until a DeviceTrustModel is
+        deployed. ADR-081 forbids calling the rule-based path AI-derived, which is why the field
+        exists rather than being inferred from the value.
+
+        Behind the `s1.identity.device-trust-score` feature flag.
+      operationId: getDeviceTrust
+      tags: [devices]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The device's advisory trust report
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deviceId:
+                    type: string
+                  score:
+                    type: integer
+                  maxScore:
+                    type: integer
+                  capped:
+                    type: boolean
+                    description: True when a cap held the total below the sum of its signals.
+                  scoredBy:
+                    type: string
+                    enum: [RULES, MODEL]
+                  rulesVersion:
+                    type: string
+                  signals:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        signal:
+                          type: string
+                          enum:
+                            [attestation, recency, enrolmentAge, revocationHistory, asnStability]
+                        band:
+                          type: string
+                        points:
+                          type: integer
+                        maxPoints:
+                          type: integer
+        '401':
+          description: Authentication required
+        '404':
+          description: Not one of the caller's devices
+        '503':
+          description: COS-FLAG-001 — feature disabled
+
+  /auth/roles/{role}/permissions:
+    get:
+      summary: List the resource:action permissions granted to a role (RBAC §6.4)
+      description: |
+        The authoritative RBAC matrix, read-only. Exposed so a client — the mobile invite flow's
+        role-permissions screen — can show a real access breakdown instead of a hard-coded one.
+        No tenant or user state is involved: this is the static grant set.
+      operationId: getRolePermissions
+      tags: [rbac]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: role
+          in: path
+          required: true
+          schema:
+            type: string
+          description: A `CosRole` value.
+      responses:
+        '200':
+          description: Granted permissions for the role
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  role:
+                    type: string
+                  permissions:
+                    type: array
+                    items:
+                      type: string
+                      example: 'project:read'
+        '400':
+          description: Unknown role
+        '401':
+          description: Authentication required
+
+  # ── The signed-in user's own record (PDPA) ────────────────────────────────
+  # `users/me` is one of this codebase's two self-service conventions — `auth` for auth primitives,
+  # `users/me` for the caller's own record. ADR-078 rejected a third `/identity/me/...` namespace.
+  /users/me/consents:
+    get:
+      summary: The signed-in user's consent state for every PDPA category
+      description: |
+        Returns all five categories, not only the withdrawable ones. Categories on the CONTRACT
+        basis (`identity`, `contact` — PDPA §24(3)) report `granted: true, withdrawable: false`:
+        they are processed and the subject is entitled to be told so, but the route out is erasure,
+        not withdrawal. A category with no recorded decision reports `granted: false` — PDPA §19
+        requires an affirmative act, so silence is never consent.
+      operationId: getConsentState
+      tags: [consent]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Consent state per category, with lawful basis
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    category:
+                      type: string
+                      enum: [identity, contact, location, financial, operational]
+                    basis:
+                      type: string
+                      enum: [CONSENT, CONTRACT]
+                    granted:
+                      type: boolean
+                    withdrawable:
+                      type: boolean
+        '401':
+          description: Authentication required
+
+    post:
+      summary: Record a consent decision (grant or withdraw)
+      description: |
+        **Append-only.** A grant and a withdrawal both insert a new row and the prior row is never
+        mutated, so the history PDPA-22 requires survives. Withdrawal is forward-only: it stops
+        future collection for that purpose and does not delete what was lawfully collected while
+        consent was live — that is erasure (PDPA-13), a different request.
+
+        Only consent-basis purposes are accepted; a contract-basis category is a 400.
+      operationId: recordConsent
+      tags: [consent]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [purpose, granted, notice_version]
+              properties:
+                purpose:
+                  type: string
+                  enum: [location, financial, operational]
+                granted:
+                  type: boolean
+                  description: true = grant, false = withdraw. Both are recorded as new rows.
+                notice_version:
+                  type: string
+                  pattern: '^\d+\.\d+\.\d+$'
+                  example: 1.0.0
+                  description: The privacy-notice version shown to the user.
+      responses:
+        '204':
+          description: Decision recorded
+        '400':
+          description: Unknown purpose, or a contract-basis category
+        '401':
+          description: Authentication required
+
+  /users/me/network-origin:
+    get:
+      summary: What the platform can tell about the caller's own network origin (ADR-080)
+      description: |
+        Derived at read time and **never stored**: city, region and ISP are resolved from the
+        caller's own ingress IP against a self-hosted GeoLite2 database, then discarded. The
+        address is taken from the request, never from a parameter — otherwise this would be a
+        geo-IP lookup service for anyone holding a session.
+
+        The behavioural label is profiling and requires `operational` consent. Without it the field
+        is `null` — "Not enabled", which the screen must render differently from
+        `INSUFFICIENT_DATA` ("too few check-ins"). Collapsing the two would tell a worker who
+        declined profiling that the platform merely lacked data. The rule's thresholds are returned
+        alongside so the label can be shown with its derivation rather than as an assertion.
+      operationId: getNetworkOrigin
+      tags: [privacy]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Network origin and behavioural context
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  origin:
+                    type: [object, 'null']
+                    description: Null when no GeoLite2 database is configured or the IP is unknown.
+                    properties:
+                      city: { type: [string, 'null'] }
+                      region: { type: [string, 'null'] }
+                      countryIsoCode: { type: [string, 'null'] }
+                      organisation: { type: [string, 'null'] }
+                  behavioral:
+                    type: [object, 'null']
+                    description: Null means the subject has not consented to `operational` processing.
+                    properties:
+                      context:
+                        type: string
+                        enum: [STATIONARY, MOBILE, INSUFFICIENT_DATA]
+                      pointCount: { type: integer }
+                      maxDistanceMetres: { type: [number, 'null'] }
+                  rule:
+                    type: object
+                    properties:
+                      windowDays: { type: integer }
+                      radiusMetres: { type: integer }
+                      minPoints: { type: integer }
+        '401':
+          description: Authentication required
+
+  /users/me/data-export:
+    post:
+      summary: Request an export of your own data (PDPA §30/§31)
+      description: |
+        Requires a single-use action token from `POST /auth/step-up/verify` — re-proving possession
+        before an archive of every category of a person's data is assembled.
+
+        **202, not 201**: the export reads across every domain schema and is produced by a Temporal
+        workflow, so the response is the request's state, not the archive. Poll
+        `GET /users/me/data-export`, or wait for the email. There is no separate rate limit — every
+        request needs a fresh action token, and step-up already caps those at 10 per user per day.
+
+        Behind the `s1.identity.data-export` kill switch (QM-15 / ADR-049).
+      operationId: requestDataExport
+      tags: [data-export]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [categories, format, action_token]
+              properties:
+                categories:
+                  type: array
+                  minItems: 1
+                  uniqueItems: true
+                  items:
+                    type: string
+                    enum: [identity, contact, location, financial, operational]
+                format:
+                  type: string
+                  enum: [JSON, CSV]
+                  description: JSON keeps types; CSV is one file per table.
+                from_date:
+                  type: string
+                  format: date
+                  description: Inclusive start of the window. Absent means "no bound", not the epoch.
+                to_date:
+                  type: string
+                  format: date
+                  description: Inclusive end of the window.
+                action_token:
+                  type: string
+      responses:
+        '202':
+          description: Export request accepted and queued
+        '401':
+          description: Authentication required
+        '403':
+          description: COS-PDPA-002 — step-up verification required
+        '422':
+          description: COS-PDPA-003 — the reporting window is inverted
+        '503':
+          description: COS-FLAG-001 — feature disabled
+
+    get:
+      summary: List your own export requests and their status
+      description: |
+        Newest first. `downloadable` says whether a download can be attempted right now, so the
+        client does not have to re-derive "READY, has a file, and not past `expires_at`". A FAILED
+        request carries `failureReason` — a sentence for the reader, never a stack trace.
+      operationId: listDataExports
+      tags: [data-export]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: The caller's export requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    exportId: { type: string, format: uuid }
+                    status: { type: string }
+                    downloadable: { type: boolean }
+                    failureReason: { type: [string, 'null'] }
+                    expiresAt: { type: [string, 'null'], format: date-time }
+        '401':
+          description: Authentication required
+        '503':
+          description: COS-FLAG-001 — feature disabled
+
+  /users/me/data-export/{exportId}/download:
+    get:
+      summary: Mint a short-lived download link for a finished export
+      description: |
+        Returns a freshly signed URL on every call rather than a link that was emailed days ago.
+        The archive holds every coordinate the subject was recorded at, so a week-long bearer URL
+        sitting in a mailbox was rejected in ADR-078: `expires_at` is the REQUEST's 7-day validity,
+        and the URL's own lifetime is File Service's `SIGNED_URL_TTL_SECONDS`, returned alongside.
+
+        The kill switch gates the DOWNLOAD as well as the request — that is the point of having it.
+        The incident it exists for is "the export is producing wrong data", and in that incident the
+        archives already sitting in MinIO are exactly what must stop being handed out.
+      operationId: downloadDataExport
+      tags: [data-export]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: exportId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: A signed URL and the seconds it remains valid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url: { type: string }
+                  expiresInSeconds: { type: integer }
+        '401':
+          description: Authentication required
+        '404':
+          description: COS-PDPA-004 not yours · COS-PDPA-006 not retrievable
+        '410':
+          description: COS-PDPA-007 — expired; the archive is deleted
+        '422':
+          description: COS-PDPA-005 — still preparing, or it failed
+        '503':
+          description: COS-FLAG-001 — feature disabled

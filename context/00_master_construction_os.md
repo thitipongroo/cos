@@ -3868,6 +3868,9 @@ Sync Engine Architecture:
                          show notification to user
 
   Delta Sync:
+    - API CONTRACT: docs/api/sync.openapi.yaml + spec §14 "Offline Sync APIs" — both written
+      2026-08-24. All six routes had run since Phase 10 named in no §14 table and carried by no
+      OpenAPI document, while the mobile client depended on every one of them.
     - Server provides: GET /api/v1/sync/delta?since={timestamp}&entity_types[]=...
     - Client requests delta on foreground resume and after background sync
     - Delta response: { updated: [...], deleted: [...], server_timestamp }

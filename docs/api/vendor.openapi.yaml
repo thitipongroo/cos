@@ -23,6 +23,31 @@ tags:
     description: Tier-2 vendor session — track PO status and submit invoices
 
 paths:
+  # ── The vendor's own lists (written 2026-08-24) ───────────────────────────
+  # Authenticated by VendorAuthGuard, not the tenant JWT: the vendor is external and has no COS
+  # account. Both routes are scoped to the vendor the token names — there is no vendor_id parameter
+  # precisely so one vendor cannot ask about another.
+  /vendor/rfqs:
+    get:
+      summary: List the RFQs this vendor was invited to
+      operationId: listInvitedRfqs
+      tags: [vendor]
+      responses:
+        '200':
+          description: RFQs the vendor holds an invitation for
+        '401':
+          description: Missing, expired or invalid vendor token
+
+  /vendor/quotations:
+    get:
+      summary: List the vendor's own submitted quotations
+      operationId: listVendorQuotations
+      tags: [vendor]
+      responses:
+        '200':
+          description: Quotations this vendor has submitted
+        '401':
+          description: Missing, expired or invalid vendor token
   /procurement/rfqs/{rfqId}/invitations:
     post:
       tags: [Invitations]

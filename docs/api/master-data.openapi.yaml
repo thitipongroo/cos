@@ -1,0 +1,441 @@
+openapi: 3.1.0
+info:
+  title: Construction OS — Master Data API
+  version: v1
+  description: |
+    The tenant's controlled vocabularies: materials, work categories, issue categories and cost
+    categories. `09-data-architecture.md` §9.5 is the governing principle — every transactional
+    record references a master-data domain by key, and free text in a field that has one is a
+    defect.
+
+    **Read is open to every authenticated role, write is TENANT_ADMIN.** The asymmetry is the point:
+    a field worker filling a dropdown needs the list on every screen, and letting them add a row
+    would defeat the reason the vocabulary is controlled — two spellings of the same material
+    become two materials, and every downstream sum splits in half.
+
+    The four vocabularies live in four different schemas, each next to the domain that consumes it:
+    `procurement.materials`, `site_ops.work_categories`, `site_ops.issue_categories`,
+    `finance.cost_categories`. All four are RLS-isolated per tenant.
+
+    Written 2026-08-24. These eleven routes had run with no OpenAPI document; §14.3 listed no
+    master-data domain.
+
+servers:
+  - url: /api/v1
+    description: Current version
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    MaterialCategory:
+      type: string
+      enum: [CONCRETE, STEEL, FORMWORK, ELECTRICAL, PLUMBING, FINISHES, EQUIPMENT, OTHER]
+
+    MaterialUnit:
+      type: string
+      description: The unit a quantity of this material is counted in. Postgres enum `MaterialUnit`.
+      enum: [KG, TON, M3, M2, M, UNIT, SET, BAG, ROLL]
+
+    IssueSeverityDefault:
+      type: string
+      description: |
+        The severity an issue of this category starts at. A default, not a ceiling — the person
+        raising the issue can still set a different one.
+      enum: [LOW, MEDIUM, HIGH, CRITICAL]
+      default: MEDIUM
+
+    CostCategoryType:
+      type: string
+      enum: [MATERIAL, LABOR, EQUIPMENT, OVERHEAD]
+
+    Material:
+      type: object
+      properties:
+        material_id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        name: { type: string, maxLength: 255 }
+        category: { $ref: '#/components/schemas/MaterialCategory' }
+        unit: { $ref: '#/components/schemas/MaterialUnit' }
+        is_active: { type: boolean }
+        created_by: { type: string, format: uuid }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    WorkCategory:
+      type: object
+      properties:
+        work_category_id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        name: { type: string, maxLength: 255 }
+        code:
+          type: string
+          maxLength: 50
+          description: Unique per tenant (e.g. `EARTHWORK`). The stable key; `name` is the label.
+        phase: { type: [string, 'null'], maxLength: 100 }
+        is_active: { type: boolean }
+        created_by: { type: string, format: uuid }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    IssueCategory:
+      type: object
+      properties:
+        issue_category_id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        name: { type: string, maxLength: 255 }
+        severity_default: { $ref: '#/components/schemas/IssueSeverityDefault' }
+        is_active: { type: boolean }
+        created_by: { type: string, format: uuid }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    CostCategory:
+      type: object
+      properties:
+        cost_category_id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        name: { type: string, maxLength: 255 }
+        type: { $ref: '#/components/schemas/CostCategoryType' }
+        is_active: { type: boolean }
+        created_by: { type: string, format: uuid }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: COS-MASTER-001
+            message: { type: string }
+            messageKey: { type: string }
+            details: { type: object }
+            traceId: { type: string }
+            timestamp: { type: string, format: date-time }
+
+  responses:
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Writing master data requires TENANT_ADMIN
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: No such row in this tenant
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: |
+        The row's unique key is already taken in this tenant — `(tenant_id, name)` for materials,
+        issue categories and cost categories; `(tenant_id, code)` for work categories.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+paths:
+  /materials:
+    get:
+      summary: List active materials
+      operationId: listMaterials
+      tags: [master-data]
+      responses:
+        '200':
+          description: The tenant's active materials
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Material'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      summary: Create a material
+      description: TENANT_ADMIN only. `name` is unique per tenant.
+      operationId: createMaterial
+      tags: [master-data]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, category, unit]
+              properties:
+                name: { type: string, maxLength: 255 }
+                category: { $ref: '#/components/schemas/MaterialCategory' }
+                unit: { $ref: '#/components/schemas/MaterialUnit' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Material'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /materials/{id}:
+    patch:
+      summary: Update a material
+      description: |
+        TENANT_ADMIN only. Partial — every field is optional. Setting `is_active: false` is the
+        same withdrawal as `DELETE`, spelled as an update.
+      operationId: updateMaterial
+      tags: [master-data]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, maxLength: 255 }
+                category: { $ref: '#/components/schemas/MaterialCategory' }
+                unit: { $ref: '#/components/schemas/MaterialUnit' }
+                is_active: { type: boolean }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Material'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+    delete:
+      summary: Withdraw a material from the vocabulary
+      description: |
+        **Soft delete** — the row is marked inactive, never removed. Transactional records already
+        reference it by key, and deleting the row would leave those records pointing at nothing:
+        a purchase order from last year has to keep naming the material it was for. Withdrawing it
+        stops the material appearing in new dropdowns and changes no history.
+      operationId: deleteMaterial
+      tags: [master-data]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Withdrawn
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /work-categories:
+    get:
+      summary: List active work categories
+      operationId: listWorkCategories
+      tags: [master-data]
+      responses:
+        '200':
+          description: The tenant's active work categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WorkCategory'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      summary: Create a work category
+      description: TENANT_ADMIN only. `code` is unique per tenant and is what other records store.
+      operationId: createWorkCategory
+      tags: [master-data]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, code]
+              properties:
+                name: { type: string, maxLength: 255 }
+                code: { type: string, maxLength: 50 }
+                phase: { type: string, maxLength: 100 }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkCategory'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /work-categories/{id}:
+    patch:
+      summary: Update a work category
+      description: |
+        TENANT_ADMIN only, partial. `code` is deliberately NOT updatable: it is the key other
+        records store, so changing it would silently re-point every one of them.
+      operationId: updateWorkCategory
+      tags: [master-data]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, maxLength: 255 }
+                phase: { type: string, maxLength: 100 }
+                is_active: { type: boolean }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkCategory'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /issue-categories:
+    get:
+      summary: List active issue categories
+      operationId: listIssueCategories
+      tags: [master-data]
+      responses:
+        '200':
+          description: The tenant's active issue categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/IssueCategory'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      summary: Create an issue category
+      description: TENANT_ADMIN only. `name` is unique per tenant.
+      operationId: createIssueCategory
+      tags: [master-data]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, maxLength: 255 }
+                severity_default: { $ref: '#/components/schemas/IssueSeverityDefault' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IssueCategory'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /cost-categories:
+    get:
+      summary: List active cost categories
+      operationId: listCostCategories
+      tags: [master-data]
+      responses:
+        '200':
+          description: The tenant's active cost categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CostCategory'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      summary: Create a cost category
+      description: TENANT_ADMIN only. `name` is unique per tenant.
+      operationId: createCostCategory
+      tags: [master-data]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, type]
+              properties:
+                name: { type: string, maxLength: 255 }
+                type: { $ref: '#/components/schemas/CostCategoryType' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CostCategory'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'

@@ -558,6 +558,113 @@ components:
               type: string
               format: date-time
 paths:
+  # ── Vendor invoices and the vendor scorecard (written 2026-08-24) ─────────
+  /procurement/vendor-invoices/{invoiceId}:
+    get:
+      summary: Get a vendor invoice by id
+      operationId: getVendorInvoice
+      tags: [vendor-invoices]
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: The invoice
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Insufficient role
+        '404':
+          description: No such invoice in this tenant
+
+  /procurement/vendor-invoices/{invoiceId}/dispute:
+    post:
+      summary: Dispute a vendor invoice
+      description: |
+        FINANCE or TENANT_ADMIN. Moves the invoice to DISPUTED, which stops it being paid while the
+        disagreement is open — a dispute is a hold, not a rejection, and the invoice stays on the
+        ledger.
+      operationId: disputeVendorInvoice
+      tags: [vendor-invoices]
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: string }
+      responses:
+        '201':
+          description: Invoice disputed
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Insufficient role — FINANCE or TENANT_ADMIN
+        '404':
+          description: No such invoice in this tenant
+        '422':
+          description: Not in a disputable state
+
+  /procurement/vendor-invoices/{invoiceId}/note:
+    post:
+      summary: Set the free-text note on a vendor invoice
+      description: FINANCE or TENANT_ADMIN. Replaces the note; it is a field, not an append log.
+      operationId: setVendorInvoiceNote
+      tags: [vendor-invoices]
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                note: { type: string }
+      responses:
+        '201':
+          description: Note set
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Insufficient role
+        '404':
+          description: No such invoice in this tenant
+
+  /procurement/vendors/{vendorId}/score:
+    get:
+      summary: Vendor scorecard
+      description: |
+        On-time delivery, quality and price, reduced to a grade. Derived from the vendor's own
+        delivery and quotation history — there is no manually entered rating to disagree with it.
+      operationId: getVendorScore
+      tags: [vendors]
+      parameters:
+        - name: vendorId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: The scorecard
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Insufficient role
+        '404':
+          description: No such vendor in this tenant
   /procurement/vendors:
     post:
       tags:

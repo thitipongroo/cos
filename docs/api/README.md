@@ -36,9 +36,12 @@ auth mechanism) requires a new version; old versions stay functional for ≥ 12 
 | Analytics          | [analytics.openapi.yaml](analytics.openapi.yaml)                 | Construction OS — Analytics API           | `1.0.0`        |
 | Vendor Portal      | [vendor.openapi.yaml](vendor.openapi.yaml)                       | Construction OS — Vendor Portal API       | `v1`           |
 | Digital Twin       | [digital-twin.openapi.yaml](digital-twin.openapi.yaml)           | Construction OS — Digital Twin API        | `v1`           |
+| Offline Sync       | [sync.openapi.yaml](sync.openapi.yaml)                           | Construction OS — Offline Sync API        | `v1`           |
+| Master Data        | [master-data.openapi.yaml](master-data.openapi.yaml)             | Construction OS — Master Data API         | `v1`           |
+| Geo                | [geo.openapi.yaml](geo.openapi.yaml)                             | Construction OS — Geo API                 | `v1`           |
 | — (see below)      | [platform-webhooks.openapi.yaml](platform-webhooks.openapi.yaml) | Construction OS — Platform Webhooks API   | `1.0.0`        |
 
-19 specs. Two notes on the last two rows, both differences between this folder and §14.3 rather than
+22 specs. Two notes on the last two rows, both differences between this folder and §14.3 rather than
 errors in either — recorded here so nobody has to re-derive them:
 
 - **`digital-twin`** is marked in §14.3 as _"Post-MVP — Phase 24 … (not created before Phase 24
@@ -62,14 +65,17 @@ prefix, not this field.
 
 ## When you change an API
 
-1. Update the service's `.openapi.yaml` in the same PR as the code. **Nothing enforces this today**
-   — `scripts/readiness/check-openapi-freshness.sh` exists and compares the spec's last commit
-   against its module's, but it runs in no workflow, and this line claimed CI failed on a stale spec
-   until 2026-08-23. Run today it reports **12 of 12 documents stale**, and a route-level comparison
-   finds **62 of 276 controller routes documented in no file at all** — `/sync/*` entirely,
-   `/geo/reverse`, most of `/materials`, and seven of the contract endpoints among them. Wiring the
-   script in would block every merge until those are written, which is why it is a decision and not
-   a fix.
+1. Update the service's `.openapi.yaml` in the same PR as the code — **CI fails if the document is
+   older than the module it describes** (`scripts/readiness/check-openapi-freshness.sh`, wired into
+   the `lint` job on 2026-08-24). It compares git COMMIT timestamps, not mtimes, so a fresh clone
+   gives the same answer as a working tree.
+
+   This line claimed the same thing before 2026-08-24 and was not true: the script existed, worked,
+   and ran in no workflow. Run then, it reported 12 of 12 documents stale, and a route-level
+   comparison found **62 of 276 controller routes carried by no document at all** — every `/sync/*`
+   endpoint the mobile client depends on, `/geo/reverse`, all of `/materials`, seven contract
+   endpoints. All 62 were written that day and the gate turned on behind them.
+
 2. New error code → add it to [error-codes.md](error-codes.md).
 3. Breaking change → new version, plus a `BREAKING CHANGE:` entry in the root `CHANGELOG.md`.
 4. Sunsetting a version → record the date in [deprecation-schedule.md](deprecation-schedule.md).

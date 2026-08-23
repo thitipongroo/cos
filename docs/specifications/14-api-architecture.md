@@ -143,6 +143,9 @@ The patterns below define the shape for each API category. OpenAPI specs are mai
 | Knowledge Graph    | [graph](../api/graph.openapi.yaml)               | MVP (Phase 13)                                                                                                         |
 | Analytics          | [analytics](../api/analytics.openapi.yaml)       | MVP (Phase 14)                                                                                                         |
 | Digital Twin       | [digital-twin](../api/digital-twin.openapi.yaml) | **Post-MVP — Phase 24 (SaaS maturity Stage 5 / Year 5+)** (not created before Phase 24 begins)                         |
+| Offline Sync       | [sync](../api/sync.openapi.yaml)                 | MVP (Phase 10) — the device↔server transport, not a domain. Added to this table 2026-08-24.                            |
+| Master Data        | [master-data](../api/master-data.openapi.yaml)   | MVP — tenant-controlled vocabularies (materials, work/issue/cost categories). Added 2026-08-24.                        |
+| Geo                | [geo](../api/geo.openapi.yaml)                   | MVP — reverse geocoding against the in-cluster Nominatim. Added 2026-08-24.                                            |
 
 The endpoint patterns below serve as the canonical reference;
 OpenAPI files are the machine-readable contracts derived from these patterns.
@@ -175,6 +178,30 @@ convention, not a restriction, and is not repeated here.
 | `POST` | `/api/v1/auth/mfa/verify`       | Confirm TOTP code to complete enrollment; sets `mfa_enabled = true`           | Bearer token |
 | `POST` | `/api/v1/auth/mfa/authenticate` | Verify TOTP during login (`TENANT_ADMIN`, `FINANCE` — Path B only per §5.4.4) | Bearer token |
 
+Five further routes on this controller, tabled 2026-08-24 — they had run since their ADRs shipped,
+named in no §14 table and carried by no OpenAPI document:
+
+| Method | Path                                         | Description                                                       | Auth         |
+| ------ | -------------------------------------------- | ----------------------------------------------------------------- | ------------ |
+| `POST` | `/api/v1/auth/step-up/request`               | Send a 6-digit code to re-prove possession — ADR-078              | Bearer token |
+| `POST` | `/api/v1/auth/step-up/verify`                | Exchange the code for a single-use, 5-minute action token         | Bearer token |
+| `POST` | `/api/v1/auth/devices/attestation-challenge` | Mint a single-use nonce for Play Integrity / App Attest — ADR-083 | Bearer token |
+| `GET`  | `/api/v1/auth/devices/{device_id}/trust`     | Advisory trust score for the caller's OWN device — ADR-081        | Bearer token |
+| `GET`  | `/api/v1/auth/roles/{role}/permissions`      | The §6.4 grant set for a role, read-only                          | Bearer token |
+
+Three properties are load-bearing and easy to erode:
+
+- **A step-up confirms an already-authenticated caller; it never authenticates one.** The action
+  token it issues is not a session and can never be exchanged for one — it is bound to one user and
+  one action, lives 5 minutes, and is consumed on first use.
+- **The attestation challenge is consumed on use, and a mismatch records no attestation rather than
+  refusing enrolment.** Attestation never blocks (ADR-054); a token not bound to a nonce this server
+  issued would otherwise be replayable indefinitely.
+- **The trust score is ADVISORY.** It never revokes a device and never blocks a login — §22.3 bars a
+  model from executing a transition that requires a human, and ADR-081 holds the property while the
+  scorer is rules so a regression cannot become a lockout. `scoredBy` names the scorer because
+  ADR-081 forbids calling the rule-based path AI-derived.
+
 ---
 
 #### Project APIs
@@ -200,8 +227,24 @@ gets shipped without a guard. A tenant admin needs it to offboard someone: befor
 you have to know what they are still on. Both are tenant-scoped like every other read, so an admin
 cannot ask about a user in another tenant.
 
-Recorded here 2026-08-22. Both were built, documented in OpenAPI and gated, but named in no
-specification — [OQ-21](../technical-design/README.md#open-questions-register).
+Recorded here 2026-08-22. Both were built and gated but named in no specification —
+[OQ-21](../technical-design/README.md#open-questions-register). This paragraph also claimed they were
+"documented in OpenAPI"; they were not, in this or any other file, until 2026-08-24.
+
+**Project phases** (ADR-070) and the **risk register** (ADR-065) hang off a project and are tabled
+in their own ADR sections below. Read is any authenticated tenant user for both; writing a phase is
+PM or Tenant Admin, raising a risk additionally allows Site Engineer — a risk is usually noticed on
+site — and editing or closing one narrows back to PM / Tenant Admin.
+
+| Method  | Path                                   | Description                                  | Auth             |
+| ------- | -------------------------------------- | -------------------------------------------- | ---------------- |
+| `GET`   | `/api/v1/projects/{project_id}/phases` | List phases, ordered by `seq`                | Any role         |
+| `POST`  | `/api/v1/projects/{project_id}/phases` | Create a phase (`seq` unique per project)    | PM, Tenant Admin |
+| `PATCH` | `/api/v1/phases/{phase_id}`            | Update a phase (status / seq / name / dates) | PM, Tenant Admin |
+
+The CURRENT phase is **not stored**. It is derived — the lowest-`seq` phase that is `IN_PROGRESS`,
+else the lowest-`seq` phase not `COMPLETED`, else none — so there is no second place for it to be
+wrong.
 
 Example request — create project:
 
@@ -241,6 +284,19 @@ POST /api/v1/projects
 | `GET`   | `/api/v1/procurement/grn`                             | List goods-receipt notes                             | Any role                               |
 | `POST`  | `/api/v1/procurement/stock-movements`                 | Issue / transfer / adjust stock — ADR-060            | Procurement Officer, Site Engineer     |
 | `GET`   | `/api/v1/procurement/stock-movements`                 | Stock movement ledger                                | Any role                               |
+
+Four further routes on this surface, tabled 2026-08-24:
+
+| Method | Path                                                       | Description                                   | Auth                  |
+| ------ | ---------------------------------------------------------- | --------------------------------------------- | --------------------- |
+| `GET`  | `/api/v1/procurement/vendor-invoices/{invoice_id}`         | Get a vendor invoice                          | Read roles            |
+| `POST` | `/api/v1/procurement/vendor-invoices/{invoice_id}/dispute` | Dispute it (→ DISPUTED)                       | Finance, Tenant Admin |
+| `POST` | `/api/v1/procurement/vendor-invoices/{invoice_id}/note`    | Set the free-text note                        | Finance, Tenant Admin |
+| `GET`  | `/api/v1/procurement/vendors/{vendor_id}/score`            | Scorecard (on-time / quality / price → grade) | Read roles            |
+
+A dispute is a HOLD, not a rejection: it stops the invoice being paid while the disagreement is
+open, and the invoice stays on the ledger. The scorecard is derived from the vendor's own delivery
+and quotation history — there is no manually entered rating that can disagree with it.
 
 ---
 
@@ -361,23 +417,33 @@ POST /api/v1/projects
 | `PATCH` | `/api/v1/site/inspections/{inspection_id}`   | Approve / request re-inspection (status transition)   | PM, Site Engineer, Safety, Admin |
 | `GET`   | `/api/v1/site/conflict-records`              | List unresolved conflict records                      | Site Engineer, PM, Admin         |
 | `PATCH` | `/api/v1/site/conflict-records/{id}/resolve` | Mark conflict record resolved                         | Site Engineer, PM, Admin         |
+| `POST`  | `/api/v1/site/issues/{issue_id}/escalate`    | Escalate an issue to the PM (in-app notification)     | SW, SE, PM, Safety, Admin        |
+
+Escalation is open to everyone who can raise an issue, deliberately: the person who finds the
+blocker is usually the one who needs it escalated, and a narrower list routes the decision through
+whoever happens to hold a role. Tabled 2026-08-24.
 
 ---
 
 #### Workforce APIs
 
-| Method  | Path                                              | Description                     | Auth              |
-| ------- | ------------------------------------------------- | ------------------------------- | ----------------- |
-| `POST`  | `/api/v1/workers`                                 | Register a worker               | PM, Site Engineer |
-| `GET`   | `/api/v1/workers`                                 | List workers (tenant-scoped)    | Any role          |
-| `GET`   | `/api/v1/workers/{worker_id}`                     | Get worker detail               | Any role          |
-| `POST`  | `/api/v1/workers/{worker_id}/attendance`          | Record check-in / check-out     | PM, Site Engineer |
-| `GET`   | `/api/v1/workers/{worker_id}/attendance`          | Attendance history (date range) | Any role          |
-| `POST`  | `/api/v1/projects/{project_id}/workforce`         | Allocate a worker to a project  | PM, Site Engineer |
-| `GET`   | `/api/v1/projects/{project_id}/workforce`         | List project workforce          | Any role          |
-| `GET`   | `/api/v1/projects/{project_id}/workforce/summary` | Manpower summary (analytics)    | Any role          |
-| `POST`  | `/api/v1/timesheets`                              | Submit a timesheet              | PM, Site Engineer |
-| `PATCH` | `/api/v1/timesheets/{timesheet_id}/approve`       | Approve a timesheet             | Site Engineer     |
+| Method  | Path                                              | Description                         | Auth              |
+| ------- | ------------------------------------------------- | ----------------------------------- | ----------------- |
+| `POST`  | `/api/v1/workers`                                 | Register a worker                   | PM, Site Engineer |
+| `GET`   | `/api/v1/workers`                                 | List workers (tenant-scoped)        | Any role          |
+| `GET`   | `/api/v1/workers/{worker_id}`                     | Get worker detail                   | Any role          |
+| `POST`  | `/api/v1/workers/{worker_id}/attendance`          | Record check-in / check-out         | PM, Site Engineer |
+| `GET`   | `/api/v1/workers/{worker_id}/attendance`          | Attendance history (date range)     | Any role          |
+| `POST`  | `/api/v1/projects/{project_id}/workforce`         | Allocate a worker to a project      | PM, Site Engineer |
+| `GET`   | `/api/v1/projects/{project_id}/workforce`         | List project workforce              | Any role          |
+| `GET`   | `/api/v1/projects/{project_id}/workforce/summary` | Manpower summary (analytics)        | Any role          |
+| `POST`  | `/api/v1/timesheets`                              | Submit a timesheet                  | PM, Site Engineer |
+| `PATCH` | `/api/v1/timesheets/{timesheet_id}/approve`       | Approve a timesheet                 | Site Engineer     |
+| `GET`   | `/api/v1/workers/me`                              | The worker row linked to the caller | Any role          |
+
+`/workers/me` is the bridge between an account and a worker row, so a field worker can check
+themselves in without knowing their own `worker_id`. Scoped by the JWT — no parameter, so it cannot
+be pointed at anyone else. Tabled 2026-08-24.
 
 ---
 
@@ -418,6 +484,43 @@ POST /api/v1/projects
 > the gap noted in `backend/src/modules/sync/sync-authz.ts`, where `photo_annotation` previously carried
 > no entry and therefore no role requirement beyond authentication). This satisfies the
 > `writeNeverWiderThanRead` invariant that file asserts, since annotation reads are unrestricted.
+
+---
+
+#### Offline Sync APIs
+
+The transport between a field device and the server. Specified in full in `17-offline-mobile-sync.md`
+— §17.2 (the tenant-admin review queue), §17.5 (per-entity conflict rules), §17.9 (the delta pull).
+Tabled here 2026-08-24: these six routes had run since Phase 10 named in no §14 table and carried by
+no OpenAPI document, while the mobile client depended on all of them.
+
+**Sync owns no entity.** `/sync/push` routes a mutation to the same service the equivalent REST
+route calls, and `/sync/delta` reads the same tables the equivalent `GET`s read. The Auth column
+below is therefore not a policy of its own: `SyncAuthGuard` mirrors, per entity type, the roles the
+equivalent REST route enforces today (`sync-authz.ts`). Widening what a role may do belongs in that
+REST controller, and sync follows it — otherwise `/sync/*` becomes an unguarded second door into
+services whose authorisation lives entirely in a controller decorator.
+
+| Method  | Path                                               | Description                                                | Auth                            |
+| ------- | -------------------------------------------------- | ---------------------------------------------------------- | ------------------------------- |
+| `GET`   | `/api/v1/sync/delta`                               | Pull changes since a cursor (`?since`, `?entity_types[]`)  | Mirrors each type's REST read   |
+| `POST`  | `/api/v1/sync/push`                                | Push one queued mutation; applies the §17.5 strategy       | Mirrors each type's REST write  |
+| `POST`  | `/api/v1/sync/resolve`                             | Same handler as `push`, under the name §17.4 uses          | Mirrors each type's REST write  |
+| `POST`  | `/api/v1/sync/exhausted`                           | Report a mutation that exhausted its 5 retries — §17.2     | Mirrors the entity's REST write |
+| `GET`   | `/api/v1/sync/exhaustions`                         | The review queue (`?status=PENDING\|RESOLVED`, newest 200) | Tenant Admin                    |
+| `PATCH` | `/api/v1/sync/exhaustions/{exhaustion_id}/resolve` | Mark a queued record IMPORTED or DISCARDED — §17.2         | Tenant Admin                    |
+
+Three properties of this surface are easy to get wrong and are settled here:
+
+- **`/sync/exhausted` sits on the push controller, not the admin one.** Reporting that a safety
+  incident failed to sync carries that incident's payload, so it needs the role that could have
+  pushed it. The queue's own routes are Tenant Admin and live on a separate controller, because the
+  guard reads a `GET` as a `delta` and would try to narrow `entity_types` out of the query string.
+- **Resolving is a state change, never a delete.** §17.2 keeps the device's copy "until successfully
+  synced or explicitly resolved by an admin" — the row is what tells the device it may stop holding
+  the record. Deleting it strands the record on the phone permanently.
+- **`deleted[]` is empty today.** It reads `platform.sync_tombstones`, and no delete path exists for
+  any of the six pullable entities, so nothing records a tombstone yet.
 
 ---
 
@@ -505,6 +608,73 @@ POST /api/v1/ai/reports/site-summary
 | `GET`  | `/api/v1/procurement/vendors/{vendor_id}`            | Get vendor detail with rating     | Any role            |
 | `GET`  | `/api/v1/procurement/vendors/{vendor_id}/quotations` | List quotation history for vendor | Any role            |
 
+The rows above are the BUYER's view, under `/procurement/vendors`. The external portal is a separate
+surface under `/vendor`, authenticated by a vendor token rather than a tenant JWT — the vendor has
+no COS account. Both routes are scoped to the vendor the token names, with no `vendor_id` parameter,
+precisely so one vendor cannot ask about another. Tabled 2026-08-24.
+
+| Method | Path                        | Description                           | Auth         |
+| ------ | --------------------------- | ------------------------------------- | ------------ |
+| `GET`  | `/api/v1/vendor/rfqs`       | RFQs this vendor was invited to       | Vendor token |
+| `GET`  | `/api/v1/vendor/quotations` | The vendor's own submitted quotations | Vendor token |
+
+---
+
+#### Geo APIs
+
+| Method | Path                            | Description                               | Auth         |
+| ------ | ------------------------------- | ----------------------------------------- | ------------ |
+| `GET`  | `/api/v1/geo/reverse?lat=&lon=` | Reverse-geocode coordinates to an address | Bearer token |
+
+**The geocoder is self-hosted** — Nominatim over the Geofabrik Thailand extract, in-cluster. A
+coordinate is where a named worker stood at a named time, so sending it to a third-party geocoder
+would export exactly the data PDPA treats most carefully, one lookup at a time, for a label.
+
+`address` is null when the geocoder cannot answer, and that is a 200, not an error: a screen that
+has coordinates can still show them, and failing the request would make an unavailable geocoder look
+like an unavailable site report. Tabled 2026-08-24.
+
+---
+
+#### Master Data APIs
+
+The tenant's controlled vocabularies. `09-data-architecture` §9.5 is the governing rule — every
+transactional record references a master-data domain by key, and free text in a field that has one
+is a defect. Tabled here 2026-08-24; the routes had run since Priority 0 Section D named in no §14
+table.
+
+**Read is every authenticated role; write is Tenant Admin.** The asymmetry is the point. A field
+worker needs the list to fill a dropdown on every screen, and letting them add a row would defeat
+the reason the vocabulary is controlled: two spellings of the same material become two materials,
+and every downstream total splits in half.
+
+| Method   | Path                           | Description                                     | Auth         |
+| -------- | ------------------------------ | ----------------------------------------------- | ------------ |
+| `GET`    | `/api/v1/materials`            | List active materials                           | Any role     |
+| `POST`   | `/api/v1/materials`            | Create a material (unique `name` per tenant)    | Tenant Admin |
+| `PATCH`  | `/api/v1/materials/{id}`       | Update a material (partial)                     | Tenant Admin |
+| `DELETE` | `/api/v1/materials/{id}`       | Withdraw a material — SOFT delete               | Tenant Admin |
+| `GET`    | `/api/v1/work-categories`      | List active work categories                     | Any role     |
+| `POST`   | `/api/v1/work-categories`      | Create one (unique `code` per tenant)           | Tenant Admin |
+| `PATCH`  | `/api/v1/work-categories/{id}` | Update `name` / `phase` / `is_active` only      | Tenant Admin |
+| `GET`    | `/api/v1/issue-categories`     | List active issue categories                    | Any role     |
+| `POST`   | `/api/v1/issue-categories`     | Create one (`severity_default`, default MEDIUM) | Tenant Admin |
+| `GET`    | `/api/v1/cost-categories`      | List active cost categories                     | Any role     |
+| `POST`   | `/api/v1/cost-categories`      | Create one (MATERIAL/LABOR/EQUIPMENT/OVERHEAD)  | Tenant Admin |
+
+Two shapes here are deliberate and worth stating, because both look like omissions:
+
+- **Withdrawal is a soft delete.** `DELETE /materials/{id}` sets `is_active = false`. Transactional
+  records already reference the row by key: a purchase order from last year has to keep naming the
+  material it was for, so removing the row would leave it pointing at nothing. Withdrawing keeps
+  the material out of new dropdowns and changes no history.
+- **A work category's `code` cannot be updated.** It is the key other records store; changing it
+  would silently re-point every one of them. `name` is the label and is freely editable.
+
+The four vocabularies live in four schemas, each beside the domain that consumes it —
+`procurement.materials`, `site_ops.work_categories`, `site_ops.issue_categories`,
+`finance.cost_categories` — all RLS-isolated per tenant.
+
 ---
 
 #### User Management APIs
@@ -527,6 +697,35 @@ until the second is added; provisioning a user for both is not yet specified.
 | `PATCH` | `/api/v1/users/{user_id}/deactivate` | Deactivate a user (revokes access, preserves data)                            | Tenant Admin |
 | `GET`   | `/api/v1/tenant/settings`            | Get tenant settings (variance/retention defaults, LINE token, notif)          | Tenant Admin |
 | `PATCH` | `/api/v1/tenant/settings`            | Update tenant settings (partial; §20.7.8, ADR-028)                            | Tenant Admin |
+
+**The caller's own record** — `users/me`, one of this codebase's two self-service conventions
+(`auth` for auth primitives, `users/me` for "the signed-in user's own record"). ADR-078 rejected a
+third `/identity/me/...` namespace: it would leave the API with two ways to say "me". None of these
+routes carries a role check — each scopes by the JWT's own `user_id` on top of RLS, so a caller
+reaches only their own data. Tabled 2026-08-24.
+
+| Method | Path                                                | Description                                          | Auth         |
+| ------ | --------------------------------------------------- | ---------------------------------------------------- | ------------ |
+| `GET`  | `/api/v1/users/me/consents`                         | Consent state for all five PDPA categories — ADR-079 | Bearer token |
+| `POST` | `/api/v1/users/me/consents`                         | Record a grant or a withdrawal (append-only)         | Bearer token |
+| `GET`  | `/api/v1/users/me/network-origin`                   | Own network origin + behavioural label — ADR-080     | Bearer token |
+| `POST` | `/api/v1/users/me/data-export`                      | Request an export of own data (PDPA §30/§31)         | Bearer token |
+| `GET`  | `/api/v1/users/me/data-export`                      | Own export requests and their status                 | Bearer token |
+| `GET`  | `/api/v1/users/me/data-export/{export_id}/download` | Mint a short-lived signed URL for a finished export  | Bearer token |
+
+- **Consent is append-only.** A grant and a withdrawal both insert a new row; the prior row is never
+  mutated, so the history PDPA-22 requires survives. Withdrawal is forward-only — it stops future
+  collection and does not delete what was lawfully collected while consent was live. That is
+  erasure (PDPA-13), a different request. A category with no decision reports `granted: false`:
+  PDPA §19 requires an affirmative act, so silence is never consent.
+- **The network origin is derived at read time and never stored**, from the caller's own ingress IP
+  — never from a parameter, which would make it a geo-IP lookup service for anyone with a session.
+  The behavioural label is profiling and needs `operational` consent; without it the field is null
+  ("Not enabled"), which a screen must render differently from `INSUFFICIENT_DATA`.
+- **An export needs a step-up action token, and returns 202.** It reads across every domain schema
+  through a Temporal workflow, so the response is the request's state, not the archive. The download
+  mints a fresh signed URL per call rather than mailing a long-lived one — the archive holds every
+  coordinate the subject was recorded at (ADR-078).
 
 Request body — create user (Path A, phone OTP):
 

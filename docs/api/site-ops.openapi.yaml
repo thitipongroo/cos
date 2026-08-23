@@ -397,6 +397,31 @@ components:
               format: date-time
 
 paths:
+  # ── Issue escalation (written 2026-08-24) ─────────────────────────────────
+  /site/issues/{issueId}/escalate:
+    post:
+      summary: Escalate an issue to the Project Manager
+      description: |
+        Sends an in-app notification to the PM. Open to everyone who can raise an issue —
+        SITE_WORKER, SITE_ENGINEER, PROJECT_MANAGER, SAFETY_OFFICER, TENANT_ADMIN — because the
+        person who finds the blocker is usually the one who needs it escalated, and a narrower list
+        would route the decision through whoever happens to hold a role.
+      operationId: escalateIssue
+      tags: [issues]
+      parameters:
+        - name: issueId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '201':
+          description: Escalated; the PM has been notified
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /site/reports:
     post:
       summary: Create or upsert a site report (offline-sync compatible)

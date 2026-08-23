@@ -1,0 +1,504 @@
+openapi: 3.1.0
+info:
+  title: Construction OS — Offline Sync API
+  version: v1
+  description: |
+    The offline-sync transport between a field device and the server — Phase 10, specified in
+    `17-offline-mobile-sync.md` (§17.2 review queue, §17.5 conflict-resolution rules, §17.9 delta
+    pull).
+
+    **This is a transport, not a domain.** `/sync/push` does not own any entity: it routes an
+    incoming mutation to the same service the equivalent REST endpoint calls, and `/sync/delta`
+    reads the same tables the equivalent GET endpoints read. That is exactly why it is authorised
+    separately — see the note under `security` below.
+
+    Written 2026-08-24. These six routes had run since Phase 10 with no OpenAPI document of any
+    kind, while the mobile client depended on all of them; §14.3 listed no `sync` domain and no
+    other document carried the paths.
+
+servers:
+  - url: /api/v1
+    description: Current version
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # ── Vocabulary ────────────────────────────────────────────────────────────
+    # The `entity_type` of a PUSH names a write handler. It is NOT the same set as the entity_type
+    # of an exhaustion report, which names a row in the §17.2 queue — see ExhaustionEntityType.
+    PushEntityType:
+      type: string
+      description: |
+        The entity a queued mutation targets. Each value is bound to a role list in
+        `sync-authz.ts`, mirroring what the equivalent REST route enforces today — sync grants
+        exactly what the online path grants, never more.
+      enum:
+        - task
+        - site_report
+        - issue
+        - attendance
+        - safety
+        - material
+        - inspection
+        - photo_annotation
+        - delivery
+        - purchase-request
+
+    DeltaEntityType:
+      type: string
+      description: |
+        The entity types `/sync/delta` can page. Six, not ten: an entity is pullable only where a
+        server-side read exists to mirror. `attendance` carries no role restriction because
+        §14 marks `GET /workers/{id}/attendance` "Any role".
+      enum: [task, site_report, issue, attendance, safety, material]
+
+    ExhaustionEntityType:
+      type: string
+      description: |
+        The CLIENT's vocabulary for a mutation that exhausted its five retries, matching
+        `SyncManager.EXHAUSTED_NOTIFY_TYPES`. Deliberately a different set from `PushEntityType`:
+        these name a row in §17.2's table, and each maps to the roles that get the push alert
+        (`material_consumption` alerts nobody and is queue-only, which is different from being
+        absent — an absent type is rejected).
+      enum: [safety_incidents, workforce_attendance, inspection_results, material_consumption]
+
+    ServerSyncStatus:
+      type: string
+      description: |
+        `ACCEPTED` — applied. `CONFLICT_FLAGGED` — stored for human review (§17.5: photo
+        annotations, safety incidents). `CONFLICT_REJECTED` — the server's version stands and is
+        returned in `server_payload` (safety checklists: server-wins, no client override).
+      enum: [ACCEPTED, CONFLICT_FLAGGED, CONFLICT_REJECTED]
+
+    # ── Requests ──────────────────────────────────────────────────────────────
+    PushItem:
+      type: object
+      required: [entity_type, entity_id, operation, payload]
+      properties:
+        entity_type:
+          $ref: '#/components/schemas/PushEntityType'
+        entity_id:
+          type: string
+          description: The server id for an UPDATE; the client-generated id for a CREATE.
+        operation:
+          type: string
+          enum: [CREATE, UPDATE]
+        payload:
+          type: object
+          description: |
+            The entity's own fields, shaped by `entity_type` — the same body the equivalent REST
+            route accepts. For `task` only `progress_percent` is read (§17.5 Max-wins).
+          additionalProperties: true
+        client_submitted_at:
+          type: string
+          format: date-time
+          description: |
+            When the device recorded the mutation. **Capped at the server's clock plus five
+            minutes' tolerance** (OQ-28, 2026-08-23): before that, a handset running fast won every
+            last-write-wins merge, and a phone offline on a site for a week is exactly the device
+            whose clock has drifted.
+
+    ReportExhaustion:
+      type: object
+      required: [entity_type, entity_id, operation, payload]
+      properties:
+        entity_type:
+          $ref: '#/components/schemas/ExhaustionEntityType'
+        entity_id:
+          type: string
+          format: uuid
+        operation:
+          type: string
+          enum: [CREATE, UPDATE]
+        payload:
+          type: object
+          additionalProperties: true
+        client_submitted_at:
+          type: string
+          format: date-time
+        last_error:
+          type: string
+          description: The last transport error the device saw. Diagnostic free text, not control flow.
+
+    ResolveExhaustion:
+      type: object
+      required: [resolution]
+      properties:
+        resolution:
+          type: string
+          enum: [IMPORTED, DISCARDED]
+          description: |
+            A record of the admin's judgement, not an instruction to this service. Importing the
+            payload means re-driving it through the entity's own API with the body this queue
+            shows; the queue never writes it for you.
+        resolution_note:
+          type: string
+
+    # ── Responses ─────────────────────────────────────────────────────────────
+    PushResponse:
+      type: object
+      required: [status]
+      properties:
+        status:
+          $ref: '#/components/schemas/ServerSyncStatus'
+        server_payload:
+          description: |
+            The server's row after the write, or — on `CONFLICT_REJECTED` — the version that
+            stands, so the device can replace its own without a second round trip.
+          type: [object, 'null']
+          additionalProperties: true
+
+    DeltaResponse:
+      type: object
+      required: [updated, deleted, server_timestamp, has_more, full_resync_required]
+      properties:
+        updated:
+          type: array
+          description: |
+            Rows changed since `since`, each carrying its `entity_type` alongside the row's own
+            columns. Upsert by the row's id.
+          items:
+            type: object
+            additionalProperties: true
+        deleted:
+          type: array
+          description: |
+            Tombstoned ids to remove locally, read from `platform.sync_tombstones`. **Empty
+            today**: no delete path exists for any of the six pullable entities, so nothing records
+            a tombstone yet.
+          items:
+            type: string
+        server_timestamp:
+          type: string
+          format: date-time
+          description: |
+            What to send as `since` next time. "Now" when nothing was truncated; otherwise the
+            watermark of the truncated page, so the next call resumes rather than skipping the
+            remainder.
+        has_more:
+          type: boolean
+          description: At least one entity type had more rows than fit in the 500-row page — call again.
+        full_resync_required:
+          type: boolean
+          description: |
+            `since` predates the tombstone retention window, so `deleted` is NOT complete: anything
+            deleted and then pruned while the device was away is absent from it and would survive
+            locally forever. Drop the local copies of these entity types, then keep paging until
+            `has_more` is false. This QUALIFIES the response — `updated` is still populated.
+        retention_days:
+          type: integer
+          description: Sent only alongside `full_resync_required`, so a client can log why.
+
+    SyncExhaustion:
+      type: object
+      properties:
+        exhaustion_id: { type: string, format: uuid }
+        entity_type: { $ref: '#/components/schemas/ExhaustionEntityType' }
+        entity_id: { type: string, format: uuid }
+        operation: { type: string, enum: [CREATE, UPDATE] }
+        payload: { type: object, additionalProperties: true }
+        reported_by: { type: string, format: uuid }
+        client_submitted_at: { type: [string, 'null'], format: date-time }
+        last_error: { type: [string, 'null'] }
+        retry_count: { type: integer }
+        status: { type: string, enum: [PENDING, RESOLVED] }
+        resolution: { type: [string, 'null'], enum: [IMPORTED, DISCARDED, null] }
+        resolved_by: { type: [string, 'null'], format: uuid }
+        resolved_at: { type: [string, 'null'], format: date-time }
+        resolution_note: { type: [string, 'null'] }
+        created_at: { type: string, format: date-time }
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: COS-SYNC-001
+            message:
+              type: string
+            messageKey:
+              type: string
+            details:
+              type: object
+            traceId:
+              type: string
+            timestamp:
+              type: string
+              format: date-time
+
+  responses:
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: |
+        The caller's role may not push or pull this entity type. `SyncAuthGuard` mirrors the role
+        list of the equivalent REST route, so a refusal here means the online path would refuse too.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    BadRequest:
+      description: Malformed body, unknown entity type, or a queue row that is not PENDING
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+paths:
+  /sync/delta:
+    get:
+      summary: Pull entities changed since a timestamp
+      description: |
+        Each requested type is paged separately, capped at 500 rows ordered by that type's delta
+        column. If ANY type is truncated, `server_timestamp` is the LOWEST watermark among the
+        truncated types rather than "now" — returning "now" would silently skip every row that did
+        not fit.
+
+        Delta columns, per `ENTITY_REGISTRY`: `task`, `site_report`, `issue` and `safety` page on
+        `modified_at`; `attendance` on `recorded_at`; `material` on `created_at`. The last two are
+        insertion timestamps on purpose — neither table has an UPDATE path anywhere in the source,
+        so for them insertion IS modification (§17.5 calls material append-only).
+      operationId: syncDelta
+      tags: [sync]
+      parameters:
+        - name: since
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: Cursor from the previous response's `server_timestamp`. Defaults to the epoch.
+        - name: entity_types
+          in: query
+          required: false
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/DeltaEntityType'
+          description: |
+            Which types to pull. Both `entity_types` and `entity_types[]` are accepted, single or
+            repeated — the mobile client sends the bracketed form. An unknown name is dropped
+            rather than erroring, and a type the caller's role may not read is dropped as well.
+      responses:
+        '200':
+          description: A page of changes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeltaResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /sync/push:
+    post:
+      summary: Push one queued offline mutation
+      description: |
+        Applies the §17.5 conflict strategy for the entity type and returns what the server did.
+        The write goes through the same service the equivalent REST route calls.
+
+        This is the ONLY write path for a photo annotation: a dedicated `PUT` was considered and
+        rejected as inconsistent with the entities already routed through here (§14 Files APIs).
+      operationId: syncPush
+      tags: [sync]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PushItem'
+      responses:
+        '200':
+          description: |
+            The mutation was processed. A `CONFLICT_FLAGGED` or `CONFLICT_REJECTED` status is a
+            successful call — the server has an answer — not an error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /sync/resolve:
+    post:
+      summary: Apply a server-side write with conflict resolution
+      description: |
+        The same handler as `/sync/push`, under the name §17.4 uses for a client resolving a
+        conflict it was told about. Kept as its own path because the wire protocol in the
+        specification names it; it is not a second behaviour.
+      operationId: syncResolve
+      tags: [sync]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PushItem'
+      responses:
+        '200':
+          description: The mutation was processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /sync/exhausted:
+    post:
+      summary: Report a mutation that exhausted its five retries
+      description: |
+        §17.2's review queue. Reporting is idempotent per (tenant, entity_type, entity_id,
+        operation): a repeat report returns the existing id with `created: false` and emits
+        nothing, because re-alerting on every retry of the report would turn one failed record into
+        a stream of pages.
+
+        It lives on the push controller, not the admin one, so the same role that could have pushed
+        the record may report its failure — the report carries the record's payload.
+      operationId: syncReportExhaustion
+      tags: [sync]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportExhaustion'
+      responses:
+        '200':
+          description: Queued, or already queued
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [exhaustion_id, created]
+                properties:
+                  exhaustion_id:
+                    type: string
+                    format: uuid
+                  created:
+                    type: boolean
+                    description: False when this repeats a report already in the queue.
+        '400':
+          description: |
+            `entity_type` is not one of the four review-queue types. The message lists what is
+            expected.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /sync/exhaustions:
+    get:
+      summary: List queued sync exhaustions for review
+      description: |
+        The tenant admin's queue (§17.2). Newest first, capped at 200 rows. Pending by default —
+        a resolved row is history, not work.
+      operationId: listSyncExhaustions
+      tags: [sync]
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [PENDING, RESOLVED]
+            default: PENDING
+          description: Any value other than `RESOLVED` is read as `PENDING`.
+      responses:
+        '200':
+          description: The queue
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SyncExhaustion'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Requires TENANT_ADMIN
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /sync/exhaustions/{exhaustionId}/resolve:
+    patch:
+      summary: Mark a queued exhaustion imported or discarded
+      description: |
+        A state change, never a delete. §17.2 keeps the device's copy "until successfully synced or
+        explicitly resolved by an admin", so this row is what tells the device it may stop holding
+        the record — deleting it would strand the record on the phone permanently.
+
+        Resolving a row that is already resolved fails, rather than overwriting the first admin's
+        decision and its timestamp.
+      operationId: resolveSyncExhaustion
+      tags: [sync]
+      parameters:
+        - name: exhaustionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolveExhaustion'
+      responses:
+        '200':
+          description: Resolved
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [resolved]
+                properties:
+                  resolved:
+                    type: boolean
+        '400':
+          description: No PENDING row with that id in this tenant — not found and already resolved are the same answer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Requires TENANT_ADMIN
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'

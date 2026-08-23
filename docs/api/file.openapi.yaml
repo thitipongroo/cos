@@ -120,6 +120,34 @@ components:
             timestamp: { type: string, format: date-time }
 
 paths:
+  # ── Photo annotations (§14 Files APIs; written 2026-08-24) ────────────────
+  /files/{fileId}/annotation:
+    get:
+      summary: Get a photo's annotation stroke list
+      description: |
+        Powers re-editing. Any role may read, which is why §14 can state the write set explicitly
+        without breaking the `writeNeverWiderThanRead` invariant.
+
+        **There is no REST write.** An annotation is written through `POST /api/v1/sync/push` with
+        `entity_type: photo_annotation`, like every other field-editable entity — a dedicated `PUT`
+        was considered and rejected as inconsistent with them (ADR-056; §14 Files APIs). The push
+        path runs the `version`-based `CONFLICT_FLAGGED` check: two people can mark up the same
+        photo offline, and neither auto-merging strokes nor last-write-wins is acceptable when each
+        is one person's reading of the same defect.
+      operationId: getFileAnnotation
+      tags: [annotations]
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: The stroke list and its `version`
+        '401':
+          description: Unauthenticated
+        '404':
+          description: No annotation on this file yet
   /files/upload:
     post:
       operationId: uploadFile

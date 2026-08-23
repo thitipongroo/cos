@@ -13,6 +13,230 @@ tags:
   - name: finance
     description: Budget, cost tracking, payments, variance reporting
 paths:
+  # ── Contract lifecycle and payment approval (ADR-058) ─────────────────────
+  # Written 2026-08-24. All eight were canonical in §14 Financial APIs and carried by no document.
+  /finance/payments/{paymentId}/approve:
+    patch:
+      summary: Approve a pending payment (PENDING → PROCESSED)
+      operationId: approvePayment
+      tags: [payments]
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: The payment after approval
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Insufficient role — FINANCE or TENANT_ADMIN
+        '404':
+          description: No such payment in this tenant
+        '422':
+          description: Not in PENDING state
+
+  /finance/contracts/{id}/document:
+    post:
+      summary: Attach the contract document
+      description: |
+        Two modes (ADR-058 CT-2c-3). `upload` references a document already in the File Service and
+        requires `file_id`; `generate` builds the PDF in-app from the contract, the BOQ snapshot and
+        the terms, and takes no file. The document's SHA-256 is what a later signature binds to, so
+        replacing it after signing is not an amendment — it is a different contract.
+      operationId: attachContractDocument
+      tags: [contracts]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mode]
+              properties:
+                mode:
+                  type: string
+                  enum: [upload, generate]
+                file_id:
+                  type: string
+                  format: uuid
+                  description: Required when `mode` is `upload`; rejected otherwise.
+      responses:
+        '201':
+          description: Document attached
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Insufficient role
+        '404':
+          description: No such contract in this tenant
+        '422':
+          description: Contract is not in a state that accepts a document
+
+  /finance/contracts/{id}/sign:
+    post:
+      summary: Contractor-side signature (PKI / verifiable credential)
+      description: |
+        Binds the document's SHA-256, not the contract row — a signature that did not name the
+        bytes it signed would survive the document being swapped. The caller's IP is recorded on
+        the signature as part of the audit trail.
+      operationId: signContract
+      tags: [contracts]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '201':
+          description: Signature recorded
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Insufficient role
+        '404':
+          description: No such contract in this tenant
+        '422':
+          description: No document attached, or already signed by this side
+
+  /finance/contracts/{id}/sign-links:
+    post:
+      summary: Issue a single-use magic link for the client to sign
+      description: |
+        The client has no account. The link authenticates them on its own for exactly one
+        signature — see `POST /finance/contracts/sign/{token}`.
+      operationId: issueContractSignLink
+      tags: [contracts]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                client_name:
+                  type: string
+                  description: Shown on the signing page.
+                client_email:
+                  type: string
+                  format: email
+      responses:
+        '201':
+          description: Link issued
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Insufficient role
+        '404':
+          description: No such contract in this tenant
+
+  /finance/contracts/sign/{token}:
+    post:
+      summary: An external client signs via magic link
+      description: |
+        **PUBLIC — no bearer token, and deliberately outside the tenant middleware.** The signer has
+        no account at all; the guard takes the tenant from the token's own signed claim, so the
+        write still runs under RLS. Single use: a replayed link is refused rather than recording a
+        second signature.
+      operationId: signContractAsClient
+      tags: [contracts]
+      security: []
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema: { type: string }
+          description: The single-use contract-signing token from the magic link.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                client_name: { type: string }
+                client_email: { type: string, format: email }
+      responses:
+        '201':
+          description: Client signature recorded
+        '401':
+          description: Bad signature, expired, or already used
+
+  /finance/contracts/{id}/signatures:
+    get:
+      summary: Signature audit trail for a contract
+      description: Every signature recorded against the contract, in order, with who and from where.
+      operationId: listContractSignatures
+      tags: [contracts]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: The signature trail
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Insufficient role
+        '404':
+          description: No such contract in this tenant
+
+  /finance/contracts/{id}/activate:
+    post:
+      summary: Put a fully-signed contract into force (SIGNED → ACTIVE)
+      operationId: activateContract
+      tags: [contracts]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '201':
+          description: Contract activated
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Insufficient role — PM or TENANT_ADMIN
+        '404':
+          description: No such contract in this tenant
+        '422':
+          description: Not fully signed, or not in SIGNED state
+
+  /finance/contracts/{id}/terminate:
+    post:
+      summary: Terminate a contract (SIGNED | ACTIVE → TERMINATED)
+      operationId: terminateContract
+      tags: [contracts]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '201':
+          description: Contract terminated
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Insufficient role — PM or TENANT_ADMIN
+        '404':
+          description: No such contract in this tenant
+        '422':
+          description: Not in a terminable state
   /finance/budget/{projectId}:
     get:
       tags:
