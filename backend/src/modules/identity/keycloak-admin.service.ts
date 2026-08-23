@@ -24,7 +24,71 @@ export interface KeycloakTokenResponse {
  * markers distinct rather than "harmonising" them: making this `[ERASED]` turns every erasure into a
  * 400 from Keycloak, half-way through an operation that cannot be retried.
  */
+/**
+ * A non-OK response from Keycloak's token endpoint, carrying the OAuth `error` code it returned.
+ *
+ * Exists so a caller can separate "the identity provider refused this grant" from "the identity
+ * provider is broken" (TDD OQ-11). Both arrive here as a failed fetch; only the body says which.
+ */
+export class KeycloakTokenError extends Error {
+  constructor(
+    readonly oauthError: string | null,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'KeycloakTokenError';
+  }
+}
+
+/**
+ * The `error` field of an OAuth error response, or null when the body is not one.
+ *
+ * Keycloak answers `{"error":"invalid_grant","error_description":"..."}`, but a proxy in front of it
+ * can return HTML or nothing at all — so a parse failure means "not an OAuth refusal", which is
+ * exactly the case that should stay a 503.
+ */
+function parseOAuthError(body: string): string | null {
+  try {
+    const parsed: unknown = JSON.parse(body);
+    const code = (parsed as { error?: unknown }).error;
+    return typeof code === 'string' ? code : null;
+  } catch {
+    return null;
+  }
+}
+
 export const KEYCLOAK_ERASED_MARKER = 'ERASED';
+
+/**
+ * The scope that makes Path A's refresh token survive a day underground (TDD OQ-14).
+ *
+ * `00_master` § PHASE 2 promises "cached token valid 7 days without internet". The realm did not
+ * deliver it and nothing said so. Measured against Keycloak 26.6.4 with this realm:
+ *
+ *   without a scope   refresh_expires_in = 1800   — THIRTY MINUTES, not seven days
+ *   scope=offline_access   refresh_expires_in = 0  — does not expire; the token's `typ` is `Offline`
+ *
+ * The seven days is `ssoSessionMaxLifespan`, a ceiling. What actually kills the session is
+ * `ssoSessionIdleTimeout = 1800`. So a worker who lost signal for half an hour came back to a dead
+ * refresh token and had to redo SMS OTP — on a site where the reason they were offline is that there
+ * is no signal to receive an SMS on. Proved by compressing the idle window to 60s and waiting 75s:
+ * the plain refresh returned `Token is not active`, the offline one refreshed cleanly.
+ *
+ * PATH A ONLY, deliberately. This is issued to a field handset that is expected to be offline for
+ * days; a non-expiring refresh token in a browser session belongs to nobody's threat model. Path B
+ * keeps the 30-minute idle window.
+ *
+ * NOTHING ELSE HAD TO CHANGE. `offline_access` is already an optional scope on the `cos-backend`
+ * client, and already a composite of `default-roles-construction-os` — so every user holds the role
+ * (checked in the committed realm export, not assumed). `refreshToken()` needs no change either: the
+ * rotation chain keeps `typ=Offline` and `refresh_expires_in=0` (measured over three rotations).
+ *
+ * REVOCATION STILL WORKS, and this is the part worth checking before trusting it. An admin
+ * `users/{id}/logout` alone does NOT revoke an offline session — measured, the refresh still
+ * succeeded afterwards. But `enabled: false` does (`User disabled`), and both `disableUser` and
+ * `eraseUser` set that BEFORE they log out. Deactivation and PDPA erasure therefore still cut access.
+ */
+export const OFFLINE_ACCESS_SCOPE = 'offline_access';
 
 @Injectable()
 export class KeycloakAdminService {
@@ -146,10 +210,37 @@ export class KeycloakAdminService {
           client_secret: this.clientSecret,
           username: phone,
           password: ephemeralCredential,
+          // OFFLINE_ACCESS_SCOPE is what makes the offline-first promise true. See the constant.
+          scope: OFFLINE_ACCESS_SCOPE,
         }),
         'directgrant',
       );
     } catch (err) {
+      // A REFUSAL IS NOT AN OUTAGE (TDD OQ-11). Keycloak answers `invalid_grant` when the flow
+      // declines this user — which is what the realm's `Path B only - privileged roles` execution
+      // does to a TENANT_ADMIN / FINANCE account on Direct Grant (measured against 26.6.4). Reporting
+      // that as `COS-AUTH-503 Identity provider unavailable` told the caller the platform was down
+      // when it was working exactly as designed, and sent whoever read the alert looking for an
+      // outage that did not exist.
+      //
+      // The message deliberately does not say WHY the grant was refused. From here `invalid_grant`
+      // covers both "this account may not use this path" and "that was not the right credential",
+      // and an error that distinguished them would let a caller enumerate privileged accounts by
+      // phone number.
+      if (err instanceof KeycloakTokenError && err.oauthError === 'invalid_grant') {
+        logger.warn(
+          { realm, keycloakUserId },
+          'keycloak.directgrant.refused — the identity provider declined this grant',
+        );
+        throw new UnauthorizedException({
+          error: {
+            code: 'COS-AUTH-001',
+            message: 'This account cannot sign in with an OTP — use email sign-in',
+            messageKey: 'auth.otp.pathNotAvailable',
+          },
+        });
+      }
+
       logger.error(
         { realm, keycloakUserId, err },
         'keycloak.directgrant.failed — identity provider unreachable or misconfigured',
@@ -367,7 +458,11 @@ export class KeycloakAdminService {
       if (operation === 'refresh') {
         throw new UnauthorizedException('Refresh token invalid or expired');
       }
-      throw new InternalServerErrorException('Token endpoint error');
+      // The OAuth error code travels with the exception, because the caller has to tell a REFUSAL
+      // from an OUTAGE and the HTTP status cannot: Keycloak answers both `invalid_grant` (wrong
+      // password, or a flow that denied this user) and a broken realm with a 4xx/5xx that reads the
+      // same from here. `exchangeOtpForTokens` turns `invalid_grant` into 401 rather than 503.
+      throw new KeycloakTokenError(parseOAuthError(body), `Token endpoint error (${res.status})`);
     }
 
     return res.json() as Promise<KeycloakTokenResponse>;

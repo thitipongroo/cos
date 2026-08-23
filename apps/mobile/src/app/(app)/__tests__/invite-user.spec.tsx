@@ -6,10 +6,13 @@
 // input and be sent as an address. The payload carries exactly one of the two keys, which is what
 // the backend enforces on its side (user.service.ts rejects a payload carrying both).
 //
-// That exclusivity is a product rule, not a law of nature: the product owner has asked for a
-// unified login where every user can use either method. When that lands, the tests below are among
-// the ones that have to change — which is the point of naming the rule here rather than leaving it
-// implicit in the shape of a payload.
+// That exclusivity is permanent, and it is a property of the mechanism rather than a product
+// preference. Keycloak stores exactly ONE password credential per user, and Path A writes an
+// ephemeral one over it on every OTP login — so an account holding both identifiers would lose its
+// password to its own login, irreversibly (the stored hash cannot be read back to restore it).
+// Measured on Keycloak 26.6.4; a "unified login" letting one account use either method was proposed
+// on 2026-07-31 and withdrawn on 2026-08-23 for exactly this reason (TDD OQ-14, spec §5.4.4). Do not
+// relax these tests expecting it to return.
 //
 // The phone case also normalises: the field takes Thai national digits and the API takes E.164, so
 // 0812345678 must reach the server as +66812345678 (§20.5).

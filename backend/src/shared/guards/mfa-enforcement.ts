@@ -1,20 +1,25 @@
 // MFA enforcement — Layer 2 (defense-in-depth) for the two-layer MFA design (spec §5.4.1, master Phase 2).
 //
-// Layer 1 (authoritative, BY DESIGN — NOT PRESENT IN THE CHECKED-IN REALM, verified 2026-08-20):
-//   Keycloak is supposed to force OTP at login for TENANT_ADMIN / FINANCE via a role-conditional OTP
-//   subflow in the browser flow. It is not in
-//   infrastructure/keycloak/realms/construction-os-realm.json: that file binds the stock `browser`
-//   flow, every flow in it is `builtIn: true`, `conditional-user-role` appears zero times, the
-//   composite role `mfa-required` is not among its twelve realm roles, and there is no `acr.loa.map`
-//   attribute. What the `forms` subflow actually runs is `conditional-user-configured` — the very
-//   condition ADR-067's Context says the security review rejected, because it prompts only users who
-//   have ALREADY enrolled.
+// Layer 1 (authoritative): Keycloak forces OTP at login for TENANT_ADMIN / FINANCE, and refuses them
+//   outright on Path A. PRESENT in infrastructure/keycloak/realms/construction-os-realm.json since
+//   2026-08-22: the realm binds `browserFlow: browser-mfa` and `directGrantFlow: direct-grant-mfa`,
+//   and carries `acr.loa.map = {"silver":1,"gold":2}`. `scripts/ci/check-keycloak-mfa-config.mjs`
+//   asserts it stays there, in the CI lint job.
 //
-//   So on any environment provisioned from that file, this module's Layer 2 is not defence in depth —
-//   it is the only depth there is, and it is off by default (below). See the verified-gap note at the
-//   top of ADR-067. Fixing it means the live-Keycloak procedure in docs/runbooks/mfa-enforcement.md,
-//   never a hand edit of the realm JSON: a malformed flow import breaks every login, and there is no
-//   Keycloak in CI to validate one against.
+//   THE MECHANISM IS NOT THE ONE ADR-067 ORIGINALLY SPECIFIED. `conditional-user-role` appears zero
+//   times: it was proven unusable and replaced by a `Condition - user attribute` on the `role` user
+//   attribute (`^(TENANT_ADMIN|FINANCE)$`), which is what the two custom flows condition on. The
+//   composite role `mfa-required` does not exist and is not needed.
+//
+//   This comment asserted the opposite until 2026-08-23 — it still described the pre-2026-08-22
+//   realm and told the reader that Layer 2 was "the only depth there is". It was stale by a day when
+//   it was written and wrong for a year of reading after that; a security control's own source file
+//   is the worst place to be wrong about whether the other layer exists (TDD OQ-10).
+//
+//   Two things remain genuinely OPS work, not code: an already-running Keycloak does not pick up the
+//   committed realm (`--import-realm` runs on first init only), and Layer 2 is off until MFA_ENFORCE
+//   is set. Both are docs/runbooks/mfa-enforcement.md. Never hand-edit the realm JSON's flows: a
+//   malformed import breaks every login and there is no Keycloak in CI to validate one against.
 // Layer 2 (this module): the backend independently rejects a privileged token whose `acr` does not prove
 //   OTP was performed, so a token minted without the OTP step cannot act as TENANT_ADMIN / FINANCE. Invoked
 //   from JwtAuthGuard.handleRequest (every authenticated request) — JwtAuthGuard is applied per-route, and
@@ -24,6 +29,11 @@
 // verified against a running Keycloak first (docs/runbooks/mfa-enforcement.md) — enforcing before `acr`
 // is emitted correctly would lock out every privileged user. Until enabled, a shortfall is logged (WARN)
 // but not blocked, so the tested code ships and ops activates it deliberately.
+//
+// BOTH VARIABLES ARE IN THE HELM VALUES for every environment (infrastructure/helm/cos-backend), set
+// to the same defaults as here. They were in `.env.example` only until 2026-08-23, which meant the
+// deliberate activation this comment describes was impossible in a cluster without first editing a
+// chart — the kill switch existed everywhere except where it would be thrown (TDD OQ-10).
 
 import { ForbiddenException } from '@nestjs/common';
 import { createLogger } from '@cos/logger';

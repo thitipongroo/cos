@@ -1,7 +1,7 @@
 # Keycloak Dual Authentication Path (Path A: OTP, Path B: OIDC)
 
 **Date:** 2026-06-09
-**Status:** Accepted — **amended 2026-08-21: unified login (see Update)**
+**Status:** Accepted — **amended 2026-08-21 (role binding dropped) and 2026-08-23 (one account, one path)**
 **Deciders:** Product Owner, Engineering Lead
 **Tags:** security, architecture
 
@@ -37,9 +37,44 @@ those documents reference instead of restating.
 
 **Precondition worth stating plainly:** a path is usable by a given account only if the account
 carries the identifier it needs — a phone number for Path A, an email plus a Keycloak credential for
-Path B. `POST /api/v1/users` provisions one or the other, so unified login is a policy ("no role is
-barred"), not a guarantee that every existing account can already use both. Provisioning one user for
-both paths is not yet specified.
+Path B. `POST /api/v1/users` provisions one or the other. See the 2026-08-23 update below for why
+that stayed true.
+
+---
+
+## Update — 2026-08-23: one account, one path
+
+**Product-owner decision, superseding "unified login" in part.** The role binding stays dropped — any
+role may be provisioned on either path, with the `TENANT_ADMIN` / `FINANCE` exception above. What is
+withdrawn is per-ACCOUNT choice: an account carries one identifier and therefore one path for its
+lifetime, and `POST /api/v1/users` rejecting both together is now the intended design rather than a
+gap awaiting a spec.
+
+**The mechanism cannot support both on one account, and this was measured rather than reasoned.**
+Path A mints its token by writing an ephemeral credential onto the Keycloak account and immediately
+calling Direct Grant (see Decision below). Keycloak stores exactly one password credential per user,
+so on an account that also had a Path B password that write destroys it. Against Keycloak 26.6.4 on
+2026-08-23: a real password authenticated, one OTP login ran `resetPassword` + Direct Grant, and the
+same real password was then rejected with `invalid_grant`. Irreversibly — the admin API withholds
+`secretData`, so the hash cannot be saved and restored around the login.
+
+Three alternatives were tested and none is available:
+
+- **Standard token exchange** (`TOKEN_EXCHANGE_STANDARD_V2`, enabled by default in 26.6.4) answers
+  `requested_subject is not supported for standard token exchange`. It re-issues a token the caller
+  already holds; at OTP time there is none.
+- **Legacy token exchange** (`TOKEN_EXCHANGE`) is the only variant that accepts `requested_subject`,
+  and it reports `type: PREVIEW`, `deprecated: true`, disabled. Building the login path of a product
+  with CIS/FIPS customers on a deprecated preview feature is not a trade worth making.
+- **A custom authenticator SPI** would work. Rejected on cost: a Java artifact in the build and
+  deploy path, to serve a convenience nobody had asked for.
+
+**Why the convenience was not worth it.** Per-account choice was attractive mainly as a fallback —
+if OTP fails you, sign in with a password. On a construction site OTP fails you when there is no
+signal, and with no signal a password login cannot reach Keycloak either. The fallback was never real.
+The genuine offline gap was elsewhere and is now closed: Path A requests `offline_access`, so the
+refresh token no longer dies after 30 minutes idle and a handset can be away for a month and still
+refresh silently (`05-security-compliance` §5.4.4, TDD OQ-14).
 
 ---
 

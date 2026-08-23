@@ -21,3 +21,16 @@ podDisruptionBudget:
 env:
   NODE_ENV: 'development'
   OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.monitoring:4318'
+  # MFA Layer 2 kill switch (QM-4, ADR-067; runbook docs/runbooks/mfa-enforcement.md).
+  #
+  # Present in EVERY values file so ops can flip it with a values change rather than a chart edit.
+  # It lived only in .env.example until 2026-08-23, which meant Layer 2 could not be turned on in a
+  # cluster at all — the switch existed everywhere except where it would be thrown (TDD OQ-10).
+  #
+  # Stays 'false' here on purpose. Enabling it before the realm emits `acr` correctly locks out every
+  # TENANT_ADMIN and FINANCE user, so activation is runbook Step 3: watch the `mfa.shortfall` WARN
+  # lines until real traffic carries acr=gold, THEN set this true.
+  MFA_ENFORCE: 'false'
+  # The acr value that proves OTP, per the realm's acr.loa.map ({"silver":1,"gold":2} → level 2).
+  # scripts/ci/check-keycloak-mfa-config.mjs prints the value the committed realm implies.
+  MFA_REQUIRED_ACR: 'gold'

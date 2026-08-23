@@ -357,8 +357,13 @@ describe('UserService', () => {
     it('updates membership role, re-syncs the Keycloak role attribute, and emits user.role_changed', async () => {
       (prismaMock.$queryRaw as jest.Mock)
         .mockResolvedValueOnce([
-          { role: CosRole.SITE_ENGINEER, keycloak_user_id: KC_USER_ID, keycloak_realm: REALM },
-        ]) // SELECT membership + keycloak identifiers
+          {
+            role: CosRole.SITE_ENGINEER,
+            keycloak_user_id: KC_USER_ID,
+            keycloak_realm: REALM,
+            email: 'wichai@acme.co.th',
+          },
+        ]) // SELECT membership + keycloak identifiers + email (the Path B guard reads it)
         .mockResolvedValueOnce([{}]); // UPDATE
 
       await expect(
@@ -379,6 +384,89 @@ describe('UserService', () => {
       await expect(
         service.changeRole(USER_ID, { role: CosRole.FINANCE }, TENANT_ID, ACTOR_ID),
       ).rejects.toThrow(NotFoundException);
+    });
+
+    // PROMOTING A PHONE-ONLY ACCOUNT TO A PATH B ROLE USED TO LOCK THE PERSON OUT (TDD OQ-11).
+    //
+    // TENANT_ADMIN and FINANCE are denied on Path A at Keycloak itself (measured against 26.6.4), and
+    // a Path A account has `email = ''` with no way to add one — so the promotion left a person who
+    // could use neither path, with no error naming the cause. The role change succeeded, the Keycloak
+    // attribute was dutifully updated, and the account simply went dark at their next login.
+    it('refuses to promote a phone-only account to TENANT_ADMIN', async () => {
+      (prismaMock.$queryRaw as jest.Mock).mockResolvedValueOnce([
+        {
+          role: CosRole.SITE_ENGINEER,
+          keycloak_user_id: KC_USER_ID,
+          keycloak_realm: REALM,
+          email: '', // Path A account — one account carries one identifier (§5.4.4)
+        },
+      ]);
+
+      await expect(
+        service.changeRole(USER_ID, { role: CosRole.TENANT_ADMIN }, TENANT_ID, ACTOR_ID),
+      ).rejects.toThrow(BadRequestException);
+
+      // Nothing was written anywhere: no membership UPDATE, and no Keycloak attribute change that
+      // would leave the two stores disagreeing about the role.
+      expect(prismaMock.$queryRaw).toHaveBeenCalledTimes(1);
+      expect(keycloakAdmin.syncUserRole).not.toHaveBeenCalled();
+    });
+
+    it('refuses the same promotion to FINANCE', async () => {
+      (prismaMock.$queryRaw as jest.Mock).mockResolvedValueOnce([
+        {
+          role: CosRole.SITE_WORKER,
+          keycloak_user_id: KC_USER_ID,
+          keycloak_realm: REALM,
+          email: '',
+        },
+      ]);
+
+      await expect(
+        service.changeRole(USER_ID, { role: CosRole.FINANCE }, TENANT_ID, ACTOR_ID),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('allows the promotion when the account has an email to sign in with', async () => {
+      (prismaMock.$queryRaw as jest.Mock)
+        .mockResolvedValueOnce([
+          {
+            role: CosRole.PROJECT_MANAGER,
+            keycloak_user_id: KC_USER_ID,
+            keycloak_realm: REALM,
+            email: 'wichai@acme.co.th',
+          },
+        ])
+        .mockResolvedValueOnce([{}]);
+
+      await expect(
+        service.changeRole(USER_ID, { role: CosRole.TENANT_ADMIN }, TENANT_ID, ACTOR_ID),
+      ).resolves.toBeUndefined();
+      expect(keycloakAdmin.syncUserRole).toHaveBeenCalledWith(
+        KC_USER_ID,
+        REALM,
+        CosRole.TENANT_ADMIN,
+      );
+    });
+
+    // The guard is about the destination role, not about phones. Moving a phone-only account between
+    // NON-privileged roles is ordinary and must stay possible — a site engineer becoming a safety
+    // officer does not need an email.
+    it('leaves a phone-only account free to move between non-privileged roles', async () => {
+      (prismaMock.$queryRaw as jest.Mock)
+        .mockResolvedValueOnce([
+          {
+            role: CosRole.SITE_WORKER,
+            keycloak_user_id: KC_USER_ID,
+            keycloak_realm: REALM,
+            email: '',
+          },
+        ])
+        .mockResolvedValueOnce([{}]);
+
+      await expect(
+        service.changeRole(USER_ID, { role: CosRole.SITE_ENGINEER }, TENANT_ID, ACTOR_ID),
+      ).resolves.toBeUndefined();
     });
 
     it('rejects changing a role to SYSTEM_ADMIN — privilege-escalation guard', async () => {

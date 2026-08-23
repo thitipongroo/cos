@@ -142,10 +142,13 @@ See `07-multi-tenant-architecture §7.1` and `docs/runbooks/dedicated-db-provisi
 INDEX: `(tenant_id, email)`
 UNIQUE: `(phone_number) WHERE phone_number IS NOT NULL`
 
-> One user is provisioned for **one** path. `UserService.create` rejects a request carrying both
-> `phone_number` and `email` ("Provide either phone_number or email — not both"), so the unified-login
-> policy of `05-security-compliance` §5.4.4 is not yet reachable for an account created this way — see
-> [OQ-14](../technical-design/README.md#open-questions-register).
+> One user is provisioned for **one** path, by design. `UserService.create` rejects a request
+> carrying both `phone_number` and `email` ("Provide either phone_number or email — not both"), and
+> since 2026-08-23 that is the intended behaviour rather than a gap: Keycloak holds one password
+> credential per account, and Path A overwrites it on every OTP login, so an account on both paths
+> would lose its password to its own login (`05-security-compliance` §5.4.4; TDD OQ-14, closed).
+> `email` is `NOT NULL` and holds `''` on a Path A account — the column records what the account has,
+> and a phone-only account has no email.
 
 ---
 

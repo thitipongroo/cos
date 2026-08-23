@@ -872,6 +872,11 @@ Note: Legacy names shown first → canonical name in brackets. New events use ca
 
 12. finance.budget.exceeded → [finance.budget.exceeded.v1]
 
+    DECLARED, NO PRODUCER (verified 2026-08-23, TDD OQ-50). Needs per-cost_category
+    budgets; finance.budget_lines has no such column. The overrun signal that IS built and
+    consumed is #16 finance.variance.alert.v1 — per PROJECT, against allocated_amount.
+
+
     payload: {
       project_id:       UUID
       cost_category:    string
@@ -895,6 +900,12 @@ Note: Legacy names shown first → canonical name in brackets. New events use ca
     }
 
 14. finance.cashflow_risk.detected → [finance.cashflow_risk.detected.v1]
+
+    DECLARED, NO PRODUCER (verified 2026-08-23, TDD OQ-50). The forecast exists as a PULL
+    endpoint (GET /api/v1/finance/cashflow-forecast/:projectId); nothing grades it into the
+    four risk levels and pushes. Thresholds and RULE_ENGINE rules are UNSPECIFIED — Rule 38
+    says do not guess them. scripts/ci/check-event-producers.mjs holds the line in CI.
+
 
     payload: {
       project_id:     UUID
@@ -1780,6 +1791,16 @@ Constraints:
 Build Identity Service and Tenant Service.
 
 Authentication Decision (TWO PATHS — from file 01):
+
+  ONE ACCOUNT, ONE PATH (PO decision 2026-08-23, superseding "unified login" in part —
+  spec §5.4.4, ADR-017). Role does not bind the path: any role may be PROVISIONED on either,
+  except the two below. What no account can do is hold both identifiers. Keycloak stores one
+  password credential per user and Path A overwrites it on every OTP login, so an account on
+  both paths loses its password to its own login — measured on 26.6.4, and irreversible because
+  the stored hash cannot be read back. Token exchange cannot avoid it either: the standard V2
+  grant refuses `requested_subject`, and the legacy variant that accepts it is PREVIEW +
+  deprecated. POST /api/v1/users rejecting both identifiers is the design, not a gap.
+
   Path A — Phone number + SMS OTP:
     Who:      ANY role EXCEPT TENANT_ADMIN and FINANCE (spec §5.4.4, PO decision 2026-08-21).
               Those two are Path B only: Direct Grant cannot carry the ADR-067 MFA condition,
@@ -1788,9 +1809,22 @@ Authentication Decision (TWO PATHS — from file 01):
     Rationale: "No password to forget" — field workers must never be required
                to remember a password (file 01 §A). That is why the path exists; since
                2026-08-21 it is not restricted to them.
-    Session:  JWT access token (15 min) + refresh token (7 days device-stored), issued by Keycloak
-              via Direct Grant (grant_type=password) after OTP verification succeeds
-    Offline:  Cached token valid 7 days without internet, re-validates on reconnect
+    Session:  JWT access token (15 min) + refresh token, issued by Keycloak via Direct Grant
+              (grant_type=password) after OTP verification succeeds. The grant asks for
+              scope=offline_access, so the refresh token does not expire (typ=Offline,
+              refresh_expires_in=0) and the offline session idles out after 30 days.
+    Offline:  30 days without internet; the handset re-validates silently on reconnect with no
+              new SMS. CORRECTED 2026-08-23 (TDD OQ-14): this line said 7 days, and the realm
+              delivered THIRTY MINUTES. The 7 days is ssoSessionMaxLifespan, a ceiling; what
+              actually killed the session was ssoSessionIdleTimeout=1800, measured as
+              refresh_expires_in=1800 on Keycloak 26.6.4. A worker who lost signal for half an
+              hour came back to a dead refresh token and had to redo SMS OTP — on a site where
+              the reason they were offline is that there is no signal to receive an SMS on.
+              offline_access closes it; the mobile OFFLINE_SESSION_TTL_MS is matched to the same
+              30 days so the local session and the token expire together.
+              PATH A ONLY — a non-expiring refresh token belongs on a field handset, not in an
+              office browser tab. Revocation still works: enabled=false blocks an offline refresh
+              (measured), and both disableUser and eraseUser set it before logging the user out.
     Biometric: OPTIONAL — device-side Face ID/fingerprint unlock after first login
 
   Path B — Email + password via Keycloak OIDC:

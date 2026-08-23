@@ -157,6 +157,103 @@ describe('KeycloakAdminService', () => {
       expect(result.access_token).toBe('at-abc');
     });
 
+    // OFFLINE-FIRST (TDD OQ-14). Without this scope the refresh token carries the realm's SSO idle
+    // window — measured at 1800s against Keycloak 26.6.4, i.e. THIRTY MINUTES, not the seven days
+    // `00_master` § PHASE 2 promises. A worker who lost signal for half an hour came back to a dead
+    // refresh token and had to redo SMS OTP, on a site with no signal to receive an SMS on. With the
+    // scope, `refresh_expires_in` is 0 and the token's `typ` is `Offline`.
+    it('asks for offline_access, so the refresh token survives a day underground', async () => {
+      await service.exchangeOtpForTokens('kc-uuid-1', '+66812345678', 'tenant-acme', 'cred');
+
+      // The body reaches fetch() already serialised, so parse it back rather than asserting on a
+      // substring — 'offline_access' would also match a value that merely contains it.
+      const body = new URLSearchParams(mockFetch.mock.calls[0]![1].body as string);
+      expect(body.get('scope')).toBe('offline_access');
+      expect(body.get('grant_type')).toBe('password');
+    });
+
+    // Path B is a browser session. A refresh token that never expires belongs on a field handset
+    // that is expected to be offline for days, not in a tab on an office desktop — and least of all
+    // on a TENANT_ADMIN's. The refresh proxy must not add the scope either: an offline session is
+    // established at grant time and the rotation chain carries it, so adding it here would only
+    // upgrade a Path B session that was never meant to have one.
+    it('does NOT put offline_access on the refresh proxy', async () => {
+      await service.refreshToken('rt-abc', 'tenant-acme');
+
+      const body = new URLSearchParams(mockFetch.mock.calls[0]![1].body as string);
+      expect(body.get('grant_type')).toBe('refresh_token');
+      expect(body.get('scope')).toBeNull();
+    });
+
+    // A REFUSAL IS NOT AN OUTAGE (TDD OQ-11). The realm's `Path B only - privileged roles` execution
+    // declines a TENANT_ADMIN / FINANCE account on Direct Grant, and Keycloak reports that as
+    // `invalid_grant` — the same shape as a wrong password. Reporting it as 503 told the caller the
+    // platform was down while it was working exactly as designed.
+    it('reports a declined grant as 401, not as an outage', async () => {
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 401,
+        text: jest.fn().mockResolvedValue(
+          JSON.stringify({
+            error: 'invalid_grant',
+            error_description: 'Invalid user credentials',
+          }),
+        ),
+      } as unknown as Response);
+
+      await expect(
+        service.exchangeOtpForTokens('kc-uuid-1', '+66812345678', 'tenant-acme', 'cred'),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
+    });
+
+    it('points a declined caller at email sign-in without saying why they were declined', async () => {
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 401,
+        text: jest.fn().mockResolvedValue(JSON.stringify({ error: 'invalid_grant' })),
+      } as unknown as Response);
+
+      const err = (await service
+        .exchangeOtpForTokens('kc-uuid-1', '+66812345678', 'tenant-acme', 'cred')
+        .catch((e: unknown) => e)) as UnauthorizedException;
+      const body = err.getResponse() as { error: { code: string; message: string } };
+
+      expect(body.error.code).toBe('COS-AUTH-001');
+      expect(body.error.message).toContain('email sign-in');
+      // `invalid_grant` covers both "this account may not use this path" and "wrong credential".
+      // Distinguishing them here would let a caller enumerate privileged accounts by phone number.
+      expect(body.error.message).not.toMatch(/TENANT_ADMIN|FINANCE|privileged|role/i);
+    });
+
+    // The distinction is the OAuth error code, not the HTTP status — a broken realm and a declined
+    // grant both come back 4xx/5xx. A body that is not an OAuth error at all (an HTML error page from
+    // a proxy, an empty response) must stay an outage.
+    it('still reports a non-OAuth error body as an outage', async () => {
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 502,
+        text: jest.fn().mockResolvedValue('<html>502 Bad Gateway</html>'),
+      } as unknown as Response);
+
+      await expect(
+        service.exchangeOtpForTokens('kc-uuid-1', '+66812345678', 'tenant-acme', 'cred'),
+      ).rejects.toBeInstanceOf(ServiceUnavailableException);
+    });
+
+    it('still reports a DIFFERENT OAuth error as an outage', async () => {
+      // `invalid_client` means our own client credentials are wrong — a misconfiguration the operator
+      // must see, not something the caller can act on by switching sign-in method.
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 401,
+        text: jest.fn().mockResolvedValue(JSON.stringify({ error: 'invalid_client' })),
+      } as unknown as Response);
+
+      await expect(
+        service.exchangeOtpForTokens('kc-uuid-1', '+66812345678', 'tenant-acme', 'cred'),
+      ).rejects.toBeInstanceOf(ServiceUnavailableException);
+    });
+
     it('reports a Keycloak failure as 503, not 500 (PO decision 2026-08-06)', async () => {
       // Changed from InternalServerErrorException. A tenant pointing at a realm that does not exist,
       // an account missing from the realm and Keycloak being down used to be indistinguishable from

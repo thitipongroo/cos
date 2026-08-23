@@ -17,6 +17,9 @@ import { EventOutboxService } from '../../shared/events/event-outbox.service';
 import { createLogger } from '@cos/logger';
 import { CosRole } from '@cos/types';
 import { KeycloakAdminService } from '../identity/keycloak-admin.service';
+// The two roles that are Path B only (§5.4.4). Imported rather than re-listed: the enforcement guard
+// and this promotion guard must never disagree about who is privileged.
+import { MFA_REQUIRED_ROLES } from '../../shared/guards/mfa-enforcement';
 import type { CreateUserDto } from './dto/create-user.dto';
 import type { ChangeRoleDto } from './dto/change-role.dto';
 import type { SetRolesDto } from './dto/set-roles.dto';
@@ -346,11 +349,12 @@ export class UserService implements OnModuleDestroy {
   ): Promise<void> {
     assertRoleAssignableByTenant(dto.role);
     // keycloak_user_id + realm are selected alongside the membership so the Keycloak `role` attribute
-    // can be re-synced below without a second round trip (security review F2).
+    // can be re-synced below without a second round trip (security review F2). `email` rides along for
+    // the privileged-path guard below.
     const [membership] = await this.prisma.$queryRaw<
-      Array<{ role: string; keycloak_user_id: string; keycloak_realm: string }>
+      Array<{ role: string; keycloak_user_id: string; keycloak_realm: string; email: string }>
     >`
-      SELECT m.role, u.keycloak_user_id, t.keycloak_realm
+      SELECT m.role, u.keycloak_user_id, t.keycloak_realm, u.email
       FROM platform.tenant_memberships m
       JOIN platform.users u   ON u.user_id   = m.user_id AND u.tenant_id = m.tenant_id
       JOIN platform.tenants t ON t.tenant_id = m.tenant_id
@@ -359,6 +363,31 @@ export class UserService implements OnModuleDestroy {
     `;
     if (!membership) {
       throw new NotFoundException(`User ${userId} not found in tenant`);
+    }
+
+    // PROMOTING A PHONE-ONLY ACCOUNT TO A PATH B ROLE LOCKS THE PERSON OUT (TDD OQ-11).
+    //
+    // `TENANT_ADMIN` and `FINANCE` are Path B only (§5.4.4): Keycloak's Direct Grant flow denies them
+    // outright, measured against 26.6.4. A Path A account has a phone number and `email = ''` — one
+    // account carries one identifier and this endpoint cannot add a second — so promoting one leaves
+    // a person who can use NEITHER path: Path A is refused at the identity provider, and Path B has
+    // no email to sign in with. `sendPasswordResetLink` cannot rescue them either; it also needs an
+    // email on file.
+    //
+    // Nothing caught this before: the role change succeeded, `syncUserRole` dutifully wrote the new
+    // role into Keycloak, and the account went dark at the person's next login with no error that
+    // named the cause. Refuse the promotion instead, and say what to do about it.
+    if (MFA_REQUIRED_ROLES.has(dto.role) && membership.email.trim() === '') {
+      throw new BadRequestException({
+        error: {
+          code: 'COS-AUTH-002',
+          message:
+            `${dto.role} sign in by email and password only, and this account has no email — ` +
+            'it would be left unable to use either path. Create a Path B account for this person ' +
+            'instead of promoting their phone-only one.',
+          messageKey: 'user.role.pathBRequiresEmail',
+        },
+      });
     }
 
     const oldRole = membership.role;
@@ -543,8 +572,10 @@ export class UserService implements OnModuleDestroy {
   /**
    * Standards-compliant admin-initiated reset (TENANT_ADMIN): email the target a single-use, 15-minute
    * UPDATE_PASSWORD action-token link (NIST 800-63B Rev.4) so they set their OWN password — no plaintext is
-   * ever handled by COS. Requires the user to have an email on file (Path B / any user once unified-login
-   * gives everyone an email); Path A phone-only users fall back to the temporary-password reset above.
+   * ever handled by COS. Requires the user to have an email on file, which means a PATH B account —
+   * a Path A account holds a phone number and an empty email by design, and will not grow one: one
+   * account carries one identifier for its lifetime (PO decision 2026-08-23, spec §5.4.4). Path A
+   * users fall back to the temporary-password reset above.
    * Emits identity.user.password_reset.v1 (method = email_link).
    */
   async sendPasswordResetLink(

@@ -366,10 +366,35 @@ All vendor-portal traffic is rate-limited at Kong independently of tenant API qu
 
 ### 5.4.4 Which users may use which path (authoritative)
 
-**Decision:** unified login. **Resolved:** 2026-08-21 (product owner).
+**Decision:** one account, one path. **Resolved:** 2026-08-23 (product owner), superseding the
+"unified login" decision of 2026-08-21.
 
-Both paths are open to all roles — the platform does not bind an authentication path to a role — with
-one exception.
+The platform does not bind an authentication path to a ROLE — that part of the 2026-08-21 decision
+stands, and with one exception below any role may be provisioned on either path. What is withdrawn is
+the idea that a single ACCOUNT can use both: an account carries one identifier, and therefore one
+path, for its lifetime.
+
+**Why it was withdrawn — measured, not assumed.** Path A mints its token by writing an ephemeral
+credential onto the Keycloak account and immediately calling Direct Grant. Keycloak stores exactly
+one password credential per user, so on an account that also had a Path B password, that write
+destroys it. Verified against Keycloak 26.6.4 on 2026-08-23: a real password authenticated
+successfully, one OTP login ran `resetPassword` + Direct Grant, and the same real password was then
+rejected with `invalid_grant`. Permanently — the stored hash is not readable back (`secretData` is
+withheld from the admin API), so nothing can save and restore it.
+
+Three ways out were examined and none is available:
+
+| Route                                             | Why not                                                                                             |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Standard token exchange (`..._STANDARD_V2`)       | Enabled, but answers `requested_subject is not supported for standard token exchange`. It re-issues a token you already hold; Path A holds none at OTP time |
+| Legacy token exchange (`TOKEN_EXCHANGE`)          | The only variant accepting `requested_subject`. In 26.6.4 it is `type: PREVIEW`, `deprecated: true`, off by default — not a foundation for a CIS/FIPS product's login path |
+| Save and restore the password around the login    | Impossible — the stored hash cannot be read back                                                     |
+
+A custom Keycloak authenticator SPI would work and was rejected on cost: it puts a Java artifact in
+the build and deploy path to serve a convenience no user had asked for. The offline-first gap that
+made per-account choice look necessary is closed directly instead (§5.4.2, `offline_access`).
+
+**One exception remains, on ROLE rather than on account.**
 
 **Exception: `TENANT_ADMIN` and `FINANCE` are Path B only.** Two independent reasons, either of which
 is sufficient:
@@ -384,16 +409,21 @@ is sufficient:
    The risk assessment, migration roadmap and user-notification obligations Rev 4 attaches to
    continued use are discharged in `docs/security/sms-otp-restricted-authenticator.md`.
 
-Every other role may authenticate by either path. This replaces the earlier convention under which
-Path A was described as "for field workers" and Path B "for office roles"; that framing was never a
-platform restriction, and §14.3 / §20.6.1 now reference this section rather than restating it.
+Every other role may be provisioned on either path. This still replaces the earlier convention under
+which Path A was described as "for field workers" and Path B "for office roles"; that framing was
+never a platform restriction, and §14.3 / §20.6.1 reference this section rather than restating it.
 
-**A path is available to a user only if that user carries the identifier it needs.** Path A needs a
-phone number on the user record; Path B needs an email plus a Keycloak password credential.
-`POST /api/v1/users` (§14.3) provisions one or the other, so an account created with a phone alone
-cannot use Path B until an email credential is added for it. Unified login is a statement about
-**policy** — no role is barred from a path — not a guarantee that every existing account can already
-use both. Provisioning a user for both paths is not yet specified.
+**A path is available to a user only if that user carries the identifier it needs**, and an account
+carries exactly one. Path A needs a phone number on the user record; Path B needs an email plus a
+Keycloak password credential. `POST /api/v1/users` (§14.3) provisions one or the other and rejects
+both together — that rejection is now the intended design, not a gap. Moving a person between paths
+means provisioning a new account, not adding a second identifier to theirs.
+
+**What this costs, and why it is affordable.** A field worker cannot fall back to a password when
+they have no signal. That would matter if the OTP path stranded them offline — and until 2026-08-23
+it did, because the refresh token expired after 30 minutes of inactivity. §5.4.2's `offline_access`
+change removes that: the session survives a month offline and refreshes silently on reconnect, so the
+fallback the per-account choice was standing in for is no longer needed.
 
 ---
 

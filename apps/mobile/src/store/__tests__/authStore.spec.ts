@@ -169,19 +169,33 @@ describe('authStore Path A OTP flow', () => {
     expect(s.role).toBe('SITE_WORKER');
   });
 
-  it('hydrate clears an expired session (> 7 days)', async () => {
-    const expired = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString();
+  // The offline window is 30 days since OQ-14, matched to the realm's offlineSessionIdleTimeout.
+  // Both bounds are asserted: a session that expires too early throws away a login that would still
+  // have refreshed, and one that expires too late strands the worker on a screen whose next API call
+  // is rejected by a token the realm has already forgotten.
+  function hydrateWithSessionAge(days: number): Promise<void> {
     const map: Record<string, string> = {
       cos_access_token: 'a',
       cos_refresh_token: 'r',
       cos_user_id: 'u',
       cos_user_role: 'SITE_WORKER',
-      cos_session_at: expired,
+      cos_session_at: new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString(),
     };
     (SecureStore.getItemAsync as jest.Mock).mockImplementation((k: string) =>
       Promise.resolve(map[k] ?? null),
     );
-    await useAuthStore.getState().hydrate();
+    return useAuthStore.getState().hydrate();
+  }
+
+  it('hydrate keeps a session a worker was offline with for three weeks', async () => {
+    // The case the 7-day window got wrong: a remote site, one trip out, still signed in on return.
+    await hydrateWithSessionAge(21);
+    expect(useAuthStore.getState().isAuthenticated).toBe(true);
+    expect(SecureStore.deleteItemAsync).not.toHaveBeenCalled();
+  });
+
+  it('hydrate clears an expired session (> 30 days)', async () => {
+    await hydrateWithSessionAge(31);
     expect(useAuthStore.getState().isAuthenticated).toBe(false);
     expect(SecureStore.deleteItemAsync).toHaveBeenCalled();
   });

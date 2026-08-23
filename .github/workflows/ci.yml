@@ -152,6 +152,12 @@ jobs:
       - name: ClickHouse Kafka tables match their Avro schemas
         run: node ./scripts/ci/check-clickhouse-avro-columns.mjs
 
+      # An event schema with no producer still gets a topic, a generated type and a slot in the
+      # Schema Registry readiness gate — so it is indistinguishable from a live event everywhere
+      # except here. Two finance events had all of that and nothing ever published them (TDD OQ-50).
+      - name: Every Avro event schema has a producer
+        run: node ./scripts/ci/check-event-producers.mjs
+
   # ─── MLOps tests (Python / Airflow 3.x DAGs) ────────────────────────────────
   mlops-tests:
     name: MLOps Tests (Python)

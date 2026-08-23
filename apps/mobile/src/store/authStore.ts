@@ -1,6 +1,6 @@
 // Auth store — Priority 0 Section F
 // JWT access + refresh tokens stored in expo-secure-store.
-// Offline session valid for 7 days (spec §156).
+// Offline session valid for 30 days, matched to the realm offline-session idle window (OQ-14).
 // Role drives navigation (see (app)/_layout.tsx).
 
 import { create } from 'zustand';
@@ -30,7 +30,22 @@ const ROLE_KEY = 'cos_user_role';
 const DISPLAY_NAME_KEY = 'cos_display_name';
 const SESSION_AT_KEY = 'cos_session_at'; // ISO timestamp of last successful auth
 
-const OFFLINE_SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+/**
+ * How long the app trusts a stored session with no network at all (TDD OQ-14).
+ *
+ * Thirty days, matched to the realm's `offlineSessionIdleTimeout` (2592000s) rather than chosen.
+ * The two have to agree: this timer decides whether the app still considers you signed in, and that
+ * one decides whether the refresh token it is holding is still redeemable. A local session that
+ * outlives the token strands the user on a screen the next API call rejects; one that expires first
+ * throws away a session that would still have worked.
+ *
+ * It was 7 days, from `00_master` § PHASE 2 — which describes `ssoSessionMaxLifespan`, a ceiling that
+ * was never the binding constraint. Until Path A started asking for `offline_access` the real limit
+ * was the 30-minute idle window, so this timer was generous about a session that had already died.
+ * Now it is the honest number: a worker on a remote site can be away for a month and still open the
+ * app (behind biometric unlock, if enabled) and still refresh silently on reconnect.
+ */
+const OFFLINE_SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days — see offlineSessionIdleTimeout
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -108,7 +123,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return;
     }
 
-    // Enforce 7-day offline session TTL
+    // Enforce the offline session TTL — 30 days, matched to the realm offline-session idle window
     const sessionAge = Date.now() - new Date(sessionAt).getTime();
     if (sessionAge > OFFLINE_SESSION_TTL_MS) {
       await clearSecureStore();
