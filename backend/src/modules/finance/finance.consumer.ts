@@ -48,6 +48,11 @@ export class FinanceConsumer implements OnModuleInit, OnModuleDestroy {
                 amount: string;
                 currency_code: string;
               },
+              // Carried since 2026-08-23 so the cost transaction can be attributed to a budget line
+              // (TDD OQ-50). Optional in the schema, so an event minted before that decodes as
+              // undefined and the transaction is simply left unattributed, as it was before.
+              line_items: event.payload['line_items'] as
+                Array<{ boq_item_id?: string | null }> | undefined,
             });
           },
         );

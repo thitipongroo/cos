@@ -1671,6 +1671,10 @@ describe('exact contracts — createPurchaseOrder', () => {
             quantity: '10.0000',
             unit: 'm3',
             unit_price: '6000.0000',
+            // Carried since 2026-08-23 (TDD OQ-50) so Finance can attribute the cost transaction to
+            // a budget line without querying Procurement. Null here because the fixture line was not
+            // ordered against a BOQ item.
+            boq_item_id: null,
           },
         ],
       },

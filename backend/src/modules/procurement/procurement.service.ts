@@ -450,6 +450,9 @@ export class ProcurementService {
         quantity: li.quantity,
         unit: li.unit,
         unit_price: li.unit_price,
+        // Carried so Finance can attribute the cost to a budget line without reading Procurement
+        // (TDD OQ-50). Null when the line was not ordered against a BOQ item.
+        boq_item_id: li.boq_item_id,
       })),
     });
 

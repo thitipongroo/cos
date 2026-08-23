@@ -45,6 +45,11 @@ const mockRepo = {
   addBudgetLine: jest.fn(),
   findLinesByBudget: jest.fn(),
   createTransaction: jest.fn(),
+  // Added 2026-08-23 (TDD OQ-50): handlePoCreated resolves a budget line before writing, so the
+  // double needs both. Default null = "this PO spans no single budget line", which is what every
+  // PO did before attribution existed — so tests that do not care keep their old behaviour.
+  resolveBudgetLine: jest.fn().mockResolvedValue(null),
+  getBudgetLineTotals: jest.fn().mockResolvedValue(null),
   findCostTransactions: jest.fn(),
   sumTransactionsByProject: jest.fn(),
   deleteTransactionBySource: jest.fn(),
@@ -1260,5 +1265,159 @@ describe('AR billing — customers, contracts, invoices and payments', () => {
       // Beyond-horizon item excluded → final cumulative stays 25000.
       expect(periods[12]?.cumulative_net).toBe('25000.0000');
     });
+  });
+});
+
+// ─── Budget-line attribution and finance.budget.exceeded.v1 (TDD OQ-50) ─────
+//
+// `cost_transactions.budget_line_id` has existed since the finance migration and nothing ever wrote
+// it. That was not only a missing event: `tasks.repository.getTaskBudgetRatio` computes
+// actual-vs-allocated through this exact column and `TasksService` BLOCKS a task from completing at
+// ratio >= 1.0 — so with the column always NULL, the ratio was always 0 and that gate never fired.
+describe('handlePoCreated — budget-line attribution', () => {
+  const PO = {
+    po_id: 'po-1',
+    project_id: 'proj-1',
+    tenant_id: 'tenant-1',
+    total_amount: { amount: '500000.0000', currency_code: 'THB' },
+  };
+
+  it('attributes the cost transaction to the budget line the order belongs to', async () => {
+    mockRepo.resolveBudgetLine.mockResolvedValue('line-1');
+    mockRepo.getBudgetLineTotals.mockResolvedValue(null);
+
+    await service.handlePoCreated({ ...PO, line_items: [{ boq_item_id: 'item-1' }] });
+
+    expect(mockRepo.resolveBudgetLine).toHaveBeenCalledWith('proj-1', ['item-1']);
+    expect(mockRepo.createTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ budget_line_id: 'line-1' }),
+    );
+  });
+
+  it('passes only the lines that carry a BOQ item', async () => {
+    mockRepo.resolveBudgetLine.mockResolvedValue(null);
+
+    await service.handlePoCreated({
+      ...PO,
+      line_items: [{ boq_item_id: 'item-1' }, { boq_item_id: null }, {}],
+    });
+
+    expect(mockRepo.resolveBudgetLine).toHaveBeenCalledWith('proj-1', ['item-1']);
+  });
+
+  // An event minted before the field existed decodes with `line_items` absent. It must still write
+  // the transaction — unattributed, exactly as it was before — not throw.
+  it('still records the cost when the event carries no line items at all', async () => {
+    await service.handlePoCreated(PO);
+
+    expect(mockRepo.createTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ source_id: 'po-1', budget_line_id: null }),
+    );
+  });
+});
+
+describe('finance.budget.exceeded.v1', () => {
+  const PO = {
+    po_id: 'po-1',
+    project_id: 'proj-1',
+    tenant_id: 'tenant-1',
+    total_amount: { amount: '120000.0000', currency_code: 'THB' },
+    line_items: [{ boq_item_id: 'item-1' }],
+  };
+
+  function budgetLine(allocated: string, charged: string) {
+    return {
+      line_id: 'line-1',
+      boq_category_id: 'cat-1',
+      category_code: 'CONCRETE',
+      allocated_amount: allocated,
+      charged_amount: charged,
+      currency_code: 'THB',
+    };
+  }
+
+  beforeEach(() => {
+    mockRepo.resolveBudgetLine.mockResolvedValue('line-1');
+    mockRepo.findBudgetByProject.mockResolvedValue({
+      budget_id: 'b-1',
+      allocated_amount: '1000000.0000',
+      total_budget_currency: 'THB',
+      variance_alert_threshold: '10.00',
+    });
+  });
+
+  it('emits when a category is over its allocation by more than the threshold', async () => {
+    // 120,000 charged against 100,000 allocated = 20% over, and the threshold is 10%.
+    mockRepo.getBudgetLineTotals.mockResolvedValue(budgetLine('100000.0000', '120000.0000'));
+
+    await service.handlePoCreated(PO);
+
+    const outbox = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
+    expect(outbox.publish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event_type: 'finance.budget.exceeded.v1',
+        payload: expect.objectContaining({
+          project_id: 'proj-1',
+          // The CODE, not the uuid: a person reading this needs to know which trade.
+          cost_category: 'CONCRETE',
+          overage_percent: '20.00',
+        }),
+      }),
+    );
+  });
+
+  it('does NOT emit while the category is within the threshold', async () => {
+    // 105,000 against 100,000 = 5% over, under the 10% threshold.
+    mockRepo.getBudgetLineTotals.mockResolvedValue(budgetLine('100000.0000', '105000.0000'));
+
+    await service.handlePoCreated(PO);
+
+    const outbox = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
+    const emitted = outbox.publish.mock.calls.map(
+      (c) => (c[0] as { event_type: string }).event_type,
+    );
+    expect(emitted).not.toContain('finance.budget.exceeded.v1');
+  });
+
+  // A line allocated nothing cannot be "over" it — every division would be by zero and every PO
+  // against it would alert forever.
+  it('does not emit for a line allocated zero', async () => {
+    mockRepo.getBudgetLineTotals.mockResolvedValue(budgetLine('0.0000', '50000.0000'));
+
+    await service.handlePoCreated(PO);
+
+    const outbox = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
+    const emitted = outbox.publish.mock.calls.map(
+      (c) => (c[0] as { event_type: string }).event_type,
+    );
+    expect(emitted).not.toContain('finance.budget.exceeded.v1');
+  });
+
+  it('cannot fire when the order was not attributed to a line', async () => {
+    mockRepo.resolveBudgetLine.mockResolvedValue(null);
+
+    await service.handlePoCreated(PO);
+
+    expect(mockRepo.getBudgetLineTotals).not.toHaveBeenCalled();
+  });
+
+  // The project-level threshold is reused deliberately — the same number against a smaller
+  // denominator, rather than a second knob nobody would know to set.
+  it('honours a tenant that raised its project threshold', async () => {
+    mockRepo.findBudgetByProject.mockResolvedValue({
+      budget_id: 'b-1',
+      allocated_amount: '1000000.0000',
+      total_budget_currency: 'THB',
+      variance_alert_threshold: '25.00',
+    });
+    mockRepo.getBudgetLineTotals.mockResolvedValue(budgetLine('100000.0000', '120000.0000'));
+
+    await service.handlePoCreated(PO);
+
+    const outbox = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
+    const emitted = outbox.publish.mock.calls.map(
+      (c) => (c[0] as { event_type: string }).event_type,
+    );
+    expect(emitted).not.toContain('finance.budget.exceeded.v1');
   });
 });

@@ -34,6 +34,11 @@ const mockRepo = {
   addBudgetLine: jest.fn(),
   findLinesByBudget: jest.fn(),
   createTransaction: jest.fn(),
+  // Added 2026-08-23 (TDD OQ-50): handlePoCreated resolves a budget line before writing, so the
+  // double needs both. Default null = "this PO spans no single budget line", which is what every
+  // PO did before attribution existed — so tests that do not care keep their old behaviour.
+  resolveBudgetLine: jest.fn().mockResolvedValue(null),
+  getBudgetLineTotals: jest.fn().mockResolvedValue(null),
   findCostTransactions: jest.fn(),
   sumTransactionsByProject: jest.fn(),
   deleteTransactionBySource: jest.fn().mockResolvedValue(undefined),

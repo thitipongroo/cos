@@ -480,6 +480,95 @@ export class FinanceRepository {
   }
 
   /**
+   * The ONE budget line a set of BOQ items all belong to, or null.
+   *
+   * `finance.budget_lines.boq_category_id` is the allocation dimension; the chain from a purchase
+   * order is `po_line_items.boq_item_id` → `boq.boq_items.category_id` → that column. The PO event
+   * carries the item ids (TDD OQ-50) so Finance does not have to ask Procurement — the one rule
+   * Phase 7 is absolute about.
+   *
+   * NULL UNLESS EVERY LINE LANDS ON THE SAME BUDGET LINE, and that is the point. A cost transaction
+   * carries ONE `budget_line_id`, but a PO may order across several categories — attributing the
+   * whole total to whichever category happened to be first would overstate that budget and
+   * understate the others, which is worse than the NULL it replaces. A PO that spans categories
+   * stays unattributed until the ledger can hold a split, and `finance.budget.exceeded.v1` simply
+   * does not fire for it.
+   *
+   * Reading `boq.boq_items` from here is a cross-SCHEMA read, not a cross-service one:
+   * `tasks.repository.getTaskBudgetRatio` already joins the same table for the same purpose. What
+   * Phase 7 forbids is querying PROCUREMENT, and this does not.
+   */
+  async resolveBudgetLine(project_id: string, boqItemIds: string[]): Promise<string | null> {
+    if (boqItemIds.length === 0) return null;
+
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<{ line_id: string; matched: bigint }[]>`
+        SELECT bl.line_id::text, count(DISTINCT bi.item_id) AS matched
+          FROM boq.boq_items bi
+          JOIN finance.budget_lines bl
+            ON bl.boq_category_id = bi.category_id
+           AND bl.tenant_id       = ${this.tenantId}::uuid
+           AND bl.project_id      = ${project_id}::uuid
+         WHERE bi.tenant_id = ${this.tenantId}::uuid
+           AND bi.item_id   = ANY(${boqItemIds}::uuid[])
+         GROUP BY bl.line_id
+      `,
+    );
+
+    // Exactly one budget line, and it accounts for every item on the order.
+    if (rows.length !== 1) return null;
+    return Number(rows[0]!.matched) === boqItemIds.length ? rows[0]!.line_id : null;
+  }
+
+  /**
+   * A budget line's allocation and everything charged to it so far.
+   *
+   * Committed and actual are summed together: a PO that has been raised but not yet invoiced has
+   * already consumed the budget as far as anyone planning against it is concerned, which is the
+   * same basis `recalculateAndCheckVariance` uses at project level.
+   */
+  async getBudgetLineTotals(line_id: string): Promise<{
+    line_id: string;
+    boq_category_id: string | null;
+    category_code: string | null;
+    allocated_amount: string;
+    charged_amount: string;
+    currency_code: string;
+  } | null> {
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<
+          {
+            line_id: string;
+            boq_category_id: string | null;
+            category_code: string | null;
+            allocated_amount: string;
+            charged_amount: string;
+            currency_code: string;
+          }[]
+        >`
+        SELECT bl.line_id::text,
+               bl.boq_category_id::text,
+               bc.category_code,
+               bl.allocated_amount::text,
+               COALESCE((
+                 SELECT SUM(ct.amount) FROM finance.cost_transactions ct
+                  WHERE ct.tenant_id      = ${this.tenantId}::uuid
+                    AND ct.budget_line_id = bl.line_id
+               ), 0)::text AS charged_amount,
+               bl.currency_code
+          FROM finance.budget_lines bl
+          LEFT JOIN boq.boq_categories bc
+            ON bc.category_id = bl.boq_category_id AND bc.tenant_id = bl.tenant_id
+         WHERE bl.line_id   = ${line_id}::uuid
+           AND bl.tenant_id = ${this.tenantId}::uuid
+      `,
+    );
+    return rows[0] ?? null;
+  }
+
+  /**
    * Replace the materialized BOQ line snapshot for a version (ADR-058 CT-2c-2). DELETE + re-INSERT in one
    * tenant transaction → idempotent on event re-delivery. Materializes construction.boq.items_published.v1
    * so contract-document generation reads the itemized schedule without a cross-schema BOQ read.

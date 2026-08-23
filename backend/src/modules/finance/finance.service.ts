@@ -187,7 +187,19 @@ export class FinanceService {
     project_id: string;
     tenant_id: string;
     total_amount: { amount: string; currency_code: string };
+    line_items?: Array<{ boq_item_id?: string | null }>;
   }): Promise<void> {
+    // ATTRIBUTE THE COST TO A BUDGET LINE (TDD OQ-50). `cost_transactions.budget_line_id` has existed
+    // since the finance migration and nothing ever wrote it, so every per-category figure in the
+    // platform read zero. That is not only a missing event: `tasks.repository.getTaskBudgetRatio`
+    // computes actual-vs-allocated through this exact column, and `TasksService` uses it to BLOCK a
+    // task from completing at ratio >= 1.0 (warning at 0.85). With the column always NULL the ratio
+    // was always 0, so that gate has never fired once.
+    const boqItemIds = (event.line_items ?? [])
+      .map((li) => li.boq_item_id)
+      .filter((id): id is string => typeof id === 'string' && id.length > 0);
+    const budgetLineId = await this.repo.resolveBudgetLine(event.project_id, boqItemIds);
+
     await this.repo.createTransaction({
       project_id: event.project_id,
       source_type: 'PURCHASE_ORDER',
@@ -197,9 +209,62 @@ export class FinanceService {
       transaction_date: new Date().toISOString().slice(0, 10),
       description: `PO committed: ${event.po_id}`,
       recorded_by: null,
+      budget_line_id: budgetLineId,
     });
     await this.recalculateAndCheckVariance(event.project_id);
-    logger.info({ po_id: event.po_id, project_id: event.project_id }, 'cost_transaction.committed');
+    if (budgetLineId) await this.checkBudgetLineOverrun(event.project_id, budgetLineId);
+
+    logger.info(
+      { po_id: event.po_id, project_id: event.project_id, budget_line_id: budgetLineId },
+      'cost_transaction.committed',
+    );
+  }
+
+  /**
+   * Emit `finance.budget.exceeded.v1` when one budget LINE is over its allocation.
+   *
+   * Distinct from `finance.variance.alert.v1`, which is per PROJECT against `allocated_amount` at
+   * the tenant's `variance_alert_threshold`. This is per COST CATEGORY, and the two answer different
+   * questions: a project can be comfortably inside its total while one trade has blown through its
+   * line, which is exactly the case a site manager needs told.
+   *
+   * The threshold is the project's own `variance_alert_threshold` — the same number, applied to a
+   * smaller denominator — rather than a second knob nobody would know to set. A category is
+   * "exceeded" once charged exceeds allocated by more than that percentage.
+   */
+  private async checkBudgetLineOverrun(project_id: string, line_id: string): Promise<void> {
+    const line = await this.repo.getBudgetLineTotals(line_id);
+    if (!line) return;
+
+    const allocated = new Decimal(line.allocated_amount);
+    if (allocated.isZero()) return; // nothing to be over
+
+    const charged = new Decimal(line.charged_amount);
+    const overagePct = charged.minus(allocated).dividedBy(allocated).times(100);
+
+    const budget = await this.repo.findBudgetByProject(project_id);
+    const threshold = new Decimal(budget?.variance_alert_threshold ?? 10);
+    if (!overagePct.greaterThan(threshold)) return;
+
+    await this.emitEvent('finance.budget.exceeded.v1', {
+      project_id,
+      // The event's `cost_category` is the BOQ category's CODE, not its uuid: a consumer showing this
+      // to a human needs the code, and the uuid means nothing outside the BOQ module.
+      cost_category: line.category_code ?? line.boq_category_id ?? 'UNCATEGORISED',
+      budget_amount: { amount: allocated.toFixed(4), currency_code: line.currency_code },
+      actual_amount: { amount: charged.toFixed(4), currency_code: line.currency_code },
+      overage_percent: overagePct.toFixed(2),
+      detected_at: new Date().toISOString(),
+    });
+    logger.warn(
+      {
+        project_id,
+        line_id,
+        cost_category: line.category_code,
+        overage_pct: overagePct.toFixed(2),
+      },
+      'finance.budget.exceeded',
+    );
   }
 
   /** procurement.invoice.received → record ACTUAL cost transaction */

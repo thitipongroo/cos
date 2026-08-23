@@ -18,6 +18,12 @@
 // schema's payload fields, in order. Order matters as well as membership — the reader maps a Tuple
 // positionally once names diverge.
 //
+// NESTED RECORDS COUNT TOO, and that was a hole in this script until 2026-08-23. It compared only the
+// TOP-LEVEL payload fields, so adding a field INSIDE `line_items` — an Array(Tuple(...)) — passed
+// cleanly while leaving the DDL mis-reading exactly as OQ-47 describes. Found by making that change
+// for real (adding `boq_item_id` to procurement.po.created.v1) and watching the gate stay green.
+// Nested record and array-of-record fields are now walked to any depth.
+//
 // WHAT THIS DOES NOT DO. It does not check TYPES, and it does not connect to a broker. A Tuple that
 // names every field but types one wrongly still passes here and fails at runtime. The end-to-end
 // proof is a real event through a real ClickHouse; this is the cheap gate that catches the common
@@ -34,7 +40,7 @@ const DDL = join(REPO_ROOT, 'infrastructure', 'clickhouse', 'initdb.d', '02-kafk
 const AVRO_DIR = join(REPO_ROOT, 'packages', '@cos', 'shared', 'src', 'avro');
 
 /** Split a Tuple body on top-level commas — nested `Tuple(...)` and `Array(...)` must survive. */
-function topLevelFields(body) {
+function topLevelFields(body, whole = false) {
   const out = [];
   let depth = 0;
   let cur = '';
@@ -49,7 +55,52 @@ function topLevelFields(body) {
     }
   }
   out.push(cur.trim());
-  return out.filter(Boolean).map((f) => f.split(/\s+/)[0]);
+  const fields = out.filter(Boolean);
+  // `whole` keeps the type with the name, which the nested walk needs to find `Tuple(...)` inside it.
+  return whole ? fields : fields.map((f) => f.split(/\s+/)[0]);
+}
+
+/**
+ * Every field name in an Avro record, as dotted paths, walking into nested records and arrays.
+ *
+ * `line_items.boq_item_id` rather than just `line_items`. A union is unwrapped to its non-null
+ * branch, which is how a nullable record (`["null", {record}]`) is declared here.
+ */
+function avroPaths(fields, prefix = '') {
+  const out = [];
+  for (const f of fields) {
+    const path = prefix ? `${prefix}.${f.name}` : f.name;
+    out.push(path);
+    let t = f.type;
+    if (Array.isArray(t)) t = t.find((x) => x !== 'null') ?? t[0];
+    if (t && typeof t === 'object') {
+      if (t.type === 'array') {
+        let it = t.items;
+        if (Array.isArray(it)) it = it.find((x) => x !== 'null') ?? it[0];
+        if (it && typeof it === 'object' && it.type === 'record')
+          out.push(...avroPaths(it.fields, path));
+      } else if (t.type === 'record') {
+        out.push(...avroPaths(t.fields, path));
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * Every field name in a ClickHouse Tuple body, as dotted paths, walking into nested
+ * `Tuple(...)` and `Array(Tuple(...))`.
+ */
+function ddlPaths(body, prefix = '') {
+  const out = [];
+  for (const field of topLevelFields(body, true)) {
+    const name = field.split(/\s+/)[0];
+    const path = prefix ? `${prefix}.${name}` : name;
+    out.push(path);
+    const inner = /\bTuple\(([\s\S]*)\)\s*\)?\s*$/.exec(field.slice(name.length));
+    if (inner) out.push(...ddlPaths(inner[1], path));
+  }
+  return out;
 }
 
 /**
@@ -114,14 +165,14 @@ function main() {
       failures.push({ check: 'schema-shape', detail: `${eventType}.avsc has no payload field` });
       continue;
     }
-    const expected = payloadField.type.fields.map((f) => f.name);
+    const expected = avroPaths(payloadField.type.fields);
 
     const tupleBody = /payload\s+Tuple\(([\s\S]*)\)\s*$/.exec(cols.trim());
     if (!tupleBody) {
       failures.push({ check: 'ddl-shape', detail: `${table}: no 'payload Tuple(...)' column` });
       continue;
     }
-    const declared = topLevelFields(tupleBody[1]);
+    const declared = ddlPaths(tupleBody[1]);
 
     const missing = expected.filter((f) => !declared.includes(f));
     const extra = declared.filter((f) => !expected.includes(f));

@@ -872,9 +872,16 @@ Note: Legacy names shown first → canonical name in brackets. New events use ca
 
 12. finance.budget.exceeded → [finance.budget.exceeded.v1]
 
-    DECLARED, NO PRODUCER (verified 2026-08-23, TDD OQ-50). Needs per-cost_category
-    budgets; finance.budget_lines has no such column. The overrun signal that IS built and
-    consumed is #16 finance.variance.alert.v1 — per PROJECT, against allocated_amount.
+    BUILT 2026-08-23 (TDD OQ-50). Per COST CATEGORY, where #16 finance.variance.alert.v1
+    is per PROJECT — a project can sit inside its total while one trade has blown its line.
+    Threshold is the project's own variance_alert_threshold against the smaller denominator.
+    cost_category = the BOQ category CODE.
+    The enabling fix: cost_transactions.budget_line_id existed from the first finance
+    migration and NOTHING EVER WROTE IT, so every per-category figure read zero — including
+    the task-completion gate in TasksService, which blocks at ratio >= 1.0 and so had never
+    fired. procurement.po.created.v1 now carries boq_item_id per line (nullable, Avro
+    default), and Finance resolves boq_items.category_id -> budget_lines.boq_category_id.
+    A PO spanning several categories stays unattributed rather than charging one of them.
 
 
     payload: {
@@ -901,10 +908,14 @@ Note: Legacy names shown first → canonical name in brackets. New events use ca
 
 14. finance.cashflow_risk.detected → [finance.cashflow_risk.detected.v1]
 
-    DECLARED, NO PRODUCER (verified 2026-08-23, TDD OQ-50). The forecast exists as a PULL
-    endpoint (GET /api/v1/finance/cashflow-forecast/:projectId); nothing grades it into the
-    four risk levels and pushes. Thresholds and RULE_ENGINE rules are UNSPECIFIED — Rule 38
-    says do not guess them. scripts/ci/check-event-producers.mjs holds the line in CI.
+    DECLARED — rule DECIDED 2026-08-23, producer not yet built (TDD OQ-50). The forecast is a
+    PULL endpoint (GET /api/v1/finance/cashflow-forecast/:projectId) returning 13 weekly
+    buckets of inflow/outflow/net_flow/cumulative_net. RULE_ENGINE grades by HOW SOON
+    cumulative_net first goes negative: never in 13 weeks -> no event; weeks 9-13 LOW;
+    5-8 MEDIUM; 2-4 HIGH; 0-1 CRITICAL. projected_shortfall = the most negative
+    cumulative_net across the horizon. Nothing new is invented — every figure already exists.
+    AI_FORECAST is a second, later producer.
+    scripts/ci/check-event-producers.mjs holds the line in CI until it is built.
 
 
     payload: {

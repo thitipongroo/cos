@@ -70,6 +70,26 @@ Exit condition: "finance calculations + precision tests green; RLS enforced"
 | Custom exchange-rate logic            | forbidden — Open Exchange Rates only                                                |
 | Hardcoded tax rates                   | forbidden — `wht_rules` for every jurisdiction                                      |
 
+> **Roadmap trigger, decided 2026-08-23 (PO).** The three accounting items stay unbuilt — COS tracks
+> budget vs actual and is not a book of account; the ledger of record is the customer's ERP, reached
+> through the adapters below. What changes is that they are no longer open-endedly deferred. They
+> enter the roadmap **on a stated trigger**, so the answer is checkable rather than a standing
+> "not now":
+>
+> | Item                                  | Trigger that opens it                                                                 |
+> | ------------------------------------- | ------------------------------------------------------------------------------------- |
+> | Double-entry bookkeeping              | A signed customer with no ERP requires statutory books kept inside COS                 |
+> | Chart of accounts                     | Same trigger — a COA is meaningless without the ledger it classifies                   |
+> | GL posting                            | Same trigger, or a customer requiring COS to post directly rather than export          |
+>
+> Each opens an ADR when its trigger fires; none is stubbed before then, because a stub of a general
+> ledger is a thing that looks like bookkeeping and is not. Until then, `UNSPECIFIED` means exactly
+> what Rule 38 says — do not implement, do not stub.
+>
+> **This is a decision, not a discovery:** nothing in the code changed, and nothing should. It is
+> recorded so a future reader can tell "deliberately out of scope, with a condition" from "nobody has
+> looked at this".
+
 The ERP line reads as a contradiction and is not one: the _integration_ is unspecified, while the
 _strategy-pattern stub_ is a named deliverable. Nothing behind the interface is implemented.
 

@@ -91,7 +91,12 @@ CREATE TABLE IF NOT EXISTS analytics.kafka_procurement_po_created
         po_number     String,
         total_amount  Tuple(amount String, currency_code String),
         delivery_date String,
-        line_items    Array(Tuple(item_id String, quantity String, unit String, unit_price String))
+        -- boq_item_id added 2026-08-23 (TDD OQ-50): Finance needs it to attribute a cost transaction to a
+        -- budget line. A Tuple that omits a field does not project it away, it MIS-READS the record —
+        -- and kafka_skip_broken_messages = 100 makes that silent (OQ-47). Nullable because the Avro
+        -- field is ["null","string"]: a line ordered outside the BOQ has none.
+        line_items    Array(Tuple(item_id String, quantity String, unit String, unit_price String,
+                                  boq_item_id Nullable(String)))
     )
 )
 ENGINE = Kafka

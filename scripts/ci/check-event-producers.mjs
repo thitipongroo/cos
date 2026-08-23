@@ -12,6 +12,10 @@
 // listed in a READINESS GATE that refuses to pass until they are registered in the Schema Registry —
 // for events that nothing has ever published. Measured 2026-08-23: 2 of 61.
 //
+// `finance.budget.exceeded.v1` was built later the same day and came off the list — which the
+// bidirectional half of this check caught before a human did: it failed with "listed in DECLARED_ONLY
+// but now HAS a producer".
+//
 // The failure mode is not a crash. It is a topic that exists, a schema that validates, a consumer
 // that could be written against it, and a dashboard row that stays at zero forever with nothing to
 // say whether that means "quiet" or "never built". A reader has no way to tell a live event from a
@@ -53,15 +57,10 @@ const SKIP_DIRS = new Set(['node_modules', 'dist', 'build', '__tests__', 'covera
  */
 const DECLARED_ONLY = new Map([
   [
-    'finance.budget.exceeded.v1',
-    'Needs per-cost_category budgets. finance.budget_lines has no cost_category column, and the ' +
-      'implemented per-project overrun signal is finance.variance.alert.v1 (spec §32.4 #12).',
-  ],
-  [
     'finance.cashflow_risk.detected.v1',
-    'The forecast exists as a pull endpoint (GET /finance/cashflow-forecast/:projectId); nothing ' +
-      'grades it into LOW/MEDIUM/HIGH/CRITICAL and pushes. Needs the risk thresholds and the ' +
-      'RULE_ENGINE rules to be specified (spec §32.4 #14).',
+    'Rule DECIDED 2026-08-23, producer not yet built: RULE_ENGINE grades by how soon ' +
+      'cumulative_net first goes negative across the 13-week forecast (9-13 LOW, 5-8 MEDIUM, ' +
+      '2-4 HIGH, 0-1 CRITICAL); projected_shortfall is the most negative bucket. See spec §32.4 #14.',
   ],
 ]);
 
