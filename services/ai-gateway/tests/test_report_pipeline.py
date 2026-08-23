@@ -298,3 +298,26 @@ class TestGuardRejection:
         assert result.report_id is not None
         assert "POTENTIAL_HALLUCINATION" in caplog.text
         assert len(_persist_calls(pool)) == 1
+
+    @pytest.mark.asyncio
+    async def test_the_flag_itself_never_reaches_the_caller(self, rendered, monkeypatch):
+        """master:3954 — POTENTIAL_HALLUCINATION is "logged, not returned to user".
+
+        Product-owner reading, settled 2026-08-23: the parenthetical governs the FLAG, not the
+        summary. The report is still returned, carrying `low_confidence: true` — which both clients
+        already render as a warning (apps/web reports/page.tsx, apps/mobile reports.tsx) — while the
+        label itself stays in the log. This asserts the half that was untested: the string must not
+        appear anywhere in what the caller receives, in the content or the field names.
+        """
+        monkeypatch.setattr(
+            pipeline_module._GUARD,
+            "validate",
+            lambda output, context: GuardResult(passed=True, hallucination_flagged=True),
+        )
+
+        result = await _run(_FakeProvider(_FakeLLMResponse(json.dumps(_valid_output()))), _FakePool())
+
+        assert "POTENTIAL_HALLUCINATION" not in json.dumps(result.model_dump(), default=str)
+        # And the caller is still told something is wrong — otherwise "not returned" would be
+        # satisfied by saying nothing at all.
+        assert result.low_confidence is True
