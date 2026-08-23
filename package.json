@@ -25,7 +25,8 @@
     "migrate": "turbo run migrate",
     "seed": "turbo run seed",
     "proto-gen": "cd packages/@cos/proto-contracts && buf generate",
-    "prepare": "husky"
+    "prepare": "husky",
+    "test:architecture": "jest --config jest.architecture.config.js"
   },
   "devDependencies": {
     "@pact-foundation/pact": "^17.0.0",

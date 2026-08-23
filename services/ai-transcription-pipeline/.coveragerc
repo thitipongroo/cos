@@ -9,5 +9,9 @@ omit =
     setup.py
 
 [report]
+exclude_lines =
+    pragma: no cover
+    # the module-run guard is executed by the interpreter, never by an import under test
+    if __name__ == .__main__.:
 show_missing = True
 skip_covered = False

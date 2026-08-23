@@ -192,6 +192,13 @@ jobs:
       - name: Unit tests + coverage — services/file-service
         working-directory: services/file-service
         run: pnpm run test:cov
+      # apps/web shipped with no test script and zero test files; CI ran only lint, type-check,
+      # build and Lighthouse, so none of its business logic was covered by QM-1. Wired 2026-08-23
+      # (§35.13 ESC-25). jest.config.ts scopes the 100% gate to unit-testable logic and documents
+      # every exclusion — App Router pages and React components stay with the Playwright suite.
+      - name: Unit tests + coverage — apps/web
+        working-directory: apps/web
+        run: pnpm run test:cov
       - name: Upload coverage reports
         uses: actions/upload-artifact@v4
         if: always()
@@ -208,6 +215,7 @@ jobs:
             packages/@cos/tracing/coverage/
             packages/@cos/config/coverage/
             services/file-service/coverage/
+            apps/web/coverage/
 
   # ─── Step 3b: Mobile Tests (apps/mobile — standalone Expo/RN workspace) ──────
   # apps/mobile is EXCLUDED from the repo-root pnpm workspace (React Native + Metro
@@ -304,6 +312,11 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Run contract tests
         run: pnpm run test:contract
+      # Repo-wide architecture invariants (§35.13 ESC-27) — rules that span workspaces:
+      # no console.log in app code, no direct LLM SDK outside ai-gateway, no GL logic in finance,
+      # the two clients keep their own storage engines, AI output triggers nothing autonomously.
+      - name: Architecture invariants
+        run: pnpm run test:architecture
 
   # ─── Step 4: Build Docker Images ────────────────────────────────────────────
   build-docker:
@@ -357,10 +370,12 @@ jobs:
   #
   #   Baselines measured 2026-08-23 (go 1.26, -coverpkg=./...):
   #     kg-ingestion-worker  86.0%  (tests/unit; tests/integration needs a Docker socket — CI has one)
-  #     analytics-worker      0.0%  — its one test (internal/carbon/consumer_test.go) only unmarshals
-  #                                  a struct literal and calls nothing in consumer.go, so not one
-  #                                  statement in the module is executed. 0 is a placeholder floor,
-  #                                  not an endorsement: raise it as soon as real tests land.
+  #     analytics-worker     93.1%  — raised from 0.0% on 2026-08-23 by writing the missing tests:
+  #                                  a fake database/sql driver + fake sarama session/claim for the
+  #                                  carbon consumer, real Configure()/propagation round-trips for
+  #                                  otel, and a SIGTERM-driven test of main(). What remains are two
+  #                                  error branches (resource/exporter construction failure) that no
+  #                                  input reaches.
   #   Raise coverage_min whenever the printed total exceeds it. Never lower it.
   go-tests:
     name: Go Worker Tests (analytics-worker + kg-ingestion-worker)
@@ -370,7 +385,7 @@ jobs:
       matrix:
         include:
           - service: analytics-worker
-            coverage_min: '0.0'
+            coverage_min: '93.0'
           - service: kg-ingestion-worker
             coverage_min: '86.0'
     steps:
@@ -402,15 +417,10 @@ jobs:
   # suite against itself inflates the figure badly here (with tests/ included the four report
   # 64/87/73/52%; the source alone is 45/73/46/35%).
   #
-  #   Measured 2026-08-23 (python:3.12-slim, source only):
-  #     ai-embedding-worker        73%
-  #     ai-ocr-pipeline            46%
-  #     ai-gateway                 45%
-  #     ai-transcription-pipeline  35%
-  #
-  #   All four are BELOW the 99% floor, so this gate fails until the missing tests are written.
-  #   That is the intended reading of QM-1: the gate states the requirement, and the shortfall is
-  #   visible instead of silent. fail-fast is false so every service reports its own number.
+  #   Baseline when the gate was wired (python:3.12-slim, source only): ai-embedding-worker 73%,
+  #   ai-ocr-pipeline 46%, ai-gateway 45%, ai-transcription-pipeline 35% — all four below the floor.
+  #   The missing tests were then written; as of 2026-08-23 **every service is at 100%** and the
+  #   gate passes. fail-fast is false so a regression names the service that caused it.
   ai-service-tests:
     name: AI Service Tests (Python)
     runs-on: ubuntu-latest

@@ -15,7 +15,10 @@
     "rootDir": "../..",
     "allowJs": true,
     "noEmit": true,
-    "isolatedModules": true
+    "isolatedModules": true,
+    // Includes the jest globals so `tsc --noEmit` type-checks src/**/__tests__ alongside the app,
+    // matching apps/mobile/tsconfig.json (§35.13 ESC-25).
+    "types": ["node", "jest"]
   },
   "include": ["src/**/*", "next.config.mjs", ".next/types/**/*.ts"],
   "exclude": ["node_modules", "src/app/sw.ts"]

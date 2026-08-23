@@ -4,7 +4,13 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import pytest
-from utils.chunking import Chunk, chunk_document, _split_by_size, _merge_with_overlap
+from utils.chunking import (
+    Chunk,
+    chunk_document,
+    _split_by_size,
+    _merge_with_overlap,
+    _split_with_separators,
+)
 
 
 class TestChunkDocument:
@@ -97,3 +103,22 @@ class TestMergeWithOverlap:
         chunks = ["only chunk"]
         result = _merge_with_overlap(chunks, 100, 10)
         assert result == ["only chunk"]
+
+
+class TestSplitWithSeparators:
+    """The exhausted-separator guard (§35.13 ESC-24).
+
+    _recursive_split always hands in a list ending with "", and the empty-separator branch returns
+    before recursing further — so the "not separators" guard is unreachable through the public API.
+    It is still a real contract: called with no separators left, the function must fall back to a
+    fixed-size split rather than index into an empty list.
+    """
+
+    def test_falls_back_to_size_split_when_separators_are_exhausted(self):
+        text = "x" * 250
+        result = _split_with_separators(text, 100, 0, [])
+        assert result == _split_by_size(text, 100, 0)
+        assert len(result) > 1
+
+    def test_empty_text_with_no_separators_yields_nothing(self):
+        assert _split_with_separators("", 100, 10, []) == []
