@@ -68,7 +68,7 @@ a **DR drill before every Stage transition**, recorded in the drill log above.
 
 | Runbook                                          | Covers                                                   | State |
 | ------------------------------------------------ | -------------------------------------------------------- | ----- |
-| [mfa-enforcement.md](mfa-enforcement.md)         | MFA Enforcement for TENANT_ADMIN / FINANCE (spec §5.4.1) | —     |
+| [mfa-enforcement.md](mfa-enforcement.md)         | MFA Enforcement for TENANT_ADMIN / FINANCE (spec §5.4.1) — Step 2 is scripted: `scripts/ops/verify-keycloak-mfa-live.mjs` | —     |
 | [mobile-cert-pinning.md](mobile-cert-pinning.md) | Mobile Certificate Pinning (security review L18)         | —     |
 
 ## Testing

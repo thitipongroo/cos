@@ -32,8 +32,15 @@ Applications that may need the same treatment: `cos-web`, `cos-file-service`,
 `cos-credential-service`, `cos-ai-gateway`, `cos-ai-embedding-worker`, `cos-ai-ocr-pipeline`,
 `cos-analytics-worker`, `cos-kg-ingestion-worker`, `cos-otel-collector`.
 
-> **`selfHeal: true` is set on every Application.** A `kubectl` edit made by hand will be reverted
-> within the sync interval. Roll back through ArgoCD, not through `kubectl`.
+> **`selfHeal: true` is set on the 10 `-staging` Applications, and on none of the 11 production
+> ones** — corrected 2026-08-23, this previously read "every Application". Production has no
+> `syncPolicy.automated` block at all, which is what makes promotion a manual gate (QM-16).
+>
+> The practical difference is the opposite of what the old wording implied: in **staging** a hand-made
+> `kubectl` edit is reverted within the sync interval, so roll back through ArgoCD. In **production**
+> a `kubectl rollout undo` will NOT be reverted — it survives until the next manual Sync, which then
+> silently restores the broken revision. Use it as emergency mitigation, then immediately fix the
+> revision ArgoCD would sync, or the next Sync undoes your rollback.
 
 Kubernetes-level equivalent, if ArgoCD itself is unavailable:
 

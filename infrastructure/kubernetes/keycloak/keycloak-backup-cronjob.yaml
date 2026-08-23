@@ -1,0 +1,182 @@
+# Keycloak realm daily backup — the CronJob docs/runbooks/keycloak-realm-backup.md specifies.
+#
+# WHY THIS FILE EXISTS AS A FILE. Until 2026-08-23 this manifest lived only as a fenced code block
+# inside that runbook, under the heading "Deploy to:
+# infrastructure/kubernetes/keycloak/keycloak-backup-cronjob.yaml" — a directory that did not exist.
+# So nothing produced a backup, while `keycloak-realm-recovery.md` Scenario A instructs an operator to
+# "identify the last known-good backup from S3" and the S3 bucket sits in Terraform with a 90-day
+# expiry rule applied to nothing. A recovery procedure whose first step reads from an empty bucket is
+# not a recovery procedure.
+#
+# FOUR DEFECTS IN THE RUNBOOK'S VERSION, each measured rather than reasoned about:
+#
+#   1. NO AWS CLI IN THE KEYCLOAK IMAGE. The block ran `aws s3 cp` inside
+#      quay.io/keycloak/keycloak — verified 2026-08-23:
+#        docker run --rm --entrypoint sh quay.io/keycloak/keycloak:26.6.4 -c 'command -v aws'
+#      returns nothing, and neither does `command -v curl`. Every nightly run would have exported
+#      correctly and then died on "aws: not found". Split into two containers here: the export runs
+#      as an initContainer, the upload in an image that has the CLI, over a shared emptyDir.
+#
+#   2. WRONG FILENAME. The block computed BACKUP_FILE=/tmp/realm-backup-${TIMESTAMP}.json and copied
+#      that. `kc.sh export --dir /tmp --realm X` writes `X-realm.json` — measured by running it
+#      against the live dev instance, which produced `construction-os-dev-realm.json`. The copy would
+#      have failed on a file that was never created. The timestamp belongs in the S3 KEY, not in the
+#      local name, and that is where it is now.
+#
+#   3. IMAGE FOUR MAJOR VERSIONS BEHIND. It pinned keycloak:24.0 against a platform running 26.6.4
+#      (docker-compose.yml). Exporting a 26.x schema with a 24.0 binary is not a supported
+#      combination. Pinned to the same version the platform runs; keep the two in step.
+#
+#   4. ONE REALM, AND THE WRONG ONE. It exported `--realm construction-os`. Spec §7.6 gives every
+#      ENTERPRISE tenant its own realm `cos-{tenantCode}` alongside the shared one, so a single-realm
+#      export silently omits every dedicated tenant — the customers with the tightest contractual RTO
+#      (1 hour, §8.2). This exports ALL realms with `--dir`, which writes one file per realm.
+#
+# STILL UNVERIFIED, and deliberately not guessed at:
+#   - `kc.sh export` needs the database, not a running server. Run in-cluster it gets its own pod, so
+#     it will not collide with the live Keycloak — but that has not been proven against a real
+#     cluster. Running it INSIDE the live container does collide: measured, it fails with "Unable to
+#     start the management interface on 0.0.0.0:9000 — Address already in use".
+#   - The bucket name is a Terraform variable (`s3_keycloak_backups_bucket_name`) with no default, so
+#     it differs per environment. It comes from a ConfigMap here rather than being hardcoded —
+#     `keycloak-realm-backup.md` says `cos-backups` and `keycloak-realm-recovery.md` says
+#     `cos-keycloak-backups`, and neither is provably right.
+#   - Whether the ServiceAccount below has the IRSA annotation it needs. That is an ops step.
+#
+# This manifest is NOT in any ArgoCD Application path yet — see the note in the runbook.
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-backup-config
+  namespace: cos
+  labels:
+    app.kubernetes.io/name: keycloak-realm-backup
+    app.kubernetes.io/component: backup
+data:
+  # Set per environment. Terraform exposes this as `s3_keycloak_backups_bucket_name` and gives it no
+  # default on purpose, so there is no correct value to hardcode here.
+  BACKUP_BUCKET: ''
+  # Prefix inside the bucket. keycloak-realm-recovery.md reads from `{environment}/`, so the two must
+  # agree or a restore looks in the wrong place.
+  BACKUP_PREFIX: 'production'
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: keycloak-realm-backup
+  namespace: cos
+  labels:
+    app.kubernetes.io/name: keycloak-realm-backup
+    app.kubernetes.io/component: backup
+spec:
+  schedule: '0 19 * * *' # 02:00 ICT = 19:00 UTC
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 7
+  failedJobsHistoryLimit: 3
+  # Without this a missed window (control-plane outage, node pressure) is simply skipped and the day
+  # has no backup, with nothing to say so. 6 hours still lands it well inside the same day.
+  startingDeadlineSeconds: 21600
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: keycloak-realm-backup
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: keycloak-realm-backup
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            fsGroup: 1000
+          volumes:
+            - name: export
+              emptyDir: {}
+          # STEP 1 — export every realm to the shared volume. Runs to completion before the upload
+          # container starts, which is exactly the ordering guarantee an initContainer gives and a
+          # second app container does not.
+          initContainers:
+            - name: export
+              image: quay.io/keycloak/keycloak:26.6.4
+              command: ['/bin/sh', '-c']
+              args:
+                - |
+                  set -eu
+                  # No --realm: exports ALL realms, one {realm}-realm.json per realm. The shared
+                  # realm alone would omit every ENTERPRISE tenant's cos-{tenantCode} realm (§7.6).
+                  # --users realm_file keeps users in the same file rather than a users-*.json
+                  # sidecar, so a restore is one object per realm.
+                  /opt/keycloak/bin/kc.sh export --dir /export --users realm_file
+                  echo "exported:"
+                  ls -1 /export
+                  # An export that produced nothing must fail the Job. Without this the upload step
+                  # would succeed at copying zero files and the CronJob would report success.
+                  test -n "$(ls -A /export)" || { echo "FAIL: export produced no files" >&2; exit 1; }
+              env:
+                - name: KC_DB
+                  value: postgres
+                - name: KC_DB_URL
+                  valueFrom:
+                    secretKeyRef: { name: keycloak-db-secret, key: url }
+                - name: KC_DB_USERNAME
+                  valueFrom:
+                    secretKeyRef: { name: keycloak-db-secret, key: username }
+                - name: KC_DB_PASSWORD
+                  valueFrom:
+                    secretKeyRef: { name: keycloak-db-secret, key: password }
+              volumeMounts:
+                - name: export
+                  mountPath: /export
+              resources:
+                requests: { cpu: 200m, memory: 512Mi }
+                limits: { cpu: '1', memory: 1Gi }
+          # STEP 2 — upload. A separate image because the Keycloak image has no aws CLI (measured).
+          containers:
+            - name: upload
+              image: public.ecr.aws/aws-cli/aws-cli:2.17.0
+              command: ['/bin/sh', '-c']
+              args:
+                - |
+                  set -eu
+                  test -n "${BACKUP_BUCKET}" || { echo "FAIL: BACKUP_BUCKET is unset" >&2; exit 1; }
+                  TIMESTAMP=$(date -u +%Y%m%dT%H%M%SZ)
+                  for f in /export/*.json; do
+                    base=$(basename "$f" .json)
+                    # Timestamp in the KEY, not the filename: the object name carries which realm and
+                    # when, and the realm name stays readable for the restore step.
+                    aws s3 cp "$f" \
+                      "s3://${BACKUP_BUCKET}/${BACKUP_PREFIX}/${base}-${TIMESTAMP}.json" \
+                      --sse aws:kms --ssekms-key-id "${KMS_KEY_ID}"
+                  done
+                  echo "uploaded $(ls -1 /export | wc -l) realm export(s) at ${TIMESTAMP}"
+              env:
+                - name: BACKUP_BUCKET
+                  valueFrom:
+                    configMapKeyRef: { name: keycloak-backup-config, key: BACKUP_BUCKET }
+                - name: BACKUP_PREFIX
+                  valueFrom:
+                    configMapKeyRef: { name: keycloak-backup-config, key: BACKUP_PREFIX }
+                - name: KMS_KEY_ID
+                  valueFrom:
+                    secretKeyRef: { name: kms-config, key: backup-key-id }
+              volumeMounts:
+                - name: export
+                  mountPath: /export
+                  readOnly: true
+              resources:
+                requests: { cpu: 100m, memory: 128Mi }
+                limits: { cpu: 500m, memory: 256Mi }
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: keycloak-realm-backup
+  namespace: cos
+  labels:
+    app.kubernetes.io/name: keycloak-realm-backup
+  # OPS: annotate with the IRSA role that may PutObject into the backup bucket and Encrypt with the
+  # CMK, e.g.
+  #   eks.amazonaws.com/role-arn: arn:aws:iam::<account>:role/cos-keycloak-backup
+  # Without it the upload container gets no credentials and every run fails at `aws s3 cp`.

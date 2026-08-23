@@ -1,6 +1,19 @@
 # ArgoCD PostSync hook — wave 1 smoke test
 # Spec §30.12: smoke tests (ArgoCD PostSync wave 1) → blocks E2E wave 2
-# Mirrors scripts/deploy/smoke-test.sh; runs against staging after every ArgoCD sync
+# Mirrors scripts/deploy/smoke-test.sh.
+#
+# ⚠️ THIS HOOK DOES NOT FIRE (measured 2026-08-23). An ArgoCD PostSync hook only runs for manifests
+# inside the synced Application's source path. Every Application points at infrastructure/helm/cos-*
+# or the otel overlays; this file is in infrastructure/kubernetes/argocd/, which no Application syncs.
+# Applied by hand it is a plain Job, not a hook.
+#
+# ⚠️ AND `namespace: cos` IS PRODUCTION. The line below used to claim this "runs against staging
+# after every ArgoCD sync" — staging is `cos-staging`. Both are placement decisions that belong with
+# the staging run that closes docs/runbooks/deployment.md, so nothing is moved here unilaterally.
+#
+# The auth step also calls an endpoint that has never existed — see the header of
+# scripts/deploy/smoke-test.sh for the measurements and why it cannot be repointed without a
+# decision.
 ---
 apiVersion: batch/v1
 kind: Job
@@ -33,10 +46,10 @@ spec:
               fail() { echo "SMOKE FAIL: $1" >&2; exit 1; }
 
               echo "→ [1/3] Health check"
-              STATUS=$(curl -sf -o /dev/null -w "%{http_code}" --max-time 10 "${BASE_URL}/health") \
+              STATUS=$(curl -sf -o /dev/null -w "%{http_code}" --max-time 10 "${BASE_URL}/api/v1/health/ready") \
                 || fail "health endpoint unreachable"
               [ "$STATUS" = "200" ] || fail "health returned HTTP ${STATUS}"
-              echo "  ✓ /health → 200"
+              echo "  ✓ /api/v1/health/ready → 200"
 
               echo "→ [2/3] Auth check"
               AUTH=$(curl -sf --max-time 10 -X POST "${BASE_URL}/api/v1/auth/login" \

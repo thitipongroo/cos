@@ -30,81 +30,48 @@ Recovery procedure: `docs/runbooks/keycloak-realm-recovery.md`
 
 ## Backup CronJob
 
-Deploy to: `infrastructure/kubernetes/keycloak/keycloak-backup-cronjob.yaml`
+**Committed at
+[`infrastructure/kubernetes/keycloak/keycloak-backup-cronjob.yaml`](../../infrastructure/kubernetes/keycloak/keycloak-backup-cronjob.yaml)**
+since 2026-08-23. Until then it existed only as a YAML block on this page, under a "Deploy to:" path
+whose directory did not exist — so nothing produced a backup, while
+[`keycloak-realm-recovery.md`](keycloak-realm-recovery.md) Scenario A instructs an operator to fetch
+"the last known-good backup from S3" and Terraform applies a 90-day expiry rule to an empty bucket.
 
-```yaml
-apiVersion: batch/v1
-kind: CronJob
-metadata:
-  name: keycloak-realm-backup
-  namespace: cos
-spec:
-  schedule: '0 19 * * *' # 02:00 ICT = 19:00 UTC
-  concurrencyPolicy: Forbid
-  successfulJobsHistoryLimit: 7
-  failedJobsHistoryLimit: 3
-  jobTemplate:
-    spec:
-      template:
-        spec:
-          restartPolicy: OnFailure
-          containers:
-            - name: keycloak-backup
-              image: quay.io/keycloak/keycloak:24.0
-              command:
-                - /bin/sh
-                - -c
-                - |
-                  set -e
-                  TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-                  BACKUP_FILE="/tmp/realm-backup-${TIMESTAMP}.json"
+**The block that lived here would not have worked.** Four defects, each measured on 2026-08-23 rather
+than reasoned about, and each fixed in the committed manifest:
 
-                  # Export realm
-                  /opt/keycloak/bin/kc.sh export \
-                    --dir /tmp \
-                    --users realm_file \
-                    --realm construction-os
+| Defect                                                                                        | Evidence                                                                                                                    |
+| --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Ran `aws s3 cp` inside the Keycloak image, which has **no aws CLI** (and no curl)             | `docker run --rm --entrypoint sh quay.io/keycloak/keycloak:26.6.4 -c 'command -v aws'` → nothing                             |
+| Copied `/tmp/realm-backup-${TIMESTAMP}.json`, a file the export never creates                 | `kc.sh export --dir /tmp --realm construction-os-dev` produced `construction-os-dev-realm.json` — the name is `{realm}-realm.json` |
+| Pinned `keycloak:24.0` against a platform running **26.6.4**                                  | `docker-compose.yml`                                                                                                        |
+| Exported one realm (`construction-os`), omitting every ENTERPRISE `cos-{tenantCode}` realm    | §7.6 — those tenants carry the tightest contractual RTO (1 h, §8.2)                                                          |
 
-                  # Upload to S3
-                  aws s3 cp "$BACKUP_FILE" \
-                    "s3://${BACKUP_BUCKET}/keycloak/realm-backup-${TIMESTAMP}.json" \
-                    --sse aws:kms \
-                    --ssekms-key-id "${KMS_KEY_ID}"
+The committed manifest splits the work: an **initContainer** runs `kc.sh export` for **all** realms
+into an `emptyDir`, then an `aws-cli` container uploads each file with the timestamp in the S3 key.
+It fails the Job if the export produced nothing, so a silent zero-file "success" is not possible.
 
-                  echo "Backup complete: realm-backup-${TIMESTAMP}.json"
-              env:
-                - name: KEYCLOAK_ADMIN
-                  valueFrom:
-                    secretKeyRef:
-                      name: keycloak-admin-credentials
-                      key: username
-                - name: KEYCLOAK_ADMIN_PASSWORD
-                  valueFrom:
-                    secretKeyRef:
-                      name: keycloak-admin-credentials
-                      key: password
-                - name: KC_DB
-                  value: postgres
-                - name: KC_DB_URL
-                  valueFrom:
-                    secretKeyRef:
-                      name: keycloak-db-secret
-                      key: url
-                - name: BACKUP_BUCKET
-                  value: cos-backups
-                - name: KMS_KEY_ID
-                  valueFrom:
-                    secretKeyRef:
-                      name: kms-config
-                      key: backup-key-id
-              resources:
-                requests:
-                  cpu: 100m
-                  memory: 256Mi
-                limits:
-                  cpu: 500m
-                  memory: 512Mi
-```
+### Before it can run — ops
+
+1. Set `BACKUP_BUCKET` in the `keycloak-backup-config` ConfigMap. Terraform declares
+   `s3_keycloak_backups_bucket_name` **with no default**, so there is no correct value to commit;
+   this page and the recovery page have historically disagreed (`cos-backups` vs
+   `cos-keycloak-backups`). Pick one, set it here, and make the recovery page match.
+2. Annotate the `keycloak-realm-backup` ServiceAccount with an IRSA role that may `PutObject` to that
+   bucket and `Encrypt` with the CMK. Without it every run fails at `aws s3 cp`.
+3. Confirm the `keycloak-db-secret` keys (`url`, `username`, `password`) exist in namespace `cos`.
+4. **Put the manifest in an ArgoCD Application path.** It is in none today, so `kubectl apply` is
+   currently the only thing that would deploy it — the same failure mode as the PostSync smoke test
+   (see [`deployment.md`](deployment.md)).
+5. Run it once manually and confirm objects land in the bucket:
+   `kubectl -n cos create job --from=cronjob/keycloak-realm-backup keycloak-backup-manual`
+
+### Not yet verified
+
+`kc.sh export` reads the database and starts a server process to do it. In-cluster the CronJob gets
+its own pod, so it should not collide with the live Keycloak — **but that has not been proven against
+a real cluster.** Running the export inside the live container definitely does collide: measured, it
+fails with `Unable to start the management interface on 0.0.0.0:9000 — Address already in use`.
 
 ---
 

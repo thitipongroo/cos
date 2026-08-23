@@ -45,6 +45,7 @@ Alert rules: `infrastructure/monitoring/prometheus/rules/cos-alerts.yml`.
 | `APIHighLatency`           | p99 > 5 s for 5 min                     | P1 / P2                                        |
 | `KafkaDLQNonEmpty`         | DLQ depth > 0 for 5 min                 | P2                                             |
 | `DBHighQueryTime`          | p95 query > 1 s for 5 min               | P2                                             |
+| `FinanceLedgerDrift`       | A budget disagrees with procurement     | P2 — money, not availability; see [`finance-ledger-drift.md`](finance-ledger-drift.md) |
 | `AnalyticsSLABreach`       | Analytics p95 > 3 s                     | P2                                             |
 | `AIHighTokenUsage`         | Tenant above 80% of monthly AI quota    | P3 — notify FINANCE + TENANT_ADMIN             |
 | `DiskUsageHigh`            | Any PV > 80% full                       | P2 / P3                                        |

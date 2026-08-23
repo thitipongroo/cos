@@ -96,7 +96,33 @@ Realm attribute **`acr.loa.map` = `{"silver":1,"gold":2}`**, with the `acr` clie
 > default `MFA_REQUIRED_ACR=gold` then passes it. The map needs a base level and a higher OTP level,
 > and the OTP subflow needs the `Condition - Level of Authentication` at the higher level (Step 1a).
 
-## Step 2 — Verify (live — the part no script can do)
+## Step 2 — Verify (live)
+
+**Most of this IS scriptable, and now is:**
+
+```bash
+KEYCLOAK_URL=https://<keycloak> KEYCLOAK_ADMIN_USER=admin KEYCLOAK_ADMIN_PASSWORD=… \
+KEYCLOAK_CLIENT_SECRET=… \
+node scripts/ops/verify-keycloak-mfa-live.mjs --realm <realm> --probe
+```
+
+It reads the RUNNING realm — not the committed file, which is what
+`scripts/ci/check-keycloak-mfa-config.mjs` does — and asserts the flow bindings, the
+`acr.loa.map` shape, the `Deny access` execution and its ordering ahead of the conditional-OTP
+subflow, and the privileged-role match. With `--probe` it creates a throwaway `TENANT_ADMIN` and a
+throwaway `SITE_ENGINEER`, attempts a Direct Grant as each, and deletes them — reproducing cases 3
+and 4 below. That probe is the only part that proves the flow **runs** rather than merely existing:
+falsified by unbinding `directGrantFlow`, at which point the static check reports the wrong binding
+**and** the probe reports that a TENANT_ADMIN was issued a token.
+
+It refuses to create probe users in a realm whose name does not look non-production unless `--force`
+is passed.
+
+**What still needs a browser** — cases 1, 2, 5 and 6 below: forced TOTP enrolment, the absence of an
+OTP prompt for a non-privileged user, and reading `acr` out of an issued Path B token. The script
+says so in its own output rather than implying full coverage.
+
+### The original manual list
 
 ### What was measured on 2026-08-22
 
@@ -146,7 +172,15 @@ not pick up the committed file. For those:
 1. Admin Console → Authentication → recreate `browser-mfa` and `direct-grant-mfa` per Steps 1a/1b,
    set `acr.loa.map` per Step 1c, and bind both flows; **or** drive the Admin REST API, which is how
    the verified configuration above was built.
-2. Re-run Step 2 against that environment. Do not assume it inherited anything.
+2. Re-run Step 2 against that environment. Do not assume it inherited anything — and now you do not
+   have to trust a checklist for it:
+
+   ```bash
+   node scripts/ops/verify-keycloak-mfa-live.mjs --realm <realm> --probe
+   ```
+
+   Exit 0 means the running realm has Layer 1; exit 1 lists what is missing. Run it BEFORE Step 3 —
+   enabling `MFA_ENFORCE` against a realm that does not emit `acr` locks out every privileged user.
 3. Only then Step 3.
 
 ---
