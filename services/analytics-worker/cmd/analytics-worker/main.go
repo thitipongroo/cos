@@ -18,6 +18,7 @@ import (
 	_ "github.com/ClickHouse/clickhouse-go/v2"
 
 	"github.com/construction-os/analytics-worker/internal/carbon"
+	"github.com/construction-os/analytics-worker/internal/metrics"
 	cosOtel "github.com/construction-os/coslib/cosotel"
 )
 
@@ -91,6 +92,22 @@ func main() {
 			}
 		}()
 		log.Printf("carbon consumer started (brokers=%v registry=%s)", cfg.Brokers, cfg.RegistryURL)
+
+		// Phase 14 dashboard aggregates. This ingestion used to be ClickHouse Kafka engine tables,
+		// which subscribed to bare event names and therefore to topics that never exist — see the
+		// header of internal/metrics/consumer.go. Same non-fatal posture as carbon: a metrics outage
+		// must not take down the health endpoint this process also serves.
+		metricsCfg := metrics.Config{
+			Brokers:     cfg.Brokers,
+			RegistryURL: cfg.RegistryURL,
+			RedisURL:    cfg.RedisURL,
+		}
+		go func() {
+			if err := metrics.Start(ctx, metricsCfg, db); err != nil {
+				log.Printf("metrics consumer stopped: %v", err)
+			}
+		}()
+		log.Printf("metrics consumer started (group=%s)", metrics.ConsumerGroup)
 	}
 
 	http.HandleFunc("/health/live", func(w http.ResponseWriter, r *http.Request) {

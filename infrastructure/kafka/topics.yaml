@@ -1,8 +1,16 @@
 # Construction OS — Kafka Topic Definitions
 # Source: context/00_master_construction_os.md §Phase 8 — EVENT-DRIVEN INFRASTRUCTURE
 #
-# Topic naming: {service}.{entity}.{event}
-# Schema subject naming: {topic-name}-value
+# Topic naming: {tenant_id}.{domain}.{entity}.{action}.v{N}  (§7.3 per-tenant isolation)
+#   Corrected 2026-08-23. This line used to read "{service}.{entity}.{event}", and the `name:` values
+#   below still carry that older form. The authority is topicForEvent() in
+#   packages/@cos/shared/src/kafka/topic-catalog.ts, which returns `${tenant_id}.${event_type}` and is
+#   what actually creates topics; `canonical_event` on each entry is therefore the accurate field and
+#   `name` is legacy. Nothing reads this file — no script, Makefile target or compose service
+#   references it — so it is documentation, and a documentation naming scheme that contradicts the
+#   code is what let the Phase 14 ClickHouse DDL subscribe to topics that never existed.
+# Schema subject naming: the canonical event type (RecordNameStrategy, §32.4) — NOT {topic-name}-value,
+#   which would register a duplicate schema per tenant.
 # Compatibility mode: BACKWARD_TRANSITIVE (all schemas must register before first producer use)
 #
 # Production:  replication_factor=3, min_isr=2
