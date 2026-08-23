@@ -713,6 +713,29 @@ reaches only their own data. Tabled 2026-08-24.
 | `GET`  | `/api/v1/users/me/data-export`                      | Own export requests and their status                 | Bearer token |
 | `GET`  | `/api/v1/users/me/data-export/{export_id}/download` | Mint a short-lived signed URL for a finished export  | Bearer token |
 
+**Tenant and user administration**, tabled 2026-08-24 alongside the rows above. `/tenant` and
+`/users/me` are the caller's own record and need no role — they answer "where am I" and "who am I",
+which every screen needs. The rest are Tenant Admin.
+
+| Method  | Path                                           | Description                                             | Auth         |
+| ------- | ---------------------------------------------- | ------------------------------------------------------- | ------------ |
+| `GET`   | `/api/v1/tenant`                               | The caller's own tenant — name, code, plan              | Bearer token |
+| `GET`   | `/api/v1/users/me`                             | The caller's own user row, including roles              | Bearer token |
+| `PATCH` | `/api/v1/users/me/photo`                       | Set or clear own profile photo (a File Service URL)     | Bearer token |
+| `GET`   | `/api/v1/users/{user_id}/roles`                | A user's primary + additional roles                     | Tenant Admin |
+| `PUT`   | `/api/v1/users/{user_id}/roles`                | Replace that set; emits `identity.user.role_changed.v1` | Tenant Admin |
+| `POST`  | `/api/v1/users/{user_id}/reset-password`       | Issue a one-time temporary password, returned ONCE      | Tenant Admin |
+| `POST`  | `/api/v1/users/{user_id}/reset-password/email` | Email a single-use 15-minute Keycloak reset link        | Tenant Admin |
+
+- **`PUT /users/{id}/roles` is a replacement, not a patch** — the additional-role set sent becomes
+  the set that exists, which is why it is `PUT`. Effective permissions are the UNION of
+  `ROLE_PERMISSIONS` across primary and additional roles: a second role widens, never narrows. It
+  supersedes `PATCH /users/{user_id}/role` in the table above, which sets the primary role alone.
+- **Prefer the email reset.** The temporary-password route exists for someone with no working email,
+  and it puts a plaintext password in an administrator's hands for as long as the hand-off takes.
+  The email route is a single-use 15-minute Keycloak `UPDATE_PASSWORD` action token (NIST 800-63B
+  Rev.4) — the user sets their own password and COS never sees it.
+
 - **Consent is append-only.** A grant and a withdrawal both insert a new row; the prior row is never
   mutated, so the history PDPA-22 requires survives. Withdrawal is forward-only — it stops future
   collection and does not delete what was lawfully collected while consent was live. That is
