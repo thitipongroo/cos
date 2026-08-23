@@ -13,11 +13,12 @@ import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
-# model_hint → concrete model. §22.5/§22.7: GPT-4o is the primary for every Layer-A hint today
-# (summarization, document-extraction). Kept as a map so a future hint can pick a cheaper model
-# without touching call sites.
-DEFAULT_MODEL = "gpt-4o"
-MODEL_BY_HINT: dict[str, str] = {}
+from .model_routing import load_routing_table
+
+# model_hint → concrete model comes from config/routing.yaml (master:3794-3798), NOT from this
+# module. It used to: `DEFAULT_MODEL = "gpt-4o"` with an empty MODEL_BY_HINT sent every hint to the
+# POWERFUL tier, including the FAST-tier hints the table has always listed, while the YAML table sat
+# unread. See providers/model_routing.py.
 
 
 @dataclass
@@ -46,7 +47,8 @@ class StubLLMProvider(LLMProvider):
 
 
 def model_for_hint(model_hint: str) -> str:
-    return MODEL_BY_HINT.get(model_hint, DEFAULT_MODEL)
+    """The model this hint routes to, per the configured routing table."""
+    return load_routing_table().model_for_hint(model_hint)
 
 
 class OpenAILLMProvider(LLMProvider):

@@ -75,12 +75,21 @@ async def test_openai_maps_content_and_usage():
 
 
 @pytest.mark.asyncio
-async def test_openai_uses_gpt_4o_and_shapes_messages():
+async def test_openai_sends_the_model_the_hint_routes_to_and_shapes_messages():
+    """The provider passes the ROUTED model to the client, not a fixed one.
+
+    Renamed and corrected 2026-08-23: this asserted gpt-4o for "any-hint", which passed only because
+    every hint resolved to gpt-4o. An unrecognised hint takes defaults.fallback_tier, which is FAST.
+    A POWERFUL-tier hint is asserted alongside it, so the test would fail if routing were bypassed
+    in either direction rather than only in one.
+    """
     client = _FakeOpenAIClient()
     provider = OpenAILLMProvider(client=client)
 
     await provider.complete([Message("system", "sys"), Message("user", "hi")], "any-hint")
+    assert client.capture["model"] == "gpt-4o-mini"
 
+    await provider.complete([Message("system", "sys"), Message("user", "hi")], "report-generation")
     assert client.capture["model"] == "gpt-4o"
     assert client.capture["messages"] == [
         {"role": "system", "content": "sys"},
@@ -88,9 +97,16 @@ async def test_openai_uses_gpt_4o_and_shapes_messages():
     ]
 
 
-def test_model_for_hint_defaults_to_gpt_4o():
-    assert model_for_hint("summarization") == "gpt-4o"
-    assert model_for_hint("unknown-hint") == "gpt-4o"
+def test_model_for_hint_routes_by_tier():
+    # Corrected 2026-08-23. This test used to assert that "summarization" resolves to gpt-4o, which
+    # is what the code did and the opposite of what master:3761 and 3797 require: summarization is a
+    # FAST-tier hint. The table in config/routing.yaml has always said so; nothing read it.
+    assert model_for_hint("summarization") == "gpt-4o-mini"
+    assert model_for_hint("classification") == "gpt-4o-mini"
+    assert model_for_hint("autocomplete") == "gpt-4o-mini"
+    assert model_for_hint("report-generation") == "gpt-4o"
+    assert model_for_hint("risk-analysis") == "gpt-4o"
+    assert model_for_hint("document-extraction") == "gpt-4o"
 
 
 # ── Claude fallback ─────────────────────────────────────────────────────────────
@@ -177,3 +193,55 @@ def test_factory_real_when_key_present(monkeypatch):
     provider = mod.build_llm_provider()
     assert built.get("ok") is True
     assert isinstance(provider, _Sentinel)
+
+
+def test_unknown_hint_falls_back_to_the_cheap_tier():
+    # defaults.fallback_tier is FAST. An unrecognised hint should cost the cheap model — being wrong
+    # in the expensive direction is the failure that shows up on a bill rather than in a test.
+    assert model_for_hint("no-such-hint") == "gpt-4o-mini"
+
+
+def test_routing_table_is_what_decides(monkeypatch):
+    """The table is authoritative: change the environment, change the model."""
+    from providers.model_routing import load_routing_table
+
+    load_routing_table.cache_clear()
+    monkeypatch.setenv("OPENAI_FAST_MODEL", "some-other-cheap-model")
+    try:
+        assert model_for_hint("summarization") == "some-other-cheap-model"
+    finally:
+        load_routing_table.cache_clear()
+
+
+def test_no_model_name_is_hardcoded_in_the_provider_module():
+    """master:3795 — "never hardcode model names" applies to source, not only to the YAML."""
+    import re
+    from pathlib import Path
+
+    src = Path(__file__).resolve().parents[1] / "providers" / "llm_provider.py"
+    code = re.sub(r'"""[\s\S]*?"""', " ", src.read_text(encoding="utf-8"))
+    code = re.sub(r"#[^\n]*", " ", code)
+    assert not re.search(r"[\"']gpt-[\w.-]+[\"']", code)
+
+
+def test_routing_table_exposes_every_configured_hint():
+    """`hints()` is what an operator or a diagnostic reads to see the table as loaded."""
+    from providers.model_routing import load_routing_table
+
+    hints = load_routing_table().hints()
+    assert hints["summarization"] == "gpt-4o-mini"
+    assert hints["report-generation"] == "gpt-4o"
+    # Every hint the YAML lists is present — six across the two tiers (master:3796-3797).
+    assert len(hints) == 6
+
+
+def test_blank_env_var_is_treated_as_unset(monkeypatch):
+    """`OPENAI_FAST_MODEL=` in a compose file must not resolve to an empty model name."""
+    from providers.model_routing import load_routing_table
+
+    load_routing_table.cache_clear()
+    monkeypatch.setenv("OPENAI_FAST_MODEL", "")
+    try:
+        assert model_for_hint("summarization") == "gpt-4o-mini"
+    finally:
+        load_routing_table.cache_clear()
