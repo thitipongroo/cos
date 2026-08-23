@@ -37,3 +37,7 @@ env:
   # The acr value that proves OTP, per the realm's acr.loa.map ({"silver":1,"gold":2} → level 2).
   # scripts/ci/check-keycloak-mfa-config.mjs prints the value the committed realm implies.
   MFA_REQUIRED_ACR: 'gold'
+
+# The smoke test runs HERE and only here — see values.yaml for why.
+smokeTest:
+  enabled: true

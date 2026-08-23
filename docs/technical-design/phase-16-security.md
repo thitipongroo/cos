@@ -273,6 +273,12 @@ than duplicated here:
   cannot be undone. The audit trail is now two levels: one record per REQUEST and one `PII_ERASED`
   record per erased ROW, ids only (QM-8). §11.4's `pii_erased_at` column is not being added —
   in-place anonymisation with no lifecycle flag is the mechanism.
+- [OQ-52](README.md#open-questions-register) — **closed 2026-08-23.** The tenant-isolation probe's
+  ConfigMap held a placeholder that exited 1, not the 161-line probe beside it. `TenantIsolationBreach`
+  is a P0 and fires on a value of **0**; a probe that never publishes produces an ABSENT series, which
+  no `== 0` rule trips. The control meant to catch a cross-tenant leak would have been silently dead.
+  Found while wiring its ArgoCD Application, which would have deployed the placeholder. A CI gate now
+  fails on drift between the two.
 - [OQ-46](README.md#open-questions-register) — **closed 2026-08-22.** The API gateway that three
   services' auth layers named as their first line of defence is deployed nowhere, and two of them
   accepted `x-tenant-id` — and, in file-service's case, `x-user-role` — with no bearer token at

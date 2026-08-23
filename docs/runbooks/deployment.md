@@ -26,11 +26,11 @@ readiness check greps `.github/workflows/` for exactly that and expects zero hit
 Production Applications (11): `cos-backend`, `cos-web`, `cos-file-service`,
 `cos-credential-service`, `cos-ai-gateway`, `cos-ai-embedding-worker`, `cos-ai-ocr-pipeline`,
 `cos-analytics-worker`, `cos-kg-ingestion-worker`, `cos-temporal-worker`, `cos-otel-collector`.
-Each has a `-staging` twin except `cos-temporal-worker`, which has none.
+Each has a `-staging` twin, `cos-temporal-worker` included since 2026-08-23.
 
 Two committed charts have **no Application at all** — `cos-iot-ingestion-worker` and
-`cos-ai-transcription-pipeline`. Nothing deploys them; confirm that is intended (Phase 24 / future)
-before a release note claims they ship.
+`cos-ai-transcription-pipeline`. That is intended (PO, 2026-08-23): both belong to phases that have
+not landed. Nothing deploys them, so no release note should claim they ship.
 
 ```bash
 kubectl apply -f infrastructure/kubernetes/argocd/argocd-apps.yaml -n argocd   # (re)register the apps
@@ -124,29 +124,37 @@ carries its own `# Deploy:` line — `security/cloudflare-origin-protection.yaml
 4. ArgoCD syncs. Rolling update: `maxSurge: 1`, `maxUnavailable: 0` (zero-downtime).
 5. Readiness gates the rollout — new pods must pass `/api/v1/health/ready` before old pods terminate
    (`backend/src/health.controller.ts`).
-6. Post-deploy smoke tests (ArgoCD PostSync wave 1). **See the warning below — they do not run
-   today**, and there is no wave 2.
+6. Post-deploy smoke tests (ArgoCD PostSync wave 1) — **staging only**, as a template of the
+   cos-backend chart. See below; there is no wave 2.
 
-> ### ⚠️ The PostSync smoke test does not run, and would fail if it did
+> ### The PostSync smoke test — fixed 2026-08-23
 >
-> Three findings, measured 2026-08-23:
+> It had three defects and now has none:
 >
-> 1. **It is in no Application's source path.** `postsync-smoke-test.yaml` lives in
->    `infrastructure/kubernetes/argocd/`, and every Application points at
->    `infrastructure/helm/cos-*` or the otel overlays. An ArgoCD hook only fires for manifests inside
->    the synced path, so this Job never fires. Applied by hand it is a plain Job, not a hook.
-> 2. **It calls two endpoints that do not exist.** `GET ${BASE_URL}/health` — the backend sets a
->    global prefix `api/v1` and exposes only `health/live` and `health/ready`, so there is no
->    `/health`. And `POST /api/v1/auth/login` with `{email, password}` — `@Controller('auth')` has
->    `otp/request`, `otp/verify`, `otp/attest`, `devices`, `step-up/*`, `refresh`, `logout`,
->    `mfa/enroll`, and **no `login`**. Path B authenticates against Keycloak directly, never through
->    the backend, so that route has never existed.
-> 3. **Its namespace contradicts its own comment.** The file says "runs against staging after every
->    ArgoCD sync" and sets `namespace: cos`, which is production. Staging is `cos-staging`.
+> 1. **It never fired.** It lived in `infrastructure/kubernetes/argocd/`, and an ArgoCD hook only
+>    runs for manifests inside the SYNCED Application's source path — no Application syncs that
+>    directory. Moving it to its own Application would not have helped: the hook would then follow
+>    the smoke test's own sync, not the backend's. It is now a template of the **cos-backend chart**
+>    (`templates/postsync-smoke-test.yaml`), which is what a PostSync hook has to be.
+> 2. **It called two endpoints that do not exist** — `/health` (the backend has `health/live` and
+>    `health/ready` under the `api/v1` prefix) and `POST /api/v1/auth/login` (there is no such route;
+>    Path B authenticates against Keycloak directly). The auth probe now goes to Keycloak's token
+>    endpoint with a **non-privileged** smoke user: `cos-web` is a public client with the password
+>    grant disabled, and `cos-backend` allows it but the realm refuses TENANT_ADMIN and FINANCE on
+>    Direct Grant — and `E2E_EMAIL` is a TENANT_ADMIN.
+> 3. **Its namespace was `cos`** — production — while its own comment said it ran against staging.
+>    It is now gated by `smokeTest.enabled`, true only in `values-staging.yaml`, and takes its
+>    namespace from the Application's destination (`cos-staging`).
 >
-> There is **no wave 2**: `sync-wave` appears once in `infrastructure/kubernetes/`, on this Job.
-> Fixing 2 is a code change; 1 and 3 are placement decisions that belong with the staging run that
-> closes this runbook.
+> Staging auto-syncs on every merge to `main`, so the check runs on every change; production is
+> promoted by hand afterwards, by someone who can see whether staging went green.
+>
+> There is still **no wave 2**: `sync-wave` appears once in the repository, on this hook. §30.12
+> describes the smoke test as blocking "E2E wave 2", and that wave has never existed.
+>
+> It needs a `cos-smoke-test-config` Secret in `cos-staging` (`BASE_URL`, `KEYCLOAK_URL`,
+> `KEYCLOAK_REALM`, `KEYCLOAK_CLIENT_ID`, `KEYCLOAK_CLIENT_SECRET`, `SMOKE_USER`, `SMOKE_PASSWORD`)
+> — ops, and unverified until the staging run.
 
 Strategy per QM-16: rolling by default; **blue-green** for major versions, auth changes, and any
 migration that cannot be made backward-compatible in one step; **canary** (Argo Rollouts) for API
@@ -179,7 +187,10 @@ now, investigate after. See [`rollback.md`](rollback.md).
 2. Fill in the real ingress host and ArgoCD server URL.
 3. ~~Resolve the production auto-sync gap~~ — **done**: production is manual-sync, staging is
    automated (see § Sync policy).
-4. Fix the smoke test's two dead endpoints, put it inside an Application path so the hook fires, and
-   point it at `cos-staging`. Then confirm it actually runs.
-5. Decide whether `cos-temporal-worker` needs a staging twin, and whether the two chartless services
-   (`cos-iot-ingestion-worker`, `cos-ai-transcription-pipeline`) are deliberately undeployed.
+4. ~~Fix the smoke test~~ — **done 2026-08-23** (see above). Still to confirm in staging: that the
+   hook actually fires, and that the smoke user authenticates.
+5. ~~Decide whether `cos-temporal-worker` needs a staging twin~~ — **done**: `cos-temporal-worker-staging`
+   added 2026-08-23. Temporal runs PO approval, enterprise provisioning and data export, which are
+   the workflows least safe to meet for the first time in production.
+6. `cos-iot-ingestion-worker` and `cos-ai-transcription-pipeline` have charts and no Application, and
+   that is deliberate — both belong to phases that have not landed. Add Applications when they do.

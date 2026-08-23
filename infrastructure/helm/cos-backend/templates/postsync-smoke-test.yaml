@@ -1,26 +1,33 @@
-# ArgoCD PostSync hook — wave 1 smoke test
-# Spec §30.12: smoke tests (ArgoCD PostSync wave 1) → blocks E2E wave 2
-# Mirrors scripts/deploy/smoke-test.sh.
-#
-# ⚠️ THIS HOOK DOES NOT FIRE (measured 2026-08-23). An ArgoCD PostSync hook only runs for manifests
-# inside the synced Application's source path. Every Application points at infrastructure/helm/cos-*
-# or the otel overlays; this file is in infrastructure/kubernetes/argocd/, which no Application syncs.
-# Applied by hand it is a plain Job, not a hook.
-#
-# ⚠️ AND `namespace: cos` IS PRODUCTION. The line below used to claim this "runs against staging
-# after every ArgoCD sync" — staging is `cos-staging`. Both are placement decisions that belong with
-# the staging run that closes docs/runbooks/deployment.md, so nothing is moved here unilaterally.
-#
-# The auth step now goes to Keycloak's token endpoint with a NON-PRIVILEGED smoke user; it used to
-# POST /api/v1/auth/login, which has never existed. See the header of scripts/deploy/smoke-test.sh —
-# a privileged user cannot be used, because the realm denies TENANT_ADMIN and FINANCE on Direct
-# Grant.
----
+{{- /*
+Post-deploy smoke test — spec §30.12, run as an ArgoCD PostSync hook.
+
+WHY IT LIVES IN THE CHART. It used to sit in infrastructure/kubernetes/argocd/, and an ArgoCD hook
+only fires for manifests inside the SYNCED Application's source path. No Application syncs that
+directory, so the hook never fired. Moving it to its own Application would not have helped either:
+the hook would then run when the SMOKE TEST's Application syncs, which happens when this file
+changes — not when the backend deploys. A PostSync hook has to be part of the thing whose sync it
+follows, so it is a template of the cos-backend chart.
+
+STAGING ONLY (PO decision 2026-08-23). `smokeTest.enabled` is false in values.yaml and true in
+values-staging.yaml, so this renders for cos-backend-staging and not for production. Staging
+auto-syncs on every merge to main, so the check runs on every change; production is promoted by
+hand afterwards, by someone who can see whether staging went green.
+
+The namespace is deliberately NOT set — it comes from the Application's destination, which is
+cos-staging. It used to be hardcoded to `cos`, which is production, while the file's own comment
+said it ran against staging.
+
+§30.12 describes this as blocking "E2E wave 2". There is no wave 2: `sync-wave` appears once in the
+whole repository, on this hook.
+*/ -}}
+{{- if .Values.smokeTest.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: cos-smoke-test
-  namespace: cos
+  name: {{ include "cos-backend.fullname" . }}-smoke-test
+  labels:
+    {{- include "cos-backend.labels" . | nindent 4 }}
+    app.kubernetes.io/component: smoke-test
   annotations:
     argocd.argoproj.io/hook: PostSync
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
@@ -105,3 +112,4 @@ spec:
             - name: KEYCLOAK_CLIENT_SECRET
               valueFrom:
                 secretKeyRef: { name: cos-smoke-test-config, key: KEYCLOAK_CLIENT_SECRET }
+{{- end }}

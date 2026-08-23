@@ -58,6 +58,17 @@ env:
   # ArgoCD Application, so without this the whole Phase 11/12 AI surface has no route.
   AI_GATEWAY_URL: 'http://cos-ai-gateway.cos.svc.cluster.local:8000'
 
+# Post-deploy smoke test (§30.12) — rendered as an ArgoCD PostSync hook by
+# templates/postsync-smoke-test.yaml. OFF here and ON in values-staging.yaml: staging auto-syncs on
+# every merge to main so the check runs on every change, and production is promoted by hand
+# afterwards by someone who can see whether staging went green (PO decision 2026-08-23).
+#
+# It needs the cos-smoke-test-config Secret in the same namespace: BASE_URL, KEYCLOAK_URL,
+# KEYCLOAK_REALM, KEYCLOAK_CLIENT_ID, KEYCLOAK_CLIENT_SECRET, SMOKE_USER, SMOKE_PASSWORD.
+# SMOKE_USER must NOT be TENANT_ADMIN or FINANCE — the realm refuses those on Direct Grant.
+smokeTest:
+  enabled: false
+
 envFrom:
   - secretRef:
       name: cos-backend-secrets

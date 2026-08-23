@@ -710,6 +710,42 @@ spec:
         maxDuration: 3m
         factor: 2
 
+---
+# cos-temporal-worker had a production Application and NO staging twin, while the other ten did
+# (found 2026-08-23). Temporal is where PO approval, enterprise provisioning and data export run —
+# the workflows least safe to meet for the first time in production. Added so they do not.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cos-temporal-worker-staging
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: construction-os
+  source:
+    repoURL: https://github.com/construction-os/construction-os
+    targetRevision: main
+    path: infrastructure/helm/cos-temporal-worker
+    helm:
+      valueFiles:
+        - values-staging.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cos-staging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        maxDuration: 3m
+        factor: 2
+
 
 # ─── Infrastructure workloads in namespace `cos` (added 2026-08-23) ──────────────────────────────
 #

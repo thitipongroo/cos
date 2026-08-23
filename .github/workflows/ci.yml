@@ -165,6 +165,12 @@ jobs:
       - name: Production ArgoCD Applications do not auto-sync
         run: node ./scripts/ci/check-argocd-sync-policy.mjs
 
+      # The tenant-isolation probe is mounted from a ConfigMap, and that ConfigMap held a placeholder
+      # that exited 1 — so the P0 TenantIsolationBreach control published nothing, and an absent
+      # series never trips an "== 0" alert. Fails if the embedded copy drifts from the script.
+      - name: Isolation probe ConfigMap matches its script
+        run: node ./scripts/ci/check-isolation-probe-configmap.mjs
+
   # ─── MLOps tests (Python / Airflow 3.x DAGs) ────────────────────────────────
   mlops-tests:
     name: MLOps Tests (Python)

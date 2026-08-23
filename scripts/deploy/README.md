@@ -53,10 +53,12 @@ SMOKE_USER=... SMOKE_PASSWORD=... \
 
 ## Related
 
-- `infrastructure/kubernetes/argocd/postsync-smoke-test.yaml` — the Job that mirrors this script
-  inline. **It does not currently run**: an ArgoCD hook only fires for manifests inside the synced
-  Application's path, and no Application syncs `infrastructure/kubernetes/argocd/`. There is also no
-  wave 2 — `sync-wave` appears once in the whole tree. See `docs/runbooks/deployment.md` § ⚠️.
+- `infrastructure/helm/cos-backend/templates/postsync-smoke-test.yaml` — the ArgoCD PostSync hook
+  that mirrors this script inline. **Staging only** (`smokeTest.enabled`, true in
+  `values-staging.yaml`). It moved into the chart on 2026-08-23: a hook only fires for manifests
+  inside the synced Application's path, and its old home `infrastructure/kubernetes/argocd/` is
+  synced by nothing — so it never ran. There is still no wave 2; `sync-wave` appears once in the
+  whole tree. See `docs/runbooks/deployment.md`.
 - `docs/runbooks/rollback.md` — the rollback runbook.
 - `docs/runbooks/production-readiness.md` — cites `./scripts/deploy/rollback.sh`
   in the rollback readiness check.
