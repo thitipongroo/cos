@@ -1,12 +1,8 @@
 // Workforce Service unit tests — Phase 22
 // Tests: attendance calculation, timesheet aggregation, check-in/out cycle
 
-jest.mock('@cos/kafka', () => ({
-  KafkaProducer: jest.fn().mockImplementation(() => ({
-    connect: jest.fn().mockResolvedValue(undefined),
-    publish: jest.fn().mockResolvedValue(undefined),
-  })),
-}));
+// §35.13 ESC-13: the service no longer holds a KafkaProducer — it hands an outbox envelope to
+// the repository write that anchors it, so these tests assert on the repository call itself.
 
 jest.mock('@cos/logger', () => ({
   createLogger: () => ({ info: jest.fn(), error: jest.fn(), warn: jest.fn() }),
@@ -83,16 +79,7 @@ describe('WorkforceService', () => {
       expect(callArg.hours_worked).toBe(7.5);
     });
 
-    it('emits checkin event when only check_in_at is set', async () => {
-      const { KafkaProducer } = jest.requireMock('@cos/kafka');
-      const kafkaMock = { connect: jest.fn(), publish: jest.fn() };
-      KafkaProducer.mockImplementation(() => kafkaMock);
-      repo = makeRepo();
-      service = new WorkforceService(
-        req as unknown as ConstructorParameters<typeof WorkforceService>[0],
-        repo as unknown as WorkforceRepository,
-      );
-
+    it('writes the checkin event to the outbox with the attendance INSERT', async () => {
       repo.findWorkerById.mockResolvedValue({ worker_id: 'w1' });
       repo.recordAttendance.mockResolvedValue({ log_id: 'log-1' });
 
@@ -101,8 +88,18 @@ describe('WorkforceService', () => {
         check_in_at: '2026-06-08T08:00:00Z',
       });
 
-      expect(kafkaMock.publish).toHaveBeenCalledWith(
-        expect.objectContaining({ event_type: 'workforce.checkin.created.v1' }),
+      expect(repo.recordAttendance).toHaveBeenCalledWith(
+        expect.objectContaining({ worker_id: 'w1' }),
+        expect.objectContaining({
+          event_type: 'workforce.checkin.created.v1',
+          tenant_id: 'tenant-1',
+          actor_id: 'user-1',
+          payload: {
+            worker_id: 'w1',
+            project_id: 'proj-1',
+            checked_in_at: '2026-06-08T08:00:00Z',
+          },
+        }),
       );
     });
 
@@ -115,16 +112,7 @@ describe('WorkforceService', () => {
   });
 
   describe('timesheet aggregation', () => {
-    it('approves timesheet and emits event with total_hours', async () => {
-      const { KafkaProducer } = jest.requireMock('@cos/kafka');
-      const kafkaMock = { connect: jest.fn(), publish: jest.fn() };
-      KafkaProducer.mockImplementation(() => kafkaMock);
-      repo = makeRepo();
-      service = new WorkforceService(
-        req as unknown as ConstructorParameters<typeof WorkforceService>[0],
-        repo as unknown as WorkforceRepository,
-      );
-
+    it('approves timesheet and builds the outbox event from the UPDATEd row', async () => {
       const ts = {
         timesheet_id: 'ts-1',
         worker_id: 'w1',
@@ -134,14 +122,26 @@ describe('WorkforceService', () => {
         overtime_hours: '8',
         status: 'APPROVED',
       };
-      repo.approveTimesheet.mockResolvedValue(ts);
+      // Stand in for the real repository, which invokes the builder with the UPDATEd row —
+      // the builder must actually run for its Decimal arithmetic to be exercised (QM-1).
+      let built: { event_type: string; payload: Record<string, unknown> } | undefined;
+      repo.approveTimesheet.mockImplementation(
+        async (_id: string, build?: (row: typeof ts) => typeof built) => {
+          built = build?.(ts);
+          return ts;
+        },
+      );
 
       const result = await service.approveTimesheet('ts-1');
       expect(result.status).toBe('APPROVED');
-      expect(kafkaMock.publish).toHaveBeenCalledWith(
+      expect(built).toEqual(
         expect.objectContaining({
           event_type: 'workforce.timesheet.approved.v1',
-          payload: expect.objectContaining({ total_hours: 168 }),
+          payload: expect.objectContaining({
+            worker_id: 'w1',
+            project_id: 'proj-1',
+            total_hours: 168,
+          }),
         }),
       );
     });
@@ -263,27 +263,20 @@ describe('WorkforceService', () => {
     });
   });
 
-  describe('emitEvent error path', () => {
-    it('does not throw when Kafka publish fails', async () => {
-      const { KafkaProducer } = jest.requireMock('@cos/kafka');
-      KafkaProducer.mockImplementation(() => ({
-        connect: jest.fn().mockResolvedValue(undefined),
-        publish: jest.fn().mockRejectedValue(new Error('Kafka down')),
-      }));
-      repo = makeRepo();
-      service = new WorkforceService(
-        req as unknown as ConstructorParameters<typeof WorkforceService>[0],
-        repo as unknown as WorkforceRepository,
-      );
+  // §35.13 ESC-13: the previous `emitEvent` swallowed Kafka failures, so a broker outage silently
+  // dropped the event. Under the outbox the write shares the transaction — a failure there must
+  // propagate and roll the attendance log back rather than be logged and ignored.
+  describe('outbox write failure', () => {
+    it('propagates the failure instead of silently dropping the event', async () => {
       repo.findWorkerById.mockResolvedValue({ worker_id: 'w1' });
-      repo.recordAttendance.mockResolvedValue({ log_id: 'log-1' });
+      repo.recordAttendance.mockRejectedValue(new Error('outbox insert failed'));
 
       await expect(
         service.recordAttendance('w1', {
           project_id: 'proj-1',
           check_in_at: '2026-06-08T08:00:00Z',
         }),
-      ).resolves.not.toThrow();
+      ).rejects.toThrow('outbox insert failed');
     });
   });
 
@@ -291,12 +284,6 @@ describe('WorkforceService', () => {
   // always produced the literal 'system'. It now reads `req.userId` with a CLS fallback.
   describe('userId falls back to CLS when the request carries no context', () => {
     it('emits an empty actor_id outside a CLS context', async () => {
-      const { KafkaProducer } = jest.requireMock('@cos/kafka');
-      const kafkaMock = {
-        connect: jest.fn().mockResolvedValue(undefined),
-        publish: jest.fn().mockResolvedValue(undefined),
-      };
-      KafkaProducer.mockImplementation(() => kafkaMock);
       const noUserReq = { tenantId: 'tenant-1' };
       repo = makeRepo();
       service = new WorkforceService(
@@ -311,7 +298,10 @@ describe('WorkforceService', () => {
         check_in_at: '2026-06-08T08:00:00Z',
       });
 
-      expect(kafkaMock.publish).toHaveBeenCalledWith(expect.objectContaining({ actor_id: '' }));
+      expect(repo.recordAttendance).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ actor_id: '' }),
+      );
     });
 
     it('tenantId also falls back to CLS on an empty request', () => {

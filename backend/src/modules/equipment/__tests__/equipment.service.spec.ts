@@ -7,12 +7,8 @@ import type { EquipmentRepository } from '../equipment.repository';
 
 type MockRequest = { tenantId: string; userId: string };
 
-jest.mock('@cos/kafka', () => ({
-  KafkaProducer: jest.fn().mockImplementation(() => ({
-    connect: jest.fn().mockResolvedValue(undefined),
-    publish: jest.fn().mockResolvedValue(undefined),
-  })),
-}));
+// §35.13 ESC-13: the service no longer holds a KafkaProducer — it hands an outbox envelope to
+// the repository write that anchors it, so these tests assert on the repository call itself.
 
 jest.mock('@cos/logger', () => ({
   createLogger: () => ({ info: jest.fn(), error: jest.fn(), warn: jest.fn() }),
@@ -100,7 +96,17 @@ describe('EquipmentService', () => {
 
       const result = await service.assignToProject('eq-1', { project_id: 'proj-1' });
       expect(result.assignment_id).toBe('asgn-1');
-      expect(repo.updateStatus).toHaveBeenCalledWith('eq-1', 'IN_USE');
+      // The assigned event rides the IN_USE UPDATE — same transaction, so it cannot outlive a rollback.
+      expect(repo.updateStatus).toHaveBeenCalledWith(
+        'eq-1',
+        'IN_USE',
+        expect.objectContaining({
+          event_type: 'equipment.unit.assigned.v1',
+          tenant_id: 'tenant-1',
+          actor_id: 'user-1',
+          payload: { equipment_id: 'eq-1', project_id: 'proj-1', assigned_by: 'user-1' },
+        }),
+      );
     });
 
     it('rejects assignment if equipment is IN_USE', async () => {
@@ -116,12 +122,19 @@ describe('EquipmentService', () => {
       repo.updateStatus.mockResolvedValue({ equipment_id: 'eq-1', status: 'AVAILABLE' });
 
       await service.returnFromProject('eq-1', 'asgn-1', {});
-      expect(repo.updateStatus).toHaveBeenCalledWith('eq-1', 'AVAILABLE');
+      expect(repo.updateStatus).toHaveBeenCalledWith(
+        'eq-1',
+        'AVAILABLE',
+        expect.objectContaining({
+          event_type: 'equipment.unit.returned.v1',
+          payload: { equipment_id: 'eq-1', project_id: 'proj-1' },
+        }),
+      );
     });
   });
 
   describe('maintenance logging', () => {
-    it('creates maintenance record and emits Kafka event', async () => {
+    it('creates maintenance record and writes the event to the outbox with it', async () => {
       repo.findById.mockResolvedValue({ equipment_id: 'eq-1', status: 'AVAILABLE' });
       repo.createMaintenance.mockResolvedValue({ maintenance_id: 'maint-1' });
 
@@ -133,6 +146,10 @@ describe('EquipmentService', () => {
       expect(result.maintenance_id).toBe('maint-1');
       expect(repo.createMaintenance).toHaveBeenCalledWith(
         expect.objectContaining({ maintenance_type: 'SCHEDULED' }),
+        expect.objectContaining({
+          event_type: 'equipment.unit.maintenance_scheduled.v1',
+          payload: { equipment_id: 'eq-1', scheduled_at: '2026-07-01T00:00:00Z' },
+        }),
       );
     });
 
@@ -198,25 +215,18 @@ describe('EquipmentService', () => {
     });
   });
 
-  describe('emitEvent error path', () => {
-    it('does not throw when Kafka publish fails', async () => {
-      const { KafkaProducer } = jest.requireMock('@cos/kafka');
-      KafkaProducer.mockImplementation(() => ({
-        connect: jest.fn().mockResolvedValue(undefined),
-        publish: jest.fn().mockRejectedValue(new Error('Kafka down')),
-      }));
-      repo = makeRepo();
-      service = new EquipmentService(
-        req as unknown as ConstructorParameters<typeof EquipmentService>[0],
-        repo as unknown as EquipmentRepository,
-      );
+  // §35.13 ESC-13: the previous `emitEvent` swallowed Kafka failures, so a broker outage silently
+  // dropped the event. Under the outbox the write is part of the transaction — a failure there
+  // must propagate and roll the business write back rather than be logged and ignored.
+  describe('outbox write failure', () => {
+    it('propagates the failure instead of silently dropping the event', async () => {
       repo.findById.mockResolvedValue({ equipment_id: 'eq-1', status: 'AVAILABLE' });
       repo.createAssignment.mockResolvedValue({ assignment_id: 'a-1', equipment_id: 'eq-1' });
-      repo.updateStatus.mockResolvedValue({ equipment_id: 'eq-1', status: 'IN_USE' });
+      repo.updateStatus.mockRejectedValue(new Error('outbox insert failed'));
 
-      await expect(
-        service.assignToProject('eq-1', { project_id: 'p-1' } as never),
-      ).resolves.not.toThrow();
+      await expect(service.assignToProject('eq-1', { project_id: 'p-1' } as never)).rejects.toThrow(
+        'outbox insert failed',
+      );
     });
   });
 
@@ -225,12 +235,6 @@ describe('EquipmentService', () => {
   // (Postgres 22P02). It now reads `req.userId` with a CLS fallback, matching every other service.
   describe('userId falls back to CLS when the request carries no context', () => {
     it('emits an empty actor_id outside a CLS context', async () => {
-      const { KafkaProducer } = jest.requireMock('@cos/kafka');
-      const kafkaMock = {
-        connect: jest.fn().mockResolvedValue(undefined),
-        publish: jest.fn().mockResolvedValue(undefined),
-      };
-      KafkaProducer.mockImplementation(() => kafkaMock);
       const noUserReq = { tenantId: 'tenant-1' };
       repo = makeRepo();
       service = new EquipmentService(
@@ -243,7 +247,11 @@ describe('EquipmentService', () => {
 
       await service.assignToProject('eq-1', { project_id: 'p-1' } as never);
 
-      expect(kafkaMock.publish).toHaveBeenCalledWith(expect.objectContaining({ actor_id: '' }));
+      expect(repo.updateStatus).toHaveBeenCalledWith(
+        'eq-1',
+        'IN_USE',
+        expect.objectContaining({ actor_id: '' }),
+      );
     });
 
     it('tenantId also falls back to CLS on an empty request', () => {

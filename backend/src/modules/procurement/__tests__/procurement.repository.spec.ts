@@ -541,4 +541,167 @@ describe('ProcurementRepository', () => {
     mockPrisma.$queryRaw.mockResolvedValueOnce([]);
     expect(await repo.vendorPriceStats('v1')).toEqual({ price_pct: null, count: 0 });
   });
+
+  // ── Outbox writes (Phase 8 / §35.13 ESC-13) ─────────────────────────────
+  describe('outbox writes', () => {
+    const envelope = (type: string) => ({
+      event_type: type,
+      event_version: '1.0',
+      tenant_id: 'tenant-uuid-001',
+      actor_id: 'user-1',
+      occurred_at: '2026-08-23T00:00:00.000Z',
+      correlation_id: 'corr-1',
+      payload: {},
+    });
+
+    it('setRfqWorkflowId writes the event alongside the UPDATE', async () => {
+      mockPrisma.$executeRaw.mockResolvedValue(1);
+      await repo.setRfqWorkflowId('rfq-1', 'wf-1', envelope('procurement.rfq.created.v1') as never);
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(2);
+    });
+
+    it('setRfqWorkflowId writes only the UPDATE without an event', async () => {
+      mockPrisma.$executeRaw.mockResolvedValue(1);
+      await repo.setRfqWorkflowId('rfq-1', 'wf-1');
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+    });
+
+    it('setPoWorkflowId writes the event alongside the UPDATE', async () => {
+      mockPrisma.$executeRaw.mockResolvedValue(1);
+      await repo.setPoWorkflowId('po-1', 'wf-1', envelope('procurement.po.created.v1') as never);
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(2);
+    });
+
+    it('setPoWorkflowId writes only the UPDATE without an event', async () => {
+      mockPrisma.$executeRaw.mockResolvedValue(1);
+      await repo.setPoWorkflowId('po-1', 'wf-1');
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+    });
+
+    it('updateInvoiceStatus writes the event alongside the UPDATE', async () => {
+      mockPrisma.$executeRaw.mockResolvedValue(1);
+      await repo.updateInvoiceStatus(
+        'inv-1',
+        'APPROVED',
+        envelope('procurement.vendor_invoice.approved.v1') as never,
+      );
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(2);
+    });
+
+    it('updateInvoiceStatus writes only the UPDATE without an event', async () => {
+      mockPrisma.$executeRaw.mockResolvedValue(1);
+      await repo.updateInvoiceStatus('inv-1', 'PAID');
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+    });
+
+    it('createInvoice writes the event from the inserted row', async () => {
+      const row = { invoice_id: 'inv-1', amount: '10.0000', currency_code: 'THB' };
+      mockPrisma.$queryRaw.mockResolvedValue([row]);
+      mockPrisma.$executeRaw.mockResolvedValue(1);
+      const builder = jest.fn(() => envelope('procurement.invoice.received.v1'));
+
+      await repo.createInvoice(
+        {
+          po_id: 'po-1',
+          vendor_id: 'v-1',
+          invoice_number: 'INV-1',
+          amount: '10.0000',
+          currency_code: 'THB',
+          invoice_date: '2026-08-01',
+          due_date: '2026-09-01',
+        },
+        builder as never,
+      );
+
+      expect(builder).toHaveBeenCalledWith(row);
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+    });
+
+    it('createInvoice writes nothing without a builder or when the INSERT returned no row', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([{ invoice_id: 'inv-1' }]);
+      mockPrisma.$executeRaw.mockResolvedValue(1);
+      const params = {
+        po_id: 'po-1',
+        vendor_id: 'v-1',
+        invoice_number: 'INV-1',
+        amount: '10.0000',
+        currency_code: 'THB',
+        invoice_date: '2026-08-01',
+        due_date: '2026-09-01',
+      };
+      await repo.createInvoice(params);
+      expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
+
+      jest.clearAllMocks();
+      mockPrisma.$queryRaw.mockResolvedValue([]);
+      const builder = jest.fn();
+      await repo.createInvoice(params, builder as never).catch(() => undefined);
+      expect(builder).not.toHaveBeenCalled();
+      expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
+    });
+
+    it('createDelivery computes is_partial in-transaction and writes the event', async () => {
+      const delivery = { delivery_id: 'del-1', po_id: 'po-1' };
+      const item = { delivery_item_id: 'di-1', line_id: 'line-1', quantity_received: '5.0000' };
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([delivery]) // INSERT delivery
+        .mockResolvedValueOnce([item]) // INSERT delivery_items
+        .mockResolvedValueOnce([{ line_id: 'line-1', quantity: '10.0000' }]) // po_line_items
+        .mockResolvedValueOnce([{ total: '5.0000' }]); // delivered so far → partial
+      mockPrisma.$executeRaw.mockResolvedValue(1);
+      const builder = jest.fn(() => envelope('procurement.delivery.received.v1'));
+
+      const result = await repo.createDelivery(
+        {
+          po_id: 'po-1',
+          delivered_at: '2026-08-23T00:00:00.000Z',
+          received_by: 'user-1',
+          items: [{ line_id: 'line-1', quantity_received: '5.0000' }],
+        },
+        builder as never,
+      );
+
+      expect(result.is_partial).toBe(true);
+      expect(builder).toHaveBeenCalledWith({ delivery, items: [item], is_partial: true });
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+    });
+
+    it('createDelivery reports a complete delivery and writes nothing without a builder', async () => {
+      const delivery = { delivery_id: 'del-2', po_id: 'po-1' };
+      const item = { delivery_item_id: 'di-2', line_id: 'line-1', quantity_received: '10.0000' };
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([delivery])
+        .mockResolvedValueOnce([item])
+        .mockResolvedValueOnce([{ line_id: 'line-1', quantity: '10.0000' }])
+        .mockResolvedValueOnce([{ total: '10.0000' }]); // fully delivered
+      mockPrisma.$executeRaw.mockResolvedValue(1);
+
+      const result = await repo.createDelivery({
+        po_id: 'po-1',
+        delivered_at: '2026-08-23T00:00:00.000Z',
+        received_by: 'user-1',
+        items: [{ line_id: 'line-1', quantity_received: '10.0000' }],
+      });
+
+      expect(result.is_partial).toBe(false);
+      expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
+    });
+
+    it('createDelivery treats a missing delivered-sum row as zero delivered', async () => {
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([{ delivery_id: 'del-3', po_id: 'po-1' }])
+        .mockResolvedValueOnce([{ delivery_item_id: 'di-3', line_id: 'line-1' }])
+        .mockResolvedValueOnce([{ line_id: 'line-1', quantity: '10.0000' }])
+        .mockResolvedValueOnce([]); // no sum row → COALESCE fallback '0'
+
+      const result = await repo.createDelivery({
+        po_id: 'po-1',
+        delivered_at: '2026-08-23T00:00:00.000Z',
+        received_by: 'user-1',
+        items: [{ line_id: 'line-1', quantity_received: '1.0000' }],
+      });
+
+      expect(result.is_partial).toBe(true);
+    });
+  });
 });

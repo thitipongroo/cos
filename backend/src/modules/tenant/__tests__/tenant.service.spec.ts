@@ -10,6 +10,8 @@ jest.mock('@prisma/client', () => ({
 }));
 
 jest.mock('@cos/kafka', () => ({
+  // §35.13 ESC-13: events are written to the outbox inside the business transaction.
+  OutboxPublisher: { write: jest.fn().mockResolvedValue(undefined) },
   KafkaProducer: jest.fn().mockImplementation(() => ({
     connect: jest.fn().mockResolvedValue(undefined),
     publish: jest.fn().mockResolvedValue(undefined),
@@ -51,6 +53,12 @@ describe('TenantService', () => {
   beforeEach(() => {
     service = new TenantService();
     prismaMock = (service as unknown as { prisma: jest.Mocked<PrismaClient> }).prisma;
+    // §35.13 ESC-13: deactivateTenant / assignDedicatedDb now wrap their UPDATE and the outbox
+    // write in one $transaction, so the default mock must actually run the callback. Individual
+    // tests still override this where they need bespoke transaction behaviour.
+    (prismaMock.$transaction as jest.Mock).mockImplementation(
+      async (fn: (tx: unknown) => unknown) => fn(prismaMock),
+    );
   });
 
   describe('createTenant', () => {
@@ -217,35 +225,34 @@ describe('TenantService', () => {
     });
   });
 
-  describe('publishEvent error handling', () => {
-    it('logs error but does not throw when Kafka publish fails (covers catch branch)', async () => {
+  // §35.13 ESC-13: TenantService holds no KafkaProducer — every event is written to the outbox
+  // inside the business transaction, so there is no publish-failure catch branch to cover.
+  describe('outbox writes', () => {
+    it('writes identity.tenant.created.v1 inside the create transaction', async () => {
       (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([]);
+      const txQueryRaw = jest.fn().mockResolvedValue([mockTenant]);
       (prismaMock.$transaction as jest.Mock).mockImplementation(
-        async (fn: (tx: unknown) => Promise<unknown>) => {
-          const tx = {
-            $queryRaw: jest.fn().mockResolvedValue([mockTenant]),
-            $executeRawUnsafe: jest.fn().mockResolvedValue(undefined),
-          };
-          return fn(tx);
-        },
+        async (fn: (tx: unknown) => Promise<unknown>) => fn({ $queryRaw: txQueryRaw }),
       );
-      const kafkaMock = (
-        service as unknown as {
-          kafka: { connect: jest.Mock; publish: jest.Mock; disconnect: jest.Mock };
-        }
-      ).kafka;
-      kafkaMock.publish.mockRejectedValueOnce(new Error('Kafka unavailable'));
+      const { OutboxPublisher } = jest.requireMock('@cos/kafka') as {
+        OutboxPublisher: { write: jest.Mock };
+      };
+      OutboxPublisher.write.mockClear();
 
-      await expect(
-        service.createTenant(
-          {
-            tenantCode: 'acme_corp',
-            tenantName: 'ACME Construction',
-            planType: 'STARTER' as never,
-          },
-          'admin-1',
-        ),
-      ).resolves.toBeDefined();
+      await service.createTenant(
+        { tenantCode: 'acme_corp', tenantName: 'ACME Construction', planType: 'STARTER' as never },
+        'admin-1',
+      );
+
+      expect(OutboxPublisher.write).toHaveBeenCalledWith(
+        expect.objectContaining({ $queryRaw: txQueryRaw }),
+        expect.objectContaining({
+          event_type: 'identity.tenant.created.v1',
+          // ESC-19: the real tenant id, not the literal 'platform' the old envelope used.
+          tenant_id: mockTenant.tenant_id,
+          actor_id: 'admin-1',
+        }),
+      );
     });
   });
 

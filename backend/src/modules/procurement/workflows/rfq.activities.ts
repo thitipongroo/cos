@@ -5,8 +5,9 @@
 
 import { PrismaClient } from '@prisma/client';
 import { createPrismaClient } from '../../../shared/prisma/create-prisma-client';
-import { KafkaProducer } from '@cos/kafka';
+import { OutboxPublisher } from '@cos/kafka';
 import { createLogger } from '@cos/logger';
+import { buildOutboxEvent } from '../../../shared/outbox/outbox.types';
 
 import { getDbUrlForTenant } from '../../tenant/utils/get-db-url';
 
@@ -39,29 +40,27 @@ async function withTenantTx<T>(
   }
 }
 
-async function publishEvent<T>(
+/**
+ * Builds the outbox envelope for an activity event (§35.13 ESC-13).
+ *
+ * Replaces the previous `publishEvent`, which published straight to Kafka and then SWALLOWED the
+ * error (`catch → logger.error('kafka.publish.failed')`). Because the activity still returned
+ * normally, Temporal saw a success and never retried — so the event was lost exactly as in the
+ * request-path services, and Temporal's durability guarantee never applied to it.
+ */
+function activityEvent<T>(
   event_type: string,
   payload: T,
   tenant_id: string,
   correlation_id: string,
-): Promise<void> {
-  const kafka = new KafkaProducer();
-  try {
-    await kafka.connect();
-    await kafka.publish({
-      event_type,
-      event_version: '1.0',
-      tenant_id,
-      actor_id: 'system',
-      occurred_at: new Date().toISOString(),
-      correlation_id,
-      payload,
-    });
-  } catch (err) {
-    logger.error({ event_type, err, correlation_id }, 'kafka.publish.failed');
-  } finally {
-    await kafka.disconnect();
-  }
+) {
+  return buildOutboxEvent({
+    eventType: event_type,
+    tenantId: tenant_id,
+    actorId: 'system',
+    correlationId: correlation_id,
+    payload,
+  });
 }
 
 export async function updateRfqStatus(
@@ -69,22 +68,26 @@ export async function updateRfqStatus(
   from_status: string,
   to_status: string,
 ): Promise<void> {
+  // The event rides the status UPDATE's transaction (§35.13 ESC-13).
   await withTenantTx(params.tenant_id, async (prisma) => {
     await prisma.$executeRaw`
       UPDATE procurement.rfqs SET status = ${to_status}, updated_at = now()
       WHERE rfq_id = ${params.rfq_id}::uuid AND tenant_id = ${params.tenant_id}::uuid`;
+
+    await OutboxPublisher.write(
+      prisma,
+      activityEvent(
+        'procurement.rfq.status_changed.v1',
+        { rfq_id: params.rfq_id, from_status, to_status },
+        params.tenant_id,
+        params.correlation_id,
+      ),
+    );
   });
 
   logger.info(
     { rfq_id: params.rfq_id, from_status, to_status, correlation_id: params.correlation_id },
     'rfq.status.changed',
-  );
-
-  await publishEvent(
-    'procurement.rfq.status_changed.v1',
-    { rfq_id: params.rfq_id, from_status, to_status },
-    params.tenant_id,
-    params.correlation_id,
   );
 }
 
@@ -95,14 +98,17 @@ export async function markQuotationsEvaluated(params: RfqActivityParams): Promis
     await prisma.$executeRaw`
       UPDATE procurement.rfqs SET status = 'EVALUATED', updated_at = now()
       WHERE rfq_id = ${params.rfq_id}::uuid AND tenant_id = ${params.tenant_id}::uuid`;
+
+    await OutboxPublisher.write(
+      prisma,
+      activityEvent(
+        'procurement.rfq.status_changed.v1',
+        { rfq_id: params.rfq_id, from_status: 'CLOSED', to_status: 'EVALUATED' },
+        params.tenant_id,
+        params.correlation_id,
+      ),
+    );
   });
 
   logger.info({ rfq_id: params.rfq_id, correlation_id: params.correlation_id }, 'rfq.evaluated');
-
-  await publishEvent(
-    'procurement.rfq.status_changed.v1',
-    { rfq_id: params.rfq_id, from_status: 'CLOSED', to_status: 'EVALUATED' },
-    params.tenant_id,
-    params.correlation_id,
-  );
 }

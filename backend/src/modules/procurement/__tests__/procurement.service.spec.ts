@@ -535,6 +535,7 @@ describe('Delivery recording', () => {
           quantity_received: '5.0000',
         } as DeliveryItemRow,
       ],
+      is_partial: true, // computed in-repo since §35.13 ESC-13
     });
     mockRepo.findLineItemsByPo.mockResolvedValue(lineItemFixtures);
     mockRepo.sumDeliveredQuantity.mockResolvedValue('5.0000'); // 5 out of 10 = partial
@@ -581,6 +582,7 @@ describe('Delivery recording', () => {
           quantity_received: '10.0000',
         },
       ],
+      is_partial: false, // computed in-repo since §35.13 ESC-13
     });
     mockRepo.findLineItemsByPo.mockResolvedValue(lineItemFixtures);
     mockRepo.sumDeliveredQuantity.mockResolvedValue('10.0000'); // 10 of 10 = complete
@@ -1050,16 +1052,12 @@ describe('private helper branches', () => {
     expect((svc as unknown as { userId: string }).userId).toBe('');
   });
 
-  it('publishEvent — logs error but does not throw when Kafka fails (covers catch branch)', async () => {
+  // §35.13 ESC-13: the service holds no KafkaProducer — every event goes to the outbox, so the
+  // former publish-failure catch branch no longer exists.
+  it('never constructs a Kafka producer — all events go to the outbox', async () => {
     mockRepo.findRfqById.mockResolvedValue(rfqDraftFixture);
     mockRepo.setRfqWorkflowId.mockResolvedValue(undefined);
     mockRepo.createRfq.mockResolvedValue(rfqDraftFixture);
-    const kafkaMock = (
-      service as unknown as {
-        kafka: { connect: jest.Mock; publish: jest.Mock; disconnect: jest.Mock };
-      }
-    ).kafka;
-    kafkaMock.publish.mockRejectedValueOnce(new Error('Kafka down'));
     await expect(
       service.createRfq({
         project_id: 'project-uuid-001',
@@ -1067,6 +1065,8 @@ describe('private helper branches', () => {
         deadline: new Date(Date.now() + 7 * 86400 * 1000).toISOString(),
       }),
     ).resolves.toBeDefined();
+    expect(mockKafkaPublish).not.toHaveBeenCalled();
+    expect((service as unknown as { kafka?: unknown }).kafka).toBeUndefined();
   });
 });
 
@@ -1208,8 +1208,7 @@ describe('exact contracts — createRfq', () => {
         },
       ],
     });
-    expect(mockRepo.setRfqWorkflowId).toHaveBeenCalledWith('rfq-uuid-001', 'rfq-rfq-uuid-001');
-    expect(mockKafkaPublish).toHaveBeenCalledWith({
+    expect(mockRepo.setRfqWorkflowId).toHaveBeenCalledWith('rfq-uuid-001', 'rfq-rfq-uuid-001', {
       event_type: 'procurement.rfq.created.v1',
       event_version: '1.0',
       tenant_id: 'tenant-uuid-001',
@@ -1244,17 +1243,20 @@ describe('exact contracts — createRfq', () => {
       rfq_number: 'RFQ-002',
       deadline: isoDeadline,
     });
-    expect(mockKafkaPublish).toHaveBeenCalledWith(
+    expect(mockRepo.setRfqWorkflowId).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(String),
       expect.objectContaining({
         payload: expect.objectContaining({ pr_id: 'pr-uuid-777' }),
       }),
     );
   });
 
-  it('kafka publish failure logs exact error event and does not throw', async () => {
+  // §35.13 ESC-13: createRfq no longer publishes to Kafka, so there is no publish-failure path.
+  // The event must instead reach the repository as an outbox envelope.
+  it('hands the RFQ event to the repository as an outbox envelope, never to Kafka', async () => {
     mockRepo.createRfq.mockResolvedValue({ ...rfqDraftFixture });
     mockRepo.setRfqWorkflowId.mockResolvedValue(undefined);
-    mockKafkaPublish.mockRejectedValueOnce(new Error('Kafka down'));
     await expect(
       service.createRfq({
         project_id: 'project-uuid-001',
@@ -1262,13 +1264,11 @@ describe('exact contracts — createRfq', () => {
         deadline: isoDeadline,
       }),
     ).resolves.toBeDefined();
-    expect(loggerMock.error).toHaveBeenCalledWith(
-      {
-        event_type: 'procurement.rfq.created.v1',
-        err: expect.any(Error),
-        correlation_id: expect.any(String),
-      },
-      'kafka.publish.failed',
+    expect(mockKafkaPublish).not.toHaveBeenCalled();
+    expect(mockRepo.setRfqWorkflowId).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(String),
+      expect.objectContaining({ event_type: 'procurement.rfq.created.v1' }),
     );
   });
 });
@@ -1526,7 +1526,11 @@ describe('exact contracts — createPurchaseOrder', () => {
         line_total: '60000.0000',
       },
     ]);
-    expect(mockRepo.setPoWorkflowId).toHaveBeenCalledWith('po-uuid-001', 'po-po-uuid-001');
+    expect(mockRepo.setPoWorkflowId).toHaveBeenCalledWith(
+      'po-uuid-001',
+      'po-po-uuid-001',
+      expect.objectContaining({ event_type: 'procurement.po.created.v1' }),
+    );
   });
 
   it('starts poWorkflow with exact params, thresholds, and default approvers', async () => {
@@ -1610,7 +1614,7 @@ describe('exact contracts — createPurchaseOrder', () => {
 
   it('publishes exact po.created event and log', async () => {
     await service.createPurchaseOrder(poDto);
-    expect(mockKafkaPublish).toHaveBeenCalledWith({
+    expect(mockRepo.setPoWorkflowId).toHaveBeenCalledWith(expect.any(String), expect.any(String), {
       event_type: 'procurement.po.created.v1',
       event_version: '1.0',
       tenant_id: 'tenant-uuid-001',
@@ -1783,7 +1787,11 @@ describe('exact contracts — recordDelivery', () => {
 
   it('accepts a PO in PARTIALLY_DELIVERED status', async () => {
     mockRepo.findPoById.mockResolvedValue({ ...poFixture, status: 'PARTIALLY_DELIVERED' });
-    mockRepo.createDelivery.mockResolvedValue({ delivery: deliveryRow, items: deliveryItems });
+    mockRepo.createDelivery.mockResolvedValue({
+      delivery: deliveryRow,
+      items: deliveryItems,
+      is_partial: false, // computed in-repo since §35.13 ESC-13
+    });
     mockRepo.findLineItemsByPo.mockResolvedValue(lineItemFixtures);
     mockRepo.sumDeliveredQuantity.mockResolvedValue('10.0000');
     const result = await service.recordDelivery({
@@ -1798,7 +1806,11 @@ describe('exact contracts — recordDelivery', () => {
     // Two line items: one fully delivered, one not — is_partial must be true.
     // (Kills every→some mutation: some(Boolean) would be true here.)
     mockRepo.findPoById.mockResolvedValue({ ...poFixture, status: 'ACKNOWLEDGED' });
-    mockRepo.createDelivery.mockResolvedValue({ delivery: deliveryRow, items: deliveryItems });
+    mockRepo.createDelivery.mockResolvedValue({
+      delivery: deliveryRow,
+      items: deliveryItems,
+      is_partial: true, // computed in-repo since §35.13 ESC-13
+    });
     mockRepo.findLineItemsByPo.mockResolvedValue([
       lineItemFixtures[0]!,
       { ...lineItemFixtures[0]!, line_id: 'line-uuid-002', quantity: '4.0000' },
@@ -1814,19 +1826,29 @@ describe('exact contracts — recordDelivery', () => {
     });
 
     expect(result.is_partial).toBe(true);
-    expect(mockRepo.createDelivery).toHaveBeenCalledWith({
-      po_id: 'po-uuid-001',
-      delivery_note: undefined,
-      delivered_at: deliveredAt,
-      received_by: 'user-uuid-001',
-      notes: undefined,
-      items: [{ line_id: 'line-uuid-001', quantity_received: '5.0000' }],
-    });
+    expect(mockRepo.createDelivery).toHaveBeenCalledWith(
+      {
+        po_id: 'po-uuid-001',
+        delivery_note: undefined,
+        delivered_at: deliveredAt,
+        received_by: 'user-uuid-001',
+        notes: undefined,
+        items: [{ line_id: 'line-uuid-001', quantity_received: '5.0000' }],
+      },
+      expect.any(Function), // outbox builder (§35.13 ESC-13)
+    );
     expect(mockWorkflowSignal).toHaveBeenCalledWith(recordDeliverySignal, {
       delivery_id: 'delivery-uuid-001',
       is_partial: true,
     });
-    expect(mockKafkaPublish).toHaveBeenCalledWith({
+    const deliveryBuilder = mockRepo.createDelivery.mock.calls[0][1] as (ctx: unknown) => unknown;
+    expect(
+      deliveryBuilder({
+        delivery: { delivery_id: 'delivery-uuid-001' },
+        items: [{ line_id: 'line-uuid-001', quantity_received: '5.0000' }],
+        is_partial: true,
+      }),
+    ).toEqual({
       event_type: 'procurement.delivery.received.v1',
       event_version: '1.0',
       tenant_id: 'tenant-uuid-001',
@@ -1884,20 +1906,24 @@ describe('exact contracts — invoices', () => {
       invoice_date: '2026-09-05',
       due_date: '2026-09-20',
     });
-    expect(mockRepo.createInvoice).toHaveBeenCalledWith({
-      po_id: 'po-uuid-001',
-      vendor_id: 'vendor-uuid-001',
-      invoice_number: 'INV-001',
-      amount: '60000.0000',
-      currency_code: 'THB',
-      invoice_date: '2026-09-05',
-      due_date: '2026-09-20',
-      file_id: undefined,
-    });
+    expect(mockRepo.createInvoice).toHaveBeenCalledWith(
+      {
+        po_id: 'po-uuid-001',
+        vendor_id: 'vendor-uuid-001',
+        invoice_number: 'INV-001',
+        amount: '60000.0000',
+        currency_code: 'THB',
+        invoice_date: '2026-09-05',
+        due_date: '2026-09-20',
+        file_id: undefined,
+      },
+      expect.any(Function), // outbox builder (§35.13 ESC-13)
+    );
     expect(mockWorkflowSignal).toHaveBeenCalledWith(receiveInvoiceSignal, {
       invoice_id: 'inv-uuid-001',
     });
-    expect(mockKafkaPublish).toHaveBeenCalledWith({
+    const invoiceBuilder = mockRepo.createInvoice.mock.calls[0][1] as (row: unknown) => unknown;
+    expect(invoiceBuilder(invoiceRow)).toEqual({
       event_type: 'procurement.invoice.received.v1',
       event_version: '1.0',
       tenant_id: 'tenant-uuid-001',
@@ -1937,8 +1963,7 @@ describe('exact contracts — invoices', () => {
     mockRepo.updateInvoiceStatus.mockResolvedValue(undefined);
     mockRepo.findPoById.mockResolvedValue(poFixture);
     await service.approveInvoice('inv-uuid-001');
-    expect(mockRepo.updateInvoiceStatus).toHaveBeenCalledWith('inv-uuid-001', 'APPROVED');
-    expect(mockKafkaPublish).toHaveBeenCalledWith({
+    expect(mockRepo.updateInvoiceStatus).toHaveBeenCalledWith('inv-uuid-001', 'APPROVED', {
       event_type: 'procurement.vendor_invoice.approved.v1',
       event_version: '1.0',
       tenant_id: 'tenant-uuid-001',
@@ -1975,7 +2000,9 @@ describe('exact contracts — invoices', () => {
     mockRepo.updateInvoiceStatus.mockResolvedValue(undefined);
     mockRepo.findPoById.mockResolvedValue(null);
     await service.approveInvoice('inv-uuid-001');
-    expect(mockKafkaPublish).toHaveBeenCalledWith(
+    expect(mockRepo.updateInvoiceStatus).toHaveBeenCalledWith(
+      'inv-uuid-001',
+      'APPROVED',
       expect.objectContaining({
         payload: expect.objectContaining({ project_id: '' }),
       }),

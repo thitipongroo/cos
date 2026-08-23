@@ -1,7 +1,8 @@
 // Equipment Service — Phase 21
 // Business logic: equipment CRUD, assignment lifecycle, maintenance logging, utilization recording.
 // Status transitions: AVAILABLE → IN_USE → AVAILABLE | AVAILABLE → MAINTENANCE → AVAILABLE
-// Emits typed Kafka events via the @cos/kafka KafkaProducer (QM-8).
+// Emits typed events through the Phase 8 OUTBOX (§35.13 ESC-13) — written inside the
+// business transaction by the repository, relayed to Kafka by OutboxPollerService.
 
 import {
   Injectable,
@@ -13,8 +14,8 @@ import {
 import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
 import { randomUUID } from 'crypto';
-import { KafkaProducer } from '@cos/kafka';
 import { createLogger } from '@cos/logger';
+import { buildOutboxEvent } from '../../shared/outbox/outbox.types';
 import { clsTenantId, clsUserId } from '../../shared/context/cls-context';
 import { EquipmentRepository } from './equipment.repository';
 import type { EquipmentRow, AssignmentRow, MaintenanceRow } from './equipment.repository';
@@ -34,14 +35,10 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
 
 @Injectable({ scope: Scope.REQUEST })
 export class EquipmentService {
-  private readonly kafka: KafkaProducer;
-
   constructor(
     @Inject(REQUEST) private readonly req: Request,
     private readonly repo: EquipmentRepository,
-  ) {
-    this.kafka = new KafkaProducer();
-  }
+  ) {}
 
   // ADR-031 context sources. Corrected 2026-08-22 (35-test-design.md §35.13 ESC-16): both getters
   // previously read the Passport projection (`req.user?.sub`), which nothing in this codebase ever
@@ -108,13 +105,17 @@ export class EquipmentService {
       notes: dto.notes ?? null,
     });
 
-    await this.repo.updateStatus(equipmentId, 'IN_USE');
-
-    await this.emitEvent('equipment.unit.assigned.v1', {
-      equipment_id: equipmentId,
-      project_id: dto.project_id,
-      assigned_by: this.userId,
-    });
+    // The event rides the IN_USE status UPDATE — the last write of the assignment, so an
+    // equipment unit is never reported as assigned unless it actually reached IN_USE.
+    await this.repo.updateStatus(
+      equipmentId,
+      'IN_USE',
+      this.outboxEvent('equipment.unit.assigned.v1', {
+        equipment_id: equipmentId,
+        project_id: dto.project_id,
+        assigned_by: this.userId,
+      }),
+    );
 
     return assignment;
   }
@@ -125,12 +126,14 @@ export class EquipmentService {
     _dto: ReturnEquipmentDto,
   ): Promise<AssignmentRow> {
     const assignment = await this.repo.returnAssignment(assignmentId);
-    await this.repo.updateStatus(equipmentId, 'AVAILABLE');
-
-    await this.emitEvent('equipment.unit.returned.v1', {
-      equipment_id: equipmentId,
-      project_id: assignment.project_id,
-    });
+    await this.repo.updateStatus(
+      equipmentId,
+      'AVAILABLE',
+      this.outboxEvent('equipment.unit.returned.v1', {
+        equipment_id: equipmentId,
+        project_id: assignment.project_id,
+      }),
+    );
 
     return assignment;
   }
@@ -138,22 +141,23 @@ export class EquipmentService {
   async logMaintenance(equipmentId: string, dto: LogMaintenanceDto): Promise<MaintenanceRow> {
     await this.getEquipment(equipmentId);
 
-    const maintenance = await this.repo.createMaintenance({
-      maintenance_id: randomUUID(),
-      equipment_id: equipmentId,
-      tenant_id: this.tenantId,
-      maintenance_type: dto.maintenance_type,
-      scheduled_at: dto.scheduled_at,
-      cost: dto.cost ?? null,
-      currency_code: dto.currency_code ?? null,
-      performed_by: dto.performed_by ?? null,
-      notes: dto.notes ?? null,
-    });
-
-    await this.emitEvent('equipment.unit.maintenance_scheduled.v1', {
-      equipment_id: equipmentId,
-      scheduled_at: dto.scheduled_at,
-    });
+    const maintenance = await this.repo.createMaintenance(
+      {
+        maintenance_id: randomUUID(),
+        equipment_id: equipmentId,
+        tenant_id: this.tenantId,
+        maintenance_type: dto.maintenance_type,
+        scheduled_at: dto.scheduled_at,
+        cost: dto.cost ?? null,
+        currency_code: dto.currency_code ?? null,
+        performed_by: dto.performed_by ?? null,
+        notes: dto.notes ?? null,
+      },
+      this.outboxEvent('equipment.unit.maintenance_scheduled.v1', {
+        equipment_id: equipmentId,
+        scheduled_at: dto.scheduled_at,
+      }),
+    );
 
     return maintenance;
   }
@@ -175,20 +179,18 @@ export class EquipmentService {
     return this.repo.findEquipmentByProject(projectId);
   }
 
-  private async emitEvent(eventType: string, payload: Record<string, unknown>): Promise<void> {
-    try {
-      await this.kafka.connect();
-      await this.kafka.publish({
-        event_type: eventType,
-        event_version: '1.0',
-        tenant_id: this.tenantId,
-        actor_id: this.userId,
-        correlation_id: randomUUID(),
-        occurred_at: new Date().toISOString(),
-        payload,
-      });
-    } catch (err) {
-      logger.error({ err, eventType }, 'Failed to emit Kafka event — will retry via outbox');
-    }
+  /**
+   * Builds the outbox envelope handed to the repository write that anchors it (§35.13 ESC-13).
+   * Replaces the previous `emitEvent`, which published directly to Kafka and swallowed failures
+   * with the comment "will retry via outbox" — there was no outbox, so the event was simply lost.
+   */
+  private outboxEvent(eventType: string, payload: Record<string, unknown>) {
+    return buildOutboxEvent({
+      eventType,
+      tenantId: this.tenantId,
+      actorId: this.userId,
+      correlationId: randomUUID(),
+      payload,
+    });
   }
 }

@@ -145,6 +145,97 @@ describe('ProjectRepository', () => {
     });
   });
 
+  // §35.13 ESC-13 — update() and updateStatus() take the same outbox builder contract as create().
+  describe('update()/updateStatus() outbox writes', () => {
+    function makeTxRepo() {
+      const txMock = {
+        $queryRaw: jest.fn().mockResolvedValue([baseRow]),
+        $executeRaw: jest.fn().mockResolvedValue(1),
+      };
+      const tenantPrisma = {
+        run: jest.fn((fn: (tx: typeof txMock) => Promise<unknown>) => fn(txMock)),
+      };
+      const repo = new ProjectRepository(tenantPrisma as never, { tenantId: TENANT_ID } as never);
+      return { repo, txMock };
+    }
+
+    const envelope = (type: string) => ({
+      event_type: type,
+      event_version: '1.0',
+      tenant_id: TENANT_ID,
+      actor_id: USER_ID,
+      occurred_at: '2026-08-22T00:00:00.000Z',
+      correlation_id: 'corr-1',
+      payload: {},
+    });
+
+    it('update() writes one outbox row in the same transaction', async () => {
+      const { repo, txMock } = makeTxRepo();
+      const builder = jest.fn(() => envelope('construction.project.updated.v1'));
+
+      await repo.update(PROJECT_ID, { project_name: 'X' }, builder as never);
+
+      expect(builder).toHaveBeenCalledWith(baseRow);
+      expect(txMock.$executeRaw).toHaveBeenCalledTimes(1);
+    });
+
+    it('update() writes nothing without a builder or when the UPDATE matched no row', async () => {
+      const { repo, txMock } = makeTxRepo();
+      await repo.update(PROJECT_ID, { project_name: 'X' });
+      expect(txMock.$executeRaw).not.toHaveBeenCalled();
+
+      const empty = {
+        $queryRaw: jest.fn().mockResolvedValue([]),
+        $executeRaw: jest.fn().mockResolvedValue(1),
+      };
+      const repo2 = new ProjectRepository(
+        { run: jest.fn((fn: (tx: typeof empty) => Promise<unknown>) => fn(empty)) } as never,
+        { tenantId: TENANT_ID } as never,
+      );
+      const builder = jest.fn();
+      await repo2
+        .update(PROJECT_ID, { project_name: 'X' }, builder as never)
+        .catch(() => undefined);
+      expect(builder).not.toHaveBeenCalled();
+      expect(empty.$executeRaw).not.toHaveBeenCalled();
+    });
+
+    it('updateStatus() writes every event the builder returns in one transaction', async () => {
+      const { repo, txMock } = makeTxRepo();
+      const builder = jest.fn(() => [
+        envelope('construction.project.status_changed.v1'),
+        envelope('construction.project.archived.v1'),
+      ]);
+
+      await repo.updateStatus(PROJECT_ID, 'COMPLETED' as never, {}, builder as never);
+
+      expect(builder).toHaveBeenCalledWith(baseRow);
+      // Both events share the single transaction opened by TenantPrismaService.run
+      expect(txMock.$executeRaw).toHaveBeenCalledTimes(2);
+    });
+
+    it('updateStatus() writes nothing without a builder or when no row matched', async () => {
+      const { repo, txMock } = makeTxRepo();
+      await repo.updateStatus(PROJECT_ID, 'ACTIVE' as never, {});
+      expect(txMock.$executeRaw).not.toHaveBeenCalled();
+
+      const empty = {
+        $queryRaw: jest.fn().mockResolvedValue([]),
+        $executeRaw: jest.fn().mockResolvedValue(1),
+      };
+      const repo2 = new ProjectRepository(
+        { run: jest.fn((fn: (tx: typeof empty) => Promise<unknown>) => fn(empty)) } as never,
+        { tenantId: TENANT_ID } as never,
+      );
+      const builder = jest.fn();
+      await repo2
+        .updateStatus(PROJECT_ID, 'ACTIVE' as never, {}, builder as never)
+        .catch(() => undefined);
+      expect(builder).not.toHaveBeenCalled();
+      expect(empty.$executeRaw).not.toHaveBeenCalled();
+    });
+  });
+
   describe('findById()', () => {
     it('returns the row when found', async () => {
       const repo = makeRepo([baseRow]);

@@ -1,7 +1,8 @@
 // Tenant Service — Phase 2
 // Manages tenant lifecycle: creation, deactivation, schema provisioning.
 // Uses platform PrismaClient directly (cross-tenant operations).
-// Emits identity.tenant.created.v1 and identity.tenant.deactivated.v1 Kafka events.
+// Emits identity.tenant.* and platform.enterprise.* events through the Phase 8 OUTBOX
+// (§35.13 ESC-13) — never published directly to Kafka.
 
 import {
   Injectable,
@@ -10,9 +11,11 @@ import {
   BadRequestException,
   OnModuleDestroy,
 } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { Tenant } from '@prisma/client';
 import { createPrismaClient } from '../../shared/prisma/create-prisma-client';
-import { KafkaProducer, KafkaTopicProvisioner } from '@cos/kafka';
+import { KafkaTopicProvisioner, OutboxPublisher } from '@cos/kafka';
+import { buildOutboxEvent } from '../../shared/outbox/outbox.types';
 import { createLogger } from '@cos/logger';
 import { Connection, Client } from '@temporalio/client';
 import { CreateTenantDto } from './dto/create-tenant.dto';
@@ -23,7 +26,6 @@ const logger = createLogger('tenant-service');
 export class TenantService implements OnModuleDestroy {
   // Platform PrismaClient — NOT TenantPrismaService (this operates cross-tenant)
   private readonly prisma = createPrismaClient();
-  private readonly kafka = new KafkaProducer();
 
   /** Close the Prisma connection on shutdown so the query-engine socket does not leak. */
   async onModuleDestroy(): Promise<void> {
@@ -61,6 +63,40 @@ export class TenantService implements OnModuleDestroy {
         RETURNING *
       `;
 
+      // ESC-20: `$queryRaw` returns RAW DB column names — Prisma's `@map` (tenantId → tenant_id)
+      // is applied to the query-builder API, NOT to raw SQL results. The `<Tenant[]>` generic is a
+      // compile-time cast only, so `created.tenantId` is `undefined` at runtime. Read the row
+      // through its real snake_case shape here.
+      const row = created as unknown as {
+        tenant_id: string;
+        tenant_code: string;
+        tenant_name: string;
+        plan_type: string;
+      };
+
+      // Phase 8 Outbox Pattern (§35.13 ESC-13): the event joins the INSERT's transaction, built
+      // from the inserted row so tenant_id is the real generated id. Replaces the previous
+      // fire-and-forget publish, whose comment ("outbox pattern handles retries") was never true.
+      await OutboxPublisher.write(
+        tx,
+        buildOutboxEvent({
+          eventType: 'identity.tenant.created.v1',
+          // The event is tenant-scoped (identity.* is not a platform.* type), so it routes to
+          // {tenant_id}.identity.tenant.created.v1 — the topic provisionTenantTopics creates below.
+          // ESC-19: the previous envelope hardcoded tenant_id: 'platform', targeting a topic that
+          // is never provisioned; with allowAutoTopicCreation:false that publish could not succeed.
+          tenantId: row.tenant_id,
+          actorId: createdBy,
+          correlationId: randomUUID(),
+          payload: {
+            tenant_id: row.tenant_id,
+            tenant_code: row.tenant_code,
+            tenant_name: row.tenant_name,
+            plan_type: row.plan_type,
+          },
+        }),
+      );
+
       logger.info({ tenantCode: dto.tenantCode, createdBy }, 'Tenant record created');
 
       return created!;
@@ -69,37 +105,47 @@ export class TenantService implements OnModuleDestroy {
     // Provision the tenant's per-tenant Kafka topic set (spec §7.3) before any of the
     // tenant's events are produced. Idempotent; non-fatal so onboarding is not blocked
     // by a transient Kafka outage (topics can be re-provisioned by re-running onboarding).
-    await this.provisionTenantTopics(tenant.tenantId);
+    // ESC-20: read tenant_id, not tenantId — `tenant` is a raw `$queryRaw` row (snake_case
+    // columns), so the previous `tenant.tenantId` provisioned topics for `undefined`.
+    await this.provisionTenantTopics((tenant as unknown as { tenant_id: string }).tenant_id);
 
     logger.info(
       { tenantCode: dto.tenantCode, keycloakRealm },
       'Keycloak realm assigned to tenant record',
     );
 
-    // 4. Emit identity.tenant.created.v1 (non-fatal — outbox pattern handles retries)
-    await this.publishEvent('identity.tenant.created.v1', {
-      tenant_id: tenant.tenantId,
-      tenant_code: tenant.tenantCode,
-      tenant_name: tenant.tenantName,
-      plan_type: tenant.planType,
-    });
+    // identity.tenant.created.v1 was already written to the outbox inside the transaction above.
 
     return tenant;
   }
 
   async deactivateTenant(tenantId: string, actorId: string): Promise<void> {
-    const [tenant] = await this.prisma.$queryRaw<Tenant[]>`
-      UPDATE platform.tenants
-      SET is_active = false, updated_at = now()
-      WHERE tenant_id = ${tenantId}::uuid AND is_active = true
-      RETURNING *
-    `;
-    if (!tenant) {
-      throw new NotFoundException(`Tenant ${tenantId} not found or already inactive`);
-    }
-    logger.info({ tenantId, actorId }, 'Tenant deactivated');
+    // Outbox (§35.13 ESC-13): the UPDATE and its event share one transaction, so a tenant is never
+    // deactivated without the event, and never emits the event without being deactivated.
+    await this.prisma.$transaction(async (tx) => {
+      const [tenant] = await tx.$queryRaw<Tenant[]>`
+        UPDATE platform.tenants
+        SET is_active = false, updated_at = now()
+        WHERE tenant_id = ${tenantId}::uuid AND is_active = true
+        RETURNING *
+      `;
+      if (!tenant) {
+        throw new NotFoundException(`Tenant ${tenantId} not found or already inactive`);
+      }
 
-    await this.publishEvent('identity.tenant.deactivated.v1', { tenant_id: tenantId });
+      await OutboxPublisher.write(
+        tx,
+        buildOutboxEvent({
+          eventType: 'identity.tenant.deactivated.v1',
+          tenantId,
+          actorId,
+          correlationId: randomUUID(),
+          payload: { tenant_id: tenantId },
+        }),
+      );
+
+      logger.info({ tenantId, actorId }, 'Tenant deactivated');
+    });
   }
 
   async findByCode(tenantCode: string): Promise<Tenant | null> {
@@ -119,16 +165,30 @@ export class TenantService implements OnModuleDestroy {
     if (!dedicatedDbUrl.startsWith('postgresql://') && !dedicatedDbUrl.startsWith('postgres://')) {
       throw new BadRequestException('dedicatedDbUrl must start with postgresql:// or postgres://');
     }
-    const affected = await this.prisma.$executeRaw`
-      UPDATE platform.tenants
-      SET dedicated_db_url = ${dedicatedDbUrl}, updated_at = now()
-      WHERE tenant_id = ${tenantId}::uuid AND is_active = true
-    `;
-    if (affected === 0) {
-      throw new NotFoundException(`Tenant ${tenantId} not found or inactive`);
-    }
-    logger.info({ tenantId, actorId }, 'Tenant dedicated DB assigned');
-    await this.publishEvent('identity.tenant.dedicated_db_assigned.v1', { tenant_id: tenantId });
+    // Outbox (§35.13 ESC-13) — UPDATE and event in one transaction.
+    await this.prisma.$transaction(async (tx) => {
+      const affected = await tx.$executeRaw`
+        UPDATE platform.tenants
+        SET dedicated_db_url = ${dedicatedDbUrl}, updated_at = now()
+        WHERE tenant_id = ${tenantId}::uuid AND is_active = true
+      `;
+      if (affected === 0) {
+        throw new NotFoundException(`Tenant ${tenantId} not found or inactive`);
+      }
+
+      await OutboxPublisher.write(
+        tx,
+        buildOutboxEvent({
+          eventType: 'identity.tenant.dedicated_db_assigned.v1',
+          tenantId,
+          actorId,
+          correlationId: randomUUID(),
+          payload: { tenant_id: tenantId },
+        }),
+      );
+
+      logger.info({ tenantId, actorId }, 'Tenant dedicated DB assigned');
+    });
   }
 
   async markAsEnterpriseContracted(
@@ -174,9 +234,25 @@ export class TenantService implements OnModuleDestroy {
     }
 
     logger.info({ tenantId, workflowId, actorId }, 'Enterprise provisioning workflow started');
-    await this.publishEvent('platform.enterprise.contract_signed.v1', {
-      tenant_id: tenantId,
-      contract_reference: contractReference ?? null,
+
+    // Outbox (§35.13 ESC-13). NOTE: this method performs no business DB write — the state change
+    // lives in Temporal — so there is no row to be atomic *with*. The outbox is used here purely as
+    // the durable at-least-once relay: the previous direct publish silently LOST the event whenever
+    // Kafka was unavailable. `platform.*` events route to the shared platform.events topic (§15.7).
+    await this.prisma.$transaction(async (tx) => {
+      await OutboxPublisher.write(
+        tx,
+        buildOutboxEvent({
+          eventType: 'platform.enterprise.contract_signed.v1',
+          tenantId,
+          actorId,
+          correlationId: randomUUID(),
+          payload: {
+            tenant_id: tenantId,
+            contract_reference: contractReference ?? null,
+          },
+        }),
+      );
     });
 
     return { workflowId };
@@ -215,24 +291,6 @@ export class TenantService implements OnModuleDestroy {
       logger.error({ tenantId, err }, 'kafka.topic.provision.failed');
     } finally {
       await provisioner.disconnect().catch(() => undefined);
-    }
-  }
-
-  private async publishEvent<T>(eventType: string, payload: T): Promise<void> {
-    try {
-      await this.kafka.connect();
-      await this.kafka.publish<T>({
-        event_type: eventType,
-        event_version: '1.0',
-        tenant_id: 'platform',
-        actor_id: 'system',
-        occurred_at: new Date().toISOString(),
-        correlation_id: globalThis.crypto.randomUUID(),
-        payload,
-      });
-      await this.kafka.disconnect();
-    } catch (err) {
-      logger.error({ event_type: eventType, err }, 'kafka.publish.failed');
     }
   }
 }

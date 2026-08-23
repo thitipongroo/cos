@@ -293,6 +293,9 @@ describe('SiteOps Integration (Phase 6)', () => {
       expect(res.status).toBe(200);
       expect(createConflictSpy).toHaveBeenCalledWith(
         expect.objectContaining({ entity_type: 'issues', conflict_type: 'STATUS_CONFLICT' }),
+        // 2nd arg is the site.conflict.flagged.v1 outbox envelope, written inside the conflict
+        // record's own INSERT transaction (§35.13 ESC-13).
+        expect.objectContaining({ event_type: 'site.conflict.flagged.v1' }),
       );
     });
 

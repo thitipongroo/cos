@@ -238,6 +238,7 @@ describe('BoqService', () => {
       expect(result.version_number).toBe(1);
       expect(mockRepo.createVersion).toHaveBeenCalledWith(
         expect.objectContaining({ version_number: 1 }),
+        expect.any(Function), // outbox builder (§35.13 ESC-13)
       );
     });
 
@@ -255,18 +256,17 @@ describe('BoqService', () => {
       mockRepo.createVersion.mockResolvedValue(draftVersion);
       mockRepo.findLatestApprovedVersion.mockResolvedValue(null);
 
-      const kafkaMock = (
-        service as unknown as {
-          kafka: { connect: jest.Mock; publish: jest.Mock; disconnect: jest.Mock };
-        }
-      ).kafka;
-
       await service.createVersion('project-uuid-001', { currency_code: 'THB' });
 
-      const eventTypes = kafkaMock.publish.mock.calls.map(
-        (c: [{ event_type: string }]) => c[0].event_type,
-      );
-      expect(eventTypes).toContain('construction.boq.created.v1');
+      // Events now go to the outbox: assert on the builder handed to the repository.
+      const builder = mockRepo.createVersion.mock.calls[0][1] as (
+        row: BoqVersionRow,
+      ) => { event_type: string }[];
+      const eventTypes = builder(draftVersion).map((e) => e.event_type);
+      expect(eventTypes).toEqual([
+        'construction.boq.version_created.v1',
+        'construction.boq.created.v1',
+      ]);
     });
 
     it('does NOT publish boq.created.v1 on subsequent versions (version_number > 1 branch)', async () => {
@@ -280,19 +280,14 @@ describe('BoqService', () => {
       mockRepo.updateCategorySubtotal.mockResolvedValue(undefined);
       mockRepo.updateVersionTotal.mockResolvedValue(undefined);
 
-      const kafkaMock = (
-        service as unknown as {
-          kafka: { connect: jest.Mock; publish: jest.Mock; disconnect: jest.Mock };
-        }
-      ).kafka;
-
       const result = await service.createVersion('project-uuid-001', { currency_code: 'THB' });
       expect(result.version_number).toBe(2);
       expect(mockRepo.copyVersionContents).toHaveBeenCalled();
 
-      const eventTypes = kafkaMock.publish.mock.calls.map(
-        (c: [{ event_type: string }]) => c[0].event_type,
-      );
+      const builder = mockRepo.createVersion.mock.calls[0][1] as (
+        row: BoqVersionRow,
+      ) => { event_type: string }[];
+      const eventTypes = builder({ ...draftVersion, version_number: 2 }).map((e) => e.event_type);
       expect(eventTypes).not.toContain('construction.boq.created.v1');
     });
 
@@ -374,6 +369,7 @@ describe('BoqService', () => {
       expect(result.status).toBe('APPROVED');
       expect(mockRepo.approveVersion).toHaveBeenCalledWith(
         expect.objectContaining({ version_id: 'version-uuid-002', approved_by: 'user-uuid-001' }),
+        expect.objectContaining({ event_type: 'construction.boq.version_approved.v1' }),
       );
     });
   });
@@ -553,32 +549,62 @@ describe('BoqService', () => {
   });
 
   // ── Kafka error handling ───────────────────────────────────────────────────
-  describe('publishEvent error handling', () => {
-    it('logs error but does not throw when Kafka publish fails (G4 — covers catch branch)', async () => {
-      const draftV2: BoqVersionRow = {
-        ...draftVersion,
-        version_id: 'version-uuid-002',
-        version_number: 2,
-      };
-      mockRepo.findVersionById
-        .mockResolvedValueOnce(draftV2)
-        .mockResolvedValueOnce({ ...draftV2, status: 'APPROVED' });
+  // §35.13 ESC-13: the service no longer holds a KafkaProducer, so there is no direct-publish
+  // catch branch left. Item mutations instead write construction.boq.updated.v1 to the outbox in
+  // the same transaction as the closing version-total UPDATE.
+  describe('boq.updated.v1 outbox write on item mutation', () => {
+    it('writes the event with the version total UPDATE and sources project_id from the version row', async () => {
+      mockRepo.findVersionById.mockResolvedValue(draftVersion);
+      mockRepo.addItem.mockResolvedValue(item);
       mockRepo.findItemsByVersion.mockResolvedValue([item]);
       mockRepo.findCategoriesByVersion.mockResolvedValue([category]);
       mockRepo.updateCategorySubtotal.mockResolvedValue(undefined);
       mockRepo.updateVersionTotal.mockResolvedValue(undefined);
-      mockRepo.approveVersion.mockResolvedValue(undefined);
 
-      const kafkaMock = (
-        service as unknown as {
-          kafka: { connect: jest.Mock; publish: jest.Mock; disconnect: jest.Mock };
-        }
-      ).kafka;
-      kafkaMock.publish.mockRejectedValueOnce(new Error('Kafka down'));
+      await service.addItem('version-uuid-001', {
+        category_id: 'category-uuid-001',
+        description: 'Concrete',
+        unit: 'M3',
+        quantity: '10',
+        unit_cost: '100',
+        currency_code: 'THB',
+      } as never);
 
-      await expect(
-        service.approveVersion('project-uuid-001', 'version-uuid-002'),
-      ).resolves.toBeDefined();
+      const call = mockRepo.updateVersionTotal.mock.calls.at(-1) as [
+        string,
+        string,
+        { event_type: string; payload: { project_id: string; version_id: string } },
+      ];
+      expect(call[2].event_type).toBe('construction.boq.updated.v1');
+      // ESC-18: project_id must be the PROJECT id from the version row, not the version id.
+      expect(call[2].payload.project_id).toBe(draftVersion.project_id);
+      expect(call[2].payload.version_id).toBe('version-uuid-001');
+    });
+
+    it('falls back to an empty project_id and THB when the version row is missing', async () => {
+      mockRepo.findVersionById.mockResolvedValueOnce(draftVersion).mockResolvedValue(null);
+      mockRepo.addItem.mockResolvedValue(item);
+      mockRepo.findItemsByVersion.mockResolvedValue([item]);
+      mockRepo.findCategoriesByVersion.mockResolvedValue([category]);
+      mockRepo.updateCategorySubtotal.mockResolvedValue(undefined);
+      mockRepo.updateVersionTotal.mockResolvedValue(undefined);
+
+      await service.addItem('version-uuid-001', {
+        category_id: 'category-uuid-001',
+        description: 'Concrete',
+        unit: 'M3',
+        quantity: '10',
+        unit_cost: '100',
+        currency_code: 'THB',
+      } as never);
+
+      const call = mockRepo.updateVersionTotal.mock.calls.at(-1) as [
+        string,
+        string,
+        { payload: { project_id: string; new_total_estimated_currency: string } },
+      ];
+      expect(call[2].payload.project_id).toBe('');
+      expect(call[2].payload.new_total_estimated_currency).toBe('THB');
     });
   });
 

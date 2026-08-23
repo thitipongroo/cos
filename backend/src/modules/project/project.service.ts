@@ -1,6 +1,8 @@
 // Project Service — Phase 3
 // Business logic: create, read, update, status transitions, membership, documents.
-// Emits typed Kafka events via @cos/kafka KafkaProducer (QM-8, WORKFLOW ENGINE SPEC).
+// Emits typed Kafka events through the Phase 8 OUTBOX (QM-8, WORKFLOW ENGINE SPEC): every event is
+// written to platform.outbox_events inside the same transaction as its business row and relayed by
+// OutboxPollerService. This service never publishes to Kafka directly (§35.13 ESC-13).
 // OpenSearch used for full-text project search (QM-6 — kept async, non-blocking).
 
 import {
@@ -14,8 +16,8 @@ import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
 import { randomUUID } from 'crypto';
 import { Client as OpenSearchClient } from '@opensearch-project/opensearch';
-import { KafkaProducer } from '@cos/kafka';
 import { buildOutboxEvent } from '../../shared/outbox/outbox.types';
+import type { OutboxEventInput } from '../../shared/outbox/outbox.types';
 import { createLogger } from '@cos/logger';
 import type { CosRole } from '@cos/types';
 import { ProjectRepository } from './project.repository';
@@ -43,7 +45,6 @@ export class ProjectService {
   private readonly userRole: string;
   private readonly correlationId: string;
   private readonly openSearch: OpenSearchClient;
-  private readonly kafka: KafkaProducer;
 
   constructor(
     private readonly repo: ProjectRepository,
@@ -58,7 +59,6 @@ export class ProjectService {
     this.openSearch = new OpenSearchClient({
       node: process.env['OPENSEARCH_URL'] ?? 'http://localhost:9200',
     });
-    this.kafka = new KafkaProducer();
   }
 
   async create(dto: CreateProjectDto): Promise<ProjectRow> {
@@ -151,14 +151,22 @@ export class ProjectService {
       if (dto[key] !== undefined) changedFields[key] = dto[key];
     }
 
-    const updated = await this.repo.update(projectId, dto);
+    // Outbox (§35.13 ESC-13) — written in the same transaction as the UPDATE.
+    const updated = await this.repo.update(projectId, dto, (row) =>
+      buildOutboxEvent({
+        eventType: 'construction.project.updated.v1',
+        tenantId: this.tenantId,
+        actorId: this.userId,
+        correlationId: this.correlationId,
+        payload: {
+          project_id: row.project_id,
+          changed_fields: changedFields,
+          updated_by: this.userId,
+        },
+      }),
+    );
 
     await this.indexProject(updated);
-    await this.publishEvent('construction.project.updated.v1', {
-      project_id: updated.project_id,
-      changed_fields: changedFields,
-      updated_by: this.userId,
-    });
 
     return updated;
   }
@@ -204,22 +212,44 @@ export class ProjectService {
       meta.cancelled_at = now;
     }
 
-    const updated = await this.repo.updateStatus(projectId, dto.to as ProjectStatus, meta);
+    // Outbox (§35.13 ESC-13): both events for this transition are written in the SAME transaction
+    // as the status update, so a rollback emits neither and a commit loses neither.
+    const updated = await this.repo.updateStatus(
+      projectId,
+      dto.to as ProjectStatus,
+      meta,
+      (row) => {
+        const events: OutboxEventInput[] = [
+          buildOutboxEvent({
+            eventType: 'construction.project.status_changed.v1',
+            tenantId: this.tenantId,
+            actorId: this.userId,
+            correlationId: this.correlationId,
+            payload: {
+              project_id: row.project_id,
+              from_status: existing.status,
+              to_status: dto.to as ProjectStatus,
+              reason: dto.reason ?? null,
+            },
+          }),
+        ];
+        // COMPLETED projects are considered archived for downstream consumers
+        if (dto.to === 'COMPLETED') {
+          events.push(
+            buildOutboxEvent({
+              eventType: 'construction.project.archived.v1',
+              tenantId: this.tenantId,
+              actorId: this.userId,
+              correlationId: this.correlationId,
+              payload: { project_id: row.project_id },
+            }),
+          );
+        }
+        return events;
+      },
+    );
 
     await this.indexProject(updated);
-    await this.publishEvent('construction.project.status_changed.v1', {
-      project_id: updated.project_id,
-      from_status: existing.status,
-      to_status: dto.to as ProjectStatus,
-      reason: dto.reason ?? null,
-    });
-
-    // COMPLETED projects are considered archived for downstream consumers
-    if (dto.to === 'COMPLETED') {
-      await this.publishEvent('construction.project.archived.v1', {
-        project_id: updated.project_id,
-      });
-    }
 
     logger.info(
       {
@@ -326,32 +356,6 @@ export class ProjectService {
     } catch (err) {
       logger.warn({ q, err }, 'opensearch.search.failed — falling back to DB list');
       return this.repo.list({ status: dto.status, type: dto.type, cursor: dto.cursor, limit });
-    }
-  }
-
-  private async publishEvent<T>(eventType: string, payload: T): Promise<void> {
-    try {
-      await this.kafka.connect();
-      await this.kafka.publish<T>({
-        event_type: eventType,
-        event_version: '1.0',
-        tenant_id: this.tenantId,
-        actor_id: this.userId,
-        occurred_at: new Date().toISOString(),
-        correlation_id: this.correlationId,
-        payload,
-      });
-      await this.kafka.disconnect();
-    } catch (err) {
-      // Direct-publish path (update / transition / archive — NOT yet converted to the outbox).
-      // A failure here is logged and swallowed: the event is LOST, it is not retried. The earlier
-      // comment claimed "outbox pattern picks up failures", which was never true — nothing wrote to
-      // the outbox. create() is already converted; converting the rest removes this path entirely
-      // (docs/specifications/35-test-design.md §35.13 ESC-13).
-      logger.error(
-        { event_type: eventType, err, correlation_id: this.correlationId },
-        'kafka.publish.failed',
-      );
     }
   }
 }

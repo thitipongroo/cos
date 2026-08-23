@@ -1,14 +1,15 @@
 // Workforce Service — Phase 22
 // Business logic: worker management, project allocation, attendance, timesheets.
-// Emits typed Kafka events via @cos/kafka KafkaProducer.
+// Emits typed events through the Phase 8 OUTBOX (§35.13 ESC-13) — written inside the
+// business transaction by the repository, relayed to Kafka by OutboxPollerService.
 
 import { Injectable, Scope, Inject, NotFoundException } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
 import { randomUUID } from 'crypto';
 import { Decimal } from '@cos/financial';
-import { KafkaProducer } from '@cos/kafka';
 import { createLogger } from '@cos/logger';
+import { buildOutboxEvent } from '../../shared/outbox/outbox.types';
 import { clsTenantId, clsUserId } from '../../shared/context/cls-context';
 import { WorkforceRepository } from './workforce.repository';
 import type { WorkerRow, AllocationRow, AttendanceRow, TimesheetRow } from './workforce.repository';
@@ -21,14 +22,10 @@ const logger = createLogger('workforce-service');
 
 @Injectable({ scope: Scope.REQUEST })
 export class WorkforceService {
-  private readonly kafka: KafkaProducer;
-
   constructor(
     @Inject(REQUEST) private readonly req: Request,
     private readonly repo: WorkforceRepository,
-  ) {
-    this.kafka = new KafkaProducer();
-  }
+  ) {}
 
   // ADR-031 context sources. Corrected 2026-08-22 (35-test-design.md §35.13 ESC-16): both getters
   // previously read the Passport projection (`req.user?.sub`), which nothing in this codebase ever
@@ -110,19 +107,6 @@ export class WorkforceService {
             .toNumber()
         : null);
 
-    const log = await this.repo.recordAttendance({
-      log_id: randomUUID(),
-      recorded_at: new Date().toISOString(),
-      worker_id: workerId,
-      project_id: dto.project_id,
-      tenant_id: this.tenantId,
-      check_in_at: dto.check_in_at ?? null,
-      check_out_at: dto.check_out_at ?? null,
-      hours_worked: hoursWorked,
-      latitude: dto.latitude ?? null,
-      longitude: dto.longitude ?? null,
-    });
-
     const eventType =
       dto.check_in_at && !dto.check_out_at
         ? 'workforce.checkin.created.v1'
@@ -133,8 +117,22 @@ export class WorkforceService {
         ? { worker_id: workerId, project_id: dto.project_id, checked_in_at: dto.check_in_at }
         : { worker_id: workerId, project_id: dto.project_id, hours_worked: hoursWorked };
 
-    await this.emitEvent(eventType, eventPayload);
-    return log;
+    // The event rides the attendance INSERT, so a rolled-back check-in emits nothing.
+    return this.repo.recordAttendance(
+      {
+        log_id: randomUUID(),
+        recorded_at: new Date().toISOString(),
+        worker_id: workerId,
+        project_id: dto.project_id,
+        tenant_id: this.tenantId,
+        check_in_at: dto.check_in_at ?? null,
+        check_out_at: dto.check_out_at ?? null,
+        hours_worked: hoursWorked,
+        latitude: dto.latitude ?? null,
+        longitude: dto.longitude ?? null,
+      },
+      this.outboxEvent(eventType, eventPayload),
+    );
   }
 
   async getAttendanceHistory(workerId: string, from: string, to: string): Promise<AttendanceRow[]> {
@@ -156,19 +154,20 @@ export class WorkforceService {
   }
 
   async approveTimesheet(timesheetId: string): Promise<TimesheetRow> {
-    const ts = await this.repo.approveTimesheet(timesheetId);
+    // Builder over the UPDATEd row: the approved hours are only known from the row, and the
+    // repository skips the builder when the UPDATE matched nothing (§35.13 ESC-13).
+    const ts = await this.repo.approveTimesheet(timesheetId, (row) =>
+      this.outboxEvent('workforce.timesheet.approved.v1', {
+        worker_id: row.worker_id,
+        project_id: row.project_id,
+        period_date: row.period_date,
+        total_hours: new Decimal(row.regular_hours)
+          .add(new Decimal(row.overtime_hours))
+          .toDecimalPlaces(2)
+          .toNumber(),
+      }),
+    );
     if (!ts) throw new NotFoundException(`Timesheet ${timesheetId} not found`);
-
-    const totalHours = new Decimal(ts.regular_hours)
-      .add(new Decimal(ts.overtime_hours))
-      .toDecimalPlaces(2);
-
-    await this.emitEvent('workforce.timesheet.approved.v1', {
-      worker_id: ts.worker_id,
-      project_id: ts.project_id,
-      period_date: ts.period_date,
-      total_hours: totalHours.toNumber(),
-    });
 
     return ts;
   }
@@ -177,20 +176,18 @@ export class WorkforceService {
     return this.repo.getManpowerSummary(projectId);
   }
 
-  private async emitEvent(eventType: string, payload: Record<string, unknown>): Promise<void> {
-    try {
-      await this.kafka.connect();
-      await this.kafka.publish({
-        event_type: eventType,
-        event_version: '1.0',
-        tenant_id: this.tenantId,
-        actor_id: this.userId,
-        correlation_id: randomUUID(),
-        occurred_at: new Date().toISOString(),
-        payload,
-      });
-    } catch (err) {
-      logger.error({ err, eventType }, 'Failed to emit Kafka event');
-    }
+  /**
+   * Builds the outbox envelope handed to the repository write that anchors it (§35.13 ESC-13).
+   * Replaces the previous `emitEvent`, which published directly to Kafka and swallowed the
+   * failure — losing the event whenever the broker was unreachable.
+   */
+  private outboxEvent(eventType: string, payload: Record<string, unknown>) {
+    return buildOutboxEvent({
+      eventType,
+      tenantId: this.tenantId,
+      actorId: this.userId,
+      correlationId: randomUUID(),
+      payload,
+    });
   }
 }

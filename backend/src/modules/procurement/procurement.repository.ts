@@ -6,7 +6,10 @@
 import { Injectable, Scope, Inject } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
+import { OutboxPublisher } from '@cos/kafka';
+import { Decimal } from '@cos/financial';
 import { TenantPrismaService } from '../tenant/prisma/tenant-prisma.service';
+import type { OutboxEventInput } from '../../shared/outbox/outbox.types';
 
 // ── Row types ──────────────────────────────────────────────────────────────
 
@@ -280,13 +283,19 @@ export class ProcurementRepository {
     );
   }
 
-  async setRfqWorkflowId(rfq_id: string, workflow_id: string): Promise<void> {
-    await this.db.run(
-      (prisma) =>
-        prisma.$executeRaw`
+  async setRfqWorkflowId(
+    rfq_id: string,
+    workflow_id: string,
+    outboxEvent?: OutboxEventInput,
+  ): Promise<void> {
+    await this.db.run(async (prisma) => {
+      await prisma.$executeRaw`
         UPDATE procurement.rfqs SET temporal_workflow_id = ${workflow_id}, updated_at = now()
-        WHERE rfq_id = ${rfq_id}::uuid AND tenant_id = ${this.tenantId}::uuid`,
-    );
+        WHERE rfq_id = ${rfq_id}::uuid AND tenant_id = ${this.tenantId}::uuid`;
+      // Outbox (§35.13 ESC-13) — anchored on the last DB write of RFQ creation, which happens
+      // after the Temporal workflow has started, so the event ordering is unchanged.
+      if (outboxEvent) await OutboxPublisher.write(prisma, outboxEvent);
+    });
   }
 
   // ── Quotations ────────────────────────────────────────────────────────────
@@ -503,13 +512,18 @@ export class ProcurementRepository {
     );
   }
 
-  async setPoWorkflowId(po_id: string, workflow_id: string): Promise<void> {
-    await this.db.run(
-      (prisma) =>
-        prisma.$executeRaw`
+  async setPoWorkflowId(
+    po_id: string,
+    workflow_id: string,
+    outboxEvent?: OutboxEventInput,
+  ): Promise<void> {
+    await this.db.run(async (prisma) => {
+      await prisma.$executeRaw`
         UPDATE procurement.purchase_orders SET temporal_workflow_id = ${workflow_id}, updated_at = now()
-        WHERE po_id = ${po_id}::uuid AND tenant_id = ${this.tenantId}::uuid`,
-    );
+        WHERE po_id = ${po_id}::uuid AND tenant_id = ${this.tenantId}::uuid`;
+      // Outbox (§35.13 ESC-13) — last DB write of PO creation, after the workflow started.
+      if (outboxEvent) await OutboxPublisher.write(prisma, outboxEvent);
+    });
   }
 
   // ── PO Line Items ─────────────────────────────────────────────────────────
@@ -552,14 +566,27 @@ export class ProcurementRepository {
 
   // ── Deliveries ────────────────────────────────────────────────────────────
 
-  async createDelivery(params: {
-    po_id: string;
-    delivery_note?: string;
-    delivered_at: string;
-    received_by: string;
-    notes?: string;
-    items: Array<{ line_id: string; quantity_received: string }>;
-  }): Promise<{ delivery: DeliveryRow; items: DeliveryItemRow[] }> {
+  async createDelivery(
+    params: {
+      po_id: string;
+      delivery_note?: string;
+      delivered_at: string;
+      received_by: string;
+      notes?: string;
+      items: Array<{ line_id: string; quantity_received: string }>;
+    },
+    /**
+     * Outbox builder (§35.13 ESC-13). Receives the inserted delivery, its items and `is_partial`
+     * — which is computed INSIDE this transaction, because it depends on the rows just inserted.
+     * Previously the service recomputed it with two extra round-trips after the commit and then
+     * fire-and-forget published, so the event was neither atomic nor retried.
+     */
+    buildOutboxEvent?: (ctx: {
+      delivery: DeliveryRow;
+      items: DeliveryItemRow[];
+      is_partial: boolean;
+    }) => OutboxEventInput,
+  ): Promise<{ delivery: DeliveryRow; items: DeliveryItemRow[]; is_partial: boolean }> {
     return this.db.run(async (prisma) => {
       const deliveries = await prisma.$queryRaw<DeliveryRow[]>`
         INSERT INTO procurement.deliveries (po_id, tenant_id, delivery_note, delivered_at, received_by, notes)
@@ -579,7 +606,33 @@ export class ProcurementRepository {
         deliveryItems.push(rows[0]!);
       }
 
-      return { delivery, items: deliveryItems };
+      // Derived state, computed in-transaction so it reflects exactly the rows just written.
+      const lineItems = await prisma.$queryRaw<PoLineItemRow[]>`
+        SELECT * FROM procurement.po_line_items
+        WHERE po_id = ${params.po_id}::uuid AND tenant_id = ${this.tenantId}::uuid`;
+
+      let is_partial = false;
+      for (const li of lineItems) {
+        const sums = await prisma.$queryRaw<Array<{ total: string }>>`
+          SELECT COALESCE(SUM(quantity_received), 0)::text AS total
+          FROM procurement.delivery_items di
+          JOIN procurement.deliveries d ON di.delivery_id = d.delivery_id
+          WHERE di.line_id = ${li.line_id}::uuid AND di.tenant_id = ${this.tenantId}::uuid`;
+        const delivered = new Decimal(sums[0]?.total ?? '0');
+        if (delivered.lessThan(new Decimal(li.quantity))) {
+          is_partial = true;
+          break;
+        }
+      }
+
+      if (buildOutboxEvent) {
+        await OutboxPublisher.write(
+          prisma,
+          buildOutboxEvent({ delivery, items: deliveryItems, is_partial }),
+        );
+      }
+
+      return { delivery, items: deliveryItems, is_partial };
     });
   }
 
@@ -595,27 +648,34 @@ export class ProcurementRepository {
 
   // ── Invoices ──────────────────────────────────────────────────────────────
 
-  async createInvoice(params: {
-    po_id: string;
-    vendor_id: string;
-    invoice_number: string;
-    amount: string;
-    currency_code: string;
-    invoice_date: string;
-    due_date: string;
-    file_id?: string;
-  }): Promise<InvoiceRow> {
-    const rows = await this.db.run(
-      (prisma) =>
-        prisma.$queryRaw<InvoiceRow[]>`
+  async createInvoice(
+    params: {
+      po_id: string;
+      vendor_id: string;
+      invoice_number: string;
+      amount: string;
+      currency_code: string;
+      invoice_date: string;
+      due_date: string;
+      file_id?: string;
+    },
+    buildOutboxEvent?: (row: InvoiceRow) => OutboxEventInput,
+  ): Promise<InvoiceRow> {
+    const rows = await this.db.run(async (prisma) => {
+      const inserted = await prisma.$queryRaw<InvoiceRow[]>`
         INSERT INTO procurement.invoices (po_id, vendor_id, tenant_id, invoice_number, amount, currency_code,
                               invoice_date, due_date, file_id)
         VALUES (${params.po_id}::uuid, ${params.vendor_id}::uuid, ${this.tenantId}::uuid,
                 ${params.invoice_number}, ${params.amount}::decimal, ${params.currency_code},
                 ${params.invoice_date}::date, ${params.due_date}::date,
                 ${params.file_id ?? null}::uuid)
-        RETURNING *`,
-    );
+        RETURNING *`;
+      // Outbox (§35.13 ESC-13) — builder over the INSERTed row so invoice_id is the real id.
+      if (buildOutboxEvent && inserted[0]) {
+        await OutboxPublisher.write(prisma, buildOutboxEvent(inserted[0]));
+      }
+      return inserted;
+    });
     return rows[0]!;
   }
 
@@ -658,13 +718,18 @@ export class ProcurementRepository {
     return { rows, total: Number(countRows[0]?.count ?? 0) };
   }
 
-  async updateInvoiceStatus(invoice_id: string, status: InvoiceRow['status']): Promise<void> {
-    await this.db.run(
-      (prisma) =>
-        prisma.$executeRaw`
+  async updateInvoiceStatus(
+    invoice_id: string,
+    status: InvoiceRow['status'],
+    outboxEvent?: OutboxEventInput,
+  ): Promise<void> {
+    await this.db.run(async (prisma) => {
+      await prisma.$executeRaw`
         UPDATE procurement.invoices SET status = ${status}
-        WHERE invoice_id = ${invoice_id}::uuid AND tenant_id = ${this.tenantId}::uuid`,
-    );
+        WHERE invoice_id = ${invoice_id}::uuid AND tenant_id = ${this.tenantId}::uuid`;
+      // Outbox (§35.13 ESC-13) — e.g. procurement.vendor_invoice.approved.v1 on APPROVED.
+      if (outboxEvent) await OutboxPublisher.write(prisma, outboxEvent);
+    });
   }
 
   // G-M14 — set the invoice's free-text note.

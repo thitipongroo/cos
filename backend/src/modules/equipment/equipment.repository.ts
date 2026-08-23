@@ -2,7 +2,9 @@
 // All DB access via TenantPrismaService (SET LOCAL app.current_tenant_id per request — ADR-008).
 
 import { Injectable, Scope } from '@nestjs/common';
+import { OutboxPublisher } from '@cos/kafka';
 import { TenantPrismaService } from '../tenant/prisma/tenant-prisma.service';
+import type { OutboxEventInput } from '../../shared/outbox/outbox.types';
 
 export interface EquipmentRow {
   equipment_id: string;
@@ -95,15 +97,26 @@ export class EquipmentRepository {
     return rows[0] ?? null;
   }
 
-  async updateStatus(id: string, status: string): Promise<EquipmentRow> {
-    const rows = await this.db.run(
-      (tx) => tx.$queryRaw<EquipmentRow[]>`
+  /**
+   * @param outboxEvent Optional event written to the outbox inside this UPDATE's transaction
+   *   (§35.13 ESC-13). Every id in the equipment events is known before the write, so a
+   *   pre-built envelope is enough — no builder-over-inserted-row needed here.
+   */
+  async updateStatus(
+    id: string,
+    status: string,
+    outboxEvent?: OutboxEventInput,
+  ): Promise<EquipmentRow> {
+    const rows = await this.db.run(async (tx) => {
+      const updated = await tx.$queryRaw<EquipmentRow[]>`
       UPDATE equipment.equipment
       SET status = ${status}::equipment.equipment_status_enum
       WHERE equipment_id = ${id}::uuid
       RETURNING *
-    `,
-    );
+    `;
+      if (outboxEvent) await OutboxPublisher.write(tx, outboxEvent);
+      return updated;
+    });
     return rows[0];
   }
 
@@ -142,19 +155,22 @@ export class EquipmentRepository {
     return rows[0];
   }
 
-  async createMaintenance(params: {
-    maintenance_id: string;
-    equipment_id: string;
-    tenant_id: string;
-    maintenance_type: string;
-    scheduled_at: string;
-    cost: number | null;
-    currency_code: string | null;
-    performed_by: string | null;
-    notes: string | null;
-  }): Promise<MaintenanceRow> {
-    const rows = await this.db.run(
-      (tx) => tx.$queryRaw<MaintenanceRow[]>`
+  async createMaintenance(
+    params: {
+      maintenance_id: string;
+      equipment_id: string;
+      tenant_id: string;
+      maintenance_type: string;
+      scheduled_at: string;
+      cost: number | null;
+      currency_code: string | null;
+      performed_by: string | null;
+      notes: string | null;
+    },
+    outboxEvent?: OutboxEventInput,
+  ): Promise<MaintenanceRow> {
+    const rows = await this.db.run(async (tx) => {
+      const inserted = await tx.$queryRaw<MaintenanceRow[]>`
       INSERT INTO equipment.equipment_maintenance (
         maintenance_id, equipment_id, tenant_id, maintenance_type, status,
         scheduled_at, cost, currency_code, performed_by, notes
@@ -167,8 +183,10 @@ export class EquipmentRepository {
         ${params.performed_by}, ${params.notes}
       )
       RETURNING *
-    `,
-    );
+    `;
+      if (outboxEvent) await OutboxPublisher.write(tx, outboxEvent);
+      return inserted;
+    });
     return rows[0];
   }
 

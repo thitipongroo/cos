@@ -370,4 +370,112 @@ describe('BoqRepository', () => {
     await repo.copyVersionContents('from-v', 'to-v');
     expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(3);
   });
+
+  // ── Outbox writes (Phase 8 / §35.13 ESC-13) ───────────────────────────────
+  // Each event must be written through the SAME `TenantPrismaService.run` transaction as its
+  // business write, so a rollback emits nothing.
+  describe('outbox writes', () => {
+    const versionRow = { version_id: 'v-1', project_id: 'p-1', version_number: 1 };
+    const envelope = (type: string) => ({
+      event_type: type,
+      event_version: '1.0',
+      tenant_id: 'tenant-uuid-001',
+      actor_id: 'user-1',
+      occurred_at: '2026-08-23T00:00:00.000Z',
+      correlation_id: 'corr-1',
+      payload: {},
+    });
+
+    it('createVersion writes every event the builder returns, in one transaction', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([versionRow]);
+      mockPrisma.$executeRaw.mockResolvedValue(1);
+      const builder = jest.fn(() => [
+        envelope('construction.boq.version_created.v1'),
+        envelope('construction.boq.created.v1'),
+      ]);
+
+      await repo.createVersion(
+        {
+          project_id: 'p-1',
+          version_number: 1,
+          version_name: null,
+          currency_code: 'THB',
+          created_by: 'user-1',
+        },
+        builder as never,
+      );
+
+      expect(builder).toHaveBeenCalledWith(versionRow);
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(2);
+      expect(mockTenantPrisma.run).toHaveBeenCalledTimes(1);
+    });
+
+    it('createVersion writes nothing without a builder, or when the INSERT returned no row', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([versionRow]);
+      mockPrisma.$executeRaw.mockResolvedValue(1);
+      await repo.createVersion({
+        project_id: 'p-1',
+        version_number: 1,
+        version_name: null,
+        currency_code: 'THB',
+        created_by: 'user-1',
+      });
+      expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
+
+      jest.clearAllMocks();
+      mockPrisma.$queryRaw.mockResolvedValue([]);
+      const builder = jest.fn();
+      await repo
+        .createVersion(
+          {
+            project_id: 'p-1',
+            version_number: 1,
+            version_name: null,
+            currency_code: 'THB',
+            created_by: 'user-1',
+          },
+          builder as never,
+        )
+        .catch(() => undefined);
+      expect(builder).not.toHaveBeenCalled();
+      expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
+    });
+
+    it('approveVersion writes the event alongside the supersede + approve UPDATEs', async () => {
+      mockPrisma.$executeRaw.mockResolvedValue(1);
+
+      await repo.approveVersion(
+        { version_id: 'v-1', approved_by: 'user-1', new_total: '100.0000' },
+        envelope('construction.boq.version_approved.v1') as never,
+      );
+
+      // 2 UPDATEs + 1 outbox INSERT, all in the single run() transaction
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(3);
+      expect(mockTenantPrisma.run).toHaveBeenCalledTimes(1);
+    });
+
+    it('approveVersion writes only the two UPDATEs when no event is supplied', async () => {
+      mockPrisma.$executeRaw.mockResolvedValue(1);
+      await repo.approveVersion({ version_id: 'v-1', approved_by: 'user-1', new_total: '1.0000' });
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(2);
+    });
+
+    it('updateVersionTotal writes the event alongside the total UPDATE', async () => {
+      mockPrisma.$executeRaw.mockResolvedValue(1);
+
+      await repo.updateVersionTotal(
+        'v-1',
+        '250.0000',
+        envelope('construction.boq.updated.v1') as never,
+      );
+
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(2);
+    });
+
+    it('updateVersionTotal writes only the UPDATE when no event is supplied', async () => {
+      mockPrisma.$executeRaw.mockResolvedValue(1);
+      await repo.updateVersionTotal('v-1', '250.0000');
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+    });
+  });
 });

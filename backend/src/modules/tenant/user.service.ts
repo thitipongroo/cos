@@ -12,7 +12,9 @@ import {
   OnModuleDestroy,
 } from '@nestjs/common';
 import { createPrismaClient } from '../../shared/prisma/create-prisma-client';
-import { KafkaProducer } from '@cos/kafka';
+import { randomUUID } from 'crypto';
+import { OutboxPublisher } from '@cos/kafka';
+import { buildOutboxEvent } from '../../shared/outbox/outbox.types';
 import { createLogger } from '@cos/logger';
 import { KeycloakAdminService } from '../identity/keycloak-admin.service';
 import type { CreateUserDto } from './dto/create-user.dto';
@@ -54,7 +56,6 @@ export interface PaginatedUsers {
 export class UserService implements OnModuleDestroy {
   // Platform PrismaClient — NOT TenantPrismaService (platform.users is cross-tenant)
   private readonly prisma = createPrismaClient();
-  private readonly kafka = new KafkaProducer();
 
   constructor(private readonly keycloakAdmin: KeycloakAdminService) {}
 
@@ -189,6 +190,25 @@ export class UserService implements OnModuleDestroy {
           VALUES (${tenantId}::uuid, ${created!.user_id}::uuid, ${dto.role}::"CosRoleEnum")
         `;
 
+        // Outbox (§35.13 ESC-13) — the event joins the user + membership INSERT transaction, so a
+        // rolled-back user creation (including the Keycloak rollback path below) emits nothing.
+        await OutboxPublisher.write(
+          tx,
+          buildOutboxEvent({
+            eventType: 'identity.user.created.v1',
+            tenantId,
+            actorId,
+            correlationId: randomUUID(),
+            payload: {
+              tenant_id: tenantId,
+              user_id: created!.user_id,
+              // @pdpa: email transmitted in event for downstream provisioning only
+              email: emailValue,
+              role: dto.role,
+            },
+          }),
+        );
+
         return created!;
       });
     } catch (err) {
@@ -200,14 +220,7 @@ export class UserService implements OnModuleDestroy {
     }
 
     logger.info({ userId: user.user_id, tenantId, actorId, role: dto.role }, 'user.created');
-
-    await this.publishEvent('identity.user.created.v1', {
-      tenant_id: tenantId,
-      user_id: user.user_id,
-      // @pdpa: email transmitted in event for downstream provisioning only
-      email: emailValue,
-      role: dto.role,
-    });
+    // identity.user.created.v1 was written to the outbox inside the transaction above.
 
     return { ...user, role: dto.role };
   }
@@ -228,20 +241,35 @@ export class UserService implements OnModuleDestroy {
     }
 
     const oldRole = membership.role;
-    await this.prisma.$queryRaw`
-      UPDATE platform.tenant_memberships
-      SET role = ${dto.role}::"CosRoleEnum"
-      WHERE user_id = ${userId}::uuid AND tenant_id = ${tenantId}::uuid
-    `;
+
+    // Outbox (§35.13 ESC-13) — role change and its event in one transaction. A permission change
+    // that downstream consumers never hear about is a security-relevant divergence, so this one
+    // must not be fire-and-forget.
+    await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`
+        UPDATE platform.tenant_memberships
+        SET role = ${dto.role}::"CosRoleEnum"
+        WHERE user_id = ${userId}::uuid AND tenant_id = ${tenantId}::uuid
+      `;
+
+      await OutboxPublisher.write(
+        tx,
+        buildOutboxEvent({
+          eventType: 'identity.user.role_changed.v1',
+          tenantId,
+          actorId,
+          correlationId: randomUUID(),
+          payload: {
+            tenant_id: tenantId,
+            user_id: userId,
+            old_role: oldRole,
+            new_role: dto.role,
+          },
+        }),
+      );
+    });
 
     logger.info({ userId, tenantId, actorId, oldRole, newRole: dto.role }, 'user.role_changed');
-
-    await this.publishEvent('identity.user.role_changed.v1', {
-      tenant_id: tenantId,
-      user_id: userId,
-      old_role: oldRole,
-      new_role: dto.role,
-    });
   }
 
   async deactivateUser(userId: string, tenantId: string, actorId: string): Promise<void> {
@@ -257,23 +285,5 @@ export class UserService implements OnModuleDestroy {
       throw new NotFoundException(`User ${userId} not found or already inactive`);
     }
     logger.info({ userId, tenantId, actorId }, 'user.deactivated');
-  }
-
-  private async publishEvent<T>(eventType: string, payload: T): Promise<void> {
-    try {
-      await this.kafka.connect();
-      await this.kafka.publish<T>({
-        event_type: eventType,
-        event_version: '1.0',
-        tenant_id: 'platform',
-        actor_id: 'system',
-        occurred_at: new Date().toISOString(),
-        correlation_id: globalThis.crypto.randomUUID(),
-        payload,
-      });
-      await this.kafka.disconnect();
-    } catch (err) {
-      logger.error({ event_type: eventType, err }, 'kafka.publish.failed');
-    }
   }
 }

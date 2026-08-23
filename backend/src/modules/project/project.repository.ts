@@ -234,10 +234,14 @@ export class ProjectRepository {
     return { items: page, nextCursor };
   }
 
-  async update(projectId: string, dto: UpdateProjectDto): Promise<ProjectRow> {
-    const rows = await this.tenantPrisma.run(
-      async (tx) =>
-        await tx.$queryRaw<ProjectRow[]>`
+  /** Outbox-aware — see `create()` for why the parameter is a builder over the returned row. */
+  async update(
+    projectId: string,
+    dto: UpdateProjectDto,
+    buildOutboxEvent?: (row: ProjectRow) => OutboxEventInput,
+  ): Promise<ProjectRow> {
+    const rows = await this.tenantPrisma.run(async (tx) => {
+      const updated = await tx.$queryRaw<ProjectRow[]>`
         UPDATE projects.projects SET
           project_name    = COALESCE(${dto.project_name ?? null}, project_name),
           budget_amount   = COALESCE(${dto.budget_amount ?? null}::decimal, budget_amount),
@@ -248,8 +252,12 @@ export class ProjectRepository {
         WHERE project_id = ${projectId}::uuid
           AND tenant_id  = ${this.tenantId}::uuid
         RETURNING *
-      `,
-    );
+      `;
+      if (buildOutboxEvent && updated[0]) {
+        await OutboxPublisher.write(tx, buildOutboxEvent(updated[0]));
+      }
+      return updated;
+    });
     return rows[0]!;
   }
 
@@ -262,10 +270,10 @@ export class ProjectRepository {
       cancellation_reason?: string;
       cancelled_at?: string;
     },
+    buildOutboxEvents?: (row: ProjectRow) => OutboxEventInput[],
   ): Promise<ProjectRow> {
-    const rows = await this.tenantPrisma.run(
-      async (tx) =>
-        await tx.$queryRaw<ProjectRow[]>`
+    const rows = await this.tenantPrisma.run(async (tx) => {
+      const updated = await tx.$queryRaw<ProjectRow[]>`
         UPDATE projects.projects SET
           status              = ${toStatus}::"ProjectStatus",
           on_hold_reason      = COALESCE(${meta.on_hold_reason ?? null}, on_hold_reason),
@@ -276,8 +284,16 @@ export class ProjectRepository {
         WHERE project_id = ${projectId}::uuid
           AND tenant_id  = ${this.tenantId}::uuid
         RETURNING *
-      `,
-    );
+      `;
+      // A transition can emit TWO events (status_changed, and archived when moving to COMPLETED),
+      // so this builder returns an array — all of them share the one transaction.
+      if (buildOutboxEvents && updated[0]) {
+        for (const evt of buildOutboxEvents(updated[0])) {
+          await OutboxPublisher.write(tx, evt);
+        }
+      }
+      return updated;
+    });
     return rows[0]!;
   }
 

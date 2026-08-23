@@ -2,13 +2,8 @@
 // Full budget lifecycle + procurement event consumption.
 // Uses in-memory mock repository to test the Service layer end-to-end.
 
-jest.mock('@cos/kafka', () => ({
-  KafkaProducer: jest.fn().mockImplementation(() => ({
-    connect: jest.fn().mockResolvedValue(undefined),
-    publish: jest.fn().mockResolvedValue(undefined),
-    disconnect: jest.fn().mockResolvedValue(undefined),
-  })),
-}));
+// §35.13 ESC-13: events go to the outbox inside the repository write, so the service holds no
+// KafkaProducer and these tests assert on the envelope handed to the repository.
 
 jest.mock('@cos/logger', () => ({
   createLogger: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }),
@@ -234,15 +229,18 @@ describe('Variance alert', () => {
       actual_total: '40000', // total 120% of allocated = +20% variance
     });
 
-    // Should not throw — Kafka publish failure is swallowed
-    await expect(
-      svc.handlePoCreated({
-        po_id: 'po-alert-001',
-        project_id: 'proj-int-001',
-        tenant_id: 'tenant-int-001',
-        total_amount: { amount: '80000', currency_code: 'THB' },
-      }),
-    ).resolves.not.toThrow();
+    await svc.handlePoCreated({
+      po_id: 'po-alert-001',
+      project_id: 'proj-int-001',
+      tenant_id: 'tenant-int-001',
+      total_amount: { amount: '80000', currency_code: 'THB' },
+    });
+
+    // The alert envelope rides the aggregates UPDATE (§35.13 ESC-13).
+    expect(mockRepo.updateBudgetAggregates).toHaveBeenCalledWith(
+      expect.objectContaining({ budget_id: overBudgetRow.budget_id }),
+      expect.objectContaining({ event_type: 'finance.variance.alert.v1' }),
+    );
   });
 });
 
@@ -277,6 +275,14 @@ describe('recordPayment', () => {
     expect(result.payment_id).toBe('pay-int-001');
     expect(mockRepo.createPayment).toHaveBeenCalledWith(
       expect.objectContaining({ invoice_id: 'inv-int-001', amount: '50000.0000' }),
+      expect.any(Function),
+    );
+    // Resolve the builder the way the repository does — against the INSERTed row.
+    const build = mockRepo.createPayment.mock.calls[0]![1] as (r: typeof payRow) => {
+      event_type: string;
+    };
+    expect(build(payRow)).toEqual(
+      expect.objectContaining({ event_type: 'finance.payment.processed.v1' }),
     );
   });
 });

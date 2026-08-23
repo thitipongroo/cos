@@ -21,13 +21,9 @@ import { InspectionStatus } from '../dto/submit-inspection.dto';
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
-jest.mock('@cos/kafka', () => ({
-  KafkaProducer: jest.fn().mockImplementation(() => ({
-    connect: jest.fn().mockResolvedValue(undefined),
-    publish: jest.fn().mockResolvedValue(undefined),
-    disconnect: jest.fn().mockResolvedValue(undefined),
-  })),
-}));
+// §35.13 ESC-13: the service no longer holds a KafkaProducer — it hands the repository an outbox
+// envelope (or a builder over the written row) that rides the business transaction. These tests
+// therefore assert on what reached the repository, resolving builders exactly as the repo does.
 
 jest.mock('@opensearch-project/opensearch', () => ({
   Client: jest.fn().mockImplementation(() => ({
@@ -54,6 +50,7 @@ const mockRepo = {
   findIssueById: jest.fn(),
   listIssues: jest.fn(),
   updateIssue: jest.fn(),
+  updateIssueStatus: jest.fn(),
   createInspection: jest.fn(),
   findChecklistById: jest.fn(),
   findInspections: jest.fn(),
@@ -64,6 +61,21 @@ const mockRepo = {
   listConflictRecords: jest.fn(),
   resolveConflictRecord: jest.fn(),
   insertMaterialConsumption: jest.fn(),
+  writeOutboxEvent: jest.fn(),
+};
+
+/**
+ * Resolves the outbox argument a repository mock received. Where the service passes a builder,
+ * this invokes it with `row` exactly as the real repository does — so the builder body is
+ * genuinely exercised (QM-1: an uncalled callback is uncovered code).
+ */
+const outboxArg = (
+  fn: jest.Mock,
+  argIndex: number,
+  row?: unknown,
+): { event_type?: string; payload?: Record<string, unknown> } | undefined => {
+  const arg = fn.mock.calls[0]?.[argIndex];
+  return typeof arg === 'function' ? arg(row) : arg;
 };
 
 const MOCK_REQUEST = {
@@ -202,19 +214,20 @@ describe('createSiteReport', () => {
     expect(mockRepo.createSiteReport).toHaveBeenCalledTimes(1);
     expect(mockRepo.createSiteReport).toHaveBeenCalledWith(
       expect.objectContaining({ blockers: 'crane down; concrete delivery late' }),
+      expect.anything(),
     );
     expect(result.report_id).toBe('report-1');
   });
 
-  it('emits site.report.created.v1 Kafka event', async () => {
+  it('writes site.report.created.v1 to the outbox with the report INSERT', async () => {
     mockRepo.createSiteReport.mockResolvedValue(makeReport());
     await service.createSiteReport({ project_id: 'project-1', report_date: '2026-06-04' });
-    // KafkaProducer.publish is called once (event emission)
-    const { KafkaProducer } = jest.requireMock('@cos/kafka') as { KafkaProducer: jest.Mock };
-    const instance = KafkaProducer.mock.results[0]?.value as { publish: jest.Mock };
-    expect(instance.publish).toHaveBeenCalledWith(
+    // Same repository call as the INSERT ⇒ the event cannot survive a rollback.
+    expect(outboxArg(mockRepo.createSiteReport, 1)).toEqual(
       expect.objectContaining({
-        event_type: expect.stringContaining('site.report.created.v1'),
+        event_type: 'site.report.created.v1',
+        tenant_id: 'tenant-uuid-1',
+        actor_id: 'user-uuid-1',
       }),
     );
   });
@@ -337,10 +350,8 @@ describe('syncSiteReports', () => {
 
     expect(results[0]?.conflict_status).toBe('CONFLICT_FLAGGED');
     expect(mockRepo.createConflictRecord).toHaveBeenCalledTimes(1);
-    // Emits site.conflict.flagged.v1 for notification routing (ConflictRecord persistence AND notification)
-    const { KafkaProducer } = jest.requireMock('@cos/kafka') as { KafkaProducer: jest.Mock };
-    const producer = KafkaProducer.mock.results[0]?.value as { publish: jest.Mock };
-    expect(producer.publish).toHaveBeenCalledWith(
+    // The notification event rides the conflict record's own INSERT.
+    expect(outboxArg(mockRepo.createConflictRecord, 1)).toEqual(
       expect.objectContaining({
         event_type: 'site.conflict.flagged.v1',
         payload: expect.objectContaining({
@@ -363,10 +374,8 @@ describe('createIssue', () => {
       severity: IssueSeverity.HIGH,
     });
     expect(result.issue_id).toBe('issue-1');
-    const { KafkaProducer } = jest.requireMock('@cos/kafka') as { KafkaProducer: jest.Mock };
-    const instance = KafkaProducer.mock.results[0]?.value as { publish: jest.Mock };
-    expect(instance.publish).toHaveBeenCalledWith(
-      expect.objectContaining({ event_type: expect.stringContaining('site.issue.created.v1') }),
+    expect(outboxArg(mockRepo.createIssue, 1)).toEqual(
+      expect.objectContaining({ event_type: 'site.issue.created.v1' }),
     );
   });
 
@@ -380,6 +389,7 @@ describe('createIssue', () => {
     });
     expect(mockRepo.createIssue).toHaveBeenCalledWith(
       expect.objectContaining({ issue_id: '11111111-1111-1111-1111-111111111111' }),
+      expect.anything(),
     );
   });
 });
@@ -425,10 +435,7 @@ describe('updateIssue', () => {
     });
 
     expect(mockRepo.createConflictRecord).toHaveBeenCalledTimes(1);
-    // Emits site.conflict.flagged.v1 for notification routing
-    const { KafkaProducer } = jest.requireMock('@cos/kafka') as { KafkaProducer: jest.Mock };
-    const producer = KafkaProducer.mock.results[0]?.value as { publish: jest.Mock };
-    expect(producer.publish).toHaveBeenCalledWith(
+    expect(outboxArg(mockRepo.createConflictRecord, 1)).toEqual(
       expect.objectContaining({
         event_type: 'site.conflict.flagged.v1',
         payload: expect.objectContaining({
@@ -446,11 +453,86 @@ describe('updateIssue', () => {
     mockRepo.updateIssue.mockResolvedValue({ ...serverIssue, status: 'OPEN' });
 
     await service.updateIssue('issue-1', { status: IssueStatus.OPEN });
-    // No status change event since from=OPEN and to=OPEN
-    const { KafkaProducer } = jest.requireMock('@cos/kafka') as { KafkaProducer: jest.Mock };
-    const instance = KafkaProducer.mock.results[0]?.value as { publish: jest.Mock };
-    expect(instance.publish).not.toHaveBeenCalledWith(
-      expect.objectContaining({ event_type: expect.stringContaining('status_changed') }),
+    // updateIssue never carries a status event — FIELD_LEVEL_MERGE makes the server status win,
+    // so nothing can transition here (§35.13 ESC-21). Transitions go through changeIssueStatus.
+    expect(mockRepo.updateIssue).toHaveBeenCalledWith('issue-1', expect.any(Object));
+  });
+});
+
+// ── changeIssueStatus (§35.13 ESC-21) ──────────────────────────────────────
+
+// Before this endpoint existed, PATCH /site/issues/:id was the only writer of issues.status and it
+// applies FIELD_LEVEL_MERGE — the server's status always wins — so an issue could never leave OPEN
+// and site.issue.status_changed.v1 was unreachable.
+describe('changeIssueStatus', () => {
+  it('throws NotFoundException when the issue does not exist', async () => {
+    mockRepo.findIssueById.mockResolvedValue(null);
+    await expect(
+      service.changeIssueStatus('missing', { status: IssueStatus.RESOLVED }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(mockRepo.updateIssueStatus).not.toHaveBeenCalled();
+  });
+
+  it('persists the transition and builds the event from the UPDATEd row', async () => {
+    const existing = makeIssue({ status: 'OPEN' });
+    const updatedRow = makeIssue({ status: 'RESOLVED', resolution_note: 'fixed on site' });
+    mockRepo.findIssueById.mockResolvedValue(existing);
+    mockRepo.updateIssueStatus.mockResolvedValue(updatedRow);
+
+    const result = await service.changeIssueStatus('issue-1', {
+      status: IssueStatus.RESOLVED,
+      resolution_note: 'fixed on site',
+    });
+
+    expect(result.status).toBe('RESOLVED');
+    expect(mockRepo.updateIssueStatus).toHaveBeenCalledWith(
+      'issue-1',
+      'RESOLVED',
+      'fixed on site',
+      expect.any(Function),
+    );
+    expect(outboxArg(mockRepo.updateIssueStatus, 3, updatedRow)).toEqual(
+      expect.objectContaining({
+        event_type: 'site.issue.status_changed.v1',
+        payload: {
+          issue_id: 'issue-1',
+          project_id: 'project-1',
+          from_status: 'OPEN',
+          to_status: 'RESOLVED',
+        },
+      }),
+    );
+  });
+
+  it('passes a null resolution_note when none is supplied', async () => {
+    mockRepo.findIssueById.mockResolvedValue(makeIssue({ status: 'OPEN' }));
+    mockRepo.updateIssueStatus.mockResolvedValue(makeIssue({ status: 'IN_PROGRESS' }));
+
+    await service.changeIssueStatus('issue-1', { status: IssueStatus.IN_PROGRESS });
+
+    expect(mockRepo.updateIssueStatus).toHaveBeenCalledWith(
+      'issue-1',
+      'IN_PROGRESS',
+      null,
+      expect.any(Function),
+    );
+  });
+
+  it('emits nothing when the status is unchanged — a no-op is not a transition', async () => {
+    mockRepo.findIssueById.mockResolvedValue(makeIssue({ status: 'OPEN' }));
+    mockRepo.updateIssueStatus.mockResolvedValue(makeIssue({ status: 'OPEN' }));
+
+    await service.changeIssueStatus('issue-1', {
+      status: IssueStatus.OPEN,
+      resolution_note: 'note only',
+    });
+
+    // still persists the note, but hands the write no envelope
+    expect(mockRepo.updateIssueStatus).toHaveBeenCalledWith(
+      'issue-1',
+      'OPEN',
+      'note only',
+      undefined,
     );
   });
 });
@@ -468,9 +550,8 @@ describe('escalateIssue', () => {
     const res = await service.escalateIssue('i-esc');
     expect(res).toEqual({ issue_id: 'i-esc', status: 'ESCALATED' });
 
-    const { KafkaProducer } = jest.requireMock('@cos/kafka') as { KafkaProducer: jest.Mock };
-    const instance = KafkaProducer.mock.results[0]?.value as { publish: jest.Mock };
-    expect(instance.publish).toHaveBeenCalledWith(
+    // No business write to be atomic with — the outbox is the durable relay (§35.13 ESC-13).
+    expect(outboxArg(mockRepo.writeOutboxEvent, 0)).toEqual(
       expect.objectContaining({ event_type: 'site.issue.escalated.v1' }),
     );
   });
@@ -511,10 +592,8 @@ describe('submitInspection', () => {
       inspected_at: '2026-06-04T08:00:00Z',
     });
 
-    const { KafkaProducer } = jest.requireMock('@cos/kafka') as { KafkaProducer: jest.Mock };
-    const instance = KafkaProducer.mock.results[0]?.value as { publish: jest.Mock };
-    expect(instance.publish).toHaveBeenCalledWith(
-      expect.objectContaining({ event_type: expect.stringContaining('inspection.passed') }),
+    expect(outboxArg(mockRepo.createInspection, 1)).toEqual(
+      expect.objectContaining({ event_type: 'site.inspection.passed.v1' }),
     );
   });
 
@@ -542,12 +621,11 @@ describe('submitInspection', () => {
     // spec 11 §517 — issue_severity is persisted on a FAILED inspection.
     expect(mockRepo.createInspection).toHaveBeenCalledWith(
       expect.objectContaining({ issue_severity: 'HIGH' }),
+      expect.anything(),
     );
 
-    const { KafkaProducer } = jest.requireMock('@cos/kafka') as { KafkaProducer: jest.Mock };
-    const instance = KafkaProducer.mock.results[0]?.value as { publish: jest.Mock };
-    expect(instance.publish).toHaveBeenCalledWith(
-      expect.objectContaining({ event_type: expect.stringContaining('inspection.failed') }),
+    expect(outboxArg(mockRepo.createInspection, 1)).toEqual(
+      expect.objectContaining({ event_type: 'site.inspection.failed.v1' }),
     );
   });
 
@@ -574,14 +652,8 @@ describe('submitInspection', () => {
     });
 
     expect(mockRepo.createInspection).toHaveBeenCalled();
-    const { KafkaProducer } = jest.requireMock('@cos/kafka') as { KafkaProducer: jest.Mock };
-    const instance = KafkaProducer.mock.results[0]?.value as { publish: jest.Mock };
-    expect(instance.publish).not.toHaveBeenCalledWith(
-      expect.objectContaining({ event_type: expect.stringContaining('inspection.passed') }),
-    );
-    expect(instance.publish).not.toHaveBeenCalledWith(
-      expect.objectContaining({ event_type: expect.stringContaining('inspection.failed') }),
-    );
+    // Neither outcome matches ⇒ no envelope reaches the INSERT.
+    expect(outboxArg(mockRepo.createInspection, 1)).toBeUndefined();
   });
 });
 
@@ -669,39 +741,20 @@ describe('updateIssue — status_changed event emission', () => {
     mockRepo.updateIssue.mockResolvedValue({ ...serverIssue, status: 'OPEN' });
 
     await service.updateIssue('issue-1', { status: IssueStatus.OPEN, description: 'update' });
-    const { KafkaProducer } = jest.requireMock('@cos/kafka') as { KafkaProducer: jest.Mock };
-    const instance = KafkaProducer.mock.results[0]?.value as { publish: jest.Mock };
-    expect(instance.publish).not.toHaveBeenCalledWith(
-      expect.objectContaining({ event_type: expect.stringContaining('status_changed') }),
-    );
+    expect(mockRepo.updateIssue).toHaveBeenCalledWith('issue-1', expect.any(Object));
   });
 });
 
-describe('emitEvent error handling (covers Kafka catch branch)', () => {
-  it('logs warn but does not throw when Kafka publish fails with Error instance', async () => {
-    mockRepo.createSiteReport.mockResolvedValue(makeReport());
-    const kafkaMock = (
-      service as unknown as {
-        kafka: { connect: jest.Mock; publish: jest.Mock; disconnect: jest.Mock };
-      }
-    ).kafka;
-    kafkaMock.publish.mockRejectedValueOnce(new Error('Kafka down'));
+// §35.13 ESC-13: `emitEvent` used to log `kafka.publish.failed` and return normally, so every
+// site event was silently dropped during a broker outage while the row was already committed —
+// invisible to offline-sync clients. The outbox write shares the transaction, so its failure must
+// propagate and roll the business write back.
+describe('outbox write failure', () => {
+  it('propagates the failure instead of silently dropping the event', async () => {
+    mockRepo.createSiteReport.mockRejectedValueOnce(new Error('outbox insert failed'));
     await expect(
       service.createSiteReport({ project_id: 'project-1', report_date: '2026-06-04' }),
-    ).resolves.toBeDefined();
-  });
-
-  it('logs warn with String(err) when Kafka publish fails with non-Error (covers instanceof false branch)', async () => {
-    mockRepo.createSiteReport.mockResolvedValue(makeReport());
-    const kafkaMock = (
-      service as unknown as {
-        kafka: { connect: jest.Mock; publish: jest.Mock; disconnect: jest.Mock };
-      }
-    ).kafka;
-    kafkaMock.publish.mockRejectedValueOnce('plain string error'); // non-Error throw
-    await expect(
-      service.createSiteReport({ project_id: 'project-1', report_date: '2026-06-04' }),
-    ).resolves.toBeDefined();
+    ).rejects.toThrow('outbox insert failed');
   });
 });
 
@@ -906,6 +959,13 @@ describe('inspection results & approval', () => {
     mockRepo.updateInspectionStatus.mockResolvedValue({ ...pending, status: 'PASSED' });
     const r = await service.updateInspectionStatus('insp-1', { status: 'PASSED' } as never);
     expect(r.status).toBe('PASSED');
+    // Builder resolved against the UPDATEd row — project_id comes from the row, not the DTO.
+    expect(outboxArg(mockRepo.updateInspectionStatus, 1, { ...pending, status: 'PASSED' })).toEqual(
+      expect.objectContaining({
+        event_type: 'site.inspection.passed.v1',
+        payload: expect.objectContaining({ inspection_id: 'insp-1', project_id: 'proj-uuid-1' }),
+      }),
+    );
   });
 
   it('updateInspectionStatus → FAILED emits failed event', async () => {
@@ -914,6 +974,12 @@ describe('inspection results & approval', () => {
     await expect(
       service.updateInspectionStatus('insp-1', { status: 'FAILED' } as never),
     ).resolves.toBeDefined();
+    expect(outboxArg(mockRepo.updateInspectionStatus, 1, { ...pending, status: 'FAILED' })).toEqual(
+      expect.objectContaining({
+        event_type: 'site.inspection.failed.v1',
+        payload: expect.objectContaining({ checklist_id: 'chk-1' }),
+      }),
+    );
   });
 
   it('updateInspectionStatus → REQUIRES_REINSPECTION (no event branch)', async () => {
@@ -928,6 +994,8 @@ describe('inspection results & approval', () => {
         notes: 'redo',
       } as never),
     ).resolves.toBeDefined();
+    // Neither PASSED nor FAILED ⇒ no builder is handed to the UPDATE.
+    expect(outboxArg(mockRepo.updateInspectionStatus, 1)).toBeUndefined();
   });
 
   it('updateInspectionStatus throws when already PASSED (terminal)', async () => {

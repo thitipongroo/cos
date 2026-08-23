@@ -429,4 +429,193 @@ describe('SiteOpsRepository', () => {
     expect(await repo.listChecklists('proj-uuid-001')).toHaveLength(1);
     expect(await repo.listChecklists()).toHaveLength(1);
   });
+
+  // Phase 8 Outbox Pattern (§35.13 ESC-13): the outbox row goes through the SAME tx handle as the
+  // business write, and the builder is skipped whenever there is no row to build from.
+  describe('outbox writes', () => {
+    const envelope = {
+      event_type: 'site.inspection.passed.v1',
+      event_version: '1.0',
+      tenant_id: 'tenant-uuid-001',
+      actor_id: 'user-uuid-001',
+      occurred_at: '2026-08-22T00:00:00.000Z',
+      correlation_id: 'corr-1',
+      payload: { inspection_id: 'insp-1' },
+    };
+
+    it('updateInspectionStatus builds the event from the UPDATEd row', async () => {
+      const row = { inspection_id: 'insp-1', project_id: 'proj-uuid-001' };
+      mockPrisma.$queryRaw.mockResolvedValue([row]);
+      const builder = jest.fn(() => envelope);
+
+      await repo.updateInspectionStatus(
+        { inspection_id: 'insp-1', status: 'PASSED' },
+        builder as never,
+      );
+
+      expect(builder).toHaveBeenCalledWith(row);
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+    });
+
+    it('updateInspectionStatus writes nothing when the UPDATE matched no row', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([]);
+      const builder = jest.fn();
+      await repo.updateInspectionStatus(
+        { inspection_id: 'missing', status: 'PASSED' },
+        builder as never,
+      );
+      expect(builder).not.toHaveBeenCalled();
+      expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
+    });
+
+    // The true branch of every optional-outbox write: the outbox INSERT rides the SAME tx handle.
+    it('every optional-outbox write emits one outbox row through the business tx', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([{ id: 'x' }]);
+      const e = envelope as never;
+
+      await repo.createSiteReport(
+        {
+          report_id: 'r-1',
+          project_id: 'p-1',
+          submitted_by: 'u-1',
+          report_date: '2026-06-04',
+          summary: null,
+          weather: null,
+          manpower_count: null,
+          client_submitted_at: null,
+        },
+        e,
+      );
+      await repo.createIssue(
+        {
+          issue_id: 'i-1',
+          project_id: 'p-1',
+          report_id: null,
+          title: 't',
+          description: null,
+          severity: 'HIGH',
+          assigned_to: null,
+          client_submitted_at: null,
+        },
+        e,
+      );
+      await repo.updateIssueStatus('i-1', 'RESOLVED', 'done', (() => envelope) as never);
+      await repo.createInspection(
+        {
+          inspection_id: 'insp-1',
+          project_id: 'p-1',
+          checklist_id: 'chk-1',
+          status: 'PASSED',
+          inspected_by: 'u-1',
+          inspected_at: '2026-06-04T08:00:00Z',
+          notes: null,
+        },
+        e,
+      );
+      await repo.createConflictRecord(
+        {
+          conflict_id: 'c-1',
+          entity_type: 'issues',
+          entity_id: 'i-1',
+          client_payload: {},
+          server_payload: {},
+          conflict_type: 'STATUS_CONFLICT',
+        },
+        e,
+      );
+      await repo.insertMaterialConsumption(
+        {
+          consumption_id: 'mc-1',
+          project_id: 'p-1',
+          report_id: 'r-1',
+          material_name: 'cement',
+          material_id: 'm-1',
+          task_id: null,
+          quantity: '10',
+          unit: 'bag',
+          consumed_by: 'u-1',
+          consumed_at: '2026-06-04T08:00:00Z',
+        },
+        e,
+      );
+
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(6);
+    });
+
+    // The false branch of every optional-outbox write: the same method used without an event
+    // must issue no outbox INSERT at all.
+    it('every optional-outbox write skips the outbox when no event is supplied', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([{ id: 'x' }]);
+
+      await repo.createSiteReport({
+        report_id: 'r-1',
+        project_id: 'p-1',
+        submitted_by: 'u-1',
+        report_date: '2026-06-04',
+        summary: null,
+        weather: null,
+        manpower_count: null,
+        client_submitted_at: null,
+      });
+      await repo.createIssue({
+        issue_id: 'i-1',
+        project_id: 'p-1',
+        report_id: null,
+        title: 't',
+        description: null,
+        severity: 'HIGH',
+        assigned_to: null,
+        client_submitted_at: null,
+      });
+      await repo.updateIssue('i-1', { status: 'OPEN' });
+      await repo.updateIssueStatus('i-1', 'RESOLVED', null);
+      await repo.createInspection({
+        inspection_id: 'insp-1',
+        project_id: 'p-1',
+        checklist_id: 'chk-1',
+        status: 'PASSED',
+        inspected_by: 'u-1',
+        inspected_at: '2026-06-04T08:00:00Z',
+        notes: null,
+      });
+      await repo.createConflictRecord({
+        conflict_id: 'c-1',
+        entity_type: 'issues',
+        entity_id: 'i-1',
+        client_payload: {},
+        server_payload: {},
+        conflict_type: 'STATUS_CONFLICT',
+      });
+      await repo.insertMaterialConsumption({
+        consumption_id: 'mc-1',
+        project_id: 'p-1',
+        report_id: 'r-1',
+        material_name: 'cement',
+        material_id: 'm-1',
+        task_id: null,
+        quantity: '10',
+        unit: 'bag',
+        consumed_by: 'u-1',
+        consumed_at: '2026-06-04T08:00:00Z',
+      });
+
+      expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
+    });
+
+    it('updateIssueStatus writes nothing when the UPDATE matched no row', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([]);
+      const builder = jest.fn();
+      const r = await repo.updateIssueStatus('missing', 'RESOLVED', null, builder as never);
+      expect(r).toBeNull();
+      expect(builder).not.toHaveBeenCalled();
+      expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
+    });
+
+    it('writeOutboxEvent writes the event with no business write alongside it', async () => {
+      await repo.writeOutboxEvent(envelope as never);
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+      expect(mockPrisma.$queryRaw).not.toHaveBeenCalled();
+      expect(mockTenantPrisma.run).toHaveBeenCalledTimes(1);
+    });
+  });
 });

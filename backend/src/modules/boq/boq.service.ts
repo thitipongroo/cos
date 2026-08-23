@@ -1,7 +1,8 @@
 // BOQ Service — Phase 4
 // Business logic: versioning, calculation, approval.
 // Financial precision: decimal.js ROUND_HALF_UP throughout (spec §FINANCIAL PRECISION SPEC).
-// Emits typed Kafka events via the @cos/kafka KafkaProducer (QM-8).
+// Emits typed Kafka events through the Phase 8 OUTBOX (QM-8): every event is written to
+// platform.outbox_events inside the same transaction as its business write (§35.13 ESC-13).
 
 import {
   Injectable,
@@ -17,7 +18,8 @@ import type { Request } from 'express';
 import { randomUUID } from 'crypto';
 import { Decimal, calculateLineTotal, sumDecimals } from '@cos/financial';
 import { toBoqCsv } from './boq-csv.util';
-import { KafkaProducer } from '@cos/kafka';
+import { buildOutboxEvent } from '../../shared/outbox/outbox.types';
+import type { OutboxEventInput } from '../../shared/outbox/outbox.types';
 import { createLogger } from '@cos/logger';
 import { BoqRepository } from './boq.repository';
 import type { BoqVersionRow, BoqCategoryRow, BoqItemRow } from './boq.repository';
@@ -37,7 +39,6 @@ export class BoqService {
     return (this.request as { userId?: string }).userId ?? '';
   }
   private readonly correlationId: string;
-  private readonly kafka: KafkaProducer;
 
   constructor(
     private readonly repo: BoqRepository,
@@ -48,7 +49,6 @@ export class BoqService {
     },
   ) {
     this.correlationId = randomUUID();
-    this.kafka = new KafkaProducer();
   }
 
   // ── Version Operations ────────────────────────────────────────────────────
@@ -65,13 +65,53 @@ export class BoqService {
     const maxVersion = await this.repo.findMaxVersionNumber(project_id);
     const newVersionNumber = maxVersion + 1;
 
-    const version = await this.repo.createVersion({
-      project_id,
-      version_number: newVersionNumber,
-      version_name: dto.version_name ?? null,
-      currency_code: dto.currency_code,
-      created_by: this.userId,
-    });
+    // Outbox (§35.13 ESC-13): both events are written inside the INSERT's transaction, from the
+    // inserted row, so version_id is the real generated id and a rollback emits nothing.
+    const version = await this.repo.createVersion(
+      {
+        project_id,
+        version_number: newVersionNumber,
+        version_name: dto.version_name ?? null,
+        currency_code: dto.currency_code,
+        created_by: this.userId,
+      },
+      (row) => {
+        const events: OutboxEventInput[] = [
+          buildOutboxEvent({
+            eventType: 'construction.boq.version_created.v1',
+            tenantId: this.tenantId,
+            actorId: this.userId,
+            correlationId: this.correlationId,
+            payload: {
+              boq_version_id: row.version_id,
+              project_id,
+              version_number: row.version_number,
+              total_estimated: {
+                amount: row.total_estimated_amount,
+                currency_code: row.total_estimated_currency,
+              },
+              created_by: this.userId,
+            },
+          }),
+        ];
+        if (newVersionNumber === 1) {
+          events.push(
+            buildOutboxEvent({
+              eventType: 'construction.boq.created.v1',
+              tenantId: this.tenantId,
+              actorId: this.userId,
+              correlationId: this.correlationId,
+              payload: {
+                project_id,
+                version_id: row.version_id,
+                version_number: row.version_number,
+              },
+            }),
+          );
+        }
+        return events;
+      },
+    );
 
     // If copying from latest approved version
     if (newVersionNumber > 1) {
@@ -93,25 +133,6 @@ export class BoqService {
       },
       'boq.version.created',
     );
-
-    await this.publishEvent('construction.boq.version_created.v1', {
-      boq_version_id: version.version_id,
-      project_id,
-      version_number: version.version_number,
-      total_estimated: {
-        amount: version.total_estimated_amount,
-        currency_code: version.total_estimated_currency,
-      },
-      created_by: this.userId,
-    });
-
-    if (newVersionNumber === 1) {
-      await this.publishEvent('construction.boq.created.v1', {
-        project_id,
-        version_id: version.version_id,
-        version_number: version.version_number,
-      });
-    }
 
     return version;
   }
@@ -147,11 +168,28 @@ export class BoqService {
     // Recalculate final total before approving
     const finalTotal = await this.recalculateVersionTotal(version_id);
 
-    await this.repo.approveVersion({
-      version_id,
-      approved_by: this.userId,
-      new_total: finalTotal,
-    });
+    // Outbox (§35.13 ESC-13) — the event joins the supersede+approve transaction.
+    await this.repo.approveVersion(
+      {
+        version_id,
+        approved_by: this.userId,
+        new_total: finalTotal,
+      },
+      buildOutboxEvent({
+        eventType: 'construction.boq.version_approved.v1',
+        tenantId: this.tenantId,
+        actorId: this.userId,
+        correlationId: this.correlationId,
+        payload: {
+          version_id,
+          project_id,
+          version_number: version.version_number,
+          total_estimated_amount: finalTotal,
+          total_estimated_currency: version.total_estimated_currency,
+          approved_by: this.userId,
+        },
+      }),
+    );
 
     const approved = await this.repo.findVersionById(version_id);
 
@@ -166,15 +204,6 @@ export class BoqService {
       },
       'boq.version.approved',
     );
-
-    await this.publishEvent('construction.boq.version_approved.v1', {
-      version_id,
-      project_id,
-      version_number: version.version_number,
-      total_estimated_amount: finalTotal,
-      total_estimated_currency: version.total_estimated_currency,
-      approved_by: this.userId,
-    });
 
     return approved!;
   }
@@ -214,8 +243,7 @@ export class BoqService {
       sort_order: dto.sort_order ?? 0,
     });
 
-    const newTotal = await this.recalculateFromCategory(dto.category_id, version_id);
-    await this.publishItemsUpdated(version_id, version_id, 1, newTotal);
+    await this.recalculateFromCategory(dto.category_id, version_id, 1);
     return item;
   }
 
@@ -240,8 +268,7 @@ export class BoqService {
       sort_order: dto.sort_order,
     });
 
-    const newTotal = await this.recalculateFromCategory(existing.category_id, existing.version_id);
-    await this.publishItemsUpdated(existing.version_id, existing.version_id, 1, newTotal);
+    await this.recalculateFromCategory(existing.category_id, existing.version_id, 1);
     return updated;
   }
 
@@ -251,8 +278,7 @@ export class BoqService {
     await this.assertDraftVersion(existing.version_id);
 
     await this.repo.deleteItem(item_id);
-    const newTotal = await this.recalculateFromCategory(existing.category_id, existing.version_id);
-    await this.publishItemsUpdated(existing.version_id, existing.version_id, 1, newTotal);
+    await this.recalculateFromCategory(existing.category_id, existing.version_id, 1);
   }
 
   // ── Export ────────────────────────────────────────────────────────────────
@@ -300,12 +326,16 @@ export class BoqService {
    * Recalculate category subtotal and version total from a changed category.
    * Returns the new version total as a decimal string.
    */
-  private async recalculateFromCategory(category_id: string, version_id: string): Promise<string> {
+  private async recalculateFromCategory(
+    category_id: string,
+    version_id: string,
+    changed_count: number,
+  ): Promise<string> {
     const allItems = await this.repo.findItemsByVersion(version_id);
     const categoryItems = allItems.filter((i) => i.category_id === category_id);
     const categorySubtotal = sumDecimals(categoryItems.map((i) => new Decimal(i.estimated_total)));
     await this.repo.updateCategorySubtotal(category_id, categorySubtotal.toFixed(4));
-    return this.recalculateVersionTotal(version_id);
+    return this.recalculateAndRecordUpdate(version_id, changed_count);
   }
 
   /**
@@ -337,39 +367,56 @@ export class BoqService {
     return totalStr;
   }
 
-  private async publishItemsUpdated(
+  /**
+   * Recalculate and, in the SAME transaction as the closing version-total UPDATE, write the
+   * `construction.boq.updated.v1` outbox row (§35.13 ESC-13). Used by the item add/update/delete
+   * paths, which previously recalculated and then fire-and-forget published.
+   */
+  private async recalculateAndRecordUpdate(
     version_id: string,
-    project_id: string,
     changed_count: number,
-    new_total: string,
-  ): Promise<void> {
-    const version = await this.repo.findVersionById(version_id);
-    await this.publishEvent('construction.boq.updated.v1', {
-      version_id,
-      project_id,
-      changed_items_count: changed_count,
-      new_total_estimated_amount: new_total,
-      new_total_estimated_currency: version?.total_estimated_currency ?? 'THB',
-    });
-  }
+  ): Promise<string> {
+    const allItems = await this.repo.findItemsByVersion(version_id);
+    const categories = await this.repo.findCategoriesByVersion(version_id);
 
-  private async publishEvent<T>(eventType: string, payload: T): Promise<void> {
-    try {
-      await this.kafka.connect();
-      await this.kafka.publish({
-        event_type: eventType,
-        event_version: '1.0',
-        tenant_id: this.tenantId,
-        actor_id: this.userId,
-        occurred_at: new Date().toISOString(),
-        correlation_id: this.correlationId,
-        payload,
-      });
-    } catch (err) {
-      logger.error(
-        { event_type: eventType, err, correlation_id: this.correlationId },
-        'kafka.publish.failed',
-      );
+    for (const cat of categories) {
+      const items = allItems.filter((i) => i.category_id === cat.category_id);
+      const subtotal = sumDecimals(items.map((i) => new Decimal(i.estimated_total)));
+      await this.repo.updateCategorySubtotal(cat.category_id, subtotal.toFixed(4));
     }
+
+    const rootCategories = categories.filter((c) => !c.parent_category_id);
+    const versionTotal = sumDecimals(
+      rootCategories.map((c) => {
+        const items = allItems.filter((i) => i.category_id === c.category_id);
+        return sumDecimals(items.map((i) => new Decimal(i.estimated_total)));
+      }),
+    );
+
+    const totalStr = versionTotal.toFixed(4);
+    const version = await this.repo.findVersionById(version_id);
+
+    await this.repo.updateVersionTotal(
+      version_id,
+      totalStr,
+      buildOutboxEvent({
+        eventType: 'construction.boq.updated.v1',
+        tenantId: this.tenantId,
+        actorId: this.userId,
+        correlationId: this.correlationId,
+        payload: {
+          version_id,
+          // project_id comes from the version row. Corrected 2026-08-23 (§35.13 ESC-18): all three
+          // call sites previously passed `version_id` into this slot, so every emitted
+          // construction.boq.updated.v1 carried a version id where the contract requires a project id.
+          project_id: version?.project_id ?? '',
+          changed_items_count: changed_count,
+          new_total_estimated_amount: totalStr,
+          new_total_estimated_currency: version?.total_estimated_currency ?? 'THB',
+        },
+      }),
+    );
+
+    return totalStr;
   }
 }

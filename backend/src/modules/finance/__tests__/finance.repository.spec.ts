@@ -457,4 +457,104 @@ describe('FinanceRepository', () => {
     mockPrisma.$queryRaw.mockResolvedValue([{ due_date: new Date(), amount: '20000.0000' }]);
     expect(await repo.findPendingPaymentsDue('proj-uuid-001')).toHaveLength(1);
   });
+
+  // Phase 8 Outbox Pattern (§35.13 ESC-13): the outbox row goes through the SAME tx handle as
+  // the business write, and the builder is skipped whenever there is no row to build from.
+  describe('outbox writes', () => {
+    const envelope = {
+      event_type: 'finance.budget.created.v1',
+      event_version: '1.0',
+      tenant_id: 'tenant-uuid-001',
+      actor_id: 'user-uuid-001',
+      occurred_at: '2026-08-22T00:00:00.000Z',
+      correlation_id: 'corr-1',
+      payload: { budget_id: 'budget-uuid-001' },
+    };
+
+    const upsertParams = {
+      project_id: 'proj-uuid-001',
+      total_budget_amount: '1000000.0000',
+      total_budget_currency: 'THB',
+      variance_alert_threshold: '10.00',
+    };
+
+    const paymentParams = {
+      invoice_id: 'inv-uuid-001',
+      project_id: 'proj-uuid-001',
+      amount: '1000.0000',
+      currency_code: 'THB',
+      payment_date: '2026-06-08',
+      recorded_by: 'user-uuid-001',
+    };
+
+    it('upsertBudget writes the outbox row from the upserted row', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([budgetRow]);
+      const builder = jest.fn(() => envelope);
+      await repo.upsertBudget(upsertParams, builder as never);
+      expect(builder).toHaveBeenCalledWith(budgetRow);
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+    });
+
+    it('upsertBudget writes nothing without a builder', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([budgetRow]);
+      await repo.upsertBudget(upsertParams);
+      expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
+    });
+
+    it('createPayment writes the outbox row from the inserted row', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([{ payment_id: 'pay-1' }]);
+      const builder = jest.fn(() => envelope);
+      await repo.createPayment(paymentParams, builder as never);
+      expect(builder).toHaveBeenCalledWith({ payment_id: 'pay-1' });
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+    });
+
+    it('createPayment writes nothing without a builder', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([{ payment_id: 'pay-1' }]);
+      await repo.createPayment(paymentParams);
+      expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
+    });
+
+    it('updateBillingStatus writes the outbox row from the updated row', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([{ billing_id: 'bill-1' }]);
+      const builder = jest.fn(() => envelope);
+      await repo.updateBillingStatus({ billing_id: 'bill-1', status: 'PAID' }, builder as never);
+      expect(builder).toHaveBeenCalledWith({ billing_id: 'bill-1' });
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+    });
+
+    it('updateBillingStatus writes nothing when the UPDATE matched no row', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([]);
+      const builder = jest.fn();
+      await repo.updateBillingStatus({ billing_id: 'missing', status: 'PAID' }, builder as never);
+      expect(builder).not.toHaveBeenCalled();
+      expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
+    });
+
+    it('updateBudgetAggregates writes the variance alert in the same transaction', async () => {
+      await repo.updateBudgetAggregates(
+        {
+          budget_id: 'budget-uuid-001',
+          committed_amount: '0.0000',
+          actual_amount: '0.0000',
+          allocated_amount: '0.0000',
+        },
+        { ...envelope, event_type: 'finance.variance.alert.v1' } as never,
+      );
+      // one $executeRaw for the UPDATE, one for the outbox row — same tx handle
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(2);
+      expect(mockTenantPrisma.run).toHaveBeenCalledTimes(1);
+    });
+
+    it('updateBudgetAggregates writes nothing without an event', async () => {
+      await repo.updateBudgetAggregates({
+        budget_id: 'budget-uuid-001',
+        committed_amount: '0.0000',
+        actual_amount: '0.0000',
+        allocated_amount: '0.0000',
+      });
+      // one $executeRaw for the UPDATE itself, none for an outbox row
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+    });
+  });
 });

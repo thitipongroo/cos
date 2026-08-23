@@ -15,8 +15,8 @@ import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
 import { randomUUID } from 'crypto';
 import { Decimal, sumDecimals } from '@cos/financial';
-import { KafkaProducer } from '@cos/kafka';
 import { createLogger } from '@cos/logger';
+import { buildOutboxEvent } from '../../shared/outbox/outbox.types';
 import { FinanceRepository } from './finance.repository';
 import type {
   ProjectBudgetRow,
@@ -71,7 +71,6 @@ export class FinanceService {
     return (this.request as { userId?: string }).userId ?? '';
   }
   private readonly correlationId: string;
-  private readonly kafka: KafkaProducer;
 
   constructor(
     private readonly repo: FinanceRepository,
@@ -79,7 +78,6 @@ export class FinanceService {
     private readonly request: Request & { tenantId?: string; user?: { user_id?: string } },
   ) {
     this.correlationId = randomUUID();
-    this.kafka = new KafkaProducer();
   }
 
   // ── Budget Management ─────────────────────────────────────────────────────
@@ -89,19 +87,21 @@ export class FinanceService {
       ? new Decimal(dto.variance_alert_threshold).toFixed(2)
       : DEFAULT_VARIANCE_THRESHOLD.toFixed(2);
 
-    const budget = await this.repo.upsertBudget({
-      project_id,
-      total_budget_amount: new Decimal(dto.total_budget_amount).toFixed(4),
-      total_budget_currency: dto.total_budget_currency,
-      variance_alert_threshold: threshold,
-    });
-
-    await this.emitEvent('finance.budget.created.v1', {
-      project_id,
-      budget_id: budget.budget_id,
-      total_budget_amount: budget.total_budget_amount,
-      total_budget_currency: budget.total_budget_currency,
-    });
+    const budget = await this.repo.upsertBudget(
+      {
+        project_id,
+        total_budget_amount: new Decimal(dto.total_budget_amount).toFixed(4),
+        total_budget_currency: dto.total_budget_currency,
+        variance_alert_threshold: threshold,
+      },
+      (row) =>
+        this.outboxEvent('finance.budget.created.v1', {
+          project_id,
+          budget_id: row.budget_id,
+          total_budget_amount: row.total_budget_amount,
+          total_budget_currency: row.total_budget_currency,
+        }),
+    );
 
     logger.info(
       { project_id, budget_id: budget.budget_id, tenant_id: this.tenantId },
@@ -235,24 +235,26 @@ export class FinanceService {
 
   async recordPayment(dto: RecordPaymentDto): Promise<PaymentRow> {
     const project_id = dto.project_id;
-    const payment = await this.repo.createPayment({
-      invoice_id: dto.invoice_id,
-      project_id,
-      amount: new Decimal(dto.amount).toFixed(4),
-      currency_code: dto.currency_code,
-      payment_date: dto.payment_date,
-      payment_reference: dto.payment_reference ?? null,
-      recorded_by: this.userId,
-    });
-
-    await this.emitEvent('finance.payment.processed.v1', {
-      project_id,
-      payment_id: payment.payment_id,
-      invoice_id: dto.invoice_id,
-      amount: payment.amount,
-      currency_code: payment.currency_code,
-      payment_date: dto.payment_date,
-    });
+    const payment = await this.repo.createPayment(
+      {
+        invoice_id: dto.invoice_id,
+        project_id,
+        amount: new Decimal(dto.amount).toFixed(4),
+        currency_code: dto.currency_code,
+        payment_date: dto.payment_date,
+        payment_reference: dto.payment_reference ?? null,
+        recorded_by: this.userId,
+      },
+      (row) =>
+        this.outboxEvent('finance.payment.processed.v1', {
+          project_id,
+          payment_id: row.payment_id,
+          invoice_id: dto.invoice_id,
+          amount: row.amount,
+          currency_code: row.currency_code,
+          payment_date: dto.payment_date,
+        }),
+    );
 
     logger.info(
       { payment_id: payment.payment_id, project_id, tenant_id: this.tenantId },
@@ -339,18 +341,16 @@ export class FinanceService {
     const actual = new Decimal(actual_total);
     const allocated = new Decimal(budget.allocated_amount);
 
-    await this.repo.updateBudgetAggregates({
-      budget_id: budget.budget_id,
-      committed_amount: committed.toFixed(4),
-      actual_amount: actual.toFixed(4),
-      allocated_amount: budget.allocated_amount,
-    });
-
+    // The alert is decided BEFORE the write so it can ride that write's transaction
+    // (§35.13 ESC-13) — every input is already known from the sums above.
+    let alert: ReturnType<typeof this.outboxEvent> | undefined;
+    let variancePctForLog: string | undefined;
     if (!allocated.isZero()) {
       const variance_pct = actual.plus(committed).minus(allocated).dividedBy(allocated).times(100);
       const threshold = new Decimal(budget.variance_alert_threshold);
       if (variance_pct.greaterThan(threshold)) {
-        await this.emitEvent('finance.variance.alert.v1', {
+        variancePctForLog = variance_pct.toFixed(4);
+        alert = this.outboxEvent('finance.variance.alert.v1', {
           project_id,
           budget_id: budget.budget_id,
           variance_percentage: variance_pct.toFixed(4),
@@ -360,11 +360,21 @@ export class FinanceService {
           allocated_amount: allocated.toFixed(4),
           currency_code: budget.total_budget_currency,
         });
-        logger.warn(
-          { project_id, variance_pct: variance_pct.toFixed(4) },
-          'finance.variance.alert',
-        );
       }
+    }
+
+    await this.repo.updateBudgetAggregates(
+      {
+        budget_id: budget.budget_id,
+        committed_amount: committed.toFixed(4),
+        actual_amount: actual.toFixed(4),
+        allocated_amount: budget.allocated_amount,
+      },
+      alert,
+    );
+
+    if (variancePctForLog) {
+      logger.warn({ project_id, variance_pct: variancePctForLog }, 'finance.variance.alert');
     }
   }
 
@@ -448,19 +458,22 @@ export class FinanceService {
         'Billing amount exceeds PM approval limit; Executive approval required',
       );
     }
-    const updated = await this.repo.updateBillingStatus({
-      billing_id,
-      status: 'ISSUED',
-      approved_by: this.userId,
-    });
-    await this.emitEvent('finance.billing.approved.v1', {
-      billing_id,
-      project_id: updated.project_id,
-      contract_id: updated.contract_id,
-      amount: updated.amount,
-      approved_by: this.userId,
-      tier,
-    });
+    const updated = await this.repo.updateBillingStatus(
+      {
+        billing_id,
+        status: 'ISSUED',
+        approved_by: this.userId,
+      },
+      (row) =>
+        this.outboxEvent('finance.billing.approved.v1', {
+          billing_id,
+          project_id: row.project_id,
+          contract_id: row.contract_id,
+          amount: row.amount,
+          approved_by: this.userId,
+          tier,
+        }),
+    );
     logger.info({ billing_id, tier, tenant_id: this.tenantId }, 'billing.approved');
     return updated;
   }
@@ -485,13 +498,17 @@ export class FinanceService {
       payment_reference: dto.payment_reference ?? null,
       received_by: this.userId,
     });
-    await this.repo.updateBillingStatus({ billing_id: dto.billing_id, status: 'PAID' });
-    await this.emitEvent('finance.ar_receipt.recorded.v1', {
-      ar_receipt_id: receipt.ar_receipt_id,
-      billing_id: dto.billing_id,
-      project_id: dto.project_id,
-      amount_received: receipt.amount_received,
-    });
+    // Anchored to the PAID transition — the last write of the receipt — so the event cannot
+    // report a settled billing that was never settled (§35.13 ESC-13). The receipt's ids are
+    // already known here, so the builder ignores the UPDATEd row.
+    await this.repo.updateBillingStatus({ billing_id: dto.billing_id, status: 'PAID' }, () =>
+      this.outboxEvent('finance.ar_receipt.recorded.v1', {
+        ar_receipt_id: receipt.ar_receipt_id,
+        billing_id: dto.billing_id,
+        project_id: dto.project_id,
+        amount_received: receipt.amount_received,
+      }),
+    );
     logger.info(
       {
         ar_receipt_id: receipt.ar_receipt_id,
@@ -558,25 +575,18 @@ export class FinanceService {
     return periods;
   }
 
-  private async emitEvent<T>(eventType: string, payload: T): Promise<void> {
-    try {
-      await this.kafka.connect();
-      await this.kafka.publish({
-        event_type: eventType,
-        event_version: '1.0',
-        tenant_id: this.tenantId,
-        actor_id: this.userId,
-        occurred_at: new Date().toISOString(),
-        correlation_id: this.correlationId,
-        payload,
-      });
-    } catch (err) {
-      logger.error(
-        { event_type: eventType, err, correlation_id: this.correlationId },
-        'kafka.publish.failed',
-      );
-    } finally {
-      await this.kafka.disconnect().catch(/* istanbul ignore next */ () => undefined);
-    }
+  /**
+   * Builds the outbox envelope handed to the repository write that anchors it (§35.13 ESC-13).
+   * Replaces the previous `emitEvent`, which published directly to Kafka and logged failures as
+   * `kafka.publish.failed` — a financial event silently lost whenever the broker was unreachable.
+   */
+  private outboxEvent<T>(eventType: string, payload: T) {
+    return buildOutboxEvent({
+      eventType,
+      tenantId: this.tenantId,
+      actorId: this.userId,
+      correlationId: this.correlationId,
+      payload,
+    });
   }
 }
