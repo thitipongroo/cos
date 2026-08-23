@@ -138,13 +138,21 @@ every RBAC guard (Phase 2), `HallucinationGuard` (Phase 12), `SyncManager` confl
 
 ## 8. Failure modes & rollback
 
-| Failure                                           | Behaviour today                                               |
-| ------------------------------------------------- | ------------------------------------------------------------- |
-| Workflow specs run in the parallel pool           | Flaky hook timeouts — prevented by the separate serial config |
-| `jest.runAllTimers()` used on an async sleep      | Test hangs — Rule 30                                          |
-| Prisma migrates the wrong DB in integration tests | Prevented by running from a cwd with no `.env`                |
-| Coverage drops below 100/100                      | `ci-coverage-guard.yml` blocks the merge                      |
-| A dependency has a High/Critical advisory         | `pnpm audit` + `pip-audit` + `govulncheck` block              |
+| Failure                                           | Behaviour today                                                            |
+| ------------------------------------------------- | -------------------------------------------------------------------------- |
+| Workflow specs run in the parallel pool           | Flaky hook timeouts — prevented by the separate serial config              |
+| `jest.runAllTimers()` used on an async sleep      | Test hangs — Rule 30                                                       |
+| Prisma migrates the wrong DB in integration tests | Prevented by running from a cwd with no `.env`                             |
+| Coverage drops below 100/100                      | `ci-coverage-guard.yml` blocks the merge                                   |
+| A workspace has specs but no CI step              | Nothing — the threshold is per workspace, so an unrun one passes vacuously |
+| A dependency has a High/Critical advisory         | `pnpm audit` + `pip-audit` + `govulncheck` block                           |
+
+That last row was measured, not hypothetical. `apps/web`, `@cos/ui-logic` and `@cos/test-utils`
+each carried committed specs and a `coverageThreshold` of 100/100 that **no workflow ever ran** —
+156 tests that could not fail a build. `@cos/ui-logic` is the one that matters most: both clients
+import its phone formatter (§20.5) and loading-state rules. All three were wired into the
+`unit-tests` job on 2026-08-23, and all three pass at 100/100. A per-workspace threshold says
+nothing about a workspace nobody invokes.
 
 **A limit worth stating plainly**, because several findings in this TDD turn on it: 100/100 coverage
 proves every line and branch is _exercised_, not that it is _reached in production_. OQ-25, OQ-32,

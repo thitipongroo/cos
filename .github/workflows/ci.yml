@@ -329,6 +329,24 @@ jobs:
       - name: Unit tests + coverage — @cos/schemas
         working-directory: packages/@cos/schemas
         run: pnpm run test:cov
+      # Three workspaces below carried committed specs and a 100%-threshold jest.config.js that NO
+      # workflow ran — 156 tests that could not fail the build (wired in 2026-08-23). @cos/ui-logic
+      # is the sharpest of them: apps/web AND apps/mobile both import its phone formatter (§20.5)
+      # and its loading-state rules, so a regression there reaches every screen on both clients with
+      # nothing in between. The rule they were missing from is stated a few steps above — "@cos
+      # packages with executable logic must have CI coverage".
+      - name: Unit tests + coverage — @cos/ui-logic (shared by web and mobile)
+        working-directory: packages/@cos/ui-logic
+        run: pnpm run test:cov
+      - name: Unit tests + coverage — @cos/test-utils
+        working-directory: packages/@cos/test-utils
+        run: pnpm run test:cov
+      # apps/web: the health route handlers and lib/ helpers (riskHeatMap, locale, flags,
+      # loadingState). The Playwright job below drives journeys through a built app; this is the
+      # unit gate underneath it, and neither substitutes for the other.
+      - name: Unit tests + coverage — apps/web
+        working-directory: apps/web
+        run: pnpm run test:cov
       # Structural check the unit tests cannot make: the schemas must have exactly the fields of the
       # API request types in apps/web/src/lib/api/types.ts. Three schemas had already drifted from
       # them silently — see the script header. It reads across two packages, which is why it is a
