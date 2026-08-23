@@ -104,6 +104,31 @@ equivalent permit exactly this, on the condition that the basis is stated specif
 subject with "kept for legal reasons" without naming the law, the categories and the period is itself
 a breach, which is why `data-retention-policy.md` now names a statute per row.
 
+**Amended 2026-08-23 (TDD OQ-48).** This ADR was written for a subject with NO platform account, and
+the erasure it describes reached `crm.contacts`, `crm.leads` and `procurement.vendors` only. Two
+tables have since joined it, because the subject of a request is not reliably accountless: a site
+worker can hold both a `workforce.workers` record and a `platform.users` account with the tenant that
+employs them, and the search already resolves a worker through that account row.
+
+`platform.users` is the one table where erasure and DEACTIVATION cannot be separated — `display_name`,
+`email` and `phone_number` are how the person signs in, so clearing them ends the account by
+definition, and `is_active = false` is part of the erasure rather than an addition.
+
+It also crosses a system boundary, which nothing else in this ADR does. Keycloak holds the person's
+username, email and display name, and the account stays enabled until something disables it — so
+anonymising the database row alone leaves the subject fully identified in the identity provider and
+still able to log in. `KeycloakAdminService.eraseUser` disables, logs out every live session, and
+overwrites those fields; the realm sets `editUsernameAllowed: true` so the username (their email on
+Path B, their phone on Path A) can be overwritten at all.
+
+That second system is the reason erasure is no longer atomic. A Keycloak failure is REPORTED, not
+rolled back: the database columns are already cleared and cannot be restored, so the response carries
+`keycloak_erase_failed` naming any account still live in the identity provider. Reporting success
+while a live account survives is the one outcome this must never produce.
+
+See `11-database-schema` §11.4 for the per-table statements, their required ORDER, and the two-level
+audit trail.
+
 ### 6. Verification proves CONTROL OF THE IDENTIFIER ON FILE, and the platform witnesses it
 
 The subject is emailed a single-use, HMAC-signed link — the token shape the vendor portal and

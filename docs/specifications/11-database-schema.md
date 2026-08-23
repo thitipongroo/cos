@@ -1186,11 +1186,14 @@ snapshotting the rows to a WORM file first under legal hold. It is irreversible 
 | `crm.leads`            | `contact_name`                                   | ✅ yes                     |
 | `procurement.vendors`  | `contact_name`, `contact_email`, `contact_phone` | ✅ yes                     |
 | `workforce.workers`    | `full_name`, `contact_phone`                     | ✅ yes (added 2026-08-23)  |
-| `platform.users`       | `display_name`, `email`, `phone_number`          | ❌ **no** — OQ-48          |
+| `platform.users`       | `display_name`, `email`, `phone_number`          | ✅ yes (added 2026-08-23)  |
 
-The last two are not an oversight to patch blindly: a `platform.users` row anchors audit logs,
-memberships and foreign keys that must survive erasure, and whether a tenant is even the controller
-of its own workers' data is a legal question. Recorded rather than guessed at.
+A `platform.users` row anchors audit logs, memberships and foreign keys that must survive erasure,
+so the ROW survives and only its personal columns are cleared — the same rule as everywhere else in
+this table. What is different about it is that erasure and deactivation cannot be separated here:
+`display_name`, `email` and `phone_number` are how the person signs in and how anyone finds them, so
+clearing them ends the account by definition. `is_active = false` is therefore part of the erasure,
+not an addition to it.
 
 > **Note on `lead_id` FK:** `Contact.lead_id` is intentionally retained after PII erasure.
 > It is a business relationship identifier (non-PII) required for audit trail integrity and
@@ -1207,10 +1210,43 @@ Rows are then updated in place:
 | `crm.leads`           | `contact_name = NULL`                                                                                     |
 | `procurement.vendors` | `contact_email = NULL`, `contact_phone = NULL`; `tax_id` and `address` cleared **only** for `INDIVIDUAL` vendors — a company's are not personal data |
 | `workforce.workers`   | `full_name = '[ERASED]'`, `contact_phone = NULL`. `employee_code`, `trade_type` and `is_active` are untouched: they are the tenant's employment record, and a rights request is not a resignation |
+| `platform.users`      | `display_name = '[ERASED]'`, `email = ''`, `phone_number = NULL`, `is_active = false`. `email` is `NOT NULL` and its index is not unique, so `''` is safe for any number of erased accounts; `phone_number` must go to NULL because its unique index is PARTIAL (`WHERE phone_number IS NOT NULL`) and a placeholder would collide on the second erasure in a tenant |
 
 `name = '[ERASED]'` rather than NULL because the column is NOT NULL and a contact list still has to
 render a row. `deleted_at` is untouched: erasure and deletion stay independent, and the row is never
 deleted — the id and `tenant_id` must survive for FK integrity and the audit trail.
+
+**The order of the five statements is load-bearing**, because two of them match through a table an
+earlier one has already rewritten: `crm.leads` is reached through contacts already marked
+`[ERASED]`, and `workforce.workers` resolves an email through `platform.users` — so the account row
+must be erased LAST. Reversing the last two makes every email-only worker erasure match nothing and
+report a clean result.
+
+**Keycloak is the second half, not an afterthought.** Anonymising `platform.users` alone leaves the
+person fully identified in the identity provider, which stores their `username` (their email on
+Path B, their phone number on Path A), their `email` and their `firstName` — and leaves the account
+enabled, so they can still complete a fresh login. `KeycloakAdminService.eraseUser` disables the
+account, logs out every live session, and overwrites those fields. Three constraints of the realm's
+declarative user profile shape what it can write, all measured against Keycloak 26.6.4:
+
+| Field                | Constraint                                                   | What erasure writes                |
+| -------------------- | ------------------------------------------------------------ | ---------------------------------- |
+| `username`           | Editable only when the realm sets `editUsernameAllowed: true` | `erased-{user_id}`                 |
+| `email`              | `required: true` — cannot be cleared; an omitted field is left UNCHANGED | `erased-{user_id}@erased.invalid` (RFC 2606 reserved TLD — unroutable) |
+| `firstName`/`lastName` | `required: true`, and `person-name-prohibited-characters` rejects `[` `]` | `ERASED` — deliberately NOT the `[ERASED]` the database uses |
+
+The realm therefore sets **`editUsernameAllowed: true`** (PO decision 2026-08-23). Without it the
+subject's own email or phone number stays in the identity provider permanently and the erasure is
+not one. The `tenant_id` / `user_id` / `role` attributes are kept: they are not personal data, and
+the guards and RLS depend on them.
+
+The account is disabled and scrubbed rather than DELETED because `platform.users.keycloak_user_id` is
+`NOT NULL UNIQUE` and cannot be nulled — deleting the Keycloak account would leave that column
+pointing at nothing, and every later call through it would 404 on a row that still looks live.
+
+A Keycloak failure is REPORTED, never swallowed and never rolled back: the database columns are
+already gone and cannot be restored, so the response carries `keycloak_erase_failed` naming any
+account that is erased in Construction OS but still live in the identity provider.
 
 > **Corrected 2026-08-23** ([OQ-48](../technical-design/README.md#open-questions-register)). The
 > procedure here previously specified `pii_erased_at = NOW()`, a `WHERE pii_erased_at IS NULL` filter
@@ -1218,14 +1254,25 @@ deleted — the id and `tenant_id` must survive for FK integrity and the audit t
 > **No table in the database has that column**, so there is no flag to stamp, nothing to filter on,
 > and two lifecycle states rather than four.
 >
-> An audit record IS written — `platform.audit_logs` with `resource_type = 'subject_requests'`,
-> `resource_id` = the request id and `metadata = {"matches": n}` — but not in the
-> `{ event: "pii.erased", entity_type, entity_id, … }` per-entity shape specified above: it records
-> the REQUEST that was fulfilled and how many rows it touched, not one entry per erased row.
->
-> Whether to add the column and the per-entity audit entry, or to accept in-place anonymisation and
-> a per-request audit record as the whole mechanism, is what remains of OQ-48 — together with
-> `platform.users`, the one entity in the table above still not reached.
+> The `pii_erased_at` column is NOT being added — in-place anonymisation with no lifecycle flag is
+> the mechanism (PO decision 2026-08-23). The per-entity audit entry IS: as of that date an erasure
+> writes **two levels** of audit record.
+
+**Audit trail.** Two levels, one describing the request and one describing what it reached:
+
+| Level        | `action`     | `resource_type`     | `resource_id` | `metadata`                                   |
+| ------------ | ------------ | ------------------- | ------------- | -------------------------------------------- |
+| Per request  | `ERASE …`    | `subject_requests`  | request id    | `{"matches": n}`                             |
+| Per record   | `PII_ERASED` | the table name      | the row's id  | `{"event": "pii.erased", "request_id": "…"}` |
+
+The per-request row alone could say four records were erased but never WHICH four, so an auditor
+asking "was this person's worker record erased?" had no answer the trail could give — the erased
+tables no longer name the person. The per-entity rows are written from the ids the `UPDATE … RETURNING`
+statements returned, for the same reason: by then there is nothing left to search for.
+
+Neither level ever carries the erased VALUES. An audit log that recorded what it deleted would be a
+second copy of the personal data, surviving in an append-only table that by design cannot be erased
+in turn (QM-4, QM-8 — ids and counts only).
 
 See 05-security-compliance section 5.3 for the full PDPA / GDPR compliance strategy.
 

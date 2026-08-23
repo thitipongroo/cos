@@ -279,6 +279,7 @@ Before starting any implementation task:
   - Same PII tagging rules as PDPA
   - Data Processing Agreements (DPAs) required for all third-party processors
   - Right to erasure must be implementable within 30 days; implementation strategy: anonymization-in-place preferred over cascade delete (preserves aggregate analytics)
+  - Erasure spans TWO systems, and both halves are required (TDD OQ-48): the database columns AND the Keycloak account. Anonymising `platform.users` alone leaves the person named in the identity provider (username = their email on Path B / phone on Path A, plus email and display name) and still able to log in. `KeycloakAdminService.eraseUser` disables, logs out every session, and overwrites those fields; the realm sets `editUsernameAllowed: true` so the username can be overwritten at all. A Keycloak failure is reported via `keycloak_erase_failed`, never rolled back — the database half cannot be undone. Per-table statements, their required ORDER, and the two-level audit trail: spec §11.4
 - **CCPA (California, USA)** — applies when California residents are served:
   - "Do not sell my personal information" opt-out must be implementable
 - **SOC 2 Type II** — platform must be SOC 2 Type II ready by Stage 3; controls tracked in `docs/compliance/soc2-controls.md`; every new feature reviewed against SOC 2 trust criteria (Security, Availability, Confidentiality) before merge

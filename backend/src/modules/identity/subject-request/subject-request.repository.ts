@@ -43,10 +43,36 @@ export interface SubjectRequestRow {
  * business data (a lead's company, a vendor's purchase history) and is not the subject's to receive.
  */
 export interface SubjectMatch {
-  source: 'crm.contacts' | 'crm.leads' | 'procurement.vendors' | 'workforce.workers';
+  source:
+    'crm.contacts' | 'crm.leads' | 'procurement.vendors' | 'workforce.workers' | 'platform.users';
   id: string;
   fields: Record<string, string | null>;
 }
+
+/**
+ * What an erasure actually touched — the ids, per table, not just how many.
+ *
+ * Counts were enough while the audit trail said "this request erased n rows". Since 2026-08-23 it
+ * says WHICH rows (§11.4, TDD OQ-48), and an auditor asking "was this person's worker record erased?"
+ * needs an answer the trail can give. Ids are not personal data; the erased values are, and are never
+ * carried here.
+ */
+export interface AnonymisationResult {
+  contacts: string[];
+  leads: string[];
+  vendors: string[];
+  workers: string[];
+  /**
+   * Account rows, with the Keycloak id each one is bound to. The pair travels together because
+   * erasing the database row without erasing the Keycloak account leaves the person named and able to
+   * log in — the two halves are one operation.
+   */
+  users: Array<{ userId: string; keycloakUserId: string }>;
+}
+
+/** Table names as they appear in `audit_logs.resource_type` for a per-entity erasure record. */
+export type ErasedResourceType =
+  'crm.contacts' | 'crm.leads' | 'procurement.vendors' | 'workforce.workers' | 'platform.users';
 
 @Injectable({ scope: Scope.REQUEST })
 export class SubjectRequestRepository {
@@ -293,21 +319,31 @@ export class SubjectRequestRepository {
    * Vendor `tax_id`/`address` are cleared ONLY on an INDIVIDUAL row, for the same reason the search
    * withholds them — on a company row they were never this person's data.
    *
-   * Returns the number of rows changed per table so the outcome note can state what was done.
+   * THE ORDER OF THE FIVE STATEMENTS IS LOAD-BEARING, because two of them match through a table an
+   * earlier one has already rewritten:
+   *   1. contacts — matched directly by the identifiers.
+   *   2. leads    — reached through contacts already marked `[ERASED]`. Must follow (1).
+   *   3. vendors  — independent.
+   *   4. workers  — an email is resolved through `platform.users`, so this must run BEFORE (5)
+   *                 clears that email. Reversing 4 and 5 makes every email-only worker erasure
+   *                 silently match nothing and report a clean result.
+   *   5. users    — last, for exactly that reason.
+   *
+   * Every statement returns the ids it changed, not just a count: the caller writes one audit row per
+   * erased record (§11.4, PO decision 2026-08-23). Ids are not personal data and may live in
+   * `audit_logs.metadata`; the erased VALUES never may (QM-8).
    */
-  async anonymise(
-    email: string | null,
-    phone: string | null,
-  ): Promise<{ contacts: number; leads: number; vendors: number; workers: number }> {
+  async anonymise(email: string | null, phone: string | null): Promise<AnonymisationResult> {
     const contacts = await this.db.run(
       (tx) =>
-        tx.$executeRaw`
+        tx.$queryRaw<{ contact_id: string }[]>`
         UPDATE crm.contacts
            SET name = '[ERASED]', email = NULL, phone = NULL, updated_at = now()
          WHERE tenant_id = ${this.tenantId}::uuid
            AND deleted_at IS NULL
            AND ((${email}::text IS NOT NULL AND lower(email) = lower(${email}::text))
              OR (${phone}::text IS NOT NULL AND phone = ${phone}::text))
+        RETURNING contact_id::text
       `,
     );
 
@@ -315,7 +351,7 @@ export class SubjectRequestRepository {
     // it. `company` is untouched — a juristic person is not a data subject.
     const leads = await this.db.run(
       (tx) =>
-        tx.$executeRaw`
+        tx.$queryRaw<{ lead_id: string }[]>`
         UPDATE crm.leads
            SET contact_name = NULL, updated_at = now()
          WHERE tenant_id = ${this.tenantId}::uuid
@@ -325,12 +361,13 @@ export class SubjectRequestRepository {
               WHERE c.tenant_id = ${this.tenantId}::uuid
                 AND c.name = '[ERASED]'
            )
+        RETURNING lead_id::text
       `,
     );
 
     const vendors = await this.db.run(
       (tx) =>
-        tx.$executeRaw`
+        tx.$queryRaw<{ vendor_id: string }[]>`
         UPDATE procurement.vendors
            SET contact_email = NULL,
                contact_phone = NULL,
@@ -340,6 +377,7 @@ export class SubjectRequestRepository {
          WHERE tenant_id = ${this.tenantId}::uuid
            AND ((${email}::text IS NOT NULL AND lower(contact_email) = lower(${email}::text))
              OR (${phone}::text IS NOT NULL AND contact_phone = ${phone}::text))
+        RETURNING vendor_id::text
       `,
     );
 
@@ -359,7 +397,7 @@ export class SubjectRequestRepository {
     // `workforce.project_workforce` referentially intact.
     const workers = await this.db.run(
       (tx) =>
-        tx.$executeRaw`
+        tx.$queryRaw<{ worker_id: string }[]>`
         UPDATE workforce.workers
            SET full_name = '[ERASED]',
                contact_phone = NULL
@@ -370,10 +408,74 @@ export class SubjectRequestRepository {
                     WHERE u.tenant_id = ${this.tenantId}::uuid
                       AND lower(u.email) = lower(${email}::text)
                  )))
+        RETURNING worker_id::text
       `,
     );
 
-    return { contacts, leads, vendors, workers };
+    // `platform.users` — the account itself (PO decision 2026-08-23, TDD OQ-48).
+    //
+    // This is the one table where erasure and DEACTIVATION cannot be separated. Everywhere else the
+    // row keeps working with the person taken out of it — a worker still holds their slot on a
+    // roster. An account cannot: `display_name`, `email` and `phone_number` ARE how the person signs
+    // in and how anyone finds them, so removing them ends the account by definition. `is_active =
+    // false` is therefore part of the erasure rather than an extra; leaving it `true` would advertise
+    // a live account that nobody can use or identify.
+    //
+    // `email = ''` rather than NULL — the column is `NOT NULL`. Empty is safe where a marker would
+    // not be: `users_tenant_email_idx` is NOT unique, so any number of erased accounts can share it,
+    // and no login path matches an empty string. `phone_number` goes to NULL, which is what the
+    // PARTIAL unique index (`WHERE phone_number IS NOT NULL`, migration 20260819000001) requires — a
+    // placeholder there would collide on the second erasure in a tenant.
+    //
+    // `keycloak_user_id` is RETURNED, not cleared: it is `NOT NULL UNIQUE`, and the caller needs it to
+    // erase the matching Keycloak account. Without that second half the person is still fully named in
+    // the identity provider and can still log in.
+    //
+    // The row itself survives. It anchors `platform.audit_logs.actor_id`, `tenant_memberships` and
+    // every `created_by` / `recorded_by` in the system — deleting it would tear holes in the audit
+    // trail QM-4 requires to be both append-only and complete.
+    const users = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<{ user_id: string; keycloak_user_id: string }[]>`
+        UPDATE platform.users
+           SET display_name = '[ERASED]',
+               email = '',
+               phone_number = NULL,
+               is_active = false,
+               updated_at = now()
+         WHERE tenant_id = ${this.tenantId}::uuid
+           AND ((${email}::text IS NOT NULL AND lower(email) = lower(${email}::text))
+             OR (${phone}::text IS NOT NULL AND phone_number = ${phone}::text))
+        RETURNING user_id::text, keycloak_user_id
+      `,
+    );
+
+    return {
+      contacts: contacts.map((r) => r.contact_id),
+      leads: leads.map((r) => r.lead_id),
+      vendors: vendors.map((r) => r.vendor_id),
+      workers: workers.map((r) => r.worker_id),
+      users: users.map((r) => ({ userId: r.user_id, keycloakUserId: r.keycloak_user_id })),
+    };
+  }
+
+  /**
+   * The Keycloak realm this tenant's accounts live in.
+   *
+   * Read through the tenant-scoped connection, not the privileged one: `rls_tenants_read` (migration
+   * 20260804000001) restricts `app_user` to its own tenant's row precisely so a request-scoped path
+   * like this one cannot reach another tenant's realm — or its `dedicated_db_url`, which is why that
+   * policy was tightened. Only `keycloak_realm` is selected.
+   */
+  async findTenantRealm(): Promise<string | null> {
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<{ keycloak_realm: string }[]>`
+        SELECT keycloak_realm FROM platform.tenants
+         WHERE tenant_id = ${this.tenantId}::uuid
+      `,
+    );
+    return rows[0]?.keycloak_realm ?? null;
   }
 
   // ── Verification (ADR-090 §6) ───────────────────────────────────────────────
@@ -466,6 +568,52 @@ export class SubjectRequestRepository {
           ${params.requestId}::uuid,
           ${JSON.stringify({ matches: params.matches })}::jsonb
         )
+      `,
+    );
+  }
+
+  /**
+   * One audit row per record erased (§11.4, PO decision 2026-08-23 — TDD OQ-48).
+   *
+   * The per-REQUEST row `writeAudit` writes says four rows were erased. It cannot say WHICH four, so
+   * an auditor asking "was this person's worker record erased?" had no way to answer from the trail —
+   * only from the erased tables themselves, which by then no longer name the person. That is the gap
+   * §11.4 described with a `{ event: 'pii.erased', entity_type, entity_id }` entry, specified since
+   * the section was written and never built.
+   *
+   * `resource_type` is the table, `resource_id` the row's own id, so the entry reads the same way
+   * every other audit row does. `metadata` carries the marker and the request that authorised it —
+   * ids and constants only. The erased VALUES are never written here: an audit log that recorded what
+   * it deleted would be a second copy of the personal data, surviving in an append-only table that by
+   * design cannot be erased in turn (QM-4, QM-8).
+   *
+   * One statement for all of them: an erasure that touched five tables should not cost five
+   * round-trips, and a partial write would leave a trail claiming less than actually happened.
+   */
+  async writeErasureAudit(
+    actorId: string,
+    requestId: string,
+    entries: Array<{ resourceType: ErasedResourceType; resourceId: string }>,
+  ): Promise<void> {
+    if (entries.length === 0) return;
+
+    const rows = entries.map((e) => ({
+      resource_type: e.resourceType,
+      resource_id: e.resourceId,
+      metadata: JSON.stringify({ event: 'pii.erased', request_id: requestId }),
+    }));
+
+    await this.db.run(
+      (tx) =>
+        tx.$executeRaw`
+        INSERT INTO platform.audit_logs (tenant_id, actor_id, action, resource_type, resource_id, metadata)
+        SELECT ${this.tenantId}::uuid,
+               ${actorId}::uuid,
+               'PII_ERASED',
+               r->>'resource_type',
+               (r->>'resource_id')::uuid,
+               (r->>'metadata')::jsonb
+          FROM jsonb_array_elements(${JSON.stringify(rows)}::jsonb) AS r
       `,
     );
   }

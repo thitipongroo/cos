@@ -12,6 +12,13 @@ import type { FileServiceClient } from '../../../files/file-service-client.servi
 import type { FileLegalHoldService } from '../../../files/file-legal-hold.service';
 import type { SubjectVerificationService } from '../subject-verification.service';
 import type { SendGridAdapter } from '../../../notification/adapters/sendgrid.adapter';
+import type { KeycloakAdminService } from '../../keycloak-admin.service';
+import type { AnonymisationResult } from '../subject-request.repository';
+
+/** An anonymise() result with only the tables a test cares about populated. */
+function erased(partial: Partial<AnonymisationResult> = {}): AnonymisationResult {
+  return { contacts: [], leads: [], vendors: [], workers: [], users: [], ...partial };
+}
 
 const REQUEST_ID = '33333333-3333-4333-8333-333333333333';
 const ACTOR = '22222222-2222-4222-8222-222222222222';
@@ -50,12 +57,15 @@ describe('SubjectRequestService', () => {
       | 'writeAudit'
       | 'recordChallenge'
       | 'markVerifiedByTokenHash'
+      | 'writeErasureAudit'
+      | 'findTenantRealm'
     >
   >;
   let files: jest.Mocked<Pick<FileServiceClient, 'upload'>>;
   let legalHold: jest.Mocked<Pick<FileLegalHoldService, 'place'>>;
   let verification: jest.Mocked<Pick<SubjectVerificationService, 'issue' | 'hashToken'>>;
   let email: jest.Mocked<Pick<SendGridAdapter, 'send'>>;
+  let keycloak: jest.Mocked<Pick<KeycloakAdminService, 'eraseUser'>>;
   let service: SubjectRequestService;
 
   beforeEach(() => {
@@ -67,6 +77,8 @@ describe('SubjectRequestService', () => {
       findMatches: jest.fn(),
       anonymise: jest.fn(),
       writeAudit: jest.fn(),
+      writeErasureAudit: jest.fn(),
+      findTenantRealm: jest.fn().mockResolvedValue('construction-os-dev'),
       recordChallenge: jest.fn(),
       markVerifiedByTokenHash: jest.fn(),
     } as unknown as typeof repo;
@@ -77,6 +89,7 @@ describe('SubjectRequestService', () => {
       hashToken: jest.fn(),
     } as unknown as typeof verification;
     email = { send: jest.fn() } as unknown as typeof email;
+    keycloak = { eraseUser: jest.fn() } as unknown as typeof keycloak;
     process.env['PUBLIC_WEB_URL'] = 'https://app.example.test';
     service = new SubjectRequestService(
       repo as unknown as SubjectRequestRepository,
@@ -84,6 +97,7 @@ describe('SubjectRequestService', () => {
       legalHold as unknown as FileLegalHoldService,
       verification as unknown as SubjectVerificationService,
       email as unknown as SendGridAdapter,
+      keycloak as unknown as KeycloakAdminService,
     );
   });
 
@@ -203,15 +217,141 @@ describe('SubjectRequestService', () => {
       repo.findById.mockResolvedValue(
         openRequest({ request_type: 'ERASURE', verified_at: new Date('2026-08-15T00:00:00.000Z') }),
       );
-      repo.anonymise.mockResolvedValue({ contacts: 2, leads: 1, vendors: 1, workers: 0 });
+      repo.anonymise.mockResolvedValue(
+        erased({ contacts: ['c1', 'c2'], leads: ['l1'], vendors: ['v1'] }),
+      );
 
       await expect(service.erase(REQUEST_ID, {}, ACTOR)).resolves.toEqual({
         request_id: REQUEST_ID,
-        anonymised: { contacts: 2, leads: 1, vendors: 1, workers: 0 },
+        anonymised: { contacts: 2, leads: 1, vendors: 1, workers: 0, users: 0 },
         total: 4,
         archived_file_id: null,
+        keycloak_erase_failed: [],
       });
       expect(repo.writeAudit).toHaveBeenCalledWith(expect.objectContaining({ matches: 4 }));
+    });
+
+    // ── The Keycloak half (TDD OQ-48) ───────────────────────────────────────
+    //
+    // Anonymising platform.users on its own is not an erasure. Keycloak holds the person's username
+    // (their email on Path B, their phone on Path A), their email and their display name, and the
+    // account stays ENABLED — so they are still fully named in the identity provider and can still
+    // complete a fresh login. These tests are what stops the database half shipping alone.
+
+    function erasureRequest() {
+      return openRequest({
+        request_type: 'ERASURE',
+        verified_at: new Date('2026-08-15T00:00:00.000Z'),
+      });
+    }
+
+    it('erases the Keycloak account behind every erased user row', async () => {
+      repo.findById.mockResolvedValue(erasureRequest());
+      repo.anonymise.mockResolvedValue(
+        erased({ users: [{ userId: 'u1', keycloakUserId: 'kc-1' }] }),
+      );
+
+      const result = await service.erase(REQUEST_ID, {}, ACTOR);
+
+      expect(keycloak.eraseUser).toHaveBeenCalledWith('kc-1', 'construction-os-dev', 'u1');
+      expect(result.keycloak_erase_failed).toEqual([]);
+      expect(result.anonymised.users).toBe(1);
+    });
+
+    it('does not touch Keycloak when no account row was erased', async () => {
+      repo.findById.mockResolvedValue(erasureRequest());
+      repo.anonymise.mockResolvedValue(erased({ contacts: ['c1'] }));
+
+      await service.erase(REQUEST_ID, {}, ACTOR);
+
+      expect(keycloak.eraseUser).not.toHaveBeenCalled();
+      // No realm lookup either — a CRM-only erasure has no business reading tenant configuration.
+      expect(repo.findTenantRealm).not.toHaveBeenCalled();
+    });
+
+    // The database columns are already gone and cannot be put back, so throwing here would leave the
+    // operator with a request that looks failed and data that is half erased. The account is named in
+    // the result instead, so somebody finishes it — reporting success while a live account survives
+    // is the outcome this must never produce.
+    it('reports a Keycloak failure instead of swallowing it or rolling back', async () => {
+      repo.findById.mockResolvedValue(erasureRequest());
+      repo.anonymise.mockResolvedValue(
+        erased({ users: [{ userId: 'u1', keycloakUserId: 'kc-1' }] }),
+      );
+      keycloak.eraseUser.mockRejectedValue(new Error('keycloak unreachable'));
+
+      const result = await service.erase(REQUEST_ID, {}, ACTOR);
+
+      expect(result.keycloak_erase_failed).toEqual(['u1']);
+      // The audit still records what the database did — the erasure happened, half of it.
+      expect(repo.writeAudit).toHaveBeenCalled();
+    });
+
+    it('reports a failure rather than guessing when the tenant has no realm', async () => {
+      repo.findById.mockResolvedValue(erasureRequest());
+      repo.anonymise.mockResolvedValue(
+        erased({ users: [{ userId: 'u1', keycloakUserId: 'kc-1' }] }),
+      );
+      repo.findTenantRealm.mockResolvedValue(null);
+
+      const result = await service.erase(REQUEST_ID, {}, ACTOR);
+
+      expect(keycloak.eraseUser).not.toHaveBeenCalled();
+      expect(result.keycloak_erase_failed).toEqual(['u1']);
+    });
+
+    it('carries on to the second account when the first one fails', async () => {
+      repo.findById.mockResolvedValue(erasureRequest());
+      repo.anonymise.mockResolvedValue(
+        erased({
+          users: [
+            { userId: 'u1', keycloakUserId: 'kc-1' },
+            { userId: 'u2', keycloakUserId: 'kc-2' },
+          ],
+        }),
+      );
+      keycloak.eraseUser.mockRejectedValueOnce(new Error('boom')).mockResolvedValueOnce(undefined);
+
+      const result = await service.erase(REQUEST_ID, {}, ACTOR);
+
+      expect(keycloak.eraseUser).toHaveBeenCalledTimes(2);
+      expect(result.keycloak_erase_failed).toEqual(['u1']);
+    });
+
+    // ── The per-entity audit trail (§11.4, TDD OQ-48) ───────────────────────
+
+    it('audits every erased record by table and id, not just how many', async () => {
+      repo.findById.mockResolvedValue(erasureRequest());
+      repo.anonymise.mockResolvedValue(
+        erased({
+          contacts: ['c1', 'c2'],
+          leads: ['l1'],
+          workers: ['w1'],
+          users: [{ userId: 'u1', keycloakUserId: 'kc-1' }],
+        }),
+      );
+
+      await service.erase(REQUEST_ID, {}, ACTOR);
+
+      expect(repo.writeErasureAudit).toHaveBeenCalledWith(ACTOR, REQUEST_ID, [
+        { resourceType: 'crm.contacts', resourceId: 'c1' },
+        { resourceType: 'crm.contacts', resourceId: 'c2' },
+        { resourceType: 'crm.leads', resourceId: 'l1' },
+        { resourceType: 'workforce.workers', resourceId: 'w1' },
+        { resourceType: 'platform.users', resourceId: 'u1' },
+      ]);
+    });
+
+    it('still writes the per-request record alongside the per-entity ones', async () => {
+      repo.findById.mockResolvedValue(erasureRequest());
+      repo.anonymise.mockResolvedValue(erased({ contacts: ['c1'], workers: ['w1'] }));
+
+      await service.erase(REQUEST_ID, {}, ACTOR);
+
+      // Two levels, not one replacing the other: the request-level row says which request was
+      // fulfilled, the per-entity rows say what it reached.
+      expect(repo.writeAudit).toHaveBeenCalledWith(expect.objectContaining({ matches: 2 }));
+      expect(repo.writeErasureAudit).toHaveBeenCalledTimes(1);
     });
 
     it('refuses to erase from an ACCESS request — that would destroy what was asked to be seen', async () => {
@@ -231,7 +371,7 @@ describe('SubjectRequestService', () => {
       repo.findById.mockResolvedValue(
         openRequest({ request_type: 'ERASURE', verified_at: new Date('2026-08-15T00:00:00.000Z') }),
       );
-      repo.anonymise.mockResolvedValue({ contacts: 1, leads: 0, vendors: 0, workers: 0 });
+      repo.anonymise.mockResolvedValue(erased({ contacts: ['c1'] }));
 
       const result = await service.erase(REQUEST_ID, {}, ACTOR);
 
@@ -249,7 +389,7 @@ describe('SubjectRequestService', () => {
       ]);
       files.upload.mockResolvedValue({ file_id: 'file-1' });
       legalHold.place.mockResolvedValue(true);
-      repo.anonymise.mockResolvedValue({ contacts: 1, leads: 0, vendors: 0, workers: 0 });
+      repo.anonymise.mockResolvedValue(erased({ contacts: ['c1'] }));
 
       const result = await service.erase(
         REQUEST_ID,

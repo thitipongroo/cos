@@ -16,6 +16,16 @@ export interface KeycloakTokenResponse {
   token_type: string;
 }
 
+/**
+ * The name an erased Keycloak account carries (TDD OQ-48).
+ *
+ * NOT `[ERASED]`, which is what the database columns use. The realm's `person-name-prohibited-characters`
+ * validator rejects square brackets on `firstName`/`lastName` — measured, not assumed. Keep the two
+ * markers distinct rather than "harmonising" them: making this `[ERASED]` turns every erasure into a
+ * 400 from Keycloak, half-way through an operation that cannot be retried.
+ */
+export const KEYCLOAK_ERASED_MARKER = 'ERASED';
+
 @Injectable()
 export class KeycloakAdminService {
   private readonly baseUrl: string;
@@ -248,6 +258,65 @@ export class KeycloakAdminService {
     await client.users.update({ id: keycloakUserId }, { enabled: false });
     await client.users.logout({ id: keycloakUserId });
     logger.info({ keycloakUserId, realm }, 'keycloak.user.disabled');
+  }
+
+  /**
+   * Erase the personal data Keycloak holds about a user, and end their access (PDPA §33 — TDD OQ-48).
+   *
+   * Anonymising `platform.users` alone leaves the person fully identified in the identity provider:
+   * Keycloak stores `username` (their phone number on Path A, their email on Path B), `email`, and
+   * `firstName` (their display name). Those three ARE the personal data — the `tenant_id` / `user_id`
+   * / `role` attributes are not, and are left in place because the guards and RLS depend on them.
+   *
+   * Disable-and-scrub rather than `deleteUser`: `platform.users.keycloak_user_id` is
+   * `VARCHAR(255) NOT NULL UNIQUE`, so it cannot be nulled. Deleting the Keycloak account would leave
+   * that column pointing at nothing, and every later call through it — `disableUser`, `syncUserRole`,
+   * `setTemporaryPassword` — would 404 on a row that still looks live. The account object survives as
+   * an empty shell; the person does not (PO decision 2026-08-23).
+   *
+   * EVERY REPLACEMENT VALUE BELOW WAS MEASURED against Keycloak 26.6.4 with this realm's declarative
+   * user profile, because three obvious choices are rejected outright:
+   *
+   *   - `email: null` / omitted — `email` is `required: true` in the realm's user profile, and an
+   *     omitted field is left UNCHANGED rather than cleared. So it must be overwritten with a
+   *     syntactically valid address that identifies nobody. `.invalid` is the RFC 2606 reserved TLD:
+   *     it can never resolve or receive mail, so this address cannot reach a real inbox.
+   *   - `firstName: '[ERASED]'` — rejected, `error-person-name-invalid-character`: the
+   *     `person-name-prohibited-characters` validator refuses square brackets. Hence bare `ERASED`,
+   *     which is deliberately NOT the `[ERASED]` marker the database columns use — the two stores
+   *     enforce different character sets and pretending otherwise would be a 400 at erase time, on
+   *     the one operation that must not fail half-way.
+   *   - `username: …` with the realm's original `editUsernameAllowed: false` — rejected,
+   *     `error-user-attribute-read-only`. The realm now sets it `true` (PO decision 2026-08-23);
+   *     without that, the person's own email or phone number stays in the IdP forever and this is
+   *     not an erasure. `lastName` is `required: true` as well, so it takes the same marker.
+   *
+   * `username` becomes `erased-{cosUserId}` — an internal identifier already in the token claims and
+   * not personal data. Deriving it from the user's own id rather than a fresh random keeps this
+   * idempotent: erasing twice produces the same username instead of a second orphan.
+   *
+   * Order matters. Disable and log out FIRST: the scrub is several round-trips, and a live refresh
+   * token would otherwise keep minting access tokens through the middle of it.
+   *
+   * Irreversible by design — the same property `anonymise()` has, for the same reason.
+   */
+  async eraseUser(keycloakUserId: string, realm: string, cosUserId: string): Promise<void> {
+    const client = await this.getAuthenticatedClient(realm);
+    await client.users.update({ id: keycloakUserId }, { enabled: false });
+    await client.users.logout({ id: keycloakUserId });
+    await client.users.update(
+      { id: keycloakUserId },
+      {
+        username: `erased-${cosUserId}`,
+        email: `erased-${cosUserId}@erased.invalid`,
+        firstName: KEYCLOAK_ERASED_MARKER,
+        lastName: KEYCLOAK_ERASED_MARKER,
+        emailVerified: false,
+      },
+    );
+    // No email, no username, no display name in this line — logging them would put the data back
+    // (QM-8). The two ids are the audit trail.
+    logger.info({ keycloakUserId, realm, cosUserId }, 'keycloak.user.erased');
   }
 
   /**

@@ -154,20 +154,104 @@ describe('SubjectRequestRepository', () => {
     expect(sql).toContain("vendor_type = 'INDIVIDUAL'");
   });
 
-  it('anonymise() returns the per-table counts', async () => {
-    mockPrisma.$executeRaw
-      .mockResolvedValueOnce(2)
-      .mockResolvedValueOnce(1)
-      .mockResolvedValueOnce(0)
-      .mockResolvedValueOnce(1);
-    await expect(repo.anonymise('a@b.co', null)).resolves.toEqual({
-      contacts: 2,
-      leads: 1,
-      vendors: 0,
-      workers: 1,
+  // anonymise() went from four bulk UPDATEs returning counts to five returning IDS (OQ-48). The ids
+  // are what the per-entity audit trail is written from, so "how many" is no longer enough.
+  describe('anonymise()', () => {
+    /** Queue one RETURNING result per statement, in the order anonymise() issues them. */
+    function queueErasure(): void {
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([{ contact_id: 'c1' }, { contact_id: 'c2' }]) // crm.contacts
+        .mockResolvedValueOnce([{ lead_id: 'l1' }]) // crm.leads
+        .mockResolvedValueOnce([]) // procurement.vendors
+        .mockResolvedValueOnce([{ worker_id: 'w1' }]) // workforce.workers
+        .mockResolvedValueOnce([{ user_id: 'u1', keycloak_user_id: 'kc-1' }]); // platform.users
+    }
+
+    /** The SQL of the Nth statement, normalised to one line. */
+    function sqlOf(i: number): string {
+      return String((mockPrisma.$queryRaw.mock.calls[i] as unknown[])[0]).replace(/\s+/g, ' ');
+    }
+
+    it('returns the ids it erased, per table, and the Keycloak id of each account', async () => {
+      queueErasure();
+      await expect(repo.anonymise('a@b.co', null)).resolves.toEqual({
+        contacts: ['c1', 'c2'],
+        leads: ['l1'],
+        vendors: [],
+        workers: ['w1'],
+        users: [{ userId: 'u1', keycloakUserId: 'kc-1' }],
+      });
+      // Five tables now, not four — platform.users joined the list (OQ-48).
+      expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(5);
     });
-    // Four tables now, not three — workforce.workers joined the list (OQ-48).
-    expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(4);
+
+    // Not stylistic. `workers` resolves an email THROUGH platform.users; if users were erased first
+    // that lookup would find an empty email, match nothing, and report a clean erasure that never
+    // touched the worker's record.
+    it('erases platform.users LAST, after the workers query that reads it', async () => {
+      queueErasure();
+      await repo.anonymise('a@b.co', null);
+
+      expect(sqlOf(3)).toContain('UPDATE workforce.workers');
+      expect(sqlOf(3)).toContain('SELECT u.user_id FROM platform.users u');
+      expect(sqlOf(4)).toContain('UPDATE platform.users');
+    });
+
+    // Same shape one step earlier: leads are reached through contacts already marked '[ERASED]'.
+    it('erases crm.leads after the contacts it matches them through', async () => {
+      queueErasure();
+      await repo.anonymise('a@b.co', null);
+
+      expect(sqlOf(0)).toContain('UPDATE crm.contacts');
+      expect(sqlOf(1)).toContain('UPDATE crm.leads');
+      expect(sqlOf(1)).toContain("c.name = '[ERASED]'");
+    });
+
+    it('ends the account as part of erasing it, and keeps the row', async () => {
+      queueErasure();
+      await repo.anonymise('a@b.co', null);
+      const users = sqlOf(4);
+
+      // display_name/email/phone_number ARE how the person signs in, so clearing them ends the
+      // account whether or not the flag says so. Leaving is_active true would advertise a live
+      // account nobody can use or identify.
+      expect(users).toContain("display_name = '[ERASED]'");
+      expect(users).toContain("email = ''"); // NOT NULL column; the index on it is not unique
+      expect(users).toContain('phone_number = NULL'); // partial UNIQUE index needs NULL, not a marker
+      expect(users).toContain('is_active = false');
+      // The row survives — it anchors audit_logs.actor_id and every created_by in the system.
+      expect(users).not.toMatch(/\bDELETE\b/);
+      // And the Keycloak id comes back rather than being cleared: the caller needs it to finish.
+      expect(users).toContain('RETURNING user_id::text, keycloak_user_id');
+    });
+
+    it('scopes every statement to the tenant', async () => {
+      queueErasure();
+      await repo.anonymise('a@b.co', null);
+      for (let i = 0; i < 5; i++) expect(sqlOf(i)).toContain('tenant_id = ');
+    });
+  });
+
+  it('writeErasureAudit() writes one row per erased record, with ids and never the values', async () => {
+    mockPrisma.$executeRaw.mockResolvedValue(2);
+    await repo.writeErasureAudit('user-1', REQUEST_ID, [
+      { resourceType: 'workforce.workers', resourceId: 'w1' },
+      { resourceType: 'platform.users', resourceId: 'u1' },
+    ]);
+
+    const params = mockPrisma.$executeRaw.mock.calls[0] as unknown[];
+    const payload = String(params.find((x) => String(x).includes('pii.erased')));
+    expect(payload).toContain('workforce.workers');
+    expect(payload).toContain('w1');
+    expect(payload).toContain('platform.users');
+    // QM-8 again: the trail says WHICH row was erased, never what it said.
+    expect(JSON.stringify(params)).not.toContain('@b.co');
+    expect(String(params[0])).toContain("'PII_ERASED'");
+  });
+
+  it('writeErasureAudit() writes nothing when nothing was erased', async () => {
+    await repo.writeErasureAudit('user-1', REQUEST_ID, []);
+    expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
   });
 
   it('writeAudit() records the count and never the matches themselves', async () => {

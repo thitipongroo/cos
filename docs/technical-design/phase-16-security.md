@@ -260,10 +260,19 @@ alerts that observe these controls).
 None new. Three existing entries land squarely in this phase and are tracked in the register rather
 than duplicated here:
 
-- [OQ-48](README.md#open-questions-register) — PDPA §33 erasure anonymises in place across four
-  tables; `workforce.workers` was added 2026-08-23 because §11.4 had specified it all along.
-  `platform.users` remains unreached, and §11.4's `pii_erased_at` column exists on no table —
-  the audit trail for an erasure is one record per REQUEST, not one per erased row.
+- [OQ-48](README.md#open-questions-register) — **closed 2026-08-23.** PDPA §33 erasure anonymises in
+  place, now across five tables and one external system. `workforce.workers` was added because §11.4
+  had specified it all along; `platform.users` followed, and with it the account itself — those
+  columns are how the person signs in, so `is_active = false` is part of the erasure rather than an
+  addition. The security-relevant half is Keycloak: the identity provider held the subject's
+  username (their email on Path B, their phone on Path A), email and display name, and kept the
+  account ENABLED, so an "erased" person was still fully named there and could still complete a
+  fresh login. `eraseUser` disables, logs out every live session, and overwrites those fields — the
+  realm had to set `editUsernameAllowed: true` before the username could be written at all. A
+  failure there is reported (`keycloak_erase_failed`), never rolled back, because the database half
+  cannot be undone. The audit trail is now two levels: one record per REQUEST and one `PII_ERASED`
+  record per erased ROW, ids only (QM-8). §11.4's `pii_erased_at` column is not being added —
+  in-place anonymisation with no lifecycle flag is the mechanism.
 - [OQ-46](README.md#open-questions-register) — **closed 2026-08-22.** The API gateway that three
   services' auth layers named as their first line of defence is deployed nowhere, and two of them
   accepted `x-tenant-id` — and, in file-service's case, `x-user-role` — with no bearer token at

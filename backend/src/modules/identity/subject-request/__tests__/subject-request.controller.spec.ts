@@ -76,9 +76,10 @@ describe('SubjectRequestController', () => {
   it('erase() passes only the request id and the actor', async () => {
     service.erase.mockResolvedValue({
       request_id: REQUEST_ID,
-      anonymised: { contacts: 0, leads: 0, vendors: 0, workers: 0 },
+      anonymised: { contacts: 0, leads: 0, vendors: 0, workers: 0, users: 0 },
       total: 0,
       archived_file_id: null,
+      keycloak_erase_failed: [],
     });
     await controller.erase(REQUEST_ID, {}, req);
     expect(service.erase).toHaveBeenCalledWith(REQUEST_ID, {}, USER);

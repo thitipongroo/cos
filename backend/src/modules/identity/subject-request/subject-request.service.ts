@@ -32,6 +32,7 @@ import { FileServiceClient } from '../../files/file-service-client.service';
 import { FileLegalHoldService } from '../../files/file-legal-hold.service';
 import { SubjectVerificationService } from './subject-verification.service';
 import { SendGridAdapter } from '../../notification/adapters/sendgrid.adapter';
+import { KeycloakAdminService } from '../keycloak-admin.service';
 
 const logger = createLogger('subject-request');
 
@@ -44,10 +45,24 @@ export interface SubjectMatchResult {
 
 export interface ErasureResult {
   request_id: string;
-  anonymised: { contacts: number; leads: number; vendors: number; workers: number };
+  anonymised: {
+    contacts: number;
+    leads: number;
+    vendors: number;
+    workers: number;
+    users: number;
+  };
   total: number;
   /** File id of the pre-anonymisation snapshot, when a legal hold was asked for. */
   archived_file_id: string | null;
+  /**
+   * COS user ids whose DATABASE row was anonymised but whose KEYCLOAK account was not (TDD OQ-48).
+   *
+   * Normally empty. A non-empty list means the person is erased in Construction OS and still named
+   * and able to log in at the identity provider — the erasure is incomplete and someone has to
+   * finish it by hand. It is surfaced rather than thrown because the database half cannot be undone.
+   */
+  keycloak_erase_failed: string[];
 }
 
 @Injectable()
@@ -58,6 +73,7 @@ export class SubjectRequestService {
     private readonly legalHold: FileLegalHoldService,
     private readonly verification: SubjectVerificationService,
     private readonly email: SendGridAdapter,
+    private readonly keycloak: KeycloakAdminService,
   ) {}
 
   async create(dto: CreateSubjectRequestDto, actorId: string): Promise<SubjectRequestRow> {
@@ -152,22 +168,95 @@ export class SubjectRequestService {
         : null;
 
     const anonymised = await this.repo.anonymise(request.subject_email, request.subject_phone);
-    const total = anonymised.contacts + anonymised.leads + anonymised.vendors + anonymised.workers;
+    const counts = {
+      contacts: anonymised.contacts.length,
+      leads: anonymised.leads.length,
+      vendors: anonymised.vendors.length,
+      workers: anonymised.workers.length,
+      users: anonymised.users.length,
+    };
+    const total = counts.contacts + counts.leads + counts.vendors + counts.workers + counts.users;
 
+    // THE KEYCLOAK HALF. Anonymising `platform.users` on its own is not an erasure: Keycloak holds the
+    // person's username (their email on Path B, their phone number on Path A), their email and their
+    // display name, and the account stays enabled — so they remain fully named in the identity
+    // provider and can still complete a fresh login. `eraseUser` disables, logs out every live
+    // session, and overwrites those fields (TDD OQ-48).
+    //
+    // Failure here is REPORTED, NOT SWALLOWED, and does not roll back. The database columns are
+    // already gone and cannot be put back, so throwing would leave the operator with a request that
+    // looks failed and data that is half erased. Instead the identity provider is named in the
+    // outcome so somebody finishes the job — a silent catch would let a live account survive an
+    // erasure that reported success.
+    const realm = anonymised.users.length > 0 ? await this.repo.findTenantRealm() : null;
+    const keycloakFailures: string[] = [];
+    for (const { userId, keycloakUserId } of anonymised.users) {
+      if (realm === null) {
+        keycloakFailures.push(userId);
+        continue;
+      }
+      try {
+        await this.keycloak.eraseUser(keycloakUserId, realm, userId);
+      } catch (err) {
+        keycloakFailures.push(userId);
+        logger.error(
+          { requestId, userId, err },
+          'subject-request.erase.keycloak_failed — the account is still live in the identity provider',
+        );
+      }
+    }
+
+    // The per-REQUEST record: which request was fulfilled, and how many rows it reached.
     await this.repo.writeAudit({
       actorId,
       action: 'ERASE /api/v1/subject-requests/:id/erase',
       requestId,
       matches: total,
     });
+
+    // The per-ENTITY records — one row per erased record, naming the table and the id (§11.4).
+    // Written after the request-level row so the trail reads request-then-detail, and written from the
+    // ids the UPDATEs returned rather than from a re-query: by now the rows no longer name the person,
+    // so there is nothing left to search for.
+    await this.repo.writeErasureAudit(actorId, requestId, [
+      ...anonymised.contacts.map((id) => ({
+        resourceType: 'crm.contacts' as const,
+        resourceId: id,
+      })),
+      ...anonymised.leads.map((id) => ({ resourceType: 'crm.leads' as const, resourceId: id })),
+      ...anonymised.vendors.map((id) => ({
+        resourceType: 'procurement.vendors' as const,
+        resourceId: id,
+      })),
+      ...anonymised.workers.map((id) => ({
+        resourceType: 'workforce.workers' as const,
+        resourceId: id,
+      })),
+      ...anonymised.users.map((u) => ({
+        resourceType: 'platform.users' as const,
+        resourceId: u.userId,
+      })),
+    ]);
+
     // `held` is a boolean, never the reason: the reason names a live dispute and belongs in
     // files.files.legal_hold_reason, not in an application log (QM-8).
     logger.info(
-      { requestId, ...anonymised, held: archivedFileId !== null },
+      {
+        requestId,
+        ...counts,
+        held: archivedFileId !== null,
+        keycloakFailures: keycloakFailures.length,
+      },
       'subject-request.erase',
     );
 
-    return { request_id: requestId, anonymised, total, archived_file_id: archivedFileId };
+    return {
+      request_id: requestId,
+      anonymised: counts,
+      total,
+      archived_file_id: archivedFileId,
+      keycloak_erase_failed: keycloakFailures,
+    };
   }
 
   /**
