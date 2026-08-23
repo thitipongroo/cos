@@ -204,6 +204,57 @@ Three properties are load-bearing and easy to erode:
 
 ---
 
+#### Device Trust, Public Documents and Subject Rights APIs
+
+Three surfaces that hang off identity without being authentication itself. Tabled 2026-08-24.
+
+**Trusted devices** (ADR-054/082/083). Enrolment never blocks on attestation: a device that cannot
+produce a platform token is enrolled with no verdict recorded, rather than refused.
+
+| Method   | Path                               | Description                                    | Auth         |
+| -------- | ---------------------------------- | ---------------------------------------------- | ------------ |
+| `GET`    | `/api/v1/auth/devices`             | The caller's own trusted devices (non-revoked) | Bearer token |
+| `POST`   | `/api/v1/auth/devices`             | Enrol this device — registers its public key   | Bearer token |
+| `DELETE` | `/api/v1/auth/devices/{device_id}` | Revoke a trusted device                        | Bearer token |
+| `POST`   | `/api/v1/auth/otp/attest`          | Attest device trust before OTP (§20.6.1)       | Public       |
+
+**Public legal documents** (ADR-091). Both routes are PUBLIC and necessarily so: the policy is what
+a person reads BEFORE deciding to sign up, and a notice you must authenticate to read is not a
+notice. They are safe reads of one static document — no tenant, no user, no parameter — so there is
+nothing to scope. They are deliberately NOT behind the inquiry feature flag: that switch exists for
+a route that WRITES, and turning it off must not take the policy document down with it.
+
+| Method | Path                              | Description                                 | Auth   |
+| ------ | --------------------------------- | ------------------------------------------- | ------ |
+| `GET`  | `/api/v1/privacy/policy/metadata` | Version, effective date, file name, SHA-256 | Public |
+| `GET`  | `/api/v1/privacy/policy/pdf`      | The Privacy Policy as a PDF                 | Public |
+| `GET`  | `/api/v1/terms/metadata`          | Version, effective date, file name, SHA-256 | Public |
+| `GET`  | `/api/v1/terms/pdf`               | The Terms of Use as a PDF                   | Public |
+
+**Privacy inquiries and subject-rights requests** (PDPA §30–§34). Lodging an inquiry needs no
+account — the person complaining about how their data was handled may not have one — while reading
+the queue is `SYSTEM_ADMIN`, and acting on a subject request is `TENANT_ADMIN`.
+
+| Method  | Path                                      | Description                                            | Auth         |
+| ------- | ----------------------------------------- | ------------------------------------------------------ | ------------ |
+| `POST`  | `/api/v1/privacy/inquiries`               | Lodge an inquiry without an account                    | Public       |
+| `GET`   | `/api/v1/privacy/inquiries`               | The inquiry queue                                      | System Admin |
+| `GET`   | `/api/v1/privacy/inquiries/{reference}`   | One inquiry, by the reference the sender was given     | System Admin |
+| `POST`  | `/api/v1/subject-requests`                | Raise a subject-rights request                         | Tenant Admin |
+| `GET`   | `/api/v1/subject-requests`                | List subject-rights requests                           | Tenant Admin |
+| `GET`   | `/api/v1/subject-requests/{id}/matches`   | What the tenant holds about this subject               | Tenant Admin |
+| `POST`  | `/api/v1/subject-requests/{id}/verify`    | Email a verification link to the address ON THE RECORD | Tenant Admin |
+| `POST`  | `/api/v1/subject-requests/{id}/erase`     | Anonymise in place (QM-5) — keeps the row, clears PII  | Tenant Admin |
+| `PATCH` | `/api/v1/subject-requests/{id}/close`     | Close as FULFILLED or REJECTED                         | Tenant Admin |
+| `POST`  | `/api/v1/subject-requests/verify/{token}` | The subject confirms the link (single use, no account) | Signed token |
+
+Erasure **anonymises in place** rather than deleting: the row is what other records point at, and a
+site report with no author is a worse record than one whose author is marked erased. The
+verification email goes to the address on the MATCHED RECORD, never to one supplied with the
+request — otherwise anyone could name a subject and have the confirmation sent to themselves.
+
+---
+
 #### Project APIs
 
 | Method  | Path                                  | Description                            | Auth                        |
@@ -246,6 +297,59 @@ The CURRENT phase is **not stored**. It is derived — the lowest-`seq` phase th
 else the lowest-`seq` phase not `COMPLETED`, else none — so there is no second place for it to be
 wrong.
 
+**Project members and status transitions.** Read is any authenticated tenant user; writing either is
+PM or Tenant Admin. Tabled 2026-08-24.
+
+| Method   | Path                                              | Description                       | Auth                    |
+| -------- | ------------------------------------------------- | --------------------------------- | ----------------------- |
+| `GET`    | `/api/v1/projects/{project_id}/members`           | List project members              | Any role                |
+| `POST`   | `/api/v1/projects/{project_id}/members`           | Add or update a member            | PM, Tenant Admin        |
+| `DELETE` | `/api/v1/projects/{project_id}/members/{user_id}` | Remove a member                   | PM, Tenant Admin        |
+| `POST`   | `/api/v1/projects/{project_id}/transitions`       | Trigger a status transition       | PM, Tenant Admin        |
+| `GET`    | `/api/v1/projects/{project_id}/documents`         | List project documents            | Any role                |
+| `GET`    | `/api/v1/projects/{project_id}/progress`          | BOQ-value-weighted earned percent | Exec, PM, SE, SW, Admin |
+
+**The spatial hierarchy** — building → floor → room, plus structures, units and assets — is
+`10-construction-ontology` §10 made addressable. Every level follows the same three shapes: list and
+create under the parent, then read, update and delete by the child's own id. Read is any
+authenticated tenant user throughout; every write is PM or Tenant Admin. Tabled 2026-08-24.
+
+| Method   | Path                                         | Description                   | Auth             |
+| -------- | -------------------------------------------- | ----------------------------- | ---------------- |
+| `GET`    | `/api/v1/projects/{project_id}/buildings`    | List buildings in a project   | Any role         |
+| `POST`   | `/api/v1/projects/{project_id}/buildings`    | Create a building             | PM, Tenant Admin |
+| `GET`    | `/api/v1/buildings/{id}`                     | Get a building                | Any role         |
+| `PATCH`  | `/api/v1/buildings/{id}`                     | Update building metadata      | PM, Tenant Admin |
+| `DELETE` | `/api/v1/buildings/{id}`                     | Delete a building             | PM, Tenant Admin |
+| `GET`    | `/api/v1/buildings/{building_id}/floors`     | List floors in a building     | Any role         |
+| `POST`   | `/api/v1/buildings/{building_id}/floors`     | Create a floor                | PM, Tenant Admin |
+| `GET`    | `/api/v1/floors/{id}`                        | Get a floor                   | Any role         |
+| `PATCH`  | `/api/v1/floors/{id}`                        | Update floor metadata         | PM, Tenant Admin |
+| `DELETE` | `/api/v1/floors/{id}`                        | Delete a floor                | PM, Tenant Admin |
+| `GET`    | `/api/v1/floors/{floor_id}/rooms`            | List rooms on a floor         | Any role         |
+| `POST`   | `/api/v1/floors/{floor_id}/rooms`            | Create a room                 | PM, Tenant Admin |
+| `GET`    | `/api/v1/rooms/{id}`                         | Get a room                    | Any role         |
+| `PATCH`  | `/api/v1/rooms/{id}`                         | Update room metadata          | PM, Tenant Admin |
+| `DELETE` | `/api/v1/rooms/{id}`                         | Delete a room                 | PM, Tenant Admin |
+| `GET`    | `/api/v1/buildings/{building_id}/structures` | List structures in a building | Any role         |
+| `POST`   | `/api/v1/buildings/{building_id}/structures` | Create a structure            | PM, Tenant Admin |
+| `GET`    | `/api/v1/structures/{id}`                    | Get a structure               | Any role         |
+| `PATCH`  | `/api/v1/structures/{id}`                    | Update structure metadata     | PM, Tenant Admin |
+| `DELETE` | `/api/v1/structures/{id}`                    | Delete a structure            | PM, Tenant Admin |
+| `GET`    | `/api/v1/buildings/{building_id}/units`      | List units in a building      | Any role         |
+| `POST`   | `/api/v1/buildings/{building_id}/units`      | Create a unit                 | PM, Tenant Admin |
+| `GET`    | `/api/v1/units/{id}`                         | Get a unit                    | Any role         |
+| `PATCH`  | `/api/v1/units/{id}`                         | Update unit metadata          | PM, Tenant Admin |
+| `DELETE` | `/api/v1/units/{id}`                         | Delete a unit                 | PM, Tenant Admin |
+| `GET`    | `/api/v1/projects/{project_id}/assets`       | List assets in a project      | Any role         |
+| `POST`   | `/api/v1/projects/{project_id}/assets`       | Create an asset               | PM, Tenant Admin |
+| `GET`    | `/api/v1/assets/{id}`                        | Get an asset                  | Any role         |
+| `PATCH`  | `/api/v1/assets/{id}`                        | Update asset metadata         | PM, Tenant Admin |
+| `DELETE` | `/api/v1/assets/{id}`                        | Delete an asset               | PM, Tenant Admin |
+
+Assets hang off the PROJECT, not off a room, because equipment moves: pinning one to a room would
+make its location a fact of the schema rather than of the day.
+
 Example request — create project:
 
 ```json
@@ -259,6 +363,27 @@ POST /api/v1/projects
 }
 
 ```
+
+---
+
+#### BOQ APIs
+
+A BOQ is versioned, and only a `DRAFT` version is editable — approving one supersedes the previous
+`APPROVED` version rather than replacing it, so a purchase order raised last quarter still points at
+the numbers it was raised against. Read is Exec / PM / Finance / Procurement / Tenant Admin; every
+write is PM or Tenant Admin. Tabled 2026-08-24.
+
+| Method   | Path                                                      | Description                             | Auth                       |
+| -------- | --------------------------------------------------------- | --------------------------------------- | -------------------------- |
+| `GET`    | `/api/v1/projects/{project_id}/boq/versions`              | List a project's BOQ versions           | Exec, PM, Fin, Proc, Admin |
+| `POST`   | `/api/v1/projects/{project_id}/boq/versions`              | Create a new DRAFT version              | PM, Tenant Admin           |
+| `GET`    | `/api/v1/projects/{project_id}/boq/versions/{version_id}` | Version detail with categories/items    | Exec, PM, Fin, Proc, Admin |
+| `POST`   | `/api/v1/projects/{project_id}/boq/versions/{id}/approve` | Approve a DRAFT (previous → SUPERSEDED) | PM, Tenant Admin           |
+| `POST`   | `/api/v1/boq/versions/{version_id}/categories`            | Add a category to a DRAFT version       | PM, Tenant Admin           |
+| `POST`   | `/api/v1/boq/versions/{version_id}/items`                 | Add a line item to a DRAFT version      | PM, Tenant Admin           |
+| `PATCH`  | `/api/v1/boq/items/{item_id}`                             | Update a line item (DRAFT only)         | PM, Tenant Admin           |
+| `DELETE` | `/api/v1/boq/items/{item_id}`                             | Delete a line item (DRAFT only)         | PM, Tenant Admin           |
+| `GET`    | `/api/v1/boq/versions/{version_id}/export`                | Export as JSON (default) or CSV         | Exec, PM, Fin, Proc, Admin |
 
 ---
 
@@ -297,6 +422,33 @@ Four further routes on this surface, tabled 2026-08-24:
 A dispute is a HOLD, not a rejection: it stops the invoice being paid while the disagreement is
 open, and the invoice stays on the ledger. The scorecard is derived from the vendor's own delivery
 and quotation history — there is no manually entered rating that can disagree with it.
+
+---
+
+The PO and RFQ state machines, tabled 2026-08-24. Every transition below is a POST to its own path
+rather than a PATCH of a `status` field: a state machine whose transitions are field writes cannot
+enforce which moves are legal, and each of these emits its own event.
+
+| Method | Path                                                       | Description                                  | Auth                          |
+| ------ | ---------------------------------------------------------- | -------------------------------------------- | ----------------------------- |
+| `GET`  | `/api/v1/procurement/purchase-orders/{po_id}`              | PO detail with line items                    | Exec, PM, Fin, Proc, Admin    |
+| `POST` | `/api/v1/procurement/purchase-orders/{po_id}/submit`       | DRAFT → PENDING_APPROVAL                     | Proc Officer, Proc Mgr, Admin |
+| `POST` | `/api/v1/procurement/purchase-orders/{po_id}/reject`       | Return to DRAFT for revision                 | PM, Finance, Exec, Admin      |
+| `POST` | `/api/v1/procurement/purchase-orders/{po_id}/acknowledge`  | SENT → ACKNOWLEDGED (vendor confirmed)       | Proc Officer, Proc Mgr, Admin |
+| `POST` | `/api/v1/procurement/purchase-orders/{po_id}/dispute`      | INVOICED → DISPUTED                          | Finance, Tenant Admin         |
+| `POST` | `/api/v1/procurement/purchase-orders/{po_id}/mark-paid`    | INVOICED → PAID                              | Finance, Tenant Admin         |
+| `GET`  | `/api/v1/procurement/purchase-orders/{po_id}/deliveries`   | Deliveries recorded against this PO          | Exec, PM, Fin, Proc, Admin    |
+| `POST` | `/api/v1/procurement/rfqs/{rfq_id}/publish`                | DRAFT → PUBLISHED                            | Proc Officer, Proc Mgr, Admin |
+| `POST` | `/api/v1/procurement/rfqs/{rfq_id}/close`                  | PUBLISHED → CLOSED (manual)                  | Proc Officer, Proc Mgr, Admin |
+| `POST` | `/api/v1/procurement/rfqs/{rfq_id}/award`                  | EVALUATED → AWARDED                          | Proc Officer, Proc Mgr, Admin |
+| `POST` | `/api/v1/procurement/rfqs/{rfq_id}/cancel`                 | Cancel an RFQ                                | Proc Officer, Proc Mgr, Admin |
+| `POST` | `/api/v1/procurement/rfqs/{rfq_id}/invitations`            | Invite a vendor — returns a magic-link token | Proc Officer, Proc Mgr, Admin |
+| `POST` | `/api/v1/procurement/vendor-invoices/{invoice_id}/approve` | RECEIVED/VERIFIED → APPROVED                 | Finance, Tenant Admin         |
+| `GET`  | `/api/v1/procurement/vendors/directory`                    | Active vendors with their open-project count | Exec, PM, Fin, Proc, Admin    |
+
+Disputing and marking paid are FINANCE's, not Procurement's — the same split as the vendor-invoice
+routes above. Acknowledgement is the opposite: it records what the vendor said, so it belongs to the
+team that talks to them.
 
 ---
 
@@ -427,19 +579,20 @@ whoever happens to hold a role. Tabled 2026-08-24.
 
 #### Workforce APIs
 
-| Method  | Path                                              | Description                         | Auth              |
-| ------- | ------------------------------------------------- | ----------------------------------- | ----------------- |
-| `POST`  | `/api/v1/workers`                                 | Register a worker                   | PM, Site Engineer |
-| `GET`   | `/api/v1/workers`                                 | List workers (tenant-scoped)        | Any role          |
-| `GET`   | `/api/v1/workers/{worker_id}`                     | Get worker detail                   | Any role          |
-| `POST`  | `/api/v1/workers/{worker_id}/attendance`          | Record check-in / check-out         | PM, Site Engineer |
-| `GET`   | `/api/v1/workers/{worker_id}/attendance`          | Attendance history (date range)     | Any role          |
-| `POST`  | `/api/v1/projects/{project_id}/workforce`         | Allocate a worker to a project      | PM, Site Engineer |
-| `GET`   | `/api/v1/projects/{project_id}/workforce`         | List project workforce              | Any role          |
-| `GET`   | `/api/v1/projects/{project_id}/workforce/summary` | Manpower summary (analytics)        | Any role          |
-| `POST`  | `/api/v1/timesheets`                              | Submit a timesheet                  | PM, Site Engineer |
-| `PATCH` | `/api/v1/timesheets/{timesheet_id}/approve`       | Approve a timesheet                 | Site Engineer     |
-| `GET`   | `/api/v1/workers/me`                              | The worker row linked to the caller | Any role          |
+| Method  | Path                                                | Description                                                | Auth              |
+| ------- | --------------------------------------------------- | ---------------------------------------------------------- | ----------------- |
+| `POST`  | `/api/v1/workers`                                   | Register a worker                                          | PM, Site Engineer |
+| `GET`   | `/api/v1/workers`                                   | List workers (tenant-scoped)                               | Any role          |
+| `GET`   | `/api/v1/workers/{worker_id}`                       | Get worker detail                                          | Any role          |
+| `POST`  | `/api/v1/workers/{worker_id}/attendance`            | Record check-in / check-out                                | PM, Site Engineer |
+| `GET`   | `/api/v1/workers/{worker_id}/attendance`            | Attendance history (date range)                            | Any role          |
+| `POST`  | `/api/v1/projects/{project_id}/workforce`           | Allocate a worker to a project                             | PM, Site Engineer |
+| `GET`   | `/api/v1/projects/{project_id}/workforce`           | List project workforce                                     | Any role          |
+| `GET`   | `/api/v1/projects/{project_id}/workforce/summary`   | Manpower summary (analytics)                               | Any role          |
+| `POST`  | `/api/v1/timesheets`                                | Submit a timesheet                                         | PM, Site Engineer |
+| `PATCH` | `/api/v1/timesheets/{timesheet_id}/approve`         | Approve a timesheet                                        | Site Engineer     |
+| `GET`   | `/api/v1/workers/me`                                | The worker row linked to the caller                        | Any role          |
+| `GET`   | `/api/v1/projects/{project_id}/workforce/directory` | Project crew as a contact list, with today's on-site state | Any role          |
 
 `/workers/me` is the bridge between an account and a worker row, so a field worker can check
 themselves in without knowing their own `worker_id`. Scoped by the JWT — no parameter, so it cannot
@@ -579,6 +732,29 @@ POST /api/v1/ai/reports/site-summary
 
 ---
 
+#### Notification APIs
+
+Every route is the caller's own — scoped by the JWT, so none carries a role requirement. Tabled
+2026-08-24.
+
+| Method  | Path                                 | Description                                      | Auth         |
+| ------- | ------------------------------------ | ------------------------------------------------ | ------------ |
+| `GET`   | `/api/v1/notifications`              | The caller's notifications (paginated)           | Bearer token |
+| `PATCH` | `/api/v1/notifications/{id}/read`    | Mark one as read                                 | Bearer token |
+| `PATCH` | `/api/v1/notifications/read-all`     | Mark all as read                                 | Bearer token |
+| `GET`   | `/api/v1/notifications/preferences`  | Own channel preferences                          | Bearer token |
+| `PATCH` | `/api/v1/notifications/preferences`  | Update own channel preferences                   | Bearer token |
+| `POST`  | `/api/v1/notifications/device-token` | Register an Expo push token                      | Bearer token |
+| `GET`   | `/api/v1/notifications/stream`       | **SSE** stream of real-time in-app notifications | Bearer token |
+
+`/stream` is Server-Sent Events, **not** WebSocket (§19.2): notifications travel one way, and SSE
+reconnects on its own over the intermittent connectivity a site has.
+
+Preferences cannot switch off a critical safety notification — the exemption covers the disable path
+as well as quiet hours, through one shared `isCriticalSafetyEvent()` check (§19.6).
+
+---
+
 #### CRM APIs (MVP — UI + backend, ADR-029)
 
 > CRM is MVP : `Lead → Opportunity → Customer`. `convert` wins the
@@ -599,6 +775,38 @@ POST /api/v1/ai/reports/site-summary
 
 ---
 
+#### Analytics APIs
+
+Read-only dashboards over the ClickHouse warehouse. The executive dashboard is restricted; the
+per-project trends are open to any authenticated tenant user, because a trend for a project you can
+already read tells you nothing you could not derive by reading it. Tabled 2026-08-24.
+
+| Method | Path                                                        | Description                                       | Auth                     |
+| ------ | ----------------------------------------------------------- | ------------------------------------------------- | ------------------------ |
+| `GET`  | `/api/v1/analytics/executive`                               | Budget utilisation, at-risk projects, overruns    | Exec, PM, Finance, Admin |
+| `GET`  | `/api/v1/analytics/pm/{project_id}`                         | Manpower trend, open issues, inspection pass rate | Any role                 |
+| `GET`  | `/api/v1/analytics/projects/{project_id}/cost-trend`        | Daily committed vs actual                         | Any role                 |
+| `GET`  | `/api/v1/analytics/projects/{project_id}/procurement-trend` | Daily PO, RFQ and invoice activity                | Any role                 |
+| `GET`  | `/api/v1/analytics/projects/{project_id}/site-trend`        | Daily manpower, issues, inspections               | Any role                 |
+
+---
+
+#### Knowledge Graph APIs
+
+Relationship queries the relational schema answers badly — "which other projects share this vendor"
+is a join across four tables in PostgreSQL and one hop in Neo4j. Read-only, any authenticated tenant
+user. Tabled 2026-08-24.
+
+| Method | Path                                               | Description                           | Auth     |
+| ------ | -------------------------------------------------- | ------------------------------------- | -------- |
+| `GET`  | `/api/v1/graph/projects/{project_id}/vendors`      | Vendors supplying this project        | Any role |
+| `GET`  | `/api/v1/graph/projects/{project_id}/supply-chain` | Material supply chain for the project | Any role |
+| `GET`  | `/api/v1/graph/projects/{project_id}/inspections`  | Inspections with a pass/fail summary  | Any role |
+| `GET`  | `/api/v1/graph/vendors/{vendor_id}/projects`       | Projects sharing this vendor          | Any role |
+| `GET`  | `/api/v1/graph/vendors/{vendor_id}/invoices`       | Invoices this vendor has submitted    | Any role |
+
+---
+
 #### Vendor APIs
 
 | Method | Path                                                 | Description                       | Auth                |
@@ -613,10 +821,21 @@ surface under `/vendor`, authenticated by a vendor token rather than a tenant JW
 no COS account. Both routes are scoped to the vendor the token names, with no `vendor_id` parameter,
 precisely so one vendor cannot ask about another. Tabled 2026-08-24.
 
-| Method | Path                        | Description                           | Auth         |
-| ------ | --------------------------- | ------------------------------------- | ------------ |
-| `GET`  | `/api/v1/vendor/rfqs`       | RFQs this vendor was invited to       | Vendor token |
-| `GET`  | `/api/v1/vendor/quotations` | The vendor's own submitted quotations | Vendor token |
+| Method | Path                                   | Description                              | Auth         |
+| ------ | -------------------------------------- | ---------------------------------------- | ------------ |
+| `GET`  | `/api/v1/vendor/rfqs`                  | RFQs this vendor was invited to          | Vendor token |
+| `GET`  | `/api/v1/vendor/quotations`            | The vendor's own submitted quotations    | Vendor token |
+| `GET`  | `/api/v1/vendor/rfq/{token}`           | Open one invited RFQ — Tier-1 magic link | Magic link   |
+| `POST` | `/api/v1/vendor/rfq/{token}/quotation` | Submit a quotation for it — Tier-1       | Magic link   |
+| `GET`  | `/api/v1/vendor/purchase-orders`       | POs on the linked trading relationship   | Vendor token |
+| `GET`  | `/api/v1/vendor/invoices`              | The vendor's own invoices                | Vendor token |
+| `POST` | `/api/v1/vendor/invoices`              | Submit an invoice against one of its POs | Vendor token |
+
+The portal has **two tiers, and they authenticate differently**. Tier-1 is a single RFQ opened from
+an emailed magic link by a vendor with no account at all — the token names the RFQ and the vendor,
+and nothing else is reachable with it. Tier-2 is a vendor session over a linked trading
+relationship, which is what makes a list of "the vendor's own" POs and invoices meaningful. Neither
+takes a `vendor_id` parameter, so one vendor cannot ask about another. Tabled 2026-08-24.
 
 ---
 
