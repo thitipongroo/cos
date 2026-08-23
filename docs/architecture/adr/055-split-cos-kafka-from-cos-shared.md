@@ -21,7 +21,7 @@ The package violated that rule in practice:
 - `src/kafka/schema-registry.client.ts` used `fs.readFileSync` and `path.join`
 
 At the same time, `00_master` §Phase 8 `Generate:` instructs that the Kafka SDK — `KafkaProducer`,
-`KafkaConsumer`, `OutboxPublisher` with `OutboxPoller` — be delivered *inside* `@cos/shared`. Rule 34
+`KafkaConsumer`, `OutboxPublisher` with `OutboxPoller` — be delivered _inside_ `@cos/shared`. Rule 34
 and the Phase 8 command therefore contradicted each other, and the implementation followed the
 phase command.
 
@@ -35,10 +35,10 @@ Recorded as `35-test-design.md` §35.13 ESC-08; the failing case is `TC-P08-UNIT
 
 Split the package in two along the mobile-safety boundary:
 
-| Package        | Contents                                                                                                   | Consumers                      |
-| -------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------ |
-| `@cos/shared`  | Typed cross-service event payload contracts (`src/events/*.ts`) and the `BaseEventEnvelope` re-export       | All platforms — **mobile-safe** |
-| `@cos/kafka`   | `KafkaProducer`, `KafkaConsumer`, `OutboxPublisher`/`OutboxPoller`, `DlqPublisher`, `KafkaTopicProvisioner`, topic catalog, Prometheus metrics, Schema Registry client, and the Avro `.avsc` schemas | Node services only |
+| Package       | Contents                                                                                                                                                                                             | Consumers                       |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| `@cos/shared` | Typed cross-service event payload contracts (`src/events/*.ts`) and the `BaseEventEnvelope` re-export                                                                                                | All platforms — **mobile-safe** |
+| `@cos/kafka`  | `KafkaProducer`, `KafkaConsumer`, `OutboxPublisher`/`OutboxPoller`, `DlqPublisher`, `KafkaTopicProvisioner`, topic catalog, Prometheus metrics, Schema Registry client, and the Avro `.avsc` schemas | Node services only              |
 
 - `@cos/shared` now declares exactly one runtime dependency, `@cos/types`, and every import in its
   sources is `import type`. It has no executable logic, so under Rule 35 it is exempt from a Jest
@@ -55,11 +55,11 @@ Split the package in two along the mobile-safety boundary:
   runtime dependencies of `@cos/shared` — the package would still not be mobile-safe, and it would
   also split the Kafka SDK across two locations for no benefit.
 - **Alternatives considered:**
-  - *Move only `OutboxPoller`/`OutboxPublisher` to `backend/src` (literal Rule 34(c)).* Rejected —
+  - _Move only `OutboxPoller`/`OutboxPublisher` to `backend/src` (literal Rule 34(c))._ Rejected —
     does not achieve mobile safety, as above.
-  - *Keep one package and narrow Rule 34 to a "server-only subpath".* Rejected — the guarantee then
+  - _Keep one package and narrow Rule 34 to a "server-only subpath"._ Rejected — the guarantee then
     depends on every future import choosing the right subpath, which no gate enforces.
-  - *Leave it, since mobile does not import it today.* Rejected — the alias is present, so the
+  - _Leave it, since mobile does not import it today._ Rejected — the alias is present, so the
     breach is one import away, and the contradiction between Rule 34 and Phase 8 would persist.
 
 ## Consequences

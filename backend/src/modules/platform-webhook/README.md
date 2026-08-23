@@ -33,9 +33,9 @@ Required header: `X-Webhook-Signature: sha256=<hex>`
 
 ## Configuration
 
-| Variable                  | Description                                             |
-| ------------------------- | ------------------------------------------------------- |
-| `PLATFORM_WEBHOOK_SECRET` | HMAC-SHA256 shared secret used to verify every request  |
+| Variable                  | Description                                            |
+| ------------------------- | ------------------------------------------------------ |
+| `PLATFORM_WEBHOOK_SECRET` | HMAC-SHA256 shared secret used to verify every request |
 
 Injected from AWS Secrets Manager (cloud) or HashiCorp Vault (on-premise) — never committed.
 

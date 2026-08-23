@@ -38,9 +38,9 @@ backed by `platform.sync_tombstones`.
 
 ## Configuration
 
-| Variable                        | Description                                              |
-| ------------------------------- | -------------------------------------------------------- |
-| `SYNC_TOMBSTONE_RETENTION_DAYS` | Retention window before a tombstone row is pruned        |
+| Variable                        | Description                                       |
+| ------------------------------- | ------------------------------------------------- |
+| `SYNC_TOMBSTONE_RETENTION_DAYS` | Retention window before a tombstone row is pruned |
 
 ## Usage
 

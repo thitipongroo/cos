@@ -34,12 +34,10 @@ No module-specific environment variables. Uses the shared `DATABASE_URL` (PgBoun
 
 ```typescript
 // Completing a task evaluates all gates; a hard-block failure returns 422
-PATCH /api/v1/tasks/<taskId>
-{ "status": "completed" }
+PATCH / api / v1 / tasks / <taskId>{ status: 'completed' };
 
 // Budget at or above 100% requires explicit PM acknowledgement
-PATCH /api/v1/tasks/<taskId>
-{ "status": "completed", "acknowledge_budget_overrun": true }
+PATCH / api / v1 / tasks / <taskId>{ status: 'completed', acknowledge_budget_overrun: true };
 ```
 
 ## Notes

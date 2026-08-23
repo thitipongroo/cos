@@ -35,7 +35,7 @@ describe('Analytics query layer (Testcontainers — ClickHouse)', () => {
   let service: AnalyticsService;
 
   beforeAll(async () => {
-    container = await new GenericContainer('clickhouse/clickhouse-server:24.8-alpine')
+    container = await new GenericContainer('clickhouse/clickhouse-server:26.3-alpine')
       .withEnvironment({
         CLICKHOUSE_DB: 'analytics',
         CLICKHOUSE_USER: 'cos',

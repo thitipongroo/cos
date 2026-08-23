@@ -30,13 +30,13 @@ from the module class's `onModuleDestroy` (ADR-034 / Rule 39).
 
 ## Configuration
 
-| Variable                | Description                                  |
-| ----------------------- | -------------------------------------------- |
-| `CLICKHOUSE_URL`        | ClickHouse HTTP endpoint                     |
-| `CLICKHOUSE_USER`       | ClickHouse user                              |
-| `CLICKHOUSE_PASSWORD`   | ClickHouse password                          |
-| `CLICKHOUSE_DB`         | ClickHouse database name                     |
-| `REDIS_URL`             | Redis connection string (response cache)     |
+| Variable              | Description                              |
+| --------------------- | ---------------------------------------- |
+| `CLICKHOUSE_URL`      | ClickHouse HTTP endpoint                 |
+| `CLICKHOUSE_USER`     | ClickHouse user                          |
+| `CLICKHOUSE_PASSWORD` | ClickHouse password                      |
+| `CLICKHOUSE_DB`       | ClickHouse database name                 |
+| `REDIS_URL`           | Redis connection string (response cache) |
 
 DI tokens: `CLICKHOUSE_CLIENT`, `ANALYTICS_CACHE_REDIS` (see `analytics.tokens.ts`).
 

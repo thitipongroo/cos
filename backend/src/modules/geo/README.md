@@ -29,9 +29,9 @@ Response:
 
 ## Configuration
 
-| Variable        | Default                  | Description                          |
-| --------------- | ------------------------ | ------------------------------------ |
-| `NOMINATIM_URL` | `http://nominatim:8080`  | Base URL of the Nominatim instance   |
+| Variable        | Default                 | Description                        |
+| --------------- | ----------------------- | ---------------------------------- |
+| `NOMINATIM_URL` | `http://nominatim:8080` | Base URL of the Nominatim instance |
 
 ## Usage
 

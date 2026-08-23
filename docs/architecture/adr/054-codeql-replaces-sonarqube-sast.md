@@ -51,13 +51,13 @@ Replace SonarQube with **GitHub CodeQL** as the SAST gate.
   QM-12 and QM-18 obligations for something that only inspects source code.
 - **Native multi-language coverage.** One job covers the four languages in this monorepo.
 - **Alternatives considered:**
-  - *Keep SonarQube and provision the server.* Rejected: it re-imposes the exact operational cost
+  - _Keep SonarQube and provision the server._ Rejected: it re-imposes the exact operational cost
     that caused the deferral, and delays the Stage 1→2 gate by the length of that infrastructure
     work.
-  - *Semgrep OSS.* Viable and server-free, but CodeQL is native to the CI platform already in use,
+  - _Semgrep OSS._ Viable and server-free, but CodeQL is native to the CI platform already in use,
     needs no third-party token for a public repository, and its results surface directly in the
     repository's security tab.
-  - *Leave the gate deferred.* Rejected: it leaves a Stage 1→2 blocker open with no owner and no
+  - _Leave the gate deferred._ Rejected: it leaves a Stage 1→2 blocker open with no owner and no
     date, and leaves the codebase with no static analysis beyond ESLint's security plugin.
 
 ## Consequences

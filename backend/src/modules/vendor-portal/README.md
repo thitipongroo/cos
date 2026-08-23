@@ -44,8 +44,8 @@ Tier-2 requests carry a `Bearer` vendor session token plus `x-vendor-tenant-id`.
 
 ## Configuration
 
-| Variable               | Description                                                |
-| ---------------------- | ---------------------------------------------------------- |
+| Variable               | Description                                                 |
+| ---------------------- | ----------------------------------------------------------- |
 | `VENDOR_PORTAL_SECRET` | HMAC secret for magic-link tokens and vendor session tokens |
 
 Injected from AWS Secrets Manager (cloud) or HashiCorp Vault (on-premise).

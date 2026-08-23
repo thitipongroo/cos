@@ -14,14 +14,14 @@ last_updated: '2026-07-05'
 
 Six components + their two service hooks were read in full:
 
-| Component | Source file | Browser API used (verified) |
-| --- | --- | --- |
-| `ImageWithFallback` | `.../components/figma/ImageWithFallback.tsx` | `<img onError>` + inline data-URI SVG |
-| `LoadingState` | `.../components/mobile/LoadingState.tsx` | none — CSS only (`animate-pulse` / `animate-spin`) |
-| `AdvancedPhotoCapture` | `.../components/camera/AdvancedPhotoCapture.tsx` | `<input type=file capture>`, `URL.createObjectURL`, `fetch(blob)`→`File` |
-| `PhotoAnnotation` | `.../components/camera/PhotoAnnotation.tsx` | Canvas 2D (`getContext`/`drawImage`/`getImageData`/`toBlob`), `new Image()`, mouse+touch |
-| `VoiceInput` | `.../components/voice/VoiceInput.tsx` + `services/speech.service.ts` | `(webkit)SpeechRecognition` |
-| `LocationDisplay` | `.../components/location/LocationDisplay.tsx` + `services/location.service.ts` | `navigator.geolocation`, `localStorage`, `fetch → nominatim.openstreetmap.org` |
+| Component              | Source file                                                                    | Browser API used (verified)                                                              |
+| ---------------------- | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| `ImageWithFallback`    | `.../components/figma/ImageWithFallback.tsx`                                   | `<img onError>` + inline data-URI SVG                                                    |
+| `LoadingState`         | `.../components/mobile/LoadingState.tsx`                                       | none — CSS only (`animate-pulse` / `animate-spin`)                                       |
+| `AdvancedPhotoCapture` | `.../components/camera/AdvancedPhotoCapture.tsx`                               | `<input type=file capture>`, `URL.createObjectURL`, `fetch(blob)`→`File`                 |
+| `PhotoAnnotation`      | `.../components/camera/PhotoAnnotation.tsx`                                    | Canvas 2D (`getContext`/`drawImage`/`getImageData`/`toBlob`), `new Image()`, mouse+touch |
+| `VoiceInput`           | `.../components/voice/VoiceInput.tsx` + `services/speech.service.ts`           | `(webkit)SpeechRecognition`                                                              |
+| `LocationDisplay`      | `.../components/location/LocationDisplay.tsx` + `services/location.service.ts` | `navigator.geolocation`, `localStorage`, `fetch → nominatim.openstreetmap.org`           |
 
 `LoadingState` exports `SkeletonCard` / `LoadingSpinner` / `EmptyState`.
 
@@ -30,22 +30,22 @@ Six components + their two service hooks were read in full:
 ## 0. Prerequisites (do before any run)
 
 - [ ] Serve over **HTTPS or `localhost`** — geolocation / SpeechRecognition / camera require a
-  secure context; on plain HTTP the APIs never fire.
+      secure context; on plain HTTP the APIs never fire.
 - [ ] `lucide-react` is installed in `apps/web` (**verified missing today**) — all six components
-  import it; without it they fail to build.
+      import it; without it they fail to build.
 - [ ] Reset site permissions (Location / Microphone / Camera) to **Ask** so the permission
-  grant/deny paths are exercised.
+      grant/deny paths are exercised.
 - [ ] Design tokens re-themed: mockup uses `--mobile-*` / `--text-*` / `--touch-*`
-  (React-Native-only per `apps/web/src/app/globals.css`). Confirm computed styles resolve to
-  `§32.7` web tokens (`--cos-*`, `--web-radius-*`). `ImageWithFallback` is the only zero-token one.
+      (React-Native-only per `apps/web/src/app/globals.css`). Confirm computed styles resolve to
+      `§32.7` web tokens (`--cos-*`, `--web-radius-*`). `ImageWithFallback` is the only zero-token one.
 
 ## 1. Browser matrix
 
-| Browser | Why it must be tested |
-| --- | --- |
-| Chrome / Edge (desktop) | Primary target; `SpeechRecognition` supported. |
-| Safari (macOS + iPad) | webkit prefix; validates tablet target + `capture` behaviour. |
-| Firefox (desktop) | **Verified: no `SpeechRecognition`** → must show the graceful fallback, not crash. |
+| Browser                 | Why it must be tested                                                              |
+| ----------------------- | ---------------------------------------------------------------------------------- |
+| Chrome / Edge (desktop) | Primary target; `SpeechRecognition` supported.                                     |
+| Safari (macOS + iPad)   | webkit prefix; validates tablet target + `capture` behaviour.                      |
+| Firefox (desktop)       | **Verified: no `SpeechRecognition`** → must show the graceful fallback, not crash. |
 
 ## 2. Per-component cases
 
@@ -53,7 +53,7 @@ Six components + their two service hooks were read in full:
 
 - [ ] Valid `src` → image renders (all browsers).
 - [ ] Broken/404 `src` → `onError` swaps to the SVG fallback; fallback `<img>` has
-  `alt="Error loading image"` and the original URL is preserved on `data-original-url`.
+      `alt="Error loading image"` and the original URL is preserved on `data-original-url`.
 - [ ] No lingering console error.
 
 ### LoadingState — 🟢 automatable
@@ -82,8 +82,8 @@ Six components + their two service hooks were read in full:
 - [ ] Undo steps back via `putImageData`; disabled at the last remaining state.
 - [ ] Save → `canvas.toBlob` returns a PNG blob.
 - [ ] **CORS (critical)**: annotate a **remote image with no CORS header** then Save → expect
-  `toBlob` to **throw (tainted canvas)**; with `Access-Control-Allow-Origin` present → passes.
-  Confirms storage-CORS must be controlled.
+      `toBlob` to **throw (tainted canvas)**; with `Access-Control-Allow-Origin` present → passes.
+      Confirms storage-CORS must be controlled.
 
 ### VoiceInput — 🟠 policy + partly manual
 
@@ -91,9 +91,9 @@ Six components + their two service hooks were read in full:
 - [ ] **Safari**: works? (webkit prefix) — **observe on a real device.**
 - [ ] **Firefox**: **verified** → must show "Voice input not supported in this browser" (no crash).
 - [ ] Deny mic → error banner (`bg-red-50`), listening state cleared. **On real browsers only** —
-  see the verified note in §4 (headless Chromium does not deny the mic).
+      see the verified note in §4 (headless Chromium does not deny the mic).
 - [ ] Language picker changes `recognition.lang`. **Gap: the languages list has no `th` (Thai)** —
-  10 languages, Thai absent.
+      10 languages, Thai absent.
 - [ ] **Privacy**: confirm Chrome ships audio off-device (DevTools network) → policy decision.
 
 ### LocationDisplay — 🔴 core fix required
@@ -102,32 +102,32 @@ Six components + their two service hooks were read in full:
 - [ ] Deny permission → "Location permission denied" (`PERMISSION_DENIED`).
 - [ ] On plain HTTP → API inert → confirms HTTPS requirement.
 - [ ] **Reverse-geocode (critical)**: DevTools Network shows a call to
-  `nominatim.openstreetmap.org` with the `User-Agent` header **dropped** (browsers forbid setting
-  it) and subject to rate-limit → address falls back to "Unknown location". **Confirms
-  `reverseGeocode` must be replaced with a COS backend endpoint before production** (external call
-  also leaks site coordinates to a third party). The `getCurrentPosition` call itself is fine.
+      `nominatim.openstreetmap.org` with the `User-Agent` header **dropped** (browsers forbid setting
+      it) and subject to rate-limit → address falls back to "Unknown location". **Confirms
+      `reverseGeocode` must be replaced with a COS backend endpoint before production** (external call
+      also leaks site coordinates to a third party). The `getCurrentPosition` call itself is fine.
 
 ## 3. Cross-cutting
 
 - [ ] **PWA/offline (Serwist)**: offline → network-dependent components (VoiceInput,
-  LocationDisplay reverse-geocode) degrade without crashing.
+      LocationDisplay reverse-geocode) degrade without crashing.
 - [ ] **Dark mode** (`<html class="dark">`): text legible in both themes after re-theme.
 - [ ] **i18n**: mockup strings are hardcoded English ("Take Photos", "Listening…", "Current
-  Location"). Port must route through `useI18n().t(...)`. **Gap: mockup does not use i18n.**
+      Location"). Port must route through `useI18n().t(...)`. **Gap: mockup does not use i18n.**
 - [ ] **Console/network**: no errors; no unintended external calls (especially Nominatim).
 
 ## 4. Automatable vs manual (for the Playwright spec)
 
-| Area | Automatable | Reason |
-| --- | --- | --- |
-| ImageWithFallback fallback | ✅ yes | Deterministic `onError`. |
-| LoadingState render + EmptyState action | ✅ yes | Pure DOM/CSS. |
-| LocationDisplay permission **denied** | ✅ yes | `context.clearPermissions()` + assert denied text. |
-| LocationDisplay granted (positive control) | ✅ yes | `grantPermissions` + `setGeolocation`; Nominatim aborted via `context.route`. |
-| VoiceInput render + listening transition | ✅ yes | **Verified**: headless Chromium exposes `(webkit)SpeechRecognition`; `start()` succeeds → assert listening state. |
-| VoiceInput mic-**denied** error path | ❌ manual | **Verified**: headless Chromium does not deny the mic (`start()` succeeds, no error) → banner never fires. |
-| VoiceInput live transcription | ❌ manual | No real audio in CI; Chromium speech uses Google servers. |
-| Camera capture, canvas drawing, real GPS fix | ❌ manual | Need real device sensors / grantable hardware. |
+| Area                                         | Automatable | Reason                                                                                                            |
+| -------------------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------- |
+| ImageWithFallback fallback                   | ✅ yes      | Deterministic `onError`.                                                                                          |
+| LoadingState render + EmptyState action      | ✅ yes      | Pure DOM/CSS.                                                                                                     |
+| LocationDisplay permission **denied**        | ✅ yes      | `context.clearPermissions()` + assert denied text.                                                                |
+| LocationDisplay granted (positive control)   | ✅ yes      | `grantPermissions` + `setGeolocation`; Nominatim aborted via `context.route`.                                     |
+| VoiceInput render + listening transition     | ✅ yes      | **Verified**: headless Chromium exposes `(webkit)SpeechRecognition`; `start()` succeeds → assert listening state. |
+| VoiceInput mic-**denied** error path         | ❌ manual   | **Verified**: headless Chromium does not deny the mic (`start()` succeeds, no error) → banner never fires.        |
+| VoiceInput live transcription                | ❌ manual   | No real audio in CI; Chromium speech uses Google servers.                                                         |
+| Camera capture, canvas drawing, real GPS fix | ❌ manual   | Need real device sensors / grantable hardware.                                                                    |
 
 The automatable rows are covered by
 [`tests/e2e/specs/component-port.spec.ts`](../../../tests/e2e/specs/component-port.spec.ts).

@@ -28,11 +28,11 @@ The driver is created in the module factory and closed on shutdown (ADR-034 / Ru
 
 ## Configuration
 
-| Variable          | Description                    |
-| ----------------- | ------------------------------ |
-| `NEO4J_URI`       | Bolt URI of the Neo4j instance |
-| `NEO4J_USERNAME`  | Neo4j user                     |
-| `NEO4J_PASSWORD`  | Neo4j password                 |
+| Variable         | Description                    |
+| ---------------- | ------------------------------ |
+| `NEO4J_URI`      | Bolt URI of the Neo4j instance |
+| `NEO4J_USERNAME` | Neo4j user                     |
+| `NEO4J_PASSWORD` | Neo4j password                 |
 
 ## Usage
 
