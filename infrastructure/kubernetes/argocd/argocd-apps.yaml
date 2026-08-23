@@ -709,3 +709,167 @@ spec:
         duration: 5s
         maxDuration: 3m
         factor: 2
+
+
+# ─── Infrastructure workloads in namespace `cos` (added 2026-08-23) ──────────────────────────────
+#
+# WHY THESE ARRIVED LATE. Until now NO Application pointed anywhere inside infrastructure/kubernetes/
+# — the 21 existing ones cover infrastructure/helm/cos-* and the otel overlays only. Everything else
+# was applied by hand: of the 15 manifests under that tree, 3 carried a "# Deploy:" comment and 12
+# carried nothing at all, and nothing anywhere recorded whether any of them had ever been applied.
+#
+# That is tolerable for a bootstrap component installed once. It is not tolerable for these five,
+# because other things in the repository already depend on them being there — a runbook step, a P0
+# alert, a readiness check, a recovery procedure. A dependency on something nobody can confirm exists
+# is the same shape as the Keycloak backup CronJob that lived only as prose in a runbook.
+#
+# MANUAL SYNC, like the rest of production. No `automated` block: promotion stays a human action
+# (QM-16), and scripts/ci/check-argocd-sync-policy.mjs fails the build if one of these grows one.
+#
+# STILL DELIBERATELY MANUAL, because ArgoCD cannot sync them before it can sync anything:
+#   namespaces/       — the namespaces and quotas everything else lands in
+#   sealed-secrets/   — the controller must decrypt SealedSecrets before a workload can mount them
+#   cert-manager/     — ClusterIssuer; needs the cert-manager CRDs installed first
+#   external-secrets/ — its own namespace and ServiceAccount
+#   autoscaler/       — kube-system Deployment plus cluster-scoped RBAC
+#   argocd/           — ArgoCD itself, and argocd-apps.yaml is this file
+#   kong/             — a Kong declarative config, not Kubernetes manifests
+# Their order is in docs/runbooks/deployment.md § Cluster bootstrap.
+---
+# QM-18 puts PgBouncer between every service and PostgreSQL, and db-failover.md tells an operator
+# to "kubectl -n cos rollout restart deployment/pgbouncer" after a failover. Nothing deployed it.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cos-pgbouncer
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: construction-os
+  source:
+    repoURL: https://github.com/construction-os/construction-os
+    targetRevision: main
+    path: infrastructure/kubernetes/pgbouncer
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cos
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        maxDuration: 3m
+        factor: 2
+---
+# The synthetic cross-tenant probe (§30.6). It publishes tenant_isolation_check_result and is what
+# raises TenantIsolationBreach — a P0. Readiness check AUTO-29 looks for this CronJob.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cos-isolation-probe
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: construction-os
+  source:
+    repoURL: https://github.com/construction-os/construction-os
+    targetRevision: main
+    path: infrastructure/monitoring/isolation-probe
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cos
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        maxDuration: 3m
+        factor: 2
+---
+# The daily realm export. keycloak-realm-recovery.md Scenario A reads the objects it writes, so a
+# realm restore depends on this having run.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cos-keycloak-backup
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: construction-os
+  source:
+    repoURL: https://github.com/construction-os/construction-os
+    targetRevision: main
+    path: infrastructure/kubernetes/keycloak
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cos
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        maxDuration: 3m
+        factor: 2
+---
+# Kafka StatefulSet + Schema Registry. Every domain event in the platform goes through them.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cos-kafka
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: construction-os
+  source:
+    repoURL: https://github.com/construction-os/construction-os
+    targetRevision: main
+    path: infrastructure/kubernetes/kafka
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cos
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        maxDuration: 3m
+        factor: 2
+---
+# MLflow tracking server (Phase 23).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cos-mlflow
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: construction-os
+  source:
+    repoURL: https://github.com/construction-os/construction-os
+    targetRevision: main
+    path: infrastructure/kubernetes/mlflow
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cos
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        maxDuration: 3m
+        factor: 2

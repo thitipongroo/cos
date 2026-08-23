@@ -272,7 +272,14 @@ Runtime: Temporal, AWS RDS, AWS Secrets Manager, AWS KMS.
 
 ## 14. Open questions / NOT SPECIFIED
 
-None specific to this phase. The one qualification on its implementation status —
-that the `enterprise-provisioning` worker is never launched — is
-[OQ-32](README.md#open-questions-register), which spans Phases 5, 9 and 25 and is recorded there
-rather than duplicated here.
+Two, both recorded in the register rather than duplicated here:
+
+- [OQ-32](README.md#open-questions-register) — the `enterprise-provisioning` worker is never
+  launched. Spans Phases 5, 9 and 25.
+- [OQ-51](README.md#open-questions-register) — **closed 2026-08-23.** The dedicated realm this phase
+  provisions could not be used. Provisioning writes a per-tenant `cos-{tenantCode}` realm (§7.6) and
+  `platform.tenants.keycloak_realm` is `NOT NULL UNIQUE`, but `KeycloakJwtStrategy` validates against
+  ONE realm from a single `KEYCLOAK_REALM` env var — so a token minted in a dedicated realm is
+  rejected by the API, and nothing checks that a token's issuing realm is the one registered for the
+  tenant it claims. Measured 2026-08-23. Raised here because provisioning a realm nobody can
+  authenticate against is this phase's output being unusable, not just an auth detail.

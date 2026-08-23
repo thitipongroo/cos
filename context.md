@@ -214,8 +214,15 @@ Before starting any implementation task:
     - SMB/mid-market (STARTER, PROFESSIONAL): shared realm `construction-os`
     - ENTERPRISE: dedicated realm `cos-{tenantCode}`, provisioned by Phase 25
       EnterpriseProvisioningWorkflow
-    - `keycloak-jwt.strategy.ts` reads `KEYCLOAK_REALM` env var (`construction-os`
-      for shared-realm tenants)
+    - `keycloak-jwt.strategy.ts` resolves the issuer PER TOKEN (2026-08-23, TDD OQ-51):
+      the trusted-issuer allowlist is `SELECT keycloak_realm FROM platform.tenants WHERE
+      is_active = true` (cached 60s), JWKS is fetched from `KEYCLOAK_URL` + that realm, and
+      `validate()` REJECTS unless the realm in `iss` equals the tenant'''s `keycloak_realm`.
+      It previously validated against a single `KEYCLOAK_REALM` env var, so a dedicated
+      ENTERPRISE realm could not authenticate at all and the `tenant_id` claim was believed
+      with nothing tying it to the issuer. `KEYCLOAK_REALM` still seeds the dev default and
+      `KEYCLOAK_URL` still supplies the JWKS host (split horizon) — a token'''s `iss` host is
+      never used to fetch keys.
 - All inputs validated at the API layer — never trust client-supplied data; use **class-validator** (TypeScript/NestJS DTOs) or **Pydantic** (Python/FastAPI) for schema validation — never hand-written `if` checks alone (source: master API gateway + spec §30.3; `@cos/validation` uses class-validator)
 - SQL queries via Prisma ORM only — never raw string interpolation in SQL
 - **Schema-qualified SQL names MANDATORY** — all SQL (raw queries, migrations, multi-schema Prisma `@@schema` models) must reference tables by schema-qualified name (`procurement.vendors`, `finance.project_budgets`) — **never unqualified**; prevents `search_path` ambiguity across the multi-schema tenant model and keeps RLS/tenant isolation deterministic (spec §11.0 rule 2; pairs with the RLS mandate under "Skip RLS on domain tables")

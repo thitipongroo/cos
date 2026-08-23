@@ -62,6 +62,47 @@ Phase 19 checklist.
 > inspect an Application named `cos-production` that has never existed. Both are corrected; the gate
 > is what keeps them corrected.
 
+## Cluster bootstrap — what ArgoCD does NOT deploy
+
+**Added 2026-08-23.** Until then no Application pointed anywhere inside
+`infrastructure/kubernetes/`: the Applications covered `infrastructure/helm/cos-*` and the otel
+overlays only, and everything else in that tree was applied by hand. Of its 15 manifests, 3 carried a
+`# Deploy:` comment and 12 carried nothing — and nothing anywhere recorded whether any had been
+applied. Five of them are now Applications, because other things in the repository already depend on
+them existing:
+
+| Application           | Path                                       | Depended on by                                            |
+| --------------------- | ------------------------------------------ | --------------------------------------------------------- |
+| `cos-pgbouncer`       | `infrastructure/kubernetes/pgbouncer`      | QM-18; `db-failover.md` restarts it after a failover      |
+| `cos-isolation-probe` | `infrastructure/monitoring/isolation-probe` | `TenantIsolationBreach` (P0); readiness AUTO-29           |
+| `cos-keycloak-backup` | `infrastructure/kubernetes/keycloak`       | `keycloak-realm-recovery.md` Scenario A reads its output  |
+| `cos-kafka`           | `infrastructure/kubernetes/kafka`          | every domain event                                        |
+| `cos-mlflow`          | `infrastructure/kubernetes/mlflow`         | Phase 23                                                   |
+
+All five are **manual-sync**, like the rest of production, and
+`scripts/ci/check-argocd-sync-policy.mjs` fails the build if one grows an `automated` block.
+
+### Applied by hand, in this order
+
+ArgoCD cannot sync these — several must exist before ArgoCD can sync anything at all.
+
+1. `infrastructure/kubernetes/namespaces/` — namespaces, quotas and limit ranges everything lands in.
+2. `infrastructure/kubernetes/sealed-secrets/` — the controller, then the SealedSecrets. A workload
+   scheduled before it can decrypt its secret will crash-loop on a missing value.
+3. `infrastructure/kubernetes/cert-manager/` — `ClusterIssuer`; needs the cert-manager CRDs first.
+4. `infrastructure/kubernetes/external-secrets/` — its own namespace and ServiceAccount.
+5. `infrastructure/kubernetes/autoscaler/` — `kube-system` Deployment plus cluster-scoped RBAC.
+6. ArgoCD itself, then `kubectl apply -f infrastructure/kubernetes/argocd/argocd-apps.yaml -n argocd`.
+
+Not Kubernetes manifests, and applied by their own tooling: `infrastructure/kubernetes/kong/`
+(a Kong declarative config). Two small `cos`-namespace manifests are still hand-applied and each
+carries its own `# Deploy:` line — `security/cloudflare-origin-protection.yaml` and
+`argo-rollouts/analysis-template-error-rate.yaml`.
+
+> **Nothing verifies that the hand-applied set was applied.** That is the residual risk this split
+> narrows rather than removes: the five Applications above are now visible in `argocd app list`,
+> the rest are not visible anywhere.
+
 ## Pre-deployment checklist
 
 - [ ] CI pipeline passing (all test gates green — see [`../manual/ci-cd.md`](../manual/ci-cd.md))

@@ -367,6 +367,16 @@ Steps :
 1. Tenant registration request received (via platform admin API)
 2. Tenant record created in `tenants` table with unique `tenant_id` (UUID)
 3. Keycloak assignment: shared realm for SMB/mid-market; dedicated realm created for enterprise.
+
+   > **Validation honours this as of 2026-08-23 (TDD OQ-51).** Until then it did not: token MINTING
+   > read `platform.tenants.keycloak_realm` per tenant, but `KeycloakJwtStrategy` validated `iss`
+   > against ONE realm from a single `KEYCLOAK_REALM` env var — so a dedicated-realm token was
+   > rejected outright and this line described a capability the platform did not have. The strategy
+   > now resolves the issuer per token against a trusted-issuer allowlist taken from that column, and
+   > **binds it**: a token is refused unless the realm in its `iss` is the realm registered for the
+   > tenant it claims. Signature and audience prove a token is genuine, not which tenant it may act
+   > as — `tenant_id` is a Keycloak user attribute, so without the binding any trusted realm could
+   > name another realm'''s tenant.
    **Protocol mappers MUST be configured** on every realm (shared or dedicated) per `05-security-compliance`
    §5.4.2 — mappers for `tenant_id`, `user_id`, and `role` are required before any user can authenticate.
    Missing mappers cause Kong Gateway to reject all requests.

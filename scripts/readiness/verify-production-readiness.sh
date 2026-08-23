@@ -406,11 +406,19 @@ echo "  [AUTO-31] Keycloak realm isolation..."
 # authenticate into another's. The specs that mention keycloak_realm exercise user and tenant service
 # logic, not realm isolation, and the live probe's five surfaces do not include Keycloak.
 #
-# This is a real gap in a real boundary (spec §7.6 gives ENTERPRISE tenants their own realm), so it
-# fails rather than skips. Close it by adding a Keycloak surface to the isolation probe — that is
-# where the other four cross-tenant reads already live — or by writing the test this check used to
-# point at. Do not silence it by deleting the check.
-fail "AUTO-31: Keycloak realm isolation has NO test — see the note above this check"
+# THE PROPERTY NOBODY WROTE A TEST FOR, identified 2026-08-23 (TDD OQ-51):
+#
+#   the realm in a token'''s `iss` == platform.tenants.keycloak_realm for the tenant_id it claims
+#
+# KeycloakJwtStrategy validates `iss` against ONE realm from a single KEYCLOAK_REALM env var and its
+# validate() never reads t.keycloak_realm — so the binding is unenforced, and a dedicated
+# cos-{tenantCode} realm (§7.6) cannot authenticate against the API at all. The dev seed already
+# violates it: dev@cos.local is in realm construction-os-dev and claims a tenant_id whose registered
+# realm is construction-os.
+#
+# Fails rather than skips, and stays failing until OQ-51 is decided — enforcing the binding is an
+# auth change that would reject that seed as it stands. Do not silence it by deleting the check.
+fail "AUTO-31: Keycloak realm isolation is unenforced and untested — TDD OQ-51"
 
 # ── Summary ────────────────────────────────────────────────────────────────────
 
