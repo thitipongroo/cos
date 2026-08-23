@@ -2,7 +2,8 @@
 
 ## Purpose
 
-Manages daily field operations: site reports, issue tracking, safety inspections, and offline sync conflict resolution. Primary data-capture module for field workers (SITE_WORKER, SITE_ENGINEER).
+Manages daily field operations: site reports, issue tracking, safety inspections, and offline sync
+conflict resolution. Primary data-capture module for field workers (SITE_WORKER, SITE_ENGINEER).
 
 ## Public API
 

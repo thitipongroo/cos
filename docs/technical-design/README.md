@@ -256,8 +256,13 @@ implementation.
 ## Open questions register
 
 Contradictions found in the source material while compiling these pages. Each is recorded here and
-carried into the § 14 of the affected phase page. Entries the product owner has since decided are
-marked **Closed** with the date and the evidence; the rest are open and await a decision.
+carried into the § 14 of the affected phase page. An entry is marked **Closed** with the date and the
+evidence that settled it; anything not so marked is open and awaits a product-owner decision.
+
+**As of 2026-08-23: 50 entries, all 50 closed.** That is a statement about this register, not about
+the system — it means every contradiction found while compiling these pages has been run to ground,
+not that none remain to be found. New entries are expected as the pages are read against the code
+again; a closed register is where the next audit starts, not where auditing stops.
 
 | ID   | Where                                                                                                      | What                                                                                                                                                                                                | Affects            |
 | ---- | ---------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
