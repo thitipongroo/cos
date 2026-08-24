@@ -19,7 +19,7 @@ func scrape(t *testing.T) string {
 	return rec.Body.String()
 }
 
-// The names and label sets must match packages/@cos/shared/src/kafka/metrics.ts, or the shared
+// The names and label sets must match packages/@cos/kafka/src/metrics.ts, or the shared
 // Grafana panels and the alert rules silently skip these workers.
 func TestExposesTheSharedKafkaMetricNames(t *testing.T) {
 	coskafka.MessagesConsumed.WithLabelValues("t.a.b.v1", "svc.shared", "a.b.v1").Inc()

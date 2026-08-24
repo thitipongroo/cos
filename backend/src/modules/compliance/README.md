@@ -46,4 +46,4 @@ await complianceAuditService.startAudit('SOC2_TYPE_II');
 - Compliance documents that must exist before Phase 16 sign-off:
   `docs/compliance/soc2-controls.md`, `docs/compliance/data-flow-map.md`,
   `docs/compliance/data-retention-policy.md`.
-- Test design: `docs/manual/35-test-design.md` §35.10.16.
+- Test design: `docs/architecture/test-design/phase-16-security.md` §35.10.16.

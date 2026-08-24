@@ -10,7 +10,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 )
 
-// Retry policy — identical to MAX_RETRIES / RETRY_DELAYS_MS in @cos/shared/src/kafka/consumer.ts.
+// Retry policy — identical to MAX_RETRIES / RETRY_DELAYS_MS in @cos/kafka/src/consumer.ts.
 // Kept in step deliberately: an operator reasoning about redelivery should not have to ask which
 // language a consumer happens to be written in.
 var retryDelays = []time.Duration{1 * time.Second, 5 * time.Second, 30 * time.Second}

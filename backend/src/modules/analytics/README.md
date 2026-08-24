@@ -54,4 +54,4 @@ Cache is invalidated event-driven: a relevant Kafka event clears the matching ca
 - Request validation lives in `analytics.request.ts` (class-validator) — malformed `dateRange` or
   `projectIds` return 400 with field-level detail.
 - Dashboard/analytics latency SLO: p95 < 1 s (`31-monitoring-observability` §31.6, QM-6).
-- Test design: `docs/manual/35-test-design.md` §35.10.14.
+- Test design: `docs/architecture/test-design/phase-14-analytics-and-dashboard.md` §35.10.14.

@@ -29,7 +29,7 @@ The breach was latent rather than active: `apps/mobile` imports nothing from `@c
 But `apps/mobile/tsconfig.json` carries a `@cos/shared` path alias, so the first mobile import of an
 event type would have pulled `kafkajs` into the Metro bundle.
 
-Recorded as `35-test-design.md` §35.13 ESC-08; the failing case is `TC-P08-UNIT-016`.
+Recorded as docs/architecture/test-design/escalation-register.md §35.13 ESC-08; the failing case is `TC-P08-UNIT-016`.
 
 ## Decision
 
@@ -88,5 +88,5 @@ Split the package in two along the mobile-safety boundary:
 
 - `context.md` Rule 34, Rule 35, Rule 33
 - `context/00_master_construction_os.md` §Phase 1 (shared package boundaries), §Phase 8
-- `docs/manual/35-test-design.md` §35.13 ESC-08, `TC-P08-UNIT-016`
+- `docs/architecture/test-design/README.md` §35.13 ESC-08, `TC-P08-UNIT-016`
 - `docs/specifications/32-implementation-specifications.md` §32.4 (event contracts)

@@ -33,7 +33,7 @@ export class WorkforceService {
     private readonly repo: WorkforceRepository,
   ) {}
 
-  // ADR-031 context sources. Corrected 2026-08-22 (35-test-design.md §35.13 ESC-16): both getters
+  // ADR-031 context sources. Corrected 2026-08-22 (docs/architecture/test-design/escalation-register.md §35.13 ESC-16): both getters
   // previously read the Passport projection (`req.user?.sub`), which nothing in this codebase ever
   // sets — JwtAuthGuard publishes `userId` (from `user_id`) into CLS, and TenantContextInterceptor
   // projects `req.userId`/`req.tenantId`. `user?.sub` therefore always fell through to the literal

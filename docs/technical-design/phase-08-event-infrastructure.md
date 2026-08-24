@@ -275,7 +275,7 @@ Verified on **2026-08-21** against this working tree (Rule 36).
 | -------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------- |
 | Docker Compose: Kafka + Registry | ✅ present | `docker-compose.yml` → `kafka` (`confluentinc/cp-kafka:8.3.0`, KRaft), `schema-registry`                |
 | Kubernetes manifests             | ✅ present | `infrastructure/kubernetes/kafka/kafka-statefulset.yaml`, `schema-registry-deployment.yaml`             |
-| `KafkaProducer`                  | ✅ present | `packages/@cos/shared/src/kafka/producer.ts`                                                            |
+| `KafkaProducer`                  | ✅ present | `packages/@cos/kafka/src/producer.ts`                                                                   |
 | `KafkaConsumer` + idempotency    | ✅ present | `kafka/consumer.ts`; `__tests__/consumer.idempotency.spec.ts`                                           |
 | Outbox publisher / poller        | ✅ present | `kafka/outbox.ts`; `backend/src/shared/events/event-outbox.service.ts`, `outbox-poller.service.ts`      |
 | DLQ + retry                      | ✅ present | `kafka/dlq.ts` + `__tests__/dlq.spec.ts`                                                                |

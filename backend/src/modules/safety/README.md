@@ -59,4 +59,4 @@ PATCH /api/v1/safety/permits/<permitId>/approve
 - A task cannot complete while a linked HIGH/CRITICAL incident is open (Phase 6 gate #5) or while a
   linked permit is `EXPIRED`/`REVOKED` (gate #4).
 - OpenAPI spec: `docs/api/safety.openapi.yaml`.
-- Test design: `docs/manual/35-test-design.md` §35.10.6.
+- Test design: `docs/architecture/test-design/phase-06-site-operations.md` §35.10.6.

@@ -6,7 +6,7 @@
 //   - context.md Phase 19 automated check #7 : k6 run --vus 100 --duration 300s
 //   - spec 31-monitoring-observability 31.6 : the same SLO targets
 //
-// Rewritten 2026-08-22 (see docs/manual/35-test-design.md 35.13 ESC-12): the previous
+// Rewritten 2026-08-22 (see docs/architecture/test-design/README.md 35.13 ESC-12): the previous
 // version ran 20->50 VUs against /health/live only, with a single p95<1000ms threshold. That did
 // not exercise any read or write endpoint and did not match the profile context.md documents for
 // this file, so the Phase 19 gate was not actually measuring the QM-6 budget.

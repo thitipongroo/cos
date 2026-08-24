@@ -2,7 +2,7 @@
 
 > Verified against the codebase on 2026-07-20. Where this file names a concrete route, module, or
 > topic it was read from source, not from a plan. The authoritative registries live in code and win
-> any disagreement: `packages/@cos/shared/src/kafka/topic-catalog.ts` for events and topics,
+> any disagreement: `packages/@cos/kafka/src/topic-catalog.ts` for events and topics,
 > `backend/src/modules/` for the module list, `services/` for the service list.
 
 ## Runtime Topology
@@ -120,7 +120,7 @@ tenant-prefixed form (`{tenant_id}.{type}`) — see the Runtime Topology box.
   real vectors yet. Scheduled for a full build (§22).
 
 **Source of truth — do not maintain a copy of the event list here.** The catalogue is
-`EVENT_AVSC_MAP` in [`packages/@cos/shared/src/kafka/topic-catalog.ts`](../../packages/@cos/shared/src/kafka/topic-catalog.ts),
+`EVENT_AVSC_MAP` in [`packages/@cos/kafka/src/topic-catalog.ts`](../../packages/@cos/kafka/src/topic-catalog.ts),
 which maps every event type to its Avro schema and feeds both the producer's schema lookup and the
 per-tenant topic provisioner. Individual event payload types live in `packages/@cos/shared/src/events/`.
 Consumer subscriptions are declared at each consumer: `SUBSCRIBED_EVENT_TYPES` in
@@ -133,7 +133,7 @@ Consumer subscriptions are declared at each consumer: `SUBSCRIBED_EVENT_TYPES` i
 - **Synchronous (HTTP):** only client → Kong → service; never service-to-service HTTP inside monolith boundary
 - **Asynchronous:** inter-module coordination via Kafka events, written through a **transactional
   outbox** — services insert into `platform.outbox_events` in the same transaction as the state
-  change, and `OutboxPoller` (`packages/@cos/shared/src/kafka/outbox.ts`) publishes to Kafka every
+  change, and `OutboxPoller` (`packages/@cos/kafka/src/outbox.ts`) publishes to Kafka every
   500ms. Not every module emits yet: 8 do (boq, equipment, finance, procurement, project, site-ops,
   tenant, workforce)
 - **AI calls:** NestJS → AI Gateway (HTTP); AI Gateway → OpenAI / Claude / Ollama via `LLMProvider` interface

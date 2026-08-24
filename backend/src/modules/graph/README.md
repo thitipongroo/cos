@@ -49,4 +49,4 @@ GET /api/v1/graph/vendors/<vendorId>/invoices
   authority for operational data.
 - Uniqueness constraints are `{label}.{id}` + `tenant_id`.
 - OpenAPI spec: `docs/api/graph.openapi.yaml`.
-- Test design: `docs/manual/35-test-design.md` §35.10.13.
+- Test design: `docs/architecture/test-design/phase-13-knowledge-graph.md` §35.10.13.

@@ -8,7 +8,7 @@
 // It also covers the relay half end-to-end (OutboxPoller reads the committed row, publishes it,
 // marks it published) and asserts the ESC-17 orphan table is gone after migrations.
 //
-// Source: docs/specifications/30-testing-strategy.md §30.4; 35-test-design.md TC-P08-UNIT-010,
+// Source: docs/specifications/30-testing-strategy.md §30.4; docs/architecture/test-design/README.md TC-P08-UNIT-010,
 // §35.13 ESC-13 / ESC-17 / ESC-22.
 
 import { OutboxPublisher, OutboxPoller } from '@cos/kafka';

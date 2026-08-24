@@ -362,7 +362,7 @@ vendor adapter. Credentials and SDK config stored per-site in AWS Secrets Manage
 #### Platform-side acceptance criteria
 
 **Resolved 2026-08-22 (product owner).** The interface above previously defined only the signature and
-return type, so no acceptance behaviour could be tested (see `35-test-design.md` §35.13 ESC-04). The
+return type, so no acceptance behaviour could be tested (see docs/architecture/test-design/escalation-register.md §35.13 ESC-04). The
 platform now owns these criteria; biometric accuracy itself remains the vendor's SLA:
 
 | Criterion            | Value                                                                             |

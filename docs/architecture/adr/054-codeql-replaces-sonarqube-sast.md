@@ -23,8 +23,8 @@ The deferral is a hard blocker on the Stage 1→2 transition: Phase 19 automated
 while no SAST runs. The blocking cause is not the tool's suitability — it is that SonarQube requires
 a long-lived server to be provisioned, operated and secured on EKS before a single scan can run.
 
-Recorded as `35-test-design.md` §35.13 ESC-11; the affected test cases are `TC-P16-SEC-005` and
-`TC-P19-MAN-006`.
+Recorded as `docs/architecture/test-design/escalation-register.md` §35.13 ESC-11; the affected
+test cases are `TC-P16-SEC-005` and `TC-P19-MAN-006`.
 
 ## Decision
 
@@ -86,5 +86,5 @@ Replace SonarQube with **GitHub CodeQL** as the SAST gate.
 
 - `docs/specifications/30-testing-strategy.md` §30.10 (Security Testing), §30.12 (CI/CD Test Gates)
 - `context.md` QM-4 (Security)
-- `docs/manual/35-test-design.md` §35.13 ESC-11, `TC-P16-SEC-005`, `TC-P19-MAN-006`
+- `docs/architecture/test-design/README.md` §35.13 ESC-11, `TC-P16-SEC-005`, `TC-P19-MAN-006`
 - `context/00_master_construction_os.md` §Phase 16, §Phase 19 automated check #4

@@ -579,7 +579,7 @@ All models trained on Phase 23 MLOps pipeline (MLflow + Feast). Minimum data thr
 > `30-testing-strategy` §30.11 (Precision ≥ 0.85, secondary Recall) but was absent from this model
 > table and from `00_master` Phase 23. It is a missing model, not a stale name: its use case and
 > evaluation metric are recorded now; algorithm, input features and minimum training data stay
-> `UNSPECIFIED` and must not be inferred. See `35-test-design.md` §35.13 ESC-03.
+> `UNSPECIFIED` and must not be inferred. See docs/architecture/test-design/escalation-register.md §35.13 ESC-03.
 
 - DeviceTrustModel: **no count threshold** — promotion is gated on beating the rule-based baseline on
   a held-out set, measured by **PR-AUC** (ADR-081). A count trigger is the wrong gate here: the

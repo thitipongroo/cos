@@ -21,7 +21,7 @@ import (
 
 const (
 	// TopicRegex matches the tenant-scoped topic for this event. Topics are
-	// {tenant_id}.{domain}.{entity}.{action}.{version} (packages/@cos/shared/src/kafka/topic-catalog.ts),
+	// {tenant_id}.{domain}.{entity}.{action}.{version} (packages/@cos/kafka/src/topic-catalog.ts),
 	// so a bare event name never matches a real topic — sarama treats a leading ^ as a pattern.
 	TopicRegex = `^[^.]+\.carbon\.record\.created\.v1$`
 

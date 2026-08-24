@@ -1008,7 +1008,7 @@ docs/specifications/20-ux-flow.md §20.8              — Accessibility (WCAG 2.
 docs/specifications/22-ai-architecture.md §22.7      — AI integration decisions (registry); §22.8 AI security (OWASP LLM Top 10); §22.9 model governance; §22.10 RAG-eval/prompt-registry/token-cap/semantic-cache
 docs/specifications/23-ai-native-operating-model.md §23.5 — Human-AI governance structure (STEW-001)
 docs/specifications/30-testing-strategy.md §30.9     — Lighthouse CI frontend gate (Core Web Vitals + bundle budget + accessibility category = 1.0)
-docs/manual/35-test-design.md                — Test Design: per-phase test case catalogue (Phase 1–25); TC ID convention `TC-P{NN}-{LEVEL}-{NNN}`; cross-cutting suites; traceability matrix; §35.13 UNSPECIFIED/escalation register (derived from §30 — on conflict §30 wins)
+docs/architecture/test-design/README.md                — Test Design: per-phase test case catalogue (Phase 1–25); TC ID convention `TC-P{NN}-{LEVEL}-{NNN}`; cross-cutting suites; traceability matrix; §35.13 UNSPECIFIED/escalation register (derived from §30 — on conflict §30 wins)
 docs/specifications/31-monitoring-observability.md §31.6 — SLO/error-budget + Frontend Web Vitals (LCP/INP/CLS); §31.9 incident/SEV/postmortem; §31.11 chaos/game-day; §31.12 DORA
 
 # Readiness & Verification

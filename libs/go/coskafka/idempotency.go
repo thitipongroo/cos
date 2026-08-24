@@ -8,7 +8,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// IdempotencyTTL matches IDEMPOTENCY_TTL_SECONDS in @cos/shared/src/kafka/consumer.ts. Kafka
+// IdempotencyTTL matches IDEMPOTENCY_TTL_SECONDS in @cos/kafka/src/consumer.ts. Kafka
 // retention for the shared tier is 7 days (§7.3), so 24h covers redelivery without holding keys
 // for the whole retention window.
 const IdempotencyTTL = 24 * time.Hour

@@ -1,4 +1,4 @@
--- Drop the orphan projects.outbox_events table (35-test-design.md §35.13 ESC-17).
+-- Drop the orphan projects.outbox_events table (docs/architecture/test-design/escalation-register.md §35.13 ESC-17).
 --
 -- Origin: 20260531000003_project_service issued an UNQUALIFIED
 --   CREATE TABLE IF NOT EXISTS outbox_events

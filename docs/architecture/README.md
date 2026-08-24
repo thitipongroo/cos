@@ -9,8 +9,19 @@ The maintained architecture views, the runtime topology, and the Architecture De
 
 > **Authority.** `docs/specifications/` is the source of truth for every architecture decision;
 > `context/00_master_construction_os.md` is the compiled execution view of those decisions. This
-> folder holds the **diagrams** and the **ADRs** — it does not make decisions of its own. Where a
-> diagram here disagrees with a spec, the spec wins and the diagram is the bug.
+> folder holds the **diagrams**, the **ADRs** and the **test design** — it does not make decisions
+> of its own. Where anything here disagrees with a spec, the spec wins and the page here is the bug.
+
+---
+
+## Test design
+
+[`test-design/`](test-design/README.md) — the per-phase test case catalogue (Phase 1–25), the
+cross-cutting suites, the traceability matrix and the UNSPECIFIED/escalation register. Split out
+of the single `35-test-design.md` on 2026-08-25, one page per phase.
+
+It implements [`specifications/30-testing-strategy.md`](../specifications/30-testing-strategy.md),
+which owns the strategy; on conflict §30 wins.
 
 ---
 

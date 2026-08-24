@@ -310,7 +310,7 @@ using **Pact.io** (consumer-driven contract testing).
 
 **Clarified 2026-08-22 (product owner).** Two k6 script sets exist and they are **not** duplicates.
 The table above is the scenario catalogue; the table below is what is executable today
-(see `35-test-design.md` §35.13 ESC-06).
+(see docs/architecture/test-design/escalation-register.md §35.13 ESC-06).
 
 | Suite               | Purpose                                                                 | Scripts                                                            |
 | ------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------ |
@@ -468,7 +468,7 @@ unit tests. Integration tests against a real Redis are covered in the e2e test s
 
 > **Resolved 2026-08-22 (product owner).** `SafetyVisionModel` and `GraphMLModel` previously had no
 > primary metric, secondary metric or pass threshold in any spec file, so their evaluation could not
-> be designed (see `35-test-design.md` §35.13 ESC-02). `CostAnomalyModel` carried a threshold here
+> be designed (see docs/architecture/test-design/escalation-register.md §35.13 ESC-02). `CostAnomalyModel` carried a threshold here
 > but did not exist in `00_master` Phase 23 or §22.6 — it is a **missing model**, now added to both
 > (ESC-03). Its use case and metric are defined; its algorithm, input features and minimum training
 > data remain `UNSPECIFIED` until Layer B enters an active development sprint (owner: AI/Platform

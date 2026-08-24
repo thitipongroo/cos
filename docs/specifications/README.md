@@ -100,7 +100,7 @@ their role. Developers building the MVP should read [03-system-design](03-system
 | 32  | Implementation Specifications | [32-implementation-specifications](32-implementation-specifications.md) | Phase Dependency Graph, Deployable Units, Extension Points, Event Contracts, Financial Precision, Workflow State Machines, Design Tokens | Active |
 | 33  | Digital Twin and IoT Layer    | [33-digital-twin-iot](33-digital-twin-iot.md)                           | Phase 24 spec — IoT integration, digital twins, carbon analytics, smart city                                                             | Active |
 | 34  | Enterprise Tenant Provisioning | [34-enterprise-tenant-provisioning](34-enterprise-tenant-provisioning.md) | Phase 25 spec — trigger paths, Temporal workflow state machine, activities, human gate, CRM webhook HMAC verification, idempotency, IaC, schema isolation | Active |
-| 35  | Test Design                   | [35-test-design](../manual/35-test-design.md)                                     | Per-phase test case catalogue (Phase 1–25), test case ID convention, cross-cutting suites, traceability matrix, escalation register      | Active |
+| 35  | Test Design                   | [test-design/](../architecture/test-design/README.md)                                     | Per-phase test case catalogue (Phase 1–25), test case ID convention, cross-cutting suites, traceability matrix, escalation register      | Active |
 
 ---
 

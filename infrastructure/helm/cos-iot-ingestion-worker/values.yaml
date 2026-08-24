@@ -49,7 +49,7 @@ env:
   MQTT_BROKER_URL: 'tcp://emqx:1883'
   KAFKA_BROKERS: 'kafka:9092'
   # Topic geometry for topics this worker creates on first publish. Must match the TypeScript
-  # producer's defaults (packages/@cos/shared/src/kafka/producer.ts) so a tenant's topic is the same
+  # producer's defaults (packages/@cos/kafka/src/producer.ts) so a tenant's topic is the same
   # shape whichever side creates it.
   KAFKA_TOPIC_PARTITIONS: '3'
   KAFKA_TOPIC_REPLICATION_FACTOR: '1'
