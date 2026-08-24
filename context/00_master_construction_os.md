@@ -5436,6 +5436,32 @@ Generate:
   Product-owner decision 2026-08-23: deferred here rather than stubbed earlier, because a producer
   built before the forecasting model would have to be rewritten once the model exists.
 
+- PRODUCER for the safety-violation event — added 2026-08-25 after Phase 20 found the §19.6 rule
+  "Critical safety notifications (SafetyIncidentReported, SafetyViolationDetected) cannot be
+  disabled" enforceable for only ONE of the two events it names. `SafetyIncidentReported` maps to
+  `safety.incident.created.v1`; `SafetyViolationDetected` has no canonical event type, no `.avsc`,
+  no topic-catalogue entry, no producer and no consumer — it appears in exactly two places in the
+  whole specification: the §19.6 sentence above and the Safety group of
+  `16-enterprise-event-flow §Enterprise event catalogue`.
+  It belongs to this phase because `SafetyVisionModel` below is what detects a violation — its
+  `SafetyAnalysisResult { violations, confidence, severity }` is the only source of one anywhere in
+  the specs — and that model is gated on "10,000+ labeled site photos accumulated in production".
+  Ship the event together with all five of its halves, or the gap simply moves:
+    1. canonical event type + `.avsc` + `EVENT_AVSC_MAP` entry (naming per §7.3 / §32.4)
+    2. the producer, in whichever service hosts SafetyVisionModel inference
+    3. membership of `CRITICAL_EVENT_TYPES` in `notification.service.ts` — without it the event is
+       one a user can switch off, which is the exact thing §19.6 forbids
+    4. `EVENT_ROLE_MAP` routing AND `SUBSCRIBED_EVENT_TYPES` subscription (a routing entry alone
+       decides an audience for a message no consumer asks for)
+    5. a system-default notification template — `notifyUser` drops any channel with no template row
+  A guard is already in place: the `§19.6 critical event set` block in
+  `notification.service.spec.ts` fails the build the moment a canonical `safety.*` incident or
+  violation event enters the catalogue without being marked critical. Until then the omission is
+  recorded here rather than invented in code.
+  Product-owner decision 2026-08-25: deferred to this phase rather than named speculatively now,
+  because an event type minted before the model exists would fix a name and a payload that the
+  model's actual output may not match.
+
 Stubs in Phase 23 (generate stub — algorithms RESOLVED in spec §22-ai-architecture §22.6, implement when data thresholds met):
 
   ModelRegistry:

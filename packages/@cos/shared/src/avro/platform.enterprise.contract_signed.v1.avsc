@@ -16,6 +16,8 @@
       "type": "record", "name": "EnterpriseContractSignedPayload",
       "fields": [
         { "name": "tenant_id",           "type": "string", "doc": "UUID of the tenant whose contract was signed" },
+        { "name": "tenant_name",         "type": "string", "default": "", "doc": "§19.8 notification content renders {tenant_name}; empty default keeps the schema backward-compatible" },
+        { "name": "tenant_code",         "type": "string", "default": "", "doc": "§19.8 notification content renders {tenant_code}" },
         { "name": "contract_reference",  "type": ["null", "string"], "default": null, "doc": "External contract ID from CRM or contract system" }
       ]
     }}

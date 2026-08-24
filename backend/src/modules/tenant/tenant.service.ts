@@ -206,9 +206,11 @@ export class TenantService implements OnModuleDestroy {
         plan_type: string;
         is_active: boolean;
         dedicated_db_url: string | null;
+        tenant_name: string;
+        tenant_code: string;
       }>
     >`
-      SELECT plan_type, is_active, dedicated_db_url
+      SELECT plan_type, is_active, dedicated_db_url, tenant_name, tenant_code
       FROM platform.tenants
       WHERE tenant_id = ${tenantId}::uuid
       LIMIT 1
@@ -239,8 +241,13 @@ export class TenantService implements OnModuleDestroy {
     }
 
     logger.info({ tenantId, workflowId, actorId }, 'Enterprise provisioning workflow started');
+    // tenant_name / tenant_code travel on the payload because §19.8 pins the notification body to
+    // "Automated DB provisioning workflow started for {tenant_name} ({tenant_code})" — the Notification
+    // Service renders templates from the event payload alone and has no tenant lookup of its own.
     await this.publishEvent('platform.enterprise.contract_signed.v1', {
       tenant_id: tenantId,
+      tenant_name: tenant.tenant_name,
+      tenant_code: tenant.tenant_code,
       contract_reference: contractReference ?? null,
     });
 

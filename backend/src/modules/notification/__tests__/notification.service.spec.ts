@@ -5,7 +5,12 @@ jest.mock('@cos/logger', () => ({
   createLogger: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }),
 }));
 
-import { NotificationService, isWithinQuietHours } from '../notification.service';
+import {
+  NotificationService,
+  isWithinQuietHours,
+  CRITICAL_EVENT_TYPES,
+} from '../notification.service';
+import { CANONICAL_EVENT_TYPES } from '@cos/shared';
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
@@ -260,6 +265,136 @@ describe('preference filtering', () => {
       payload: {},
     });
     expect(mockRepo.createNotification).not.toHaveBeenCalled();
+  });
+});
+
+// ── §19.6 critical safety override ─────────────────────────────────────────
+
+// "Critical safety notifications (SafetyIncidentReported, SafetyViolationDetected) cannot be
+// disabled." (19-notification-architecture §19.6; master:5100-5101 adds "or quieted — always
+// delivered"). Both halves are asserted here, each against a control proving the filter it
+// bypasses is genuinely active for a non-critical event.
+describe('critical safety notifications (§19.6)', () => {
+  const criticalTemplate = {
+    template_id: 't-safety',
+    tenant_id: null,
+    event_type: 'safety.incident.created.v1',
+    channel: 'IN_APP',
+    subject_template: 'Safety incident reported ({{severity}})',
+    body_template: 'A {{severity}} incident on project {{project_id}}.',
+    is_active: true,
+  };
+
+  const emitIncident = async (): Promise<void> => {
+    await svc.handleEvent({
+      event_type: 'safety.incident.created.v1',
+      tenant_id: 'tenant-001',
+      actor_id: 'actor-001',
+      payload: { project_id: 'proj-001', severity: 'CRITICAL', incident_id: 'inc-001' },
+    });
+  };
+
+  beforeEach(() => {
+    mockRepo.findUsersByRole.mockResolvedValue([{ user_id: 'u1', email: 'a@b.com' }]);
+    mockRepo.findTemplatesByChannel.mockResolvedValue(templatesFor(criticalTemplate));
+    mockRepo.createNotification.mockResolvedValue({
+      ...notifRow,
+      event_type: 'safety.incident.created.v1',
+    });
+    mockRepo.markSent.mockResolvedValue(undefined);
+  });
+
+  it('delivers even when the recipient has disabled every channel', async () => {
+    mockRepo.findDisabledChannels.mockResolvedValue(allDisabled());
+
+    await emitIncident();
+
+    // Every channel the recipient switched off is still written and dispatched.
+    expect(mockRepo.createNotification).toHaveBeenCalledTimes(ALL_CHANNELS.length);
+    expect(mockSse.push).toHaveBeenCalled();
+  });
+
+  it('control: a non-critical event with the same disabled set is suppressed', async () => {
+    mockRepo.findDisabledChannels.mockResolvedValue(allDisabled());
+    mockRepo.findTemplatesByChannel.mockResolvedValue(
+      templatesFor({ ...criticalTemplate, event_type: 'site.inspection.failed.v1' }),
+    );
+
+    await svc.handleEvent({
+      event_type: 'site.inspection.failed.v1',
+      tenant_id: 'tenant-001',
+      actor_id: 'actor-001',
+      payload: {},
+    });
+
+    expect(mockRepo.createNotification).not.toHaveBeenCalled();
+  });
+
+  it('pushes inside the quiet window when the recipient is disabled and quieted at once', async () => {
+    // The two suppressors the spec forbids for this event, applied together.
+    mockRepo.findDisabledChannels.mockResolvedValue(allDisabled());
+    mockRepo.getUserQuietHours.mockResolvedValue({ start: '00:00:00', end: '23:59:00' });
+    mockRepo.findDeviceTokens.mockResolvedValue([{ push_token: 'ExponentPushToken[x]' }]);
+    mockPush.send.mockResolvedValue(undefined);
+
+    await emitIncident();
+
+    expect(mockPush.send).toHaveBeenCalled();
+  });
+
+  it('control: a non-critical event in the same quiet window sends no push', async () => {
+    mockRepo.findDisabledChannels.mockResolvedValue(new Set<string>());
+    mockRepo.getUserQuietHours.mockResolvedValue({ start: '00:00:00', end: '23:59:00' });
+    mockRepo.findDeviceTokens.mockResolvedValue([{ push_token: 'ExponentPushToken[x]' }]);
+    mockRepo.findTemplatesByChannel.mockResolvedValue(
+      templatesFor({ ...criticalTemplate, event_type: 'site.inspection.failed.v1' }),
+    );
+    mockRepo.createNotification.mockResolvedValue({ ...notifRow });
+
+    await svc.handleEvent({
+      event_type: 'site.inspection.failed.v1',
+      tenant_id: 'tenant-001',
+      actor_id: 'actor-001',
+      payload: {},
+    });
+
+    expect(mockPush.send).not.toHaveBeenCalled();
+  });
+});
+
+// ── §19.6 critical set completeness ────────────────────────────────────────
+
+// §19.6 names two events that "cannot be disabled": SafetyIncidentReported and
+// SafetyViolationDetected. Only the first exists as a canonical event type; the second appears
+// solely as a business-event display name (16-enterprise-event-flow §Safety) with no §32.4 name, no
+// .avsc and no producer, so it cannot be added to the set without inventing an event.
+//
+// This guard exists so that gap stops being silent: the moment a safety incident/violation event
+// enters the canonical catalogue, this test fails until it is also marked critical. Without it,
+// adding safety.violation.detected.v1 later would quietly ship a notification users can disable —
+// which is the exact defect §19.6 forbids.
+describe('§19.6 critical event set', () => {
+  const criticalCandidates = CANONICAL_EVENT_TYPES.filter(
+    (e) => e.startsWith('safety.') && /incident|violation/.test(e),
+  );
+
+  it('covers every canonical safety incident/violation event', () => {
+    const uncovered = criticalCandidates.filter((e) => !CRITICAL_EVENT_TYPES.has(e));
+    expect(uncovered).toEqual([]);
+  });
+
+  it('lists only events that actually exist in the canonical catalogue', () => {
+    const phantom = [...CRITICAL_EVENT_TYPES].filter((e) => !CANONICAL_EVENT_TYPES.includes(e));
+    expect(phantom).toEqual([]);
+  });
+
+  it('records that SafetyViolationDetected has no canonical event type yet', () => {
+    // Documents the gap rather than asserting a name that does not exist. Product-owner decision
+    // 2026-08-25: the producer is deferred to Phase 23, where SafetyVisionModel — the only thing in
+    // the specs that detects a violation — is built; see the Phase 23 Generate list in
+    // context/00_master_construction_os.md for the five halves it must ship with. When that lands,
+    // the first test above starts failing and this one is what points at why.
+    expect(CANONICAL_EVENT_TYPES.filter((e) => e.includes('violation'))).toEqual([]);
   });
 });
 

@@ -16,9 +16,54 @@ const logger = createLogger('notification-service');
 const CHANNELS = ['IN_APP', 'EMAIL', 'LINE'] as const;
 type Channel = (typeof CHANNELS)[number];
 
-// Critical safety notifications are NEVER quieted (§19.6 — "cannot be disabled or quieted"). Only the
-// safety-incident event qualifies; every other event's push is suppressed inside the quiet window.
-const CRITICAL_EVENT_TYPES = new Set<string>(['safety.incident.created.v1']);
+// Critical safety notifications are NEVER disabled and NEVER quieted (§19.6 — "cannot be disabled
+// or quieted — always delivered"). Both halves of that rule are enforced: notifyUser ignores a
+// recipient's disabled preference rows for these events, and dispatch never suppresses their push
+// inside the quiet window. Only the safety-incident event qualifies; every other event honours the
+// recipient's preferences and quiet hours.
+// §19.6 names TWO events here: SafetyIncidentReported and SafetyViolationDetected. Only the first has
+// a canonical name — 'safety.incident.created.v1' (§32.4 / topic-catalog / .avsc). SafetyViolationDetected
+// appears only as a business-event display name in 16-enterprise-event-flow §Safety and in the §19.6
+// sentence itself: no canonical event type, no schema, no producer, no consumer. It is therefore
+// deliberately NOT invented here: PO decision 2026-08-25 defers the producer to Phase 23, where
+// SafetyVisionModel is built (see that phase's Generate list for the five halves it ships with).
+// The guard in notification.service.spec.ts fails the build if a safety incident/violation event
+// ever enters the catalogue without being added to this set.
+export const CRITICAL_EVENT_TYPES = new Set<string>(['safety.incident.created.v1']);
+
+/**
+ * Envelope tenant_id used by platform-level producers (§19.8). It is a sentinel, not a UUID, so it
+ * can never be handed to a tenant-scoped query — findUsersByRole casts ::uuid and NotificationPrisma
+ * rejects anything that is not a UUID. The event NAME is not the discriminator: platform.sync.
+ * exhausted.v1 is also `platform.`-prefixed but carries a real tenant UUID, because it is a
+ * tenant-scoped alert that merely travels on the shared topic.
+ */
+export const PLATFORM_TENANT_SENTINEL = 'platform';
+
+/**
+ * §19.8: platform-level notifications are "NOT subject to quiet-hours suppression — they represent
+ * operational platform state that SYSTEM_ADMIN must act on". Note this exemption covers quiet hours
+ * ONLY; §19.8 says nothing about preferences, so a SYSTEM_ADMIN who switches a channel off still
+ * switches it off.
+ */
+/**
+ * The §19.8 provisioning human gate. It is NOT a Kafka event — "sent directly by
+ * EnterpriseProvisioningWorkflow via the Notification Service" — so it has no canonical event type,
+ * no .avsc and no EVENT_ROLE_MAP entry. The string is still the templates table's key, which is how
+ * its subject/body and its two channels come from data rather than from an INSERT literal.
+ */
+export const PLATFORM_HUMAN_GATE_EVENT_TYPE = 'platform.enterprise.awaiting_approval';
+
+const PLATFORM_LEVEL_EVENT_TYPES = new Set<string>([
+  'platform.enterprise.contract_signed.v1',
+  'platform.enterprise.db_provisioned.v1',
+  PLATFORM_HUMAN_GATE_EVENT_TYPE,
+]);
+
+/** Events that must reach the user regardless of the hour (§19.6 safety, §19.8 platform). */
+function isQuietHoursExempt(eventType: string): boolean {
+  return CRITICAL_EVENT_TYPES.has(eventType) || PLATFORM_LEVEL_EVENT_TYPES.has(eventType);
+}
 
 /** Minutes-since-midnight for a 'HH:MM[:SS]' string. */
 function minutesOfDay(hms: string): number {
@@ -67,7 +112,10 @@ export function isWithinQuietHours(now: Date, tz: string, start: string, end: st
  */
 type PayloadRoleSelector = { rolesFromPayload: (payload: Record<string, unknown>) => string[] };
 
-const EVENT_ROLE_MAP: Record<
+// Exported so the integration suite can assert the routing table against the database rather than
+// against a copy of itself: every event routed here needs a notification template, or notifyUser
+// silently drops it at `if (!template) continue`.
+export const EVENT_ROLE_MAP: Record<
   string,
   string[] | 'actor' | { payloadUserId: string } | PayloadRoleSelector
 > = {
@@ -128,8 +176,14 @@ export class NotificationService {
       return;
     }
 
-    let recipients: Array<{ user_id: string; email: string }>;
-    if (routing === 'actor') {
+    // Recipients may live in a different tenant from the event: a platform-level event is addressed
+    // to every SYSTEM_ADMIN on the installation, and each of them belongs to a tenant of their own.
+    // The row is stored under the RECIPIENT's tenant so it lands in an inbox the existing
+    // tenant-scoped query and RLS policy can already reach.
+    let recipients: Array<{ user_id: string; email: string; tenant_id?: string }>;
+    if (event.tenant_id === PLATFORM_TENANT_SENTINEL) {
+      recipients = await this.repo.findSystemAdmins();
+    } else if (routing === 'actor') {
       recipients = [{ user_id: event.actor_id, email: '' }];
     } else if (Array.isArray(routing)) {
       recipients = await this.repo.findUsersByRole(event.tenant_id, routing);
@@ -146,11 +200,34 @@ export class NotificationService {
     await Promise.allSettled(
       recipients.map((r) =>
         this.notifyUser({
-          tenant_id: event.tenant_id,
+          tenant_id: r.tenant_id ?? event.tenant_id,
           user_id: r.user_id,
           email: r.email,
           event_type: event.event_type,
           payload: event.payload,
+        }),
+      ),
+    );
+  }
+
+  /**
+   * Deliver a platform-level notification that did not arrive over Kafka (§19.8 human gate).
+   *
+   * Recipients are every active SYSTEM_ADMIN, exactly as the platform branch of handleEvent resolves
+   * them, and the row is stored under each admin's own tenant. Kept off EVENT_ROLE_MAP on purpose:
+   * an entry there would claim a Kafka audience for a message no consumer subscribes to, which is
+   * the shape that left both enterprise events unreachable in the first place.
+   */
+  async notifySystemAdmins(eventType: string, payload: Record<string, unknown>): Promise<void> {
+    const recipients = await this.repo.findSystemAdmins();
+    await Promise.allSettled(
+      recipients.map((r) =>
+        this.notifyUser({
+          tenant_id: r.tenant_id,
+          user_id: r.user_id,
+          email: r.email,
+          event_type: eventType,
+          payload,
         }),
       ),
     );
@@ -174,9 +251,15 @@ export class NotificationService {
       this.repo.findTemplatesByChannel(params.tenant_id, params.event_type, CHANNELS),
     ]);
 
+    // §19.6: a critical safety event is delivered on every channel regardless of what the recipient
+    // has switched off. Without this, a user who mutes one channel to cut noise silently stops
+    // receiving incident alerts — and the §19.7 escalation chain never fires either, because it is
+    // driven by an acknowledgement that can only come from a notification the user never got.
+    const critical = CRITICAL_EVENT_TYPES.has(params.event_type);
+
     for (const channel of CHANNELS) {
       // Absent preference row = enabled, matching isChannelEnabled's `?? true` default.
-      if (disabledChannels.has(channel)) continue;
+      if (!critical && disabledChannels.has(channel)) continue;
 
       const template = templatesByChannel.get(channel);
       if (!template) continue;
@@ -213,7 +296,7 @@ export class NotificationService {
         // is subject to quiet hours (§19.6). Critical safety pushes are never suppressed.
         this.sse.push(userId, notif);
         const suppressPush =
-          !CRITICAL_EVENT_TYPES.has(notif.event_type) &&
+          !isQuietHoursExempt(notif.event_type) &&
           (await this.isInQuietHours(notif.tenant_id, userId));
         if (!suppressPush) {
           const tokens = await this.repo.findDeviceTokens(notif.tenant_id, userId);
