@@ -6,6 +6,22 @@ import { MinioContainer, StartedMinioContainer } from '@testcontainers/minio';
 import { ClickHouseContainer, StartedClickHouseContainer } from '@testcontainers/clickhouse';
 import { GenericContainer, Network, StartedNetwork, StartedTestContainer } from 'testcontainers';
 
+/**
+ * The PostgreSQL image every caller gets.
+ *
+ * TimescaleDB, not plain postgres, because three migrations call `create_hypertable`
+ * (ADR-032; master §Phase 18 testcontainers setup states it outright: "backend uses the
+ * timescale/timescaledb image"). The image is a superset of stock PostgreSQL, so a service that
+ * needs no hypertable is unaffected.
+ *
+ * This used to be `postgres:16-alpine`. Nothing had noticed because `startContainers` has no caller
+ * outside this package's own unit test — but the first suite to run the backend's migrations
+ * through it would have failed at migrate time, before reaching a single assertion, with an error
+ * about an unknown function rather than about the image. `backend/test/helpers/integration-infra.ts`
+ * already uses the right one; these two must not disagree.
+ */
+export const POSTGRES_IMAGE = 'timescale/timescaledb:latest-pg16';
+
 export interface TestContainers {
   postgres?: StartedPostgreSqlContainer;
   redis?: StartedRedisContainer;
@@ -37,7 +53,7 @@ export async function startContainers(opts: TestContainersOptions = {}): Promise
 
   if (opts.postgres) {
     independentPromises.push(
-      new PostgreSqlContainer('postgres:16-alpine')
+      new PostgreSqlContainer(POSTGRES_IMAGE)
         .withDatabase('cos_test')
         .withUsername('cos_test')
         .withPassword('cos_test')
