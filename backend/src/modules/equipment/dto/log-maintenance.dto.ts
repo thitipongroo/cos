@@ -1,4 +1,5 @@
-import { IsEnum, IsDateString, IsOptional, IsNumber, IsPositive, IsString } from 'class-validator';
+import { IsEnum, IsDateString, IsOptional, IsString } from 'class-validator';
+import { IsDecimalString } from '@cos/validation';
 
 export enum MaintenanceType {
   SCHEDULED = 'SCHEDULED',
@@ -14,9 +15,9 @@ export class LogMaintenanceDto {
   scheduled_at!: string;
 
   @IsOptional()
-  @IsNumber()
-  @IsPositive()
-  cost?: number;
+  // DECIMAL string — see create-equipment.dto.ts; master:990.
+  @IsDecimalString()
+  cost?: string;
 
   @IsOptional()
   @IsString()

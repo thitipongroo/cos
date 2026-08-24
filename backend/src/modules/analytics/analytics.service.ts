@@ -137,10 +137,15 @@ export class AnalyticsService {
             if(cost.budget > 0,
                round(toFloat64(cost.actual) / toFloat64(cost.budget) * 100, 2),
                0)                                      AS utilizationPct,
-            if(cost.budget > 0,
+            -- toBool, or the column comes back as UInt8 1/0 while ExecutiveDashboardRow and
+            -- docs/api/analytics.openapi.yaml both declare a boolean. A client written against that
+            -- contract, comparing against true, then reads every at-risk project as not-at-risk.
+            -- Invisible until now because every test of this endpoint stubbed the ClickHouse client
+            -- and the stub returned real booleans.
+            toBool(if(cost.budget > 0,
                abs(toFloat64(cost.actual) - toFloat64(cost.budget))
                / toFloat64(cost.budget) * 100 > {riskThreshold:Float64},
-               false)                                  AS atRisk,
+               false))                                 AS atRisk,
             coalesce(overdue.overdue_count, 0)         AS overdueInvoiceCount
           FROM cost
           LEFT JOIN overdue ON cost.project_id = overdue.project_id

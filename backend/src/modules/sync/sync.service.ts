@@ -27,6 +27,8 @@ import { ProcurementService } from '../procurement/procurement.service';
 import { EventOutboxService } from '../../shared/events/event-outbox.service';
 import type { CreateIssueDto } from '../site-ops/dto/create-issue.dto';
 import type { CreateMaterialConsumptionDto } from '../site-ops/dto/create-material-consumption.dto';
+import { EquipmentService } from '../equipment/equipment.service';
+import type { RecordUtilizationDto } from '../equipment/dto/record-utilization.dto';
 import type { SubmitInspectionDto } from '../site-ops/dto/submit-inspection.dto';
 import type { SyncSiteReportsDto } from '../site-ops/dto/sync-site-reports.dto';
 import type { RecordAttendanceDto } from '../workforce/dto/attendance.dto';
@@ -69,6 +71,12 @@ const ENTITY_REGISTRY: Record<string, EntityRegistryEntry> = {
   attendance: { table: 'workforce_telemetry.attendance_logs', deltaColumn: 'recorded_at' },
   safety: { table: 'site_ops.incidents', deltaColumn: 'created_at' },
   material: { table: 'site_ops.material_consumptions', deltaColumn: 'created_at' },
+  // Equipment usage logs (§17.4 offline READ/write, master:3578). Shaped like attendance: a
+  // telemetry hypertable whose delta column is the partition key it is already ordered by.
+  equipment: {
+    table: 'equipment_telemetry.equipment_utilization',
+    deltaColumn: 'recorded_at',
+  },
 };
 
 @Injectable({ scope: Scope.REQUEST })
@@ -80,6 +88,7 @@ export class SyncService {
     private readonly workforce: WorkforceService,
     private readonly annotations: AnnotationService,
     private readonly procurement: ProcurementService,
+    private readonly equipment: EquipmentService,
     // EventsModule is @Global, so no import is needed in SyncModule to inject this.
     private readonly outbox: EventOutboxService,
   ) {}
@@ -280,6 +289,18 @@ export class SyncService {
           client_id: dto.entity_id,
         });
         return { status: 'ACCEPTED', server_payload: row };
+      }
+
+      case 'equipment': {
+        // Equipment usage captured on site (§17.4; sync priority 7 per master:3582 / §17.6).
+        // entity_id is the equipment_id — a utilization row has no id of its own, its identity is
+        // the equipment plus the instant. The repository INSERT is ON CONFLICT DO NOTHING against
+        // that natural key, so the retries §17.2 guarantees cannot inflate summed hours or fuel.
+        await this.equipment.recordUtilization(
+          dto.entity_id,
+          dto.payload as unknown as RecordUtilizationDto,
+        );
+        return { status: 'ACCEPTED', server_payload: dto.payload };
       }
 
       case 'photo_annotation': {

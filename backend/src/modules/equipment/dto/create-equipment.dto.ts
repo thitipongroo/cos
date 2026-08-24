@@ -1,4 +1,5 @@
-import { IsString, IsEnum, IsOptional, IsDateString, IsNumber, IsPositive } from 'class-validator';
+import { IsString, IsEnum, IsOptional, IsDateString } from 'class-validator';
+import { IsDecimalString } from '@cos/validation';
 
 export enum EquipmentType {
   CRANE = 'CRANE',
@@ -24,10 +25,13 @@ export class CreateEquipmentDto {
   @IsDateString()
   purchase_date?: string;
 
+  // A DECIMAL STRING, not a JS number: master:990 — "Never use JavaScript Number for monetary
+  // calculations" — and the column is DECIMAL(19,4). @IsNumber() parsed the body into a float
+  // before anything could round it, which is the same class of bug as the PO approval tier that
+  // parseFloat-ed its total. finance and boq already take money this way.
   @IsOptional()
-  @IsNumber()
-  @IsPositive()
-  purchase_cost?: number;
+  @IsDecimalString()
+  purchase_cost?: string;
 
   @IsOptional()
   @IsString()

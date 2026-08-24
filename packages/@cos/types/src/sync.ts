@@ -34,6 +34,11 @@ export const SYNC_PUSHABLE_ENTITY_TYPES = [
   // purchase ORDER that §17.4 keeps online-required is a separate, later, approved document.
   'delivery',
   'purchase-request',
+  // Added 2026-08-25 (Phase 21). "Equipment usage" is in the §17.4 offline read/write list
+  // (master:3578) and holds sync priority 7 on reconnect (master:3582; §17.6). It was the one entry
+  // in that list with no case here, so a device that queued an equipment usage log was told "saved,
+  // will sync" and then got a 400 forever — the exact drift this constant exists to prevent.
+  'equipment',
 ] as const;
 
 export type SyncPushableEntityType = (typeof SYNC_PUSHABLE_ENTITY_TYPES)[number];

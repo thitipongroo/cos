@@ -129,6 +129,21 @@ const DELIVERY_WRITE_ROLES = [
 
 // workforce.controller.ts — POST /workers/{id}/attendance (14-api-architecture §Workforce APIs:
 // "PM, Site Engineer"; TENANT_ADMIN is FULL on Workforce attendance per the §6.4 matrix).
+// Mirrors EQUIPMENT_WRITE_ROLES / EQUIPMENT_READ_ROLES on the equipment controllers, which are
+// themselves the 06-rbac-permission-matrix Equipment row (PM RW, Tenant Admin FULL; Executive, Site
+// Engineer, Procurement and Finance read-only; Safety and CRM none). Copied, not re-decided — the
+// same rule every entry in this file follows.
+const EQUIPMENT_WRITE_ROLES = [CosRole.PROJECT_MANAGER, CosRole.TENANT_ADMIN] as const;
+
+const EQUIPMENT_READ_ROLES = [
+  CosRole.EXECUTIVE,
+  CosRole.PROJECT_MANAGER,
+  CosRole.SITE_ENGINEER,
+  CosRole.PROCUREMENT_OFFICER,
+  CosRole.FINANCE,
+  CosRole.TENANT_ADMIN,
+] as const;
+
 const ATTENDANCE_WRITE_ROLES = [
   CosRole.PROJECT_MANAGER,
   CosRole.SITE_ENGINEER,
@@ -159,6 +174,9 @@ export const PUSH_ROLES: Readonly<Record<string, readonly CosRole[]>> = Object.f
   // above: these are the roles the equivalent POST route enforces today, copied, not re-decided.
   delivery: DELIVERY_WRITE_ROLES,
   'purchase-request': PURCHASE_REQUEST_WRITE_ROLES,
+  // Equipment usage logs (§17.4 offline read/write; Phase 21). The write roles are those of
+  // POST /equipment/{id}/utilization, which is the route this push replays.
+  equipment: EQUIPMENT_WRITE_ROLES,
 });
 
 /**
@@ -180,6 +198,10 @@ export const DELTA_ROLES: Readonly<Record<string, readonly CosRole[]>> = Object.
   issue: ISSUE_READ_ROLES,
   safety: SAFETY_READ_ROLES,
   material: SITE_REPORT_READ_ROLES,
+  // Equipment usage is pullable as well as pushable (§17.4 says READ/write), so unlike attendance it
+  // needs a read gate: the matrix denies Safety and CRM any Equipment access, and an absent entry
+  // here would mean "any role".
+  equipment: EQUIPMENT_READ_ROLES,
 });
 
 /**
@@ -204,5 +226,6 @@ export const syncAuthzInvariants = {
     // so this pair passes trivially today. It is listed anyway so that narrowing annotation READS later
     // cannot silently leave writes wider than reads.
     'photo_annotation',
+    'equipment',
   ] as const,
 };

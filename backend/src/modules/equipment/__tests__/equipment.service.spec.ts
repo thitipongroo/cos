@@ -5,7 +5,7 @@ import { NotFoundException, UnprocessableEntityException } from '@nestjs/common'
 import { MaintenanceType } from '../dto/log-maintenance.dto';
 import type { EquipmentRepository } from '../equipment.repository';
 
-type MockRequest = { tenantId: string; user: { sub: string } };
+type MockRequest = { tenantId: string; userId: string };
 
 jest.mock('@cos/shared', () => ({
   KafkaProducer: jest.fn().mockImplementation(() => ({
@@ -30,9 +30,13 @@ const makeRepo = () => ({
   findEquipmentByProject: jest.fn(),
 });
 
+// req.userId — the PLATFORM user UUID that TenantMiddleware publishes. The mock used to supply
+// `user: { sub }` instead: `sub` is the KEYCLOAK id, and under the Fastify adapter req.user does not
+// reliably reach a Scope.REQUEST provider at all, so the service read undefined and fell back to the
+// literal 'system'. That is not a UUID, and assigned_by is a NOT NULL UUID column.
 const makeReq = (userId = 'user-1', tenantId = 'tenant-1'): MockRequest => ({
   tenantId,
-  user: { sub: userId },
+  userId,
 });
 
 import { EquipmentService } from '../equipment.service';
@@ -200,8 +204,12 @@ describe('EquipmentService', () => {
     });
   });
 
-  describe('userId fallback to system', () => {
-    it('uses "system" as actor_id when req.user is undefined', async () => {
+  describe('missing authenticated user', () => {
+    it('refuses the write instead of attributing it to "system"', async () => {
+      // This used to assert actor_id: 'system'. That value cannot be stored — assigned_by is a NOT
+      // NULL UUID, so every assignment made without a user died with 22P02 at the database rather
+      // than being recorded against anyone. Refusing here keeps the failure at the boundary, where
+      // it says what is actually wrong.
       const outboxMock = makeOutboxDouble();
       const noUserReq = { tenantId: 'tenant-1' };
       repo = makeRepo();
@@ -211,14 +219,11 @@ describe('EquipmentService', () => {
         outboxMock.service,
       );
       repo.findById.mockResolvedValue({ equipment_id: 'eq-1', status: 'AVAILABLE' });
-      repo.createAssignment.mockResolvedValue({ assignment_id: 'a-1', equipment_id: 'eq-1' });
-      repo.updateStatus.mockResolvedValue({ equipment_id: 'eq-1', status: 'IN_USE' });
 
-      await service.assignToProject('eq-1', { project_id: 'p-1' } as never);
-
-      expect(outboxMock.publish).toHaveBeenCalledWith(
-        expect.objectContaining({ actor_id: 'system' }),
+      await expect(service.assignToProject('eq-1', { project_id: 'p-1' } as never)).rejects.toThrow(
+        /No authenticated user/,
       );
+      expect(outboxMock.publish).not.toHaveBeenCalled();
     });
   });
 

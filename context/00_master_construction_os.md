@@ -5196,7 +5196,8 @@ TimescaleDB Tables (schema: equipment_telemetry):
     operator_id     UUID
     INDEX: (equipment_id, recorded_at DESC)
 
-  IoT telemetry: MQTT 5.0; broker = EMQX self-hosted on EKS (RESOLVED — AWS IoT Core deferred, Azure IoT Hub excluded; see Phase 21 stub note below + spec §13.5, §33.8); topic: cos/v1/devices/{device_id}/telemetry
+  IoT telemetry: MQTT 5.0; broker = EMQX self-hosted on EKS (RESOLVED — AWS IoT Core deferred, Azure IoT Hub excluded; see Phase 21 stub note below + spec §13.5, §33.8); topic: cos/v1/tenants/{tenant_id}/devices/{device_id}/telemetry (corrected 2026-08-25 — the
+    tenant is a topic segment the broker authenticates per device, never a payload field; spec §33.5)
     Trigger: equipment has IoT sensor attached
     Interface: { streamTelemetry(equipmentId: string): AsyncIterable<TelemetryEvent> }
 
