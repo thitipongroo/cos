@@ -31,8 +31,12 @@ GET    /api/v1/projects/:projectId/equipment               — equipment on proj
 ## Dependencies
 
 - `@cos/database` — `TenantPrismaService` (PostgreSQL for equipment entities)
-- `@cos/financial` — `Decimal` for cost fields (`purchase_cost`, maintenance `cost`)
-- `@cos/rbac` — role guards
+- `@cos/validation` — `IsDecimalString` for the cost fields (`purchase_cost`, maintenance `cost`).
+  They are decimal STRINGS end to end, straight into `DECIMAL(19,4)`; no arithmetic happens in this
+  module, so `@cos/financial`'s `Decimal` is not needed here. (This line used to name
+  `@cos/financial` while the DTOs actually took `@IsNumber()` — a JS float, which master:990
+  forbids for money.)
+- `@cos/rbac` — `Roles`, paired with `RolesGuard` on both controllers
 - `@cos/shared` — Kafka event contracts
 - TimescaleDB — hypertable for `equipment_utilization` time-series data
 

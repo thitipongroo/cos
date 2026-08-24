@@ -33,7 +33,12 @@ import { AppModule } from '../../../src/app.module';
 import { JwtAuthGuard } from '../../../src/modules/identity/guards/jwt-auth.guard';
 import { KeycloakAdminService } from '../../../src/modules/identity/keycloak-admin.service';
 
-jest.setTimeout(240_000);
+// Matches jest.spec-derived-integration.config.js's testTimeout rather than undercutting it. The
+// hook cost here is `prisma migrate deploy`, which grows with the migration count — 97 as of
+// 2026-08-25, up from 92 that morning — and this file blew the 240s budget on a run where its two
+// sibling Phase 2 suites still passed. A per-file budget below the config's only turns a slow
+// machine into a red suite.
+jest.setTimeout(900_000);
 
 const PHONE = '+66899999001';
 const TENANT_ID = 'bbbbbbbb-1111-4000-8000-000000000001';

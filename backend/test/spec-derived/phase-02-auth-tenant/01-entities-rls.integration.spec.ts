@@ -21,7 +21,12 @@ import {
 // a baseUrl/paths shim just to name it.
 type PrismaLike = IntegrationInfra['prisma'];
 
-jest.setTimeout(240_000);
+// Matches jest.spec-derived-integration.config.js's testTimeout rather than undercutting it. The
+// hook cost here is `prisma migrate deploy`, which grows with the migration count — 97 as of
+// 2026-08-25, up from 92 that morning — and this file blew the 240s budget on a run where its two
+// sibling Phase 2 suites still passed. A per-file budget below the config's only turns a slow
+// machine into a red suite.
+jest.setTimeout(900_000);
 
 interface ColumnRow {
   column_name: string;
