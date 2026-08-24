@@ -1010,7 +1010,7 @@ docs/specifications/30-testing-strategy.md §30.9     — Lighthouse CI frontend
 docs/specifications/31-monitoring-observability.md §31.6 — SLO/error-budget + Frontend Web Vitals (LCP/INP/CLS); §31.9 incident/SEV/postmortem; §31.11 chaos/game-day; §31.12 DORA
 
 # Readiness & Verification
-scripts/readiness/verify-production-readiness.sh    — Auto-verify 30 [AUTO] checks (Phase 19)
+scripts/readiness/verify-production-readiness.sh    — Auto-verify 31 [AUTO] checks (Phase 19)
 scripts/readiness/run-all-checks.sh                 — Interactive verify 14 [MANUAL] checks (Phase 19)
 scripts/readiness/check-openapi-freshness.sh        — Verify OpenAPI spec exists, is valid YAML/JSON, version present, live sync if INGRESS_HOST set (Phase 18)
 scripts/readiness/check-i18n-completeness.sh        — Verify all i18n keys are translated (Phase 18)

@@ -20,11 +20,26 @@ if command -v aws &>/dev/null; then
     --query 'DBInstances[?contains(DBInstanceIdentifier, `cos-postgres`)].MultiAZ' \
     --output text 2>/dev/null || echo "")
 
-  if [[ "$retention" -ge 7 ]] 2>/dev/null; then
-    echo "  ✓ RDS: backup retention = $retention days"
+  # THE FLOOR DEPENDS ON THE ENVIRONMENT — corrected 2026-08-24.
+  #
+  # This compared against 7 everywhere, so a production RDS retaining a week of backups passed the
+  # gate and the platform was declared production-ready. master §Phase 19 Data requires "daily,
+  # 30-day retention", and docs/runbooks/db-failover.md states the same split: 30 days in
+  # production, 7 elsewhere. The script already receives --env; it simply was not using it.
+  #
+  # It is not only a backup-depth question. RPO 15 minutes is claimed via PostgreSQL PITR, and the
+  # RDS point-in-time window is bounded by BackupRetentionPeriod — at 7 days you cannot restore to
+  # any moment older than a week, whatever the RPO target says.
+  min_retention=7
+  if [[ "${ENV:-staging}" == "production" ]]; then
+    min_retention=30
+  fi
+
+  if [[ "$retention" -ge "$min_retention" ]] 2>/dev/null; then
+    echo "  ✓ RDS: backup retention = $retention days (>= $min_retention for ${ENV:-staging})"
     PASS=$((PASS + 1))
   else
-    echo "  ✗ RDS: backup retention = '${retention}' (expected >= 7)"
+    echo "  ✗ RDS: backup retention = '${retention}' (expected >= $min_retention for ${ENV:-staging})"
     FAIL=$((FAIL + 1))
   fi
 

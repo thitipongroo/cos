@@ -4874,7 +4874,8 @@ SECTION A — PRE-LAUNCH CHECKLIST (Build quality gates)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Legend:
-  [AUTO] = verified automatically via CI/CD script — see scripts/verify-production-readiness.sh
+  [AUTO] = verified automatically via CI/CD script — see scripts/readiness/verify-production-readiness.sh
+           (path corrected 2026-08-24; the script lives in scripts/readiness/ with the check-*.sh it calls)
   [MANUAL] = requires human verification — cannot be automated
 
 Architecture:
