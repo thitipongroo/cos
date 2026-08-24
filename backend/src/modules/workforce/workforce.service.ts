@@ -123,6 +123,7 @@ export class WorkforceService {
       hours_worked: hoursWorked,
       latitude: dto.latitude ?? null,
       longitude: dto.longitude ?? null,
+      method: dto.method ?? null,
     });
 
     const eventType =
@@ -141,11 +142,11 @@ export class WorkforceService {
     // `checkin_id` is the attendance log's own id, and `location` is the lat/lng the DTO already
     // captured and the row already stores — both were available all along.
     //
-    // `method` is null. The API cannot capture it: there is no `method` on RecordAttendanceDto and no
-    // column on workforce_telemetry.attendance_logs, so the enum was made nullable rather than
-    // guessed at (product-owner decision 2026-08-23: ship what exists, defer `method` until the
-    // capture is built). Null means "not recorded" — deriving GPS from the presence of coordinates
-    // would put a value a consumer could not distinguish from a real one.
+    // `method` is what the CLIENT asserts about how the check-in was captured, added 2026-08-24 —
+    // the capture path deferred on 2026-08-23 when the payload was completed. It is still nullable
+    // and still means "not recorded" when absent, which a consumer must be able to tell apart from
+    // MANUAL ("a person typed this in"). It is NOT derived from the presence of coordinates: that
+    // would produce a GPS value indistinguishable from one the client actually asserted.
     const eventPayload =
       eventType === 'workforce.checkin.created.v1'
         ? {
@@ -153,7 +154,7 @@ export class WorkforceService {
             worker_id: workerId,
             project_id: dto.project_id,
             checkin_at: dto.check_in_at,
-            method: null,
+            method: dto.method ?? null,
             location:
               dto.latitude != null && dto.longitude != null
                 ? { lat: dto.latitude, lng: dto.longitude }

@@ -53,6 +53,8 @@ export interface AttendanceRow {
   check_in_at: Date | null;
   check_out_at: Date | null;
   hours_worked: string | null;
+  /** How the check-in was captured, or null when the client did not say. Added 2026-08-24. */
+  method: string | null;
 }
 
 export interface TimesheetRow {
@@ -223,19 +225,21 @@ export class WorkforceRepository {
     hours_worked: number | null;
     latitude?: number | null;
     longitude?: number | null;
+    method?: string | null;
   }): Promise<AttendanceRow> {
     const rows = await this.db.run(
       (tx) => tx.$queryRaw<AttendanceRow[]>`
       INSERT INTO workforce_telemetry.attendance_logs (
         log_id, recorded_at, worker_id, project_id, tenant_id,
-        check_in_at, check_out_at, hours_worked, latitude, longitude
+        check_in_at, check_out_at, hours_worked, latitude, longitude, method
       ) VALUES (
         ${params.log_id}::uuid, ${params.recorded_at}::timestamptz,
         ${params.worker_id}::uuid, ${params.project_id}::uuid,
         ${params.tenant_id}::uuid,
         ${params.check_in_at}::timestamptz, ${params.check_out_at}::timestamptz,
         ${params.hours_worked}::decimal(5,2),
-        ${params.latitude ?? null}::numeric, ${params.longitude ?? null}::numeric
+        ${params.latitude ?? null}::numeric, ${params.longitude ?? null}::numeric,
+        ${params.method ?? null}
       )
       RETURNING *
     `,

@@ -525,6 +525,17 @@ components:
           type: [number, 'null']
           format: double
           example: 9.00
+        latitude:
+          type: [number, 'null']
+          format: double
+        longitude:
+          type: [number, 'null']
+          format: double
+        method:
+          type: [string, 'null']
+          enum: [QR_CODE, GPS, BIOMETRIC, MANUAL, null]
+          description: Null on every row written before 2026-08-24, and on any the client did not
+            label — not recorded, which is not the same as MANUAL.
 
     Timesheet:
       type: object
@@ -649,6 +660,31 @@ components:
           format: double
           description: Explicit hours override. Calculated from timestamps when omitted.
           example: 9.00
+        latitude:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+          example: 13.7563
+          description: Where the check-in happened. Feeds `GET /geo/reverse`, which resolves it
+            against the in-cluster Nominatim — the coordinate never leaves the tenant.
+        longitude:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+          example: 100.5018
+        method:
+          type: string
+          enum: [QR_CODE, GPS, BIOMETRIC, MANUAL]
+          description: |
+            How the check-in was captured, as the CLIENT asserts it. Added 2026-08-24; before that
+            the field existed on `workforce.checkin.created.v1` and nothing could populate it.
+
+            **Omit it when the client cannot tell.** Absent means NOT RECORDED, which a consumer
+            must be able to tell apart from `MANUAL` ("a person typed this in"). It is never
+            derived from the presence of coordinates — that would produce a `GPS` value
+            indistinguishable from one a client actually asserted.
 
     SubmitTimesheetRequest:
       type: object

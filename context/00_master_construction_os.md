@@ -840,7 +840,8 @@ Note: Legacy names shown first → canonical name in brackets. New events use ca
      worker_id:      UUID
      project_id:     UUID
      checkin_at:     datetime
-     method:         enum [QR_CODE, GPS, BIOMETRIC, MANUAL]
+     method:         enum [QR_CODE, GPS, BIOMETRIC, MANUAL] (nullable — null means NOT
+                     RECORDED, which is not MANUAL; captured from the client 2026-08-24)
      location:       { lat: float, lng: float }  (nullable)
    }
 
@@ -5486,7 +5487,15 @@ Generate:
 - Integration tests: check-in/out cycle
 - Kafka event producers:
 
-    workforce.checkin.created.v1    { worker_id, project_id, checked_in_at }
+    workforce.checkin.created.v1    { checkin_id, worker_id, project_id, checkin_at, method,
+                                      location }
+      NOTE: this line said { worker_id, project_id, checked_in_at } until 2026-08-24 — three
+      fields, one of them misnamed, which is exactly what the service emitted and why NO
+      check-in event ever reached Kafka (TDD OQ-36: it could not be Avro-encoded, and since
+      ADR-094 that fails in the outbox poller). The six-field form above is §32.4 #9.
+      `method` is nullable and the capture was built 2026-08-24 (migration 20260824000001):
+      it is what the CLIENT asserts, never derived from the presence of coordinates, and
+      absent means NOT RECORDED — which is not the same as MANUAL.
     workforce.checkout.created.v1   { worker_id, project_id, hours_worked }
     workforce.timesheet.approved.v1 { worker_id, project_id, period_date, total_hours }
 

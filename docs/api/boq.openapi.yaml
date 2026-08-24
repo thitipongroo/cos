@@ -458,6 +458,7 @@ components:
           maxLength: 100
         description:
           type: string
+          maxLength: 5000
         unit:
           type: string
           maxLength: 50
@@ -506,6 +507,7 @@ components:
       properties:
         description:
           type: string
+          maxLength: 5000
         unit:
           type: string
           maxLength: 50

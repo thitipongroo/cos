@@ -139,11 +139,42 @@ describe('WorkforceService', () => {
         project_id: 'proj-1',
         // `checkin_at`, not `checked_in_at`: the schema's name, not the service's.
         checkin_at: '2026-06-08T08:00:00Z',
-        // Null because the API cannot capture it — no DTO field, no column. Deriving GPS from the
-        // presence of coordinates would put a value a consumer could not tell from a real one.
+        // Null because this caller did not say. Absent is NOT `MANUAL`, and it is not derived
+        // from the presence of coordinates either — that would produce a GPS value a consumer
+        // could not tell apart from one a client actually asserted.
         method: null,
         location: { lat: 13.7563, lng: 100.5018 },
       });
+    });
+
+    // The capture path, built 2026-08-24. The schema declared `method` from the start and
+    // ClickHouse has carried a column for it all along; until this, every event sent null because
+    // there was nowhere to read a value from.
+    it('carries the method the client asserted, and stores it on the row', async () => {
+      const outboxMock = makeOutboxDouble();
+      repo = makeRepo();
+      service = new WorkforceService(
+        req as unknown as ConstructorParameters<typeof WorkforceService>[0],
+        repo as unknown as WorkforceRepository,
+        outboxMock.service,
+      );
+      repo.findWorkerById.mockResolvedValue({ worker_id: 'w1' });
+      repo.recordAttendance.mockResolvedValue({ log_id: 'log-44' });
+
+      await service.recordAttendance('w1', {
+        project_id: 'proj-1',
+        check_in_at: '2026-06-08T08:00:00Z',
+        method: 'QR_CODE',
+      });
+
+      // On the wire...
+      const published = outboxMock.publish.mock.calls[0][0] as { payload: Record<string, unknown> };
+      expect(published.payload).toMatchObject({ method: 'QR_CODE' });
+
+      // ...and on the row, so a later read does not have to replay Kafka to learn it.
+      expect(repo.recordAttendance).toHaveBeenCalledWith(
+        expect.objectContaining({ method: 'QR_CODE' }),
+      );
     });
 
     it('sends location null when the check-in carried no coordinates', async () => {
