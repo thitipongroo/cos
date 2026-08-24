@@ -3,7 +3,7 @@ import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TerminusModule } from '@nestjs/terminus';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { ThrottlerStorageRedisService } from 'nestjs-throttler-storage-redis';
+import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
 import { ClsModule } from 'nestjs-cls';
 import { HealthController } from './health.controller';
 import { IdentityModule } from './modules/identity/identity.module';
@@ -63,9 +63,24 @@ import { EventsModule } from './shared/events/events.module';
       inject: [ConfigService],
       useFactory: (cfg: ConfigService) => ({
         throttlers: [{ ttl: 60000, limit: 100 }],
-        // Pass the URL (not a pre-built Redis): ThrottlerStorageRedisService then OWNS the client and
-        // closes it in its own onModuleDestroy (disconnectRequired=true). Passing a Redis instance
-        // leaves disconnectRequired falsy, so the socket leaks past app.close() and hangs Jest.
+        // Storage adapter swapped 2026-08-24 from `nestjs-throttler-storage-redis`, which its author
+        // ARCHIVED in September 2024. That package was written against throttler v5: its
+        // `increment(key, ttl)` takes two arguments where v6 calls
+        // `increment(key, ttl, limit, blockDuration, throttlerName)`, and its Lua returns only
+        // `{totalHits, timeToExpire}`. ThrottlerGuard decides with `if (isBlocked)`, so an undefined
+        // field meant the guard NEVER blocked — application-layer rate limiting was silently off
+        // while Redis kept counting and every endpoint answered 200. Proven: 115 requests to a
+        // 100/min route produced no 429 at all.
+        //
+        // `@nest-lab/throttler-storage-redis` is the ioredis-based provider the official throttler
+        // README lists, and its increment carries the full v6 signature and record. ioredis matters:
+        // the rest of this codebase already uses it, and the node-redis alternative would put two
+        // Redis client libraries in one runtime.
+        //
+        // Pass the URL (not a pre-built Redis): the service then OWNS the client and closes it in
+        // its own onModuleDestroy (disconnectRequired=true). Passing a Redis instance leaves that
+        // flag falsy, so the socket leaks past app.close() and hangs Jest — this package keeps the
+        // same behaviour.
         storage: new ThrottlerStorageRedisService(cfg.getOrThrow<string>('REDIS_URL')),
       }),
     }),
