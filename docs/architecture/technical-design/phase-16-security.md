@@ -116,7 +116,7 @@ user, file upload 20 req/min per user, health/metrics 60 req/min per IP. See
 only Path B — the account lockout is Keycloak's (`bruteForceProtected`, `failureFactor: 5`,
 `maxFailureWaitSeconds: 900` in the realm file), and a failed SMS OTP never reaches that counter. The
 product owner accepted Path A without a lock of its own; the reasoning and its bounds are in
-`docs/security/sms-otp-restricted-authenticator.md` §3.3.
+`docs/assessments/sms-otp-restricted-authenticator.md` §3.3.
 
 ---
 
@@ -161,7 +161,7 @@ picture.
 | Connection made as the `cos` owner role               | **RLS is bypassed** — which is why the runtime connects as `app_user`                                      |
 | An attempt to alter or delete an audit row            | Denied by `rls_audit_no_update` / `rls_audit_no_delete`                                                    |
 | Request reaches the origin without traversing the WAF | Logged as "WAF bypass detected"; blocked in production by CF-Ray, but see § 7 — the SG is the real control |
-| A new origin added to CORS without policy update      | Nothing enforces this — `docs/security/cors-policy.md` is the control, and it is a document                |
+| A new origin added to CORS without policy update      | Nothing enforces this — `docs/policies/cors-policy.md` is the control, and it is a document                |
 | Secret committed in plaintext                         | sealed-secrets is the mechanism; no scanner in CI enforces the prohibition                                 |
 
 **Rollback:** `20260608000004_rls_policies` has a paired rollback. Reversing it removes tenant
@@ -236,12 +236,12 @@ Verified on **2026-08-22** against this working tree (Rule 36 — commands run, 
 | OWASP dependency check in CI                      | ✅ present | `ci.yml` step 5a                                                                         |
 | `ComplianceAuditWorkflow` stub (Type A fail-fast) | ✅ present | `modules/compliance/workflows/compliance-audit.workflow.ts` + a dedicated exception type |
 | Integration test — cross-tenant isolation         | ✅ present | `backend/test/tenant-isolation.integration.spec.ts`                                      |
-| `docs/compliance/soc2-controls.md`                | ✅ present | plus ISO 27001 and PDPA control docs                                                     |
-| `docs/compliance/data-flow-map.md`                | ✅ present | —                                                                                        |
-| `docs/compliance/data-retention-policy.md`        | ✅ present | —                                                                                        |
-| `docs/security/cors-policy.md`                    | ✅ present | —                                                                                        |
-| `docs/security/csp-policy.md`                     | ✅ present | —                                                                                        |
-| `docs/security/pentest-findings.md`               | ✅ present | required before Stage 1→2                                                                |
+| `docs/registers/soc2-controls.md`                 | ✅ present | plus ISO 27001 and PDPA control docs                                                     |
+| `docs/registers/data-flow-map.md`                 | ✅ present | —                                                                                        |
+| `docs/policies/data-retention-policy.md`          | ✅ present | —                                                                                        |
+| `docs/policies/cors-policy.md`                    | ✅ present | —                                                                                        |
+| `docs/policies/csp-policy.md`                     | ✅ present | —                                                                                        |
+| `docs/registers/pentest-findings.md`              | ✅ present | required before Stage 1→2                                                                |
 
 Every Generate item in this phase is present on disk. Note that `ComplianceAuditWorkflow` is a Temporal
 workflow, so [OQ-32](README.md#open-questions-register) applies to it as it does to the other four.

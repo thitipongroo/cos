@@ -15,7 +15,7 @@
 
 ### Production
 
-```
+```http
 Access-Control-Allow-Origin: https://app.construction-os.app
 ```
 
@@ -31,7 +31,7 @@ send `Origin` headers — no CORS exemption needed for React Native.
 
 ### Staging
 
-```
+```http
 Access-Control-Allow-Origin: https://staging.construction-os.app
 ```
 
@@ -42,7 +42,7 @@ Access-Control-Allow-Origin: https://staging.construction-os.app
 
 ### Development (local)
 
-```
+```http
 Access-Control-Allow-Origin: http://localhost:3000
 ```
 
@@ -56,7 +56,7 @@ Access-Control-Allow-Origin: http://localhost:3000
 
 ## Allowed methods
 
-```
+```http
 Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS
 ```
 
@@ -64,7 +64,7 @@ Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS
 
 ## Allowed headers
 
-```
+```http
 Access-Control-Allow-Headers:
   Content-Type,
   Authorization,
@@ -81,7 +81,7 @@ Access-Control-Allow-Headers:
 
 ## Credentials
 
-```
+```http
 Access-Control-Allow-Credentials: true
 ```
 
@@ -91,7 +91,7 @@ Required for cookie-based session (Keycloak OIDC code flow in web app).
 
 ## Preflight cache
 
-```
+```http
 Access-Control-Max-Age: 600
 ```
 
@@ -101,7 +101,7 @@ Access-Control-Max-Age: 600
 
 ## Exposed headers
 
-```
+```http
 Access-Control-Expose-Headers:
   X-RateLimit-Limit,
   X-RateLimit-Remaining,
@@ -175,9 +175,9 @@ required, use a server-side proxy endpoint instead.
 
 ## Review schedule
 
-| Trigger                 | Action                                                             |
-| ----------------------- | ------------------------------------------------------------------ |
-| New subdomain / web app | Add origin; update this document                                   |
-| Stage 1 → Stage 2       | Confirm no `localhost` origins present in production config        |
-| Quarterly               | Audit allowed origins; remove any decommissioned subdomains        |
-| External pentest        | Review CORS-related findings (`docs/security/pentest-findings.md`) |
+| Trigger                 | Action                                                              |
+| ----------------------- | ------------------------------------------------------------------- |
+| New subdomain / web app | Add origin; update this document                                    |
+| Stage 1 → Stage 2       | Confirm no `localhost` origins present in production config         |
+| Quarterly               | Audit allowed origins; remove any decommissioned subdomains         |
+| External pentest        | Review CORS-related findings (`docs/registers/pentest-findings.md`) |

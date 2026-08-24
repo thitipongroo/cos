@@ -1,5 +1,5 @@
 /**
- * Route protection (spec §20.6.2) + Content-Security-Policy (QM-4; docs/security/csp-policy.md).
+ * Route protection (spec §20.6.2) + Content-Security-Policy (QM-4; docs/policies/csp-policy.md).
  *
  * Auth: wraps `next-auth`'s middleware WITHOUT options, so the authorization behaviour is unchanged —
  * unauthenticated requests to protected routes still redirect to the next-auth sign-in page (/login).

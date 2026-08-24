@@ -23,7 +23,7 @@ portal) could read the token and act as the user until it expires.
 token-theft threat is mitigated by defense-in-depth rather than by removing the token from JS:
 
 - **Content-Security-Policy (H5)** — a nonce-based CSP with **no `unsafe-inline` / `unsafe-eval`** in
-  production (`apps/web/src/middleware.ts`, `docs/security/csp-policy.md`). This is the primary control: it
+  production (`apps/web/src/middleware.ts`, `docs/policies/csp-policy.md`). This is the primary control: it
   blocks the injected inline script that an exfiltration payload needs, and `connect-src` restricts where a
   script may send data. CSP currently ships **Report-Only**; enforcing it (`CSP_ENFORCE=true` after the
   staging smoke test) is the action that makes this mitigation load-bearing.
@@ -43,5 +43,5 @@ CSRF) and web change, deliberately deferred here.
 ## References
 
 - `apps/web/src/lib/auth/options.ts`, `apps/web/src/lib/api/vendor.ts`, `apps/web/src/lib/api/client.ts`
-- `docs/security/csp-policy.md` (H5), ADR-067 area / H3 refresh rotation
+- `docs/policies/csp-policy.md` (H5), ADR-067 area / H3 refresh rotation
 - Spec §5.9 (STRIDE threat model)

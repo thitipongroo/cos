@@ -10,7 +10,7 @@
 // on a page like this one. That is exactly what the mobile Privacy Policy now does; the HSM detail
 // the mockup wanted to assert is here, with its certificate, rather than as a bare claim there.
 //
-// Every row below is sourced from the control registers in docs/compliance/. When a control is not
+// Every row below is sourced from the control registers in docs/registers/. When a control is not
 // implemented it says so — the value of this page is that a reader can check it. Do not add a row
 // here that cannot be pointed at a file, a certificate, or a published third-party fact.
 //

@@ -31,7 +31,7 @@ export interface TextInputFieldProps extends FieldShellProps {
 
 /**
  * The ref lands on the `<input>` so react-hook-form's `shouldFocusError` can move focus to the
- * first invalid field on a failed submit — item C3 of docs/a11y/screenreader-checklist.md.
+ * first invalid field on a failed submit — item C3 of docs/evidence/screenreader-checklist.md.
  */
 export const TextInputField = forwardRef<HTMLInputElement, TextInputFieldProps>(
   function TextInputField(

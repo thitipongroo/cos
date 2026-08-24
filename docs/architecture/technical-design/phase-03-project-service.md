@@ -350,7 +350,7 @@ Verified on **2026-08-22** against this working tree (Rule 36 — commands run, 
 | Kafka producer — `project.archived`               | ✅ present | `construction.project.archived.v1` — emitted inside the `COMPLETED` transition                             |
 | CRM stub — Salesforce / HubSpot / Pipedrive       | ✅ present | `ep/crm-integration.stub.ts` names all three adapters                                                      |
 | BIM stub — IFC import                             | ✅ present | `ep/bim-integration.stub.ts`                                                                               |
-| `docs/i18n/localization-gaps.md`                  | ✅ present | required by the Phase 3 constraint block                                                                   |
+| `docs/registers/localization-gaps.md`             | ✅ present | required by the Phase 3 constraint block                                                                   |
 
 **Beyond the Phase 3 list.** Each addition is attributable:
 

@@ -7,7 +7,7 @@
 // need to invent a second store, only a writer, because those four columns had existed since Phase 9
 // with nothing in the codebase setting them.
 //
-// IT IS DELIBERATE, NEVER AUTOMATIC. `docs/compliance/data-retention-policy.md` § Legal hold says an
+// IT IS DELIBERATE, NEVER AUTOMATIC. `docs/policies/data-retention-policy.md` § Legal hold says an
 // engineer PLACES the flag when a dispute or investigation exists. Holding every erasure by default
 // would mean the personal data never actually leaves the platform, which is not erasure — so the
 // caller has to ask, and has to say why.

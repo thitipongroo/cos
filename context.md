@@ -197,12 +197,12 @@ Before starting any implementation task:
 - **Buddhist Era (BE) calendar** — Thai users expect B.E. year display (e.g., 2568 not 2025); use `Intl.DateTimeFormat` with `calendar: 'buddhist'` for `th-TH` locale; never hardcode Gregorian year arithmetic for Thai display
 - **Character encoding** — all source files, API responses, and database text columns must use UTF-8; explicitly verify PostgreSQL cluster encoding is `UTF8`; never override to a narrower encoding
 - **Locale negotiation** — honor `Accept-Language` HTTP header for API responses; store user's preferred locale in their profile and use it as override over header
-- For Thai-specific business rules that have no international equivalent → tag with `// i18n: TH-SPECIFIC` comment and add to `docs/i18n/localization-gaps.md`
+- For Thai-specific business rules that have no international equivalent → tag with `// i18n: TH-SPECIFIC` comment and add to `docs/registers/localization-gaps.md`
 
 ### QM-4 — Security
 
 - **No secrets in code or git history** — runtime secrets injected via **AWS Secrets Manager** (cloud/AWS EKS; External Secrets Operator syncs SM secrets → K8s Secret → pod env) or **HashiCorp Vault** (on-premise/hybrid; Vault Agent sidecar) per spec §5.2; ADR-013. Kubernetes Secret objects that must exist in git committed only as **SealedSecret** via `sealed-secrets` (kubeseal); never commit `.env` files; never commit `*.pem`, `*.key`, or `*.pfx` files; pre-commit hook must block secret patterns (`git-secrets` or `gitleaks`). Source of truth: `context/00_master_construction_os.md` §Phase 2 Secret Management
-- **Secrets rotation** — all secrets must have a rotation schedule defined in `docs/security/secrets-rotation-policy.md`; cloud: database credentials rotated via AWS SM automated rotation (Lambda rotation function per resource type); on-premise: database credentials rotated every 24h via **Vault database secrets engine** (dynamic secrets, lease TTL — see Vault secret rotation policy); JWT signing keys rotate every 180 days via JWKS endpoint rotation (zero-downtime); rotation tested in staging before each Stage transition
+- **Secrets rotation** — all secrets must have a rotation schedule defined in `docs/policies/secrets-rotation-policy.md`; cloud: database credentials rotated via AWS SM automated rotation (Lambda rotation function per resource type); on-premise: database credentials rotated every 24h via **Vault database secrets engine** (dynamic secrets, lease TTL — see Vault secret rotation policy); JWT signing keys rotate every 180 days via JWKS endpoint rotation (zero-downtime); rotation tested in staging before each Stage transition
 - **Authentication — TWO PATHS (Phase 2 authoritative):**
   - **Path B (email/password):** uses Keycloak OIDC — never implement custom email/password auth; JWT is RS256-signed by Keycloak
   - **Path A (SMS OTP):** OTP send/verify uses a **Custom lightweight NestJS module** within the identity module (NOT a Keycloak extension); after OTP verification succeeds, token issuance goes through **Keycloak Direct Grant** (`grant_type=password`, ephemeral credential) → RS256 JWT from Keycloak; SMS gateway: cloud = AWS SNS; on-premise = pluggable `SmsSender` provider (in-country aggregator / SMPP / customer gateway) per ADR-040
@@ -228,13 +228,13 @@ Before starting any implementation task:
 - **Schema-qualified SQL names MANDATORY** — all SQL (raw queries, migrations, multi-schema Prisma `@@schema` models) must reference tables by schema-qualified name (`procurement.vendors`, `finance.project_budgets`) — **never unqualified**; prevents `search_path` ambiguity across the multi-schema tenant model and keeps RLS/tenant isolation deterministic (spec §11.0 rule 2; pairs with the RLS mandate under "Skip RLS on domain tables")
 - File uploads: validate MIME type server-side, scan with ClamAV (Phase 9+)
 - OWASP Top 10 — every endpoint must be hardened against: injection, broken auth, IDOR, SSRF, XSS, security misconfiguration
-- **Immutable audit logging (spec §5.1/§5.2 principle, §5.9 STRIDE)** — every state-changing endpoint (create / update / delete / state-transition) must emit an **immutable** (append-only — never updated or deleted) audit-log entry capturing actor identity, action, target entity_type/entity_id, `tenant_id`, and timestamp. **All SYSTEM_ADMIN / platform-admin actions** are additionally written to `platform.audit_logs` with the operator's user identity (spec §20.4 admin panel; spec §06 audit-access matrix — SYSTEM_ADMIN = FULL, tenant roles read-only). Audit-log retention per `docs/compliance/data-retention-policy.md`
+- **Immutable audit logging (spec §5.1/§5.2 principle, §5.9 STRIDE)** — every state-changing endpoint (create / update / delete / state-transition) must emit an **immutable** (append-only — never updated or deleted) audit-log entry capturing actor identity, action, target entity_type/entity_id, `tenant_id`, and timestamp. **All SYSTEM_ADMIN / platform-admin actions** are additionally written to `platform.audit_logs` with the operator's user identity (spec §20.4 admin panel; spec §06 audit-access matrix — SYSTEM_ADMIN = FULL, tenant roles read-only). Audit-log retention per `docs/policies/data-retention-policy.md`
 - **Security headers** — every HTTP response must include:
   - `Strict-Transport-Security: max-age=31536000; includeSubDomains`
   - `X-Content-Type-Options: nosniff`
   - `X-Frame-Options: DENY`
   - `Referrer-Policy: strict-origin-when-cross-origin`
-  - `Content-Security-Policy` — policy defined in `docs/security/csp-policy.md`; never use `unsafe-inline` or `unsafe-eval` in production CSP
+  - `Content-Security-Policy` — policy defined in `docs/policies/csp-policy.md`; never use `unsafe-inline` or `unsafe-eval` in production CSP
 - **TLS policy** — TLS 1.3 minimum on all ingress endpoints (source: master §Phase 16 + spec §05 §5.2); TLS 1.0, TLS 1.1, TLS 1.2 explicitly disabled on ingress; certificate rotation automated via cert-manager (Kubernetes) + AWS ACM (cloud)
 - **mTLS** — required for all service-to-service communication that crosses VPC/node boundaries; internal calls within the same NestJS process are exempt; mTLS managed via **Istio 1.21+** service mesh (source: master tech stack — Istio handles mTLS certificate lifecycle via cert-manager integration; no separate AWS Private CA required)
 - **WAF** — solution depends on deployment type (source: spec §05-security-compliance §5.5 + §08-enterprise-deployment §8.7):
@@ -247,7 +247,7 @@ Before starting any implementation task:
     - **App integration MANDATORY**: use `CF-Connecting-IP` as real IP; validate `CF-Ray` present; log `CF-Ray` → `backend/src/shared/middleware/cloudflare-waf.middleware.ts`
   - **On-premise deployments**: Cloudflare WAF is NOT applicable — Kong Gateway provides rate limiting; customer-provided WAF MUST meet OWASP CRS paranoia level 2 minimum (see spec §08-enterprise-deployment §8.7)
 - **Data encryption at rest** — algorithm: **AES-256** minimum on all persistent storage (source: spec §5.2); all S3 buckets + RDS/Aurora: SSE-KMS with **customer-managed key (CMK)**; all ElastiCache nodes: AWS-managed key (`at_rest_encryption_enabled`); one CMK per storage-type per env with alias `cos/{env}/rds|s3|elasticache`; **annual KMS rotation**; key policy grants use to the app service role + SYSTEM_ADMIN only; CMK definitions in `infrastructure/terraform/aws/kms.tf` (source: spec §5.2.1). On-prem = Vault Transit envelope encryption.
-- **Penetration testing** — external pentest required before Stage 1→2 and Stage 2→3 transitions; findings tracked in `docs/security/pentest-findings.md`; all HIGH/CRITICAL findings resolved before advancing stage
+- **Penetration testing** — external pentest required before Stage 1→2 and Stage 2→3 transitions; findings tracked in `docs/registers/pentest-findings.md`; all HIGH/CRITICAL findings resolved before advancing stage
 - SAST and code quality scan must pass in CI before merge — **CodeQL + Semgrep CE + jscpd** (ADR-011;
   spec §30.10, §30.12). Replaced SonarQube, which was specified but never deployed:
   - **CodeQL** (`.github/workflows/codeql.yml`) — semantic/taint SAST over JS-TS, Python and Go.
@@ -274,7 +274,7 @@ Before starting any implementation task:
     Developer Edition (paid). See ADR-011 for the full comparison and the air-gapped caveat.
 - Dependency vulnerability scan in CI (`npm audit --audit-level=high` / `pip-audit`) — no HIGH/CRITICAL unresolved
 - Rate limiting required on all public-facing endpoints (see QM-7)
-- CORS policy must be explicit — never use `*` in production; allowed origins defined in `docs/security/cors-policy.md`
+- CORS policy must be explicit — never use `*` in production; allowed origins defined in `docs/policies/cors-policy.md`
 
 ### QM-5 — Data Privacy & Compliance
 
@@ -283,7 +283,7 @@ Before starting any implementation task:
   - All PII fields must be tagged in Prisma schema with `@pdpa(category: "...")` comment
   - Consent must be captured before any PII is stored
   - Data subject rights (access, deletion, portability) must be implementable for each PII entity
-  - Retain personal data for no longer than the purpose requires — define retention in `docs/compliance/data-retention-policy.md`
+  - Retain personal data for no longer than the purpose requires — define retention in `docs/policies/data-retention-policy.md`
 - **GDPR (EU)** — applies when any EU resident's data is processed:
   - Same PII tagging rules as PDPA
   - Data Processing Agreements (DPAs) required for all third-party processors
@@ -291,8 +291,8 @@ Before starting any implementation task:
   - Erasure spans TWO systems, and both halves are required (TDD OQ-48): the database columns AND the Keycloak account. Anonymising `platform.users` alone leaves the person named in the identity provider (username = their email on Path B / phone on Path A, plus email and display name) and still able to log in. `KeycloakAdminService.eraseUser` disables, logs out every session, and overwrites those fields; the realm sets `editUsernameAllowed: true` so the username can be overwritten at all. A Keycloak failure is reported via `keycloak_erase_failed`, never rolled back — the database half cannot be undone. Per-table statements, their required ORDER, and the two-level audit trail: spec §11.4
 - **CCPA (California, USA)** — applies when California residents are served:
   - "Do not sell my personal information" opt-out must be implementable
-- **SOC 2 Type II** — platform must be SOC 2 Type II ready by Stage 3; controls tracked in `docs/compliance/soc2-controls.md`; every new feature reviewed against SOC 2 trust criteria (Security, Availability, Confidentiality) before merge
-- **Cross-border data transfer**: Thai-origin data must not leave the `ap-southeast-7` (Bangkok) region — `ap-southeast-1` (Singapore) is the DR/fallback — without explicit product owner approval and legal review; data residency rules per region defined in `docs/compliance/data-residency-policy.md` (region decision: GLOB-001, spec §8.8 + §5.6)
+- **SOC 2 Type II** — platform must be SOC 2 Type II ready by Stage 3; controls tracked in `docs/registers/soc2-controls.md`; every new feature reviewed against SOC 2 trust criteria (Security, Availability, Confidentiality) before merge
+- **Cross-border data transfer**: Thai-origin data must not leave the `ap-southeast-7` (Bangkok) region — `ap-southeast-1` (Singapore) is the DR/fallback — without explicit product owner approval and legal review; data residency rules per region defined in `docs/policies/data-residency-policy.md` (region decision: GLOB-001, spec §8.8 + §5.6)
 - PII must never appear in logs, traces, or error messages — use `[REDACTED]` or masked values
 
 ### QM-6 — Performance Budgets
@@ -359,7 +359,7 @@ Every new service, module, or background job must include:
 - Never use `console.log` — always use the platform logger (`@cos/logger`)
 - PII must never appear in log fields — use IDs only
 - Log level discipline: DEBUG = dev only, INFO = business events, WARN = recoverable anomaly, ERROR = requires investigation
-- **Log retention** — production logs stored in **Loki** (30 days hot on S3 object storage); 1 year cold; compliance archive retained 7 years (source: spec §31.2 + master Phase 15; CloudWatch Logs removed; Loki is the authoritative log store); retention schedule defined in `docs/compliance/log-retention-policy.md`
+- **Log retention** — production logs stored in **Loki** (30 days hot on S3 object storage); 1 year cold; compliance archive retained 7 years (source: spec §31.2 + master Phase 15; CloudWatch Logs removed; Loki is the authoritative log store); retention schedule defined in `docs/policies/log-retention-policy.md`
 
 **Distributed Tracing:**
 
@@ -513,9 +513,9 @@ Source: spec §31.6
 
 - Budget remaining < 50% → freeze non-critical feature work; prioritize reliability
 - Budget remaining < 10% → freeze ALL feature work; mandatory incident review with product owner
-- SLO dashboards tracked in Grafana; dashboard IDs registered in `docs/slo/dashboard-registry.md`
+- SLO dashboards tracked in Grafana; dashboard IDs registered in `docs/registers/dashboard-registry.md`
 - SLO burn rate alerts wired via QM-8 metrics
-- Monthly SLO review required; notes in `docs/slo/monthly-reviews/YYYY-MM.md`
+- Monthly SLO review required; notes in `docs/evidence/slo-monthly-reviews/YYYY-MM.md`
 
 ### QM-15 — Feature Flags & Progressive Delivery
 
@@ -529,7 +529,7 @@ All user-facing features and high-risk changes must ship behind a feature flag.
   `backend/src/shared/feature-flags/feature-flag.service.ts` (retrofit kill-switches fail-open);
   no Unleash server required for local dev
 - Retrofit scope (product-owner decision 2026-07-04): critical surfaces only — AI/LLM endpoints, auth flows,
-  financial mutations; other existing features are NOT retrofitted; flag registry in `docs/feature-flags/registry.md`
+  financial mutations; other existing features are NOT retrofitted; flag registry in `docs/registers/feature-flag-registry.md`
 - Flag naming convention: `{stage}.{domain}.{feature}` (e.g., `s1.procurement.bulk-upload`)
 - **Mandatory flag scenarios:**
   - Any new UI screen or workflow step
@@ -538,7 +538,7 @@ All user-facing features and high-risk changes must ship behind a feature flag.
   - Any change to authentication or authorization logic
   - Any Kafka schema change
 - **Progressive rollout order:** 1% of tenants → 10% → 50% → 100%; minimum 24 hours at each step unless a rollback is triggered
-- Feature flags must be removed from code within 30 days of reaching 100% rollout; stale flags tracked in `docs/feature-flags/cleanup-backlog.md`
+- Feature flags must be removed from code within 30 days of reaching 100% rollout; stale flags tracked in `docs/registers/feature-flag-cleanup-backlog.md`
 - Emergency kill switch: every flag must be togglable to OFF within 60 seconds without a deployment
 
 ### QM-16 — Deployment Safety
@@ -696,14 +696,14 @@ Save audit log to `cos-audit/audit-<timestamp>.log`
 
 **Additional manual checks (8 global-scale additions):**
 
-- [ ] PDPA data flow reviewed and documented in `docs/compliance/data-flow-map.md`
+- [ ] PDPA data flow reviewed and documented in `docs/registers/data-flow-map.md`
 - [ ] Rate limiting verified via load test (k6): no tenant can exceed 100 req/min sustained
 - [ ] DR runbook executed successfully in staging (RTO achieved < 30 minutes)
 - [ ] API backward compatibility: old mobile app version (N-1) tested against new backend
 - [ ] Feature flags verified: all mandatory flags present and togglable to OFF in < 60 seconds
 - [ ] SLO dashboard live in Grafana with correct thresholds per QM-14
 - [ ] On-call rotation and PagerDuty escalation policy configured and tested (paging drill completed)
-- [ ] Secrets rotation schedule defined in `docs/security/secrets-rotation-policy.md`; first rotation executed and verified in staging
+- [ ] Secrets rotation schedule defined in `docs/policies/secrets-rotation-policy.md`; first rotation executed and verified in staging
 
 ### Step 3 — Report final status
 
@@ -1031,19 +1031,19 @@ scripts/readiness/check-service-runtimes.sh         — Architectural fitness fu
 scripts/loadtest/api-baseline.js                    — k6 load test: 100 VU × 5 min mixed-read baseline gate; P95 read < 300ms, P95 write < 500ms, error rate < 0.1% (QM-6; Phase 18)
 
 # Compliance & Governance
-docs/compliance/data-flow-map.md                    — PDPA/GDPR data flow documentation (Phase 16)
-docs/compliance/data-retention-policy.md            — Data retention rules per entity type (Phase 16)
-docs/compliance/log-retention-policy.md             — Log retention schedule and archival policy (Phase 15)
-docs/compliance/data-residency-policy.md            — Data residency requirements per region (Phase 17)
-docs/compliance/soc2-controls.md                    — SOC 2 Type II control tracking (before Stage 2→3)
-docs/i18n/localization-gaps.md                      — TH-specific rules with no i18n equivalent (Phase 3)
+docs/registers/data-flow-map.md                    — PDPA/GDPR data flow documentation (Phase 16)
+docs/policies/data-retention-policy.md            — Data retention rules per entity type (Phase 16)
+docs/policies/log-retention-policy.md             — Log retention schedule and archival policy (Phase 15)
+docs/policies/data-residency-policy.md            — Data residency requirements per region (Phase 17)
+docs/registers/soc2-controls.md                    — SOC 2 Type II control tracking (before Stage 2→3)
+docs/registers/localization-gaps.md                      — TH-specific rules with no i18n equivalent (Phase 3)
 
 # Security
-docs/security/secrets-rotation-policy.md            — Rotation schedule for all secret types (Phase 2)
-docs/security/csp-policy.md                         — Content Security Policy definition (Phase 16)
-docs/security/cors-policy.md                        — CORS allowed origins per environment (Phase 3)
-docs/security/pentest-findings.md                   — External pentest findings and resolution status (before Stage 1→2)
-docs/security/sms-otp-restricted-authenticator.md  — NIST SP 800-63B Rev 4 obligations for Path A SMS OTP: risk assessment, migration roadmap, user notification (spec §5.4.4)
+docs/policies/secrets-rotation-policy.md            — Rotation schedule for all secret types (Phase 2)
+docs/policies/csp-policy.md                         — Content Security Policy definition (Phase 16)
+docs/policies/cors-policy.md                        — CORS allowed origins per environment (Phase 3)
+docs/registers/pentest-findings.md                   — External pentest findings and resolution status (before Stage 1→2)
+docs/assessments/sms-otp-restricted-authenticator.md  — NIST SP 800-63B Rev 4 obligations for Path A SMS OTP: risk assessment, migration roadmap, user notification (spec §5.4.4)
 infrastructure/terraform/aws/kms.tf                 — KMS customer-managed key definitions (Phase 17)
 infrastructure/kubernetes/external-secrets/         — ESO ExternalSecrets: AWS SM → K8s Secret cos-<svc>-secrets (cloud secret delivery; spec §08 §8.6)
 infrastructure/kubernetes/sealed-secrets/           — SealedSecrets (kubeseal): git-committed / on-prem secret path; same cos-<svc>-secrets names
@@ -1061,11 +1061,11 @@ docs/architecture/adr/033-ci-build-gate.md                        — CI `build`
 docs/architecture/adr/036-compose-profiles-local-app-services.md  — Docker Compose `apps` profile to run app services in containers locally (Phase 1 enhancement; `make docker-apps-up-full`)
 
 # SLO & Reliability
-docs/slo/dashboard-registry.md                      — Grafana dashboard IDs per SLO (Phase 15)
-docs/slo/monthly-reviews/                           — Monthly SLO review notes directory (Phase 19)
+docs/registers/dashboard-registry.md                      — Grafana dashboard IDs per SLO (Phase 15)
+docs/evidence/slo-monthly-reviews/                           — Monthly SLO review notes directory (Phase 19)
 
 # Feature Flags
-docs/feature-flags/cleanup-backlog.md               — Stale flags pending removal from code (Phase 3)
+docs/registers/feature-flag-cleanup-backlog.md               — Stale flags pending removal from code (Phase 3)
 
 # Runbooks
 docs/runbooks/disaster-recovery.md               — DR runbook (primary DR procedure)

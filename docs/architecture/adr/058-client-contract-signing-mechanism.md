@@ -119,7 +119,7 @@ were added for these transitions — §16.2 defines none.
   the exact client-DID issuance flow (ephemeral vs persistent) is an implementation detail to settle in build.
 - **Legal validity under Thai ETA / ETDA is a compliance follow-up** — this ADR fixes the technical
   mechanism, not a legal opinion; in-country counsel (per §28 legal-review pattern) confirms admissibility.
-  The engineering half of that follow-up is now closed: `docs/compliance/thai-eta-signature-briefing.md`
+  The engineering half of that follow-up is now closed: `docs/assessments/thai-eta-signature-briefing.md`
   describes exactly what the mechanism retains and proves, states the seven properties most likely to
   decide the opinion (chief among them that client identity assurance rests on an emailed single-use
   link, with no ID or OTP check), and lists the questions counsel must answer plus the remedies

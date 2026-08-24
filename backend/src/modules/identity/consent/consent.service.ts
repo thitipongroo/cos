@@ -1,6 +1,6 @@
 // PDPA §19 consent (ADR-079) — the record of which processing purposes a person has agreed to.
 //
-// Closes PDPA-20/21/22, which docs/compliance/pdpa-controls.md records as OPEN because no consent
+// Closes PDPA-20/21/22, which docs/registers/pdpa-controls.md records as OPEN because no consent
 // table existed and the "Keycloak consent claim" that data-residency-policy.md §3 assumes is absent
 // (the realm sets "consentRequired": false on every client, and Path A never traverses a Keycloak
 // consent screen).

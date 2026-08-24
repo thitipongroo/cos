@@ -92,4 +92,4 @@ in-tenant (no third-party call)."_
 - [ADR-080](080-geoip-enrichment-and-behavioral-context.md) — self-hosted GeoLite2, the same
   in-tenant-enrichment stance
 - [`05-security-compliance.md`](../../specifications/05-security-compliance.md) §5.6 — data residency
-- `docs/compliance/data-flow-map.md` — where geocoding appears in the PDPA data flow
+- `docs/registers/data-flow-map.md` — where geocoding appears in the PDPA data flow

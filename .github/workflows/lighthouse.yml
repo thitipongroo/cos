@@ -22,7 +22,7 @@ name: Lighthouse CI
 # pnpm-lock.yaml + --frozen-lockfile, so the audit set cannot shift underneath the gate without a
 # deliberate dependency PR. `color-contrast` is asserted separately only because its failure message
 # names the offending element — the category assertion already covers it.
-# Rationale and the measured ratios: docs/a11y/contrast-report.md.
+# Rationale and the measured ratios: docs/evidence/contrast-report.md.
 on:
   # Manual trigger, so a baseline can be measured without inventing a pull request. Every budget
   # asserted below is a measurement, and a measurement has to come from a real ubuntu-latest run —

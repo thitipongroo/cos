@@ -224,7 +224,7 @@ CREATE TABLE IF NOT EXISTS platform.support_messages (
   sender_user_id UUID                             REFERENCES platform.users (user_id) ON DELETE SET NULL,
 
   -- @pdpa(category: "operational") — free text; a person may put anything in a support message,
-  -- including their own contact details. Retained per docs/compliance/data-retention-policy.md.
+  -- including their own contact details. Retained per docs/policies/data-retention-policy.md.
   body           TEXT                             NOT NULL,
 
   -- WHAT THE ASSISTANT'S TURN WAS, RECORDED WITH IT. §22.3 forbids presenting a model's output as

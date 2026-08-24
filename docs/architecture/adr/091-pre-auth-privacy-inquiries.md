@@ -97,7 +97,7 @@ carries the digest of the stored record.
 ### Positive
 
 - A data subject with no account has a recorded channel and a reference, instead of an address that
-  may bounce (`docs/compliance/pdpa-controls.md` scores PDPA-03 `PARTIAL` today, precisely because
+  may bounce (`docs/registers/pdpa-controls.md` scores PDPA-03 `PARTIAL` today, precisely because
   `EXPO_PUBLIC_DPO_EMAIL` points at a general support mailbox and no DPO is appointed).
 - The inquiry queue is evidence for PDPA-03/PDPA-05 at the Stage 1→2 gate.
 
@@ -155,4 +155,4 @@ Thai face, which is a font-licensing decision nobody has taken. The metadata end
 - ADR-090 — external data subjects, processor role and tenant tooling (`platform.subject_requests`)
 - ADR-078 — account-holder data export (`platform.export_requests`)
 - ADR-030 / ADR-058 — magic-link surfaces authenticated by token rather than session
-- `docs/compliance/pdpa-controls.md` — PDPA-03 `PARTIAL`, PDPA-05 (DPO not yet appointed)
+- `docs/registers/pdpa-controls.md` — PDPA-03 `PARTIAL`, PDPA-05 (DPO not yet appointed)

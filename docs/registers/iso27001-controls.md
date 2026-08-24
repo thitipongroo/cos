@@ -45,7 +45,7 @@ largest obstacle to certification and is tracked as `ISMS-00` below.
 
 | ID    | Annex A | Control                               | Evidence                                                                                                    | Status    | Verified   |
 | ----- | ------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------------- | --------- | ---------- |
-| A5-01 | A.5.1   | Policies for information security     | `docs/compliance/` + `docs/security/` policy set, git change-controlled                                     | `PARTIAL` | 2026-08-03 |
+| A5-01 | A.5.1   | Policies for information security     | `docs/policies/` set, git change-controlled                                                                 | `PARTIAL` | 2026-08-03 |
 | A5-07 | A.5.7   | Threat intelligence                   | CodeQL + Semgrep CE + Trivy in CI; `pnpm audit` / `pip-audit` / `govulncheck` dependency gates (ADR-011)    | `PARTIAL` | 2026-08-03 |
 | A5-15 | A.5.15  | Access control                        | RBAC + ABAC (`packages/@cos/rbac`, `backend/src/shared/guards/`); 9 spec roles + 3 implementation sub-roles | `DONE`    | 2026-08-03 |
 | A5-17 | A.5.17  | Authentication information            | Keycloak OIDC single source of truth; RS256 JWT; MFA/TOTP for TENANT_ADMIN + FINANCE                        | `DONE`    | 2026-08-03 |
@@ -96,6 +96,6 @@ largest obstacle to certification and is tracked as `ISMS-00` below.
 ## Related documents
 
 - `docs/specifications/05-security-compliance.md` §5.3.1 — audit workflow; names this file
-- `docs/compliance/soc2-controls.md` — SOC 2 Type II control tracking
-- `docs/compliance/pdpa-controls.md` — PDPA control tracking
+- `docs/registers/soc2-controls.md` — SOC 2 Type II control tracking
+- `docs/registers/pdpa-controls.md` — PDPA control tracking
 - `context/00_master_construction_os.md` § Risk Register — R-01..R-09

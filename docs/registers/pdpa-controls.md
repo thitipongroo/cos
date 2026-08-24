@@ -2,7 +2,7 @@
 
 > **Purpose:** Track implementation status of Thai Personal Data Protection Act (PDPA, B.E. 2562)
 > controls. Named as the PDPA controls tracker by spec §05-security-compliance §5.3.1 and referenced
-> by `docs/compliance/data-residency-policy.md` §5. Audit cadence: annual, triggered 6 months before
+> by `docs/policies/data-residency-policy.md` §5. Audit cadence: annual, triggered 6 months before
 > the first Thai enterprise customer onboards (§5.3.1).
 
 ---
@@ -43,7 +43,7 @@ the prerequisite for assigning the rest.
 
 ## §30–§34 — Data subject rights
 
-Status is taken from `docs/compliance/data-flow-map.md` § Data subject rights implementation and
+Status is taken from `docs/registers/data-flow-map.md` § Data subject rights implementation and
 re-verified against the backend routes.
 
 **Access and portability are now self-service** (ADR-078, 2026-08-05). The paragraph that stood here
@@ -56,16 +56,16 @@ The route prefix also changed: ADR-078 rejected the `/api/v1/identity/me/...` pa
 originally, because `identity` is not a route prefix in this API and inventing a third namespace for
 one feature would have left two ways to say "me". The paths below are the ones that exist.
 
-| ID      | PDPA ref | Right               | Implementation on disk                                                                                                                                                                                                                            | Status   | Verified   |
-| ------- | -------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ---------- |
-| PDPA-10 | §30      | Access              | `POST /api/v1/users/me/data-export` (step-up verified) · `GET /api/v1/users/me/data-export` · `GET …/:id/download`. Collector reads all five @pdpa categories across BOTH databases; mobile screen at `apps/mobile/src/app/(app)/data-export.tsx` | `DONE`   | 2026-08-05 |
-| PDPA-11 | §31      | Portability         | Same endpoints; `format: JSON \| CSV` — JSON preserves types, CSV is one file per table. Archive assembled by `data-export.workflow.ts`, delivered as a signed URL minted per request                                                             | `DONE`   | 2026-08-05 |
-| PDPA-12 | §32      | Object              | Marketing opt-out — not applicable at Stage 1                                                                                                                                                                                                     | `N/A S1` | 2026-08-03 |
+| ID      | PDPA ref | Right               | Implementation on disk                                                                                                                                                                                                                                                                                                                                                          | Status   | Verified   |
+| ------- | -------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ---------- |
+| PDPA-10 | §30      | Access              | `POST /api/v1/users/me/data-export` (step-up verified) · `GET /api/v1/users/me/data-export` · `GET …/:id/download`. Collector reads all five @pdpa categories across BOTH databases; mobile screen at `apps/mobile/src/app/(app)/data-export.tsx`                                                                                                                               | `DONE`   | 2026-08-05 |
+| PDPA-11 | §31      | Portability         | Same endpoints; `format: JSON \| CSV` — JSON preserves types, CSV is one file per table. Archive assembled by `data-export.workflow.ts`, delivered as a signed URL minted per request                                                                                                                                                                                           | `DONE`   | 2026-08-05 |
+| PDPA-12 | §32      | Object              | Marketing opt-out — not applicable at Stage 1                                                                                                                                                                                                                                                                                                                                   | `N/A S1` | 2026-08-03 |
 | PDPA-13 | §33      | Erasure             | `DELETE /api/v1/identity/me` → anonymisation. **Still not implemented** — the SELF-SERVICE route does not exist. An account holder's data CAN now be erased, but only through the tenant-operator desk (PDPA-48), which since 2026-08-23 reaches `platform.users` and the Keycloak account as well. That is the controller acting on a request, not the subject acting directly | `OPEN`   | 2026-08-23 |
-| PDPA-14 | §34      | Restrict processing | Account suspension (ADMIN action). Not implemented                                                                                                                                                                                                | `OPEN`   | 2026-08-03 |
+| PDPA-14 | §34      | Restrict processing | Account suspension (ADMIN action). Not implemented                                                                                                                                                                                                                                                                                                                              | `OPEN`   | 2026-08-03 |
 
 **PDPA-10 and PDPA-11 became `DONE` on 2026-08-05**, when `s1.identity.data-export` reached 100% and
-its fallback was flipped ON (`docs/feature-flags/registry.md`). They were `PARTIAL` until that day —
+its fallback was flipped ON (`docs/registers/feature-flag-registry.md`). They were `PARTIAL` until that day —
 the mechanism was complete and tested, but a flag that ships OFF means the right is not exercisable
 by a data subject, and this file's own rule is that a `PARTIAL` row must never be described to a
 subject as if it were `DONE`.
@@ -185,7 +185,7 @@ covers is the **module**, not our deployment:
 ## Related documents
 
 - `docs/specifications/05-security-compliance.md` §5.3.1 — audit workflow; names this file
-- `docs/compliance/data-flow-map.md` — personal data flow map (RoPA)
-- `docs/compliance/data-retention-policy.md` — retention period per entity type
-- `docs/compliance/data-residency-policy.md` — region assignment per tenant
-- `docs/compliance/soc2-controls.md` — SOC 2 Type II control tracking
+- `docs/registers/data-flow-map.md` — personal data flow map (RoPA)
+- `docs/policies/data-retention-policy.md` — retention period per entity type
+- `docs/policies/data-residency-policy.md` — region assignment per tenant
+- `docs/registers/soc2-controls.md` — SOC 2 Type II control tracking

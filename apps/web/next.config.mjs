@@ -1,7 +1,7 @@
 // PWA via Serwist (@serwist/turbopack) — Turbopack-compatible, replaces next-pwa (ADR-047).
 import { withSerwist } from '@serwist/turbopack';
 
-// Static security headers (QM-4; docs/security/csp-policy.md "Other mandatory security headers").
+// Static security headers (QM-4; docs/policies/csp-policy.md "Other mandatory security headers").
 // These are env-agnostic and carry zero runtime risk. HSTS is only honored by browsers over HTTPS,
 // so setting it unconditionally is safe for local http dev (ignored there). CSP is NOT here: a strict
 // no-unsafe-inline policy requires a per-request nonce, which static headers() cannot emit — it is

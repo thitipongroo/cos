@@ -28,7 +28,7 @@
 //                      app-role URL, so runtime queries are subject to RLS (spec §5.2, ADR-013, QM-4).
 //
 // Secret naming is deterministic (`cos/{env}/tenant-db/{tenantCode}/app_user`) so provisioning is
-// idempotent and rotation has a stable handle (docs/security/secrets-rotation-policy.md).
+// idempotent and rotation has a stable handle (docs/policies/secrets-rotation-policy.md).
 
 import { createLogger } from '@cos/logger';
 

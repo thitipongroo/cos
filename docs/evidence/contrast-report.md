@@ -8,7 +8,7 @@ last_updated: 2026-08-03
 ## Purpose
 
 Spec §20.8 makes this file an acceptance criterion: _"Contrast audit of §32.7 tokens passes 4.5:1 /
-3:1 (`docs/a11y/contrast-report.md`)"_. This is that audit, plus the page-level failures found on
+3:1 (`docs/evidence/contrast-report.md`)"_. This is that audit, plus the page-level failures found on
 `/login` and the rule that keeps them from returning.
 
 Thresholds are the two §20.8 lists as required:

@@ -1,6 +1,6 @@
 -- PDPA §19 consent records (ADR-079; closes PDPA-20/21/22, which pdpa-controls.md records as OPEN).
 --
--- WHY A TABLE AND NOT A KEYCLOAK CLAIM: docs/compliance/data-residency-policy.md §3 assumes a
+-- WHY A TABLE AND NOT A KEYCLOAK CLAIM: docs/policies/data-residency-policy.md §3 assumes a
 -- "Keycloak consent claim". No such claim exists — the realm sets "consentRequired": false on every
 -- client, and the Path A (SMS OTP) flow never traverses a Keycloak consent screen at all. Consent has
 -- to be the platform's own record or it is not a record.

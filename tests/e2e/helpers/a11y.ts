@@ -12,7 +12,7 @@ import { expect, type Page } from '@playwright/test';
  *
  * Deliberately WCAG A + AA only. Axe also ships `best-practice` and WCAG AAA rules; including
  * them would fail the build on findings the project has not committed to (AAA contrast is 7:1 —
- * the design system targets AA's 4.5:1, see docs/a11y/contrast-report.md).
+ * the design system targets AA's 4.5:1, see docs/evidence/contrast-report.md).
  */
 export const WCAG_AA_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
 
@@ -60,7 +60,7 @@ export const SMALLEST_SUPPORTED_WIDTH = 375;
  * Doubling the root font size is the standard automated stand-in: Tailwind sizes in `rem`, so it
  * scales type without touching the viewport, which is exactly what a user raising their browser's
  * font size does. Full conformance also requires nothing to be clipped or overlapped, which no
- * script can judge — docs/a11y/screenreader-checklist.md carries that half.
+ * script can judge — docs/evidence/screenreader-checklist.md carries that half.
  *
  * The failure mode this catches is the common one: a fixed-width container that pushes the page
  * into horizontal scrolling once the text grows. Horizontal scrolling of the whole page is what

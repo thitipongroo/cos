@@ -42,5 +42,5 @@ MSK, ClickHouse) must honour the residency assignment of the tenant's home regio
 ## 5. Related documents
 
 - `docs/specifications/05-security-compliance.md` §5.6 — canonical residency table
-- `docs/compliance/pdpa-controls.md` — PDPA control tracking
+- `docs/registers/pdpa-controls.md` — PDPA control tracking
 - `infrastructure/terraform/aws/` — regional Terraform modules

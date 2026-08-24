@@ -12,7 +12,7 @@
 -- called, not what the decision was.
 --
 -- If the goal is to disable the feature rather than erase the evidence, turn the flag off instead
--- (docs/feature-flags/registry.md) and leave the table in place. Only run this if the migration is
+-- (docs/registers/feature-flag-registry.md) and leave the table in place. Only run this if the migration is
 -- being rolled back before any real consent decision has been captured.
 
 DROP TABLE IF EXISTS platform.consents;

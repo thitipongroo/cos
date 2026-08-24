@@ -47,7 +47,7 @@ being mistaken for "done".
 - Runbooks: production readiness, deployment, rollback, incident response
 - Architecture documentation and ADRs for each major technology choice
 - The adoption-gate Grafana dashboard
-- `cos-audit/` and `docs/slo/monthly-reviews/` as committed directories
+- `cos-audit/` and `docs/evidence/slo-monthly-reviews/` as committed directories
 
 ### Out of scope
 
@@ -67,7 +67,7 @@ scripts/readiness/
 docs/runbooks/          21 entries — production-readiness · deployment · rollback ·
                         incident-response · db-failover · disaster-recovery · on-call-rotation ·
                         postmortem-template · temporal-worker-restart · …
-docs/slo/monthly-reviews/
+docs/evidence/slo-monthly-reviews/
 cos-audit/              directory committed, *.log git-ignored
 infrastructure/monitoring/grafana/dashboards/adoption-gates.json
 ```
@@ -199,7 +199,7 @@ Acceptance is the two checklists themselves. `run-all-checks.sh` writes sign-off
 `cos-audit/`, whose contents are git-ignored while the directory is committed (`.gitignore` lines
 108–110) — required as the Stage 1→2 transition gate per §32.11.
 
-`docs/slo/monthly-reviews/` receives `YYYY-MM.md` notes written by the Engineering Lead on the first
+`docs/evidence/slo-monthly-reviews/` receives `YYYY-MM.md` notes written by the Engineering Lead on the first
 business day of each month, escalating to the product owner when the error budget falls below 20%
 (§31.6).
 
@@ -220,7 +220,7 @@ Verified on **2026-08-22** against this working tree (Rule 36 — commands run, 
 | Readiness verification scripts                  | ✅ present  | `scripts/readiness/` — 12 scripts incl. `verify-production-readiness.sh` and `run-all-checks.sh` |
 | Adoption gate dashboard                         | ✅ present  | `grafana/dashboards/adoption-gates.json`                                                         |
 | `cos-audit/` committed, logs ignored            | ✅ present  | `.gitignore` 108–110, `.gitkeep` retained                                                        |
-| `docs/slo/monthly-reviews/`                     | ✅ present  | —                                                                                                |
+| `docs/evidence/slo-monthly-reviews/`            | ✅ present  | —                                                                                                |
 | CI contains no `kubectl apply` / `helm upgrade` | ✅ verified | grep over `.github/workflows/` returns **0** matches                                             |
 
 **One path in the command is stale.** The Section A legend points at

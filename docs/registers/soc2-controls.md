@@ -17,13 +17,13 @@ SOC 2 Type II covers five Trust Service Criteria (TSC). Construction OS targets:
 
 ### CC1 — Control Environment
 
-| Control ID | Description                                                | Implementation                                        | Status  |
-| ---------- | ---------------------------------------------------------- | ----------------------------------------------------- | ------- |
-| CC1.1      | COSO principle: commitment to integrity and ethical values | `docs/compliance/` policies in git; change-controlled | OPEN    |
-| CC1.2      | Board/management oversight of internal controls            | Product owner review + ADR-based decisions            | OPEN    |
-| CC1.3      | Organizational structure and reporting lines               | RBAC roles defined in `packages/@cos/rbac/`           | PARTIAL |
-| CC1.4      | Competency and commitment of individuals                   | Onboarding runbook; access review quarterly           | OPEN    |
-| CC1.5      | Accountability mechanisms                                  | Immutable audit log (Phase 2 `audit_logs` table)      | PARTIAL |
+| Control ID | Description                                                | Implementation                                   | Status  |
+| ---------- | ---------------------------------------------------------- | ------------------------------------------------ | ------- |
+| CC1.1      | COSO principle: commitment to integrity and ethical values | `docs/policies/` in git; change-controlled       | OPEN    |
+| CC1.2      | Board/management oversight of internal controls            | Product owner review + ADR-based decisions       | OPEN    |
+| CC1.3      | Organizational structure and reporting lines               | RBAC roles defined in `packages/@cos/rbac/`      | PARTIAL |
+| CC1.4      | Competency and commitment of individuals                   | Onboarding runbook; access review quarterly      | OPEN    |
+| CC1.5      | Accountability mechanisms                                  | Immutable audit log (Phase 2 `audit_logs` table) | PARTIAL |
 
 ### CC2 — Communication and Information
 
@@ -35,12 +35,12 @@ SOC 2 Type II covers five Trust Service Criteria (TSC). Construction OS targets:
 
 ### CC3 — Risk Assessment
 
-| Control ID | Description                                                | Implementation                                     | Status  |
-| ---------- | ---------------------------------------------------------- | -------------------------------------------------- | ------- |
-| CC3.1      | Specifying objectives to identify and assess risk          | SLO targets defined (QM-14); risk register         | OPEN    |
-| CC3.2      | Identifying and analyzing risks                            | Threat model in `docs/security/`; pentest findings | OPEN    |
-| CC3.3      | Assessing fraud risk                                       | Audit trail; RBAC prevents unauthorized access     | PARTIAL |
-| CC3.4      | Identifying significant changes affecting internal control | ADR process; migration backward-compat (QM-9)      | PARTIAL |
+| Control ID | Description                                                | Implementation                                                                      | Status  |
+| ---------- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------- | ------- |
+| CC3.1      | Specifying objectives to identify and assess risk          | SLO targets defined (QM-14); risk register                                          | OPEN    |
+| CC3.2      | Identifying and analyzing risks                            | Threat model in `05-security-compliance` §5.9; `docs/registers/pentest-findings.md` | OPEN    |
+| CC3.3      | Assessing fraud risk                                       | Audit trail; RBAC prevents unauthorized access                                      | PARTIAL |
+| CC3.4      | Identifying significant changes affecting internal control | ADR process; migration backward-compat (QM-9)                                       | PARTIAL |
 
 ### CC4 — Monitoring Activities
 
@@ -55,7 +55,7 @@ SOC 2 Type II covers five Trust Service Criteria (TSC). Construction OS targets:
 | ---------- | --------------------------------------------------- | --------------------------------------------- | ------- |
 | CC5.1      | Mitigation actions to address risks                 | Feature flags (QM-15); canary deploys (QM-16) | PARTIAL |
 | CC5.2      | Technology controls implemented for risk mitigation | PgBouncer (QM-18); RLS; mTLS; WAF             | PARTIAL |
-| CC5.3      | Relevant policies and procedures deployed           | This document + all `docs/compliance/`        | PARTIAL |
+| CC5.3      | Relevant policies and procedures deployed           | This document + all of `docs/policies/`       | PARTIAL |
 
 ### CC6 — Logical and Physical Access
 
@@ -64,7 +64,7 @@ SOC 2 Type II covers five Trust Service Criteria (TSC). Construction OS targets:
 | CC6.1      | Logical access security software, infrastructure, architectures | Keycloak OIDC; RS256 JWT; MFA; Kong rate limiting               | PARTIAL |
 | CC6.2      | Access provisioning and deprovisioning                          | RBAC + Keycloak user management (Phase 2)                       | PARTIAL |
 | CC6.3      | Restrictions on access based on least privilege                 | Role matrix in `packages/@cos/rbac/src/roles.ts`                | PARTIAL |
-| CC6.4      | Credential management and rotation                              | `docs/security/secrets-rotation-policy.md`; AWS Secrets Manager | PARTIAL |
+| CC6.4      | Credential management and rotation                              | `docs/policies/secrets-rotation-policy.md`; AWS Secrets Manager | PARTIAL |
 | CC6.5      | Disposal of data                                                | Data retention policy; right-to-erasure (PDPA §41)              | OPEN    |
 | CC6.6      | Logical access from unauthorized systems                        | WAF (Cloudflare + Kong); VPC SG; mTLS                           | PARTIAL |
 | CC6.7      | Transmission of data with encryption                            | TLS 1.3 minimum; SSE-KMS at rest                                | PARTIAL |

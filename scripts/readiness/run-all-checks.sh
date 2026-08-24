@@ -198,7 +198,7 @@ log "═════════════════════════
 manual_check \
   "MANUAL-13" "AI Monitoring" \
   "LLM provider API key rotation procedure documented." \
-  "Run: cat docs/security/secrets-rotation-policy.md | grep -A5 'LLM\|OpenAI\|Claude'"
+  "Run: cat docs/policies/secrets-rotation-policy.md | grep -A5 'LLM\|OpenAI\|Claude'"
 
 # ── SECTION G: Global-Scale Additions (8 checks) ──────────────────────────────
 
@@ -209,8 +209,8 @@ log "═════════════════════════
 
 manual_check \
   "GLOBAL-01" "Compliance" \
-  "PDPA data flow reviewed and documented in docs/compliance/data-flow-map.md." \
-  "Run: ls -la docs/compliance/data-flow-map.md && wc -l docs/compliance/data-flow-map.md"
+  "PDPA data flow reviewed and documented in docs/registers/data-flow-map.md." \
+  "Run: ls -la docs/registers/data-flow-map.md && wc -l docs/registers/data-flow-map.md"
 
 manual_check \
   "GLOBAL-02" "Performance" \
@@ -244,8 +244,8 @@ manual_check \
 
 manual_check \
   "GLOBAL-08" "Security" \
-  "Secrets rotation schedule defined in docs/security/secrets-rotation-policy.md; first rotation executed and verified in staging." \
-  "Run: cat docs/security/secrets-rotation-policy.md. Verify rotation schedule entries for DB creds, JWT keys, LLM API keys. Confirm first rotation completed."
+  "Secrets rotation schedule defined in docs/policies/secrets-rotation-policy.md; first rotation executed and verified in staging." \
+  "Run: cat docs/policies/secrets-rotation-policy.md. Verify rotation schedule entries for DB creds, JWT keys, LLM API keys. Confirm first rotation completed."
 
 # ── Final Report ───────────────────────────────────────────────────────────────
 

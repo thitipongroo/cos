@@ -234,7 +234,7 @@ export function FlowStep({
  *
  * Rendered disabled with a "coming soon" chip rather than hidden (PO decision 2026-08-04). It is
  * deliberately NOT a Pressable: there is no endpoint behind any of these (PDPA-10/11/13/14 are all
- * OPEN in docs/compliance/pdpa-controls.md), and a control that looks tappable but silently does
+ * OPEN in docs/registers/pdpa-controls.md), and a control that looks tappable but silently does
  * nothing is worse than one that states its status.
  */
 export function DisabledAction({

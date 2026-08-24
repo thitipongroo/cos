@@ -109,7 +109,7 @@ portals. A Dialog wrapper would be unused, untested code.
 
 ### 5. Rollout behind `s1.web.client-validation`, fail-closed
 
-Registered in `docs/feature-flags/registry.md`, default **OFF**. Unlike the retrofit kill-switches,
+Registered in `docs/registers/feature-flag-registry.md`, default **OFF**. Unlike the retrofit kill-switches,
 which are fail-open, this one is fail-closed: with the flag off the resolver is `undefined`, forms
 submit whatever the user typed, and `class-validator` rejects bad input server-side — the behaviour
 that shipped before this existed. Degrading to the known-good path is safer than enabling
@@ -176,7 +176,7 @@ to the field that caused it.
 
 - Spec §20.8 Accessibility (WCAG 2.2 AA) — the acceptance criteria this work is measured against
 - Spec §30.9 — the Lighthouse gate, now including `categories:accessibility` ≥ 1.0
-- Spec §32.7 — the design tokens audited in `docs/a11y/contrast-report.md`
+- Spec §32.7 — the design tokens audited in `docs/evidence/contrast-report.md`
 - ADR-049 — Unleash feature flags, server-evaluated delivery
 - ADR-055 — the `apps/web` unit-test lane these consumers are covered by
 - QM-1 (100% line + branch), QM-3 (i18n keys, Buddhist Era), QM-4 (class-validator), QM-15 (flags)

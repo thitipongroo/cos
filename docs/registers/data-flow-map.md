@@ -9,7 +9,7 @@
 ## Storage region — read this before any row below
 
 Every storage location in this document resolves to the **tenant's home region**, not to one fixed
-region. The assignment is authoritative in `docs/compliance/data-residency-policy.md` (referenced by
+region. The assignment is authoritative in `docs/policies/data-residency-policy.md` (referenced by
 spec §5.6) and is recorded per tenant in `platform.tenants.data_region`, immutable after first write:
 
 | Tenant origin   | Data-residency region        | DR region        |

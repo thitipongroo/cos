@@ -185,4 +185,4 @@ aws kms schedule-key-deletion \
 
 - **Breach notification:** If data was accessed using the compromised key → PDPA notification within 72h (QM-5)
 - **Post-mortem:** Complete `docs/runbooks/postmortem-template.md` within 5 business days
-- **Update secrets rotation policy:** `docs/security/secrets-rotation-policy.md` — add lessons learned
+- **Update secrets rotation policy:** `docs/policies/secrets-rotation-policy.md` — add lessons learned

@@ -41,7 +41,7 @@ enumerated phase in the register, and the verification below is correspondingly 
 
 ### Out of scope
 
-- SLO definitions themselves — `docs/slo/dashboard-registry.md` holds dashboard ids and targets
+- SLO definitions themselves — `docs/registers/dashboard-registry.md` holds dashboard ids and targets
 - Per-phase alerts for domain behaviour; this phase provides the platform metrics
 
 ---
@@ -87,7 +87,7 @@ None. This phase's persistence is Prometheus TSDB, Loki chunks and Jaeger spans,
 platform's databases.
 
 Log retention is policy, not schema: application logs 30-day hot / 1-year cold; audit logs indefinite
-with a 7-year WORM window (§31.4), recorded in `docs/compliance/log-retention-policy.md`.
+with a 7-year WORM window (§31.4), recorded in `docs/policies/log-retention-policy.md`.
 
 ---
 
@@ -215,10 +215,10 @@ Verified on **2026-08-22** against this working tree (Rule 36 — commands run, 
 | 22 of 24 mandatory metrics have a producer | ✅ present    | names verified in the TS/Go metric definitions                         |
 | **`kafka_consumer_lag` producer**          | ❌ **absent** | gauge registration has no production caller — OQ-43                    |
 | **`kafka_dlq_depth` producer**             | ❌ **absent** | same — OQ-43                                                           |
-| `docs/compliance/log-retention-policy.md`  | ✅ present    | —                                                                      |
+| `docs/policies/log-retention-policy.md`    | ✅ present    | —                                                                      |
 | `infrastructure/synthetics/`               | ✅ present    | `health-probes.yaml`                                                   |
 | Tenant-isolation probe CronJob             | ✅ present    | `isolation-probe/` — cronjob, configmap, rbac, probe script            |
-| `docs/slo/dashboard-registry.md`           | ✅ present    | —                                                                      |
+| `docs/registers/dashboard-registry.md`     | ✅ present    | —                                                                      |
 
 ---
 

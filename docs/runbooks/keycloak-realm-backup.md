@@ -20,7 +20,7 @@ Backup is performed via `kc.sh export` and stored to S3 (MinIO in staging).
 > versioning on, public access blocked, `force_destroy = false`.
 >
 > **PDPA carve-out to honour:** a realm export contains user PII, and
-> `docs/compliance/data-retention-policy.md` purges a deleted account's Keycloak record after 30
+> `docs/policies/data-retention-policy.md` purges a deleted account's Keycloak record after 30
 > days — so a deleted user survives in these exports for up to 60 days longer. Record that in the
 > RoPA and honour it on an erasure request; this bucket is not out of scope for §33 subject rights.
 
@@ -40,12 +40,12 @@ whose directory did not exist — so nothing produced a backup, while
 **The block that lived here would not have worked.** Four defects, each measured on 2026-08-23 rather
 than reasoned about, and each fixed in the committed manifest:
 
-| Defect                                                                                        | Evidence                                                                                                                    |
-| --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Ran `aws s3 cp` inside the Keycloak image, which has **no aws CLI** (and no curl)             | `docker run --rm --entrypoint sh quay.io/keycloak/keycloak:26.6.4 -c 'command -v aws'` → nothing                             |
-| Copied `/tmp/realm-backup-${TIMESTAMP}.json`, a file the export never creates                 | `kc.sh export --dir /tmp --realm construction-os-dev` produced `construction-os-dev-realm.json` — the name is `{realm}-realm.json` |
-| Pinned `keycloak:24.0` against a platform running **26.6.4**                                  | `docker-compose.yml`                                                                                                        |
-| Exported one realm (`construction-os`), omitting every ENTERPRISE `cos-{tenantCode}` realm    | §7.6 — those tenants carry the tightest contractual RTO (1 h, §8.2)                                                          |
+| Defect                                                                                     | Evidence                                                                                                                           |
+| ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Ran `aws s3 cp` inside the Keycloak image, which has **no aws CLI** (and no curl)          | `docker run --rm --entrypoint sh quay.io/keycloak/keycloak:26.6.4 -c 'command -v aws'` → nothing                                   |
+| Copied `/tmp/realm-backup-${TIMESTAMP}.json`, a file the export never creates              | `kc.sh export --dir /tmp --realm construction-os-dev` produced `construction-os-dev-realm.json` — the name is `{realm}-realm.json` |
+| Pinned `keycloak:24.0` against a platform running **26.6.4**                               | `docker-compose.yml`                                                                                                               |
+| Exported one realm (`construction-os`), omitting every ENTERPRISE `cos-{tenantCode}` realm | §7.6 — those tenants carry the tightest contractual RTO (1 h, §8.2)                                                                |
 
 The committed manifest splits the work: an **initContainer** runs `kc.sh export` for **all** realms
 into an `emptyDir`, then an `aws-cli` container uploads each file with the timestamp in the S3 key.

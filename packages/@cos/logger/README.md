@@ -4,7 +4,9 @@ Structured JSON logging based on Pino. The only approved logger for all Construc
 
 ## Purpose
 
-Enforces QM-8 observability standards: every log entry must include `trace_id`, `span_id`, `tenantId`, `userId`, `service`, `module`, and `event`. PII must never appear in log fields — use IDs only. Never use `console.log`.
+Enforces QM-8 observability standards: every log entry must include `trace_id`, `span_id`,
+`tenantId`, `userId`, `service`, `module`, and `event`. PII must never appear in log fields —
+use IDs only. Never use `console.log`.
 
 ## Public API
 
@@ -70,5 +72,5 @@ console.log('PO created'); // violates QM-8
 ## Notes
 
 - QM-8: logs stored in Loki (30 days hot, 1 year cold, 7 years compliance archive)
-- Log retention schedule: `docs/compliance/log-retention-policy.md` (created at Phase 15)
+- Log retention schedule: `docs/policies/log-retention-policy.md` (created at Phase 15)
 - PII rule: log `userId` (UUID) only — never email, phone, or name fields

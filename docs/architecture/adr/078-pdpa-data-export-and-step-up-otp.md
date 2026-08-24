@@ -9,7 +9,7 @@
 
 ## Context
 
-`docs/compliance/pdpa-controls.md` records **PDPA-10 (§30 Access)** and **PDPA-11 (§31 Portability)**
+`docs/registers/pdpa-controls.md` records **PDPA-10 (§30 Access)** and **PDPA-11 (§31 Portability)**
 as `OPEN`: no route exists, and a `grep` for `data-export` across `backend/src/modules/identity`
 returns nothing. Subject requests are handled manually through the controller contact (PDPA-03),
 which is itself `PARTIAL` — the address is a general support mailbox because no DPO is appointed
@@ -199,7 +199,7 @@ in-app download page already gives without weakening the 1-hour signed-URL invar
 
 ## References
 
-- `docs/compliance/pdpa-controls.md` §30–§34 (PDPA-10/11 rows), § Known corrections
+- `docs/registers/pdpa-controls.md` §30–§34 (PDPA-10/11 rows), § Known corrections
 - `docs/specifications/05-security-compliance.md` §5.3.1 · `docs/specifications/09-data-architecture.md`
 - `context/00_master_construction_os.md` §Phase 9 (signed-URL TTL, bucket naming), §Phase 2 (OTP rules)
 - `backend/prisma/migrations/20260803000001_tag_pii_columns/` (the five `@pdpa` categories)

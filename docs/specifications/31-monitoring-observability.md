@@ -182,7 +182,7 @@ per `05-security-compliance` section 5.2. Audit logs are never deleted.
 | Application logs | 30 days     | 1 year       | —                  |
 | Audit logs       | Indefinite  | —            | 7 years (WORM)     |
 
-Authoritative retention schedule: `docs/compliance/log-retention-policy.md`
+Authoritative retention schedule: `docs/policies/log-retention-policy.md`
 
 ---
 
@@ -278,12 +278,12 @@ A monthly review of SLO compliance is required for all tiers. The review covers:
 
 1. Engineering Lead pulls the SLO Burn Rate Dashboard for the preceding calendar month
 2. Documents compliance status, incidents, and corrective actions
-3. Saves notes to `docs/slo/monthly-reviews/YYYY-MM.md` (one file per month)
+3. Saves notes to `docs/evidence/slo-monthly-reviews/YYYY-MM.md` (one file per month)
 4. Reviews with product owner; escalates if error budget < 20% remaining
 
 **Cadence:** First business day of each month, covering the previous month.
 
-**File location:** `docs/slo/monthly-reviews/YYYY-MM.md`
+**File location:** `docs/evidence/slo-monthly-reviews/YYYY-MM.md`
 
 ---
 
@@ -324,7 +324,7 @@ Alerts are routed via **Alertmanager** (bundled with Prometheus) to the on-call 
 ## 31.8 Dashboards
 
 All dashboards are version-controlled as Grafana JSON in the GitOps repository.
-Dashboard IDs and their corresponding SLO targets are registered in `docs/slo/dashboard-registry.md`.
+Dashboard IDs and their corresponding SLO targets are registered in `docs/registers/dashboard-registry.md`.
 
 ### Platform Overview Dashboard
 

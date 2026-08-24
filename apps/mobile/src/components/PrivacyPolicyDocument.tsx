@@ -53,7 +53,7 @@ export const POLICY_EFFECTIVE_DATE = '2026-08-03';
 // Data Protection Office contact, supplied by configuration rather than hardcoded.
 //
 // There is no address to hardcode: no `dpo@` exists anywhere in the repo, and per
-// docs/compliance/data-flow-map.md the DPO is an **External DPO** engaged at the Stage 2→3 gate —
+// docs/registers/data-flow-map.md the DPO is an **External DPO** engaged at the Stage 2→3 gate —
 // the appointment (spec §5.3 PDPA hard requirements) has not happened at Stage 1. Inventing an
 // address on a PDPA notice is not acceptable: PDPA §37(3) requires the controller's contact to be a
 // channel a data subject can actually reach.

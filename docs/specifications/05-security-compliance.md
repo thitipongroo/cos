@@ -123,17 +123,17 @@ Targets (see §5.3.1 for audit workflow spec):
 **Audit workflow steps (implemented as Temporal workflow):**
 
 1. Trigger: audit_start_date = certification_date - 6 months
-2. Generate evidence collection checklist from `docs/compliance/` runbooks
+2. Generate evidence collection checklist from `docs/policies/` and `docs/registers/`
 3. Assign TENANT_ADMIN as evidence owner; notify via notification service
 4. Track evidence completion status in audit_logs table
 5. Gate: all evidence items marked COMPLETE before external auditor engagement
-6. External auditor findings tracked in `docs/security/pentest-findings.md` (SOC 2) or audit tracker
+6. External auditor findings tracked in `docs/registers/pentest-findings.md` (SOC 2) or audit tracker
 
-**Controls tracking:** `docs/compliance/soc2-controls.md` (SOC 2) · `docs/compliance/iso27001-controls.md` (ISO 27001) · `docs/compliance/pdpa-controls.md` (PDPA)
+**Controls tracking:** `docs/registers/soc2-controls.md` (SOC 2) · `docs/registers/iso27001-controls.md` (ISO 27001) · `docs/registers/pdpa-controls.md` (PDPA)
 
-**PDPA data governance:** `docs/compliance/data-flow-map.md` (personal data flow map — reviewed before
+**PDPA data governance:** `docs/registers/data-flow-map.md` (personal data flow map — reviewed before
 each new feature that processes PII; required before Stage 1→2 transition) ·
-`docs/compliance/data-retention-policy.md` (retention period per entity type — reviewed annually)
+`docs/policies/data-retention-policy.md` (retention period per entity type — reviewed annually)
 
 ### Regional Compliance Scope (COORD-003)
 
@@ -407,7 +407,7 @@ is sufficient:
 2. **SMS is a restricted authenticator.** NIST SP 800-63B Rev 4 classifies SMS/PSTN OTP as
    _restricted_ and it no longer satisfies AAL2. Phone possession alone is a single factor.
    The risk assessment, migration roadmap and user-notification obligations Rev 4 attaches to
-   continued use are discharged in `docs/security/sms-otp-restricted-authenticator.md`.
+   continued use are discharged in `docs/assessments/sms-otp-restricted-authenticator.md`.
 
 Every other role may be provisioned on either path. This still replaces the earlier convention under
 which Path A was described as "for field workers" and Path B "for office roles"; that framing was
@@ -550,7 +550,7 @@ Terraform configuration: `infrastructure/terraform/cloudflare/`
 Data residency rules determine where tenant data is stored and processed to satisfy
 PDPA (Thailand) and GDPR (EU) obligations.
 
-Authoritative file: `docs/compliance/data-residency-policy.md`
+Authoritative file: `docs/policies/data-residency-policy.md`
 
 ### Region assignment
 
@@ -586,7 +586,7 @@ data is stored in its own home region regardless of where the platform control p
 
 ## 5.7 Content Security Policy (CSP)
 
-The platform Content Security Policy is defined in `docs/security/csp-policy.md`.
+The platform Content Security Policy is defined in `docs/policies/csp-policy.md`.
 The policy must be reviewed and updated whenever a new third-party resource origin is
 added (CDN, font provider, analytics).
 
@@ -602,12 +602,12 @@ Constraints:
 
 ## 5.8 CORS Policy
 
-Allowed origins per environment are defined in `docs/security/cors-policy.md`.
+Allowed origins per environment are defined in `docs/policies/cors-policy.md`.
 
 Constraints:
 
 - Never use `Access-Control-Allow-Origin: *` in production
-- The allowed origins list in `docs/security/cors-policy.md` must be updated before
+- The allowed origins list in `docs/policies/cors-policy.md` must be updated before
   onboarding any new web client or partner origin
 - Preflight response cache (`Access-Control-Max-Age`) must not exceed 86400 seconds (24 hours)
 - CORS headers are set by the application's secure-headers middleware
@@ -770,7 +770,7 @@ observability work that remains.
 
 Zero-trust + mTLS (Istio) for cross-boundary calls · secrets in Vault / AWS Secrets Manager
 (never in code) · SBOM + dependency pinning (§5.10) · NIST CSF 2.0 function mapping
-(Govern / Identify / Protect / Detect / Respond / Recover) tracked in `docs/compliance/*-controls.md`.
+(Govern / Identify / Protect / Detect / Respond / Recover) tracked in `docs/registers/*-controls.md`.
 
 ### Acceptance criteria / gate
 

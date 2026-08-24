@@ -9,7 +9,7 @@
 //     authoritative log store and explicitly removed the alternative, so the pipeline step is
 //     described generically ("log store") rather than naming a product we do not run.
 //   - Kong Gateway IS correct (spec §4.8) and is kept.
-// Retention follows docs/compliance/log-retention-policy.md: 30 days hot, 1 year cold, audit
+// Retention follows docs/policies/log-retention-policy.md: 30 days hot, 1 year cold, audit
 // entries 7 years in WORM storage — not the mockup's flat "1Y Hot / 7Y Cold".
 //
 // The automatic-redaction row is Planned on purpose: @cos/logger sets no pino `redact` option, so

@@ -28,7 +28,7 @@ Product-owner decisions (2026-07-04):
    talk to Unleash and hold no provider credentials. Endpoints are gated with
    `@FeatureFlag('<name>')` + a global `FeatureFlagGuard` (503 `COS-FLAG-001` when OFF).
 3. **Retrofit scope: critical surfaces only** — AI/LLM endpoints, auth flows, financial
-   mutations (permanent kill-switches, fail-open, registry: `docs/feature-flags/registry.md`).
+   mutations (permanent kill-switches, fail-open, registry: `docs/registers/feature-flag-registry.md`).
    No blanket retrofit of the existing 20 modules.
 
 Local dev and unit tests run without an Unleash server: `UNLEASH_URL` unset → registry
@@ -64,4 +64,4 @@ the kill-switch retrofit, which degrades safely to defaults).
 - `context.md` QM-15 (provider, delivery, retrofit scope)
 - `backend/src/shared/feature-flags/` (service, guard, decorator, controller, module, tests)
 - `.env.example` (`UNLEASH_*` replaces `APPCONFIG_*`)
-- `docs/feature-flags/registry.md`, `docs/api/error-codes.md` (COS-FLAG-001)
+- `docs/registers/feature-flag-registry.md`, `docs/api/error-codes.md` (COS-FLAG-001)

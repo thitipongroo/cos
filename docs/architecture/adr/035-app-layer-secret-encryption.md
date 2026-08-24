@@ -60,7 +60,7 @@ and may be reused for future secrets classified `RESTRICTED`.
 ### Negative
 
 - Introduces a long-lived secret (`APP_SECRET_ENCRYPTION_KEY`) that must be managed and rotated
-  (added to `docs/security/secrets-rotation-policy.md`).
+  (added to `docs/policies/secrets-rotation-policy.md`).
 - Key rotation requires decrypt-with-old + re-encrypt-with-new for all stored values (no key-version
   field today) — documented as the rotation procedure.
 - A lost key makes existing `mfa_totp_secret` values unrecoverable; affected users must re-enrol MFA.
@@ -75,5 +75,5 @@ and may be reused for future secrets classified `RESTRICTED`.
 - `backend/src/modules/identity/mfa/mfa.service.ts` — first consumer
 - `docs/specifications/11-database-schema.md` — `platform.users.mfa_totp_secret`
 - `docs/specifications/05-security-compliance.md` — encryption-at-rest / Vault Transit envelope option
-- `docs/security/secrets-rotation-policy.md` — `APP_SECRET_ENCRYPTION_KEY` rotation
+- `docs/policies/secrets-rotation-policy.md` — `APP_SECRET_ENCRYPTION_KEY` rotation
 - QM-4 (Security — AES-256 at rest), QM-11 (ADR requirement)

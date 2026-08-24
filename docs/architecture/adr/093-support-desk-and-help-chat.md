@@ -120,7 +120,7 @@ implying one is watching.
 `s1.support.help-chat` (QM-15: a new UI surface and a write path reachable without an account).
 `@Throttle` at the AI endpoint rate — 20 req/min per tenant (QM-7) — and per IP for the anonymous
 path. A message body is free text a person may put anything into, so it is tagged
-`@pdpa(category: "operational")` and retained per `docs/compliance/data-retention-policy.md`.
+`@pdpa(category: "operational")` and retained per `docs/policies/data-retention-policy.md`.
 
 ## Rationale
 

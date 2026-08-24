@@ -2,7 +2,7 @@
 //
 // Automated axe-core scans of the routes a site user actually passes through. Automated checks
 // catch roughly a third of WCAG failures; the rest are covered by the manual pass in
-// docs/a11y/screenreader-checklist.md, which this suite does not replace.
+// docs/evidence/screenreader-checklist.md, which this suite does not replace.
 
 import { test } from '../fixtures';
 import { expectNoA11yViolations, expectUsableAt200PercentText } from '../helpers/a11y';

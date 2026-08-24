@@ -20,9 +20,9 @@ Reviewing that requirement before building it surfaced four problems.
 The requirement had been asserted for months without being implemented.
 
 **2. The requirement was never justified.** There was no ADR for SonarQube. No SOC 2 or ISO 27001
-control referenced it — `docs/compliance/soc2-controls.md` cites ClamAV, `pnpm audit` and Trivy for
+control referenced it — `docs/registers/soc2-controls.md` cites ClamAV, `pnpm audit` and Trivy for
 CC6.8, and PR review plus CI gates for CC8.1. The words "SAST" and "static analysis" appear nowhere
-in `docs/compliance/` or `05-security-compliance.md`. QM-4 cited §30.10/§30.12 as mandating it, and
+in `docs/policies/`, `docs/registers/` or `05-security-compliance.md`. QM-4 cited §30.10/§30.12 as mandating it, and
 §30.12 in turn cited `04-tech-stack` §4.9 as its authority — but §4.9 does not mention SonarQube at
 all. The citation chain closed on itself.
 

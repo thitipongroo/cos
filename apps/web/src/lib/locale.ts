@@ -58,7 +58,7 @@ export function directionFor(locale: string): 'ltr' | 'rtl' {
  *
  * `lang` matters more than it looks: a screen reader picks its voice and pronunciation rules from
  * it, so Thai content announced under `lang="en"` is unintelligible. No automated check catches
- * this — it is item B1 on docs/a11y/screenreader-checklist.md.
+ * this — it is item B1 on docs/evidence/screenreader-checklist.md.
  *
  * Returns void and tolerates a missing document so it can be called from an effect without the
  * caller guarding for SSR.

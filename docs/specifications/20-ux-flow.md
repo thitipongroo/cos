@@ -331,9 +331,9 @@ Thai-specific business rules that have no direct international equivalent (e.g.,
 calculation logic, BoT regulatory fields, Buddhist Era dates) must be:
 
 1. Tagged in source code with `// i18n: TH-SPECIFIC`
-2. Documented in `docs/i18n/localization-gaps.md` before the feature merges
+2. Documented in `docs/registers/localization-gaps.md` before the feature merges
 
-`docs/i18n/localization-gaps.md` is the authoritative registry of all TH-specific rules.
+`docs/registers/localization-gaps.md` is the authoritative registry of all TH-specific rules.
 It must be reviewed before adding support for any new country (VN, SG, MY, ID) to ensure
 TH-specific logic is not silently applied to non-TH tenants.
 
@@ -645,7 +645,7 @@ Non-negotiable for safety flows (incident / safety report): **color is never the
       — **done 2026-08-03.** jsx-a11y runs at error level over `apps/web/src/**/*.tsx` via the root
       `eslint.config.mjs` (0 violations across 81 files); axe-core scans 6 routes in the Playwright
       suite; the Lighthouse accessibility category is gated at 1.0 (see §30.9).
-- [x] Contrast audit of §32.7 tokens passes 4.5:1 / 3:1 (`docs/a11y/contrast-report.md`)
+- [x] Contrast audit of §32.7 tokens passes 4.5:1 / 3:1 (`docs/evidence/contrast-report.md`)
       — **audit done 2026-08-03, and it does NOT pass.** 7 findings (F1–F7) against the §32.7 tokens
       themselves, worst `--mobile-syncing #FFD60A` at 1.41:1 as a status indicator, and
       `--cos-dark-elevated #111827` at 1.14:1 as the dark-surface input border. Each hex is a §32.7
@@ -656,7 +656,7 @@ Non-negotiable for safety flows (incident / safety report): **color is never the
   accessibility prop at all. It runs as a **ratchet** — warns on the 24, fails when the count
   grows — because failing on the existing 24 would only mean disabling the check.
 - [ ] Manual screen-reader pass (VoiceOver + TalkBack) on the 5 critical flows (login, daily report,
-      issue, safety incident, sync-status) — `docs/a11y/screenreader-checklist.md`
+      issue, safety incident, sync-status) — `docs/evidence/screenreader-checklist.md`
       — **checklist written 2026-08-03, no pass recorded yet.** Not automatable; this remains open.
 - [x] Layout verified at 200% font scale on the smallest supported device (375pt)
       — **done 2026-08-03** for `/login`, via `expectUsableAt200PercentText` in the Playwright suite

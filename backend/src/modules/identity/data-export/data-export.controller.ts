@@ -1,6 +1,6 @@
 // PDPA §30 access / §31 portability — the signed-in user exporting their OWN data (ADR-078).
 //
-// Closes PDPA-10/11, recorded OPEN in docs/compliance/pdpa-controls.md.
+// Closes PDPA-10/11, recorded OPEN in docs/registers/pdpa-controls.md.
 //
 // Under @Controller('users') with a `me/` path, matching ConsentController and UserMeController: this
 // codebase has two self-service conventions — `auth` for auth primitives, `users/me` for "the signed-in

@@ -16,7 +16,7 @@ import { FieldError, Label, Text } from 'react-aria-components';
 export const CONTROL = 'w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm';
 export const LABEL = 'block text-sm font-medium text-gray-700';
 export const DESCRIPTION = 'text-xs text-gray-500';
-// `text-red-700` on white measures 6.48:1 — above the 4.5:1 AA floor (docs/a11y/contrast-report.md).
+// `text-red-700` on white measures 6.48:1 — above the 4.5:1 AA floor (docs/evidence/contrast-report.md).
 export const ERROR = 'text-xs text-red-700';
 export const OPTION =
   'cursor-pointer rounded px-2 py-1 outline-none data-[focused]:bg-blue-600 data-[focused]:text-white';

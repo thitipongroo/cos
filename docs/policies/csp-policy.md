@@ -128,9 +128,9 @@ These are configured via `helmet()` in `backend/src/main.ts` and
 
 ## Review schedule
 
-| Trigger                                      | Action                                                                       |
-| -------------------------------------------- | ---------------------------------------------------------------------------- |
-| New external script / style dependency added | Update `script-src` / `style-src` and document justification                 |
-| Stage 1 → Stage 2                            | Enable `report-uri` endpoint; add Sentry origin if applicable                |
-| Quarterly                                    | Review CSP violation reports (Stage 2+); tighten any permissive directives   |
-| External pentest                             | Review pentest findings related to CSP (`docs/security/pentest-findings.md`) |
+| Trigger                                      | Action                                                                        |
+| -------------------------------------------- | ----------------------------------------------------------------------------- |
+| New external script / style dependency added | Update `script-src` / `style-src` and document justification                  |
+| Stage 1 → Stage 2                            | Enable `report-uri` endpoint; add Sentry origin if applicable                 |
+| Quarterly                                    | Review CSP violation reports (Stage 2+); tighten any permissive directives    |
+| External pentest                             | Review pentest findings related to CSP (`docs/registers/pentest-findings.md`) |

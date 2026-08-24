@@ -8,7 +8,7 @@
 
 ## Log store architecture
 
-```
+```text
 Application → @cos/logger (JSON) → Promtail (agent) → Loki
                                                          ├── Hot tier:  S3 object storage (30 days)
                                                          ├── Cold tier: S3 Glacier (12 months)

@@ -313,7 +313,7 @@ function LoginContent() {
                     aria-describedby={errors.phoneNumber ? 'login-phone-error' : undefined}
                     placeholder={t('auth.otp.phonePlaceholder')}
                     // placeholder:text-slate-400, not slate-500: slate-500 on --cos-navy measures
-                    // 3.97:1, below the 4.5:1 floor (docs/a11y/contrast-report.md).
+                    // 3.97:1, below the 4.5:1 floor (docs/evidence/contrast-report.md).
                     className="h-12 w-full rounded-lg border border-white/10 bg-cos-navy px-4 text-white placeholder:text-slate-400 focus:border-cos-blue focus:outline-none"
                   />
                 )}

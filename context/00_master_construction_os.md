@@ -2322,7 +2322,7 @@ Constraints:
 
 - Before marking Phase 3 complete: read every Generate item above line by line,
   run ls/grep to verify each exists on disk, show output — Rule 36
-- docs/i18n/localization-gaps.md must exist by Phase 3 completion (create stub if not yet
+- docs/registers/localization-gaps.md must exist by Phase 3 completion (create stub if not yet
   populated); tag TH-specific logic in source with // i18n: TH-SPECIFIC and document before
   each feature merges (source: context.md §Compliance, spec §20.5)
 
@@ -3796,7 +3796,7 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
       PDPA: `crm.contacts.{name,email,phone}` and `crm.leads.contact_name` are personal data about
       people with NO platform account. The TENANT is the controller and COS the PROCESSOR, so a
       subject request is routed to the tenant rather than answered here — ADR-090; tagged by
-      migration 20260816000002; flows in docs/compliance/data-flow-map.md §9. `crm.leads.company`
+      migration 20260816000002; flows in docs/registers/data-flow-map.md §9. `crm.leads.company`
       is NOT tagged: a juristic person is not a data subject. There is no B2B exemption in Thai law.
 
 Local SQLite Schema (mirrors server entities for offline use):
@@ -4572,7 +4572,7 @@ Grafana Dashboards (required):
   - Tenant Operations (per tenant): API volume/latency (Prometheus), active users (active_sessions_total gauge), storage usage (storage_used_bytes gauge), AI token quota (llm_tokens_consumed_total)
   - Business Metrics (internal): daily active tenants (PostgreSQL audit_logs), procurement value THB (PostgreSQL purchase_orders), site reports (ClickHouse site_activity_daily), approval completion rate (Prometheus workflow metrics)
   - SLO Burn Rate: error budget remaining per tier (30-day), fast burn (1h), slow burn (6h), historical SLO compliance
-  Dashboard IDs and SLO targets per dashboard: docs/slo/dashboard-registry.md (source: spec §31.8)
+  Dashboard IDs and SLO targets per dashboard: docs/registers/dashboard-registry.md (source: spec §31.8)
 
 Generate:
 
@@ -4586,7 +4586,7 @@ Generate:
 - NestJS interceptor for automatic HTTP metrics
 - Kafka metrics middleware for producer/consumer
 - Unit tests: metric collection, trace propagation
-- Log retention schedule: docs/compliance/log-retention-policy.md
+- Log retention schedule: docs/policies/log-retention-policy.md
   (application logs 30-day hot / 1-year cold; audit logs indefinite / 7-year WORM — source: spec §31.4)
 - Synthetic health check probe definitions: infrastructure/synthetics/
   (≥2 AWS regions, 60s interval, OTel Collector + Grafana Synthetic Monitoring;
@@ -4619,10 +4619,10 @@ Compliance Targets (source §13.3):
     Stub: follow §32.9 Integration Stub Pattern (Type A — fail-fast)
 
   Compliance documentation (must exist before Phase 16 sign-off):
-    docs/compliance/soc2-controls.md     — SOC 2 Type II control tracking (required before Stage 2→3)
-    docs/compliance/data-flow-map.md     — PDPA/GDPR personal data flow map (reviewed before each
+    docs/registers/soc2-controls.md     — SOC 2 Type II control tracking (required before Stage 2→3)
+    docs/registers/data-flow-map.md     — PDPA/GDPR personal data flow map (reviewed before each
                                            new feature that processes PII; required before Stage 1→2)
-    docs/compliance/data-retention-policy.md — retention period per entity type (reviewed annually)
+    docs/policies/data-retention-policy.md — retention period per entity type (reviewed annually)
 
 Security Requirements:
   Encryption algorithm: AES-256 minimum for all at-rest data encryption — custom field-level
@@ -4691,7 +4691,7 @@ Secure Headers (all HTTP responses):
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
   Content-Security-Policy: default-src 'self' (adjust per frontend needs;
-    policy definition: docs/security/csp-policy.md — no unsafe-inline/unsafe-eval; report-only in staging)
+    policy definition: docs/policies/csp-policy.md — no unsafe-inline/unsafe-eval; report-only in staging)
   Referrer-Policy: strict-origin-when-cross-origin
 
 Input Security:
@@ -4715,9 +4715,9 @@ Generate:
 - OWASP dependency check in CI pipeline
 - Unit tests: RBAC guards, rate limiting, tenant isolation middleware
 - Integration tests: cross-tenant isolation (must not leak data)
-- CORS policy: docs/security/cors-policy.md (allowed origins per environment; no * in production;
+- CORS policy: docs/policies/cors-policy.md (allowed origins per environment; no * in production;
   max-age ≤ 86400s; update policy before adding any new origin — source: spec §5.8)
-- External pentest: docs/security/pentest-findings.md (findings and resolution status;
+- External pentest: docs/registers/pentest-findings.md (findings and resolution status;
   required before Stage 1→2 — source: spec §5.3.1, context.md §Security)
 
 Constraints:
@@ -5172,7 +5172,7 @@ Generate:
 - Extension point decisions: documented in docs/specifications/ (§13.3-13.5, §22.6, §05-security-compliance §5.3.1)
 - Adoption gate dashboard: track all 8 SECTION B gates in Grafana
 - cos-audit/ directory committed at repository root (log file contents git-ignored via .gitignore entry: cos-audit/*.log; directory must exist for run-all-checks.sh to write sign-off logs; required as Stage 1→2 transition gate — per spec §32.11)
-- docs/slo/monthly-reviews/ directory committed (monthly SLO review notes written here as YYYY-MM.md; Engineering Lead writes on first business day of each month covering previous month; escalate to product owner if error budget < 20% — per spec §31.6)
+- docs/evidence/slo-monthly-reviews/ directory committed (monthly SLO review notes written here as YYYY-MM.md; Engineering Lead writes on first business day of each month covering previous month; escalate to product owner if error budget < 20% — per spec §31.6)
 
 
 Constraints:

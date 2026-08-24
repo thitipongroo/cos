@@ -80,7 +80,7 @@ rules:
     severity: ERROR
     message: >-
       Never return Access-Control-Allow-Origin: * (context.md §Never; QM-4). Allowed origins are
-      declared per environment in docs/security/cors-policy.md. A wildcard on a multi-tenant API
+      declared per environment in docs/policies/cors-policy.md. A wildcard on a multi-tenant API
       lets any site drive an authenticated browser session against another tenant's data.
     pattern-either:
       - pattern: |

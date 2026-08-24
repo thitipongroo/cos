@@ -3,7 +3,7 @@
 // Stub type: Type A — fail-fast (spec §32.9)
 //
 // Replace this stub with the real workflow when the trigger condition is met.
-// Real implementation: collect evidence from docs/compliance/ runbooks, assign
+// Real implementation: collect evidence from docs/policies/ and docs/registers/, assign
 // TENANT_ADMIN as evidence owner, gate on all items COMPLETE before auditor engagement.
 
 import { log } from '@temporalio/workflow';

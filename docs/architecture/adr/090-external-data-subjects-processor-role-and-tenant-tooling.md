@@ -9,7 +9,7 @@
 
 ## Context
 
-`docs/compliance/pdpa-controls.md` records **PDPA-40 (RoPA)** as `PARTIAL`, evidenced by
+`docs/registers/pdpa-controls.md` records **PDPA-40 (RoPA)** as `PARTIAL`, evidenced by
 `data-flow-map.md` — "8 service flows + processor table". Auditing the `@pdpa` column tags against
 the migrations rather than against the export collector showed that those eight flows describe only
 one kind of data subject: **someone with a platform account**.
@@ -28,7 +28,7 @@ The omission was structural rather than careless. `20260803000001_tag_pii_column
 and that collector is keyed by `userId`; ADR-078 made the tags "the authoritative scope statement",
 so a person the collector could not reach was a person nothing prompted anyone to tag. The result was
 a compliance record that read as a claim the platform holds no personal data about these people.
-`crm` appears nowhere in `docs/compliance/`, and `ADR-029` (CRM MVP) does not mention PDPA, PII or
+`crm` appears nowhere in `docs/policies/` or `docs/registers/`, and `ADR-029` (CRM MVP) does not mention PDPA, PII or
 consent.
 
 **"It is only business contact data" was examined and does not hold in Thailand.** Singapore's PDPA
@@ -226,8 +226,8 @@ Three behaviours are easy to reverse by accident, so they are stated here as wel
 ## References
 
 - `context.md` QM-5 (PDPA/GDPR, erasure strategy, `@pdpa` tagging obligation)
-- `docs/compliance/pdpa-controls.md` PDPA-40 · `docs/compliance/data-flow-map.md` §9, §10,
-  § Controller and processor roles · `docs/compliance/data-retention-policy.md` § CRM data
+- `docs/registers/pdpa-controls.md` PDPA-40 · `docs/registers/data-flow-map.md` §9, §10,
+  § Controller and processor roles · `docs/policies/data-retention-policy.md` § CRM data
 - Migrations `20260816000001_add_vendor_type_to_vendors`, `20260816000002_tag_external_party_pii`;
   earlier passes `20260803000001_tag_pii_columns`, `20260804000005_tag_pii_columns_v2`
 - [ADR-078](078-pdpa-data-export-and-step-up-otp.md) — the controller-side export this deliberately

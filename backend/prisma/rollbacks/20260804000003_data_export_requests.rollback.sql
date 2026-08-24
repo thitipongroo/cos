@@ -18,7 +18,7 @@
 --   2. Requests in flight lose their result: a Temporal workflow that completes after this runs will
 --      fail to write back.
 --
--- To disable the feature instead, turn off s1.identity.data-export (docs/feature-flags/registry.md)
+-- To disable the feature instead, turn off s1.identity.data-export (docs/registers/feature-flag-registry.md)
 -- and leave the table in place.
 
 DROP TABLE IF EXISTS platform.export_requests;

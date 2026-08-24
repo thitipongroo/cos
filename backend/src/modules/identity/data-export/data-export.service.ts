@@ -1,6 +1,6 @@
 // PDPA §30 access / §31 portability — the request side of the data export (ADR-078).
 //
-// Closes PDPA-10/11, which docs/compliance/pdpa-controls.md records as OPEN. §30 gives the controller
+// Closes PDPA-10/11, which docs/registers/pdpa-controls.md records as OPEN. §30 gives the controller
 // 30 days to answer a VERIFIED request, so three things have to be true at once: the person is
 // re-proven (step-up action token), the request is durable (a row, not a fire-and-forget job), and
 // the subject can see its state without re-submitting because nothing visibly happened.

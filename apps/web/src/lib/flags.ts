@@ -6,10 +6,10 @@
  * so it can carry the 100% QM-1 gate under the node-only jest config. The React binding lives in
  * `src/lib/api/flags.ts`.
  *
- * Registry: docs/feature-flags/registry.md
+ * Registry: docs/registers/feature-flag-registry.md
  */
 
-/** Client-side form validation via `@cos/schemas` + react-hook-form (docs/feature-flags/registry.md). */
+/** Client-side form validation via `@cos/schemas` + react-hook-form (docs/registers/feature-flag-registry.md). */
 export const FLAG_WEB_CLIENT_VALIDATION = 's1.web.client-validation';
 
 /**

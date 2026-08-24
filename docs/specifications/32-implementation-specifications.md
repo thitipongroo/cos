@@ -1918,13 +1918,13 @@ is dead code — it must be removed within 30 days.
 | ------------ | -------------------------------------------------- | ----------------------------------------------------------------------- |
 | ACTIVE       | Flag live; rollout < 100%                          | Monitor, iterate                                                        |
 | FULL_ROLLOUT | Flag at 100% rollout for < 30 days                 | Schedule cleanup PR in current sprint                                   |
-| STALE        | Flag at 100% rollout for > 30 days without cleanup | Add to `docs/feature-flags/cleanup-backlog.md`; escalate in next sprint |
+| STALE        | Flag at 100% rollout for > 30 days without cleanup | Add to `docs/registers/feature-flag-cleanup-backlog.md`; escalate in next sprint |
 | REMOVED      | Flag check deleted from code and registry          | Strike through entry in backlog; must be in same PR as code deletion    |
 
 ### Rules
 
 - A flag transitions to STALE automatically 30 days after reaching 100% rollout
-- Stale flags are tracked in `docs/feature-flags/cleanup-backlog.md`
+- Stale flags are tracked in `docs/registers/feature-flag-cleanup-backlog.md`
 - Flag cleanup (code deletion + backlog update) must be a single PR — never split
 - Flag cleanup is a hard prerequisite before each Stage gate (Stage 1→2, Stage 2→3)
 - No new flags may be introduced in the same PR that adds a feature if that PR already

@@ -10,7 +10,7 @@ import { createLogger } from '@cos/logger';
 
 const logger = createLogger('feature-flags');
 
-// Flag registry: docs/feature-flags/registry.md — naming {stage}.{domain}.{feature} (QM-15).
+// Flag registry: docs/registers/feature-flag-registry.md — naming {stage}.{domain}.{feature} (QM-15).
 // Fallback values apply when Unleash is unreachable or not configured; retrofit kill-switches
 // default ON so a flag-service outage never disables a live feature (fail-open by design).
 export const DEFAULT_FLAGS: Readonly<Record<string, boolean>> = {

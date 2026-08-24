@@ -4,7 +4,7 @@
 -- `files` schemas are Prisma models (`datasource.schemas = ["platform", "files"]`). The domain
 -- schemas — workforce, workforce_telemetry, site_ops — are raw-SQL migrations and cannot carry a
 -- Prisma attribute at all, so QM-5's tagging obligation had no mechanism there and the PII in those
--- tables was untagged (found 2026-08-03 while auditing docs/compliance/data-flow-map.md).
+-- tables was untagged (found 2026-08-03 while auditing docs/registers/data-flow-map.md).
 --
 -- A COMMENT ON COLUMN reaches every table regardless of how it was created, survives in the database
 -- itself, and is queryable — so the PII inventory can be regenerated from the live schema instead of
@@ -47,7 +47,7 @@ COMMENT ON COLUMN workforce.project_workforce.daily_rate IS '@pdpa(category: "fi
 
 -- ─── location: GPS is captured on FIVE tables, not only at check-in ──────────────────────────
 -- (migration 20260705000001_geo_coordinates). Retention differs per table — attendance is purged at
--- 90 days; the other four persist with their parent record. See docs/compliance/data-retention-policy.md.
+-- 90 days; the other four persist with their parent record. See docs/policies/data-retention-policy.md.
 COMMENT ON COLUMN workforce_telemetry.attendance_logs.latitude IS '@pdpa(category: "location") — check-in/out GPS; 90-day retention';
 COMMENT ON COLUMN workforce_telemetry.attendance_logs.longitude IS '@pdpa(category: "location") — check-in/out GPS; 90-day retention';
 

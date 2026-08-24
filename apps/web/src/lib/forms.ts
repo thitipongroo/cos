@@ -46,7 +46,7 @@ export interface ValidatedFormOptions<TInput extends FieldValues, TOutput> exten
  * `shouldFocusError` is react-hook-form's default, restated here because it is load-bearing: it
  * moves focus to the first invalid field on a failed submit, and works only because every field in
  * `components/form/` forwards its ref to the focusable element — item C3 of
- * docs/a11y/screenreader-checklist.md.
+ * docs/evidence/screenreader-checklist.md.
  */
 export function useValidatedForm<TInput extends FieldValues, TOutput>({
   schema,

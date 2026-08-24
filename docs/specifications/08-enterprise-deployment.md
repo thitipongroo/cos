@@ -341,7 +341,7 @@ Cross-region replication: ap-southeast-7 ↔ ap-southeast-1 active-passive failo
   tenants can restrict data to a single region via DPA configuration
 - **Regional kill switch:** Platform operator can isolate a region (block egress, stop
   replication) within 4 hours of incident declaration
-- **Geopolitical risk registry:** Maintained in `docs/security/geopolitical-risk-registry.md`;
+- **Geopolitical risk registry:** Maintained in `docs/registers/geopolitical-risk-registry.md`;
   reviewed quarterly; triggers deployment change if risk level rises to HIGH
 
 ---

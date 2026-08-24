@@ -17,7 +17,7 @@ import { FeatureFlag } from '../../../shared/feature-flags/feature-flag.decorato
 import { PrivacyInquiryService } from './privacy-inquiry.service';
 import { CreatePrivacyInquiryDto } from './dto/create-privacy-inquiry.dto';
 
-/** QM-15 kill-switch. New feature → default OFF until rollout (docs/feature-flags/registry.md). */
+/** QM-15 kill-switch. New feature → default OFF until rollout (docs/registers/feature-flag-registry.md). */
 export const PRIVACY_INQUIRY_FLAG = 's1.identity.privacy-inquiry';
 
 @ApiTags('privacy-inquiries')

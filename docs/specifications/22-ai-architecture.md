@@ -709,7 +709,7 @@ Base SaaS subscription revenue is not shared. Revenue distributed quarterly via 
 - **Rotation:** Domain experts rotate annually
 - **Quarterly audit scope:** AI recommendation accuracy, override rates, bias metrics,
   COORD-001 threshold compliance, COORD-004 data source confidence trends
-- **Audit output:** Published in `docs/ai-governance/quarterly-report-{YYYY}-Q{N}.md`
+- **Audit output:** Published in `docs/evidence/ai-quarterly-report-{YYYY}-Q{N}.md`
 - **Certification path:** ISO/IEC 42001:2026 (AI Management System — EN version published 2026)
 - **Escalation:** Any AI behavior anomaly triggers committee review within 48 hours
 - **Operating structure:** the operating-model detail — ISO 42001 role mapping, tiered HITL/HOTL human
@@ -740,7 +740,7 @@ Base SaaS subscription revenue is not shared. Revenue distributed quarterly via 
 
 - **Governance model:** Constitutional constraints are immutable; operational rules adapt
 - **Proposal mechanism:** AI may flag governance inefficiencies; humans vote to update rules
-- **Versioning:** Governance policies in `docs/ai-governance/policy/` versioned with semver
+- **Versioning:** Governance policies in `docs/policies/` versioned with semver
 - **Democratic input:** Annual stakeholder survey informs policy updates
 - **Immutable constraints:** Safety hierarchy (CIV-002) and financial thresholds (COORD-001)
   may only be tightened, never relaxed, by automated systems
@@ -759,7 +759,7 @@ Base SaaS subscription revenue is not shared. Revenue distributed quarterly via 
 - **Alignment monitoring:** Recommendation acceptance rate, override rate, and user correction
   rate tracked via OpenTelemetry; anomaly detection fires at > 20% deviation from baseline
 - **RSP v3.0 compliance:** Capability evaluations required before each major model upgrade
-- **Audit:** Annual alignment audit; results in `docs/ai-governance/alignment-audit-{YYYY}.md`
+- **Audit:** Annual alignment audit; results in `docs/evidence/ai-alignment-audit-{YYYY}.md`
 
 ---
 
@@ -793,7 +793,7 @@ below reference mechanisms elsewhere in this spec unless marked **[GAP]** (to bu
 
 - **Model cards** — every deployed model (LLM provider model, SafetyVisionModel, RiskClassifier,
   DeviceTrustModel) has a card recording purpose, training/eval data, known limits, owner:
-  `docs/ai-governance/model-cards/`. DeviceTrustModel's card additionally records the PR-AUC margin
+  `docs/evidence/model-cards/`. DeviceTrustModel's card additionally records the PR-AUC margin
   over the rule-based baseline that authorised its promotion (§22.6, ADR-081) — the model may not be
   deployed without it, and the surface must state which scorer is serving
 - **Evaluation suite** — LAYER-C-001 rubric (§22.6) run as a gate before each model/prompt change;
@@ -802,7 +802,7 @@ below reference mechanisms elsewhere in this spec unless marked **[GAP]** (to bu
   major model upgrade (RSP v3.0 capability evaluation, §22.7)
 - **Provenance** — provider + model version pinned and logged per inference; model/prompt changes
   are audited (ties to §22.4 advisory guardrail)
-- **Alignment audit** — annual, per §22.7 (`docs/ai-governance/alignment-audit-{YYYY}.md`)
+- **Alignment audit** — annual, per §22.7 (`docs/evidence/ai-alignment-audit-{YYYY}.md`)
 
 Acceptance: [ ] model card exists for every deployed model · [ ] eval gate blocks unreviewed
 model/prompt changes · [ ] red-team performed before each major upgrade.

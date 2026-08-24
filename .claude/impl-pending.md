@@ -90,8 +90,8 @@
 - [ ] **4A.4** CI grep gate for React Native `accessibilityLabel` + `accessibilityRole`.
       **Current state is 17/76 and 24/76 files — this gate fails on day one.** Sequence it: land the
       gate as a warning, close the gap, then flip to blocking. Do not flip it blocking first.
-- [ ] **4A.5** `docs/a11y/contrast-report.md` — audit §32.7 tokens against 4.5:1 / 3:1 (measurement).
-- [ ] **4A.6** `docs/a11y/screenreader-checklist.md` for the 5 critical flows named in §20.8.
+- [ ] **4A.5** `docs/evidence/contrast-report.md` — audit §32.7 tokens against 4.5:1 / 3:1 (measurement).
+- [ ] **4A.6** `docs/evidence/screenreader-checklist.md` for the 5 critical flows named in §20.8.
 - [ ] **4A.7** Verify layout at 200% font scale at 375pt; record the result.
 
 ## PART 4B — React Aria, selective
@@ -124,7 +124,7 @@
 
 ## PART 6 — QM-15 feature flag (decision X.4)
 
-- [ ] **6.1** Register the flag in `docs/feature-flags/registry.md` using the QM-15 naming convention
+- [ ] **6.1** Register the flag in `docs/registers/feature-flag-registry.md` using the QM-15 naming convention
       `{stage}.{domain}.{feature}` — proposed `s1.web.client-validation`.
 - [ ] **6.2** Implement via the existing server-evaluated path (ADR-049): backend `FeatureFlagService`
       + `GET /api/v1/flags`; clients never hold provider credentials. With `UNLEASH_URL` unset the
@@ -132,7 +132,7 @@
 - [ ] **6.3** The flag must be **togglable OFF within 60 seconds without a deploy** (QM-15) and must
       cleanly fall back to the current behaviour (HTML5-only validation).
 - [ ] **6.4** Progressive rollout per QM-15: 1% → 10% → 50% → 100%, minimum 24 h per step.
-- [ ] **6.5** Record it in `docs/feature-flags/cleanup-backlog.md` — QM-15 requires removal within
+- [ ] **6.5** Record it in `docs/registers/feature-flag-cleanup-backlog.md` — QM-15 requires removal within
       30 days of reaching 100%.
 
 ## Cross-cutting

@@ -2,7 +2,7 @@
 --
 -- DESTRUCTIVE, and what is lost is compliance evidence rather than operational data: the table is the
 -- platform's own record that a person with no account wrote in about their data — who, when, what
--- they asked for, and what was done. `docs/compliance/pdpa-controls.md` scores PDPA-03 on the
+-- they asked for, and what was done. `docs/registers/pdpa-controls.md` scores PDPA-03 on the
 -- existence of a channel a data subject can actually reach; dropping this removes the evidence that
 -- one was answered.
 --
