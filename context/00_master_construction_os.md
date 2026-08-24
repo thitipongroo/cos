@@ -3292,7 +3292,7 @@ Generate:
   file.document.quarantined.v1, notify SYSTEM_ADMIN, SYSTEM_ADMIN-only recovery.
   Corrected 2026-08-22 — the previous "deferred to Phase 9 spec" wording contradicted the fully
   specified behaviour in the same Phase 9 block and the shipped implementation; test design in
-  docs/specifications/35-test-design.md §35.10.9 / §35.13 ESC-07)
+  docs/manual/35-test-design.md §35.10.9 / §35.13 ESC-07)
 - Signed URL generation service
 - OpenSearch indexing on upload complete
 - PostgreSQL migration files
@@ -3990,7 +3990,7 @@ Generate:
   orchestration chain", contradicting BOTH the Orchestration section in this same phase block
   ("plain Python sequential pipeline — no Agent Orchestrator; LangGraph deferred to LAYER-C-001")
   AND the context.md Never rule "Implement LangGraph in Phase 11–12". Authoritative: spec
-  §22-ai-architecture §22.3. See docs/specifications/35-test-design.md §35.13 ESC-09.
+  §22-ai-architecture §22.3. See docs/manual/35-test-design.md §35.13 ESC-09.
 - HallucinationGuard class with all 5 checks above
 - Structured output Pydantic models for each report type
 - Prompt templates (ai/prompts/): one per report type
@@ -4204,7 +4204,7 @@ Performance SLA (source of truth: docs/specifications/31-monitoring-observabilit
   — Corrected 2026-08-22: the former "Executive 3s / PM 2s" split conflicted with the §31.6 SLO
     (dashboard/analytics p95 < 1s) and with §30.9 (p95 < 1s, ClickHouse query < 200ms).
     §31.6 wins per the authority hierarchy (specs beat context files). See
-    docs/specifications/35-test-design.md §35.13 ESC-10.
+    docs/manual/35-test-design.md §35.13 ESC-10.
   Data freshness:        15 minutes (acceptable lag from transaction to dashboard)
   Real-time metrics:     < 30 seconds lag (for critical alerts only)
 
@@ -5351,7 +5351,7 @@ Model Types (from source §19.3):
     Added 2026-08-22 — it had an evaluation threshold in spec §30.11 (Precision ≥ 0.85, secondary
     Recall) but was missing from this phase and from §22.6. Algorithm, input features and minimum
     training data are UNSPECIFIED — do NOT infer them; owner AI/Platform Lead, decided when Layer B
-    enters an active development sprint. See docs/specifications/35-test-design.md §35.13 ESC-03.
+    enters an active development sprint. See docs/manual/35-test-design.md §35.13 ESC-03.
 
 Feature Store (Feast):
   Feature views:

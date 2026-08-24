@@ -55,4 +55,4 @@ compare(X-Webhook-Signature, expectedSig) using timingSafeEqual
 - Events emitted downstream: `platform.enterprise.contract_signed.v1`,
   `platform.enterprise.db_provisioned.v1`.
 - OpenAPI spec: `docs/api/platform-webhooks.openapi.yaml`.
-- Test design: `docs/specifications/35-test-design.md` §35.10.25.
+- Test design: `docs/manual/35-test-design.md` §35.10.25.

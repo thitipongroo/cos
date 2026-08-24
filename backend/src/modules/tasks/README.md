@@ -62,4 +62,4 @@ Warn only (HTTP `200` with `warnings[]`):
   silently with no `ConflictRecord` (progress is monotonic).
 - Tasks reference `floor_id` / `room_id` (nullable) for room assignment — mirrored as `LOCATED_IN`
   in the knowledge graph.
-- Test design: `docs/specifications/35-test-design.md` §35.10.6.
+- Test design: `docs/manual/35-test-design.md` §35.10.6.

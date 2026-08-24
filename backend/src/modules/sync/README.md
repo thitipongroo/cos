@@ -62,4 +62,4 @@ POST /api/v1/sync/push
   task progress → site reports → material → equipment usage → photo/media (last).
 - Financial entities never auto-resolve — a detected conflict is flagged `CONFLICT_FLAGGED` for
   manual `FINANCE` / `PROJECT_MANAGER` resolution (QM-9).
-- Test design: `docs/specifications/35-test-design.md` §35.10.6 and §35.10.10.
+- Test design: `docs/manual/35-test-design.md` §35.10.6 and §35.10.10.

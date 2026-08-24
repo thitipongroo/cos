@@ -86,5 +86,5 @@ Replace SonarQube with **GitHub CodeQL** as the SAST gate.
 
 - `docs/specifications/30-testing-strategy.md` §30.10 (Security Testing), §30.12 (CI/CD Test Gates)
 - `context.md` QM-4 (Security)
-- `docs/specifications/35-test-design.md` §35.13 ESC-11, `TC-P16-SEC-005`, `TC-P19-MAN-006`
+- `docs/manual/35-test-design.md` §35.13 ESC-11, `TC-P16-SEC-005`, `TC-P19-MAN-006`
 - `context/00_master_construction_os.md` §Phase 16, §Phase 19 automated check #4

@@ -54,4 +54,4 @@ PATCH /api/v1/crm/opportunities/<opportunityId>/convert
 - ADR-029 overrode the `21-mvp-scope` §21.6 "UI excluded" note — basic CRM UI is in MVP.
 - Inbound CRM→COS project creation (Salesforce / HubSpot / Pipedrive webhooks) is a **Phase 3**
   concern (`CRMIntegration` strategy stub), not part of this module.
-- Test design: `docs/specifications/35-test-design.md` §35.10.10 (Web app scope).
+- Test design: `docs/manual/35-test-design.md` §35.10.10 (Web app scope).

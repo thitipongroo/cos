@@ -69,4 +69,4 @@ Injected from AWS Secrets Manager (cloud) or HashiCorp Vault (on-premise).
 - Magic-link tokens are stored as `token_hash` in `procurement.rfq_invitations`; the raw token is
   never persisted.
 - OpenAPI spec: `docs/api/vendor.openapi.yaml`. Vendor pages: `20-ux-flow` §20.7.12 under `/vendor`.
-- Test design: `docs/specifications/35-test-design.md` §35.10.5.
+- Test design: `docs/manual/35-test-design.md` §35.10.5.

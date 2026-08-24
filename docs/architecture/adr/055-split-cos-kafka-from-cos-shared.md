@@ -88,5 +88,5 @@ Split the package in two along the mobile-safety boundary:
 
 - `context.md` Rule 34, Rule 35, Rule 33
 - `context/00_master_construction_os.md` §Phase 1 (shared package boundaries), §Phase 8
-- `docs/specifications/35-test-design.md` §35.13 ESC-08, `TC-P08-UNIT-016`
+- `docs/manual/35-test-design.md` §35.13 ESC-08, `TC-P08-UNIT-016`
 - `docs/specifications/32-implementation-specifications.md` §32.4 (event contracts)
