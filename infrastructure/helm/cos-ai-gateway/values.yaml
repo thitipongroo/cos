@@ -55,3 +55,11 @@ readinessProbe:
     port: 8000
   initialDelaySeconds: 15
   periodSeconds: 5
+
+# Rolling deployment — master §Phase 17: surge by one, never go unavailable. maxUnavailable MUST
+# stay 0: any other value trades zero-downtime for a faster rollout, which is the opposite of what
+# the spec chose. Overridable per environment, but prod must not relax it.
+strategy:
+  type: RollingUpdate
+  maxSurge: 1
+  maxUnavailable: 0

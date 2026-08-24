@@ -61,16 +61,43 @@ affinity:
               app.kubernetes.io/name: cos-backend
           topologyKey: kubernetes.io/hostname
 
+# THE PREFIX IS PART OF THE PATH. main.ts calls setGlobalPrefix('api/v1') with no `exclude`, so
+# @Controller('health') + @Get('live') is served at /api/v1/health/live — NOT /health/live.
+#
+# Corrected 2026-08-24. These probes read /health/live and /health/ready, which return 404: the
+# liveness probe would fail three times and put the pod in CrashLoopBackOff, and readiness would
+# never pass so it would take no traffic. The backend would not deploy at all.
+#
+# This is the exact failure the 2026-07-20 Linux POC recorded — "four charts probed a health path the
+# service does not serve ... only a real deploy catches this, lint and dry-run do not". That round
+# fixed four charts and flagged cos-file-service and cos-web as unverified; both were in fact
+# correct, and the one nobody suspected was this one.
+#
+# Verified by request against a booted app: /health/live → 404, /api/v1/health/live → 200. The same
+# prefixed path is what docker-compose.yml uses for this service's healthcheck and what
+# tenant.middleware.ts exempts from tenant lookup.
+#
+# Every OTHER service in this repo serves /health/live unprefixed — do not "make this consistent"
+# with them by shortening the path here; change setGlobalPrefix instead, and only after updating
+# compose, the middleware and the auth integration test that all name the prefixed form.
 livenessProbe:
   httpGet:
-    path: /health/live
+    path: /api/v1/health/live
     port: 3000
   initialDelaySeconds: 30
   periodSeconds: 10
 
 readinessProbe:
   httpGet:
-    path: /health/ready
+    path: /api/v1/health/ready
     port: 3000
   initialDelaySeconds: 15
   periodSeconds: 5
+
+# Rolling deployment — master §Phase 17: surge by one, never go unavailable. maxUnavailable MUST
+# stay 0: any other value trades zero-downtime for a faster rollout, which is the opposite of what
+# the spec chose. Overridable per environment, but prod must not relax it.
+strategy:
+  type: RollingUpdate
+  maxSurge: 1
+  maxUnavailable: 0
