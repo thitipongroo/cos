@@ -13,11 +13,18 @@ import {
   NotFoundException,
   ForbiddenException,
   UnprocessableEntityException,
+  BadRequestException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { REQUEST } from '@nestjs/core';
 import { FinanceService } from '../finance.service';
+import { EventOutboxService } from '../../../shared/events/event-outbox.service';
+import { makeOutboxDouble } from '../../../shared/events/__tests__/outbox-double';
 import { FinanceRepository } from '../finance.repository';
+import { FileServiceClient } from '../../files/file-service-client.service';
+import { CredentialClientService } from '../../credentials/credential-client.service';
+import { ContractSignLinkService } from '../contract-sign-link.service';
 import type {
   ProjectBudgetRow,
   BudgetLineRow,
@@ -46,6 +53,14 @@ const mockRepo = {
   createContract: jest.fn(),
   findContractById: jest.fn(),
   listContracts: jest.fn(),
+  attachSignedDocument: jest.fn(),
+  updateContractStatus: jest.fn(),
+  replaceBoqSnapshot: jest.fn(),
+  findBoqSnapshotByProject: jest.fn(),
+  recordContractSignature: jest.fn(),
+  createSignToken: jest.fn(),
+  consumeSignToken: jest.fn(),
+  listContractSignatures: jest.fn(),
   createBilling: jest.fn(),
   findBillingById: jest.fn(),
   listBillings: jest.fn(),
@@ -68,6 +83,9 @@ const outboxArg = (
   const arg = fn.mock.calls[0]?.[argIndex];
   return typeof arg === 'function' ? arg(row) : arg;
 };
+const mockFileClient = { getFileMetadata: jest.fn(), upload: jest.fn() };
+const mockCredentialClient = { issue: jest.fn(), verify: jest.fn() };
+const mockSignLink = { issue: jest.fn(), verify: jest.fn(), hashToken: jest.fn() };
 
 const mockRequest = {
   tenantId: 'tenant-uuid-001',
@@ -142,7 +160,11 @@ beforeEach(async () => {
   const module: TestingModule = await Test.createTestingModule({
     providers: [
       FinanceService,
+      { provide: EventOutboxService, useValue: makeOutboxDouble().service },
       { provide: FinanceRepository, useValue: mockRepo },
+      { provide: FileServiceClient, useValue: mockFileClient },
+      { provide: CredentialClientService, useValue: mockCredentialClient },
+      { provide: ContractSignLinkService, useValue: mockSignLink },
       { provide: REQUEST, useValue: mockRequest },
     ],
   }).compile();
@@ -156,7 +178,11 @@ describe('constructor', () => {
     const m = await Test.createTestingModule({
       providers: [
         FinanceService,
+        { provide: EventOutboxService, useValue: makeOutboxDouble().service },
         { provide: FinanceRepository, useValue: mockRepo },
+        { provide: FileServiceClient, useValue: mockFileClient },
+        { provide: CredentialClientService, useValue: mockCredentialClient },
+        { provide: ContractSignLinkService, useValue: mockSignLink },
         { provide: REQUEST, useValue: {} },
       ],
     }).compile();
@@ -578,7 +604,11 @@ describe('outbox write failure', () => {
       }),
     );
   });
+});
 
+// (Named for the two Kafka catch-branch tests it used to open with; those moved to
+// shared/events/__tests__/event-outbox.service.spec.ts when the services stopped publishing inline.)
+describe('AR billing — customers, contracts, invoices and payments', () => {
   // ── AR Billing increment ────────────────────────────────────────────────────
 
   describe('Customers & Contracts', () => {
@@ -614,23 +644,499 @@ describe('outbox write failure', () => {
         contract_type: 'MAIN_CONTRACT',
         contract_value: '1000000',
         customer_id: 'cust-1',
+        terms: 'Net 30; retention 5%',
       });
       expect(mockRepo.createContract).toHaveBeenCalledWith(
-        expect.objectContaining({ contract_value: '1000000.0000' }),
+        expect.objectContaining({ contract_value: '1000000.0000', terms: 'Net 30; retention 5%' }),
       );
     });
 
-    it('createContract leaves contract_value null when omitted', async () => {
+    it('createContract leaves contract_value + terms null when omitted', async () => {
       mockRepo.createContract.mockResolvedValue({ contract_id: 'con-1' });
       await service.createContract({ project_id: 'proj-uuid-001', contract_type: 'SUBCONTRACT' });
       expect(mockRepo.createContract).toHaveBeenCalledWith(
-        expect.objectContaining({ contract_value: null }),
+        expect.objectContaining({ contract_value: null, terms: null }),
       );
     });
 
     it('listContracts delegates to repo', async () => {
       mockRepo.listContracts.mockResolvedValue([{ contract_id: 'con-1' }]);
       expect(await service.listContracts('proj-uuid-001')).toHaveLength(1);
+    });
+
+    it('listContractSignatures delegates to repo (ADR-058 CT-6)', async () => {
+      mockRepo.listContractSignatures.mockResolvedValue([{ signature_id: 'sig-1' }]);
+      expect(await service.listContractSignatures('con-1')).toHaveLength(1);
+    });
+
+    describe('activate / terminate lifecycle', () => {
+      it('activates a SIGNED contract', async () => {
+        mockRepo.findContractById.mockResolvedValue({ contract_id: 'con-1', status: 'SIGNED' });
+        mockRepo.updateContractStatus.mockResolvedValue({ contract_id: 'con-1', status: 'ACTIVE' });
+        const r = await service.activateContract('con-1');
+        expect(r.status).toBe('ACTIVE');
+        expect(mockRepo.updateContractStatus).toHaveBeenCalledWith('con-1', 'ACTIVE');
+      });
+
+      it('404s activating an unknown contract', async () => {
+        mockRepo.findContractById.mockResolvedValue(null);
+        await expect(service.activateContract('missing')).rejects.toBeInstanceOf(NotFoundException);
+      });
+
+      it('400s activating a contract that is not SIGNED', async () => {
+        mockRepo.findContractById.mockResolvedValue({ contract_id: 'con-1', status: 'DRAFT' });
+        await expect(service.activateContract('con-1')).rejects.toBeInstanceOf(BadRequestException);
+        expect(mockRepo.updateContractStatus).not.toHaveBeenCalled();
+      });
+
+      it('terminates a SIGNED contract and an ACTIVE contract', async () => {
+        mockRepo.findContractById.mockResolvedValue({ contract_id: 'con-1', status: 'SIGNED' });
+        mockRepo.updateContractStatus.mockResolvedValue({
+          contract_id: 'con-1',
+          status: 'TERMINATED',
+        });
+        expect((await service.terminateContract('con-1')).status).toBe('TERMINATED');
+
+        mockRepo.findContractById.mockResolvedValue({ contract_id: 'con-1', status: 'ACTIVE' });
+        expect((await service.terminateContract('con-1')).status).toBe('TERMINATED');
+        expect(mockRepo.updateContractStatus).toHaveBeenCalledWith('con-1', 'TERMINATED');
+      });
+
+      it('404s terminating an unknown contract', async () => {
+        mockRepo.findContractById.mockResolvedValue(null);
+        await expect(service.terminateContract('missing')).rejects.toBeInstanceOf(
+          NotFoundException,
+        );
+      });
+
+      it('400s terminating a DRAFT contract', async () => {
+        mockRepo.findContractById.mockResolvedValue({ contract_id: 'con-1', status: 'DRAFT' });
+        await expect(service.terminateContract('con-1')).rejects.toBeInstanceOf(
+          BadRequestException,
+        );
+        expect(mockRepo.updateContractStatus).not.toHaveBeenCalled();
+      });
+    });
+
+    it('handleBoqItemsPublished materializes the line snapshot (ADR-058 CT-2c-2)', async () => {
+      const items = [
+        {
+          item_code: 'A-1',
+          description: 'Concrete',
+          unit: 'm3',
+          quantity: '10.0000',
+          unit_cost: '2500.0000',
+          estimated_total: '25000.0000',
+        },
+      ];
+      await service.handleBoqItemsPublished({
+        version_id: 'ver-1',
+        project_id: 'proj-uuid-001',
+        tenant_id: 'tenant-uuid-001',
+        items,
+      });
+      expect(mockRepo.replaceBoqSnapshot).toHaveBeenCalledWith('ver-1', 'proj-uuid-001', items);
+    });
+
+    describe('attachDocument (ADR-058 CT-2)', () => {
+      const dto = { mode: 'upload' as const, file_id: 'file-uuid-1' };
+
+      it('attaches a validated file to the contract', async () => {
+        mockRepo.findContractById.mockResolvedValue({ contract_id: 'con-1' });
+        mockFileClient.getFileMetadata.mockResolvedValue({ file_id: 'file-uuid-1' });
+        mockRepo.attachSignedDocument.mockResolvedValue({
+          contract_id: 'con-1',
+          signed_document_id: 'file-uuid-1',
+        });
+
+        const result = await service.attachDocument('con-1', dto);
+        expect(result.signed_document_id).toBe('file-uuid-1');
+        expect(mockRepo.attachSignedDocument).toHaveBeenCalledWith('con-1', 'file-uuid-1');
+      });
+
+      it('404s when the contract does not exist', async () => {
+        mockRepo.findContractById.mockResolvedValue(null);
+        await expect(service.attachDocument('missing', dto)).rejects.toBeInstanceOf(
+          NotFoundException,
+        );
+        expect(mockFileClient.getFileMetadata).not.toHaveBeenCalled();
+      });
+
+      it('400s when the file does not exist for the tenant', async () => {
+        mockRepo.findContractById.mockResolvedValue({ contract_id: 'con-1' });
+        mockFileClient.getFileMetadata.mockResolvedValue(null);
+        await expect(service.attachDocument('con-1', dto)).rejects.toBeInstanceOf(
+          BadRequestException,
+        );
+        expect(mockRepo.attachSignedDocument).not.toHaveBeenCalled();
+      });
+
+      it('generate mode builds the PDF, uploads it, and binds the returned file_id', async () => {
+        mockRepo.findContractById.mockResolvedValue({
+          contract_id: 'con-1',
+          project_id: 'proj-uuid-001',
+          contract_type: 'MAIN_CONTRACT',
+          contract_value: '1000000.0000',
+          terms: 'Net 30',
+        });
+        mockRepo.findBoqSnapshotByProject.mockResolvedValue([
+          {
+            item_code: 'A-1',
+            description: 'Concrete',
+            unit: 'm3',
+            quantity: '10.0000',
+            unit_cost: '2500.0000',
+            estimated_total: '25000.0000',
+          },
+        ]);
+        mockFileClient.upload.mockResolvedValue({ file_id: 'gen-file-1' });
+        mockRepo.attachSignedDocument.mockResolvedValue({
+          contract_id: 'con-1',
+          signed_document_id: 'gen-file-1',
+        });
+
+        const result = await service.attachDocument('con-1', { mode: 'generate' });
+        expect(mockFileClient.upload).toHaveBeenCalledWith(
+          expect.objectContaining({
+            contentType: 'application/pdf',
+            entityType: 'contract',
+            entityId: 'con-1',
+          }),
+        );
+        expect(mockRepo.attachSignedDocument).toHaveBeenCalledWith('con-1', 'gen-file-1');
+        expect(result.signed_document_id).toBe('gen-file-1');
+      });
+    });
+
+    describe('signContract (ADR-058 CT-3)', () => {
+      const signed = {
+        contract_id: 'con-1',
+        project_id: 'proj-uuid-001',
+        signed_document_id: 'file-1',
+        status: 'DRAFT',
+      };
+
+      it('404 when the contract does not exist', async () => {
+        mockRepo.findContractById.mockResolvedValue(null);
+        await expect(service.signContract('missing', '1.2.3.4')).rejects.toBeInstanceOf(
+          NotFoundException,
+        );
+      });
+
+      it('400 when the contract has no attached document', async () => {
+        mockRepo.findContractById.mockResolvedValue({
+          contract_id: 'con-1',
+          signed_document_id: null,
+        });
+        await expect(service.signContract('con-1', '1.2.3.4')).rejects.toBeInstanceOf(
+          BadRequestException,
+        );
+      });
+
+      it('400 when the document file is missing', async () => {
+        mockRepo.findContractById.mockResolvedValue(signed);
+        mockFileClient.getFileMetadata.mockResolvedValue(null);
+        await expect(service.signContract('con-1', '1.2.3.4')).rejects.toBeInstanceOf(
+          BadRequestException,
+        );
+      });
+
+      it('400 when the document has no sha256 hash', async () => {
+        mockRepo.findContractById.mockResolvedValue(signed);
+        mockFileClient.getFileMetadata.mockResolvedValue({ file_id: 'file-1', sha256: null });
+        await expect(service.signContract('con-1', '1.2.3.4')).rejects.toBeInstanceOf(
+          BadRequestException,
+        );
+      });
+
+      it('issues + verifies the VC and records a VERIFIED INTERNAL signature', async () => {
+        mockRepo.findContractById.mockResolvedValue(signed);
+        mockFileClient.getFileMetadata.mockResolvedValue({
+          file_id: 'file-1',
+          sha256: 'a'.repeat(64),
+        });
+        mockCredentialClient.issue.mockResolvedValue({
+          vcId: 'vc-1',
+          credential: { id: 'urn:vc' },
+        });
+        mockCredentialClient.verify.mockResolvedValue({ verified: true });
+        mockRepo.recordContractSignature.mockResolvedValue({
+          signature_id: 'sig-1',
+          verification_status: 'VERIFIED',
+        });
+        // Only the internal signature so far → no draft→signed transition yet.
+        mockRepo.listContractSignatures.mockResolvedValue([
+          { signer_party: 'INTERNAL', verification_status: 'VERIFIED' },
+        ]);
+
+        const result = await service.signContract('con-1', '203.0.113.5');
+        expect(mockRepo.updateContractStatus).not.toHaveBeenCalled();
+        expect(mockCredentialClient.issue).toHaveBeenCalledWith(
+          expect.objectContaining({
+            credentialType: 'CONTRACT_SIGNATURE',
+            documentHash: 'a'.repeat(64),
+          }),
+        );
+        expect(mockRepo.recordContractSignature).toHaveBeenCalledWith(
+          expect.objectContaining({
+            signer_party: 'INTERNAL',
+            credential_ref: 'vc-1',
+            verification_status: 'VERIFIED',
+            ip_address: '203.0.113.5',
+          }),
+        );
+        expect(result.verification_status).toBe('VERIFIED');
+      });
+
+      it('records FAILED when the VC does not verify', async () => {
+        mockRepo.findContractById.mockResolvedValue(signed);
+        mockFileClient.getFileMetadata.mockResolvedValue({
+          file_id: 'file-1',
+          sha256: 'a'.repeat(64),
+        });
+        mockCredentialClient.issue.mockResolvedValue({ vcId: 'vc-2', credential: {} });
+        mockCredentialClient.verify.mockResolvedValue({ verified: false });
+        mockRepo.recordContractSignature.mockResolvedValue({
+          signature_id: 'sig-x',
+          verification_status: 'FAILED',
+        });
+        mockRepo.listContractSignatures.mockResolvedValue([
+          { signer_party: 'INTERNAL', verification_status: 'FAILED' },
+        ]);
+
+        await service.signContract('con-1', '1.2.3.4');
+        expect(mockRepo.recordContractSignature).toHaveBeenCalledWith(
+          expect.objectContaining({ verification_status: 'FAILED' }),
+        );
+      });
+
+      it('skips the signed transition when the contract is already SIGNED', async () => {
+        mockRepo.findContractById.mockResolvedValue({ ...signed, status: 'SIGNED' });
+        mockFileClient.getFileMetadata.mockResolvedValue({
+          file_id: 'file-1',
+          sha256: 'a'.repeat(64),
+        });
+        mockCredentialClient.issue.mockResolvedValue({ vcId: 'vc-3', credential: {} });
+        mockCredentialClient.verify.mockResolvedValue({ verified: true });
+        mockRepo.recordContractSignature.mockResolvedValue({
+          signature_id: 'sig-y',
+          verification_status: 'VERIFIED',
+        });
+
+        await service.signContract('con-1', '1.2.3.4');
+        expect(mockRepo.listContractSignatures).not.toHaveBeenCalled(); // early return, no re-check
+        expect(mockRepo.updateContractStatus).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('issueSignLink (ADR-058 CT-4)', () => {
+      const signed = { contract_id: 'con-1', signed_document_id: 'file-1' };
+      const origBase = process.env['CONTRACT_SIGN_URL_BASE'];
+      afterEach(() => {
+        if (origBase === undefined) delete process.env['CONTRACT_SIGN_URL_BASE'];
+        else process.env['CONTRACT_SIGN_URL_BASE'] = origBase;
+      });
+
+      it('404 when the contract does not exist', async () => {
+        mockRepo.findContractById.mockResolvedValue(null);
+        await expect(service.issueSignLink('missing', {})).rejects.toBeInstanceOf(
+          NotFoundException,
+        );
+      });
+
+      it('400 when the contract has no attached document', async () => {
+        mockRepo.findContractById.mockResolvedValue({
+          contract_id: 'con-1',
+          signed_document_id: null,
+        });
+        await expect(service.issueSignLink('con-1', {})).rejects.toBeInstanceOf(
+          BadRequestException,
+        );
+      });
+
+      it('issues a link with client info + stores the token hash (configured base URL)', async () => {
+        process.env['CONTRACT_SIGN_URL_BASE'] = 'https://sign.example';
+        mockRepo.findContractById.mockResolvedValue(signed);
+        mockSignLink.issue.mockResolvedValue({
+          token: 'tok-abc',
+          tokenHash: 'h'.repeat(64),
+          expiresAt: new Date('2026-08-01T00:00:00Z'),
+        });
+        mockRepo.createSignToken.mockResolvedValue({ token_id: 'tk-1' });
+
+        const result = await service.issueSignLink('con-1', {
+          client_name: 'ACME',
+          client_email: 'a@acme.com',
+        });
+        expect(result.url).toBe('https://sign.example/contracts/sign/tok-abc');
+        expect(result.expires_at).toBe('2026-08-01T00:00:00.000Z');
+        expect(mockRepo.createSignToken).toHaveBeenCalledWith(
+          expect.objectContaining({
+            contract_id: 'con-1',
+            token_hash: 'h'.repeat(64),
+            invited_name: 'ACME',
+            invited_email: 'a@acme.com',
+          }),
+        );
+      });
+
+      it('issues a link without client info, using the default base URL', async () => {
+        delete process.env['CONTRACT_SIGN_URL_BASE'];
+        mockRepo.findContractById.mockResolvedValue(signed);
+        mockSignLink.issue.mockResolvedValue({
+          token: 'tok-xyz',
+          tokenHash: 'h'.repeat(64),
+          expiresAt: new Date(),
+        });
+        mockRepo.createSignToken.mockResolvedValue({ token_id: 'tk-2' });
+
+        const result = await service.issueSignLink('con-1', {});
+        expect(result.url).toContain('https://app.cos.local/contracts/sign/tok-xyz');
+        expect(mockRepo.createSignToken).toHaveBeenCalledWith(
+          expect.objectContaining({ invited_name: null, invited_email: null }),
+        );
+      });
+    });
+
+    describe('signContractAsClient (ADR-058 CT-5)', () => {
+      const tokenRow = { token_id: 'tok-id-1', contract_id: 'con-1' };
+      beforeEach(() => mockSignLink.hashToken.mockResolvedValue('h'.repeat(64)));
+
+      it('401 for an invalid/used token', async () => {
+        mockRepo.consumeSignToken.mockResolvedValue(null);
+        await expect(service.signContractAsClient('tok', {}, '1.2.3.4')).rejects.toBeInstanceOf(
+          UnauthorizedException,
+        );
+      });
+
+      it('400 when the contract has no document', async () => {
+        mockRepo.consumeSignToken.mockResolvedValue(tokenRow);
+        mockRepo.findContractById.mockResolvedValue({
+          contract_id: 'con-1',
+          signed_document_id: null,
+        });
+        await expect(service.signContractAsClient('tok', {}, '1.2.3.4')).rejects.toBeInstanceOf(
+          BadRequestException,
+        );
+      });
+
+      it('400 when the document hash is unavailable', async () => {
+        mockRepo.consumeSignToken.mockResolvedValue(tokenRow);
+        mockRepo.findContractById.mockResolvedValue({
+          contract_id: 'con-1',
+          signed_document_id: 'file-1',
+        });
+        mockFileClient.getFileMetadata.mockResolvedValue({ sha256: null });
+        await expect(service.signContractAsClient('tok', {}, '1.2.3.4')).rejects.toBeInstanceOf(
+          BadRequestException,
+        );
+      });
+
+      it('records a VERIFIED CLIENT signature, captures client identity, and consumes the token', async () => {
+        mockRepo.consumeSignToken.mockResolvedValue(tokenRow);
+        mockRepo.findContractById.mockResolvedValue({
+          contract_id: 'con-1',
+          project_id: 'proj-uuid-001',
+          signed_document_id: 'file-1',
+          status: 'DRAFT',
+        });
+        mockFileClient.getFileMetadata.mockResolvedValue({ sha256: 'a'.repeat(64) });
+        mockCredentialClient.issue.mockResolvedValue({ vcId: 'vc-c1', credential: {} });
+        mockCredentialClient.verify.mockResolvedValue({ verified: true });
+        mockRepo.recordContractSignature.mockResolvedValue({
+          signature_id: 'sig-c1',
+          verification_status: 'VERIFIED',
+        });
+        // Both parties now VERIFIED → draft→signed transition + finance.contract.signed.v1.
+        mockRepo.listContractSignatures.mockResolvedValue([
+          { signer_party: 'INTERNAL', verification_status: 'VERIFIED' },
+          { signer_party: 'CLIENT', verification_status: 'VERIFIED' },
+        ]);
+
+        const result = await service.signContractAsClient(
+          'tok',
+          { client_name: 'Jane Client', client_email: 'jane@client.com' },
+          '198.51.100.7',
+        );
+        expect(result.verification_status).toBe('VERIFIED');
+        expect(mockRepo.recordContractSignature).toHaveBeenCalledWith(
+          expect.objectContaining({
+            signer_party: 'CLIENT',
+            magic_link_token_id: 'tok-id-1',
+            credential_ref: 'vc-c1',
+            ip_address: '198.51.100.7',
+            signer_identity: { name: 'Jane Client', email: 'jane@client.com' },
+          }),
+        );
+        expect(mockRepo.updateContractStatus).toHaveBeenCalledWith('con-1', 'SIGNED');
+      });
+
+      it('consumes the token BEFORE issuing the credential (single-use under concurrency)', async () => {
+        // Ordering is the fix: consuming last left a window in which a second concurrent request
+        // passed the check and recorded a second CLIENT signature on the same magic link.
+        const order: string[] = [];
+        mockRepo.consumeSignToken.mockImplementation(() => {
+          order.push('consume');
+          return Promise.resolve(tokenRow);
+        });
+        mockRepo.findContractById.mockResolvedValue({
+          contract_id: 'con-1',
+          project_id: 'proj-uuid-001',
+          signed_document_id: 'file-1',
+          status: 'DRAFT',
+        });
+        mockFileClient.getFileMetadata.mockResolvedValue({ sha256: 'a'.repeat(64) });
+        mockCredentialClient.issue.mockImplementation(() => {
+          order.push('issue');
+          return Promise.resolve({ vcId: 'vc-c1', credential: {} });
+        });
+        mockCredentialClient.verify.mockResolvedValue({ verified: true });
+        mockRepo.recordContractSignature.mockImplementation(() => {
+          order.push('record');
+          return Promise.resolve({ signature_id: 'sig-c1', verification_status: 'VERIFIED' });
+        });
+        mockRepo.listContractSignatures.mockResolvedValue([]);
+
+        await service.signContractAsClient('tok', {}, '198.51.100.7');
+        expect(order).toEqual(['consume', 'issue', 'record']);
+      });
+
+      it('a token already consumed by a concurrent request is rejected with 401', async () => {
+        // Second caller: the atomic UPDATE matched no rows, so the repo returns null.
+        mockRepo.consumeSignToken.mockResolvedValue(null);
+        await expect(service.signContractAsClient('tok', {}, '1.2.3.4')).rejects.toBeInstanceOf(
+          UnauthorizedException,
+        );
+        expect(mockRepo.recordContractSignature).not.toHaveBeenCalled();
+      });
+
+      it('records FAILED when the VC does not verify (+ null client identity)', async () => {
+        mockRepo.consumeSignToken.mockResolvedValue(tokenRow);
+        mockRepo.findContractById.mockResolvedValue({
+          contract_id: 'con-1',
+          project_id: 'proj-uuid-001',
+          signed_document_id: 'file-1',
+          status: 'DRAFT',
+        });
+        mockFileClient.getFileMetadata.mockResolvedValue({ sha256: 'a'.repeat(64) });
+        mockCredentialClient.issue.mockResolvedValue({ vcId: 'vc-c2', credential: {} });
+        mockCredentialClient.verify.mockResolvedValue({ verified: false });
+        mockRepo.recordContractSignature.mockResolvedValue({
+          signature_id: 'sig-cf',
+          verification_status: 'FAILED',
+        });
+        mockRepo.listContractSignatures.mockResolvedValue([
+          { signer_party: 'CLIENT', verification_status: 'FAILED' },
+        ]);
+
+        await service.signContractAsClient('tok', {}, '1.2.3.4');
+        expect(mockRepo.recordContractSignature).toHaveBeenCalledWith(
+          expect.objectContaining({
+            verification_status: 'FAILED',
+            signer_identity: { name: null, email: null },
+          }),
+        );
+      });
     });
   });
 

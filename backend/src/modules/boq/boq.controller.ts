@@ -23,6 +23,7 @@ import type { Response } from 'express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../identity/guards/jwt-auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
+import { PolicyGuard } from '../../shared/guards/policy.guard';
 import { Roles } from '@cos/rbac';
 import { CosRole } from '@cos/types';
 import { BoqService } from './boq.service';
@@ -33,7 +34,7 @@ import { UpdateBoqItemDto } from './dto/update-boq-item.dto';
 
 @ApiTags('boq')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, PolicyGuard)
 @Controller()
 export class BoqController {
   constructor(private readonly boqService: BoqService) {}

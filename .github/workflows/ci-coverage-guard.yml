@@ -1,0 +1,58 @@
+name: CI Coverage Guard
+
+# Detects the failure mode where a commit lands on a long-lived branch and GitHub creates NO
+# workflow run for it, so nothing ever verifies it.
+#
+# This happened on 2026-08-06: pushes 8857bb1 (21:29Z) and 094b6c7 (21:58Z) to `develop` produced
+# zero runs across every workflow, and the breakage 8857bb1 introduced (16 Markdown files failing
+# format:check) stayed invisible until an unrelated push a day later finally triggered a build.
+# The cause was never established — see scripts/ci/check-branch-has-ci-run.sh for what was ruled
+# out. This workflow does not prevent it; it bounds how long it can go unnoticed to one day.
+#
+# Deliberately on `schedule`, not `push`: a push-triggered guard cannot fire in exactly the
+# situation it exists to catch — the one where the push creates no run.
+#
+# ┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+# │ NOT RUNNING YET — and it cannot, until the default branch is dealt with.                     │
+# │                                                                                             │
+# │ GitHub triggers `schedule` and `workflow_dispatch` ONLY from the repository's default        │
+# │ branch. This repository's default branch is `main`, which sits at dd9a001 "Initial commit"   │
+# │ (2026-05-29), is 520 commits behind `develop`, and contains no `.github/` directory at all.  │
+# │ So this file is on `develop`, where nothing will ever start it:                              │
+# │                                                                                             │
+# │   gh api repos/:owner/:repo/actions/workflows/ci-coverage-guard.yml  →  404 Not Found        │
+# │                                                                                             │
+# │ Product-owner decision 2026-08-07: keep the guard and record why, rather than delete it or   │
+# │ move the branch. Two ways to activate it, both branch-topology decisions, neither taken yet: │
+# │   • point the default branch at `develop` — one setting, no code change; or                  │
+# │   • bring `main` forward, which also makes it a real release branch again. Note that a push  │
+# │     to `main` runs build-docker → Trivy → push-ecr → update-gitops, i.e. it deploys.         │
+# │                                                                                             │
+# │ Until then this is documentation of a known gap, not an active check. Run it by hand with:   │
+# │   ./scripts/ci/check-branch-has-ci-run.sh develop                                            │
+# └─────────────────────────────────────────────────────────────────────────────────────────────┘
+
+on:
+  schedule:
+    # 02:00 UTC daily (09:00 ICT — start of the working day for this team).
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  guard:
+    name: Branch tips have CI runs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # `develop` only — see the script header: `main` has no workflow files at all, so its tip
+      # having no run is expected, not the symptom this guard exists to surface.
+      - name: Check develop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # `bash <script>` — see the note in ci.yml: Windows checkouts with core.filemode=false do
+        # not record the exec bit, so `./<script>` fails with "Permission denied" on the runner.
+        run: bash ./scripts/ci/check-branch-has-ci-run.sh develop

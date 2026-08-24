@@ -1,0 +1,47 @@
+{
+  "type": "record",
+  "name": "BoqItemsPublishedV1",
+  "namespace": "com.constructionos.boq",
+  "doc": "Emitted when a BOQ version is approved — carries the full itemized line set so downstream services can materialize it (e.g. finance contract-document generation, ADR-058 CT-2c-2). Phase 4.",
+  "fields": [
+    { "name": "event_id",      "type": "string" },
+    { "name": "event_type",    "type": "string" },
+    { "name": "event_version", "type": "string" },
+    { "name": "tenant_id",     "type": "string" },
+    { "name": "actor_id",      "type": "string" },
+    { "name": "occurred_at",   "type": "string" },
+    { "name": "correlation_id","type": "string" },
+    {
+      "name": "payload",
+      "type": {
+        "type": "record",
+        "name": "BoqItemsPublishedPayload",
+        "fields": [
+          { "name": "version_id",               "type": "string" },
+          { "name": "project_id",               "type": "string" },
+          { "name": "version_number",            "type": "int"    },
+          { "name": "total_estimated_amount",    "type": "string" },
+          { "name": "total_estimated_currency",  "type": "string" },
+          {
+            "name": "items",
+            "type": {
+              "type": "array",
+              "items": {
+                "type": "record",
+                "name": "BoqLineItem",
+                "fields": [
+                  { "name": "item_code",       "type": ["null", "string"], "default": null },
+                  { "name": "description",     "type": "string" },
+                  { "name": "unit",            "type": "string" },
+                  { "name": "quantity",        "type": "string" },
+                  { "name": "unit_cost",       "type": "string" },
+                  { "name": "estimated_total", "type": "string" }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -21,6 +21,8 @@ const mockRepo = {
   countBlockingIncidents: jest.fn(),
   countUndeliveredMaterials: jest.fn(),
   getTaskBudgetRatio: jest.fn(),
+  findProgressSums: jest.fn(),
+  findSchedulableTasks: jest.fn(),
 };
 
 const taskRow = { task_id: 'task-1', project_id: 'proj-1', status: 'IN_PROGRESS' };
@@ -113,17 +115,19 @@ it('updateTask → COMPLETED blocked lists all 7 gates + budget overrun (COS-TAS
     service.updateTask('task-1', { status: 'COMPLETED' } as never),
   ).rejects.toMatchObject({
     response: {
-      code: 'COS-TASK-001',
-      blocking_gates: [
-        'inspections',
-        'issues',
-        'dependencies',
-        'permits',
-        'incidents',
-        'material',
-        'delay',
-        'budget_overrun',
-      ],
+      error: {
+        code: 'COS-TASK-001',
+        blocking_gates: [
+          'inspections',
+          'issues',
+          'dependencies',
+          'permits',
+          'incidents',
+          'material',
+          'delay',
+          'budget_overrun',
+        ],
+      },
     },
   });
   expect(mockRepo.updateTask).not.toHaveBeenCalled();
@@ -166,4 +170,53 @@ it('budget with zero allocated → no warning (allocated>0 false branch)', async
   mockRepo.updateTask.mockResolvedValue({ ...taskRow, status: 'COMPLETED' });
   const r = await service.updateTask('task-1', { status: 'COMPLETED' } as never);
   expect(r.warnings).toEqual([]);
+});
+
+// getProjectProgress only wires the two repository reads into the pure functions above —
+// deriveProgress and earnedScheduleDays own the §32.12 arithmetic and are tested directly in
+// tasks-progress.spec.ts. What is asserted here is the wiring: both reads happen, and both results
+// reach the response.
+describe('getProjectProgress', () => {
+  it('combines the weighted sums with the Earned Schedule day-variance', async () => {
+    mockRepo.findProgressSums.mockResolvedValue({
+      weightTotal: 1000,
+      earnedTotal: 45000,
+      schedWeightTotal: 1000,
+      schedEarnedTotal: 45000,
+      schedPlannedTotal: 50000,
+    });
+    mockRepo.findSchedulableTasks.mockResolvedValue([]);
+
+    const r = await service.getProjectProgress('proj-1');
+
+    expect(mockRepo.findProgressSums).toHaveBeenCalledWith('proj-1');
+    expect(mockRepo.findSchedulableTasks).toHaveBeenCalledWith('proj-1');
+    // 45000/1000 = 45% earned against 50% planned → SPI 0.9
+    expect(r.percentComplete).toBe(45);
+    expect(r.plannedPercent).toBe(50);
+    expect(r.spi).toBeCloseTo(0.9);
+    // No schedulable task → the day-variance is null, never 0 (§32.12: null ≠ on schedule).
+    expect(r.scheduleDaysBehind).toBeNull();
+  });
+
+  it('reports nulls for a project with no BOQ-linked task', async () => {
+    mockRepo.findProgressSums.mockResolvedValue({
+      weightTotal: 0,
+      earnedTotal: 0,
+      schedWeightTotal: 0,
+      schedEarnedTotal: 0,
+      schedPlannedTotal: 0,
+    });
+    mockRepo.findSchedulableTasks.mockResolvedValue([]);
+
+    const r = await service.getProjectProgress('proj-empty');
+
+    expect(r).toEqual({
+      percentComplete: null,
+      plannedPercent: null,
+      spi: null,
+      status: null,
+      scheduleDaysBehind: null,
+    });
+  });
 });

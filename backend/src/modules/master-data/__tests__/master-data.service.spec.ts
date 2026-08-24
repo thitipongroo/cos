@@ -289,6 +289,7 @@ describe('MasterDataService', () => {
       await expect(noUserSvc.listMaterials()).resolves.toEqual([]);
       // Invoke the lazy getter — constructing the service (or calling a method that does not
       // read it) does NOT exercise the `|| clsUserId()` fallback branch (context.md QM-1; ADR-031).
+      // exercise the userId getter's `|| clsUserId()` fallback branch (no request.userId, no CLS → '')
       expect((noUserSvc as unknown as { userId: string }).userId).toBe('');
     });
   });

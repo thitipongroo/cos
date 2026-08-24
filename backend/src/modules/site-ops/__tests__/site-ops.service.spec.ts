@@ -7,6 +7,8 @@ import { NotFoundException, UnprocessableEntityException } from '@nestjs/common'
 import { Test, TestingModule } from '@nestjs/testing';
 import { REQUEST } from '@nestjs/core';
 import { SiteOpsService } from '../site-ops.service';
+import { EventOutboxService } from '../../../shared/events/event-outbox.service';
+import { makeOutboxDouble } from '../../../shared/events/__tests__/outbox-double';
 import { SiteOpsRepository } from '../site-ops.repository';
 import type {
   SiteReportRow,
@@ -15,7 +17,8 @@ import type {
   SafetyChecklistRow,
   ConflictRecordRow,
 } from '../site-ops.repository';
-import { IssueSeverity } from '../dto/create-issue.dto';
+import { IssueSeverity, IssueType } from '../dto/create-issue.dto';
+import { ReportShift, BlockerCategory } from '../dto/create-site-report.dto';
 import { IssueStatus } from '../dto/update-issue.dto';
 import { InspectionStatus } from '../dto/submit-inspection.dto';
 
@@ -44,9 +47,16 @@ jest.mock('@cos/logger', () => ({
 const mockRepo = {
   createSiteReport: jest.fn(),
   findReportById: jest.fn(),
+  findReportsByIds: jest.fn().mockResolvedValue(new Map()),
+  replaceManpowerLogs: jest.fn(),
+  // Default to "no breakdown recorded" — the shape getSiteReport must tolerate on every pre-existing
+  // report. Tests that care override it per case.
+  listManpowerLogs: jest.fn().mockResolvedValue([]),
   listSiteReports: jest.fn(),
+  updateSiteReport: jest.fn(),
   updateReportStatus: jest.fn(),
   createIssue: jest.fn(),
+  nextIssueNumber: jest.fn(),
   findIssueById: jest.fn(),
   listIssues: jest.fn(),
   updateIssue: jest.fn(),
@@ -61,6 +71,9 @@ const mockRepo = {
   listConflictRecords: jest.fn(),
   resolveConflictRecord: jest.fn(),
   insertMaterialConsumption: jest.fn(),
+  findMaterialIdByName: jest.fn(),
+  findCarbonFactor: jest.fn(),
+  insertCarbonRecord: jest.fn(),
   writeOutboxEvent: jest.fn(),
 };
 
@@ -108,6 +121,7 @@ function makeReport(overrides?: Partial<SiteReportRow>): SiteReportRow {
 function makeIssue(overrides?: Partial<IssueRow>): IssueRow {
   return {
     issue_id: 'issue-1',
+    issue_number: 'ISS-2026-0001',
     project_id: 'project-1',
     tenant_id: 'tenant-uuid-1',
     report_id: null,
@@ -116,6 +130,7 @@ function makeIssue(overrides?: Partial<IssueRow>): IssueRow {
     severity: 'HIGH',
     status: 'OPEN',
     assigned_to: null,
+    created_by: 'user-uuid-1',
     resolution_note: null,
     client_submitted_at: null,
     modified_at: new Date('2026-06-04T08:00:00Z'),
@@ -143,9 +158,12 @@ let service: SiteOpsService;
 
 beforeEach(async () => {
   jest.clearAllMocks();
+  // Default: the sync write lands. Tests that exercise the "row vanished mid-sync" path override it.
+  mockRepo.updateSiteReport.mockResolvedValue(makeReport());
   const module: TestingModule = await Test.createTestingModule({
     providers: [
       SiteOpsService,
+      { provide: EventOutboxService, useValue: makeOutboxDouble().service },
       { provide: SiteOpsRepository, useValue: mockRepo },
       { provide: REQUEST, useValue: MOCK_REQUEST },
     ],
@@ -160,6 +178,7 @@ describe('constructor', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SiteOpsService,
+        { provide: EventOutboxService, useValue: makeOutboxDouble().service },
         { provide: SiteOpsRepository, useValue: mockRepo },
         { provide: REQUEST, useValue: {} },
       ],
@@ -177,6 +196,7 @@ describe('constructor', () => {
       const module: TestingModule = await Test.createTestingModule({
         providers: [
           SiteOpsService,
+          { provide: EventOutboxService, useValue: makeOutboxDouble().service },
           { provide: SiteOpsRepository, useValue: mockRepo },
           { provide: REQUEST, useValue: MOCK_REQUEST },
         ],
@@ -219,6 +239,26 @@ describe('createSiteReport', () => {
     expect(result.report_id).toBe('report-1');
   });
 
+  // 20260808000001 — shift + blocker_category. Both are optional and must reach the repository as
+  // given; the service never substitutes a value for either (NULL means "not recorded", and
+  // defaulting shift to DAY would assert a fact nobody entered).
+  it('passes shift and blocker_category through to the repository', async () => {
+    mockRepo.createSiteReport.mockResolvedValue(makeReport());
+
+    await service.createSiteReport({
+      project_id: 'project-1',
+      report_date: '2026-06-04',
+      shift: ReportShift.NIGHT,
+      blockers: 'heavy rain from 14:00',
+      blocker_category: BlockerCategory.WEATHER,
+    });
+
+    expect(mockRepo.createSiteReport).toHaveBeenCalledWith(
+      expect.objectContaining({ shift: 'NIGHT', blocker_category: 'WEATHER' }),
+      expect.anything(),
+    );
+  });
+
   it('writes site.report.created.v1 to the outbox with the report INSERT', async () => {
     mockRepo.createSiteReport.mockResolvedValue(makeReport());
     await service.createSiteReport({ project_id: 'project-1', report_date: '2026-06-04' });
@@ -242,6 +282,26 @@ describe('getSiteReport', () => {
     expect(result.report_id).toBe('report-1');
   });
 
+  it('attaches the per-trade manpower breakdown', async () => {
+    mockRepo.findReportById.mockResolvedValue(makeReport());
+    mockRepo.listManpowerLogs.mockResolvedValueOnce([
+      { trade_type: 'STRUCTURAL', worker_count: 16 },
+      { trade_type: 'ELECTRICAL', worker_count: 8 },
+    ]);
+
+    const result = await service.getSiteReport('report-1');
+
+    expect(result.manpower_lines).toHaveLength(2);
+    expect(result.manpower_lines[0]).toEqual(expect.objectContaining({ trade_type: 'STRUCTURAL' }));
+  });
+
+  // A report filed before the breakdown existed has none. That is data, not an error.
+  it('returns an empty breakdown when none was recorded', async () => {
+    mockRepo.findReportById.mockResolvedValue(makeReport());
+    const result = await service.getSiteReport('report-1');
+    expect(result.manpower_lines).toEqual([]);
+  });
+
   it('throws NotFoundException when not found', async () => {
     mockRepo.findReportById.mockResolvedValue(null);
     await expect(service.getSiteReport('missing')).rejects.toBeInstanceOf(NotFoundException);
@@ -252,7 +312,7 @@ describe('getSiteReport', () => {
 
 describe('syncSiteReports', () => {
   it('ACCEPTED for new report (no existing record)', async () => {
-    mockRepo.findReportById.mockRejectedValue(new Error('not found'));
+    mockRepo.findReportsByIds.mockResolvedValue(new Map());
     mockRepo.createSiteReport.mockResolvedValue(makeReport({ report_id: 'new-id' }));
 
     const results = await service.syncSiteReports({
@@ -270,8 +330,31 @@ describe('syncSiteReports', () => {
     expect(results[0]?.report_id).toBe('new-id');
   });
 
+  it('still syncs when the batch pre-fetch fails — every item takes the create path', async () => {
+    // The pre-fetch is one set-based lookup replacing a per-item read. If it rejects (a malformed id
+    // slipping past the UUID filter would break the ::uuid[] cast for the WHOLE batch), the catch
+    // degrades to an empty map, which is exactly what the old per-item `.catch(() => null)` did:
+    // a sync push from the field must not fail wholesale because a lookup could not be optimised.
+    mockRepo.findReportsByIds.mockRejectedValue(new Error('invalid input syntax for type uuid'));
+    mockRepo.createSiteReport.mockResolvedValue(makeReport({ report_id: 'recovered-id' }));
+
+    const results = await service.syncSiteReports({
+      items: [
+        {
+          client_id: 'recovered-id',
+          project_id: 'project-1',
+          report_date: '2026-06-04',
+          client_submitted_at: '2026-06-04T09:00:00Z',
+        },
+      ],
+    });
+
+    expect(results[0]?.conflict_status).toBe('ACCEPTED');
+    expect(mockRepo.createSiteReport).toHaveBeenCalledTimes(1);
+  });
+
   it('ACCEPTED for new report with all optional fields provided (covers ?? null true branches)', async () => {
-    mockRepo.findReportById.mockRejectedValue(new Error('not found'));
+    mockRepo.findReportsByIds.mockResolvedValue(new Map());
     mockRepo.createSiteReport.mockResolvedValue(makeReport({ report_id: 'new-full-id' }));
 
     const results = await service.syncSiteReports({
@@ -293,7 +376,7 @@ describe('syncSiteReports', () => {
   });
 
   it('ACCEPTED for new report with no optional fields (covers ?? null false branches)', async () => {
-    mockRepo.findReportById.mockRejectedValue(new Error('not found'));
+    mockRepo.findReportsByIds.mockResolvedValue(new Map());
     mockRepo.createSiteReport.mockResolvedValue(makeReport({ report_id: 'bare-id' }));
 
     const results = await service.syncSiteReports({
@@ -312,7 +395,7 @@ describe('syncSiteReports', () => {
 
   it('ACCEPTED for existing report with no client_submitted_at (covers ?? new Date() branch)', async () => {
     const serverReport = makeReport({ modified_at: new Date('2026-06-04T07:00:00Z') });
-    mockRepo.findReportById.mockResolvedValue(serverReport);
+    mockRepo.findReportsByIds.mockResolvedValue(new Map([['report-1', serverReport]]));
     mockRepo.createSiteReport.mockResolvedValue(serverReport);
 
     const results = await service.syncSiteReports({
@@ -333,7 +416,7 @@ describe('syncSiteReports', () => {
     const serverReport = makeReport({
       modified_at: new Date('2026-06-04T10:00:00Z'),
     });
-    mockRepo.findReportById.mockResolvedValue(serverReport);
+    mockRepo.findReportsByIds.mockResolvedValue(new Map([['report-1', serverReport]]));
     mockRepo.createConflictRecord.mockResolvedValue({});
 
     const results = await service.syncSiteReports({
@@ -361,11 +444,200 @@ describe('syncSiteReports', () => {
       }),
     );
   });
+
+  // ── Regression: the edit path must actually write ────────────────────────
+  // This branch previously computed a resolution, wrote a conflict record when flagged, and returned
+  // ACCEPTED without ever updating the report — so offline edits were acknowledged and dropped.
+
+  it('persists the client fields when syncing an edit to an existing report', async () => {
+    mockRepo.findReportsByIds.mockResolvedValue(
+      new Map([
+        [
+          'report-1',
+          makeReport({ summary: 'server text', modified_at: new Date('2026-06-04T07:00:00Z') }),
+        ],
+      ]),
+    );
+
+    const results = await service.syncSiteReports({
+      items: [
+        {
+          client_id: 'report-1',
+          project_id: 'project-1',
+          report_date: '2026-06-04',
+          summary: 'edited offline',
+          weather: 'rain',
+          manpower_count: 12,
+          client_submitted_at: '2026-06-04T09:00:00Z',
+        },
+      ],
+    });
+
+    expect(results[0]?.conflict_status).toBe('ACCEPTED');
+    expect(mockRepo.updateSiteReport).toHaveBeenCalledWith(
+      'report-1',
+      expect.objectContaining({
+        summary: 'edited offline',
+        weather: 'rain',
+        manpower_count: 12,
+        client_submitted_at: '2026-06-04T09:00:00Z',
+      }),
+    );
+  });
+
+  it('persists a client-wins overwrite even when the result is flagged for review', async () => {
+    mockRepo.findReportsByIds.mockResolvedValue(
+      new Map([['report-1', makeReport({ modified_at: new Date('2026-06-04T10:00:00Z') })]]),
+    );
+    mockRepo.createConflictRecord.mockResolvedValue({});
+
+    const results = await service.syncSiteReports({
+      items: [
+        {
+          client_id: 'report-1',
+          project_id: 'project-1',
+          report_date: '2026-06-04',
+          summary: 'client wins but flagged',
+          client_submitted_at: '2026-06-04T11:00:00Z',
+          last_known_modified_at: '2026-06-04T08:00:00Z',
+        },
+      ],
+    });
+
+    expect(results[0]?.conflict_status).toBe('CONFLICT_FLAGGED');
+    expect(mockRepo.updateSiteReport).toHaveBeenCalledWith(
+      'report-1',
+      expect.objectContaining({ summary: 'client wins but flagged' }),
+    );
+  });
+
+  it('does NOT write when the server row wins — a no-op write would bump modified_at', async () => {
+    mockRepo.findReportsByIds.mockResolvedValue(
+      new Map([['report-1', makeReport({ modified_at: new Date('2026-06-04T10:00:00Z') })]]),
+    );
+    mockRepo.createConflictRecord.mockResolvedValue({});
+
+    const results = await service.syncSiteReports({
+      items: [
+        {
+          client_id: 'report-1',
+          project_id: 'project-1',
+          report_date: '2026-06-04',
+          summary: 'stale client edit',
+          client_submitted_at: '2026-06-04T09:00:00Z', // older than server modified_at
+          last_known_modified_at: '2026-06-04T08:00:00Z',
+        },
+      ],
+    });
+
+    expect(results[0]?.conflict_status).toBe('CONFLICT_FLAGGED');
+    expect(mockRepo.updateSiteReport).not.toHaveBeenCalled();
+  });
+
+  it('reports CONFLICT_REJECTED instead of ACCEPTED when the row vanished mid-sync', async () => {
+    mockRepo.findReportsByIds.mockResolvedValue(
+      new Map([['report-1', makeReport({ modified_at: new Date('2026-06-04T07:00:00Z') })]]),
+    );
+    mockRepo.updateSiteReport.mockResolvedValue(null); // deleted between read and write
+
+    const results = await service.syncSiteReports({
+      items: [
+        {
+          client_id: 'report-1',
+          project_id: 'project-1',
+          report_date: '2026-06-04',
+          summary: 'edit that cannot land',
+          client_submitted_at: '2026-06-04T09:00:00Z',
+        },
+      ],
+    });
+
+    expect(results[0]?.conflict_status).toBe('CONFLICT_REJECTED');
+  });
 });
 
 // ── createIssue ───────────────────────────────────────────────────────────
 
 describe('createIssue', () => {
+  beforeEach(() => mockRepo.nextIssueNumber.mockResolvedValue('ISS-2026-0001'));
+
+  // Offline idempotency. `client_id` has been accepted since G-M11 for photo linkage, but the write
+  // was not idempotent on it: a replayed queue item hit issues_pkey and came back a 500, which the
+  // device's outbox reads as a retryable failure - so the issue existed on the server while the
+  // person who raised it watched it retry five times and get discarded under 17.2.
+  describe('replayed offline create', () => {
+    /** Outbox publish mock of the service under test — events are queued now, not published. */
+    const publishMock = (): jest.Mock =>
+      (service as unknown as { outbox: { publish: jest.Mock } }).outbox.publish;
+
+    it('returns the issue already raised, without re-emitting or re-numbering', async () => {
+      const existing = makeIssue({ issue_id: 'client-uuid' });
+      mockRepo.findIssueById.mockResolvedValue(existing);
+      publishMock().mockClear();
+
+      const result = await service.createIssue({
+        client_id: 'client-uuid',
+        project_id: 'project-1',
+        title: 'Crack in foundation',
+        severity: IssueSeverity.HIGH,
+      });
+
+      expect(result).toBe(existing);
+      expect(mockRepo.createIssue).not.toHaveBeenCalled();
+      // No second notification, and no second read of the ISS-<year>-<seq> sequence.
+      expect(mockRepo.nextIssueNumber).not.toHaveBeenCalled();
+      expect(publishMock()).not.toHaveBeenCalled();
+    });
+
+    it('does not look for an existing issue when the caller sent no client_id', async () => {
+      mockRepo.findIssueById.mockResolvedValue(null);
+      mockRepo.createIssue.mockResolvedValue(makeIssue());
+
+      await service.createIssue({
+        project_id: 'project-1',
+        title: 'Crack in foundation',
+        severity: IssueSeverity.HIGH,
+      });
+
+      expect(mockRepo.findIssueById).not.toHaveBeenCalled();
+      expect(mockRepo.createIssue).toHaveBeenCalled();
+    });
+
+    it('resolves a concurrent replay that won the insert race', async () => {
+      // Nothing found by the pre-check, then an empty RETURNING from ON CONFLICT DO NOTHING.
+      const existing = makeIssue({ issue_id: 'client-uuid' });
+      mockRepo.findIssueById.mockResolvedValueOnce(null).mockResolvedValueOnce(existing);
+      mockRepo.createIssue.mockResolvedValue(null);
+      publishMock().mockClear();
+
+      const result = await service.createIssue({
+        client_id: 'client-uuid',
+        project_id: 'project-1',
+        title: 'Crack in foundation',
+        severity: IssueSeverity.HIGH,
+      });
+
+      expect(result).toBe(existing);
+      expect(publishMock()).not.toHaveBeenCalled();
+    });
+
+    it('rejects an id that conflicts but is invisible - it belongs to another tenant', async () => {
+      // RLS hides the row while the primary key still rejects the insert. A silent success would
+      // report an issue this tenant cannot see and nobody will act on.
+      mockRepo.findIssueById.mockResolvedValue(null);
+      mockRepo.createIssue.mockResolvedValue(null);
+
+      await expect(
+        service.createIssue({
+          client_id: 'client-uuid',
+          project_id: 'project-1',
+          title: 'Crack in foundation',
+          severity: IssueSeverity.HIGH,
+        }),
+      ).rejects.toMatchObject({ status: 409 });
+    });
+  });
+
   it('creates issue and emits site.issue.created.v1', async () => {
     mockRepo.createIssue.mockResolvedValue(makeIssue());
     const result = await service.createIssue({
@@ -379,6 +651,36 @@ describe('createIssue', () => {
     );
   });
 
+  // issue_type — the field app classifies at source; the value must reach the row unchanged.
+  it('passes issue_type through to the repository', async () => {
+    mockRepo.createIssue.mockResolvedValue(makeIssue());
+    await service.createIssue({
+      project_id: 'project-1',
+      title: 'Rework on column formwork',
+      severity: IssueSeverity.MEDIUM,
+      issue_type: IssueType.REWORK,
+    });
+    expect(mockRepo.createIssue).toHaveBeenCalledWith(
+      expect.objectContaining({ issue_type: 'REWORK' }),
+      expect.anything(),
+    );
+  });
+
+  // Omitted → null, so the COLUMN default ('GENERAL') decides. The service must not substitute a
+  // default of its own, or the schema stops being the single place that value is defined.
+  it('sends null issue_type when the caller omits it, leaving the column default to apply', async () => {
+    mockRepo.createIssue.mockResolvedValue(makeIssue());
+    await service.createIssue({
+      project_id: 'project-1',
+      title: 'Unclassified',
+      severity: IssueSeverity.LOW,
+    });
+    expect(mockRepo.createIssue).toHaveBeenCalledWith(
+      expect.objectContaining({ issue_type: null }),
+      expect.anything(),
+    );
+  });
+
   it('uses the client-provided id as issue_id when present (G-M11 offline linkage)', async () => {
     mockRepo.createIssue.mockResolvedValue(makeIssue());
     await service.createIssue({
@@ -389,6 +691,22 @@ describe('createIssue', () => {
     });
     expect(mockRepo.createIssue).toHaveBeenCalledWith(
       expect.objectContaining({ issue_id: '11111111-1111-1111-1111-111111111111' }),
+      expect.anything(),
+    );
+  });
+
+  it('persists the acting user as created_by, not only in the event payload', async () => {
+    // The value was always available here — it just never reached the row, so an issue the raiser
+    // was never assigned was unattributable in their own PDPA export (20260804000004). The event
+    // stream is a publish queue, not a queryable record of who raised what.
+    mockRepo.createIssue.mockResolvedValue(makeIssue());
+    await service.createIssue({
+      project_id: 'project-1',
+      title: 'Crack',
+      severity: IssueSeverity.HIGH,
+    });
+    expect(mockRepo.createIssue).toHaveBeenCalledWith(
+      expect.objectContaining({ created_by: 'user-uuid-1' }),
       expect.anything(),
     );
   });
@@ -560,6 +878,62 @@ describe('escalateIssue', () => {
 // ── submitInspection ──────────────────────────────────────────────────────
 
 describe('submitInspection', () => {
+  // Signature (migration 20260808000002). The drawn mark is stored as given; absent means unsigned,
+  // and the service must not substitute anything — `inspected_by` is the attribution that matters.
+  it('stores the drawn signature when one is supplied', async () => {
+    mockRepo.findChecklistById.mockResolvedValue(makeChecklist());
+    mockRepo.createInspection.mockResolvedValue({
+      inspection_id: 'insp-1',
+      project_id: 'project-1',
+      tenant_id: 'tenant-uuid-1',
+      checklist_id: 'checklist-1',
+      status: 'PASSED' as const,
+      inspected_by: 'user-uuid-1',
+      inspected_at: new Date(),
+      notes: null,
+    });
+    const signature = [{ d: 'M0.1,0.5 L0.4,0.3', color: '#F8FAFC', width: 0.01 }];
+
+    await service.submitInspection({
+      project_id: 'project-1',
+      checklist_id: 'checklist-1',
+      status: InspectionStatus.PASSED,
+      inspected_at: '2026-08-08T08:00:00Z',
+      signature,
+    });
+
+    expect(mockRepo.createInspection).toHaveBeenCalledWith(
+      expect.objectContaining({ signature }),
+      expect.anything(),
+    );
+  });
+
+  it('records NULL when the checklist is confirmed without signing', async () => {
+    mockRepo.findChecklistById.mockResolvedValue(makeChecklist());
+    mockRepo.createInspection.mockResolvedValue({
+      inspection_id: 'insp-1',
+      project_id: 'project-1',
+      tenant_id: 'tenant-uuid-1',
+      checklist_id: 'checklist-1',
+      status: 'PASSED' as const,
+      inspected_by: 'user-uuid-1',
+      inspected_at: new Date(),
+      notes: null,
+    });
+
+    await service.submitInspection({
+      project_id: 'project-1',
+      checklist_id: 'checklist-1',
+      status: InspectionStatus.PASSED,
+      inspected_at: '2026-08-08T08:00:00Z',
+    });
+
+    expect(mockRepo.createInspection).toHaveBeenCalledWith(
+      expect.objectContaining({ signature: null }),
+      expect.anything(),
+    );
+  });
+
   it('throws NotFoundException when checklist not found', async () => {
     mockRepo.findChecklistById.mockResolvedValue(null);
     await expect(
@@ -915,6 +1289,102 @@ describe('createMaterialConsumption', () => {
     };
     const result = await service.createMaterialConsumption('report-uuid-001', dto as never);
     expect(result.task_id).toBe('task-uuid-001');
+  });
+
+  // ── Phase 24 embodied carbon (§33.4) ────────────────────────────────────────────────────────
+  describe('embodied carbon', () => {
+    const dto = {
+      material_name: 'Steel rod',
+      task_id: undefined,
+      quantity: '10',
+      unit: 'pcs',
+      consumed_at: '2026-06-11',
+    };
+
+    const carbonPublish = () => {
+      const producer = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
+      return producer.publish.mock.calls.find(
+        (c) => (c[0] as { event_type: string }).event_type === 'carbon.record.created.v1',
+      );
+    };
+
+    beforeEach(() => {
+      mockRepo.findReportById.mockResolvedValue(makeReport());
+      mockRepo.insertMaterialConsumption.mockResolvedValue(materialRow);
+    });
+
+    it('skips carbon when the typed material name is not in the master (mobile free-text)', async () => {
+      mockRepo.findMaterialIdByName.mockResolvedValue(null);
+
+      await service.createMaterialConsumption('report-uuid-001', dto as never);
+
+      expect(mockRepo.findCarbonFactor).not.toHaveBeenCalled();
+      expect(mockRepo.insertCarbonRecord).not.toHaveBeenCalled();
+      expect(carbonPublish()).toBeUndefined();
+    });
+
+    it('skips carbon when the tenant has loaded no factor for the material (§33.4 opt-in)', async () => {
+      mockRepo.findMaterialIdByName.mockResolvedValue('mat-master-001');
+      mockRepo.findCarbonFactor.mockResolvedValue(null);
+
+      await service.createMaterialConsumption('report-uuid-001', dto as never);
+
+      expect(mockRepo.insertCarbonRecord).not.toHaveBeenCalled();
+      expect(carbonPublish()).toBeUndefined();
+    });
+
+    it('records carbon and emits Scope 3 with the factor source when a factor exists', async () => {
+      mockRepo.findMaterialIdByName.mockResolvedValue('mat-master-001');
+      mockRepo.findCarbonFactor.mockResolvedValue({
+        carbon_factor: '2.500000',
+        source: 'EPD-2023-001',
+      });
+      mockRepo.insertCarbonRecord.mockResolvedValue({
+        carbon_record_id: 'carbon-uuid-001',
+        tenant_id: 'tenant-uuid-1',
+        project_id: 'proj-uuid-001',
+        consumption_id: 'cons-uuid-001',
+        material_id: 'mat-master-001',
+        quantity_consumed: '10.0000',
+        unit: 'pcs',
+        carbon_factor: '2.500000',
+        carbon_factor_source: 'EPD-2023-001',
+        carbon_kgco2e: '25.0000',
+        recorded_at: '2026-06-11T00:00:00Z',
+      });
+
+      await service.createMaterialConsumption('report-uuid-001', dto as never);
+
+      // The consumption carries the resolved master id, not a fresh random one.
+      expect(mockRepo.insertMaterialConsumption).toHaveBeenCalledWith(
+        expect.objectContaining({ material_id: 'mat-master-001' }),
+        expect.anything(),
+      );
+      const call = carbonPublish();
+      expect(call).toBeDefined();
+      expect((call![0] as { payload: Record<string, unknown> }).payload).toEqual(
+        expect.objectContaining({
+          carbon_record_id: 'carbon-uuid-001',
+          carbon_kgco2e: '25.0000',
+          carbon_factor_source: 'EPD-2023-001',
+          ghg_scope: 'SCOPE_3',
+        }),
+      );
+    });
+
+    it('does not re-emit when the record already existed (replayed consumption)', async () => {
+      mockRepo.findMaterialIdByName.mockResolvedValue('mat-master-001');
+      mockRepo.findCarbonFactor.mockResolvedValue({
+        carbon_factor: '2.500000',
+        source: 'EPD-2023-001',
+      });
+      // ON CONFLICT DO NOTHING returned no row — the footprint must not be counted twice.
+      mockRepo.insertCarbonRecord.mockResolvedValue(null);
+
+      await service.createMaterialConsumption('report-uuid-001', dto as never);
+
+      expect(carbonPublish()).toBeUndefined();
+    });
   });
 
   it('throws NotFoundException when report not found', async () => {

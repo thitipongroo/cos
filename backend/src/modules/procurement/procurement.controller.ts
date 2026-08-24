@@ -17,12 +17,21 @@ import {
   HttpStatus,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../identity/guards/jwt-auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
+import { PolicyGuard } from '../../shared/guards/policy.guard';
 import { Roles } from '@cos/rbac';
 import { CosRole } from '@cos/types';
 import { ProcurementService } from './procurement.service';
+import { VENDOR_CATEGORIES } from './vendor-classification';
 import { CreateVendorDto } from './dto/create-vendor.dto';
 import { CreatePurchaseRequestDto } from './dto/create-purchase-request.dto';
 import { CreateRfqDto } from './dto/create-rfq.dto';
@@ -51,7 +60,7 @@ function parseLimit(limit: string): number {
 
 @ApiTags('procurement')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, PolicyGuard)
 @Controller()
 export class ProcurementController {
   constructor(private readonly svc: ProcurementService) {}
@@ -73,6 +82,33 @@ export class ProcurementController {
   @ApiQuery({ name: 'active_only', required: false, type: Boolean, description: 'Default: true' })
   listVendors(@Query('active_only') active_only?: string) {
     return this.svc.listVendors(active_only !== 'false');
+  }
+
+  // GET /api/v1/procurement/vendors/directory
+  //
+  // Declared BEFORE the /:vendorId route on purpose: Nest matches in declaration order, and a literal
+  // segment registered after a parameterised one is swallowed by it — `directory` would arrive as a
+  // vendorId and fail the ParseUUIDPipe with a 400.
+  @Get('procurement/vendors/directory')
+  @Roles(...READ_ROLES)
+  @ApiOperation({
+    summary: 'Vendor directory — active vendors with their open-project count',
+    description:
+      'Serves the mobile vendor directory. Each row is the vendor plus `active_project_count`: ' +
+      'DISTINCT projects the vendor currently has a purchase order on whose status is not DRAFT, ' +
+      'PENDING_APPROVAL or PAID (the states that are not live work). Separate from GET ' +
+      '/procurement/vendors, which is the plain master read and does not pay for the aggregate. ' +
+      'The trust score is NOT included — it is a per-vendor computation, GET .../{vendorId}/score.',
+  })
+  @ApiQuery({
+    name: 'category',
+    required: false,
+    enum: VENDOR_CATEGORIES,
+    description: 'Narrow to one category. An unknown value is a 400, never a silent full list.',
+  })
+  @ApiResponse({ status: 400, description: 'Unknown category' })
+  listVendorDirectory(@Query('category') category?: string) {
+    return this.svc.listVendorDirectory(category);
   }
 
   // GET /api/v1/procurement/vendors/:vendorId
@@ -106,8 +142,18 @@ export class ProcurementController {
   // ── Purchase Requests ─────────────────────────────────────────────────────────
 
   // POST /api/v1/procurement/purchase-requests  (project_id in body)
+  // Roles are the RW column of 06-rbac-permission-matrix "Purchase requests": PM and SITE_ENGINEER
+  // both hold RW — a purchase request starts on site, where the shortage is noticed — alongside
+  // Procurement (RWD) and Tenant Admin (FULL). PROJECT_MANAGER and SITE_ENGINEER were missing here,
+  // so the two roles the matrix expects to raise requests were the two that got 403.
   @Post('procurement/purchase-requests')
-  @Roles(CosRole.PROCUREMENT_OFFICER, CosRole.PROC_MANAGER, CosRole.TENANT_ADMIN)
+  @Roles(
+    CosRole.SITE_ENGINEER,
+    CosRole.PROJECT_MANAGER,
+    CosRole.PROCUREMENT_OFFICER,
+    CosRole.PROC_MANAGER,
+    CosRole.TENANT_ADMIN,
+  )
   @ApiOperation({ summary: 'Create a purchase request' })
   createPurchaseRequest(@Body() dto: CreatePurchaseRequestDto) {
     return this.svc.createPurchaseRequest(dto);

@@ -5,10 +5,15 @@ Voice transcription — spec 21-mvp-scope §21.4 (Layer A assistive AI) + 22-ai-
 stub provider until the model image is deployed (mirrors ai-embedding-worker).
 """
 import os
+from uuid import UUID
 
 import httpx
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+
+import metrics
 
 from providers.transcription_provider import (
     FasterWhisperProvider,
@@ -16,7 +21,15 @@ from providers.transcription_provider import (
     TranscriptionProvider,
 )
 
-app = FastAPI(title="COS AI Transcription Pipeline", version="0.1.0")
+@asynccontextmanager
+async def _lifespan(_app: FastAPI):
+    """Start the Prometheus exporter on :9464 (§31.3, QM-8 — see metrics.py)."""
+    metrics.start_metrics_server()
+    yield
+
+
+app = FastAPI(title="COS AI Transcription Pipeline", version="0.1.0", lifespan=_lifespan)
+metrics.install(app)
 
 
 def _select_provider() -> TranscriptionProvider:
@@ -29,7 +42,13 @@ _provider = _select_provider()
 
 
 class TranscribeRequest(BaseModel):
-    file_id: str
+    # UUID, not str. This value is interpolated straight into the file-service URL below,
+    # so an unvalidated string let a caller walk the path with "../" and reach endpoints on
+    # file-service that were never meant to be reachable from here. file_id is a UUID
+    # everywhere it is stored (20260605000002_file_service), so constraining the type costs
+    # nothing and makes the interpolation safe by construction.
+    # Found by CodeQL py/partial-ssrf; neither bandit nor the Semgrep packs reported it.
+    file_id: UUID
     tenant_id: str
     language: str | None = "th"  # app default locale is Thai
 
@@ -67,7 +86,8 @@ async def transcribe(req: TranscribeRequest):
         raise HTTPException(status_code=503, detail=str(exc))
 
     return TranscribeResponse(
-        file_id=req.file_id,
+        # str() at the boundary: file_id is a UUID on the request model, str on the response.
+        file_id=str(req.file_id),
         transcript=result.transcript,
         language=result.language,
         duration_seconds=result.duration_seconds,

@@ -49,7 +49,7 @@ manual_check() {
   local description="$3"
   local verification_hint="$4"
 
-  ((check_num++))
+  check_num=$((check_num + 1))
   log ""
   log "── [$check_num/$TOTAL] $id ($section)"
   log "   $description"
@@ -63,19 +63,19 @@ manual_check() {
     case "$answer" in
       y|Y|yes|YES)
         log "   → PASS"
-        ((PASS++))
+        PASS=$((PASS + 1))
         break
         ;;
       n|N|no|NO)
         read -r -p "   Note (what failed / what needs fixing): " note </dev/tty
         log "   → FAIL: $note"
-        ((FAIL++))
+        FAIL=$((FAIL + 1))
         break
         ;;
       s|S|skip|SKIP)
         read -r -p "   Reason for skip: " reason </dev/tty
         log "   → SKIPPED: $reason"
-        ((SKIP++))
+        SKIP=$((SKIP + 1))
         break
         ;;
       *)

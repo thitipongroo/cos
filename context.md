@@ -143,7 +143,7 @@ Before starting any implementation task:
 ### QM-1 — Test Coverage
 
 - Unit test coverage **100% lines and 100% branches** for all new modules (source: spec §30.3, §30.12); measured by `jest --coverage` with thresholds `{"global":{"lines":100,"branches":100}}` or `pytest --cov` with `--cov-fail-under=99` for lines (branch coverage enforced in jest config)
-  - **Backend gate is genuinely green.** The parallel unit run (`pnpm --filter @cos/backend test:cov`) is 98 suites / 1321 tests at 100/100/100/100. Temporal `*.workflow.spec.ts` (3 suites / 12 tests) run **serially** via `pnpm --filter @cos/backend test:workflows` (own `jest.workflows.config.js`, `maxWorkers:1`) because parallel `TestWorkflowEnvironment` time-skipping servers starve each other (flaky hook timeouts + `WorkflowFailedError: Workflow execution timed out`); they are excluded from `test:cov` **and** from `collectCoverageFrom` (coverage-neutral — the only source they uniquely touch is `*.workflow.ts`, already coverage-excluded; activities are covered by `*.activities.spec.ts`). Integration specs (10 suites / 106 tests) run via `pnpm --filter @cos/backend test:integration` (Testcontainers; see §30.4). Two recurring traps to avoid: (1) request-scoped services read **`req.userId` / `req.tenantId`** (projected by `TenantContextInterceptor` from `req.user`, ADR-031) with a **CLS fallback** under Fastify (`req.userId ?? clsUserId()`) — unit-test mocks must set `userId`/`tenantId` (not only `req.user.user_id`), and a test that exercises the fallback must run inside a CLS context; (2) the `?? ''` fallback in each lazy `tenantId`/`userId` getter is covered by **invoking the getter** on an empty-`REQUEST` instance (`expect((svc as unknown as {tenantId:string}).tenantId).toBe('')`) — merely constructing the service does not. **`TenantPrismaService` is now a singleton that reads tenant context from CLS** (ADR-031 Update 2026-06-26): its tests establish context via `ClsServiceManager.getClsService().run(...)` rather than a mock `REQUEST`; it still validates lazily in `run()` (not the constructor).
+  - **Backend gate is genuinely green.** The parallel unit run (`pnpm --filter @cos/backend test:cov`) is 139 suites / 1879 tests at 100/100/100/100 (verified 2026-07-21). Temporal `*.workflow.spec.ts` (3 suites / 12 tests) run **serially** via `pnpm --filter @cos/backend test:workflows` (own `jest.workflows.config.js`, `maxWorkers:1`) because parallel `TestWorkflowEnvironment` time-skipping servers starve each other (flaky hook timeouts + `WorkflowFailedError: Workflow execution timed out`); they are excluded from `test:cov` **and** from `collectCoverageFrom` (coverage-neutral — the only source they uniquely touch is `*.workflow.ts`, already coverage-excluded; activities are covered by `*.activities.spec.ts`). Integration specs (13 suites / 129 tests) run via `pnpm --filter @cos/backend test:integration` (Testcontainers; see §30.4). Two recurring traps to avoid: (1) request-scoped services read **`req.userId` / `req.tenantId`** (projected by `TenantContextInterceptor` from `req.user`, ADR-031) with a **CLS fallback** under Fastify (`req.userId ?? clsUserId()`) — unit-test mocks must set `userId`/`tenantId` (not only `req.user.user_id`), and a test that exercises the fallback must run inside a CLS context; (2) the `?? ''` fallback in each lazy `tenantId`/`userId` getter is covered by **invoking the getter** on an empty-`REQUEST` instance (`expect((svc as unknown as {tenantId:string}).tenantId).toBe('')`) — merely constructing the service does not. **`TenantPrismaService` is now a singleton that reads tenant context from CLS** (ADR-031 Update 2026-06-26): its tests establish context via `ClsServiceManager.getClsService().run(...)` rather than a mock `REQUEST`; it still validates lazily in `run()` (not the constructor).
 - Integration tests required for every public API endpoint
 - Contract tests required whenever a new inter-service HTTP contract is introduced
 - E2E tests required for every critical user workflow (site report, procurement approval, cost tracking):
@@ -187,7 +187,7 @@ Before starting any implementation task:
 - **Zero hardcoded user-facing strings in application code** — all strings go through i18n keys
 - i18n keys format: `{domain}.{screen}.{element}` (e.g., `procurement.list.emptyState`)
 - Translation files live in `apps/*/src/i18n/{locale}.json` (e.g., `th.json`, `en.json`)
-- Default locale: `th-TH`. Fallback locale: `en-US`
+- Default locale: `en-US` (product-owner decision 2026-07-26 — overrides the original `th-TH` default). Fallback locale: `en-US`. Users switch to `th-TH` in-app; Buddhist-era display still applies when Thai is selected.
 - All dates → ISO 8601 internally; display via `Intl.DateTimeFormat` with user's locale
 - All currencies → `decimal.js` internally; display via `Intl.NumberFormat` with user's locale
 - All timestamps → stored in UTC; converted to user's timezone on display
@@ -238,8 +238,30 @@ Before starting any implementation task:
   - **On-premise deployments**: Cloudflare WAF is NOT applicable — Kong Gateway provides rate limiting; customer-provided WAF MUST meet OWASP CRS paranoia level 2 minimum (see spec §08-enterprise-deployment §8.7)
 - **Data encryption at rest** — algorithm: **AES-256** minimum on all persistent storage (source: spec §5.2); all S3 buckets + RDS/Aurora: SSE-KMS with **customer-managed key (CMK)**; all ElastiCache nodes: AWS-managed key (`at_rest_encryption_enabled`); one CMK per storage-type per env with alias `cos/{env}/rds|s3|elasticache`; **annual KMS rotation**; key policy grants use to the app service role + SYSTEM_ADMIN only; CMK definitions in `infrastructure/terraform/aws/kms.tf` (source: spec §5.2.1). On-prem = Vault Transit envelope encryption.
 - **Penetration testing** — external pentest required before Stage 1→2 and Stage 2→3 transitions; findings tracked in `docs/security/pentest-findings.md`; all HIGH/CRITICAL findings resolved before advancing stage
-- SAST must pass in CI via **CodeQL** (`github/codeql-action`) before merge — spec §30.10 and §30.12; blocks merge on any alert of severity High or above; languages: JavaScript/TypeScript, Python, Go; workflow `.github/workflows/codeql.yml`; no server required (free for this public repository)
-  **Replaced SonarQube 2026-08-22 — ADR-054.** SonarQube Community Edition required a self-hosted EKS server that was never provisioned, so its gate stayed ⏸ DEFERRED and blocked Phase 19 automated check #4 (Stage 1→2). Coverage thresholds (100% lines / 100% branches per QM-1) are enforced in each package's `jest.config.js`, not by the SAST tool. The former "0% duplication on new code" clause is dropped — CodeQL does not measure duplication. Trivy + `pnpm audit` + `pip-audit` + `govulncheck` + GitLeaks are retained alongside it. If the repository becomes private, GitHub Advanced Security is required — revisit ADR-054.
+- SAST and code quality scan must pass in CI before merge — **CodeQL + Semgrep CE + jscpd** (ADR-011;
+  spec §30.10, §30.12). Replaced SonarQube, which was specified but never deployed:
+  - **CodeQL** (`.github/workflows/codeql.yml`) — semantic/taint SAST over JS-TS, Python and Go.
+    Free because this repository is public; on a private repository it needs a GitHub Code Security
+    licence billed per active committer. **Cannot run air-gapped** — it requires GitHub.
+  - **Semgrep CE** (`.github/workflows/semgrep.yml`, rules in `.semgrep/`) — project-policy rules
+    (BLOCKING) encoding the §Never prohibitions below, plus registry security rulesets (advisory,
+    reported to code scanning). Runs fully offline, which is what covers on-premise/air-gapped.
+  - **ruff** (`ruff check services mlops`, CI lint job, BLOCKING) — Python lint. Nothing linted
+    Python before 2026-07-21, which is how 39 unused imports accumulated; the default E+F set
+    was measured against this tree and passes clean. Runs offline (ADR-011).
+  - **jscpd** (`.jscpd.json`, run in the CI lint job) — duplication. Threshold is a **ratchet at 1.3%**
+    against a measured baseline of 1.12% (2026-07-21), not 0%: jscpd has no "new code" concept and
+    the repo already carries duplication. ADR-021 removed the three largest clusters — the Go
+    workers' copied `internal/coskafka` and `internal/otel` (23.01% of Go lines → **0.00%**, now the
+    shared module `libs/go`), the budget grid rendered by two routes (tsx 2.18% → 1.33%), and the
+    cursor codec copied into seven `modules/project/` repositories (typescript 1.50% → 1.20%).
+    Total went 2.80% → 1.12%. What is left is NestJS controller/service boilerplate and list-page
+    scaffolding in `apps/web`.
+  - Coverage thresholds are enforced where they are measured — jest 100/100 (QM-1) and pytest
+    `--cov-fail-under=99` per Python service — not by a separate quality-gate server.
+    Why not SonarQube: its **Community** edition has no branch or pull-request analysis, so a
+    "before merge, on new code" gate is impossible on it, and no taint analysis either; those start at
+    Developer Edition (paid). See ADR-011 for the full comparison and the air-gapped caveat.
 - Dependency vulnerability scan in CI (`npm audit --audit-level=high` / `pip-audit`) — no HIGH/CRITICAL unresolved
 - Rate limiting required on all public-facing endpoints (see QM-7)
 - CORS policy must be explicit — never use `*` in production; allowed origins defined in `docs/security/cors-policy.md`
@@ -267,21 +289,21 @@ Before starting any implementation task:
 These are enforced targets. If an implementation does not meet them, do not ship — optimize or escalate.
 Source: spec §31.6 (targets corrected to match spec SLO definitions; Web Vitals per §31.6 Frontend Web Vitals SLO + §30.9 Lighthouse CI gate)
 
-| Metric                                       | Target                                         | Measurement                                                                             |
-| -------------------------------------------- | ---------------------------------------------- | --------------------------------------------------------------------------------------- |
-| API p95 latency (read endpoints — GET)       | **< 300ms**                                    | Grafana / k6 load test                                                                  |
-| API p99 latency (read endpoints — GET)       | < 500ms                                        | Grafana / k6 load test                                                                  |
-| API p95 latency (write endpoints — POST/PUT) | **< 500ms**                                    | Grafana / k6 load test                                                                  |
-| API p99 latency (write endpoints — POST/PUT) | < 1s                                           | Grafana / k6 load test                                                                  |
-| Dashboard / analytics (ClickHouse)           | p95 < 1s                                       | Grafana / k6 load test                                                                  |
-| AI report generation                         | p95 < 5s                                       | Grafana / k6 load test                                                                  |
-| Web LCP — Largest Contentful Paint (p75)     | ≤ 2.5s                                         | web-vitals RUM (spec §31.6); Lighthouse CI lab gate (§30.9)                             |
-| Web INP — Interaction to Next Paint (p75)    | ≤ 200ms                                        | web-vitals RUM (§31.6); TBT lab proxy in Lighthouse CI (§30.9)                          |
-| Web CLS — Cumulative Layout Shift (p75)      | ≤ 0.1                                          | web-vitals RUM (§31.6); Lighthouse CI lab gate (§30.9)                                  |
-| Mobile app cold start (React Native)         | < 3s on mid-range Android                      | Manual test + Flipper                                                                   |
-| Offline sync completion (3G, 5MB data)       | < 30s                                          | Manual test on throttled network                                                        |
-| Background job (Temporal workflow)           | SLA defined per workflow type in workflow spec | Temporal dashboard                                                                      |
-| k6 sustained load (100 VU × 5 min)           | 0 errors, p95 within budget                    | Weekly scheduled — `scripts/loadtest/api-baseline.js` (staging); Phase 19 one-time gate |
+| Metric                                       | Target                                         | Measurement                                                                                                                                                                                                                                                                   |
+| -------------------------------------------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| API p95 latency (read endpoints — GET)       | **< 300ms**                                    | Grafana / k6 load test                                                                                                                                                                                                                                                        |
+| API p99 latency (read endpoints — GET)       | < 500ms                                        | Grafana / k6 load test                                                                                                                                                                                                                                                        |
+| API p95 latency (write endpoints — POST/PUT) | **< 500ms**                                    | Grafana / k6 load test                                                                                                                                                                                                                                                        |
+| API p99 latency (write endpoints — POST/PUT) | < 1s                                           | Grafana / k6 load test                                                                                                                                                                                                                                                        |
+| Dashboard / analytics (ClickHouse)           | p95 < 1s                                       | Grafana / k6 load test                                                                                                                                                                                                                                                        |
+| AI report generation                         | p95 < 5s                                       | Grafana / k6 load test                                                                                                                                                                                                                                                        |
+| Web LCP — Largest Contentful Paint (p75)     | field ≤ 2.5s · lab ≤ 3.2s                      | web-vitals RUM p75 (spec §31.6) for the field number. The Lighthouse lab gate (§30.9) is a separate 3.2s: one throttled profile on a `ubuntu-latest` runner, calibrated to the highest median of five measured CI runs (2,913ms) + ~10%. It is a regression gate, not the SLO |
+| Web INP — Interaction to Next Paint (p75)    | ≤ 200ms                                        | web-vitals RUM (§31.6); TBT lab proxy in Lighthouse CI (§30.9)                                                                                                                                                                                                                |
+| Web CLS — Cumulative Layout Shift (p75)      | ≤ 0.1                                          | web-vitals RUM (§31.6); Lighthouse CI lab gate (§30.9)                                                                                                                                                                                                                        |
+| Mobile app cold start (React Native)         | < 3s on mid-range Android                      | Manual test + Flipper                                                                                                                                                                                                                                                         |
+| Offline sync completion (3G, 5MB data)       | < 30s                                          | Manual test on throttled network                                                                                                                                                                                                                                              |
+| Background job (Temporal workflow)           | SLA defined per workflow type in workflow spec | Temporal dashboard                                                                                                                                                                                                                                                            |
+| k6 sustained load (100 VU × 5 min)           | 0 errors, p95 within budget                    | Weekly scheduled — `scripts/loadtest/api-baseline.js` (staging); Phase 19 one-time gate                                                                                                                                                                                       |
 
 The k6 load test runs on a **weekly schedule against staging** — not per-PR (source: spec §30.9). Results are advisory: alert Engineering Lead if p95 latency increases > 20% vs. previous week. Load tests do not block PR merge. Note: Phase 19 automated check #7 runs a one-time load test gate before production go-live.
 
@@ -333,7 +355,7 @@ Every new service, module, or background job must include:
 - All HTTP requests must propagate `traceparent` header (W3C Trace Context)
 - All Kafka events must carry `trace_id` and `span_id` in headers
 - All cross-service calls must create child spans
-- **Sampling strategy** — tail-based sampling in production: 1% baseline of all requests; 100% of requests with errors (`4xx`/`5xx` responses); 100% of all AI/LLM calls; 100% of all financial transactions (source: spec §31.5 — "head-based" corrected to "tail-based"; tail-based captures all error traces regardless of baseline sample rate); sampling config in `infrastructure/monitoring/otel-collector/otel-collector-config.yml` (sampling section)
+- **Sampling strategy** — tail-based sampling in production: 1% baseline of all requests; 100% of requests with errors (`4xx`/`5xx` responses); 100% of all AI/LLM calls; 100% of all financial transactions (source: spec §31.5 — "head-based" corrected to "tail-based"; tail-based captures all error traces regardless of baseline sample rate); sampling config in `infrastructure/monitoring/otel-collector/otel-collector-config.yml` (sampling section). **No SDK may head-sample** (ADR-075): the Go (`libs/go/cosotel`), Python (`services/ai-gateway/otel.py`) and Node (`@cos/tracing`) SDKs export EVERY span and the Collector's `tail_sampling` processor decides — a head sampler drops spans before the Collector can apply the error/AI/financial policies, so those "100%" guarantees silently fail. The baseline is set by `OTEL_SAMPLING_PERCENTAGE` (PERCENT 0–100, not a ratio) injected into the Collector Deployment; per spec §31.5 development=100, staging=10, production=1. Collector 0.103.0 accepts only `${env:VAR}` — `${VAR:-default}` makes it refuse to start
 
 **Metrics:**
 
@@ -365,9 +387,10 @@ Every new service, module, or background job must include:
 - **Mobile backward compatibility** — the backend must support the previous 2 major mobile app versions
 - **Offline sync conflict resolution** — conflict strategy is entity-specific (authoritative spec: `context/00_master_construction_os.md` §Phase 6 Offline Conflict Resolution Strategy); agents must implement exactly the strategies below — never invent a different strategy without an ADR:
   - `site_reports`: **LAST_WRITE_WINS** on `client_submitted_at`; flag as `CONFLICT_FLAGGED` for `SITE_ENGINEER` manual review when server `modified_at` differs from client's `last_known_modified_at`
-  - `issues`: **FIELD_LEVEL_MERGE** — `description` / `resolution_note`: last writer wins; `status`: server wins (authoritative); `photos`: union (additive, no conflict possible); flag `ConflictRecord` for `SITE_ENGINEER` review if `status` was changed server-side during client's offline edit
+  - `issues`: **FIELD_LEVEL_MERGE** — `description` / `resolution_note`: last writer wins; `status`: server wins (authoritative); `photos`: union (additive, no conflict possible — this resolves WHICH photos are attached, not a photo's contents); flag `ConflictRecord` for `SITE_ENGINEER` review if `status` was changed server-side during client's offline edit
+  - **photo annotation** (the ADR-056 stroke list on a photo): **CONFLICT_FLAGGED** — no auto-resolution. An annotation stays editable after sync, so two people can mark up the same photo offline; merging strokes would blend two readings of one defect and last-write-wins would discard one. Server detects concurrent modification on sync → `CONFLICT_FLAGGED` + notify `SITE_ENGINEER`; never auto-merge or overwrite (spec §17.5; PO decision 2026-07-17)
   - `safety_checklists`: **SERVER_WINS** — reject client version unconditionally; return server version with `CONFLICT_REJECTED` status; safety data must be authoritative, no exceptions
-  - **Financial entities** (BOQ line items, payment approvals, budget entries, invoice records): **no auto-resolution** — offline write operations on financial entities are held in the sync queue; before applying, server checks for concurrent server-side modification; if conflict detected → status `CONFLICT_FLAGGED`, push notification to `FINANCE` or `PROJECT_MANAGER` for manual resolution; never auto-merge, auto-overwrite, or silently discard financial data
+  - **Financial entities** (POs, vendor invoices / AR / AP, payments, budget-line mutations): **online-required — NOT offline-writable** (spec §17.4; dual-write risk); BOQ line items are read-only cache (§17.4). Neither is offline-mutated, so neither reaches sync conflict resolution — the sync push endpoint (`/sync/push`, `/sync/resolve`) has no financial `entity_type` case and rejects any such write (`BadRequestException`); financial data is never auto-merged, auto-overwritten, or silently discarded. (§17.5's conflict table has no financial row for this reason.)
   - Sync wire protocol (server-side endpoint): `POST /api/v1/sync/resolve` accepts `{ entity_type, entity_id, client_version, payload, client_submitted_at }`; returns `{ resolved_payload, conflict_status, server_version }` where `conflict_status ∈ { ACCEPTED | CONFLICT_FLAGGED | CONFLICT_REJECTED }`
   - `ConflictHandler` class (generated in Phase 10) must implement all three strategies; unit-tested per QM-1 (Phase 18 mandatory coverage list)
   - **Offline write scope (spec §17.4)** — agents must NOT allow offline writes outside this list: offline read/write = tasks, site reports, inspections, workforce attendance, material consumption, safety checklists + incidents, equipment usage; **online-required (read-cache only)** = POs, vendor invoices / AR / receipts / payments, budget-line mutations, vendor master, permissions/roles; read-only stale-while-revalidate cache = project master, BOQ lines, room/floor reference, drawings, vendor directory
@@ -514,7 +537,7 @@ Every production deployment must follow this protocol:
 - **Zero-downtime** — required for all production changes; use Kubernetes rolling update by default
 - **Blue-green deployment** — required for: major version releases, authentication system changes, any database migration that cannot be made backward-compatible in a single step
 - **Canary deployment** — required for: API endpoint changes, new background job types, AI model version upgrades; minimum canary duration 30 minutes at 5% traffic before full rollout
-- **Automated rollback** — if error rate exceeds 1% within 10 minutes of deployment → pipeline rolls back automatically; health gate defined in `.github/workflows/deploy.yml`
+- **Automated rollback** — if error rate exceeds 1% within 10 minutes of deployment → the rollout is aborted and traffic shifts back to the stable ReplicaSet automatically. Health gate: `infrastructure/kubernetes/argo-rollouts/analysis-template-error-rate.yaml` (`AnalysisTemplate/error-rate` + `AnalysisTemplate/p99-latency`, PromQL mirroring the `APIHighErrorRate` / `APIHighLatency` rules). **PARTIALLY IMPLEMENTED as of 2026-08-07: the templates exist; the Argo Rollouts controller is not installed and the workloads are still `Deployment`s, so nothing evaluates them yet** — see `infrastructure/kubernetes/argo-rollouts/README.md` for the activation steps. This line previously named `.github/workflows/deploy.yml`, which has never existed and could not host the gate: ADR-012 forbids CI from deploying and Phase 19 greps the workflows for `kubectl apply`/`helm upgrade` expecting zero hits
 - **Deployment windows** — production deployments only during defined low-traffic windows; windows in `docs/runbooks/deployment-windows.md`; emergency hotfixes exempt with product owner approval on record
 - Deployment runbook required for every major release in `docs/runbooks/releases/`
 
@@ -627,13 +650,12 @@ npm audit --audit-level=high
 # 3. Python dependency vulnerability check
 pip-audit --requirement ai/requirements.txt
 
-# 4. SAST scan — CodeQL (ADR-054; replaced SonarQube 2026-08-22)
-#    Runs in GitHub Actions (.github/workflows/codeql.yml) across javascript-typescript, python, go.
-#    Gate: zero open CodeQL alerts of severity High or above on the branch under review.
-gh api "repos/:owner/:repo/code-scanning/alerts?state=open&severity=high" --jq 'length'   # expect 0
-gh api "repos/:owner/:repo/code-scanning/alerts?state=open&severity=critical" --jq 'length' # expect 0
-# Coverage (100% lines / 100% branches) is enforced by each package's jest.config.js — check #1 above,
-# NOT by the SAST tool. The former SonarQube "0% duplication on new code" clause is dropped.
+# 4. SAST + code quality scan (ADR-011 — replaced SonarQube)
+#    All three already run in CI on every PR; this is re-verification, not a separate gate.
+semgrep --config .semgrep/ --error          # project policy rules (blocking)
+pnpm exec jscpd backend/src packages apps/web/src services   # duplication ratchet (.jscpd.json)
+gh api repos/:owner/:repo/code-scanning/alerts --jq '[.[]|select(.state=="open")]|length'
+# Pass = semgrep exit 0, jscpd exit 0, and 0 open CodeQL/Semgrep code-scanning alerts
 
 # 5. OpenAPI spec freshness
 ./scripts/readiness/check-openapi-freshness.sh
@@ -739,7 +761,7 @@ If any check fails → list what needs to be fixed before re-running. Do not adv
 - Validate database migrations for backward compatibility before applying (QM-9)
 - Commit a rollback script for every database migration in `prisma/rollbacks/` (QM-9) — kept OUTSIDE `prisma/migrations/` so `prisma migrate deploy` does not treat it as a migration (P3015)
 - Register every new Kafka schema in the Schema Registry before the first producer deployment (QM-9); subject = canonical event type (**RecordNameStrategy**, one schema per event shared across tenants — never `{topic_name}-value`; topics carry a `{tenant_id}.` prefix) (spec §32.4)
-- Provision Kafka topics **explicitly** — producers use `allowAutoTopicCreation: false`; the per-tenant topic set (`{tenant_id}.{domain}.{entity}.{action}.v{N}` + `{tenant_id}.{domain}.dlq`) is created idempotently at tenant onboarding (SMB Phase 2, Enterprise Phase 25 workflow, local dev via seed); platform events use the shared `platform.events` topic. Shared consumers subscribe via per-tenant topic RegExp under a `{service}.shared` group and validate the `tenant_id` header before processing (spec §7.3, §15.6)
+- Provision Kafka topics **explicitly** — producers use `allowAutoTopicCreation: false` and `auto.create.topics.enable` is false on every real broker, so Kafka never creates a topic implicitly. A tenant's topic (`{tenant_id}.{domain}.{entity}.{action}.v{N}`) is created by `KafkaProducer` **on the first publish that needs it**, and its single DLQ (`{tenant_id}.dlq` — one per tenant, not per domain) on the first failure. Do **not** provision the whole catalogue at onboarding: that made topic count scale with customer headcount (46 topics / 414 replicas per tenant) instead of usage. Exception: enterprise tenants get a dedicated namespace/cluster and are still provisioned eagerly (Phase 25 workflow). Platform events use the shared `platform.events` topic. Shared consumers subscribe via per-tenant topic RegExp under a `{service}.shared` group and validate the `tenant_id` header before processing (spec §7.3, §15.6)
 - Gate every user-facing feature and high-risk change behind a feature flag before production (QM-15)
 - Include all required security headers in every HTTP response (QM-4)
 - Use class-validator (TypeScript/NestJS) or Pydantic (Python) for all API input validation — never hand-written `if` checks alone (QM-4)
@@ -758,7 +780,12 @@ If any check fails → list what needs to be fixed before re-running. Do not adv
   TimescaleDB is a PostgreSQL extension co-located on the primary instance through
   Stages 1–3, split to a dedicated instance only on the volume trigger in ADR-032
 - Use **scikit-learn + XGBoost** for all Phase 23 ML models (DelayForecastModel, SafetyVisionModel,
-  GraphMLModel, RiskClassifier); RESOLVED (source: spec §22-ai-architecture §22.6)
+  GraphMLModel, RiskClassifier, **DeviceTrustModel**); RESOLVED (source: spec §22-ai-architecture §22.6).
+  DeviceTrustModel (added 2026-08-04, ADR-081) is the one model with **no minimum-count training
+  threshold** — it is promoted only by beating the rule-based baseline on a held-out set (PR-AUC),
+  because its positive class is rare by design; until then a deterministic rule-based scorer serves
+  and the surface must not be described as AI-derived. The score is advisory — never revokes a device
+  or blocks a login (§22.3)
 - Use **MLflow** (experiment tracking + model registry) + **Evidently AI** (open-source, self-hosted —
   model/output evaluation + drift) for Phase 23+ MLOps; no external SaaS/API key. W&B removed —
   RESOLVED (source: spec §22-ai-architecture §22.6; ADR-038)
@@ -767,7 +794,17 @@ If any check fails → list what needs to be fixed before re-running. Do not adv
 
 - Rule 26 — Before adding `import { X } from 'pkg'` to any source file, verify 'pkg' is in that package's own `package.json` (not root or another package). Add it if missing. (prevents missing runtime deps)
 - Rule 27 — When adding any new script to any `package.json`, add the corresponding task to root `turbo.json` in the same commit. (prevents missing turbo tasks)
-- Rule 28 — After any `package.json` change, run `pnpm install` locally and commit `pnpm-lock.yaml` in the same PR. CI `--frozen-lockfile` will fail without it. (prevents CI lockfile failure)
+- Rule 28 — After changing anything that moves dependency resolution — `package.json`
+  `dependencies`/`devDependencies`/`peerDependencies`/`optionalDependencies`/`resolutions`/`pnpm`, or
+  `overrides:` in `pnpm-workspace.yaml` — run `pnpm install` and commit `pnpm-lock.yaml` in the same
+  commit; CI `--frozen-lockfile` fails without it. NOT every `package.json` edit: `scripts`,
+  `engines` and `packageManager` produce no lockfile diff, so there is nothing to commit (narrowed
+  2026-08-08; full rationale in 00_master Rule 28). **Which lockfile: the nearest one ABOVE that
+  `package.json`** — `apps/mobile` is its own workspace, so a mobile dependency needs
+  `cd apps/mobile && pnpm install` and `apps/mobile/pnpm-lock.yaml`; everything else uses the root
+  one. Enforced for every author by `scripts/ci/check-lockfile-staged.sh` in `.husky/pre-commit`
+  (it names the expected lockfile) — the `.claude/hooks/` version only sees agent edits.
+  (prevents CI lockfile failure)
 - Rule 29 — Before writing `(see ADR-NNN)` in any spec or code comment, verify `docs/architecture/adr/NNN-*.md` exists. Create the ADR first if it does not. (prevents dangling ADR references)
 - Rule 30 — For async functions using `setTimeout` internally (retry, poller, backoff), use `jest.useFakeTimers()` in `beforeEach`, `jest.useRealTimers()` in `afterEach`, and `await jest.runAllTimersAsync()` — NOT `jest.runAllTimers()`. (prevents test hangs on multi-step retry chains)
 - Rule 31 — "Generate: complete directory structure with placeholder README per service" means EVERY directory in the spec, including all `services/` and `packages/@cos/*`. "Tooling: X" means fully initialized (e.g., Husky = `.husky/pre-commit` exists, not just declared in `package.json`). tsconfig exceptions must be documented inline. (prevents incomplete scope)
@@ -818,6 +855,37 @@ If any check fails → list what needs to be fixed before re-running. Do not adv
   (c) Resources outside Nest DI (OTel SDK in `main.ts`) → provider with `OnApplicationShutdown` → `shutdownTracing()`
   (d) `main.ts` MUST call `app.enableShutdownHooks()` before `app.listen()`; never use `forceExit` to mask a leak
   (e) Every new `onModuleDestroy`/`onApplicationShutdown` needs a unit test → keep QM-1 100% line+branch coverage
+- Rule 40 — **Every surface that waits for data renders its wait through `<LoadingState />`** (prevents a
+  specified component drifting out of use while screens hand-roll their own indicators). Authoritative:
+  spec §32.7 "Loading State"; ADR-055. Applies the moment a screen, region, list, card or button gains an
+  async state — fetch, submit, sync flush, AI job:
+  (a) Pick the variant by the SHAPE of what it stands in for: `widget` card/tile/dashboard · `list` stacked
+  list or feed (mobile) · `table` data-table rows (web) · `ai` an AI job, not a plain fetch · `micro` inline
+  or inside a button
+  (b) **Never hand-roll one** — no `ActivityIndicator`, no self-made skeleton `View`/`div`, **no line of text
+  standing in for a loading state, no placeholder glyph (`…`)**. The last two have no signature a script can
+  match, so they are caught in review or not at all — that is why this rule exists in prose
+  (c) Mobile: wrap a region that reveals content in `<LoadingBoundary>`, not a ternary; a determinate loader
+  runs to 100 and holds one fill before the crossfade
+  (d) `label` is caller-supplied, already-translated copy (QM-3) — the component holds no key and no literal
+  (e) `progress` only when a real percentage exists; omitted = indeterminate = **no percentage shown**, never
+  a fabricated one. **A percentage needs ≥ 2 load steps** — one request can only report 0% then 100%, which
+  reads as stuck (same rule that keeps a `micro` ring in a submit button wordless). Use
+  `loadProgress(done, total)` (returns `null` below two steps) and count the steps that settle **while the
+  loader is on screen**, not the APIs the file imports
+  (g) Skeletons animate **per element**, never as one band across the card — the mockup puts
+  `.skeleton-pulse` on each bar and plate separately
+  (h) The bar and the percentage are **one JS-driven animated value**. Never move the bar to the native
+  driver for smoothness: that driver keeps animating _while the JS thread is blocked_ and only JS can write
+  text, so the bar fills while the number sits at 0 (hit on app launch 2026-08-17). Smoothness comes from
+  animating `translateX` rather than `width`, and from isolating the counting text
+  (f) Any ink override (`tone`, `color`) must **measure** ≥ 3:1 against the surface it sits on (SC 1.4.11),
+  and ≥ 4.5:1 if it colours text (§20.8) — on 2026-08-17 every cyan in the product measured under 3:1 on a
+  `--mobile-primary` button while looking fine
+  Machine half: `scripts/ci/check-loading-state.sh` in the CI lint job — it catches `ActivityIndicator` and
+  raw Tailwind `animate-*`, **not** (b)'s text/placeholder cases.
+  (root cause: 24 hand-rolled indicators accumulated after `<LoadingState />` was specified, and web's own
+  copy reached zero production consumers while ~35 list pages showed a plain "Loading…" line)
 
 ### Never
 
@@ -827,14 +895,16 @@ If any check fails → list what needs to be fixed before re-running. Do not adv
 - Add direct HTTP or gRPC calls between NestJS modules inside the monolith — use NestJS DI for synchronous cross-module calls and Kafka events for async; HTTP is only for cross-deployable communication (master §3; rule 3)
 - Query another module's database tables directly from application code — cross-module data access must go through the owning module's service layer or via Kafka events (master §4)
 - **Skip RLS on domain tables** — PostgreSQL Row Level Security is MANDATORY on every domain table from MVP (primary isolation mechanism, spec §7.7); `app.current_tenant_id` must be set at request start before any query; application-layer `WHERE tenant_id = $1` is secondary defense-in-depth, not a replacement for RLS
-- **Define design tokens without wiring the Tailwind pipeline** — the §32.7 tokens only take effect if `apps/web` has `postcss.config.js` + `tailwind.config.js` (content globs + `theme.extend` mapping tokens) + `src/app/globals.css` (`@tailwind …` + `:root{--cos-*/--web-*}`) imported in the root `layout.tsx` (with `@fontsource/inter-tight`). Without the full wiring the page renders unstyled even though tokens are "defined" (spec §32.7 → Web Implementation; verify the build emits non-empty utility CSS)
+- **Define design tokens without wiring the Tailwind pipeline** — the §32.7 tokens only take effect if `apps/web` has `postcss.config.js` + `tailwind.config.js` (content globs + `theme.extend` mapping tokens) + `src/app/globals.css` (`@tailwind …` + `:root{--cos-*/--web-*}`) imported in the root `layout.tsx` (with `@fontsource-variable/inter-tight`). Without the full wiring the page renders unstyled even though tokens are "defined" (spec §32.7 → Web Implementation; verify the build emits non-empty utility CSS)
 - **Define design tokens without wiring the React Native app (mobile)** — same pitfall, different mechanism: RN has no CSS vars, so the §32.7 `--mobile-*` tokens must be a typed module (`apps/mobile/src/theme/tokens.ts`), the brand font loaded via `expo-font` + `@expo-google-fonts/inter-tight` (`useFonts` in `app/_layout.tsx`), and components must reference the theme (never hardcode hex/`fontWeight`). The app also needs an Expo config (`app.json` with `expo-router` + `expo-font` plugins, `main: 'expo-router/entry'`) or it never boots (spec §32.7 → Mobile Implementation)
 - **Reintroduce WatermelonDB or its native wiring** — the offline DB is **Drizzle ORM on expo-sqlite** (first-party; no config plugins, no simdjson pod, no decorators/loose babel, no CMake patch). Decision record spec `17 §17.10` / ADR-048 (2026-07-04); measured envelope G1/G2 recorded there
 - **Simulate offline in Detox via `device.setStatusBar`/NetInfo jest mock** — neither works: Detox has no connectivity API (setStatusBar is cosmetic) and the NetInfo jest mock is unit-only (Detox runs the real binary). Use an app-level hook gated by `EXPO_PUBLIC_E2E=1` (deep link `cos://e2e/network` → `useNetworkStatus`); and there is **no boolean `element().isVisible()`** — use `await waitFor(el).toBeVisible().withTimeout()` (spec §30.7)
 - **Call `useSearchParams()` / `usePathname()` / `useRouter()` (or any CSR-bailout hook) without a `<Suspense>` boundary in a Next.js App Router page** — these hooks opt the subtree into client-side rendering, and `next build` fails the static export of the route with `missing-suspense-with-csr-bailout` ("Error occurred prerendering page"). `tsc --noEmit` (the `type-check` gate) does NOT catch this — only the `build` gate does (ADR-033). Isolate the hook in a child component and wrap it: `export default function Page(){ return <Suspense fallback={…}><Inner/></Suspense> }`. Example fix: `apps/web/src/app/login/page.tsx` (spec §32.7 → Web Implementation)
 - Implement BigQuery or Snowflake — analytics uses ClickHouse only
-- Implement LangGraph in Phase 11–12 — Phase 12 uses plain Python sequential pipeline; LangGraph
-  deferred to LAYER-C-001 decision for Layer C autonomous AI (source: spec §22-ai-architecture §22.3)
+- Implement LangGraph in Phase 11–12 — Phase 12 uses plain Python sequential pipeline; Layer C
+  orchestration is LAYER-C-001, provisionally resolved to **Temporal.io** (PO decision 2026-07-10);
+  final commitment gated by the §22.6 Thai benchmark when Layer B is stable ≥ 30 days — LangGraph
+  remains a fallback candidate only (source: spec §22-ai-architecture §22.3)
 - Use IndexedDB in React Native — smartphone uses **Drizzle ORM on expo-sqlite** (`cos_offline_v2.db`, useLiveQuery reactive reads) for all main business entities (site_reports, issues, local_photos, etc.); `sync_queue` keeps its own expo-sqlite handle (`cos_sync_queue.db`). Raw expo-sqlite for other entities is prohibited — go through the Drizzle schema (spec 17 §17.10 / ADR-048)
 - Skip hallucination guard on AI report endpoints
 - Invent workflow states or transitions beyond those defined in master §WORKFLOW ENGINE SPEC — implement exactly what is specified, nothing more (master §9; spec §32.6)
@@ -929,7 +999,7 @@ context/11_background_civilization.md               — BACKGROUND CIVILIZATION 
 docs/specifications/                                — SOURCE OF TRUTH for all architecture decisions (00–34); master is the compiled execution view
 
 # Engineering Governance & Non-functional Standards (authoritative spec sections)
-docs/specifications/03-system-design.md §3.4        — C4 architecture views (Context / Container / Component)
+docs/specifications/03-system-design.md §3.4        — C4 architecture views (Context / Container / Component); the Context + Container diagram SOURCES live in docs/architecture/README.md (moved there 2026-08-07 per §3.4's own "diagram sources live in architecture/" rule)
 docs/specifications/05-security-compliance.md §5.9  — Threat Model (STRIDE) per external surface; §5.10 supply-chain (SBOM/SLSA)
 docs/specifications/08-enterprise-deployment.md §8.2 — RTO/RPO per tier; §8.10 FinOps; §8.11 compute sustainability
 docs/specifications/09-data-architecture.md §9.8     — Data governance (MDM, lineage, catalog)
@@ -937,7 +1007,7 @@ docs/specifications/18-enterprise-saas-scaling.md §18.4 — Capacity planning +
 docs/specifications/20-ux-flow.md §20.8              — Accessibility (WCAG 2.2 AA)
 docs/specifications/22-ai-architecture.md §22.7      — AI integration decisions (registry); §22.8 AI security (OWASP LLM Top 10); §22.9 model governance; §22.10 RAG-eval/prompt-registry/token-cap/semantic-cache
 docs/specifications/23-ai-native-operating-model.md §23.5 — Human-AI governance structure (STEW-001)
-docs/specifications/30-testing-strategy.md §30.9     — Lighthouse CI frontend gate (Core Web Vitals + bundle budget)
+docs/specifications/30-testing-strategy.md §30.9     — Lighthouse CI frontend gate (Core Web Vitals + bundle budget + accessibility category = 1.0)
 docs/specifications/35-test-design.md                — Test Design: per-phase test case catalogue (Phase 1–25); TC ID convention `TC-P{NN}-{LEVEL}-{NNN}`; cross-cutting suites; traceability matrix; §35.13 UNSPECIFIED/escalation register (derived from §30 — on conflict §30 wins)
 docs/specifications/31-monitoring-observability.md §31.6 — SLO/error-budget + Frontend Web Vitals (LCP/INP/CLS); §31.9 incident/SEV/postmortem; §31.11 chaos/game-day; §31.12 DORA
 
@@ -948,6 +1018,7 @@ scripts/readiness/check-openapi-freshness.sh        — Verify OpenAPI spec exis
 scripts/readiness/check-i18n-completeness.sh        — Verify all i18n keys are translated (Phase 18)
 scripts/readiness/check-security-headers.sh         — Verify all required HTTP security headers on ingress (HSTS, X-Content-Type-Options, X-Frame-Options, CSP, Referrer-Policy, Permissions-Policy) + TLS 1.3 (Phase 16)
 scripts/readiness/check-schema-registry.sh          — Verify Kafka Schema Registry connectivity, BACKWARD_TRANSITIVE compatibility mode, all critical v1 schemas registered per spec §32.4 event table, local .avsc files valid JSON (Phase 8)
+scripts/readiness/check-service-runtimes.sh         — Architectural fitness function: every runtime declared in a docs table matches the build files in services/<name>/ (go.mod→Go, requirements.txt→Python, package.json→Node). CANONICAL table = spec §32.2; 00_master §DEPLOYABLE UNITS, §33 Service Assignment and README are mirrors. Runs in the CI lint job on every PR
 scripts/loadtest/api-baseline.js                    — k6 load test: 100 VU × 5 min mixed-read baseline gate; P95 read < 300ms, P95 write < 500ms, error rate < 0.1% (QM-6; Phase 18)
 
 # Compliance & Governance
@@ -1009,7 +1080,9 @@ docs/runbooks/temporal-worker-restart.md         — Temporal.io worker restart 
 cos-audit/                                          — Product owner sign-off audit logs (git-ignored content, directory committed)
 
 # Observability Infrastructure
-infrastructure/monitoring/otel-collector/otel-collector-config.yml — OTel collector config (includes trace sampling configuration)
+infrastructure/monitoring/otel-collector/otel-collector-config.yml — OTel collector config (tail_sampling + Loki label hints; ADR-075)
+infrastructure/monitoring/otel-collector/kustomization.yaml        — base; generates the config ConfigMap from the file above (never hand-write it)
+infrastructure/monitoring/otel-collector-overlays/{development,staging,production}/ — per-env ENV + OTEL_SAMPLING_PERCENTAGE (§31.5: 100/10/1); deploy with `kubectl apply -k <overlay>`, NOT `apply -f`
 infrastructure/synthetics/                          — Synthetic monitoring probe definitions for Grafana Synthetic Monitoring / OpenTelemetry Collector (Phase 15)
 
 # Lint & Format Config

@@ -11,9 +11,19 @@
 1. **Data minimization** — collect and retain only what is necessary for the stated purpose.
 2. **Purpose limitation** — data is not retained beyond the period needed to fulfill the purpose for which it was collected.
 3. **Accuracy** — stale data that no longer serves its purpose is deleted or anonymized, not kept indefinitely.
-4. **Right to erasure** — when a data subject exercises their PDPA §33 right, deletion / anonymization is completed within 30 days, subject to legal hold exceptions below.
+4. **Right to erasure** — when a data subject exercises their PDPA §33 right, deletion /
+   anonymization is completed within 30 days, subject to legal hold exceptions below.
 
 ---
+
+> **Table names verified 2026-08-03** against `backend/prisma/migrations/` (68 migrations, 98
+> tables, resolving the `20260605000004_db_refactor_global_schemas` `SET SCHEMA` moves). Seven rows
+> named tables that do not exist — `qc_inspections`, `check_ins`, `workforce.worker_rates`,
+> `workforce.timesheets`, `equipment.assets`, `equipment.telemetry`, `equipment.maintenance_logs` —
+> and the photo bucket was `cos-files-{env}` rather than the per-tenant `cos-{tenant_id}` the file
+> service actually creates. A retention rule naming a table that does not exist can never be
+> executed, so each was an unenforceable rule, not a cosmetic typo. The National ID row was removed
+> outright: no `national_id` column exists in any migration, so there is nothing to purge.
 
 ## Retention schedule
 
@@ -29,26 +39,54 @@
 
 ### Project and operational data
 
-| Entity                | Table                       | Retention Period           | Disposal Method                                 | Legal Basis                                    |
-| --------------------- | --------------------------- | -------------------------- | ----------------------------------------------- | ---------------------------------------------- |
-| Project records       | `projects`                  | Project lifetime + 7 years | Archive (read-only); delete after 7 years       | Thai accounting law; construction contract law |
-| BOQ line items        | `boq_items`                 | Project lifetime + 7 years | Archive                                         | Same as project                                |
-| Daily site reports    | `site_reports`              | Project lifetime + 7 years | Archive                                         | Contractual; accounting                        |
-| Safety checklists     | `safety_checklists`         | Project lifetime + 7 years | Archive                                         | Thai safety law (กฎกระทรวงความปลอดภัย)         |
-| QC inspection records | `qc_inspections`            | Project lifetime + 7 years | Archive                                         | Construction contract                          |
-| Issue records         | `issues`                    | Project lifetime + 3 years | Archive                                         | Contractual                                    |
-| GPS check-in records  | `check_ins`                 | 90 days from collection    | Hard delete (raw GPS); aggregate to daily count | PDPA §6(7) location data minimization          |
-| Progress photos (S3)  | S3 bucket `cos-files-{env}` | Project lifetime + 1 year  | S3 lifecycle rule → Glacier → delete            | Contractual                                    |
+| Entity                | Table                                 | Retention Period           | Disposal Method                                 | Legal Basis                                    |
+| --------------------- | ------------------------------------- | -------------------------- | ----------------------------------------------- | ---------------------------------------------- |
+| Project records       | `projects`                            | Project lifetime + 7 years | Archive (read-only); delete after 7 years       | Thai accounting law; construction contract law |
+| BOQ line items        | `boq_items`                           | Project lifetime + 7 years | Archive                                         | Same as project                                |
+| Daily site reports    | `site_reports`                        | Project lifetime + 7 years | Archive                                         | Contractual; accounting                        |
+| Safety checklists     | `safety_checklists`                   | Project lifetime + 7 years | Archive                                         | Thai safety law (กฎกระทรวงความปลอดภัย)         |
+| QC inspection records | `site_ops.inspections`                | Project lifetime + 7 years | Archive                                         | Construction contract                          |
+| Issue records         | `issues`                              | Project lifetime + 3 years | Archive                                         | Contractual                                    |
+| GPS check-in records  | `workforce_telemetry.attendance_logs` | 90 days from collection    | Hard delete (raw GPS); aggregate to daily count | PDPA §6(7) location data minimization          |
+| Progress photos (S3)  | S3 bucket `cos-{tenant_id}`           | Project lifetime + 1 year  | S3 lifecycle rule → Glacier → delete            | Contractual                                    |
 
 ### Procurement data
 
-| Entity            | Table               | Retention Period        | Disposal Method | Legal Basis                    |
-| ----------------- | ------------------- | ----------------------- | --------------- | ------------------------------ |
-| Purchase requests | `purchase_requests` | 7 years from PO close   | Archive         | Thai accounting law            |
-| RFQs              | `rfqs`              | 7 years from completion | Archive         | Accounting                     |
-| Vendor quotations | `quotations`        | 7 years from PO award   | Archive         | Accounting; dispute resolution |
-| Purchase orders   | `purchase_orders`   | 7 years from delivery   | Archive         | Accounting                     |
-| Delivery notes    | `delivery_notes`    | 7 years                 | Archive         | Accounting                     |
+| Entity                         | Table                                                                       | Retention Period                                               | Disposal Method                                                                              | Legal Basis                                                                                  |
+| ------------------------------ | --------------------------------------------------------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Purchase requests              | `purchase_requests`                                                         | 7 years from PO close                                          | Archive                                                                                      | Thai accounting law                                                                          |
+| RFQs                           | `rfqs`                                                                      | 7 years from completion                                        | Archive                                                                                      | Accounting                                                                                   |
+| Vendor quotations              | `quotations`                                                                | 7 years from PO award                                          | Archive                                                                                      | Accounting; dispute resolution                                                               |
+| Purchase orders                | `purchase_orders`                                                           | 7 years from delivery                                          | Archive                                                                                      | Accounting                                                                                   |
+| Delivery notes                 | `delivery_notes`                                                            | 7 years                                                        | Archive                                                                                      | Accounting                                                                                   |
+| Vendor contact person          | `procurement.vendors.contact_email`, `.contact_phone`                       | While the vendor is active + 7 years from the last transaction | **Anonymise in place** (clear the two columns; the vendor row and its purchase history stay) | Accounting (the transactions), not the contact — see § External people below                 |
+| Sole trader's tax id / address | `procurement.vendors.tax_id`, `.address` where `vendor_type = 'INDIVIDUAL'` | Same as above                                                  | Anonymise in place                                                                           | Revenue Code §87 requires the TRANSACTION record, which survives anonymisation of the person |
+
+### CRM data — EXTERNAL people (COS is processor)
+
+| Entity         | Table                                     | Retention Period                              | Disposal Method                                                      | Legal Basis                                           |
+| -------------- | ----------------------------------------- | --------------------------------------------- | -------------------------------------------------------------------- | ----------------------------------------------------- |
+| CRM contact    | `crm.contacts`                            | Until the tenant erases, or lead close + 2 yr | **Anonymise in place** — clear `name`/`email`/`phone`, keep the row  | No statutory basis to keep the PERSON; see below      |
+| CRM lead       | `crm.leads`                               | Same                                          | Anonymise `contact_name`; `company` is untouched (not personal data) | —                                                     |
+| Converted lead | `crm.opportunities` → `finance.customers` | 7 years from conversion                       | Row retained; personal columns already anonymised upstream           | Thai accounting law (the transaction, not the person) |
+
+**Why anonymise rather than delete, and why the row stays.** QM-5 states the platform's strategy
+outright — _"anonymization-in-place preferred over cascade delete (preserves aggregate analytics)"_ —
+and the schema makes it the only correct option here: `crm.contacts.lead_id` is `NOT NULL REFERENCES
+crm.leads`, and a lead converts into an opportunity and then a `finance.customers` row that Thai
+accounting law requires be kept for 7 years. Deleting the contact would break a chain the tenant is
+legally obliged to retain; clearing the personal columns removes the person from it and leaves the
+transaction intact. This is the standard **conditional erasure** shape: the personal data leaves the
+operational system, the record that the law requires survives.
+
+**A legal-hold copy is kept separately, reachable by legal only.** Where a row is under
+`legal_hold` (§ Legal hold below), anonymisation is deferred and the pre-anonymisation values are
+written to the restricted archive rather than discarded, so a dispute can still be answered.
+Product-owner decision 2026-08-16; the archive and its access control are specified in ADR-090.
+
+**Stating the basis is itself an obligation.** Answering a data subject with "we keep it for legal
+reasons" without naming the law, the categories and the period is a breach in its own right — which
+is why each row above names its statute rather than pointing at this document generally.
 
 ### Finance data
 
@@ -62,21 +100,20 @@
 
 ### Workforce data
 
-| Entity                    | Table                           | Retention Period                        | Disposal Method                                | Legal Basis                            |
-| ------------------------- | ------------------------------- | --------------------------------------- | ---------------------------------------------- | -------------------------------------- |
-| Worker records (active)   | `workforce.workers`             | Employment period                       | N/A                                            | Contractual                            |
-| Worker records (ended)    | `workforce.workers`             | End of employment + 2 years             | Anonymize PII; retain aggregate                | Thai Labor Protection Act §§13-17      |
-| National ID (บัตรประชาชน) | `workforce.workers.national_id` | End of employment + 2 years, then purge | Hard delete from column; retain UUID reference | PDPA §26 — sensitive data minimization |
-| Salary / rate records     | `workforce.worker_rates`        | 7 years                                 | Archive                                        | Thai Revenue Code                      |
-| Timesheet records         | `workforce.timesheets`          | 2 years                                 | Archive                                        | Labor law                              |
+| Entity                  | Table                                    | Retention Period            | Disposal Method                 | Legal Basis                       |
+| ----------------------- | ---------------------------------------- | --------------------------- | ------------------------------- | --------------------------------- |
+| Worker records (active) | `workforce.workers`                      | Employment period           | N/A                             | Contractual                       |
+| Worker records (ended)  | `workforce.workers`                      | End of employment + 2 years | Anonymize PII; retain aggregate | Thai Labor Protection Act §§13-17 |
+| Salary / rate records   | `workforce.project_workforce.daily_rate` | 7 years                     | Archive                         | Thai Revenue Code                 |
+| Timesheet records       | `workforce_telemetry.timesheets`         | 2 years                     | Archive                         | Labor law                         |
 
 ### Equipment data
 
-| Entity                            | Table                        | Retention Period         | Disposal Method                                                        | Legal Basis      |
-| --------------------------------- | ---------------------------- | ------------------------ | ---------------------------------------------------------------------- | ---------------- |
-| Equipment records                 | `equipment.assets`           | Asset lifetime + 5 years | Archive                                                                | Asset accounting |
-| Equipment telemetry (TimescaleDB) | `equipment.telemetry`        | 90 days hot              | Downsample to hourly aggregates after 90 days; keep aggregates 5 years | Operational      |
-| Maintenance records               | `equipment.maintenance_logs` | Asset lifetime + 5 years | Archive                                                                | Accounting       |
+| Entity                            | Table                                       | Retention Period         | Disposal Method                                                        | Legal Basis      |
+| --------------------------------- | ------------------------------------------- | ------------------------ | ---------------------------------------------------------------------- | ---------------- |
+| Equipment records                 | `equipment.equipment`                       | Asset lifetime + 5 years | Archive                                                                | Asset accounting |
+| Equipment telemetry (TimescaleDB) | `equipment_telemetry.equipment_utilization` | 90 days hot              | Downsample to hourly aggregates after 90 days; keep aggregates 5 years | Operational      |
+| Maintenance records               | `equipment.equipment_maintenance`           | Asset lifetime + 5 years | Archive                                                                | Accounting       |
 
 ### Observability and audit data
 

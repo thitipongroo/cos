@@ -5,7 +5,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import pytest
 from providers.llm_provider import LLMProvider, StubLLMProvider, Message
-from providers.alternative_llm_provider import AlternativeLLMProvider
+from providers.alternative_llm_provider import ClaudeLLMProvider, OllamaLLMProvider
 
 
 class TestStubLLMProvider:
@@ -27,20 +27,20 @@ class TestStubLLMProvider:
                 await provider.complete([], hint)
 
 
-class TestAlternativeLLMProvider:
-    def test_is_llm_provider_subclass(self):
-        provider = AlternativeLLMProvider()
-        assert isinstance(provider, LLMProvider)
+class TestAlternativeProvidersAreDropInReplaceable:
+    # Both concrete alternatives satisfy the same interface as the primary, so the gateway can swap
+    # them by config without touching call sites (§22.7). Constructed with injected clients so no
+    # SDK or network is touched.
+    def test_claude_is_llm_provider(self):
+        assert isinstance(ClaudeLLMProvider(client=object()), LLMProvider)
 
-    @pytest.mark.asyncio
-    async def test_complete_raises_not_implemented(self):
-        provider = AlternativeLLMProvider()
-        with pytest.raises(NotImplementedError):
-            await provider.complete([Message(role="user", content="hello")], "summarization")
+    def test_ollama_is_llm_provider(self):
+        assert isinstance(OllamaLLMProvider(client=object()), LLMProvider)
 
     def test_drop_in_replaceable(self):
         def accept_provider(p: LLMProvider) -> bool:
             return isinstance(p, LLMProvider)
 
         assert accept_provider(StubLLMProvider())
-        assert accept_provider(AlternativeLLMProvider())
+        assert accept_provider(ClaudeLLMProvider(client=object()))
+        assert accept_provider(OllamaLLMProvider(client=object()))

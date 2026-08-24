@@ -47,7 +47,11 @@
       "@cos/validation": ["./packages/@cos/validation/src/index.ts"],
       "@cos/validation/*": ["./packages/@cos/validation/src/*"],
       "@cos/database": ["./packages/@cos/database/src/index.ts"],
-      "@cos/database/*": ["./packages/@cos/database/src/*"]
+      "@cos/database/*": ["./packages/@cos/database/src/*"],
+      "@cos/ui-logic": ["./packages/@cos/ui-logic/src/index.ts"],
+      "@cos/ui-logic/*": ["./packages/@cos/ui-logic/src/*"],
+      "@cos/schemas": ["./packages/@cos/schemas/src/index.ts"],
+      "@cos/schemas/*": ["./packages/@cos/schemas/src/*"]
     }
   }
 }

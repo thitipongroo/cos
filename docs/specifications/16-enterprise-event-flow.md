@@ -86,6 +86,11 @@ Procurement :
 - VendorQuoted
 - PurchaseApproved
 - DeliveryReceived
+- GoodsReceived
+- StockIssued
+- StockTransferred
+- StockAdjusted
+- CentralPriceCatalogUpdated
 - InventoryUpdated
 - InventoryLow
 
@@ -121,7 +126,28 @@ CRM :
 
 - LeadCreated
 - OpportunityConverted
+- ContractDocumentAttached
+- ContractSignatureRecorded
 - ContractSigned
+- VariationOrderSubmitted
+- VariationOrderApproved
+- ClaimSubmitted
+- ClaimAccepted
+- TenderImported
+- BidSubmitted
+- TenderWon
+- TenderLost
+- BondIssued
+- BondReleased
+- BondCalled
+- BondExpiring
+- PermitRecorded
+- PermitExpiring
+- RiskRaised
+- RiskStatusChanged
+- CommunicationRecorded
+- ActionItemAssigned
+- ActionItemCompleted
 
 ---
 

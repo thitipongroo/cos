@@ -7,12 +7,14 @@ import { ThrottlerStorageRedisService } from 'nestjs-throttler-storage-redis';
 import { ClsModule } from 'nestjs-cls';
 import { HealthController } from './health.controller';
 import { IdentityModule } from './modules/identity/identity.module';
+import { LastSeenModule } from './modules/identity/last-seen.module';
 import { TenantModule } from './modules/tenant/tenant.module';
 import { ProjectModule } from './modules/project/project.module';
 import { BoqModule } from './modules/boq/boq.module';
 import { ProcurementModule } from './modules/procurement/procurement.module';
 import { FinanceModule } from './modules/finance/finance.module';
 import { SiteOpsModule } from './modules/site-ops/site-ops.module';
+import { FilesModule } from './modules/files/files.module';
 import { TasksModule } from './modules/tasks/tasks.module';
 import { SafetyModule } from './modules/safety/safety.module';
 import { GeoModule } from './modules/geo/geo.module';
@@ -26,6 +28,8 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { ComplianceModule } from './modules/compliance/compliance.module';
 import { WorkforceModule } from './modules/workforce/workforce.module';
 import { SyncModule } from './modules/sync/sync.module';
+import { CredentialsModule } from './modules/credentials/credentials.module';
+import { EquipmentModule } from './modules/equipment/equipment.module';
 import { FeatureFlagsModule } from './shared/feature-flags/feature-flags.module';
 import { FeatureFlagGuard } from './shared/feature-flags/feature-flag.guard';
 import { AuditInterceptor } from './shared/interceptors/audit.interceptor';
@@ -35,11 +39,17 @@ import { TenantContextInterceptor } from './shared/interceptors/tenant-context.i
 import { CloudflareWafMiddleware } from './shared/middleware/cloudflare-waf.middleware';
 import { SecureHeadersMiddleware } from './shared/middleware/secure-headers.middleware';
 import { TracingShutdownService } from './shared/tracing-shutdown.service';
-import { OutboxPollerService } from './shared/outbox/outbox-poller.service';
+import { PrismaPoolShutdownService } from './shared/prisma/prisma-pool-shutdown.service';
+import { SchedulingModule } from './shared/scheduling/scheduling.module';
+import { EventsModule } from './shared/events/events.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, envFilePath: ['.env'] }),
+    // Two-file env scheme (spec §08): the only .env is the monorepo ROOT one. Under turbo the backend
+    // runs with cwd = backend/, so ../.env is the root file; '.env' covers a run from the repo root.
+    // In docker the env is injected via docker-compose env_file (root .env), so neither path exists
+    // in the container and ConfigModule falls back to process.env — which is already populated.
+    ConfigModule.forRoot({ isGlobal: true, envFilePath: ['../.env', '.env'] }),
     // Global CLS (AsyncLocalStorage) — carries authenticated tenant context across guards,
     // interceptors and (formerly request-scoped) providers. Under Fastify, Passport's req.user does
     // NOT survive into downstream handlers (Fastify clones the request), so JwtAuthGuard publishes the
@@ -60,6 +70,10 @@ import { OutboxPollerService } from './shared/outbox/outbox-poller.service';
     }),
     TerminusModule,
     FeatureFlagsModule, // QM-15 / ADR-049 — Unleash-backed flags + GET /api/v1/flags
+    LastSeenModule, // @Global — last_seen_at touch used by JwtAuthGuard in every module (User Audit)
+    SchedulingModule, // @Global — leader election for @Cron jobs, so they run on ONE replica not all
+    EventsModule, // @Global — durable event outbox + its poller (replaces per-request Kafka producers)
+
     IdentityModule,
     TenantModule,
     ProjectModule,
@@ -67,6 +81,7 @@ import { OutboxPollerService } from './shared/outbox/outbox-poller.service';
     ProcurementModule,
     FinanceModule,
     SiteOpsModule,
+    FilesModule, // Photo annotations — GET endpoint; write path via SyncModule (ADR-056)
     TasksModule,
     SafetyModule,
     GeoModule,
@@ -80,11 +95,10 @@ import { OutboxPollerService } from './shared/outbox/outbox-poller.service';
     ComplianceModule,
     WorkforceModule, // Phase 22 — now wired (required for self check-in /workers/me, option A)
     SyncModule, // Finding 2 — generic offline sync API (/sync/delta, /sync/push, /sync/resolve)
-    // Remaining modules added per phase:
+    CredentialsModule, // ADR-019 — REST client for the CredentialService (W3C DID/VC) microservice
+    EquipmentModule, // Phase 21 — equipment tracking, assignments, maintenance, utilization
     // Phase 8: (Kafka/event infra wired into all modules)
     // Phase 9: (FileService is a separate deployable)
-    // Phase 21: EquipmentModule
-    // Phase 22: WorkforceModule
   ],
   controllers: [HealthController],
   providers: [
@@ -103,8 +117,9 @@ import { OutboxPollerService } from './shared/outbox/outbox-poller.service';
     { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },
     // Closes the OpenTelemetry SDK (Prometheus exporter) on graceful shutdown (enableShutdownHooks)
     TracingShutdownService,
-    // Phase 8 Outbox Pattern relay — starts on bootstrap, stops on SIGTERM (Rule 39 / §35.13 ESC-13)
-    OutboxPollerService,
+    // Ends the shared pg pools that back every PrismaClient. No individual client may close them
+    // (they are shared by URL — see shared/prisma/create-prisma-client.ts), so this hook owns it.
+    PrismaPoolShutdownService,
   ],
 })
 export class AppModule implements NestModule {

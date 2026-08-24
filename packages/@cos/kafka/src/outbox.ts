@@ -52,13 +52,24 @@ export class OutboxPublisher {
     const eventId = event.event_id ?? randomUUID();
     const envelope = { ...event, event_id: eventId };
 
-    // Schema-qualified name is MANDATORY (QM-4 / spec §11.0 rule 2): an unqualified
-    // `outbox_events` resolves through `search_path`, which is not deterministic under the
-    // multi-schema tenant model. The poller below already reads `platform.outbox_events`;
-    // this INSERT was the one unqualified reference. Corrected 2026-08-22.
+    // MUST stay schema-qualified. This INSERT was unqualified while OutboxPoller below reads and
+    // updates `platform.outbox_events`, so writer and reader did not necessarily address the same
+    // table: nothing in the application sets search_path, and `public.outbox_events` was moved to
+    // the `projects` schema by 20260605000004_db_refactor_global_schemas. The failure mode is the
+    // bad kind — events accepted into a table the poller never reads, so they are never published
+    // and nothing errors. (QM-4 / spec §11.0 rule 2; found by the Semgrep SQL audit, ADR-011.)
+    // tenant_id is denormalised out of the envelope on purpose: 20260819000003_outbox_delivery_state
+    // added the column so an operator can answer "whose events are stuck" from the row itself
+    // instead of parsing every payload. EventOutboxService.insert() fills it the same way.
     await (tx as unknown as OutboxPrismaClient).$executeRaw`
-      INSERT INTO platform.outbox_events (id, event_type, payload, published)
-      VALUES (${eventId}::uuid, ${envelope.event_type}, ${JSON.stringify(envelope)}::jsonb, false)
+      INSERT INTO platform.outbox_events (id, tenant_id, event_type, payload, published)
+      VALUES (
+        ${eventId}::uuid,
+        ${envelope.tenant_id},
+        ${envelope.event_type},
+        ${JSON.stringify(envelope)}::jsonb,
+        false
+      )
     `;
   }
 }

@@ -10,6 +10,8 @@ import {
 import { Test, TestingModule } from '@nestjs/testing';
 import { REQUEST } from '@nestjs/core';
 import { BoqService } from '../boq.service';
+import { EventOutboxService } from '../../../shared/events/event-outbox.service';
+import { makeOutboxDouble } from '../../../shared/events/__tests__/outbox-double';
 import { BoqRepository } from '../boq.repository';
 import type { BoqVersionRow, BoqCategoryRow, BoqItemRow } from '../boq.repository';
 
@@ -24,6 +26,7 @@ jest.mock('@cos/kafka', () => ({
 
 const mockRepo = {
   createVersion: jest.fn(),
+  claimNextVersion: jest.fn(),
   findVersionsByProject: jest.fn(),
   findVersionById: jest.fn(),
   findDraftVersion: jest.fn(),
@@ -34,6 +37,7 @@ const mockRepo = {
   addCategory: jest.fn(),
   findCategoriesByVersion: jest.fn(),
   updateCategorySubtotal: jest.fn(),
+  updateCategorySubtotals: jest.fn(),
   addItem: jest.fn(),
   updateItem: jest.fn(),
   deleteItem: jest.fn(),
@@ -114,6 +118,7 @@ describe('BoqService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         BoqService,
+        { provide: EventOutboxService, useValue: makeOutboxDouble().service },
         { provide: BoqRepository, useValue: mockRepo },
         { provide: REQUEST, useValue: mockRequest },
       ],
@@ -127,6 +132,7 @@ describe('BoqService', () => {
       const module: TestingModule = await Test.createTestingModule({
         providers: [
           BoqService,
+          { provide: EventOutboxService, useValue: makeOutboxDouble().service },
           { provide: BoqRepository, useValue: mockRepo },
           { provide: REQUEST, useValue: {} },
         ],
@@ -146,8 +152,7 @@ describe('BoqService', () => {
       // Native JS: 0.1 * 300 = 30.000000000000004 (float error)
       // decimal.js: exactly 30.0000
       mockRepo.findDraftVersion.mockResolvedValue(null);
-      mockRepo.findMaxVersionNumber.mockResolvedValue(0);
-      mockRepo.createVersion.mockResolvedValue(draftVersion);
+      mockRepo.claimNextVersion.mockResolvedValue({ version: draftVersion, version_number: 1 });
       mockRepo.findLatestApprovedVersion.mockResolvedValue(null);
 
       mockRepo.findVersionById.mockResolvedValue(draftVersion);
@@ -159,7 +164,7 @@ describe('BoqService', () => {
       }));
       mockRepo.findItemsByVersion.mockResolvedValue([]);
       mockRepo.findCategoriesByVersion.mockResolvedValue([category]);
-      mockRepo.updateCategorySubtotal.mockResolvedValue(undefined);
+      mockRepo.updateCategorySubtotals.mockResolvedValue(undefined);
       mockRepo.updateVersionTotal.mockResolvedValue(undefined);
 
       const result = await service.addItem('version-uuid-001', {
@@ -185,7 +190,7 @@ describe('BoqService', () => {
       }));
       mockRepo.findItemsByVersion.mockResolvedValue([]);
       mockRepo.findCategoriesByVersion.mockResolvedValue([category]);
-      mockRepo.updateCategorySubtotal.mockResolvedValue(undefined);
+      mockRepo.updateCategorySubtotals.mockResolvedValue(undefined);
       mockRepo.updateVersionTotal.mockResolvedValue(undefined);
 
       const result = await service.addItem('version-uuid-001', {
@@ -210,7 +215,7 @@ describe('BoqService', () => {
       }));
       mockRepo.findItemsByVersion.mockResolvedValue([]);
       mockRepo.findCategoriesByVersion.mockResolvedValue([category]);
-      mockRepo.updateCategorySubtotal.mockResolvedValue(undefined);
+      mockRepo.updateCategorySubtotals.mockResolvedValue(undefined);
       mockRepo.updateVersionTotal.mockResolvedValue(undefined);
 
       const result = await service.addItem('version-uuid-001', {
@@ -230,19 +235,22 @@ describe('BoqService', () => {
   describe('Version creation', () => {
     it('creates first version with version_number = 1', async () => {
       mockRepo.findDraftVersion.mockResolvedValue(null);
-      mockRepo.findMaxVersionNumber.mockResolvedValue(0);
-      mockRepo.createVersion.mockResolvedValue(draftVersion);
+      mockRepo.claimNextVersion.mockResolvedValue({ version: draftVersion, version_number: 1 });
       mockRepo.findLatestApprovedVersion.mockResolvedValue(null);
 
       const result = await service.createVersion('project-uuid-001', { currency_code: 'THB' });
       expect(result.version_number).toBe(1);
-      expect(mockRepo.createVersion).toHaveBeenCalledWith(
-        expect.objectContaining({ version_number: 1 }),
-        expect.any(Function), // outbox builder (§35.13 ESC-13)
+      // version_number is now allocated inside the transaction (COALESCE(MAX)+1), not passed in,
+      // and the outbox builder rides along so the events commit with the row (§35.13 ESC-13).
+      expect(mockRepo.claimNextVersion).toHaveBeenCalledWith(
+        expect.objectContaining({ project_id: 'project-uuid-001', currency_code: 'THB' }),
+        expect.any(Function),
       );
     });
 
     it('throws ConflictException if DRAFT already exists', async () => {
+      // claimNextVersion returns null when it finds a DRAFT under the per-project advisory lock.
+      mockRepo.claimNextVersion.mockResolvedValue(null);
       mockRepo.findDraftVersion.mockResolvedValue(draftVersion);
 
       await expect(
@@ -250,16 +258,30 @@ describe('BoqService', () => {
       ).rejects.toThrow(ConflictException);
     });
 
+    it('still reports the conflict when the blocking DRAFT cannot be re-read', async () => {
+      // claimNextVersion and findDraftVersion are two separate reads: the lock-holder can approve or
+      // delete the DRAFT in between, so the id lookup comes back empty. The 409 is still correct —
+      // the claim genuinely failed — and the message must degrade to 'unknown' rather than render
+      // "(undefined)" at a user.
+      mockRepo.claimNextVersion.mockResolvedValue(null);
+      mockRepo.findDraftVersion.mockResolvedValue(null);
+
+      await expect(
+        service.createVersion('project-uuid-001', { currency_code: 'THB' }),
+      ).rejects.toThrow(/already has a DRAFT BOQ version \(unknown\)/);
+    });
+
     it('publishes boq.created.v1 on first version (version_number === 1 branch)', async () => {
       mockRepo.findDraftVersion.mockResolvedValue(null);
-      mockRepo.findMaxVersionNumber.mockResolvedValue(0);
-      mockRepo.createVersion.mockResolvedValue(draftVersion);
+      mockRepo.claimNextVersion.mockResolvedValue({ version: draftVersion, version_number: 1 });
       mockRepo.findLatestApprovedVersion.mockResolvedValue(null);
 
       await service.createVersion('project-uuid-001', { currency_code: 'THB' });
 
       // Events now go to the outbox: assert on the builder handed to the repository.
-      const builder = mockRepo.createVersion.mock.calls[0][1] as (
+      // The builder now rides claimNextVersion — that is the call that does the INSERT, so it is
+      // the transaction the events have to join.
+      const builder = mockRepo.claimNextVersion.mock.calls[0][1] as (
         row: BoqVersionRow,
       ) => { event_type: string }[];
       const eventTypes = builder(draftVersion).map((e) => e.event_type);
@@ -271,20 +293,24 @@ describe('BoqService', () => {
 
     it('does NOT publish boq.created.v1 on subsequent versions (version_number > 1 branch)', async () => {
       mockRepo.findDraftVersion.mockResolvedValue(null);
-      mockRepo.findMaxVersionNumber.mockResolvedValue(1);
-      mockRepo.createVersion.mockResolvedValue({ ...draftVersion, version_number: 2 });
+      mockRepo.claimNextVersion.mockResolvedValue({
+        version: { ...draftVersion, version_number: 2 },
+        version_number: 2,
+      });
       mockRepo.findLatestApprovedVersion.mockResolvedValue(approvedVersion);
       mockRepo.copyVersionContents.mockResolvedValue(undefined);
       mockRepo.findItemsByVersion.mockResolvedValue([item]);
       mockRepo.findCategoriesByVersion.mockResolvedValue([category]);
-      mockRepo.updateCategorySubtotal.mockResolvedValue(undefined);
+      mockRepo.updateCategorySubtotals.mockResolvedValue(undefined);
       mockRepo.updateVersionTotal.mockResolvedValue(undefined);
 
       const result = await service.createVersion('project-uuid-001', { currency_code: 'THB' });
       expect(result.version_number).toBe(2);
       expect(mockRepo.copyVersionContents).toHaveBeenCalled();
 
-      const builder = mockRepo.createVersion.mock.calls[0][1] as (
+      // The builder now rides claimNextVersion — that is the call that does the INSERT, so it is
+      // the transaction the events have to join.
+      const builder = mockRepo.claimNextVersion.mock.calls[0][1] as (
         row: BoqVersionRow,
       ) => { event_type: string }[];
       const eventTypes = builder({ ...draftVersion, version_number: 2 }).map((e) => e.event_type);
@@ -293,8 +319,10 @@ describe('BoqService', () => {
 
     it('creates version_number = 2 when no approved version to copy from (G5 — inner if false branch)', async () => {
       mockRepo.findDraftVersion.mockResolvedValue(null);
-      mockRepo.findMaxVersionNumber.mockResolvedValue(1);
-      mockRepo.createVersion.mockResolvedValue({ ...draftVersion, version_number: 2 });
+      mockRepo.claimNextVersion.mockResolvedValue({
+        version: { ...draftVersion, version_number: 2 },
+        version_number: 2,
+      });
       mockRepo.findLatestApprovedVersion.mockResolvedValue(null);
 
       const result = await service.createVersion('project-uuid-001', { currency_code: 'THB' });
@@ -361,7 +389,7 @@ describe('BoqService', () => {
         .mockResolvedValueOnce({ ...draftV2, status: 'APPROVED' }); // final fetch
       mockRepo.findItemsByVersion.mockResolvedValue([item]);
       mockRepo.findCategoriesByVersion.mockResolvedValue([category]);
-      mockRepo.updateCategorySubtotal.mockResolvedValue(undefined);
+      mockRepo.updateCategorySubtotals.mockResolvedValue(undefined);
       mockRepo.updateVersionTotal.mockResolvedValue(undefined);
       mockRepo.approveVersion.mockResolvedValue(undefined);
 
@@ -371,6 +399,18 @@ describe('BoqService', () => {
         expect.objectContaining({ version_id: 'version-uuid-002', approved_by: 'user-uuid-001' }),
         expect.objectContaining({ event_type: 'construction.boq.version_approved.v1' }),
       );
+
+      // ADR-058 CT-2c-2: approval also publishes the full itemized line set for downstream materialization.
+      const outboxMock = (
+        service as unknown as {
+          outbox: { publish: jest.Mock };
+        }
+      ).outbox;
+      const itemsEvent = outboxMock.publish.mock.calls
+        .map((c) => c[0] as { event_type: string; payload: { items: unknown[] } })
+        .find((e) => e.event_type === 'construction.boq.items_published.v1');
+      expect(itemsEvent).toBeDefined();
+      expect(itemsEvent!.payload.items).toHaveLength(1);
     });
   });
 
@@ -446,7 +486,7 @@ describe('BoqService', () => {
       mockRepo.updateItem.mockResolvedValue(item);
       mockRepo.findItemsByVersion.mockResolvedValue([item]);
       mockRepo.findCategoriesByVersion.mockResolvedValue([category]);
-      mockRepo.updateCategorySubtotal.mockResolvedValue(undefined);
+      mockRepo.updateCategorySubtotals.mockResolvedValue(undefined);
       mockRepo.updateVersionTotal.mockResolvedValue(undefined);
       await expect(
         service.updateItem('item-uuid-001', { quantity: '1.0000' }),
@@ -463,7 +503,7 @@ describe('BoqService', () => {
       });
       mockRepo.findItemsByVersion.mockResolvedValue([item]);
       mockRepo.findCategoriesByVersion.mockResolvedValue([category]);
-      mockRepo.updateCategorySubtotal.mockResolvedValue(undefined);
+      mockRepo.updateCategorySubtotals.mockResolvedValue(undefined);
       mockRepo.updateVersionTotal.mockResolvedValue(undefined);
 
       const result = await service.updateItem('item-uuid-001', {
@@ -480,7 +520,7 @@ describe('BoqService', () => {
       mockRepo.updateItem.mockResolvedValue({ ...item, description: 'Updated desc' });
       mockRepo.findItemsByVersion.mockResolvedValue([item]);
       mockRepo.findCategoriesByVersion.mockResolvedValue([category]);
-      mockRepo.updateCategorySubtotal.mockResolvedValue(undefined);
+      mockRepo.updateCategorySubtotals.mockResolvedValue(undefined);
       mockRepo.updateVersionTotal.mockResolvedValue(undefined);
 
       const result = await service.updateItem('item-uuid-001', { description: 'Updated desc' });
@@ -503,7 +543,7 @@ describe('BoqService', () => {
       mockRepo.deleteItem.mockResolvedValue(undefined);
       mockRepo.findItemsByVersion.mockResolvedValue([]);
       mockRepo.findCategoriesByVersion.mockResolvedValue([category]);
-      mockRepo.updateCategorySubtotal.mockResolvedValue(undefined);
+      mockRepo.updateCategorySubtotals.mockResolvedValue(undefined);
       mockRepo.updateVersionTotal.mockResolvedValue(undefined);
 
       await expect(service.deleteItem('item-uuid-001')).resolves.toBeUndefined();

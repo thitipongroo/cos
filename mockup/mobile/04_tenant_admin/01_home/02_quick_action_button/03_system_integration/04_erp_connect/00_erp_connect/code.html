@@ -1,0 +1,295 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>ERP Connect | Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "sync-active": "#00C853",
+                    "on-tertiary-fixed": "#161b2b",
+                    "tertiary-fixed": "#dee1f9",
+                    "surface-container-lowest": "#000f21",
+                    "on-background": "#d3e4fe",
+                    "surface-container": "#0F172A",
+                    "tertiary": "#c1c5dc",
+                    "on-surface": "#d3e4fe",
+                    "secondary-fixed": "#acedff",
+                    "mobile-primary": "#0066FF",
+                    "mobile-warning": "#FF9500",
+                    "error-container": "#93000a",
+                    "outline-variant": "#434655",
+                    "error": "#ffb4ab",
+                    "dark-surface": "#0F172A",
+                    "primary-fixed": "#dbe1ff",
+                    "tertiary-container": "#686c80",
+                    "surface-bright": "#2a3a4f",
+                    "surface-container-highest": "#26364a",
+                    "on-tertiary-container": "#eeefff",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "primary": "#b4c5ff",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "outline": "#8d90a0",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "inverse-surface": "#d3e4fe",
+                    "inverse-on-surface": "#213145",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "surface-tint": "#b4c5ff",
+                    "on-tertiary": "#2b3041",
+                    "on-error-container": "#ffdad6",
+                    "primary-container": "#2563eb",
+                    "dark-bg": "#020617",
+                    "on-secondary-fixed": "#001f26",
+                    "on-primary-container": "#eeefff",
+                    "on-surface-variant": "#c3c6d7",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "surface-dim": "#031427",
+                    "surface": "#0F172A",
+                    "background": "#020617",
+                    "mobile-danger": "#FF3B30",
+                    "inverse-primary": "#0053db",
+                    "secondary": "#06B6D4",
+                    "mobile-success": "#00C853",
+                    "on-secondary": "#003640",
+                    "on-secondary-container": "#00424e",
+                    "secondary-container": "#03b5d3",
+                    "on-error": "#690005",
+                    "sync-pending": "#94A3B8",
+                    "on-primary-fixed": "#00174b",
+                    "surface-container-high": "#1b2b3f",
+                    "surface-container-low": "#0b1c30",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "on-primary": "#002a78",
+                    "surface-variant": "#26364a",
+                    "ai-cyan": "#06B6D4"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "web-margin": "32px",
+                    "space-3": "12px",
+                    "space-1": "4px",
+                    "space-2": "8px",
+                    "edge-mobile": "24px",
+                    "base": "4px",
+                    "touch-target": "52px",
+                    "space-4": "16px"
+            },
+            "fontFamily": {
+                    "tiny-web": ["Inter Tight"],
+                    "label-mobile": ["Inter Tight"],
+                    "hero-mobile": ["Inter Tight"],
+                    "h1-web": ["Inter Tight"],
+                    "h2-web": ["Inter Tight"],
+                    "display-web": ["Inter Tight"],
+                    "body-web": ["Inter Tight"],
+                    "body-mobile": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            font-family: 'Inter Tight', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            overscroll-behavior-y: contain;
+            background-color: #020617;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-effect {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface overflow-x-hidden pb-24">
+<!-- Top App Bar -->
+<header class="fixed top-0 left-0 right-0 z-50 bg-dark-bg/95 backdrop-blur-md flex justify-between items-center w-full px-edge-mobile h-touch-target border-b border-white/5">
+<div class="flex items-center gap-space-2">
+<img alt="COS Logo" class="w-6 h-6 object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAmyui4ezLWuxgLMJZxiac6X59OBw1X-_kYNZCv37nKNh8oZBuv6GV7g32e0ouhpw9bx52M6VaY7fHt1_FriVDtQGBpB-5exYZ36EG6dkEff3f-FEZisTXW3iuEFuKzwmE0nM7K9ixWaoPQqeGkAKId9dG1kQA1m1Of106lT5tbVaypfmICGhuMztKB5_xLYFYrg5ZX1HuCghrn8ddVShFQnsd5Gi0076Wijs1T2kSfVRTJM76eAw7-h1ok5DwHl-h4wgWetpApZoI">
+<h1 class="font-h1-web text-[18px] font-extrabold tracking-tight text-white uppercase">CONSTRUCTION OS</h1>
+</div>
+<div class="flex items-center gap-space-1 bg-mobile-success/10 px-3 py-1.5 rounded-full border border-mobile-success/20">
+<span class="material-symbols-outlined text-mobile-success text-sm font-bold" data-icon="check_circle" style="font-variation-settings: &quot;FILL&quot; 1;">check_circle</span>
+<span class="text-[11px] text-mobile-success font-bold uppercase tracking-wider">Synced</span>
+</div>
+</header>
+<!-- Main Content -->
+<main class="mt-20 px-edge-mobile space-y-space-4">
+<!-- Section Title -->
+<section class="space-y-space-1 py-space-2">
+<div class="flex items-baseline justify-between">
+<h2 class="font-hero-mobile text-hero-mobile text-white">ERP Connect</h2>
+<span class="text-tiny-web text-on-surface-variant font-medium">FINANCIALS</span>
+</div>
+<p class="font-body-mobile text-body-mobile text-on-surface-variant leading-relaxed">
+                Connect your central accounting systems to sync financial data and project budgets seamlessly.</p>
+</section>
+<!-- AI Integration Assist -->
+<section class="bg-ai-cyan/5 border-l-4 border-ai-cyan p-space-3 rounded-r-xl space-y-space-3 relative overflow-hidden">
+<div class="absolute top-0 right-0 opacity-5">
+<span class="material-symbols-outlined text-7xl" data-icon="psychology">psychology</span>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-2 text-ai-cyan">
+<span class="material-symbols-outlined text-base" data-icon="bolt" style="font-variation-settings: &quot;FILL&quot; 1;">bolt</span>
+<span class="font-label-mobile text-label-mobile tracking-wider uppercase">Integration Assist</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="text-[10px] font-bold text-ai-cyan uppercase tracking-widest">99% Confidence</span>
+<span class="text-[8px] text-ai-cyan/60 uppercase">Source: Integration Docs</span>
+</div>
+</div>
+<div class="space-y-space-2 relative z-10">
+<p class="font-body-web text-body-web text-on-surface leading-snug">
+                    To start, generate an <span class="font-bold text-white">OAUTH2</span> client secret in your ERP dashboard. Map the endpoint to <code class="bg-surface-container-highest/50 px-1.5 py-0.5 rounded text-ai-cyan font-mono text-[13px]">/api/v1/sync</code>.
+                </p>
+<div class="flex gap-space-2 pt-1">
+<button class="h-touch-target flex-1 bg-ai-cyan/20 text-ai-cyan px-3 rounded-lg font-bold text-tiny-web active:scale-[0.98] transition-transform uppercase">View Step-by-Step</button>
+<button class="h-touch-target flex-1 border border-ai-cyan/30 text-ai-cyan px-3 rounded-lg font-bold text-tiny-web active:scale-[0.98] transition-transform uppercase">Whitelist IP</button>
+</div>
+</div>
+</section>
+<!-- Input Form -->
+<div class="grid grid-cols-1 gap-space-3">
+<!-- Provider Selection -->
+<div class="bg-surface-container rounded-xl p-space-3 space-y-space-2 border border-white/5">
+<label class="font-label-mobile text-[11px] text-on-surface-variant uppercase tracking-widest block">ERP Provider</label>
+<div class="relative">
+<select class="w-full bg-surface-container-highest/50 text-white h-touch-target rounded-lg px-space-3 appearance-none border border-white/10 focus:border-mobile-primary transition-all">
+<option>SAP S/4HANA</option>
+<option>Oracle NetSuite</option>
+<option>Microsoft Dynamics 365</option>
+<option selected="">Custom REST ERP</option>
+</select>
+<span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant" data-icon="expand_more">expand_more</span>
+</div>
+</div>
+<!-- Base URL -->
+<div class="bg-surface-container rounded-xl p-space-3 space-y-space-2 border border-white/5">
+<label class="font-label-mobile text-[11px] text-on-surface-variant uppercase tracking-widest block">Base URL</label>
+<div class="flex items-center bg-surface-container-highest/50 rounded-lg px-space-3 border border-white/10 focus-within:border-mobile-primary">
+<span class="material-symbols-outlined text-on-surface-variant mr-2" data-icon="lan">lan</span>
+<input class="w-full bg-transparent text-white h-touch-target border-none focus:ring-0 font-body-web" placeholder="https://api.erp-system.com/v1" type="text">
+</div>
+</div>
+<!-- API Key -->
+<div class="bg-surface-container rounded-xl p-space-3 space-y-space-2 border border-white/5">
+<div class="flex justify-between items-center">
+<label class="font-label-mobile text-[11px] text-on-surface-variant uppercase tracking-widest">API Secret Key</label>
+<span class="text-[10px] text-mobile-success font-bold flex items-center gap-1 uppercase">
+<span class="material-symbols-outlined text-[12px]" data-icon="lock" style="font-variation-settings: &quot;FILL&quot; 1;">lock</span>
+                        Encrypted</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="flex-1 flex items-center bg-surface-container-highest/50 rounded-lg px-space-3 border border-white/10 focus-within:border-mobile-primary">
+<input class="w-full bg-transparent text-white h-touch-target border-none focus:ring-0 font-body-web" id="api-key" type="password" value="••••••••••••••••••••••••">
+<button class="p-2 text-on-surface-variant active:text-mobile-primary" onclick="toggleVisibility()">
+<span class="material-symbols-outlined" data-icon="visibility" id="eye-icon">visibility</span>
+</button>
+</div>
+<button class="bg-primary/10 text-primary h-touch-target px-5 rounded-lg font-bold text-tiny-web active:scale-95 transition-all uppercase">Paste</button>
+</div>
+</div>
+</div>
+<!-- Visualization -->
+<div class="relative w-full h-44 rounded-2xl overflow-hidden border border-white/5 group">
+<div class="w-full h-full bg-cover bg-center transition-transform duration-1000 group-hover:scale-105" style="background-image: url(&quot;https://lh3.googleusercontent.com/aida-public/AB6AXuCaZNUNDApqJ58rmJpgMTB5_rdRZckiEbcBqljp_Nchjf9RD0l7OJQMVbBHO-0NYvwZB213aySRtLpRXAW99AjExWu7_ItEHDFHK7taJtyzq4Oz3BaCchH7r_2-8t4VV6NzmoPvL4PKkVuB1eOoPeuHn5XlO5kksaoYyYRiS_jKuHmM-kGl5lWkND_Hw9P3s55cieZvQldcg6ntU8-2ZuH_iZgucy8k1UTBelJ3UVY-tc3Ygnzn1-yFyxaOJaMzpNXkxqSK2LuODf0&quot;);"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-dark-bg via-dark-bg/20 to-transparent"></div>
+<div class="absolute bottom-4 left-4 right-4 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-mobile-success animate-pulse"></div>
+<span class="text-[10px] font-bold text-white tracking-[0.2em] uppercase">Ready to Connect</span>
+</div>
+<span class="text-[10px] text-on-surface-variant font-medium uppercase tracking-wider">DC: BANGKOK_EAST</span>
+</div>
+</div>
+<!-- Security & Final Action -->
+<div class="flex flex-col items-center py-4 space-y-5">
+<div class="flex items-center gap-3 bg-surface-container-low/50 px-5 py-3 rounded-xl border border-white/5 w-full">
+<span class="material-symbols-outlined text-mobile-success" data-icon="verified_user" style="font-variation-settings: &quot;FILL&quot; 1;">verified_user</span>
+<div class="text-left">
+<p class="text-[11px] text-white font-bold uppercase tracking-tight">AES-256 BANK-GRADE ENCRYPTION</p>
+<p class="text-[10px] text-on-surface-variant leading-none mt-1">End-to-end secure transmission active.</p>
+</div>
+</div>
+<button class="w-full h-[60px] bg-primary-container text-white rounded-2xl font-bold text-label-mobile tracking-[0.1em] flex items-center justify-center gap-3 shadow-lg shadow-primary-container/10 active:scale-[0.97] transition-all uppercase">
+<span class="">Authorize &amp; Link Financials</span>
+<span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+</button>
+<p class="text-[11px] text-on-surface-variant text-center px-6 leading-relaxed">
+                By clicking authorize, you agree to Construction OS's <span class="underline decoration-primary/40 text-white/80">Data Management Policy</span>.
+            </p>
+</div>
+</main>
+<!-- Bottom Navigation -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center h-20 pb-safe bg-surface-container/95 backdrop-blur-xl border-t border-white/5 md:hidden">
+<a class="flex flex-col items-center justify-center text-on-surface-variant gap-1" href="#">
+<span class="material-symbols-outlined text-[24px]" data-icon="dashboard">dashboard</span>
+<span class="text-[10px] font-medium uppercase tracking-tighter">Dashboard</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant gap-1" href="#">
+<span class="material-symbols-outlined text-[24px]" data-icon="grid_view">grid_view</span>
+<span class="text-[10px] font-medium uppercase tracking-tighter">Modules</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant gap-1" href="#">
+<span class="material-symbols-outlined text-[24px]" data-icon="list_alt">list_alt</span>
+<span class="text-[10px] font-medium uppercase tracking-tighter">AI Logs</span>
+</a>
+<a class="flex flex-col items-center justify-center text-mobile-primary gap-1" href="#">
+<div class="relative flex flex-col items-center">
+<span class="material-symbols-outlined text-[24px]" data-icon="settings" style="font-variation-settings: &quot;FILL&quot; 1;">settings</span>
+<span class="text-[10px] font-bold uppercase tracking-tighter">Settings</span>
+</div>
+</a>
+</nav>
+<script>
+        function toggleVisibility() {
+            const input = document.getElementById('api-key');
+            const icon = document.getElementById('eye-icon');
+            if (input.type === "password") {
+                input.type = "text";
+                icon.innerText = "visibility_off";
+                input.value = "ERP_PRJ_8842_AKEY_SECURE_NODE_90";
+            } else {
+                input.type = "password";
+                icon.innerText = "visibility";
+                input.value = "••••••••••••••••••••••••";
+            }
+        }
+
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const originalScale = btn.style.transform;
+                btn.style.transform = 'scale(0.95)';
+                setTimeout(() => btn.style.transform = originalScale, 100);
+            });
+        });
+    </script>
+
+
+</body></html>

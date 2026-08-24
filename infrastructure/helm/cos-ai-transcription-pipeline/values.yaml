@@ -1,0 +1,77 @@
+replicaCount: 2
+image:
+  repository: ''
+  tag: 'latest'
+  pullPolicy: IfNotPresent
+service:
+  type: ClusterIP
+  # uvicorn --port 8000 (services/ai-transcription-pipeline/Dockerfile CMD + EXPOSE 8000).
+  port: 8000
+  # Served by metrics.py (§31.3, QM-8) — the same port prometheus.yml scrapes for every other
+  # service. This chart deliberately omitted it while the app exported nothing; the app now does,
+  # so the port, the containerPort, the Service port and the scrape annotation land together as
+  # that comment required.
+  metricsPort: 9464
+resources:
+  # Master §Phase 17 "Resource requests/limits per FastAPI service (AI)".
+  # NOTE: sized for the DEFAULT provider (STT_PROVIDER=stub). Running STT_PROVIDER=faster_whisper
+  # loads a Whisper model into memory and will need a larger limit — size that from a measurement,
+  # not a guess, before enabling it in any environment.
+  requests:
+    cpu: '500m'
+    memory: '1Gi'
+  limits:
+    cpu: '2000m'
+    memory: '2Gi'
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 60
+  targetMemoryUtilizationPercentage: 70
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+env:
+  OTEL_SERVICE_NAME: 'ai-transcription-pipeline'
+  OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector:4318'
+  # Matches service.metricsPort and the prometheus.yml scrape target.
+  PROMETHEUS_PORT: '9464'
+  # main.py reads FILE_SERVICE_URL to fetch the signed URL for the audio file.
+  FILE_SERVICE_URL: 'http://file-service:8000'
+  # main.py: "stub" (default) | "faster_whisper". Keep stub until the model image is deployed.
+  STT_PROVIDER: 'stub'
+envFrom:
+  # This service currently reads no secrets (only the env keys above). Mark the secret optional so
+  # the pod starts without it; add keys here if/when it needs credentials.
+  - secretRef:
+      name: cos-ai-transcription-pipeline-secrets
+      optional: true
+serviceAccount:
+  create: true
+  name: 'cos-ai-transcription-pipeline'
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: cos-ai-transcription-pipeline
+          topologyKey: kubernetes.io/hostname
+# /health/live is the ONLY route this service serves besides POST /api/v1/ai/transcribe
+# (services/ai-transcription-pipeline/main.py:44). There is no /health/ready, so readiness probes
+# the same path — matching cos-ai-gateway and cos-analytics-worker. ADR-039: four charts once probed
+# a path the service did not serve and would have CrashLooped in production.
+livenessProbe:
+  httpGet:
+    path: /health/live
+    port: 8000
+  initialDelaySeconds: 30
+  periodSeconds: 10
+readinessProbe:
+  httpGet:
+    path: /health/live
+    port: 8000
+  initialDelaySeconds: 15
+  periodSeconds: 5

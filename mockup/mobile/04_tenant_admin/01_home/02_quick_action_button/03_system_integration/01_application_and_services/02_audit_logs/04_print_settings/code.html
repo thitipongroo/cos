@@ -1,0 +1,325 @@
+<!DOCTYPE html><html class="dark" lang="th"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>ตั้งค่าการพิมพ์ - CONSTRUCTION OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "infrastructure-navy": "#0B1020",
+                        "concrete-white": "#F8FAFC",
+                        "ai-cyan": "#06B6D4",
+                        "surface-dim": "#031427",
+                        "on-surface-variant": "#c3c6d7",
+                        "surface-tint": "#b4c5ff",
+                        "surface-container-highest": "#26364a",
+                        "on-primary-fixed": "#00174b",
+                        "surface-container-low": "#0b1c30",
+                        "sync-pending": "#94A3B8",
+                        "dark-bg": "#0B1020",
+                        "tertiary": "#c1c5dc",
+                        "error": "#ffb4ab",
+                        "secondary-fixed": "#acedff",
+                        "on-background": "#F8FAFC",
+                        "mobile-primary": "#0066FF",
+                        "secondary": "#4cd7f6",
+                        "primary-fixed": "#dbe1ff",
+                        "error-container": "#93000a",
+                        "sync-active": "#00C853",
+                        "outline-variant": "#434655",
+                        "on-secondary-container": "#00424e",
+                        "on-tertiary-container": "#eeefff",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "surface-bright": "#2a3a4f",
+                        "dark-surface": "#0F172A",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "mobile-success": "#00C853",
+                        "on-secondary-fixed": "#001f26",
+                        "on-surface": "#F8FAFC",
+                        "tertiary-container": "#686c80",
+                        "tertiary-fixed": "#dee1f9",
+                        "secondary-container": "#03b5d3",
+                        "on-primary-container": "#eeefff",
+                        "inverse-primary": "#0053db",
+                        "mobile-warning": "#FF9500",
+                        "surface-container-high": "#1b2b3f",
+                        "on-primary": "#002a78",
+                        "surface-variant": "#26364a",
+                        "primary": "#b4c5ff",
+                        "surface": "#0B1020",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "inverse-on-surface": "#213145",
+                        "surface-container": "#102034",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "outline": "#8d90a0",
+                        "inverse-surface": "#F8FAFC",
+                        "on-secondary": "#003640",
+                        "background": "#0B1020",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "on-tertiary": "#2b3041",
+                        "on-tertiary-fixed": "#161b2b",
+                        "on-error-container": "#ffdad6",
+                        "on-error": "#690005",
+                        "mobile-danger": "#FF3B30",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "surface-container-lowest": "#000f21",
+                        "primary-container": "#2563eb"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0px",
+                        "lg": "0px",
+                        "xl": "0px",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "touch-target": "52px",
+                        "space-2": "8px",
+                        "edge-mobile": "24px",
+                        "space-4": "16px",
+                        "web-margin": "32px",
+                        "space-3": "12px",
+                        "base": "4px",
+                        "space-1": "4px"
+                    },
+                    "fontFamily": {
+                        "hero-mobile": ["Inter Tight"],
+                        "body-mobile": ["Inter Tight"],
+                        "label-mobile": ["Inter Tight"],
+                        "h1-web": ["Inter Tight"],
+                        "h2-web": ["Inter Tight"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #0B1020;
+            font-family: 'Inter Tight', 'Sarabun', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .bottom-sheet-anim {
+            animation: slideUp 0.3s cubic-bezier(0, 0, 0.2, 1);
+        }
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #434655;
+        }
+        .industrial-divider {
+            border-top: 1px solid rgba(141, 144, 160, 0.2);
+        }
+    </style>
+</head>
+<body class="text-on-surface h-screen w-full flex flex-col justify-end overflow-hidden">
+<!-- Background Context (Simulating the 'previous screen') -->
+<div class="fixed inset-0 z-0 bg-[#000000CC] flex flex-col">
+<!-- Branding Header -->
+<header class="flex justify-between items-center px-edge-mobile h-16 border-b border-white/10 bg-infrastructure-navy">
+<div class="flex items-center gap-3">
+<img src="https://lh3.googleusercontent.com/aida-public/AB6AXuBv14h_Q3ifXSnQTnEHL8aRwich374pzJRlehKMgPIode2LTTzzSnYaDKdNSBpa0ilKcST1RWBsIVg83SgmNOuRaITe_kyrKPuO6MT0Yx_x3JDErUU-vI-DJ8LiFem82UGvN4TnVS1rJiqE5cnjeTbg18ztoYwi1bAmXEUXUHogxwzZeZ43S2WX7veU4NFDBmDGSLkOFaRnOTutE9a7lu2rjUT9Tg4qBElGdNRuEBh8O__4tJ3wVOUNzLOteT5u_0wbethh-TtaLWk" alt="COS Brand Icon" class="w-8 h-8 object-contain">
+<span class="font-bold text-sm tracking-[0.1em] text-concrete-white">CONSTRUCTION OS</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-sync-active"></div>
+<span class="text-[10px] font-bold text-sync-active tracking-wider">SYNCED</span>
+</div>
+</header>
+<div class="mt-12 flex flex-col items-center justify-center px-edge-mobile text-center">
+<div class="w-20 h-20 border-2 border-mobile-success flex items-center justify-center mb-6">
+<span class="material-symbols-outlined text-4xl text-mobile-success">check</span>
+</div>
+<h2 class="text-2xl font-bold mb-2">บันทึกรายงานแล้ว</h2>
+<p class="text-on-surface-variant text-sm">#REBAR-042 สร้างเสร็จสมบูรณ์</p>
+</div>
+</div>
+<!-- Print Bottom Sheet -->
+<div class="relative z-50 bg-infrastructure-navy w-full max-h-[90vh] flex flex-col bottom-sheet-anim border-t-4 border-primary">
+<!-- Header -->
+<div class="px-edge-mobile h-[72px] flex justify-between items-center border-b border-outline-variant/30">
+<div class="flex items-center gap-4">
+<button class="w-10 h-10 flex items-center justify-center hover:bg-white/5" onclick="window.history.back()">
+<span class="material-symbols-outlined text-2xl">close</span>
+</button>
+<h2 class="font-bold text-lg tracking-tight text-concrete-white">ตั้งค่าการพิมพ์บันทึก</h2>
+</div>
+<button class="bg-primary px-8 h-10 text-infrastructure-navy font-bold text-sm uppercase tracking-widest active:bg-primary-fixed transition-colors">
+                พิมพ์
+            </button>
+</div>
+<div class="overflow-y-auto custom-scrollbar flex-1 px-edge-mobile py-6 space-y-8">
+<!-- AI Pre-flight Module -->
+<div class="border-l-4 border-ai-cyan bg-ai-cyan/5 p-4 space-y-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-ai-cyan text-sm" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<p class="font-bold text-xs text-ai-cyan uppercase tracking-widest">AI Pre-flight</p>
+</div>
+<p class="text-sm font-medium leading-relaxed text-concrete-white">
+                    ปรับแต่งรูปแบบรายงานความปลอดภัยแล้ว ตรวจสอบความถูกต้องข้อมูล 100%
+                </p>
+<div class="flex gap-4 pt-1 opacity-60">
+<span class="text-[10px] uppercase font-bold">ความเชื่อมั่น 99%</span>
+<span class="text-[10px] uppercase font-bold">แหล่งที่มา: ระบบตรวจสอบการพิมพ์</span>
+</div>
+</div>
+<!-- Printer Selection -->
+<section class="space-y-3">
+<label class="text-[10px] font-bold text-outline uppercase tracking-[0.15em]">เครื่องพิมพ์ที่เลือก</label>
+<div class="bg-surface-container-high h-[72px] px-4 flex items-center justify-between border border-outline-variant/20 hover:border-primary/50 cursor-pointer group">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 bg-infrastructure-navy border border-outline-variant/30 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">print</span>
+</div>
+<div>
+<p class="font-bold text-sm">Site_Office_L1_Pro</p>
+<p class="text-[11px] text-mobile-success font-bold uppercase tracking-wider flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-mobile-success"></span> ออนไลน์
+                            </p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:text-primary">arrow_forward_ios</span>
+</div>
+</section>
+<!-- Settings Grid -->
+<div class="grid grid-cols-2 gap-4">
+<!-- Copies -->
+<div class="bg-surface-container border border-outline-variant/20 p-4 flex flex-col justify-between h-32">
+<span class="text-[10px] font-bold text-outline uppercase tracking-[0.15em]">จำนวนสำเนา</span>
+<div class="flex items-center justify-between">
+<button class="w-10 h-10 border border-outline-variant/30 flex items-center justify-center active:bg-white/5">
+<span class="material-symbols-outlined text-sm">remove</span>
+</button>
+<span class="text-2xl font-bold text-primary">1</span>
+<button class="w-10 h-10 border border-outline-variant/30 flex items-center justify-center active:bg-white/5">
+<span class="material-symbols-outlined text-sm">add</span>
+</button>
+</div>
+</div>
+<!-- Color -->
+<div class="bg-surface-container border border-outline-variant/20 p-4 flex flex-col justify-between h-32">
+<span class="text-[10px] font-bold text-outline uppercase tracking-[0.15em]">สี</span>
+<div class="flex items-center justify-between">
+<span class="text-sm font-bold text-on-surface-variant">สีทั้งหมด</span>
+<div class="w-14 h-[30px] bg-primary-container relative p-1 cursor-pointer">
+<div class="w-[22px] h-[22px] bg-white ml-auto"></div>
+</div>
+</div>
+</div>
+<!-- Orientation -->
+<div class="col-span-2 bg-surface-container border border-outline-variant/20 p-4 space-y-4">
+<span class="text-[10px] font-bold text-outline uppercase tracking-[0.15em]">แนววางกระดาษ</span>
+<div class="grid grid-cols-2 gap-2 h-[52px]">
+<button class="flex items-center justify-center gap-2 bg-primary text-infrastructure-navy font-bold text-sm uppercase">
+<span class="material-symbols-outlined text-[18px]">portrait</span>
+<span class="">แนวตั้ง</span>
+</button>
+<button class="flex items-center justify-center gap-2 border border-outline-variant/30 text-on-surface-variant font-bold text-sm uppercase">
+<span class="material-symbols-outlined text-[18px]">landscape</span>
+<span class="">แนวนอน</span>
+</button>
+</div>
+</div>
+<!-- Paper Size -->
+<div class="col-span-2 bg-surface-container border border-outline-variant/20 h-[72px] px-4 flex items-center justify-between cursor-pointer">
+<div class="flex flex-col">
+<span class="text-[10px] font-bold text-outline uppercase tracking-[0.15em]">ขนาดกระดาษ</span>
+<span class="text-sm font-bold mt-1">International Standard A4</span>
+</div>
+<span class="material-symbols-outlined text-outline">unfold_more</span>
+</div>
+</div>
+<!-- Preview Section -->
+<section class="space-y-3 pb-8">
+<div class="flex justify-between items-end">
+<label class="text-[10px] font-bold text-outline uppercase tracking-[0.15em]">ตัวอย่างก่อนพิมพ์</label>
+<span class="text-[10px] font-bold text-primary uppercase tracking-widest">หน้า 1 จาก 12</span>
+</div>
+<div class="relative w-full aspect-[1/1.414] bg-white shadow-xl group overflow-hidden border border-white/20">
+<!-- PDF Content Mock -->
+<div class="absolute inset-0 p-10 flex flex-col text-infrastructure-navy">
+<div class="flex justify-between items-start border-b-[3px] border-infrastructure-navy pb-6">
+<div>
+<h3 class="font-bold text-2xl leading-none tracking-tighter">CONSTRUCTION OS - SECURITY AUDIT</h3>
+<p class="text-[11px] mt-2 font-black uppercase tracking-[0.2em] bg-infrastructure-navy text-white px-2 py-0.5 inline-block">Daily Inspection Report</p>
+</div>
+<div class="text-right">
+<p class="text-xs font-bold">#AUDIT-SEC-2024v2</p>
+<p class="text-[9px] font-medium opacity-70">May 24, 2024</p>
+</div>
+</div>
+<div class="mt-8 space-y-6">
+<div class="flex justify-between items-center border-b border-gray-300 pb-3">
+<span class="text-[11px] font-bold uppercase tracking-wider">Default MFA Status</span>
+<span class="text-[11px] font-black text-mobile-success">ENABLED</span>
+</div>
+<div class="flex justify-between items-center border-b border-gray-300 pb-3">
+<span class="text-[11px] font-bold uppercase tracking-wider">Session Timeout</span>
+<span class="text-[11px] font-black">30 MINS</span>
+</div>
+<div class="bg-gray-100 p-4 border-l-4 border-infrastructure-navy">
+<p class="text-[10px] leading-relaxed font-medium">
+                                    AI ANALYSIS: Security protocol alignment verified. Zero high-risk vulnerabilities detected in the current audit period.
+                                </p>
+</div>
+</div>
+<div class="mt-auto flex justify-between items-center opacity-40 text-[9px] font-bold italic border-t pt-4">
+<span class="">GEN VIA CON-OS INDUSTRIAL PLATFORM</span>
+<span class="">P.01</span>
+</div>
+</div>
+<!-- Overlay -->
+<div class="absolute inset-0 bg-infrastructure-navy/0 group-hover:bg-infrastructure-navy/10 transition-colors flex items-center justify-center">
+<div class="bg-infrastructure-navy text-white px-6 py-3 font-bold text-xs uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
+                            แตะเพื่อขยาย
+                        </div>
+</div>
+</div>
+</section>
+</div>
+<!-- Safe Area -->
+<div class="h-8 bg-infrastructure-navy"></div>
+</div>
+<script>
+        // Micro-interactions
+        document.querySelectorAll('button, .cursor-pointer').forEach(el => {
+            el.addEventListener('touchstart', () => {
+                el.classList.add('opacity-80');
+            });
+            el.addEventListener('touchend', () => {
+                el.classList.remove('opacity-80');
+            });
+        });
+
+        // Simple Toggle Simulation
+        const colorToggle = document.querySelector('.w-14.h-\\[30px\\]');
+        if(colorToggle) {
+            colorToggle.addEventListener('click', function() {
+                const dot = this.querySelector('div');
+                if(this.classList.contains('bg-primary-container')) {
+                    this.classList.remove('bg-primary-container');
+                    this.classList.add('bg-outline-variant/30');
+                    dot.classList.remove('ml-auto');
+                } else {
+                    this.classList.add('bg-primary-container');
+                    this.classList.remove('bg-outline-variant/30');
+                    dot.classList.add('ml-auto');
+                }
+            });
+        }
+    </script>
+
+
+</body></html>

@@ -57,12 +57,29 @@ resource "aws_db_parameter_group" "main" {
 resource "aws_db_instance" "main" {
   identifier             = "cos-postgres-${var.environment}"
   engine                 = "postgres"
-  engine_version         = "16.2"
+  # PostgreSQL 18 per context/00_master_construction_os.md § infrastructure stack. Raised from 16.2
+  # on 2026-08-07 (product-owner decision) to close a real dev/prod parity gap: docker-compose.yml
+  # already runs timescale/timescaledb:latest-pg18, so local development and production were two
+  # major versions apart. Prisma 7.8 + pg 8.22 support 18, and no migration in backend/prisma uses a
+  # version-gated feature.
+  #
+  # ⚠️ VERIFY BEFORE `terraform apply` — two preconditions were NOT verifiable from this repository:
+  #   1. AWS RDS must offer PostgreSQL 18 in ap-southeast-7 (Bangkok). Check
+  #      `aws rds describe-db-engine-versions --engine postgres --region ap-southeast-7`.
+  #      If 18 is unavailable there, pin the highest offered major and fix 00_master to match.
+  #   2. TimescaleDB must be available for that engine version — ADR-032 co-locates TimescaleDB on
+  #      this instance through Stages 1–3, so an engine RDS supports but Timescale does not is a
+  #      broken deployment, not an upgrade.
+  # An already-provisioned instance additionally needs a planned major-version upgrade; changing this
+  # value alone does not migrate it.
+  engine_version         = "18"
   instance_class         = var.instance_class
   allocated_storage      = var.allocated_storage
   max_allocated_storage  = var.allocated_storage * 3
   storage_type           = "gp3"
   storage_encrypted      = true
+  # Customer-managed CMK (QM-4) — without this, RDS falls back to the AWS-managed aws/rds key.
+  kms_key_id             = var.kms_key_id
 
   db_name  = "cos"
   username = "cos_admin"

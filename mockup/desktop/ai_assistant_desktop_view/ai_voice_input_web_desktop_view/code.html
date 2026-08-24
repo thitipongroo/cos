@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Construction OS - AI Voice Input</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-tertiary": "#2b3041",
+                    "cos-navy": "#0B1020",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "surface-container-low": "#0b1c30",
+                    "surface": "#031427",
+                    "background": "#031427",
+                    "tertiary-container": "#686c80",
+                    "primary-container": "#2563eb",
+                    "tertiary": "#c1c5dc",
+                    "on-secondary-container": "#00424e",
+                    "on-error": "#690005",
+                    "inverse-surface": "#d3e4fe",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "on-surface": "#d3e4fe",
+                    "outline-variant": "#434655",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "surface-variant": "#26364a",
+                    "on-secondary": "#003640",
+                    "inverse-on-surface": "#213145",
+                    "cos-white": "#F8FAFC",
+                    "on-primary": "#002a78",
+                    "mobile-success": "#00C853",
+                    "surface-tint": "#b4c5ff",
+                    "secondary-fixed": "#acedff",
+                    "surface-container": "#102034",
+                    "on-surface-variant": "#c3c6d7",
+                    "primary": "#b4c5ff",
+                    "surface-dim": "#031427",
+                    "on-primary-container": "#eeefff",
+                    "on-tertiary-fixed": "#161b2b",
+                    "surface-container-lowest": "#000f21",
+                    "surface-bright": "#2a3a4f",
+                    "error-container": "#93000a",
+                    "sync-pending": "#94A3B8",
+                    "mobile-warning": "#FF9500",
+                    "outline": "#8d90a0",
+                    "inverse-primary": "#0053db",
+                    "on-error-container": "#ffdad6",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "surface-container-high": "#1b2b3f",
+                    "on-tertiary-container": "#eeefff",
+                    "secondary-container": "#03b5d3",
+                    "surface-container-highest": "#26364a",
+                    "on-secondary-fixed": "#001f26",
+                    "mobile-danger": "#FF3B30",
+                    "cos-cyan": "#06B6D4",
+                    "primary-fixed": "#dbe1ff",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "tertiary-fixed": "#dee1f9",
+                    "on-primary-fixed": "#00174b",
+                    "sync-active": "#FFD60A",
+                    "on-background": "#d3e4fe",
+                    "secondary": "#4cd7f6",
+                    "cos-blue": "#2563EB",
+                    "mobile-primary": "#0066FF",
+                    "dark-surface": "#0F172A",
+                    "dark-bg": "#020617",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "error": "#ffb4ab"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "web-space-1": "4px",
+                    "web-base": "4px",
+                    "mobile-edge": "24px",
+                    "web-space-3": "12px",
+                    "web-space-2": "8px",
+                    "web-space-4": "16px",
+                    "mobile-touch-target": "52px",
+                    "web-space-8": "32px"
+            },
+            "fontFamily": {
+                    "web-text-small": ["Inter Tight"],
+                    "web-text-h2": ["Inter Tight"],
+                    "mobile-text-label": ["Inter Tight"],
+                    "web-text-tiny": ["Inter Tight"],
+                    "web-text-h1": ["Inter Tight"],
+                    "mobile-text-hero": ["Inter Tight"],
+                    "web-text-body": ["Inter Tight"],
+                    "web-text-display": ["Inter Tight"],
+                    "mobile-text-body": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "web-text-small": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                    "web-text-h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "mobile-text-label": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "web-text-tiny": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "web-text-h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "mobile-text-hero": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "web-text-body": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "web-text-display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "mobile-text-body": ["17px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+        }
+        
+        .waveform-bar {
+            animation: wave-animation 1.2s ease-in-out infinite;
+            transform-origin: bottom;
+        }
+
+        @keyframes wave-animation {
+            0%, 100% { height: 10px; opacity: 0.4; }
+            50% { height: 40px; opacity: 1; }
+        }
+
+        .pulse-ring {
+            animation: pulse-ring 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+
+        .scanline {
+            background: linear-gradient(to bottom, transparent, rgba(6, 182, 212, 0.1), transparent);
+            animation: scan 4s linear infinite;
+        }
+
+        @keyframes scan {
+            from { transform: translateY(-100%); }
+            to { transform: translateY(1000%); }
+        }
+    </style>
+</head>
+<body class="bg-dark-bg text-on-surface font-web-text-body overflow-hidden">
+<!-- Main Web App Shell (TopAppBar) -->
+<header class="w-full top-0 sticky border-b border-outline-variant/30 bg-surface dark:bg-dark-surface flex items-center justify-between px-web-space-8 h-16 z-40">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-cos-blue text-2xl" data-icon="menu">menu</span>
+<h1 class="font-web-text-h1 text-cos-blue dark:text-primary font-bold tracking-tight">Construction OS</h1>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2 px-3 py-1 bg-surface-container rounded-lg border border-outline-variant/20">
+<div class="w-2 h-2 rounded-full bg-mobile-success animate-pulse"></div>
+<span class="text-web-text-tiny uppercase text-on-surface-variant">System Online</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-cos-blue transition-colors" data-icon="cloud_sync">cloud_sync</span>
+</div>
+</header>
+<!-- UI Overlay / Content Canvas -->
+<main class="relative h-[calc(100vh-64px)] w-full flex items-center justify-center p-web-space-8 bg-cos-navy/50 overflow-hidden">
+<!-- Ambient Grid & Scanline Decor -->
+<div class="absolute inset-0 opacity-10 pointer-events-none" style="background-image: radial-gradient(#2563EB 1px, transparent 1px); background-size: 32px 32px;"></div>
+<div class="absolute inset-0 scanline pointer-events-none"></div>
+<!-- AI Voice Interface Container (Bento Style Modal) -->
+<div class="relative grid grid-cols-12 gap-6 w-full max-w-6xl h-[640px] z-10">
+<!-- Left Side: Visualizer & Mic -->
+<div class="col-span-12 lg:col-span-7 bg-surface-container border border-outline-variant/30 rounded-xl overflow-hidden flex flex-col relative shadow-2xl">
+<!-- Status Header -->
+<div class="p-web-space-4 flex justify-between items-center bg-surface-container-high/50 border-b border-outline-variant/20">
+<div class="flex items-center gap-3">
+<div class="bg-cos-blue/10 p-1.5 rounded">
+<span class="material-symbols-outlined text-cos-blue text-xl" data-icon="settings_voice">settings_voice</span>
+</div>
+<div>
+<p class="text-web-text-tiny text-on-surface-variant uppercase font-bold tracking-wider">Interface 04-A</p>
+<p class="text-web-text-small text-on-surface">Voice Input Processor</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-web-text-tiny text-cos-cyan font-bold">SYSTEM LISTENING</span>
+<div class="flex gap-0.5">
+<div class="w-1 h-3 bg-cos-cyan rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+<div class="w-1 h-4 bg-cos-cyan rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+<div class="w-1 h-2 bg-cos-cyan rounded-full animate-bounce" style="animation-delay: 0.3s"></div>
+</div>
+</div>
+</div>
+<!-- Main Visualization Area -->
+<div class="flex-grow flex flex-col items-center justify-center p-8 gap-12">
+<!-- Circular Visualizer -->
+<div class="relative flex items-center justify-center">
+<!-- Pulse Rings -->
+<div class="absolute w-48 h-48 rounded-full border-2 border-cos-cyan/30 pulse-ring"></div>
+<div class="absolute w-48 h-48 rounded-full border border-cos-blue/20 pulse-ring" style="animation-delay: 1s"></div>
+<!-- Center Mic Button -->
+<button class="group relative z-20 w-32 h-32 bg-cos-blue rounded-full flex items-center justify-center shadow-[0_0_40px_-5px_rgba(37,99,235,0.6)] active:scale-95 transition-all duration-200">
+<span class="material-symbols-outlined text-white text-5xl" data-icon="mic" data-weight="fill" style="font-variation-settings: 'FILL' 1;">mic</span>
+<!-- Circular Waveform around Mic -->
+<svg class="absolute inset-0 w-full h-full -rotate-90 overflow-visible">
+<circle class="text-cos-cyan/40 animate-[spin_10s_linear_infinite]" cx="64" cy="64" fill="none" r="70" stroke="currentColor" stroke-dasharray="4 8" stroke-width="2"></circle>
+</svg>
+</button>
+</div>
+<!-- Dynamic Horizontal Waveform -->
+<div class="w-full h-24 flex items-center justify-center gap-1.5 px-12">
+<!-- Left bars -->
+<div class="waveform-bar w-1.5 bg-cos-blue/40 rounded-full" style="animation-delay: 0.1s; height: 12px"></div>
+<div class="waveform-bar w-1.5 bg-cos-blue/60 rounded-full" style="animation-delay: 0.3s; height: 28px"></div>
+<div class="waveform-bar w-1.5 bg-cos-blue/80 rounded-full" style="animation-delay: 0.5s; height: 16px"></div>
+<div class="waveform-bar w-1.5 bg-cos-blue rounded-full" style="animation-delay: 0.2s; height: 42px"></div>
+<!-- Center Focus -->
+<div class="waveform-bar w-2 bg-cos-cyan rounded-full" style="animation-delay: 0.4s; height: 64px"></div>
+<div class="waveform-bar w-2 bg-cos-cyan rounded-full" style="animation-delay: 0.1s; height: 50px"></div>
+<div class="waveform-bar w-2 bg-cos-cyan rounded-full" style="animation-delay: 0.6s; height: 72px"></div>
+<div class="waveform-bar w-2 bg-cos-cyan rounded-full" style="animation-delay: 0.3s; height: 48px"></div>
+<!-- Right bars -->
+<div class="waveform-bar w-1.5 bg-cos-blue rounded-full" style="animation-delay: 0.5s; height: 38px"></div>
+<div class="waveform-bar w-1.5 bg-cos-blue/80 rounded-full" style="animation-delay: 0.2s; height: 18px"></div>
+<div class="waveform-bar w-1.5 bg-cos-blue/60 rounded-full" style="animation-delay: 0.4s; height: 24px"></div>
+<div class="waveform-bar w-1.5 bg-cos-blue/40 rounded-full" style="animation-delay: 0.6s; height: 10px"></div>
+</div>
+</div>
+<!-- Footer Stats -->
+<div class="p-web-space-4 bg-cos-navy/30 border-t border-outline-variant/10 flex items-center justify-between">
+<div class="flex gap-8">
+<div>
+<span class="block text-[10px] text-on-surface-variant uppercase">Sensitivity</span>
+<span class="text-web-text-small font-mono text-cos-cyan">-42dB</span>
+</div>
+<div>
+<span class="block text-[10px] text-on-surface-variant uppercase">Sample Rate</span>
+<span class="text-web-text-small font-mono text-on-surface">48kHz</span>
+</div>
+</div>
+<div class="flex gap-1">
+<div class="w-8 h-1 bg-cos-blue rounded-full"></div>
+<div class="w-8 h-1 bg-cos-blue/30 rounded-full"></div>
+<div class="w-8 h-1 bg-cos-blue/30 rounded-full"></div>
+</div>
+</div>
+</div>
+<!-- Right Side: Transcription Panel -->
+<div class="col-span-12 lg:col-span-5 flex flex-col gap-6">
+<!-- Live Transcription Panel -->
+<div class="flex-grow bg-surface-container border-l-4 border-l-cos-cyan border-y border-r border-outline-variant/30 rounded-xl flex flex-col shadow-xl overflow-hidden">
+<div class="p-web-space-4 border-b border-outline-variant/20 flex items-center justify-between bg-cos-cyan/5">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-cos-cyan text-lg" data-icon="auto_awesome">auto_awesome</span>
+<span class="text-web-text-tiny font-bold uppercase tracking-widest text-cos-cyan">AI Live Transcription</span>
+</div>
+<span class="text-web-text-tiny text-on-surface-variant bg-surface-container-high px-2 py-0.5 rounded border border-outline-variant/20">THAI (TH)</span>
+</div>
+<div class="p-6 flex-grow flex flex-col gap-4 font-mobile-text-body overflow-y-auto">
+<div class="flex flex-col gap-1">
+<span class="text-[10px] text-on-surface-variant uppercase font-mono">00:12:04</span>
+<p class="text-on-surface leading-relaxed border-l-2 border-outline-variant/30 pl-4 py-1">
+                                งานเทพื้นชั้น 3 เสร็จ 80% ...
+                            </p>
+</div>
+<div class="flex flex-col gap-1">
+<span class="text-[10px] text-cos-cyan uppercase font-mono">Real-time processing</span>
+<p class="text-web-text-h2 text-on-surface leading-snug animate-pulse">
+                                ตรวจพบรอยร้าวขนาดเล็กบริเวณคานฝั่งทิศตะวันออก ต้องการให้วิศวกรเข้าประเมินด่วนภายในพรุ่งนี้เช้า...
+                            </p>
+</div>
+<!-- AI Insight Injection -->
+<div class="mt-4 p-4 bg-cos-cyan/5 border border-cos-cyan/20 rounded-lg">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-cos-cyan text-sm" data-icon="psychology">psychology</span>
+<span class="text-web-text-tiny font-bold text-cos-cyan uppercase">AI Intent Detection</span>
+</div>
+<p class="text-web-text-small text-on-surface-variant italic">
+                                Action: Schedule Inspection<br/>
+                                Priority: <span class="text-mobile-danger">High</span><br/>
+                                Location: Floor 3, East Beam
+                            </p>
+</div>
+</div>
+<div class="p-4 bg-surface-container-low border-t border-outline-variant/10 flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-container-highest border border-outline-variant/30 flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant text-base" data-icon="translate">translate</span>
+</div>
+<p class="text-web-text-tiny text-on-surface-variant">Continuous translation to English (UK) enabled</p>
+</div>
+</div>
+<!-- Action Panel -->
+<div class="bg-surface-container border border-outline-variant/30 rounded-xl p-4 flex gap-4 shadow-lg">
+<button class="flex-1 h-web-space-8 rounded bg-surface-variant/50 border border-outline-variant/40 text-on-surface font-web-text-small uppercase tracking-widest hover:bg-surface-variant transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-lg" data-icon="close">close</span>
+                        Cancel
+                    </button>
+<button class="flex-[2] h-web-space-8 rounded bg-cos-blue text-white font-web-text-small font-bold uppercase tracking-widest shadow-lg shadow-cos-blue/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-lg" data-icon="check_circle">check_circle</span>
+                        Finish &amp; Process
+                    </button>
+</div>
+</div>
+</div>
+<!-- Background Infrastructure Elements -->
+<div class="absolute bottom-12 left-12 p-4 border-l border-b border-outline-variant/30 text-left opacity-30 pointer-events-none">
+<span class="text-web-text-tiny block font-mono text-cos-blue">LATENCY: 14ms</span>
+<span class="text-web-text-tiny block font-mono text-cos-blue">STREAM_ID: COS_VX_2910</span>
+</div>
+<div class="absolute top-24 right-12 flex flex-col items-end gap-2 opacity-20 pointer-events-none">
+<div class="w-32 h-1 bg-outline-variant"></div>
+<div class="w-16 h-1 bg-outline-variant"></div>
+<div class="w-24 h-1 bg-outline-variant"></div>
+</div>
+</main>
+<!-- Side Navigation Placeholder (Desktop Rule) -->
+<nav class="hidden md:flex fixed left-0 top-16 bottom-0 w-16 bg-surface-container-low border-r border-outline-variant/20 flex-col items-center py-8 gap-8 z-30">
+<div class="p-2 bg-primary-container text-on-primary-container rounded-lg">
+<span class="material-symbols-outlined" data-icon="assignment">assignment</span>
+</div>
+<div class="p-2 text-on-surface-variant hover:text-cos-blue transition-colors">
+<span class="material-symbols-outlined" data-icon="view_in_ar">view_in_ar</span>
+</div>
+<div class="p-2 text-on-surface-variant hover:text-cos-blue transition-colors">
+<span class="material-symbols-outlined" data-icon="photo_camera">photo_camera</span>
+</div>
+<div class="p-2 text-on-surface-variant hover:text-cos-blue transition-colors">
+<span class="material-symbols-outlined" data-icon="health_and_safety">health_and_safety</span>
+</div>
+<div class="mt-auto p-2 text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="more_horiz">more_horiz</span>
+</div>
+</nav>
+<!-- Interaction Script -->
+<script>
+        // Simple micro-interaction for mic button toggle
+        const micBtn = document.querySelector('button.bg-cos-blue');
+        let isListening = true;
+
+        micBtn.addEventListener('click', () => {
+            isListening = !isListening;
+            if (isListening) {
+                micBtn.classList.add('bg-cos-blue');
+                micBtn.classList.remove('bg-mobile-danger');
+                document.querySelector('[data-icon="mic"]').textContent = 'mic';
+                document.querySelectorAll('.waveform-bar').forEach(bar => bar.style.animationPlayState = 'running');
+            } else {
+                micBtn.classList.remove('bg-cos-blue');
+                micBtn.classList.add('bg-mobile-danger');
+                document.querySelector('[data-icon="mic"]').textContent = 'mic_off';
+                document.querySelectorAll('.waveform-bar').forEach(bar => bar.style.animationPlayState = 'paused');
+            }
+        });
+
+        // Simulating transcription updates
+        const transcriptionBox = document.querySelector('.flex-grow.flex.flex-col.gap-4');
+        setInterval(() => {
+            if (isListening) {
+                const dots = document.querySelector('.animate-pulse');
+                if (dots && dots.textContent.endsWith('...')) {
+                    // Just a visual flicker for demo
+                }
+            }
+        }, 3000);
+    </script>
+</body></html>

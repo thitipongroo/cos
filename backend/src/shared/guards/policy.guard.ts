@@ -1,5 +1,11 @@
 // PolicyGuard — enforces ABAC rules (project_membership, tenant_match, resource_ownership).
 // Default ABAC covers MVP. Swap advanced policy via EP-AUTH-001.
+//
+// Wired into the tenant-scoped feature controllers (boq, crm, master-data, procurement, safety,
+// site-ops, tasks, finance) as defense-in-depth (security review L2). It is NOT the primary
+// cross-tenant control — PostgreSQL RLS is (ADR-008 / the H1 fix). It is deliberately NOT applied to
+// the SYSTEM_ADMIN cross-tenant routes in tenant.controller (`:tenantId` path param), where an admin
+// legitimately operates on another tenant and tenant_match would wrongly block it.
 
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { createLogger } from '@cos/logger';

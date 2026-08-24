@@ -1,19 +1,24 @@
-from abc import ABC, abstractmethod
+"""Embedding provider for ai-embedding-worker — re-exports libs/python/cosembedding (§22.7; ADR-021).
 
+Kept as a module so ``from providers.embedding_provider import ...`` keeps working for the ingestion
+pipeline and the tests; the provider implementation lives once in cosembedding, shared with the AI
+Gateway's query-side embedder, replacing the copies jscpd flagged.
+"""
 
-class EmbeddingProvider(ABC):
-    @abstractmethod
-    async def embed(self, texts: list[str]) -> list[list[float]]: ...
+from cosembedding import (
+    EMBEDDING_DIMENSIONS,
+    EMBEDDING_MODEL,
+    EmbeddingProvider,
+    OpenAIEmbeddingProvider,
+    StubEmbeddingProvider,
+    build_embedding_provider,
+)
 
-    @property
-    @abstractmethod
-    def dimensions(self) -> int: ...
-
-
-class StubEmbeddingProvider(EmbeddingProvider):
-    async def embed(self, texts: list[str]) -> list[list[float]]:
-        raise NotImplementedError("StubEmbeddingProvider: real embedding provider not configured")
-
-    @property
-    def dimensions(self) -> int:
-        return 1536  # text-embedding-3-small
+__all__ = [
+    "EMBEDDING_DIMENSIONS",
+    "EMBEDDING_MODEL",
+    "EmbeddingProvider",
+    "OpenAIEmbeddingProvider",
+    "StubEmbeddingProvider",
+    "build_embedding_provider",
+]

@@ -4,6 +4,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { BoqController } from '../boq.controller';
 import { BoqService } from '../boq.service';
+import { LastSeenService } from '../../identity/last-seen.service';
 
 const mockVersion = {
   version_id: 'v-001',
@@ -73,7 +74,13 @@ describe('BoqController', () => {
     jest.clearAllMocks();
     const module: TestingModule = await Test.createTestingModule({
       controllers: [BoqController],
-      providers: [{ provide: BoqService, useValue: mockService }],
+      providers: [
+        { provide: BoqService, useValue: mockService },
+        // JwtAuthGuard (class-level @UseGuards) gained a LastSeenService dependency; provide a mock so
+        // the guard resolves under DI. The guard never runs here — these tests call the controller
+        // methods directly — but the module must still compile.
+        { provide: LastSeenService, useValue: { touch: jest.fn() } },
+      ],
     }).compile();
     controller = module.get<BoqController>(BoqController);
   });

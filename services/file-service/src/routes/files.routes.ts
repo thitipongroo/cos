@@ -6,10 +6,17 @@
 // GET    /api/v1/files
 // GET    /api/v1/files/by-entity/:entityType/:entityId
 
+import { createHash } from 'node:crypto';
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { v4 as uuidv4 } from 'uuid';
-import { validateFile, readMultipartBuffer } from '../middleware/validation';
-import { buildError } from '../errors';
+import {
+  validateFile,
+  readMultipartBuffer,
+  sizeLimitFor,
+  magicByteMismatch,
+  toBasename,
+} from '../middleware/validation';
+import { buildError, FILE_ERRORS } from '../errors';
 import { runAntivirusScan } from '../services/scan-runner';
 import { buildStoredKey } from '../util/stored-key';
 import { isValidCategory } from '../util/category';
@@ -25,22 +32,42 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
       return reply.status(422).send(buildError('MIME_TYPE_NOT_ALLOWED', request.traceId));
     }
 
-    const { buffer, size } = await readMultipartBuffer(part);
     const mimeType = part.mimetype;
-    const filename = part.filename;
+    // The multipart Content-Disposition filename is attacker-controlled and is NOT sanitized by
+    // @fastify/multipart, so it can carry path separators (e.g. "../../x.png"). Reduce it to its
+    // basename before it reaches the object key / DB, mirroring the ZIP extraction path
+    // (zip-extraction.service.ts uses entry.fileName.split('/').pop()). Strip both '/' and '\'.
+    const filename = toBasename(part.filename);
     const entityType = (request.query as Record<string, string>)['entity_type'] ?? null;
     const entityId = (request.query as Record<string, string>)['entity_id'] ?? null;
 
-    const validationError = validateFile(filename, mimeType, size);
-    if (validationError) {
-      return reply.status(validationError.httpStatus).send({
+    // Reject a blocked extension / disallowed MIME BEFORE buffering the stream — never read a 1 GB
+    // disallowed upload into memory (size=0 passes the size gate, so only ext + MIME are checked here).
+    const metaError = validateFile(filename, mimeType, 0);
+    if (metaError) {
+      return reply.status(metaError.httpStatus).send({
         error: {
-          code: validationError.code,
-          message: validationError.message,
+          code: metaError.code,
+          message: metaError.message,
           traceId: request.traceId,
           timestamp: new Date().toISOString(),
         },
       });
+    }
+
+    // Read with the per-type cap enforced while streaming (M6 — bounded memory).
+    const { buffer, size, truncated } = await readMultipartBuffer(part, sizeLimitFor(mimeType));
+    if (truncated) {
+      return reply
+        .status(FILE_ERRORS.FILE_TOO_LARGE.httpStatus)
+        .send(buildError('FILE_TOO_LARGE', request.traceId));
+    }
+
+    // Server-side content check: reject when the magic bytes contradict the declared type (M7).
+    if (magicByteMismatch(buffer, mimeType)) {
+      return reply
+        .status(FILE_ERRORS.MIME_CONTENT_MISMATCH.httpStatus)
+        .send(buildError('MIME_CONTENT_MISMATCH', request.traceId));
     }
 
     const fileId = uuidv4();
@@ -58,6 +85,9 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
     const isArchive = mimeType === 'application/zip';
 
     // Persist metadata (PENDING_SCAN)
+    // SHA-256 of the content — the cryptographic anchor for document signing (ADR-058 CT-3).
+    const sha256 = createHash('sha256').update(buffer).digest('hex');
+
     const row = await app.db.insertFile({
       fileId,
       tenantId: request.tenantId,
@@ -68,6 +98,7 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
       fileSizeBytes: size,
       uploadedBy: request.userId,
       isArchive,
+      sha256,
     });
 
     if (entityType && entityId) {
@@ -128,6 +159,7 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
       file_size_bytes: row.file_size_bytes.toString(),
       file_status: row.file_status,
       uploaded_at: row.uploaded_at.toISOString(),
+      sha256: row.sha256,
     });
   });
 
@@ -141,6 +173,14 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
     }
     if (file.deleted_at) {
       return reply.status(404).send(buildError('FILE_DELETED', request.traceId));
+    }
+    // Do not hand out a download URL until ClamAV has cleared the file. The scan is async (fire-and-
+    // forget after upload), so an object is PENDING_SCAN for a window and QUARANTINED if infected —
+    // serving either would let unscanned/malicious bytes reach another user (spec §Phase 9).
+    if (file.file_status !== 'CLEAN') {
+      return reply
+        .status(FILE_ERRORS.FILE_NOT_CLEAN.httpStatus)
+        .send(buildError('FILE_NOT_CLEAN', request.traceId));
     }
 
     try {
@@ -170,6 +210,7 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
       uploaded_by: file.uploaded_by,
       uploaded_at: file.uploaded_at.toISOString(),
       deleted_at: file.deleted_at?.toISOString() ?? null,
+      sha256: file.sha256,
     });
   });
 

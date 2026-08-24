@@ -29,15 +29,29 @@ done
 [[ -z "$PKG_JSON" && -f "package.json" ]] && PKG_JSON="package.json"
 [[ -z "$PKG_JSON" ]] && exit 0
 
+# Node builtins are not packages and can never appear in package.json — listing them there would
+# shadow the real module. Generated from `require('module').builtinModules` on Node 24 (the version
+# CI pins via NODE_VERSION), with subpaths collapsed to their top-level name and the private `_*`
+# modules dropped. Anything reachable only as `node:<name>` (sea, sqlite, test) is covered by the
+# prefix check below instead, since no npm package may be named `node:*`.
+BUILTINS=" assert async_hooks buffer child_process cluster console constants crypto dgram \
+diagnostics_channel dns domain events fs http http2 https inspector module net os path perf_hooks \
+process punycode querystring readline repl stream string_decoder sys timers tls trace_events tty \
+url util v8 vm wasi worker_threads zlib "
+
 MISSING=()
 while IFS= read -r pkg; do
   [[ -z "$pkg" ]] && continue
+  # `node:` prefix is reserved for builtins — always allowed.
+  [[ "$pkg" == node:* ]] && continue
   # Normalize to top-level package name
   if [[ "$pkg" == @* ]]; then
     NAME=$(printf '%s' "$pkg" | cut -d/ -f1-2)
   else
     NAME=$(printf '%s' "$pkg" | cut -d/ -f1)
   fi
+  # Bare builtin (`fs`, `path`, `fs/promises`) — also allowed.
+  [[ "$BUILTINS" == *" $NAME "* ]] && continue
   # Check all dep fields
   if ! jq -e --arg n "$NAME" \
     '.dependencies[$n] // .devDependencies[$n] // .peerDependencies[$n] // .optionalDependencies[$n]' \

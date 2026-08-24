@@ -45,23 +45,25 @@ describe('SafetyRepository', () => {
     expect(
       (
         await repo.createIncident({
+          incident_id: 'inc-1',
           project_id: 'p1',
           incident_type: 'fall',
           severity: 'HIGH',
           reported_by: 'u1',
           task_id: 't1',
         })
-      ).incident_id,
+      )?.incident_id,
     ).toBe('inc-1');
     expect(
       (
         await repo.createIncident({
+          incident_id: 'inc-1',
           project_id: 'p1',
           incident_type: 'fall',
           severity: 'LOW',
           reported_by: 'u1',
         })
-      ).incident_id,
+      )?.incident_id,
     ).toBe('inc-1');
   });
 
@@ -108,6 +110,8 @@ describe('SafetyRepository', () => {
           linked_task_id: 't1',
           valid_from: '2026-07-01',
           valid_until: '2026-07-31',
+          contractor_name: 'Skyline Structural',
+          description: 'Hot work, level 4',
         })
       ).permit_id,
     ).toBe('perm-1');
@@ -144,6 +148,23 @@ describe('SafetyRepository', () => {
     expect((await repo.updatePermitStatus('perm-1', 'ACTIVE')).status).toBe('ACTIVE');
   });
 
+  // Both sides of `revokeReason ?? null`. The statement's CASE keeps the reason off the ACTIVE path;
+  // that guard is SQL, so only an integration test can observe it — what is asserted here is that
+  // the parameter reaches the query either way.
+  it('updatePermitStatus carries a revoke reason, and NULL when none is given', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([
+      { ...permitRow, status: 'REVOKED', revoke_reason: 'Scaffold not tagged' },
+    ]);
+    expect(
+      (await repo.updatePermitStatus('perm-1', 'REVOKED', 'Scaffold not tagged')).revoke_reason,
+    ).toBe('Scaffold not tagged');
+
+    mockPrisma.$queryRaw.mockResolvedValue([
+      { ...permitRow, status: 'REVOKED', revoke_reason: null },
+    ]);
+    expect((await repo.updatePermitStatus('perm-1', 'REVOKED')).revoke_reason).toBeNull();
+  });
+
   it('getComplianceSummary returns counts (with and without project filter)', async () => {
     const summary = {
       open_incidents: 2,
@@ -154,5 +175,20 @@ describe('SafetyRepository', () => {
     mockPrisma.$queryRaw.mockResolvedValue([summary]);
     expect((await repo.getComplianceSummary('p1')).open_incidents).toBe(2);
     expect((await repo.getComplianceSummary()).revoked_permits).toBe(1);
+  });
+
+  it('returns null when the incident_id already exists (ON CONFLICT DO NOTHING)', async () => {
+    // The replay case: /sync/push resends a queued offline incident and the insert must not create a
+    // second safety record. An empty RETURNING is how DO NOTHING reports that.
+    mockPrisma.$queryRaw.mockResolvedValue([]);
+    await expect(
+      repo.createIncident({
+        incident_id: 'inc-1',
+        project_id: 'p1',
+        incident_type: 'fall',
+        severity: 'HIGH',
+        reported_by: 'u1',
+      }),
+    ).resolves.toBeNull();
   });
 });

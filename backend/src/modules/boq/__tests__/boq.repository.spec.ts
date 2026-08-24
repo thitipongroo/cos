@@ -95,6 +95,58 @@ describe('BoqRepository', () => {
     expect(result).toBeNull();
   });
 
+  describe('claimNextVersion', () => {
+    it('takes a per-project advisory lock before reading, then inserts', async () => {
+      const created = { version_id: 'v-1', version_number: 3 };
+      mockPrisma.$executeRaw.mockResolvedValue(1);
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([]) // no existing DRAFT
+        .mockResolvedValueOnce([created]);
+
+      const result = await repo.claimNextVersion({
+        project_id: 'p-001',
+        version_name: null,
+        currency_code: 'THB',
+        created_by: 'u-001',
+      });
+
+      // The lock is what makes the check-then-act safe; assert it is actually taken.
+      const lockSql = mockPrisma.$executeRaw.mock.calls[0]![0] as string[];
+      expect(lockSql.join('')).toContain('pg_advisory_xact_lock');
+      expect(result).toEqual({ version: created, version_number: 3 });
+    });
+
+    it('returns null when the project already has a DRAFT', async () => {
+      mockPrisma.$executeRaw.mockResolvedValue(1);
+      mockPrisma.$queryRaw.mockResolvedValueOnce([{ version_id: 'existing-draft' }]);
+
+      const result = await repo.claimNextVersion({
+        project_id: 'p-001',
+        version_name: null,
+        currency_code: 'THB',
+        created_by: 'u-001',
+      });
+
+      expect(result).toBeNull();
+      // Nothing inserted — only the DRAFT probe ran.
+      expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(1);
+    });
+
+    it('runs the whole claim inside ONE transaction', async () => {
+      mockPrisma.$executeRaw.mockResolvedValue(1);
+      mockPrisma.$queryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([{ version_number: 1 }]);
+
+      await repo.claimNextVersion({
+        project_id: 'p-001',
+        version_name: null,
+        currency_code: 'THB',
+        created_by: 'u-001',
+      });
+
+      expect(mockTenantPrisma.run).toHaveBeenCalledTimes(1);
+    });
+  });
+
   it('findMaxVersionNumber returns 0 when no versions exist', async () => {
     mockPrisma.$queryRaw.mockResolvedValue([{ max: null }]);
     const result = await repo.findMaxVersionNumber('p-001');
@@ -251,6 +303,26 @@ describe('BoqRepository', () => {
     mockPrisma.$executeRaw.mockResolvedValue(1);
     await repo.updateCategorySubtotal('cat-001', '420000.0000');
     expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+  });
+
+  // Whole-version recalculation must be ONE statement: as a per-category loop it was both N round
+  // trips and non-atomic, so a mid-loop failure left some subtotals new and the rest stale.
+  it('updateCategorySubtotals writes every category in a single statement', async () => {
+    mockPrisma.$executeRaw.mockResolvedValue(3);
+    await repo.updateCategorySubtotals([
+      { category_id: 'cat-001', subtotal: '100.0000' },
+      { category_id: 'cat-002', subtotal: '200.0000' },
+      { category_id: 'cat-003', subtotal: '300.0000' },
+    ]);
+    expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+    const sql = (mockPrisma.$executeRaw.mock.calls[0][0] as string[]).join('?');
+    expect(sql).toMatch(/UPDATE\s+boq\.boq_categories/);
+    expect(sql).toContain('UNNEST');
+  });
+
+  it('updateCategorySubtotals does nothing when there are no categories', async () => {
+    await repo.updateCategorySubtotals([]);
+    expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
   });
 
   it('updateItem returns updated row', async () => {

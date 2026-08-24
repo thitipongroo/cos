@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Material Request Workflow | Infrastructure OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            font-family: 'Inter Tight', sans-serif;
+            background-color: #101415;
+            color: #e0e3e5;
+            overflow: hidden;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #191c1e;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #44474d;
+            border-radius: 2px;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "background": "#101415",
+                        "surface-container": "#1d2022",
+                        "surface-tint": "#b9c7e4",
+                        "on-primary-fixed-variant": "#39475f",
+                        "inverse-surface": "#e0e3e5",
+                        "on-secondary-fixed-variant": "#173bab",
+                        "on-tertiary": "#003739",
+                        "on-tertiary-fixed": "#002021",
+                        "on-tertiary-fixed-variant": "#004f53",
+                        "error": "#ffb4ab",
+                        "on-secondary-fixed": "#001453",
+                        "surface-container-lowest": "#0b0f10",
+                        "primary": "#b9c7e4",
+                        "tertiary-fixed-dim": "#00dce5",
+                        "outline": "#8f9097",
+                        "surface-container-highest": "#323537",
+                        "on-tertiary-container": "#009096",
+                        "surface": "#101415",
+                        "surface-container-low": "#191c1e",
+                        "on-secondary": "#002584",
+                        "tertiary": "#00dce5",
+                        "surface-dim": "#101415",
+                        "outline-variant": "#44474d",
+                        "tertiary-container": "#001d1f",
+                        "surface-container-high": "#272a2c",
+                        "primary-fixed": "#d6e3ff",
+                        "on-primary-fixed": "#0d1c32",
+                        "secondary-container": "#173bab",
+                        "on-primary": "#233148",
+                        "surface-variant": "#323537",
+                        "on-error": "#690005",
+                        "on-surface-variant": "#c5c6cd",
+                        "on-secondary-container": "#a0b1ff",
+                        "on-surface": "#e0e3e5",
+                        "on-error-container": "#ffdad6",
+                        "tertiary-fixed": "#63f7ff",
+                        "inverse-primary": "#515f78",
+                        "secondary-fixed": "#dde1ff",
+                        "primary-container": "#0a192f",
+                        "on-primary-container": "#74829d",
+                        "secondary-fixed-dim": "#b8c4ff",
+                        "on-background": "#e0e3e5",
+                        "surface-bright": "#363a3b",
+                        "primary-fixed-dim": "#b9c7e4",
+                        "error-container": "#93000a",
+                        "secondary": "#b8c4ff",
+                        "inverse-on-surface": "#2d3133"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "gutter": "12px",
+                        "container-margin": "24px",
+                        "cell-padding-y": "8px",
+                        "cell-padding-x": "12px",
+                        "sidebar-width": "260px",
+                        "unit": "4px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Inter Tight"],
+                        "headline-lg": ["Inter Tight"],
+                        "label-sm": ["Inter Tight"],
+                        "label-md": ["Inter Tight"],
+                        "body-sm": ["Inter Tight"],
+                        "data-mono": ["Inter Tight"],
+                        "display-lg": ["Inter Tight"],
+                        "body-md": ["Inter Tight"],
+                        "title-lg": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "label-sm": ["11px", {"lineHeight": "14px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "body-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+                        "data-mono": ["13px", {"lineHeight": "18px", "fontWeight": "500"}],
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "title-lg": ["18px", {"lineHeight": "24px", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="flex h-screen w-full bg-background selection:bg-primary selection:text-on-primary">
+<!-- Sidebar Navigation -->
+<aside class="w-sidebar-width h-screen sticky left-0 top-0 bg-surface-container-low dark:bg-surface-container-low flex flex-col py-container-margin border-r border-outline-variant shrink-0">
+<div class="px-6 mb-8">
+<h1 class="font-headline-md text-headline-md font-bold text-on-surface dark:text-on-background">Construction OS</h1>
+<p class="font-label-md text-label-md text-on-surface-variant opacity-70">Strategic Infrastructure</p>
+</div>
+<nav class="flex-1 space-y-1 px-3">
+<a class="flex items-center gap-3 px-4 py-3 text-primary dark:text-primary-fixed-dim font-bold border-r-2 border-primary bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="assignment">assignment</span>
+<span class="font-label-md text-label-md">Tasks</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high transition-colors active:scale-95 duration-75" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="font-label-md text-label-md">Inventory</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high transition-colors active:scale-95 duration-75" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-label-md text-label-md">Reports</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high transition-colors active:scale-95 duration-75" href="#">
+<span class="material-symbols-outlined" data-icon="layers">layers</span>
+<span class="font-label-md text-label-md">BIM</span>
+</a>
+</nav>
+<div class="mt-auto px-3 space-y-1">
+<button class="w-full mb-6 bg-primary text-on-primary py-3 rounded-lg font-label-md flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-[20px]" data-icon="add">add</span>
+                New Request
+            </button>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span class="font-label-md text-label-md">Support</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Cluster -->
+<main class="flex-1 flex flex-col h-screen overflow-hidden">
+<!-- Top Navigation Bar -->
+<header class="h-16 w-full sticky top-0 z-50 flex justify-between items-center px-container-margin bg-surface dark:bg-background border-b border-outline-variant">
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2 text-on-surface">
+<span class="material-symbols-outlined text-primary" data-icon="construction">construction</span>
+<span class="font-title-lg text-title-lg font-bold">Material Request Workflow</span>
+</div>
+<div class="relative group">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline-variant text-[20px]" data-icon="search">search</span>
+<input class="bg-surface-container-low border border-outline-variant rounded-full pl-10 pr-4 py-1.5 text-body-sm w-64 focus:outline-none focus:border-primary transition-all" placeholder="Search resources..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-3 border-r border-outline-variant pr-4">
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors relative">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="cloud_done">cloud_done</span>
+</button>
+</div>
+<div class="flex items-center gap-3 pl-2">
+<div class="text-right">
+<p class="font-label-md text-on-surface">John Arbuckle</p>
+<p class="font-label-sm text-on-surface-variant opacity-70">Site Engineer (B-12)</p>
+</div>
+<img class="w-10 h-10 rounded-full border border-outline-variant object-cover" data-alt="A professional headshot of a middle-aged male site engineer wearing a white hard hat and safety vest. He is smiling slightly against a background of a construction site with structural steel beams and a clear blue sky. The lighting is bright and natural, reinforcing an authoritative and reliable persona for a corporate infrastructure command center UI." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCMwKUiXZkyp3BZpV1xbsJVm5SmoEjK1K-f_xUL09ERsCDpfLPGpC8VoHXv6a6zCmG5OXzqOeHvzb9f9rdAoVzdj6MQFQmtEG48c12T5DK2nY6mB5i85CMJwUDxZDJ9W1ip6DM4sT3c4EakBqeG8IRTxTd45yaAzTEDeCh7BdP7qd4fNOOblTXSEXaaz3P4IxKxhyOMrfv1acvQey4Dt1Esbi-tAyoplWahX-LU522GR_1QpHH63FEgAWQGyDy-wgogjdLUVDBmaf0"/>
+</div>
+</div>
+</header>
+<!-- Dynamic Split-Pane Content -->
+<section class="flex-1 flex overflow-hidden">
+<!-- Left Pane: Request Form -->
+<div class="w-1/2 flex flex-col border-r border-outline-variant bg-surface custom-scrollbar overflow-y-auto">
+<div class="p-container-margin space-y-8">
+<!-- Contextual Header -->
+<div class="pb-6 border-b border-outline-variant">
+<div class="flex items-center gap-2 text-tertiary mb-1">
+<span class="material-symbols-outlined text-[18px]" data-icon="location_on">location_on</span>
+<span class="font-label-sm uppercase tracking-widest">Active Sector</span>
+</div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Skyline Tower A - Sector B-12</h2>
+<p class="font-body-md text-on-surface-variant mt-2">Create a new procurement request for structural reinforcement materials.</p>
+</div>
+<!-- Form Controls -->
+<form class="space-y-6">
+<div class="space-y-2">
+<label class="font-label-md text-on-surface-variant">Material Description</label>
+<div class="relative">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline text-[20px]" data-icon="rebase_edit">rebase_edit</span>
+<select class="w-full bg-surface-container-low border border-outline-variant rounded-lg pl-10 pr-4 py-3 text-body-md appearance-none focus:ring-1 focus:ring-primary focus:border-primary outline-none text-on-surface">
+<option>Ready-mix Concrete G30</option>
+<option>Reinforcing Steel 16mm</option>
+<option>Plywood Formwork (18mm)</option>
+<option>Grout Mix (High Strength)</option>
+</select>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-gutter">
+<div class="space-y-2">
+<label class="font-label-md text-on-surface-variant">BOQ Link</label>
+<div class="relative">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline text-[20px]" data-icon="account_tree">account_tree</span>
+<select class="w-full bg-surface-container-low border border-outline-variant rounded-lg pl-10 pr-4 py-3 text-body-md appearance-none focus:ring-1 focus:ring-primary focus:border-primary outline-none text-on-surface">
+<option>Structural Concrete</option>
+<option>Foundation Piles</option>
+<option>Retaining Walls</option>
+</select>
+</div>
+</div>
+<div class="space-y-2">
+<label class="font-label-md text-on-surface-variant">Delivery Date</label>
+<div class="relative">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline text-[20px]" data-icon="calendar_today">calendar_today</span>
+<input class="w-full bg-surface-container-low border border-outline-variant rounded-lg pl-10 pr-4 py-3 text-body-md focus:ring-1 focus:ring-primary focus:border-primary outline-none text-on-surface" type="date" value="2024-11-20"/>
+</div>
+</div>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between items-center">
+<label class="font-label-md text-on-surface-variant">Quantity Required</label>
+<span class="font-label-sm text-tertiary">Unit: m³</span>
+</div>
+<div class="relative">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline text-[20px]" data-icon="straighten">straighten</span>
+<input class="w-full bg-surface-container-low border border-outline-variant rounded-lg pl-10 pr-4 py-4 text-headline-md font-bold text-on-surface focus:ring-1 focus:ring-primary focus:border-primary outline-none" step="0.1" type="number" value="45.5"/>
+</div>
+</div>
+<div class="p-4 bg-primary-container rounded-lg border border-primary/20 flex gap-4">
+<span class="material-symbols-outlined text-primary mt-1" data-icon="info">info</span>
+<p class="font-body-sm text-on-primary-container leading-relaxed">
+                                This request will be routed to the Site Manager and Procurement Lead. Ensure all site safety clearance forms for heavy vehicle access are submitted.
+                            </p>
+</div>
+</form>
+</div>
+</div>
+<!-- Right Pane: AI & Evidence -->
+<div class="w-1/2 bg-surface-container-low flex flex-col p-container-margin custom-scrollbar overflow-y-auto">
+<div class="space-y-gutter h-full flex flex-col">
+<!-- AI Quantity Suggestion Panel -->
+<div class="p-6 bg-tertiary-container rounded-xl border border-tertiary/20 relative overflow-hidden shrink-0">
+<!-- Subtle Background Glow -->
+<div class="absolute -right-20 -top-20 w-64 h-64 bg-tertiary/10 rounded-full blur-[100px]"></div>
+<div class="flex items-center gap-3 mb-4">
+<div class="w-10 h-10 rounded-lg bg-tertiary flex items-center justify-center">
+<span class="material-symbols-outlined text-on-tertiary" data-icon="smart_toy" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+</div>
+<div>
+<h3 class="font-title-lg text-title-lg text-tertiary-fixed-dim">AI Quantity Suggestion</h3>
+<p class="font-label-sm text-on-tertiary-container">Confidence: 98.4%</p>
+</div>
+</div>
+<div class="flex items-baseline gap-2 mb-4">
+<span class="font-display-lg text-display-lg text-tertiary">45.5</span>
+<span class="font-headline-md text-on-tertiary-container">m³ Recommended</span>
+</div>
+<div class="space-y-3 font-body-md text-on-surface-variant">
+<p class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-tertiary" data-icon="check_circle">check_circle</span>
+                                Calculated based on 72h pouring schedule for Sector B-12.
+                            </p>
+<p class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-tertiary" data-icon="check_circle">check_circle</span>
+                                Factorized 5% waste margin for structural columns.
+                            </p>
+<p class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-tertiary" data-icon="check_circle">check_circle</span>
+                                Cross-referenced with BIM Model v2.4 (Concrete Volumes).
+                            </p>
+</div>
+<div class="mt-6 pt-4 border-t border-tertiary/10 flex justify-between items-center">
+<span class="font-label-sm text-on-tertiary-container/60 uppercase">Last Sync: 2m ago</span>
+<button class="text-tertiary font-label-md hover:underline">View Optimization Details</button>
+</div>
+</div>
+<!-- Evidence Capture Section -->
+<div class="flex-1 flex flex-col bg-surface border border-outline-variant rounded-xl overflow-hidden min-h-[300px]">
+<div class="px-6 py-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="photo_camera">photo_camera</span>
+<h4 class="font-title-lg text-title-lg">Evidence Capture</h4>
+</div>
+<button class="bg-surface-container-highest px-3 py-1.5 rounded text-label-md flex items-center gap-2 hover:bg-outline-variant transition-colors">
+<span class="material-symbols-outlined text-[18px]" data-icon="upload">upload</span>
+                                Update
+                            </button>
+</div>
+<div class="relative flex-1 group">
+<div class="absolute inset-0 bg-cover bg-center" data-alt="A high-resolution site photograph of a construction area ready for a concrete pour. Rebar grids are meticulously laid out across the foundation level of a skyscraper, with concrete spacers and formwork visible. The lighting is late afternoon golden hour, highlighting the textures of the steel and the dark gray gravel background. The atmosphere is professional, technical, and organized, fitting a high-density industrial dark mode UI." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAtRPu-NE_p84wHXekqJopFpsBc1vcA1axzzM8s7PFSX8vZ8-qmL0aZ38L5GojCwElB8UadS_xhj5JlPh-L2zDQAmxyq4Uc5bzD0n6pdy8-ofxxqbDQ5LyDwAb95V1jpKZrHcZdP9-NDldqm4IhKz1r6F54T6NDqLsLqfnBqgw_cTahoEj7uwYtS1ZaZNn8EBPa-fYtEKIV6xM42DlQHEvPO3-GObbrh4A1VfhIq00r0LhUHMGIhVh-6CwzPREOkRsCgJhtiav0YOs')"></div>
+<div class="absolute inset-0 bg-background/20 group-hover:bg-transparent transition-all"></div>
+<!-- Overlay UI on Photo -->
+<div class="absolute bottom-4 left-4 right-4 flex justify-between items-end pointer-events-none">
+<div class="bg-background/80 backdrop-blur-md p-3 rounded-lg border border-outline-variant/30 text-white shadow-xl">
+<p class="font-label-sm text-tertiary">LAT/LONG: 25.1972° N, 55.2744° E</p>
+<p class="font-label-md">Timestamp: 2024-11-18 14:32:01</p>
+<p class="font-label-sm opacity-70">Skyline Tower A - Sector B-12 Platform</p>
+</div>
+<div class="bg-primary/90 p-2 rounded-lg text-on-primary">
+<span class="material-symbols-outlined text-[32px]" data-icon="grid_view">grid_view</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Fixed Footer -->
+<footer class="h-20 w-full bg-surface-container-lowest border-t border-outline-variant flex justify-between items-center px-container-margin shrink-0">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
+<span class="font-label-sm text-on-surface-variant">System Status: Optimal</span>
+</div>
+<div class="hidden md:flex items-center gap-4 text-on-surface-variant font-label-sm">
+<a class="hover:text-on-surface transition-colors" href="#">Security</a>
+<span class="text-outline-variant">/</span>
+<a class="hover:text-on-surface transition-colors" href="#">API Docs</a>
+<span class="text-outline-variant">/</span>
+<a class="hover:text-on-surface transition-colors" href="#">Privacy Policy</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="px-6 py-2.5 text-on-surface-variant hover:text-on-surface font-label-md transition-colors">
+                    Save Draft
+                </button>
+<button class="bg-primary hover:bg-primary/90 text-on-primary px-10 py-3 rounded-lg font-headline-md shadow-lg shadow-primary/10 transition-all flex items-center gap-3 active:scale-95">
+                    Submit Request
+                    <span class="material-symbols-outlined" data-icon="send">send</span>
+</button>
+</div>
+</footer>
+</main>
+<!-- Micro-interaction Scripts -->
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Placeholder for form interactions
+            const inputs = document.querySelectorAll('input, select');
+            inputs.forEach(input => {
+                input.addEventListener('focus', () => {
+                    input.parentElement.querySelector('.material-symbols-outlined').style.color = '#b9c7e4';
+                });
+                input.addEventListener('blur', () => {
+                    input.parentElement.querySelector('.material-symbols-outlined').style.color = '#8f9097';
+                });
+            });
+
+            // Ripple effect on primary button
+            const mainCta = document.querySelector('button.bg-primary');
+            mainCta.addEventListener('click', (e) => {
+                const rect = mainCta.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                const ripple = document.createElement('span');
+                ripple.style.position = 'absolute';
+                ripple.style.width = '1px';
+                ripple.style.height = '1px';
+                ripple.style.background = 'rgba(255, 255, 255, 0.4)';
+                ripple.style.borderRadius = '50%';
+                ripple.style.left = x + 'px';
+                ripple.style.top = y + 'px';
+                ripple.style.transition = 'all 0.6s ease-out';
+                ripple.style.pointerEvents = 'none';
+                
+                mainCta.style.position = 'relative';
+                mainCta.style.overflow = 'hidden';
+                mainCta.appendChild(ripple);
+                
+                requestAnimationFrame(() => {
+                    ripple.style.transform = 'scale(400)';
+                    ripple.style.opacity = '0';
+                });
+                
+                setTimeout(() => ripple.remove(), 600);
+            });
+        });
+    </script>
+</body></html>

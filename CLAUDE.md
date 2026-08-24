@@ -67,10 +67,10 @@ Items that do NOT qualify as NEEDS_ESCALATION:
 
 ## All other rules
 
-Rules 1–39 are defined in:
+Rules 1–40 are defined in:
 
-- `context/00_master_construction_os.md` — Rules 1–39 (authoritative)
-- `context.md` — Rules 26–39 (agent-optimized form)
+- `context/00_master_construction_os.md` — Rules 1–40 (authoritative)
+- `context.md` — Rules 26–40 (agent-optimized form)
 
 All rules apply to every task. Rules 36 and 38 are repeated here because they are
 the two gates most likely to be skipped under time pressure.

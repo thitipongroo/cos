@@ -1,0 +1,307 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>Construction OS - Confirm Reset</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary-container": "#03b5d3",
+                    "mobile-danger": "#FF3B30",
+                    "surface-variant": "#26364a",
+                    "on-secondary-container": "#00424e",
+                    "on-tertiary-fixed": "#161b2b",
+                    "surface-bright": "#2a3a4f",
+                    "secondary": "#4cd7f6",
+                    "on-surface-variant": "#c3c6d7",
+                    "on-surface": "#d3e4fe",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "outline": "#8d90a0",
+                    "error": "#ffb4ab",
+                    "mobile-success": "#00C853",
+                    "sync-pending": "#94A3B8",
+                    "surface-container-high": "#1b2b3f",
+                    "inverse-surface": "#d3e4fe",
+                    "tertiary-container": "#686c80",
+                    "surface": "#031427",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "surface-container-highest": "#26364a",
+                    "outline-variant": "#434655",
+                    "surface-container-low": "#0b1c30",
+                    "on-primary-fixed": "#00174b",
+                    "on-secondary-fixed": "#001f26",
+                    "on-tertiary": "#2b3041",
+                    "background": "#031427",
+                    "inverse-primary": "#0053db",
+                    "on-tertiary-container": "#eeefff",
+                    "mobile-primary": "#0066FF",
+                    "on-secondary": "#003640",
+                    "primary-container": "#2563eb",
+                    "surface-container": "#102034",
+                    "secondary-fixed": "#acedff",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "error-container": "#93000a",
+                    "tertiary-fixed": "#dee1f9",
+                    "primary-fixed": "#dbe1ff",
+                    "tertiary": "#c1c5dc",
+                    "surface-container-lowest": "#000f21",
+                    "dark-surface": "#0F172A",
+                    "mobile-warning": "#FF9500",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "on-primary-container": "#eeefff",
+                    "surface-tint": "#b4c5ff",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "dark-bg": "#020617",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "on-error": "#690005",
+                    "on-error-container": "#ffdad6",
+                    "on-primary": "#002a78",
+                    "on-background": "#d3e4fe",
+                    "surface-dim": "#031427",
+                    "primary": "#b4c5ff",
+                    "inverse-on-surface": "#213145",
+                    "sync-active": "#FFD60A"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "space-2": "8px",
+                    "space-4": "16px",
+                    "touch-target": "52px",
+                    "base": "4px",
+                    "web-margin": "32px",
+                    "space-3": "12px",
+                    "space-1": "4px",
+                    "edge-mobile": "24px"
+            },
+            "fontFamily": {
+                    "h1-web": ["Inter Tight"],
+                    "hero-mobile": ["Inter Tight"],
+                    "body-web": ["Inter Tight"],
+                    "label-mobile": ["Inter Tight"],
+                    "h2-web": ["Inter Tight"],
+                    "display-web": ["Inter Tight"],
+                    "tiny-web": ["Inter Tight"],
+                    "body-mobile": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #031427;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .ai-shimmer {
+            background: linear-gradient(90deg, rgba(3,181,211,0) 0%, rgba(3,181,211,0.1) 50%, rgba(3,181,211,0) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite linear;
+        }
+        @keyframes shimmer {
+            from { background-position: 200% 0; }
+            to { background-position: -200% 0; }
+        }
+    </style>
+</head>
+<body class="font-body-mobile text-on-surface overflow-x-hidden pb-[100px]">
+<!-- Top App Bar -->
+<header class="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-edge-mobile h-touch-target bg-surface-dim dark:bg-surface-container-lowest">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-primary" data-icon="menu">menu</span>
+<h1 class="font-display-web text-[20px] font-bold text-primary tracking-tight">CONSTRUCTION OS</h1>
+</div>
+<div class="flex items-center gap-space-3">
+<div class="flex items-center bg-mobile-success/10 px-space-2 py-0.5 rounded-full border border-mobile-success/20">
+<span class="w-2 h-2 rounded-full bg-mobile-success mr-1.5 animate-pulse"></span>
+<span class="font-tiny-web text-mobile-success uppercase">Synced</span>
+</div>
+<div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container font-bold text-xs border border-primary/20">
+                TA
+            </div>
+</div>
+</header>
+<main class="mt-touch-target px-edge-mobile pt-space-4 space-y-space-4">
+<!-- Breadcrumb / Context -->
+<div class="flex items-center gap-1 text-on-surface-variant font-label-mobile text-[12px] uppercase tracking-wider">
+<span class="">User Management</span>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span class="text-primary">Password Reset</span>
+</div>
+
+<!-- User Identity Card -->
+<section class="bg-surface-container rounded-xl p-space-4 border-l-4 border-primary shadow-lg">
+<div class="flex items-center gap-space-4">
+<div class="relative">
+<img class="w-16 h-16 rounded-lg object-cover border border-outline-variant" data-alt="A professional headshot of a Middle Eastern male project manager in a high-tech construction office. He wears a clean white hard hat and a navy blue tactical vest over a crisp shirt. The background shows glowing blue architectural blueprints on digital screens. The lighting is sharp, industrial, and high-contrast, fitting a dark mode UI." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBXy6rmIjm8pyhlHnTOQgmiQIRVfXmMT74TlGHNLxkB2btajNMbOEW_Eoo8qM_Y3VYHi_LTEVGwgf31ZRPpZQvo_vTdNuHkUqmiBZhBznkaLFyUyIsmxM-_sAmozkg7vku0TJ9qV0tUM10Wf6MycN5k0N9fF3wtB-oOHjjZTqaGdEORkKzdvYc7e2yImmdfHgF3AYjE2x7CragPHhZP2-ZYUJ-OSijTaCDtWeCH6IhS-QD_g2GUINoD">
+<div class="absolute -bottom-1 -right-1 bg-mobile-success w-4 h-4 rounded-full border-2 border-surface-container"></div>
+</div>
+<div class="flex-1">
+<h3 class="font-h2-web text-on-surface">Somchai Wisawakorn</h3>
+<div class="flex flex-wrap gap-2 mt-1">
+<span class="bg-surface-variant text-on-surface-variant px-2 py-0.5 rounded font-tiny-web uppercase tracking-tight">UID: OS-99210</span>
+<span class="bg-primary/10 text-primary px-2 py-0.5 rounded font-tiny-web uppercase tracking-tight">Project Manager</span>
+</div>
+</div>
+</div>
+</section>
+<!-- AI Security Insight -->
+<section class="relative overflow-hidden bg-secondary-container/5 border-l-4 border-secondary rounded-xl p-space-4 ai-shimmer">
+<div class="flex items-start gap-space-3">
+<span class="material-symbols-outlined text-secondary" data-icon="verified_user" style="font-variation-settings: &quot;FILL&quot; 1;">verified_user</span>
+<div class="space-y-1">
+<p class="font-label-mobile text-secondary uppercase tracking-widest text-[11px]">AI Security Check</p>
+<p class="text-on-secondary-container font-label-mobile text-[14px] leading-tight">
+<span class="font-bold">99% Confidence.</span> This request matches your administrative pattern. No suspicious activity detected.
+                    </p>
+</div>
+</div>
+</section>
+<!-- Reset Options -->
+<div class="space-y-space-3">
+<p class="font-label-mobile text-on-surface-variant uppercase tracking-widest px-1">Delivery Method</p>
+<!-- Option 1: Email (Selected by default) -->
+<label class="group relative flex items-center justify-between p-space-4 bg-surface-container-high rounded-xl border-2 border-primary ring-1 ring-primary/20 cursor-pointer transition-all active:scale-95">
+<input checked="" class="hidden peer" name="reset_method" type="radio">
+<div class="flex items-center gap-space-3">
+<div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="mail">mail</span>
+</div>
+<div>
+<p class="font-h2-web text-[16px] text-on-surface">SEND RESET LINK (EMAIL)</p>
+<p class="font-label-mobile text-on-surface-variant text-[12px]">somchai@const-os.com</p>
+</div>
+</div>
+<div class="flex flex-col items-end gap-1">
+<span class="material-symbols-outlined text-primary" data-icon="check_circle" style="font-variation-settings: &quot;FILL&quot; 1;">check_circle</span>
+<span class="text-[10px] bg-primary text-on-primary-container px-1.5 py-0.5 rounded font-bold uppercase">Recommended</span>
+</div>
+</label>
+<!-- Option 2: Temporary Password -->
+<label class="group relative flex items-center justify-between p-space-4 bg-surface-container rounded-xl border border-outline-variant/30 cursor-pointer transition-all hover:bg-surface-bright/10 active:scale-95">
+<input class="hidden peer" name="reset_method" type="radio">
+<div class="flex items-center gap-space-3">
+<div class="w-10 h-10 bg-on-surface-variant/10 rounded-lg flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="key">key</span>
+</div>
+<div>
+<p class="font-h2-web text-[16px] text-on-surface">GENERATE TEMPORARY PASSWORD</p>
+<p class="font-label-mobile text-on-surface-variant text-[12px]">For manual handover (expires in 1hr)</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline" data-icon="radio_button_unchecked">radio_button_unchecked</span>
+</label>
+</div>
+<!-- Action Buttons -->
+<div class="pt-space-4 space-y-space-3">
+<button class="w-full h-touch-target bg-mobile-primary text-white rounded-lg font-bold uppercase tracking-[0.05em] flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined text-[20px]" data-icon="lock_reset">lock_reset</span>
+                CONFIRM RESET
+            </button>
+<button class="w-full h-touch-target border-2 border-outline-variant text-on-surface font-bold uppercase tracking-[0.05em] rounded-lg active:scale-95 transition-transform duration-150">
+                CANCEL
+            </button>
+</div>
+<!-- System Logs / Metadata -->
+<div class="bg-surface-container-lowest rounded-lg p-space-3 border border-outline-variant/10 mt-space-4">
+<div class="flex items-center justify-between font-tiny-web text-outline uppercase">
+<span class="">Request Origin:</span>
+<span class="text-on-surface-variant">Terminal 04-HQ</span>
+</div>
+<div class="flex items-center justify-between font-tiny-web text-outline uppercase mt-1">
+<span class="">Auth Level:</span>
+<span class="text-mobile-warning">Tenant Admin</span>
+</div>
+</div>
+</main>
+<!-- Bottom Nav Bar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-base pb-safe bg-surface-container dark:bg-surface-container-high h-[72px] shadow-lg">
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-bright/20 px-space-4 py-space-2">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+<span class="font-label-mobile text-label-mobile">Reports</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-bright/20 px-space-4 py-space-2">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="font-label-mobile text-label-mobile">Inventory</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-bright/20 px-space-4 py-space-2">
+<span class="material-symbols-outlined" data-icon="view_in_ar">view_in_ar</span>
+<span class="font-label-mobile text-label-mobile">BIM</span>
+</div>
+<!-- Active Tab: Users -->
+<div class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-xl px-space-4 py-space-2 scale-95 transition-all duration-200">
+<span class="material-symbols-outlined" data-icon="group" style="font-variation-settings: &quot;FILL&quot; 1;">group</span>
+<span class="font-label-mobile text-label-mobile">Users</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-bright/20 px-space-4 py-space-2">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-mobile text-label-mobile">Settings</span>
+</div>
+</nav>
+<script>
+        // Simple Radio Interaction Logic
+        document.querySelectorAll('input[name="reset_method"]').forEach(input => {
+            input.addEventListener('change', (e) => {
+                // Reset all containers
+                document.querySelectorAll('label').forEach(label => {
+                    label.classList.remove('border-primary', 'ring-1', 'ring-primary/20', 'bg-surface-container-high');
+                    label.classList.add('bg-surface-container', 'border-outline-variant/30');
+                    const icon = label.querySelector('.material-symbols-outlined:last-child');
+                    if(icon) {
+                        icon.innerText = 'radio_button_unchecked';
+                        icon.style.fontVariationSettings = "'FILL' 0";
+                        icon.classList.remove('text-primary');
+                        icon.classList.add('text-outline');
+                    }
+                });
+
+                // Apply active styles to parent
+                const parent = e.target.closest('label');
+                parent.classList.add('border-primary', 'ring-1', 'ring-primary/20', 'bg-surface-container-high');
+                parent.classList.remove('bg-surface-container', 'border-outline-variant/30');
+                const icon = parent.querySelector('.material-symbols-outlined:last-child');
+                if(icon) {
+                    icon.innerText = 'check_circle';
+                    icon.style.fontVariationSettings = "'FILL' 1";
+                    icon.classList.remove('text-outline');
+                    icon.classList.add('text-primary');
+                }
+            });
+        });
+
+        // Confirmed Button Interaction
+        document.querySelector('button.bg-mobile-primary').addEventListener('click', function() {
+            this.innerHTML = '<span class="material-symbols-outlined animate-spin" data-icon="progress_activity">progress_activity</span> AUTHORIZING...';
+            setTimeout(() => {
+                this.classList.replace('bg-mobile-primary', 'bg-mobile-success');
+                this.innerHTML = '<span class="material-symbols-outlined" data-icon="check">check</span> ACTION COMPLETE';
+            }, 1500);
+        });
+    </script>
+
+
+</body></html>

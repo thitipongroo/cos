@@ -1,0 +1,288 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>Survey Summary | Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+        body {
+            font-family: 'Inter Tight', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+        }
+        .glass-panel {
+            background: rgba(16, 32, 52, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .industrial-shimmer {
+            background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite linear;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "mobile-primary": "#0066FF",
+                      "on-secondary-container": "#00424e",
+                      "tertiary": "#c1c5dc",
+                      "surface-dim": "#031427",
+                      "surface-container-low": "#0b1c30",
+                      "on-primary-fixed-variant": "#003ea8",
+                      "mobile-warning": "#FF9500",
+                      "outline": "#8d90a0",
+                      "on-background": "#d3e4fe",
+                      "on-secondary-fixed": "#001f26",
+                      "inverse-primary": "#0053db",
+                      "dark-surface": "#0F172A",
+                      "surface-container": "#102034",
+                      "on-tertiary-fixed-variant": "#414658",
+                      "inverse-on-surface": "#213145",
+                      "secondary": "#4cd7f6",
+                      "primary": "#b4c5ff",
+                      "background": "#031427",
+                      "surface": "#031427",
+                      "on-surface": "#d3e4fe",
+                      "dark-bg": "#020617",
+                      "on-primary-fixed": "#00174b",
+                      "mobile-success": "#00C853",
+                      "on-tertiary-fixed": "#161b2b",
+                      "on-error": "#690005",
+                      "inverse-surface": "#d3e4fe",
+                      "error": "#ffb4ab",
+                      "primary-fixed-dim": "#b4c5ff",
+                      "surface-container-highest": "#26364a",
+                      "on-surface-variant": "#c3c6d7",
+                      "tertiary-container": "#686c80",
+                      "surface-tint": "#b4c5ff",
+                      "on-tertiary-container": "#eeefff",
+                      "on-primary": "#002a78",
+                      "on-error-container": "#ffdad6",
+                      "tertiary-fixed-dim": "#c1c5dc",
+                      "sync-active": "#FFD60A",
+                      "on-secondary": "#003640",
+                      "secondary-fixed": "#acedff",
+                      "on-tertiary": "#2b3041",
+                      "surface-container-high": "#1b2b3f",
+                      "on-surface-container": "#eeefff",
+                      "surface-bright": "#2a3a4f",
+                      "tertiary-fixed": "#dee1f9",
+                      "surface-variant": "#26364a",
+                      "mobile-danger": "#FF3B30",
+                      "primary-fixed": "#dbe1ff",
+                      "secondary-container": "#03b5d3",
+                      "secondary-fixed-dim": "#4cd7f6",
+                      "sync-pending": "#94A3B8",
+                      "outline-variant": "#434655",
+                      "error-container": "#93000a",
+                      "surface-container-lowest": "#000f21",
+                      "on-secondary-fixed-variant": "#004e5c",
+                      "primary-container": "#2563eb"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "web-margin": "32px",
+                      "space-2": "8px",
+                      "space-4": "16px",
+                      "space-3": "12px",
+                      "edge-mobile": "24px",
+                      "base": "4px",
+                      "touch-target": "52px",
+                      "space-1": "4px"
+              },
+              "fontFamily": {
+                      "tiny-web": ["Inter Tight"],
+                      "h2-web": ["Inter Tight"],
+                      "hero-mobile": ["Inter Tight"],
+                      "label-mobile": ["Inter Tight"],
+                      "h1-web": ["Inter Tight"],
+                      "body-web": ["Inter Tight"],
+                      "body-mobile": ["Inter Tight"],
+                      "display-web": ["Inter Tight"]
+              },
+              "fontSize": {
+                      "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                      "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                      "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                      "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+              }
+            },
+          },
+        }
+    </script>
+</head>
+<body class="bg-surface-dim text-on-surface overflow-x-hidden min-h-screen pb-32">
+<!-- Top AppBar (Constructed from JSON Specs) -->
+<header class="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-edge-mobile h-touch-target bg-surface-dim dark:bg-surface-container-lowest"><div class="flex items-center gap-2">
+    <div class="w-8 h-8">
+        <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuBZyaNhrrqteQik-oM2o87BG8n6wS4uyLlgJJ-t4ElzFAZ2qhXGLTqfFLKS5qRMviqQhLUqFmE0hZqTc7ISYNc83ZP7Xr8Q5Yhqt_mmFPgNgxgIz85HUGvNXy78ojkACCVDXjTgRuq6eoqFokkxLIt9ZDmPeilnMAaLK2Z3yBVm6G8hRrPJtsS25mDWkxExuLDVEGMrXzLKIWYXulBRepEn8xrelhgvg-jMW60yqUPtTdJrGCS-4u3Iy9R8q05URXfU_wMvBq6Ls7M" alt="Construction OS Logo" class="w-full h-full object-contain">
+    </div>
+    <span class="font-bold text-body-web tracking-wider text-on-surface uppercase">CONSTRUCTION OS</span>
+</div>
+<div class="flex items-center gap-4">
+    <div class="flex items-center gap-1.5 bg-mobile-success/20 px-2 py-1 rounded-full">
+        <span class="material-symbols-outlined text-mobile-success !text-[14px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+        <span class="font-tiny-web text-tiny-web text-mobile-success tracking-widest">SYNCED</span>
+    </div>
+    <div class="w-10 h-10 rounded-full bg-surface-container-high border border-outline-variant flex items-center justify-center overflow-hidden">
+        <img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBeLmPwEn4bA6Hao5vq7s-VZ5PjZv7hjFnn0RMvsrSwo3e66NASaFDGTYuawo2mzb7umdjWxsjbgLcyu00E_eFDbygXiYpETAOT0O2cZuASLqjw9A9JmeiCP_Ekq94CpgNxZx2jnnn85NoKphpHxYZCIWyGp1IBJACQRowQ5aDRMmByOgaUd8lBsoKq0H77XHW7XPHOqeXzPAyUBkEL-1PAkQpcItt0fhJfPD47Jhrro9-5pFvEQbYUEyr4-8Qdd6fzBebC-nSBM5c">
+    </div>
+</div></header>
+<main class="mt-20 px-edge-mobile space-y-space-4">
+<!-- Success Banner -->
+<section class="relative overflow-hidden rounded-xl bg-surface-container-high p-space-4 flex flex-col items-center justify-center text-center border-l-4 border-mobile-success">
+<div class="absolute inset-0 industrial-shimmer opacity-30"></div>
+<div class="w-16 h-16 rounded-full bg-mobile-success/20 flex items-center justify-center mb-space-2">
+<span class="material-symbols-outlined text-mobile-success text-4xl" data-icon="check_circle" style="font-variation-settings: &quot;FILL&quot; 1;">check_circle</span>
+</div>
+<h1 class="font-hero-mobile text-hero-mobile text-on-surface leading-tight">SURVEY COMPLETED SUCCESSFULLY</h1>
+<p class="font-body-mobile text-body-mobile text-on-surface-variant mt-1">Mission Identifier: RC-2023-08-X</p>
+</section>
+<!-- Data Summary Bento Grid -->
+<div class="grid grid-cols-2 gap-space-3">
+<!-- Captured Points -->
+<div class="bg-surface-container p-space-3 rounded-xl border border-outline-variant/10">
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="blur_on">blur_on</span>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase tracking-wider">Captured Points</span>
+</div>
+<div class="font-h1-web text-h1-web-mobile text-on-surface">12.8M</div>
+</div>
+<!-- Total Photos -->
+<div class="bg-surface-container p-space-3 rounded-xl border border-outline-variant/10">
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="photo_library">photo_library</span>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase tracking-wider">Total Photos</span>
+</div>
+<div class="font-h1-web text-h1-web-mobile text-on-surface">156</div>
+</div>
+<!-- Flight Duration -->
+<div class="bg-surface-container p-space-3 rounded-xl border border-outline-variant/10">
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="timer">timer</span>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase tracking-wider">Flight Time</span>
+</div>
+<div class="font-h1-web text-h1-web-mobile text-on-surface">14:22</div>
+</div>
+<!-- Ground Resolution -->
+<div class="bg-surface-container p-space-3 rounded-xl border border-outline-variant/10">
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="grid_view">grid_view</span>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase tracking-wider">Resolution</span>
+</div>
+<div class="font-h1-web text-h1-web-mobile text-on-surface">1.2 cm/px</div>
+</div>
+</div>
+<!-- AI Integration Module -->
+<div class="bg-secondary/5 border-l-4 border-secondary rounded-r-xl p-space-4 relative">
+<div class="flex items-start gap-space-3">
+<span class="material-symbols-outlined text-secondary" data-icon="auto_awesome" style="font-variation-settings: &quot;FILL&quot; 1;">auto_awesome</span>
+<div class="space-y-1">
+<p class="font-label-mobile text-label-mobile text-secondary uppercase tracking-widest">CORE_AI Analysis</p>
+<p class="font-body-mobile text-body-mobile text-on-surface leading-relaxed">
+                        Data Integrity Verified <span class="text-secondary font-bold">(99.2% Confidence)</span>. Initializing 3D Mesh Generation...
+                    </p>
+</div>
+</div>
+<div class="mt-space-3 h-1 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-secondary w-2/3 animate-[pulse_2s_infinite]"></div>
+</div>
+</div>
+<!-- Sync Status Section -->
+<section class="bg-surface-container-high rounded-xl p-space-4 border border-outline-variant/20">
+<div class="flex justify-between items-end mb-space-2">
+<div>
+<h3 class="font-label-mobile text-label-mobile text-on-surface uppercase tracking-tight">Sync Status</h3>
+<p class="font-h2-web text-h2-web text-primary">3.8 GB RAW DATA ENQUEUED</p>
+</div>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant">15% Complete</span>
+</div>
+<div class="w-full h-3 bg-surface-container-low rounded-full mb-2">
+<div class="h-full bg-primary w-[15%] rounded-full relative">
+<div class="absolute inset-0 bg-white/20 industrial-shimmer"></div>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-sync-pending text-sm animate-spin" data-icon="sync">sync</span>
+<span class="font-body-web text-body-web text-on-surface-variant">Uploading via LTE...</span>
+</div>
+</section>
+<!-- Action Buttons -->
+<div class="flex flex-col gap-space-3 pt-space-2">
+<button class="h-touch-target w-full bg-mobile-primary text-white rounded-xl font-label-mobile text-label-mobile uppercase tracking-widest font-bold shadow-lg shadow-mobile-primary/20 active:scale-95 transition-all duration-150 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined" data-icon="visibility">visibility</span>
+                VIEW FULL MISSION DETAIL
+            </button>
+<button class="h-touch-target w-full border-2 border-outline-variant text-on-surface rounded-xl font-label-mobile text-label-mobile uppercase tracking-widest font-bold active:scale-95 transition-all duration-150 flex items-center justify-center gap-2 hover:bg-surface-bright/10">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+                RETURN TO DRONE HUB
+            </button>
+</div>
+</main>
+<!-- Bottom Navigation Bar (Constructed from JSON Specs) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-base pb-safe bg-surface-container dark:bg-surface-container-high h-[72px] shadow-lg">
+<!-- Reports -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-bright/20 px-space-4 py-space-2 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+<span class="font-label-mobile text-label-mobile mt-1">Reports</span>
+</a>
+<!-- Inventory -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-bright/20 px-space-4 py-space-2 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="font-label-mobile text-label-mobile mt-1">Inventory</span>
+</a>
+<!-- BIM (Active) -->
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-xl px-space-4 py-space-2 active:scale-95 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="view_in_ar" style="font-variation-settings: &quot;FILL&quot; 1;">view_in_ar</span>
+<span class="font-label-mobile text-label-mobile mt-1">BIM</span>
+</a>
+<!-- Users -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-bright/20 px-space-4 py-space-2 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-label-mobile text-label-mobile mt-1">Users</span>
+</a>
+<!-- Settings -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-bright/20 px-space-4 py-space-2 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-mobile text-label-mobile mt-1">Settings</span>
+</a>
+</nav>
+<script>
+        // Micro-interaction for feedback
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('touchstart', function() {
+                this.classList.add('scale-95');
+            });
+            btn.addEventListener('touchend', function() {
+                this.classList.remove('scale-95');
+            });
+        });
+    </script>
+
+
+
+
+</body></html>

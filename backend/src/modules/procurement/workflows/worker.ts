@@ -6,6 +6,7 @@
 import { Worker } from '@temporalio/worker';
 import * as rfqActivities from './rfq.activities';
 import * as poActivities from './po.activities';
+import { disconnectActivityClients } from './activity-helpers';
 import { createLogger } from '@cos/logger';
 
 const logger = createLogger('procurement-worker');
@@ -23,7 +24,13 @@ export async function runProcurementWorker(): Promise<void> {
   });
 
   logger.info({ taskQueue: TASK_QUEUE }, 'procurement.worker.starting');
-  await worker.run();
+  try {
+    await worker.run();
+  } finally {
+    // Activity Prisma clients are pooled for the worker's lifetime (activity-helpers.ts), so this is
+    // the only place that closes them.
+    await disconnectActivityClients();
+  }
 }
 
 // Entry point for standalone worker process

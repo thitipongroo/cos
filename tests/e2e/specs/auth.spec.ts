@@ -19,7 +19,7 @@ test.describe('Authentication', () => {
 
   test('invalid credentials keep the user on Keycloak, unauthenticated', async ({ page }) => {
     await page.goto('/login');
-    await page.getByRole('button', { name: /keycloak/i }).click(); // office → Keycloak hosted login
+    await page.getByTestId('office-login-button').click(); // office → Keycloak hosted login
     await page.locator('#username').fill('wrong@example.com');
     await page.locator('#password').fill('wrongpassword');
     await page.locator('#kc-login').click();

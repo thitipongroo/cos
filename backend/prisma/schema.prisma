@@ -4,13 +4,13 @@
 // All tenant entity schemas are defined and migrated per-phase
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   // multiSchema is GA since Prisma 6 — no longer a preview feature. The "schemas" field on the
   // datasource below keeps working without it.
   // Alpine (node:*-alpine) ships OpenSSL 3.x with musl libc. Without an explicit target Prisma
   // generated the openssl-1.1.x musl engine, which fails at runtime ("libssl.so.1.1: not found").
   // Pin the musl + openssl-3.0.x engines for both CPU arches (x64 CI, arm64 local) plus native.
-  binaryTargets   = ["native", "linux-musl-openssl-3.0.x", "linux-musl-arm64-openssl-3.0.x"]
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x", "linux-musl-arm64-openssl-3.0.x"]
 }
 
 datasource db {
@@ -63,12 +63,18 @@ model Tenant {
   isActive       Boolean  @default(true) @map("is_active")
   // NULL = shared DB (STARTER/PROFESSIONAL); non-NULL = dedicated DB URL (ENTERPRISE per spec §7.1)
   dedicatedDbUrl String?  @map("dedicated_db_url") @db.VarChar(500)
+  // Data-residency region (§5.6): Thai -> ap-southeast-7, EU -> eu-west-1, default -> ap-southeast-1.
+  // Assigned at provisioning, immutable after first data write; consumers resolve it via tenant_id.
+  dataRegion     String   @default("ap-southeast-1") @map("data_region") @db.VarChar(20)
+  // IANA timezone (Phase 20 §19.3/§19.6): notification quiet hours + digest schedules evaluate in this
+  // zone. Defaulted from data_region at provisioning; a tenant may override it independently (PO 2026-07-23).
+  timezone       String   @default("Asia/Bangkok") @map("timezone") @db.VarChar(40)
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz()
 
-  users            User[]
-  memberships      TenantMembership[]
-  auditLogs        AuditLog[]
+  users       User[]
+  memberships TenantMembership[]
+  auditLogs   AuditLog[]
 
   @@map("tenants")
   @@schema("platform")
@@ -76,28 +82,318 @@ model Tenant {
 
 // @pdpa(category: "identity") — email and display_name are personal data
 model User {
-  userId          String   @id @default(dbgenerated("gen_random_uuid()")) @map("user_id") @db.Uuid
-  tenantId        String   @map("tenant_id") @db.Uuid
-  keycloakUserId  String   @unique @map("keycloak_user_id") @db.VarChar(255)
+  userId         String   @id @default(dbgenerated("gen_random_uuid()")) @map("user_id") @db.Uuid
+  tenantId       String   @map("tenant_id") @db.Uuid
+  keycloakUserId String   @unique @map("keycloak_user_id") @db.VarChar(255)
   // @pdpa(category: "contact") — phone_number is PII (Path A users only)
-  phoneNumber     String?  @map("phone_number") @db.VarChar(20)
+  phoneNumber    String?  @map("phone_number") @db.VarChar(20)
   // @pdpa(category: "contact") — email is personal data
-  email           String   @map("email") @db.VarChar(255)
+  email          String   @map("email") @db.VarChar(255)
   // @pdpa(category: "identity") — display name is personal data
-  displayName     String   @map("display_name") @db.VarChar(255)
-  isActive        Boolean  @default(true) @map("is_active")
-  mfaEnabled      Boolean  @default(false) @map("mfa_enabled")
-  mfaTotpSecret   String?  @map("mfa_totp_secret") @db.VarChar(255)
-  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
-  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+  displayName    String   @map("display_name") @db.VarChar(255)
+  isActive       Boolean  @default(true) @map("is_active")
+  mfaEnabled     Boolean  @default(false) @map("mfa_enabled")
+  // Org unit for HR (nullable — set by seed/HR, not required at account creation).
+  department     String?  @map("department") @db.VarChar(255)
+  mfaTotpSecret  String?  @map("mfa_totp_secret") @db.VarChar(255)
+  // Last authenticated request (throttled 15 min in JwtAuthGuard) — powers the Tenant Admin User Audit.
+  lastSeenAt     DateTime @default(now()) @map("last_seen_at") @db.Timestamptz()
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz()
 
-  tenant      Tenant             @relation(fields: [tenantId], references: [tenantId])
-  memberships TenantMembership[]
-  auditLogs   AuditLog[]         @relation("ActorLogs")
+  tenant                Tenant             @relation(fields: [tenantId], references: [tenantId])
+  memberships           TenantMembership[]
+  auditLogs             AuditLog[]         @relation("ActorLogs")
+  trustedDevices        TrustedDevice[]
+  consents              ConsentRecord[]
+  exportRequests        ExportRequest[]
+  // Subject requests this user KEYED IN as an admin — not requests about them (ADR-090: the subject
+  // of one of these has no account, so they can never be the `User` on the other end).
+  subjectRequestsOpened SubjectRequest[]
 
   @@index([tenantId, email])
+  // UNIQUE in the database, and only expressible as a plain @@index here: the real index is PARTIAL
+  // (`WHERE phone_number IS NOT NULL`, migration 20260819000001_unique_user_phone_number) and Prisma
+  // schema has no syntax for a partial index. The uniqueness is load-bearing, not cosmetic — Path A
+  // OTP login resolves a caller by this column alone, so two rows sharing a number means logging in
+  // as an arbitrary tenant (IdentityService.issueTokensForPhone refuses rather than guess). Do not
+  // "fix" this line to match the database by making it @@unique: Prisma would then generate a
+  // NON-partial unique index and drift the other way.
   @@index([phoneNumber])
   @@map("users")
+  @@schema("platform")
+}
+
+// Device trust (§20.6.1) — a user's hardware-bound devices for the "trusted device" indicator.
+// A device is trusted when it holds a non-extractable P-256 key (Secure Enclave / Android Keystore)
+// whose SPKI public key is registered here, is not revoked, has not expired, and proves possession by
+// signing a fresh server challenge at OTP verify. Cross-tenant identity data (like users) — looked up
+// before a tenant context exists — so it lives in the platform schema. public_key is a PUBLIC key, not
+// a secret; the private key never leaves the device's secure hardware.
+// @pdpa(category: "identity") — device_id + model identify a person's device
+model TrustedDevice {
+  deviceRowId String    @id @default(dbgenerated("gen_random_uuid()")) @map("device_row_id") @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  // Stable per-install identifier the app keeps in secure storage (not a hardware serial).
+  deviceId    String    @map("device_id") @db.VarChar(128)
+  // Base64url-encoded SPKI DER P-256 public key (react-native-secure-sign getPublicKey()).
+  publicKey   String    @map("public_key") @db.Text
+  platform    String    @map("platform") @db.VarChar(16)
+  model       String?   @map("model") @db.VarChar(128)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  lastSeenAt  DateTime  @default(now()) @map("last_seen_at") @db.Timestamptz()
+  // Sliding trust window — extended on each successful trusted verify (§20.6.1: 30d / renew on use).
+  expiresAt   DateTime  @map("expires_at") @db.Timestamptz()
+  revokedAt   DateTime? @map("revoked_at") @db.Timestamptz()
+
+  // Platform attestation (ADR-082). All nullable: a device enrolled before 20260805000001 has never
+  // been attested, and NULL is a distinct state from UNAVAILABLE ("we asked, the platform could not
+  // answer") which is itself distinct from FAILED ("we asked, it did not pass").
+  // @pdpa(category: "identity") — these narrow device identification
+  attestationVerdict AttestationVerdict?   @map("attestation_verdict")
+  // The tier (ADR-083). NULL on iOS — App Attest attests the app, not the device, so it has no
+  // equivalent concept — and NULL whenever no verdict was obtained at all.
+  integrityLevel     DeviceIntegrityLevel? @map("integrity_level")
+  attestedAt         DateTime?             @map("attested_at") @db.Timestamptz()
+  // The only server-verified OS signal available: Play Integrity's deviceAttributes.sdkVersion, an
+  // Android API level. NOT expo-device's osVersion — that is self-reported and, on a rooted device,
+  // attacker-controlled. NULL on iOS.
+  osVersion          String?               @map("os_version") @db.VarChar(32)
+  // There is deliberately no securityPatchLevel: no attestation verdict on either platform carries
+  // one (ADR-083). integrityLevel STRONG already means "patched within the last year" on Android 13+.
+
+  // Why trust ended (ADR-081). COMPROMISED is the model's ONLY positive class; the other three are
+  // ordinary fleet churn. NULL while revokedAt is NULL, and also for revocations predating the column.
+  revocationReason DeviceRevocationReason? @map("revocation_reason")
+
+  user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@unique([userId, deviceId])
+  @@index([userId])
+  @@map("trusted_devices")
+  @@schema("platform")
+}
+
+// PDPA §19 consent purposes (ADR-079). Only the categories ADR-079 assigns the CONSENT lawful basis
+// appear here. `identity` and `contact` are CONTRACT-based (PDPA §24(3)) — an account cannot exist
+// without a name and a phone number or email — so they are deliberately absent: a value here would
+// invite writing a consent row that contradicts the decision. Their route out is erasure (PDPA-13).
+enum ConsentPurpose {
+  LOCATION
+  FINANCIAL
+  OPERATIONAL
+
+  @@schema("platform")
+}
+
+/// Platform integrity verdict from Play Integrity / App Attest (ADR-082).
+/// UNAVAILABLE is not a failure — it is "we asked and the platform could not answer" (no Play
+/// Services, an OS the API does not cover, verifier not configured). A NULL column means we never
+/// asked at all. Scoring those two the same would make an old device indistinguishable from one
+/// whose integrity is unknown for a current reason.
+enum AttestationVerdict {
+  PASSED
+  FAILED
+  UNAVAILABLE
+
+  @@schema("platform")
+}
+
+/// How strong the platform's answer was (ADR-083) — Play Integrity's device-integrity labels.
+/// Orthogonal to AttestationVerdict: that says whether an answer arrived, this says what it was worth.
+/// NULL on iOS, where App Attest has no equivalent concept.
+///
+/// STRONG carries a fact the platform will not hand over as a value: on Android 13+ it requires a
+/// security update within the last year. That is why this tier is rendered instead of a patch date —
+/// the tier is the conclusion the date was only evidence for.
+enum DeviceIntegrityLevel {
+  STRONG
+  DEVICE
+  BASIC
+
+  @@schema("platform")
+}
+
+/// Why a device lost trust (ADR-081).
+/// ONLY COMPROMISED is the model's positive class. The other three are ordinary hygiene — a user
+/// tidying up old installs, an admin offboarding, a lost handset — and labelling them as compromises
+/// would teach the model that normal fleet churn looks like an attack.
+enum DeviceRevocationReason {
+  USER_REVOKED
+  ADMIN_REVOKED
+  LOST_OR_STOLEN
+  COMPROMISED
+
+  @@schema("platform")
+}
+
+// PDPA §19 consent record (ADR-079; closes PDPA-20/21/22).
+//
+// APPEND-ONLY: granting and withdrawing both INSERT a row; the effective state is the latest row per
+// (userId, purpose). Enforced by privilege, not convention — app_user holds SELECT + INSERT only, the
+// same mechanism that makes audit_logs immutable. There is deliberately no update/delete path here.
+//
+// Cross-tenant identity data like User and TrustedDevice, so it lives in the platform schema, but it
+// carries tenantId and the standard rls_tenant_isolation policy (ADR-031).
+// @pdpa(category: "identity") — user_id links a consent decision to a person
+model ConsentRecord {
+  consentId     String         @id @default(dbgenerated("gen_random_uuid()")) @map("consent_id") @db.Uuid
+  tenantId      String         @map("tenant_id") @db.Uuid
+  userId        String         @map("user_id") @db.Uuid
+  // @pdpa(category: "operational") — which processing purpose the decision covers
+  purpose       ConsentPurpose @map("purpose")
+  // true = granted, false = withdrawn. Both are inserts; neither mutates the prior row.
+  granted       Boolean        @map("granted")
+  // Version of the privacy notice in force at the time (PrivacyPolicyDocument.tsx POLICY_VERSION).
+  noticeVersion String         @map("notice_version") @db.VarChar(32)
+  recordedAt    DateTime       @default(now()) @map("recorded_at") @db.Timestamptz()
+
+  user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@index([userId, purpose, recordedAt(sort: Desc)])
+  @@map("consents")
+  @@schema("platform")
+}
+
+enum ExportStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+  EXPIRED
+
+  @@schema("platform")
+}
+
+enum ExportFormat {
+  JSON
+  CSV
+
+  @@schema("platform")
+}
+
+// A subject request from a person with no platform account (ADR-090). Two types, not five: PDPA §30
+// access and §31 portability are one job here — the tenant is handed what is held and gives it to the
+// subject in whatever form it agreed — and §33 erasure is the other. Rectification is deliberately
+// absent: an admin corrects a CRM contact by editing it, which needs no request record.
+enum SubjectRequestType {
+  ACCESS
+  ERASURE
+
+  @@schema("platform")
+}
+
+// OPEN until answered. FULFILLED and REJECTED are both closures and both require an outcome note —
+// a refusal that does not name its basis is itself a breach (ADR-090 §5), which the DB CHECK
+// `subject_requests_closed_has_outcome` enforces alongside `closed_at`.
+enum SubjectRequestStatus {
+  OPEN
+  FULFILLED
+  REJECTED
+
+  @@schema("platform")
+}
+
+// PDPA §30/§31 data-export request (ADR-078; closes PDPA-10/11).
+//
+// A row per request because §30 gives the controller 30 days to answer one, and "we ran a job" is not
+// an answer an auditor can accept. It is also what lets the subject see their own request's state.
+//
+// `fileId` is a File Service reference, not a storage path: the backend has no MinIO client and must
+// not grow one (master fixes Main App <-> File Service as REST). `expiresAt` is the REQUEST's 7-day
+// validity — the emailed link opens an authenticated in-app page that mints a fresh 1-hour signed URL
+// on click, rather than mailing a week-long bearer URL for a RESTRICTED payload.
+// @pdpa(category: "identity") — user_id links a request to a person
+model ExportRequest {
+  exportId   String   @id @default(dbgenerated("gen_random_uuid()")) @map("export_id") @db.Uuid
+  tenantId   String   @map("tenant_id") @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  // @pdpa(category: "operational") — which categories of the subject's data were exported
+  categories String[] @map("categories")
+
+  format   ExportFormat @map("format")
+  fromDate DateTime?    @map("from_date") @db.Date
+  toDate   DateTime?    @map("to_date") @db.Date
+
+  status        ExportStatus @default(PENDING) @map("status")
+  fileId        String?      @map("file_id") @db.Uuid
+  // Never a stack trace — this is shown to the subject (QM-10).
+  failureReason String?      @map("failure_reason") @db.Text
+  requestedAt   DateTime     @default(now()) @map("requested_at") @db.Timestamptz()
+  completedAt   DateTime?    @map("completed_at") @db.Timestamptz()
+  expiresAt     DateTime     @map("expires_at") @db.Timestamptz()
+
+  user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@index([userId, requestedAt(sort: Desc)])
+  @@index([status, expiresAt])
+  @@map("export_requests")
+  @@schema("platform")
+}
+
+// A subject request from someone with NO platform account (ADR-090; PDPA-48).
+//
+// The sibling of ExportRequest above, and the difference is who drives it. ExportRequest is keyed by
+// `userId` and the subject operates it themselves; the people here — a CRM contact, a lead, the named
+// contact at a vendor — have no account, so the TENANT is their controller and answers on their
+// behalf. What this row records is the tenant's handling, not a subject session.
+//
+// It is also the permission to search: without it there is no lawful reason for an admin to look a
+// stranger's email up in the tenant's customer base, and every search cites a request id and is
+// audited (ADR-090 §4).
+//
+// `receivedAt` is when the TENANT received the request, not when it was keyed in — PDPA §30 runs 30
+// days from receipt, so it is supplied and never defaulted to now().
+model SubjectRequest {
+  requestId   String             @id @default(dbgenerated("gen_random_uuid()")) @map("request_id") @db.Uuid
+  tenantId    String             @map("tenant_id") @db.Uuid
+  requestType SubjectRequestType @map("request_type")
+
+  // At least one identifier is required (DB CHECK `subject_requests_identifier_present`): with
+  // neither there is nothing to search for.
+  // @pdpa(category: "contact", role: "processor") — the email a data subject identified themselves by
+  subjectEmail String? @map("subject_email") @db.VarChar(255)
+  // @pdpa(category: "contact", role: "processor") — the phone a data subject identified themselves by
+  subjectPhone String? @map("subject_phone") @db.VarChar(50)
+
+  status      SubjectRequestStatus @default(OPEN) @map("status")
+  receivedAt  DateTime             @map("received_at") @db.Timestamptz()
+  // @pdpa(category: "operational") — traces the request record to the admin who keyed it in
+  openedBy    String               @map("opened_by") @db.Uuid
+  openedAt    DateTime             @default(now()) @map("opened_at") @db.Timestamptz()
+  closedAt    DateTime?            @map("closed_at") @db.Timestamptz()
+  // What was done, or why it was refused. A refusal must name its basis — "kept for legal reasons"
+  // without naming the law is itself a breach (ADR-090 §5).
+  outcomeNote String?              @map("outcome_note") @db.Text
+
+  // Platform-witnessed verification (ADR-090 §6, migration 20260816000004).
+  //
+  // What these prove is CONTROL OF THE IDENTIFIER THE TENANT ALREADY HOLDS — the challenge goes to
+  // the address on the MATCHED RECORD, never to one typed into the request. Not proof of legal
+  // identity, and deliberately not: regulators ask for verification proportionate to the risk and
+  // treat demanding ID documents without reasonable doubt as an infringement (Art 12(2)/12(6)).
+  //
+  // Only the hash is stored, as with the vendor-portal and contract-signing links (ADR-030/058): the
+  // raw token leaves in the email and a database copy cannot be replayed. `verifiedAt` is also what
+  // makes the token single-use, and the DB CHECK `subject_requests_verified_has_evidence` stops a row
+  // claiming it was verified with no record of what was sent where.
+  verificationTokenHash String?   @map("verification_token_hash") @db.VarChar(64)
+  verificationSentTo    String?   @map("verification_sent_to") @db.VarChar(255)
+  verificationSentAt    DateTime? @map("verification_sent_at") @db.Timestamptz()
+  verifiedAt            DateTime? @map("verified_at") @db.Timestamptz()
+  verificationMethod    String?   @map("verification_method") @db.VarChar(20)
+
+  openedByUser User @relation(fields: [openedBy], references: [userId])
+
+  // Pre-auth inquiries that were routed here (ADR-091). Usually zero or one: a request the tenant
+  // received by email or phone has none, and one that started on the public policy screen has the
+  // inquiry it came from. Nothing on this side changes — the FK lives on PrivacyInquiry.
+  privacyInquiries PrivacyInquiry[]
+
+  @@index([tenantId, status, receivedAt])
+  @@index([verificationTokenHash])
+  @@map("subject_requests")
   @@schema("platform")
 }
 
@@ -113,6 +409,92 @@ model TenantMembership {
 
   @@unique([tenantId, userId])
   @@map("tenant_memberships")
+  @@schema("platform")
+}
+
+// Additional roles a user holds beyond their primary tenant_memberships role (multi-role support).
+// Effective roles = primary ∪ additional; effective permissions = union of ROLE_PERMISSIONS.
+model UserAdditionalRole {
+  userId     String      @map("user_id") @db.Uuid
+  tenantId   String      @map("tenant_id") @db.Uuid
+  role       CosRoleEnum @map("role")
+  assignedBy String?     @map("assigned_by") @db.Uuid
+  assignedAt DateTime    @default(now()) @map("assigned_at") @db.Timestamptz()
+
+  @@id([userId, tenantId, role])
+  @@index([userId, tenantId])
+  @@map("user_additional_roles")
+  @@schema("platform")
+}
+
+// An inquiry lodged from the PRE-AUTH Privacy Policy screen, by someone with NO account (ADR-091).
+//
+// THE ONLY platform MODEL WITHOUT tenant_id, and the only one with no RLS policy behind it. Both are
+// deliberate and both are permitted by master §Phase 2 ("platform tables exempt"; identity tables are
+// "cross-tenant, no RLS needed"): the sender has not identified a tenant and may not know which one
+// holds their data, so there is nothing to isolate by and the standard policy shape would deny every
+// row. Access is confined by ROLE — SYSTEM_ADMIN through RolesGuard — and every read is audited.
+//
+// Chains into SubjectRequest rather than duplicating it: when an inquiry is matched to a tenant, that
+// tenant's admin opens a SubjectRequest in the normal way and `linkedRequestId` points at it. The two
+// records are two different events with two different clocks — see the migration header.
+model PrivacyInquiry {
+  inquiryId String @id @default(dbgenerated("gen_random_uuid()")) @map("inquiry_id") @db.Uuid
+
+  // The handle the sender is given and can quote back. Not the UUID — it is read off a screen and
+  // typed into an email — and not a sequence, because a monotonic public reference would disclose how
+  // many inquiries the platform receives.
+  reference String @unique @map("reference") @db.VarChar(32)
+
+  // Supplied by an unauthenticated stranger and therefore UNVERIFIED. Nothing downstream may treat
+  // these as proof of identity: GDPR Art 12(2)/12(6) makes over-verification an infringement, and the
+  // controller that eventually answers verifies against what IT already holds (ADR-090 §6).
+  // @pdpa(category: "identity", role: "controller") — a name given by a person with no account here
+  senderName  String  @map("sender_name") @db.VarChar(255)
+  // @pdpa(category: "contact", role: "controller") — the address a reply goes to
+  senderEmail String  @map("sender_email") @db.VarChar(255)
+  // @pdpa(category: "contact", role: "controller") — optional, as the form marks it
+  senderPhone String? @map("sender_phone") @db.VarChar(50)
+
+  category PrivacyInquiryCategory @default(GENERAL) @map("category")
+  subject  String                 @map("subject") @db.VarChar(255)
+  // @pdpa(category: "operational", role: "controller") — free text written by the sender
+  message  String                 @db.Text
+
+  status     PrivacyInquiryStatus @default(OPEN) @map("status")
+  receivedAt DateTime             @default(now()) @map("received_at") @db.Timestamptz()
+
+  // Set when the inquiry is handed to a tenant. ON DELETE SET NULL — the subject request is the
+  // controller's record on its own retention schedule, and losing it must not delete the evidence
+  // that a stranger wrote in.
+  linkedRequestId String?         @map("linked_request_id") @db.Uuid
+  linkedRequest   SubjectRequest? @relation(fields: [linkedRequestId], references: [requestId], onDelete: SetNull)
+
+  closedAt    DateTime? @map("closed_at") @db.Timestamptz()
+  // Required on close (DB CHECK): a refusal that does not name its basis is itself a breach.
+  outcomeNote String?   @map("outcome_note") @db.Text
+
+  @@index([status, receivedAt])
+  @@index([senderEmail])
+  @@map("privacy_inquiries")
+  @@schema("platform")
+}
+
+enum PrivacyInquiryCategory {
+  GENERAL
+  DATA_ACCESS
+  DATA_CORRECTION
+  DATA_DELETION
+  SECURITY_CONCERN
+
+  @@schema("platform")
+}
+
+enum PrivacyInquiryStatus {
+  OPEN
+  ROUTED
+  CLOSED
+
   @@schema("platform")
 }
 
@@ -166,7 +548,19 @@ model StoredFile {
   deletedAt        DateTime?  @map("deleted_at") @db.Timestamptz()
   quarantinedAt    DateTime?  @map("quarantined_at") @db.Timestamptz()
 
-  metadata FileMetadata[]
+  // Per-file legal hold (migration 20260706000003). The columns have existed since Phase 9 and
+  // NOTHING SET THEM until ADR-090 — the WORM guarantee the migration describes ("legal hold blocks
+  // ALL deletion, soft + hard") was a column with no writer. Modelled here so the subject-request
+  // erasure can place a hold through the files module rather than reaching into `files.files` from
+  // another module's code (master §4). No migration accompanies this: the columns already exist, and
+  // adding them to the model is alignment, not a schema change.
+  legalHold       Boolean   @default(false) @map("legal_hold")
+  legalHoldReason String?   @map("legal_hold_reason") @db.Text
+  legalHoldBy     String?   @map("legal_hold_by") @db.Uuid
+  legalHoldAt     DateTime? @map("legal_hold_at") @db.Timestamptz()
+
+  metadata   FileMetadata[]
+  annotation PhotoAnnotation?
 
   @@index([tenantId, uploadedBy])
   @@index([tenantId, fileStatus])
@@ -189,4 +583,175 @@ model FileMetadata {
   @@index([entityType, entityId])
   @@map("file_metadata")
   @@schema("files")
+}
+
+// Re-editable markup on a photo (ADR-056). The stroke list is retained-mode with NORMALISED (0..1)
+// coordinates, so one list renders at any resolution; the flattened marked-up image is a separate
+// StoredFile, never stored here. `version` is the concurrency token: an offline edit carries the
+// base version it read, and on sync a mismatch means someone else edited the same photo → the write
+// is CONFLICT_FLAGGED for SITE_ENGINEER review, never merged (17-offline-mobile-sync §17.5).
+model PhotoAnnotation {
+  annotationId String    @id @default(dbgenerated("gen_random_uuid()")) @map("annotation_id") @db.Uuid
+  fileId       String    @unique @map("file_id") @db.Uuid
+  tenantId     String    @map("tenant_id") @db.Uuid
+  strokes      Json      @map("strokes") @db.JsonB
+  version      Int       @default(1) @map("version")
+  modifiedBy   String    @map("modified_by") @db.Uuid
+  modifiedAt   DateTime  @default(now()) @map("modified_at") @db.Timestamptz()
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  deletedAt    DateTime? @map("deleted_at") @db.Timestamptz()
+
+  file StoredFile @relation(fields: [fileId], references: [fileId])
+
+  @@index([tenantId])
+  @@map("photo_annotations")
+  @@schema("files")
+}
+
+// ─── SUPPORT DESK + HELP CHAT (ADR-093) ───────────────────────────────────
+// Backs mockup/mobile/01_authen/05_get_help/. All four models live in "platform" because the
+// Support Centre is reached BEFORE sign-in: a pre-auth caller has no tenant, and master §Phase 2
+// exempts platform tables from the tenant_id rule. See migration 20260818000001 for the full note.
+
+/// The one fallback desk, served to anyone including a pre-auth caller. No tenant_id and no RLS —
+/// there is nothing to scope by, and this row is public by design (a support number you must sign in
+/// to read is useless to someone who cannot sign in). Exactly one row, pinned by `singleton`.
+model SupportDeskDefault {
+  singleton Boolean @id @default(true) @map("singleton")
+
+  supportCenterPhone   String? @map("support_center_phone") @db.VarChar(50)
+  itHotlinePhone       String? @map("it_hotline_phone") @db.VarChar(50)
+  itHotlineLabel       String? @map("it_hotline_label") @db.VarChar(255)
+  itHotlineDescription String? @map("it_hotline_description") @db.Text
+  // Free text, not two TIME columns: "24/7 Available" has no open and close time (ADR-093 §1).
+  hoursCritical        String? @map("hours_critical") @db.VarChar(120)
+  hoursGeneral         String? @map("hours_general") @db.VarChar(120)
+  // [{ label, phone }] — read whole, never queried into. Shape held by a CHECK and the DTO.
+  regionalHotlines     Json    @default("[]") @map("regional_hotlines") @db.JsonB
+
+  // @updatedAt, not @default(now()): this column is here to say when an admin last edited the desk,
+  // and a create-only default would freeze it at seed time. There is no BEFORE UPDATE trigger anywhere
+  // in this schema — Tenant and User keep updated_at honest the same way.
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+  updatedBy String?  @map("updated_by") @db.Uuid
+
+  @@map("support_desk_default")
+  @@schema("platform")
+}
+
+/// A tenant's override of the row above, merged over it field by field — an unset column falls
+/// through to the default rather than blanking it. Tenant-scoped, so it takes the ORDINARY
+/// rls_tenant_isolation policy and is unreachable pre-auth, which is the whole reason the default
+/// row exists separately.
+model TenantSupportDesk {
+  tenantId String @id @map("tenant_id") @db.Uuid
+
+  supportCenterPhone   String? @map("support_center_phone") @db.VarChar(50)
+  itHotlinePhone       String? @map("it_hotline_phone") @db.VarChar(50)
+  itHotlineLabel       String? @map("it_hotline_label") @db.VarChar(255)
+  itHotlineDescription String? @map("it_hotline_description") @db.Text
+  hoursCritical        String? @map("hours_critical") @db.VarChar(120)
+  hoursGeneral         String? @map("hours_general") @db.VarChar(120)
+  regionalHotlines     Json    @default("[]") @map("regional_hotlines") @db.JsonB
+
+  // @updatedAt, not @default(now()): this column is here to say when an admin last edited the desk,
+  // and a create-only default would freeze it at seed time. There is no BEFORE UPDATE trigger anywhere
+  // in this schema — Tenant and User keep updated_at honest the same way.
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+  updatedBy String?  @map("updated_by") @db.Uuid
+
+  @@map("tenant_support_desks")
+  @@schema("platform")
+}
+
+enum SupportTicketStatus {
+  OPEN
+  AI_HANDLING
+  /// A person has been asked for. No support-agent role or console exists yet (ADR-093 §3), so this
+  /// waits on SYSTEM_ADMIN and the screen says so rather than implying someone is watching.
+  ESCALATED
+  RESOLVED
+  CLOSED
+
+  @@schema("platform")
+}
+
+enum SupportMessageSender {
+  USER
+  AI
+  /// Defined now, produced by nothing yet — the console that emits it is out of ADR-093's scope.
+  HUMAN_AGENT
+  /// The thread's own notices (opened, escalated), attributable to no person.
+  SYSTEM
+
+  @@schema("platform")
+}
+
+/// One support conversation. `tenantId` and `openedBy` are BOTH nullable because Help Chat is open
+/// pre-auth (PO decision 2026-08-18), which is why these tables carry `rls_tenant_or_anonymous`
+/// rather than the standard policy: with no tenant context the policy matches the tenantId IS NULL
+/// rows and nothing else. RLS scopes that anonymous set but cannot divide it, so an anonymous ticket
+/// is addressed by an unguessable token whose SHA-256 is `accessTokenHash`.
+model SupportTicket {
+  ticketId  String @id @default(dbgenerated("gen_random_uuid()")) @map("ticket_id") @db.Uuid
+  /// Human-quotable handle ("Ticket #…"), never an authenticator. Application-generated, not a
+  /// sequence: a monotonic public reference would disclose the platform's ticket volume (ADR-091).
+  reference String @unique @map("reference") @db.VarChar(32)
+
+  tenantId String? @map("tenant_id") @db.Uuid
+  /// @pdpa(category: "operational", role: "controller") — traces a ticket to the account that opened it
+  openedBy String? @map("opened_by") @db.Uuid
+
+  /// SHA-256 of a one-time token (spec §5.4.3). Set on anonymous tickets only; never rendered, never
+  /// logged. NULL when a JWT is the credential and RLS the scope.
+  accessTokenHash String? @map("access_token_hash") @db.Char(64)
+
+  status      SupportTicketStatus @default(OPEN) @map("status")
+  openedAt    DateTime            @default(now()) @map("opened_at") @db.Timestamptz()
+  /// Stamped on escalation and KEPT through RESOLVED/CLOSED — how long the caller waited for a
+  /// person is the number that says whether ESCALATED is honest.
+  escalatedAt DateTime?           @map("escalated_at") @db.Timestamptz()
+  closedAt    DateTime?           @map("closed_at") @db.Timestamptz()
+
+  /// The device's locale at open, so a reply is written back in the language it was asked in (QM-3).
+  locale String? @map("locale") @db.VarChar(16)
+
+  messages SupportMessage[]
+
+  @@index([status, openedAt])
+  @@index([tenantId, openedAt(sort: Desc)])
+  @@map("support_tickets")
+  @@schema("platform")
+}
+
+/// One turn in a thread. The three AI columns are NOT optional decoration: §22.3 forbids presenting a
+/// model's output as more than advice, and storing the HallucinationGuard verdict with the message is
+/// what lets the thread RENDER it — the rule <ProcurementInsight /> already follows. A CHECK holds
+/// "AI turn iff verdict present".
+model SupportMessage {
+  messageId String  @id @default(dbgenerated("gen_random_uuid()")) @map("message_id") @db.Uuid
+  ticketId  String  @map("ticket_id") @db.Uuid
+  /// Denormalised from the ticket so this table can carry the SAME policy — RLS does not follow FKs.
+  tenantId  String? @map("tenant_id") @db.Uuid
+
+  senderType   SupportMessageSender @map("sender_type")
+  /// @pdpa(category: "operational", role: "controller") — traces a turn to the account that wrote it
+  senderUserId String?              @map("sender_user_id") @db.Uuid
+
+  /// @pdpa(category: "operational", role: "controller") — free text; a caller may include anything
+  /// about themselves. Retained per docs/compliance/data-retention-policy.md.
+  body String @map("body") @db.Text
+
+  modelUsed     String?  @map("model_used") @db.VarChar(100)
+  confidence    Decimal? @map("confidence") @db.Decimal(4, 3)
+  lowConfidence Boolean? @map("low_confidence")
+
+  sentAt DateTime  @default(now()) @map("sent_at") @db.Timestamptz()
+  readAt DateTime? @map("read_at") @db.Timestamptz()
+
+  ticket SupportTicket @relation(fields: [ticketId], references: [ticketId], onDelete: Cascade)
+
+  @@index([ticketId, sentAt])
+  @@map("support_messages")
+  @@schema("platform")
 }

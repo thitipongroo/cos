@@ -1,6 +1,21 @@
 # ArgoCD Application manifests — GitOps sync for all Construction OS services
 # Deploy: kubectl apply -f infrastructure/kubernetes/argocd/argocd-apps.yaml -n argocd
-# Each app watches infrastructure/helm/<chart> in this repo and auto-syncs on push
+# Each app watches infrastructure/helm/<chart> in this repo.
+#
+# PRODUCTION SYNC IS MANUAL — do not add `syncPolicy.automated` to these Applications.
+# Every Application here uses values-prod.yaml on targetRevision: main. QM-16 and the Phase 19
+# readiness checklist require production promotion to be a MANUAL sync gate in the ArgoCD UI, with
+# auto-sync limited to staging. Until 2026-08-07 all ten carried `automated: {prune, selfHeal}`,
+# so a push to main deployed straight to production with no gate — the exact thing that gate exists
+# to prevent. The blocks were removed; `retry` and `syncOptions` are unaffected.
+#
+# STAGING auto-syncs — the ten `*-staging` Applications at the bottom of this file. Same cluster,
+# namespace `cos-staging` (product-owner decision 2026-08-07), each on its chart's values-staging.yaml.
+# That is the split QM-16 requires: staging syncs itself, production waits for a human.
+#
+# Note for Phase 19: its automated check greps for an application literally named `cos-staging`.
+# The staging apps here are named per service (`cos-backend-staging`, …) because ArgoCD Applications
+# are per-chart, not per-environment. Update the check to match, or it reports a false failure.
 
 # ─── AppProject ───────────────────────────────────────────────────────────────
 apiVersion: argoproj.io/v1alpha1
@@ -14,6 +29,10 @@ spec:
     - 'https://github.com/construction-os/construction-os'
   destinations:
     - namespace: cos
+      server: https://kubernetes.default.svc
+    # Staging shares the cluster and gets its own namespace (product-owner decision 2026-08-07).
+    # Without this entry ArgoCD rejects every *-staging Application as an invalid destination.
+    - namespace: cos-staging
       server: https://kubernetes.default.svc
     - namespace: monitoring
       server: https://kubernetes.default.svc
@@ -46,9 +65,6 @@ spec:
     server: https://kubernetes.default.svc
     namespace: cos
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
     syncOptions:
       - CreateNamespace=true
     retry:
@@ -80,9 +96,35 @@ spec:
     server: https://kubernetes.default.svc
     namespace: cos
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        maxDuration: 3m
+        factor: 2
+
+---
+# ─── CredentialService (W3C DID/VC — ADR-019) ─────────────────────────────────
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cos-credential-service
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: construction-os
+  source:
+    repoURL: https://github.com/construction-os/construction-os
+    targetRevision: main
+    path: infrastructure/helm/cos-credential-service
+    helm:
+      valueFiles:
+        - values-prod.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cos
+  syncPolicy:
     retry:
       limit: 5
       backoff:
@@ -112,9 +154,6 @@ spec:
     server: https://kubernetes.default.svc
     namespace: cos
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
     retry:
       limit: 5
       backoff:
@@ -144,9 +183,6 @@ spec:
     server: https://kubernetes.default.svc
     namespace: cos
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
     retry:
       limit: 5
       backoff:
@@ -176,9 +212,6 @@ spec:
     server: https://kubernetes.default.svc
     namespace: cos
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
     retry:
       limit: 5
       backoff:
@@ -208,9 +241,6 @@ spec:
     server: https://kubernetes.default.svc
     namespace: cos
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
     retry:
       limit: 5
       backoff:
@@ -240,9 +270,6 @@ spec:
     server: https://kubernetes.default.svc
     namespace: cos
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
     retry:
       limit: 5
       backoff:
@@ -271,6 +298,368 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: cos
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        maxDuration: 3m
+        factor: 2
+---
+# OTel Collector. The AppProject already whitelists the `monitoring` namespace, but nothing under
+# infrastructure/monitoring/ had an Application — so the collector had no deploy path at all.
+#
+# Source is a KUSTOMIZE overlay, not Helm: the overlay supplies the two mandatory env vars
+# (ENV, OTEL_SAMPLING_PERCENTAGE) and the base generates the collector ConfigMap from the real
+# config file. ArgoCD detects kustomization.yaml automatically — no `kustomize:` block needed.
+# Point a staging ArgoCD instance at overlays/staging instead (§31.5: staging samples at 10%).
+# See ADR-075.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cos-otel-collector
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: construction-os
+  source:
+    repoURL: https://github.com/construction-os/construction-os
+    targetRevision: main
+    path: infrastructure/monitoring/otel-collector-overlays/production
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        maxDuration: 3m
+        factor: 2
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# STAGING Applications — auto-sync ON, deliberately unlike the production set above.
+#
+# QM-16 and the Phase 19 checklist split the two: staging auto-syncs on every image-tag update,
+# production waits for a manual sync gate in the ArgoCD UI. Added 2026-08-07 (product-owner
+# decision: same cluster, separate namespace).
+#
+# Same cluster (https://kubernetes.default.svc), namespace `cos-staging` — see the AppProject
+# destinations at the top of this file. The OTel collector stays in `monitoring` in both
+# environments and is a kustomize overlay, not a Helm chart, so it takes the staging overlay path
+# rather than a values file.
+# ══════════════════════════════════════════════════════════════════════════════
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cos-backend-staging
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: construction-os
+  source:
+    repoURL: https://github.com/construction-os/construction-os
+    targetRevision: main
+    path: infrastructure/helm/cos-backend
+    helm:
+      valueFiles:
+        - values-staging.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cos-staging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        maxDuration: 3m
+        factor: 2
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cos-file-service-staging
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: construction-os
+  source:
+    repoURL: https://github.com/construction-os/construction-os
+    targetRevision: main
+    path: infrastructure/helm/cos-file-service
+    helm:
+      valueFiles:
+        - values-staging.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cos-staging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        maxDuration: 3m
+        factor: 2
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cos-credential-service-staging
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: construction-os
+  source:
+    repoURL: https://github.com/construction-os/construction-os
+    targetRevision: main
+    path: infrastructure/helm/cos-credential-service
+    helm:
+      valueFiles:
+        - values-staging.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cos-staging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        maxDuration: 3m
+        factor: 2
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cos-ai-gateway-staging
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: construction-os
+  source:
+    repoURL: https://github.com/construction-os/construction-os
+    targetRevision: main
+    path: infrastructure/helm/cos-ai-gateway
+    helm:
+      valueFiles:
+        - values-staging.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cos-staging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        maxDuration: 3m
+        factor: 2
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cos-analytics-worker-staging
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: construction-os
+  source:
+    repoURL: https://github.com/construction-os/construction-os
+    targetRevision: main
+    path: infrastructure/helm/cos-analytics-worker
+    helm:
+      valueFiles:
+        - values-staging.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cos-staging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        maxDuration: 3m
+        factor: 2
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cos-kg-ingestion-worker-staging
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: construction-os
+  source:
+    repoURL: https://github.com/construction-os/construction-os
+    targetRevision: main
+    path: infrastructure/helm/cos-kg-ingestion-worker
+    helm:
+      valueFiles:
+        - values-staging.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cos-staging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        maxDuration: 3m
+        factor: 2
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cos-ai-embedding-worker-staging
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: construction-os
+  source:
+    repoURL: https://github.com/construction-os/construction-os
+    targetRevision: main
+    path: infrastructure/helm/cos-ai-embedding-worker
+    helm:
+      valueFiles:
+        - values-staging.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cos-staging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        maxDuration: 3m
+        factor: 2
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cos-ai-ocr-pipeline-staging
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: construction-os
+  source:
+    repoURL: https://github.com/construction-os/construction-os
+    targetRevision: main
+    path: infrastructure/helm/cos-ai-ocr-pipeline
+    helm:
+      valueFiles:
+        - values-staging.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cos-staging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        maxDuration: 3m
+        factor: 2
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cos-web-staging
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: construction-os
+  source:
+    repoURL: https://github.com/construction-os/construction-os
+    targetRevision: main
+    path: infrastructure/helm/cos-web
+    helm:
+      valueFiles:
+        - values-staging.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cos-staging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        maxDuration: 3m
+        factor: 2
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cos-otel-collector-staging
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: construction-os
+  source:
+    repoURL: https://github.com/construction-os/construction-os
+    targetRevision: main
+    path: infrastructure/monitoring/otel-collector-overlays/staging
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
   syncPolicy:
     automated:
       prune: true

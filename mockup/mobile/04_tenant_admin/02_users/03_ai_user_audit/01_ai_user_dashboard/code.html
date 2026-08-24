@@ -1,0 +1,343 @@
+<!DOCTYPE html><html class="dark" lang="th"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>AI User Audit Recommendations | Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+        body {
+            font-family: 'Inter Tight', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            background-color: #031427;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+
+        .glass-panel {
+            background: rgba(16, 32, 52, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .status-strip {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+        }
+
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(6, 182, 212, 0.1), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 3s infinite linear;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        .safe-bottom {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "dark-bg": "#020617",
+                        "surface-tint": "#b4c5ff",
+                        "sync-pending": "#94A3B8",
+                        "sync-active": "#00C853",
+                        "surface-container-highest": "#26364a",
+                        "surface-dim": "#031427",
+                        "outline-variant": "#434655",
+                        "inverse-primary": "#0053db",
+                        "on-secondary-fixed": "#001f26",
+                        "on-error-container": "#ffdad6",
+                        "on-surface-variant": "#c3c6d7",
+                        "dark-surface": "#0F172A",
+                        "secondary-fixed": "#acedff",
+                        "on-primary-container": "#eeefff",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "surface-bright": "#2a3a4f",
+                        "surface-variant": "#26364a",
+                        "inverse-surface": "#d3e4fe",
+                        "surface-container-lowest": "#000f21",
+                        "on-primary": "#002a78",
+                        "tertiary": "#c1c5dc",
+                        "on-surface": "#d3e4fe",
+                        "outline": "#8d90a0",
+                        "on-error": "#690005",
+                        "background": "#031427",
+                        "tertiary-fixed": "#dee1f9",
+                        "on-tertiary-container": "#eeefff",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "on-secondary": "#003640",
+                        "mobile-warning": "#FF9500",
+                        "surface-container-low": "#0b1c30",
+                        "mobile-primary": "#0066FF",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "primary-fixed": "#dbe1ff",
+                        "surface-container-high": "#1b2b3f",
+                        "secondary": "#4cd7f6",
+                        "mobile-success": "#00C853",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "mobile-danger": "#FF3B30",
+                        "surface-container": "#102034",
+                        "on-tertiary-fixed": "#161b2b",
+                        "error-container": "#93000a",
+                        "on-secondary-container": "#00424e",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "error": "#ffb4ab",
+                        "inverse-on-surface": "#213145",
+                        "secondary-container": "#03b5d3",
+                        "primary": "#b4c5ff",
+                        "on-background": "#d3e4fe",
+                        "tertiary-container": "#686c80",
+                        "primary-container": "#2563eb",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "on-primary-fixed": "#00174b",
+                        "on-tertiary": "#2b3041",
+                        "surface": "#031427",
+                        "ai-cyan": "#06B6D4"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "space-3": "12px",
+                        "touch-target": "52px",
+                        "space-4": "16px",
+                        "web-margin": "32px",
+                        "space-1": "4px",
+                        "edge-mobile": "24px",
+                        "base": "4px",
+                        "space-2": "8px"
+                    },
+                    "fontFamily": {
+                        "h1-web": ["Inter Tight"],
+                        "label-mobile": ["Inter Tight"],
+                        "display-web": ["Inter Tight"],
+                        "tiny-web": ["Inter Tight"],
+                        "hero-mobile": ["Inter Tight"],
+                        "body-web": ["Inter Tight"],
+                        "body-mobile": ["Inter Tight"],
+                        "h2-web": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                        "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                        "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="text-on-surface">
+<!-- Header Section -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-edge-mobile h-touch-target bg-surface">
+<div class="flex items-center gap-space-3">
+<button class="transition-transform active:scale-95 duration-200">
+<span class="material-symbols-outlined text-on-surface">arrow_back</span>
+</button>
+<div class="flex flex-col">
+<h1 class="font-display-web text-h1-web-mobile font-bold tracking-tight">CONSTRUCTION OS</h1>
+<div class="flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-sync-active"></span>
+<span class="font-tiny-web text-sync-active uppercase tracking-widest">Synced</span>
+</div>
+</div>
+</div>
+<button class="transition-transform active:scale-95 duration-200">
+<span class="material-symbols-outlined text-on-surface">more_vert</span>
+</button>
+</header>
+<main class="pt-[72px] pb-[120px] px-edge-mobile space-y-space-4">
+<!-- Page Title -->
+<section class="mt-space-2">
+
+<p class="font-body-mobile text-on-surface-variant text-sm mt-1">รายการแนะนำการตรวจสอบผู้ใช้โดยระบบ AI</p>
+</section>
+<!-- AI Summary Card -->
+<section class="relative overflow-hidden rounded-xl bg-ai-cyan/5 border-l-4 border-ai-cyan p-space-4">
+<div class="shimmer absolute inset-0 pointer-events-none opacity-20"></div>
+<div class="relative z-10 flex flex-col gap-space-2">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-2 text-ai-cyan">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">psychology</span>
+<span class="font-label-mobile uppercase tracking-wider">AI Audit Logic</span>
+</div>
+<div class="px-2 py-0.5 rounded-full bg-ai-cyan text-on-primary font-tiny-web">95% CONFIDENCE</div>
+</div>
+<p class="font-body-mobile text-on-surface text-sm leading-relaxed">
+                    AI ตรวจพบ <span class="font-bold text-ai-cyan">3 บัญชี</span> ที่ไม่มีความเคลื่อนไหวเกิน 30 วัน ข้อแนะนำ: <span class="underline decoration-ai-cyan/40">ระงับการใช้งานหรือตรวจสอบสิทธิ์ใหม่</span>
+</p>
+<div class="flex items-center gap-1 mt-1 opacity-60">
+<span class="material-symbols-outlined text-[14px]">database</span>
+<span class="font-tiny-web">Data Source: Tenant Access Logs</span>
+</div>
+</div>
+</section>
+<!-- Recommendation List -->
+<div class="space-y-space-4">
+<!-- User Card 1 -->
+<div class="relative glass-panel rounded-xl overflow-hidden flex flex-col transition-all active:scale-[0.98]">
+<div class="status-strip bg-mobile-danger"></div>
+<div class="p-space-4 flex flex-col gap-space-3">
+<div class="flex items-start justify-between">
+<div class="flex gap-space-3">
+<img class="w-12 h-12 rounded-lg object-cover border border-outline-variant" data-alt="A professional headshot of a senior construction engineer in high-visibility gear, sharp focus, industrial dark studio background, cinematic lighting, 8k resolution, photorealistic style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDG0CJ_P_RAzJjLPnFr6GyGhGkQ1WNBZqogyMc44VbbuNMsrYryurBElfp2PB9-Uw-eVGd1LqrgB0OdPALEYz1-pyYF-B8Ldo0HLFxf8l8TYtgkpXaLQ0GOstYKeA8TZ28knsBwrceEGFeL7J0HC5Z6Al3yNCXjYe3s3fOVtGG8MMIPLWy_YUratBZ7eSZTHIV4O-cygInM64AUWcJ1Ga-Hh6CVVh3MW2l58YuY460NckCqp3tyv_aI">
+<div>
+<h3 class="font-label-mobile text-on-surface text-base">Somchai Pakdee</h3>
+<p class="font-tiny-web text-on-surface-variant">UID: COS-9921-X</p>
+<span class="inline-block mt-1 px-2 py-0.5 rounded bg-surface-container-highest text-tertiary font-tiny-web uppercase">Field Supervisor</span>
+</div>
+</div>
+<div class="text-right">
+<p class="font-tiny-web text-mobile-danger uppercase font-bold">Risk: Abandoned</p>
+<p class="font-tiny-web text-on-surface-variant">Active 42 days ago</p>
+</div>
+</div>
+<div class="bg-dark-bg/40 p-space-2 rounded-lg border border-white/5">
+<div class="flex items-center gap-2 text-ai-cyan">
+<span class="material-symbols-outlined text-[18px]">info</span>
+<span class="font-tiny-web font-semibold uppercase">AI Reason</span>
+</div>
+<p class="font-body-web text-xs text-on-surface-variant mt-1">ตรวจพบการเข้าใช้งานล่าสุดจากพิกัดที่ไม่คุ้นเคยก่อนหยุดนิ่ง 42 วัน</p>
+</div>
+<div class="grid grid-cols-2 gap-space-2 mt-2">
+<button class="h-touch-target rounded-lg border border-mobile-danger text-mobile-danger font-label-mobile uppercase tracking-widest transition-colors hover:bg-mobile-danger/10">Suspend</button>
+<button class="h-touch-target rounded-lg bg-mobile-primary text-white font-label-mobile uppercase tracking-widest shadow-lg shadow-mobile-primary/20">Re-verify</button>
+</div>
+</div>
+</div>
+<!-- User Card 2 -->
+<div class="relative glass-panel rounded-xl overflow-hidden flex flex-col transition-all active:scale-[0.98]">
+<div class="status-strip bg-mobile-warning"></div>
+<div class="p-space-4 flex flex-col gap-space-3">
+<div class="flex items-start justify-between">
+<div class="flex gap-space-3">
+<img class="w-12 h-12 rounded-lg object-cover border border-outline-variant" data-alt="A sharp portrait of a female project manager in a modern office, wearing a dark navy blazer, industrial-chic background with architectural blueprints, soft moody lighting, deep shadows, 8k professional photography." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCRWbWNbtfO91NLFu-Acboja-KtcWnamdICXEg8uFOwRTWm28dUbgXe2VVELnPJQxrHBnoJuU4dgYPNiUoyWb_I84P0h1eScWiB2mg1lK5X9_CIDKBCctKjNsFLsGsj06K55aDlmB1b6WgpthM_tVjiSdqr5S96vkPHbrZNPJ_3hdfKGdMsO_oovhNTFSwt9a2wLSCRGTtex3uDifvDTdDNVKzDWKj7QrT9h9ZD0PstXZPWn-sJiDHZ">
+<div>
+<h3 class="font-label-mobile text-on-surface text-base">Arisara Wongsa</h3>
+<p class="font-tiny-web text-on-surface-variant">UID: COS-1102-A</p>
+<span class="inline-block mt-1 px-2 py-0.5 rounded bg-surface-container-highest text-tertiary font-tiny-web uppercase">Sub-Contractor</span>
+</div>
+</div>
+<div class="text-right">
+<p class="font-tiny-web text-mobile-warning uppercase font-bold">Risk: Inactive</p>
+<p class="font-tiny-web text-on-surface-variant">Active 31 days ago</p>
+</div>
+</div>
+<div class="bg-dark-bg/40 p-space-2 rounded-lg border border-white/5">
+<div class="flex items-center gap-2 text-ai-cyan">
+<span class="material-symbols-outlined text-[18px]">info</span>
+<span class="font-tiny-web font-semibold uppercase">AI Reason</span>
+</div>
+<p class="font-body-web text-xs text-on-surface-variant mt-1">สัญญาจ้างโครงการ Alpha กำลังจะสิ้นสุดใน 7 วัน แต่ไม่มีการเคลื่อนไหว</p>
+</div>
+<div class="grid grid-cols-2 gap-space-2 mt-2">
+<button class="h-touch-target rounded-lg border border-mobile-danger text-mobile-danger font-label-mobile uppercase tracking-widest transition-colors hover:bg-mobile-danger/10">Suspend</button>
+<button class="h-touch-target rounded-lg bg-mobile-primary text-white font-label-mobile uppercase tracking-widest shadow-lg shadow-mobile-primary/20">Re-verify</button>
+</div>
+</div>
+</div>
+<!-- User Card 3 -->
+<div class="relative glass-panel rounded-xl overflow-hidden flex flex-col transition-all active:scale-[0.98]">
+<div class="status-strip bg-mobile-danger"></div>
+<div class="p-space-4 flex flex-col gap-space-3">
+<div class="flex items-start justify-between">
+<div class="flex gap-space-3">
+<div class="w-12 h-12 rounded-lg bg-surface-container-highest flex items-center justify-center border border-outline-variant">
+<span class="material-symbols-outlined text-on-surface-variant">person</span>
+</div>
+<div>
+<h3 class="font-label-mobile text-on-surface text-base">Unknown User</h3>
+<p class="font-tiny-web text-on-surface-variant">UID: COS-4451-Z</p>
+<span class="inline-block mt-1 px-2 py-0.5 rounded bg-surface-container-highest text-tertiary font-tiny-web uppercase">External Auditor</span>
+</div>
+</div>
+<div class="text-right">
+<p class="font-tiny-web text-mobile-danger uppercase font-bold">Risk: Ghost Acc</p>
+<p class="font-tiny-web text-on-surface-variant">Active 120 days ago</p>
+</div>
+</div>
+<div class="bg-dark-bg/40 p-space-2 rounded-lg border border-white/5">
+<div class="flex items-center gap-2 text-ai-cyan">
+<span class="material-symbols-outlined text-[18px]">info</span>
+<span class="font-tiny-web font-semibold uppercase">AI Reason</span>
+</div>
+<p class="font-body-web text-xs text-on-surface-variant mt-1">บัญชีถูกสร้างขึ้นชั่วคราวและไม่มีการเข้าใช้งานนานกว่า 4 เดือน</p>
+</div>
+<div class="grid grid-cols-2 gap-space-2 mt-2">
+<button class="h-touch-target rounded-lg border border-mobile-danger text-mobile-danger font-label-mobile uppercase tracking-widest transition-colors hover:bg-mobile-danger/10">Suspend</button>
+<button class="h-touch-target rounded-lg bg-mobile-primary text-white font-label-mobile uppercase tracking-widest shadow-lg shadow-mobile-primary/20">Re-verify</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Bulk Actions Bottom Bar -->
+<footer class="fixed bottom-0 w-full z-50 bg-surface-container-low border-t border-white/5 safe-bottom">
+<div class="px-edge-mobile py-space-4 flex flex-col gap-space-2">
+<button class="w-full h-touch-target bg-mobile-danger text-white rounded-xl font-label-mobile uppercase tracking-widest shadow-xl shadow-mobile-danger/20 transition-all active:scale-95 duration-200 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">block</span>
+                SUSPEND ALL FLAGGED
+            </button>
+<button class="w-full h-touch-target text-on-surface-variant font-label-mobile uppercase tracking-widest transition-all active:scale-95 duration-200">
+                DISMISS ALL
+            </button>
+</div>
+</footer>
+<!-- Bottom Navigation (Hidden as per Contextual FAB/Shell Suppression for task-focused detail screens) -->
+<!-- We prioritize the Action Canvas for the Admin Audit task -->
+<script>
+        // Micro-interaction for buttons
+        document.querySelectorAll('button').forEach(button => {
+            button.addEventListener('touchstart', () => {
+                button.classList.add('opacity-80');
+            });
+            button.addEventListener('touchend', () => {
+                button.classList.remove('opacity-80');
+            });
+        });
+
+        // Simple mock for "Dismiss" action
+        const dismissBtn = document.querySelector('button:last-child');
+        dismissBtn.addEventListener('click', () => {
+            if(confirm('Dismiss all recommendations?')) {
+                document.querySelector('main').innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-[530px] text-center space-y-4" data-stitch-vh="h-[530px]===h-[60vh]">
+                        <div class="w-20 h-20 rounded-full bg-mobile-success/20 flex items-center justify-center">
+                            <span class="material-symbols-outlined text-mobile-success text-4xl">check_circle</span>
+                        </div>
+                        <h2 class="font-hero-mobile text-on-surface">Audit Complete</h2>
+                        <p class="text-on-surface-variant font-body-mobile">ทุกอย่างเรียบร้อยดี ไม่พบบัญชีที่มีความเสี่ยง</p>
+                    </div>
+                `;
+                document.querySelector('footer').style.display = 'none';
+            }
+        });
+    </script>
+
+
+</body></html>

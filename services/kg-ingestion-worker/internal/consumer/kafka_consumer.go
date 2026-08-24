@@ -1,15 +1,25 @@
-// Sarama consumer group handler for kg-ingestion-worker.
-// Subscribes to all tenant-scoped construction/procurement/site/finance events
-// using a cross-tenant regex pattern per spec §Phase 13 NE-1 fix.
-// Source: context/00_master_construction_os.md §Phase 13
+// Kafka consumer for kg-ingestion-worker.
+//
+// Subscribes by regex to every tenant's construction/procurement/site/finance topics (§7.3, §Phase
+// 13) and drives the shared coskafka pipeline: Confluent-framed Avro decode → tenant-isolation
+// guard → idempotency → retry → DLQ. The kg-specific handler bridges the decoded envelope into the
+// Neo4j mapper and graph writer.
+//
+// Replaces the previous sarama implementation, which could not work on two counts verified against a
+// real broker: it json.Unmarshal'd Avro-encoded bytes (fails on byte 0 of every message), and
+// sarama has no regex topic subscription (the pattern was sent to the broker as a literal topic name
+// and rejected as invalid). Both are fixed by franz-go + coskafka.
 package consumer
 
 import (
 	"context"
 	"encoding/json"
-	"log"
+	"fmt"
+	"log/slog"
+	"os"
+	"time"
 
-	"github.com/IBM/sarama"
+	"github.com/construction-os/coslib/coskafka"
 	"github.com/construction-os/kg-ingestion-worker/internal/graph"
 	"github.com/construction-os/kg-ingestion-worker/internal/mapper"
 	"github.com/construction-os/kg-ingestion-worker/internal/model"
@@ -21,109 +31,91 @@ import (
 // Source: docs/specifications/07-multi-tenant-architecture §7.3 + §Phase 13 NE-1/NE-4 fixes.
 const TopicRegex = `^[^.]+\.(construction|procurement|site|finance)\..*`
 
-// ConsumerGroupID is the Kafka consumer group name per spec §Phase 13.
-const ConsumerGroupID = "kg-consumer-group"
+// ConsumerGroupID is the Kafka consumer group name. §7.3 shared-tier convention {service_name}.shared.
+const ConsumerGroupID = "kg-ingestion-worker.shared"
 
-// KGConsumerHandler implements sarama.ConsumerGroupHandler.
-type KGConsumerHandler struct {
-	driver neo4j.DriverWithContext
+// Config carries the endpoints the consumer needs.
+type Config struct {
+	Brokers     []string
+	RegistryURL string
+	RedisURL    string
 }
 
-func NewKGConsumerHandler(driver neo4j.DriverWithContext) *KGConsumerHandler {
-	return &KGConsumerHandler{driver: driver}
-}
+// Start runs the kg consumer until ctx is cancelled.
+//
+// resetOffset drives the admin rebuild endpoint: true replays the whole history to rebuild the
+// graph from scratch, false starts at the beginning for a fresh group (these consumers never
+// committed before this change, so there is history to backfill and re-reading is safe — the graph
+// writer's operations are idempotent MERGEs).
+func Start(ctx context.Context, cfg Config, driver neo4j.DriverWithContext, resetOffset bool) error {
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil)).With("component", "kg-consumer")
 
-func (h *KGConsumerHandler) Setup(_ sarama.ConsumerGroupSession) error   { return nil }
-func (h *KGConsumerHandler) Cleanup(_ sarama.ConsumerGroupSession) error { return nil }
-
-func (h *KGConsumerHandler) ConsumeClaim(sess sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
-	for msg := range claim.Messages() {
-		if err := h.processMessage(sess.Context(), msg); err != nil {
-			log.Printf("kg-consumer: error processing topic=%s offset=%d: %v", msg.Topic, msg.Offset, err)
-			// log and continue — do not stop the consumer on a single bad message
-		}
-		sess.MarkMessage(msg, "")
-	}
-	return nil
-}
-
-func (h *KGConsumerHandler) processMessage(ctx context.Context, msg *sarama.ConsumerMessage) error {
-	var env model.EventEnvelope
-	if err := json.Unmarshal(msg.Value, &env); err != nil {
-		log.Printf("kg-consumer: malformed envelope topic=%s: %v", msg.Topic, err)
-		return nil // skip malformed messages
-	}
-
-	ops, err := mapper.MapEvent(&env)
-	if err != nil {
-		log.Printf("kg-consumer: mapper error event_type=%s: %v", env.EventType, err)
-		return nil // skip unmappable payloads
-	}
-	if len(ops) == 0 {
-		return nil // unhandled event type — skip silently
-	}
-
-	return graph.ExecuteOperations(ctx, h.driver, ops)
-}
-
-// StartConsumerGroup starts the Sarama consumer group and blocks until ctx is cancelled.
-// resetOffset: if true, seek to OffsetOldest for full rebuild.
-func StartConsumerGroup(ctx context.Context, brokers []string, driver neo4j.DriverWithContext, resetOffset bool) error {
-	cfg := sarama.NewConfig()
-	cfg.Version = sarama.V3_0_0_0
+	// A full rebuild must replay history the stable group has already committed. ConsumeResetOffset
+	// only takes effect for a group with no committed offset, so a rebuild runs under a distinct,
+	// throwaway group whose fresh AtStart replays everything. The stable group is used for normal
+	// consumption.
+	group := ConsumerGroupID
 	if resetOffset {
-		cfg.Consumer.Offsets.Initial = sarama.OffsetOldest
-	} else {
-		cfg.Consumer.Offsets.Initial = sarama.OffsetNewest
+		group = fmt.Sprintf("%s.rebuild.%d", ConsumerGroupID, time.Now().UnixNano())
+		logger.Info("full rebuild — consuming under a throwaway group from the start", "group", group)
 	}
-	cfg.Consumer.Group.Rebalance.GroupStrategies = []sarama.BalanceStrategy{sarama.NewBalanceStrategyRoundRobin()}
 
-	group, err := sarama.NewConsumerGroup(brokers, ConsumerGroupID, cfg)
+	dlq, err := coskafka.NewDLQPublisher(cfg.Brokers)
 	if err != nil {
 		return err
 	}
-	defer group.Close()
+	defer func() { _ = dlq.Close() }()
 
-	handler := NewKGConsumerHandler(driver)
-
-	for {
-		if err := group.Consume(ctx, nil, handler); err != nil {
-			return err
-		}
-		if ctx.Err() != nil {
-			return nil
+	var idem *coskafka.Idempotency
+	if cfg.RedisURL != "" {
+		idem, err = coskafka.NewIdempotency(cfg.RedisURL)
+		if err != nil {
+			logger.Warn("redis unavailable — running without idempotency", "error", err)
+		} else {
+			defer func() { _ = idem.Close() }()
 		}
 	}
+
+	handler := NewGraphHandler(driver, logger)
+	consumer := coskafka.NewConsumer(
+		coskafka.NewDecoder(cfg.RegistryURL),
+		dlq,
+		idem,
+		handler,
+		logger,
+	)
+
+	return consumer.Run(ctx, cfg.Brokers, group, TopicRegex)
 }
 
-// StartConsumerGroupWithRegex starts a consumer using topic regex subscription.
-// sarama.NewConsumerGroup with topic patterns uses the regex consumer API.
-func StartConsumerGroupWithRegex(ctx context.Context, brokers []string, driver neo4j.DriverWithContext, resetOffset bool) error {
-	cfg := sarama.NewConfig()
-	cfg.Version = sarama.V3_0_0_0
-	if resetOffset {
-		cfg.Consumer.Offsets.Initial = sarama.OffsetOldest
-	} else {
-		cfg.Consumer.Offsets.Initial = sarama.OffsetNewest
-	}
-	cfg.Consumer.Group.Rebalance.GroupStrategies = []sarama.BalanceStrategy{sarama.NewBalanceStrategyRoundRobin()}
-
-	group, err := sarama.NewConsumerGroup(brokers, ConsumerGroupID, cfg)
-	if err != nil {
-		return err
-	}
-	defer group.Close()
-
-	handler := NewKGConsumerHandler(driver)
-	// Pass the regex as the single topic string — sarama treats strings starting with ^ as regex
-	topics := []string{TopicRegex}
-
-	for {
-		if err := group.Consume(ctx, topics, handler); err != nil {
-			return err
+// NewGraphHandler bridges a decoded envelope into the Neo4j mapper + writer.
+//
+// Returning nil for unmappable or unhandled events (rather than an error) keeps them out of the DLQ:
+// the kg worker deliberately consumes a broad regex and ignores event types it has no graph mapping
+// for — that is not a failure. A genuine write error IS returned, so the coskafka retry/DLQ path
+// handles a Neo4j outage.
+func NewGraphHandler(driver neo4j.DriverWithContext, logger *slog.Logger) coskafka.Handler {
+	return func(ctx context.Context, envelope *coskafka.EventEnvelope) error {
+		env := model.EventEnvelope{
+			EventID:       envelope.EventID,
+			EventType:     envelope.EventType,
+			EventVersion:  envelope.EventVersion,
+			TenantID:      envelope.TenantID,
+			ActorID:       envelope.ActorID,
+			OccurredAt:    envelope.OccurredAt,
+			CorrelationID: envelope.CorrelationID,
+			Payload:       json.RawMessage(envelope.Payload),
 		}
-		if ctx.Err() != nil {
+
+		ops, err := mapper.MapEvent(&env)
+		if err != nil {
+			logger.Warn("mapper error — skipping", "error", err, "event_type", env.EventType)
 			return nil
 		}
+		if len(ops) == 0 {
+			return nil // event type this worker does not graph — not an error
+		}
+
+		return graph.ExecuteOperations(ctx, driver, ops)
 	}
 }

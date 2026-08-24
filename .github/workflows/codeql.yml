@@ -1,50 +1,56 @@
----
-# CodeQL SAST gate — ADR-054 (replaces the never-provisioned self-hosted SonarQube).
-# Source: docs/specifications/30-testing-strategy.md 30.10 + 30.12; context.md QM-4.
-# Blocks PR merge on any alert of severity High or above.
-# Free for this public repository; if the repo becomes private, GitHub Advanced Security is
-# required - revisit ADR-054.
 name: CodeQL
+
+# SAST — semantic/dataflow analysis (QM-4; spec §30.10 SAST, §30.12 CI gates).
+#
+# Replaces the SonarQube gate that QM-4 previously specified (ADR-011). Two reasons:
+#   1. Cost — CodeQL is free for public repositories, which this repo is. SonarQube Community Build
+#      is also free but cannot do what QM-4 asks: it has no branch or pull-request analysis, so a
+#      "0 new bugs / 0 new vulnerabilities on new code, before merge" gate is impossible on it.
+#      Those features start at SonarQube Developer Edition (paid).
+#   2. Depth — CodeQL performs cross-file taint analysis (tracing user input to a sink). SonarQube
+#      Community Build does not include taint analysis at all.
+#
+# ⚠️ This workflow's zero cost depends on the repository staying PUBLIC. On a private repository
+# CodeQL requires a GitHub Code Security licence, billed per active committer. If visibility ever
+# changes, this gate has a price attached — see ADR-011.
+#
+# Air-gapped note: CodeQL runs on GitHub and cannot scan in a disconnected environment. Semgrep CE
+# (.github/workflows/semgrep.yml) is the offline-capable half of the pair and covers that case.
 
 on:
   push:
-    branches: [main, staging, develop]
+    branches: [main, develop, staging]
   pull_request:
-    branches: [main, staging, develop]
+    branches: [main, develop]
   schedule:
-    # Weekly full scan so newly published queries reach the default branch even without a push.
-    - cron: '0 3 * * 1'
+    # Weekly full scan — catches new query-pack rules landing against unchanged code.
+    # Monday 06:00 UTC, after mutation tests (05:00) so the runner load does not overlap.
+    - cron: '0 6 * * 1'
 
+# Supersede an in-flight scan when the same ref is pushed again — a queued duplicate adds
+# nothing and CodeQL runs are long (60-minute timeout below).
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-permissions:
-  contents: read
-
 jobs:
   analyze:
-    name: Analyze (${{ matrix.language }})
+    name: Analyze — ${{ matrix.language }}
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     permissions:
+      # Required to upload results to the code scanning API. ci.yml declares no `permissions:` block
+      # and therefore runs on the default token, which cannot write security events.
       security-events: write
-      packages: read
-      actions: read
       contents: read
+      actions: read
     strategy:
       fail-fast: false
       matrix:
-        include:
-          # backend, apps/web, apps/mobile, packages/@cos/*, services/file-service
-          - language: javascript-typescript
-            build-mode: none
-          # services/ai-gateway, ai-embedding-worker, ai-ocr-pipeline,
-          # ai-transcription-pipeline, mlops/
-          - language: python
-            build-mode: none
-          # services/analytics-worker, services/kg-ingestion-worker
-          - language: go
-            build-mode: autobuild
+        # Covers every language in the repo: TypeScript (backend, apps, packages), Python (five AI
+        # services + mlops), Go (three workers). javascript-typescript analyses both in one pass.
+        language: ['javascript-typescript', 'python', 'go']
+
     steps:
       - uses: actions/checkout@v4
 
@@ -52,10 +58,35 @@ jobs:
         uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
-          build-mode: ${{ matrix.build-mode }}
-          queries: security-extended
+          # security-and-quality adds maintainability queries on top of security-extended, which is
+          # the closest equivalent to the code-quality half of the SonarQube gate being replaced.
+          queries: security-and-quality
+          # Generated trees must stay out of the scan. A local run on 2026-07-21 produced 13
+          # js/xss-through-dom findings, every one of them in coverage/lcov-report/sorter.js — a
+          # file istanbul writes, not one anyone here maintains. Thirteen unfixable high-severity
+          # alerts is how a security dashboard becomes something people stop reading.
+          # Measured, not guessed: a local run on 2026-07-21 returned 73 findings, and 70 of them
+          # came from generated trees — 67 from apps/mobile/android/build (a Gradle problems-report
+          # HTML), 3 from Stryker mutation reports, 13 js/xss-through-dom from istanbul's
+          # coverage/lcov-report/sorter.js. None is a file anyone here maintains. Excluding them
+          # leaves exactly 3 first-party findings; leaving them in is how a security dashboard
+          # becomes something people stop opening.
+          config: |
+            paths-ignore:
+              - '**/coverage/**'
+              - '**/dist/**'
+              - '**/.next/**'
+              - '**/build/**'
+              - '**/reports/mutation/**'
+              - 'mockup/**'
+
+      # Go is a compiled language: CodeQL needs to observe a build to extract the database.
+      # Autobuild handles the three workers' standard `go build` layouts.
+      - name: Autobuild
+        if: matrix.language == 'go'
+        uses: github/codeql-action/autobuild@v3
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
         with:
-          category: /language:${{ matrix.language }}
+          category: '/language:${{ matrix.language }}'

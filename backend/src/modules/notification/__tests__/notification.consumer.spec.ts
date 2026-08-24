@@ -53,14 +53,14 @@ beforeEach(() => {
 describe('onModuleInit', () => {
   it('registers a handler for each of the 9 subscribed topics', async () => {
     await consumer.onModuleInit();
-    expect(mockOn).toHaveBeenCalledTimes(10);
+    expect(mockOn).toHaveBeenCalledTimes(12);
     const registeredEventTypes = mockOn.mock.calls.map((c: unknown[]) => c[0]);
     for (const eventType of EXPECTED_EVENT_TYPES) {
       expect(registeredEventTypes).toContain(eventType);
     }
   });
 
-  it('connects with the shared group ID and all 10 event types', async () => {
+  it('connects with the shared group ID and all 12 event types', async () => {
     await consumer.onModuleInit();
     expect(mockConnect).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -69,7 +69,7 @@ describe('onModuleInit', () => {
       }),
     );
     const callArgs = mockConnect.mock.calls[0][0] as { eventTypes: string[] };
-    expect(callArgs.eventTypes).toHaveLength(10);
+    expect(callArgs.eventTypes).toHaveLength(12);
   });
 
   it('connects with fromBeginning = false', async () => {

@@ -1,0 +1,55 @@
+flowchart TB
+  PRECON["🟨 Preconstruction (post-MVP)<br/>tender · bid · feasibility · land (§20.7.12c)"]
+
+  subgraph COS["🟦 COS — IN SCOPE (construction ops + project cost)"]
+    direction TB
+    CRM["CRM / Sales — MVP basic<br/>lead → opportunity → contract"]
+    PRJ["Project + BOQ<br/>(Phase 4)"]
+    PROC["Procurement + Vendor Portal (MVP)<br/>PR → RFQ → PO → รับของ (Phase 5)"]
+    SITE["Site Ops (MVP)<br/>attendance · timesheet · รายงาน · safety · QC/inspection · issues (punch/defect)"]
+    COST["Cost Tracking<br/>budget vs actual · cost transaction (Phase 7)"]
+    AR["AR — วางบิลลูกค้า<br/>create → approve → paid · retention · milestone (Phase 7)"]
+    AP["AP — Vendor Invoice<br/>+ payment status (Phase 7)"]
+    PAY["Payment status + WHT calc<br/>(rate table · wht_certificate_ref · §13)"]
+    CASH["Cash-flow forecast + dashboards<br/>project/portfolio (ClickHouse + AI)"]
+
+    CRM --> PRJ --> PROC --> COST
+    PRJ --> SITE
+    SITE -->|"labor cost = คีย์เอง (MVP)"| COST
+    PROC --> AP
+    COST --> AR
+    AR --> PAY
+    AP --> PAY
+    COST --> CASH
+  end
+
+  subgraph EXT["🟧 OUTSIDE COS — Accounting / HR back-office (integration boundary)"]
+    direction TB
+    ACC["Accounting system<br/>GL · ผังบัญชี · บัญชีคู่ · งบการเงิน (P&amp;L/BS) · ปิดงบ · bank rec · VAT/e-Tax · ยื่นภาษี"]
+    HRP["HR / Payroll system<br/>เงินเดือน · ประกันสังคม · ภ.ง.ด.1 · กองทุนสำรองฯ · HRIS"]
+  end
+
+  subgraph GAP["⬜ ยังไม่ทำ — post-MVP / gap (ล้อมรอบ flow แต่ยังไม่มี)"]
+    direction TB
+    G1["Full scheduling: Gantt / CPM / baseline / S-curve (post-MVP)"]
+    G2["Document / Drawing management (post-MVP)"]
+    G3["Contractor & Customer portals (Phase 2)"]
+    G4["Variation Order / Change Order / Claims (✅ designed ADR-059 · post-MVP)"]
+    G5["Inventory / Warehouse — WMS (✅ designed ADR-060 · post-MVP)"]
+    G6["ราคากลาง / e-GP integration (✅ designed ADR-061/062 · post-MVP)"]
+    G7["BI/Analytics Layer B + Autonomous Layer C (post-MVP)"]
+  end
+
+  PRECON -. "post-MVP → ต่อเข้าหัวสาย" .-> CRM
+  PAY -. "cost tx · AR/AP · WHT ref → บันทึกบัญชี" .-> ACC
+  SITE -. "timesheet / attendance → ใช้คิดเงินเดือน" .-> HRP
+  HRP -. "payroll auto-pull (⚠️ DEFERRED — file 02 Phase B)" .-> COST
+
+  classDef inbox fill:#e6f0ff,stroke:#3b82f6,color:#0b1f44;
+  classDef extbox fill:#fff2e0,stroke:#f59e0b,color:#3d2a00;
+  classDef gapbox fill:#f3f4f6,stroke:#9ca3af,color:#111827;
+  classDef prebox fill:#fef9c3,stroke:#eab308,color:#3f2d00;
+  class CRM,PRJ,PROC,SITE,COST,AR,AP,PAY,CASH inbox;
+  class ACC,HRP extbox;
+  class G1,G2,G3,G4,G5,G6,G7 gapbox;
+  class PRECON prebox;

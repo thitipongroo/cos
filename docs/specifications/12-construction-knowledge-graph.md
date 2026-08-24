@@ -60,7 +60,7 @@ Entities :
 - Material
 - Equipment
 - Procurement
-- Contract (`contract_id` maps to `po_id` of APPROVED Purchase Orders; a PO in APPROVED status is the contractual agreement in this system. No separate Contract module needed.)
+- Contract
 - Inspection
 - Incident
 - Invoice
@@ -79,6 +79,25 @@ Note on Procurement :
 procurement lifecycle. In the database schema it is normalised into separate tables
 (purchase_request, rfq, quotation, purchase_order, delivery, vendor_invoice).
 See 10-construction-ontology section 10.2 (Note on Procurement) for the full mapping.
+
+Note on Contract :
+
+`Contract` in the knowledge graph is the `Contract` entity in the schema
+(11-database-schema), not a derived view: it carries its own `contract_id`, `contract_type`,
+`contract_value` and `status`.
+
+`contract_type` decides which side the contract belongs to, and therefore which of the two
+section 12.3 relationships applies :
+
+- `main_contract` — contractor ↔ client/owner; `customer_id` populated, `vendor_id` null.
+  Resolves `Contract BELONGS_TO Customer`.
+- `subcontract` / `supply_agreement` — contractor ↔ vendor; `vendor_id` populated,
+  `customer_id` null. Resolves `Contract BELONGS_TO Vendor`.
+
+A Purchase Order is a procurement record, not a Contract: `purchase_order` sits inside the
+`Procurement` lifecycle node (see the note above). `Contract.contract_value` on a
+`main_contract` is the basis for retention percentage and billing milestones
+(11-database-schema, Financials — Retention / Financials — Billing), which no PO can carry.
 
 Note on Invoice :
 

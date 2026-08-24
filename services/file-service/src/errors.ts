@@ -52,6 +52,22 @@ export const FILE_ERRORS = {
     message: 'Invalid retention policy (category or retention_days)',
     httpStatus: 422,
   },
+  // COS-FILE-015 is the backend's "no annotation for this file" (ADR-056) — next free code is 016.
+  FILE_NOT_CLEAN: {
+    code: 'COS-FILE-016',
+    message: 'File is not available yet — antivirus scan is pending or the file was quarantined',
+    httpStatus: 409,
+  },
+  MIME_CONTENT_MISMATCH: {
+    code: 'COS-FILE-017',
+    message: 'File content does not match its declared type',
+    httpStatus: 422,
+  },
+  INVALID_TOKEN: {
+    code: 'COS-FILE-018',
+    message: 'Invalid or expired authentication token',
+    httpStatus: 401,
+  },
 } as const;
 
 export type FileErrorKey = keyof typeof FILE_ERRORS;

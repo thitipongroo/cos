@@ -1,7 +1,8 @@
 // VendorPortalRepository — tenant-scoped reads/writes for the Vendor Portal (ADR-030).
 // All access via TenantPrismaService (SET LOCAL app.current_tenant_id — ADR-008). The tenant
 // context is set by VendorAuthGuard (from the Tier-1 token's tenant_id or the Tier-2 relationship)
-// before this request-scoped repository is constructed.
+// before this request-scoped repository is constructed. It reaches TenantPrismaService via CLS —
+// the request object alone is not a reliable carrier under Fastify (see vendor-auth.guard.ts).
 //
 // Reuses existing procurement tables (rfqs, quotations, purchase_orders, invoices) — the portal
 // does not duplicate the procurement data model.
@@ -9,6 +10,7 @@
 import { Injectable, Scope, Inject } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import { TenantPrismaService } from '../tenant/prisma/tenant-prisma.service';
+import { clsTenantId } from '../../shared/context/cls-context';
 
 export interface RfqInvitationRow {
   invitation_id: string;
@@ -70,8 +72,11 @@ export interface InvitedRfqRow {
 
 @Injectable({ scope: Scope.REQUEST })
 export class VendorPortalRepository {
+  // CLS is the fallback, not a nicety: under Fastify the REQUEST injected into a Scope.REQUEST
+  // provider is not guaranteed to be the object the auth layer decorated. VendorAuthGuard (vendor
+  // path) and JwtAuthGuard (buyer path) both publish tenant_id into CLS, so this resolves for both.
   private get tenantId(): string {
-    return (this.request as { tenantId?: string }).tenantId ?? '';
+    return (this.request as { tenantId?: string }).tenantId ?? clsTenantId();
   }
 
   constructor(
@@ -170,6 +175,24 @@ export class VendorPortalRepository {
         WHERE vendor_id = ${vendorId}::uuid ORDER BY created_at DESC
       `,
     );
+  }
+
+  // Fetch a single PO only if it belongs to this vendor (tenant-scoped by RLS via db.run). Used to
+  // authorize invoice submission — returns null when the PO does not exist or is another vendor's.
+  async findPurchaseOrderForVendor(
+    poId: string,
+    vendorId: string,
+  ): Promise<PurchaseOrderRow | null> {
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<PurchaseOrderRow[]>`
+        SELECT po_id, po_number, status, total_amount, currency_code, delivery_date, rfq_id
+        FROM procurement.purchase_orders
+        WHERE po_id = ${poId}::uuid AND vendor_id = ${vendorId}::uuid
+        LIMIT 1
+      `,
+    );
+    return rows[0] ?? null;
   }
 
   // ── Invoices (Tier-2: submit + list own) ────────────────────────────────────

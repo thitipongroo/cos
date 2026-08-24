@@ -8,8 +8,7 @@ Read path: Redis cache (TTL 5 min) for current state.
 from __future__ import annotations
 
 import json
-import os
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID
 

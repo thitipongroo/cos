@@ -4,9 +4,9 @@
 // a TCP connection alive after tests finish, which causes the Jest worker warning.
 //
 // Schema Registry is mocked — Avro encoding is tested separately in
-//   src/kafka/__tests__/schema-registry.client.spec.ts
+//   src/__tests__/schema-registry.client.spec.ts
 // Redis idempotency store is mocked — logic tested separately in
-//   src/kafka/__tests__/consumer.idempotency.spec.ts
+//   src/__tests__/consumer.idempotency.spec.ts
 //
 // What this test validates (over and above unit tests):
 //   1. KafkaProducer connects to a real broker and publishes a message
@@ -18,12 +18,12 @@ process.env['TESTCONTAINERS_RYUK_DISABLED'] = 'true';
 
 import { KafkaContainer, StartedKafkaContainer } from '@testcontainers/kafka';
 import { Kafka } from 'kafkajs';
-import { KafkaProducer } from '../../src/kafka/producer';
-import { KafkaConsumer } from '../../src/kafka/consumer';
+import { KafkaProducer } from '../../src/producer';
+import { KafkaConsumer } from '../../src/consumer';
 import type { BaseEventEnvelope } from '@cos/types';
 
 // Mock Schema Registry: bypass Avro encoding, use plain JSON buffers
-jest.mock('../../src/kafka/schema-registry.client', () => ({
+jest.mock('../../src/schema-registry.client', () => ({
   // producer.connect() calls ensureCompatibilityMode() at startup — mock it so the
   // real HTTP PUT to the Schema Registry /config endpoint is not attempted.
   ensureCompatibilityMode: jest.fn().mockResolvedValue(undefined),

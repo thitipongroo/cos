@@ -49,11 +49,11 @@ export async function loginViaKeycloak(
     }
   });
   await page.goto('/login');
-  // The office/Keycloak action button (i18n label contains "Keycloak" in every locale:
-  // "Sign in with Keycloak" / "เข้าสู่ระบบด้วย Keycloak"). Matched by name rather than as
-  // "the only button" because dev tooling (e.g. the Next.js dev overlay) injects its own.
-  // Clicking it navigates to the hosted Keycloak login form.
-  await page.getByRole('button', { name: /keycloak/i }).click();
+  // The office/management action button (Path B) — selected by its stable data-testid rather
+  // than its visible label, which is locale- and design-dependent ("Login with Email" /
+  // "เข้าสู่ระบบด้วยอีเมล"). Clicking it calls signIn('keycloak', …) and navigates to the hosted
+  // Keycloak login form.
+  await page.getByTestId('office-login-button').click();
   await page.locator('#username').fill(email);
   await page.locator('#password').fill(password);
   await page.locator('#kc-login').click();

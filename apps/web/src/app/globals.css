@@ -33,6 +33,58 @@
   --web-radius-md: 8px;
   --web-radius-lg: 12px;
   --web-radius-xl: 16px;
+
+  /*
+   * <LoadingState /> glows (§32.7 "Exception 2 — loading states"; ADR-055; reference
+   * mockup/desktop/imp_002_universal_loading_component_desktop_view). Declared as tokens rather
+   * than written inline: the mockup states them as raw rgba, and §32.7 "Tokens only" forbids a
+   * hardcoded hex in a component. Each derives its colour from the brand token via color-mix, so
+   * retinting --cos-blue / --cos-cyan retints the glow with it.
+   */
+  --cos-glow-ai: 0 0 20px color-mix(in srgb, var(--cos-cyan) 12%, transparent);
+  --cos-glow-bar-blue: 0 0 8px color-mix(in srgb, var(--cos-blue) 55%, transparent);
+  --cos-glow-bar-cyan: 0 0 8px color-mix(in srgb, var(--cos-cyan) 55%, transparent);
+}
+
+.dark {
+  /* The dark tier runs its own cyan (--cos-dark-cyan), so the glows follow it. */
+  --cos-glow-ai: 0 0 20px color-mix(in srgb, var(--cos-dark-cyan) 12%, transparent);
+  --cos-glow-bar-cyan: 0 0 8px color-mix(in srgb, var(--cos-dark-cyan) 55%, transparent);
+}
+
+/*
+ * <LoadingState /> motion (§32.7 "Exception 2 — loading states"; ADR-055).
+ * Named cos-* so they cannot collide with a Tailwind built-in animation.
+ * Decorative: prefers-reduced-motion stops them below.
+ *
+ * The desktop mockup's `ai` variant carries NO scan-line and NO waveform — it signals work with a
+ * glow, a pulsing processor glyph and a ping dot instead (product-owner decision 2026-08-17). The
+ * cos-scan / cos-waveform keyframes that stood here served only the old web `ai` motif and went
+ * with it; the mobile app keeps its own scan-line + waveform in React Native `Animated`, not CSS.
+ */
+
+/*
+ * Indeterminate progress: a bright segment sweeps the track, so a bar with no honest percentage is
+ * still visibly working and nothing invents a figure it does not have (ADR-055 honest-data policy).
+ */
+@keyframes cos-indeterminate {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(400%);
+  }
+}
+
+/* WCAG 2.2 AA (spec §20.8) — a loading state must not animate for users who opt out. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 @layer base {

@@ -36,6 +36,7 @@ const reportRow = {
 
 const issueRow = {
   issue_id: 'issue-uuid-001',
+  issue_number: 'ISS-2026-0001',
   project_id: 'proj-uuid-001',
   tenant_id: 'tenant-uuid-001',
   report_id: null,
@@ -149,6 +150,70 @@ describe('SiteOpsRepository', () => {
     expect(result.blockers).toBe('crane down');
   });
 
+  it('createSiteReport persists shift and blocker_category (20260808000001)', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([
+      { ...reportRow, shift: 'NIGHT', blocker_category: 'WEATHER' },
+    ]);
+    const result = await repo.createSiteReport({
+      report_id: 'report-uuid-003',
+      project_id: 'proj-uuid-001',
+      submitted_by: 'user-uuid-001',
+      report_date: '2026-06-04',
+      summary: null,
+      blocker_category: 'WEATHER',
+      weather: null,
+      manpower_count: null,
+      shift: 'NIGHT',
+      client_submitted_at: null,
+    });
+    expect(result.shift).toBe('NIGHT');
+    expect(result.blocker_category).toBe('WEATHER');
+  });
+
+  // ── Manpower logs (master §Phase 6) ─────────────────────────────────────────
+
+  it('replaceManpowerLogs deletes the old breakdown then inserts each line', async () => {
+    mockPrisma.$executeRaw.mockResolvedValue(1);
+
+    await repo.replaceManpowerLogs('report-uuid-001', [
+      { trade_type: 'ELECTRICAL', worker_count: 8, hours_worked: 8 },
+      { trade_type: 'STRUCTURAL', worker_count: 16, hours_worked: 10 },
+    ]);
+
+    // One DELETE + one INSERT per line, and both inside a SINGLE db.run transaction — a report must
+    // never be observable with its old breakdown gone and the new one not yet written.
+    expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(3);
+    expect(mockTenantPrisma.run).toHaveBeenCalledTimes(1);
+  });
+
+  it('replaceManpowerLogs still clears the breakdown when given no lines', async () => {
+    mockPrisma.$executeRaw.mockResolvedValue(1);
+    await repo.replaceManpowerLogs('report-uuid-001', []);
+    // The DELETE alone — an empty array means "nobody on site", which is a statement, not a no-op.
+    expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+  });
+
+  it('listManpowerLogs returns the report breakdown', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([
+      {
+        log_id: 'log-uuid-001',
+        report_id: 'report-uuid-001',
+        tenant_id: 'tenant-uuid-001',
+        trade_type: 'STRUCTURAL',
+        worker_count: 16,
+        hours_worked: '8.00',
+      },
+    ]);
+    const rows = await repo.listManpowerLogs('report-uuid-001');
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.trade_type).toBe('STRUCTURAL');
+  });
+
+  it('listManpowerLogs returns an empty list for a report with no breakdown', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([]);
+    expect(await repo.listManpowerLogs('report-uuid-001')).toEqual([]);
+  });
+
   it('findReportById returns null when not found', async () => {
     mockPrisma.$queryRaw.mockResolvedValue([]);
     expect(await repo.findReportById('missing')).toBeNull();
@@ -157,6 +222,85 @@ describe('SiteOpsRepository', () => {
   it('findReportById returns row when found', async () => {
     mockPrisma.$queryRaw.mockResolvedValue([reportRow]);
     expect((await repo.findReportById('report-uuid-001'))?.report_id).toBe('report-uuid-001');
+  });
+
+  // Batch lookup backing the offline-sync path — one query for the whole push instead of one per item.
+  it('findReportsByIds keys the returned rows by report_id', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([reportRow]);
+    const found = await repo.findReportsByIds(['report-uuid-001', 'report-uuid-002']);
+    expect(found.get('report-uuid-001')?.report_id).toBe('report-uuid-001');
+    expect(found.get('report-uuid-002')).toBeUndefined();
+    expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(1);
+  });
+
+  it('findReportsByIds short-circuits an empty id list without querying', async () => {
+    const found = await repo.findReportsByIds([]);
+    expect(found.size).toBe(0);
+    expect(mockPrisma.$queryRaw).not.toHaveBeenCalled();
+  });
+
+  // The LAST_WRITE_WINS half of offline sync (§17.5): when the client's submission is newer, the
+  // server row is overwritten in place. modified_at is bumped here because the NEXT sync compares
+  // against it to detect a concurrent server-side edit.
+  describe('updateSiteReport', () => {
+    it('returns the updated row', async () => {
+      const updated = { ...reportRow, summary: 'poured slab', manpower_count: 12 };
+      mockPrisma.$queryRaw.mockResolvedValue([updated]);
+
+      const result = await repo.updateSiteReport('report-uuid-001', {
+        summary: 'poured slab',
+        blockers: null,
+        weather: 'sunny',
+        manpower_count: 12,
+        client_submitted_at: '2026-06-04T09:00:00Z',
+      });
+
+      expect(result?.summary).toBe('poured slab');
+      expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(1);
+    });
+
+    it('returns null when the report belongs to another tenant', async () => {
+      // The UPDATE carries `AND tenant_id = ...`, so a cross-tenant id simply matches no row. Null
+      // lets the caller answer 404 rather than reporting a successful write that never happened.
+      mockPrisma.$queryRaw.mockResolvedValue([]);
+      const result = await repo.updateSiteReport('foreign-report', {
+        summary: null,
+        blockers: null,
+        weather: null,
+        manpower_count: null,
+        client_submitted_at: null,
+      });
+      expect(result).toBeNull();
+    });
+
+    it('writes NULL coordinates when the client sends none (offline report with no GPS fix)', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([reportRow]);
+      await repo.updateSiteReport('report-uuid-001', {
+        summary: 's',
+        blockers: null,
+        weather: null,
+        manpower_count: null,
+        client_submitted_at: null,
+        // latitude/longitude omitted entirely — the ?? null fallbacks supply them.
+      });
+      expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(1);
+    });
+
+    it('passes explicit coordinates through', async () => {
+      // SiteReportRow does not surface lat/lng, so assert the write happened rather than the shape.
+      mockPrisma.$queryRaw.mockResolvedValue([reportRow]);
+      const result = await repo.updateSiteReport('report-uuid-001', {
+        summary: 's',
+        blockers: null,
+        weather: null,
+        manpower_count: null,
+        client_submitted_at: null,
+        latitude: 13.75,
+        longitude: 100.5,
+      });
+      expect(result).not.toBeNull();
+      expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(1);
+    });
   });
 
   it('listSiteReports returns rows and total', async () => {
@@ -180,15 +324,34 @@ describe('SiteOpsRepository', () => {
     mockPrisma.$queryRaw.mockResolvedValue([issueRow]);
     const result = await repo.createIssue({
       issue_id: 'issue-uuid-001',
+      issue_number: 'ISS-2026-0001',
       project_id: 'proj-uuid-001',
       report_id: null,
       title: 'Crack',
       description: null,
       severity: 'HIGH',
       assigned_to: null,
+      created_by: 'user-uuid-001',
       client_submitted_at: null,
     });
-    expect(result.issue_id).toBe('issue-uuid-001');
+    expect(result!.issue_id).toBe('issue-uuid-001');
+  });
+
+  // nextIssueNumber (ADR-069) — ISS-<year>-<seq> from MAX+1 per tenant/year. The three cases cover the
+  // `rows[0]?.max_seq ?? 0` branches: no rows, a row with a null max, and a row with a value.
+  it('nextIssueNumber starts at 0001 when the query returns no rows', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([]);
+    expect(await repo.nextIssueNumber(2026)).toBe('ISS-2026-0001');
+  });
+
+  it('nextIssueNumber starts at 0001 when the tenant has no issues this year', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([{ max_seq: null }]);
+    expect(await repo.nextIssueNumber(2026)).toBe('ISS-2026-0001');
+  });
+
+  it('nextIssueNumber increments the highest existing sequence', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([{ max_seq: 41 }]);
+    expect(await repo.nextIssueNumber(2026)).toBe('ISS-2026-0042');
   });
 
   it('findIssueById returns null when not found', async () => {
@@ -305,6 +468,46 @@ describe('SiteOpsRepository', () => {
     expect(result.issue_severity).toBe('HIGH');
   });
 
+  // The signature is SERIALISED in the repository (migration 20260808000002), so both sides of that
+  // decision belong here rather than in the service: strokes → a JSON string bound to a ::jsonb
+  // parameter, no strokes → a real SQL NULL. Binding the array itself would make Prisma send a
+  // Postgres array, not JSONB, and the insert would fail at runtime with no test to catch it.
+  it('createInspection serialises the signature strokes for the jsonb column', async () => {
+    const signature = [{ d: 'M0.1,0.2 L0.3,0.4', color: '#FFFFFF', width: 0.006 }];
+    mockPrisma.$queryRaw.mockResolvedValue([{ ...inspectionRow, signature }]);
+    const result = await repo.createInspection({
+      inspection_id: 'insp-uuid-003',
+      project_id: 'proj-uuid-001',
+      checklist_id: 'cl-uuid-001',
+      status: 'PASSED',
+      inspected_by: 'user-uuid-001',
+      inspected_at: '2026-08-08T08:00:00Z',
+      notes: null,
+      signature,
+    });
+    // The bound value is the JSON text, never the array object.
+    const bound = mockPrisma.$queryRaw.mock.calls.at(-1)!.slice(1) as unknown[];
+    expect(bound).toContain(JSON.stringify(signature));
+    expect(result.signature).toEqual(signature);
+  });
+
+  it('createInspection binds NULL when the inspection is unsigned', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([{ ...inspectionRow, signature: null }]);
+    await repo.createInspection({
+      inspection_id: 'insp-uuid-004',
+      project_id: 'proj-uuid-001',
+      checklist_id: 'cl-uuid-001',
+      status: 'PASSED',
+      inspected_by: 'user-uuid-001',
+      inspected_at: '2026-08-08T08:00:00Z',
+      notes: null,
+      signature: null,
+    });
+    const bound = mockPrisma.$queryRaw.mock.calls.at(-1)!.slice(1) as unknown[];
+    expect(bound).toContain(null);
+    expect(bound.some((v) => typeof v === 'string' && v.startsWith('['))).toBe(false);
+  });
+
   it('findChecklistById returns null when not found', async () => {
     mockPrisma.$queryRaw.mockResolvedValue([]);
     expect(await repo.findChecklistById('missing')).toBeNull();
@@ -376,6 +579,75 @@ describe('SiteOpsRepository', () => {
       consumed_at: '2026-06-11',
     });
     expect(result.consumption_id).toBe('cons-uuid-001');
+  });
+
+  // ── Carbon analytics (Phase 24 — spec §33.4) ────────────────────────────────
+
+  it('findMaterialIdByName returns the master material id when the name resolves', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([{ material_id: 'mat-master-001' }]);
+    const result = await repo.findMaterialIdByName('Steel rod');
+    expect(result).toBe('mat-master-001');
+  });
+
+  it('findMaterialIdByName returns null for a name not in the master (mobile free-text)', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([]);
+    const result = await repo.findMaterialIdByName('Sttel rodd');
+    expect(result).toBeNull();
+  });
+
+  it('findCarbonFactor returns the tenant factor and its audit source', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([{ carbon_factor: '2.500000', source: 'EPD-2023-001' }]);
+    const result = await repo.findCarbonFactor('mat-master-001');
+    expect(result).toEqual({ carbon_factor: '2.500000', source: 'EPD-2023-001' });
+  });
+
+  it('findCarbonFactor returns null when the tenant has loaded no factor (§33.4 opt-in)', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([]);
+    const result = await repo.findCarbonFactor('mat-master-001');
+    expect(result).toBeNull();
+  });
+
+  it('insertCarbonRecord returns the inserted row', async () => {
+    const carbonRow = {
+      carbon_record_id: 'carbon-uuid-001',
+      tenant_id: 'tenant-uuid-001',
+      project_id: 'proj-uuid-001',
+      consumption_id: 'cons-uuid-001',
+      material_id: 'mat-master-001',
+      quantity_consumed: '10.0000',
+      unit: 'pcs',
+      carbon_factor: '2.500000',
+      carbon_factor_source: 'EPD-2023-001',
+      carbon_kgco2e: '25.0000',
+      recorded_at: '2026-06-11T00:00:00Z',
+    };
+    mockPrisma.$queryRaw.mockResolvedValue([carbonRow]);
+    const result = await repo.insertCarbonRecord({
+      carbon_record_id: 'carbon-uuid-001',
+      project_id: 'proj-uuid-001',
+      consumption_id: 'cons-uuid-001',
+      material_id: 'mat-master-001',
+      quantity_consumed: '10.0000',
+      unit: 'pcs',
+      carbon_factor: '2.500000',
+      carbon_factor_source: 'EPD-2023-001',
+    });
+    expect(result?.carbon_kgco2e).toBe('25.0000');
+  });
+
+  it('insertCarbonRecord returns null when ON CONFLICT DO NOTHING suppressed a replay', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([]);
+    const result = await repo.insertCarbonRecord({
+      carbon_record_id: 'carbon-uuid-002',
+      project_id: 'proj-uuid-001',
+      consumption_id: 'cons-uuid-001',
+      material_id: 'mat-master-001',
+      quantity_consumed: '10.0000',
+      unit: 'pcs',
+      carbon_factor: '2.500000',
+      carbon_factor_source: 'EPD-2023-001',
+    });
+    expect(result).toBeNull();
   });
 
   // ── Inspections list/detail/update (ADR-025) ────────────────────────────────
@@ -489,12 +761,14 @@ describe('SiteOpsRepository', () => {
       await repo.createIssue(
         {
           issue_id: 'i-1',
+          issue_number: 'ISS-2026-0001',
           project_id: 'p-1',
           report_id: null,
           title: 't',
           description: null,
           severity: 'HIGH',
           assigned_to: null,
+          created_by: 'user-uuid-001',
           client_submitted_at: null,
         },
         e,
@@ -559,12 +833,14 @@ describe('SiteOpsRepository', () => {
       });
       await repo.createIssue({
         issue_id: 'i-1',
+        issue_number: 'ISS-2026-0001',
         project_id: 'p-1',
         report_id: null,
         title: 't',
         description: null,
         severity: 'HIGH',
         assigned_to: null,
+        created_by: 'user-uuid-001',
         client_submitted_at: null,
       });
       await repo.updateIssue('i-1', { status: 'OPEN' });
@@ -616,6 +892,26 @@ describe('SiteOpsRepository', () => {
       expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
       expect(mockPrisma.$queryRaw).not.toHaveBeenCalled();
       expect(mockTenantPrisma.run).toHaveBeenCalledTimes(1);
+    });
+
+    it('createIssue returns null when the issue_id is already taken (ON CONFLICT DO NOTHING)', async () => {
+      // The offline replay: /sync/push resends a queued create under the same client UUID. This used to
+      // raise a primary-key violation, which the device's outbox read as a retryable failure.
+      mockPrisma.$queryRaw.mockResolvedValue([]);
+      await expect(
+        repo.createIssue({
+          issue_id: 'issue-uuid-001',
+          issue_number: 'ISS-2026-0001',
+          project_id: 'proj-uuid-001',
+          report_id: null,
+          title: 'Cracked slab',
+          description: null,
+          severity: 'HIGH',
+          assigned_to: null,
+          created_by: 'user-uuid-001',
+          client_submitted_at: null,
+        }),
+      ).resolves.toBeNull();
     });
   });
 });

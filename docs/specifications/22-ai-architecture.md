@@ -1,8 +1,8 @@
 ---
 title: 'AI Architecture'
-version: '1.9.0'
+version: '1.10.0'
 status: Active
-last_updated: '2026-07-04'
+last_updated: '2026-07-10'
 authors:
   - thitipongroo
 related_docs:
@@ -100,18 +100,17 @@ agent must plan, invoke tools, and act across multiple services.
 - Full autonomous multi-agent framework (Layer C) : framework selection deferred until
   post-Stage 2, when Layer B capabilities are validated in production.
 
-> ⚠️ **DECISION PENDING [LAYER-C-001]:** Agent orchestration framework for Layer C has not been
-> selected. Candidates: LangGraph, CrewAI, AutoGen, or custom Temporal.io activity chains.
-> **Decision trigger:** Layer B deployed to production and first Analytical AI feature is
-> stable for ≥ 30 days.
-> **Owner:** thitipongroo (interim AI/Platform Lead).
-> **Decision deadline:** No later than 4 weeks after Layer B goes live in production.
-> **Leading candidate:** Temporal.io (already in use for approval workflows — see
-> 15-event-driven-workflow section 15.4); evaluate against LangGraph before committing.
-> **Evaluation rubric** (apply when trigger fires — see §22.5 LAYER-C-001 Evaluation Rubric):
-> rank each candidate on 5 axes: (1) LangChain compatibility (>=0.3), (2) Temporal.io co-existence,
-> (3) Thai-language tool-calling accuracy, (4) durable execution / human-in-the-loop support,
-> (5) operational complexity. Select the highest scorer; document rationale in a one-page ADR.
+> 🟡 **PROVISIONALLY RESOLVED [LAYER-C-001]**:
+> **Temporal.io is pre-selected as the provisional agent orchestration framework for
+> Layer C** — it is already in use for approval workflows (15-event-driven-workflow
+> §15.4) and provides durable execution + human-in-the-loop natively.
+> **Final commitment is still gated:** when the trigger fires (Layer B deployed to
+> production and first Analytical AI feature stable for ≥ 30 days), run the §22.6
+> evaluation rubric — including the Thai construction benchmark (minimum pass 4/5) —
+> against Temporal.io as a **validation gate**. If Temporal.io fails the benchmark,
+> re-open the full candidate set (LangGraph, CrewAI, AutoGen).
+> **Decision deadline (final commitment):** no later than 4 weeks after Layer B goes
+> live in production (§22.6 Decision Output).
 > **Action:** Open a spec issue tagged `layer-c-decision` when Layer B stabilises.
 
 ### Vector Store Tenant Isolation
@@ -275,9 +274,11 @@ Thai Language :
 
 ## 22.6 LAYER-C-001 Evaluation Rubric
 
-> This section is **not active** — it is a decision template to be used when the
-> trigger condition fires: _Layer B deployed to production and stable for ≥ 30 days._
-> Do not use this rubric to justify selecting a framework before the trigger.
+> This section activates when the trigger condition fires: _Layer B deployed to
+> production and stable for ≥ 30 days._ Per §22.3, **Temporal.io is provisionally pre-selected**; when the trigger
+> fires this rubric runs as a **validation gate** against Temporal.io first — the full candidate
+> set below is re-opened only if Temporal.io fails the Thai benchmark (< 4/5).
+> Do not treat the provisional selection as final before the trigger.
 
 ### Candidates
 
@@ -426,12 +427,12 @@ highest field-level accuracy on complex / variable documents in invoice-extracti
 
 **Decision:** LangChain Python SDK (`langchain` + `langchain-openai`) configured with the LLMProvider wrapper.
 
-| Attribute  | Value                                                                                                         |
-| ---------- | ------------------------------------------------------------------------------------------------------------- |
-| Library    | `langchain>=0.3`, `langchain-openai>=0.2`                                                                     |
-| Chain type | RAG chain: retrievers (pgvector + OpenSearch) → RRF fusion → cross-encoder reranker → LLM (see §22.7 RAG-001) |
-| Config     | Chain config stored in `ai/chains/` as YAML per chain type                                                    |
-| Interface  | `LangChainProviderConfig.buildChain(chainType, tenantId): Chain`                                              |
+| Attribute  | Value                                                                                                                                                                                                                                                                                                        |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Library    | `langchain>=0.3`, `langchain-openai>=0.2`                                                                                                                                                                                                                                                                    |
+| Chain type | RAG chain: retrievers (pgvector + OpenSearch) → RRF fusion → cross-encoder reranker → LLM (see §22.7 RAG-001)                                                                                                                                                                                                |
+| Config     | Chain config stored in `services/ai-gateway/ai/chains/` as YAML per chain type — service-local, resolved via `providers.langchain_config.CHAINS_DIR` (override `AI_CHAINS_DIR`). NOT repo-root `ai/chains/`: that copy diverged onto a second schema and broke inside the container (PO decision 2026-07-21) |
+| Interface  | `LangChainProviderConfig.buildChain(chainType, tenantId): Chain`                                                                                                                                                                                                                                             |
 
 ---
 
@@ -457,7 +458,7 @@ highest field-level accuracy on complex / variable documents in invoice-extracti
   position alone (no score normalization) and rewards documents both retrievers agree on.
 - **Pipeline:** BM25 (OpenSearch) + vector (pgvector) → RRF merge → cross-encoder reranker (§22.7
   Cross-Encoder Reranking) → top-k = 5 context assembly.
-- **Tuning:** RRF rank constant is tunable in chain config (`ai/chains/`) — use the retriever library's
+- **Tuning:** RRF rank constant is tunable in chain config (`services/ai-gateway/ai/chains/`) — use the retriever library's
   documented default unless benchmark dictates otherwise.
 
 **Industry precedent (2026):** most production hybrid-RAG systems fuse BM25 + vector with RRF, optionally
@@ -557,12 +558,13 @@ before executing; throws `GovernanceViolationError` for disallowed actions.
 
 **Decision:** Python `scikit-learn` + `XGBoost` as the primary ML framework for all Phase 23 models.
 
-| Model              | Use case                   | Algorithm                                                                | Input features                                                               |
-| ------------------ | -------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
-| DelayForecastModel | Delay forecast             | XGBoost regressor (days to delay)                                        | procurement delays, task completion %, weather history, workforce attendance |
-| SafetyVisionModel  | Safety violation detection | XGBoost classifier on extracted image features (HOG + ViT embeddings)    | site photo embeddings, PPE label presence                                    |
-| GraphMLModel       | Supply chain risk          | XGBoost on graph-derived node features (PageRank, centrality) from Neo4j | vendor relationship graph features                                           |
-| RiskClassifier     | Project risk score         | XGBoost multi-class (LOW/MEDIUM/HIGH/CRITICAL)                           | budget variance, schedule delay, procurement status, safety incidents        |
+| Model              | Use case                   | Algorithm                                                                | Input features                                                                                        |
+| ------------------ | -------------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
+| DelayForecastModel | Delay forecast             | XGBoost regressor (days to delay)                                        | procurement delays, task completion %, weather history, workforce attendance                          |
+| SafetyVisionModel  | Safety violation detection | XGBoost classifier on extracted image features (HOG + ViT embeddings)    | site photo embeddings, PPE label presence                                                             |
+| GraphMLModel       | Supply chain risk          | XGBoost on graph-derived node features (PageRank, centrality) from Neo4j | vendor relationship graph features                                                                    |
+| RiskClassifier     | Project risk score         | XGBoost multi-class (LOW/MEDIUM/HIGH/CRITICAL)                           | budget variance, schedule delay, procurement status, safety incidents                                 |
+| DeviceTrustModel   | Device trust score         | XGBoost binary classifier; calibrated probability rendered 0–100         | attestation verdict, enrolment age, `last_seen_at` recency, revocation history, ingress ASN stability |
 | CostAnomalyModel   | Cost anomaly detection — flags unusual cost entries and procurement patterns | **UNSPECIFIED** — algorithm to be decided when Layer B enters an active development sprint (owner: AI/Platform Lead) | **UNSPECIFIED** — candidate sources: `finance.cost_transactions`, `finance.project_budgets`, ClickHouse `project_cost_daily` |
 
 All models trained on Phase 23 MLOps pipeline (MLflow + Feast). Minimum data thresholds before training:
@@ -578,6 +580,14 @@ All models trained on Phase 23 MLOps pipeline (MLflow + Feast). Minimum data thr
 > table and from `00_master` Phase 23. It is a missing model, not a stale name: its use case and
 > evaluation metric are recorded now; algorithm, input features and minimum training data stay
 > `UNSPECIFIED` and must not be inferred. See `35-test-design.md` §35.13 ESC-03.
+
+- DeviceTrustModel: **no count threshold** — promotion is gated on beating the rule-based baseline on
+  a held-out set, measured by **PR-AUC** (ADR-081). A count trigger is the wrong gate here: the
+  positive class ("device later revoked as compromised") is rare by design, so a calendar- or
+  volume-based trigger would promote a model that had learned almost nothing, and accuracy/ROC-AUC
+  both stay flattering under that imbalance. Until the gate passes, a deterministic rule-based scorer
+  serves behind the same interface, and the surface is **not** described as AI-derived while it does.
+  The score is advisory only — it never revokes a device or blocks a login (§22.3).
 
 ---
 
@@ -771,8 +781,11 @@ below reference mechanisms elsewhere in this spec unless marked **[GAP]** (to bu
 
 ## 22.9 Model Governance
 
-- **Model cards** — every deployed model (LLM provider model, SafetyVisionModel, RiskClassifier)
-  has a card recording purpose, training/eval data, known limits, owner: `docs/ai-governance/model-cards/`
+- **Model cards** — every deployed model (LLM provider model, SafetyVisionModel, RiskClassifier,
+  DeviceTrustModel) has a card recording purpose, training/eval data, known limits, owner:
+  `docs/ai-governance/model-cards/`. DeviceTrustModel's card additionally records the PR-AUC margin
+  over the rule-based baseline that authorised its promotion (§22.6, ADR-081) — the model may not be
+  deployed without it, and the surface must state which scorer is serving
 - **Evaluation suite** — LAYER-C-001 rubric (§22.6) run as a gate before each model/prompt change;
   regression eval on a fixed construction-domain test set
 - **AI red-teaming** — adversarial test of prompt injection + jailbreak + safety-bypass before each

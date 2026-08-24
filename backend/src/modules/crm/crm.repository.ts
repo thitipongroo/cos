@@ -5,6 +5,8 @@
 import { Injectable, Scope, Inject } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import { TenantPrismaService } from '../tenant/prisma/tenant-prisma.service';
+import { applyCap, capLimit } from '../../shared/pagination/list-cap';
+import { clsTenantId } from '../../shared/context/cls-context';
 
 export interface LeadRow {
   lead_id: string;
@@ -52,8 +54,12 @@ export interface CrmCustomerRow {
 
 @Injectable({ scope: Scope.REQUEST })
 export class CrmRepository {
+  // CLS fallback is load-bearing, not cosmetic: under Fastify the REQUEST injected into a
+  // Scope.REQUEST provider is not guaranteed to be the object the auth layer decorated. The auth
+  // guards publish tenant_id into CLS (the same source TenantPrismaService reads for RLS), so this
+  // resolves even when the request copy does not carry it.
   private get tenantId(): string {
-    return (this.request as { tenantId?: string }).tenantId ?? '';
+    return (this.request as { tenantId?: string }).tenantId ?? clsTenantId();
   }
 
   constructor(
@@ -88,7 +94,7 @@ export class CrmRepository {
         tx.$queryRaw<LeadRow[]>`
         SELECT * FROM crm.leads
         WHERE tenant_id = ${this.tenantId}::uuid AND deleted_at IS NULL
-          AND (${status ?? null} IS NULL OR status = ${status ?? null})
+          AND (${status ?? null}::text IS NULL OR status = ${status ?? null}::text)
         ORDER BY created_at DESC
       `,
     );
@@ -146,7 +152,7 @@ export class CrmRepository {
         tx.$queryRaw<OpportunityRow[]>`
         SELECT * FROM crm.opportunities
         WHERE tenant_id = ${this.tenantId}::uuid AND deleted_at IS NULL
-          AND (${status ?? null} IS NULL OR status = ${status ?? null})
+          AND (${status ?? null}::text IS NULL OR status = ${status ?? null}::text)
         ORDER BY created_at DESC
       `,
     );
@@ -228,13 +234,15 @@ export class CrmRepository {
   }
 
   async listCustomers(): Promise<CrmCustomerRow[]> {
-    return this.db.run(
+    const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<CrmCustomerRow[]>`
         SELECT * FROM finance.customers
         WHERE tenant_id = ${this.tenantId}::uuid
         ORDER BY created_at DESC
+        LIMIT ${capLimit()}
       `,
     );
+    return applyCap(rows, 'crm.customers');
   }
 }

@@ -39,11 +39,13 @@ import { FinanceService } from '../finance.service';
 const mockHandlePoCreated = jest.fn().mockResolvedValue(undefined);
 const mockHandleInvoiceReceived = jest.fn().mockResolvedValue(undefined);
 const mockHandlePoStatusChanged = jest.fn().mockResolvedValue(undefined);
+const mockHandleBoqItemsPublished = jest.fn().mockResolvedValue(undefined);
 
 const mockSvc: Partial<FinanceService> = {
   handlePoCreated: mockHandlePoCreated,
   handleInvoiceReceived: mockHandleInvoiceReceived,
   handlePoStatusChanged: mockHandlePoStatusChanged,
+  handleBoqItemsPublished: mockHandleBoqItemsPublished,
 };
 
 // ── Mock ModuleRef ──────────────────────────────────────────────────────────
@@ -59,6 +61,7 @@ const EXPECTED_EVENT_TYPES = [
   'procurement.po.created.v1',
   'procurement.invoice.received.v1',
   'procurement.po.status_changed.v1',
+  'construction.boq.items_published.v1',
 ];
 
 let consumer: FinanceConsumer;
@@ -71,12 +74,12 @@ beforeEach(() => {
 // ── onModuleInit ────────────────────────────────────────────────────────────
 
 describe('onModuleInit', () => {
-  it('registers 3 kafka handlers', async () => {
+  it('registers 4 kafka handlers', async () => {
     await consumer.onModuleInit();
-    expect(mockOn).toHaveBeenCalledTimes(3);
+    expect(mockOn).toHaveBeenCalledTimes(4);
   });
 
-  it('connects with the shared finance group and all 3 event types', async () => {
+  it('connects with the shared finance group and all 4 event types', async () => {
     await consumer.onModuleInit();
     expect(mockConnect).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -86,7 +89,7 @@ describe('onModuleInit', () => {
       }),
     );
     const args = mockConnect.mock.calls[0][0] as { eventTypes: string[] };
-    expect(args.eventTypes).toHaveLength(3);
+    expect(args.eventTypes).toHaveLength(4);
   });
 
   it('po.created handler calls svc.handlePoCreated with correct payload', async () => {
@@ -159,6 +162,40 @@ describe('onModuleInit', () => {
 
     expect(mockHandlePoStatusChanged).toHaveBeenCalledWith(
       expect.objectContaining({ po_id: 'po-001', to_status: 'CANCELLED', tenant_id: 'tenant-001' }),
+    );
+  });
+
+  it('boq.items_published handler calls svc.handleBoqItemsPublished with the line items', async () => {
+    await consumer.onModuleInit();
+    const call = (mockOn.mock.calls as unknown[]).find(
+      (c) => (c as unknown[])[0] === 'construction.boq.items_published.v1',
+    ) as unknown[];
+    const handler = call[1] as (e: unknown) => Promise<void>;
+
+    const items = [
+      {
+        item_code: 'A-1',
+        description: 'Concrete',
+        unit: 'm3',
+        quantity: '10.0000',
+        unit_cost: '2500.0000',
+        estimated_total: '25000.0000',
+      },
+    ];
+    await handler({
+      event_type: 'construction.boq.items_published.v1',
+      tenant_id: 'tenant-001',
+      actor_id: 'actor-001',
+      payload: { version_id: 'ver-001', project_id: 'proj-001', items },
+    });
+
+    expect(mockHandleBoqItemsPublished).toHaveBeenCalledWith(
+      expect.objectContaining({
+        version_id: 'ver-001',
+        project_id: 'proj-001',
+        tenant_id: 'tenant-001',
+        items,
+      }),
     );
   });
 

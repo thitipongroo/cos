@@ -4,12 +4,22 @@ const sendMock = jest.fn().mockResolvedValue(undefined);
 const connectMock = jest.fn().mockResolvedValue(undefined);
 const disconnectMock = jest.fn().mockResolvedValue(undefined);
 
+// A tenant's DLQ is created on first failure, so the publisher drives an admin client too.
+const adminConnectMock = jest.fn().mockResolvedValue(undefined);
+const adminDisconnectMock = jest.fn().mockResolvedValue(undefined);
+const createTopicsMock = jest.fn().mockResolvedValue(true);
+
 jest.mock('kafkajs', () => ({
   Kafka: jest.fn().mockImplementation(() => ({
     producer: jest.fn().mockReturnValue({
       connect: connectMock,
       disconnect: disconnectMock,
       send: sendMock,
+    }),
+    admin: jest.fn().mockReturnValue({
+      connect: adminConnectMock,
+      disconnect: adminDisconnectMock,
+      createTopics: createTopicsMock,
     }),
   })),
 }));
@@ -29,7 +39,7 @@ describe('DlqPublisher', () => {
     await publisher.disconnect();
   });
 
-  it('publishes to {tenant_id}.{domain}.dlq topic', async () => {
+  it('publishes to the {tenant_id}.dlq topic', async () => {
     await publisher.publish({
       originalTopic: 'tenant-1.construction.project.created.v1',
       originalValue: Buffer.from('data'),
@@ -40,8 +50,8 @@ describe('DlqPublisher', () => {
 
     expect(sendMock).toHaveBeenCalledTimes(1);
     const call = sendMock.mock.calls[0][0];
-    // Tenant-scoped DLQ (§7.3): {tenant_id}.{domain}.dlq.
-    expect(call.topic).toBe('tenant-1.construction.dlq');
+    // Tenant-scoped DLQ (§7.3): {tenant_id}.dlq — one per tenant, shared across its domains.
+    expect(call.topic).toBe('tenant-1.dlq');
   });
 
   it('includes failure metadata in headers', async () => {
@@ -56,6 +66,30 @@ describe('DlqPublisher', () => {
     const headers = sendMock.mock.calls[0][0].messages[0].headers;
     expect(headers['dlq.reason']).toBe('HANDLER_ERROR');
     expect(headers['dlq.retry_count']).toBe('3');
+  });
+
+  it('creates a tenant DLQ once, then reuses it for later failures', async () => {
+    // ensureTopic memoizes in knownTopics: the DLQ is created on the tenant's FIRST failure, and
+    // every later failure must go straight to send() — an admin round-trip per failed message
+    // would put broker latency on the path that exists to preserve messages.
+    const failure = {
+      originalTopic: 'tenant-1.construction.project.created.v1',
+      originalValue: Buffer.from('data'),
+      reason: 'HANDLER_ERROR',
+      failedAt: '2026-05-31T00:00:00Z',
+      retryCount: 3,
+    };
+
+    await publisher.publish(failure);
+    // Second failure on the same tenant — a different source topic still maps to tenant-1.dlq.
+    await publisher.publish({ ...failure, originalTopic: 'tenant-1.site.report.created.v1' });
+
+    expect(sendMock).toHaveBeenCalledTimes(2);
+    expect(sendMock.mock.calls[0][0].topic).toBe('tenant-1.dlq');
+    expect(sendMock.mock.calls[1][0].topic).toBe('tenant-1.dlq');
+    // The admin client is driven exactly once, on the first failure only.
+    expect(createTopicsMock).toHaveBeenCalledTimes(1);
+    expect(adminConnectMock).toHaveBeenCalledTimes(1);
   });
 
   it('throws when publish called before connect', async () => {
@@ -73,8 +107,8 @@ describe('DlqPublisher', () => {
 });
 
 describe('getDlqTopicNames', () => {
-  it('generates DLQ topic names for given domains', () => {
-    const names = getDlqTopicNames(['construction', 'site', 'procurement']);
-    expect(names).toEqual(['construction.dlq', 'site.dlq', 'procurement.dlq']);
+  it('generates one DLQ topic name per tenant', () => {
+    const names = getDlqTopicNames(['tenant-a', 'tenant-b', 'tenant-c']);
+    expect(names).toEqual(['tenant-a.dlq', 'tenant-b.dlq', 'tenant-c.dlq']);
   });
 });

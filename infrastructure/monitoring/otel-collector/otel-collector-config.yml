@@ -47,14 +47,47 @@ processors:
       - name: probabilistic-policy
         type: probabilistic
         probabilistic:
-          sampling_percentage: 1
+          # PERCENT (0–100), not a ratio: 1 = 1%. Per spec §31.5 the Deployment sets
+          # development=100, staging=10, production=1. Supplied via the Deployment env: block —
+          # collector 0.103.0 has NO default-value syntax, so this MUST be set (ADR-075).
+          sampling_percentage: ${env:OTEL_SAMPLING_PERCENTAGE}
 
   # Attach environment resource attributes
   resource:
     attributes:
+      # `${env:VAR}` is the only substitution form collector 0.103.0 accepts. The previous
+      # `${ENV:-production}` made the collector FAIL TO START:
+      #   cannot resolve the configuration: scheme "ENV" is not supported for uri "ENV:-production"
+      # There is no default-value form, so the Deployment must set ENV explicitly (ADR-075).
       - key: deployment.environment
-        value: ${ENV:-production}
+        value: ${env:ENV}
         action: upsert
+
+  # LOGS-ONLY. Kept separate from `resource` above because that one runs in the traces and metrics
+  # pipelines too, and the loki.* hint attributes must not leak into spans or metric series.
+  # Label NAMES match promtail (infrastructure/monitoring/loki/promtail-config.yml uses `service`
+  # and `tenant_id`), so both log paths into Loki are queryable with one LogQL selector.
+  resource/loki:
+    attributes:
+      - key: service
+        from_attribute: service.name
+        action: insert
+      - key: env
+        from_attribute: deployment.environment
+        action: insert
+      - key: loki.resource.labels
+        value: service, env
+        action: insert
+
+  # LOGS-ONLY. Promotes log-record attributes to Loki labels.
+  # tenant_id is a deliberate label so LogQL can scope by tenant, matching promtail. It is also the
+  # highest-cardinality label here — one stream per tenant per service — so watch stream counts as
+  # tenants grow and demote it to a structured-metadata filter if Loki starts complaining.
+  attributes/loki:
+    actions:
+      - key: loki.attribute.labels
+        value: tenant_id, level
+        action: insert
 
 exporters:
   # Traces → Jaeger
@@ -75,13 +108,23 @@ exporters:
   # Logs → Loki via OTLP
   loki:
     endpoint: 'http://loki:3100/loki/api/v1/push'
-    labels:
-      resource:
-        service.name: 'service'
-        deployment.environment: 'env'
-      attributes:
-        level: 'level'
-        tenant_id: 'tenant_id'
+    # The `labels:` block that used to live here is NOT a valid key in collector 0.103.0 — it made
+    # the whole config fail to load ("'' has invalid keys: labels"). Custom labels are now selected
+    # by HINT attributes (loki.resource.labels / loki.attribute.labels) added by the resource/loki
+    # and attributes/loki processors below. Same resulting labels: service, env, tenant_id, level.
+    # Verified end-to-end against grafana/loki:3.0.0 (see ADR-075).
+    default_labels_enabled:
+      # Suppress the exporter's own boilerplate labels — verified they really do disappear.
+      exporter: false
+      job: false
+      instance: false
+    # A `service_name` label also shows up on every stream. It is NOT from this exporter — Loki 3.x
+    # adds it itself (`limits_config.discover_service_name`), which is why a log carrying no service
+    # attribute at all still lands as `service_name="unknown_service"`. Verified against
+    # grafana/loki:3.0.0. It mirrors `service` 1:1 so it creates no extra streams, and it is the
+    # label Grafana's Explore UI keys on — left enabled deliberately. Turn it off in
+    # infrastructure/monitoring/loki/loki-config.yml, not here, if that ever changes.
+    # (`discover_log_levels` is the same story for the `level` label.)
 
   # Debug logging (disabled in production; enable for local dev)
   debug:
@@ -107,8 +150,10 @@ service:
       processors: [memory_limiter, resource, batch]
       exporters: [prometheus]
     logs:
+      # resource/loki + attributes/loki add the Loki hint attributes; they run AFTER `resource`
+      # because `env` is copied from deployment.environment, which `resource` sets.
       receivers: [otlp]
-      processors: [memory_limiter, resource, batch]
+      processors: [memory_limiter, resource, resource/loki, attributes/loki, batch]
       exporters: [loki]
 
   telemetry:

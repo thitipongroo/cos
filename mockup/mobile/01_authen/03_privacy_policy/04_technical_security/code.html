@@ -1,0 +1,243 @@
+<!DOCTYPE html><html class="dark" lang="th" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Technical Security Framework</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface": "#031427",
+                        "on-primary-fixed": "#161b2b",
+                        "tertiary-container": "#001318",
+                        "concrete-white": "#F8FAFC",
+                        "surface-variant": "#26364a",
+                        "error-container": "#93000a",
+                        "inverse-primary": "#595e71",
+                        "on-error": "#690005",
+                        "primary": "#c1c5dc",
+                        "on-primary-fixed-variant": "#414658",
+                        "primary-fixed-dim": "#c1c5dc",
+                        "on-tertiary-fixed": "#001f26",
+                        "offline": "#8E8E93",
+                        "tertiary-fixed": "#acedff",
+                        "secondary-container": "#0053db",
+                        "primary-container": "#0b1020",
+                        "danger": "#EF4444",
+                        "secondary-fixed-dim": "#b4c5ff",
+                        "surface-container-lowest": "#000f21",
+                        "syncing": "#FFD60A",
+                        "inverse-surface": "#d3e4fe",
+                        "on-secondary-fixed": "#00174b",
+                        "tertiary": "#4cd7f6",
+                        "background": "#031427",
+                        "on-surface": "#d3e4fe",
+                        "on-secondary-container": "#cdd7ff",
+                        "on-tertiary-fixed-variant": "#004e5c",
+                        "secondary-fixed": "#dbe1ff",
+                        "on-error-container": "#ffdad6",
+                        "outline-variant": "#46464c",
+                        "surface-tint": "#c1c5dc",
+                        "surface-container-highest": "#26364a",
+                        "surface-container-low": "#0b1c30",
+                        "primary-fixed": "#dee1f9",
+                        "surface-container-high": "#1b2b3f",
+                        "warning": "#F59E0B",
+                        "surface-bright": "#2a3a4f",
+                        "on-tertiary-container": "#0088a0",
+                        "inverse-on-surface": "#213145",
+                        "outline": "#909097",
+                        "surface-dim": "#031427",
+                        "secondary": "#b4c5ff",
+                        "on-secondary": "#002a78",
+                        "on-background": "#d3e4fe",
+                        "on-primary": "#2b3041",
+                        "on-primary-container": "#777c90",
+                        "tertiary-fixed-dim": "#4cd7f6",
+                        "success": "#10B981",
+                        "error": "#ffb4ab",
+                        "on-tertiary": "#003640",
+                        "on-secondary-fixed-variant": "#003ea8",
+                        "surface-container": "#102034",
+                        "on-surface-variant": "#c7c6cd",
+                        "mobile-primary": "#0066FF"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "web-padding-card": "16px",
+                        "mobile-icon-pad": "8px",
+                        "mobile-card-pad": "12px",
+                        "touch-target-min": "44px",
+                        "mobile-base": "8px",
+                        "web-gap-tight": "4px",
+                        "web-margin-component": "32px",
+                        "mobile-section-pad": "16px",
+                        "touch-target-optimum": "52px",
+                        "web-page-gap": "64px",
+                        "web-base": "4px",
+                        "mobile-edge-margin": "24px"
+                    },
+                    "fontFamily": {
+                        "headline-h3": ["Inter"],
+                        "label-tiny": ["Inter"],
+                        "mobile-body": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "headline-h1": ["Inter"],
+                        "headline-h2": ["Inter"],
+                        "mobile-hero": ["Inter"],
+                        "mobile-title": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-h3": ["16px", { "lineHeight": "1.3", "fontWeight": "500" }],
+                        "label-tiny": ["11px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "mobile-body": ["17px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "display-lg": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-md": ["14px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "body-sm": ["12px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "headline-h1": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "headline-h2": ["20px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "mobile-hero": ["28px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "mobile-title": ["22px", { "lineHeight": "1.3", "fontWeight": "600" }]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col">
+<!-- TopAppBar Semantic Shell -->
+<header class="bg-surface dark:bg-surface fixed top-0 w-full z-50 border-b border-outline-variant transition-colors duration-200 flex justify-between items-center h-touch-target-optimum px-mobile-edge-margin">
+<div class="flex items-center gap-2">
+
+<span class="font-headline-h2 text-headline-h2 font-bold text-primary tracking-tighter">TECHINICAL SECURITY</span>
+</div>
+<div class="flex items-center">
+
+</div>
+</header>
+<main class="flex-grow pt-24 pb-32 px-4 md:px-web-margin-component max-w-7xl mx-auto w-full flex flex-col gap-8 md:gap-web-page-gap">
+<!-- Header & Description Section -->
+<section class="flex flex-col gap-4 text-center md:text-left">
+
+<p class="font-body-md text-body-md text-on-surface-variant max-w-3xl">
+                สถาปัตยกรรมระดับองค์กรที่ออกแบบมาเพื่อสภาพแวดล้อมที่มีความสำคัญต่อภารกิจ เราใช้โปรโตคอลการรักษาความปลอดภัยขั้นสูงสุด รวมถึงการเข้ารหัส AES-256 สำหรับข้อมูลที่อยู่นิ่ง, TLS 1.3 สำหรับข้อมูลที่เคลื่อนไหว, และการแยกผู้เช่า (Row-Level Security - RLS) เพื่อรับประกันความสมบูรณ์และการแยกข้อมูลที่ไม่มีใครเทียบได้
+            </p>
+</section>
+<!-- Core Protection Bento Grid -->
+<section class="flex flex-col gap-6">
+<h2 class="font-headline-h2 text-headline-h2 text-primary border-b border-outline-variant pb-2">Core Protection</h2>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<!-- Data Encryption Card -->
+<div class="bg-surface-container-high border border-outline-variant rounded-lg p-web-padding-card flex flex-col gap-3 relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-6xl text-primary" style="font-variation-settings: &quot;FILL&quot; 1;">enhanced_encryption</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: &quot;FILL&quot; 1;">enhanced_encryption</span>
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface">Data Encryption</h3>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant z-10 relative">
+                        การเข้ารหัส AES-256 (Advanced Encryption Standard) ที่ระดับพื้นที่เก็บข้อมูล ข้อมูลทั้งหมดถูกเข้ารหัสขณะพัก เพื่อป้องกันการเข้าถึงจากผู้ไม่หวังดีแม้ในกรณีที่มีการประนีประนอมทางกายภาพของเซิร์ฟเวอร์.
+                    </p>
+<div class="mt-auto pt-4 flex gap-2">
+<span class="bg-surface-container-highest text-primary font-label-tiny text-label-tiny px-2 py-1 rounded uppercase tracking-wider">AES-256</span>
+<span class="bg-surface-container-highest text-primary font-label-tiny text-label-tiny px-2 py-1 rounded uppercase tracking-wider">AT REST</span>
+</div>
+</div>
+<!-- Network Guard Card -->
+<div class="bg-surface-container-high border border-outline-variant rounded-lg p-web-padding-card flex flex-col gap-3 relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-6xl text-tertiary" style="font-variation-settings: &quot;FILL&quot; 1;">router</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary" style="font-variation-settings: &quot;FILL&quot; 1;">router</span>
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface">Network Guard</h3>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant z-10 relative">
+                        ปกป้องขอบข่ายเครือข่ายด้วย Cloudflare Web Application Firewall (WAF) การป้องกัน DDoS แบบเรียลไทม์ และนโยบาย Origin Protection ที่จำกัดทราฟฟิกขาเข้าเฉพาะโหนดที่ได้รับอนุญาตเท่านั้น.
+                    </p>
+<div class="mt-auto pt-4 flex gap-2">
+<span class="bg-surface-container-highest text-tertiary font-label-tiny text-label-tiny px-2 py-1 rounded uppercase tracking-wider">WAF</span>
+<span class="bg-surface-container-highest text-tertiary font-label-tiny text-label-tiny px-2 py-1 rounded uppercase tracking-wider">TLS 1.3</span>
+</div>
+</div>
+<!-- Tenant Isolation Card -->
+<div class="bg-surface-container-high border border-outline-variant rounded-lg p-web-padding-card flex flex-col gap-3 relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-mobile-primary" style="font-variation-settings: &quot;FILL&quot; 1; font-size: 64px;">dns</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-mobile-primary" style="font-variation-settings: &quot;FILL&quot; 1;">dns</span>
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface">Tenant Isolation</h3>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant z-10 relative">
+                        การแยกข้อมูลลูกค้าระดับเรคคอร์ดผ่าน PostgreSQL Row-Level Security (RLS) รับประกันด้วยสถาปัตยกรรมฐานข้อมูลว่าผู้ใช้ไม่สามารถเข้าถึงข้อมูลข้ามพื้นที่เช่าได้ในทุกระดับการสืบค้น.
+                    </p>
+<div class="mt-auto pt-4 flex gap-2">
+<span class="bg-surface-container-highest text-mobile-primary font-label-tiny text-label-tiny px-2 py-1 rounded uppercase tracking-wider">RLS</span>
+<span class="bg-surface-container-highest text-mobile-primary font-label-tiny text-label-tiny px-2 py-1 rounded uppercase tracking-wider">POSTGRES</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Infrastructure Status Area -->
+<section class="bg-surface-container border border-outline-variant p-4 rounded-lg flex flex-col md:flex-row justify-between items-center gap-4">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary text-3xl">storage</span>
+<div>
+<h4 class="font-headline-h3 text-headline-h3 text-on-surface">Infrastructure Status</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Global Monitoring System</p>
+</div>
+</div>
+<div class="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+<div class="bg-surface-container-highest border border-outline-variant px-4 py-2 rounded flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-success animate-pulse"></span>
+<span class="font-label-tiny text-label-tiny text-on-surface uppercase">Region: ap-southeast-7</span>
+</div>
+<div class="bg-surface-container-highest border border-outline-variant px-4 py-2 rounded flex items-center gap-2">
+<span class="material-symbols-outlined text-success text-sm" style="font-variation-settings: &quot;FILL&quot; 1;">verified</span>
+<span class="font-label-tiny text-label-tiny text-success uppercase">Status: Hardened</span>
+</div>
+</div>
+</section>
+<!-- Compliance Footer Section -->
+<section class="mt-8 border-t border-outline-variant pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-center md:text-left">
+<div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">เอกสารเผยแพร่ทางเทคนิคนี้ใช้สำหรับการอ้างอิงเท่านั้น. ข้อมูลทั้งหมดถูกป้องกันภายใต้ข้อตกลงการรักษาความลับ (NDA).</p>
+</div>
+<div class="flex gap-4">
+<div class="flex items-center gap-1 border border-outline-variant rounded px-3 py-1 bg-surface-container-low">
+<span class="material-symbols-outlined text-on-surface-variant text-sm">workspace_premium</span>
+<span class="font-label-tiny text-label-tiny text-on-surface-variant">ISO 27001 COMPLIANT</span>
+</div>
+<div class="flex items-center gap-1 border border-outline-variant rounded px-3 py-1 bg-surface-container-low">
+<span class="material-symbols-outlined text-on-surface-variant text-sm">fact_check</span>
+<span class="font-label-tiny text-label-tiny text-on-surface-variant">SOC 2 TYPE II</span>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar Semantic Shell (Only visible on mobile, though intent here is informational, included per JSON structure logic for potential main hub context) -->
+
+
+
+
+
+
+
+</body></html>

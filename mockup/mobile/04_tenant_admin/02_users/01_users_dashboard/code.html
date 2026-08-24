@@ -1,0 +1,407 @@
+<!DOCTYPE html><html class="dark" lang="th" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+<title>Construction OS - User Management</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@100..900&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary": "#4cd7f6",
+                    "primary": "#b4c5ff",
+                    "on-secondary-container": "#00424e",
+                    "secondary-container": "#03b5d3",
+                    "error-container": "#93000a",
+                    "on-secondary-fixed": "#001f26",
+                    "mobile-warning": "#FF9500",
+                    "outline-variant": "#434655",
+                    "tertiary-fixed": "#dee1f9",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "on-tertiary-container": "#eeefff",
+                    "on-tertiary": "#2b3041",
+                    "secondary-fixed": "#acedff",
+                    "on-tertiary-fixed": "#161b2b",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "sync-active": "#FFD60A",
+                    "surface-container-low": "#0b1c30",
+                    "primary-fixed": "#dbe1ff",
+                    "on-primary-container": "#eeefff",
+                    "sync-pending": "#94A3B8",
+                    "on-surface": "#d3e4fe",
+                    "primary-container": "#2563eb",
+                    "surface-variant": "#26364a",
+                    "on-surface-variant": "#c3c6d7",
+                    "error": "#ffb4ab",
+                    "mobile-primary": "#0066FF",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "background": "#031427",
+                    "surface": "#031427",
+                    "on-primary-fixed": "#00174b",
+                    "surface-container-highest": "#26364a",
+                    "outline": "#8d90a0",
+                    "surface-tint": "#b4c5ff",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "tertiary": "#c1c5dc",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "dark-bg": "#020617",
+                    "inverse-primary": "#0053db",
+                    "mobile-danger": "#FF3B30",
+                    "inverse-surface": "#d3e4fe",
+                    "on-primary": "#002a78",
+                    "surface-dim": "#031427",
+                    "dark-surface": "#0F172A",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "on-error-container": "#ffdad6",
+                    "surface-container": "#102034",
+                    "surface-bright": "#2a3a4f",
+                    "on-background": "#d3e4fe",
+                    "tertiary-container": "#686c80",
+                    "on-error": "#690005",
+                    "surface-container-lowest": "#000f21",
+                    "mobile-success": "#00C853",
+                    "surface-container-high": "#1b2b3f",
+                    "inverse-on-surface": "#213145",
+                    "on-secondary": "#003640",
+                    "ai-cyan": "#06B6D4"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "touch-target": "52px",
+                    "base": "4px",
+                    "web-margin": "32px",
+                    "space-3": "12px",
+                    "space-2": "8px",
+                    "edge-mobile": "24px",
+                    "space-4": "16px",
+                    "space-1": "4px"
+            },
+            "fontFamily": {
+                    "body-mobile": ["Inter Tight"],
+                    "hero-mobile": ["Inter Tight"],
+                    "display-web": ["Inter Tight"],
+                    "body-web": ["Inter Tight"],
+                    "label-mobile": ["Inter Tight"],
+                    "tiny-web": ["Inter Tight"],
+                    "h1-web": ["Inter Tight"],
+                    "h2-web": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+        }
+        body {
+            background-color: #031427;
+            font-family: 'Inter Tight', sans-serif;
+            color: #d3e4fe;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .bento-grid {
+            display: grid;
+            gap: 16px;
+            grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+        }
+        .card-status-strip {
+            width: 4px;
+            height: 100%;
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen pb-24">
+<!-- Top App Bar -->
+<header class="bg-background text-primary flex justify-between items-center w-full px-edge-mobile h-[64px] sticky top-0 z-50">
+<div class="flex items-center gap-3">
+<img src="https://lh3.googleusercontent.com/aida-public/AB6AXuBGfxGzhCwR9U8qSjHD3hd7Hfw4aI2MmYVWX8DLhOrTZ06eVDqU_wydo3-IC8MbTvoCERi7KrVtXEpbnvnqkm-KfYf8PXx6vSxt7Xs5IWohepZCyw_DJqERjkG7mForN8cDburkUUIMnDCOe61TWMA6iOAURvrsOidx4M8PvBTd0_vcj5sQakaC3np9YOYGYf782nlie8GOB2PEIAKwPnumjlW8ygpKW4UNzwvYASXLCNp08tvtex5P3etASKAbx68ouQabAnbAAKg" alt="Construction OS Logo" class="w-8 h-8 object-contain">
+<h1 class="font-h1-web text-[16px] uppercase tracking-[0.1em] font-bold">CONSTRUCTION OS</h1>
+</div>
+<div class="flex items-center gap-2 px-3 py-1 bg-surface-container-high rounded-full border border-white/5">
+<span class="w-2 h-2 rounded-full bg-mobile-success"></span>
+<span class="font-tiny-web text-tiny-web text-mobile-success uppercase tracking-widest">SYNCED</span>
+<span class="material-symbols-outlined text-[16px] text-mobile-success" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+</header>
+<main class="px-edge-mobile py-space-4">
+<!-- Screen Header -->
+<div class="mb-6">
+<h2 class="font-hero-mobile text-hero-mobile text-on-surface mb-2">จัดการผู้ใช้งาน</h2>
+<p class="font-body-mobile text-body-mobile text-on-surface-variant opacity-70">จัดการสิทธิ์และการเข้าถึงข้อมูลภายในโครงการ</p>
+</div>
+<!-- Controls Section (Search & Filter) -->
+<div class="space-y-4 mb-8">
+<!-- Search Bar -->
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline" data-icon="search">search</span>
+<input class="w-full h-[52px] bg-surface-container border-none rounded-xl pl-12 pr-4 text-on-surface focus:ring-2 focus:ring-primary-container transition-all placeholder:text-outline-variant font-body-mobile text-body-mobile" placeholder="ค้นหาผู้ใช้งาน..." type="text">
+</div>
+<!-- Filters -->
+<div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+<button class="whitespace-nowrap px-5 h-[40px] bg-primary-container text-on-primary-container rounded-full font-label-mobile text-label-mobile active:scale-95 transition-transform">ทั้งหมด</button>
+<button class="whitespace-nowrap px-5 h-[40px] bg-surface-container text-on-surface-variant rounded-full font-label-mobile text-label-mobile hover:bg-surface-bright transition-colors">Executive</button>
+<button class="whitespace-nowrap px-5 h-[40px] bg-surface-container text-on-surface-variant rounded-full font-label-mobile text-label-mobile hover:bg-surface-bright transition-colors">PM</button>
+<button class="whitespace-nowrap px-5 h-[40px] bg-surface-container text-on-surface-variant rounded-full font-label-mobile text-label-mobile hover:bg-surface-bright transition-colors">Site Engineer</button>
+<button class="whitespace-nowrap px-5 h-[40px] bg-surface-container text-on-surface-variant rounded-full font-label-mobile text-label-mobile hover:bg-surface-bright transition-colors">Foreman</button>
+</div>
+</div>
+<!-- User Grid -->
+<div class="bento-grid">
+<!-- User Card 1: Active Executive -->
+<div class="relative bg-surface-container rounded-xl overflow-hidden shadow-lg border border-white/5 active:scale-[0.98] transition-transform duration-200">
+<div class="card-status-strip bg-mobile-success"></div>
+<div class="p-space-4">
+<div class="flex items-start justify-between mb-4">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 rounded-full overflow-hidden border-2 border-primary-container/30">
+<img alt="สมชาย วิศวกรรม" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBHKVceTbo967aNXlBwwVXxtIU9fOowlm34LqFz7bwnNcDjP_kNy_qOX_GRt3I_kvypLRDpDzOvKaFLy_ymhrapRmaBl08tSTsvkEliHT8B5-CfhhTgtEsoI0qP2k9pxZDEXu1CXwLt00jwqjzI-DkdO4XmhV-AecoYLbsFK0e7nWSfFhw90EGFOBv1ntQ69eyB9lo-MiIknhknvWOjdJ_IyKhTBi8ehvTp8SJBzaPDk2xPRvv4kql0nzVNYV2j7Q7O-10IJFsEzh4">
+</div>
+<div>
+<h3 class="font-h2-web text-h2-web text-on-surface leading-tight">สมชาย วิศวกรรม</h3>
+<p class="font-tiny-web text-tiny-web text-outline uppercase tracking-widest">UID: OS-99210</p>
+</div>
+</div>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/5">
+<span class="material-symbols-outlined text-outline" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+<div class="grid grid-cols-2 gap-4 mb-4">
+<div>
+<p class="font-tiny-web text-tiny-web text-outline-variant mb-1">บทบาท</p>
+<span class="inline-flex items-center px-2 py-0.5 rounded bg-on-secondary-container/20 text-secondary font-label-mobile text-label-mobile">Executive</span>
+</div>
+<div>
+<p class="font-tiny-web text-tiny-web text-outline-variant mb-1">สถานะ</p>
+<span class="text-mobile-success font-label-mobile text-label-mobile flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-mobile-success"></span> Active
+                            </span>
+</div>
+</div>
+<div class="pt-3 border-t border-white/5 flex items-center justify-between">
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]" data-icon="alternate_email">alternate_email</span>
+<span class="font-body-mobile text-[14px]">Email Login</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant" data-icon="chevron_right">chevron_right</span>
+</div>
+</div>
+</div>
+<!-- User Card 2: Active PM -->
+<div class="relative bg-surface-container rounded-xl overflow-hidden shadow-lg border border-white/5 active:scale-[0.98] transition-transform duration-200">
+<div class="card-status-strip bg-mobile-success"></div>
+<div class="p-space-4">
+<div class="flex items-start justify-between mb-4">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 rounded-full overflow-hidden border-2 border-primary-container/30">
+<img alt="วิไลพร มั่นคง" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBrmB7ls3UENWNvq6Lx6sh2I8BSOCFl90ISfCbbFUrDKQNqYAgmQkvqicyw6BvMJ4CDowfFLReCnrZoCbZRWr5c693O6NGTY7sWPq6VWgN3DvNbKdNPWNR3nQYsee09np37zF_h-m0aArT2KrR5FeRm8CzcmjZiCMHIYrz4RhpiyOsxF6KFRlZxtxa7HIXeuK2Pm8KHzLlRDmc-njcIBeZ804UrFgfhgTOFpbrbyQQN-MR58VJNO75Ag9a_TtoNux7SFITUzJxhBAc">
+</div>
+<div>
+<h3 class="font-h2-web text-h2-web text-on-surface leading-tight">วิไลพร มั่นคง</h3>
+<p class="font-tiny-web text-tiny-web text-outline uppercase tracking-widest">UID: OS-88432</p>
+</div>
+</div>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/5">
+<span class="material-symbols-outlined text-outline" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+<div class="grid grid-cols-2 gap-4 mb-4">
+<div>
+<p class="font-tiny-web text-tiny-web text-outline-variant mb-1">บทบาท</p>
+<span class="inline-flex items-center px-2 py-0.5 rounded bg-primary-container/20 text-primary font-label-mobile text-label-mobile">Project Manager</span>
+</div>
+<div>
+<p class="font-tiny-web text-tiny-web text-outline-variant mb-1">สถานะ</p>
+<span class="text-mobile-success font-label-mobile text-label-mobile flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-mobile-success"></span> Active
+                            </span>
+</div>
+</div>
+<div class="pt-3 border-t border-white/5 flex items-center justify-between">
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]" data-icon="smartphone">smartphone</span>
+<span class="font-body-mobile text-[14px]">OTP Login</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant" data-icon="chevron_right">chevron_right</span>
+</div>
+</div>
+</div>
+<!-- User Card 3: Inactive Site Engineer -->
+<div class="relative bg-surface-container rounded-xl overflow-hidden shadow-lg border border-white/5 opacity-60 grayscale-[0.3]">
+<div class="card-status-strip bg-outline-variant"></div>
+<div class="p-space-4">
+<div class="flex items-start justify-between mb-4">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 rounded-full overflow-hidden bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-outline" data-icon="person">person</span>
+</div>
+<div>
+<h3 class="font-h2-web text-h2-web text-on-surface leading-tight">ธนาวุฒิ รักเรียน</h3>
+<p class="font-tiny-web text-tiny-web text-outline uppercase tracking-widest">UID: OS-77123</p>
+</div>
+</div>
+<button class="w-10 h-10 flex items-center justify-center rounded-full">
+<span class="material-symbols-outlined text-outline" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+<div class="grid grid-cols-2 gap-4 mb-4">
+<div>
+<p class="font-tiny-web text-tiny-web text-outline-variant mb-1">บทบาท</p>
+<span class="inline-flex items-center px-2 py-0.5 rounded bg-surface-variant text-on-surface-variant font-label-mobile text-label-mobile">Site Engineer</span>
+</div>
+<div>
+<p class="font-tiny-web text-tiny-web text-outline-variant mb-1">สถานะ</p>
+<span class="text-outline-variant font-label-mobile text-label-mobile flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-outline-variant"></span> Inactive
+                            </span>
+</div>
+</div>
+<div class="pt-3 border-t border-white/5 flex items-center justify-between">
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]" data-icon="alternate_email">alternate_email</span>
+<span class="font-body-mobile text-[14px]">Email Login</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant" data-icon="lock">lock</span>
+</div>
+</div>
+</div>
+<!-- AI Insight Module (Updated Standards) -->
+<div class="relative bg-surface-container-high rounded-xl overflow-hidden border-l-4 border-ai-cyan p-space-4 shadow-xl">
+<div class="absolute top-0 right-0 p-2 opacity-10">
+<span class="material-symbols-outlined text-6xl text-ai-cyan" data-icon="psychology">psychology</span>
+</div>
+<div class="flex items-center justify-between mb-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-ai-cyan" data-icon="auto_awesome" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<h4 class="font-label-mobile text-label-mobile text-ai-cyan uppercase tracking-wider">AI USER AUDIT</h4>
+</div>
+<span class="font-tiny-web text-[10px] text-ai-cyan/60 font-bold bg-ai-cyan/10 px-2 py-0.5 rounded">95% CONFIDENCE</span>
+</div>
+<p class="font-body-mobile text-[15px] text-on-surface leading-relaxed mb-4">
+                    ตรวจพบผู้ใช้งาน 3 รายที่ไม่ได้เข้าสู่ระบบนานกว่า 30 วัน แนะนำให้ตรวจสอบสถานะเพื่อความปลอดภัยของโครงการ
+                </p>
+<div class="flex flex-col gap-3">
+<button class="w-full h-[44px] bg-ai-cyan/10 hover:bg-ai-cyan/20 text-ai-cyan border border-ai-cyan/30 rounded-lg font-label-mobile text-label-mobile transition-all active:scale-[0.98]">
+                        ดูรายการที่แนะนำ
+                    </button>
+<p class="font-tiny-web text-[10px] text-outline-variant text-center italic">Data Source: Tenant Audit Log</p>
+</div>
+</div>
+<!-- User Card 4: New Site Engineer -->
+<div class="relative bg-surface-container rounded-xl overflow-hidden shadow-lg border border-white/5 active:scale-[0.98] transition-transform duration-200">
+<div class="card-status-strip bg-mobile-success"></div>
+<div class="p-space-4">
+<div class="flex items-start justify-between mb-4">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 rounded-full overflow-hidden border-2 border-primary-container/30">
+<img alt="กิตติพงษ์ ใจดี" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDyqI3fNjIELmIr6oQwgr8TF9_fmm9OX1P-nLLcpVrbHkHpIW-Dhre4GaokG13gmkkdKyJ5i4bXW2HSu7u9wYqIIEbtCt8Y9baJkda1FcY6EOpiCOLQxtFac9aBS-UORNPGc5JeI4ceHse9mDafxMvNDQ-0uJjdno2CDHeWMjjrBM360WrszlkuT8v0PA8b68mmND7syjIzr8iKcZpx5CLpdHALdOtatGLxMH2-tyBj9_dnSEYObGtWhaxqJJ7wKVoABXph2BfeecA">
+</div>
+<div>
+<h3 class="font-h2-web text-h2-web text-on-surface leading-tight">กิตติพงษ์ ใจดี</h3>
+<p class="font-tiny-web text-tiny-web text-outline uppercase tracking-widest">UID: OS-88551</p>
+</div>
+</div>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/5">
+<span class="material-symbols-outlined text-outline" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+<div class="grid grid-cols-2 gap-4 mb-4">
+<div>
+<p class="font-tiny-web text-tiny-web text-outline-variant mb-1">บทบาท</p>
+<span class="inline-flex items-center px-2 py-0.5 rounded bg-primary-container/20 text-primary font-label-mobile text-label-mobile">Site Engineer</span>
+</div>
+<div>
+<p class="font-tiny-web text-tiny-web text-outline-variant mb-1">สถานะ</p>
+<span class="text-mobile-success font-label-mobile text-label-mobile flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-mobile-success"></span> Active
+                            </span>
+</div>
+</div>
+<div class="pt-3 border-t border-white/5 flex items-center justify-between">
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]" data-icon="smartphone">smartphone</span>
+<span class="font-body-mobile text-[14px]">OTP Login</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant" data-icon="chevron_right">chevron_right</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Floating Action Button -->
+<button class="fixed right-6 bottom-24 w-[56px] h-[56px] bg-mobile-primary text-white rounded-full flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all z-50">
+<span class="material-symbols-outlined text-3xl" data-icon="add">add</span>
+</button>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center h-[72px] pb-safe bg-surface-container-highest border-t border-white/5 rounded-t-2xl px-2">
+<button class="flex flex-col items-center justify-center w-[72px] h-[52px] text-on-surface-variant hover:text-primary transition-colors active:scale-95">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label-mobile text-[10px] mt-0.5">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center w-[72px] h-[52px] bg-primary-container/20 text-primary rounded-xl active:scale-95">
+<span class="material-symbols-outlined" data-icon="group" style="font-variation-settings: 'FILL' 1;">group</span>
+<span class="font-label-mobile text-[10px] mt-0.5">Users</span>
+</button>
+<button class="flex flex-col items-center justify-center w-[72px] h-[52px] text-on-surface-variant hover:text-primary transition-colors active:scale-95">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="font-label-mobile text-[10px] mt-0.5">Alerts</span>
+</button>
+<button class="flex flex-col items-center justify-center w-[72px] h-[52px] text-on-surface-variant hover:text-primary transition-colors active:scale-95">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-mobile text-[10px] mt-0.5">Settings</span>
+</button>
+</nav>
+<script>
+        // Simple Interaction logic
+        document.querySelectorAll('.active\\:scale-95').forEach(el => {
+            el.addEventListener('mousedown', () => el.classList.add('scale-95'));
+            el.addEventListener('mouseup', () => el.classList.remove('scale-95'));
+            el.addEventListener('mouseleave', () => el.classList.remove('scale-95'));
+        });
+
+        // Filter toggle effect
+        const filters = document.querySelectorAll('.flex.gap-2 button');
+        filters.forEach(filter => {
+            filter.addEventListener('click', () => {
+                filters.forEach(f => {
+                    f.classList.remove('bg-primary-container', 'text-on-primary-container');
+                    f.classList.add('bg-surface-container', 'text-on-surface-variant');
+                });
+                filter.classList.add('bg-primary-container', 'text-on-primary-container');
+                filter.classList.remove('bg-surface-container', 'text-on-surface-variant');
+            });
+        });
+    </script>
+
+
+</body></html>

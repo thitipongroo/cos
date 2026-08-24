@@ -3,7 +3,6 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import pytest
 from reports.guard import HallucinationGuard, MIN_WORDS, MAX_WORDS, CONFIDENCE_THRESHOLD
 
 

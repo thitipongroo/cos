@@ -14,11 +14,135 @@ import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
 import { createLogger } from '@cos/logger';
 import { TasksRepository } from './tasks.repository';
-import type { TaskRow } from './tasks.repository';
+import type { ProgressSums, SchedulableTaskRow, TaskRow } from './tasks.repository';
 import type { CreateTaskDto } from './dto/create-task.dto';
 import type { UpdateTaskDto } from './dto/update-task.dto';
 
 const logger = createLogger('tasks-service');
+
+/** §32.12 SPI verdict bands. */
+const SPI_AHEAD_ABOVE = 1.05;
+const SPI_BEHIND_BELOW = 0.95;
+
+const MS_PER_DAY = 86_400_000;
+
+export type ScheduleStatus = 'ahead' | 'on_track' | 'behind';
+
+/** The value-weighted figures, derivable from the sums alone (deriveProgress). */
+export interface ScheduleFigures {
+  percentComplete: number | null;
+  plannedPercent: number | null;
+  spi: number | null;
+  status: ScheduleStatus | null;
+}
+
+export interface ProjectProgress extends ScheduleFigures {
+  /** Earned Schedule day-variance (§32.12): + behind, − ahead. Null when no schedulable task. */
+  scheduleDaysBehind: number | null;
+}
+
+/**
+ * Derive the §32.12 figures from the weighted sums.
+ *
+ * Exported as a free function, not a method: it is pure, and the null semantics are the whole point
+ * of the metric, so they are tested directly rather than through a mocked repository.
+ *
+ * Every field is nullable and null always means "not computable" — never zero. A project with no
+ * BOQ-linked task must not render a 0% bar, which would read as "no work done" rather than "no data".
+ */
+export function deriveProgress(sums: ProgressSums): ScheduleFigures {
+  // No BOQ-linked, non-cancelled task carries any value: nothing is measurable.
+  if (sums.weightTotal <= 0) {
+    return { percentComplete: null, plannedPercent: null, spi: null, status: null };
+  }
+
+  const percentComplete = sums.earnedTotal / sums.weightTotal;
+
+  // Nothing has planned dates → there is no schedule to judge against, but progress is still known.
+  if (sums.schedWeightTotal <= 0) {
+    return { percentComplete, plannedPercent: null, spi: null, status: null };
+  }
+
+  const plannedPercent = sums.schedPlannedTotal / sums.schedWeightTotal;
+
+  // Nothing was due to have started yet. "Ahead of schedule" is meaningless here, and dividing by
+  // zero would report Infinity as spectacular progress.
+  if (plannedPercent <= 0) {
+    return { percentComplete, plannedPercent, spi: null, status: null };
+  }
+
+  // Both sides span the schedulable subset only — see §32.12 "Schedule verdict".
+  const earnedScheduled = sums.schedEarnedTotal / sums.schedWeightTotal;
+  const spi = earnedScheduled / plannedPercent;
+
+  const status: ScheduleStatus =
+    spi > SPI_AHEAD_ABOVE ? 'ahead' : spi < SPI_BEHIND_BELOW ? 'behind' : 'on_track';
+
+  return { percentComplete, plannedPercent, spi, status };
+}
+
+/** A date reduced to a whole day-number (UTC midnight), so arithmetic is in days like §32.12's SQL. */
+function toDayNumber(date: Date): number {
+  return Math.floor(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()) / MS_PER_DAY,
+  );
+}
+
+/** One task's planned completion (0..100) at a given day-number — the clamped ramp of §32.12. */
+function plannedPctAt(startDay: number, endDay: number, day: number): number {
+  // Zero- or negative-length span is a milestone: 0 before its end, 100 from its end on.
+  if (endDay <= startDay) return day >= endDay ? 100 : 0;
+  const frac = (day - startDay) / (endDay - startDay);
+  return Math.max(0, Math.min(1, frac)) * 100;
+}
+
+/**
+ * Earned Schedule day-variance (§32.12): how many days behind (+) or ahead (−) the schedule is.
+ *
+ * Finds the date `ES` at which the time-phased planned curve `PV(d)` reaches today's earned percent,
+ * then returns `round(today − ES)` in days. Pure and exported so the search + edge cases are tested
+ * without a database. `null` when there is no schedulable task — same "not computable" as `spi`.
+ */
+export function earnedScheduleDays(rows: SchedulableTaskRow[], today: Date): number | null {
+  const tasks = rows
+    .filter((r) => r.weight > 0)
+    .map((r) => ({
+      progress: r.progress,
+      weight: r.weight,
+      startDay: toDayNumber(r.planned_start),
+      endDay: toDayNumber(r.planned_end),
+    }));
+  const totalWeight = tasks.reduce((s, t) => s + t.weight, 0);
+  if (totalWeight <= 0) return null;
+
+  const earned = tasks.reduce((s, t) => s + t.progress * t.weight, 0) / totalWeight;
+  const pvAt = (day: number): number =>
+    tasks.reduce((s, t) => s + plannedPctAt(t.startDay, t.endDay, day) * t.weight, 0) / totalWeight;
+
+  const minStart = Math.min(...tasks.map((t) => t.startDay));
+  const maxEnd = Math.max(...tasks.map((t) => t.endDay));
+  const todayDay = toDayNumber(today);
+
+  // ES is the day where PV = earned. PV is monotonic non-decreasing between minStart and maxEnd.
+  let es: number;
+  if (earned <= pvAt(minStart)) {
+    es = minStart; // nothing was due yet — the plan is at its start
+  } else if (earned >= pvAt(maxEnd)) {
+    es = maxEnd; // all scheduled work is done per the plan — the plan is at its finish
+  } else {
+    // Bisect for the crossing. ~50 iterations over a day range converges well past whole-day needs.
+    let lo = minStart;
+    let hi = maxEnd;
+    for (let i = 0; i < 50; i++) {
+      const mid = (lo + hi) / 2;
+      if (pvAt(mid) < earned) lo = mid;
+      else hi = mid;
+    }
+    es = (lo + hi) / 2;
+  }
+
+  return Math.round(todayDay - es);
+}
 
 @Injectable({ scope: Scope.REQUEST })
 export class TasksService {
@@ -43,6 +167,18 @@ export class TasksService {
     return { items: rows, total, page: params.page, limit: params.limit };
   }
 
+  /** BOQ-value-weighted progress + schedule verdict + Earned Schedule day-variance (§32.12). */
+  async getProjectProgress(project_id: string): Promise<ProjectProgress> {
+    const [sums, schedulable] = await Promise.all([
+      this.repo.findProgressSums(project_id),
+      this.repo.findSchedulableTasks(project_id),
+    ]);
+    return {
+      ...deriveProgress(sums),
+      scheduleDaysBehind: earnedScheduleDays(schedulable, new Date()),
+    };
+  }
+
   async createTask(project_id: string, dto: CreateTaskDto): Promise<TaskRow> {
     const task = await this.repo.createTask({
       project_id,
@@ -62,7 +198,7 @@ export class TasksService {
   async getTask(taskId: string): Promise<TaskRow> {
     const task = await this.repo.findTaskById(taskId);
     if (!task) {
-      throw new NotFoundException({ code: 'COS-TASK-002', message: 'Task not found' });
+      throw new NotFoundException({ error: { code: 'COS-TASK-002', message: 'Task not found' } });
     }
     return task;
   }
@@ -90,9 +226,11 @@ export class TasksService {
 
       if (blocking.length > 0) {
         throw new UnprocessableEntityException({
-          code: 'COS-TASK-001',
-          message: 'Task completion blocked by hard-block gates',
-          blocking_gates: blocking,
+          error: {
+            code: 'COS-TASK-001',
+            message: 'Task completion blocked by hard-block gates',
+            blocking_gates: blocking,
+          },
         });
       }
     }

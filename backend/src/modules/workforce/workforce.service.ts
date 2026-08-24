@@ -12,7 +12,13 @@ import { createLogger } from '@cos/logger';
 import { buildOutboxEvent } from '../../shared/outbox/outbox.types';
 import { clsTenantId, clsUserId } from '../../shared/context/cls-context';
 import { WorkforceRepository } from './workforce.repository';
-import type { WorkerRow, AllocationRow, AttendanceRow, TimesheetRow } from './workforce.repository';
+import type {
+  WorkerRow,
+  AllocationRow,
+  AttendanceRow,
+  DirectoryRow,
+  TimesheetRow,
+} from './workforce.repository';
 import type { CreateWorkerDto } from './dto/create-worker.dto';
 import type { AllocateWorkerDto } from './dto/allocate-worker.dto';
 import type { RecordAttendanceDto } from './dto/attendance.dto';
@@ -91,6 +97,11 @@ export class WorkforceService {
 
   async getProjectWorkforce(projectId: string): Promise<AllocationRow[]> {
     return this.repo.getProjectWorkforce(projectId);
+  }
+
+  /** The project crew as a contact list, with today’s on-site state (mockup 04_directory). */
+  async getProjectDirectory(projectId: string): Promise<DirectoryRow[]> {
+    return this.repo.getProjectDirectory(projectId);
   }
 
   async recordAttendance(workerId: string, dto: RecordAttendanceDto): Promise<AttendanceRow> {

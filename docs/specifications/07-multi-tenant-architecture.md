@@ -229,7 +229,24 @@ Consumer group naming :
 Dead-letter queues :
 
 - Tenant-scoped — DLQ for tenant A cannot receive messages from tenant B
-- Naming: `{tenant_id}.{domain}.dlq`
+- Naming: `{tenant_id}.dlq` — **one DLQ per tenant, not one per tenant-and-domain**. The isolation
+  guarantee above is about tenants, and a single tenant-scoped DLQ satisfies it exactly; a DLQ per
+  domain multiplied every tenant's topic count by the number of domains (ten) for a separation this
+  spec never required. The originating domain remains recoverable from the `dlq.original_topic`
+  header carried on every DLQ message.
+
+Topic provisioning :
+
+- **Created on first publish, not at tenant onboarding.** `KafkaProducer` creates a tenant's topic
+  the first time an event needs it, so topic count scales with what a tenant actually uses rather
+  than with customer headcount. Eagerly provisioning the whole catalogue cost 46 topics — 138
+  partitions, 414 replicas at RF=3 — per tenant regardless of usage, which makes broker capacity a
+  function of how many customers exist rather than how much traffic they generate.
+- `auto.create.topics.enable` is **false** on all real brokers (MSK and Kubernetes), so creation is
+  performed explicitly by the application, never implicitly by Kafka.
+- **Exception — enterprise tier:** an enterprise tenant gets a dedicated namespace or cluster, so
+  its topic count is bounded by one tenant's catalogue. Eager provisioning is retained there
+  (`provisionKafkaTopicsActivity`), where the scaling argument above does not apply.
 
 Topic lifecycle management :
 
@@ -249,20 +266,24 @@ auto-create is never relied upon. The full canonical event catalogue (§32.4) is
 tenant, created idempotently at tenant onboarding:
 
 1. **Per-tenant topic set:** one `{tenant_id}.{domain}.{entity}.{action}.v{N}` topic per
-   **non-platform** canonical event type, plus one `{tenant_id}.{domain}.dlq` per domain.
+   **non-platform** canonical event type, plus a single `{tenant_id}.dlq` for the whole tenant.
 2. **Shared platform topics** (created once, not per tenant): `platform.events` and `platform.dlq` (§15.7).
 3. **Trigger:**
-   - **SMB / Mid-market (shared cluster):** created during tenant onboarding (Phase 2) — a
-     `provisionTenantTopics` step runs immediately after the tenant record is created, before any of
-     the tenant's events are produced.
+   - **SMB / Mid-market (shared cluster):** created **on first publish**, not at onboarding.
+     `KafkaProducer` creates the topic the first time an event needs it and caches the fact for the
+     process lifetime; the DLQ is created on a tenant's first failed message. Materialising the whole
+     catalogue at onboarding was removed because it made broker capacity scale with customer count
+     rather than traffic — 46 topics, 138 partitions, 414 replicas at RF=3 for every tenant,
+     overwhelmingly never written to.
    - **Enterprise (dedicated namespace):** created by the Phase 25 `EnterpriseProvisioningWorkflow`
      (`provisionKafkaTopicsActivity`), after routing verification and before the
      `platform.enterprise.db_provisioned.v1` go-live event.
    - **Local development:** the seed script provisions the dev tenant, the `platform` pseudo-tenant
      (used by tenant-lifecycle `identity.*` events emitted with `tenant_id = "platform"`), and the
      shared platform topics.
-4. **Idempotency:** provisioning lists existing topics and creates only the missing ones, so
-   re-running onboarding (or the seed) is safe and produces no broker errors.
+4. **Idempotency:** creation is idempotent in both paths — `createTopics` resolves false when the
+   topic already exists, so two services racing on a tenant's first event, a re-run of the seed, or
+   an operator re-provisioning a cluster all produce no broker errors.
 
 **Consumer subscription (shared cluster):** a shared-group consumer subscribes to each canonical
 event type via a **per-tenant topic RegExp** (`^[^.]+\.{domain}\.{entity}\.{action}\.v{N}$`), so a

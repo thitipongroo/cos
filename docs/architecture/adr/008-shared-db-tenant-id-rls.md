@@ -58,18 +58,19 @@ One named PostgreSQL schema per domain module (global, shared across tenants):
 
 ### Mandatory rules for every domain table
 
-1. `tenant_id UUID NOT NULL` (exceptions: `platform` cross-tenant tables; `notification_templates.tenant_id` is nullable — null = system template)
+1. `tenant_id UUID NOT NULL` (exceptions: `platform` cross-tenant tables;
+   `notification_templates.tenant_id` is nullable — null = system template)
 2. All SQL must use schema-qualified names: `procurement.vendors`, `finance.project_budgets`
 3. RLS must be enabled on every domain table:
 
-```sql
-ALTER TABLE {schema}.{table} ENABLE ROW LEVEL SECURITY;
-ALTER TABLE {schema}.{table} FORCE ROW LEVEL SECURITY;
+   ```sql
+   ALTER TABLE {schema}.{table} ENABLE ROW LEVEL SECURITY;
+   ALTER TABLE {schema}.{table} FORCE ROW LEVEL SECURITY;
 
-CREATE POLICY tenant_isolation ON {schema}.{table}
-  AS RESTRICTIVE
-  USING (tenant_id = current_setting('app.current_tenant_id', TRUE)::uuid);
-```
+   CREATE POLICY tenant_isolation ON {schema}.{table}
+     AS RESTRICTIVE
+     USING (tenant_id = current_setting('app.current_tenant_id', TRUE)::uuid);
+   ```
 
 4. The application must issue `SET LOCAL app.current_tenant_id = '{tenant_id}'`
    inside a transaction before any query on that connection.
@@ -115,7 +116,8 @@ Construction OS upgrades tenants to Dedicated DB when they move to the enterpris
 
 ### Negative
 
-- `TenantPrismaService` must be retired — modules using it (projects, boq, procurement, site-ops) need migration updates and repository changes
+- `TenantPrismaService` must be retired — modules using it (projects, boq, procurement,
+  site-ops) need migration updates and repository changes
 - Existing migrations for those modules need companion migrations to move tables to named schemas with RLS
 - RLS policies must be added to every new migration going forward
 

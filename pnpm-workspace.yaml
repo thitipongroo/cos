@@ -11,14 +11,29 @@ packages:
   # in the dedicated `mobile-tests` job (.github/workflows/ci.yml).
   - '!apps/mobile'
   - 'backend'
-  - 'services/*'
   - 'packages/@cos/*'
+  - 'services/*'
 
 overrides:
   # Single fastify version — file-service imports fastify directly while @nestjs/platform-fastify
   # pulls its own; a duplicate breaks file-service's plugin type augmentation (FastifyTypeProvider
   # mismatch). Pin both to one v5 release (NestJS 11 / ADR-042 requires Fastify 5).
   fastify: '5.9.0'
+  # Single pg version — same class of failure as fastify above, but it fails at RUNTIME, not in the
+  # type checker. @prisma/adapter-pg decides whether it was handed a live pool or a config object
+  # with `poolOrConfig instanceof pg.Pool` (adapter-pg@7.8.0 dist/index.js:772), resolved against ITS
+  # OWN copy of pg. backend pinned pg 8.22.0 while the adapter's `^8.16.3` resolved 8.21.0, so
+  # pnpm's isolated linker gave them two physical modules with two distinct Pool classes — and the
+  # shared pool that createPrismaClient() passes in (ADR-094) failed that instanceof, fell through to
+  # the config branch, and was handed to `new pg.Pool(<a Pool instance>)`. Every connection parameter
+  # was then an object, and pg-protocol threw on the startup packet:
+  #   TypeError: The "string" argument must be of type string ... Received an instance of Object
+  #     at Writer.addCString (pg-protocol/buffer-writer.ts:43)
+  # It took out 12 of 13 Testcontainers suites and all 4 isolation tests while every unit test stayed
+  # green, because the unit specs mock the adapter and never reach the instanceof.
+  # 8.22.0 satisfies every declared range (backend 8.22.0 exact, file-service and credential-service
+  # ^8.11.5, @cos/test-utils ^8.21.0, adapter-pg ^8.16.3), so one copy serves all of them.
+  pg: '8.22.0'
   multer: '^2.1.1'
   lodash: '^4.18.1'
   'picomatch@>=4.0.0 <4.0.4': '4.0.4'
@@ -33,6 +48,54 @@ overrides:
   'tmp@<0.2.6': '^0.2.7'
   '@remix-run/server-runtime@<2.17.5': '2.17.5'
   'turbo-stream@<3.0.0': '^3.2.0'
+  # Newly-disclosed transitive advisories — patched versions exist, no major upgrade needed:
+  '@opentelemetry/propagator-jaeger@<2.9.0': '^2.9.0' # GHSA-45rx-2jwx-cxfr — DoS via malformed Jaeger header (via @opentelemetry/sdk-node)
+  'fast-uri@>=3.0.0 <3.1.5': '^3.1.5' # GHSA-4c8g-83qw-93j6 + GHSA-v2hh-gcrm-f6hx + GHSA-7p8r-x3mc-p8w7 — host confusion; the third (backslash authority introducer) is patched only in 3.1.5, so the range was widened from <3.1.4 (via ajv / @fastify/ajv-compiler / @confluentinc/schemaregistry)
+  'sharp@<0.35.0': '^0.35.0' # GHSA-f88m-g3jw-g9cj — inherited libvips CVEs (via next / @serwist/turbopack)
+  'postcss@<8.5.18': '^8.5.18' # GHSA-6g55-p6wh-862q (<8.5.12) + GHSA-r28c-9q8g-f849 (<8.5.18) — path traversal / arbitrary .map file read via sourceMappingURL (transitive, via next/tailwind toolchain)
+  'find-my-way@<9.6.1': '^9.6.1' # GHSA-c96f-x56v-gq3h — DoS with HTTP/2 (transitive, via fastify)
+  'js-yaml@>=5.0.0 <5.2.2': '^5.2.2' # GHSA-pm4m-ph32-ghv5 — DoS via exponential parsing in flow collections (5.x only; 3.x/4.x are not in that advisory's range — but see the two below, which are)
+  'js-yaml@>=3.0.0 <3.15.1': '^3.15.1' # GHSA-5p4m-2wfm-xmqj — quadratic CPU in !!omap resolution; the 3.x line got its own backport in 3.15.1 (via babel-plugin-istanbul / @lhci/utils)
+  'js-yaml@>=4.0.0 <4.3.1': '^4.3.1' # GHSA-5p4m-2wfm-xmqj — same advisory, 4.x branch, patched in 4.3.1 (via @nestjs/swagger / cosmiconfig)
+  'ip-address@<=10.3.0': '^10.3.1' # GHSA-mwp4-54f8-5fhr — Address4 reads leading-zero octets as decimal while resolvers read them as octal, giving SSRF / trust-boundary bypass (via socks-proxy-agent / unleash-client)
+  '@fastify/static@<10.1.1': '^10.1.1' # GHSA-83w8-p2f5-377r — route-guard bypass via path traversal; patched only in 10.1.1 (major bump, Fastify 5 compatible — via @fastify/swagger-ui / @nestjs/platform-fastify / @nestjs/swagger)
+  'brace-expansion@<5.0.8': '5.0.9' # GHSA-mh99-v99m-4gvg — DoS via unbounded expansion (OOM); env advisory patches only >=5.0.8, so every vulnerable major (1.x/2.x/5.x, all transitive dev/build tooling) is bumped to 5.0.9
+  # GHSA-jmr9-qjv8-65gv — extract-zip follows symlinks out of the extraction directory. It cannot be
+  # fixed by bumping extract-zip: the advisory names 2.0.2 as the patched release and NO SUCH VERSION
+  # EXISTS on npm (2.0.1 is the newest published). The dependency is dev-only and single-sourced —
+  # apps/web devDependency @lhci/cli@0.15.1 (already the latest) pins lighthouse to EXACTLY 12.6.1,
+  # whose puppeteer-core@24 asks for @puppeteer/browsers@^2, which is the last line still using
+  # extract-zip. @puppeteer/browsers@3 replaced it with modern-tar, so overriding the 2.x line removes
+  # the vulnerable package from the tree entirely rather than suppressing the finding.
+  #
+  # Compatibility was verified, not assumed: puppeteer-core@24.43.1 uses 13 symbols from this package
+  # and 3.1.0 exports all 13. 3.x is ESM-only ("type": "module"), which would break a `require()` —
+  # but lighthouse is ESM and does `import puppeteer from 'puppeteer-core'`, so the ESM build is what
+  # loads, and it imports @puppeteer/browsers as ESM. Its `engines` floor of node >=22.12 is met by
+  # the repo's Node 24 (CI NODE_VERSION: '24').
+  #
+  # Pinned exactly, not ^3.1.0: puppeteer@25.5.0 (mermaid-cli) already resolves 3.1.0, so an exact pin
+  # keeps ONE copy in the store instead of adding a second, newer one beside it.
+  '@puppeteer/browsers@<3': '3.1.0'
+  # GHSA-ggr8-5vv4-36mx — deepmerge-ts blows the stack merging a recursive object graph. Disclosed
+  # 2026-08-17, hours after the tree it sits in was last touched: nothing here changed, the advisory
+  # arrived under a dependency that had been still for months. It surfaced only once the Lint job went
+  # green again, because `dependency-audit` has `needs: [lint, type-check]` and had been skipping.
+  #
+  # UPSTREAM CANNOT FIX IT TODAY. @prisma/config pins `deepmerge-ts: 7.1.5` EXACTLY — not a range —
+  # and prisma 7.9.1, the newest release, still pins the same version. Waiting for Prisma is waiting
+  # indefinitely, so the patched line is forced in here instead.
+  #
+  # Compatibility was verified, not assumed. @prisma/config imports exactly ONE symbol, `deepmerge`,
+  # and passes it to c12 as `merger`; 8.0.0 still exports it (and removes nothing — it adds five).
+  # All four of 8.0.0's BREAKING CHANGES miss that call site: three concern `deepmergeInto` and
+  # type-level renames (DeepMergeMetaMetaData → DeepMergeMergeInfo, DeepMergeIntoFunctionUtils →
+  # DeepMergeIntoUtils), and the fourth changes how colliding Map keys merge — a Prisma config is
+  # plain objects loaded from a .ts/.js file, not Maps. Both builds were run side by side over eight
+  # merge shapes (nested records, arrays, nulls, functions, Dates, empty objects) with identical
+  # results.
+  'deepmerge-ts@<8.0.0': '^8.0.0'
+  'nanoid@<3.3.18': '^3.3.18' # GHSA-2v37-7h3g-55p8 — a custom alphabet generator loops forever when size is 0, hanging the caller; only the 3.x line is in this tree (via postcss ← next / tailwind / webpack), so the advisory's other branch (>=4.0.0 <5.1.6) needs no entry. Range widened from <3.3.17: the advisory was re-scoped after 3.3.17 shipped an incomplete fix, and now reads vulnerable <3.3.18 / patched >=3.3.18 — the pinned 3.3.17 became vulnerable again where it stood, which is what turned the audit gate red
 
 auditConfig:
   ignoreCves:
@@ -56,11 +119,27 @@ allowBuilds:
   '@prisma/engines': true
   '@scarf/scarf': false
   '@swc/core': true
+  # cbor-x's OPTIONAL native accelerator. Declined on purpose: the only CBOR this repo decodes is one
+  # small App Attest attestation object per device enrolment (ADR-082), so the pure-JS path is fast by
+  # a wide margin — and it keeps a native toolchain out of the backend image and the CI builder for a
+  # security-critical parse. cbor-x falls back automatically when it is absent (verified locally).
+  cbor-extract: false
   cpu-features: true
   detox: true
   dtrace-provider: true
+  # esbuild's postinstall links the platform-native binary. Needed because apps/web bundles its
+  # service worker with the NATIVE esbuild on Windows (see apps/web/src/app/serwist/[path]/route.ts):
+  # the esbuild-wasm build that Turbopack loads during `next build` rejects a Windows working
+  # directory, so `next build` cannot complete on a Windows dev machine without this.
+  esbuild: true
   prisma: true
   protobufjs: true
+  # puppeteer's postinstall downloads the Chromium build that @mermaid-js/mermaid-cli renders with.
+  # Without it `mmdc` fails at launch. DEV TOOLING ONLY: mermaid-cli syntax-checks the ```mermaid
+  # blocks in docs/ before they are committed, and is deliberately NOT wired into CI (product-owner
+  # decision 2026-08-07) — so this ~150 MB download never runs on a CI runner, only on a dev machine
+  # that has installed devDependencies.
+  puppeteer: true
   sharp: true
   ssh2: true
   unrs-resolver: true
@@ -85,3 +164,4 @@ minimumReleaseAgeExclude:
   - '@typescript-eslint/visitor-keys@8.62.1'
   - prettier@3.9.4
   - recharts@3.9.1
+  - '@hookform/resolvers@5.7.1'

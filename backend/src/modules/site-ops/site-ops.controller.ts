@@ -24,6 +24,7 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../identity/guards/jwt-auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
+import { PolicyGuard } from '../../shared/guards/policy.guard';
 import { Roles } from '@cos/rbac';
 import { CosRole } from '@cos/types';
 import { SiteOpsService } from './site-ops.service';
@@ -53,7 +54,7 @@ const INSPECTION_WRITE_ROLES = [
 
 @ApiTags('site-ops')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, PolicyGuard)
 @Controller()
 export class SiteOpsController {
   constructor(private readonly svc: SiteOpsService) {}
@@ -89,6 +90,21 @@ export class SiteOpsController {
     type: Boolean,
     description: 'Reduced payload for mobile',
   })
+  @ApiQuery({
+    name: 'q',
+    required: false,
+    type: String,
+    description:
+      'Full-text search over summary + weather (OpenSearch). Unpaged, capped at 50 hits.',
+  })
+  // `q` FULL-TEXT SEARCH — exposed 2026-08-12, not newly built. `SiteOpsService.listSiteReports`
+  // has taken a `q` and routed it to `searchSiteReports` (OpenSearch over summary + weather) since
+  // the module was written, but no controller parameter ever passed one, so the branch was
+  // unreachable over HTTP. The Site Engineer reports screen draws a search field
+  // (mockup 03_site_engineer/04_reports/04_se_reports) and this is what serves it.
+  // NOTE THE SEARCH PATH IS UNPAGED by design in the service: it returns the OpenSearch hits (capped
+  // at 50) with `total` = that count, ignoring page/limit. That is the existing contract, not
+  // something added here — the client stops offering "load more" while a query is active.
   listSiteReports(
     @Query('project_id') project_id?: string,
     @Query('from_date') from_date?: string,
@@ -96,6 +112,7 @@ export class SiteOpsController {
     @Query('page') page = '1',
     @Query('limit') limit = '20',
     @Query('minimal') minimal?: string,
+    @Query('q') q?: string,
   ) {
     return this.svc.listSiteReports({
       project_id,
@@ -104,6 +121,9 @@ export class SiteOpsController {
       page: Math.max(1, parseInt(page, 10) || 1),
       limit: Math.min(100, Math.max(1, parseInt(limit, 10) || 20)),
       minimal: minimal === 'true',
+      // Blank and whitespace-only are NOT a search: the service treats any truthy `q` as one, and an
+      // empty box on the client must return the normal paged list, not an OpenSearch round trip.
+      q: q?.trim() === '' ? undefined : q,
     });
   }
 

@@ -33,6 +33,43 @@ components:
       type: string
       enum: [OPEN, IN_PROGRESS, RESOLVED, CLOSED]
 
+    # site_ops.issues.issue_type — classifies a blocking issue (master §Phase 6). Task-completion
+    # gate #2 blocks on an OPEN issue of type DEFECT / REWORK / PUNCH.
+    IssueType:
+      type: string
+      enum: [DEFECT, REWORK, PUNCH, GENERAL]
+      default: GENERAL
+
+    # site_ops.site_reports.shift (migration 20260808000001). Null means "not recorded" — never DAY.
+    ReportShift:
+      type: string
+      enum: [DAY, NIGHT]
+
+    # site_ops.site_reports.blocker_category (migration 20260808000001) — the queryable axis over the
+    # free-text `blockers` description, which remains the record of what actually happened.
+    BlockerCategory:
+      type: string
+      enum: [WEATHER, MATERIAL, POWER, OTHER]
+
+    # One trade's headcount on a daily report → one site_ops.manpower_logs row (master §Phase 6).
+    ManpowerLine:
+      type: object
+      required: [trade_type, worker_count]
+      properties:
+        trade_type:
+          type: string
+          maxLength: 100
+          example: ELECTRICAL
+        worker_count:
+          type: integer
+          minimum: 0
+          example: 8
+        hours_worked:
+          type: number
+          minimum: 0
+          maximum: 24
+          description: Hours worked; defaults to 8 (a full shift) when omitted
+
     InspectionStatus:
       type: string
       enum: [PASSED, FAILED, REQUIRES_REINSPECTION]
@@ -69,12 +106,25 @@ components:
           type: string
           nullable: true
           maxLength: 2000
+        blockers:
+          type: string
+          nullable: true
+          maxLength: 2000
+          description: Free-text obstacles (spec 11 §474)
+        blocker_category:
+          allOf:
+            - $ref: '#/components/schemas/BlockerCategory'
+          nullable: true
         weather:
           type: string
           nullable: true
           maxLength: 100
         manpower_count:
           type: integer
+          nullable: true
+        shift:
+          allOf:
+            - $ref: '#/components/schemas/ReportShift'
           nullable: true
         client_submitted_at:
           type: string
@@ -86,6 +136,14 @@ components:
         modified_at:
           type: string
           format: date-time
+        manpower_lines:
+          type: array
+          description: >-
+            Per-trade breakdown. Returned by GET /site/reports/{reportId} only — the list endpoint
+            omits it rather than issuing one query per row for data no list view shows. Empty when
+            no breakdown was recorded.
+          items:
+            $ref: '#/components/schemas/ManpowerLine'
 
     SiteReportMinimal:
       type: object
@@ -132,6 +190,8 @@ components:
           nullable: true
         severity:
           $ref: '#/components/schemas/IssueSeverity'
+        issue_type:
+          $ref: '#/components/schemas/IssueType'
         status:
           $ref: '#/components/schemas/IssueStatus'
         assigned_to:
@@ -359,12 +419,35 @@ paths:
                 summary:
                   type: string
                   maxLength: 2000
+                blockers:
+                  type: string
+                  maxLength: 2000
+                blocker_category:
+                  $ref: '#/components/schemas/BlockerCategory'
                 weather:
                   type: string
                   maxLength: 100
                 manpower_count:
                   type: integer
                   minimum: 0
+                shift:
+                  $ref: '#/components/schemas/ReportShift'
+                manpower_lines:
+                  type: array
+                  maxItems: 20
+                  description: >-
+                    Replaces the report's whole breakdown. Omit to leave it untouched; send [] to
+                    clear it.
+                  items:
+                    $ref: '#/components/schemas/ManpowerLine'
+                latitude:
+                  type: number
+                  minimum: -90
+                  maximum: 90
+                longitude:
+                  type: number
+                  minimum: -180
+                  maximum: 180
                 client_submitted_at:
                   type: string
                   format: date-time
@@ -528,6 +611,8 @@ paths:
                   type: string
                 severity:
                   $ref: '#/components/schemas/IssueSeverity'
+                issue_type:
+                  $ref: '#/components/schemas/IssueType'
                 assigned_to:
                   type: string
                   format: uuid

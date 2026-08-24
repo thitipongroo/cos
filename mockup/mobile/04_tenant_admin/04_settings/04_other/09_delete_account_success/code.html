@@ -1,0 +1,239 @@
+<!DOCTYPE html><html class="dark" lang="th" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>Tenant Account Deleted | CONSTRUCTION OS</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style>
+        body {
+            font-family: 'Inter Tight', sans-serif;
+            background-color: #031427;
+            color: #d3e4fe;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .success-glow {
+            filter: drop-shadow(0 0 20px rgba(0, 200, 83, 0.3));
+        }
+        .shimmer {
+            background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 3s infinite linear;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container": "#102034",
+                        "outline": "#8d90a0",
+                        "inverse-on-surface": "#213145",
+                        "on-tertiary": "#2b3041",
+                        "on-tertiary-fixed": "#161b2b",
+                        "surface": "#031427",
+                        "on-background": "#d3e4fe",
+                        "on-error": "#690005",
+                        "secondary-fixed": "#acedff",
+                        "on-error-container": "#ffdad6",
+                        "background": "#031427",
+                        "surface-dim": "#031427",
+                        "error": "#ffb4ab",
+                        "tertiary": "#c1c5dc",
+                        "surface-tint": "#b4c5ff",
+                        "outline-variant": "#434655",
+                        "primary-fixed": "#dbe1ff",
+                        "inverse-surface": "#d3e4fe",
+                        "dark-surface": "#0F172A",
+                        "secondary": "#4cd7f6",
+                        "mobile-success": "#00C853",
+                        "surface-container-high": "#1b2b3f",
+                        "mobile-warning": "#FF9500",
+                        "mobile-danger": "#FF3B30",
+                        "inverse-primary": "#0053db",
+                        "secondary-container": "#03b5d3",
+                        "primary-container": "#2563eb",
+                        "surface-container-low": "#0b1c30",
+                        "on-secondary-fixed": "#001f26",
+                        "on-surface-variant": "#c3c6d7",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "surface-container-highest": "#26364a",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "on-primary": "#002a78",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "on-secondary": "#003640",
+                        "on-secondary-container": "#00424e",
+                        "on-primary-fixed": "#00174b",
+                        "on-tertiary-container": "#eeefff",
+                        "tertiary-container": "#686c80",
+                        "surface-variant": "#26364a",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "dark-bg": "#020617",
+                        "primary": "#b4c5ff",
+                        "error-container": "#93000a",
+                        "sync-pending": "#94A3B8",
+                        "surface-container-lowest": "#000f21",
+                        "surface-bright": "#2a3a4f",
+                        "on-surface": "#d3e4fe",
+                        "sync-active": "#FFD60A",
+                        "on-primary-container": "#eeefff",
+                        "tertiary-fixed": "#dee1f9",
+                        "mobile-primary": "#0066FF"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "touch-target": "52px",
+                        "space-4": "16px",
+                        "space-3": "12px",
+                        "edge-mobile": "24px",
+                        "web-margin": "32px",
+                        "space-1": "4px",
+                        "space-2": "8px",
+                        "base": "4px"
+                    },
+                    "fontFamily": {
+                        "h2-web": ["Inter Tight"],
+                        "display-web": ["Inter Tight"],
+                        "body-mobile": ["Inter Tight"],
+                        "h1-web": ["Inter Tight"],
+                        "tiny-web": ["Inter Tight"],
+                        "body-web": ["Inter Tight"],
+                        "label-mobile": ["Inter Tight"],
+                        "hero-mobile": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                        "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background flex flex-col min-h-screen">
+<!-- TopAppBar Shell Mapping -->
+<header class="flex justify-between items-center w-full h-16 px-edge-mobile z-50 bg-surface dark:bg-surface fixed top-0">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-primary dark:text-primary" style="font-variation-settings: &quot;FILL&quot; 1;">construction</span>
+<span class="font-hero-mobile text-hero-mobile font-bold tracking-tight text-on-surface dark:text-on-surface">CONSTRUCTION OS</span>
+</div>
+<div class="flex items-center gap-space-1">
+<span class="material-symbols-outlined text-mobile-success text-[16px]">sync</span>
+<span class="font-tiny-web text-tiny-web text-mobile-success tracking-widest uppercase">SYNCED</span>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="flex-grow flex flex-col items-center justify-center px-edge-mobile pt-16 pb-12 w-full max-w-md mx-auto text-center">
+<!-- Animated Background Ornament -->
+<div class="absolute inset-0 pointer-events-none opacity-20 z-0">
+
+</div>
+<!-- Success Content Container -->
+<div class="relative z-10 w-full flex flex-col items-center">
+<!-- Success Icon -->
+<div class="mb-space-4 success-glow bg-surface-container-high rounded-full p-6 border border-mobile-success/20" style="transform: scale(1.005);">
+<span class="material-symbols-outlined text-mobile-success text-[64px]" style="font-variation-settings: &quot;FILL&quot; 1;">check_circle</span>
+</div>
+<!-- Headline -->
+<h1 class="font-hero-mobile text-hero-mobile text-on-surface mb-space-3 leading-tight">
+                คำขอลบบัญชีสำเร็จ
+            </h1>
+<!-- Subtext -->
+<p class="font-body-mobile text-body-mobile text-on-surface-variant mb-space-4 px-2">
+                ระบบกำลังดำเนินการลบข้อมูลทั้งหมดของคุณอย่างถาวร โดยจะใช้เวลาดำเนินการภายใน 24-48 ชั่วโมง คุณจะได้รับอีเมลยืนยันเมื่อกระบวนการเสร็จสิ้น
+            </p>
+<!-- Security Note (AI Module Style) -->
+<div class="w-full bg-secondary/5 border-l-4 border-secondary rounded-lg p-4 mb-8 text-left shimmer">
+<div class="flex gap-3">
+<span class="material-symbols-outlined text-secondary">info</span>
+<div>
+<p class="font-label-mobile text-label-mobile text-secondary uppercase tracking-wider mb-1">Security Protocol</p>
+<p class="font-body-web text-body-web text-on-surface">
+                            ข้อมูลที่ถูกลบจะไม่สามารถกู้คืนได้ภายหลังกระบวนการนี้เสร็จสิ้น โปรดตรวจสอบให้แน่ใจว่าคุณได้สำรองข้อมูลที่จำเป็นแล้ว
+                        </p>
+</div>
+</div>
+</div>
+<!-- Main Action Button -->
+<button class="w-full h-touch-target bg-mobile-primary text-white font-label-mobile text-label-mobile rounded-lg flex items-center justify-center gap-2 active:scale-95 transition-transform duration-150 uppercase tracking-[0.05em] shadow-lg" onclick="window.location.reload()">
+<span class="">กลับสู่หน้าหลัก</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</div>
+</main>
+<!-- Visual Divider Detail -->
+<div class="w-full px-edge-mobile max-w-md mx-auto mb-8 relative z-10">
+<div class="h-px w-full bg-outline-variant opacity-20"></div>
+</div>
+<!-- Layout Graphic Content (Asymmetric Bento Element) -->
+<div class="px-edge-mobile max-w-md mx-auto mb-12 relative z-10 grid grid-cols-2 gap-4">
+<div class="bg-surface-container rounded-xl p-4 border border-outline-variant/10">
+<span class="material-symbols-outlined text-outline mb-2">history</span>
+<p class="font-tiny-web text-tiny-web text-outline uppercase">Logged Date</p>
+<p class="font-label-mobile text-label-mobile text-on-surface">Oct 24, 2023</p>
+</div>
+<div class="bg-surface-container rounded-xl p-4 border border-outline-variant/10">
+<span class="material-symbols-outlined text-outline mb-2">vpn_key</span>
+<p class="font-tiny-web text-tiny-web text-outline uppercase">Ticket ID</p>
+<p class="font-label-mobile text-label-mobile text-on-surface">#DEL-99021</p>
+</div>
+</div>
+<!-- Footer -->
+<footer class="mt-auto w-full px-edge-mobile py-8 text-center relative z-10 bg-surface-container-lowest">
+<p class="font-tiny-web text-tiny-web text-outline uppercase tracking-widest mb-2">
+            © 2026 CONSTRUCTION OS • INDUSTRIAL DATA CLEAR</p>
+<div class="flex justify-center items-center gap-4">
+<div class="flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-mobile-success"></span>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant">DB_STATUS: CLEANUP_PENDING</span>
+</div>
+<div class="w-px h-3 bg-outline-variant"></div>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant">SERVER: TH-BKK-04</span>
+</div>
+</footer>
+<!-- No BottomNavBar or FAB as per "Transactional/Success" Suppression rules -->
+<script>
+        // Micro-interaction for the success icon pulse
+        const successIcon = document.querySelector('.success-glow');
+        if (successIcon) {
+            let scale = 1;
+            let growing = true;
+            setInterval(() => {
+                if (growing) {
+                    scale += 0.005;
+                    if (scale >= 1.05) growing = false;
+                } else {
+                    scale -= 0.005;
+                    if (scale <= 1) growing = true;
+                }
+                successIcon.style.transform = `scale(${scale})`;
+            }, 50);
+        }
+    </script>
+
+
+</body></html>

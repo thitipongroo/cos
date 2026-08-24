@@ -17,7 +17,6 @@ from .models import (
     Divergence,
     DivergenceReport,
     SeverityLevel,
-    TwinEntity,
 )
 
 # Configurable divergence thresholds per entity type

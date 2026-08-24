@@ -3,7 +3,7 @@
 
 import { View, Text, StyleSheet } from 'react-native';
 import { useI18n } from '../i18n';
-import { colors, fontFamily, typography } from '../theme/tokens';
+import { colors, fontFamily, radius, typography } from '../theme/tokens';
 
 const STATUS_COLOR: Record<string, string> = {
   // success-ish
@@ -22,6 +22,13 @@ const STATUS_COLOR: Record<string, string> = {
   CRITICAL: colors.danger,
   CONFLICT: colors.danger,
   HIGH: colors.danger,
+  // project lifecycle (`ProjectStatus`) — ADDITIVE: every one of these fell through to the neutral
+  // default before, so `/portfolio` showed a running project the same grey as a cancelled one. The
+  // tones come from lib/projectStatusTone.ts, which the manager Home reads for the same chips.
+  ACTIVE: colors.success,
+  COMPLETED: colors.success,
+  ON_HOLD: colors.warning,
+  CANCELLED: colors.textSecondary,
   // neutral
   NOT_STARTED: colors.textSecondary,
   DRAFT: colors.textSecondary,
@@ -40,6 +47,11 @@ export function StatusChip({ label, testID }: { label: string; testID?: string }
 }
 
 const styles = StyleSheet.create({
-  chip: { alignSelf: 'flex-start', borderRadius: 4, paddingHorizontal: 8, paddingVertical: 2 },
+  chip: {
+    alignSelf: 'flex-start',
+    borderRadius: radius.xl,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
   text: { color: colors.bg, fontSize: typography.label.fontSize, fontFamily: fontFamily.medium },
 });

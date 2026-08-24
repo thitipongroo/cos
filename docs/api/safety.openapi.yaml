@@ -99,6 +99,17 @@ paths:
                 valid_until:
                   type: string
                   format: date
+                contractor_name:
+                  type: string
+                  maxLength: 255
+                  description: >-
+                    Firm performing the permitted work. Free text, NOT a vendor reference — a
+                    subcontractor crew often has no procurement.vendors record. Added 2026-08-13;
+                    optional, so a client that omits it is unaffected.
+                description:
+                  type: string
+                  maxLength: 4000
+                  description: Scope of work and safety measures. Added 2026-08-13; optional.
       responses:
         '201':
           description: Permit created (PENDING)
@@ -143,6 +154,22 @@ paths:
       summary: Reject a permit (PENDING → REVOKED)
       parameters:
         - { name: permitId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        # NOT required — this endpoint took no body at all before 2026-08-13 and deployed clients
+        # still call it with none (or with `{}`). Adding an optional body is a non-breaking
+        # addition (QM-2), so no version bump.
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  maxLength: 500
+                  description: >-
+                    Why the permit was rejected. Stored on the permit as revoke_reason. Omitted →
+                    NULL, which records that no reason was given rather than a blank one.
       responses:
         '200':
           description: Permit rejected (REVOKED)
@@ -160,6 +187,11 @@ paths:
     post:
       tags: [safety]
       summary: Submit a completed safety checklist (recorded as an inspection)
+      description: >-
+        Roles: Site Worker, Site Engineer, Safety Officer, Tenant Admin. Site Worker was added
+        2026-08-08 (ADR-089) — the daily verification is the field worker's own pre-shift routine,
+        and §6.8 grants the role RW on Safety. Incident reporting is NOT widened by that decision:
+        POST /safety/incidents stays with Site Engineer / Safety Officer / Admin per §14.
       requestBody:
         required: true
         content:
@@ -182,6 +214,23 @@ paths:
                   format: date-time
                 notes:
                   type: string
+                signature:
+                  type: array
+                  maxItems: 200
+                  description: >-
+                    The confirming signature as strokes — `[{ d, color, width }]`, `d` an SVG path in
+                    NORMALISED 0..1 coordinates (the ADR-056 annotation shape). An ATTESTATION MARK
+                    only: no PKI and no non-repudiation; the authoritative attribution is the row's
+                    `inspected_by` / `inspected_at`. Contract e-signature is ADR-058's separate
+                    PKI/VC path. RESTRICTED / personal data — see migration 20260808000002. Omit for
+                    an unsigned submission.
+                  items:
+                    type: object
+                    required: [d, color, width]
+                    properties:
+                      d: { type: string, maxLength: 4000 }
+                      color: { type: string, maxLength: 32 }
+                      width: { type: number, minimum: 0, maximum: 1 }
       responses:
         '201':
           description: Checklist submitted

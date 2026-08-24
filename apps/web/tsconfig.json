@@ -20,6 +20,12 @@
     // matching apps/mobile/tsconfig.json (§35.13 ESC-25).
     "types": ["node", "jest"]
   },
-  "include": ["src/**/*", "next.config.mjs", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "src/app/sw.ts"]
+  // next-env.d.ts is required here by Next.js ("The file must be in your tsconfig.json include
+  // array" — https://nextjs.org/docs/app/api-reference/config/typescript). It is git-ignored, not
+  // absent: `next dev` / `next build` / `next typegen` regenerate it.
+  "include": ["next-env.d.ts", "src/**/*", "next.config.mjs", ".next/types/**/*.ts"],
+  // Specs are compiled by tsconfig.test.json (which adds the jest globals) and type-checked by
+  // ts-jest on every run. Next must not compile them: this config declares no jest types, so
+  // `describe`/`it`/`expect` would fail type-check, and tests are not part of the app bundle.
+  "exclude": ["node_modules", "src/app/sw.ts", "src/**/__tests__/**"]
 }

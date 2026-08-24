@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Issue Submitted - Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "mobile-primary": "#0066FF",
+                        "on-tertiary-fixed": "#161b2b",
+                        "tertiary": "#c1c5dc",
+                        "outline": "#8d90a0",
+                        "on-primary-container": "#eeefff",
+                        "primary": "#b4c5ff",
+                        "cos-cyan": "#06B6D4",
+                        "surface-container-low": "#0b1c30",
+                        "surface-container-lowest": "#000f21",
+                        "surface-variant": "#26364a",
+                        "secondary": "#4cd7f6",
+                        "on-error-container": "#ffdad6",
+                        "on-primary-fixed": "#00174b",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "inverse-surface": "#d3e4fe",
+                        "dark-surface": "#0F172A",
+                        "tertiary-container": "#686c80",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "on-secondary-fixed": "#001f26",
+                        "surface-tint": "#b4c5ff",
+                        "secondary-fixed": "#acedff",
+                        "primary-container": "#2563eb",
+                        "outline-variant": "#434655",
+                        "inverse-primary": "#0053db",
+                        "mobile-success": "#00C853",
+                        "on-secondary-container": "#00424e",
+                        "on-primary": "#002a78",
+                        "on-error": "#690005",
+                        "on-surface": "#d3e4fe",
+                        "error": "#ffb4ab",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "sync-active": "#FFD60A",
+                        "cos-white": "#F8FAFC",
+                        "surface": "#031427",
+                        "error-container": "#93000a",
+                        "background": "#031427",
+                        "on-surface-variant": "#c3c6d7",
+                        "dark-bg": "#020617",
+                        "primary-fixed": "#dbe1ff",
+                        "sync-pending": "#94A3B8",
+                        "mobile-warning": "#FF9500",
+                        "secondary-container": "#03b5d3",
+                        "mobile-danger": "#FF3B30",
+                        "surface-container": "#102034",
+                        "surface-bright": "#2a3a4f",
+                        "inverse-on-surface": "#213145",
+                        "on-tertiary": "#2b3041",
+                        "on-background": "#d3e4fe",
+                        "cos-blue": "#2563EB",
+                        "surface-container-highest": "#26364a",
+                        "cos-navy": "#0B1020",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "on-tertiary-container": "#eeefff",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "tertiary-fixed": "#dee1f9",
+                        "on-secondary": "#003640",
+                        "surface-container-high": "#1b2b3f",
+                        "surface-dim": "#031427"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "web-space-3": "12px",
+                        "web-base": "4px",
+                        "web-space-8": "32px",
+                        "web-space-4": "16px",
+                        "web-space-1": "4px",
+                        "web-space-2": "8px",
+                        "mobile-touch-target": "52px",
+                        "mobile-edge": "24px"
+                    },
+                    "fontFamily": {
+                        "mobile-text-hero": ["Inter Tight"],
+                        "mobile-text-label": ["Inter Tight"],
+                        "web-text-tiny": ["Inter Tight"],
+                        "web-text-display": ["Inter Tight"],
+                        "mobile-text-body": ["Inter Tight"],
+                        "web-text-small": ["Inter Tight"],
+                        "web-text-h2": ["Inter Tight"],
+                        "web-text-body": ["Inter Tight"],
+                        "web-text-h1": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "mobile-text-hero": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                        "mobile-text-label": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                        "web-text-tiny": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "web-text-display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "mobile-text-body": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "web-text-small": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                        "web-text-h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "web-text-body": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "web-text-h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #020617;
+            color: #d3e4fe;
+            font-family: 'Inter Tight', sans-serif;
+            margin: 0;
+            overflow-x: hidden;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .success-bg-glow {
+            background: radial-gradient(circle at center, rgba(0, 200, 83, 0.08) 0%, transparent 70%);
+        }
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 16px;
+        }
+        .glass-card {
+            background: rgba(16, 32, 52, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(67, 70, 85, 0.5);
+        }
+    </style>
+</head>
+<body class="dark bg-dark-bg min-h-screen flex">
+<!-- SideNavBar (Suppressed on Success Screen as per UX guidelines for focused states, but using TopNavBar as the Anchor) -->
+<div class="flex-1 flex flex-col">
+<!-- TopNavBar -->
+<nav class="w-full h-12 sticky top-0 bg-surface-container dark:bg-surface-container border-b border-outline-variant flex justify-between items-center px-web-space-4 z-40">
+<div class="flex items-center gap-web-space-4">
+<span class="font-web-text-h1 text-web-text-h1 font-bold text-cos-white">Construction OS</span>
+<div class="hidden md:flex gap-web-space-4 ml-web-space-8">
+<a class="font-web-text-body text-web-text-body text-on-surface-variant hover:text-cos-white hover:bg-surface-container-highest transition-colors px-2 py-1 rounded cursor-pointer active:opacity-80" href="#">Global View</a>
+<a class="font-web-text-body text-web-text-body text-on-surface-variant hover:text-cos-white hover:bg-surface-container-highest transition-colors px-2 py-1 rounded cursor-pointer active:opacity-80" href="#">Site Map</a>
+<a class="font-web-text-body text-web-text-body text-on-surface-variant hover:text-cos-white hover:bg-surface-container-highest transition-colors px-2 py-1 rounded cursor-pointer active:opacity-80" href="#">Schedule</a>
+<a class="font-web-text-body text-web-text-body text-on-surface-variant hover:text-cos-white hover:bg-surface-container-highest transition-colors px-2 py-1 rounded cursor-pointer active:opacity-80" href="#">Analytics</a>
+</div>
+</div>
+<div class="flex items-center gap-web-space-4">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer">notifications</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer">help</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer">settings</span>
+<div class="w-8 h-8 rounded-full bg-surface-variant overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a construction site manager in a high-tech corporate office, wearing a clean dark navy polo shirt. The background is a blurred high-end control room with glowing screens and technical data visualizations, maintaining the industrial dark mode aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCSR5iFoEZjmgYxWN6qjsSUAHW_I2ouSCSt_-Vma2TFIreQsQRkrJPnMpdQSfwqgdCc3AnMB9-mE8qAzB9FOuSEaEp-uxm_RI2jV1xVZQu3Qxb1k6ZyYWAQO-yzz4Ir3Mstv7Z5T22ju5lZBXhXMYoezZ8R29kkCjmqpcd5o3jXIVMwajywg63T3oE_q2JH5IVRYKQ-7Xsf0D2Pji9pKsGw_aLFRVFdLLu98u4cXdNN93dAuAk3-aSiFEqS27pxFluXjDE-jMzNBVg"/>
+</div>
+</div>
+</nav>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col items-center justify-center p-web-space-8 relative overflow-hidden">
+<!-- Background Atmospheric Effect -->
+
+<div class="max-w-4xl w-full z-10">
+<!-- Success Messaging Header -->
+<div class="text-center mb-web-space-8">
+<div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-mobile-success/10 border border-mobile-success/30 mb-web-space-4 animate-pulse">
+<span class="material-symbols-outlined text-mobile-success text-5xl" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<h1 class="font-web-text-display text-web-text-display text-cos-white">Issue Successfully Submitted</h1>
+<p class="font-web-text-body text-web-text-body text-on-surface-variant mt-2">The record has been broadcast to all field units and logged in Project Alpha.</p>
+</div>
+<!-- Issue Summary Card (Bento-ish Layout) -->
+<div class="glass-card rounded-xl p-web-space-8 shadow-2xl relative overflow-hidden">
+<!-- Subtle AI Accent Line -->
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-cos-cyan"></div>
+<div class="flex flex-col md:flex-row justify-between items-start gap-web-space-8">
+<div class="flex-1 space-y-web-space-4">
+<div>
+<span class="font-web-text-tiny text-web-text-tiny uppercase text-cos-cyan mb-1 block">Issue Identification</span>
+<h2 class="font-web-text-h1 text-web-text-h1 text-cos-white leading-tight">Concrete Reinforcement Deviation - Sector G4</h2>
+<div class="flex items-center gap-web-space-3 mt-2">
+<code class="bg-surface-container px-2 py-0.5 rounded text-primary font-mono text-xs border border-outline-variant">ID: ISS-2024-0892</code>
+<span class="flex items-center gap-1 font-web-text-small text-web-text-small text-sync-active">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">sync</span>
+                                        Live Sync Active
+                                    </span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-web-space-4 pt-web-space-4 border-t border-outline-variant">
+<div>
+<span class="font-web-text-tiny text-web-text-tiny text-on-surface-variant block">Location</span>
+<div class="flex items-center gap-2 mt-1">
+<span class="material-symbols-outlined text-cos-blue text-lg">location_on</span>
+<span class="font-web-text-body text-web-text-body text-cos-white">Infrastructure / Site B / Foundation</span>
+</div>
+</div>
+<div>
+<span class="font-web-text-tiny text-web-text-tiny text-on-surface-variant block">Priority Level</span>
+<div class="flex items-center gap-2 mt-1">
+<div class="w-2 h-2 rounded-full bg-mobile-danger"></div>
+<span class="font-web-text-body text-web-text-body text-cos-white">Critical - Action Required</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Mini Map / Context Preview -->
+<div class="w-full md:w-64 h-40 rounded-lg overflow-hidden border border-outline-variant bg-surface-container relative group">
+<div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110" data-alt="A top-down architectural site map of a construction zone, styled with a high-tech blueprint aesthetic. The map uses neon blue lines on a deep charcoal background, with a bright pulsing red dot marking the location of an issue. The lighting is dark and moody, emphasizing technical precision." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuB2KvmmY-Vf5-RJdgYZg0WSbAJbJ9KoelcwQuG-z91oZHVy3WbBxU_9edIuV7Q5SPXuT-fI_NZXB4-p2xrsxSKJ4Rtrb7dFwSiRi5eg41SZ4h6a5oQNpv3l5E0WJyJF4j4Mf99DZaf_riRoKbqTxlq7ZcQdhQMvguTxE4wjSIW6l59iqb--Ob3Xv9YuuR-n3_C1ST_birW_id1dhu07XtpR7aiIayVJpFAodtlOT3kjQGYeQCLmuYwTumvG9bFGOc6b7YLhjfWwLZk')"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-dark-bg/80 to-transparent"></div>
+<div class="absolute bottom-2 left-2 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs text-cos-white">visibility</span>
+<span class="font-web-text-tiny text-web-text-tiny text-cos-white">Sector G4 Preview</span>
+</div>
+</div>
+</div>
+<!-- AI Insights Component (Small) -->
+<div class="mt-web-space-6 bg-cos-cyan/5 border-l-2 border-cos-cyan p-web-space-3 rounded-r-lg">
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-cos-cyan text-lg">psychology</span>
+<span class="font-web-text-small text-web-text-small font-semibold text-cos-cyan">AI Assessment</span>
+</div>
+<p class="font-web-text-small text-web-text-small text-on-surface-variant">Issue matches 3 historical structural patterns in Project Alpha. Recommended remediation: Re-validate rebar spacing against BIM Model V2.4.</p>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="flex flex-col md:flex-row items-center justify-center gap-web-space-4 mt-web-space-8">
+<button class="w-full md:w-auto h-12 px-web-space-8 bg-cos-blue hover:bg-primary-container text-cos-white font-web-text-body text-web-text-body rounded-lg transition-all active:scale-95 flex items-center justify-center gap-2 shadow-lg shadow-cos-blue/20">
+<span class="material-symbols-outlined">list_alt</span>
+                        View in Issues List
+                    </button>
+<button class="w-full md:w-auto h-12 px-web-space-8 bg-surface-container-highest hover:bg-surface-variant text-cos-white font-web-text-body text-web-text-body rounded-lg border border-outline-variant transition-all active:scale-95 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">dashboard</span>
+                        Back to Dashboard
+                    </button>
+</div>
+<!-- Footer Log Info -->
+<div class="mt-12 text-center">
+<p class="font-web-text-tiny text-web-text-tiny text-on-surface-variant/40 flex items-center justify-center gap-2 uppercase tracking-widest">
+<span class="material-symbols-outlined text-xs">terminal</span>
+                        Transmission Log: SUCCESSFUL_BROADCAST_PROTO_04
+                    </p>
+</div>
+</div>
+</main>
+</div>
+<!-- Micro-interaction script -->
+<script>
+        document.querySelectorAll('button, a').forEach(el => {
+            el.addEventListener('mousedown', () => {
+                el.style.transform = 'scale(0.98)';
+            });
+            el.addEventListener('mouseup', () => {
+                el.style.transform = 'scale(1)';
+            });
+            el.addEventListener('mouseleave', () => {
+                el.style.transform = 'scale(1)';
+            });
+        });
+    </script>
+</body></html>

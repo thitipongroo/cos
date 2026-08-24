@@ -1,0 +1,424 @@
+/*
+ * Construction OS — Keycloak login restyle (Path B, mockup/desktop/imp_001_authen/03_login_email_password_web).
+ *
+ * Layers over the stock `keycloak` login theme (theme.properties parent=keycloak). Element ids
+ * (#username / #password / #kc-login / #kc-form-login) come from the inherited base login.ftl and
+ * are NOT changed here — the E2E helper depends on them. Colours are the §32.7 dark tokens:
+ *   page   #0B1020 (--cos-navy)      card   #0F172A (--cos-dark-surface / slate-900)
+ *   input  #0B1020                   accent #2563EB (--cos-blue)   focus #06B6D4 (--cos-cyan)
+ *   text   #F8FAFC                   muted  #94A3B8
+ * Selectors are intentionally broad (legacy .card-pf/.form-control/.btn-primary + generic tags) so
+ * the restyle survives minor base-theme markup differences across Keycloak patch versions.
+ */
+
+:root {
+  --cos-navy: #0b1020;
+  --cos-surface: #0f172a;
+  --cos-blue: #2563eb;
+  --cos-blue-hover: #1d4ed8;
+  --cos-cyan: #06b6d4;
+  --cos-text: #f8fafc;
+  --cos-muted: #94a3b8;
+  --cos-border: rgba(255, 255, 255, 0.1);
+}
+
+html,
+body,
+body.login-pf,
+.login-pf body {
+  background: var(--cos-navy) !important;
+  color: var(--cos-text) !important;
+  font-family: 'Inter Tight', Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+}
+
+.login-pf-page {
+  padding: 2rem 1rem;
+  min-height: 100vh;
+  display: flex;
+  /* flex-direction: column is the fix for the TOTP / OTP / recovery-code pages: the base template.ftl
+     renders #kc-header (the "CONSTRUCTION OS" brand) and the .card-pf as siblings, so a row layout put
+     the brand on the left and squeezed the card into a narrow right column. Stacking them centres a
+     full-width card, matching the custom standalone login.ftl. */
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+}
+
+/* Brand header (realm displayName "Construction OS") */
+#kc-header,
+#kc-header-wrapper {
+  color: var(--cos-text) !important;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding-bottom: 1.5rem;
+}
+
+/* The auth card */
+.card-pf,
+#kc-content,
+#kc-content-wrapper {
+  background: var(--cos-surface) !important;
+  border: 1px solid var(--cos-border) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5) !important;
+  color: var(--cos-text) !important;
+}
+
+.card-pf {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 2rem !important;
+}
+
+/* Form title → "Secure Access" (via messages override) */
+#kc-page-title {
+  color: var(--cos-text) !important;
+  font-size: 20px;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+/* Labels */
+label,
+.control-label,
+.pf-c-form__label,
+.pf-v5-c-form__label {
+  color: var(--cos-muted) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* Inputs */
+input[type='text'],
+input[type='email'],
+input[type='password'],
+#username,
+#password,
+.form-control,
+.pf-c-form-control,
+.pf-v5-c-form-control {
+  background: var(--cos-navy) !important;
+  border: 1px solid var(--cos-border) !important;
+  border-radius: 8px !important;
+  color: var(--cos-text) !important;
+  height: 48px !important;
+  padding: 0 14px !important;
+  font-size: 14px !important;
+}
+
+input::placeholder {
+  color: rgba(148, 163, 184, 0.5) !important;
+}
+
+input[type='text']:focus,
+input[type='email']:focus,
+input[type='password']:focus,
+#username:focus,
+#password:focus,
+.form-control:focus {
+  border-color: var(--cos-cyan) !important;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.35) !important;
+  outline: none !important;
+}
+
+/* Primary button (Sign In) */
+#kc-login,
+input[type='submit'],
+.btn-primary,
+.pf-c-button.pf-m-primary,
+.pf-v5-c-button.pf-m-primary {
+  background: var(--cos-blue) !important;
+  border: none !important;
+  border-radius: 8px !important;
+  color: #fff !important;
+  height: 48px !important;
+  font-weight: 600 !important;
+  width: 100%;
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.25) !important;
+  transition: background 0.15s ease;
+}
+
+#kc-login:hover,
+.btn-primary:hover {
+  background: var(--cos-blue-hover) !important;
+}
+
+/* Links (Forgot password, register, etc.) */
+a,
+#kc-registration a,
+#kc-info-wrapper a {
+  color: var(--cos-cyan) !important;
+}
+
+a:hover {
+  color: var(--cos-text) !important;
+}
+
+/* Alerts / error feedback (keep readable on dark) */
+.alert-error,
+.pf-c-alert.pf-m-danger,
+.pf-v5-c-alert.pf-m-danger {
+  background: rgba(239, 68, 68, 0.1) !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+  color: #fca5a5 !important;
+  border-radius: 8px;
+}
+
+.alert-success,
+.pf-c-alert.pf-m-success {
+  background: rgba(16, 185, 129, 0.1) !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+  color: #6ee7b7 !important;
+}
+
+/* Password field: blend the reveal (eye) toggle + its input-group with the dark inputs
+   (base theme renders it as a white control button otherwise). */
+.pf-c-input-group,
+.pf-v5-c-input-group,
+.pf-c-form-control-group {
+  background: transparent !important;
+}
+
+.pf-c-button.pf-m-control,
+.pf-v5-c-button.pf-m-control,
+button[aria-label='Show password'],
+button[aria-label='Hide password'] {
+  background: var(--cos-navy) !important;
+  border: 1px solid var(--cos-border) !important;
+  border-left: none !important;
+  color: var(--cos-muted) !important;
+  border-radius: 0 8px 8px 0 !important;
+}
+
+/* PatternFly draws the control button's fill/border via ::after — neutralise it so the reveal
+   toggle blends with the dark inputs instead of showing the base theme's light control surface. */
+.pf-c-button.pf-m-control::after,
+.pf-v5-c-button.pf-m-control::after,
+.pf-c-button.pf-m-control::before {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Nested form wrappers from the classic theme — flatten so the card reads as one surface. */
+#kc-form-wrapper,
+#kc-form,
+.pf-c-form,
+.pf-v5-c-form {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Checkbox row (remember me) */
+#kc-form-options,
+.checkbox label {
+  color: var(--cos-muted) !important;
+}
+
+/* Footer / locale selector */
+#kc-info,
+#kc-locale {
+  color: var(--cos-muted) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────────────────────────
+ * MFA pages — TOTP setup / OTP challenge / recovery codes (base templates login-config-totp.ftl,
+ * login-otp.ftl, login-recovery-authn-code-config.ftl). These render through the base template.ftl
+ * card, so the shared card/input/button rules above already apply; below styles their page-specific
+ * markup to the §32.7 dark tokens + mockup/mobile/02_shared/01_mfa/01_mfa_enrollment and
+ * 01_mfa/03_mfa_backup_codes_success–04_mfa_backup_codes_download. Element ids are the
+ * base templates' own — not renamed — so the Keycloak form contracts stay intact.
+ * ──────────────────────────────────────────────────────────────────────────────────────────────── */
+
+/* Brand header sits centred above the card (flex-column parent). */
+#kc-header,
+#kc-header-wrapper {
+  text-align: center;
+  font-size: 15px;
+}
+
+/* Give MFA cards a touch more room than the login card for the QR + steps. */
+body[data-page-id^='login-config-totp'] .card-pf,
+body[data-page-id^='login-recovery'] .card-pf {
+  max-width: 460px;
+}
+
+/* ── TOTP setup: instruction steps ── */
+#kc-totp-settings {
+  text-align: left;
+  padding-left: 1.25rem;
+  margin: 0 0 1.5rem;
+  color: var(--cos-text);
+}
+#kc-totp-settings > li {
+  margin-bottom: 1rem;
+  padding-left: 0.25rem;
+}
+#kc-totp-settings p {
+  margin: 0.25rem 0;
+  color: var(--cos-muted);
+}
+#kc-totp-supported-apps {
+  margin: 0.5rem 0 0;
+  padding-left: 1rem;
+  color: var(--cos-text);
+  font-weight: 500;
+}
+#kc-totp-type,
+#kc-totp-algorithm,
+#kc-totp-digits,
+#kc-totp-period,
+#kc-totp-counter {
+  color: var(--cos-muted);
+  font-size: 13px;
+  list-style: none;
+}
+
+/* QR must keep a white quiet-zone so authenticator apps can scan it. */
+#kc-totp-secret-qr-code {
+  display: block;
+  width: 200px;
+  height: 200px;
+  margin: 0.75rem auto;
+  padding: 12px;
+  background: #fff;
+  border-radius: 12px;
+}
+
+/* Manual secret key — monospaced chip on the dark input surface. */
+#kc-totp-secret-key {
+  display: inline-block;
+  margin: 0.25rem 0;
+  padding: 0.5rem 0.75rem;
+  background: var(--cos-navy);
+  border: 1px solid var(--cos-border);
+  border-radius: 8px;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.12em;
+  color: var(--cos-text);
+  word-break: break-all;
+}
+#mode-barcode,
+#mode-manual {
+  color: var(--cos-cyan);
+}
+
+/* ── OTP login challenge: credential list (when >1 authenticator) ── */
+.select-auth-box-parent,
+#kc-otp-login-form label[for^='kc-otp-credential'] {
+  background: var(--cos-navy) !important;
+  border: 1px solid var(--cos-border) !important;
+  border-radius: 8px !important;
+  color: var(--cos-text) !important;
+  margin-bottom: 0.5rem;
+}
+
+/* ── Recovery codes ── */
+.pf-c-alert.pf-m-warning,
+.pf-v5-c-alert.pf-m-warning {
+  background: rgba(245, 158, 11, 0.1) !important;
+  border: 1px solid rgba(245, 158, 11, 0.35) !important;
+  border-radius: 8px !important;
+  color: #fcd34d !important;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  text-align: left;
+}
+.pf-c-alert.pf-m-warning .pf-c-alert__title,
+.pf-c-alert__title {
+  color: #fcd34d !important;
+  font-weight: 600;
+}
+
+#kc-recovery-codes-list {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 1.25rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+#kc-recovery-codes-list li {
+  background: var(--cos-navy);
+  border: 1px solid var(--cos-border);
+  border-radius: 8px;
+  padding: 0.55rem 0.5rem;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--cos-text);
+  text-align: left;
+}
+#kc-recovery-codes-list li span {
+  color: var(--cos-muted);
+  margin-right: 0.25rem;
+}
+
+/* Print / download / copy — link buttons in the accent colour. */
+#printRecoveryCodes,
+#downloadRecoveryCodes,
+#copyRecoveryCodes {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: var(--cos-cyan) !important;
+  width: auto !important;
+  height: auto !important;
+  padding: 0.25rem 0.5rem !important;
+  font-weight: 500 !important;
+}
+
+/* Confirmation checkbox row. */
+#kcRecoveryCodesConfirmationCheck + label,
+label[for='kcRecoveryCodesConfirmationCheck'] {
+  color: var(--cos-muted) !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  font-size: 13px !important;
+}
+
+/* Disabled primary submit (recovery codes before confirming) reads as disabled. */
+input[type='submit']:disabled,
+.btn-primary:disabled {
+  opacity: 0.45 !important;
+  box-shadow: none !important;
+  cursor: not-allowed;
+}
+
+/* ── Secondary / cancel buttons on AIA pages (kcButtonDefaultClass) ── */
+#cancelTOTPBtn,
+#cancelRecoveryAuthnCodesBtn,
+.btn-default,
+.pf-c-button.pf-m-secondary,
+.pf-v5-c-button.pf-m-secondary {
+  background: transparent !important;
+  border: 1px solid var(--cos-border) !important;
+  color: var(--cos-muted) !important;
+  border-radius: 8px !important;
+  height: 48px !important;
+  width: 100%;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+  margin-top: 0.5rem;
+}
+#cancelTOTPBtn:hover,
+#cancelRecoveryAuthnCodesBtn:hover,
+.btn-default:hover {
+  color: var(--cos-text) !important;
+  border-color: var(--cos-muted) !important;
+}
+
+/* Logout-other-sessions checkbox label (shared by TOTP + recovery). */
+#logout-sessions + label,
+label[for='logout-sessions'] {
+  color: var(--cos-muted) !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  font-size: 13px !important;
+}

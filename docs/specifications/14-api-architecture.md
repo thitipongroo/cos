@@ -203,44 +203,125 @@ POST /api/v1/projects
 
 #### Procurement APIs
 
-| Method  | Path                                                  | Description                              | Auth                                   |
-| ------- | ----------------------------------------------------- | ---------------------------------------- | -------------------------------------- |
-| `GET`   | `/api/v1/procurement/purchase-requests`               | List PRs (filterable by status, project) | Any role                               |
-| `POST`  | `/api/v1/procurement/purchase-requests`               | Create PR                                | PM, Site Engineer, Procurement Officer |
-| `POST`  | `/api/v1/procurement/rfqs`                            | Create RFQ from PR                       | Procurement Officer                    |
-| `GET`   | `/api/v1/procurement/rfqs`                            | List RFQs (filterable: status, project)  | Any role                               |
-| `GET`   | `/api/v1/procurement/rfqs/{rfq_id}/quotations`        | List vendor quotations for RFQ           | Any role                               |
-| `POST`  | `/api/v1/procurement/purchase-orders`                 | Create PO from selected quotation        | Procurement Officer                    |
-| `GET`   | `/api/v1/procurement/purchase-orders`                 | List POs (filterable: status, project)   | Any role                               |
-| `PATCH` | `/api/v1/procurement/purchase-orders/{po_id}/approve` | Approve PO (triggers approval workflow)  | PM, Finance, Executive                 |
-| `POST`  | `/api/v1/procurement/deliveries`                      | Record delivery against PO               | Procurement Officer, Site Engineer     |
-| `GET`   | `/api/v1/procurement/deliveries`                      | List deliveries (filterable: PO)         | Any role                               |
-| `POST`  | `/api/v1/procurement/vendor-invoices`                 | Create vendor invoice against PO         | Procurement Officer, Finance           |
+| Method  | Path                                                  | Description                                          | Auth                                   |
+| ------- | ----------------------------------------------------- | ---------------------------------------------------- | -------------------------------------- |
+| `GET`   | `/api/v1/procurement/purchase-requests`               | List PRs (filterable by status, project)             | Any role                               |
+| `POST`  | `/api/v1/procurement/purchase-requests`               | Create PR                                            | PM, Site Engineer, Procurement Officer |
+| `POST`  | `/api/v1/procurement/rfqs`                            | Create RFQ from PR                                   | Procurement Officer                    |
+| `GET`   | `/api/v1/procurement/rfqs`                            | List RFQs (filterable: status, project)              | Any role                               |
+| `GET`   | `/api/v1/procurement/rfqs/{rfq_id}/quotations`        | List vendor quotations for RFQ                       | Any role                               |
+| `POST`  | `/api/v1/procurement/purchase-orders`                 | Create PO from selected quotation                    | Procurement Officer                    |
+| `GET`   | `/api/v1/procurement/purchase-orders`                 | List POs (filterable: status, project)               | Any role                               |
+| `PATCH` | `/api/v1/procurement/purchase-orders/{po_id}/approve` | Approve PO (triggers approval workflow)              | PM, Finance, Executive                 |
+| `POST`  | `/api/v1/procurement/deliveries`                      | Record delivery against PO                           | Procurement Officer, Site Engineer     |
+| `GET`   | `/api/v1/procurement/deliveries`                      | List deliveries (filterable: PO)                     | Any role                               |
+| `POST`  | `/api/v1/procurement/vendor-invoices`                 | Create vendor invoice against PO                     | Procurement Officer, Finance           |
+| `POST`  | `/api/v1/procurement/warehouses`                      | Create a warehouse — ADR-060                         | Procurement Officer, ADMIN             |
+| `GET`   | `/api/v1/procurement/warehouses`                      | List warehouses                                      | Any role                               |
+| `GET`   | `/api/v1/procurement/inventory`                       | Stock-on-hand (by warehouse/material; low-stock)     | Any role                               |
+| `POST`  | `/api/v1/procurement/grn`                             | Goods receipt from a delivery (stock-only) — ADR-060 | Procurement Officer, Site Engineer     |
+| `GET`   | `/api/v1/procurement/grn`                             | List goods-receipt notes                             | Any role                               |
+| `POST`  | `/api/v1/procurement/stock-movements`                 | Issue / transfer / adjust stock — ADR-060            | Procurement Officer, Site Engineer     |
+| `GET`   | `/api/v1/procurement/stock-movements`                 | Stock movement ledger                                | Any role                               |
+
+---
+
+#### Reference Pricing (ราคากลาง) APIs — ADR-061
+
+| Method | Path                                       | Description                               | Auth         |
+| ------ | ------------------------------------------ | ----------------------------------------- | ------------ |
+| `POST` | `/api/v1/admin/central-prices/import`      | Import central-price catalog (CSV/Excel)  | SYSTEM_ADMIN |
+| `GET`  | `/api/v1/central-prices`                   | Lookup central prices by code/description | Any role     |
+| `GET`  | `/api/v1/boq/projects/{id}/price-variance` | BOQ-vs-ราคากลาง variance report           | Any role     |
+
+---
+
+#### Preconstruction (e-GP) APIs — ADR-062
+
+| Method  | Path                                         | Description                             | Auth                       |
+| ------- | -------------------------------------------- | --------------------------------------- | -------------------------- |
+| `GET`   | `/api/v1/preconstruction/tenders`            | List tenders (filter by status)         | CRM/Sales, PM, EXEC, ADMIN |
+| `POST`  | `/api/v1/preconstruction/tenders`            | Create tender (manual)                  | CRM/Sales, PM, ADMIN       |
+| `POST`  | `/api/v1/preconstruction/tenders/sync`       | Pull tenders via EgpAdapter — ADR-062   | CRM/Sales, ADMIN           |
+| `POST`  | `/api/v1/preconstruction/tenders/{id}/bids`  | Create a bid from BOQ                   | CRM/Sales, PM, ADMIN       |
+| `POST`  | `/api/v1/preconstruction/bids/{id}/submit`   | Submit bid (adapter or manual)          | CRM/Sales, PM, EXEC, ADMIN |
+| `PATCH` | `/api/v1/preconstruction/tenders/{id}/award` | Record WON/LOST (WON → create Contract) | CRM/Sales, EXEC, ADMIN     |
+
+---
+
+#### Permits & Licences APIs — ADR-064
+
+| Method  | Path                          | Description                                             | Auth      |
+| ------- | ----------------------------- | ------------------------------------------------------- | --------- |
+| `GET`   | `/api/v1/permits`             | List permits/licences (`?type`/`?project_id`/`?status`) | Any role  |
+| `POST`  | `/api/v1/permits`             | Record a permit / licence (incl. building permit)       | PM, ADMIN |
+| `PATCH` | `/api/v1/permits/{id}/status` | Transition active / expired / revoked — ADR-064         | PM, ADMIN |
+
+---
+
+#### Project Risk Register APIs — ADR-065
+
+| Method  | Path                                          | Description                                | Auth                     |
+| ------- | --------------------------------------------- | ------------------------------------------ | ------------------------ |
+| `GET`   | `/api/v1/projects/{id}/risks`                 | List risks (`?status` / `?category`)       | Any role                 |
+| `POST`  | `/api/v1/projects/{id}/risks`                 | Raise a risk — ADR-065                     | PM, Site Engineer, ADMIN |
+| `PATCH` | `/api/v1/projects/{id}/risks/{riskId}`        | Edit a risk (likelihood/impact/mitigation) | PM, ADMIN                |
+| `PATCH` | `/api/v1/projects/{id}/risks/{riskId}/status` | Transition OPEN/MITIGATING/CLOSED/ACCEPTED | PM, ADMIN                |
+
+---
+
+#### Document-Control (site instruction / minutes / correspondence) APIs — ADR-066
+
+| Method  | Path                                                            | Description                     | Auth                     |
+| ------- | --------------------------------------------------------------- | ------------------------------- | ------------------------ |
+| `GET`   | `/api/v1/projects/{id}/communications`                          | List records (`?type`)          | Any role                 |
+| `POST`  | `/api/v1/projects/{id}/communications`                          | Create record — ADR-066         | PM, Site Engineer, ADMIN |
+| `POST`  | `/api/v1/projects/{id}/communications/{recordId}/actions`       | Add an action item              | PM, Site Engineer, ADMIN |
+| `PATCH` | `/api/v1/projects/{id}/communications/{recordId}/actions/{aid}` | Action item OPEN/DONE — ADR-066 | PM, Site Engineer, ADMIN |
 
 ---
 
 #### Financial APIs
 
-| Method  | Path                                             | Description                            | Auth                           |
-| ------- | ------------------------------------------------ | -------------------------------------- | ------------------------------ |
-| `GET`   | `/api/v1/finance/budget/{project_id}`            | Budget summary with lines              | FINANCE, PM, EXEC, ADMIN       |
-| `POST`  | `/api/v1/finance/budget/{project_id}`            | Create or update project budget        | FINANCE, ADMIN                 |
-| `POST`  | `/api/v1/finance/budget/{project_id}/lines`      | Add a budget line                      | FINANCE, ADMIN                 |
-| `GET`   | `/api/v1/finance/cost-transactions`              | List cost transactions (tenant-wide)   | FINANCE, PM, EXEC, ADMIN       |
-| `POST`  | `/api/v1/finance/payments`                       | Record payment vs a vendor invoice     | FINANCE, ADMIN                 |
-| `GET`   | `/api/v1/finance/payments`                       | List payments / AP queue (tenant-wide) | FINANCE, PM, EXEC, ADMIN       |
-| `PATCH` | `/api/v1/finance/payments/{payment_id}/approve`  | Approve pending payment (→ PROCESSED)  | FINANCE, ADMIN                 |
-| `GET`   | `/api/v1/finance/reports/variance`               | Budget variance across projects        | FINANCE, EXEC, ADMIN           |
-| `POST`  | `/api/v1/finance/customers`                      | Register a client/customer             | FINANCE, PM, CRM, ADMIN        |
-| `GET`   | `/api/v1/finance/customers`                      | List customers                         | FINANCE, PM, EXEC, PROC, ADMIN |
-| `POST`  | `/api/v1/finance/contracts`                      | Create a contract                      | PM, ADMIN                      |
-| `GET`   | `/api/v1/finance/contracts`                      | List contracts (filterable by project) | FINANCE, PM, EXEC, PROC, ADMIN |
-| `POST`  | `/api/v1/finance/billing`                        | Create client billing (AR) — DRAFT     | FINANCE, ADMIN                 |
-| `GET`   | `/api/v1/finance/billing`                        | List client billings (tenant-wide)     | FINANCE, PM, EXEC, PROC, ADMIN |
-| `GET`   | `/api/v1/finance/billing/{billing_id}`           | Get a client billing                   | FINANCE, PM, EXEC, PROC, ADMIN |
-| `PATCH` | `/api/v1/finance/billing/{billing_id}/approve`   | Approve billing (DRAFT → ISSUED, §15)  | PM, EXEC, ADMIN                |
-| `POST`  | `/api/v1/finance/ar-receipts`                    | Record client payment (billing → PAID) | FINANCE, ADMIN                 |
-| `GET`   | `/api/v1/finance/cashflow-forecast/{project_id}` | 13-week direct-method cash forecast    | FINANCE, PM, EXEC, ADMIN       |
+| Method  | Path                                             | Description                                                         | Auth                           |
+| ------- | ------------------------------------------------ | ------------------------------------------------------------------- | ------------------------------ |
+| `GET`   | `/api/v1/finance/budget/{project_id}`            | Budget summary with lines                                           | FINANCE, PM, EXEC, ADMIN       |
+| `POST`  | `/api/v1/finance/budget/{project_id}`            | Create or update project budget                                     | FINANCE, ADMIN                 |
+| `POST`  | `/api/v1/finance/budget/{project_id}/lines`      | Add a budget line                                                   | FINANCE, ADMIN                 |
+| `GET`   | `/api/v1/finance/cost-transactions`              | List cost transactions (tenant-wide)                                | FINANCE, PM, EXEC, ADMIN       |
+| `POST`  | `/api/v1/finance/payments`                       | Record payment vs a vendor invoice                                  | FINANCE, ADMIN                 |
+| `GET`   | `/api/v1/finance/payments`                       | List payments / AP queue (tenant-wide)                              | FINANCE, PM, EXEC, ADMIN       |
+| `PATCH` | `/api/v1/finance/payments/{payment_id}/approve`  | Approve pending payment (→ PROCESSED)                               | FINANCE, ADMIN                 |
+| `GET`   | `/api/v1/finance/reports/variance`               | Budget variance across projects                                     | FINANCE, EXEC, ADMIN           |
+| `POST`  | `/api/v1/finance/customers`                      | Register a client/customer                                          | FINANCE, PM, CRM, ADMIN        |
+| `GET`   | `/api/v1/finance/customers`                      | List customers                                                      | FINANCE, PM, EXEC, PROC, ADMIN |
+| `POST`  | `/api/v1/finance/contracts`                      | Create a contract                                                   | PM, ADMIN                      |
+| `GET`   | `/api/v1/finance/contracts`                      | List contracts (filterable by project)                              | FINANCE, PM, EXEC, PROC, ADMIN |
+| `POST`  | `/api/v1/finance/contracts/{id}/document`        | Attach contract doc (upload \| generate) — ADR-058                  | PM, EXEC, ADMIN                |
+| `POST`  | `/api/v1/finance/contracts/{id}/sign`            | Contractor-side signature (PKI/VC) — ADR-058                        | PM, EXEC, ADMIN                |
+| `POST`  | `/api/v1/finance/contracts/{id}/sign-links`      | Issue client magic-link to sign — ADR-058                           | PM, EXEC, ADMIN                |
+| `POST`  | `/api/v1/finance/contracts/sign/{token}`         | External client signs via magic-link (tenant-mw excluded) — ADR-058 | magic-link token               |
+| `GET`   | `/api/v1/finance/contracts/{id}/signatures`      | Signature audit trail                                               | FINANCE, PM, EXEC, PROC, ADMIN |
+| `POST`  | `/api/v1/finance/contracts/{id}/activate`        | Put a fully-signed contract into force (SIGNED → ACTIVE) — ADR-058  | PM, ADMIN                      |
+| `POST`  | `/api/v1/finance/contracts/{id}/terminate`       | Terminate a contract (SIGNED \| ACTIVE → TERMINATED) — ADR-058      | PM, ADMIN                      |
+| `POST`  | `/api/v1/finance/contracts/{id}/variations`      | Create Variation Order (DRAFT) — ADR-059                            | PM, ADMIN                      |
+| `GET`   | `/api/v1/finance/variations`                     | List VOs (tenant-wide; ?contract_id/project_id)                     | FINANCE, PM, EXEC, PROC, ADMIN |
+| `PATCH` | `/api/v1/finance/variations/{id}/submit`         | DRAFT → SUBMITTED — ADR-059                                         | PM, ADMIN                      |
+| `PATCH` | `/api/v1/finance/variations/{id}/approve`        | SUBMITTED → APPROVED (AR chain) → auto-adjust                       | PM, EXEC, ADMIN                |
+| `PATCH` | `/api/v1/finance/variations/{id}/reject`         | SUBMITTED → REJECTED — ADR-059                                      | PM, EXEC, ADMIN                |
+| `POST`  | `/api/v1/finance/claims`                         | Create a contractor claim — ADR-059                                 | PM, ADMIN                      |
+| `GET`   | `/api/v1/finance/claims`                         | List claims (tenant-wide; ?contract_id)                             | FINANCE, PM, EXEC, PROC, ADMIN |
+| `PATCH` | `/api/v1/finance/claims/{id}/accept`             | ACCEPTED → convert to VO — ADR-059                                  | PM, EXEC, ADMIN                |
+| `PATCH` | `/api/v1/finance/claims/{id}/reject`             | Reject a claim — ADR-059                                            | PM, EXEC, ADMIN                |
+| `POST`  | `/api/v1/finance/bonds`                          | Record a bank guarantee / bond — ADR-063                            | FINANCE, PM, ADMIN             |
+| `GET`   | `/api/v1/finance/bonds`                          | List bonds (?contract_id/tender_id/status)                          | FINANCE, PM, EXEC, ADMIN       |
+| `PATCH` | `/api/v1/finance/bonds/{id}/status`              | Transition ACTIVE/RELEASED/CALLED/EXPIRED — ADR-063                 | FINANCE, PM, ADMIN             |
+| `POST`  | `/api/v1/finance/billing`                        | Create client billing (AR) — DRAFT                                  | FINANCE, ADMIN                 |
+| `GET`   | `/api/v1/finance/billing`                        | List client billings (tenant-wide)                                  | FINANCE, PM, EXEC, PROC, ADMIN |
+| `GET`   | `/api/v1/finance/billing/{billing_id}`           | Get a client billing                                                | FINANCE, PM, EXEC, PROC, ADMIN |
+| `PATCH` | `/api/v1/finance/billing/{billing_id}/approve`   | Approve billing (DRAFT → ISSUED, §15)                               | PM, EXEC, ADMIN                |
+| `POST`  | `/api/v1/finance/ar-receipts`                    | Record client payment (billing → PAID)                              | FINANCE, ADMIN                 |
+| `GET`   | `/api/v1/finance/cashflow-forecast/{project_id}` | 13-week direct-method cash forecast                                 | FINANCE, PM, EXEC, ADMIN       |
 
 ---
 
@@ -306,6 +387,19 @@ POST /api/v1/projects
 | `GET`    | `/api/v1/files/{file_id}`             | Get file metadata and a short-lived download URL                                                                    | Any role     |
 | `DELETE` | `/api/v1/files/{file_id}`             | Soft-delete file; automatic hard-delete from MinIO 30 days later (see `09-data-architecture` File Lifecycle Policy) | Tenant Admin |
 | `GET`    | `/api/v1/projects/{project_id}/files` | List files attached to a project (filterable by type, uploader)                                                     | Any role     |
+| `GET`    | `/api/v1/files/{file_id}/annotation`  | Get the photo's annotation stroke list + `version` (404 if none) — powers re-editing                                | Any role     |
+
+> **Writing an annotation has no REST endpoint.** It flows through the offline-sync path like every
+> other field-editable entity: `POST /api/v1/sync/push` with `entity_type: "photo_annotation"`, which
+> runs the `version`-based `CONFLICT_FLAGGED` check (ADR-056; §17.5). A dedicated `PUT` was considered
+> and rejected as inconsistent with the seven entities already routed through `/sync/push`.
+>
+> **Write authorization: Site Worker, Site Engineer, PM, Tenant Admin** — the same set as the other
+> field-editable entities pushed through `/sync/push` (`site_report`, `issue`, `material`). Reading an
+> annotation stays "Any role", matching the `GET` row above (product-owner decision 2026-08-04; closes
+> the gap noted in `backend/src/modules/sync/sync-authz.ts`, where `photo_annotation` previously carried
+> no entry and therefore no role requirement beyond authentication). This satisfies the
+> `writeNeverWiderThanRead` invariant that file asserts, since annotation reads are unrestricted.
 
 ---
 
@@ -504,6 +598,22 @@ signatures against a single JWKS endpoint:
 
 The COS identity service performs OTP send/verify only — it does **not** sign JWTs. Token `iss`
 claim is validated against the Keycloak JWKS endpoint.
+
+**Identity forwarding.** The `jwt` plugin only _validates_ — it does not project claims. Services that
+are reached directly through Kong and trust gateway-set identity headers (today: `file-service`) get an
+explicit mapping on their route: client-supplied `x-tenant-id` / `x-user-id` / `x-user-role` are removed,
+then re-added from the verified token's `tenant_id` / `user_id` / `role` claims (§5.4.1 — note `user_id`,
+the platform user UUID, not `sub`). Without that mapping the headers are simply absent, which is how the
+file upload route silently 401'd; see §5.9.4. `cos-backend` needs no mapping — it validates the JWT
+itself (`KeycloakJwtStrategy`).
+
+**One exception, by design:** `credentials.construction-os.io` carries no `jwt` plugin. It exposes only
+two unauthenticated GETs — `/tenants/:tenantId/did.json` and
+`/tenants/:tenantId/status-lists/:statusListId` — because a third-party verifier resolving a W3C
+credential holds no platform identity (BG-001, ADR-019). It is a separate host rather than a path under
+`api.*` so nothing on `/api/v1/*` loses JWT enforcement; the route strips any client-supplied
+`x-tenant-id`/`x-user-id`/`x-user-role` and is IP-rate-limited. CredentialService's `issue`, `verify`
+and `revoke` are **not** routed at the edge at all — they are mesh-only (§5.9.8).
 
 ### Traffic Type Distinction
 

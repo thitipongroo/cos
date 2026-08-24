@@ -1,6 +1,7 @@
 'use client';
 
 import { useT } from '../../i18n';
+import { LoadingState } from './LoadingState';
 
 /**
  * Generic data-table for list views (§20.6.2 — web list views use data tables;
@@ -26,7 +27,11 @@ export function DataTable<T>({ columns, rows, rowKey, isLoading, emptyKey }: Dat
   const t = useT();
 
   if (isLoading) {
-    return <div className="py-8 text-center text-sm text-gray-400">{t('common.loading')}</div>;
+    // The §32.7 loading component, shaped to this table's own column count, instead of the bare
+    // "Loading…" line this rendered before (ADR-055; desktop mockup Variant B). `label` is passed
+    // for the screen reader — the `table` variant has no caption slot, so it renders only as the
+    // progressbar's accessible name; a loading state with nothing to announce is aria-hidden.
+    return <LoadingState variant="table" columns={columns.length} label={t('common.loading')} />;
   }
   if (rows.length === 0) {
     return (

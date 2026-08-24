@@ -1,3 +1,4 @@
+import { SYNC_PUSHABLE_ENTITY_TYPES } from '@cos/types';
 import { SYNC_PRIORITY_ORDER, syncPriorityRank, syncPriorityCaseSql } from '../syncPriority';
 
 describe('§17.6 sync priority order', () => {
@@ -6,9 +7,13 @@ describe('§17.6 sync priority order', () => {
       'safety',
       'attendance',
       'inspection',
+      'issue',
       'task',
       'site_report',
       'material',
+      'delivery',
+      'purchase-request',
+      'photo_annotation',
       'equipment',
     ]);
   });
@@ -17,8 +22,8 @@ describe('§17.6 sync priority order', () => {
     it('returns the index for a ranked entity type', () => {
       expect(syncPriorityRank('safety')).toBe(0);
       expect(syncPriorityRank('attendance')).toBe(1);
-      expect(syncPriorityRank('material')).toBe(5);
-      expect(syncPriorityRank('equipment')).toBe(6);
+      expect(syncPriorityRank('material')).toBe(6);
+      expect(syncPriorityRank('equipment')).toBe(10);
     });
 
     it('returns length (sorts last) for an unranked entity type', () => {
@@ -32,13 +37,23 @@ describe('§17.6 sync priority order', () => {
       const sql = syncPriorityCaseSql();
       expect(sql).toBe(
         "CASE entity_type WHEN 'safety' THEN 0 WHEN 'attendance' THEN 1 WHEN 'inspection' THEN 2 " +
-          "WHEN 'task' THEN 3 WHEN 'site_report' THEN 4 WHEN 'material' THEN 5 " +
-          "WHEN 'equipment' THEN 6 ELSE 7 END",
+          "WHEN 'issue' THEN 3 WHEN 'task' THEN 4 WHEN 'site_report' THEN 5 " +
+          "WHEN 'material' THEN 6 WHEN 'delivery' THEN 7 WHEN 'purchase-request' THEN 8 " +
+          "WHEN 'photo_annotation' THEN 9 WHEN 'equipment' THEN 10 ELSE 11 END",
       );
     });
 
     it('accepts a custom column name', () => {
       expect(syncPriorityCaseSql('t.entity_type')).toContain('CASE t.entity_type WHEN');
     });
+  });
+
+  // The invariant that keeps this list honest as the offline set grows: anything the outbox can hold
+  // must have a rank, or it silently sorts into the unranked tail behind everything else. That is how
+  // `issue` and `photo_annotation` came to flush after equipment usage logs.
+  it('ranks every entity type the outbox can hold', () => {
+    for (const type of SYNC_PUSHABLE_ENTITY_TYPES) {
+      expect(syncPriorityRank(type)).toBeLessThan(SYNC_PRIORITY_ORDER.length);
+    }
   });
 });

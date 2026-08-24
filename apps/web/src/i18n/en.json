@@ -1,42 +1,116 @@
 {
-  "common": {
-    "appName": "Construction OS",
-    "loading": "Loading...",
-    "signOut": "Sign out",
-    "retry": "Retry",
-    "offline": "Offline",
-    "synced": "Synced",
-    "syncing": "Syncing...",
-    "readOnly": "Read-only mode — this account can view but not modify",
-    "featureFlag": {
-      "disabled": "This feature is temporarily disabled"
+  "admin": {
+    "title": "System Admin panel",
+    "unauthorized": "SYSTEM_ADMIN role required",
+    "colCode": "Tenant code",
+    "colName": "Tenant name",
+    "colPlan": "Plan",
+    "colDb": "Dedicated DB",
+    "shared": "Shared",
+    "assignDb": "Assign DB",
+    "dbUrlOptional": "Dedicated DB URL (optional)",
+    "createTenant": "Create tenant",
+    "markContracted": "Mark as Contracted",
+    "markContractedConfirm": "Start dedicated DB provisioning — type the tenant code to confirm:",
+    "contractRef": "Contract reference (optional)"
+  },
+  "auth": {
+    "login": {
+      "title": "Sign in",
+      "office": "Office / management",
+      "officeButton": "Sign in with Keycloak",
+      "emailButton": "Login with Email",
+      "fieldLink": "Field login (SMS OTP)",
+      "fieldAccess": "Field Worker Access",
+      "error": "Sign-in failed. Please try again.",
+      "headline": "The Industrial Intelligence Layer for Modern Infrastructure.",
+      "subtitle": "Real-time telemetry, secure asset tracking, and AI-native field operations for enterprise-scale projects.",
+      "badgeEnterprise": "Enterprise Grade",
+      "badgeNetwork": "Global Network",
+      "cardTitle": "Secure Access",
+      "cardSubtitle": "Choose how you want to access the command center.",
+      "credentialsSubtitle": "Enter your credentials to access the command center.",
+      "sendPasscode": "Send Secure Passcode",
+      "cloudSyncActive": "Cloud Sync Active",
+      "support": "Support",
+      "systemStatus": "System Status",
+      "helpCenter": "Help Center",
+      "termsOfService": "Terms of Service",
+      "privacyPolicy": "Privacy Policy",
+      "securityPolicy": "Security Policy",
+      "terms": "Terms",
+      "footerUnit": "Industrial Intelligence Unit / Global Operations",
+      "globalRegion": "GLOBAL: SFO-7",
+      "or": "or",
+      "statusOperational": "All Systems Operational",
+      "copyright": "© 2026 Construction OS Enterprise"
+    },
+    "otp": {
+      "title": "Sign in with SMS OTP",
+      "phoneTitle": "Field Worker Access",
+      "phoneSubtitle": "Enter your phone number to receive a one-time passcode.",
+      "phoneLabel": "Phone number",
+      "phonePlaceholder": "e.g. 0812345678",
+      "requestButton": "Request OTP",
+      "otpLabel": "OTP code (6 digits)",
+      "verifyTitle": "Verify Your Identity",
+      "verifySubtitle": "Enter the 6-digit code sent to the number ending in",
+      "verifyButton": "Verify and continue",
+      "resendCode": "Resend code",
+      "expiresIn": "Code expires in",
+      "aesActive": "AES-256 Active",
+      "securityNote": "Your session is monitored for security. Do not share your code with anyone, including Construction OS staff.",
+      "backToOffice": "Back to office sign-in",
+      "sent": "An OTP code has been sent to your phone.",
+      "requestError": "Failed to request OTP.",
+      "verifyError": "Invalid or expired OTP.",
+      "countryLabel": "Country"
+    },
+    "logout": {
+      "title": "Signing out..."
+    },
+    "loading": {
+      "title": "Securing your session",
+      "status": "Securing session context",
+      "inProgress": "System authentication in progress",
+      "encryption": "Encryption",
+      "nodeId": "Node ID",
+      "rootCert": "ROOT_CERT: VALIDATED",
+      "helpCenter": "Help Center"
+    },
+    "pending": {
+      "title": "Module not yet available",
+      "body": "The pages for your role are still under development (pending backend)."
     }
   },
-  "shell": {
-    "notifications": "Notifications",
-    "noNotifications": "No notifications",
-    "markAllRead": "Mark all as read",
-    "language": "Language"
+  "common": {
+    "appName": "Construction OS",
+    "featureFlag": {
+      "disabled": "This feature is temporarily disabled"
+    },
+    "imageFailedToLoad": "Could not be loaded",
+    "loading": "Loading...",
+    "offline": "Offline",
+    "readOnly": "Read-only mode — this account can view but not modify",
+    "retry": "Retry",
+    "signOut": "Sign out",
+    "synced": "Synced",
+    "syncing": "Syncing..."
   },
-  "table": {
-    "project": "Project",
-    "code": "Code",
-    "status": "Status",
-    "type": "Type",
-    "budget": "Budget",
-    "actual": "Actual",
-    "utilization": "Utilization %",
-    "severity": "Severity",
-    "title": "Title",
-    "createdAt": "Created",
-    "actions": "Actions"
-  },
-  "projectStatus": {
-    "DRAFT": "Draft",
-    "ACTIVE": "Active",
-    "ON_HOLD": "On hold",
-    "COMPLETED": "Completed",
-    "CANCELLED": "Cancelled"
+  "crm": {
+    "leadsTitle": "Leads",
+    "opportunitiesTitle": "Opportunities",
+    "customersTitle": "Customers",
+    "colContact": "Contact",
+    "colCompany": "Company",
+    "colSource": "Source",
+    "colTitle": "Title",
+    "colValue": "Value",
+    "colCloseDate": "Expected close",
+    "createLead": "Add lead",
+    "createOpportunity": "Create opportunity",
+    "convert": "Convert to customer",
+    "selectLead": "Select a lead"
   },
   "exec": {
     "homeTitle": "Portfolio overview",
@@ -57,6 +131,93 @@
     "lowConfidence": "Low confidence — insufficient data",
     "atRisk": "At risk",
     "onTrack": "On track"
+  },
+  "finance": {
+    "paymentsTitle": "Payments (AP)",
+    "budgetTitle": "Budget",
+    "invoicesTitle": "Vendor invoices",
+    "varianceTitle": "Variance report",
+    "allStatuses": "All statuses",
+    "approve": "Approve",
+    "overBudget": "Over budget",
+    "onBudget": "On budget",
+    "selectProject": "Select project",
+    "invoicesHint": "Invoices are owned by procurement (AP) — Finance views/approves/pays",
+    "colNumber": "Number",
+    "colVendor": "Vendor",
+    "colPo": "PO",
+    "colDueDate": "Due date",
+    "colReference": "Reference",
+    "dispute": "Dispute",
+    "recordPayment": "Record payment",
+    "amount": "Amount",
+    "paymentDate": "Payment date",
+    "selectInvoice": "Select invoice",
+    "paymentReference": "Reference (optional)"
+  },
+  "location": {
+    "getLocation": "Get location",
+    "locating": "Getting location…",
+    "currentLocation": "Current location",
+    "coordinates": "Coordinates",
+    "accuracy": "Accuracy",
+    "notSupported": "Location services are not available in this browser",
+    "denied": "Location permission denied",
+    "timeout": "Location request timed out",
+    "unavailable": "Location unavailable"
+  },
+  "nav": {
+    "exec": {
+      "home": "Portfolio home",
+      "portfolio": "Portfolio",
+      "alerts": "Risk alerts",
+      "reports": "Executive reports"
+    },
+    "pm": {
+      "projects": "Projects"
+    },
+    "procurement": {
+      "requests": "Purchase requests",
+      "rfqs": "RFQs",
+      "quotations": "Quotations",
+      "orders": "Purchase orders",
+      "deliveries": "Deliveries",
+      "vendors": "Vendors"
+    },
+    "finance": {
+      "payments": "Payments",
+      "budget": "Budget",
+      "invoices": "Invoices",
+      "variance": "Variance report"
+    },
+    "site": {
+      "reports": "Site reports",
+      "issues": "Issues",
+      "inspections": "Inspections",
+      "conflicts": "Conflict resolution"
+    },
+    "siteWorker": {
+      "newReport": "Daily report",
+      "newIssue": "Report issue",
+      "tasks": "Tasks",
+      "checklists": "Checklists"
+    },
+    "admin": {
+      "users": "User management",
+      "tenant": "Tenant settings",
+      "subjectRequests": "Subject requests"
+    },
+    "safety": {
+      "incidents": "Incidents",
+      "permits": "Permits",
+      "checklists": "Checklists",
+      "compliance": "Compliance"
+    },
+    "crm": {
+      "leads": "Leads",
+      "opportunities": "Opportunities",
+      "customers": "Customers"
+    }
   },
   "pm": {
     "projectsTitle": "Projects",
@@ -79,6 +240,25 @@
     "tabProcurement": "Procurement",
     "tabFinance": "Finance",
     "tabSite": "Site",
+    "tabRisks": "Risks",
+    "tabDashboard": "Dashboard",
+    "tabGraph": "Knowledge Graph",
+    "graphTitle": "Project Knowledge Graph",
+    "graphSubtitle": "Vendors, material supply chain, and inspections linked to this project (from the Neo4j graph database).",
+    "graphVendors": "Vendors supplying the project",
+    "graphSupplyChain": "Material supply chain",
+    "graphInspections": "Inspections",
+    "graphVendorDetail": "Vendor detail",
+    "graphOtherProjects": "Other projects sharing this vendor",
+    "graphInvoices": "Vendor invoices",
+    "graphViewVendor": "View relationships",
+    "graphSelectVendor": "Select a vendor to see shared projects and invoices",
+    "graphEmpty": "No graph data yet for this project",
+    "colVendor": "Vendor",
+    "colMaterial": "Material",
+    "colProject": "Project",
+    "colInvoice": "Invoice no.",
+    "colCurrency": "Currency",
     "procurementTitle": "Procurement status",
     "financeTitle": "Budget vs actual",
     "siteTitle": "Site summary",
@@ -98,12 +278,6 @@
     "colDeadline": "Deadline",
     "colManpower": "Manpower",
     "colVersion": "Version"
-  },
-  "projectType": {
-    "RESIDENTIAL": "Residential",
-    "COMMERCIAL": "Commercial",
-    "INFRASTRUCTURE": "Infrastructure",
-    "INDUSTRIAL": "Industrial"
   },
   "proc": {
     "requestsTitle": "Purchase requests",
@@ -152,151 +326,63 @@
     "deadline": "Deadline",
     "colScore": "Score"
   },
-  "finance": {
-    "paymentsTitle": "Payments (AP)",
-    "budgetTitle": "Budget",
-    "invoicesTitle": "Vendor invoices",
-    "varianceTitle": "Variance report",
-    "allStatuses": "All statuses",
-    "approve": "Approve",
-    "overBudget": "Over budget",
-    "onBudget": "On budget",
-    "selectProject": "Select project",
-    "invoicesHint": "Invoices are owned by procurement (AP) — Finance views/approves/pays",
-    "colNumber": "Number",
-    "colVendor": "Vendor",
-    "colPo": "PO",
-    "colDueDate": "Due date",
-    "colReference": "Reference",
-    "dispute": "Dispute",
-    "recordPayment": "Record payment",
-    "amount": "Amount",
-    "paymentDate": "Payment date",
-    "selectInvoice": "Select invoice",
-    "paymentReference": "Reference (optional)"
+  "profile": {
+    "title": "My profile",
+    "link": "Profile",
+    "name": "Name",
+    "email": "Email",
+    "role": "Role",
+    "tenant": "Organization",
+    "language": "Language"
   },
-  "nav": {
-    "exec": {
-      "home": "Portfolio home",
-      "portfolio": "Portfolio",
-      "alerts": "Risk alerts",
-      "reports": "Executive reports"
-    },
-    "pm": {
-      "projects": "Projects"
-    },
-    "procurement": {
-      "requests": "Purchase requests",
-      "rfqs": "RFQs",
-      "quotations": "Quotations",
-      "orders": "Purchase orders",
-      "deliveries": "Deliveries",
-      "vendors": "Vendors"
-    },
-    "finance": {
-      "payments": "Payments",
-      "budget": "Budget",
-      "invoices": "Invoices",
-      "variance": "Variance report"
-    },
-    "site": {
-      "reports": "Site reports",
-      "issues": "Issues",
-      "inspections": "Inspections",
-      "conflicts": "Conflict resolution"
-    },
-    "siteWorker": {
-      "newReport": "Daily report",
-      "newIssue": "Report issue",
-      "tasks": "Tasks",
-      "checklists": "Checklists"
-    },
-    "admin": {
-      "users": "User management",
-      "tenant": "Tenant settings"
-    },
-    "safety": {
-      "incidents": "Incidents",
-      "permits": "Permits",
-      "checklists": "Checklists",
-      "compliance": "Compliance"
-    },
-    "crm": {
-      "leads": "Leads",
-      "opportunities": "Opportunities",
-      "customers": "Customers"
-    }
+  "projectStatus": {
+    "DRAFT": "Draft",
+    "ACTIVE": "Active",
+    "ON_HOLD": "On hold",
+    "COMPLETED": "Completed",
+    "CANCELLED": "Cancelled"
   },
-  "auth": {
-    "login": {
-      "title": "Sign in",
-      "office": "Office / management",
-      "officeButton": "Sign in with Keycloak",
-      "fieldLink": "Field login (SMS OTP)",
-      "error": "Sign-in failed. Please try again."
-    },
-    "otp": {
-      "title": "Sign in with SMS OTP",
-      "phoneLabel": "Phone number",
-      "phonePlaceholder": "e.g. 0812345678",
-      "requestButton": "Request OTP",
-      "otpLabel": "OTP code (6 digits)",
-      "verifyButton": "Verify and sign in",
-      "backToOffice": "Back to office sign-in",
-      "sent": "An OTP code has been sent to your phone.",
-      "requestError": "Failed to request OTP.",
-      "verifyError": "Invalid or expired OTP.",
-      "countryLabel": "Country"
-    },
-    "logout": {
-      "title": "Signing out..."
-    },
-    "pending": {
-      "title": "Module not yet available",
-      "body": "The pages for your role are still under development (pending backend)."
-    }
+  "projectType": {
+    "RESIDENTIAL": "Residential",
+    "COMMERCIAL": "Commercial",
+    "INFRASTRUCTURE": "Infrastructure",
+    "INDUSTRIAL": "Industrial"
   },
-  "site": {
-    "reportsTitle": "Site reports",
-    "issuesTitle": "Site issues",
-    "inspectionsTitle": "Inspection results",
-    "conflictsTitle": "Conflict resolution",
-    "colDate": "Date",
-    "colSummary": "Summary",
-    "colManpower": "Manpower",
-    "colTitle": "Title",
-    "colSeverity": "Severity",
-    "colChecklist": "Checklist",
-    "colInspectedAt": "Inspected at",
-    "colNotes": "Notes",
-    "colEntity": "Entity",
-    "colEntityId": "Entity ID",
-    "colConflictType": "Conflict type",
-    "approve": "Approve",
-    "requestReinspection": "Request re-inspection",
-    "resolve": "Resolve",
-    "allStatuses": "All statuses",
-    "tasksTitle": "Assigned tasks",
-    "selectProject": "Select a project",
-    "colTaskName": "Task",
-    "colProgress": "Progress",
-    "complete": "Complete",
-    "completeBlocked": "Cannot complete — blocked (inspections / issues / dependencies / permits)",
-    "reportsNewTitle": "Submit daily report",
-    "issuesNewTitle": "Report an issue",
-    "checklistsTitle": "Safety checklists",
-    "colChecklistName": "Checklist",
-    "colVersion": "Version",
-    "fieldDate": "Date",
-    "fieldManpower": "Manpower",
-    "fieldSummary": "Summary / blockers",
-    "fieldTitle": "Title",
+  "risk": {
+    "aiSuggested": "AI",
+    "cancel": "Cancel",
+    "colActions": "",
+    "colCategory": "Category",
+    "colScore": "L × I",
+    "colStatus": "Status",
+    "colTitle": "Risk",
+    "edit": "Edit",
     "fieldDescription": "Description",
-    "fieldPhoto": "Photo",
-    "submit": "Submit",
-    "submitted": "Submitted",
-    "fieldBlockers": "Blockers (if any)",
-    "escalate": "Escalate"
+    "fieldMitigation": "Mitigation",
+    "fieldOwner": "Owner",
+    "fieldTitle": "Risk title",
+    "filterAllCategory": "All categories",
+    "filterAllStatus": "All statuses",
+    "heatMap": "Likelihood × impact heat map",
+    "impact": "Impact",
+    "likelihood": "Likelihood",
+    "raise": "Raise risk",
+    "save": "Save",
+    "title": "Risk register"
+  },
+  "riskCategory": {
+    "SAFETY": "Safety",
+    "FINANCIAL": "Financial",
+    "SCHEDULE": "Schedule",
+    "TECHNICAL": "Technical",
+    "EXTERNAL": "External",
+    "OTHER": "Other"
+  },
+  "riskStatus": {
+    "OPEN": "Open",
+    "MITIGATING": "Mitigating",
+    "CLOSED": "Closed",
+    "ACCEPTED": "Accepted"
   },
   "safety": {
     "incidentsTitle": "Safety incidents",
@@ -333,37 +419,113 @@
     "lineToken": "LINE Channel Access Token",
     "notifications": "Enable notifications",
     "save": "Save",
-    "saved": "Saved"
+    "saved": "Saved",
+    "srTitle": "Subject requests",
+    "srIntro": "Requests from people with no account here — CRM contacts, leads, vendor contacts. Your organisation is the controller; Construction OS holds this data on your instruction.",
+    "srType": "Type",
+    "srSubject": "Subject",
+    "srStatus": "Status",
+    "srReceived": "Received",
+    "srOpen": "Open",
+    "srAccess": "Access",
+    "srErasure": "Erasure",
+    "srEmail": "Email",
+    "srPhone": "Phone",
+    "srReceivedAt": "Received at",
+    "srNote": "Note",
+    "srCreate": "Open request",
+    "srViewMatches": "View what is held",
+    "srMatches": "Records held",
+    "srNoMatches": "Nothing matched the identifiers on this request.",
+    "srErase": "Anonymise",
+    "srLegalHold": "Keep a copy under legal hold",
+    "srLegalHoldReason": "Reason for the hold",
+    "srClose": "Close request",
+    "srOutcome": "What was done, or why it was refused",
+    "srFulfilled": "Fulfilled",
+    "srRejected": "Rejected",
+    "srErased": "Anonymised {total} record(s)",
+    "srVerify": "Send verification link",
+    "srVerified": "Verified",
+    "srUnverified": "Not verified",
+    "srVerifySent": "Verification link sent to {to}",
+    "srVerifyHint": "Anonymisation is blocked until the subject confirms the link. It is sent to the address on the matched record, not the one typed above."
   },
-  "admin": {
-    "title": "System Admin panel",
-    "unauthorized": "SYSTEM_ADMIN role required",
-    "colCode": "Tenant code",
-    "colName": "Tenant name",
-    "colPlan": "Plan",
-    "colDb": "Dedicated DB",
-    "shared": "Shared",
-    "assignDb": "Assign DB",
-    "dbUrlOptional": "Dedicated DB URL (optional)",
-    "createTenant": "Create tenant",
-    "markContracted": "Mark as Contracted",
-    "markContractedConfirm": "Start dedicated DB provisioning — type the tenant code to confirm:",
-    "contractRef": "Contract reference (optional)"
+  "shell": {
+    "notifications": "Notifications",
+    "noNotifications": "No notifications",
+    "markAllRead": "Mark all as read",
+    "language": "Language"
   },
-  "crm": {
-    "leadsTitle": "Leads",
-    "opportunitiesTitle": "Opportunities",
-    "customersTitle": "Customers",
-    "colContact": "Contact",
-    "colCompany": "Company",
-    "colSource": "Source",
+  "site": {
+    "allStatuses": "All statuses",
+    "approve": "Approve",
+    "checklistsTitle": "Safety checklists",
+    "colChecklist": "Checklist",
+    "colChecklistName": "Checklist",
+    "colConflictType": "Conflict type",
+    "colDate": "Date",
+    "colEntity": "Entity",
+    "colEntityId": "Entity ID",
+    "colInspectedAt": "Inspected at",
+    "colManpower": "Manpower",
+    "colNotes": "Notes",
+    "colProgress": "Progress",
+    "colSeverity": "Severity",
+    "colSummary": "Summary",
+    "colTaskName": "Task",
     "colTitle": "Title",
-    "colValue": "Value",
-    "colCloseDate": "Expected close",
-    "createLead": "Add lead",
-    "createOpportunity": "Create opportunity",
-    "convert": "Convert to customer",
-    "selectLead": "Select a lead"
+    "colVersion": "Version",
+    "complete": "Complete",
+    "completeBlocked": "Cannot complete — blocked (inspections / issues / dependencies / permits)",
+    "conflictsTitle": "Conflict resolution",
+    "escalate": "Escalate",
+    "fieldBlockers": "Blockers (if any)",
+    "fieldDate": "Date",
+    "fieldDescription": "Description",
+    "fieldManpower": "Manpower",
+    "fieldPhoto": "Photo",
+    "fieldSeverity": "Severity",
+    "fieldSummary": "Summary / blockers",
+    "fieldTitle": "Title",
+    "inspectionsTitle": "Inspection results",
+    "issuesNewTitle": "Report an issue",
+    "issuesTitle": "Site issues",
+    "reportsNewTitle": "Submit daily report",
+    "reportsTitle": "Site reports",
+    "requestReinspection": "Request re-inspection",
+    "resolve": "Resolve",
+    "selectProject": "Select a project",
+    "submit": "Submit",
+    "submitted": "Submitted",
+    "tasksTitle": "Assigned tasks"
+  },
+  "table": {
+    "project": "Project",
+    "code": "Code",
+    "status": "Status",
+    "type": "Type",
+    "budget": "Budget",
+    "actual": "Actual",
+    "utilization": "Utilization %",
+    "severity": "Severity",
+    "title": "Title",
+    "createdAt": "Created",
+    "actions": "Actions"
+  },
+  "validation": {
+    "invalidOption": "Choose one of the available options",
+    "notACurrency": "Enter a 3-letter currency code",
+    "notADate": "Enter a valid date",
+    "notAPhone": "Enter a valid phone number",
+    "notAUuid": "Invalid selection",
+    "notAnAmount": "Enter a valid amount",
+    "notAnEmail": "Enter a valid email address",
+    "notAnInteger": "Enter a whole number",
+    "notAnOtp": "Enter the 6-digit code",
+    "outOfRange": "Out of the allowed range",
+    "required": "This field is required",
+    "tooLong": "Too long"
   },
   "vendor": {
     "portalTitle": "Vendor Portal",
@@ -409,24 +571,99 @@
     "unavailable": "Transcription service is not available yet",
     "language": "Language"
   },
-  "location": {
-    "getLocation": "Get location",
-    "locating": "Getting location…",
-    "currentLocation": "Current location",
-    "coordinates": "Coordinates",
-    "accuracy": "Accuracy",
-    "notSupported": "Location services are not available in this browser",
-    "denied": "Location permission denied",
-    "timeout": "Location request timed out",
-    "unavailable": "Location unavailable"
-  },
-  "profile": {
-    "title": "My profile",
-    "link": "Profile",
-    "name": "Name",
-    "email": "Email",
-    "role": "Role",
-    "tenant": "Organization",
-    "language": "Language"
+  "trust": {
+    "brand": "CONSTRUCTION OS",
+    "title": "Trust Center",
+    "intro": "What protects your data, stated so you can check it. Every control below points at a certificate, a public fact, or a control register in our repository — and the ones we have not built yet are listed as such rather than left out.",
+    "verifiedOn": "Controls verified against the implementation on",
+    "status": {
+      "live": "Live",
+      "partial": "Partial",
+      "planned": "Planned"
+    },
+    "controls": {
+      "heading": "Security controls",
+      "note": "“Planned” means specified and scheduled, but not running in production today.",
+      "keys": {
+        "label": "Key protection",
+        "detail": "Data-encryption keys are generated and used inside AWS Key Management Service hardware security modules. The module is validated by NIST; the certificate is linked below and is active until 17 November 2026, when it must be re-verified."
+      },
+      "atRest": {
+        "label": "Encryption at rest",
+        "detail": "All databases, object storage and backups, using a customer-managed key."
+      },
+      "fieldLevel": {
+        "label": "Field-level encryption",
+        "detail": "Individual sensitive fields, such as MFA secrets and signing keys, are separately encrypted before storage."
+      },
+      "inTransit": {
+        "label": "Encryption in transit",
+        "detail": "TLS 1.3 is the minimum on every public endpoint; earlier TLS versions are disabled."
+      },
+      "isolation": {
+        "label": "Tenant isolation",
+        "detail": "Every table carries a database-enforced policy so one organisation cannot read another's rows, even if the application layer is bypassed. A cross-tenant test runs on every build."
+      },
+      "mesh": {
+        "label": "Service-to-service mTLS",
+        "detail": "Mutual TLS between internal services is specified but is not yet deployed."
+      },
+      "logRedaction": {
+        "label": "Automatic log redaction",
+        "detail": "Personal data is kept out of logs by engineering convention; automated redaction is not yet enforced."
+      },
+      "subjectRights": {
+        "label": "Self-service data requests",
+        "detail": "Access, portability, erasure and restriction requests are handled by our Data Protection Office; a self-service endpoint is not yet built."
+      },
+      "breach": {
+        "label": "Automated breach notification",
+        "detail": "The 72-hour notification workflow required by PDPA is not yet implemented."
+      }
+    },
+    "certs": {
+      "heading": "Certifications",
+      "note": "We hold none of these today. They are listed with their target so the status is not ambiguous.",
+      "soc2": {
+        "label": "SOC 2 Type II",
+        "detail": "Security, Availability, Confidentiality. Audit begins 6 months before our Stage 1→2 transition."
+      },
+      "iso27001": {
+        "label": "ISO/IEC 27001:2022",
+        "detail": "Information Security Management System. No ISMS is established yet — the largest gap to certification."
+      },
+      "pdpa": {
+        "label": "PDPA audit (Thailand)",
+        "detail": "Annual audit, triggered 6 months before the first Thai enterprise customer onboards."
+      }
+    },
+    "subprocessors": {
+      "heading": "Sub-processors",
+      "note": "Third parties that may process personal data on our behalf.",
+      "colName": "Processor",
+      "colPurpose": "Purpose",
+      "colRegion": "Region",
+      "aws": {
+        "name": "Amazon Web Services",
+        "purpose": "Databases, object storage, secrets, Kubernetes"
+      },
+      "awsSns": {
+        "name": "AWS SNS",
+        "purpose": "Sign-in code (SMS) delivery — pinned to the SMS-capable endpoint"
+      },
+      "openai": {
+        "name": "OpenAI",
+        "purpose": "AI report generation. Personal data is removed before any text is sent"
+      },
+      "cloudflare": {
+        "name": "Cloudflare",
+        "purpose": "Web application firewall and CDN"
+      }
+    },
+    "residency": {
+      "heading": "Data residency",
+      "body": "Data is stored in the home region assigned to your organisation: Thailand (ap-southeast-7) for Thai organisations, Ireland (eu-west-1) for EU organisations, and Singapore (ap-southeast-1) otherwise, with Singapore as the disaster-recovery region for Thai data. The one routine cross-border transfer is SMS sign-in code delivery."
+    },
+    "footer": "Questions about this page, or a request to exercise your data rights, go to our Data Protection Office — the address is published in the Privacy Policy in the app."
   }
 }

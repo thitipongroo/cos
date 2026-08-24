@@ -3,50 +3,13 @@
 // Registered with the Temporal worker (worker.ts).
 // Workflows (po.workflow.ts) call these via proxyActivities — determinism preserved.
 
-import { PrismaClient } from '@prisma/client';
-import { createPrismaClient } from '../../../shared/prisma/create-prisma-client';
 import { OutboxPublisher } from '@cos/kafka';
 import { createLogger } from '@cos/logger';
 import { buildOutboxEvent } from '../../../shared/outbox/outbox.types';
 
-import { getDbUrlForTenant } from '../../tenant/utils/get-db-url';
+import { publishEvent, withTenantTx } from './activity-helpers';
 
-const logger = createLogger('po-activities');
-
-export interface PoActivityParams {
-  po_id: string;
-  project_id: string;
-  vendor_id: string;
-  tenant_id: string;
-  correlation_id: string;
-}
-
-async function withTenantTx<T>(
-  tenantId: string,
-  fn: (prisma: PrismaClient) => Promise<T>,
-): Promise<T> {
-  const dbUrl = await getDbUrlForTenant(tenantId);
-  const prisma = createPrismaClient(dbUrl);
-  try {
-    return await prisma.$transaction(async (tx) => {
-      await (tx as PrismaClient).$executeRawUnsafe(
-        `SET LOCAL app.current_tenant_id = '${tenantId}'`,
-      );
-      return fn(tx as PrismaClient);
-    });
-  } finally {
-    await prisma.$disconnect();
-  }
-}
-
-/**
- * Builds the outbox envelope for an activity event (§35.13 ESC-13).
- *
- * Replaces the previous `publishEvent`, which published straight to Kafka and then SWALLOWED the
- * error (`catch → logger.error('kafka.publish.failed')`). Because the activity still returned
- * normally, Temporal saw a success and never retried — so the event was lost exactly as in the
- * request-path services, and Temporal's durability guarantee never applied to it.
- */
+/** Envelope for an activity-emitted event: activities act as the system, not as a user. */
 function activityEvent<T>(
   event_type: string,
   payload: T,
@@ -62,19 +25,14 @@ function activityEvent<T>(
   });
 }
 
-/** Writes an activity event to the outbox in its own tenant transaction (no business write). */
-async function writeStandaloneEvent<T>(
-  event_type: string,
-  payload: T,
-  tenant_id: string,
-  correlation_id: string,
-): Promise<void> {
-  await withTenantTx(tenant_id, async (prisma) => {
-    await OutboxPublisher.write(
-      prisma,
-      activityEvent(event_type, payload, tenant_id, correlation_id),
-    );
-  });
+const logger = createLogger('po-activities');
+
+export interface PoActivityParams {
+  po_id: string;
+  project_id: string;
+  vendor_id: string;
+  tenant_id: string;
+  correlation_id: string;
 }
 
 export async function updatePoStatus(
@@ -127,8 +85,8 @@ export async function notifyApprover(
     'po.approval.requested',
   );
 
-  // No business write in this activity — the outbox is the durable at-least-once relay.
-  await writeStandaloneEvent(
+  await publishEvent(
+    logger,
     'procurement.po.approval_requested.v1',
     {
       po_id: params.po_id,
@@ -153,8 +111,8 @@ export async function compensateCancelledPo(params: PoActivityParams): Promise<v
     'po.cancelled.compensation',
   );
 
-  // Compensation emits only — no business write to be atomic with.
-  await writeStandaloneEvent(
+  await publishEvent(
+    logger,
     'procurement.po.status_changed.v1',
     { po_id: params.po_id, from_status: 'PENDING_APPROVAL', to_status: 'DRAFT' },
     params.tenant_id,

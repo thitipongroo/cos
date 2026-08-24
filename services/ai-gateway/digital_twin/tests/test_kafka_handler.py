@@ -1,40 +1,54 @@
-"""Unit tests for the Digital Twin Kafka wiring — Phase 24.
+"""Unit tests for the Digital Twin Kafka consumer/producer (§Phase 24).
 
-§35.13 ESC-24: digital_twin/kafka_handler.py was entirely uncovered (36 statements). aiokafka is
-replaced with fakes, so the consumer loop runs for real without a broker. What matters here is the
-error contract: a telemetry message that fails to process must be logged and the loop must KEEP
-CONSUMING — one poison record cannot stop twin synchronisation for every tenant — and the consumer
-and producer must both be stopped in the finally block (Rule 39 / ADR-034).
+`start_telemetry_consumer` is a long-running broker loop, so nothing here touches a real broker:
+`AIOKafkaConsumer` / `AIOKafkaProducer` are patched on the module (they are imported at module scope
+here, unlike ai-embedding-worker's lazy import, so patching the module attribute is the seam).
+
+What is worth pinning down is not "it consumes" but the decisions that fail silently in production:
+the `equipment.telemetry.*` pattern, `latest` offset reset (a twin backfilling months of stale
+telemetry would publish a wrong current state), that a poison record does not wedge the partition,
+that both clients are always stopped, and that no `twin.state.updated` is emitted when the sync
+service declines the event.
 """
 
+from __future__ import annotations
+
 import json
+import sys
 from datetime import datetime, timezone
-from uuid import uuid4
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import pytest
-
 from digital_twin import kafka_handler
 from digital_twin.models import SeverityLevel, StateSource, TwinDivergenceEvent, TwinState
 
 
-class _Msg:
-    def __init__(self, value):
-        self.value = value
+TENANT = "22222222-2222-2222-2222-222222222222"
+
+
+class _FakeMessage:
+    def __init__(self, value: dict, tenant_id: str = TENANT, header_tenant: str | None = TENANT):
+        # The §7.3 guard compares the tenant_id header against the envelope's tenant_id.
+        self.value = {**value, "tenant_id": tenant_id}
+        self.headers = [] if header_tenant is None else [("tenant_id", header_tenant.encode())]
 
 
 class _FakeConsumer:
-    instances: list["_FakeConsumer"] = []
+    instances: list = []
+    next_messages: list = []
 
     def __init__(self, **kwargs):
         self.kwargs = kwargs
-        self.subscribed_pattern = None
+        self.subscribed: dict = {}
         self.started = False
         self.stopped = False
-        self.messages: list[_Msg] = []
-        type(self).instances.append(self)
+        self.messages = list(_FakeConsumer.next_messages)
+        _FakeConsumer.instances.append(self)
 
     def subscribe(self, pattern=None):
-        self.subscribed_pattern = pattern
+        self.subscribed = {"pattern": pattern}
 
     async def start(self):
         self.started = True
@@ -43,22 +57,22 @@ class _FakeConsumer:
         self.stopped = True
 
     def __aiter__(self):
-        async def gen():
-            for m in self.messages:
-                yield m
+        async def _gen():
+            for msg in self.messages:
+                yield msg
 
-        return gen()
+        return _gen()
 
 
 class _FakeProducer:
-    instances: list["_FakeProducer"] = []
+    instances: list = []
 
     def __init__(self, **kwargs):
         self.kwargs = kwargs
         self.started = False
         self.stopped = False
-        self.sent: list[tuple[str, dict]] = []
-        type(self).instances.append(self)
+        self.sent: list = []
+        _FakeProducer.instances.append(self)
 
     async def start(self):
         self.started = True
@@ -73,174 +87,254 @@ class _FakeProducer:
 @pytest.fixture
 def fake_kafka(monkeypatch):
     _FakeConsumer.instances = []
+    _FakeConsumer.next_messages = []
     _FakeProducer.instances = []
     monkeypatch.setattr(kafka_handler, "AIOKafkaConsumer", _FakeConsumer)
     monkeypatch.setattr(kafka_handler, "AIOKafkaProducer", _FakeProducer)
     return _FakeConsumer, _FakeProducer
 
 
-def _twin_state(**overrides) -> TwinState:
-    base = dict(
-        entity_id=uuid4(),
-        tenant_id=uuid4(),
-        recorded_at=datetime(2026, 6, 8, tzinfo=timezone.utc),
-        attributes={"fuel_level": 0.75},
+def _twin_state() -> TwinState:
+    return TwinState(
+        entity_id="11111111-1111-1111-1111-111111111111",
+        tenant_id="22222222-2222-2222-2222-222222222222",
+        recorded_at=datetime.now(timezone.utc),
         source=StateSource.IOT,
-        confidence=1.0,
+        confidence=0.95,
+        attributes={"fuel_level": 42},
     )
-    base.update(overrides)
-    return TwinState(**base)
 
 
-class TestStartTelemetryConsumer:
+@pytest.fixture
+def handled(monkeypatch):
+    """Replaces handle_iot_telemetry_event; `result` controls what the sync service returns."""
+    calls: list = []
+    # `fail_when` lets a test fail only SOME records without reassigning the module attribute
+    # (which would fight monkeypatch and leak the fake into later tests).
+    box = {"result": _twin_state(), "raises": None, "fail_when": lambda _value: False}
+
+    async def fake_handle(value, *, db_pool, redis_client):
+        calls.append((value, db_pool, redis_client))
+        if box["raises"] is not None:
+            raise box["raises"]
+        if box["fail_when"](value):
+            raise RuntimeError("telemetry processing blew up")
+        return box["result"]
+
+    monkeypatch.setattr(kafka_handler, "handle_iot_telemetry_event", fake_handle)
+    return calls, box
+
+
+class TestConsumerConfiguration:
     @pytest.mark.asyncio
-    async def test_subscribes_to_the_telemetry_pattern_and_starts_both_clients(
-        self, fake_kafka, monkeypatch
-    ):
-        async def _handle(*_args, **_kwargs):
-            return None
-
-        monkeypatch.setattr(kafka_handler, "handle_iot_telemetry_event", _handle)
+    async def test_subscribes_to_the_equipment_telemetry_pattern(self, fake_kafka, handled):
+        consumer_cls, _ = fake_kafka
 
         await kafka_handler.start_telemetry_consumer(db_pool=object(), redis_client=object())
 
-        consumer = _FakeConsumer.instances[0]
-        producer = _FakeProducer.instances[0]
-        assert consumer.subscribed_pattern == r"^equipment\.telemetry\."
-        assert consumer.kwargs["group_id"] == "digital-twin-sync"
-        assert consumer.kwargs["auto_offset_reset"] == "latest"
-        assert consumer.started and producer.started
+        assert consumer_cls.instances[0].subscribed == {
+            "pattern": kafka_handler._TELEMETRY_TOPIC_PATTERN
+        }
 
     @pytest.mark.asyncio
-    async def test_stops_both_clients_even_when_the_loop_ends(self, fake_kafka, monkeypatch):
-        async def _handle(*_args, **_kwargs):
-            return None
-
-        monkeypatch.setattr(kafka_handler, "handle_iot_telemetry_event", _handle)
+    async def test_reads_from_latest_not_earliest(self, fake_kafka, handled):
+        # A twin describes the CURRENT world. Replaying months of history on restart would publish a
+        # long tail of stale twin.state.updated events — the opposite of the ingestion workers,
+        # which backfill deliberately.
+        consumer_cls, _ = fake_kafka
 
         await kafka_handler.start_telemetry_consumer(db_pool=object(), redis_client=object())
 
-        assert _FakeConsumer.instances[0].stopped
-        assert _FakeProducer.instances[0].stopped
+        kwargs = consumer_cls.instances[0].kwargs
+        assert kwargs["auto_offset_reset"] == "latest"
+        assert kwargs["group_id"] == "digital-twin-sync"
+        assert kwargs["enable_auto_commit"] is True
 
     @pytest.mark.asyncio
-    async def test_emits_twin_state_updated_for_each_processed_record(
-        self, fake_kafka, monkeypatch
-    ):
-        state = _twin_state()
-
-        async def _handle(value, **_kwargs):
-            return state
-
-        monkeypatch.setattr(kafka_handler, "handle_iot_telemetry_event", _handle)
-        _FakeConsumer.instances = []
-        consumer_holder: list[_FakeConsumer] = []
-
-        class _Seeded(_FakeConsumer):
-            def __init__(self, **kwargs):
-                super().__init__(**kwargs)
-                self.messages = [_Msg({"equipment_id": "e1"}), _Msg({"equipment_id": "e2"})]
-                consumer_holder.append(self)
-
-        monkeypatch.setattr(kafka_handler, "AIOKafkaConsumer", _Seeded)
+    async def test_value_deserializer_parses_json_utf8(self, fake_kafka, handled):
+        consumer_cls, _ = fake_kafka
 
         await kafka_handler.start_telemetry_consumer(db_pool=object(), redis_client=object())
 
-        producer = _FakeProducer.instances[0]
-        assert len(producer.sent) == 2
-        topic, payload = producer.sent[0]
-        assert topic == "twin.state.updated"
-        assert payload["event_type"] == "twin.state.updated"
-        assert payload["confidence"] == 1.0
-        assert payload["attributes"] == {"fuel_level": 0.75}
+        deserialize = consumer_cls.instances[0].kwargs["value_deserializer"]
+        assert deserialize(json.dumps({"เครื่องจักร": 1}).encode("utf-8")) == {"เครื่องจักร": 1}
 
     @pytest.mark.asyncio
-    async def test_emits_nothing_when_the_handler_returns_no_state(self, fake_kafka, monkeypatch):
-        async def _handle(*_args, **_kwargs):
-            return None
-
-        monkeypatch.setattr(kafka_handler, "handle_iot_telemetry_event", _handle)
-
-        class _Seeded(_FakeConsumer):
-            def __init__(self, **kwargs):
-                super().__init__(**kwargs)
-                self.messages = [_Msg({"equipment_id": "unknown"})]
-
-        monkeypatch.setattr(kafka_handler, "AIOKafkaConsumer", _Seeded)
+    async def test_producer_sends_raw_bytes_no_serializer(self, fake_kafka, handled):
+        _, producer_cls = fake_kafka
 
         await kafka_handler.start_telemetry_consumer(db_pool=object(), redis_client=object())
 
-        assert _FakeProducer.instances[0].sent == []
+        # Envelopes are encoded via the injectable seam and sent as raw bytes — no value_serializer.
+        assert "value_serializer" not in producer_cls.instances[0].kwargs
+
+    def test_default_json_encode_produces_a_json_envelope(self):
+        raw = kafka_handler._json_encode("twin.state.updated.v1", {"event_type": "twin.state.updated.v1"})
+        assert json.loads(raw.decode("utf-8"))["event_type"] == "twin.state.updated.v1"
+
+
+class TestLifecycle:
+    @pytest.mark.asyncio
+    async def test_starts_and_always_stops_both_clients(self, fake_kafka, handled):
+        consumer_cls, producer_cls = fake_kafka
+
+        await kafka_handler.start_telemetry_consumer(db_pool=object(), redis_client=object())
+
+        consumer, producer = consumer_cls.instances[0], producer_cls.instances[0]
+        assert (consumer.started, consumer.stopped) == (True, True)
+        assert (producer.started, producer.stopped) == (True, True)
+
+
+class TestTelemetryProcessing:
+    @pytest.mark.asyncio
+    async def test_emits_twin_state_updated_for_each_processed_record(self, fake_kafka, handled):
+        consumer_cls, producer_cls = fake_kafka
+        consumer_cls.next_messages = [_FakeMessage({"a": 1}), _FakeMessage({"a": 2})]
+
+        await kafka_handler.start_telemetry_consumer(db_pool=object(), redis_client=object())
+
+        sent = producer_cls.instances[0].sent
+        assert len(sent) == 2
+        expected_topic = "22222222-2222-2222-2222-222222222222.twin.state.updated.v1"
+        assert {topic for topic, _ in sent} == {expected_topic}
 
     @pytest.mark.asyncio
-    async def test_a_failing_record_is_logged_and_the_loop_continues(
-        self, fake_kafka, monkeypatch, caplog
-    ):
-        """One poison telemetry record must not stop twin sync for everyone else."""
-        state = _twin_state()
-        seen: list[dict] = []
+    async def test_event_payload_carries_the_twin_state_fields(self, fake_kafka, handled):
+        consumer_cls, producer_cls = fake_kafka
+        consumer_cls.next_messages = [_FakeMessage({"a": 1})]
 
-        async def _handle(value, **_kwargs):
-            seen.append(value)
-            if value.get("equipment_id") == "bad":
-                raise ValueError("malformed telemetry")
-            return state
+        await kafka_handler.start_telemetry_consumer(db_pool=object(), redis_client=object())
 
-        monkeypatch.setattr(kafka_handler, "handle_iot_telemetry_event", _handle)
+        _, value = producer_cls.instances[0].sent[0]
+        envelope = json.loads(value.decode("utf-8"))
+        assert envelope["event_type"] == "twin.state.updated.v1"
+        payload = envelope["payload"]
+        assert payload["entity_id"] == "11111111-1111-1111-1111-111111111111"
+        assert payload["tenant_id"] == "22222222-2222-2222-2222-222222222222"
+        assert payload["confidence"] == 0.95
+        # Notification event, not a data carrier — attribute detail stays in twin_states (§Phase 24).
+        assert "attributes" not in payload
 
-        class _Seeded(_FakeConsumer):
-            def __init__(self, **kwargs):
-                super().__init__(**kwargs)
-                self.messages = [
-                    _Msg({"equipment_id": "bad"}),
-                    _Msg({"equipment_id": "good"}),
-                ]
+    @pytest.mark.asyncio
+    async def test_passes_db_pool_and_redis_through_to_the_sync_service(self, fake_kafka, handled):
+        calls, _ = handled
+        consumer_cls, _ = fake_kafka
+        consumer_cls.next_messages = [_FakeMessage({"a": 1})]
+        db, redis_client = object(), object()
 
-        monkeypatch.setattr(kafka_handler, "AIOKafkaConsumer", _Seeded)
+        await kafka_handler.start_telemetry_consumer(db_pool=db, redis_client=redis_client)
 
-        with caplog.at_level("ERROR", logger="digital-twin.kafka"):
+        assert calls[0] == ({"a": 1, "tenant_id": TENANT}, db, redis_client)
+
+    @pytest.mark.asyncio
+    async def test_nothing_is_published_when_the_sync_service_declines(self, fake_kafka, handled):
+        # handle_iot_telemetry_event returns None for an unknown entity or a malformed event —
+        # publishing a twin.state.updated for it would invent state.
+        _, box = handled
+        box["result"] = None
+        consumer_cls, producer_cls = fake_kafka
+        consumer_cls.next_messages = [_FakeMessage({"a": 1})]
+
+        await kafka_handler.start_telemetry_consumer(db_pool=object(), redis_client=object())
+
+        assert producer_cls.instances[0].sent == []
+
+
+class TestPoisonRecordHandling:
+    @pytest.mark.asyncio
+    async def test_a_failing_record_does_not_stop_the_loop(self, fake_kafka, handled, caplog):
+        import logging
+
+        calls, box = handled
+        consumer_cls, producer_cls = fake_kafka
+        consumer_cls.next_messages = [_FakeMessage({"bad": True}), _FakeMessage({"good": True})]
+        box["fail_when"] = lambda value: value.get("bad", False)
+
+        with caplog.at_level(logging.ERROR, logger="digital-twin.kafka"):
             await kafka_handler.start_telemetry_consumer(db_pool=object(), redis_client=object())
 
-        assert [m["equipment_id"] for m in seen] == ["bad", "good"]
-        assert len(_FakeProducer.instances[0].sent) == 1  # only the good one published
-        assert any("Error processing telemetry event" in r.message for r in caplog.records)
+        assert len(calls) == 2  # the good record after the poison one was still processed
+        assert len(producer_cls.instances[0].sent) == 1
+        assert "Error processing telemetry event" in caplog.text
 
     @pytest.mark.asyncio
-    async def test_json_serialisers_round_trip(self, fake_kafka, monkeypatch):
-        """Consumer and producer are constructed with json (de)serialisers — assert both work."""
+    async def test_clients_are_stopped_even_when_a_record_fails(self, fake_kafka, handled):
+        _, box = handled
+        box["raises"] = RuntimeError("boom")
+        consumer_cls, producer_cls = fake_kafka
+        consumer_cls.next_messages = [_FakeMessage({"a": 1})]
 
-        async def _handle(*_a, **_k):
-            return None
-
-        monkeypatch.setattr(kafka_handler, 'handle_iot_telemetry_event', _handle)
         await kafka_handler.start_telemetry_consumer(db_pool=object(), redis_client=object())
 
-        deserialise = _FakeConsumer.instances[0].kwargs['value_deserializer']
-        assert deserialise(json.dumps({'a': 1}).encode()) == {'a': 1}
+        assert consumer_cls.instances[0].stopped is True
+        assert producer_cls.instances[0].stopped is True
 
-        serialise = _FakeProducer.instances[0].kwargs['value_serializer']
-        assert json.loads(serialise({'b': 2}).decode()) == {'b': 2}
+
+class TestTenantHeaderGuard:
+    @pytest.mark.asyncio
+    async def test_skips_records_with_a_missing_or_mismatched_tenant_header(
+        self, fake_kafka, handled, caplog
+    ):
+        import logging
+
+        calls, _ = handled
+        consumer_cls, producer_cls = fake_kafka
+        consumer_cls.next_messages = [
+            _FakeMessage({"a": 1}, header_tenant=None),  # missing header → skip
+            _FakeMessage({"a": 2}, header_tenant="99999999-9999-9999-9999-999999999999"),  # mismatch → skip
+            _FakeMessage({"a": 3}),  # header matches envelope → processed
+        ]
+
+        with caplog.at_level(logging.ERROR, logger="digital-twin.kafka"):
+            await kafka_handler.start_telemetry_consumer(db_pool=object(), redis_client=object())
+
+        assert len(calls) == 1
+        assert calls[0][0] == {"a": 3, "tenant_id": TENANT}
+        assert len(producer_cls.instances[0].sent) == 1
+        assert "does not match envelope" in caplog.text
+
+    def test_header_value_decodes_and_defaults(self):
+        assert kafka_handler._header_value([("tenant_id", b"t-1")], "tenant_id") == "t-1"
+        assert kafka_handler._header_value([("tenant_id", "t-2")], "tenant_id") == "t-2"
+        assert kafka_handler._header_value([("other", b"x")], "tenant_id") is None
+        assert kafka_handler._header_value(None, "tenant_id") is None
 
 
 class TestPublishDivergenceDetected:
     @pytest.mark.asyncio
-    async def test_sends_the_event_on_the_divergence_topic(self, caplog):
+    async def test_publishes_to_the_divergence_topic(self):
         producer = _FakeProducer()
         event = TwinDivergenceEvent(
-            project_id=uuid4(),
-            tenant_id=uuid4(),
-            generated_at=datetime(2026, 6, 8, tzinfo=timezone.utc),
-            divergence_count=3,
-            max_severity=SeverityLevel.HIGH,
+            project_id="33333333-3333-3333-3333-333333333333",
+            tenant_id="22222222-2222-2222-2222-222222222222",
+            generated_at=datetime.now(timezone.utc),
             risk_level="HIGH",
+            divergence_count=4,
+            max_severity=SeverityLevel.HIGH,
         )
 
-        with caplog.at_level("INFO", logger="digital-twin.kafka"):
-            await kafka_handler.publish_divergence_detected(event, producer=producer)
+        await kafka_handler.publish_divergence_detected(event, producer=producer)
 
-        topic, payload = producer.sent[0]
-        assert topic == "twin.divergence.detected"
-        assert payload["event_type"] == "twin.divergence.detected"
-        assert payload["divergence_count"] == 3
+        topic, value = producer.sent[0]
+        assert topic == "22222222-2222-2222-2222-222222222222.twin.divergence.detected.v1"
+        payload = json.loads(value.decode("utf-8"))["payload"]
         assert payload["risk_level"] == "HIGH"
-        assert any("twin.divergence.detected emitted" in r.message for r in caplog.records)
+        assert payload["divergence_count"] == 4
+
+    @pytest.mark.asyncio
+    async def test_payload_is_json_serialisable(self):
+        # model_dump(mode="json") must leave no datetime/UUID objects for the producer serializer.
+        producer = _FakeProducer()
+        event = TwinDivergenceEvent(
+            project_id="33333333-3333-3333-3333-333333333333",
+            tenant_id="22222222-2222-2222-2222-222222222222",
+            generated_at=datetime.now(timezone.utc),
+            risk_level="LOW",
+            divergence_count=0,
+            max_severity=SeverityLevel.LOW,
+        )
+
+        await kafka_handler.publish_divergence_detected(event, producer=producer)
+
+        # value is already JSON-encoded bytes; decoding must yield a clean envelope (no datetime/UUID).
+        json.loads(producer.sent[0][1].decode("utf-8"))

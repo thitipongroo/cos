@@ -38,6 +38,11 @@ output "s3_files_bucket_arn" {
   value       = module.s3.files_bucket_arn
 }
 
+output "s3_keycloak_backups_bucket_arn" {
+  description = "ARN of the Keycloak realm backups S3 bucket"
+  value       = module.s3.keycloak_backups_bucket_arn
+}
+
 output "s3_backups_bucket_arn" {
   description = "ARN of the database backups S3 bucket"
   value       = module.s3.backups_bucket_arn

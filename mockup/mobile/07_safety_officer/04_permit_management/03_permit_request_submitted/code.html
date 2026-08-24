@@ -1,0 +1,218 @@
+<!DOCTYPE html><html class="dark" lang="th" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=block" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        try {
+            tailwind.config = {
+                darkMode: "class",
+                theme: {
+                    extend: {
+                        "colors": {
+                            "dark-bg": "#020617",
+                            "dark-surface": "#0F172A",
+                            "dark-elevated": "#111827",
+                            "dark-text": "#F8FAFC",
+                            "dark-muted": "#94A3B8",
+                            "surface-dim": "#020617",
+                            "mobile-success": "#00C853",
+                            "on-tertiary-fixed-variant": "#414658",
+                            "on-primary-container": "#eeefff",
+                            "tertiary-fixed": "#dee1f9",
+                            "surface-container-lowest": "#000f21",
+                            "surface-container": "#0F172A",
+                            "secondary-container": "#03b5d3",
+                            "on-tertiary-container": "#eeefff",
+                            "on-secondary-fixed-variant": "#004e5c",
+                            "error": "#ffb4ab",
+                            "surface": "#020617",
+                            "on-background": "#F8FAFC",
+                            "surface-container-low": "#0F172A",
+                            "on-surface-variant": "#94A3B8",
+                            "on-error": "#690005",
+                            "tertiary-container": "#686c80",
+                            "sync-pending": "#94A3B8",
+                            "surface-container-highest": "#111827",
+                            "tertiary-fixed-dim": "#c1c5dc",
+                            "secondary": "#4cd7f6",
+                            "on-primary": "#002a78",
+                            "on-error-container": "#ffdad6",
+                            "secondary-fixed-dim": "#4cd7f6",
+                            "outline-variant": "#1e293b",
+                            "mobile-primary": "#0066FF",
+                            "primary-container": "#2563eb",
+                            "mobile-warning": "#FF9500",
+                            "surface-variant": "#1e293b",
+                            "on-secondary": "#003640",
+                            "background": "#020617",
+                            "on-primary-fixed-variant": "#003ea8",
+                            "sync-active": "#FFD60A",
+                            "on-secondary-fixed": "#001f26",
+                            "tertiary": "#c1c5dc",
+                            "inverse-surface": "#F8FAFC",
+                            "on-tertiary-fixed": "#161b2b",
+                            "mobile-danger": "#FF3B30",
+                            "secondary-fixed": "#acedff",
+                            "outline": "#334155",
+                            "error-container": "#93000a",
+                            "primary-fixed": "#dbe1ff",
+                            "surface-tint": "#b4c5ff",
+                            "on-secondary-container": "#00424e",
+                            "on-primary-fixed": "#00174b",
+                            "surface-container-high": "#111827",
+                            "on-tertiary": "#2b3041",
+                            "primary-fixed-dim": "#b4c5ff",
+                            "inverse-primary": "#0053db",
+                            "on-surface": "#F8FAFC",
+                            "surface-bright": "#1e293b",
+                            "primary": "#b4c5ff",
+                            "inverse-on-surface": "#0F172A",
+                            "cos-blue": "#2563eb",
+                            "cos-white": "#FFFFFF"
+                        },
+                        "spacing": {
+                            "space-1": "4px",
+                            "web-margin": "32px",
+                            "touch-target": "52px",
+                            "edge-mobile": "24px",
+                            "space-2": "8px",
+                            "space-3": "12px",
+                            "base": "4px",
+                            "space-4": "16px"
+                        },
+                        "fontFamily": {
+                            "tiny-web": ["Inter Tight"],
+                            "display-web": ["Inter Tight"],
+                            "h2-web": ["Inter Tight"],
+                            "body-web": ["Inter Tight"],
+                            "label-mobile": ["Inter Tight"],
+                            "h1-web": ["Inter Tight"],
+                            "body-mobile": ["Inter Tight"],
+                            "hero-mobile": ["Inter Tight"]
+                        },
+                        "fontSize": {
+                            "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                            "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                            "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                            "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                            "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                            "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                            "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                            "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}]
+                        }
+                    },
+                },
+            }
+        } catch (_e) {}
+    </script>
+</head>
+<body class="flex flex-col min-h-screen bg-dark-bg text-dark-text">
+<!-- TopAppBar from JSON -->
+<header class="bg-dark-bg docked full-width top-0 border-b border-outline-variant/30 flex justify-between items-center h-[64px] px-4 z-50">
+<div class="flex items-center">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-bright active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-dark-muted">arrow_back</span>
+</button>
+<div class="flex items-center gap-2 ml-2">
+<img alt="CONSTRUCTION OS Icon" class="w-9 h-9 object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDjXIM9g0mkMMY3GfHRU26n-XP3phBmwhJaEFR3bf48bNhCwt5accROpCTGjWxxA2AMdvuPoAFsdOqJkq8XjzPo5b4CGfvlpDHPdeUR4C4mGYZRjSS_IhbZVPcr8NiSDcc8VAPmqD-OFBe5OZ7wyqRNH5gIKMf-C8XX1BpbnsZCPU_ps1yWeBzfOac4bE5oVWNkaJKNDM7PzoTG0io3TYyoVC2T-ohWCBNvrj5f7Y-27CpXZGfbJCr2MxD3J-GHagnxue3SytfiGrg">
+<h1 class="font-bold text-cos-white font-display-web text-h2-web tracking-tight uppercase leading-none">CONSTRUCTION OS</h1>
+</div>
+</div>
+<div class="flex items-center">
+<div class="w-10 h-10 rounded-full border border-outline-variant overflow-hidden">
+<img alt="User Avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAV6QIVZNmZLccRtJu1NiNeE2Xoyl09TkrX5Sdar8MDEcR-cRx9tOh8k2vdxvf_bMCj5OJzLv2l9Pz7sn09FJ465VbPROosh_BR6Ki_DnDPO0rR0RGZIzowLHcIhVsRt5-BgC0k2LPufONcuojvHhdEzcUgUS9PDowaPM0v8JufyLqfo4SBoCxxrs9zY_cRbnU6sumWa6kmu6XKaBH0ugReMMUxm2ncxq5-Rny-La9dI1U7-UFTcVgkb7eApuEfUnb7mqxMU8DyHkU">
+</div>
+</div>
+</header>
+<main class="flex-grow flex flex-col items-center px-6 pt-12 pb-24 overflow-y-auto">
+<!-- Success Module -->
+<div class="flex flex-col items-center text-center mb-10 w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
+<div class="relative mb-6">
+<div class="absolute inset-0 bg-mobile-success opacity-20 blur-xl rounded-full animate-pulse"></div>
+<span class="material-symbols-outlined text-[80px] text-mobile-success relative z-10" style="font-variation-settings: &quot;FILL&quot; 1;">check_circle</span>
+</div>
+<h2 class="font-hero-mobile text-hero-mobile text-dark-text mb-3">ส่งคำขอเรียบร้อยแล้ว</h2>
+
+</div>
+<!-- Status Card -->
+<div class="w-full bg-dark-surface border border-outline-variant overflow-hidden mb-4 shadow-xl animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-100">
+<div class="w-full h-1 bg-mobile-success"></div>
+<div class="p-5 space-y-4">
+<div class="flex justify-between items-center">
+<span class="font-label-mobile text-label-mobile text-dark-muted uppercase tracking-wider">Request ID</span>
+<span class="font-label-mobile text-label-mobile text-dark-text font-mono">PR-2023-10-24</span>
+</div>
+<div class="h-px bg-outline-variant opacity-20"></div>
+<div class="flex justify-between items-center">
+<span class="font-label-mobile text-label-mobile text-dark-muted">Type</span>
+<span class="font-label-mobile text-label-mobile text-dark-text">Work Permit</span>
+</div>
+<div class="h-px bg-outline-variant opacity-20"></div>
+<div class="flex justify-between items-center">
+<span class="font-label-mobile text-label-mobile text-dark-muted">Status</span>
+<div class="px-3 py-1 bg-mobile-warning/10 border border-mobile-warning/20 rounded-full">
+<span class="font-tiny-web text-tiny-web text-mobile-warning">รอการตรวจสอบ</span>
+</div>
+</div>
+</div>
+</div>
+<!-- AI Tracking Note -->
+<section class="w-full p-4 border border-outline-variant space-y-3 relative overflow-hidden bg-dark-elevated">
+<div class="absolute top-0 right-0 p-2">
+<div class="flex flex-col items-end">
+<span class="text-[10px] font-bold text-secondary/60 uppercase">Confidence</span>
+<span class="text-lg font-bold text-secondary">98%</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary">auto_awesome</span>
+<h3 class="font-label-mobile text-sm text-secondary">INSIGHT</h3>
+</div>
+<p class="text-dark-muted font-body-web text-xs leading-relaxed">ตรวจสอบเอกสารครบถ้วนแล้ว... กำลังส่งให้วิศวกรควบคุม</p>
+<div class="pt-1 flex items-center gap-1.5 opacity-60">
+<span class="material-symbols-outlined text-[12px] text-secondary">database</span>
+<span class="text-[9px] text-dark-muted uppercase tracking-tighter italic">SOURCES: COMPLIANCE DB, SITE PROTOCOL V2.4</span>
+</div>
+</section>
+<!-- Illustration / Visual Anchor -->
+<div class="w-full rounded-xl overflow-hidden mb-12 border border-outline-variant opacity-80 h-32 relative mt-6">
+<div class="absolute inset-0 bg-gradient-to-t from-dark-bg to-transparent z-10"></div>
+<div class="w-full h-full bg-center bg-cover" style="background-image: url(&quot;https://lh3.googleusercontent.com/aida-public/AB6AXuDa7rENFqa1yUdSpnuMxaWDzOXg9z7RbLCOM8VX4NcpcxdrK_Cz0Ev8gaEsz67rwe8FwgGJ43DdTIodxROirspUk1_Hhr8C1-qcZ1DjYbaQe_huYYqICip37ERuP3-mI42jZ3PGovYnpZ4hdfAqWPcqV8tkgpqQ6jsV5T3yU0BOsBWq85mMfazc4yeJzD4v04BPPW1WmFMYBYYeA9EIcgf_RzDlEX5AelAFCHIz5aeKvSam23W4EmQduCzwgVC1xHIwUKUhrA7xRFc&quot;);"></div>
+</div>
+</main>
+<!-- Fixed Action Bar -->
+<footer class="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-dark-bg via-dark-bg to-transparent pt-12">
+<div class="flex flex-col gap-3 max-w-md mx-auto">
+<button class="w-full h-[52px] bg-mobile-primary text-white font-bold uppercase tracking-[0.05em] rounded-none transition-transform active:scale-95 flex items-center justify-center gap-2 shadow-lg" onclick="this.classList.add('scale-95')">
+<span class="">กลับไปที่หน้าหลัก</span>
+<span class="material-symbols-outlined">home</span>
+</button>
+<button class="w-full h-[52px] border border-outline-variant text-dark-text rounded-none font-label-mobile flex items-center justify-center hover:bg-dark-surface active:scale-95 transition-transform" onclick="this.classList.add('scale-95')">
+            ดูสถานะคำขอ
+        </button>
+</div>
+</footer>
+<script>
+    // Micro-interaction for feedback
+    document.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('touchstart', function() {
+            this.classList.add('opacity-80');
+        });
+        btn.addEventListener('touchend', function() {
+            this.classList.remove('opacity-80');
+        });
+    });
+
+    // Simulating AI "thinking" animation with text update
+    setTimeout(() => {
+        const aiText = document.querySelector('section p.text-dark-muted');
+        if(aiText) {
+            aiText.textContent = "AI ตรวจสอบเอกสารครบถ้วนแล้ว... กำลังส่งให้วิศวกรควบคุม";
+        }
+    }, 4000);
+</script>
+
+
+</body></html>

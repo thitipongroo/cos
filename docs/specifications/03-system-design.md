@@ -104,58 +104,18 @@ the informal overview; the levels below are the maintained views. Code-level (L4
 it is read from the source. Diagram sources live in `architecture/` and are updated in the same PR as
 a structural change.
 
-### Level 1 — System Context
+### Level 1 — System Context · Level 2 — Container
 
-```mermaid
-flowchart TB
-    subgraph external[External actors & systems]
-        U["Users\n(Executive, PM, Site Engineer,\nProcurement, Finance, Safety)"]
-        V["Vendor / contractor network\n(magic-link portal)"]
-        SMS["SMS OTP provider"]
-        LLM["LLM provider\n(OpenAI GPT-4o)"]
-        CRM["Enterprise CRM\n(webhook)"]
-        IOT["Field IoT devices\n(MQTT)"]
-    end
-    COS["Construction OS\nAI-native multi-tenant SaaS"]
-    U --> COS
-    V --> COS
-    COS --> SMS
-    COS --> LLM
-    CRM --> COS
-    IOT --> COS
-```
+The maintained diagram sources are
+**[`architecture/README.md` § C4 architecture views](../architecture/README.md#c4-architecture-views)**.
 
-### Level 2 — Container
-
-```mermaid
-flowchart TB
-    Web["Web app\n(Next.js)"]
-    Mob["Mobile app\n(Expo / React Native + Drizzle/expo-sqlite)"]
-    GW["API Gateway\n(Kong)"]
-    API["Modular Monolith\n(NestJS)"]
-    FS["File Service\n(Fastify)"]
-    GoW["Go workers\n(analytics, KG ingestion)"]
-    PyAI["Python AI services\n(ai-gateway, embedding-worker, ocr-pipeline)"]
-    PG[("PostgreSQL\n(+ pgvector, RLS)")]
-    CH[("ClickHouse / TimescaleDB\nanalytics + timeseries")]
-    K[["Kafka\nevent bus (CDC + business events)"]]
-    R[("Redis")]
-    KC["Keycloak\n(OIDC)"]
-    MQ["EMQX\n(MQTT → Kafka bridge)"]
-
-    Web --> GW
-    Mob --> GW
-    GW --> API
-    API --> PG
-    API --> FS
-    API --> KC
-    API --> K
-    K --> GoW --> CH
-    K --> PyAI
-    PyAI --> PG
-    API --> PyAI
-    MQ --> K
-```
+Both views lived inline in this section until 2026-08-07. That contradicted the rule stated directly
+above — "diagram sources live in `architecture/`" — and left the gate below unmeetable, because
+`architecture/README.md` was an empty file and could reference nothing. Moving them satisfies both
+halves; the moved versions are also expanded (PgBouncer, Temporal, Schema Registry, Neo4j,
+OpenSearch, MinIO, ClamAV, the secrets store and the four `services/` deployables this section never
+drew; Expo Push, email, LINE, Avalara, Open Exchange Rates and the Cloudflare edge on the Context
+view), each addition attributed to the spec that establishes it.
 
 ### Level 3 — Component
 

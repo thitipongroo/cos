@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="th"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>รายละเอียดผู้ใช้งาน - Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "mobile-primary": "#0066FF",
+                    "secondary": "#4cd7f6",
+                    "primary-container": "#2563eb",
+                    "inverse-surface": "#d3e4fe",
+                    "on-primary-fixed": "#00174b",
+                    "dark-surface": "#0F172A",
+                    "inverse-on-surface": "#213145",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "dark-bg": "#020617",
+                    "on-secondary-fixed": "#001f26",
+                    "on-error-container": "#ffdad6",
+                    "background": "#031427",
+                    "on-secondary": "#003640",
+                    "on-surface-variant": "#c3c6d7",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "on-tertiary": "#2b3041",
+                    "sync-pending": "#94A3B8",
+                    "surface-container-highest": "#26364a",
+                    "secondary-container": "#03b5d3",
+                    "surface-container-lowest": "#000f21",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "on-surface": "#d3e4fe",
+                    "on-background": "#d3e4fe",
+                    "tertiary-container": "#686c80",
+                    "inverse-primary": "#0053db",
+                    "on-error": "#690005",
+                    "surface-tint": "#b4c5ff",
+                    "on-tertiary-fixed": "#161b2b",
+                    "outline": "#8d90a0",
+                    "surface-container-low": "#0b1c30",
+                    "sync-active": "#FFD60A",
+                    "tertiary-fixed": "#dee1f9",
+                    "error-container": "#93000a",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "tertiary": "#c1c5dc",
+                    "on-primary": "#002a78",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "secondary-fixed": "#acedff",
+                    "primary": "#b4c5ff",
+                    "primary-fixed": "#dbe1ff",
+                    "surface-bright": "#2a3a4f",
+                    "surface-variant": "#26364a",
+                    "mobile-warning": "#FF9500",
+                    "on-primary-container": "#eeefff",
+                    "surface-dim": "#031427",
+                    "mobile-success": "#00C853",
+                    "surface-container-high": "#1b2b3f",
+                    "outline-variant": "#434655",
+                    "surface-container": "#102034",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "surface": "#031427",
+                    "error": "#ffb4ab",
+                    "mobile-danger": "#FF3B30",
+                    "on-secondary-container": "#00424e",
+                    "on-tertiary-container": "#eeefff",
+                    "ai-cyan": "#06B6D4",
+                    "infra-navy": "#0B1020"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0px",
+                    "lg": "0px",
+                    "xl": "0px",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "space-2": "8px",
+                    "space-1": "4px",
+                    "space-4": "16px",
+                    "touch-target": "52px",
+                    "base": "4px",
+                    "space-3": "12px",
+                    "edge-mobile": "24px",
+                    "web-margin": "32px"
+            },
+            "fontFamily": {
+                    "tiny-web": ["Inter Tight"],
+                    "hero-mobile": ["Inter Tight"],
+                    "h2-web": ["Inter Tight"],
+                    "display-web": ["Inter Tight"],
+                    "body-web": ["Inter Tight"],
+                    "body-mobile": ["Inter Tight"],
+                    "label-mobile": ["Inter Tight"],
+                    "h1-web": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #031427;
+            color: #d3e4fe;
+            font-family: 'Inter Tight', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite linear;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .ai-glow {
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.2);
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+<!-- TopAppBar (Based on JSON Architecture) -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-edge-mobile h-touch-target bg-surface dark:bg-surface border-b border-white/5">
+<div class="flex items-center gap-space-3 transition-transform active:scale-95 duration-200">
+<span class="material-symbols-outlined text-on-surface" data-icon="arrow_back">arrow_back</span>
+<span class="font-display-web text-display-web-mobile font-bold text-on-surface dark:text-on-surface tracking-tighter">CONSTRUCTION OS</span>
+</div>
+<div class="flex items-center gap-space-3">
+<span class="material-symbols-outlined text-on-surface" data-icon="more_vert">more_vert</span>
+</div>
+</header>
+<main class="flex-1 mt-touch-target mb-[100px] overflow-y-auto px-edge-mobile pt-space-4">
+<!-- Profile Section -->
+<section class="flex flex-col items-center mb-space-4 py-space-4 border border-white/10 bg-surface-container relative overflow-hidden">
+<div class="absolute inset-0 shimmer opacity-30 pointer-events-none"></div>
+<div class="relative w-24 h-24 mb-space-3">
+<div class="w-full h-full border-2 border-ai-cyan p-1">
+<img class="w-full h-full object-cover" data-alt="Close up cinematic portrait of a professional Thai male site engineer named Somchai, wearing a charcoal grey high-visibility vest and a white hard hat. He has a determined expression. The background is a blurred high-tech construction control room with blue screens. The lighting is sharp, industrial, and high-contrast dark mode aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDDLLoBcVb83dHQhkdxmRxmW7plkDw8m6EF7C9w370LijVBUOIIp4mTrpql3PcWM0roHQtUeJAuzZ-Y0d0KYGiA0zZDN4VAnszYv8gy_931TDTmjt-F5ndksH6sC8WNrYZSYQQs_vSJsBgX2lmJ2bXsOAOZSbbaiRQfX7uocEbBbcO1GQZ7dBEdSXcm_VYOwpdaVlPIG3IDDLZ6CGpvLjvuomzllD1I7uI3tNsk2nHDBs7vLME82WZ2"/>
+</div>
+<div class="absolute -bottom-1 -right-1 bg-mobile-success w-4 h-4 rounded-full border-2 border-surface ai-glow"></div>
+</div>
+<h1 class="font-h1-web text-h1-web-mobile text-on-surface text-center">สมชาย วิศวกรรม</h1>
+<div class="flex items-center gap-space-2 mt-space-1">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">UID: OS-99210</span>
+<span class="w-1 h-1 bg-outline-variant rounded-full"></span>
+<span class="font-tiny-web text-tiny-web text-secondary uppercase font-bold tracking-widest">EXECUTIVE</span>
+</div>
+<div class="mt-space-3 inline-flex items-center gap-space-1 px-space-2 py-1 bg-mobile-success/10 border border-mobile-success/30">
+<span class="w-1.5 h-1.5 bg-mobile-success rounded-full animate-pulse"></span>
+<span class="font-label-mobile text-label-mobile text-mobile-success">Active</span>
+</div>
+</section>
+<!-- AI Audit Module -->
+<section class="mb-space-4 border-l-4 border-ai-cyan bg-ai-cyan/5 p-space-3 relative overflow-hidden">
+<div class="absolute right-0 top-0 h-full w-32 pointer-events-none opacity-20">
+
+</div>
+<div class="flex justify-between items-start relative z-10">
+<div>
+<h2 class="font-label-mobile text-label-mobile text-ai-cyan flex items-center gap-space-1">
+<span class="material-symbols-outlined text-[16px]" data-icon="psychology">psychology</span>
+                        AI ANALYTICS ENGINE
+                    </h2>
+<p class="font-h2-web text-h2-web mt-space-1">ความเชื่อมั่นในกิจกรรม: 98%</p>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant mt-0.5">ตรวจสอบล่าสุด: 5 นาทีที่ผ่านมา</p>
+</div>
+</div>
+</section>
+<!-- Information Cards: Personal Info -->
+<div class="space-y-space-4">
+<section class="bg-surface-container p-space-3 border border-white/5">
+<div class="flex items-center gap-space-2 mb-space-3 border-b border-white/10 pb-space-1">
+<span class="material-symbols-outlined text-secondary" data-icon="person">person</span>
+<h3 class="font-label-mobile text-label-mobile text-on-surface uppercase tracking-wider">ข้อมูลส่วนบุคคล</h3>
+</div>
+<div class="grid grid-cols-1 gap-space-3">
+<div class="flex flex-col">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">อีเมล</span>
+<span class="font-body-mobile text-body-mobile text-on-surface">somchai@const-os.com</span>
+</div>
+<div class="flex flex-col">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">เบอร์โทรศัพท์</span>
+<span class="font-body-mobile text-body-mobile text-on-surface">081-XXX-XXXX</span>
+</div>
+<div class="flex flex-col">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">แผนก</span>
+<span class="font-body-mobile text-body-mobile text-on-surface">วิศวกรรมโครงสร้าง</span>
+</div>
+</div>
+</section>
+<!-- Projects Section -->
+<section class="bg-surface-container p-space-3 border border-white/5">
+<div class="flex items-center gap-space-2 mb-space-3 border-b border-white/10 pb-space-1">
+<span class="material-symbols-outlined text-secondary" data-icon="architecture">architecture</span>
+<h3 class="font-label-mobile text-label-mobile text-on-surface uppercase tracking-wider">โครงการที่ดูแล</h3>
+</div>
+<div class="space-y-space-2">
+<div class="flex justify-between items-center bg-surface-container-low p-space-2 border-l-2 border-mobile-primary">
+<div>
+<p class="font-label-mobile text-label-mobile text-on-surface">Skyline Tower A</p>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant">รหัสโครงการ: ST-2024-01</p>
+</div>
+<span class="bg-mobile-success/20 text-mobile-success text-[11px] px-2 py-0.5 border border-mobile-success/40 font-bold">ACTIVE</span>
+</div>
+<div class="flex justify-between items-center bg-surface-container-low p-space-2 border-l-2 border-outline">
+<div>
+<p class="font-label-mobile text-label-mobile text-on-surface">Metro Bridge</p>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant">รหัสโครงการ: MB-2023-15</p>
+</div>
+<span class="bg-surface-variant text-on-surface-variant text-[11px] px-2 py-0.5 border border-white/10 font-bold">COMPLETED</span>
+</div>
+</div>
+</section>
+</div>
+<!-- Action Buttons -->
+<div class="mt-space-4 flex flex-col gap-space-3">
+<button class="w-full h-touch-target bg-mobile-primary text-white font-label-mobile uppercase tracking-widest flex items-center justify-center gap-space-2 transition-all active:scale-[0.98]">
+<span class="material-symbols-outlined" data-icon="admin_panel_settings">admin_panel_settings</span>
+                แก้ไขสิทธิ์การใช้งาน
+            </button>
+<button class="w-full h-touch-target border border-outline text-on-surface font-label-mobile uppercase tracking-widest flex items-center justify-center gap-space-2 transition-all active:scale-[0.98]">
+<span class="material-symbols-outlined" data-icon="lock_reset">lock_reset</span>
+                รีเซ็ตรหัสผ่าน
+            </button>
+</div>
+</main>
+<!-- BottomNavBar (Based on JSON Architecture) -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center px-edge-mobile pb-safe h-[72px] bg-surface-container-low dark:bg-surface-container-low shadow-lg rounded-t-xl">
+<div class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-space-3 py-space-1 transition-all active:scale-95 duration-200">
+<span class="material-symbols-outlined" data-icon="construction">construction</span>
+<span class="font-label-mobile text-label-mobile">Projects</span>
+</div>
+<!-- ACTIVE TAB: TEAM/USERS -->
+<div class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl px-space-3 py-space-1 transition-all active:scale-95 duration-200">
+<span class="material-symbols-outlined" data-icon="group" style="font-variation-settings: 'FILL' 1;">group</span>
+<span class="font-label-mobile text-label-mobile">Team</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-space-3 py-space-1 transition-all active:scale-95 duration-200">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-label-mobile text-label-mobile">Insights</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-space-3 py-space-1 transition-all active:scale-95 duration-200">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-mobile text-label-mobile">Settings</span>
+</div>
+</nav>
+<script>
+        // Micro-interaction for buttons
+        document.querySelectorAll('button').forEach(button => {
+            button.addEventListener('touchstart', function() {
+                this.classList.add('brightness-125');
+            });
+            button.addEventListener('touchend', function() {
+                this.classList.remove('brightness-125');
+            });
+        });
+    </script>
+</body></html>

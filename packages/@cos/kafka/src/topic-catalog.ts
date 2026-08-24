@@ -6,7 +6,7 @@
 //   - CloudEvents `type` / event_type : {domain}.{entity}.{action}.{version}      (no tenant prefix)
 //   - Kafka topic name (per-tenant)    : {tenant_id}.{domain}.{entity}.{action}.{version}
 //   - Platform events ({platform.*})   : shared `platform.events` topic, NOT tenant-scoped (§15.7)
-//   - DLQ topic                        : {tenant_id}.{domain}.dlq  (tenant-scoped, §7.3)
+//   - DLQ topic                        : {tenant_id}.dlq  (ONE per tenant, not per domain, §7.3)
 //   - Schema Registry subject          : canonical event_type (RecordNameStrategy) — one schema
 //                                        per event, shared across all tenants (§32.4 resolution).
 
@@ -26,10 +26,13 @@ export const EVENT_AVSC_MAP: Record<string, string> = {
   'construction.project.updated.v1': 'construction.project.updated.v1.avsc',
   'construction.project.status_changed.v1': 'construction.project.status_changed.v1.avsc',
   'construction.project.archived.v1': 'construction.project.archived.v1.avsc',
+  'construction.project.risk_raised.v1': 'construction.project.risk_raised.v1.avsc',
+  'construction.project.risk_status_changed.v1': 'construction.project.risk_status_changed.v1.avsc',
   'construction.boq.version_created.v1': 'construction.boq.version_created.v1.avsc',
   'construction.boq.version_approved.v1': 'construction.boq.version_approved.v1.avsc',
   'construction.boq.created.v1': 'construction.boq.created.v1.avsc',
   'construction.boq.updated.v1': 'construction.boq.updated.v1.avsc',
+  'construction.boq.items_published.v1': 'construction.boq.items_published.v1.avsc',
   'construction.task.completed.v1': 'construction.task.completed.v1.avsc',
   'construction.delay.detected.v1': 'construction.delay.detected.v1.avsc',
   // Procurement
@@ -51,6 +54,8 @@ export const EVENT_AVSC_MAP: Record<string, string> = {
   'site.issue.status_changed.v1': 'site.issue.status_changed.v1.avsc',
   'site.material.consumed.v1': 'site.material.consumed.v1.avsc',
   'site.conflict.flagged.v1': 'site.conflict.flagged.v1.avsc',
+  // Safety (Phase 6) — consumed by Notification Service for §19.3 escalation
+  'safety.incident.created.v1': 'safety.incident.created.v1.avsc',
   // Finance
   'finance.budget.created.v1': 'finance.budget.created.v1.avsc',
   'finance.budget.exceeded.v1': 'finance.budget.exceeded.v1.avsc',
@@ -59,13 +64,23 @@ export const EVENT_AVSC_MAP: Record<string, string> = {
   'finance.cashflow_risk.detected.v1': 'finance.cashflow_risk.detected.v1.avsc',
   'finance.billing.approved.v1': 'finance.billing.approved.v1.avsc',
   'finance.ar_receipt.recorded.v1': 'finance.ar_receipt.recorded.v1.avsc',
-  // Workforce
+  'finance.contract.document_attached.v1': 'finance.contract.document_attached.v1.avsc',
+  'finance.contract.signature_recorded.v1': 'finance.contract.signature_recorded.v1.avsc',
+  'finance.contract.signed.v1': 'finance.contract.signed.v1.avsc',
+  // Workforce (Phase 22)
   'workforce.checkin.created.v1': 'workforce.checkin.created.v1.avsc',
+  'workforce.checkout.created.v1': 'workforce.checkout.created.v1.avsc',
+  'workforce.timesheet.approved.v1': 'workforce.timesheet.approved.v1.avsc',
+  // Equipment (Phase 21)
+  'equipment.unit.assigned.v1': 'equipment.unit.assigned.v1.avsc',
+  'equipment.unit.returned.v1': 'equipment.unit.returned.v1.avsc',
+  'equipment.unit.maintenance_scheduled.v1': 'equipment.unit.maintenance_scheduled.v1.avsc',
   // Identity
   'identity.tenant.created.v1': 'identity.tenant.created.v1.avsc',
   'identity.tenant.deactivated.v1': 'identity.tenant.deactivated.v1.avsc',
   'identity.user.created.v1': 'identity.user.created.v1.avsc',
   'identity.user.role_changed.v1': 'identity.user.role_changed.v1.avsc',
+  'identity.user.password_reset.v1': 'identity.user.password_reset.v1.avsc',
   // Platform
   'platform.enterprise.contract_signed.v1': 'platform.enterprise.contract_signed.v1.avsc',
   'platform.enterprise.db_provisioned.v1': 'platform.enterprise.db_provisioned.v1.avsc',
@@ -119,15 +134,30 @@ export function subjectForEvent(eventType: string): string {
  * tenant_id is a UUID (no dots), so `[^.]+` matches exactly the tenant prefix segment.
  */
 export function tenantTopicPattern(eventType: string): RegExp {
-  const escaped = eventType.replace(/[.]/g, '\\.');
+  // Escape every regex metacharacter, not just the dot. The previous version replaced `.` alone, so
+  // any other metacharacter in eventType survived into `new RegExp` and changed what the
+  // subscription matched — `*`, `+` and `{n,m}` are the dangerous ones, because a shared-cluster
+  // consumer subscribing by pattern would silently widen or narrow its topic set. Every caller
+  // today passes a catalog constant, so this is hardening rather than a live bug; but the signature
+  // takes a plain string and nothing enforces that.
+  // Found by CodeQL js/incomplete-sanitization.
+  const escaped = eventType.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   return new RegExp(`^[^.]+\\.${escaped}$`);
 }
 
-/** DLQ topic for a failed message's original topic — `{tenant_id}.{domain}.dlq` (§7.3). */
+/**
+ * DLQ topic for a failed message's original topic — `{tenant_id}.dlq` (§7.3).
+ *
+ * One DLQ per tenant, not one per tenant-and-domain. The §7.3 guarantee is about tenants —
+ * "DLQ for tenant A cannot receive messages from tenant B" — and a single tenant-scoped DLQ
+ * satisfies it exactly, while a DLQ per domain multiplied the per-tenant topic count by ten for a
+ * separation the spec never asked for. The failed message keeps its `dlq.original_topic` header,
+ * so the domain it came from is still recoverable when triaging.
+ */
 export function dlqTopicFor(originalTopic: string): string {
   if (originalTopic === PLATFORM_EVENTS_TOPIC || isPlatformEvent(originalTopic)) {
     return PLATFORM_DLQ_TOPIC;
   }
-  const [tenantId, domain] = originalTopic.split('.');
-  return `${tenantId}.${domain}.dlq`;
+  const [tenantId] = originalTopic.split('.');
+  return `${tenantId}.dlq`;
 }

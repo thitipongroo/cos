@@ -82,6 +82,9 @@ resource "aws_msk_cluster" "main" {
       client_broker = "TLS"
       in_cluster    = true
     }
+    # AWS-managed key is intentional (security review L17): QM-4's customer-managed-CMK list is S3 /
+    # RDS / ElastiCache only — MSK is not in it. Empty ARN = AWS-managed at-rest encryption (still
+    # encrypted). Set a CMK ARN here only if the CMK scope is later extended to MSK.
     encryption_at_rest_kms_key_arn = ""
   }
 

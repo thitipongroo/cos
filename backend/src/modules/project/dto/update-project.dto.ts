@@ -4,6 +4,7 @@ import {
   MaxLength,
   IsDateString,
   IsNumberString,
+  IsMilitaryTime,
   Length,
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
@@ -35,4 +36,22 @@ export class UpdateProjectDto {
   @IsOptional()
   @IsDateString()
   end_date?: string;
+
+  // PM-entered projected completion date (nullable) — feeds AI delay-risk detection; falls back to
+  // end_date when unset (11-database-schema §11.2, Phase 12 Delay Risk Detection).
+  @ApiPropertyOptional({ example: '2027-11-15' })
+  @IsOptional()
+  @IsDateString()
+  estimated_completion_date?: string;
+
+  // Standard daily working window (ADR-072) — 24-hour HH:MM.
+  @ApiPropertyOptional({ example: '07:00' })
+  @IsOptional()
+  @IsMilitaryTime()
+  work_hours_start?: string;
+
+  @ApiPropertyOptional({ example: '18:00' })
+  @IsOptional()
+  @IsMilitaryTime()
+  work_hours_end?: string;
 }

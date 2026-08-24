@@ -6,6 +6,8 @@ import { Test } from '@nestjs/testing';
 import { REQUEST } from '@nestjs/core';
 import { NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import { ProjectService } from '../project.service';
+import { EventOutboxService } from '../../../shared/events/event-outbox.service';
+import { makeOutboxDouble } from '../../../shared/events/__tests__/outbox-double';
 import { ProjectRepository } from '../project.repository';
 import type { ProjectRow } from '../project.repository';
 
@@ -41,6 +43,9 @@ const baseProject: ProjectRow = {
   budget_currency: 'THB',
   start_date: '2026-06-01',
   end_date: '2027-12-31',
+  estimated_completion_date: null,
+  work_hours_start: null,
+  work_hours_end: null,
   on_hold_reason: null,
   on_hold_at: null,
   cancellation_reason: null,
@@ -54,7 +59,9 @@ function makeRepo(overrides: Partial<ProjectRepository> = {}): ProjectRepository
   return {
     create: jest.fn().mockResolvedValue(baseProject),
     findById: jest.fn().mockResolvedValue(baseProject),
+    findByIds: jest.fn().mockResolvedValue([baseProject]),
     list: jest.fn().mockResolvedValue({ items: [baseProject], nextCursor: null }),
+    listByMember: jest.fn().mockResolvedValue([baseProject]),
     update: jest.fn().mockResolvedValue(baseProject),
     updateStatus: jest.fn().mockResolvedValue(baseProject),
     addMember: jest.fn().mockResolvedValue({}),
@@ -69,6 +76,7 @@ async function buildService(repo: ProjectRepository, reqOverride = {}): Promise<
   const module = await Test.createTestingModule({
     providers: [
       ProjectService,
+      { provide: EventOutboxService, useValue: makeOutboxDouble().service },
       { provide: ProjectRepository, useValue: repo },
       { provide: REQUEST, useValue: { ...mockRequest, ...reqOverride } },
     ],
@@ -84,6 +92,7 @@ describe('ProjectService', () => {
       const module = await Test.createTestingModule({
         providers: [
           ProjectService,
+          { provide: EventOutboxService, useValue: makeOutboxDouble().service },
           { provide: ProjectRepository, useValue: makeRepo() },
           { provide: REQUEST, useValue: {} },
         ],
@@ -346,6 +355,49 @@ describe('ProjectService', () => {
       expect(Array.isArray(result.items)).toBe(true);
     });
 
+    it('hydrates OpenSearch hits with ONE repo call, in relevance order', async () => {
+      const second: ProjectRow = { ...baseProject, project_id: 'proj-uuid-002' };
+      const { Client } = jest.requireMock('@opensearch-project/opensearch') as {
+        Client: jest.Mock;
+      };
+      Client.mockImplementationOnce(() => ({
+        index: jest.fn().mockResolvedValue({}),
+        search: jest.fn().mockResolvedValue({
+          body: { hits: { hits: [{ _id: 'proj-uuid-002' }, { _id: 'proj-uuid-001' }] } },
+        }),
+      }));
+      // Returned deliberately in the opposite order — SQL does not preserve relevance ranking.
+      const repo = makeRepo({
+        findByIds: jest.fn().mockResolvedValue([baseProject, second]),
+      } as never);
+      const service = await buildService(repo);
+
+      const result = await service.list({ q: 'Test', limit: 10 } as never);
+
+      expect(repo.findByIds).toHaveBeenCalledTimes(1);
+      expect(repo.findByIds).toHaveBeenCalledWith(['proj-uuid-002', 'proj-uuid-001']);
+      expect(repo.findById).not.toHaveBeenCalled();
+      expect(result.items.map((p) => p.project_id)).toEqual(['proj-uuid-002', 'proj-uuid-001']);
+    });
+
+    it('drops search hits with no surviving row', async () => {
+      const { Client } = jest.requireMock('@opensearch-project/opensearch') as {
+        Client: jest.Mock;
+      };
+      Client.mockImplementationOnce(() => ({
+        index: jest.fn().mockResolvedValue({}),
+        search: jest.fn().mockResolvedValue({
+          body: { hits: { hits: [{ _id: 'proj-uuid-001' }, { _id: 'deleted-since-indexing' }] } },
+        }),
+      }));
+      const repo = makeRepo({ findByIds: jest.fn().mockResolvedValue([baseProject]) } as never);
+      const service = await buildService(repo);
+
+      const result = await service.list({ q: 'Test', limit: 10 } as never);
+
+      expect(result.items.map((p) => p.project_id)).toEqual(['proj-uuid-001']);
+    });
+
     it('falls back to repo.list when OpenSearch throws', async () => {
       const { Client } = jest.requireMock('@opensearch-project/opensearch') as {
         Client: jest.Mock;
@@ -357,6 +409,26 @@ describe('ProjectService', () => {
       const service = await buildService(makeRepo());
       const result = await service.list({ q: 'Test', limit: 10 } as never);
       expect(Array.isArray(result.items)).toBe(true);
+    });
+  });
+
+  describe('listMine()', () => {
+    it('returns the caller’s own projects via repo.listByMember', async () => {
+      const repo = makeRepo();
+      const service = await buildService(repo);
+      const result = await service.listMine();
+      expect(result.items).toHaveLength(1);
+      expect(repo.listByMember).toHaveBeenCalled();
+    });
+  });
+
+  describe('listForUser()', () => {
+    it('returns a specific user’s projects via repo.listByMember', async () => {
+      const repo = makeRepo();
+      const service = await buildService(repo);
+      const result = await service.listForUser('user-uuid-002');
+      expect(result.items).toHaveLength(1);
+      expect(repo.listByMember).toHaveBeenCalledWith('user-uuid-002');
     });
   });
 

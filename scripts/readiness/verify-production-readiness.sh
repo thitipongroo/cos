@@ -44,9 +44,9 @@ fi
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
-pass() { echo "  ✓ $1"; ((PASS++)); }
-fail() { echo "  ✗ $1"; ((FAIL++)); }
-skip() { echo "  - $1 (skipped — tool/config not available)"; ((SKIP++)); }
+pass() { echo "  ✓ $1"; PASS=$((PASS + 1)); }
+fail() { echo "  ✗ $1"; FAIL=$((FAIL + 1)); }
+skip() { echo "  - $1 (skipped — tool/config not available)"; SKIP=$((SKIP + 1)); }
 
 section() { echo ""; echo "── $1 ──"; }
 
@@ -158,7 +158,7 @@ if command -v trivy &>/dev/null; then
       | grep -c "CRITICAL" 2>/dev/null || echo "0")
     if [[ "$result" -gt 0 ]]; then
       echo "    ✗ $img: $result CRITICAL CVEs"
-      ((trivy_fail++))
+      trivy_fail=$((trivy_fail + 1))
     fi
   done
   if [[ "$trivy_fail" -eq 0 ]]; then

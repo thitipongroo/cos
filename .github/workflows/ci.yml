@@ -23,6 +23,7 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -42,17 +43,41 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Install yamllint + sqlfluff
-        run: pip install yamllint==1.38.0 sqlfluff==4.2.2
+      - name: Install yamllint + sqlfluff + ruff
+        run: pip install yamllint==1.38.0 sqlfluff==4.2.2 ruff==0.15.22
       - name: yamllint
         run: yamllint .
       - name: sqlfluff
         run: sqlfluff lint .
+      # Python lint. Nothing linted Python before this: the repo had no ruff, flake8 or pylint in
+      # CI, which is how 39 unused imports and a mid-file import accumulated unnoticed (ADR-021).
+      # Ruff's default E+F set was measured against this tree and now passes clean, so it runs as a
+      # blocking gate rather than advisory. It needs no network at run time, which matters for the
+      # air-gapped target (ADR-039).
+      - name: ruff (Python lint)
+        run: ruff check services mlops
+      # Copy-paste detection — the duplication half of the QM-4 quality gate (ADR-011). Threshold
+      # and measured baseline live in .jscpd.json; it is a ratchet against regression, not 0%.
+      - name: jscpd (duplication)
+        # `libs` is in the list because the shared Go module lives there (ADR-021); without it
+        # code moved out of services/ would silently leave the duplication gate's scope.
+        #
+        # `apps/mobile/src` joined it on 2026-08-19. It had NEVER been measured: the largest tsx
+        # tree in the repo (144 files, 38k lines) sat outside the only gate that looks for copy-paste,
+        # so a clone there was invisible by construction rather than by decision.
+        run: pnpm exec jscpd backend/src packages apps/web/src services libs apps/mobile/src
+
       # markdownlint runs on CHANGED Markdown files only — a repo-wide gate is not feasible
       # (~101k pre-existing violations). The large legacy reference trees (docs/specifications/,
-      # context/, context.md) carry that backlog and are excluded here AND in .markdownlintignore;
-      # all other new/edited .md must be clean (uses .markdownlint.json). markdownlint lints the
-      # whole changed file, so touching a non-excluded legacy doc means tidying it.
+      # context/, context.md) carry that backlog, and mockup/ is a design-tool export that is never
+      # hand-edited — all are excluded here; all other new/edited .md must be clean (uses
+      # .markdownlint.json). markdownlint lints the whole changed file, so touching a non-excluded
+      # legacy doc means tidying it.
+      # The pathspec below is what actually gates: markdownlint-cli2 does NOT honour
+      # .markdownlintignore for paths passed as explicit arguments (only for its own glob
+      # expansion), so an entry there alone would not exclude anything from this step. The
+      # .markdownlintignore entries mirror this list for local `markdownlint-cli2 "**/*.md"` runs —
+      # keep the two in sync.
       - name: markdownlint (changed Markdown only)
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
@@ -61,15 +86,53 @@ jobs:
             base="${{ github.event.before }}"
           fi
           changed=$(git diff --name-only --diff-filter=ACMR "$base" HEAD -- '*.md' \
-            ':(exclude)context.md' ':(exclude)context/**' ':(exclude)docs/specifications/**' 2>/dev/null || true)
+            ':(exclude)context.md' ':(exclude)context/**' ':(exclude)docs/specifications/**' \
+            ':(exclude)mockup/**' 2>/dev/null || true)
           if [ -z "$changed" ]; then echo "No changed (non-legacy) Markdown files — skipping."; exit 0; fi
           echo "Changed Markdown files:"; echo "$changed"
           echo "$changed" | xargs pnpm exec markdownlint-cli2
+
+      # Architectural fitness function: every runtime named in a docs table must match the build
+      # files actually in services/<name>/. Runs repo-wide (not changed-files-only) — the failure
+      # this guards against is a table edited in isolation from the directory it describes, so
+      # scoping it to changed files would miss exactly the case it exists for. Canonical table:
+      # docs/specifications/32-implementation-specifications.md §32.2.
+      # Invoked as `bash <script>`, not `./<script>`. This repository is developed on Windows with
+      # core.filemode=false, so a local `chmod +x` is NOT recorded in the index: both scripts below
+      # were committed 100644 while every sibling in scripts/readiness/ is 100755, and the first CI
+      # run that reached this step died with "Permission denied" (exit 126). `bash` does not care
+      # about the mode, so the gate cannot be silently disarmed by the same Windows quirk again.
+      - name: Service runtime declarations match the repository
+        run: bash ./scripts/readiness/check-service-runtimes.sh
+
+      # Same class of failure as the runtime table, one layer down: a ConfigService.getOrThrow() in a
+      # module factory that CI has no value for takes the whole unit-test suite with it. Broke three
+      # times in a row, one key at a time, before this check existed.
+      - name: Unit-test env covers every getOrThrow key
+        run: bash ./scripts/ci/check-unit-test-env.sh
+
+      # Rule 40. Same shape again: a component was specified (<LoadingState />, §32.7 / ADR-055) and
+      # then 24 hand-rolled loading indicators accumulated beside it, because nothing compared the
+      # spec to what screens rendered. Repo-wide, not changed-files-only — the drift is per-screen
+      # and a new screen is exactly the case this guards. Catches the two grep-able classes; the
+      # text-only and placeholder classes are Rule 40(b)'s job, not this script's.
+      - name: Loading states go through <LoadingState />
+        run: bash ./scripts/ci/check-loading-state.sh
+
+      # ADR-091 (Privacy Policy) and ADR-092 (Terms of Use). Each document's prose lives in two
+      # places — the mobile i18n bundle the screen renders, and the backend document the downloadable
+      # PDF is built from — because apps/mobile is a standalone workspace whose bundles the backend
+      # cannot import at runtime. Two copies of a legal text is the drift <PrivacyPolicyDocument />
+      # was extracted to prevent, so the trade is only acceptable with a machine between them: this
+      # fails the build the moment they disagree on the version, the effective date, or any sentence.
+      - name: Legal screens and their PDFs say the same thing
+        run: node ./scripts/ci/check-legal-parity.mjs
 
   # ─── MLOps tests (Python / Airflow 3.x DAGs) ────────────────────────────────
   mlops-tests:
     name: MLOps Tests (Python)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
@@ -88,6 +151,7 @@ jobs:
   type-check:
     name: Type Check
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -111,6 +175,7 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -136,6 +201,38 @@ jobs:
   unit-tests:
     name: Unit Tests (coverage 100% lines / 100% branches)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # `AppModule › resolves every provider in every module` (src/__tests__/app.module.spec.ts)
+      # builds the whole injector. Nothing CONNECTS — Test.compile() never calls onModuleInit — but
+      # every module factory RUNS, and the ones below abort on a missing variable rather than pick a
+      # default. Locally the repo-root .env supplies them, which is why this only ever failed in CI.
+      #
+      # These are dummies; no service is reachable from a unit-test runner. Shapes mirror
+      # .env.example so a reader is not misled about what the real values look like, and the pattern
+      # matches the repo-level DIRECT_DATABASE_URL above.
+      #
+      # Whoever adds the next ConfigService.getOrThrow() to a module factory must add it here too,
+      # or this job goes red with a message that names the key. Current list is the complete set of
+      # getOrThrow keys in backend/src plus appDatabaseUrl():
+      #
+      #   appDatabaseUrl() — backend/src/shared/prisma/app-database-url.ts — throws instead of
+      #   silently falling back to the RLS-bypassing superuser DATABASE_URL (ADR-031, QM-18).
+      APP_DATABASE_URL: postgresql://app_user:ci@localhost:5432/ci
+      #   REDIS_URL is DELIBERATELY ABSENT — do not add it here. It is set inside
+      #   src/__tests__/app.module.spec.ts instead. Five services read it as
+      #   `process.env['REDIS_URL'] ?? '…'`, and istanbul counts `a ?? b` per operand: unset
+      #   evaluates both and covers the branch, set short-circuits and leaves the fallback operand
+      #   unexecuted. Setting it job-wide took backend branch coverage from 100% to 99.84% and broke
+      #   the QM-1 gate. The spec file explains it in full.
+      #   ClickHouse client factory — analytics.module.ts
+      CLICKHOUSE_URL: http://localhost:8123
+      CLICKHOUSE_USER: ci
+      CLICKHOUSE_PASSWORD: ci
+      #   Neo4j driver factory — graph.module.ts
+      NEO4J_URI: bolt://localhost:7687
+      NEO4J_USERNAME: ci
+      NEO4J_PASSWORD: ci
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -186,11 +283,28 @@ jobs:
       - name: Unit tests + coverage — @cos/config
         working-directory: packages/@cos/config
         run: pnpm run test:cov
-      # services/file-service is a separate deployable (Fastify) with its own jest.config.js
-      # enforcing the same 100% lines / 100% branches gate (QM-1). It was previously built and
-      # scanned by CI but never tested — wired in 2026-08-22 (§35.13 ESC-05).
-      - name: Unit tests + coverage — services/file-service
+      # Shared client-side form rules (Rule 35). Its bundle-guards spec also pins the two measured
+      # constraints that would otherwise regress silently: zod/mini over classic zod, and the ESM
+      # build being what bundlers resolve (CJS measures 69,352 B gzipped vs 6,905 B for ESM).
+      - name: Unit tests + coverage — @cos/schemas
+        working-directory: packages/@cos/schemas
+        run: pnpm run test:cov
+      # Structural check the unit tests cannot make: the schemas must have exactly the fields of the
+      # API request types in apps/web/src/lib/api/types.ts. Three schemas had already drifted from
+      # them silently — see the script header. It reads across two packages, which is why it is a
+      # script here rather than a spec inside either one.
+      - name: Schema/API contract parity — @cos/schemas
+        run: scripts/readiness/check-schema-contract.sh
+      # Both Fastify services enforce the same 100% lines/branches gate in their own jest.config.js.
+      # file-service was built and scanned by CI but never tested until 2026-08-22 (§35.13 ESC-05).
+      # Neither run needs Docker: file-service's `integration` specs are mock-based, and
+      # credential-service's Testcontainers suites live in the separate integration job below.
+      - name: Unit tests + coverage — file-service
         working-directory: services/file-service
+        run: pnpm run test:cov
+      # ESM service — jest runs under --experimental-vm-modules (see its package.json scripts).
+      - name: Unit tests + coverage — credential-service (QM-1 crypto/DID-VC)
+        working-directory: services/credential-service
         run: pnpm run test:cov
       # apps/web shipped with no test script and zero test files; CI ran only lint, type-check,
       # build and Lighthouse, so none of its business logic was covered by QM-1. Wired 2026-08-23
@@ -216,6 +330,7 @@ jobs:
             packages/@cos/config/coverage/
             services/file-service/coverage/
             apps/web/coverage/
+            services/credential-service/coverage/
 
   # ─── Step 3b: Mobile Tests (apps/mobile — standalone Expo/RN workspace) ──────
   # apps/mobile is EXCLUDED from the repo-root pnpm workspace (React Native + Metro
@@ -226,6 +341,7 @@ jobs:
   mobile-tests:
     name: Mobile Tests (apps/mobile — type-check + eslint + jest)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -242,6 +358,12 @@ jobs:
       # ESLint uses the shared root config (same rules the pre-commit hook enforces on mobile).
       - name: ESLint — apps/mobile
         run: pnpm exec eslint apps/mobile/src
+      # React Native accessibility gate (spec §20.8). eslint-plugin-jsx-a11y covers apps/web only —
+      # its rules are DOM-shaped and never fire on <Pressable>/<TouchableOpacity>. It began as a
+      # ratchet over 24 unlabelled files; the baseline reached 0 on 2026-08-20, so it now fails on
+      # the first file that ships a tappable element with no accessibility prop.
+      - name: React Native a11y gate — apps/mobile
+        run: scripts/a11y/check-rn-a11y.sh
       - name: Type-check — apps/mobile
         working-directory: apps/mobile
         run: pnpm run type-check
@@ -249,12 +371,163 @@ jobs:
       - name: Unit tests + coverage — apps/mobile
         working-directory: apps/mobile
         run: pnpm run test:cov
+      # Render tests (jest.render.config.ts) — src/components and src/app, which the coverage gate
+      # above deliberately excludes. Run as a SEPARATE command rather than a second jest project:
+      # the two instrument differently (ts-jest vs babel-jest) and merging their reports made files
+      # the logic suite covers fully report as low as 80%.
+      #
+      # `test:render:cov` since 2026-08-20: these 145 files were outside every coverage gate, so the
+      # render config now carries a RATCHET over them — the floors are what the specs actually
+      # reach, and they are raised in the change that adds specs. 100% is not the line here; see the
+      # note in jest.render.config.ts for why.
+      - name: Render tests + coverage ratchet — apps/mobile
+        working-directory: apps/mobile
+        run: pnpm run test:render:cov
+
+  # ─── Step 3c: Go Worker Tests ───────────────────────────────────────────────
+  # These suites existed but nothing ran them: CI's only `pytest`/`go test` invocation was
+  # `pytest mlops/tests/`, so 13 Go test files across three workers were never executed on any PR.
+  # (`govulncheck` below is a vulnerability scan, not a test run.) QM-1 requires them in CI.
+  #
+  # COVERAGE (§35.13 ESC-23, product-owner decision 2026-08-23): QM-1 fixes a threshold for Jest
+  # (100/100) and pytest (--cov-fail-under=99) but names no figure for Go, so the gate starts at
+  # each module's MEASURED baseline and ratchets up — it blocks regressions today without turning
+  # CI red for coverage that was never written. Modules with no measured baseline run the same
+  # gofmt/vet/test steps with no floor.
+  #
+  #   -coverpkg=./... is required, not cosmetic: the gated modules keep their tests in a separate
+  #   tests/ package, and `go test` measures each package against its OWN tests only. Without it
+  #   they report 0.0% however much the tests actually exercise.
+  #
+  #   Baselines RE-MEASURED 2026-08-24 after the merge, with the integration suites running against
+  #   a real Docker socket (go 1.26, -coverpkg=./..., CGO_ENABLED=1 for -race):
+  #     analytics-worker     96.2%   (93.1% before the merge; 46.8% immediately after it)
+  #     kg-ingestion-worker  93.8%   (86.0% before the merge; 23.7% immediately after it)
+  #
+  #   Both fell when the merge replaced or added code the tests did not reach, and both are now above
+  #   their pre-merge figures. internal/carbon was rewritten from a sarama ConsumerGroup
+  #   (Consumer/ConsumeClaim/process) to a coskafka Writer/Handle/Start, so the suite covering the old
+  #   shape could not be carried over and was rewritten against the new one. kg-ingestion-worker
+  #   gained a whole graph read path plus admin/rebuild wiring that arrived with no tests.
+  #
+  #   Writing the kg tests found a startup defect: main() bound the Prometheus port twice — once via
+  #   cosOtel.Start and again through a second server of its own — and the losing bind called
+  #   log.Fatalf, so the worker died on startup every time (§35.13 ESC-46). No test had ever run
+  #   main(); the first one to do so failed immediately.
+  #
+  #   Raise coverage_min whenever the printed total exceeds it. Never lower it without recording a
+  #   measurement here, as this entry does.
+  go-tests:
+    name: Go Tests — ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: services/analytics-worker
+            coverage_min: '96.0'
+          - service: services/kg-ingestion-worker
+            coverage_min: '93.0'
+          - service: services/iot-ingestion-worker
+            coverage_min: ''
+          # coslib — its own go.mod, so it needs its own matrix entry or its tests
+          # (the decoder / DLQ / idempotency suites) run nowhere. ADR-021.
+          - service: libs/go
+            coverage_min: ''
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: ${{ matrix.service }}/go.mod
+          cache-dependency-path: ${{ matrix.service }}/go.sum
+      # gofmt/vet were never gated, so four files sat unformatted on main and a `go vet` finding
+      # could have landed unnoticed. `gofmt -l` prints offending files and exits 0, so the file list
+      # is turned into a non-zero exit explicitly.
+      - name: gofmt
+        working-directory: ${{ matrix.service }}
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "::error::gofmt found unformatted files:"
+            echo "$unformatted"
+            gofmt -d .
+            exit 1
+          fi
+      - name: go vet
+        working-directory: ${{ matrix.service }}
+        run: go vet ./...
+      - name: go test
+        working-directory: ${{ matrix.service }}
+        run: go test ./... -race -coverpkg=./... -coverprofile=coverage.out
+      - name: Coverage gate — floor ${{ matrix.coverage_min }}%
+        if: matrix.coverage_min != ''
+        working-directory: ${{ matrix.service }}
+        run: |
+          go tool cover -func=coverage.out | tail -20
+          TOTAL=$(go tool cover -func=coverage.out | awk '/^total:/ {print $NF}' | tr -d '%')
+          MIN='${{ matrix.coverage_min }}'
+          echo "coverage: ${TOTAL}%  (floor ${MIN}%)"
+          awk -v t="$TOTAL" -v m="$MIN" 'BEGIN { if (t + 0 < m + 0) { printf "FAIL: coverage %.1f%% is below the %.1f%% floor\n", t, m; exit 1 } }'
+
+  # ─── Step 3d: Python Service Tests ──────────────────────────────────────────
+  # Same gap as go-tests: 24 pytest files across five services never ran in CI.
+  #
+  # COVERAGE GATE IS LIVE. Each service's pytest.ini carries `--cov --cov-fail-under=99` (QM-1);
+  # all five are at 100% line coverage as of 2026-07-21. The gate lives in pytest.ini rather than
+  # here so a local `pytest` run enforces exactly what CI does.
+  #
+  # The measured baselines that led here were NOT the ones first reported: counting `tests/` in the
+  # coverage source badly distorted them (ai-gateway read 36% when it was 70%, ai-embedding-worker
+  # 30% when it was 77%). Each service has a `.coveragerc` that omits `tests/` — do not drop it, or
+  # the numbers silently inflate again.
+  python-tests:
+    name: Python Tests — ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - services/ai-gateway
+          - services/ai-embedding-worker
+          - services/ai-ocr-pipeline
+          - services/ai-transcription-pipeline
+          - services/bim-import-worker
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        working-directory: ${{ matrix.service }}
+        run: |
+          python -m pip install --upgrade pip
+          # requirements-dev.txt already `-r requirements.txt`; not every service ships one.
+          if [ -f requirements-dev.txt ]; then
+            pip install -r requirements-dev.txt
+          else
+            pip install -r requirements.txt
+          fi
+          pip install pytest pytest-asyncio
+      - name: pytest
+        working-directory: ${{ matrix.service }}
+        # ai-gateway resolves prompt templates relative to the repo checkout here (no container
+        # flattening), so no PROMPTS_DIR is needed. OTel is disabled so the exporter does not spend
+        # the job retrying a collector that is not running.
+        env:
+          OTEL_SDK_DISABLED: 'true'
+        # No path argument: each service's pytest.ini `testpaths` is authoritative. Hardcoding
+        # `tests` here silently skipped services/ai-gateway/digital_twin/tests/ — three suites that
+        # pass and cover 64 statements the report counted as untested.
+        run: python -m pytest -q
 
   # ─── Step 4a: Integration Tests ─────────────────────────────────────────────
   # Source: spec §30.4 — Testcontainers (PostgreSQL, Redis) per test run; blocks PR merge
   integration-tests:
     name: Integration Tests (Testcontainers)
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     needs: [lint, type-check, unit-tests]
     steps:
       - uses: actions/checkout@v4
@@ -276,12 +549,18 @@ jobs:
       - name: Run integration tests — services/file-service (MinIO)
         working-directory: services/file-service
         run: pnpm run test:integration
+      # Testcontainers Postgres + the credentials migration: RLS isolation, did:web verification and
+      # the Status List revocation loop (ADR-019 CS-9/CS-6).
+      - name: Run integration tests — credential-service
+        working-directory: services/credential-service
+        run: pnpm run test:integration
 
   # ─── Step 4b: Multi-tenant Isolation Tests ──────────────────────────────────
   # Source: spec §30.6 — Cross-tenant data access is a Critical Security Defect; blocks PR merge
   isolation-tests:
     name: Multi-tenant Isolation Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     needs: [lint, type-check, unit-tests]
     steps:
       - uses: actions/checkout@v4
@@ -307,6 +586,7 @@ jobs:
   contract-tests:
     name: API Contract Tests (Pact)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: [lint, type-check]
     steps:
       - uses: actions/checkout@v4
@@ -328,20 +608,69 @@ jobs:
   build-docker:
     name: Build Docker — ${{ matrix.service }}
     runs-on: ubuntu-latest
-    needs: [lint, type-check, build, unit-tests, integration-tests, isolation-tests, contract-tests]
+    timeout-minutes: 30
+    needs:
+      [
+        lint,
+        type-check,
+        build,
+        unit-tests,
+        integration-tests,
+        isolation-tests,
+        contract-tests,
+        go-tests,
+        python-tests,
+      ]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
     strategy:
+      # Every service builds from the repo ROOT context (context: .) with an explicit
+      # `file: <service>/Dockerfile`. Each COPYs at least one path OUTSIDE its own directory: pnpm
+      # workspace members install the @cos/* packages they import; the Go workers `replace` libs/go;
+      # the Python workers install libs/python/cosmetrics (ADR-021); ai-gateway also bakes in repo-root
+      # ai/prompts. Verified by running `docker build` locally. A service-scoped context breaks those
+      # COPYs with `"/<path>": not found`.
       matrix:
-        service:
-          - backend
-          - services/file-service
-          - services/ai-gateway
-          - services/analytics-worker
-          - services/kg-ingestion-worker
-          - services/ai-embedding-worker
-          - services/ai-ocr-pipeline
-          - services/ai-transcription-pipeline
-          - apps/web
+        include:
+          - service: backend
+            context: .
+            file: backend/Dockerfile
+          - service: services/file-service
+            context: .
+            file: services/file-service/Dockerfile
+          # Root context: pnpm workspace member — the frozen install needs every workspace
+          # package.json present (see its Dockerfile header).
+          - service: services/credential-service
+            context: .
+            file: services/credential-service/Dockerfile
+          - service: apps/web
+            context: .
+            file: apps/web/Dockerfile
+          # ai-gateway is NOT self-contained: it needs repo-root ai/prompts baked in (see its
+          # Dockerfile header), so it builds from the root context like backend/file-service/web.
+          - service: services/ai-gateway
+            context: .
+            file: services/ai-gateway/Dockerfile
+          # analytics-worker is NOT self-contained: it `replace`s the shared coslib module at
+          # libs/go (ADR-021), which sits outside a service-scoped context.
+          - service: services/analytics-worker
+            context: .
+            file: services/analytics-worker/Dockerfile
+          # kg-ingestion-worker is NOT self-contained: it `replace`s the shared coslib module at
+          # libs/go (ADR-021), which sits outside a service-scoped context.
+          - service: services/kg-ingestion-worker
+            context: .
+            file: services/kg-ingestion-worker/Dockerfile
+          # The ai-*-pipeline / ai-embedding-worker services are NOT self-contained: requirements.txt
+          # installs the shared libs/python/cosmetrics (ADR-021), outside a service-scoped context.
+          - service: services/ai-embedding-worker
+            context: .
+            file: services/ai-embedding-worker/Dockerfile
+          - service: services/ai-ocr-pipeline
+            context: .
+            file: services/ai-ocr-pipeline/Dockerfile
+          - service: services/ai-transcription-pipeline
+            context: .
+            file: services/ai-transcription-pipeline/Dockerfile
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
@@ -351,8 +680,8 @@ jobs:
       - name: Build image
         uses: docker/build-push-action@v5
         with:
-          context: .
-          file: ${{ matrix.service }}/Dockerfile
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
           push: false
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -360,102 +689,10 @@ jobs:
 
   # ─── Step 5a: Dependency Audit (OWASP / pnpm audit) ────────────────────────
   # Source: spec §Phase 16 — "OWASP dependency check in CI pipeline"
-  # ─── Step 3c: Go worker tests ───────────────────────────────────────────────
-  # Source: spec §30.2 (Unit tooling — Go: testing + testify), QM-1. The Go workers had unit and
-  # integration tests on disk but no workflow executed them; only govulncheck ran. Wired
-  # 2026-08-22 (§35.13 ESC-05).
-  #
-  # COVERAGE (§35.13 ESC-23, product-owner decision 2026-08-23): QM-1 fixes a threshold for Jest
-  # (100/100) and pytest (--cov-fail-under=99) but names no figure for Go, so this gate starts at
-  # each module's MEASURED baseline and ratchets up — it blocks regressions today without turning
-  # CI red for coverage that was never written.
-  #
-  #   -coverpkg=./... is required, not cosmetic: both modules keep their tests in a separate
-  #   tests/ package, and "go test" measures each package against its OWN tests only. Without it
-  #   both modules report 0.0% however much the tests actually exercise.
-  #
-  #   Baselines measured 2026-08-23 (go 1.26, -coverpkg=./...):
-  #     kg-ingestion-worker  86.0%  (tests/unit; tests/integration needs a Docker socket — CI has one)
-  #     analytics-worker     93.1%  — raised from 0.0% on 2026-08-23 by writing the missing tests:
-  #                                  a fake database/sql driver + fake sarama session/claim for the
-  #                                  carbon consumer, real Configure()/propagation round-trips for
-  #                                  otel, and a SIGTERM-driven test of main(). What remains are two
-  #                                  error branches (resource/exporter construction failure) that no
-  #                                  input reaches.
-  #   Raise coverage_min whenever the printed total exceeds it. Never lower it.
-  go-tests:
-    name: Go Worker Tests (analytics-worker + kg-ingestion-worker)
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - service: analytics-worker
-            coverage_min: '93.0'
-          - service: kg-ingestion-worker
-            coverage_min: '86.0'
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version-file: services/${{ matrix.service }}/go.mod
-          cache-dependency-path: services/${{ matrix.service }}/go.sum
-      - name: go test — ${{ matrix.service }}
-        working-directory: services/${{ matrix.service }}
-        run: go test ./... -v -coverpkg=./... -coverprofile=coverage.out
-      - name: Coverage gate — ${{ matrix.service }} (floor ${{ matrix.coverage_min }}%)
-        working-directory: services/${{ matrix.service }}
-        run: |
-          go tool cover -func=coverage.out | tail -20
-          TOTAL=$(go tool cover -func=coverage.out | awk '/^total:/ {print $NF}' | tr -d '%')
-          MIN='${{ matrix.coverage_min }}'
-          echo "coverage: ${TOTAL}%  (floor ${MIN}%)"
-          awk -v t="$TOTAL" -v m="$MIN" 'BEGIN { if (t + 0 < m + 0) { printf "FAIL: coverage %.1f%% is below the %.1f%% floor\n", t, m; exit 1 } }'
-
-  # ─── Step 3d: AI service tests (Python) ─────────────────────────────────────
-  # Source: spec §30.2 (Unit tooling — Python: pytest), QM-1. The four AI services ship pytest
-  # suites and a pytest.ini each, but CI ran pytest only for mlops/tests/. Wired 2026-08-22
-  # (§35.13 ESC-05).
-  #
-  # COVERAGE (§35.13 ESC-24, product-owner decision 2026-08-23): QM-1 states the Python gate
-  # explicitly — "pytest --cov with --cov-fail-under=99 for lines" — so unlike Go this needed no
-  # new threshold, only wiring. Each service carries a .coveragerc that omits tests/: measuring a
-  # suite against itself inflates the figure badly here (with tests/ included the four report
-  # 64/87/73/52%; the source alone is 45/73/46/35%).
-  #
-  #   Baseline when the gate was wired (python:3.12-slim, source only): ai-embedding-worker 73%,
-  #   ai-ocr-pipeline 46%, ai-gateway 45%, ai-transcription-pipeline 35% — all four below the floor.
-  #   The missing tests were then written; as of 2026-08-23 **every service is at 100%** and the
-  #   gate passes. fail-fast is false so a regression names the service that caused it.
-  ai-service-tests:
-    name: AI Service Tests (Python)
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        service:
-          - ai-gateway
-          - ai-embedding-worker
-          - ai-ocr-pipeline
-          - ai-transcription-pipeline
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Install dependencies — ${{ matrix.service }}
-        working-directory: services/${{ matrix.service }}
-        run: |
-          pip install -r requirements.txt
-          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
-      - name: pytest + coverage — ${{ matrix.service }}
-        working-directory: services/${{ matrix.service }}
-        run: pytest --cov=. --cov-config=.coveragerc --cov-report=term-missing --cov-fail-under=99
-
   dependency-audit:
     name: Dependency Audit (pnpm audit + govulncheck)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: [lint, type-check]
     steps:
       - uses: actions/checkout@v4
@@ -471,9 +708,17 @@ jobs:
       - name: pnpm audit (Node.js dependencies)
         run: bash scripts/pnpm-audit.sh
       # Go vulnerability check for kg-ingestion-worker
+      #
+      # Pinned to a PATCH version, not the '1.26' minor it used to be. setup-go satisfies a spec from
+      # the runner's tool cache before it downloads anything, so '1.26' kept resolving to the 1.26.5
+      # already baked into the image — and go1.26.6 (a security release fixing six stdlib
+      # vulnerabilities reachable from this worker: net/url, html/template, crypto/tls, net/http ×2,
+      # encoding/asn1) had shipped roughly an hour earlier. A floating minor cannot promise a patched
+      # standard library on the day the patch lands, which is the only day it matters. Bump this in
+      # step with the `go` directive in the service go.mod files, which is what actually builds them.
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.25'
+          go-version: '1.26.6'
       - name: govulncheck — kg-ingestion-worker
         working-directory: services/kg-ingestion-worker
         run: |
@@ -482,16 +727,26 @@ jobs:
       - name: govulncheck — analytics-worker
         working-directory: services/analytics-worker
         run: govulncheck ./...
-      # Python safety check for ai-gateway
+      # Python safety check — every service with a runtime requirements.txt. Globbed rather than
+      # listed: auditing only ai-gateway is how Pillow 12.2.0 (PYSEC-2026-2254) sat unnoticed in
+      # ai-ocr-pipeline, and a new service would inherit the same blind spot.
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: pip-audit — ai-gateway
-        working-directory: services/ai-gateway
+      - name: pip-audit — Python services
         run: |
           pip install pip-audit
-          # PYSEC-2026-161 resolved 2026-07-04: starlette pinned to 1.0.1 in requirements.txt
-          pip-audit -r requirements.txt
+          status=0
+          for req in services/*/requirements.txt; do
+            svc="$(dirname "$req")"
+            echo "::group::pip-audit — $svc"
+            # Run from the service dir so a local path dep (../../libs/python/cosmetrics, ADR-021)
+            # resolves — pip-audit rejects it as an "Invalid requirement" from the repo root, and
+            # once resolved it is skipped gracefully (not on PyPI). Real PyPI deps are still audited.
+            ( cd "$svc" && pip-audit -r requirements.txt ) || status=1
+            echo "::endgroup::"
+          done
+          exit $status
 
   # ─── Step 5b: Secret Scan (gitleaks) ────────────────────────────────────────
   # QM-4: block secret patterns in CI (complements the .husky/pre-commit gitleaks hook,
@@ -500,6 +755,7 @@ jobs:
   secret-scan:
     name: Secret Scan (gitleaks)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -514,20 +770,53 @@ jobs:
   security-scan:
     name: Security Scan (Trivy) — ${{ matrix.service }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs: [build-docker]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
     strategy:
+      # Must mirror build-docker's context/file pairs exactly: every service builds from the repo ROOT
+      # context (context: .) with `file: <service>/Dockerfile`, because each COPYs a path outside its
+      # own directory (@cos/* workspace packages, libs/go, libs/python/cosmetrics, or ai/prompts).
       matrix:
-        service:
-          - backend
-          - services/file-service
-          - services/ai-gateway
-          - services/analytics-worker
-          - services/kg-ingestion-worker
-          - services/ai-embedding-worker
-          - services/ai-ocr-pipeline
-          - services/ai-transcription-pipeline
-          - apps/web
+        include:
+          - service: backend
+            context: .
+            file: backend/Dockerfile
+          - service: services/file-service
+            context: .
+            file: services/file-service/Dockerfile
+          # Root context: pnpm workspace member — the frozen install needs every workspace
+          # package.json present (see its Dockerfile header).
+          - service: services/credential-service
+            context: .
+            file: services/credential-service/Dockerfile
+          - service: apps/web
+            context: .
+            file: apps/web/Dockerfile
+          - service: services/ai-gateway
+            context: .
+            file: services/ai-gateway/Dockerfile
+          # analytics-worker is NOT self-contained: it `replace`s the shared coslib module at
+          # libs/go (ADR-021), which sits outside a service-scoped context.
+          - service: services/analytics-worker
+            context: .
+            file: services/analytics-worker/Dockerfile
+          # kg-ingestion-worker is NOT self-contained: it `replace`s the shared coslib module at
+          # libs/go (ADR-021), which sits outside a service-scoped context.
+          - service: services/kg-ingestion-worker
+            context: .
+            file: services/kg-ingestion-worker/Dockerfile
+          # The ai-*-pipeline / ai-embedding-worker services are NOT self-contained: requirements.txt
+          # installs the shared libs/python/cosmetrics (ADR-021), outside a service-scoped context.
+          - service: services/ai-embedding-worker
+            context: .
+            file: services/ai-embedding-worker/Dockerfile
+          - service: services/ai-ocr-pipeline
+            context: .
+            file: services/ai-ocr-pipeline/Dockerfile
+          - service: services/ai-transcription-pipeline
+            context: .
+            file: services/ai-transcription-pipeline/Dockerfile
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
@@ -537,8 +826,8 @@ jobs:
       - name: Rebuild image from GHA cache
         uses: docker/build-push-action@v5
         with:
-          context: .
-          file: ${{ matrix.service }}/Dockerfile
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
           push: false
           cache-from: type=gha
           tags: ${{ steps.name.outputs.short }}:${{ github.sha }}
@@ -564,6 +853,7 @@ jobs:
   push-ecr:
     name: Push to ECR — ${{ matrix.service }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs: [security-scan]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
     environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
@@ -572,6 +862,7 @@ jobs:
         service:
           - backend
           - services/file-service
+          - services/credential-service
           - services/ai-gateway
           - services/analytics-worker
           - services/kg-ingestion-worker
@@ -607,6 +898,7 @@ jobs:
   update-gitops:
     name: Update GitOps image tags
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: [push-ecr]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
     steps:
@@ -618,7 +910,7 @@ jobs:
         env:
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          for SERVICE in backend services/file-service services/ai-gateway services/analytics-worker services/kg-ingestion-worker services/ai-embedding-worker services/ai-ocr-pipeline apps/web; do
+          for SERVICE in backend services/file-service services/credential-service services/ai-gateway services/analytics-worker services/kg-ingestion-worker services/ai-embedding-worker services/ai-ocr-pipeline apps/web; do
             NAME="cos-$(basename ${SERVICE})"
             FILE="infrastructure/helm/${NAME}/values-prod.yaml"
             sed -i "s|  tag: '.*'|  tag: '${IMAGE_TAG}'|" "${FILE}"
@@ -636,8 +928,9 @@ jobs:
   e2e-tests:
     name: E2E Tests (Playwright)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs: [update-gitops]
-    # Spec §30.5/§30.12 + ADR-048 (PO decision 2026-07-04): E2E runs on merge to `staging` —
+    # Spec §30.5/§30.12 + ADR-020 (PO decision 2026-07-04): E2E runs on merge to `staging` —
     # the staging branch deploys to the staging env (update-gitops → ArgoCD auto-sync) and the
     # E2E result gates production promotion (merge staging → main).
     if: github.ref == 'refs/heads/staging'
@@ -663,6 +956,116 @@ jobs:
         with:
           name: playwright-report
           path: tests/e2e/playwright-report/
+
+  # ─── Step 8b: Mobile E2E (Detox, staging only) ──────────────────────────────
+  # apps/mobile/e2e/ held five Detox specs that NO workflow ran — the `e2e-tests` job above is
+  # Playwright against apps/web. Added 2026-08-20 (PO asked for it).
+  #
+  # STAGING ONLY, for the same reason the Playwright job is: these specs log a seeded worker in
+  # over Path A (phone + a fixed test OTP), read the sync queue, and drive a real conflict — they
+  # need a live API with fixture data, not a mock. Same gate as ADR-020 / §30.5: staging deploys,
+  # E2E runs, and the result gates promotion to main.
+  #
+  # ANDROID ONLY. iOS Detox needs a macOS runner (10x the minutes) for the same three specs; the
+  # emulator covers the behaviour under test — offline queueing, reconnect sync, conflict resolve —
+  # none of which is platform-specific. Add an ios.sim.release matrix leg if a bug ever turns out
+  # to be one.
+  #
+  # THREE SPECS, NOT FIVE. capture.spec.ts and benchmark.spec.ts say in their own headers that they
+  # are not functional tests — one writes screenshots into docs/screens/, the other runs the §17.10
+  # G1/G2 harness. Both are documented as "run explicitly" and are named here so their exclusion is
+  # a decision rather than an oversight.
+  #
+  # `expo prebuild` runs because android/ is generated, not committed (.gitignore) — the APK cannot
+  # be built without it. EXPO_PUBLIC_E2E=1 is what arms `src/lib/e2e/networkOverride`, the app-level
+  # hook the specs toggle connectivity through; Detox has no cross-platform airplane mode.
+  #
+  # SECRETS THIS NEEDS, and none of them exist yet — create them before enabling:
+  #   STAGING_MOBILE_API_URL   e.g. https://staging.example/api/v1  (EXPO_PUBLIC_API_URL)
+  #   E2E_WORKER_PHONE         seeded SITE_WORKER, E.164
+  #   E2E_INSPECTOR_PHONE      seeded inspector, E.164
+  #   E2E_USER_A_PHONE         the sync-conflict fixture's first user
+  #   E2E_TEST_OTP             the fixed OTP the staging auth bypass accepts
+  #   E2E_API_TOKEN            bearer for the conflict fixture's direct API writes
+  #   E2E_TEST_TASK_ID         the task the conflict spec mutates
+  # Until they are set the job runs and fails at login, which is the honest failure — a skip would
+  # report green for a suite that never ran.
+  #
+  # NOT VERIFIED BY A RUN. This job has never executed; it is written from the Detox config, the
+  # specs' own env usage, and the existing mobile job. Expect the first staging run to need
+  # adjustment (AVD name, Gradle memory, boot timeout) rather than to pass first time.
+  # TWO SPECS, NOT THREE. `offline-checkin.spec.ts` was deleted on 2026-08-21 (PO): it drove
+  # `check-in-button`, and self check-in was removed from the product on 2026-08-09 — two of its
+  # tests waited on that button unguarded and would have failed this job, and two sat behind
+  # `isVisible` and passed having checked nothing. Attendance is still covered end to end by
+  # `offline-inspection.spec.ts`, which exercises the same offline queue-and-sync path.
+  #
+  # SIX SECRETS, NOT SEVEN: `E2E_WORKER_PHONE` went with it — no remaining spec reads it, and a
+  # secret nobody reads is one somebody was asked to create for nothing.
+  mobile-e2e-tests:
+    name: Mobile E2E (Detox — Android emulator)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    needs: [update-gitops]
+    if: github.ref == 'refs/heads/staging'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      # apps/mobile is its own pnpm workspace root (own pnpm-lock.yaml) — install standalone.
+      - name: Install mobile dependencies
+        working-directory: apps/mobile
+        run: pnpm install --frozen-lockfile
+      # android/ is generated by prebuild, not committed.
+      - name: Generate the Android project
+        working-directory: apps/mobile
+        env:
+          EXPO_PUBLIC_API_URL: ${{ secrets.STAGING_MOBILE_API_URL }}
+          EXPO_PUBLIC_E2E: '1'
+        run: pnpm exec expo prebuild --platform android --no-install
+      # The DEBUG variant, deliberately: Detox's instrumentation runtime is proguard-stripped from
+      # the release APK, so its ready handshake never completes there (see .detoxrc.js).
+      - name: Build the app and the test runner
+        working-directory: apps/mobile
+        env:
+          EXPO_PUBLIC_API_URL: ${{ secrets.STAGING_MOBILE_API_URL }}
+          EXPO_PUBLIC_E2E: '1'
+        run: pnpm exec detox build --configuration android.emu.debug
+      - name: Run Detox
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          # .detoxrc.js reads this; it must name the AVD the action creates.
+          DETOX_AVD_NAME: test
+          E2E_API_URL: ${{ secrets.STAGING_MOBILE_API_URL }}
+          E2E_INSPECTOR_PHONE: ${{ secrets.E2E_INSPECTOR_PHONE }}
+          E2E_USER_A_PHONE: ${{ secrets.E2E_USER_A_PHONE }}
+          E2E_TEST_OTP: ${{ secrets.E2E_TEST_OTP }}
+          E2E_API_TOKEN: ${{ secrets.E2E_API_TOKEN }}
+          E2E_TEST_TASK_ID: ${{ secrets.E2E_TEST_TASK_ID }}
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          avd-name: test
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          working-directory: apps/mobile
+          script: >-
+            pnpm exec detox test --configuration android.emu.debug --headless --record-logs failing
+            e2e/offline-inspection.spec.ts e2e/sync-conflict.spec.ts
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: detox-artifacts
+          path: apps/mobile/artifacts/
 
   # ─── Step 9: Load Tests — MOVED to .github/workflows/load-tests.yml ─────────
   # Spec §30.9 + §30.12: load tests run weekly on staging, NOT per-deploy.

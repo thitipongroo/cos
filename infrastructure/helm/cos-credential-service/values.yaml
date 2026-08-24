@@ -1,0 +1,74 @@
+replicaCount: 2
+
+image:
+  repository: ''
+  tag: 'latest'
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  # Must match CREDENTIAL_SERVICE_URL in the backend (default http://credential-service:3009).
+  port: 3009
+
+resources:
+  requests:
+    cpu: '200m'
+    memory: '256Mi'
+  limits:
+    cpu: '500m'
+    memory: '512Mi'
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 8
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+env:
+  NODE_ENV: 'production'
+  # Names the service in structured logs (src/logger.ts) — matches the cos-file-service convention.
+  OTEL_SERVICE_NAME: 'credential-service'
+  # Baked into every tenant DID (did:web:{domain}:tenants:{id}) and into every credential already
+  # issued — renaming this host invalidates them all. Must match the Kong route host and the
+  # cos-credentials-tls certificate exactly (§5.9.8, ADR-019).
+  DID_WEB_BASE_DOMAIN: 'credentials.construction-os.io'
+
+# DATABASE_URL + APP_SECRET_ENCRYPTION_KEY (issuer private-key encryption, ADR-035) come from the
+# secret — never from values. The service refuses to start with an unusable key in production.
+envFrom:
+  - secretRef:
+      name: cos-credential-service-secrets
+
+serviceAccount:
+  create: true
+  name: 'cos-credential-service'
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: cos-credential-service
+          topologyKey: kubernetes.io/hostname
+
+# The service exposes one unauthenticated /health (no live/ready split) — see main.ts.
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 3009
+  initialDelaySeconds: 20
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 3009
+  initialDelaySeconds: 10
+  periodSeconds: 5

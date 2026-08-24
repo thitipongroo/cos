@@ -21,6 +21,7 @@ const baseRow = {
   budget_currency: 'THB',
   start_date: '2026-06-01',
   end_date: '2027-12-31',
+  estimated_completion_date: null,
   on_hold_reason: null,
   on_hold_at: null,
   cancellation_reason: null,
@@ -53,6 +54,58 @@ describe('ProjectRepository', () => {
       };
       const noCtx = new ProjectRepository(tenantPrisma as never, {} as never);
       expect((noCtx as unknown as { tenantId: string }).tenantId).toBe('');
+    });
+  });
+
+  // Hydrates OpenSearch hits in ONE round trip. The loop it replaced ran a full
+  // BEGIN/SET LOCAL/SELECT/COMMIT per hit, so the early return below is what keeps a search with no
+  // matches from opening a transaction at all.
+  describe('findByIds()', () => {
+    it('returns [] without opening a transaction for an empty id list', async () => {
+      const txMock = { $queryRaw: jest.fn() };
+      const tenantPrisma = {
+        run: jest.fn((fn: (tx: typeof txMock) => Promise<unknown>) => fn(txMock)),
+      };
+      const repo = new ProjectRepository(tenantPrisma as never, { tenantId: TENANT_ID } as never);
+
+      expect(await repo.findByIds([])).toEqual([]);
+      expect(tenantPrisma.run).not.toHaveBeenCalled();
+      expect(txMock.$queryRaw).not.toHaveBeenCalled();
+    });
+
+    it('fetches every id in a single query', async () => {
+      const repo = makeRepo([baseRow]);
+      const rows = await repo.findByIds([baseRow.project_id, 'other-id']);
+      expect(rows).toEqual([baseRow]);
+    });
+  });
+
+  describe('listByMember()', () => {
+    it('returns the projects the user is a member of', async () => {
+      const repo = makeRepo([baseRow]);
+      const result = await repo.listByMember(USER_ID);
+      expect(result).toHaveLength(1);
+      expect(result[0]!.project_id).toBe(PROJECT_ID);
+    });
+
+    // The two LATERAL columns the mobile project pickers draw beside the name. The building has been
+    // here since 2026-08-11; the progress bar is the 2026-08-12 addition (PO: "1d. เพิ่ม field
+    // progress"), and it is aggregated in THIS query rather than fetched per card so the picker
+    // stays one round trip — see the method's own note.
+    it('carries the building and the BOQ-weighted progress through', async () => {
+      const repo = makeRepo([{ ...baseRow, building_name: 'Tower A', progress_percent: 62.5 }]);
+      const result = await repo.listByMember(USER_ID);
+      expect(result[0]!.building_name).toBe('Tower A');
+      expect(result[0]!.progress_percent).toBe(62.5);
+    });
+
+    // NULL is the §32.12 "not computable" case (no BOQ-linked task), and it must survive as NULL.
+    // Coercing it to 0 anywhere along the way would draw an empty bar on a site whose progress is
+    // simply unknown — the one thing that metric's null semantics exist to prevent.
+    it('leaves an unmeasurable project’s progress null rather than zero', async () => {
+      const repo = makeRepo([{ ...baseRow, building_name: null, progress_percent: null }]);
+      const result = await repo.listByMember(USER_ID);
+      expect(result[0]!.progress_percent).toBeNull();
     });
   });
 
@@ -234,6 +287,21 @@ describe('ProjectRepository', () => {
       expect(builder).not.toHaveBeenCalled();
       expect(empty.$executeRaw).not.toHaveBeenCalled();
     });
+
+    it('passes the working-hours window through when provided (ADR-072)', async () => {
+      const repo = makeRepo([baseRow]);
+      const res = await repo.create(
+        {
+          project_code: 'PROJ-002',
+          project_name: 'Test',
+          project_type: 'COMMERCIAL' as never,
+          work_hours_start: '07:00',
+          work_hours_end: '18:00',
+        },
+        USER_ID,
+      );
+      expect(res.project_id).toBe(PROJECT_ID);
+    });
   });
 
   describe('findById()', () => {
@@ -377,6 +445,19 @@ describe('ProjectRepository', () => {
       // All fields undefined → ?? null branches taken for all
       const result = await repo.update(PROJECT_ID, {});
       expect(result.project_id).toBe(PROJECT_ID);
+    });
+
+    it('interpolates PM-entered estimated_completion_date into the UPDATE (§11.2)', async () => {
+      // Capture the tagged-template call so we can assert the value reaches the query.
+      const txMock = { $queryRaw: jest.fn().mockResolvedValue([baseRow]) };
+      const tenantPrisma = {
+        run: jest.fn((fn: (tx: typeof txMock) => Promise<unknown>) => fn(txMock)),
+      };
+      const repo = new ProjectRepository(tenantPrisma as never, { tenantId: TENANT_ID } as never);
+      await repo.update(PROJECT_ID, { estimated_completion_date: '2027-11-15' });
+      // Interpolated values follow the strings array in a tagged template.
+      const values = txMock.$queryRaw.mock.calls[0]!.slice(1);
+      expect(values).toContain('2027-11-15');
     });
   });
 

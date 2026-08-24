@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="th"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Construction OS - Site Inventory Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            font-family: 'Inter Tight', sans-serif;
+            background-color: #020617; /* dark-bg */
+            color: #d3e4fe; /* on-background */
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .glass-panel {
+            background: rgba(16, 32, 52, 0.6); /* surface-container */
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(67, 70, 85, 0.3); /* outline-variant */
+        }
+        .ai-glow {
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.1);
+        }
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #020617;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #434655;
+            border-radius: 10px;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "mobile-danger": "#FF3B30",
+                      "cos-cyan": "#06B6D4",
+                      "on-secondary-fixed": "#001f26",
+                      "surface-container-highest": "#26364a",
+                      "dark-surface": "#0F172A",
+                      "dark-bg": "#020617",
+                      "mobile-primary": "#0066FF",
+                      "cos-blue": "#2563EB",
+                      "secondary-fixed-dim": "#4cd7f6",
+                      "error": "#ffb4ab",
+                      "tertiary-fixed": "#dee1f9",
+                      "on-primary-fixed": "#00174b",
+                      "on-tertiary-fixed-variant": "#414658",
+                      "primary-fixed": "#dbe1ff",
+                      "secondary": "#4cd7f6",
+                      "sync-active": "#FFD60A",
+                      "on-background": "#d3e4fe",
+                      "mobile-warning": "#FF9500",
+                      "outline": "#8d90a0",
+                      "on-primary-container": "#eeefff",
+                      "sync-pending": "#94A3B8",
+                      "surface-container-lowest": "#000f21",
+                      "surface-bright": "#2a3a4f",
+                      "error-container": "#93000a",
+                      "on-tertiary-fixed": "#161b2b",
+                      "surface-container-high": "#1b2b3f",
+                      "on-tertiary-container": "#eeefff",
+                      "on-primary-fixed-variant": "#003ea8",
+                      "secondary-container": "#03b5d3",
+                      "inverse-primary": "#0053db",
+                      "on-error-container": "#ffdad6",
+                      "inverse-on-surface": "#213145",
+                      "on-secondary": "#003640",
+                      "cos-white": "#F8FAFC",
+                      "on-secondary-fixed-variant": "#004e5c",
+                      "surface-variant": "#26364a",
+                      "primary": "#b4c5ff",
+                      "surface-dim": "#031427",
+                      "surface-container": "#102034",
+                      "surface-tint": "#b4c5ff",
+                      "secondary-fixed": "#acedff",
+                      "on-primary": "#002a78",
+                      "mobile-success": "#00C853",
+                      "on-surface-variant": "#c3c6d7",
+                      "surface": "#031427",
+                      "surface-container-low": "#0b1c30",
+                      "background": "#031427",
+                      "on-tertiary": "#2b3041",
+                      "tertiary-fixed-dim": "#c1c5dc",
+                      "cos-navy": "#0B1020",
+                      "primary-fixed-dim": "#b4c5ff",
+                      "on-error": "#690005",
+                      "inverse-surface": "#d3e4fe",
+                      "on-secondary-container": "#00424e",
+                      "outline-variant": "#434655",
+                      "on-surface": "#d3e4fe",
+                      "tertiary-container": "#686c80",
+                      "primary-container": "#2563eb",
+                      "tertiary": "#c1c5dc"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "web-space-3": "12px",
+                      "web-space-2": "8px",
+                      "mobile-edge": "24px",
+                      "web-space-1": "4px",
+                      "web-space-8": "32px",
+                      "web-space-4": "16px",
+                      "mobile-touch-target": "52px"
+              },
+              "fontFamily": {
+                      "web-text-small": ["Inter Tight"],
+                      "web-text-tiny": ["Inter Tight"],
+                      "web-text-h1": ["Inter Tight"],
+                      "mobile-text-hero": ["Inter Tight"],
+                      "web-text-h2": ["Inter Tight"],
+                      "mobile-text-label": ["Inter Tight"],
+                      "mobile-text-body": ["Inter Tight"],
+                      "web-text-display": ["Inter Tight"],
+                      "web-text-body": ["Inter Tight"]
+              },
+              "fontSize": {
+                      "web-text-small": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                      "web-text-tiny": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                      "web-text-h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "mobile-text-hero": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                      "web-text-h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "mobile-text-label": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                      "mobile-text-body": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "web-text-display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "web-text-body": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+              }
+            },
+          },
+        }
+      </script>
+</head>
+<body class="flex min-h-screen">
+<!-- Navigation Drawer (Sidebar) -->
+<aside class="h-full w-80 rounded-r-xl bg-surface-container dark:bg-surface-container-low shadow-xl flex flex-col p-mobile-edge border-r border-outline-variant/30 sticky top-0">
+<div class="mb-web-space-8">
+<h1 class="font-mobile-text-hero text-mobile-text-hero font-bold text-cos-blue dark:text-primary">Construction OS</h1>
+<p class="text-web-text-tiny uppercase opacity-50 mt-1 tracking-widest">Enterprise Command</p>
+</div>
+<nav class="flex-1 space-y-2">
+<a class="flex items-center gap-3 px-4 py-3 text-primary font-bold bg-primary/10 rounded-lg transition-colors duration-150" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-web-text-body">Site Inventory</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-variant rounded-lg transition-colors duration-150" href="#">
+<span class="material-symbols-outlined">assignment</span>
+<span class="font-web-text-body">Tasks (งาน)</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-variant rounded-lg transition-colors duration-150" href="#">
+<span class="material-symbols-outlined">view_in_ar</span>
+<span class="font-web-text-body">BIM Explorer</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-variant rounded-lg transition-colors duration-150" href="#">
+<span class="material-symbols-outlined">photo_camera</span>
+<span class="font-web-text-body">Site Photos</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-variant rounded-lg transition-colors duration-150" href="#">
+<span class="material-symbols-outlined">health_and_safety</span>
+<span class="font-web-text-body">Safety Compliance</span>
+</a>
+</nav>
+<div class="mt-auto pt-web-space-8 border-t border-outline-variant/20 flex flex-col gap-4">
+<div class="flex items-center gap-3 px-2">
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center border border-outline-variant/30 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Close-up professional portrait of a field supervisor in their 40s, wearing a clean white safety helmet and a subtle gray technical vest. The background is a slightly blurred architectural office with blueprint-filled walls. The lighting is crisp and cool, emphasizing precision and leadership." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDCgdKxRv4xW3lE8Xtu3BSGj-HFKNDYC9UrenYzpCr9ua0jDvloVNesg1MYWkhLlr44wqNbt3IEjIE_P0CmXGoEq2yDGpO2jkawNyjX3NlNORtoP-iD85cOGsG2AJ4XauoMYhmpdoHLuxorTyIeQh-MiYT5TacJJ7-wYlB-_Sl6H3F92h5ij273-06-Fn_Im3wxo84y_l0szuxbw-aYdcCauZau_L9Ee3tNQMHAagTCytxrRcFeNiIG1oGlYW5pbikbSLZpnXowmUI"/>
+</div>
+<div class="overflow-hidden">
+<p class="font-web-text-body font-bold text-on-surface truncate">Alex Rivers</p>
+<p class="font-web-text-tiny text-on-surface-variant truncate">Supervisor - Site A</p>
+</div>
+</div>
+<div class="flex items-center justify-between px-2 text-web-text-tiny">
+<span class="text-mobile-success flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-mobile-success animate-pulse"></span>
+                    Sync: Online
+                </span>
+<span class="text-on-surface-variant">v2.4.0</span>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 flex flex-col bg-dark-bg min-h-screen overflow-x-hidden">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky z-40 bg-surface dark:bg-dark-surface border-b border-outline-variant/30 flex items-center justify-between px-mobile-edge h-mobile-touch-target">
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-cos-blue dark:text-primary active:scale-95 transition-transform">menu</button>
+<div class="h-6 w-px bg-outline-variant/30"></div>
+<h2 class="font-web-text-h2 text-on-surface">คลังพัสดุก่อสร้าง (Site Inventory)</h2>
+</div>
+<div class="flex items-center gap-web-space-4">
+<div class="relative group">
+<span class="absolute inset-y-0 left-3 flex items-center text-on-surface-variant pointer-events-none">
+<span class="material-symbols-outlined text-sm">search</span>
+</span>
+<input class="bg-surface-container-low border border-outline-variant/30 rounded-lg pl-10 pr-4 py-1.5 font-web-text-body text-on-surface focus:ring-2 focus:ring-cos-blue transition-all w-64" placeholder="Search Materials..." type="text"/>
+</div>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-cos-blue transition-colors">cloud_sync</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-cos-blue transition-colors">notifications</button>
+<div class="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center text-on-primary-container">
+<span class="material-symbols-outlined text-xl">add</span>
+</div>
+</div>
+</header>
+<section class="p-mobile-edge space-y-web-space-6 pb-20">
+<!-- KPI Overview: Top Metric Bar -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-web-space-4">
+<div class="glass-panel p-web-space-4 rounded-xl flex flex-col justify-between h-32 border-l-4 border-l-mobile-danger">
+<div class="flex justify-between items-start">
+<span class="text-web-text-tiny font-bold uppercase tracking-wider text-on-surface-variant">Critical Items (เร่งด่วน)</span>
+<span class="material-symbols-outlined text-mobile-danger">priority_high</span>
+</div>
+<div class="flex items-end justify-between">
+<span class="text-web-text-display font-bold text-on-surface">08</span>
+<span class="text-web-text-tiny text-mobile-danger mb-1">+2 from yesterday</span>
+</div>
+</div>
+<div class="glass-panel p-web-space-4 rounded-xl flex flex-col justify-between h-32 border-l-4 border-l-cos-blue">
+<div class="flex justify-between items-start">
+<span class="text-web-text-tiny font-bold uppercase tracking-wider text-on-surface-variant">Expected Today (ส่งวันนี้)</span>
+<span class="material-symbols-outlined text-cos-blue">local_shipping</span>
+</div>
+<div class="flex items-end justify-between">
+<span class="text-web-text-display font-bold text-on-surface">12</span>
+<span class="text-web-text-tiny text-on-surface-variant mb-1">4 batches in transit</span>
+</div>
+</div>
+<div class="glass-panel p-web-space-4 rounded-xl flex flex-col justify-between h-32 border-l-4 border-l-mobile-success">
+<div class="flex justify-between items-start">
+<span class="text-web-text-tiny font-bold uppercase tracking-wider text-on-surface-variant">Stock Value (มูลค่าคลัง)</span>
+<span class="material-symbols-outlined text-mobile-success">payments</span>
+</div>
+<div class="flex items-end justify-between">
+<span class="text-web-text-display font-bold text-on-surface">$1.2M</span>
+<span class="text-web-text-tiny text-mobile-success mb-1">↑ 4.2% Month-on-Month</span>
+</div>
+</div>
+<div class="glass-panel p-web-space-4 rounded-xl flex flex-col justify-between h-32 border-l-4 border-l-cos-cyan ai-glow">
+<div class="flex justify-between items-start">
+<span class="text-web-text-tiny font-bold uppercase tracking-wider text-cos-cyan">AI Optimization Index</span>
+<span class="material-symbols-outlined text-cos-cyan">bolt</span>
+</div>
+<div class="flex items-end justify-between">
+<span class="text-web-text-display font-bold text-cos-cyan">94%</span>
+<span class="text-web-text-tiny text-cos-cyan mb-1">Optimized Flow</span>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-web-space-6">
+<!-- Material Stock Table: Main Content (2/3 width) -->
+<div class="lg:col-span-2 space-y-web-space-4">
+<div class="glass-panel rounded-xl overflow-hidden">
+<div class="px-web-space-4 py-web-space-3 border-b border-outline-variant/30 flex justify-between items-center bg-surface-container-high/50">
+<h3 class="font-web-text-h2 text-on-surface">Material Stock (พัสดุในคลัง)</h3>
+<div class="flex gap-2">
+<button class="px-3 py-1 bg-surface-container text-web-text-tiny font-bold rounded border border-outline-variant/30 text-on-surface-variant hover:bg-surface-variant transition-colors">Export CSV</button>
+<button class="px-3 py-1 bg-cos-blue text-web-text-tiny font-bold rounded text-cos-white hover:bg-blue-600 transition-colors">Filter List</button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead class="bg-surface-container text-web-text-tiny uppercase tracking-widest text-on-surface-variant border-b border-outline-variant/30">
+<tr>
+<th class="px-6 py-4 font-semibold">Code</th>
+<th class="px-6 py-4 font-semibold">Item Name (ชื่อรายการ)</th>
+<th class="px-6 py-4 font-semibold">Current Qty</th>
+<th class="px-6 py-4 font-semibold">Min Threshold</th>
+<th class="px-6 py-4 font-semibold">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/10 text-web-text-body">
+<tr class="hover:bg-surface-variant/30 transition-colors cursor-pointer group">
+<td class="px-6 py-4 font-mono text-cos-blue">S-STR-442</td>
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="font-bold">Structural Steel (เหล็กรูปพรรณ)</span>
+<span class="text-web-text-small text-on-surface-variant">Grade A-36, 12m lengths</span>
+</div>
+</td>
+<td class="px-6 py-4 font-bold">142 Tons</td>
+<td class="px-6 py-4 text-on-surface-variant">40 Tons</td>
+<td class="px-6 py-4">
+<span class="px-2 py-0.5 rounded-sm bg-mobile-success text-cos-white text-web-text-tiny font-bold">IN STOCK</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-variant/30 transition-colors cursor-pointer group">
+<td class="px-6 py-4 font-mono text-cos-blue">C-PTL-901</td>
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="font-bold">Portland Cement (ปูนซีเมนต์พอร์ตแลนด์)</span>
+<span class="text-web-text-small text-on-surface-variant">Type I, Bulk Storage</span>
+</div>
+</td>
+<td class="px-6 py-4 font-bold">850 Bags</td>
+<td class="px-6 py-4 text-on-surface-variant">1,200 Bags</td>
+<td class="px-6 py-4">
+<span class="px-2 py-0.5 rounded-sm bg-mobile-warning text-cos-white text-web-text-tiny font-bold">LOW STOCK</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-variant/30 transition-colors cursor-pointer group">
+<td class="px-6 py-4 font-mono text-cos-blue">R-BAR-002</td>
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="font-bold">Rebar (เหล็กเส้น)</span>
+<span class="text-web-text-small text-on-surface-variant">DB20, High Tensile</span>
+</div>
+</td>
+<td class="px-6 py-4 font-bold">0 Tons</td>
+<td class="px-6 py-4 text-on-surface-variant">15 Tons</td>
+<td class="px-6 py-4">
+<span class="px-2 py-0.5 rounded-sm bg-mobile-danger text-cos-white text-web-text-tiny font-bold">OUT OF STOCK</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-variant/30 transition-colors cursor-pointer group">
+<td class="px-6 py-4 font-mono text-cos-blue">E-WIR-115</td>
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="font-bold">Electrical Wiring (สายไฟ)</span>
+<span class="text-web-text-small text-on-surface-variant">2.5mm THW, Copper</span>
+</div>
+</td>
+<td class="px-6 py-4 font-bold">45 Reels</td>
+<td class="px-6 py-4 text-on-surface-variant">10 Reels</td>
+<td class="px-6 py-4">
+<span class="px-2 py-0.5 rounded-sm bg-mobile-success text-cos-white text-web-text-tiny font-bold">IN STOCK</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-variant/30 transition-colors cursor-pointer group">
+<td class="px-6 py-4 font-mono text-cos-blue">G-GLS-880</td>
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="font-bold">Glass Panels (แผ่นกระจก)</span>
+<span class="text-web-text-small text-on-surface-variant">Double Glazed, UV Filter</span>
+</div>
+</td>
+<td class="px-6 py-4 font-bold">12 units</td>
+<td class="px-6 py-4 text-on-surface-variant">10 units</td>
+<td class="px-6 py-4">
+<span class="px-2 py-0.5 rounded-sm bg-mobile-warning text-cos-white text-web-text-tiny font-bold">LOW STOCK</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Recent Logs -->
+<div class="glass-panel rounded-xl overflow-hidden">
+<div class="px-web-space-4 py-web-space-3 border-b border-outline-variant/30 flex justify-between items-center bg-surface-container-high/50">
+<h3 class="font-web-text-h2 text-on-surface">Recent Activity Logs (รายการเคลื่อนไหวล่าสุด)</h3>
+<button class="text-cos-blue text-web-text-tiny font-bold hover:underline">View All Logs</button>
+</div>
+<div class="p-2 space-y-1">
+<div class="flex items-center justify-between p-3 rounded-lg hover:bg-surface-variant/20 group">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-mobile-success/10 flex items-center justify-center text-mobile-success">
+<span class="material-symbols-outlined text-sm">download</span>
+</div>
+<div>
+<p class="font-web-text-body font-bold text-on-surface">Material Received: Structural Steel</p>
+<p class="text-web-text-tiny text-on-surface-variant">Invoice #INV-2024-001 • Received by Sam T.</p>
+</div>
+</div>
+<span class="text-web-text-tiny text-on-surface-variant group-hover:text-on-surface">12 mins ago</span>
+</div>
+<div class="flex items-center justify-between p-3 rounded-lg hover:bg-surface-variant/20 group">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-mobile-primary/10 flex items-center justify-center text-mobile-primary">
+<span class="material-symbols-outlined text-sm">upload</span>
+</div>
+<div>
+<p class="font-web-text-body font-bold text-on-surface">Material Consumed: Rebar DB20</p>
+<p class="text-web-text-tiny text-on-surface-variant">Allocated to Sector B-4 • Site Request #REQ-99</p>
+</div>
+</div>
+<span class="text-web-text-tiny text-on-surface-variant group-hover:text-on-surface">1 hour ago</span>
+</div>
+<div class="flex items-center justify-between p-3 rounded-lg hover:bg-surface-variant/20 group">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-cos-cyan/10 flex items-center justify-center text-cos-cyan">
+<span class="material-symbols-outlined text-sm">door_open</span>
+</div>
+<div>
+<p class="font-web-text-body font-bold text-on-surface">Delivery Gate-In: Bulk Cement</p>
+<p class="text-web-text-tiny text-on-surface-variant">Truck #BK-7721 • Awaiting Inspection</p>
+</div>
+</div>
+<span class="text-web-text-tiny text-on-surface-variant group-hover:text-on-surface">3 hours ago</span>
+</div>
+</div>
+</div>
+</div>
+<!-- AI Insights Panel (1/3 width) -->
+<div class="lg:col-span-1 space-y-web-space-6">
+<div class="glass-panel rounded-xl border-l-4 border-l-cos-cyan bg-cos-cyan/5 ai-glow flex flex-col p-web-space-4">
+<div class="flex items-center gap-2 mb-web-space-4">
+<span class="material-symbols-outlined text-cos-cyan animate-pulse">auto_awesome</span>
+<h3 class="font-web-text-h2 text-cos-cyan uppercase tracking-wide">AI Predictive Analytics</h3>
+</div>
+<!-- Usage Chart Placeholder -->
+<div class="mb-web-space-6">
+<p class="text-web-text-tiny font-bold text-on-surface-variant mb-2">Usage Forecast: Portland Cement</p>
+<div class="h-48 w-full bg-surface-container-high relative rounded-lg border border-cos-cyan/20 overflow-hidden">
+<!-- Simulated Chart Graphic -->
+<svg class="absolute inset-0 w-full h-full" preserveaspectratio="none">
+<path class="opacity-80" d="M0 150 Q 50 140, 100 100 T 200 80 T 300 120 T 400 40" fill="none" stroke="#06B6D4" stroke-width="2"></path>
+<path class="opacity-50" d="M0 150 Q 50 145, 100 120 T 200 130 T 300 140 T 400 110" fill="none" stroke="#2563EB" stroke-dasharray="4 2" stroke-width="2"></path>
+</svg>
+<div class="absolute bottom-2 left-2 flex gap-4">
+<div class="flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-cos-cyan"></span>
+<span class="text-[10px] text-on-surface-variant">Predicted</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-cos-blue"></span>
+<span class="text-[10px] text-on-surface-variant">Actual</span>
+</div>
+</div>
+</div>
+</div>
+<div class="space-y-web-space-4">
+<div class="p-3 bg-cos-cyan/10 border border-cos-cyan/30 rounded-lg">
+<div class="flex items-center gap-2 text-cos-cyan mb-1">
+<span class="material-symbols-outlined text-sm">warning</span>
+<span class="text-web-text-tiny font-bold">Potential Shortage (คาดการณ์ขาดแคลน)</span>
+</div>
+<p class="text-web-text-small text-on-surface leading-snug">AI predicts Cement shortage in 72 hours based on current pouring schedule and delayed delivery #TX-04.</p>
+<button class="mt-2 text-cos-cyan text-web-text-tiny font-bold underline">Re-route Delivery</button>
+</div>
+<div class="p-3 bg-cos-cyan/10 border border-cos-cyan/30 rounded-lg">
+<div class="flex items-center gap-2 text-cos-cyan mb-1">
+<span class="material-symbols-outlined text-sm">trending_down</span>
+<span class="text-web-text-tiny font-bold">Cost Saving Insight</span>
+</div>
+<p class="text-web-text-small text-on-surface leading-snug">Consolidating structural steel orders for Sector C could reduce procurement costs by 8.4% ($24k savings).</p>
+<button class="mt-2 text-cos-cyan text-web-text-tiny font-bold underline">Approve Strategy</button>
+</div>
+<div class="p-3 bg-surface-container-high rounded-lg border border-outline-variant/30">
+<div class="flex items-center gap-2 text-on-surface-variant mb-1">
+<span class="material-symbols-outlined text-sm">mic</span>
+<span class="text-web-text-tiny font-bold">Voice Entry Log (สั่งด้วยเสียง)</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="flex-1 h-1 bg-cos-cyan/20 rounded-full overflow-hidden">
+<div class="h-full bg-cos-cyan w-1/3 animate-pulse"></div>
+</div>
+<span class="text-web-text-tiny text-on-surface-variant">0:04</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Material Origin Map -->
+<div class="glass-panel rounded-xl overflow-hidden">
+<div class="px-web-space-4 py-web-space-3 border-b border-outline-variant/30 flex justify-between items-center">
+<h3 class="font-web-text-label text-on-surface">Material Logistics Map</h3>
+</div>
+<div class="h-64 relative overflow-hidden">
+<img class="w-full h-full object-cover grayscale opacity-60" data-alt="A sophisticated dark-themed satellite map overlay of an urban construction site in Bangkok. Glowing blue lines represent logistics routes, and pulsing yellow dots indicate delivery trucks in real-time transit. The aesthetic is data-heavy, technical, and high-contrast, fitting for a command center dashboard." data-location="Bangkok Construction Zone" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCN8fR19Z7pRXhxG-Mev-v9F86eabLGiFFxLm0HB---feDsNocdZ492r8tWoSnK1ZUeB-vErr157WkQUghMD1N1UtJpiLTQYmumlUQAXe5qllfMvWHQhfAOeTP6VV8zsTzqmUj6NTHM_Icyu4xNAAav4FBmz0hhp8RA0RCDhcS8TZc_OWOxDhvairyKahOqSPWQvuUsE0hFYBoKfO9tQQW2aePjXa47UcgCsbSAwGdWPBe9GbeDzpj2-rak70tJwOlBglP_-SLt33g"/>
+<div class="absolute top-2 left-2 flex flex-col gap-1">
+<div class="px-2 py-1 bg-cos-navy/80 rounded border border-outline-variant/30 flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-mobile-success animate-pulse"></span>
+<span class="text-web-text-tiny text-on-surface font-bold">Truck 04: Arriving</span>
+</div>
+<div class="px-2 py-1 bg-cos-navy/80 rounded border border-outline-variant/30 flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-mobile-warning"></span>
+<span class="text-web-text-tiny text-on-surface font-bold">Truck 09: Delayed</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Floating Action Button (Only for specific Dashboard Context) -->
+<button class="fixed bottom-web-space-8 right-web-space-8 w-14 h-14 bg-cos-blue text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50">
+<span class="material-symbols-outlined text-3xl">add</span>
+</button>
+</main>
+<script>
+        // Simple micro-interaction for rows
+        document.querySelectorAll('tbody tr').forEach(row => {
+            row.addEventListener('click', () => {
+                row.classList.toggle('bg-primary/5');
+            });
+        });
+    </script>
+</body></html>

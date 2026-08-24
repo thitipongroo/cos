@@ -86,6 +86,7 @@ import paths) with no additional benefit for this upgrade.
 
 ## References
 
-- QM-18 (PgBouncer transaction mode; direct migration connection), ADR-008 (RLS), ADR-031 (CLS
-  tenant context), ADR-034 (graceful shutdown of long-lived clients)
+- ADR-018 (Prisma as the ORM — ADR-041 upgrades that choice to v7), QM-18 (PgBouncer
+  transaction mode; direct migration connection), ADR-008 (RLS), ADR-031 (CLS tenant
+  context), ADR-034 (graceful shutdown of long-lived clients)
 - Prisma 7 `P1012` datasource error; `prisma/config` `defineConfig` + `env`; `@prisma/adapter-pg`

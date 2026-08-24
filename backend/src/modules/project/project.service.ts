@@ -21,7 +21,7 @@ import type { OutboxEventInput } from '../../shared/outbox/outbox.types';
 import { createLogger } from '@cos/logger';
 import type { CosRole } from '@cos/types';
 import { ProjectRepository } from './project.repository';
-import type { ProjectRow } from './project.repository';
+import type { MemberProjectRow, ProjectRow } from './project.repository';
 import { validateTransition } from './project.state-machine';
 import type { ProjectStatus } from './project.state-machine';
 import type { CreateProjectDto } from './dto/create-project.dto';
@@ -129,6 +129,22 @@ export class ProjectService {
     }
 
     return this.repo.list({ status: dto.status, type: dto.type, cursor: dto.cursor, limit });
+  }
+
+  /**
+   * The signed-in user's own projects (projects they are a member of). Scoped by the JWT user_id, so
+   * a caller only ever sees their own projects — used by the SITE_ENGINEER home picker.
+   */
+  async listMine(): Promise<{ items: MemberProjectRow[] }> {
+    return { items: await this.repo.listByMember(this.userId) };
+  }
+
+  /**
+   * A specific user's projects — used by the TENANT_ADMIN user-profile screen. The repository scopes
+   * `WHERE tenant_id = <caller's tenant>`, so an admin only ever sees projects inside their own tenant.
+   */
+  async listForUser(userId: string): Promise<{ items: MemberProjectRow[] }> {
+    return { items: await this.repo.listByMember(userId) };
   }
 
   async update(projectId: string, dto: UpdateProjectDto): Promise<ProjectRow> {
@@ -351,12 +367,13 @@ export class ProjectService {
 
       if (ids.length === 0) return { items: [], nextCursor: null };
 
-      // Fetch full rows from DB (OpenSearch holds only search fields, not full entity)
-      const items: ProjectRow[] = [];
-      for (const id of ids) {
-        const row = await this.repo.findById(id);
-        if (row) items.push(row);
-      }
+      // Fetch full rows from DB (OpenSearch holds only search fields, not full entity) in ONE query.
+      // This used to loop findById(), i.e. a separate tenant transaction per hit.
+      const rows = await this.repo.findByIds(ids);
+      // Restore OpenSearch relevance order, which the SQL result does not preserve. Ids with no row
+      // (deleted since indexing, or filtered out by RLS) simply drop out, as before.
+      const byId = new Map(rows.map((r) => [r.project_id, r]));
+      const items = ids.map((id) => byId.get(id)).filter((r): r is ProjectRow => r !== undefined);
       return { items, nextCursor: null }; // cursor not supported for search results
     } catch (err) {
       logger.warn({ q, err }, 'opensearch.search.failed — falling back to DB list');

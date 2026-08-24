@@ -36,6 +36,17 @@ resource "cloudflare_record" "app" {
   ttl     = 1
 }
 
+# CredentialService public did:web host. Third-party verifiers resolve tenant DID documents and
+# revocation status lists here; the hostname is embedded in every credential already issued.
+resource "cloudflare_record" "credentials" {
+  zone_id = var.cloudflare_zone_id
+  name    = "credentials"
+  type    = "CNAME"
+  value   = "alb.${var.environment}.construction-os.io"
+  proxied = true
+  ttl     = 1
+}
+
 # ── TLS configuration ──────────────────────────────────────────────────────────
 resource "cloudflare_zone_settings_override" "cos" {
   zone_id = var.cloudflare_zone_id

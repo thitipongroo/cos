@@ -10,9 +10,9 @@ import {
 import en from '../en.json';
 import th from '../th.json';
 
-describe('locale constants (QM-3)', () => {
-  it('default locale is th and fallback is en', () => {
-    expect(DEFAULT_LOCALE).toBe('th');
+describe('locale constants', () => {
+  it('default locale is en (PO 2026-07-26, overrides QM-3) and fallback is en', () => {
+    expect(DEFAULT_LOCALE).toBe('en');
     expect(FALLBACK_LOCALE).toBe('en');
   });
 });

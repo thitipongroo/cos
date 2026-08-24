@@ -1,0 +1,257 @@
+<!DOCTYPE html><html class="dark" lang="th" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>กำลังดำเนินการแก้ไขความเสี่ยง | CONSTRUCTION OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-lowest": "#000f21",
+                    "on-primary-fixed": "#00174b",
+                    "primary-fixed": "#dbe1ff",
+                    "on-tertiary-fixed": "#161b2b",
+                    "inverse-on-surface": "#213145",
+                    "error-container": "#93000a",
+                    "outline": "#8d90a0",
+                    "surface-bright": "#2a3a4f",
+                    "primary-container": "#2563eb",
+                    "sync-pending": "#94A3B8",
+                    "surface-container": "#102034",
+                    "error": "#ffb4ab",
+                    "dark-surface": "#0F172A",
+                    "mobile-primary": "#0066FF",
+                    "tertiary": "#c1c5dc",
+                    "secondary": "#06B6D4", // Updated to AI Cyan
+                    "surface-dim": "#031427",
+                    "on-secondary-container": "#00424e",
+                    "on-tertiary": "#2b3041",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "inverse-primary": "#0053db",
+                    "surface-tint": "#b4c5ff",
+                    "secondary-fixed-dim": "#06B6D4",
+                    "surface-container-low": "#0b1c30",
+                    "primary": "#b4c5ff",
+                    "on-primary": "#002a78",
+                    "on-secondary-fixed": "#001f26",
+                    "on-secondary": "#003640",
+                    "mobile-danger": "#FF3B30",
+                    "mobile-success": "#00C853",
+                    "sync-active": "#00C853", // Updated to Official Synced Green
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "surface-variant": "#26364a",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "outline-variant": "#434655",
+                    "on-primary-container": "#eeefff",
+                    "tertiary-container": "#686c80",
+                    "on-error-container": "#ffdad6",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "on-error": "#690005",
+                    "on-surface": "#d3e4fe",
+                    "background": "#031427",
+                    "surface": "#031427",
+                    "inverse-surface": "#d3e4fe",
+                    "on-tertiary-container": "#eeefff",
+                    "surface-container-high": "#1b2b3f",
+                    "tertiary-fixed": "#dee1f9",
+                    "on-surface-variant": "#c3c6d7",
+                    "dark-bg": "#020617",
+                    "secondary-container": "#03b5d3",
+                    "secondary-fixed": "#acedff",
+                    "surface-container-highest": "#26364a",
+                    "on-background": "#d3e4fe",
+                    "mobile-warning": "#FF9500"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "touch-target": "52px",
+                    "edge-mobile": "24px",
+                    "base": "4px",
+                    "space-2": "8px",
+                    "space-3": "12px",
+                    "web-margin": "32px",
+                    "space-4": "16px",
+                    "space-1": "4px"
+            },
+            "fontFamily": {
+                    "hero-mobile": ["Inter Tight"],
+                    "h2-web": ["Inter Tight"],
+                    "body-mobile": ["Inter Tight"],
+                    "tiny-web": ["Inter Tight"],
+                    "h1-web": ["Inter Tight"],
+                    "body-web": ["Inter Tight"],
+                    "label-mobile": ["Inter Tight"],
+                    "display-web": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #031427;
+            color: #d3e4fe;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+            min-height: max(884px, 100dvh);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .scanning-circle {
+            animation: rotate 4s linear infinite;
+        }
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(6, 182, 212, 0.1), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite linear;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .step-entry {
+            animation: slideIn 0.5s ease-out forwards;
+            opacity: 0;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(-10px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center w-full px-edge-mobile h-touch-target bg-background sticky top-0 z-50 border-b border-outline-variant/10">
+<div class="flex items-center gap-3">
+<img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDgoyUSi_iXywKHMx4i1pRtVqdVAXyXk_ABQ0pR0OLGmQHb5UTCrCakGzMTaTqEYXtp-nSqk1RTXolp57yGWmmlZFa8VrPDf_bJYoLInUfbg4icSv8UPGhRZk9gKWpz7zzc8XmDUa3L53dQXx2e3KOYQcsS_KhyLHX5ZhbwoN-S7dnVQrJ_hBosM5FE3cluV6hP-N6zkLbkNnSwwKLtWlpfzbQEHcMMAjWHEN2jDBbjMJ0KdCKHGaiiDh_ms1ETuxjaXc0UoKVzEaQ" alt="CONSTRUCTION OS Logo" class="w-8 h-8 object-contain bg-transparent">
+<span class="text-h2-web font-black text-primary tracking-tighter uppercase whitespace-nowrap">CONSTRUCTION OS</span>
+</div>
+<div class="flex items-center gap-1.5 bg-[#00C853]/10 px-3 py-1.5 rounded-full border border-[#00C853]/30">
+<span class="material-symbols-outlined text-[#00C853] text-[16px]" style="font-variation-settings: &quot;FILL&quot; 1;">check_circle</span>
+<span class="font-tiny-web text-[#00C853] font-bold uppercase tracking-wider">SYNCED</span>
+</div>
+</header>
+<main class="flex-grow flex flex-col px-edge-mobile pt-space-4 pb-12">
+<!-- Headline Section -->
+<div class="mb-8">
+<h1 class="font-hero-mobile text-hero-mobile text-on-background">Mitigation in progress</h1>
+<p class="font-body-mobile text-on-surface-variant mt-2">กำลังบังคับใช้โปรโตคอลความปลอดภัยในทุกโครงสร้างพื้นฐานของ Sector 7-B และ Core Admin</p>
+</div>
+<!-- Animation Section (Circular Progress) -->
+<div class="relative flex flex-col items-center justify-center py-8 mb-8">
+<div class="relative w-64 h-64 flex items-center justify-center">
+<!-- Outer Static Ring -->
+<div class="absolute inset-0 rounded-full border-[1px] border-secondary/10"></div>
+<!-- Dynamic Scanning Arc -->
+<div class="absolute inset-0 rounded-full border-t-[3px] border-secondary scanning-circle" style="box-shadow: 0 -4px 20px rgba(6, 182, 212, 0.4);"></div>
+<!-- Inner Core -->
+<div class="w-48 h-48 rounded-full bg-surface-container-low flex flex-col items-center justify-center text-center p-6 border border-outline-variant/30 shadow-[inset_0_0_20px_rgba(6, 182, 212, 0.1)]">
+<span class="material-symbols-outlined text-secondary text-5xl mb-3" style="font-variation-settings: &quot;FILL&quot; 1;">security</span>
+<span class="font-label-mobile text-secondary uppercase tracking-[0.2em] text-[10px] font-bold animate-pulse">Executing Protocols...</span>
+</div>
+<!-- Orbital Glow Point -->
+<div class="absolute w-3 h-3 bg-secondary rounded-full scanning-circle shadow-[0_0_10px_#06B6D4]" style="top: -1.5px; left: 50%; transform: translateX(-50%);"></div>
+</div>
+</div>
+<!-- Active Mitigation Steps -->
+<div class="space-y-3 mb-8">
+<div class="step-entry flex items-center gap-3 p-4 bg-surface-container rounded-xl border-l-4 border-mobile-success" style="animation-delay: 0.2s;">
+<span class="material-symbols-outlined text-mobile-success text-xl">check_circle</span>
+<span class="font-body-web text-on-surface">กำลังบังคับการรีเซ็ตรหัสผ่านสำหรับ Admin #442</span>
+</div>
+<div class="step-entry flex items-center gap-3 p-4 bg-surface-container rounded-xl border-l-4 border-secondary" style="animation-delay: 0.4s;">
+<span class="material-symbols-outlined text-secondary text-xl animate-pulse">sync</span>
+<span class="font-body-web text-on-surface">กำลังเปิดใช้งาน Geo-fencing สำหรับ Sector 7-B</span>
+</div>
+<div class="step-entry flex items-center gap-3 p-4 bg-surface-container rounded-xl border-l-4 border-outline-variant" style="animation-delay: 0.6s;">
+<span class="material-symbols-outlined text-outline-variant text-xl">pending</span>
+<span class="font-body-web text-on-surface-variant">กำลังอัปเดตบันทึก Identity Provider</span>
+</div>
+</div>
+<!-- AI Insight Block -->
+<div class="p-4 bg-surface-container-high rounded-xl border border-secondary/20 relative overflow-hidden mb-12">
+<div class="shimmer absolute inset-0 opacity-10"></div>
+<div class="flex items-start gap-3 relative z-10">
+<span class="material-symbols-outlined text-secondary mt-0.5">smart_toy</span>
+<div class="flex-1">
+<div class="flex justify-between items-center mb-1">
+<p class="font-label-mobile text-secondary uppercase tracking-tight font-bold">Insight</p>
+<span class="text-[10px] text-on-surface-variant/60 font-mono">Source: Automated Mitigation Engine</span>
+</div>
+<p class="font-body-web text-on-surface leading-snug">ตรวจสอบขั้นตอนการแก้ไขเรียบร้อยแล้ว คาดว่าระบบจะกลับสู่สภาวะปกติภายใน &lt; 2 นาที</p>
+<p class="font-label-mobile text-secondary mt-2 font-bold italic">98% Confidence.</p>
+</div>
+</div>
+</div>
+<!-- Actions -->
+<div class="mt-auto space-y-3">
+<button class="w-full h-touch-target min-h-[52px] bg-primary-container text-on-primary-container font-h1-web uppercase tracking-wider rounded-xl shadow-lg active:scale-[0.98] transition-all duration-150 flex items-center justify-center gap-2">
+                ดูสถานะสุขภาพระบบ
+                <span class="material-symbols-outlined">analytics</span>
+</button>
+<button class="w-full h-touch-target min-h-[52px] bg-transparent text-primary border border-primary/30 font-label-mobile uppercase tracking-widest rounded-xl active:bg-primary/10 transition-colors">
+                กลับสู่บันทึกการตรวจสอบ
+            </button>
+</div>
+</main>
+<!-- Bottom Notification Toast -->
+<div class="fixed bottom-6 left-4 right-4 bg-surface-container-highest p-4 rounded-xl flex items-center justify-between border border-secondary/30 shadow-2xl transform transition-transform duration-500 z-[100] translate-y-0" id="toast">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-mobile-success/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-mobile-success text-lg">verified</span>
+</div>
+<span class="font-body-web font-medium">โปรโตคอล 442-A เสร็จสมบูรณ์</span>
+</div>
+<button class="text-on-surface-variant p-1" onclick="hideToast()">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<script>
+        // Simple Micro-interaction: Show a success toast after 3 seconds
+        setTimeout(() => {
+            const toast = document.getElementById('toast');
+            toast.classList.remove('translate-y-48');
+            toast.classList.add('translate-y-0');
+        }, 4000);
+
+        function hideToast() {
+            const toast = document.getElementById('toast');
+            toast.classList.add('translate-y-48');
+            toast.classList.remove('translate-y-0');
+        }
+
+        // Haptic-like feedback on button press
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('touchstart', () => {
+                if (window.navigator.vibrate) window.navigator.vibrate(15);
+            });
+        });
+    </script>
+
+
+</body></html>

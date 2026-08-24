@@ -5,12 +5,14 @@ import { createClient, ClickHouseClient } from '@clickhouse/client';
 import { redisInsStore } from 'cache-manager-ioredis-yet';
 import Redis from 'ioredis';
 import { AnalyticsService } from './analytics.service';
+import { AnalyticsProjectScopeService } from './analytics-project-scope.service';
+import { TenantModule } from '../tenant/tenant.module';
 import { AnalyticsExecutiveController } from './analytics.executive.controller';
 import { AnalyticsPmController } from './analytics.pm.controller';
 import { AnalyticsTrendsController } from './analytics.trends.controller';
-import { CLICKHOUSE_CLIENT } from './analytics.tokens';
+import { CACHE_REDIS, CLICKHOUSE_CLIENT } from './analytics.tokens';
 
-export { CLICKHOUSE_CLIENT };
+export { CLICKHOUSE_CLIENT, CACHE_REDIS };
 
 // Cache TTL: 5 minutes — spec §Phase 14 Caching Strategy
 const CACHE_TTL_MS = 5 * 60 * 1000;
@@ -20,8 +22,10 @@ const CACHE_TTL_MS = 5 * 60 * 1000;
 // when the module is instantiated more than once (e.g. integration tests build the app per-suite):
 // every instance's CacheModule factory overwrites the shared reference, so all but the last client
 // leak their socket + reconnect timer past app.close() and hang Jest.
-const CACHE_REDIS = Symbol('ANALYTICS_CACHE_REDIS');
-
+//
+// The token moved to analytics.tokens.ts (from a module-private Symbol) so AnalyticsService can
+// inject the same client for pattern-based cache invalidation.
+//
 // Owns the cache Redis client and exports it. Imported by both AnalyticsModule (so its class can
 // close the client) and the CacheModule.registerAsync below (so the store uses the same instance).
 // Nest treats the imported module as one instance per AnalyticsModule, so client and closer match.
@@ -41,6 +45,8 @@ class CacheRedisModule {}
 @Module({
   imports: [
     ConfigModule,
+    // TenantModule supplies TenantPrismaService for the §6.5 project-membership lookup.
+    TenantModule,
     CacheRedisModule,
     CacheModule.registerAsync({
       imports: [CacheRedisModule],
@@ -65,6 +71,7 @@ class CacheRedisModule {}
         }),
     },
     AnalyticsService,
+    AnalyticsProjectScopeService,
   ],
   exports: [AnalyticsService],
 })

@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="th"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>Construction OS - Select Logo File</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary": "#003640",
+                    "on-tertiary": "#2b3041",
+                    "mobile-danger": "#FF3B30",
+                    "inverse-surface": "#d3e4fe",
+                    "secondary-container": "#03b5d3",
+                    "tertiary-container": "#686c80",
+                    "on-primary-container": "#eeefff",
+                    "primary-container": "#2563eb",
+                    "primary": "#b4c5ff",
+                    "dark-surface": "#0F172A",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "outline-variant": "#434655",
+                    "surface-variant": "#26364a",
+                    "surface-container-highest": "#26364a",
+                    "on-tertiary-fixed": "#161b2b",
+                    "on-error-container": "#ffdad6",
+                    "outline": "#8d90a0",
+                    "surface-container-lowest": "#000f21",
+                    "inverse-primary": "#0053db",
+                    "surface-container-high": "#1b2b3f",
+                    "dark-bg": "#020617",
+                    "on-surface": "#d3e4fe",
+                    "secondary": "#4cd7f6",
+                    "on-primary": "#002a78",
+                    "on-tertiary-container": "#eeefff",
+                    "on-error": "#690005",
+                    "on-primary-fixed": "#00174b",
+                    "tertiary-fixed": "#dee1f9",
+                    "sync-pending": "#94A3B8",
+                    "tertiary": "#c1c5dc",
+                    "primary-fixed": "#dbe1ff",
+                    "on-surface-variant": "#c3c6d7",
+                    "sync-active": "#FFD60A",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "surface-bright": "#2a3a4f",
+                    "on-secondary-container": "#00424e",
+                    "surface": "#031427",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "inverse-on-surface": "#213145",
+                    "surface-container": "#102034",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "on-secondary-fixed": "#001f26",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "secondary-fixed": "#acedff",
+                    "surface-container-low": "#0b1c30",
+                    "on-background": "#d3e4fe",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "surface-dim": "#031427",
+                    "error": "#ffb4ab",
+                    "error-container": "#93000a",
+                    "surface-tint": "#b4c5ff",
+                    "mobile-success": "#00C853",
+                    "mobile-primary": "#0066FF",
+                    "background": "#031427",
+                    "mobile-warning": "#FF9500"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "space-1": "4px",
+                    "space-2": "8px",
+                    "space-4": "16px",
+                    "edge-mobile": "24px",
+                    "base": "4px",
+                    "web-margin": "32px",
+                    "touch-target": "52px",
+                    "space-3": "12px"
+            },
+            "fontFamily": {
+                    "tiny-web": ["Inter Tight"],
+                    "label-mobile": ["Inter Tight"],
+                    "body-web": ["Inter Tight"],
+                    "body-mobile": ["Inter Tight"],
+                    "h1-web": ["Inter Tight"],
+                    "hero-mobile": ["Inter Tight"],
+                    "h2-web": ["Inter Tight"],
+                    "display-web": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            font-family: 'Inter Tight', sans-serif;
+            background-color: #031427;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .tonal-layering {
+            background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%);
+        }
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite linear;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .safe-bottom-padding {
+            padding-bottom: calc(16px + env(safe-area-inset-bottom));
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="text-on-surface overflow-hidden h-screen flex flex-col">
+<!-- Top App Bar -->
+<header class="bg-surface-dim border-b border-white/10 flex justify-between items-center w-full px-edge-mobile h-touch-target sticky top-0 z-50">
+<div class="flex items-center gap-4">
+<button class="text-on-surface hover:bg-surface-bright/10 p-2 rounded-full transition-colors duration-200">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="font-h1-web text-h1-web-mobile font-bold text-primary">เลือกไฟล์โลโก้</h1>
+</div>
+<div class="flex items-center gap-2 px-3 py-1 bg-surface-container rounded-full border border-white/5">
+<span class="w-2 h-2 rounded-full bg-mobile-success"></span>
+<span class="font-tiny-web text-tiny-web uppercase tracking-widest text-mobile-success">Synced</span>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 overflow-y-auto px-edge-mobile py-6 flex flex-col gap-6">
+<!-- Category Tabs -->
+<nav class="flex gap-2 p-1 bg-surface-container-low rounded-xl">
+<button class="flex-1 py-2.5 px-4 rounded-lg bg-secondary-container text-on-secondary-container font-bold text-label-mobile transition-all duration-200">
+                ไฟล์ล่าสุด
+            </button>
+<button class="flex-1 py-2.5 px-4 rounded-lg text-on-surface-variant hover:bg-surface-bright/10 font-label-mobile transition-all duration-200">
+                ดาวน์โหลด
+            </button>
+<button class="flex-1 py-2.5 px-4 rounded-lg text-on-surface-variant hover:bg-surface-bright/10 font-label-mobile transition-all duration-200">
+                คลาวด์
+            </button>
+</nav>
+<!-- Search & Filter -->
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full bg-surface-container border-none rounded-xl pl-12 pr-4 py-3 text-body-mobile focus:ring-2 focus:ring-primary-container transition-all" placeholder="ค้นหาชื่อไฟล์..." type="text"/>
+</div>
+<!-- File Grid (Bento Style) -->
+<div class="grid grid-cols-2 gap-4">
+<!-- Active/Selected File -->
+<div class="relative bg-surface-container border-2 border-primary-container rounded-xl p-3 flex flex-col gap-3 transition-transform duration-150 active:scale-95 group">
+<div class="aspect-square bg-surface-container-high rounded-lg overflow-hidden flex items-center justify-center p-4">
+<img class="w-full h-full object-contain" data-alt="A clean, minimalist vector of a construction company logo featuring a stylized crane and abstract geometric shapes. The logo is displayed in high-contrast white against a deep charcoal gray background, reflecting the industrial-grade and systematic aesthetic of the Construction OS platform. Professional, corporate, and precise." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAtxeOhwLAmvSrMNXHuZorS6a97FuNdtLPMyyOX91GIOr9qWI00JoLRZxeAGlNS1HBkyNkV-XujbORp-sFuGIsQEcPoanTsBy9WABOF6Mffl_HWIZZ5f7gJdRc7G3sq0LYQdEJYHVuSC9j2pxiwHmIx1wLdhWAxQu50ZJ6MU7T10-u4pqFbg5ayxTrQJrGowUuXAI7YJ9wZ0AQW7pS_4h5ofI4BWHAAA62KaPFeM0P8LzXSAI-U8c5i"/>
+</div>
+<div class="flex flex-col">
+<span class="font-label-mobile text-on-surface truncate">main_logo_v2.svg</span>
+<span class="text-tiny-web text-on-surface-variant uppercase">42 KB • SVG</span>
+</div>
+<div class="absolute top-2 right-2 bg-primary-container text-on-primary-container rounded-full p-1 shadow-lg">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+</div>
+<!-- Other Files -->
+<div class="bg-surface-container border border-white/5 rounded-xl p-3 flex flex-col gap-3 transition-transform duration-150 active:scale-95 hover:bg-surface-container-high">
+<div class="aspect-square bg-surface-container-high rounded-lg overflow-hidden flex items-center justify-center p-4">
+<img class="w-full h-full object-contain opacity-80" data-alt="A professional engineering firm logo featuring interlocking hexagonal structures and bold industrial typography. The visual style is high-utility and mission-critical, using a primary blue and metallic silver palette. The background is a dark matte finish typical of high-end SaaS software interfaces for field engineers." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB-Frta9UBDRzy6r7DGJwnqpq9ObNBppbxIl_VOaEYmANrruVVLUbt9Phcn9rIA-NA5YAeMFjvibKmlKi6b6o-8fy9JE8WPy6lp7IU3C4YeIO9T-TOPJSEbuVRi0YhZP7s6BUh-QI0K0_cYkMZTLyEq73wve7JeRaSEFbUf1m22QNrq4jDbCeZD3gRdZzsKJXy6dqFMU0LkXwnSt3zdu7ozKeHuJyGg34b3p6tpu73JP92FqUhWz3jz"/>
+</div>
+<div class="flex flex-col">
+<span class="font-label-mobile text-on-surface truncate">site_banner.png</span>
+<span class="text-tiny-web text-on-surface-variant uppercase">1.2 MB • PNG</span>
+</div>
+</div>
+<div class="bg-surface-container border border-white/5 rounded-xl p-3 flex flex-col gap-3 transition-transform duration-150 active:scale-95 hover:bg-surface-container-high">
+<div class="aspect-square bg-surface-container-high rounded-lg overflow-hidden flex items-center justify-center p-4">
+<img class="w-full h-full object-contain opacity-80" data-alt="An architectural blueprint icon reimagined as a logo, with sharp white lines defining structural foundations on a dark navy background. The lighting is subtle, creating a sense of depth and technical precision suited for a project management mobile application for large-scale construction projects." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBoNJX4h66DF1bc3a5pmFHrjISOrFMIx45ODhdXeZt-zTHdEC3_qiDLfkfKnRLaNl7BAF1Q5AsNONMObWcToPIEOp33afpkCAId-FW1PaR98Wu3nRvsOanK_kx0oYo4FwdRFzIenPekmx9m_1U_78nNp6gYAwOMgdydcB9sii1pdjBnmgG-P8qEHBdhjMvDTICkwSUeWV0zoCthfIqv3BtTtd5mmEAGoDNJ8Fim5rLOtuH3iDOvhkhs"/>
+</div>
+<div class="flex flex-col">
+<span class="font-label-mobile text-on-surface truncate">arch_icon.svg</span>
+<span class="text-tiny-web text-on-surface-variant uppercase">15 KB • SVG</span>
+</div>
+</div>
+<div class="bg-surface-container border border-white/5 rounded-xl p-3 flex flex-col gap-3 transition-transform duration-150 active:scale-95 hover:bg-surface-container-high">
+<div class="aspect-square bg-surface-container-high rounded-lg overflow-hidden flex items-center justify-center p-4">
+<img class="w-full h-full object-contain opacity-80" data-alt="A modern corporate emblem for a construction machinery company, showing a simplified profile of an excavator arm within a circular frame. The color scheme features safety orange accents over a dark slate base, emphasizing functional clarity and industrial reliability within a dark mode mobile interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1kpdw_yfVZUeV7Wst9CSLh7dADprHsanS8qqdqCSnXjNsbo-7fmMjAYjYKEqHeeGdGlzBHsVb4s-zCdj69DGRBr1d3P9F_K_k3bW3UybZerMjhBLHWVbLf6Z3M7tTSxkmCN-G_7FDdQicTA9M1U1A1YDhtlISjuQlv7TfhxVKG9ui_JRKb7jQkm9_yX67Wh3yMortZg0jEfvEGMZ51cMFZNY9zRS9RwvbDD-xTuhc0ry3unT1JAeW"/>
+</div>
+<div class="flex flex-col">
+<span class="font-label-mobile text-on-surface truncate">heavy_equip.png</span>
+<span class="text-tiny-web text-on-surface-variant uppercase">890 KB • PNG</span>
+</div>
+</div>
+<!-- More items for scrollability demo -->
+<div class="bg-surface-container border border-white/5 rounded-xl p-3 flex flex-col gap-3 transition-transform duration-150 active:scale-95 hover:bg-surface-container-high">
+<div class="aspect-square bg-surface-container-high rounded-lg overflow-hidden flex items-center justify-center p-4">
+<div class="flex flex-col items-center gap-1 opacity-40">
+<span class="material-symbols-outlined text-4xl">image</span>
+</div>
+</div>
+<div class="flex flex-col">
+<span class="font-label-mobile text-on-surface truncate">draft_logo.jpg</span>
+<span class="text-tiny-web text-on-surface-variant uppercase">2.4 MB • JPG</span>
+</div>
+</div>
+</div>
+<!-- AI Assistant Suggestion Module -->
+<div class="bg-surface-container border-l-4 border-secondary p-4 rounded-xl flex gap-4 items-start bg-secondary/5">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<div class="flex flex-col gap-1">
+<h4 class="font-label-mobile text-secondary">AI คำแนะนำ</h4>
+<p class="font-body-mobile text-[14px] leading-tight text-on-surface-variant">พบไฟล์ SVG ที่มีความละเอียดสูงและพื้นหลังโปร่งใส เหมาะสำหรับการใช้เป็นโลโก้บริษัทบนรายงาน</p>
+</div>
+</div>
+<div class="h-24"></div> <!-- Spacer for footer -->
+</main>
+<!-- Bottom Action Bar (Selection Info & Button) -->
+<div class="fixed bottom-0 left-0 w-full z-50 bg-surface-container border-t border-white/10 safe-bottom-padding px-edge-mobile py-4 shadow-2xl flex flex-col gap-4">
+<!-- Selected Details -->
+<div class="flex items-center justify-between">
+<div class="flex flex-col">
+<span class="text-tiny-web uppercase tracking-wider text-on-surface-variant">ไฟล์ที่เลือก</span>
+<span class="font-label-mobile text-on-surface">main_logo_v2.svg</span>
+</div>
+<div class="text-right">
+<span class="text-tiny-web uppercase tracking-wider text-on-surface-variant">ขนาด</span>
+<span class="font-label-mobile text-on-surface block">42.8 KB</span>
+</div>
+</div>
+<!-- Confirm Button -->
+<button class="w-full h-touch-target bg-primary-container text-on-primary-container font-hero-mobile text-label-mobile uppercase tracking-[0.05em] rounded-xl shadow-lg shadow-primary-container/20 transition-all duration-150 active:scale-[0.97] hover:brightness-110 flex items-center justify-center gap-3">
+<span class="material-symbols-outlined">check</span>
+            ยืนยันการเลือก
+        </button>
+</div>
+<script>
+        // Simple micro-interaction for selection
+        const gridItems = document.querySelectorAll('.grid > div');
+        gridItems.forEach(item => {
+            item.addEventListener('click', () => {
+                gridItems.forEach(i => {
+                    i.classList.remove('border-primary-container', 'border-2');
+                    i.classList.add('border-white/5', 'border');
+                    const check = i.querySelector('.absolute');
+                    if(check) check.classList.add('hidden');
+                });
+                item.classList.remove('border-white/5', 'border');
+                item.classList.add('border-primary-container', 'border-2');
+                const check = item.querySelector('.absolute');
+                if(check) check.classList.remove('hidden');
+                
+                // Haptic feedback simulation
+                if (window.navigator && window.navigator.vibrate) {
+                    window.navigator.vibrate(10);
+                }
+            });
+        });
+
+        // Tab selection logic
+        const tabs = document.querySelectorAll('nav button');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => {
+                    t.classList.remove('bg-secondary-container', 'text-on-secondary-container', 'font-bold');
+                    t.classList.add('text-on-surface-variant', 'hover:bg-surface-bright/10');
+                });
+                tab.classList.add('bg-secondary-container', 'text-on-secondary-container', 'font-bold');
+                tab.classList.remove('text-on-surface-variant', 'hover:bg-surface-bright/10');
+            });
+        });
+    </script>
+</body></html>

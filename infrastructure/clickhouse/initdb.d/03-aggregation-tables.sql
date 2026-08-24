@@ -3,7 +3,10 @@
 --
 -- Engine:       AggregatingMergeTree (pre-aggregated at ingestion time — meets P95 SLA)
 -- Partitioning: toYYYYMM(event_date) for all fact tables (spec §Phase 14)
--- TTL:          raw events 2 years; aggregated tables indefinite (spec §Phase 14)
+-- TTL:          aggregate tables indefinite (no TTL clause). Raw/cold retention is NOT in ClickHouse —
+--               it lives in PostgreSQL (2 yr rolling) + the S3/Iceberg Data Lake (10 yr, Path 2 —
+--               deferred/FUTURE, scheduled for Phase 17 per §9.4);
+--               see context/00_master_construction_os.md §Phase 14 ClickHouse Strategy.
 -- ORDER BY:     (tenant_id, project_id, event_date) — primary query pattern
 --
 -- Query pattern (always use FINAL to merge partial states):

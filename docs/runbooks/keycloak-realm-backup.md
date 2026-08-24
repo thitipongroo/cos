@@ -2,7 +2,7 @@
 
 **Source:** FILE REFERENCE MAP — "Keycloak realm daily backup (CronJob spec)"  
 **Frequency:** Daily at 02:00 ICT (UTC+7)  
-**Retention:** 7 days on S3
+**Retention:** 90 days on S3 (+ 30 days for noncurrent versions)
 
 ---
 
@@ -10,6 +10,19 @@
 
 Keycloak realm configuration (users, clients, roles, identity providers) must be backed up daily.
 Backup is performed via `kc.sh export` and stored to S3 (MinIO in staging).
+
+> **Retention resolved 2026-08-07 (product-owner decision).** This page said 7 days and
+> [`keycloak-realm-recovery.md`](keycloak-realm-recovery.md) said 30, and neither was backed by
+> anything — the bucket existed in no IaC. It is now provisioned in
+> `infrastructure/terraform/aws/modules/s3/main.tf` as `aws_s3_bucket.keycloak_backups` with an
+> `expire-old-backups` rule of **90 days** plus 30-day noncurrent-version expiry — the same window as
+> the database-backups bucket, so both backup stores expire on one rule. SSE-KMS with the CMK,
+> versioning on, public access blocked, `force_destroy = false`.
+>
+> **PDPA carve-out to honour:** a realm export contains user PII, and
+> `docs/compliance/data-retention-policy.md` purges a deleted account's Keycloak record after 30
+> days — so a deleted user survives in these exports for up to 60 days longer. Record that in the
+> RoPA and honour it on an erasure request; this bucket is not out of scope for §33 subject rights.
 
 Recovery procedure: `docs/runbooks/keycloak-realm-recovery.md`
 

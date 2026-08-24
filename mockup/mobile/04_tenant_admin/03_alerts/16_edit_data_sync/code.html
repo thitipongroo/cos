@@ -1,0 +1,263 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>Edit Sync Data | Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary": "#2b3041",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "surface": "#031427",
+                        "surface-bright": "#2a3a4f",
+                        "on-secondary-fixed": "#001f26",
+                        "on-error": "#690005",
+                        "surface-container-high": "#1b2b3f",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "on-surface-variant": "#c3c6d7",
+                        "mobile-danger": "#FF3B30",
+                        "inverse-primary": "#0053db",
+                        "tertiary-container": "#686c80",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "outline-variant": "#434655",
+                        "on-secondary-container": "#00424e",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "inverse-on-surface": "#213145",
+                        "tertiary": "#c1c5dc",
+                        "on-surface": "#d3e4fe",
+                        "secondary-container": "#03b5d3",
+                        "surface-container": "#102034",
+                        "error-container": "#93000a",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "secondary": "#4cd7f6",
+                        "on-tertiary-fixed": "#161b2b",
+                        "dark-surface": "#0F172A",
+                        "outline": "#8d90a0",
+                        "primary-container": "#2563eb",
+                        "on-primary-fixed": "#00174b",
+                        "on-error-container": "#ffdad6",
+                        "mobile-primary": "#0066FF",
+                        "on-tertiary-container": "#eeefff",
+                        "primary": "#b4c5ff",
+                        "sync-active": "#FFD60A",
+                        "sync-pending": "#94A3B8",
+                        "surface-container-low": "#0b1c30",
+                        "surface-dim": "#031427",
+                        "surface-container-highest": "#26364a",
+                        "dark-bg": "#020617",
+                        "on-primary": "#002a78",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "surface-container-lowest": "#000f21",
+                        "mobile-success": "#00C853",
+                        "tertiary-fixed": "#dee1f9",
+                        "surface-tint": "#b4c5ff",
+                        "inverse-surface": "#d3e4fe",
+                        "on-primary-container": "#eeefff",
+                        "secondary-fixed": "#acedff",
+                        "on-secondary": "#003640",
+                        "on-background": "#d3e4fe",
+                        "background": "#031427",
+                        "error": "#ffb4ab",
+                        "primary-fixed": "#dbe1ff",
+                        "mobile-warning": "#FF9500",
+                        "surface-variant": "#26364a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "web-margin": "32px",
+                        "space-2": "8px",
+                        "space-4": "16px",
+                        "space-3": "12px",
+                        "space-1": "4px",
+                        "base": "4px",
+                        "touch-target": "52px",
+                        "edge-mobile": "24px"
+                    },
+                    "fontFamily": {
+                        "tiny-web": ["Inter Tight"],
+                        "h2-web": ["Inter Tight"],
+                        "label-mobile": ["Inter Tight"],
+                        "h1-web": ["Inter Tight"],
+                        "display-web": ["Inter Tight"],
+                        "body-mobile": ["Inter Tight"],
+                        "hero-mobile": ["Inter Tight"],
+                        "body-web": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                        "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                        "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #031427;
+            font-family: 'Inter Tight', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .ai-shimmer {
+            background: linear-gradient(90deg, rgba(3,181,211,0.05) 0%, rgba(3,181,211,0.15) 50%, rgba(3,181,211,0.05) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 3s infinite linear;
+        }
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        .status-pulse {
+            animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse-ring {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+        input:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(180, 197, 255, 0.2);
+        }
+    </style>
+</head>
+<body class="text-on-surface overflow-x-hidden pb-24">
+<!-- Top App Bar -->
+<header class="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-edge-mobile h-touch-target bg-surface-dim dark:bg-surface-container-lowest">
+<div class="flex items-center gap-space-2">
+<img alt="Construction OS Icon" class="w-8 h-8 rounded-md" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAKchnfoMptU_ozywruK4ClPAzRe_xCDr5vSXIZnPFfSZPayIszLzgO3sY4xG7dV256Avaz_FFivVMqGen1uUDvk-hTPss1XErsl3Is7AC4hw_vgje23yBPI_dPokxFKt0eeC8C0uw5mvF6nV7ben7bLCJs3HXhOm6jSsxHbP9euTseN4pqKVFozS6ViifE_afUrL63wPXty1vua42dbyizCaIC6EAxBRhR3PCcso6j3FDsiZz-bAW6KiA7rCqhauGmvA">
+<h1 class="font-display-web text-[18px] font-bold text-primary tracking-tight">CONSTRUCTION OS</h1>
+</div>
+<div class="flex items-center gap-space-2 bg-surface-container-high px-space-2 py-1 rounded-full">
+<div class="w-2 h-2 rounded-full bg-mobile-success status-pulse"></div>
+<span class="font-label-mobile text-tiny-web text-mobile-success">SYNCED</span>
+</div>
+</header>
+<!-- Content Canvas -->
+<main class="pt-20 px-edge-mobile space-y-space-4">
+<!-- Context Bar -->
+<section class="flex flex-col gap-space-1 py-space-2 border-b border-outline-variant/10">
+<div class="flex items-center justify-between">
+
+<span class="bg-error-container text-on-error-container px-space-2 py-0.5 rounded text-[11px] font-bold">VALIDATION ERROR</span>
+</div>
+<h2 class="font-h1-web text-h1-web-mobile text-on-surface">Payment Request #PR-00424</h2>
+</section>
+<!-- AI Assistance Panel -->
+<section class="ai-shimmer border-l-4 border-secondary p-space-4 bg-secondary-container/5 rounded-r-xl space-y-space-3">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: &quot;FILL&quot; 1;">psychology</span>
+<span class="font-label-mobile text-secondary uppercase tracking-wider">CORE_AI Analysis</span>
+</div>
+<div class="space-y-space-2">
+<p class="font-body-mobile text-label-mobile text-on-surface">
+                    Field <span class="text-secondary font-bold">tax_id</span> failed validation: <span class="text-mobile-danger">Value exceeds digit limit</span>.
+                </p>
+<div class="bg-surface-container-highest/50 p-space-3 rounded-lg flex items-center justify-between border border-secondary/20">
+<div>
+<p class="text-tiny-web text-on-surface-variant uppercase">Suggested Correction</p>
+<p class="font-h2-web text-secondary">TX-9920-X</p>
+</div>
+<button class="bg-secondary text-on-secondary font-bold px-space-4 h-10 rounded-lg active:scale-95 transition-transform" onclick="applyAICorrection()">
+                        APPLY
+                    </button>
+</div>
+</div>
+</section>
+<!-- Form Fields -->
+<form class="space-y-space-4 mt-space-4">
+<!-- Field: Request Amount -->
+<div class="space-y-space-1">
+<label class="font-label-mobile text-on-surface-variant text-[12px] uppercase ml-1">Request Amount</label>
+<div class="relative">
+<input class="w-full h-touch-target bg-surface-container border-none text-on-surface font-body-mobile px-space-4 rounded-xl focus:ring-2 focus:ring-primary/30" type="text" value="45,200.00">
+<span class="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-on-surface-variant">payments</span>
+</div>
+</div>
+<!-- Field: Vendor -->
+<div class="space-y-space-1">
+<label class="font-label-mobile text-on-surface-variant text-[12px] uppercase ml-1">Vendor Name</label>
+<div class="relative">
+<input class="w-full h-touch-target bg-surface-container border-none text-on-surface font-body-mobile px-space-4 rounded-xl focus:ring-2 focus:ring-primary/30" type="text" value="SteelWorks Industrial Ltd.">
+<span class="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-on-surface-variant">factory</span>
+</div>
+</div>
+<!-- Field: Tax ID (Error State) -->
+<div class="space-y-space-1">
+<label class="font-label-mobile text-mobile-danger text-[12px] uppercase ml-1">Tax ID *</label>
+<div class="relative">
+<input class="w-full h-touch-target bg-surface-container border-2 border-mobile-danger/50 text-mobile-danger font-bold font-body-mobile px-space-4 rounded-xl focus:ring-2 focus:ring-mobile-danger/30" id="tax-id-field" type="text" value="TX-9920-X-ERROR-LONG">
+<span class="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-mobile-danger">warning</span>
+</div>
+<p class="text-[11px] text-mobile-danger ml-1">Error: Maximum 10 characters allowed.</p>
+</div>
+<!-- Field: Date -->
+<div class="space-y-space-1">
+<label class="font-label-mobile text-on-surface-variant text-[12px] uppercase ml-1">Submission Date</label>
+<div class="relative">
+<input class="w-full h-touch-target bg-surface-container border-none text-on-surface font-body-mobile px-space-4 rounded-xl focus:ring-2 focus:ring-primary/30" type="date" value="2023-10-27">
+<span class="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-on-surface-variant">calendar_today</span>
+</div>
+</div>
+</form>
+</main>
+<!-- Bottom Actions -->
+<nav class="fixed bottom-0 left-0 w-full z-50 bg-surface-container-high dark:bg-surface-container-highest px-edge-mobile py-space-4 flex flex-col gap-space-2 shadow-2xl">
+<button class="w-full h-touch-target bg-mobile-primary text-white font-bold text-body-mobile rounded-xl active:scale-[0.98] transition-all flex items-center justify-center gap-space-2">
+<span class="material-symbols-outlined">sync</span>
+            SAVE CHANGES &amp; RE-SYNC
+        </button>
+<button class="w-full h-touch-target border-2 border-outline-variant text-on-surface-variant font-bold text-body-mobile rounded-xl active:scale-[0.98] transition-all">
+            CANCEL
+        </button>
+</nav>
+<!-- Micro-interaction Script -->
+<script>
+        function applyAICorrection() {
+            const field = document.getElementById('tax-id-field');
+            field.value = "TX-9920-X";
+            field.classList.remove('text-mobile-danger', 'border-mobile-danger/50', 'font-bold');
+            field.classList.add('text-secondary', 'border-secondary/50');
+            
+            // Notification or visual feedback
+            const btn = event.currentTarget;
+            btn.innerHTML = '<span class="material-symbols-outlined">check</span>';
+            btn.classList.replace('bg-secondary', 'bg-mobile-success');
+            
+            setTimeout(() => {
+                btn.innerText = 'APPLIED';
+            }, 1000);
+        }
+
+        // Ripple/Active State enhancement for buttons
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('touchstart', () => {
+                btn.style.opacity = '0.8';
+            });
+            btn.addEventListener('touchend', () => {
+                btn.style.opacity = '1';
+            });
+        });
+    </script>
+
+
+</body></html>

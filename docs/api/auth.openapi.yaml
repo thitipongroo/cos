@@ -23,6 +23,234 @@ components:
       bearerFormat: JWT
 
   schemas:
+    # ─── Downloadable legal documents: Privacy Policy (ADR-091), Terms of Use (ADR-092) ──────────
+    #
+    # ONE schema for both. The two documents are built the same way and verified the same way — a
+    # digest published before the transfer, recomputed by the client over the bytes that land — so a
+    # second, identical schema under a second name would only be a place for them to drift apart.
+    LegalDocumentMetadata:
+      type: object
+      required: [version, effective_date, file_name, sha256, size_bytes, language]
+      properties:
+        version:
+          type: string
+          example: 1.0.0
+          description: Must equal the version the app screen shows — held by scripts/ci/check-legal-parity.mjs.
+        effective_date:
+          type: string
+          format: date
+        file_name:
+          type: string
+          example: COS_Privacy_Policy_v1.0.0.pdf
+        sha256:
+          type: string
+          description: Digest of the PDF, published before the transfer so the client can verify it.
+        size_bytes:
+          type: integer
+        language:
+          type: string
+          example: en
+          description: |
+            The document is English only. Stated rather than implied, so a Thai reader is not left
+            to discover it by opening the file.
+
+    # ─── Pre-auth privacy inquiries (ADR-091) ───────────────────────────────────
+    CreatePrivacyInquiry:
+      type: object
+      required: [full_name, email, subject, message]
+      description: |
+        Every field arrives from an unauthenticated stranger, so the caps below are not cosmetic —
+        together with the rate limit they are the only bound on a publicly writable table. They mirror
+        the column widths in migration 20260817000001, so a value that validates always fits.
+
+        Nothing here is verified. `full_name` and `email` are what the sender typed; no confirmation
+        step is imposed before the inquiry is accepted, because demanding one before accepting a
+        rights request is over-verification (GDPR Art 12(2)/12(6)).
+      properties:
+        full_name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        email:
+          type: string
+          format: email
+          maxLength: 255
+          description: The only route back to the sender, so syntax is validated.
+        phone:
+          type: string
+          maxLength: 50
+          description: Optional, as the form marks it.
+        category:
+          type: string
+          enum: [GENERAL, DATA_ACCESS, DATA_CORRECTION, DATA_DELETION, SECURITY_CONCERN]
+          default: GENERAL
+        subject:
+          type: string
+          minLength: 1
+          maxLength: 255
+        message:
+          type: string
+          minLength: 1
+          maxLength: 5000
+
+    PrivacyInquiryReceipt:
+      type: object
+      required: [reference, received_at]
+      description: |
+        Deliberately minimal. The sender already has everything they typed, and echoing it back would
+        make the endpoint useful for probing what the platform stores.
+      properties:
+        reference:
+          type: string
+          example: REQ-A1B2-C3D4
+          description: |
+            The handle to quote. Random, not sequential — a monotonic public reference would disclose
+            how many inquiries the platform receives and the rate between any two of them.
+        received_at:
+          type: string
+          format: date-time
+
+    PrivacyInquiry:
+      type: object
+      description: The stored row, as SYSTEM_ADMIN sees it. Not returned by the public POST.
+      properties:
+        inquiryId:
+          type: string
+          format: uuid
+        reference:
+          type: string
+        senderName:
+          type: string
+        senderEmail:
+          type: string
+        senderPhone:
+          type: string
+          nullable: true
+        category:
+          type: string
+          enum: [GENERAL, DATA_ACCESS, DATA_CORRECTION, DATA_DELETION, SECURITY_CONCERN]
+        subject:
+          type: string
+        message:
+          type: string
+        status:
+          type: string
+          enum: [OPEN, ROUTED, CLOSED]
+        receivedAt:
+          type: string
+          format: date-time
+        linkedRequestId:
+          type: string
+          format: uuid
+          nullable: true
+          description: The `subject_requests` row this was routed into, once matched to a tenant.
+        closedAt:
+          type: string
+          format: date-time
+          nullable: true
+        outcomeNote:
+          type: string
+          nullable: true
+
+    # ─── Subject requests (ADR-090; PDPA-48) ────────────────────────────────────
+    CreateSubjectRequest:
+      type: object
+      required: [request_type, received_at]
+      description: |
+        At least one of `subject_email` / `subject_phone` is required — enforced by the DTO, by the
+        service (which also rejects whitespace-only values) and by the DB CHECK
+        `subject_requests_identifier_present`. A request with no identifier would authorise a search
+        it cannot scope.
+      properties:
+        request_type:
+          type: string
+          enum: [ACCESS, ERASURE]
+          description: ACCESS covers PDPA §30/§31; ERASURE covers §33.
+        subject_email:
+          type: string
+          maxLength: 255
+        subject_phone:
+          type: string
+          maxLength: 50
+        received_at:
+          type: string
+          format: date-time
+          description: When the TENANT received it. Starts the §30 clock; may not be in the future.
+        note:
+          type: string
+          maxLength: 2000
+
+    CloseSubjectRequest:
+      type: object
+      required: [status, outcome_note]
+      properties:
+        status:
+          type: string
+          enum: [FULFILLED, REJECTED]
+        outcome_note:
+          type: string
+          minLength: 10
+          maxLength: 2000
+          description: What was done, or why it was refused, naming the basis.
+          example: 'Anonymised 2 CRM contact rows. Vendor row retained — Revenue Code §87, 7 years.'
+
+    SubjectRequest:
+      type: object
+      properties:
+        request_id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        request_type: { type: string, enum: [ACCESS, ERASURE] }
+        subject_email: { type: [string, 'null'] }
+        subject_phone: { type: [string, 'null'] }
+        status: { type: string, enum: [OPEN, FULFILLED, REJECTED] }
+        received_at: { type: string, format: date-time }
+        opened_by: { type: string, format: uuid }
+        opened_at: { type: string, format: date-time }
+        closed_at: { type: [string, 'null'], format: date-time }
+        outcome_note: { type: [string, 'null'] }
+
+    SubjectMatch:
+      type: object
+      description: |
+        Only the columns tagged `@pdpa` on that table, plus the row id — never the whole row. The
+        rest is the tenant's business data and is not the subject's to receive.
+      properties:
+        source:
+          type: string
+          enum: [crm.contacts, crm.leads, procurement.vendors]
+        id: { type: string, format: uuid }
+        fields:
+          type: object
+          additionalProperties:
+            type: [string, 'null']
+
+    SubjectMatchResult:
+      type: object
+      properties:
+        request_id: { type: string, format: uuid }
+        matches:
+          type: array
+          items:
+            $ref: '#/components/schemas/SubjectMatch'
+        note:
+          type: [string, 'null']
+          description: |
+            Set when nothing matched. An empty list is not the same as "nothing is held": a lead
+            carries a contact name but no email or phone of its own, so a lead with no contact row
+            cannot be reached by identifier.
+
+    ErasureResult:
+      type: object
+      properties:
+        request_id: { type: string, format: uuid }
+        anonymised:
+          type: object
+          properties:
+            contacts: { type: integer }
+            leads: { type: integer }
+            vendors: { type: integer }
+        total: { type: integer }
+
     RequestOtpRequest:
       type: object
       required: [phoneNumber]
@@ -32,6 +260,13 @@ components:
           pattern: '^\+[1-9]\d{7,14}$'
           example: '+66812345678'
           description: E.164 format
+        deviceId:
+          type: string
+          pattern: '^[A-Za-z0-9_-]+$'
+          maxLength: 128
+          description: |
+            Optional stable per-install device id (device trust, §20.6.1). When present, the
+            response includes a single-use `challenge` for the device to sign with its hardware key.
 
     RequestOtpResponse:
       type: object
@@ -39,6 +274,18 @@ components:
         expiresInSeconds:
           type: integer
           example: 300
+        resendCooldownSeconds:
+          type: integer
+          example: 60
+          description: |
+            Minimum seconds the client must wait before requesting another OTP (§5.5 send-rate cap).
+            The client disables "resend" and counts down for this long; the server also enforces it
+            via a per-phone cooldown and answers 429 with `retryAfterSeconds` if hit early.
+        challenge:
+          type: string
+          description: |
+            Base64url single-use nonce, present only when `deviceId` was supplied. The device signs
+            it (ECDSA P-256 / SHA-256, IEEE-P1363) and returns the signature to `/auth/otp/verify`.
 
     VerifyOtpRequest:
       type: object
@@ -63,6 +310,74 @@ components:
         expiresIn:
           type: integer
           example: 900
+
+    AttestDeviceRequest:
+      type: object
+      required: [phoneNumber, deviceId, signature]
+      properties:
+        phoneNumber:
+          type: string
+          pattern: '^\+[1-9]\d{7,14}$'
+          example: '+66812345678'
+        deviceId:
+          type: string
+          pattern: '^[A-Za-z0-9_-]+$'
+          maxLength: 128
+        signature:
+          type: string
+          pattern: '^[A-Za-z0-9_-]+$'
+          maxLength: 200
+          description: Base64url IEEE-P1363 signature over the challenge from `/auth/otp/request`.
+
+    AttestDeviceResponse:
+      type: object
+      properties:
+        deviceTrusted:
+          type: boolean
+          description: |
+            Device trust (§20.6.1). True only when a registered, non-revoked, unexpired device proved
+            possession of its key by a valid signature over the issued challenge. Reporting-only — it
+            never blocks login; login proceeds through `/auth/otp/verify` regardless.
+
+    RegisterDeviceRequest:
+      type: object
+      required: [deviceId, publicKey, platform]
+      properties:
+        deviceId:
+          type: string
+          pattern: '^[A-Za-z0-9_-]+$'
+          maxLength: 128
+        publicKey:
+          type: string
+          pattern: '^[A-Za-z0-9_-]+$'
+          maxLength: 1000
+          description: Base64url SPKI DER P-256 public key.
+        platform:
+          type: string
+          enum: [ios, android]
+        model:
+          type: string
+          maxLength: 128
+
+    TrustedDeviceSummary:
+      type: object
+      properties:
+        deviceId:
+          type: string
+        platform:
+          type: string
+        model:
+          type: string
+          nullable: true
+        lastSeenAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
 
     RefreshResponse:
       type: object
@@ -138,7 +453,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '429':
-          description: Rate limit exceeded (10 OTP/phone/day)
+          description: |
+            Rate limit exceeded — either the resend cooldown (§5.5: another OTP was requested within
+            `resendCooldownSeconds`; body carries `retryAfterSeconds`) or the 10 OTP/phone/day cap.
           headers:
             Retry-After:
               schema:
@@ -177,6 +494,86 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+
+  /auth/otp/attest:
+    post:
+      summary: Attest device trust before OTP (§20.6.1)
+      description: |
+        Verifies the device signed the challenge from `/auth/otp/request` with its registered key, and
+        returns `deviceTrusted` for the OTP screen's trusted/untrusted indicator. Reporting-only: it
+        never blocks login (which proceeds via `/auth/otp/verify`). Public but throttled; a caller
+        without the private key can only ever receive `deviceTrusted: false`, so it is no enrolment
+        oracle. Consumes the single-use challenge and slides the trust window on success.
+      tags: [auth, device-trust]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttestDeviceRequest'
+      responses:
+        '200':
+          description: Device-trust verdict for the OTP banner
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttestDeviceResponse'
+
+  /auth/devices:
+    post:
+      summary: Enrol this device for trust (§20.6.1)
+      description: |
+        Registers the device's SPKI public key for the authenticated user. Idempotent on
+        (user, deviceId): a fresh key replaces the old one and clears any prior revocation. Trust is
+        earned — a device enrols after its first successful OTP login, so the next login is trusted.
+      tags: [auth, device-trust]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterDeviceRequest'
+      responses:
+        '204':
+          description: Device enrolled
+        '401':
+          description: Unauthenticated
+    get:
+      summary: List the authenticated user's trusted devices (§20.6.1)
+      tags: [auth, device-trust]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Active (non-revoked) trusted devices
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TrustedDeviceSummary'
+        '401':
+          description: Unauthenticated
+
+  /auth/devices/{deviceId}:
+    delete:
+      summary: Revoke a trusted device (§20.6.1)
+      tags: [auth, device-trust]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Device revoked (idempotent)
+        '401':
+          description: Unauthenticated
 
   /auth/refresh:
     post:
@@ -318,3 +715,422 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+
+  # ─── The Privacy Policy document (ADR-091) ───────────────────────────────────────────────────
+  #
+  # Public, and NOT behind `s1.identity.privacy-inquiry`: that flag is the abuse switch for the write
+  # route below, and turning it off must not take the policy document down with it. A notice you must
+  # authenticate to read is not a notice.
+  /privacy/policy/metadata:
+    get:
+      summary: Version, effective date, file name and SHA-256 of the policy PDF
+      description: |
+        Fetched BEFORE the download so the client can verify the bytes it receives rather than trust
+        them. The digest is stable: the document has no per-request input and its PDF timestamps are
+        pinned to the effective date, so the same version always produces the same bytes.
+      tags: [privacy-policy]
+      security: []
+      responses:
+        '200':
+          description: Document metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LegalDocumentMetadata'
+
+  /privacy/policy/pdf:
+    get:
+      summary: The Privacy Policy as a PDF
+      description: |
+        `ETag` is the content digest, so a conditional request costs nothing and a proxy cannot serve
+        a stale edition under a new version number.
+
+        English only — pdf-lib's standard fonts carry no Thai glyphs, and embedding a Thai face is an
+        unmade font-licensing decision. `/privacy/policy/metadata` states this in `language`.
+      tags: [privacy-policy]
+      security: []
+      responses:
+        '200':
+          description: The document
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+                example: attachment; filename="COS_Privacy_Policy_v1.0.0.pdf"
+            ETag:
+              schema:
+                type: string
+                description: The SHA-256 of the body, quoted.
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+
+  # ─── The Terms of Use document (ADR-092) ─────────────────────────────────────────────────────
+  #
+  # The login footer's other legal document, public on the same terms as the policy above: the terms
+  # are what a person reads BEFORE deciding to sign up. Same two-route shape — metadata first so the
+  # client can verify the transfer rather than trust it.
+  /terms/metadata:
+    get:
+      summary: Version, effective date, file name and SHA-256 of the Terms of Use PDF
+      description: |
+        Fetched BEFORE the download so the client can verify the bytes it receives. The digest is
+        stable: the document has no per-request input and its PDF timestamps are pinned to the
+        effective date, so the same version always produces the same bytes.
+      tags: [terms-of-use]
+      security: []
+      responses:
+        '200':
+          description: Document metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LegalDocumentMetadata'
+
+  /terms/pdf:
+    get:
+      summary: The Terms of Use as a PDF
+      description: |
+        `ETag` is the content digest, so a conditional request costs nothing and a proxy cannot serve
+        a stale edition under a new version number.
+
+        English only — pdf-lib's standard fonts carry no Thai glyphs, and embedding a Thai face is an
+        unmade font-licensing decision. `/terms/metadata` states this in `language`.
+      tags: [terms-of-use]
+      security: []
+      responses:
+        '200':
+          description: The document
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+                example: attachment; filename="COS_Terms_of_Use_v1.0.0.pdf"
+            ETag:
+              schema:
+                type: string
+                description: The SHA-256 of the body, quoted.
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+
+  # ─── Pre-auth privacy inquiries (ADR-091) ────────────────────────────────────────────────────
+  #
+  # The one write in this file reachable with NO credential of any kind — not a JWT, not even a
+  # magic-link token. It exists because the sender has no account AND no known tenant: a reader on the
+  # pre-auth Privacy Policy screen may not know which organisation here holds their data, so there is
+  # nothing to scope them to. `platform.privacy_inquiries` is correspondingly the one platform table
+  # with no `tenant_id` and no RLS; access to the READ side is confined by role instead.
+  #
+  # NOT a PDPA §30 request in its own right. The controller is the tenant, and the statutory clock
+  # starts when the tenant receives it — which is what `subject_requests.received_at` below records.
+  # An inquiry that is matched to a tenant is routed into one of those rows; the two chain.
+  /privacy/inquiries:
+    post:
+      summary: Lodge a privacy inquiry without an account (ADR-091)
+      description: |
+        Public. Rate-limited at the QM-7 AUTH tier (10 req/min per IP) rather than the general tier,
+        because it is unauthenticated and writes a row.
+
+        Returns ONLY a reference and a timestamp. Nothing the sender supplied is echoed back: an
+        endpoint that reflects its input is a free oracle for probing what the platform stores.
+
+        Gated by `s1.identity.privacy-inquiry`, which ships OFF (QM-15). OFF removes an ADDITIONAL
+        channel — the Privacy Policy screen still publishes the Data Protection Office address, and
+        that address is the PDPA §37(3) contact.
+      tags: [privacy-inquiries]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePrivacyInquiry'
+      responses:
+        '201':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivacyInquiryReceipt'
+        '400':
+          description: A field is missing, malformed, or over its length cap
+        '429':
+          description: Rate limited (10/min per IP) — `Retry-After` gives the seconds until reset
+        '503':
+          description: COS-FLAG-001 — `s1.identity.privacy-inquiry` is off
+    get:
+      summary: The triage queue, oldest received first (SYSTEM_ADMIN)
+      description: |
+        SYSTEM_ADMIN, not TENANT_ADMIN. The queue is cross-tenant by construction — the sender has
+        not been matched to a tenant — so a tenant admin reading it would be reading strangers'
+        inquiries about other organisations.
+      tags: [privacy-inquiries]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [OPEN, ROUTED, CLOSED]
+      responses:
+        '200':
+          description: Inquiries, ordered by received_at ascending
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PrivacyInquiry'
+        '403':
+          description: Not a SYSTEM_ADMIN
+
+  /privacy/inquiries/{reference}:
+    get:
+      summary: One inquiry, by the reference the sender was given (SYSTEM_ADMIN)
+      tags: [privacy-inquiries]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: reference
+          in: path
+          required: true
+          schema:
+            type: string
+            example: REQ-A1B2-C3D4
+      responses:
+        '200':
+          description: The inquiry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivacyInquiry'
+        '403':
+          description: Not a SYSTEM_ADMIN
+        '404':
+          description: COS-PDPA-008 — no inquiry with that reference
+
+  # ─── Subject requests from people with NO platform account (ADR-090; PDPA-48) ────────────────
+  #
+  # Under the identity module because that is where the platform's other rights surfaces live, but a
+  # different relationship: for CRM contacts, CRM leads and the named contact at a vendor the TENANT
+  # is the controller and Construction OS the processor, so these routes serve the tenant's own
+  # compliance desk rather than a data subject. All are TENANT_ADMIN-only.
+  /subject-requests:
+    post:
+      summary: Open a subject request (ADR-090)
+      description: |
+        The row is also the AUTHORISATION to search: no search runs without one, which is what stops
+        a free lookup by email answering "is this address one of your customers".
+
+        `received_at` is when the TENANT received the request and starts the PDPA §30 30-day clock —
+        it is supplied, never defaulted to now(), and may not be in the future.
+      tags: [subject-requests]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSubjectRequest'
+      responses:
+        '201':
+          description: Request opened
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubjectRequest'
+        '400':
+          description: No identifier supplied, or received_at is in the future
+        '403':
+          description: Not a TENANT_ADMIN
+    get:
+      summary: The tenant's request queue, oldest received first
+      tags: [subject-requests]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [OPEN, FULFILLED, REJECTED]
+      responses:
+        '200':
+          description: Requests, ordered by received_at ascending
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SubjectRequest'
+
+  /subject-requests/{requestId}/matches:
+    get:
+      summary: What the tenant holds about the subject of this request
+      description: |
+        Identifiers come from the REQUEST ROW, never from the query string. Writes an audit row
+        carrying the actor, the request id and the match count (never the matches themselves).
+
+        `tax_id` and `address` on a vendor row are returned only where `vendor_type = 'INDIVIDUAL'`;
+        on a company row they are not the person's data.
+
+        Rate-limited to 10/min — below the QM-7 default of 100/min, as the residual enumeration
+        control after the request-binding.
+      tags: [subject-requests]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Matches, with a note when nothing matched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubjectMatchResult'
+        '400':
+          description: The request is already closed
+        '404':
+          description: No such request in this tenant
+
+  /subject-requests/{requestId}/erase:
+    post:
+      summary: Anonymise in place (QM-5) — clears personal columns, keeps the rows
+      description: |
+        ERASURE requests only. Irreversible by design: a hard delete would break
+        `crm.contacts.lead_id` into a chain Thai accounting law retains for 7 years (ADR-090 §5).
+      tags: [subject-requests]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Per-table counts of the rows anonymised
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErasureResult'
+        '400':
+          description: Request is not an ERASURE, or is already closed
+        '404':
+          description: No such request in this tenant
+
+  /subject-requests/{requestId}/close:
+    patch:
+      summary: Close the request as FULFILLED or REJECTED
+      description: |
+        The outcome note is required on BOTH outcomes: a refusal that does not name its basis is
+        itself a breach (ADR-090 §5).
+      tags: [subject-requests]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CloseSubjectRequest'
+      responses:
+        '200':
+          description: The closed request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubjectRequest'
+        '404':
+          description: No OPEN request with that id in this tenant
+
+  /subject-requests/{requestId}/verify:
+    post:
+      summary: Email a verification link to the address ON THE MATCHED RECORD
+      description: |
+        Proves the answerer CONTROLS THE IDENTIFIER THE TENANT ALREADY HOLDS — not that they are who
+        they say they are, and deliberately not: regulators ask for verification proportionate to the
+        risk, built on information already held, and treat demanding ID documents without reasonable
+        doubt as an infringement in its own right (GDPR Art 12(2)/12(6)).
+
+        The address is taken from the matched record, never from the request: challenging a typed-in
+        address would prove control of a claimed address and say nothing about the person the tenant
+        holds data about. Requires at least one match with an email on file. The response masks the
+        address; the full value is stored on the request row for an auditor.
+      tags: [subject-requests]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '201':
+          description: Challenge sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sent_to:
+                    type: string
+                    example: 's***@example.co.th'
+        '400':
+          description: No match, no email on the held records, or the request is closed
+        '404':
+          description: No such request in this tenant
+
+  /subject-requests/verify/{token}:
+    post:
+      summary: A data subject confirms a verification link (single use, no account)
+      description: |
+        PUBLIC — no bearer token. The person has no account at all and authenticates solely with the
+        emailed link; the guard takes the tenant from the token's own signed claim, so the write still
+        runs under RLS. Single use: a replayed link reports 400 rather than re-stamping the proof.
+      tags: [subject-requests]
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Verified
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  verified:
+                    type: boolean
+        '400':
+          description: Link already used or no longer current
+        '401':
+          description: Bad signature or expired link

@@ -10,6 +10,7 @@ import {
   IsNumber,
   Min,
   Max,
+  MaxLength,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -21,6 +22,28 @@ export class CreateIncidentDto {
   @ApiProperty({ format: 'uuid' })
   @IsUUID()
   project_id!: string;
+
+  /**
+   * Client-generated incident id, for offline creates (mirrors `client_id` on CreateIssueDto and
+   * SyncSiteReportsDto). When provided it BECOMES the server `incident_id`.
+   *
+   * WHY THIS HAD TO EXIST. An incident filed with no signal is queued on the device and replayed by
+   * `/sync/push` when the link returns. Without a client id the server minted a fresh UUID on every
+   * attempt, so any replay — and `mutate()` queues on a TIMEOUT too, where the first attempt may
+   * well have landed — created a SECOND incident record, re-notified the Safety Officer and re-armed
+   * the §19.3 30-minute escalation timer. Duplicate safety records are not a cosmetic problem: they
+   * are the input to the compliance summary, and an incident that appears twice is an incident whose
+   * count nobody can trust.
+   *
+   * Optional, so the online path and older clients are unchanged: absent means "mint one".
+   */
+  @ApiPropertyOptional({
+    format: 'uuid',
+    description: 'Client-generated id for offline idempotency',
+  })
+  @IsOptional()
+  @IsUUID()
+  client_id?: string;
 
   @ApiProperty({ description: 'Incident classification (free-form)' })
   @IsString()
@@ -79,10 +102,46 @@ export class CreatePermitDto {
   @IsOptional()
   @IsDateString()
   valid_until?: string;
+
+  // Added 2026-08-13 with the Safety Officer permit screens
+  // (mockup/mobile/07_safety_officer/04_permit_management/02_permit_request). OPTIONAL, so an
+  // existing client that posts neither keeps working — a new optional field is a non-breaking
+  // addition and needs no version bump (QM-2).
+  @ApiPropertyOptional({
+    maxLength: 255,
+    description:
+      'Firm performing the permitted work. Free text — not an FK to procurement.vendors.',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  contractor_name?: string;
+
+  @ApiPropertyOptional({ maxLength: 4000, description: 'Scope of work and safety measures' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(4000)
+  description?: string;
 }
 
 export class ApprovePermitDto {
   @ApiProperty({ enum: APPROVAL_TIERS, description: 'Approver tier (§15.5)' })
   @IsIn(APPROVAL_TIERS)
   tier!: (typeof APPROVAL_TIERS)[number];
+}
+
+/**
+ * Body of `PATCH /safety/permits/:permitId/reject`.
+ *
+ * The endpoint took NO body until 2026-08-13, so `reason` is OPTIONAL and the whole DTO is
+ * optional at the controller: a client that still sends `{}` — which is what the mobile app did
+ * until this change — must keep working (QM-2 breaking-change rules). A rejection with no reason
+ * therefore stores NULL, which is honest: nobody gave one.
+ */
+export class RejectPermitDto {
+  @ApiPropertyOptional({ maxLength: 500, description: 'Why the permit was rejected/revoked' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  reason?: string;
 }

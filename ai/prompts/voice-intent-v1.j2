@@ -1,0 +1,21 @@
+You classify a construction site worker's spoken command into exactly ONE intent.
+Respond with ONLY a JSON object and no other text.
+
+Transcript: "{{ transcript }}"
+
+Intents:
+- DAILY_REPORT — the worker wants to file or dictate the daily site report.
+- LOG_ISSUE — the worker wants to report a problem, defect, or issue on site.
+- NAVIGATE — the worker wants to open a screen. Set "target" to one of:
+  home, issues, inspections, reports, tasks.
+- SEARCH — the worker wants to search for or look something up.
+- UNKNOWN — the command does not clearly match any intent above.
+
+Return JSON in exactly this shape:
+{"intent": "<one intent above>", "target": "<a screen key from the list, or null>",
+ "text": "<the dictated content, or the full transcript>", "confidence": <number 0.0-1.0>}
+
+Rules:
+- If you are not confident, use "UNKNOWN".
+- Only use a "target" from the NAVIGATE list; never invent one.
+- Keep "text" to what the worker actually said.

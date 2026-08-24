@@ -1,0 +1,268 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>Report Viewer - Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary-fixed": "#dbe1ff",
+                    "on-tertiary-container": "#eeefff",
+                    "mobile-success": "#00C853",
+                    "surface-tint": "#b4c5ff",
+                    "sync-active": "#FFD60A",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "on-error-container": "#ffdad6",
+                    "surface-container-lowest": "#000f21",
+                    "on-secondary-fixed": "#001f26",
+                    "on-secondary": "#003640",
+                    "background": "#031427",
+                    "error-container": "#93000a",
+                    "on-primary-container": "#eeefff",
+                    "on-secondary-container": "#00424e",
+                    "on-primary-fixed": "#00174b",
+                    "inverse-surface": "#d3e4fe",
+                    "surface": "#031427",
+                    "error": "#ffb4ab",
+                    "secondary-container": "#03b5d3",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "on-tertiary-fixed": "#161b2b",
+                    "tertiary": "#c1c5dc",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "surface-container-low": "#0b1c30",
+                    "mobile-danger": "#FF3B30",
+                    "sync-pending": "#94A3B8",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "secondary-fixed": "#acedff",
+                    "on-tertiary": "#2b3041",
+                    "surface-dim": "#031427",
+                    "tertiary-container": "#686c80",
+                    "on-surface-variant": "#c3c6d7",
+                    "dark-bg": "#020617",
+                    "mobile-primary": "#0066FF",
+                    "inverse-on-surface": "#213145",
+                    "outline-variant": "#434655",
+                    "inverse-primary": "#0053db",
+                    "primary": "#b4c5ff",
+                    "surface-bright": "#2a3a4f",
+                    "mobile-warning": "#FF9500",
+                    "dark-surface": "#0F172A",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "surface-container-high": "#1b2b3f",
+                    "outline": "#8d90a0",
+                    "surface-container": "#102034",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "secondary": "#4cd7f6",
+                    "on-error": "#690005",
+                    "tertiary-fixed": "#dee1f9",
+                    "on-primary": "#002a78",
+                    "primary-container": "#2563eb",
+                    "surface-container-highest": "#26364a",
+                    "surface-variant": "#26364a",
+                    "on-surface": "#d3e4fe",
+                    "on-background": "#d3e4fe"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "edge-mobile": "24px",
+                    "touch-target": "52px",
+                    "space-3": "12px",
+                    "space-2": "8px",
+                    "base": "4px",
+                    "space-1": "4px",
+                    "web-margin": "32px",
+                    "space-4": "16px"
+            },
+            "fontFamily": {
+                    "body-web": ["Inter Tight"],
+                    "hero-mobile": ["Inter Tight"],
+                    "display-web": ["Inter Tight"],
+                    "tiny-web": ["Inter Tight"],
+                    "label-mobile": ["Inter Tight"],
+                    "h1-web": ["Inter Tight"],
+                    "body-mobile": ["Inter Tight"],
+                    "h2-web": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter Tight', sans-serif; -webkit-font-smoothing: antialiased; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .pdf-shadow { box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.4); }
+        .paper-texture { background-color: #f8fafc; background-image: radial-gradient(#e2e8f0 0.5px, transparent 0.5px); background-size: 10px 10px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #031427; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #26364a; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col overflow-hidden selection:bg-primary/30">
+<!-- Header (TopAppBar predicted component mapping) -->
+<header class="w-full top-0 sticky bg-surface-container-low dark:bg-surface-container-lowest z-50 flex items-center justify-between px-edge-mobile h-touch-target transition-colors duration-200 ease-in-out">
+<div class="flex items-center gap-space-3">
+<button class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-surface-variant/10 dark:hover:bg-white/5 text-primary active:scale-95 transition-all">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<div class="flex flex-col">
+<h1 class="font-h2-web text-h2-web font-bold text-on-surface">#SI-2024-089_Stru...</h1>
+
+</div>
+</div>
+<div class="flex items-center gap-space-2">
+<button class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-surface-variant/10 dark:hover:bg-white/5 text-on-surface-variant transition-colors">
+<span class="material-symbols-outlined">share</span>
+</button>
+<button class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-surface-variant/10 dark:hover:bg-white/5 text-on-surface-variant transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 overflow-y-auto custom-scrollbar px-edge-mobile py-space-4 pb-32">
+<!-- PDF Document Container -->
+<div class="max-w-4xl mx-auto">
+<div class="paper-texture text-slate-900 rounded-sm pdf-shadow min-h-[1100px] p-12 md:p-20 relative overflow-hidden">
+<!-- PDF Corner Fold Accent -->
+<div class="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-slate-300 to-transparent opacity-20 pointer-events-none"></div>
+<!-- Document Header -->
+<div class="border-b-2 border-slate-900 pb-space-4 mb-space-4 flex justify-between items-end">
+<div>
+<h2 class="font-display-web text-display-web font-black tracking-tighter text-slate-900">CONSTRUCTION OS</h2>
+<p class="font-label-mobile text-label-mobile font-bold text-slate-500 uppercase tracking-[0.2em]">Site Audit Report</p>
+</div>
+<div class="text-right">
+<p class="font-label-mobile text-label-mobile font-bold text-slate-900">ID: #SI-2024-089</p>
+<p class="font-tiny-web text-tiny-web text-slate-500">GENERATED: 24/10/2026 14:32</p>
+</div>
+</div>
+<!-- Metadata Grid -->
+<div class="grid grid-cols-2 gap-space-4 mb-12">
+<div class="bg-slate-200/50 p-space-3 border-l-4 border-slate-900">
+<p class="font-tiny-web text-tiny-web text-slate-500 uppercase font-bold">Project Location</p>
+<p class="font-body-web text-body-web font-semibold">Sector 7G - Skyline Tower A</p>
+</div>
+<div class="bg-slate-200/50 p-space-3 border-l-4 border-slate-900">
+<p class="font-tiny-web text-tiny-web text-slate-500 uppercase font-bold">Inspection Date</p>
+<p class="font-body-web text-body-web font-semibold">October 24, 2026</p>
+</div>
+</div>
+<!-- Executive Summary Section (AI Module Style) -->
+<section class="mb-12 border-l-4 border-mobile-primary pl-space-4 py-space-1 bg-blue-50/30">
+<div class="flex items-center gap-2 mb-space-2">
+<span class="material-symbols-outlined text-mobile-primary text-sm" style="font-variation-settings: &quot;FILL&quot; 1;">auto_awesome</span>
+<h3 class="font-label-mobile text-label-mobile font-extrabold uppercase text-mobile-primary tracking-widest">Executive Summary</h3>
+</div>
+<p class="font-body-web text-body-web text-slate-700 leading-relaxed italic">
+                        "Automated analysis indicates significant progress on levels 14-18. However, sensor nodes in the south-east quadrant of Tower A have flagged thermal expansion anomalies in primary load-bearing joints. Site integrity remains high overall, but immediate manual verification of the structural anchors is mandatory before slab pouring on level 19."
+                    </p>
+</section>
+<!-- Structural Integrity Status -->
+<section class="mb-12">
+<h3 class="font-label-mobile text-label-mobile font-bold uppercase text-slate-900 mb-space-3 tracking-widest border-b border-slate-200 pb-1">Structural Integrity</h3>
+<div class="flex items-center gap-space-4 bg-red-50 p-space-4 border border-red-200 rounded-lg">
+<div class="w-16 h-16 rounded-full bg-mobile-danger flex items-center justify-center text-white shadow-md">
+<span class="font-h2-web text-h2-web font-black">99%</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-center mb-1">
+<span class="font-label-mobile text-label-mobile font-bold text-mobile-danger">STATUS: CRITICAL ANOMALY</span>
+<span class="font-tiny-web text-tiny-web text-slate-500">Confidence Score: 0.992</span>
+</div>
+<div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+<div class="bg-mobile-danger h-full w-[99%]"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- Visual Evidence (Bento Style) -->
+<section>
+<h3 class="font-label-mobile text-label-mobile font-bold uppercase text-slate-900 mb-space-3 tracking-widest border-b border-slate-200 pb-1">Visual Evidence</h3>
+<div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+<div class="aspect-square bg-slate-200 overflow-hidden relative group">
+<img class="w-full h-full object-cover" data-alt="A high-resolution industrial site photograph showing a close-up of structural steel beams and reinforced concrete joints on a modern skyscraper construction site. The lighting is harsh afternoon sunlight typical of a high-altitude building project. The focus is sharp on the metallic texture and red-painted structural markers. The overall mood is precise and technical, reflecting a mission-critical industrial environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBj8NNUOPwjK8YYFgIIVTdBEjB0gMIxc7QhsKh5nFrcinJYwDyol-Z9RqUHLYRgPtKXoyqURHXxxtEoHGYaoaRev-NKROQlTmOyJRT_RR-p02DYwXCulOPelk4Z5Sszrf8yCIql55wYre6XIy3n2vuGoigEOZbWvnlHAlbccEzU9bfmK2Gggp9SDc1wRbm3e0kCzCqdZsvdhZlBS_dKWp_pEhrtH8VV-d6nMcD2ec8Ij5hZ8gOKftIN">
+<div class="absolute bottom-0 left-0 w-full p-2 bg-black/60 backdrop-blur-sm text-white font-tiny-web text-[10px]">CAM_04_SOUTH_EAST</div>
+</div>
+<div class="aspect-square bg-slate-200 overflow-hidden relative group">
+<img class="w-full h-full object-cover" data-alt="A wide-angle professional photograph of a construction site at Sector 7G showing the Skyline Tower A core under construction. The image features a massive yellow crane and workers in high-visibility gear against a deep blue dusk sky. The building structure is a complex lattice of dark steel and concrete. The aesthetic is industrial-modern with a palette of deep blues, yellows, and construction greys." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDguvfY9cEnH7M855pii531BhubNZMyM3sJErW9ysUHp9zDgX0UeMucLp-Inkn-NzCnwY3dl8LmXT0WpOaIQ6sJLpGrQOrPJo2vkciiE9-LlEHuIh-Q_hhhgVfCucv-5KY1r2DnBTjQClzpGPYjJU4OgDNBYpYxdatF3dJ_q004MpUUVqgM5B1qjaZSO14C0H8LbIPEu1bdmu0G0qH0kr6jIlgptc5buCKtdbqtKmsEsfZW7b_NaHd1">
+<div class="absolute bottom-0 left-0 w-full p-2 bg-black/60 backdrop-blur-sm text-white font-tiny-web text-[10px]">DRONE_VERIFY_TOP</div>
+</div>
+<div class="aspect-square bg-slate-200 overflow-hidden relative group md:col-span-1 col-span-2">
+<img class="w-full h-full object-cover" data-alt="A thermal imaging overlay photograph of a building structural joint. The image displays a heatmap palette ranging from deep blues to vibrant oranges and reds, highlighting temperature variations in the concrete and steel. Technical data points and coordinate grids are superimposed on the image. The style is highly analytical and systematic, representing advanced construction health monitoring technology." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBCBmjLJ7vWNXIcZ85Uvk-F65edfTzNtf2Txp0S5pQZ7brcx4cqvUczcAFfRIJm3LBzDCoN14n0Hl5bh02M4ZRSzTTqzYAdWPlnz1Cg35VwZt6ovgcug6P-2tRG8nXPrA-XqvmIYsk_PelcMOiEfkb_awS8u8cnP42tz_x-YtEwT5JszI2uPL3SRqMTu2LX2-nUR7NfKVTkrKuDU-5SugFFq_rQvFF0tmfy_bgod_S6aRy_pehGLli_">
+<div class="absolute bottom-0 left-0 w-full p-2 bg-black/60 backdrop-blur-sm text-white font-tiny-web text-[10px]">THERMAL_SENSOR_NODE_89</div>
+</div>
+</div>
+</section>
+<!-- Signatures -->
+<div class="mt-20 flex justify-between border-t border-slate-200 pt-space-4">
+<div class="text-center">
+<div class="w-32 h-1 bg-slate-900 mb-2 mx-auto"></div>
+<p class="font-tiny-web text-tiny-web text-slate-500 uppercase">Project Manager</p>
+</div>
+<div class="text-center">
+<div class="w-32 h-1 bg-slate-900 mb-2 mx-auto"></div>
+<p class="font-tiny-web text-tiny-web text-slate-500 uppercase">Chief Engineer</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Floating Action Controls (Bottom Anchor) -->
+<footer class="fixed bottom-0 w-full z-50 bg-surface-container dark:bg-surface-container-high px-edge-mobile pt-space-4 pb-8 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
+<div class="max-w-4xl mx-auto flex items-center gap-space-3">
+<button class="flex-1 h-touch-target border-2 border-outline-variant text-on-surface font-label-mobile text-label-mobile uppercase tracking-widest rounded-xl hover:bg-surface-variant/20 transition-all active:scale-95 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-lg">download</span>
+                DOWNLOAD
+            </button>
+<button class="flex-1 h-touch-target border-2 border-outline-variant text-on-surface font-label-mobile text-label-mobile uppercase tracking-widest rounded-xl hover:bg-surface-variant/20 transition-all active:scale-95 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-lg">print</span>
+                PRINT
+            </button>
+<button class="flex-[1.5] h-touch-target bg-primary text-on-primary font-label-mobile text-label-mobile uppercase tracking-widest rounded-xl hover:brightness-110 shadow-lg shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-lg" style="font-variation-settings: &quot;FILL&quot; 1;">share</span>
+                SHARE</button>
+</div>
+</footer>
+<!-- Interactive Elements Script -->
+<script>
+        // Simple scale interaction for the document
+        const main = document.querySelector('main');
+        const doc = document.querySelector('.paper-texture');
+        
+        main.addEventListener('scroll', () => {
+            const scrollPos = main.scrollTop;
+            const opacity = Math.max(0.5, 1 - (scrollPos / 1000));
+            // Subtle parallax or fade effects could go here
+        });
+
+        // Haptic feedback simulation for buttons
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (window.navigator.vibrate) window.navigator.vibrate(5);
+            });
+        });
+    </script>
+
+
+</body></html>

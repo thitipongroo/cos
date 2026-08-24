@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>Construction OS - Chat</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "mobile-danger": "#FF3B30",
+                    "tertiary-fixed": "#dee1f9",
+                    "mobile-primary": "#0066FF",
+                    "secondary": "#4cd7f6",
+                    "outline": "#8d90a0",
+                    "surface-dim": "#031427",
+                    "outline-variant": "#434655",
+                    "dark-surface": "#0F172A",
+                    "on-primary-fixed": "#00174b",
+                    "primary": "#b4c5ff",
+                    "error-container": "#93000a",
+                    "surface-container-high": "#1b2b3f",
+                    "surface-tint": "#b4c5ff",
+                    "primary-fixed": "#dbe1ff",
+                    "on-secondary-container": "#00424e",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "surface-container-highest": "#26364a",
+                    "on-primary-container": "#eeefff",
+                    "dark-bg": "#020617",
+                    "sync-pending": "#94A3B8",
+                    "secondary-container": "#03b5d3",
+                    "inverse-on-surface": "#213145",
+                    "surface-variant": "#26364a",
+                    "on-error": "#690005",
+                    "mobile-warning": "#FF9500",
+                    "on-secondary-fixed": "#001f26",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "on-secondary": "#003640",
+                    "on-tertiary": "#2b3041",
+                    "surface-bright": "#2a3a4f",
+                    "on-background": "#d3e4fe",
+                    "on-surface-variant": "#c3c6d7",
+                    "on-error-container": "#ffdad6",
+                    "on-tertiary-fixed": "#161b2b",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "background": "#031427",
+                    "surface-container-low": "#0b1c30",
+                    "surface-container-lowest": "#000f21",
+                    "surface-container": "#102034",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "secondary-fixed": "#acedff",
+                    "inverse-surface": "#d3e4fe",
+                    "tertiary-container": "#686c80",
+                    "error": "#ffb4ab",
+                    "primary-container": "#2563eb",
+                    "inverse-primary": "#0053db",
+                    "sync-active": "#FFD60A",
+                    "on-tertiary-container": "#eeefff",
+                    "surface": "#031427",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "on-surface": "#d3e4fe",
+                    "mobile-success": "#00C853",
+                    "tertiary": "#c1c5dc",
+                    "on-primary": "#002a78"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "web-margin": "32px",
+                    "space-3": "12px",
+                    "space-2": "8px",
+                    "space-1": "4px",
+                    "touch-target": "52px",
+                    "space-4": "16px",
+                    "edge-mobile": "24px",
+                    "base": "4px"
+            },
+            "fontFamily": {
+                    "label-mobile": ["Inter Tight"],
+                    "h2-web": ["Inter Tight"],
+                    "h1-web": ["Inter Tight"],
+                    "body-mobile": ["Inter Tight"],
+                    "tiny-web": ["Inter Tight"],
+                    "display-web": ["Inter Tight"],
+                    "hero-mobile": ["Inter Tight"],
+                    "body-web": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "32px"}],
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #031427; /* Infrastructure Navy Base */
+            color: #d3e4fe;
+            -webkit-tap-highlight-color: transparent;
+            font-family: 'Inter Tight', sans-serif;
+        }
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite linear;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .safe-bottom {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        .critical-glow {
+            box-shadow: 0 0 15px rgba(255, 59, 48, 0.2);
+        }
+    </style>
+</head>
+<body class="flex flex-col h-screen overflow-hidden">
+<!-- Top AppBar (from JSON context) -->
+<header class="w-full top-0 sticky bg-surface flex items-center justify-between px-edge-mobile h-touch-target z-50">
+<div class="flex items-center gap-space-3">
+<button class="transition-transform duration-200 active:scale-95 flex items-center justify-center w-10 h-10 hover:bg-surface-container rounded-full">
+<span class="material-symbols-outlined text-primary">arrow_back</span>
+</button>
+<div class="flex flex-col">
+<h1 class="font-h1-web text-[18px] font-bold tracking-tight text-primary">Project Leaders (HQ)</h1>
+<div class="flex items-center gap-space-1">
+<span class="w-2 h-2 rounded-full bg-mobile-success animate-pulse"></span>
+<span class="font-tiny-web text-mobile-success uppercase tracking-widest text-[10px]">Synced</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-space-2">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container transition-all">
+<span class="material-symbols-outlined text-on-surface-variant">search</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container transition-all">
+<span class="material-symbols-outlined text-primary">cloud_done</span>
+</button>
+</div>
+</header>
+<!-- Chat Canvas -->
+<main class="flex-1 overflow-y-auto px-edge-mobile py-space-4 space-y-space-4 bg-surface-container-lowest">
+<!-- Timestamp Divider -->
+<div class="flex justify-center my-space-4">
+<span class="bg-surface-container-highest/30 px-space-3 py-space-1 rounded-full font-tiny-web text-outline text-[10px] uppercase tracking-tighter">Today, 14:02 PM</span>
+</div>
+<!-- Previous Message -->
+<div class="flex items-start gap-space-2 max-w-[85%]">
+<div class="w-8 h-8 rounded-lg bg-surface-bright flex items-center justify-center flex-shrink-0 border border-outline-variant/20">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">engineering</span>
+</div>
+<div class="flex flex-col gap-space-1">
+<span class="font-tiny-web text-outline-variant text-[11px] ml-space-1">M. Chen • Site Lead</span>
+<div class="bg-surface-container p-space-3 rounded-tr-xl rounded-br-xl rounded-bl-xl border-l-2 border-primary/30">
+<p class="font-body-mobile text-[15px] leading-relaxed">Safety inspector just uploaded the zone scan for 7G. Need eyes on this immediately.</p>
+</div>
+</div>
+</div>
+<!-- SHARED REPORT CARD (Bento Style) -->
+<div class="flex items-start gap-space-2 max-w-[92%]">
+<div class="w-8 h-8 rounded-lg bg-primary-container/20 flex items-center justify-center flex-shrink-0 border border-primary/20">
+<span class="material-symbols-outlined text-primary text-[18px]">verified_user</span>
+</div>
+<div class="flex flex-col gap-space-1 w-full">
+<span class="font-tiny-web text-outline-variant text-[11px] ml-space-1">SYSTEM AUTO-GEN</span>
+<!-- Main Bento Report Card -->
+<div class="bg-surface-container rounded-xl overflow-hidden border border-outline-variant/20 shadow-2xl relative">
+<!-- Critical Accent Strip -->
+<div class="absolute top-0 left-0 bottom-0 w-1 bg-mobile-danger"></div>
+<!-- Card Header -->
+<div class="p-space-4 flex justify-between items-start">
+<div class="space-y-1">
+<span class="font-tiny-web text-outline text-[11px] tracking-widest uppercase">Report ID</span>
+<h3 class="font-h1-web text-[20px] font-extrabold text-on-surface">#SI-2024-089</h3>
+</div>
+<div class="bg-mobile-danger/10 border border-mobile-danger/30 px-space-2 py-1 rounded flex items-center gap-1 critical-glow">
+<span class="material-symbols-outlined text-mobile-danger text-[14px]" style="font-variation-settings: 'FILL' 1;">warning</span>
+<span class="font-tiny-web text-mobile-danger font-bold text-[10px] tracking-widest">CRITICAL</span>
+</div>
+</div>
+<!-- AI Module (Injected context) -->
+<div class="mx-space-4 mb-space-4 bg-secondary/5 border-l-4 border-secondary p-space-3 rounded-r-lg flex items-center justify-between">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-secondary text-[20px]">psychology</span>
+<span class="font-label-mobile text-secondary uppercase text-[11px] tracking-wider">99% CORE_AI VERIFIED</span>
+</div>
+<span class="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>
+</div>
+<!-- Map/Location Preview -->
+<div class="px-space-4 pb-space-4">
+<div class="relative h-32 w-full rounded-lg overflow-hidden border border-outline-variant/10">
+<div class="absolute inset-0 bg-cover bg-center" data-alt="A sophisticated dark-themed architectural 3D site map of an industrial construction zone called Sector 7G. The map features glowing teal wireframes and red structural hazard zones under a cool blue moonlit atmosphere. High-tech UI overlays and data points are visible, maintaining a professional construction management software aesthetic." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBk3xQyrWSoH6og2bGVCxCYPKDITTqR1ZcfRavnJ9FHNuKWI-lZ6GQ0zz3VlCNHinYa1NKWgdhFpfboBSCUh1bHl_e85KbeRQT6qTGkLSgALf1wohd81zm2udvUnmEnAg_6UrZDJN9WGLyq-Br9Fk7uIUUEvCpXZgZUkEvz36zdqhZyWH4LnVCXv0yhxsefBBK0wraK6IvPAmwNgQzrHTIzmxBwYLq29DOeHE3OCiTDXkhZV99dZt_q')"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container to-transparent opacity-60"></div>
+<div class="absolute bottom-2 left-3 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-on-surface text-[16px]">location_on</span>
+<span class="font-label-mobile text-[12px] text-on-surface">Sector 7G - Construction Zone</span>
+</div>
+</div>
+</div>
+<!-- Action Area -->
+<button class="w-full h-[52px] bg-primary text-on-primary font-bold tracking-[0.05em] flex items-center justify-center gap-2 transition-transform active:scale-[0.98]">
+<span class="font-label-mobile uppercase">VIEW FULL REPORT</span>
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+<span class="font-tiny-web text-outline-variant text-[10px] self-end mt-1">14:05 PM • Seen by 4</span>
+</div>
+</div>
+<!-- Shimmer Placeholder for incoming message -->
+<div class="flex items-start gap-space-2 max-w-[60%] opacity-40">
+<div class="w-8 h-8 rounded-lg bg-surface-container shimmer flex-shrink-0"></div>
+<div class="flex flex-col gap-space-1 w-full">
+<div class="h-12 w-full bg-surface-container rounded-xl shimmer"></div>
+</div>
+</div>
+</main>
+<!-- Bottom Input Area -->
+<footer class="bg-surface border-t border-outline-variant/10 px-edge-mobile pt-space-2 pb-safe">
+<div class="flex items-center gap-space-2 h-[64px]">
+<!-- Action Icons -->
+<div class="flex items-center">
+<button class="w-[44px] h-[44px] flex items-center justify-center text-primary active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-[26px]">add_circle</span>
+</button>
+<button class="w-[44px] h-[44px] flex items-center justify-center text-on-surface-variant active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-[24px]">image</span>
+</button>
+</div>
+<!-- Input Bar -->
+<div class="flex-1 h-[44px] bg-surface-container-highest/40 rounded-full flex items-center px-space-4 border border-outline-variant/20 group focus-within:border-primary/50 transition-all">
+<input class="bg-transparent border-none focus:ring-0 text-on-surface placeholder:text-outline-variant w-full text-[15px]" placeholder="Send update..." type="text"/>
+<button class="text-on-surface-variant group-focus-within:text-primary">
+<span class="material-symbols-outlined text-[20px]">sentiment_satisfied</span>
+</button>
+</div>
+<!-- Mic/Send Toggle -->
+<button class="w-touch-target h-touch-target bg-primary-container text-on-primary-container rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-all" id="send-btn">
+<span class="material-symbols-outlined text-[24px]">mic</span>
+</button>
+</div>
+</footer>
+<script>
+        // Micro-interaction for the send button
+        const input = document.querySelector('input');
+        const sendBtn = document.getElementById('send-btn');
+        const btnIcon = sendBtn.querySelector('.material-symbols-outlined');
+
+        input.addEventListener('input', (e) => {
+            if (e.target.value.trim().length > 0) {
+                btnIcon.innerText = 'send';
+                sendBtn.classList.remove('bg-primary-container', 'text-on-primary-container');
+                sendBtn.classList.add('bg-mobile-primary', 'text-white');
+            } else {
+                btnIcon.innerText = 'mic';
+                sendBtn.classList.add('bg-primary-container', 'text-on-primary-container');
+                sendBtn.classList.remove('bg-mobile-primary', 'text-white');
+            }
+        });
+
+        // Simple haptic-like simulation
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (window.navigator.vibrate) {
+                    window.navigator.vibrate(5);
+                }
+            });
+        });
+    </script>
+</body></html>

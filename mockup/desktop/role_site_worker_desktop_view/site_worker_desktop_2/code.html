@@ -1,0 +1,401 @@
+<!DOCTYPE html><html lang="th" class="dark" style=""><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@100..900&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=block" rel="stylesheet"><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">try{
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "cos-navy": "#0B1020",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "primary-fixed": "#dbe1ff",
+                    "on-secondary": "#003640",
+                    "on-error-container": "#ffdad6",
+                    "surface-container": "#102034",
+                    "on-secondary-fixed": "#001f26",
+                    "on-primary": "#002a78",
+                    "tertiary-fixed": "#dee1f9",
+                    "surface-tint": "#b4c5ff",
+                    "on-primary-container": "#eeefff",
+                    "primary-container": "#2563eb",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "cos-cyan": "#06B6D4",
+                    "secondary": "#4cd7f6",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "primary": "#b4c5ff",
+                    "surface-bright": "#2a3a4f",
+                    "on-secondary-container": "#00424e",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "cos-white": "#F8FAFC",
+                    "mobile-success": "#00C853",
+                    "sync-pending": "#94A3B8",
+                    "on-error": "#690005",
+                    "on-tertiary-container": "#eeefff",
+                    "cos-blue": "#2563EB",
+                    "surface-dim": "#031427",
+                    "surface-container-highest": "#26364a",
+                    "dark-bg": "#020617",
+                    "outline": "#8d90a0",
+                    "sync-active": "#FFD60A",
+                    "surface-container-lowest": "#000f21",
+                    "surface-container-low": "#0b1c30",
+                    "error": "#ffb4ab",
+                    "tertiary": "#c1c5dc",
+                    "on-background": "#d3e4fe",
+                    "on-tertiary": "#2b3041",
+                    "mobile-warning": "#FF9500",
+                    "tertiary-container": "#686c80",
+                    "inverse-on-surface": "#213145",
+                    "mobile-primary": "#0066FF",
+                    "inverse-primary": "#0053db",
+                    "error-container": "#93000a",
+                    "on-tertiary-fixed": "#161b2b",
+                    "outline-variant": "#434655",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "surface-container-high": "#1b2b3f",
+                    "secondary-container": "#03b5d3",
+                    "surface-variant": "#26364a",
+                    "on-surface-variant": "#c3c6d7",
+                    "surface": "#031427",
+                    "on-primary-fixed": "#00174b",
+                    "inverse-surface": "#d3e4fe",
+                    "background": "#031427",
+                    "mobile-danger": "#FF3B30",
+                    "dark-surface": "#0F172A",
+                    "secondary-fixed": "#acedff",
+                    "on-surface": "#d3e4fe"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "web-space-1": "4px",
+                    "web-base": "4px",
+                    "web-space-2": "8px",
+                    "mobile-touch-target": "52px",
+                    "web-space-3": "12px",
+                    "web-space-8": "32px",
+                    "web-space-4": "16px",
+                    "mobile-edge": "24px"
+            },
+            "fontFamily": {
+                    "web-text-h1": ["Inter Tight"],
+                    "web-text-body": ["Inter Tight"],
+                    "web-text-tiny": ["Inter Tight"],
+                    "mobile-text-label": ["Inter Tight"],
+                    "mobile-text-body": ["Inter Tight"],
+                    "web-text-h2": ["Inter Tight"],
+                    "web-text-small": ["Inter Tight"],
+                    "web-text-display": ["Inter Tight"],
+                    "mobile-text-hero": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "web-text-h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "web-text-body": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "web-text-tiny": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "mobile-text-label": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "mobile-text-body": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "web-text-h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "web-text-small": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                    "web-text-display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "mobile-text-hero": ["28px", {"lineHeight": "34px", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    }catch(_e){}</script><meta charset="utf-8"></head><body class="custom-scrollbar">
+<!-- TopNavBar -->
+<header class="fixed top-0 w-full h-12 bg-cos-navy border-b border-outline-variant z-50 flex justify-between items-center px-4">
+<div class="flex items-center gap-4">
+<h1 class="font-web-text-h1 text-web-text-h1 text-cos-white tracking-tight">Construction OS</h1>
+<div class="h-6 w-px bg-outline-variant mx-2"></div>
+<div class="flex items-center gap-2 bg-surface-container rounded px-3 py-1 border border-outline-variant">
+<span class="material-symbols-outlined text-cos-cyan text-[18px]">search</span>
+<input type="text" placeholder="Search tasks or files..." class="bg-transparent border-none focus:ring-0 text-web-text-small p-0 w-48 text-on-surface placeholder-on-surface-variant">
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-cos-blue transition-colors" title="Notifications">notifications</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-cos-blue transition-colors" title="Help">help</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-cos-blue transition-colors" title="Settings">settings</span>
+</div>
+<div class="flex items-center gap-3 border-l border-outline-variant pl-6">
+<div class="text-right hidden lg:block">
+<p class="font-web-text-tiny text-on-surface-variant uppercase">Site Worker</p>
+<p class="font-web-text-small font-bold text-cos-white">Sector 7G - Active</p>
+</div>
+<div class="w-8 h-8 rounded-sm bg-surface-container-highest border border-outline-variant overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A professional close-up portrait of a site construction worker in high-visibility technical gear, set against a blurred industrial background with cool blue tones and sharp cinematic lighting, reflecting a high-tech modern infrastructure environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDH0NNACnMC61BLmzwKtHyB20C_cVH0qF1UDAXkKudD1c7Tm0PFecp_gMZeXGVQCzeARCTHQllmQM5muUQFP-rQOPZokkX-YcnVl7WTmLW9oQnAEWkz1dwi9wosgofI7rg1ZCrC2YqTI3GVnbSq3YmPK70z87hXZcUX_XWleaUcEKbjiG5Qd2oU2Muud8gjzbJmSuM-gsDIAwtYaFnDUiKzBNkJa52gAgdhY4QjQHZVdnP80iCU46v2TcuOAl3hxB64NwLPpOHhGuA">
+</div>
+</div>
+</div>
+</header>
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-12 h-[calc(100vh-48px)] w-64 bg-surface-dim border-r border-outline-variant flex flex-col py-4 gap-2 z-40">
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 py-2 text-on-surface-variant pl-4 hover:bg-surface-container hover:text-on-surface transition-all font-web-text-small" href="#">
+<span class="material-symbols-outlined">assignment</span>
+<span class="">Tasks</span>
+</a>
+<a class="flex items-center gap-3 py-2 text-on-surface-variant pl-4 hover:bg-surface-container hover:text-on-surface transition-all font-web-text-small" href="#">
+<span class="material-symbols-outlined">error_outline</span>
+<span class="">Issues</span>
+</a>
+<a class="flex items-center gap-3 py-2 text-on-surface-variant pl-4 hover:bg-surface-container hover:text-on-surface transition-all font-web-text-small" href="#">
+<span class="material-symbols-outlined">assessment</span>
+<span class="">Reports</span>
+</a>
+<a class="flex items-center gap-3 py-2 text-cos-blue font-bold border-l-2 border-cos-blue pl-3 bg-surface-container-high font-web-text-small" href="#">
+<span class="material-symbols-outlined">security</span>
+<span class="">Safety</span>
+</a>
+</nav>
+<div class="mt-auto border-t border-outline-variant pt-4 space-y-1">
+<a class="flex items-center gap-3 py-2 text-on-surface-variant pl-4 hover:bg-surface-container transition-all font-web-text-small" href="#">
+<span class="material-symbols-outlined">support_agent</span>
+<span class="">Support</span>
+</a>
+<a class="flex items-center gap-3 py-2 text-on-surface-variant pl-4 hover:bg-surface-container transition-all font-web-text-small" href="#">
+<span class="material-symbols-outlined">sync</span>
+<span class="">Sync</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-64 mt-12 p-8 min-h-[calc(100vh-48px)] bg-dark-bg">
+<div class="max-w-6xl mx-auto space-y-8">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row justify-between items-end gap-4">
+<div>
+<div class="flex items-center gap-2 mb-2">
+<span class="text-cos-cyan font-web-text-tiny tracking-widest uppercase bg-cos-cyan/10 px-2 py-0.5 rounded">Compliance</span>
+<span class="text-mobile-warning font-web-text-tiny tracking-widest uppercase bg-mobile-warning/10 px-2 py-0.5 rounded">High Risk Area</span>
+</div>
+<h2 class="font-web-text-display text-web-text-display text-cos-white">Safety Checklist - Site Worker (Desktop)</h2>
+<p class="font-web-text-body text-on-surface-variant mt-1">กรุณาตรวจสอบความเรียบร้อยก่อนเข้าปฏิบัติงานในพื้นที่ Sector 7G</p>
+</div>
+<div class="text-right">
+<p class="font-web-text-tiny text-on-surface-variant">ID: SAFE-2023-0892</p>
+<p class="font-web-text-small text-on-surface">Updated: Oct 24, 08:30 AM</p>
+</div>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-12 gap-6">
+<!-- Hero: AI Safety Scan Module (Bento Cell 1) -->
+<div class="col-span-12 lg:col-span-8 bg-surface-dim border border-outline-variant rounded-xl overflow-hidden ai-glow relative">
+<div class="absolute inset-0 pointer-events-none opacity-20">
+
+</div>
+<div class="relative z-10 p-8 flex flex-col md:flex-row gap-8 items-center h-full">
+<div class="w-full md:w-1/2 aspect-square bg-surface-container-lowest border border-cos-cyan/30 rounded-lg relative overflow-hidden flex items-center justify-center">
+<div class="scan-line"></div>
+<img class="w-full h-full object-cover opacity-60" data-alt="A futuristic AI vision interface showing a real-time scan of a construction worker. Glowing blue bounding boxes identify a safety helmet, reflective vest, and steel-toed boots. The interface is dark and high-contrast, with technical data readouts in the corners and a sleek, modern industrial aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDvmtewAZrd9zc_M8CqSwsWluLnRONhslu2RtoyciynZZ_QkK1XzI8cj7vyrXWYtERpQ9PG_DFHl5OBG5fSG3fgQM85_1QVwtQ9w1v24hsWuw7AdL8yVIwuF8hSyiZoFOZ8w3vSnaeRIoGKbIj7FzXXEVexgW3McSJatXa_Ppuz2zHXKGTXMGRSMP3cTxsaIN8MrZchHhMv3Jf0teG0eIKKpx7BDN2RLN9pMFz2n2CbGWqfKVXfIDdZ-vBBGNywVvtVNCbBRYoDIng">
+<div class="absolute bottom-4 left-4 right-4 bg-cos-navy/80 backdrop-blur-md border border-outline-variant p-3 flex justify-between items-center">
+<span class="font-web-text-tiny text-cos-cyan uppercase">Scanning for PPE...</span>
+<div class="flex gap-1">
+<div class="w-1.5 h-1.5 rounded-full bg-mobile-success animate-pulse"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-mobile-success animate-pulse delay-75"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-on-surface-variant"></div>
+</div>
+</div>
+</div>
+<div class="w-full md:w-1/2 space-y-6">
+<div class="space-y-2">
+<h3 class="font-web-text-h2 text-web-text-h2 text-cos-white flex items-center gap-2">
+<span class="material-symbols-outlined text-cos-cyan" data-original-icon="biometric_setup">phonelink_setup</span>
+                                    AI Safety Scan
+                                </h3>
+<p class="font-web-text-body text-on-surface-variant">ระบบวิเคราะห์ความปลอดภัยด้วย AI จะตรวจสอบการสวมใส่อุปกรณ์ป้องกัน (PPE) อัตโนมัติภายใน 5 วินาที</p>
+</div>
+<div class="space-y-3">
+<div class="flex items-center gap-3 text-web-text-small text-mobile-success">
+<span class="material-symbols-outlined">check_circle</span>
+<span class="">Helmet Detected (99.8%)</span>
+</div>
+<div class="flex items-center gap-3 text-web-text-small text-mobile-success">
+<span class="material-symbols-outlined">check_circle</span>
+<span class="">Vest Detected (98.2%)</span>
+</div>
+<div class="flex items-center gap-3 text-web-text-small text-on-surface-variant">
+<span class="material-symbols-outlined text-mobile-warning">pending</span>
+<span class="">Glove Check Pending...</span>
+</div>
+</div>
+<button class="w-full h-12 bg-cos-cyan text-on-secondary font-bold rounded-lg flex items-center justify-center gap-2 hover:brightness-110 active:scale-[0.98] transition-all">
+<span class="">START SCAN</span>
+<span class="material-symbols-outlined">sensors</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Stats/Brief Card (Bento Cell 2) -->
+<div class="col-span-12 lg:col-span-4 bg-surface-container-high border border-outline-variant rounded-xl p-6 flex flex-col justify-between">
+<div>
+<h4 class="font-web-text-tiny text-on-surface-variant uppercase tracking-widest mb-4">Area Status</h4>
+<div class="space-y-4">
+<div class="flex justify-between items-center py-2 border-b border-outline-variant/30">
+<span class="font-web-text-small">Hazard Level</span>
+<span class="text-mobile-danger font-bold">HIGH</span>
+</div>
+<div class="flex justify-between items-center py-2 border-b border-outline-variant/30">
+<span class="font-web-text-small">Active Permits</span>
+<span class="text-cos-white">WP-2023-01</span>
+</div>
+<div class="flex justify-between items-center py-2 border-b border-outline-variant/30">
+<span class="font-web-text-small">Personnel Count</span>
+<span class="text-cos-white">12/20</span>
+</div>
+</div>
+</div>
+<div class="mt-8 bg-surface-container-highest p-4 rounded border border-outline-variant">
+<div class="flex items-center gap-3 mb-2">
+<span class="material-symbols-outlined text-mobile-warning">warning</span>
+<span class="font-web-text-small font-bold text-mobile-warning">แจ้งเตือนพิเศษ</span>
+</div>
+<p class="font-web-text-tiny text-on-surface-variant leading-relaxed">
+                            ระวังการทำงานในที่สูงเนื่องจากกระแสลมแรง (22 km/h) ตรวจสอบสายรัดนิรภัย 2 จุดทุกครั้ง
+                        </p>
+</div>
+</div>
+<!-- Detailed Checklist (Bento Cell 3) -->
+<div class="col-span-12 lg:col-span-8 bg-surface-container-low border border-outline-variant rounded-xl overflow-hidden">
+<div class="px-6 py-4 bg-surface-container border-b border-outline-variant flex justify-between items-center">
+<h3 class="font-web-text-h2 text-web-text-h2 text-cos-white">รายการตรวจสอบ</h3>
+<span class="font-web-text-tiny bg-cos-blue/20 text-cos-blue px-3 py-1 rounded-full">REQUIRED: 3 / 3</span>
+</div>
+<div class="divide-y divide-outline-variant/30">
+<!-- Checklist Item 1 -->
+<div class="p-6 flex items-start gap-4 hover:bg-surface-container-high transition-colors group cursor-pointer">
+<div class="w-6 h-6 rounded border-2 border-cos-blue flex items-center justify-center mt-0.5 group-hover:bg-cos-blue/10">
+<span class="material-symbols-outlined text-cos-blue text-[18px] opacity-0 group-active:opacity-100">check</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<h4 class="font-web-text-body font-bold text-cos-white">สวมใส่หมวกนิรภัย</h4>
+<span class="font-web-text-tiny text-mobile-danger bg-mobile-danger/10 px-2 py-0.5 rounded">CRITICAL</span>
+</div>
+<p class="font-web-text-small text-on-surface-variant mt-1">ต้องสวมใส่อย่างถูกต้องและรัดสายรัดคางตลอดเวลาที่อยู่ในพื้นที่งาน</p>
+</div>
+</div>
+<!-- Checklist Item 2 -->
+<div class="p-6 flex items-start gap-4 hover:bg-surface-container-high transition-colors group cursor-pointer">
+<div class="w-6 h-6 rounded border-2 border-cos-blue flex items-center justify-center mt-0.5 group-hover:bg-cos-blue/10">
+<span class="material-symbols-outlined text-cos-blue text-[18px] opacity-0 group-active:opacity-100">check</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<h4 class="font-web-text-body font-bold text-cos-white">ตรวจสอบสายไฟและอุปกรณ์ไฟฟ้า</h4>
+<span class="font-web-text-tiny text-mobile-warning bg-mobile-warning/10 px-2 py-0.5 rounded">INSPECTION</span>
+</div>
+<p class="font-web-text-small text-on-surface-variant mt-1">ไม่มีรอยฉีกขาดของฉนวนไฟฟ้า และอุปกรณ์ต้องมีป้ายรับรองความปลอดภัย</p>
+</div>
+</div>
+<!-- Checklist Item 3 -->
+<div class="p-6 flex items-start gap-4 hover:bg-surface-container-high transition-colors group cursor-pointer">
+<div class="w-6 h-6 rounded border-2 border-cos-blue flex items-center justify-center mt-0.5 group-hover:bg-cos-blue/10">
+<span class="material-symbols-outlined text-cos-blue text-[18px] opacity-0 group-active:opacity-100">check</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<h4 class="font-web-text-body font-bold text-cos-white">ติดตั้งป้ายเตือนในพื้นที่ทำงาน</h4>
+<span class="font-web-text-tiny text-on-surface-variant bg-surface-container-highest px-2 py-0.5 rounded">REQUIRED</span>
+</div>
+<p class="font-web-text-small text-on-surface-variant mt-1">ติดตั้งแผงกั้นและป้ายเตือนให้ชัดเจนสำหรับบุคคลภายนอก</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Authorization Area (Bento Cell 4) -->
+<div class="col-span-12 lg:col-span-4 flex flex-col gap-6">
+<div class="bg-surface-dim border border-outline-variant rounded-xl p-6 flex-1 flex flex-col">
+<div class="flex items-center gap-2 mb-6">
+<span class="material-symbols-outlined text-cos-cyan">draw</span>
+<h3 class="font-web-text-h2 text-web-text-h2 text-cos-white">Digital Authorization</h3>
+</div>
+<div class="flex-1 bg-surface-container-lowest border-2 border-dashed border-outline-variant rounded-lg relative overflow-hidden flex items-center justify-center cursor-crosshair group">
+<div class="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity">
+<div class="w-full h-full" style="background-image: radial-gradient(circle, #434655 1px, transparent 1px); background-size: 20px 20px;"></div>
+</div>
+<p class="font-web-text-tiny text-on-surface-variant uppercase tracking-widest z-10">Sign Here to Authorize</p>
+<canvas class="absolute inset-0 w-full h-full" id="signature-pad"></canvas>
+</div>
+<div class="mt-4 flex justify-between items-center">
+<button class="text-web-text-tiny text-on-surface-variant hover:text-cos-white uppercase tracking-wider transition-colors">Clear Signature</button>
+<p class="text-web-text-tiny text-on-surface-variant italic">Last verified: N/A</p>
+</div>
+</div>
+<button class="w-full h-14 bg-primary-container text-cos-white font-bold rounded-lg shadow-lg shadow-cos-blue/20 flex items-center justify-center gap-3 hover:brightness-110 active:scale-[0.99] transition-all group">
+<span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">cloud_upload</span>
+<span class="">ยืนยันข้อมูลความปลอดภัย</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+<script>
+        // Simple Signature Pad micro-interaction
+        const canvas = document.getElementById('signature-pad');
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            let painting = false;
+
+            function startPosition(e) {
+                painting = true;
+                draw(e);
+            }
+
+            function finishedPosition() {
+                painting = false;
+                ctx.beginPath();
+            }
+
+            function draw(e) {
+                if (!painting) return;
+                const rect = canvas.getBoundingClientRect();
+                const x = (e.clientX || e.touches[0].clientX) - rect.left;
+                const y = (e.clientY || e.touches[0].clientY) - rect.top;
+
+                ctx.lineWidth = 2;
+                ctx.lineCap = 'round';
+                ctx.strokeStyle = '#2563EB';
+
+                ctx.lineTo(x, y);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+            }
+
+            canvas.addEventListener('mousedown', startPosition);
+            canvas.addEventListener('mouseup', finishedPosition);
+            canvas.addEventListener('mousemove', draw);
+            
+            // Resize canvas to parent
+            function resize() {
+                canvas.width = canvas.parentElement.clientWidth;
+                canvas.height = canvas.parentElement.clientHeight;
+            }
+            window.addEventListener('resize', resize);
+            resize();
+        }
+
+        // Checklist toggle interaction
+        document.querySelectorAll('.cursor-pointer.group').forEach(item => {
+            item.addEventListener('click', function() {
+                const check = this.querySelector('.material-symbols-outlined');
+                const box = this.querySelector('.w-6.h-6');
+                if (check.classList.contains('opacity-0')) {
+                    check.classList.remove('opacity-0');
+                    box.classList.add('bg-cos-blue');
+                    check.classList.add('text-cos-white');
+                } else {
+                    check.classList.add('opacity-0');
+                    box.classList.remove('bg-cos-blue');
+                    check.classList.remove('text-cos-white');
+                }
+            });
+        });
+    </script>
+</body></html>

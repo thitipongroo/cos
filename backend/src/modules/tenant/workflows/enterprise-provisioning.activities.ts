@@ -1,7 +1,10 @@
 import { createPrismaClient } from '../../../shared/prisma/create-prisma-client';
-import { KafkaProducer, KafkaTopicProvisioner } from '@cos/kafka';
+import { EventOutboxService } from '../../../shared/events/event-outbox.service';
+import { KafkaTopicProvisioner } from '@cos/kafka';
 import { createLogger } from '@cos/logger';
 import { randomUUID } from 'crypto';
+import { readMasterPassword, ensureAppUserPassword } from './tenant-db-secrets';
+import { encryptDedicatedDbUrl } from '../utils/dedicated-db-url-cipher';
 
 const logger = createLogger('enterprise-provisioning-activities');
 
@@ -14,18 +17,30 @@ export interface RdsActivityParams {
 export interface RdsWithEndpointParams {
   tenantId: string;
   rdsEndpoint: string;
+  /** ARN of the AWS-managed master user secret (see createRdsActivity; security review F4). */
+  masterSecretArn: string;
+}
+
+/**
+ * RDS instance identifier for a tenant. MUST be identical between createRdsActivity and its
+ * compensation (compensateCreateRdsActivity) — otherwise the rollback deletes the wrong instance or
+ * none at all. Extracted so the two never drift.
+ */
+function dbIdentifierFor(tenantCode: string): string {
+  const env = process.env['NODE_ENV'] ?? 'prod';
+  return `cos-tenant-${tenantCode.replace(/_/g, '-')}-${env}`;
 }
 
 // ── Activity 1: createRdsActivity ─────────────────────────────────────────
 
 export async function createRdsActivity(
   params: RdsActivityParams,
-): Promise<{ rdsEndpoint: string }> {
+): Promise<{ rdsEndpoint: string; masterSecretArn: string }> {
   const { RDSClient, CreateDBInstanceCommand } = await import('@aws-sdk/client-rds');
 
   const tenantCode = await getPlatformTenantCode(params.tenantId);
   const env = process.env['NODE_ENV'] ?? 'prod';
-  const dbIdentifier = `cos-tenant-${tenantCode.replace(/_/g, '-')}-${env}`;
+  const dbIdentifier = dbIdentifierFor(tenantCode);
 
   const client = new RDSClient({ region: process.env['AWS_REGION'] ?? 'ap-southeast-1' });
 
@@ -61,15 +76,25 @@ export async function createRdsActivity(
   if (!endpoint)
     throw new Error(`RDS instance created but endpoint not available for ${dbIdentifier}`);
 
+  // ManageMasterUserPassword: true means AWS generated the master password and stored it in Secrets
+  // Manager — the ARN is the ONLY way to obtain it. TENANT_DB_MASTER_PASSWORD never held the real
+  // value (security review F4), so downstream activities must carry this ARN instead.
+  const masterSecretArn = response.DBInstance?.MasterUserSecret?.SecretArn;
+  if (!masterSecretArn)
+    throw new Error(
+      `RDS instance ${dbIdentifier} created without a managed master user secret — ` +
+        'ManageMasterUserPassword must be true for the provisioning workflow to obtain credentials',
+    );
+
   logger.info({ tenantId: params.tenantId, dbIdentifier, endpoint }, 'rds.instance.created');
-  return { rdsEndpoint: endpoint };
+  return { rdsEndpoint: endpoint, masterSecretArn };
 }
 
 // ── Activity 2: runMigrationsActivity ─────────────────────────────────────
 
 export async function runMigrationsActivity(params: RdsWithEndpointParams): Promise<void> {
   const { execSync } = await import('child_process');
-  const dbUrl = buildDbUrl(params.rdsEndpoint);
+  const dbUrl = await buildMasterDbUrl(params.rdsEndpoint, params.masterSecretArn);
 
   logger.info(
     { tenantId: params.tenantId, rdsEndpoint: params.rdsEndpoint },
@@ -82,15 +107,57 @@ export async function runMigrationsActivity(params: RdsWithEndpointParams): Prom
   logger.info({ tenantId: params.tenantId }, 'migrations.complete');
 }
 
+// ── Activity 2b: secureAppUserActivity ────────────────────────────────────
+
+/**
+ * Replace the app_user password that `prisma migrate deploy` just set (security review F9).
+ *
+ * Migration `20260623000001_app_user_login_and_grants` runs
+ * `ALTER ROLE app_user WITH LOGIN PASSWORD 'app_user_dev_password'` unconditionally — its own comment
+ * calls that value local-dev only, but nothing stopped it running here. Every dedicated tenant DB was
+ * therefore left with the RLS-enforcing role holding a password published in the git history.
+ *
+ * This runs immediately after migrations and before the URL is stored, so the window in which the
+ * git-known password is live is bounded by this workflow rather than by the life of the tenant.
+ *
+ * The password is bound as a parameter, never interpolated: role names cannot be parameterised in
+ * PostgreSQL but passwords can, and this value comes from Secrets Manager rather than a UUID-validated
+ * source, so it is exactly the kind of string that must not reach SQL by concatenation.
+ */
+export async function secureAppUserActivity(params: RdsWithEndpointParams): Promise<void> {
+  const tenantCode = await getPlatformTenantCode(params.tenantId);
+  const masterUrl = await buildMasterDbUrl(params.rdsEndpoint, params.masterSecretArn);
+  const appPassword = await ensureAppUserPassword(tenantCode);
+
+  const prisma = createPrismaClient(masterUrl);
+  try {
+    await prisma.$executeRaw`SELECT set_config('cos.app_user_pw', ${appPassword}, false)`;
+    await prisma.$executeRawUnsafe(
+      `DO $$ BEGIN EXECUTE format('ALTER ROLE app_user WITH LOGIN PASSWORD %L', current_setting('cos.app_user_pw')); END $$;`,
+    );
+    logger.info({ tenantId: params.tenantId }, 'tenant-db.app_user.password_secured');
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
 // ── Activity 3: assignDedicatedDbActivity ─────────────────────────────────
 
 export async function assignDedicatedDbActivity(params: RdsWithEndpointParams): Promise<void> {
   const prisma = createPrismaClient(DATABASE_URL);
   try {
-    const dbUrl = buildDbUrl(params.rdsEndpoint);
+    const tenantCode = await getPlatformTenantCode(params.tenantId);
+    // The APP-ROLE url, not the master one — this column feeds TenantPrismaService (security review F4).
+    const dbUrl = await buildAppDbUrl(params.rdsEndpoint, tenantCode);
+    // Always encrypted on this path (security review F5b). Unlike TenantService, a Temporal activity has
+    // no Nest DI container to resolve FeatureFlagService from, and constructing an Unleash client per
+    // activity would both leak a handle (Rule 39) and answer from stale defaults before its first poll.
+    // Encrypting unconditionally is the fail-safe direction, and the read side accepts both formats, so
+    // this stays compatible whichever way the s1.tenant.encrypted-db-url flag is set.
+    const stored = encryptDedicatedDbUrl(dbUrl, true);
     await prisma.$executeRaw`
       UPDATE platform.tenants
-      SET dedicated_db_url = ${dbUrl}, updated_at = now()
+      SET dedicated_db_url = ${stored}, updated_at = now()
       WHERE tenant_id = ${params.tenantId}::uuid
     `;
     logger.info({ tenantId: params.tenantId }, 'tenant.dedicated_db_url.assigned');
@@ -115,6 +182,29 @@ export async function compensateAssignDedicatedDbActivity(
   } finally {
     await prisma.$disconnect();
   }
+}
+
+// ── Compensation: compensateCreateRdsActivity (spec §Phase 25 — createRds → DeleteDBInstance) ───────
+
+/**
+ * Roll back createRdsActivity by deleting the tenant's RDS instance. Fired on SYSTEM_ADMIN abort (and
+ * available for saga rollback on a later-activity failure) so an aborted provisioning does not leave
+ * an orphaned instance running. SkipFinalSnapshot: the DB was never put into service.
+ */
+export async function compensateCreateRdsActivity(params: RdsActivityParams): Promise<void> {
+  const { RDSClient, DeleteDBInstanceCommand } = await import('@aws-sdk/client-rds');
+  const tenantCode = await getPlatformTenantCode(params.tenantId);
+  const dbIdentifier = dbIdentifierFor(tenantCode);
+
+  const client = new RDSClient({ region: process.env['AWS_REGION'] ?? 'ap-southeast-1' });
+  await client.send(
+    new DeleteDBInstanceCommand({
+      DBInstanceIdentifier: dbIdentifier,
+      SkipFinalSnapshot: true,
+      DeleteAutomatedBackups: true,
+    }),
+  );
+  logger.warn({ tenantId: params.tenantId, dbIdentifier }, 'rds.instance.compensated_deleted');
 }
 
 // ── Human gate: notifyAwaitingApprovalActivity ─────────────────────────────
@@ -154,12 +244,48 @@ export async function notifyAwaitingApprovalActivity(params: RdsActivityParams):
   }
 }
 
+// tenant_id is a UUID everywhere it is stored; anything else must never reach a shell command.
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export function assertUuid(value: string, field: string): void {
+  if (!UUID_PATTERN.test(value)) {
+    throw new Error(`${field} must be a UUID`);
+  }
+}
+
+// The two connection URLs below are interpolated into a shell command (the `|` between pg_dump and
+// psql means execSync goes through /bin/sh). They come from configuration rather than from a
+// request, but a generated password is not a safe string: Secrets Manager will happily hand back
+// one containing a backtick or `$(`, and that would execute. Postgres URLs have no legitimate use
+// for shell metacharacters, so reject them rather than hope.
+// Found by CodeQL js/indirect-command-line-injection.
+const SHELL_METACHARACTERS = /[`$\\"'|;&<>(){}\s]/;
+
+export function assertShellSafeDbUrl(value: string, field: string): void {
+  if (!value.startsWith('postgres://') && !value.startsWith('postgresql://')) {
+    throw new Error(`${field} must be a postgres:// URL`);
+  }
+  if (SHELL_METACHARACTERS.test(value)) {
+    throw new Error(`${field} contains characters that are unsafe in a shell command`);
+  }
+}
+
 // ── Activity 4: migrateDataActivity ───────────────────────────────────────
 
 export async function migrateDataActivity(params: RdsWithEndpointParams): Promise<void> {
+  // Validate before anything reaches a shell. This activity interpolates tenantId into a `pg_dump
+  // ... --where="tenant_id='...'" | psql ...` command, which runs through /bin/sh because of the
+  // pipe — so a tenantId carrying a quote or `$(...)` was arbitrary command execution with the
+  // database credentials in the same string. Every tenant_id in this system is a UUID, so the
+  // constraint costs nothing. The same pattern already guards app.current_tenant_id in
+  // TenantPrismaService. Found by CodeQL js/indirect-command-line-injection.
+  assertUuid(params.tenantId, 'tenantId');
+
   const { execSync } = await import('child_process');
   const sharedDbUrl = DATABASE_URL;
-  const dedicatedDbUrl = buildDbUrl(params.rdsEndpoint);
+  // Master URL: pg_dump/psql restore writes across every schema and needs ownership, so this is one of
+  // the few steps that legitimately uses the admin credential (security review F4).
+  const dedicatedDbUrl = await buildMasterDbUrl(params.rdsEndpoint, params.masterSecretArn);
 
   // Check if tenant has existing domain data — skip migration if empty
   const prisma = createPrismaClient(sharedDbUrl);
@@ -179,6 +305,8 @@ export async function migrateDataActivity(params: RdsWithEndpointParams): Promis
   }
 
   logger.info({ tenantId: params.tenantId }, 'migrate_data.starting');
+  assertShellSafeDbUrl(sharedDbUrl, 'DATABASE_URL');
+  assertShellSafeDbUrl(dedicatedDbUrl, 'dedicatedDbUrl');
   // pg_dump tenant-scoped data and restore to dedicated DB
   execSync(
     `pg_dump "${sharedDbUrl}" --schema=projects --schema=boq --schema=procurement ` +
@@ -194,7 +322,11 @@ export async function migrateDataActivity(params: RdsWithEndpointParams): Promis
 // ── Activity 5: verifyRoutingActivity ─────────────────────────────────────
 
 export async function verifyRoutingActivity(params: RdsWithEndpointParams): Promise<void> {
-  const dbUrl = buildDbUrl(params.rdsEndpoint);
+  // Master URL, deliberately. This step reads platform.tenants, and after the F5a policy change
+  // app_user only sees the row matching app.current_tenant_id — a GUC no provisioning activity sets.
+  // Verifying as the admin role keeps the check meaningful; the app-role credential is exercised by
+  // the first real request instead.
+  const dbUrl = await buildMasterDbUrl(params.rdsEndpoint, params.masterSecretArn);
   const prisma = createPrismaClient(dbUrl);
   try {
     await prisma.$queryRaw`SELECT 1 AS ok`;
@@ -214,6 +346,11 @@ export async function verifyRoutingActivity(params: RdsWithEndpointParams): Prom
 }
 
 // ── Provision per-tenant Kafka topics (§7.3) ───────────────────────────────
+//
+// Eager provisioning is retained HERE and only here. An enterprise tenant gets a dedicated MSK
+// namespace or cluster (§7.3), so its topic count is bounded by one tenant's catalogue rather than
+// by customer count — the arithmetic that forced the shared tier onto create-on-first-publish does
+// not apply. Standard tenants are provisioned lazily by KafkaProducer instead; see tenant.service.
 
 export async function provisionKafkaTopicsActivity(params: RdsActivityParams): Promise<void> {
   const provisioner = new KafkaTopicProvisioner();
@@ -229,10 +366,14 @@ export async function provisionKafkaTopicsActivity(params: RdsActivityParams): P
 // ── Emit completion event ──────────────────────────────────────────────────
 
 export async function emitProvisionedEventActivity(params: RdsWithEndpointParams): Promise<void> {
-  const kafka = new KafkaProducer();
+  // Queued through the outbox rather than published inline. This activity runs at the END of a long
+  // provisioning workflow — dedicated RDS, VPC peering, Route 53 — and a broker blip at that moment
+  // used to throw, which made Temporal retry the ACTIVITY, not just the publish. Retrying an emit is
+  // harmless; what made it worth changing is that until the retries were exhausted the workflow could
+  // not complete, over an event that nothing is waiting on synchronously.
+  const outbox = new EventOutboxService();
   try {
-    await kafka.connect();
-    await kafka.publish({
+    await outbox.publish({
       event_type: 'platform.enterprise.db_provisioned.v1',
       event_version: '1.0',
       tenant_id: 'platform',
@@ -243,7 +384,7 @@ export async function emitProvisionedEventActivity(params: RdsWithEndpointParams
     });
     logger.info({ tenantId: params.tenantId }, 'platform.enterprise.db_provisioned.v1.emitted');
   } finally {
-    await kafka.disconnect();
+    await outbox.onModuleDestroy();
   }
 }
 
@@ -262,9 +403,28 @@ async function getPlatformTenantCode(tenantId: string): Promise<string> {
   }
 }
 
-function buildDbUrl(rdsEndpoint: string): string {
-  const password = process.env['TENANT_DB_MASTER_PASSWORD'] ?? '';
-  return `postgresql://cos_admin:${password}@${rdsEndpoint}:5432/cos`;
+/**
+ * ADMIN connection URL — the RDS master role (`cos_admin`).
+ *
+ * Restricted to provisioning steps that genuinely need ownership: running migrations and creating the
+ * app role. It must NEVER be stored in `platform.tenants.dedicated_db_url`, because that column feeds
+ * TenantPrismaService and would run every tenant query as the DB owner, bypassing RLS (security review
+ * F4). The password is the AWS-managed one, read from Secrets Manager — the instance is created with
+ * ManageMasterUserPassword, so no environment variable holds it.
+ */
+async function buildMasterDbUrl(rdsEndpoint: string, masterSecretArn: string): Promise<string> {
+  const password = await readMasterPassword(masterSecretArn);
+  return `postgresql://cos_admin:${encodeURIComponent(password)}@${rdsEndpoint}:5432/cos`;
+}
+
+/**
+ * RUNTIME connection URL — the non-owner `app_user` role, so PostgreSQL RLS is enforced on the
+ * dedicated database exactly as it is on the shared one (spec §7.7, QM-18, ADR-008). This is the URL
+ * stored in `dedicated_db_url`.
+ */
+async function buildAppDbUrl(rdsEndpoint: string, tenantCode: string): Promise<string> {
+  const password = await ensureAppUserPassword(tenantCode);
+  return `postgresql://app_user:${encodeURIComponent(password)}@${rdsEndpoint}:5432/cos`;
 }
 
 void TEMPORAL_ADDRESS; // referenced by worker

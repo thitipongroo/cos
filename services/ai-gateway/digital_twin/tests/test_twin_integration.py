@@ -10,7 +10,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import UUID, uuid4, UUID
 
 from digital_twin.models import StateSource
-from digital_twin.sync_service import handle_iot_telemetry_event, compute_confidence
+from digital_twin.sync_service import handle_iot_telemetry_event
+
+# Production tenant_id / project_id are always UUIDs — the handler and divergence report
+# cast them via UUID(...) / ::uuid, so the mocks must use real UUIDs, not "tenant-1"/"proj-1".
+TENANT_ID = "11111111-1111-1111-1111-111111111111"
+PROJECT_ID = "22222222-2222-2222-2222-222222222222"
 
 
 # ─── handle_iot_telemetry_event ───────────────────────────────────────────────
@@ -141,7 +146,7 @@ class TestEndToEndTwinFlow:
 
         report = await generate_divergence_report(PROJECT_ID, TENANT_ID, db_pool=db)
 
-        assert report.project_id == UUID("00000000-0000-0000-0000-000000000000") or True
+        assert report.project_id == UUID(PROJECT_ID)
         # Divergences may be empty (planned_state is {} until BIM integration)
         assert isinstance(report.divergences, list)
         assert report.risk_level in {"LOW", "MEDIUM", "HIGH", "CRITICAL"}

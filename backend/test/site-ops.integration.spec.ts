@@ -56,6 +56,7 @@ function makeServerReport(overrides: Partial<SiteReportRow> = {}): SiteReportRow
 function makeServerIssue(overrides: Partial<IssueRow> = {}): IssueRow {
   return {
     issue_id: ISSUE_ID_A,
+    issue_number: 'ISS-2026-0001',
     project_id: PROJECT_ID,
     tenant_id: 'tenant-integration-001',
     report_id: null,
@@ -64,6 +65,7 @@ function makeServerIssue(overrides: Partial<IssueRow> = {}): IssueRow {
     severity: 'HIGH',
     status: 'IN_PROGRESS',
     assigned_to: null,
+    created_by: null, // pre-20260804000004 row — who raised it was never recorded
     resolution_note: null,
     client_submitted_at: new Date('2026-06-11T06:00:00Z'),
     modified_at: new Date('2026-06-11T09:00:00Z'),
@@ -202,10 +204,21 @@ describe('SiteOps Integration (Phase 6)', () => {
     afterEach(() => jest.restoreAllMocks());
 
     it('returns conflict_status CONFLICT_FLAGGED when server was modified after client last synced', async () => {
-      // Server row modified_at (09:00) is after client's last_known_modified_at (06:00)
+      // Server row modified_at (09:00) is after client's last_known_modified_at (06:00).
+      //
+      // Mocks findReportsByIds, NOT findReportById: the sync path was batched — it now resolves the
+      // whole page with one `report_id = ANY($1::uuid[])` query instead of one round trip (and one
+      // transaction) per queued item. This spy still named the old singular method, so nothing
+      // intercepted the lookup, the real query found no row, and every item took the
+      // "new report → ACCEPTED" branch. That is why this test failed while the conflict logic it
+      // covers was correct all along.
       jest
-        .spyOn(SiteOpsRepository.prototype, 'findReportById')
-        .mockResolvedValue(makeServerReport({ modified_at: new Date('2026-06-11T09:00:00Z') }));
+        .spyOn(SiteOpsRepository.prototype, 'findReportsByIds')
+        .mockResolvedValue(
+          new Map([
+            [REPORT_ID_A, makeServerReport({ modified_at: new Date('2026-06-11T09:00:00Z') })],
+          ]),
+        );
       jest
         .spyOn(SiteOpsRepository.prototype, 'createConflictRecord')
         .mockResolvedValue(makeConflictRecord());
@@ -234,9 +247,19 @@ describe('SiteOps Integration (Phase 6)', () => {
 
     it('returns conflict_status ACCEPTED when server modified_at matches client last known', async () => {
       const sharedTs = new Date('2026-06-11T06:00:00Z');
+      // Same stale-mock correction as the test above. This one was PASSING for the wrong reason:
+      // the un-intercepted lookup sent it down the "new report" branch, which also answers ACCEPTED,
+      // so the assertion held while the equal-timestamp case it exists to cover was never executed.
+      const serverRow = makeServerReport({ report_id: REPORT_ID_B, modified_at: sharedTs });
       jest
-        .spyOn(SiteOpsRepository.prototype, 'findReportById')
-        .mockResolvedValue(makeServerReport({ report_id: REPORT_ID_B, modified_at: sharedTs }));
+        .spyOn(SiteOpsRepository.prototype, 'findReportsByIds')
+        .mockResolvedValue(new Map([[REPORT_ID_B, serverRow]]));
+      // Equal timestamps mean the client wins, so this resolution carries should_persist: true and
+      // the service writes. The row exists only in the mock above, so the real UPDATE matches
+      // nothing, returns null, and the service correctly answers CONFLICT_REJECTED rather than
+      // claiming a write landed when it did not. Mock the write so the assertion is about the
+      // conflict decision, which is what this test is for.
+      jest.spyOn(SiteOpsRepository.prototype, 'updateSiteReport').mockResolvedValue(serverRow);
 
       const res = await request(app.getHttpServer())
         .post('/api/v1/site/reports/sync')

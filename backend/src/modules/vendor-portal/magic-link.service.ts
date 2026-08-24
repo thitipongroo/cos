@@ -32,7 +32,17 @@ export class MagicLinkService {
   private readonly secret: string;
 
   constructor() {
-    this.secret = process.env['VENDOR_PORTAL_SECRET'] ?? 'dev-vendor-portal-secret-change-me';
+    // The HMAC key is the sole authenticity control for these external-party tokens. In production it
+    // MUST be injected (AWS Secrets Manager / Vault) — refuse to boot rather than silently fall back to a
+    // source-visible constant that would let anyone forge tokens. A dev-only fallback keeps local/test easy.
+    const configured = process.env['VENDOR_PORTAL_SECRET'];
+    if (configured) {
+      this.secret = configured;
+    } else if (process.env['NODE_ENV'] === 'production') {
+      throw new Error('VENDOR_PORTAL_SECRET must be set in production');
+    } else {
+      this.secret = 'dev-vendor-portal-secret-change-me';
+    }
   }
 
   /** Tier-1 invitation token bound to a tenant + invitation. */

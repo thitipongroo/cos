@@ -1,0 +1,275 @@
+<!DOCTYPE html><html class="dark" lang="th"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>สถานะคิวการซิงค์ | CONSTRUCTION OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Shared Tailwind Config -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface": "#0B1020",
+                    "surface-container-high": "#0F172A",
+                    "on-primary-container": "#eeefff",
+                    "error": "#ffb4ab",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "tertiary": "#c1c5dc",
+                    "background": "#0B1020",
+                    "primary-container": "#2563eb",
+                    "on-surface": "#d3e4fe",
+                    "on-secondary-container": "#00424e",
+                    "mobile-success": "#00C853",
+                    "ai-cyan": "#06B6D4",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "on-secondary-fixed": "#001f26",
+                    "surface-variant": "#0F172A",
+                    "on-tertiary-fixed": "#161b2b",
+                    "on-primary": "#002a78",
+                    "mobile-primary": "#0066FF",
+                    "on-primary-fixed": "#00174b",
+                    "mobile-danger": "#FF3B30",
+                    "primary": "#b4c5ff",
+                    "surface-container-low": "#0F172A",
+                    "on-surface-variant": "#c3c6d7",
+                    "outline-variant": "#434655",
+                    "surface-container-lowest": "#0B1020",
+                    "surface-bright": "#1b2b3f",
+                    "secondary": "#4cd7f6",
+                    "tertiary-fixed": "#dee1f9",
+                    "on-background": "#d3e4fe",
+                    "sync-pending": "#94A3B8",
+                    "on-tertiary": "#2b3041",
+                    "primary-fixed": "#dbe1ff",
+                    "sync-active": "#FFD60A",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "secondary-fixed": "#acedff",
+                    "mobile-warning": "#FF9500",
+                    "on-error-container": "#ffdad6",
+                    "tertiary-container": "#686c80",
+                    "surface-dim": "#0B1020",
+                    "surface-tint": "#b4c5ff",
+                    "inverse-primary": "#0053db",
+                    "dark-surface": "#0F172A",
+                    "inverse-surface": "#d3e4fe",
+                    "on-secondary": "#003640",
+                    "on-error": "#690005",
+                    "inverse-on-surface": "#213145",
+                    "surface-container-highest": "#0F172A",
+                    "secondary-container": "#06B6D4",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "outline": "#8d90a0",
+                    "on-tertiary-container": "#eeefff",
+                    "error-container": "#93000a",
+                    "surface-container": "#0F172A",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "dark-bg": "#0B1020"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.25rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "space-3": "12px",
+                    "touch-target": "52px",
+                    "space-4": "16px",
+                    "space-2": "8px",
+                    "space-1": "4px",
+                    "web-margin": "32px",
+                    "edge-mobile": "24px",
+                    "base": "4px"
+            },
+            "fontFamily": {
+                    "tiny-web": ["Inter Tight"],
+                    "h2-web": ["Inter Tight"],
+                    "h1-web": ["Inter Tight"],
+                    "display-web": ["Inter Tight"],
+                    "label-mobile": ["Inter Tight"],
+                    "hero-mobile": ["Inter Tight"],
+                    "body-web": ["Inter Tight"],
+                    "body-mobile": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #0B1020;
+            font-family: 'Inter Tight', sans-serif;
+            color: #d3e4fe;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .status-strip-blue { border-left: 4px solid #b4c5ff; }
+        .status-strip-ai { border-left: 4px solid #06B6D4; }
+
+        /* Industrial sharp edges override */
+        .rounded-xl, .rounded-lg { border-radius: 0.25rem !important; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="flex flex-col min-h-screen">
+<!-- TopAppBar -->
+<header class="bg-surface-container flex justify-between items-center px-edge-mobile h-touch-target w-full sticky top-0 z-50 border-b border-outline-variant/30">
+<div class="flex items-center gap-space-2">
+<img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDHa1h-oiv_cCVItp4ZNaNzVSxgDEbujp7FSSkigDN91YZAUcTPE8Q8ayt8AZRYfXLJrpOeHRepbgkqr13JpK1lbtqFsM7eP2R4Svd2ZsqGhvRNsRLfvfcsa-i1nWtsPaOlGai4SXrv0c28i6vKvFYAKu5p5nzXzKrQEQAqgnss2M_VIZ-ZpF8yPpvJBIP5CzaWcfnizZP5eGcEdQJpebqghlb8doHjR0rneNcbhhSrHZR8ziIYgaggGjwW5KkgZXRH8tEJIViYjtk" alt="Construction OS Logo" class="w-6 h-6 object-contain">
+<h1 class="font-h1-web text-[18px] font-bold tracking-tighter text-on-surface uppercase">CONSTRUCTION OS</h1>
+</div>
+<div class="flex items-center gap-space-4">
+<span class="bg-mobile-success text-on-primary-fixed font-bold text-[10px] px-2 py-0.5 rounded-sm tracking-wider">SYNCED</span>
+<span class="material-symbols-outlined text-sync-active" data-icon="sync">sync</span>
+</div>
+</header>
+<main class="flex-1 px-edge-mobile pt-space-4 pb-32">
+<!-- Title Section -->
+<div class="mb-space-4">
+<h2 class="font-hero-mobile text-hero-mobile text-on-surface">สถานะคิวการซิงค์</h2>
+<p class="font-body-mobile text-on-surface-variant opacity-70">Sync Queue Status</p>
+</div>
+<!-- Primary Progress Card -->
+<section class="bg-dark-surface p-space-4 rounded-lg mb-space-4 status-strip-blue shadow-lg">
+<div class="flex justify-between items-start mb-space-3">
+<div>
+<h3 class="font-label-mobile text-on-surface uppercase tracking-wider">การส่งออกคลังบันทึกการตรวจสอบ</h3>
+<p class="font-tiny-web text-secondary mt-base uppercase">ประมวลผลโดย ARCHIVE-CORE-V2</p>
+</div>
+<span class="font-h2-web text-primary">68%</span>
+</div>
+<!-- Progress Bar -->
+<div class="w-full bg-surface-bright h-2 rounded-none overflow-hidden mb-space-4">
+<div class="bg-primary h-full transition-all duration-1000 ease-out shadow-[0_0_8px_rgba(180,197,255,0.5)]" style="width: 68.5237%;"></div>
+</div>
+<div class="flex flex-col gap-space-1 mb-space-4">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-sync-active text-[18px] animate-spin" data-icon="progress_activity" style="animation-duration: 3s;">progress_activity</span>
+<span class="font-label-mobile text-on-surface">กำลังประมวลผลข้อมูล (Processing Data)</span>
+</div>
+<p class="font-body-mobile text-on-surface-variant text-sm pl-7">กำลังรวบรวม 4,200 รายการ เป็นรูปแบบ PDF ที่ปลอดภัย</p>
+</div>
+<div class="border-t border-outline-variant/10 pt-space-3 flex justify-between items-center">
+<span class="font-tiny-web text-on-surface-variant uppercase">โหนด: SG-CENTRAL-01</span>
+<span class="font-tiny-web text-on-surface-variant uppercase">ประมาณการที่เหลือ: 124MB</span>
+</div>
+</section>
+<!-- AI Estimate Module -->
+<section class="bg-dark-surface p-space-4 rounded-lg mb-space-4 status-strip-ai flex items-center gap-space-4">
+<div class="bg-ai-cyan/10 p-space-2 rounded-sm">
+<span class="material-symbols-outlined text-ai-cyan" data-icon="psychology">psychology</span>
+</div>
+<div class="flex-1">
+<p class="font-label-mobile text-on-surface">คาดว่าจะเสร็จสิ้นใน <span class="text-ai-cyan">4m 12s</span></p>
+<div class="flex items-center gap-space-2 mt-space-1">
+<span class="font-tiny-web text-on-surface-variant uppercase">ความเชื่อมั่นของ AI:</span>
+<span class="font-tiny-web text-ai-cyan font-bold">98%</span>
+</div>
+</div>
+</section>
+<!-- Recent Activities List -->
+<div class="mb-space-3">
+<h4 class="font-label-mobile text-on-surface-variant uppercase tracking-widest text-[11px] mb-space-2">กิจกรรมล่าสุด (RECENT ACTIVITIES)</h4>
+<div class="flex flex-col gap-space-2">
+<!-- Item 1 -->
+<div class="bg-dark-surface p-space-3 rounded-sm flex items-center justify-between border-l border-outline-variant/20">
+<div class="flex items-center gap-space-3">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="settings_suggest">settings_suggest</span>
+<div>
+<p class="font-label-mobile text-on-surface">System Settings Sync</p>
+<p class="font-tiny-web text-on-surface-variant">2 minutes ago</p>
+</div>
+</div>
+<span class="bg-mobile-success/20 text-mobile-success px-space-2 py-0.5 rounded-sm text-[10px] font-bold tracking-tighter">SYNCED</span>
+</div>
+<!-- Item 2 -->
+<div class="bg-dark-surface p-space-3 rounded-sm flex items-center justify-between border-l border-outline-variant/20">
+<div class="flex items-center gap-space-3">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="admin_panel_settings">admin_panel_settings</span>
+<div>
+<p class="font-label-mobile text-on-surface">User Permissions Update</p>
+<p class="font-tiny-web text-on-surface-variant">Awaiting validation</p>
+</div>
+</div>
+<span class="bg-sync-pending/20 text-sync-pending px-space-2 py-0.5 rounded-sm text-[10px] font-bold tracking-tighter uppercase">PENDING</span>
+</div>
+<!-- Item 3 -->
+<div class="bg-dark-surface p-space-3 rounded-sm flex items-center justify-between border-l border-outline-variant/20">
+<div class="flex items-center gap-space-3">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="cloud_sync">cloud_sync</span>
+<div>
+<p class="font-label-mobile text-on-surface">BIM Model Delta Push</p>
+<p class="font-tiny-web text-on-surface-variant">Streaming shards...</p>
+</div>
+</div>
+<span class="bg-secondary/20 text-secondary px-space-2 py-0.5 rounded-sm text-[10px] font-bold tracking-tighter uppercase">PROCESSING</span>
+</div>
+</div>
+</div>
+<!-- Action Button -->
+<button class="w-full h-[52px] bg-primary text-on-primary font-label-mobile uppercase tracking-[0.05em] rounded-sm mt-space-4 transition-transform active:scale-[0.98] flex items-center justify-center gap-space-2 shadow-lg">
+<span class="material-symbols-outlined text-[20px]" data-icon="home">home</span>
+            กลับสู่หน้าหลักผู้ดูแลระบบ
+        </button>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center px-edge-mobile pb-safe h-[72px] bg-dark-bg border-t border-outline-variant shadow-lg">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-mobile text-[11px] mt-1">แดชบอร์ด</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="account_tree">account_tree</span>
+<span class="font-label-mobile text-[11px] mt-1">โมดูล</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-ai-cyan text-on-secondary-container rounded-full px-space-4 py-space-1 transition-transform active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="psychology" style="font-variation-settings: 'FILL' 1;">psychology</span>
+<span class="font-label-mobile text-[11px]">บันทึก AI</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-mobile text-[11px] mt-1">การตั้งค่า</span>
+</a>
+</nav>
+<!-- Micro-interaction script -->
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const progressBar = document.querySelector('.bg-primary.h-full');
+            const percentLabel = document.querySelector('.font-h2-web.text-primary');
+            let progress = 68;
+            
+            setInterval(() => {
+                if (progress < 99.5) {
+                    progress += Math.random() * 0.05;
+                    progressBar.style.width = `${progress}%`;
+                    if (percentLabel) {
+                        percentLabel.innerText = `${Math.floor(progress)}%`;
+                    }
+                }
+            }, 4000);
+        });
+    </script>
+
+
+</body></html>

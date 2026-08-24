@@ -259,6 +259,14 @@ describe('Full-text search (Testcontainers — OpenSearch)', () => {
           userId: 'user-1',
           correlationId: 'corr-1',
         } as never,
+        // SiteOpsService also takes the durable outbox, used by the events that have no row of
+        // their own. These cases only read the search index, so a throwing stub keeps an
+        // unexpected publish visible instead of silently passing.
+        {
+          publish: () => {
+            throw new Error('outbox.publish was not expected in a search test');
+          },
+        } as never,
       );
 
       const s = service as unknown as {

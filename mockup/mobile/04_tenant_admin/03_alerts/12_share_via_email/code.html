@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="th"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>Share Success - Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            font-family: 'Inter Tight', sans-serif;
+            background-color: #031427;
+            color: #d3e4fe;
+            -webkit-font-smoothing: antialiased;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .success-shimmer {
+            background: linear-gradient(90deg, rgba(0,200,83,0.1) 0%, rgba(0,200,83,0.2) 50%, rgba(0,200,83,0.1) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 3s infinite linear;
+        }
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        .bento-card {
+            background: #102034;
+            border: 1px solid rgba(67, 70, 85, 0.3);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-primary": "#002a78",
+                      "surface-container": "#102034",
+                      "background": "#031427",
+                      "sync-active": "#FFD60A",
+                      "surface-bright": "#2a3a4f",
+                      "surface-container-highest": "#26364a",
+                      "mobile-danger": "#FF3B30",
+                      "error": "#ffb4ab",
+                      "surface-container-lowest": "#000f21",
+                      "on-tertiary-fixed-variant": "#414658",
+                      "primary-container": "#2563eb",
+                      "mobile-success": "#00C853",
+                      "error-container": "#93000a",
+                      "outline": "#8d90a0",
+                      "on-surface-variant": "#c3c6d7",
+                      "mobile-primary": "#0066FF",
+                      "on-primary-container": "#eeefff",
+                      "dark-surface": "#0F172A",
+                      "primary-fixed": "#dbe1ff",
+                      "on-primary-fixed": "#00174b",
+                      "on-tertiary-container": "#eeefff",
+                      "secondary-fixed": "#acedff",
+                      "tertiary-fixed-dim": "#c1c5dc",
+                      "on-secondary": "#003640",
+                      "surface-tint": "#b4c5ff",
+                      "on-surface": "#d3e4fe",
+                      "surface-container-high": "#1b2b3f",
+                      "secondary-container": "#03b5d3",
+                      "primary-fixed-dim": "#b4c5ff",
+                      "sync-pending": "#94A3B8",
+                      "surface": "#031427",
+                      "on-error": "#690005",
+                      "secondary": "#4cd7f6",
+                      "outline-variant": "#434655",
+                      "on-tertiary-fixed": "#161b2b",
+                      "dark-bg": "#020617",
+                      "on-tertiary": "#2b3041",
+                      "on-secondary-fixed": "#001f26",
+                      "on-primary-fixed-variant": "#003ea8",
+                      "on-secondary-fixed-variant": "#004e5c",
+                      "on-background": "#d3e4fe",
+                      "inverse-surface": "#d3e4fe",
+                      "tertiary-container": "#686c80",
+                      "surface-variant": "#26364a",
+                      "surface-dim": "#031427",
+                      "surface-container-low": "#0b1c30",
+                      "primary": "#b4c5ff",
+                      "on-secondary-container": "#00424e",
+                      "secondary-fixed-dim": "#4cd7f6",
+                      "inverse-on-surface": "#213145",
+                      "inverse-primary": "#0053db",
+                      "tertiary-fixed": "#dee1f9",
+                      "on-error-container": "#ffdad6",
+                      "tertiary": "#c1c5dc",
+                      "mobile-warning": "#FF9500"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "edge-mobile": "24px",
+                      "space-1": "4px",
+                      "base": "4px",
+                      "web-margin": "32px",
+                      "touch-target": "52px",
+                      "space-4": "16px",
+                      "space-3": "12px",
+                      "space-2": "8px"
+              },
+              "fontFamily": {
+                      "h1-web": ["Inter Tight"],
+                      "h2-web": ["Inter Tight"],
+                      "label-mobile": ["Inter Tight"],
+                      "display-web": ["Inter Tight"],
+                      "tiny-web": ["Inter Tight"],
+                      "body-web": ["Inter Tight"],
+                      "body-mobile": ["Inter Tight"],
+                      "hero-mobile": ["Inter Tight"]
+              },
+              "fontSize": {
+                      "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                      "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                      "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}]
+              }
+            },
+          },
+        }
+    </script>
+</head>
+<body class="flex flex-col min-h-screen bg-background">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky z-50 bg-surface flex items-center justify-between px-edge-mobile h-touch-target transition-transform duration-200">
+<div class="flex items-center gap-space-3">
+<span class="material-symbols-outlined text-primary" data-icon="cloud_done">cloud_done</span>
+<h1 class="font-h1-web text-h1-web-mobile font-bold tracking-tight text-primary">CONSTRUCTION OS</h1>
+</div>
+<div class="flex items-center gap-space-2 bg-surface-container-high px-space-3 py-1 rounded-full border border-outline-variant/20">
+<div class="w-2 h-2 rounded-full bg-mobile-success animate-pulse"></div>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase tracking-widest">SYNCED</span>
+</div>
+</header>
+<main class="flex-1 flex flex-col px-edge-mobile py-space-4">
+<!-- Success Content Container -->
+<div class="flex-1 flex flex-col justify-center items-center text-center">
+<!-- Success Animation/Icon Space -->
+<div class="relative w-48 h-48 mb-space-4 flex items-center justify-center">
+<div class="absolute inset-0 bg-mobile-success/10 rounded-full animate-ping duration-1000"></div>
+<div class="absolute inset-4 bg-mobile-success/5 rounded-full blur-xl"></div>
+<div class="relative w-32 h-32 rounded-full bg-mobile-success flex items-center justify-center shadow-[0_0_40px_rgba(0,200,83,0.4)]">
+<span class="material-symbols-outlined text-background text-6xl font-bold" data-icon="check" style="font-variation-settings: 'wght' 700;">check</span>
+</div>
+</div>
+<!-- Success Details Card (Bento Style) -->
+<div class="w-full bento-card rounded-xl p-space-4 mb-space-4 overflow-hidden relative">
+<div class="absolute top-0 left-0 w-1 h-full bg-mobile-success"></div>
+<h2 class="font-hero-mobile text-hero-mobile text-on-surface mb-space-2">ส่งอีเมลสำเร็จ</h2>
+<div class="flex items-center justify-center gap-space-2 text-on-surface-variant mb-space-3">
+<span class="material-symbols-outlined text-sm" data-icon="description">description</span>
+<p class="font-body-mobile text-body-mobile">รายงาน #SI-2024-089</p>
+</div>
+<p class="font-body-mobile text-body-mobile text-on-surface-variant opacity-80 px-space-2">
+                    รายงานความคืบหน้าโครงการถูกส่งไปยังผู้รับเรียบร้อยแล้ว
+                </p>
+</div>
+<!-- AI Insight Module -->
+<div class="w-full bg-secondary/5 border-l-4 border-secondary rounded-lg p-space-3 mb-space-4 flex items-center gap-space-3 text-left">
+<span class="material-symbols-outlined text-secondary" data-icon="auto_awesome" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<div>
+<p class="font-label-mobile text-label-mobile text-secondary uppercase tracking-tight">AI: Email Delivery Verified</p>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant">Server response confirms inbox delivery within 2.4s.</p>
+</div>
+</div>
+<!-- Background Atmosphere (Bento Aesthetic) -->
+<div class="grid grid-cols-2 gap-space-2 w-full mt-space-2">
+<div class="bento-card rounded-lg p-space-3 flex flex-col items-start gap-1">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">Time</span>
+<span class="font-label-mobile text-label-mobile text-on-surface">14:20:05</span>
+</div>
+<div class="bento-card rounded-lg p-space-3 flex flex-col items-start gap-1">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">Network</span>
+<span class="font-label-mobile text-label-mobile text-on-surface">5G Stable</span>
+</div>
+</div>
+</div>
+<!-- Action Buttons Footer -->
+<div class="mt-auto pt-space-4 flex flex-col gap-space-3 pb-safe">
+<button class="w-full h-touch-target bg-primary-container text-on-primary-container font-h2-web text-h2-web rounded-xl flex items-center justify-center gap-space-2 active:scale-95 transition-all shadow-lg hover:brightness-110">
+<span>กลับไปที่หน้ารายงาน</span>
+<span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+</button>
+<button class="w-full h-touch-target border-2 border-outline-variant text-on-surface font-h2-web text-h2-web rounded-xl flex items-center justify-center gap-space-2 active:scale-95 transition-all hover:bg-surface-bright/20">
+<span class="material-symbols-outlined" data-icon="share">share</span>
+<span>แชร์ไปยังช่องทางอื่น</span>
+</button>
+</div>
+</main>
+<!-- Bottom Navigation Shell (Inactive for Success Flow but included as anchor) -->
+<nav class="hidden md:hidden fixed bottom-0 w-full flex justify-around items-center px-space-2 pb-safe h-[72px] bg-surface-container rounded-t-xl shadow-lg">
+<div class="flex flex-col items-center justify-center text-on-surface-variant p-space-2">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label-mobile text-label-mobile">หน้าหลัก</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-space-4 py-space-1">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+<span class="font-label-mobile text-label-mobile">รายงาน</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant p-space-2">
+<span class="material-symbols-outlined" data-icon="assignment">assignment</span>
+<span class="font-label-mobile text-label-mobile">บันทึก</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant p-space-2">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-mobile text-label-mobile">ตั้งค่า</span>
+</div>
+</nav>
+<script>
+        // Micro-interaction for feedback
+        document.querySelectorAll('button').forEach(button => {
+            button.addEventListener('click', () => {
+                const ripple = document.createElement('div');
+                ripple.classList.add('absolute', 'inset-0', 'bg-white/10', 'animate-pulse', 'rounded-xl');
+                button.appendChild(ripple);
+                setTimeout(() => ripple.remove(), 400);
+            });
+        });
+    </script>
+</body></html>

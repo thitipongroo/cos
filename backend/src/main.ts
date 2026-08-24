@@ -11,11 +11,29 @@ import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './shared/filters/http-exception.filter';
+import { appDatabaseUrl } from './shared/prisma/app-database-url';
+import { resolveTrustProxy } from './shared/net/trusted-proxy';
+import { assertSecurityTogglesConfigured } from './shared/config/security-toggles';
 
 async function bootstrap(): Promise<void> {
+  // Fail fast at startup if the non-superuser app DB role is not configured — every tenant-scoped
+  // query depends on it for PostgreSQL RLS enforcement (spec §7.7, QM-18). Booting without it would
+  // silently degrade tenant isolation, so refuse to start rather than fall back to a superuser role.
+  appDatabaseUrl();
+
+  // Refuse to boot a production instance whose security posture is implicit — WAF_ORIGIN_ENFORCE,
+  // MFA_ENFORCE and WEBHOOK_REPLAY_PROTECTION all default OFF, so an unset variable is a disabled
+  // control that looks identical to a deliberate one (security review F8).
+  assertSecurityTogglesConfigured();
+
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    new FastifyAdapter({ logger: false }),
+    // trustProxy — without it `request.ip` is the Cloudflare/ALB peer, so ThrottlerGuard (which keys on
+    // request.ip) collapsed every caller behind one edge into a single rate-limit bucket, and @Ip() /
+    // audit_logs.ip_address recorded the edge instead of the client (security review F3). Trust is
+    // granted only to peers inside TRUSTED_PROXY_CIDRS — never blanket-true, which would let a direct
+    // caller forge X-Forwarded-For. Unset ranges → false → previous behaviour (see trusted-proxy.ts).
+    new FastifyAdapter({ logger: false, trustProxy: resolveTrustProxy() }),
     // rawBody: true makes Nest expose req.rawBody (Buffer) for webhook HMAC
     // verification (Phase 25) without manually registering a content-type parser
     // that conflicts with Nest's own JSON body parser registered during init.
@@ -38,15 +56,18 @@ async function bootstrap(): Promise<void> {
     }),
   );
 
-  // Swagger / OpenAPI 3.1 — QM-11
-  const config = new DocumentBuilder()
-    .setTitle('Construction OS API')
-    .setDescription('AI-Native Construction Operating System — REST API')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+  // Swagger / OpenAPI 3.1 — QM-11. Served only outside production: the interactive UI publishes the
+  // full API surface with no auth, so it must not be exposed on prod ingress (security misconfig).
+  if (process.env['NODE_ENV'] !== 'production') {
+    const config = new DocumentBuilder()
+      .setTitle('Construction OS API')
+      .setDescription('AI-Native Construction Operating System — REST API')
+      .setVersion('1.0')
+      .addBearerAuth()
+      .build();
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api/docs', app, document);
+  }
 
   // CORS — QM-4: explicit origins only, never wildcard in production. `methods` must be listed
   // explicitly: without it the preflight advertises only GET,HEAD,POST, so the browser blocks every
@@ -68,4 +89,14 @@ async function bootstrap(): Promise<void> {
   await app.listen(port, '0.0.0.0');
 }
 
-bootstrap();
+// A rejected bootstrap must terminate the process with a non-zero exit code and a logged reason.
+// Without this handler the startup guards above (appDatabaseUrl / assertSecurityTogglesConfigured)
+// surfaced as a bare unhandled rejection: Node still exits non-zero, but the operator sees a raw
+// stack with no indication that the pod refused to start on purpose. Kubernetes then restarts it in
+// a loop with nothing in the logs naming the misconfiguration.
+bootstrap().catch((err: unknown) => {
+  // console, not @cos/logger: this runs when the Nest DI container may never have been created, so
+  // the logger's own config is not guaranteed to be loaded.
+  console.error('bootstrap.failed', err);
+  process.exit(1);
+});

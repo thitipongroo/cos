@@ -1,0 +1,52 @@
+# RAG chain configuration (§22.7 LangChain Configuration + RAG-001).
+#
+# Pipeline: BM25 (OpenSearch) + vector (pgvector) → Reciprocal Rank Fusion → cross-encoder rerank
+# → top-k context assembly → LLM. Values here are the tunable knobs; the code reads this file rather
+# than hardcoding them (§22.7 "Chain config stored in ai/chains/ as YAML per chain type").
+chain_type: rag
+
+llm:
+  # §22.5 / §22.7 LLM Provider — GPT-4o primary via the LLMProvider interface.
+  model: gpt-4o
+  model_hint: rag
+
+embedding:
+  # §22.7 Embedding Provider.
+  model: text-embedding-3-small
+  dimensions: 1536
+
+retrieval:
+  # §22.7 RAG-001 — fuse keyword + vector, then rerank.
+  vector:
+    backend: pgvector
+    table: ai.document_embeddings
+    metric: cosine
+    top_k: 20 # candidates fed into fusion, not the final answer count
+  keyword:
+    backend: opensearch
+    top_k: 20
+  fusion:
+    method: rrf # Reciprocal Rank Fusion — combines by rank position, no score normalization
+    rank_constant: 60 # library default; tune only if a benchmark dictates (§22.7 RAG-001)
+  final_top_k: 5 # §22.7 RAG-001 "top-k = 5 context assembly"
+  max_context_tokens: 4000 # §22.7 "Context assembly: top-k=5 chunks, max context 4000 tokens"
+
+chunking:
+  # §22.7 Chunking strategy. No code reads this block yet — ai-embedding-worker/utils/chunking.py
+  # carries the same numbers as Python defaults — but it is the spec-traceable source of truth and
+  # is kept so the values live in one declared place rather than only in code.
+  documents:
+    strategy: recursive_character
+    chunk_size: 500
+    chunk_overlap: 100
+  site_reports:
+    strategy: single_chunk # each report treated as one chunk (<500 tokens)
+
+rerank:
+  # §22.7 Cross-Encoder Reranking — conditional stage.
+  enabled: false # activate when RAG p95 relevance < 0.7 over a 7-day window
+  model: cross-encoder/ms-marco-MiniLM-L-6-v2
+  trigger:
+    metric: rag_retrieval_relevance_p95
+    threshold: 0.7
+    window_days: 7

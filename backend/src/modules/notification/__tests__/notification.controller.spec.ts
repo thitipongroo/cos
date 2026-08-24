@@ -84,7 +84,7 @@ describe('getPreferences', () => {
 });
 
 describe('updatePreferences', () => {
-  it('delegates to svc.updatePreferences with dto.preferences', async () => {
+  it('delegates to svc.updatePreferences with dto.preferences (no quiet-hours window)', async () => {
     mockSvc.updatePreferences.mockResolvedValue([]);
     const dto = { preferences: [{ event_type: 'e', channel: 'EMAIL', is_enabled: false }] };
     await ctrl.updatePreferences(req(), dto as never);
@@ -92,7 +92,22 @@ describe('updatePreferences', () => {
       'tenant-001',
       'user-001',
       dto.preferences,
+      undefined,
     );
+  });
+
+  it('forwards the quiet-hours window when both edges are present', async () => {
+    mockSvc.updatePreferences.mockResolvedValue([]);
+    const dto = {
+      preferences: [],
+      quiet_hours_start: '22:00',
+      quiet_hours_end: '07:00',
+    };
+    await ctrl.updatePreferences(req(), dto as never);
+    expect(mockSvc.updatePreferences).toHaveBeenCalledWith('tenant-001', 'user-001', [], {
+      start: '22:00',
+      end: '07:00',
+    });
   });
 });
 

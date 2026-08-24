@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>Link Copied | Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "background": "#031427",
+                        "dark-surface": "#0F172A",
+                        "secondary": "#4cd7f6",
+                        "inverse-surface": "#d3e4fe",
+                        "on-error-container": "#ffdad6",
+                        "primary-fixed": "#dbe1ff",
+                        "on-tertiary-container": "#eeefff",
+                        "on-primary-container": "#eeefff",
+                        "secondary-container": "#03b5d3",
+                        "error": "#ffb4ab",
+                        "dark-bg": "#020617",
+                        "on-tertiary-fixed": "#161b2b",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "on-secondary-container": "#00424e",
+                        "inverse-on-surface": "#213145",
+                        "on-primary-fixed": "#00174b",
+                        "primary": "#b4c5ff",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "surface-container-high": "#1b2b3f",
+                        "tertiary-fixed": "#dee1f9",
+                        "on-background": "#d3e4fe",
+                        "surface-container": "#102034",
+                        "surface-bright": "#2a3a4f",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "surface-container-highest": "#26364a",
+                        "outline": "#8d90a0",
+                        "surface-variant": "#26364a",
+                        "inverse-primary": "#0053db",
+                        "mobile-warning": "#FF9500",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "on-secondary-fixed": "#001f26",
+                        "on-error": "#690005",
+                        "secondary-fixed": "#acedff",
+                        "surface": "#031427",
+                        "on-tertiary": "#2b3041",
+                        "on-secondary": "#003640",
+                        "on-primary": "#002a78",
+                        "mobile-success": "#00C853",
+                        "outline-variant": "#434655",
+                        "on-surface-variant": "#c3c6d7",
+                        "surface-dim": "#031427",
+                        "surface-container-low": "#0b1c30",
+                        "on-surface": "#d3e4fe",
+                        "primary-container": "#2563eb",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "sync-pending": "#94A3B8",
+                        "tertiary-container": "#686c80",
+                        "sync-active": "#FFD60A",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "mobile-primary": "#0066FF"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "space-3": "12px",
+                        "edge-mobile": "24px",
+                        "touch-target": "52px",
+                        "space-4": "16px",
+                        "base": "4px",
+                        "space-2": "8px",
+                        "web-margin": "32px",
+                        "space-1": "4px"
+                    },
+                    "fontFamily": {
+                        "body-mobile": ["Inter Tight"],
+                        "label-mobile": ["Inter Tight"],
+                        "h2-web": ["Inter Tight"],
+                        "h1-web": ["Inter Tight"],
+                        "display-web": ["Inter Tight"],
+                        "body-web": ["Inter Tight"],
+                        "tiny-web": ["Inter Tight"],
+                        "hero-mobile": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                        "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+            text-transform: none;
+            letter-spacing: normal;
+            word-wrap: normal;
+            white-space: nowrap;
+            direction: ltr;
+        }
+        
+        .success-glow {
+            box-shadow: 0 0 40px -10px rgba(0, 200, 83, 0.3);
+        }
+
+        @keyframes check-bounce {
+            0% { transform: scale(0.5); opacity: 0; }
+            70% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .animate-check {
+            animation: check-bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        .shimmer {
+            background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+    </style>
+</head>
+<body class="bg-dark-bg text-on-surface font-body-mobile overflow-hidden">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-edge-mobile h-touch-target bg-surface-dim dark:bg-dark-bg">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-primary" data-icon="menu">menu</span>
+<h1 class="font-display-web text-h1-web-mobile font-bold text-primary tracking-tight">Construction OS</h1>
+</div>
+<div class="flex items-center gap-space-2 bg-surface-container px-space-2 py-1 rounded-full">
+<div class="w-2 h-2 rounded-full bg-mobile-success"></div>
+<span class="font-tiny-web text-tiny-web uppercase text-on-surface-variant">Synced</span>
+</div>
+</header>
+<main class="relative h-screen flex flex-col items-center justify-center px-edge-mobile pt-touch-target pb-[100px]">
+<!-- Success Content -->
+<div class="flex flex-col items-center text-center w-full max-w-sm">
+<!-- Animated Icon Container -->
+<div class="mb-space-4 relative">
+<div class="w-24 h-24 rounded-full bg-mobile-success/10 flex items-center justify-center success-glow animate-check">
+<span class="material-symbols-outlined text-[48px] text-mobile-success" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+</div>
+<!-- Confirmation Text -->
+<h2 class="font-hero-mobile text-hero-mobile text-on-surface mb-space-1">Link Copied to Clipboard</h2>
+<p class="font-body-mobile text-on-surface-variant mb-space-4">The secure share link is ready to be distributed.</p>
+<!-- Summary Bento Card -->
+<div class="w-full bg-surface-container rounded-xl overflow-hidden border-l-4 border-mobile-success shadow-xl">
+<div class="p-space-4 text-left">
+<div class="flex justify-between items-start mb-space-3">
+<div>
+<span class="font-tiny-web text-tiny-web uppercase text-on-surface-variant block mb-1">Report ID</span>
+<span class="font-h2-web text-h2-web text-on-surface font-bold tracking-tight">#SI-2024-089</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="description">description</span>
+</div>
+<div class="h-px w-full bg-white/10 my-space-3"></div>
+<div class="flex items-center gap-space-3">
+<div class="flex-1">
+<span class="font-tiny-web text-tiny-web uppercase text-on-surface-variant block mb-1">Validity</span>
+<div class="flex items-center gap-space-1">
+<span class="material-symbols-outlined text-secondary text-sm" data-icon="schedule">schedule</span>
+<span class="font-label-mobile text-label-mobile text-on-surface">Expires in 7 days</span>
+</div>
+</div>
+<div class="flex-1">
+<span class="font-tiny-web text-tiny-web uppercase text-on-surface-variant block mb-1">Permissions</span>
+<div class="flex items-center gap-space-1">
+<span class="material-symbols-outlined text-secondary text-sm" data-icon="visibility">visibility</span>
+<span class="font-label-mobile text-label-mobile text-on-surface">View Only</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Shimmer Accent -->
+<div class="h-1 w-full shimmer"></div>
+</div>
+<!-- Secondary Info -->
+<div class="mt-space-4 flex items-start gap-space-2 p-space-3 bg-primary-container/10 rounded-lg text-left">
+<span class="material-symbols-outlined text-primary mt-0.5" data-icon="info">info</span>
+<p class="font-label-mobile text-on-surface-variant">Any user with this link can view the Site Inspection Report Alpha-089. Manage access in <span class="text-primary underline">Settings</span>.</p>
+</div>
+</div>
+</main>
+<!-- Fixed Action Bar -->
+<div class="fixed bottom-0 left-0 w-full p-edge-mobile bg-gradient-to-t from-dark-bg via-dark-bg/95 to-transparent pb-safe">
+<button class="w-full h-touch-target bg-primary-container text-on-primary-container font-label-mobile rounded-xl flex items-center justify-center gap-space-2 active:scale-95 transition-transform duration-150 uppercase tracking-[0.05em] font-bold shadow-lg shadow-primary-container/20">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+            Return to Report
+        </button>
+</div>
+<!-- Background Decoration (Subtle Industrial Aesthetic) -->
+<div class="fixed inset-0 pointer-events-none z-[-1] opacity-20">
+<div class="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[120px]"></div>
+<div class="absolute bottom-0 left-0 w-64 h-64 bg-secondary/10 rounded-full blur-[120px]"></div>
+<!-- Subtle Grid Pattern -->
+<div class="absolute inset-0" style="background-image: radial-gradient(circle at 2px 2px, rgba(255,255,255,0.05) 1px, transparent 0); background-size: 24px 24px;"></div>
+</div>
+<script>
+        // Simple ripple effect or micro-interaction logic
+        document.querySelector('button').addEventListener('click', function(e) {
+            // Placeholder for navigation back
+            console.log('Navigating back to report...');
+        });
+
+        // Add visibility check for industrial-grade accessibility
+        window.addEventListener('load', () => {
+            console.log('Construction OS: Share flow confirmed.');
+        });
+    </script>
+</body></html>

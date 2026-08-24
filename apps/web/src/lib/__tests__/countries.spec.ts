@@ -43,9 +43,12 @@ describe('COUNTRIES', () => {
     }
   });
 
-  it('covers Thailand plus the ASEAN markets the module documents', () => {
+  it('covers exactly the three markets the module documents', () => {
+    // Thailand (home), Vietnam and Singapore. The catalogue is asserted whole, not sampled: each
+    // entry needs a bundled public/flags/<iso2>.svg, so a code added here without its asset shows
+    // up as a broken flag rather than a failing test.
     const codes = COUNTRIES.map((c) => c.iso2).sort();
-    expect(codes).toEqual(['bn', 'id', 'kh', 'la', 'mm', 'my', 'ph', 'sg', 'th', 'vn']);
+    expect(codes).toEqual(['sg', 'th', 'vn']);
   });
 });
 
@@ -111,7 +114,7 @@ describe('countryFromLocale', () => {
   });
 
   it('lowercases the region subtag', () => {
-    expect(countryFromLocale('en-MY')).toBe('my');
+    expect(countryFromLocale('en-VN')).toBe('vn');
   });
 
   it('falls back to the home market for a region that is not in the list', () => {

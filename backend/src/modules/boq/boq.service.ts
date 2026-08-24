@@ -20,6 +20,7 @@ import { Decimal, calculateLineTotal, sumDecimals } from '@cos/financial';
 import { toBoqCsv } from './boq-csv.util';
 import { buildOutboxEvent } from '../../shared/outbox/outbox.types';
 import type { OutboxEventInput } from '../../shared/outbox/outbox.types';
+import { EventOutboxService } from '../../shared/events/event-outbox.service';
 import { createLogger } from '@cos/logger';
 import { BoqRepository } from './boq.repository';
 import type { BoqVersionRow, BoqCategoryRow, BoqItemRow } from './boq.repository';
@@ -47,6 +48,7 @@ export class BoqService {
       tenantId?: string;
       user?: { user_id?: string; role?: string };
     },
+    private readonly outbox: EventOutboxService,
   ) {
     this.correlationId = randomUUID();
   }
@@ -54,23 +56,17 @@ export class BoqService {
   // ── Version Operations ────────────────────────────────────────────────────
 
   async createVersion(project_id: string, dto: CreateBoqVersionDto): Promise<BoqVersionRow> {
-    // Enforce: only one DRAFT per project
-    const existingDraft = await this.repo.findDraftVersion(project_id);
-    if (existingDraft) {
-      throw new ConflictException(
-        `Project ${project_id} already has a DRAFT BOQ version (${existingDraft.version_id}). Approve or delete it first.`,
-      );
-    }
-
-    const maxVersion = await this.repo.findMaxVersionNumber(project_id);
-    const newVersionNumber = maxVersion + 1;
-
-    // Outbox (§35.13 ESC-13): both events are written inside the INSERT's transaction, from the
-    // inserted row, so version_id is the real generated id and a rollback emits nothing.
-    const version = await this.repo.createVersion(
+    // The DRAFT check and the version_number allocation must happen together, under one lock: run
+    // as separate queries they were a check-then-act race in which two concurrent creates could both
+    // see "no DRAFT" and both claim the same version number. claimNextVersion() does both inside a
+    // single per-project transaction and returns null when a DRAFT already exists.
+    //
+    // The outbox builder goes in with it (§35.13 ESC-13): the events are written from the INSERTed
+    // row, inside that same transaction, so version_id is the real generated id and a rollback
+    // emits nothing. A first version emits two events, hence an array.
+    const claimed = await this.repo.claimNextVersion(
       {
         project_id,
-        version_number: newVersionNumber,
         version_name: dto.version_name ?? null,
         currency_code: dto.currency_code,
         created_by: this.userId,
@@ -94,7 +90,7 @@ export class BoqService {
             },
           }),
         ];
-        if (newVersionNumber === 1) {
+        if (row.version_number === 1) {
           events.push(
             buildOutboxEvent({
               eventType: 'construction.boq.created.v1',
@@ -112,6 +108,13 @@ export class BoqService {
         return events;
       },
     );
+    if (!claimed) {
+      const existingDraft = await this.repo.findDraftVersion(project_id);
+      throw new ConflictException(
+        `Project ${project_id} already has a DRAFT BOQ version (${existingDraft?.version_id ?? 'unknown'}). Approve or delete it first.`,
+      );
+    }
+    const { version, version_number: newVersionNumber } = claimed;
 
     // If copying from latest approved version
     if (newVersionNumber > 1) {
@@ -204,6 +207,31 @@ export class BoqService {
       },
       'boq.version.approved',
     );
+
+    // construction.boq.version_approved.v1 is NOT published here: approveVersion() above already
+    // wrote it into the supersede+approve transaction, so publishing again would emit the event
+    // twice — once durably, once transactionally.
+    //
+    // items_published is different. It needs the line set, which is read after the approval commits,
+    // so it cannot join that transaction; it goes through the durable outbox instead. Downstream
+    // materialisation (finance contract-document generation, ADR-058 CT-2c-2) snapshots per version,
+    // which is the natural grain because a contract is generated against an approved BOQ.
+    const items = await this.repo.findItemsByVersion(version_id);
+    await this.publishEvent('construction.boq.items_published.v1', {
+      version_id,
+      project_id,
+      version_number: version.version_number,
+      total_estimated_amount: finalTotal,
+      total_estimated_currency: version.total_estimated_currency,
+      items: items.map((i) => ({
+        item_code: i.item_code,
+        description: i.description,
+        unit: i.unit,
+        quantity: i.quantity,
+        unit_cost: i.unit_cost,
+        estimated_total: i.estimated_total,
+      })),
+    });
 
     return approved!;
   }
@@ -346,12 +374,19 @@ export class BoqService {
     const allItems = await this.repo.findItemsByVersion(version_id);
     const categories = await this.repo.findCategoriesByVersion(version_id);
 
-    // Update each category subtotal
-    for (const cat of categories) {
-      const items = allItems.filter((i) => i.category_id === cat.category_id);
-      const subtotal = sumDecimals(items.map((i) => new Decimal(i.estimated_total)));
-      await this.repo.updateCategorySubtotal(cat.category_id, subtotal.toFixed(4));
-    }
+    // Update every category subtotal in one statement. This was a loop issuing one UPDATE per
+    // category, each in its own transaction, so a large BOQ re-cost meant dozens of sequential round
+    // trips — and a mid-loop failure left the version half-recalculated with no total written.
+    await this.repo.updateCategorySubtotals(
+      categories.map((cat) => ({
+        category_id: cat.category_id,
+        subtotal: sumDecimals(
+          allItems
+            .filter((i) => i.category_id === cat.category_id)
+            .map((i) => new Decimal(i.estimated_total)),
+        ).toFixed(4),
+      })),
+    );
 
     // Sum root-category subtotals for version total
     const rootCategories = categories.filter((c) => !c.parent_category_id);
@@ -418,5 +453,18 @@ export class BoqService {
     );
 
     return totalStr;
+  }
+
+  /** Queue a domain event. Durable and off the request path — see EventOutboxService. */
+  private async publishEvent<T>(eventType: string, payload: T): Promise<void> {
+    await this.outbox.publish({
+      event_type: eventType,
+      event_version: '1.0',
+      tenant_id: this.tenantId,
+      actor_id: this.userId,
+      occurred_at: new Date().toISOString(),
+      correlation_id: this.correlationId,
+      payload,
+    });
   }
 }

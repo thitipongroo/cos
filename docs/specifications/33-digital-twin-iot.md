@@ -1,8 +1,8 @@
 ---
 title: 'Digital Twin and IoT Layer'
-version: '1.4.0'
+version: '1.5.0'
 status: Active
-last_updated: '2026-06-10'
+last_updated: '2026-07-10'
 authors:
   - thitipongroo
 related_docs:
@@ -171,6 +171,11 @@ bypass cache and query TimescaleDB directly.
 | < 0.7      | AI-inferred state (no direct sensor data)            |
 
 ### Service Assignment
+
+> Runtime values below are a **mirror** — the canonical table is
+> [`32-implementation-specifications`](32-implementation-specifications.md) §32.2. Change §32.2
+> first, then propagate here. `scripts/readiness/check-service-runtimes.sh` verifies both against
+> `services/<name>/` and fails CI on a mismatch.
 
 | Component           | Service / Worker                               | Runtime          |
 | ------------------- | ---------------------------------------------- | ---------------- |
@@ -386,8 +391,17 @@ queries TimescaleDB directly.
 - Redis TTL: 5 minutes per project (invalidated on state write) — defined in `docs/api/digital-twin.openapi.yaml`
 - TimescaleDB deployment: co-located on the primary PostgreSQL instance (extension), split to a dedicated instance only
   on the volume trigger
-- TimescaleDB chunk interval: set based on IoT write frequency profiling at Phase 24 planning gate — not pre-specified
-- IoT message throughput: sized at Phase 24 planning gate based on device count and sensor sampling rate — not pre-specified
+- TimescaleDB chunk interval — **provisional policy :**
+  start at the TimescaleDB default **7 days**, then tune so that active chunks (including
+  indexes) across hypertables fit within **25% of PostgreSQL memory** (Timescale official
+  best practice — "25% rule"); measure with `chunks_detailed_size()`. The Phase 24
+  planning gate **validates** this policy against measured IoT write volume (it no longer
+  invents a policy from scratch).
+- IoT message throughput — **provisional budget formula :** `Σ(device count × sampling rate) ≤ 25,000 msg/s (QoS 1)` per
+  EMQX node at 4 vCPU / 8 GiB — the EMQX official performance-reference figure for the
+  **bridging scenario** (~75% CPU), which matches this pipeline (EMQX → IoT Ingestion
+  Worker → Kafka); scale nodes linearly. The planning gate plugs actual device counts
+  and sampling rates into this formula to fix the final budget.
 - BIM file upload: async — files stored in object storage, ingestion triggered via Kafka event
 
 ### Deployment
@@ -416,7 +430,31 @@ From **28-ecosystem-expansion section 28.2 Phase 5**:
 
 ## 33.10 Success Metrics
 
-Success metrics for Phase 24 are defined at the **Phase 24 planning gate** — not pre-specified in this document.
+**Metric definitions** are decided — see below;
+**numeric targets** are set at the **Phase 24 planning gate** from measured baseline data.
+
+### Metric definitions
+
+Research basis: Bentley iTwin / Autodesk Tandem publish outcome case studies, not
+operational SLO numbers — so definitions follow the **AWS Well-Architected IoT Lens**
+measurement pattern, and numeric targets are **learned from baseline** (same eval-driven
+principle as RT-001, `22-ai-architecture` §22.7).
+
+**Technical metrics (AWS IoT Lens pattern):**
+
+| Metric                       | Definition                                                                            | Target set from                   |
+| ---------------------------- | ------------------------------------------------------------------------------------- | --------------------------------- |
+| Device connectivity          | Connected device count; **% devices disconnected + disconnect reasons**               | First 90 days production baseline |
+| Data freshness               | Device-vs-cloud timestamp delta, mapped to the §33.3 confidence tiers (≤ 60 s = live) | First 90 days production baseline |
+| Twin confidence distribution | % of TwinState records per §33.3 confidence tier (1.0 / 0.7–0.9 / < 0.7)              | First 90 days production baseline |
+| Divergence detection latency | State write → `twin.divergence.detected.v1` notification delivered                    | First 90 days production baseline |
+
+**Business metrics (house style per `28-ecosystem-expansion` §28.4 — "% of tenants"):**
+
+| Metric                 | Definition                                                    | Target set from        |
+| ---------------------- | ------------------------------------------------------------- | ---------------------- |
+| BIM element coverage   | `digital_ref` population rate per project (% of TwinEntities) | Pilot data at the gate |
+| Carbon report adoption | % of tenants generating ≥ 1 carbon report per month           | Pilot data at the gate |
 
 **Planning gate definition:**
 
@@ -427,18 +465,20 @@ The Phase 24 planning gate is triggered when both conditions are met:
 
 **Gate outputs — all must be produced before Phase 24 begins:**
 
-- Success metrics for §33.10 (IoT connectivity, twin confidence, BIM coverage,
-  divergence detection latency, carbon report adoption)
-- TimescaleDB chunk interval — sized from IoT write frequency profiling (see §33.7)
-- IoT message throughput budget — sized from device count × sensor sampling rate at gate time
+- **Numeric targets** for the §33.10 metric definitions above (targets from baseline/pilot data)
+- TimescaleDB chunk interval — **validate** the provisional 7-day + 25%-rule policy
+  (§33.8) against measured IoT write frequency
+- IoT message throughput budget — plug actual device count × sensor sampling rate into
+  the §33.8 EMQX envelope formula
 - Hardware partner confirmation — IoT device vendor and BIM integration partner both contracted
 
 **Owner:** thitipongroo
 
-28-ecosystem-expansion §28.4 defines metrics for Phases 1–4 only. No Phase 5 (Smart Infrastructure) metrics are specified
-in this document.
+28-ecosystem-expansion §28.4 defines metrics for Phases 1–4 only. For Phase 5 (Smart
+Infrastructure), **metric definitions** are specified above;
+**numeric targets** are not pre-specified — they are fixed at the planning gate.
 
-Metrics MUST be defined before Phase 24 begins, covering at minimum:
+Metric definitions cover, at minimum:
 
 - IoT device connectivity and data freshness
 - Twin state confidence distribution
@@ -453,7 +493,6 @@ Metrics MUST be defined before Phase 24 begins, covering at minimum:
 ### Industry Standardization Alignment (INT-004)
 
 **Decision:** IFC 4.3 primary + buildingSMART Digital Framework; IFC 5 alpha on watch.
-**Resolved:** 2026-06-10
 
 | Standard                        | Status (2026)           | Role in platform               |
 | ------------------------------- | ----------------------- | ------------------------------ |
@@ -475,7 +514,6 @@ Metrics MUST be defined before Phase 24 begins, covering at minimum:
 ### Planet-Scale Simulation Platform (CIV-001)
 
 **Decision:** Hybrid — physics-based FEA + ML surrogate models + real-time sensor fusion.
-**Resolved:** 2026-06-10
 
 | Component                | Approach                                          | Speed/Accuracy                 |
 | ------------------------ | ------------------------------------------------- | ------------------------------ |
@@ -492,7 +530,6 @@ General project delay / cost models use gradient boosting ML (see §22.7 INT-003
 ### Multi-Civilization Interoperability (STEW-005)
 
 **Decision:** Open standards first — IFC, CityGML, OGC API Features; W3C DID for identity.
-**Resolved:** 2026-06-10
 
 - **BIM exchange:** IFC 4.3 normative (see INT-004 above); IFC 5 alpha monitored
 - **City / infrastructure:** CityGML 3.0 (OGC standard) for urban-scale digital twin data

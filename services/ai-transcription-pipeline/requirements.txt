@@ -1,4 +1,9 @@
 fastapi==0.138.2
+# Pin starlette to 1.3.1 — clears CVE-2026-48817, CVE-2026-48818 (fix 1.1.0), PYSEC-2026-248
+# (fix 1.3.0) and PYSEC-2026-249 (fix 1.3.1). 1.3.1 is the lowest version that resolves ALL FOUR, so
+# pip-audit passes with no --ignore-vuln; mirrors services/ai-gateway/requirements.txt. Its
+# fastapi.testclient httpx->httpx2 deprecation warning is ignored in pytest.ini.
+starlette==1.3.1
 uvicorn[standard]==0.49.0
 pydantic==2.13.4
 pydantic-settings==2.14.2
@@ -11,3 +16,10 @@ python-dotenv==1.2.2
 # install so unit tests / CI run without model weights (mirrors ai-embedding-worker, which ships
 # only the stub provider). Add to the deploy image when enabling STT_PROVIDER=faster_whisper:
 #   faster-whisper==1.1.1
+
+# Prometheus exposition for the :9464 scrape target (§31.3, QM-8) — see metrics.py.
+prometheus-client>=0.21
+# Shared :9464 endpoint implementation behind metrics.py (ADR-021). Non-editable local path so pip
+# bakes it into the venv (the runtime image needs no libs/python copy); the relative path resolves
+# from the service dir in CI and from /app/services/<svc> in the Docker root-context build.
+../../libs/python/cosmetrics

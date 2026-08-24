@@ -1,0 +1,296 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Construction OS - Select Project</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-lowest": "#000f21",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "mobile-primary": "#0066FF",
+                    "primary": "#b4c5ff",
+                    "surface-variant": "#26364a",
+                    "sync-active": "#FFD60A",
+                    "on-primary-container": "#eeefff",
+                    "error-container": "#93000a",
+                    "secondary-container": "#03b5d3",
+                    "on-error": "#690005",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "surface-container-low": "#0b1c30",
+                    "on-background": "#d3e4fe",
+                    "on-primary": "#002a78",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "surface-container-high": "#1b2b3f",
+                    "surface-bright": "#2a3a4f",
+                    "tertiary": "#c1c5dc",
+                    "background": "#031427",
+                    "on-secondary-container": "#00424e",
+                    "tertiary-fixed": "#dee1f9",
+                    "surface-container": "#102034",
+                    "on-surface": "#d3e4fe",
+                    "outline": "#8d90a0",
+                    "on-secondary": "#003640",
+                    "on-tertiary-fixed": "#161b2b",
+                    "on-secondary-fixed": "#001f26",
+                    "outline-variant": "#434655",
+                    "error": "#ffb4ab",
+                    "secondary-fixed": "#acedff",
+                    "mobile-warning": "#FF9500",
+                    "surface": "#031427",
+                    "inverse-surface": "#d3e4fe",
+                    "inverse-primary": "#0053db",
+                    "on-surface-variant": "#c3c6d7",
+                    "primary-fixed": "#dbe1ff",
+                    "inverse-on-surface": "#213145",
+                    "mobile-danger": "#FF3B30",
+                    "mobile-success": "#00C853",
+                    "on-primary-fixed": "#00174b",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "surface-container-highest": "#26364a",
+                    "surface-dim": "#031427",
+                    "surface-tint": "#b4c5ff",
+                    "primary-container": "#2563eb",
+                    "dark-surface": "#0F172A",
+                    "on-error-container": "#ffdad6",
+                    "sync-pending": "#94A3B8",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "on-tertiary-container": "#eeefff",
+                    "dark-bg": "#020617",
+                    "tertiary-container": "#686c80",
+                    "secondary": "#4cd7f6",
+                    "on-tertiary": "#2b3041"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "base": "4px",
+                    "space-2": "8px",
+                    "space-4": "16px",
+                    "touch-target": "52px",
+                    "web-margin": "32px",
+                    "space-1": "4px",
+                    "edge-mobile": "24px",
+                    "space-3": "12px"
+            },
+            "fontFamily": {
+                    "body-mobile": [
+                            "Inter Tight"
+                    ],
+                    "h1-web": [
+                            "Inter Tight"
+                    ],
+                    "h2-web": [
+                            "Inter Tight"
+                    ],
+                    "body-web": [
+                            "Inter Tight"
+                    ],
+                    "label-mobile": [
+                            "Inter Tight"
+                    ],
+                    "display-web": [
+                            "Inter Tight"
+                    ],
+                    "hero-mobile": [
+                            "Inter Tight"
+                    ],
+                    "tiny-web": [
+                            "Inter Tight"
+                    ]
+            },
+            "fontSize": {
+                    "body-mobile": [
+                            "17px",
+                            {
+                                    "lineHeight": "24px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "h1-web": [
+                            "24px",
+                            {
+                                    "lineHeight": "32px",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "h2-web": [
+                            "20px",
+                            {
+                                    "lineHeight": "28px",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "body-web": [
+                            "14px",
+                            {
+                                    "lineHeight": "20px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "label-mobile": [
+                            "13px",
+                            {
+                                    "lineHeight": "18px",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "display-web": [
+                            "32px",
+                            {
+                                    "lineHeight": "40px",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "hero-mobile": [
+                            "28px",
+                            {
+                                    "lineHeight": "34px",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "tiny-web": [
+                            "11px",
+                            {
+                                    "lineHeight": "12px",
+                                    "letterSpacing": "0.05em",
+                                    "fontWeight": "500"
+                            }
+                    ]
+            }
+    },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+          font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+</head>
+<body class="bg-[#0B1020] text-on-surface font-body-mobile min-h-screen flex flex-col pt-[52px]">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-edge-mobile h-[52px] bg-surface-dim dark:bg-surface-container-lowest text-primary dark:text-primary-fixed-dim border-b border-surface-container-low dark:border-surface-container">
+<div class="flex items-center gap-space-2">
+<button class="p-space-2 rounded-full hover:bg-surface-bright/10 active:scale-95 transition-transform duration-150 flex items-center justify-center text-on-surface-variant hover:text-on-surface">
+<span class="material-symbols-outlined text-[24px]">menu</span>
+</button>
+<div class="flex items-center gap-2">
+<span class="font-display-web text-display-web-mobile font-bold text-primary tracking-tight">Construction OS</span>
+</div>
+</div>
+<div class="flex items-center gap-space-3">
+<div class="flex items-center gap-1.5 px-2 py-1 rounded-full bg-surface-container">
+<div class="w-2 h-2 rounded-full bg-sync-active animate-pulse"></div>
+<span class="font-tiny-web text-tiny-web uppercase text-on-surface-variant">Synced</span>
+</div>
+<button class="w-[32px] h-[32px] rounded-full overflow-hidden border border-surface-container-highest hover:opacity-80 active:scale-95 transition-all">
+<img alt="User Profile" class="w-full h-full object-cover" src="https://www.gstatic.com/labs-code/stitch/stitch-placeholder-300x300.svg">
+</button>
+</div>
+</header>
+<main class="flex-1 w-full max-w-3xl mx-auto px-edge-mobile py-space-4 md:py-web-margin flex flex-col gap-space-4">
+<div class="flex flex-col gap-1">
+
+
+</div>
+<div class="relative w-full group">
+<span class="material-symbols-outlined absolute left-space-4 top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within:text-secondary transition-colors">search</span>
+<input class="w-full h-touch-target bg-surface-container-low border border-surface-container-highest focus:border-secondary rounded-lg pl-12 pr-space-4 font-body-mobile text-on-surface placeholder:text-on-surface-variant/50 focus:ring-1 focus:ring-secondary transition-all outline-none" placeholder="Search Project..." type="text">
+</div>
+<div class="flex flex-col gap-space-3 mt-space-2">
+<!-- Active Project Card -->
+<button class="w-full text-left bg-surface-container hover:bg-surface-bright/20 border border-secondary/30 rounded-xl p-space-4 flex flex-col sm:flex-row sm:items-center justify-between gap-space-3 relative overflow-hidden active:scale-95 transition-all duration-200">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-secondary"></div>
+<div class="flex flex-col gap-1 z-10">
+<div class="flex items-center gap-2">
+<span class="font-label-mobile text-label-mobile px-2 py-0.5 rounded bg-secondary/20 text-secondary border border-secondary/30">CURRENT</span>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">#SK-042</span>
+</div>
+<h2 class="font-h2-web text-h2-web text-on-surface mt-1">Skyline Tower A</h2>
+<div class="flex items-center gap-1 text-on-surface-variant mt-1">
+<span class="material-symbols-outlined text-[16px]">location_on</span>
+<span class="font-body-mobile text-body-mobile text-sm">Zone C - North Wing</span>
+</div>
+</div>
+<div class="flex items-center gap-space-3 z-10">
+<div class="flex flex-col sm:items-end gap-1">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">Status</span>
+<div class="flex items-center gap-1.5 text-mobile-success">
+<span class="material-symbols-outlined text-[16px] fill">check_circle</span>
+<span class="font-label-mobile text-label-mobile">Active</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-secondary opacity-0 sm:opacity-100 transition-opacity">arrow_forward</span>
+</div>
+</button>
+<!-- Inactive Project Card -->
+<button class="w-full text-left bg-surface-container hover:bg-surface-bright/20 border border-transparent hover:border-surface-container-highest rounded-xl p-space-4 flex flex-col sm:flex-row sm:items-center justify-between gap-space-3 relative overflow-hidden active:scale-95 transition-all duration-200 group">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-surface-container-highest group-hover:bg-surface-bright transition-colors"></div>
+<div class="flex flex-col gap-1 z-10">
+<div class="flex items-center gap-2">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">#BH-109</span>
+</div>
+<h2 class="font-h2-web text-h2-web text-on-surface mt-1">Bridge Hub Expansion</h2>
+<div class="flex items-center gap-1 text-on-surface-variant mt-1">
+<span class="material-symbols-outlined text-[16px]">location_on</span>
+<span class="font-body-mobile text-body-mobile text-sm">Sector 7 - Eastern Approach</span>
+</div>
+</div>
+<div class="flex items-center gap-space-3 z-10">
+<div class="flex flex-col sm:items-end gap-1">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">Status</span>
+<div class="flex items-center gap-1.5 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">schedule</span>
+<span class="font-label-mobile text-label-mobile">On Hold</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant opacity-0 sm:opacity-100 group-hover:text-on-surface transition-all">arrow_forward</span>
+</div>
+</button>
+<!-- Inactive Project Card -->
+<button class="w-full text-left bg-surface-container hover:bg-surface-bright/20 border border-transparent hover:border-surface-container-highest rounded-xl p-space-4 flex flex-col sm:flex-row sm:items-center justify-between gap-space-3 relative overflow-hidden active:scale-95 transition-all duration-200 group">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-surface-container-highest group-hover:bg-surface-bright transition-colors"></div>
+<div class="flex flex-col gap-1 z-10">
+<div class="flex items-center gap-2">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">#MT-882</span>
+</div>
+<h2 class="font-h2-web text-h2-web text-on-surface mt-1">Metro Tunnel B</h2>
+<div class="flex items-center gap-1 text-on-surface-variant mt-1">
+<span class="material-symbols-outlined text-[16px]">location_on</span>
+<span class="font-body-mobile text-body-mobile text-sm">Underground Level 2</span>
+</div>
+</div>
+<div class="flex items-center gap-space-3 z-10">
+<div class="flex flex-col sm:items-end gap-1">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">Status</span>
+<div class="flex items-center gap-1.5 text-mobile-success">
+<span class="material-symbols-outlined text-[16px] fill">check_circle</span>
+<span class="font-label-mobile text-label-mobile">Active</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant opacity-0 sm:opacity-100 group-hover:text-on-surface transition-all">arrow_forward</span>
+</div>
+</button>
+</div>
+</main>
+
+
+
+
+</body></html>

@@ -5,10 +5,14 @@ import { ClsServiceManager } from 'nestjs-cls';
 import {
   CLS_TENANT_ID,
   CLS_USER_ID,
+  CLS_USER_ROLE,
   CLS_DEDICATED_DB_URL,
+  CLS_SYNC_ALLOWED_ENTITY_TYPES,
   clsTenantId,
   clsUserId,
+  clsUserRole,
   clsDedicatedDbUrl,
+  clsSyncAllowedEntityTypes,
 } from '../cls-context';
 
 function inCls<T>(store: Record<string, string> | null, fn: () => T): Promise<T> {
@@ -27,8 +31,42 @@ describe('cls-context accessors', () => {
     it('clsUserId returns empty string', () => {
       expect(clsUserId()).toBe('');
     });
+    it('clsUserRole returns empty string', () => {
+      expect(clsUserRole()).toBe('');
+    });
     it('clsDedicatedDbUrl returns undefined', () => {
       expect(clsDedicatedDbUrl()).toBeUndefined();
+    });
+    it('clsSyncAllowedEntityTypes returns undefined', () => {
+      expect(clsSyncAllowedEntityTypes()).toBeUndefined();
+    });
+  });
+
+  // undefined ("the guard did not run") and [] ("the guard allowed nothing") are distinct answers;
+  // SyncService branches on exactly that difference, so both are asserted here.
+  describe('clsSyncAllowedEntityTypes', () => {
+    it('returns the list the guard published', async () => {
+      const cls = ClsServiceManager.getClsService();
+      await expect(
+        cls.run(async () => {
+          cls.set(CLS_SYNC_ALLOWED_ENTITY_TYPES, ['task', 'issue']);
+          return clsSyncAllowedEntityTypes();
+        }),
+      ).resolves.toEqual(['task', 'issue']);
+    });
+
+    it('preserves an empty list rather than collapsing it to undefined', async () => {
+      const cls = ClsServiceManager.getClsService();
+      await expect(
+        cls.run(async () => {
+          cls.set(CLS_SYNC_ALLOWED_ENTITY_TYPES, []);
+          return clsSyncAllowedEntityTypes();
+        }),
+      ).resolves.toEqual([]);
+    });
+
+    it('returns undefined inside a context where the guard never ran', async () => {
+      await expect(inCls(null, clsSyncAllowedEntityTypes)).resolves.toBeUndefined();
     });
   });
 
@@ -37,18 +75,21 @@ describe('cls-context accessors', () => {
       const store = {
         [CLS_TENANT_ID]: 'tenant-1',
         [CLS_USER_ID]: 'user-1',
+        [CLS_USER_ROLE]: 'TENANT_ADMIN',
         [CLS_DEDICATED_DB_URL]: 'postgresql://app@dedicated/ent',
       };
       await expect(inCls(store, clsTenantId)).resolves.toBe('tenant-1');
       await expect(inCls(store, clsUserId)).resolves.toBe('user-1');
+      await expect(inCls(store, clsUserRole)).resolves.toBe('TENANT_ADMIN');
       await expect(inCls(store, clsDedicatedDbUrl)).resolves.toBe('postgresql://app@dedicated/ent');
     });
   });
 
   describe('inside an active context with nothing set', () => {
-    it('clsTenantId and clsUserId fall back to empty string, dedicatedDbUrl to undefined', async () => {
+    it('clsTenantId, clsUserId and clsUserRole fall back to empty string, dedicatedDbUrl to undefined', async () => {
       await expect(inCls(null, clsTenantId)).resolves.toBe('');
       await expect(inCls(null, clsUserId)).resolves.toBe('');
+      await expect(inCls(null, clsUserRole)).resolves.toBe('');
       await expect(inCls(null, clsDedicatedDbUrl)).resolves.toBeUndefined();
     });
   });

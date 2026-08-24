@@ -5,98 +5,43 @@
 
 import { Injectable, Scope, Inject } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
+import { randomUUID } from 'crypto';
 import type { Request } from 'express';
 import { OutboxPublisher } from '@cos/kafka';
 import { Decimal } from '@cos/financial';
 import { TenantPrismaService } from '../tenant/prisma/tenant-prisma.service';
 import type { OutboxEventInput } from '../../shared/outbox/outbox.types';
+import type { PrismaClient } from '@prisma/client';
+import { applyCap, capLimit } from '../../shared/pagination/list-cap';
+import { clsTenantId } from '../../shared/context/cls-context';
 
-// ── Row types ──────────────────────────────────────────────────────────────
+// Row types live in ./procurement.rows; imported here for the method signatures below and re-exported
+// so existing `from './procurement.repository'` type imports (service, specs) keep resolving.
+import type {
+  VendorRow,
+  VendorCategory,
+  VendorVerificationStatus,
+  VendorDirectoryRow,
+  PurchaseRequestRow,
+  RfqRow,
+  QuotationRow,
+  PurchaseOrderRow,
+  PoLineItemRow,
+  DeliveryRow,
+  DeliveryItemRow,
+  InvoiceRow,
+} from './procurement.rows';
 
-export interface VendorRow {
-  vendor_id: string;
-  tenant_id: string;
-  vendor_code: string;
-  vendor_name: string;
-  tax_id: string | null;
-  contact_email: string | null;
-  contact_phone: string | null;
-  address: string | null;
-  is_active: boolean;
-  created_at: Date;
-  updated_at: Date;
-}
+export type * from './procurement.rows';
 
-export interface PurchaseRequestRow {
-  pr_id: string;
-  project_id: string;
-  tenant_id: string;
-  pr_number: string;
-  status: 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'PO_CREATED';
-  requested_by: string;
-  required_date: Date | null;
-  created_at: Date;
-  updated_at: Date;
-}
+/** The transaction handle TenantPrismaService.run() hands to its callback. */
+type Tx = Omit<
+  PrismaClient,
+  '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+>;
 
-export interface RfqRow {
-  rfq_id: string;
-  pr_id: string | null;
-  project_id: string;
-  tenant_id: string;
-  rfq_number: string;
-  status: 'DRAFT' | 'PUBLISHED' | 'CLOSED' | 'EVALUATED' | 'AWARDED' | 'CANCELLED';
-  deadline: Date;
-  temporal_workflow_id: string | null;
-  created_by: string;
-  created_at: Date;
-  updated_at: Date;
-}
-
-export interface QuotationRow {
-  quotation_id: string;
-  rfq_id: string;
-  vendor_id: string;
-  tenant_id: string;
-  total_amount: string;
-  currency_code: string;
-  validity_days: number;
-  submitted_at: Date;
-  is_selected: boolean;
-}
-
-export interface PurchaseOrderRow {
-  po_id: string;
-  rfq_id: string | null;
-  vendor_id: string;
-  project_id: string;
-  tenant_id: string;
-  po_number: string;
-  status:
-    | 'DRAFT'
-    | 'PENDING_APPROVAL'
-    | 'APPROVED'
-    | 'SENT'
-    | 'ACKNOWLEDGED'
-    | 'PARTIALLY_DELIVERED'
-    | 'FULLY_DELIVERED'
-    | 'INVOICED'
-    | 'PAID'
-    | 'DISPUTED';
-  total_amount: string;
-  currency_code: string;
-  delivery_date: Date;
-  temporal_workflow_id: string | null;
-  created_by: string;
-  created_at: Date;
-  updated_at: Date;
-}
-
-export interface PoLineItemRow {
-  line_id: string;
-  po_id: string;
-  tenant_id: string;
-  boq_item_id: string | null;
+export interface PoLineItemInput {
+  boq_item_id?: string;
   description: string;
   quantity: string;
   unit: string;
@@ -104,45 +49,16 @@ export interface PoLineItemRow {
   line_total: string;
 }
 
-export interface DeliveryRow {
-  delivery_id: string;
-  po_id: string;
-  tenant_id: string;
-  delivery_note: string | null;
-  delivered_at: Date;
-  received_by: string;
-  notes: string | null;
-}
-
-export interface DeliveryItemRow {
-  delivery_item_id: string;
-  delivery_id: string;
-  line_id: string;
-  tenant_id: string;
-  quantity_received: string;
-}
-
-export interface InvoiceRow {
-  invoice_id: string;
-  po_id: string;
-  vendor_id: string;
-  tenant_id: string;
-  invoice_number: string;
-  amount: string;
-  currency_code: string;
-  invoice_date: Date;
-  due_date: Date;
-  status: 'RECEIVED' | 'VERIFIED' | 'APPROVED' | 'PAID' | 'DISPUTED';
-  file_id: string | null;
-  note?: string | null; // G-M14 (optional for back-compat with pre-migration rows)
-}
-
 // ── Repository ────────────────────────────────────────────────────────────
 
 @Injectable({ scope: Scope.REQUEST })
 export class ProcurementRepository {
+  // CLS fallback is load-bearing, not cosmetic: under Fastify the REQUEST injected into a
+  // Scope.REQUEST provider is not guaranteed to be the object the auth layer decorated. The auth
+  // guards publish tenant_id into CLS (the same source TenantPrismaService reads for RLS), so this
+  // resolves even when the request copy does not carry it.
   private get tenantId(): string {
-    return (this.request as { tenantId?: string }).tenantId ?? '';
+    return (this.request as { tenantId?: string }).tenantId ?? clsTenantId();
   }
 
   constructor(
@@ -159,14 +75,17 @@ export class ProcurementRepository {
     contact_email?: string;
     contact_phone?: string;
     address?: string;
+    category?: VendorCategory;
+    verification_status?: VendorVerificationStatus;
   }): Promise<VendorRow> {
     const rows = await this.db.run(
       (prisma) =>
         prisma.$queryRaw<VendorRow[]>`
-        INSERT INTO procurement.vendors (tenant_id, vendor_code, vendor_name, tax_id, contact_email, contact_phone, address)
+        INSERT INTO procurement.vendors (tenant_id, vendor_code, vendor_name, tax_id, contact_email, contact_phone, address, category, verification_status)
         VALUES (${this.tenantId}::uuid, ${params.vendor_code}, ${params.vendor_name},
                 ${params.tax_id ?? null}, ${params.contact_email ?? null},
-                ${params.contact_phone ?? null}, ${params.address ?? null})
+                ${params.contact_phone ?? null}, ${params.address ?? null},
+                ${params.category ?? null}, ${params.verification_status ?? null})
         RETURNING *`,
     );
     return rows[0]!;
@@ -183,17 +102,66 @@ export class ProcurementRepository {
   }
 
   async listVendors(active_only: boolean): Promise<VendorRow[]> {
-    return this.db.run((prisma) =>
+    const rows = await this.db.run((prisma) =>
       active_only
         ? prisma.$queryRaw<VendorRow[]>`
             SELECT * FROM procurement.vendors
             WHERE tenant_id = ${this.tenantId}::uuid AND is_active = true
-            ORDER BY vendor_name`
+            ORDER BY vendor_name
+            LIMIT ${capLimit()}`
         : prisma.$queryRaw<VendorRow[]>`
             SELECT * FROM procurement.vendors
             WHERE tenant_id = ${this.tenantId}::uuid
-            ORDER BY vendor_name`,
+            ORDER BY vendor_name
+            LIMIT ${capLimit()}`,
     );
+    return applyCap(rows, 'procurement.vendors');
+  }
+
+  /**
+   * The vendor directory (mockup role_proc_manager/03_vendors): active vendors, optionally narrowed
+   * to one category, each with the number of projects it currently has open work on.
+   *
+   * The count is a LATERAL sub-select rather than a GROUP BY join so a vendor with no purchase orders
+   * still comes back — with 0 — instead of dropping out of the directory. `status NOT IN (...)`
+   * encodes the definition documented on VendorDirectoryRow: DRAFT and PENDING_APPROVAL are not
+   * committed work yet, PAID is closed out, everything between them is live.
+   *
+   * Inactive vendors are excluded outright: this is a "who can I buy from" screen, and `is_active`
+   * false is the soft-delete the deactivate endpoint sets.
+   */
+  async listVendorDirectory(category: VendorCategory | null): Promise<VendorDirectoryRow[]> {
+    const rows = await this.db.run((prisma) =>
+      category === null
+        ? prisma.$queryRaw<VendorDirectoryRow[]>`
+            SELECT v.*, COALESCE(p.active_project_count, 0)::int AS active_project_count
+            FROM procurement.vendors v
+            LEFT JOIN LATERAL (
+              SELECT COUNT(DISTINCT po.project_id) AS active_project_count
+              FROM procurement.purchase_orders po
+              WHERE po.vendor_id = v.vendor_id
+                AND po.tenant_id = v.tenant_id
+                AND po.status NOT IN ('DRAFT', 'PENDING_APPROVAL', 'PAID')
+            ) p ON TRUE
+            WHERE v.tenant_id = ${this.tenantId}::uuid AND v.is_active = true
+            ORDER BY v.vendor_name
+            LIMIT ${capLimit()}`
+        : prisma.$queryRaw<VendorDirectoryRow[]>`
+            SELECT v.*, COALESCE(p.active_project_count, 0)::int AS active_project_count
+            FROM procurement.vendors v
+            LEFT JOIN LATERAL (
+              SELECT COUNT(DISTINCT po.project_id) AS active_project_count
+              FROM procurement.purchase_orders po
+              WHERE po.vendor_id = v.vendor_id
+                AND po.tenant_id = v.tenant_id
+                AND po.status NOT IN ('DRAFT', 'PENDING_APPROVAL', 'PAID')
+            ) p ON TRUE
+            WHERE v.tenant_id = ${this.tenantId}::uuid AND v.is_active = true
+              AND v.category = ${category}
+            ORDER BY v.vendor_name
+            LIMIT ${capLimit()}`,
+    );
+    return applyCap(rows, 'procurement.vendors');
   }
 
   async deactivateVendor(vendor_id: string): Promise<void> {
@@ -207,21 +175,121 @@ export class ProcurementRepository {
 
   // ── Purchase Requests ─────────────────────────────────────────────────────
 
+  /**
+   * Create a PR with its line items.
+   *
+   * `pr_number` is optional: omit it and the number is allocated INSIDE this transaction, under a
+   * per-tenant advisory lock, so two concurrent creates cannot derive the same sequence value. It
+   * used to be computed by a separate nextPrNumber() call in its own transaction — the doc comment
+   * there claimed it ran "inside the caller's transaction", which was never true — leaving a window
+   * where concurrent creates both read the same MAX and the second one died on the unique index.
+   */
+  /**
+   * Create a purchase request, at most once per caller-supplied `pr_id`.
+   *
+   * Returns null when a request with that id already exists — the offline replay case (§17.4, 2026-08-19
+   * amendment). The caller reads the existing row back and skips whatever side effects a genuine
+   * creation would have had.
+   *
+   * THE EXISTENCE CHECK COMES BEFORE THE NUMBER ALLOCATION, deliberately. `nextPrNumberIn` consumes
+   * the tenant's next PR-<year>-<seq> under an advisory lock; running it first would burn a document
+   * number on every replay of a request that was already filed, leaving gaps in a sequence people
+   * read off paperwork. The ON CONFLICT below still guards the case where two replays race past the
+   * check together.
+   */
   async createPurchaseRequest(params: {
+    /** Client-generated id for offline creates. Omitted → the column DEFAULT mints one. */
+    pr_id?: string;
     project_id: string;
-    pr_number: string;
+    pr_number?: string;
     requested_by: string;
     required_date?: string;
-  }): Promise<PurchaseRequestRow> {
-    const rows = await this.db.run(
-      (prisma) =>
-        prisma.$queryRaw<PurchaseRequestRow[]>`
-        INSERT INTO procurement.purchase_requests (project_id, tenant_id, pr_number, requested_by, required_date)
-        VALUES (${params.project_id}::uuid, ${this.tenantId}::uuid, ${params.pr_number},
+    year?: number;
+    items?: Array<{ description: string; quantity: number; unit: string; material_id?: string }>;
+  }): Promise<PurchaseRequestRow | null> {
+    // PR + its lines in one transaction: a request that records no materials is not a request, so
+    // the two must not be able to land separately.
+    return this.db.run(async (prisma) => {
+      if (params.pr_id) {
+        const existing = await prisma.$queryRaw<PurchaseRequestRow[]>`
+          SELECT * FROM procurement.purchase_requests
+          WHERE pr_id = ${params.pr_id}::uuid AND tenant_id = ${this.tenantId}::uuid`;
+        if (existing[0]) return null;
+      }
+
+      let prNumber = params.pr_number;
+      if (!prNumber) {
+        const year = params.year ?? new Date().getFullYear();
+        // Serialise number allocation per tenant+year for the rest of this transaction.
+        // hashtextextended (PostgreSQL 11+) turns the key into the bigint the lock API wants; the
+        // ::text casts keep Postgres from having to infer a type for the concatenated parameters.
+        await prisma.$executeRaw`
+          SELECT pg_advisory_xact_lock(
+            hashtextextended(${this.tenantId}::text || ':pr_number:' || ${String(year)}::text, 0)
+          )
+        `;
+        prNumber = await this.nextPrNumberIn(prisma, year);
+      }
+
+      // COALESCE, not two query branches: a null pr_id falls through to the column's own
+      // gen_random_uuid() DEFAULT, so the online path is byte-for-byte what it was.
+      const rows = await prisma.$queryRaw<PurchaseRequestRow[]>`
+        INSERT INTO procurement.purchase_requests (pr_id, project_id, tenant_id, pr_number, requested_by, required_date)
+        VALUES (COALESCE(${params.pr_id ?? null}::uuid, gen_random_uuid()),
+                ${params.project_id}::uuid, ${this.tenantId}::uuid, ${prNumber},
                 ${params.requested_by}::uuid, ${params.required_date ?? null}::date)
-        RETURNING *`,
-    );
-    return rows[0]!;
+        ON CONFLICT (pr_id) DO NOTHING
+        RETURNING *`;
+      // Empty means a concurrent replay inserted it between the check above and this statement.
+      if (!rows[0]) return null;
+      const pr = rows[0];
+      const items = params.items ?? [];
+      if (items.length > 0) {
+        // One set-based INSERT rather than a round trip per line, all still inside this transaction.
+        // WITH ORDINALITY carries the caller's array position straight into sort_order (1-based →
+        // 0-based), which is what preserved the ordering in the loop this replaces.
+        await prisma.$executeRaw`
+          INSERT INTO procurement.pr_line_items
+            (pr_id, tenant_id, material_id, description, quantity, unit, sort_order)
+          SELECT ${pr.pr_id}::uuid, ${this.tenantId}::uuid, t.material_id::uuid,
+                 t.description, t.quantity::decimal, t.unit, (t.ord - 1)::int
+          FROM unnest(
+            ${items.map((it) => it.material_id ?? null)}::text[],
+            ${items.map((it) => it.description)}::text[],
+            ${items.map((it) => String(it.quantity))}::text[],
+            ${items.map((it) => it.unit)}::text[]
+          ) WITH ORDINALITY AS t(material_id, description, quantity, unit, ord)`;
+      }
+      return pr;
+    });
+  }
+
+  /**
+   * Next PR number for the tenant, as `PR-<year>-<seq>`.
+   *
+   * Derived from the highest existing number for that year rather than a sequence, so the series
+   * stays per-tenant (pr_number is unique per tenant, not globally) and restarts each January.
+   *
+   * NOTE: this opens its OWN transaction, so the value it returns is already stale by the time the
+   * caller inserts — prefer createPurchaseRequest() without a pr_number, which allocates inside the
+   * insert transaction under an advisory lock. Kept for callers that only want to preview the next
+   * number; concurrent creates that go through this path still rely on uq_pr_tenant_number to reject
+   * the loser.
+   */
+  async nextPrNumber(year: number): Promise<string> {
+    return this.db.run((prisma) => this.nextPrNumberIn(prisma, year));
+  }
+
+  /** Sequence derivation against a caller-supplied transaction. */
+  private async nextPrNumberIn(prisma: Tx, year: number): Promise<string> {
+    const prefix = `PR-${year}-`;
+    const rows = await prisma.$queryRaw<Array<{ max_seq: number | null }>>`
+      SELECT MAX(NULLIF(regexp_replace(pr_number, '^PR-[0-9]{4}-', ''), '')::int) AS max_seq
+      FROM procurement.purchase_requests
+      WHERE tenant_id = ${this.tenantId}::uuid
+        AND pr_number LIKE ${prefix + '%'}`;
+    const next = (rows[0]?.max_seq ?? 0) + 1;
+    return `${prefix}${String(next).padStart(4, '0')}`;
   }
 
   async findPrById(pr_id: string): Promise<PurchaseRequestRow | null> {
@@ -528,31 +596,86 @@ export class ProcurementRepository {
 
   // ── PO Line Items ─────────────────────────────────────────────────────────
 
-  async createLineItems(
+  /**
+   * Insert a PO and all of its line items in ONE transaction.
+   *
+   * Previously the service created the PO, then called createLineItems(), which opened a separate
+   * transaction PER ITEM — a 10-line PO committed as 11 independent transactions with no rollback.
+   * A failure partway left a committed PO header whose total_amount no longer equalled the sum of
+   * its lines, i.e. it broke the exact invariant ProcurementService validates before calling here.
+   * Both writes now share one transaction, so the PO and its lines commit or fail together.
+   */
+  async createPurchaseOrderWithLineItems(
+    params: {
+      rfq_id?: string;
+      vendor_id: string;
+      project_id: string;
+      po_number: string;
+      total_amount: string;
+      currency_code: string;
+      delivery_date: string;
+      created_by: string;
+    },
+    items: PoLineItemInput[],
+  ): Promise<{ po: PurchaseOrderRow; line_items: PoLineItemRow[] }> {
+    return this.db.run(async (prisma) => {
+      const poRows = await prisma.$queryRaw<PurchaseOrderRow[]>`
+        INSERT INTO procurement.purchase_orders (rfq_id, vendor_id, project_id, tenant_id, po_number,
+                                     total_amount, currency_code, delivery_date, created_by)
+        VALUES (${params.rfq_id ?? null}::uuid, ${params.vendor_id}::uuid,
+                ${params.project_id}::uuid, ${this.tenantId}::uuid, ${params.po_number},
+                ${params.total_amount}::decimal, ${params.currency_code},
+                ${params.delivery_date}::date, ${params.created_by}::uuid)
+        RETURNING *`;
+      const po = poRows[0]!;
+      const line_items = await this.insertLineItems(prisma, po.po_id, items);
+      return { po, line_items };
+    });
+  }
+
+  /** Standalone line-item insert. Single transaction for the whole batch (see the note above). */
+  async createLineItems(po_id: string, items: PoLineItemInput[]): Promise<PoLineItemRow[]> {
+    return this.db.run((prisma) => this.insertLineItems(prisma, po_id, items));
+  }
+
+  private async insertLineItems(
+    prisma: Tx,
     po_id: string,
-    items: Array<{
-      boq_item_id?: string;
-      description: string;
-      quantity: string;
-      unit: string;
-      unit_price: string;
-      line_total: string;
-    }>,
+    items: PoLineItemInput[],
   ): Promise<PoLineItemRow[]> {
-    const result: PoLineItemRow[] = [];
-    for (const item of items) {
-      const rows = await this.db.run(
-        (prisma) =>
-          prisma.$queryRaw<PoLineItemRow[]>`
-          INSERT INTO procurement.po_line_items (po_id, tenant_id, boq_item_id, description, quantity, unit, unit_price, line_total)
-          VALUES (${po_id}::uuid, ${this.tenantId}::uuid, ${item.boq_item_id ?? null}::uuid,
-                  ${item.description}, ${item.quantity}::decimal, ${item.unit},
-                  ${item.unit_price}::decimal, ${item.line_total}::decimal)
-          RETURNING *`,
-      );
-      result.push(rows[0]!);
-    }
-    return result;
+    if (items.length === 0) return [];
+
+    // One set-based INSERT instead of one round trip per line. The previous loop held the
+    // transaction — and its locks — open for N network round trips; @ArrayMaxSize now caps N, but a
+    // 500-line PO still meant 500 sequential queries inside one transaction.
+    //
+    // line_id is generated here rather than left to the column DEFAULT so the returned rows can be
+    // put back into the caller's input order below. RETURNING order for INSERT ... SELECT is not
+    // guaranteed by Postgres, and po_line_items has no sort column to fall back on.
+    const ids = items.map(() => randomUUID());
+    const rows = await prisma.$queryRaw<PoLineItemRow[]>`
+      INSERT INTO procurement.po_line_items
+        (line_id, po_id, tenant_id, boq_item_id, description, quantity, unit, unit_price, line_total)
+      SELECT t.line_id::uuid, ${po_id}::uuid, ${this.tenantId}::uuid, t.boq_item_id::uuid,
+             t.description, t.quantity::decimal, t.unit, t.unit_price::decimal, t.line_total::decimal
+      FROM unnest(
+        ${ids}::text[],
+        ${items.map((i) => i.boq_item_id ?? null)}::text[],
+        ${items.map((i) => i.description)}::text[],
+        ${items.map((i) => i.quantity)}::text[],
+        ${items.map((i) => i.unit)}::text[],
+        ${items.map((i) => i.unit_price)}::text[],
+        ${items.map((i) => i.line_total)}::text[]
+      ) AS t(line_id, boq_item_id, description, quantity, unit, unit_price, line_total)
+      RETURNING *`;
+
+    const byId = new Map(rows.map((row) => [row.line_id, row]));
+    const ordered = ids
+      .map((id) => byId.get(id))
+      .filter((r): r is PoLineItemRow => r !== undefined);
+    // Fall back to RETURNING order rather than emitting an array with holes if the row set ever
+    // fails to line up — the caller gets every inserted row either way.
+    return ordered.length === rows.length ? ordered : rows;
   }
 
   async findLineItemsByPo(po_id: string): Promise<PoLineItemRow[]> {
@@ -566,8 +689,49 @@ export class ProcurementRepository {
 
   // ── Deliveries ────────────────────────────────────────────────────────────
 
+  /**
+   * Record a delivery, at most once per caller-supplied `delivery_id`.
+   *
+   * Returns null when one with that id already exists — the offline replay case. This matters more
+   * here than anywhere else in procurement: `delivery_items` is what `sumDeliveredQuantity` adds up
+   * to decide whether a PO line is fulfilled, so a replayed delivery does not merely duplicate a
+   * record, it DOUBLE-COUNTS goods received and can close a PO that is still short.
+   */
+  /** One delivery by id, tenant-scoped. Used to answer a replayed offline create. */
+  async findDeliveryById(deliveryId: string): Promise<DeliveryRow | null> {
+    const rows = await this.db.run(
+      (prisma) =>
+        prisma.$queryRaw<DeliveryRow[]>`
+        SELECT * FROM procurement.deliveries
+        WHERE delivery_id = ${deliveryId}::uuid AND tenant_id = ${this.tenantId}::uuid`,
+    );
+    return rows[0] ?? null;
+  }
+
+  /** One purchase request by id, tenant-scoped. Used to answer a replayed offline create. */
+  async findPurchaseRequestById(prId: string): Promise<PurchaseRequestRow | null> {
+    const rows = await this.db.run(
+      (prisma) =>
+        prisma.$queryRaw<PurchaseRequestRow[]>`
+        SELECT * FROM procurement.purchase_requests
+        WHERE pr_id = ${prId}::uuid AND tenant_id = ${this.tenantId}::uuid`,
+    );
+    return rows[0] ?? null;
+  }
+
+  /**
+   * Record a delivery, at most once per caller-supplied `delivery_id`, and emit its event inside
+   * the same transaction.
+   *
+   * Returns null when one with that id already exists — the offline replay case. That matters more
+   * here than anywhere else in procurement: `delivery_items` is what `sumDeliveredQuantity` adds up
+   * to decide whether a PO line is fulfilled, so a replayed delivery does not merely duplicate a
+   * record, it DOUBLE-COUNTS goods received and can close a PO that is still short.
+   */
   async createDelivery(
     params: {
+      /** Client-generated id for offline creates. Omitted → the column DEFAULT mints one. */
+      delivery_id?: string;
       po_id: string;
       delivery_note?: string;
       delivered_at: string;
@@ -586,25 +750,42 @@ export class ProcurementRepository {
       items: DeliveryItemRow[];
       is_partial: boolean;
     }) => OutboxEventInput,
-  ): Promise<{ delivery: DeliveryRow; items: DeliveryItemRow[]; is_partial: boolean }> {
+  ): Promise<{ delivery: DeliveryRow; items: DeliveryItemRow[]; is_partial: boolean } | null> {
     return this.db.run(async (prisma) => {
       const deliveries = await prisma.$queryRaw<DeliveryRow[]>`
-        INSERT INTO procurement.deliveries (po_id, tenant_id, delivery_note, delivered_at, received_by, notes)
-        VALUES (${params.po_id}::uuid, ${this.tenantId}::uuid,
+        INSERT INTO procurement.deliveries (delivery_id, po_id, tenant_id, delivery_note, delivered_at, received_by, notes)
+        VALUES (COALESCE(${params.delivery_id ?? null}::uuid, gen_random_uuid()),
+                ${params.po_id}::uuid, ${this.tenantId}::uuid,
                 ${params.delivery_note ?? null}, ${params.delivered_at}::timestamptz,
                 ${params.received_by}::uuid, ${params.notes ?? null})
+        ON CONFLICT (delivery_id) DO NOTHING
         RETURNING *`;
-      const delivery = deliveries[0]!;
+      // Nothing returned means this delivery was already recorded — the line items below, which are
+      // the quantities, must NOT run again.
+      if (!deliveries[0]) return null;
+      const delivery = deliveries[0];
 
-      const deliveryItems: DeliveryItemRow[] = [];
-      for (const item of params.items) {
-        const rows = await prisma.$queryRaw<DeliveryItemRow[]>`
+      // Single set-based INSERT, same reasoning as insertLineItems. Ordered back to the caller's
+      // input order via line_id, which uq_delivery_line makes unique within one delivery.
+      const lineIds = params.items.map((i) => i.line_id);
+      const rows =
+        params.items.length === 0
+          ? []
+          : await prisma.$queryRaw<DeliveryItemRow[]>`
           INSERT INTO procurement.delivery_items (delivery_id, line_id, tenant_id, quantity_received)
-          VALUES (${delivery.delivery_id}::uuid, ${item.line_id}::uuid,
-                  ${this.tenantId}::uuid, ${item.quantity_received}::decimal)
+          SELECT ${delivery.delivery_id}::uuid, t.line_id::uuid, ${this.tenantId}::uuid,
+                 t.quantity_received::decimal
+          FROM unnest(
+            ${lineIds}::text[],
+            ${params.items.map((i) => i.quantity_received)}::text[]
+          ) AS t(line_id, quantity_received)
           RETURNING *`;
-        deliveryItems.push(rows[0]!);
-      }
+
+      const byLineId = new Map(rows.map((row) => [row.line_id, row]));
+      const ordered = lineIds
+        .map((id) => byLineId.get(id))
+        .filter((r): r is DeliveryItemRow => r !== undefined);
+      const deliveryItems = ordered.length === rows.length ? ordered : rows;
 
       // Derived state, computed in-transaction so it reflects exactly the rows just written.
       const lineItems = await prisma.$queryRaw<PoLineItemRow[]>`

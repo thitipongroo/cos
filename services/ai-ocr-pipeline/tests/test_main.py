@@ -1,164 +1,245 @@
-"""Unit tests for the OCR pipeline FastAPI surface — Phase 11.
+"""Unit tests for the OCR FastAPI app — no file-service, no tesseract, no network.
 
-§35.13 ESC-24: main.py had no test at all, so all 31 of its statements counted against the
-QM-1 --cov-fail-under=99 gate. These cover the liveness probe and every branch of ocr_process,
-including the two HTTPException paths that only fire on an upstream failure.
+Endpoint coroutines are awaited directly rather than driven through `fastapi.testclient`. TestClient
+needs `httpx2` (its absence raises a StarletteDeprecationWarning, which `filterwarnings = error`
+turns into a collection error) and its portal leaks sockets that resurface as unraisable
+ResourceWarnings at teardown — the same trap already hit in ai-transcription-pipeline. HTTP status
+mapping is asserted through the `HTTPException` each handler raises, which is exactly what FastAPI
+serialises.
 
-httpx.AsyncClient is replaced with a fake rather than a live server: the endpoint's contract is
-"ask file-service for a signed URL, fetch the bytes, hand them to process_file", and that is
-exactly what these assert.
+`process_file` is patched at the name `main` imported it under, so pytesseract/pdf2image are never
+invoked; their real behaviour is covered by tests/test_ocr_pipeline.py.
 """
-
 import sys
 from pathlib import Path
-from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import pytest
-from fastapi.testclient import TestClient
-
 import main as main_module
-from main import app
+import pytest
+from pydantic import ValidationError
+from fastapi import HTTPException
+from main import OCRRequest, liveness, ocr_process
 from ocr_pipeline import OCROutput
 
 
 class _FakeResponse:
-    def __init__(self, status_code: int, payload: dict | None = None, content: bytes = b""):
+    def __init__(self, status_code: int, json_body: dict | None = None, content: bytes = b""):
         self.status_code = status_code
-        self._payload = payload or {}
+        self._json = json_body or {}
         self.content = content
 
-    def json(self) -> dict:
-        return self._payload
+    def json(self):
+        return self._json
 
 
 class _FakeAsyncClient:
-    """Stands in for httpx.AsyncClient: returns queued responses in call order."""
+    """Stands in for httpx.AsyncClient; serves `responses` in order and records requested URLs."""
 
-    def __init__(self, responses):
-        self._responses = list(responses)
-        self.requested_urls: list[str] = []
+    responses: list = []
+    requested_urls: list = []
+    init_kwargs: dict = {}
+
+    def __init__(self, *args, **kwargs):
+        type(self).init_kwargs = kwargs
 
     async def __aenter__(self):
         return self
 
-    async def __aexit__(self, *_exc):
+    async def __aexit__(self, *exc_info):
         return False
 
     async def get(self, url):
-        self.requested_urls.append(url)
-        return self._responses.pop(0)
+        type(self).requested_urls.append(url)
+        return type(self).responses.pop(0)
 
 
-def _client_factory(responses, captured):
-    """Returns a callable matching httpx.AsyncClient(timeout=...) that yields the fake."""
-
-    def factory(*_args, **_kwargs):
-        client = _FakeAsyncClient(responses)
-        captured.append(client)
-        return client
-
-    return factory
+@pytest.fixture
+def fake_http(monkeypatch):
+    _FakeAsyncClient.responses = []
+    _FakeAsyncClient.requested_urls = []
+    _FakeAsyncClient.init_kwargs = {}
+    monkeypatch.setattr(main_module.httpx, "AsyncClient", _FakeAsyncClient)
+    return _FakeAsyncClient
 
 
-client = TestClient(app)
+@pytest.fixture
+def captured_ocr(monkeypatch):
+    """Replaces process_file and records what the endpoint handed it."""
+    calls: list = []
+
+    def fake_process_file(file_id, file_bytes, mime_type):
+        calls.append((file_id, file_bytes, mime_type))
+        return OCROutput(file_id=file_id, extracted_text="ใบส่งของ", confidence_score=0.93)
+
+    monkeypatch.setattr(main_module, "process_file", fake_process_file)
+    return calls
+
+
+def _request(**overrides) -> OCRRequest:
+    payload = {"file_id": "11111111-1111-4111-8111-111111111111", "tenant_id": "t-1"}
+    payload.update(overrides)
+    return OCRRequest(**payload)
 
 
 class TestLiveness:
-    def test_reports_the_default_service_name(self, monkeypatch):
+    @pytest.mark.asyncio
+    async def test_reports_ok_with_default_service_name(self, monkeypatch):
         monkeypatch.delenv("OTEL_SERVICE_NAME", raising=False)
-        resp = client.get("/health/live")
-        assert resp.status_code == 200
-        assert resp.json() == {"status": "ok", "service": "ai-ocr-pipeline"}
+        assert await liveness() == {"status": "ok", "service": "ai-ocr-pipeline"}
 
-    def test_reports_the_configured_service_name(self, monkeypatch):
+    @pytest.mark.asyncio
+    async def test_service_name_comes_from_otel_env(self, monkeypatch):
         monkeypatch.setenv("OTEL_SERVICE_NAME", "ocr-canary")
-        resp = client.get("/health/live")
-        assert resp.json()["service"] == "ocr-canary"
+        assert (await liveness())["service"] == "ocr-canary"
 
 
-class TestOCRProcess:
-    def test_returns_extracted_text_for_a_fetchable_file(self, monkeypatch):
-        captured: list[_FakeAsyncClient] = []
-        responses = [
-            _FakeResponse(200, {"url": "https://s3.example/signed", "mime_type": "application/pdf"}),
-            _FakeResponse(200, content=b"%PDF-1.4 fake"),
+class TestOcrProcess:
+    @pytest.mark.asyncio
+    async def test_happy_path_returns_extracted_text(self, fake_http, captured_ocr):
+        fake_http.responses = [
+            _FakeResponse(200, {"url": "https://storage.example/scan.pdf", "mime_type": "application/pdf"}),
+            _FakeResponse(200, content=b"%PDF-bytes"),
         ]
-        monkeypatch.setattr(main_module.httpx, "AsyncClient", _client_factory(responses, captured))
-        monkeypatch.setenv("FILE_SERVICE_URL", "http://files:8000")
 
-        with patch.object(
-            main_module,
-            "process_file",
-            return_value=OCROutput(file_id="f1", extracted_text="INVOICE 123", confidence_score=0.93),
-        ) as proc:
-            resp = client.post("/api/v1/ocr/process", json={"file_id": "f1", "tenant_id": "t1"})
+        resp = await ocr_process(_request())
 
-        assert resp.status_code == 200
-        assert resp.json() == {
-            "file_id": "f1",
-            "extracted_text": "INVOICE 123",
-            "confidence_score": 0.93,
-        }
-        # the signed-url endpoint is built from FILE_SERVICE_URL and the file id
-        assert captured[0].requested_urls[0] == "http://files:8000/api/v1/files/f1/signed-url"
-        assert captured[0].requested_urls[1] == "https://s3.example/signed"
-        proc.assert_called_once_with("f1", b"%PDF-1.4 fake", "application/pdf")
+        assert resp.file_id == "11111111-1111-4111-8111-111111111111"
+        assert resp.extracted_text == "ใบส่งของ"
+        assert resp.confidence_score == 0.93
 
-    def test_defaults_the_mime_type_when_file_service_omits_it(self, monkeypatch):
-        captured: list[_FakeAsyncClient] = []
-        responses = [
-            _FakeResponse(200, {"url": "https://s3.example/signed"}),  # no mime_type
-            _FakeResponse(200, content=b"bytes"),
+    @pytest.mark.asyncio
+    async def test_forwards_bytes_and_mime_type_to_the_pipeline(self, fake_http, captured_ocr):
+        fake_http.responses = [
+            _FakeResponse(200, {"url": "https://storage.example/scan.pdf", "mime_type": "application/pdf"}),
+            _FakeResponse(200, content=b"%PDF-bytes"),
         ]
-        monkeypatch.setattr(main_module.httpx, "AsyncClient", _client_factory(responses, captured))
 
-        with patch.object(
-            main_module,
-            "process_file",
-            return_value=OCROutput(file_id="f2", extracted_text="", confidence_score=0.0),
-        ) as proc:
-            resp = client.post("/api/v1/ocr/process", json={"file_id": "f2", "tenant_id": "t1"})
+        await ocr_process(_request(file_id="77777777-7777-4777-8777-777777777777"))
 
-        assert resp.status_code == 200
-        proc.assert_called_once_with("f2", b"bytes", "application/octet-stream")
+        assert captured_ocr == [("77777777-7777-4777-8777-777777777777", b"%PDF-bytes", "application/pdf")]
 
-    def test_404_when_the_signed_url_lookup_fails(self, monkeypatch):
-        captured: list[_FakeAsyncClient] = []
-        responses = [_FakeResponse(404)]
-        monkeypatch.setattr(main_module.httpx, "AsyncClient", _client_factory(responses, captured))
+    @pytest.mark.asyncio
+    async def test_mime_type_defaults_when_file_service_omits_it(self, fake_http, captured_ocr):
+        # An absent mime_type must not KeyError; process_file's non-PDF branch handles the fallback.
+        fake_http.responses = [
+            _FakeResponse(200, {"url": "https://storage.example/photo"}),
+            _FakeResponse(200, content=b"jpeg-bytes"),
+        ]
 
-        resp = client.post("/api/v1/ocr/process", json={"file_id": "missing", "tenant_id": "t1"})
+        await ocr_process(_request())
 
-        assert resp.status_code == 404
-        assert "missing" in resp.json()["detail"]
+        assert captured_ocr[0][2] == "application/octet-stream"
 
-    def test_502_when_storage_will_not_serve_the_file(self, monkeypatch):
-        captured: list[_FakeAsyncClient] = []
-        responses = [
-            _FakeResponse(200, {"url": "https://s3.example/signed", "mime_type": "image/png"}),
+    @pytest.mark.asyncio
+    async def test_calls_file_service_signed_url_endpoint(self, fake_http, captured_ocr, monkeypatch):
+        monkeypatch.setenv("FILE_SERVICE_URL", "http://files.internal:9000")
+        fake_http.responses = [
+            _FakeResponse(200, {"url": "https://storage.example/a.png", "mime_type": "image/png"}),
+            _FakeResponse(200, content=b"png"),
+        ]
+
+        await ocr_process(_request(file_id="99999999-9999-4999-8999-999999999999"))
+
+        assert fake_http.requested_urls == [
+            "http://files.internal:9000/api/v1/files/99999999-9999-4999-8999-999999999999/signed-url",
+            "https://storage.example/a.png",
+        ]
+
+    @pytest.mark.asyncio
+    async def test_file_service_url_has_a_service_dns_default(self, fake_http, captured_ocr, monkeypatch):
+        monkeypatch.delenv("FILE_SERVICE_URL", raising=False)
+        fake_http.responses = [
+            _FakeResponse(200, {"url": "https://storage.example/a.png", "mime_type": "image/png"}),
+            _FakeResponse(200, content=b"png"),
+        ]
+
+        await ocr_process(_request())
+
+        assert fake_http.requested_urls[0].startswith("http://file-service:8000/")
+
+    @pytest.mark.asyncio
+    async def test_404_when_file_service_has_no_such_file(self, fake_http):
+        fake_http.responses = [_FakeResponse(404)]
+
+        with pytest.raises(HTTPException) as exc:
+            await ocr_process(_request(file_id="00000000-0000-4000-8000-000000000000"))
+
+        assert exc.value.status_code == 404
+        assert "00000000-0000-4000-8000-000000000000" in exc.value.detail
+
+    @pytest.mark.asyncio
+    async def test_502_when_storage_download_fails(self, fake_http):
+        # The signed URL resolved but object storage did not serve the object.
+        fake_http.responses = [
+            _FakeResponse(200, {"url": "https://storage.example/a.png", "mime_type": "image/png"}),
             _FakeResponse(500),
         ]
-        monkeypatch.setattr(main_module.httpx, "AsyncClient", _client_factory(responses, captured))
 
-        resp = client.post("/api/v1/ocr/process", json={"file_id": "f3", "tenant_id": "t1"})
+        with pytest.raises(HTTPException) as exc:
+            await ocr_process(_request())
 
-        assert resp.status_code == 502
-        assert resp.json()["detail"] == "Failed to fetch file from storage"
+        assert exc.value.status_code == 502
+        assert exc.value.detail == "Failed to fetch file from storage"
 
-    def test_rejects_a_body_missing_required_fields(self):
-        resp = client.post("/api/v1/ocr/process", json={"file_id": "f4"})
-        assert resp.status_code == 422
+    @pytest.mark.asyncio
+    async def test_ocr_is_not_attempted_when_the_download_fails(self, fake_http, captured_ocr):
+        # Guards against regressing to "OCR whatever bytes came back", including an error page.
+        fake_http.responses = [
+            _FakeResponse(200, {"url": "https://storage.example/a.png", "mime_type": "image/png"}),
+            _FakeResponse(503),
+        ]
+
+        with pytest.raises(HTTPException):
+            await ocr_process(_request())
+
+        assert captured_ocr == []
+
+    @pytest.mark.asyncio
+    async def test_http_client_uses_a_timeout(self, fake_http, captured_ocr):
+        # A hung file-service must not pin an OCR worker forever.
+        fake_http.responses = [
+            _FakeResponse(200, {"url": "https://storage.example/a.png", "mime_type": "image/png"}),
+            _FakeResponse(200, content=b"png"),
+        ]
+
+        await ocr_process(_request())
+
+        assert fake_http.init_kwargs.get("timeout") == 30
 
 
-class TestFileServiceUrlDefault:
-    def test_falls_back_to_the_in_cluster_hostname(self, monkeypatch):
-        captured: list[_FakeAsyncClient] = []
-        monkeypatch.delenv("FILE_SERVICE_URL", raising=False)
-        responses = [_FakeResponse(404)]
-        monkeypatch.setattr(main_module.httpx, "AsyncClient", _client_factory(responses, captured))
+class TestRouting:
+    def test_endpoints_are_registered_at_the_spec_paths(self):
+        # §Phase 11 names POST /api/v1/ocr/process; a rename would break the file-uploaded consumer.
+        routes = {getattr(r, "path", None) for r in main_module.app.routes}
+        assert "/api/v1/ocr/process" in routes
+        assert "/health/live" in routes
 
-        client.post("/api/v1/ocr/process", json={"file_id": "f5", "tenant_id": "t1"})
 
-        assert captured[0].requested_urls[0].startswith("http://file-service:8000/")
+class TestFileIdIsAUuid:
+    """file_id is interpolated into the file-service URL, so its type is the whole defence.
+
+    While it was `str`, a caller could send "../.." and reach a different endpoint on file-service
+    entirely — CodeQL py/partial-ssrf, which neither bandit nor the Semgrep packs reported. Typing
+    it as UUID makes the interpolation safe by construction, and these cases hold that shut.
+    """
+
+    @pytest.mark.parametrize(
+        "bad",
+        [
+            "../../admin",
+            "..%2f..%2fadmin",
+            "f-1",
+            "",
+            "http://evil.example/x",
+            "11111111-1111-4111-8111-111111111111/../../admin",
+        ],
+    )
+    def test_rejects_anything_that_is_not_a_uuid(self, bad):
+        with pytest.raises(ValidationError):
+            OCRRequest(file_id=bad, tenant_id="t-1")
+
+    def test_accepts_a_uuid_and_stringifies_to_it(self):
+        req = OCRRequest(file_id="11111111-1111-4111-8111-111111111111", tenant_id="t-1")
+
+        assert str(req.file_id) == "11111111-1111-4111-8111-111111111111"

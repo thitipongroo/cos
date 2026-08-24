@@ -1,0 +1,298 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Project Manager Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-fixed": "#161b2b",
+                        "sync-active": "#FFD60A",
+                        "surface-container-highest": "#26364a",
+                        "surface-bright": "#2a3a4f",
+                        "surface-tint": "#b4c5ff",
+                        "secondary-container": "#03b5d3",
+                        "mobile-primary": "#0066FF",
+                        "inverse-primary": "#0053db",
+                        "on-surface": "#d3e4fe",
+                        "primary-container": "#2563eb",
+                        "surface-variant": "#26364a",
+                        "tertiary-fixed": "#dee1f9",
+                        "on-error": "#690005",
+                        "tertiary": "#c1c5dc",
+                        "on-primary": "#002a78",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "tertiary-container": "#686c80",
+                        "sync-pending": "#94A3B8",
+                        "surface-container-low": "#0b1c30",
+                        "primary-fixed": "#dbe1ff",
+                        "inverse-surface": "#d3e4fe",
+                        "on-surface-variant": "#c3c6d7",
+                        "on-tertiary-container": "#eeefff",
+                        "on-primary-container": "#eeefff",
+                        "outline-variant": "#434655",
+                        "on-secondary-fixed": "#001f26",
+                        "on-background": "#d3e4fe",
+                        "on-primary-fixed": "#00174b",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "on-error-container": "#ffdad6",
+                        "mobile-success": "#00C853",
+                        "mobile-warning": "#FF9500",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "background": "#031427",
+                        "outline": "#8d90a0",
+                        "error": "#ffb4ab",
+                        "surface-dim": "#031427",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "dark-surface": "#0F172A",
+                        "surface": "#031427",
+                        "dark-bg": "#020617",
+                        "secondary-fixed": "#acedff",
+                        "mobile-danger": "#FF3B30",
+                        "primary": "#b4c5ff",
+                        "surface-container-lowest": "#000f21",
+                        "on-tertiary": "#2b3041",
+                        "on-secondary": "#003640",
+                        "inverse-on-surface": "#213145",
+                        "surface-container-high": "#1b2b3f",
+                        "surface-container": "#102034",
+                        "secondary": "#4cd7f6",
+                        "on-secondary-container": "#00424e"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "touch-target": "52px",
+                        "space-1": "4px",
+                        "web-margin": "32px",
+                        "edge-mobile": "24px",
+                        "base": "4px",
+                        "space-2": "8px",
+                        "space-3": "12px",
+                        "space-4": "16px"
+                    },
+                    "fontFamily": {
+                        "display-web": ["Inter Tight"],
+                        "h1-web": ["Inter Tight"],
+                        "hero-mobile": ["Inter Tight"],
+                        "label-mobile": ["Inter Tight"],
+                        "tiny-web": ["Inter Tight"],
+                        "h2-web": ["Inter Tight"],
+                        "body-mobile": ["Inter Tight"],
+                        "body-web": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "display-web": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "h1-web": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "hero-mobile": ["28px", { "lineHeight": "34px", "fontWeight": "700" }],
+                        "label-mobile": ["13px", { "lineHeight": "18px", "fontWeight": "600" }],
+                        "tiny-web": ["11px", { "lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "h2-web": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "body-mobile": ["17px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "body-web": ["14px", { "lineHeight": "20px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+        .h-navigation-height { height: 72px; }
+        .bg-opacity-10 { background-color: rgba(255, 255, 255, 0.1); }
+        .ai-glow { box-shadow: 0 0 15px rgba(6, 182, 212, 0.2); }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface-dim text-on-surface font-body-mobile min-h-screen pb-[90px] antialiased">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center px-edge-mobile h-touch-target w-full z-50 sticky top-0 bg-surface-dim dark:bg-surface-dim flat no shadows border-b border-surface-container-high bg-surface-container-high bg-opacity-10 backdrop-blur-md">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed-dim" data-icon="architecture">architecture</span>
+<span class="font-display-web text-h2-web text-on-surface tracking-wider">CONSTRUCTIO...</span>
+</div>
+<div class="flex items-center gap-space-3">
+<div class="flex items-center gap-1 bg-surface-container px-2 py-1 rounded-full border border-mobile-success/30">
+<div class="w-2 h-2 rounded-full bg-mobile-success"></div>
+<span class="font-tiny-web text-tiny-web text-mobile-success uppercase">SYNCED</span>
+</div>
+<div class="w-8 h-8 rounded-full bg-surface-container-highest overflow-hidden border border-outline-variant">
+<img alt="User Profile Avatar" class="w-full h-full object-cover" data-alt="A close up, high-resolution portrait of a construction project manager wearing a white hard hat and safety vest, looking confident in a well-lit modern office setting. The style is hyper-realistic and professional." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBkVkV2aG35p6MqNIz9Wvt6NX3q1FHHCzeqKS045YHm8vWbsuiDkGT15vuwK8CcuQEessRPrZyYzytA0VXyA5Qri79WUP6PVW9QtpbNyMjC9GaN61cayVhDsuRsT1cvVnyEil65n8E7hd1nDTjaYc_oUIuDx9vu6NaeKGsUxoS4xVY-7uytsazap9bzhnITT0zkz5hUsPHnnMesk-4-xpGzZQLCXZV1btsttUWrfxN6rQhoCdDBpAxG">
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="px-edge-mobile py-space-4 space-y-space-4">
+<!-- Role Title -->
+<div class="pt-space-2">
+
+</div>
+<!-- KPI Tiles Bento -->
+<div class="grid grid-cols-2 gap-space-3">
+<div class="bg-surface-container rounded-lg p-space-3 border border-outline-variant/30 flex flex-col justify-between cursor-pointer hover:border-primary/50 transition-colors group border-l-4 border-mobile-primary">
+<div class="flex justify-between items-start">
+<span class="font-label-mobile text-label-mobile text-on-surface-variant">Active Projects</span>
+<span class="material-symbols-outlined text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity" data-icon="chevron_right">chevron_right</span>
+</div>
+<div class="flex items-end justify-between mt-space-2">
+<span class="font-hero-mobile text-hero-mobile text-on-surface">05</span>
+<span class="material-symbols-outlined text-mobile-primary" data-icon="corporate_fare">corporate_fare</span>
+</div>
+</div>
+<div class="bg-surface-container rounded-lg p-space-3 border border-outline-variant/30 flex flex-col justify-between relative overflow-hidden cursor-pointer hover:border-mobile-success/50 transition-colors group">
+<div class="absolute top-0 left-0 w-1 h-full bg-mobile-success"></div>
+<div class="flex justify-between items-start ml-space-1">
+<span class="font-label-mobile text-label-mobile text-on-surface-variant">Total Variance</span>
+<span class="material-symbols-outlined text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity" data-icon="chevron_right">chevron_right</span>
+</div>
+<div class="flex items-end justify-between mt-space-2 ml-space-1">
+<span class="font-hero-mobile text-hero-mobile text-mobile-success">+1.2%</span>
+<span class="material-symbols-outlined text-mobile-success" data-icon="trending_up">trending_up</span>
+</div>
+</div>
+</div>
+<!-- CRITICAL BLOCKERS -->
+<div class="bg-surface-container rounded-lg p-space-3 border border-outline-variant/30 relative overflow-hidden flex flex-col gap-space-2 cursor-pointer">
+<div class="absolute top-0 left-0 w-1 h-full bg-mobile-danger"></div>
+<div class="flex justify-between items-center ml-space-1">
+<div class="flex items-center gap-space-2 text-mobile-danger">
+<span class="material-symbols-outlined" data-icon="warning">warning</span>
+<span class="font-label-mobile text-label-mobile uppercase">04 Critical Issues</span>
+</div>
+<span class="material-symbols-outlined text-mobile-danger" data-icon="chevron_right">chevron_right</span></div>
+<p class="font-body-mobile text-body-mobile text-on-surface ml-space-1">MEP Delay at Sector 4 affecting critical path.</p>
+<button class="mt-space-2 ml-space-1 self-start border border-mobile-danger text-mobile-danger font-tiny-web text-tiny-web px-space-3 py-space-2 rounded uppercase tracking-wider hover:bg-mobile-danger/10 transition-colors">
+                 MANAGE
+             </button>
+</div>
+<!-- CORE_AI PORTFOLIO ANALYSIS -->
+<div class="bg-surface-container rounded-lg p-space-3 border border-secondary-container/50 relative overflow-hidden flex flex-col gap-space-2 ai-glow bg-opacity-10" style="background-color: rgba(3, 181, 211, 0.05);">
+<div class="absolute top-0 left-0 w-1 h-full bg-secondary-container"></div>
+<div class="flex justify-between items-center ml-space-1">
+<div class="flex items-center gap-space-2 text-secondary-container">
+<span class="material-symbols-outlined" data-icon="memory">memory</span>
+<span class="font-label-mobile text-label-mobile uppercase tracking-wider">FULL PORTFOLIO ANALYSIS</span>
+</div>
+<span class="font-tiny-web text-tiny-web text-secondary-container bg-secondary-container/10 px-2 py-1 rounded">CONF: 92%</span>
+</div>
+<p class="font-body-mobile text-body-mobile text-on-surface ml-space-1">AI identifies a 15% risk of delay in Skyline Tower due to upcoming material shortage. Data aggregated from 5 active projects. Recommended: Review Procurement Queue.</p>
+</div>
+<!-- YOUR PROJECTS -->
+<div>
+<h2 class="font-label-mobile text-label-mobile text-on-surface-variant uppercase tracking-wider mb-space-3">YOUR PROJECTS</h2>
+<div class="space-y-space-3">
+<!-- Project A -->
+<div class="bg-surface-container rounded-lg p-space-3 border border-outline-variant/30 relative overflow-hidden flex flex-col gap-space-2 cursor-pointer border-l-2 border-secondary-container">
+<div class="absolute top-0 left-0 w-1 h-full bg-secondary-container"></div>
+<div class="ml-space-1 flex justify-between items-start">
+<div>
+<h3 class="font-h1-web text-h2-web text-on-surface">Skyline Tower</h3>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant">Phase: Structural</p>
+</div>
+<div class="flex items-center gap-1 bg-surface-container-highest px-2 py-1 rounded border border-outline-variant/50">
+<span class="material-symbols-outlined text-[14px] text-mobile-success" data-icon="cloud_sync">cloud_sync</span>
+</div><span class="material-symbols-outlined text-on-surface-variant ml-space-2" data-icon="chevron_right">chevron_right</span>
+</div>
+<div class="ml-space-1 mt-space-1">
+<div class="flex justify-between font-tiny-web text-tiny-web text-on-surface-variant mb-1">
+<span class="">Progress</span>
+<span class="">68%</span>
+</div>
+<div class="w-full bg-surface-container-highest rounded-full h-1.5 overflow-hidden">
+<div class="bg-secondary-container h-1.5 rounded-full" style="width: 68%"></div>
+</div>
+</div>
+</div>
+<!-- Project B -->
+<div class="bg-surface-container rounded-lg p-space-3 border border-outline-variant/30 relative overflow-hidden flex flex-col gap-space-2 cursor-pointer border-l-2 border-secondary-container">
+<div class="absolute top-0 left-0 w-1 h-full bg-secondary-container"></div>
+<div class="ml-space-1 flex justify-between items-start">
+<div>
+<h3 class="font-h1-web text-h2-web text-on-surface">Skybridge Central</h3>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant">Phase: Finishing</p>
+</div>
+<div class="flex items-center gap-1 bg-surface-container-highest px-2 py-1 rounded border border-outline-variant/50">
+<span class="material-symbols-outlined text-[14px] text-sync-active" data-icon="pending">pending</span>
+</div><span class="material-symbols-outlined text-on-surface-variant ml-space-2" data-icon="chevron_right">chevron_right</span>
+</div>
+<div class="ml-space-1 mt-space-1">
+<div class="flex justify-between font-tiny-web text-tiny-web text-on-surface-variant mb-1">
+<span class="">Progress</span>
+<span class="">92%</span>
+</div>
+<div class="w-full bg-surface-container-highest rounded-full h-1.5 overflow-hidden">
+<div class="bg-secondary-container h-1.5 rounded-full" style="width: 92%"></div>
+</div>
+</div>
+</div>
+<!-- Project C -->
+<div class="bg-surface-container rounded-lg p-space-3 border border-outline-variant/30 relative overflow-hidden flex flex-col gap-space-2 opacity-70 border-l-2 border-secondary-container">
+<div class="absolute top-0 left-0 w-1 h-full bg-on-surface-variant"></div>
+<div class="ml-space-1 flex justify-between items-start">
+<div>
+<h3 class="font-h1-web text-h2-web text-on-surface">Industrial Hub</h3>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant">Phase: Site Prep</p>
+</div>
+<div class="flex items-center gap-1 bg-surface-container-highest px-2 py-1 rounded border border-outline-variant/50">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant">DRAFT</span>
+</div>
+</div>
+<div class="ml-space-1 mt-space-1">
+<div class="flex justify-between font-tiny-web text-tiny-web text-on-surface-variant mb-1">
+<span class="">Progress</span>
+<span class="">15%</span>
+</div>
+<div class="w-full bg-surface-container-highest rounded-full h-1.5 overflow-hidden">
+<div class="bg-on-surface-variant h-1.5 rounded-full" style="width: 15%"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-navigation-height pb-safe bg-surface-container dark:bg-surface-container-lowest docked full-width bottom-0 rounded-t-xl bg-surface-container-low border-t border-outline-variant shadow-lg md:hidden">
+<button class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-4 py-1 active:scale-95 duration-200">
+<span class="material-symbols-outlined" data-icon="foundation" style="font-variation-settings: &quot;FILL&quot; 1;">foundation</span>
+<span class="font-label-mobile text-label-mobile mt-1">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-all active:scale-95 duration-200">
+<span class="material-symbols-outlined" data-icon="shopping_cart">shopping_cart</span>
+<span class="font-label-mobile text-label-mobile mt-1">Procurement</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-all active:scale-95 duration-200">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span class="font-label-mobile text-label-mobile mt-1">Finance</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-all active:scale-95 duration-200">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+<span class="font-label-mobile text-label-mobile mt-1">More</span>
+</button>
+</nav>
+
+
+
+
+
+
+
+
+
+
+</body></html>

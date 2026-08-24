@@ -5,18 +5,37 @@
 // PO line data is not cached offline (§17.4 — POs are online read-cache), so lines load online; the
 // record submission itself still queues offline.
 
-import { useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
+import * as Crypto from 'expo-crypto';
 import { get, mutate } from '../../api/client';
+import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { PhotoCapture } from '../../components/PhotoCapture';
 import { StatusChip } from '../../components/StatusChip';
 import { useT } from '../../i18n';
-import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
+import { colors, fontFamily, radius, spacing, typography } from '../../theme/tokens';
+import { screen } from '../../theme/screenStyles';
 
 interface DeliveryRow {
   delivery_id: string;
   status: string;
 }
+/**
+ * One recorded delivery, memoized.
+ *
+ * This row is read-only, which is exactly why memo pays here: the screen above it re-renders on
+ * every keystroke in the delivery-note field and on every PO the picker selects, and none of that
+ * changes a single row.
+ */
+const DeliveryItem = memo(function DeliveryItem({ delivery }: { delivery: DeliveryRow }) {
+  return (
+    <View testID="delivery-item" style={screen.item}>
+      <Text style={screen.itemTitle}>{delivery.delivery_id.slice(0, 8)}</Text>
+      <StatusChip label={delivery.status} />
+    </View>
+  );
+});
+
 interface PoRow {
   po_id: string;
   po_number?: string;
@@ -42,9 +61,17 @@ export default function DeliveriesScreen() {
   const [note, setNote] = useState('');
   const [linesError, setLinesError] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(true); // initial deliveries + PO fetch is in flight on mount
   const t = useT();
 
+  // Created once: the row takes nothing but its own record, so this never has to be rebuilt.
+  const renderDelivery = useCallback(
+    ({ item }: { item: DeliveryRow }) => <DeliveryItem delivery={item} />,
+    [],
+  );
+
   const load = async (): Promise<void> => {
+    setLoading(true);
     try {
       const res = await get<{ items?: DeliveryRow[] } | DeliveryRow[]>('/procurement/deliveries');
       setRows(asList(res));
@@ -56,6 +83,8 @@ export default function DeliveriesScreen() {
       setPos(asList(res));
     } catch {
       /* offline — PO picker empty */
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -83,17 +112,27 @@ export default function DeliveriesScreen() {
     const items = lines
       .map((l) => ({ line_id: l.line_id, quantity_received: (received[l.line_id] ?? '').trim() }))
       .filter((it) => it.quantity_received !== '');
+    // ONE CLIENT ID for the payload, the queue key and the server's delivery_id (ADR-051 / G-M11).
+    //
+    // The queue key used to be the PO id, which meant two deliveries against the same order shared
+    // one identity in the outbox — and, worse, that the server had no way to recognise a replay.
+    // Replaying a delivery does not merely duplicate a record: `delivery_items` are the quantities
+    // `sumDeliveredQuantity` adds up to decide whether a PO line is fulfilled, so a double-applied
+    // delivery can close a purchase order on goods that arrived once. `RecordDeliveryDto` gained
+    // `client_id` on 2026-08-19 and `recordDelivery` is idempotent on it.
+    const clientId = Crypto.randomUUID();
     await mutate(
       'POST',
       '/procurement/deliveries',
       {
+        client_id: clientId,
         po_id: poId,
         delivered_at: new Date().toISOString(),
         delivery_note: note.trim() || undefined,
         items,
       },
       'delivery',
-      poId,
+      clientId,
     );
     setSaved(true);
     setNote('');
@@ -101,9 +140,7 @@ export default function DeliveriesScreen() {
   };
 
   return (
-    <View testID="deliveries-screen" style={styles.container}>
-      <Text style={styles.heading}>{t('procurement.deliveries.title')}</Text>
-
+    <View testID="deliveries-screen" style={screen.container}>
       {/* PO picker */}
       <Text style={styles.label}>{t('procurement.deliveries.selectPo')}</Text>
       <View testID="po-picker" style={styles.poRow}>
@@ -113,6 +150,11 @@ export default function DeliveriesScreen() {
             testID={`po-option-${po.po_id}`}
             style={[styles.poChip, poId === po.po_id && styles.poChipOn]}
             onPress={() => selectPo(po.po_id)}
+            // One of a set, exactly one chosen — a radio, not a button, so a screen reader
+            // announces which purchase order the form below belongs to.
+            accessibilityRole="radio"
+            accessibilityLabel={po.po_number ?? po.po_id.slice(0, 8)}
+            accessibilityState={{ selected: poId === po.po_id }}
           >
             <Text style={[styles.poChipText, poId === po.po_id && styles.poChipTextOn]}>
               {po.po_number ?? po.po_id.slice(0, 8)}
@@ -148,15 +190,21 @@ export default function DeliveriesScreen() {
 
           <TextInput
             testID="delivery-note-input"
-            style={styles.input}
+            style={screen.input}
             placeholder={t('procurement.deliveries.notePlaceholder')}
             placeholderTextColor={colors.textSecondary}
             value={note}
             onChangeText={setNote}
           />
           <PhotoCapture entityType="inspection" entityId={poId} />
-          <TouchableOpacity testID="record-delivery-button" style={styles.button} onPress={record}>
-            <Text style={styles.buttonText}>{t('procurement.deliveries.record')}</Text>
+          <TouchableOpacity
+            testID="record-delivery-button"
+            style={screen.primaryButton}
+            onPress={record}
+            accessibilityRole="button"
+            accessibilityLabel={t('procurement.deliveries.record')}
+          >
+            <Text style={screen.primaryButtonText}>{t('procurement.deliveries.record')}</Text>
           </TouchableOpacity>
           {saved ? (
             <Text testID="delivery-saved" style={styles.saved}>
@@ -166,30 +214,25 @@ export default function DeliveriesScreen() {
         </>
       ) : null}
 
-      <FlatList
-        testID="delivery-list"
+      <LoadingBoundary
+        loading={loading && rows.length === 0}
+        variant="list"
+        theme="light"
         style={styles.list}
-        data={rows}
-        keyExtractor={(r, i) => r.delivery_id || String(i)}
-        ListEmptyComponent={<Text style={styles.empty}>{t('procurement.deliveries.empty')}</Text>}
-        renderItem={({ item }) => (
-          <View testID="delivery-item" style={styles.item}>
-            <Text style={styles.itemTitle}>{item.delivery_id.slice(0, 8)}</Text>
-            <StatusChip label={item.status} />
-          </View>
-        )}
-      />
+      >
+        <FlatList
+          testID="delivery-list"
+          data={rows}
+          keyExtractor={(r, i) => r.delivery_id || String(i)}
+          ListEmptyComponent={<Text style={screen.empty}>{t('procurement.deliveries.empty')}</Text>}
+          renderItem={renderDelivery}
+        />
+      </LoadingBoundary>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: spacing.md, gap: spacing.sm },
-  heading: {
-    fontSize: typography.title.fontSize,
-    fontFamily: fontFamily.semibold,
-    color: colors.textPrimary,
-  },
   label: {
     fontSize: typography.caption.fontSize,
     fontFamily: fontFamily.semibold,
@@ -197,7 +240,7 @@ const styles = StyleSheet.create({
   },
   poRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   poChip: {
-    borderRadius: 16,
+    borderRadius: radius.xl,
     borderWidth: 1,
     borderColor: colors.textSecondary,
     paddingHorizontal: spacing.md,
@@ -234,34 +277,12 @@ const styles = StyleSheet.create({
     minHeight: 44,
     borderWidth: 1,
     borderColor: colors.textSecondary,
-    borderRadius: 8,
+    borderRadius: radius.lg,
     paddingHorizontal: spacing.sm,
     textAlign: 'right',
     fontSize: typography.body.fontSize,
     fontFamily: fontFamily.regular,
     color: colors.textPrimary,
-  },
-  input: {
-    minHeight: 48,
-    borderWidth: 1,
-    borderColor: colors.textSecondary,
-    borderRadius: 8,
-    paddingHorizontal: spacing.md,
-    fontSize: typography.body.fontSize,
-    fontFamily: fontFamily.regular,
-    color: colors.textPrimary,
-  },
-  button: {
-    minHeight: 48,
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonText: {
-    color: colors.bg,
-    fontFamily: fontFamily.semibold,
-    fontSize: typography.body.fontSize,
   },
   notice: {
     color: colors.textSecondary,
@@ -274,16 +295,4 @@ const styles = StyleSheet.create({
     fontSize: typography.caption.fontSize,
   },
   list: { marginTop: spacing.md },
-  item: {
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surface,
-    gap: spacing.xs,
-  },
-  itemTitle: {
-    fontSize: typography.body.fontSize,
-    fontFamily: fontFamily.medium,
-    color: colors.textPrimary,
-  },
-  empty: { color: colors.textSecondary, fontFamily: fontFamily.regular, padding: spacing.md },
 });

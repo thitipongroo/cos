@@ -48,7 +48,7 @@ describe('EquipmentController', () => {
   it('updateStatus — delegates to service.updateStatus', () => {
     const svc = makeSvc();
     const ctrl = new EquipmentController(svc as never);
-    ctrl.updateStatus('eq-1', 'IN_USE');
+    ctrl.updateStatus('eq-1', { status: 'IN_USE' });
     expect(svc.updateStatus).toHaveBeenCalledWith('eq-1', 'IN_USE');
   });
 

@@ -1,7 +1,8 @@
 // Confluent Schema Registry client wrapper.
 // Compatibility mode: BACKWARD_TRANSITIVE — enforced via ensureCompatibilityMode() at producer startup.
 // Source: spec §32.4; C-NEW-1 resolved 2026-05-27; QM-9.
-// Subject naming: {topic-name}-value
+// Subject naming: RecordNameStrategy — the subject is the canonical event_type (one schema per event,
+// shared across all tenants); NOT {topic-name}-value, since topics carry a {tenant_id}. prefix (§32.4).
 
 import { SchemaRegistry, SchemaType } from '@kafkajs/confluent-schema-registry';
 import { readFileSync } from 'fs';
@@ -46,7 +47,7 @@ export function loadAvroSchema(filename: string): string {
 
 /**
  * Register or retrieve a schema ID for a given subject.
- * Subject naming: {topic-name}-value
+ * Subject naming: RecordNameStrategy — the caller passes the canonical event_type as `subject` (§32.4).
  * Called once per event type at producer startup.
  */
 export async function registerSchema(subject: string, avscFilename: string): Promise<number> {

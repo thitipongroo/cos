@@ -2,10 +2,15 @@
 // Focus: workflow state transitions, financial calculations (total validation),
 //        quotation comparison, RBAC-critical paths.
 
-import { NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import {
+  BadRequestException,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { REQUEST } from '@nestjs/core';
 import { ProcurementService } from '../procurement.service';
+import { EventOutboxService } from '../../../shared/events/event-outbox.service';
 import { ProcurementRepository } from '../procurement.repository';
 import type {
   VendorRow,
@@ -84,8 +89,10 @@ const mockRepo = {
   createVendor: jest.fn(),
   findVendorById: jest.fn(),
   listVendors: jest.fn(),
+  listVendorDirectory: jest.fn(),
   deactivateVendor: jest.fn(),
   createPurchaseRequest: jest.fn(),
+  nextPrNumber: jest.fn(),
   findPrById: jest.fn(),
   updatePrStatus: jest.fn(),
   createRfq: jest.fn(),
@@ -97,12 +104,15 @@ const mockRepo = {
   findQuotationsByVendor: jest.fn(),
   markQuotationSelected: jest.fn(),
   createPurchaseOrder: jest.fn(),
+  createPurchaseOrderWithLineItems: jest.fn(),
   findPoById: jest.fn(),
   updatePoStatus: jest.fn(),
   setPoWorkflowId: jest.fn(),
   createLineItems: jest.fn(),
   findLineItemsByPo: jest.fn(),
   createDelivery: jest.fn(),
+  findDeliveryById: jest.fn(),
+  findPurchaseRequestById: jest.fn(),
   findDeliveriesByPo: jest.fn(),
   sumDeliveredQuantity: jest.fn(),
   createInvoice: jest.fn(),
@@ -138,6 +148,10 @@ const vendorFixture: VendorRow = {
   contact_phone: null,
   address: null,
   is_active: true,
+  // NULL on both, which is what an uncategorised, never-reviewed vendor really looks like — the
+  // columns were added nullable (migration 20260810000001) precisely so existing rows say that.
+  category: null,
+  verification_status: null,
   created_at: new Date(),
   updated_at: new Date(),
 };
@@ -237,6 +251,10 @@ beforeEach(async () => {
   const module: TestingModule = await Test.createTestingModule({
     providers: [
       ProcurementService,
+      // The suite's assertions are written against `mockKafkaPublish`, and they are still exactly
+      // the right assertions — an operation emits this envelope. Wire that same mock in as the
+      // outbox's publish so the contracts below keep checking what they were written to check.
+      { provide: EventOutboxService, useValue: { publish: mockKafkaPublish } },
       { provide: ProcurementRepository, useValue: mockRepo },
       { provide: REQUEST, useValue: mockRequest },
     ],
@@ -388,8 +406,10 @@ describe('Purchase Order financial calculations', () => {
   });
 
   it('createPurchaseOrder — accepts when total_amount matches line item sum', async () => {
-    mockRepo.createPurchaseOrder.mockResolvedValue(poFixture);
-    mockRepo.createLineItems.mockResolvedValue(lineItemFixtures);
+    mockRepo.createPurchaseOrderWithLineItems.mockResolvedValue({
+      po: poFixture,
+      line_items: lineItemFixtures,
+    });
     mockRepo.setPoWorkflowId.mockResolvedValue(undefined);
 
     const result = await service.createPurchaseOrder({
@@ -415,18 +435,17 @@ describe('Purchase Order financial calculations', () => {
 
   it('createPurchaseOrder — DECIMAL precision: 10.1234 × 6000.0001 computed correctly', async () => {
     // 10.1234 × 6000.0001 = 60740.4010... rounded HALF_UP to 60740.4010
-    mockRepo.createPurchaseOrder.mockResolvedValue({
-      ...poFixture,
-      total_amount: '60740.4010',
+    mockRepo.createPurchaseOrderWithLineItems.mockResolvedValue({
+      po: { ...poFixture, total_amount: '60740.4010' },
+      line_items: [
+        {
+          ...lineItemFixtures[0]!,
+          quantity: '10.1234',
+          unit_price: '6000.0001',
+          line_total: '60740.4010',
+        },
+      ],
     });
-    mockRepo.createLineItems.mockResolvedValue([
-      {
-        ...lineItemFixtures[0]!,
-        quantity: '10.1234',
-        unit_price: '6000.0001',
-        line_total: '60740.4010',
-      },
-    ]);
     mockRepo.setPoWorkflowId.mockResolvedValue(undefined);
 
     await expect(
@@ -606,6 +625,31 @@ describe('listVendors', () => {
   });
 });
 
+describe('listVendorDirectory', () => {
+  const directoryFixture = { ...vendorFixture, active_project_count: 3 };
+
+  it('passes no category through when the caller sends none', async () => {
+    mockRepo.listVendorDirectory.mockResolvedValue([directoryFixture]);
+    const result = await service.listVendorDirectory();
+    // `null`, not `undefined` — the repository branches on it to pick the unfiltered query.
+    expect(mockRepo.listVendorDirectory).toHaveBeenCalledWith(null);
+    expect(result[0]?.active_project_count).toBe(3);
+  });
+
+  it('passes a known category through', async () => {
+    mockRepo.listVendorDirectory.mockResolvedValue([directoryFixture]);
+    await service.listVendorDirectory('LOGISTICS');
+    expect(mockRepo.listVendorDirectory).toHaveBeenCalledWith('LOGISTICS');
+  });
+
+  it('rejects an unknown category instead of silently listing everything', async () => {
+    await expect(service.listVendorDirectory('MATERIAL')).rejects.toThrow(BadRequestException);
+    // The repository must not be reached: a filter that quietly ignores its argument would return a
+    // full list the caller believes is filtered.
+    expect(mockRepo.listVendorDirectory).not.toHaveBeenCalled();
+  });
+});
+
 describe('getVendor (found)', () => {
   it('returns vendor when found', async () => {
     mockRepo.findVendorById.mockResolvedValue(vendorFixture);
@@ -642,6 +686,31 @@ describe('Purchase Requests', () => {
       pr_number: 'PR-001',
     });
     expect(result.pr_id).toBe('pr-001');
+  });
+
+  it('keeps a caller-supplied pr_number instead of allocating one', async () => {
+    mockRepo.createPurchaseRequest.mockResolvedValue({ pr_id: 'pr-001' });
+
+    await service.createPurchaseRequest({ project_id: 'p-001', pr_number: 'PR-MANUAL-9' });
+
+    expect(mockRepo.nextPrNumber).not.toHaveBeenCalled();
+    expect(mockRepo.createPurchaseRequest).toHaveBeenCalledWith(
+      expect.objectContaining({ pr_number: 'PR-MANUAL-9' }),
+    );
+  });
+
+  it('defers pr_number allocation to the insert transaction when the caller omits one', async () => {
+    // The mobile path: a site engineer should not be asked to invent a document number. The number
+    // is now derived inside createPurchaseRequest's transaction (under an advisory lock) rather than
+    // read here first — reading it in a separate transaction was a race.
+    mockRepo.createPurchaseRequest.mockResolvedValue({ pr_id: 'pr-001' });
+
+    await service.createPurchaseRequest({ project_id: 'p-001' } as never);
+
+    expect(mockRepo.nextPrNumber).not.toHaveBeenCalled();
+    expect(mockRepo.createPurchaseRequest).toHaveBeenCalledWith(
+      expect.objectContaining({ pr_number: undefined, year: new Date().getFullYear() }),
+    );
   });
 });
 
@@ -1039,6 +1108,7 @@ describe('private helper branches', () => {
     const module = await Test.createTestingModule({
       providers: [
         ProcurementService,
+        { provide: EventOutboxService, useValue: { publish: mockKafkaPublish } },
         {
           provide: ProcurementRepository,
           useValue: mockRepo,
@@ -1168,6 +1238,12 @@ describe('exact contracts — vendors and purchase requests', () => {
       pr_number: 'PR-001',
       requested_by: 'user-uuid-001',
       required_date: undefined,
+      // `year` and `items` were added when PR-number allocation moved INSIDE the insert transaction
+      // (deriving the number in the service first was a read-then-write race across two
+      // transactions). This assertion had not followed. Computed, not the literal 2026 the failure
+      // output showed — a hardcoded year turns into a green-until-January test.
+      year: new Date().getFullYear(),
+      items: undefined,
     });
     expect(loggerMock.info).toHaveBeenCalledWith(
       { pr_id: 'pr-001', tenant_id: 'tenant-uuid-001' },
@@ -1493,8 +1569,10 @@ describe('exact contracts — createPurchaseOrder', () => {
   };
 
   beforeEach(() => {
-    mockRepo.createPurchaseOrder.mockResolvedValue(poFixture);
-    mockRepo.createLineItems.mockResolvedValue(lineItemFixtures);
+    mockRepo.createPurchaseOrderWithLineItems.mockResolvedValue({
+      po: poFixture,
+      line_items: lineItemFixtures,
+    });
     mockRepo.setPoWorkflowId.mockResolvedValue(undefined);
   });
 
@@ -1506,26 +1584,31 @@ describe('exact contracts — createPurchaseOrder', () => {
 
   it('passes exact repo payload and line items', async () => {
     await service.createPurchaseOrder(poDto);
-    expect(mockRepo.createPurchaseOrder).toHaveBeenCalledWith({
-      rfq_id: undefined,
-      vendor_id: 'vendor-uuid-001',
-      project_id: 'project-uuid-001',
-      po_number: 'PO-001',
-      total_amount: '60000.0000',
-      currency_code: 'THB',
-      delivery_date: '2026-09-01',
-      created_by: 'user-uuid-001',
-    });
-    expect(mockRepo.createLineItems).toHaveBeenCalledWith('po-uuid-001', [
+    // Header + lines go to the repo as a single atomic call (one transaction).
+    expect(mockRepo.createPurchaseOrderWithLineItems).toHaveBeenCalledWith(
       {
-        boq_item_id: undefined,
-        description: 'Concrete mix M35',
-        quantity: '10.0000',
-        unit: 'm3',
-        unit_price: '6000.0000',
-        line_total: '60000.0000',
+        rfq_id: undefined,
+        vendor_id: 'vendor-uuid-001',
+        project_id: 'project-uuid-001',
+        po_number: 'PO-001',
+        total_amount: '60000.0000',
+        currency_code: 'THB',
+        delivery_date: '2026-09-01',
+        created_by: 'user-uuid-001',
       },
-    ]);
+      [
+        {
+          boq_item_id: undefined,
+          description: 'Concrete mix M35',
+          quantity: '10.0000',
+          unit: 'm3',
+          unit_price: '6000.0000',
+          line_total: '60000.0000',
+        },
+      ],
+    );
+    // The workflow id and the po.created event are set in one call, so the envelope rides that
+    // UPDATE's transaction (§35.13 ESC-13).
     expect(mockRepo.setPoWorkflowId).toHaveBeenCalledWith(
       'po-uuid-001',
       'po-po-uuid-001',
@@ -2017,5 +2100,144 @@ describe('exact contracts — invoices', () => {
     await expect(service.approveInvoice('inv-uuid-001')).rejects.toThrow(
       'Invoice inv-uuid-001 must be RECEIVED or VERIFIED to approve (current: APPROVED)',
     );
+  });
+});
+
+// Offline idempotency (§17.4 amendment 2026-08-19). Both entities are captured on site, so their
+// writes are queued and /sync/push replays them - after a timeout, or after any retry. A replay must
+// resolve to the record already filed and run NONE of the side effects a genuine create has.
+describe('replayed offline creates', () => {
+  const existingDelivery = {
+    delivery_id: 'client-uuid',
+    po_id: 'po-uuid-001',
+    tenant_id: 'tenant-uuid-001',
+    delivery_note: null,
+    delivered_at: new Date(),
+    received_by: 'user-uuid-001',
+    notes: null,
+  } as DeliveryRow;
+
+  it('recordDelivery passes client_id through as the delivery_id', async () => {
+    mockRepo.findPoById.mockResolvedValue({ ...poFixture, status: 'ACKNOWLEDGED' as const });
+    mockRepo.createDelivery.mockResolvedValue({ delivery: existingDelivery, items: [] });
+    mockRepo.findLineItemsByPo.mockResolvedValue(lineItemFixtures);
+    mockRepo.sumDeliveredQuantity.mockResolvedValue('10.0000');
+
+    await service.recordDelivery({
+      client_id: 'client-uuid',
+      po_id: 'po-uuid-001',
+      delivered_at: new Date().toISOString(),
+      items: [],
+    });
+
+    expect(mockRepo.createDelivery).toHaveBeenCalledWith(
+      expect.objectContaining({ delivery_id: 'client-uuid' }),
+      expect.any(Function), // the outbox builder that rides the INSERT (§35.13 ESC-13)
+    );
+  });
+
+  it('recordDelivery on a replay returns the existing delivery and signals nothing', async () => {
+    mockRepo.findPoById.mockResolvedValue({ ...poFixture, status: 'ACKNOWLEDGED' as const });
+    mockRepo.createDelivery.mockResolvedValue(null); // ON CONFLICT DO NOTHING
+    mockRepo.findDeliveryById.mockResolvedValue(existingDelivery);
+    mockRepo.findLineItemsByPo.mockResolvedValue(lineItemFixtures);
+    mockRepo.sumDeliveredQuantity.mockResolvedValue('5.0000');
+
+    const result = await service.recordDelivery({
+      client_id: 'client-uuid',
+      po_id: 'po-uuid-001',
+      delivered_at: new Date().toISOString(),
+      items: [{ line_id: 'line-uuid-001', quantity_received: '5.0000' }],
+    });
+
+    expect(result.delivery).toBe(existingDelivery);
+    // Still answers the partial/complete question from the quantities already stored.
+    expect(result.is_partial).toBe(true);
+    // The three things that must not happen twice: the workflow signal, the event, and (in the
+    // repository) the line items.
+    expect(mockWorkflowSignal).not.toHaveBeenCalled();
+  });
+
+  it('recordDelivery rejects a client_id it cannot see - it belongs to another tenant', async () => {
+    mockRepo.findPoById.mockResolvedValue({ ...poFixture, status: 'ACKNOWLEDGED' as const });
+    mockRepo.createDelivery.mockResolvedValue(null);
+    mockRepo.findDeliveryById.mockResolvedValue(null);
+
+    await expect(
+      service.recordDelivery({
+        client_id: 'client-uuid',
+        po_id: 'po-uuid-001',
+        delivered_at: new Date().toISOString(),
+        items: [],
+      }),
+    ).rejects.toMatchObject({ status: 409 });
+  });
+
+  it('createPurchaseRequest passes client_id through as the pr_id', async () => {
+    mockRepo.createPurchaseRequest.mockResolvedValue({ pr_id: 'client-uuid' });
+
+    await service.createPurchaseRequest({
+      client_id: 'client-uuid',
+      project_id: 'proj-uuid-001',
+      items: [],
+    } as never);
+
+    expect(mockRepo.createPurchaseRequest).toHaveBeenCalledWith(
+      expect.objectContaining({ pr_id: 'client-uuid' }),
+    );
+  });
+
+  it('createPurchaseRequest on a replay returns the request already filed', async () => {
+    const existing = { pr_id: 'client-uuid', pr_number: 'PR-2026-0001' };
+    mockRepo.createPurchaseRequest.mockResolvedValue(null);
+    mockRepo.findPurchaseRequestById.mockResolvedValue(existing);
+
+    const result = await service.createPurchaseRequest({
+      client_id: 'client-uuid',
+      project_id: 'proj-uuid-001',
+      items: [],
+    } as never);
+
+    expect(result).toBe(existing);
+    expect(mockRepo.findPurchaseRequestById).toHaveBeenCalledWith('client-uuid');
+  });
+
+  it('createPurchaseRequest rejects a client_id it cannot see', async () => {
+    mockRepo.createPurchaseRequest.mockResolvedValue(null);
+    mockRepo.findPurchaseRequestById.mockResolvedValue(null);
+
+    await expect(
+      service.createPurchaseRequest({
+        client_id: 'client-uuid',
+        project_id: 'proj-uuid-001',
+        items: [],
+      } as never),
+    ).rejects.toMatchObject({ status: 409 });
+  });
+
+  it('createPurchaseRequest with no client_id and a null result is still a conflict', async () => {
+    // Cannot happen through the repository (a null return needs a pr_id), but the branch exists and
+    // must not fall through to returning undefined as a PurchaseRequestRow.
+    mockRepo.createPurchaseRequest.mockResolvedValue(null);
+
+    await expect(
+      service.createPurchaseRequest({ project_id: 'proj-uuid-001', items: [] } as never),
+    ).rejects.toMatchObject({ status: 409 });
+  });
+
+  it('recordDelivery with no client_id and a null result is a conflict, not a crash', async () => {
+    // Unreachable through the repository (a null return needs a delivery_id), but the branch exists
+    // and must not fall through to reading `.delivery` off null.
+    mockRepo.findPoById.mockResolvedValue({ ...poFixture, status: 'ACKNOWLEDGED' as const });
+    mockRepo.createDelivery.mockResolvedValue(null);
+
+    await expect(
+      service.recordDelivery({
+        po_id: 'po-uuid-001',
+        delivered_at: new Date().toISOString(),
+        items: [],
+      }),
+    ).rejects.toMatchObject({ status: 409 });
+    expect(mockRepo.findDeliveryById).not.toHaveBeenCalled();
   });
 });

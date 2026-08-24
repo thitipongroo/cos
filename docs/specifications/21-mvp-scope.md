@@ -56,6 +56,18 @@ Modules :
 - Dashboard
 - AI report assistant
 - Vendor Portal (external self-service: RFQ, quotation, PO status, invoice) — MVP
+- CredentialService (W3C DID/VC) — MVP. **Promoted from Enterprise-opt-in to MVP (ADR-019)** as the
+  prerequisite for client contract signing. Issuer = persistent per-tenant `did:web` (Ed25519 key in Vault,
+  ADR-013) for `LicenceVC`/`EquipmentCertVC`/`TrainingRecordVC`; contract signer = ephemeral `did:key`;
+  VC = `Ed25519Signature2020` (JSON-LD Data Integrity); revocation = Status List 2021; offline verification
+  (§5.3, BG-001). **Built before contract signing.**
+- Client contract signing (e-signature workflow) — MVP. Adds the actual signing capability on top of the
+  existing `Contract` entity + `signed` status (11-database-schema). **Mechanism (ADR-058, re-based onto
+  ADR-019):** contractor authorized-role signs directly + client signs via magic-link (ADR-030); each
+  signature = a `ContractSignatureVC` from an **ephemeral `did:key`** over the SHA-256 document hash
+  (CredentialService); the contract document is uploaded **or** generated in-app; `signed` is reached when
+  both signatures verify. Built on the `finance` service. See §11 (`ContractSignature`), §14
+  (`/finance/contracts/{id}/sign…`), §06 (Contract signing row), §16 events.
 
 Note on Workforce Management in MVP :
 
@@ -68,6 +80,22 @@ Workforce management (check-in/check-out, site attendance, daily timesheet) is i
 
 MVP Workforce scope : daily check-in/check-out, timesheet by project, manpower count for
 site reports. Advanced features (shift optimization, productivity analytics) are post-MVP.
+
+> **OPEN — the mobile app has no check-in control (found 2026-08-21).** Self check-in was removed
+> from `apps/mobile` on 2026-08-09 by product-owner decision: it was on the Site Worker home, then
+> briefly in the navigation drawer, then removed outright along with its project picker (recorded in
+> `src/components/home/FieldHome.tsx`). Verified by grep — `check-in-button` exists nowhere in the
+> app, and no client API writes attendance; the rows the Shift Hours tile counts arrive read-only
+> through `/sync/delta`.
+>
+> So this paragraph and the product disagree, and the disagreement is load-bearing: the reasons given
+> above are that attendance feeds daily site reports and manpower counts, and that offline check-in
+> is a field-operation critical path (§17.4 makes attendance a high-priority sync entity). If workers
+> cannot check in from the app, those rows come from somewhere else — or not at all.
+>
+> **Not resolved here.** The 2026-08-09 decision removed a control; whether it also narrowed MVP
+> workforce scope is a separate question that has not been asked. The Detox scenario that tested it
+> was retired on 2026-08-21 (§30) — that settles the TEST, not the scope.
 
 Note on Safety and Quality Control in MVP :
 
@@ -96,6 +124,27 @@ Modules :
 - Advanced digital twin
 - Autonomous AI agents
 - Full ERP replacement
+
+### Construction full-flow scope — documented future (post-MVP)
+
+Accepted as future scope by the product owner (2026-07-20, **ADR-057**) after the scope-boundary review in
+`docs/research/back-office-boundary.md`. Each item was confirmed **absent from the entire spec** (verified,
+not inferred). Listed at **capability level only** — internal design (schema, API, RBAC, events, UX) is
+defined when each item's phase begins, per the §20.7.12c convention; do not stub before that decision.
+
+| Capability                                              | What it adds                                                                       | Confirmed current state                                                                                                 |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Variation Order / Change Order / Claims                 | Manage approved changes to contract scope/price, linked to Contract + BOQ + budget | **Designed — ADR-059** (`VariationOrder` + `Claim` in finance); still post-MVP                                          |
+| Inventory / Warehouse (WMS)                             | Stock movement, GRN vs PO delivery, multi-warehouse, material valuation            | **Designed — ADR-060** (Warehouse + StockMovement + GRN, procurement; moving average); still post-MVP                   |
+| ราคากลาง (Comptroller-General central pricing)          | Reference-price source feeding BOQ line items                                      | **Designed — ADR-061** (`platform.central_price_catalog` + BOQ `reference_price`; import + API adapter); still post-MVP |
+| e-GP (Electronic Government Procurement) integration    | Public-tender data / bidding for government work                                   | **Designed — ADR-062** (`Tender` + `Bid` in crm/Preconstruction; adapter + manual; won → Contract); still post-MVP      |
+| Bank guarantees / bonds                                 | Bid / performance / retention / advance bonds, linked to Contract + e-GP           | **Designed — ADR-063** (`Bond` in finance; full lifecycle + expiry alert); still post-MVP                               |
+| Building permit & license management                    | Track construction permits/licences by status & expiry                             | **Designed — ADR-064** (extends `Permit`: +building_permit/license +issuing_authority +expiry alert); still post-MVP    |
+| Project risk register                                   | Structured project risk log (distinct from AI delay-risk forecasting)              | **Designed — ADR-065** (`ProjectRisk` in projects; 5×5 scoring + AI-suggested feed); still post-MVP                     |
+| Site instruction / meeting minutes / correspondence log | Document-control records                                                           | **Designed — ADR-066** (`CommunicationRecord` + `ActionItem` in projects); still post-MVP                               |
+
+> **Note — client contract signing is MVP, not here.** The signing capability (e-signature) is placed in
+> MVP scope (§21.2 Included); its mechanism is decided in ADR-058 (bilateral PKI/VC + client magic-link).
 
 ---
 

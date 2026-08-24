@@ -7,6 +7,7 @@ import {
   Get,
   Post,
   Patch,
+  Put,
   Body,
   Param,
   Query,
@@ -24,6 +25,7 @@ import { RolesGuard } from '../../shared/guards/roles.guard';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { ChangeRoleDto } from './dto/change-role.dto';
+import { SetRolesDto } from './dto/set-roles.dto';
 import type { TenantRequest } from './tenant.middleware';
 
 @ApiTags('users')
@@ -77,6 +79,63 @@ export class UserController {
     @Req() req: TenantRequest,
   ) {
     await this.userService.changeRole(userId, dto, req.tenantId!, req.userId ?? 'system');
+  }
+
+  @Get(':userId/roles')
+  @ApiOperation({
+    summary: "A user's primary + additional roles (multi-role) — TENANT_ADMIN only",
+  })
+  @ApiResponse({ status: 200, description: 'Primary role + additional roles' })
+  @ApiResponse({ status: 404, description: 'User not found in tenant' })
+  async getRoles(@Param('userId', ParseUUIDPipe) userId: string, @Req() req: TenantRequest) {
+    return this.userService.getUserRoles(userId, req.tenantId!);
+  }
+
+  @Put(':userId/roles')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: "Set a user's primary + additional roles (multi-role) — TENANT_ADMIN only",
+    description:
+      'Effective permissions = union of ROLE_PERMISSIONS. Emits identity.user.role_changed.v1.',
+  })
+  @ApiResponse({ status: 204, description: 'Roles updated' })
+  @ApiResponse({ status: 404, description: 'User not found in tenant' })
+  async setRoles(
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @Body() dto: SetRolesDto,
+    @Req() req: TenantRequest,
+  ) {
+    await this.userService.setUserRoles(userId, dto, req.tenantId!, req.userId ?? 'system');
+  }
+
+  @Post(':userId/reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "Reset a user's password — issues a one-time temporary password (TENANT_ADMIN only)",
+    description:
+      'Sets a temporary password on the Keycloak account (user must change it at next sign-in) and ' +
+      'returns the plaintext ONCE for secure manual hand-off. Emits identity.user.password_reset.v1.',
+  })
+  @ApiResponse({ status: 200, description: 'Temporary password issued' })
+  @ApiResponse({ status: 404, description: 'User not found in tenant' })
+  async resetPassword(@Param('userId', ParseUUIDPipe) userId: string, @Req() req: TenantRequest) {
+    return this.userService.resetPassword(userId, req.tenantId!, req.userId ?? 'system');
+  }
+
+  @Post(':userId/reset-password/email')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Email the user a password-reset link — standards-compliant reset (TENANT_ADMIN only)',
+    description:
+      'Sends a single-use, 15-minute Keycloak UPDATE_PASSWORD action-token email (NIST 800-63B Rev.4). ' +
+      'The user sets their own password; COS never handles the plaintext. Requires an email on file. ' +
+      'Emits identity.user.password_reset.v1 (method=email_link).',
+  })
+  @ApiResponse({ status: 200, description: 'Reset link emailed' })
+  @ApiResponse({ status: 400, description: 'User has no email on file' })
+  @ApiResponse({ status: 404, description: 'User not found in tenant' })
+  async sendResetEmail(@Param('userId', ParseUUIDPipe) userId: string, @Req() req: TenantRequest) {
+    return this.userService.sendPasswordResetLink(userId, req.tenantId!, req.userId ?? 'system');
   }
 
   @Patch(':userId/deactivate')

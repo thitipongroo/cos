@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="th"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>รายละเอียดสิทธิ์ - Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary": "#003640",
+                    "secondary-fixed": "#acedff",
+                    "on-primary-container": "#eeefff",
+                    "on-error-container": "#ffdad6",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "on-tertiary-container": "#eeefff",
+                    "on-background": "#d3e4fe",
+                    "on-secondary-container": "#00424e",
+                    "on-tertiary": "#2b3041",
+                    "mobile-primary": "#0066FF",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "background": "#031427",
+                    "surface-container-lowest": "#000f21",
+                    "surface-container": "#102034",
+                    "surface-variant": "#26364a",
+                    "outline-variant": "#434655",
+                    "inverse-on-surface": "#213145",
+                    "error": "#ffb4ab",
+                    "tertiary-fixed": "#dee1f9",
+                    "on-error": "#690005",
+                    "dark-bg": "#020617",
+                    "surface-container-high": "#1b2b3f",
+                    "secondary-container": "#03b5d3",
+                    "on-secondary-fixed": "#001f26",
+                    "tertiary-container": "#686c80",
+                    "mobile-warning": "#FF9500",
+                    "outline": "#8d90a0",
+                    "inverse-surface": "#d3e4fe",
+                    "surface-dim": "#031427",
+                    "surface-bright": "#2a3a4f",
+                    "mobile-danger": "#FF3B30",
+                    "primary": "#b4c5ff",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "error-container": "#93000a",
+                    "primary-fixed": "#dbe1ff",
+                    "primary-container": "#2563eb",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "sync-pending": "#94A3B8",
+                    "on-primary-fixed": "#00174b",
+                    "surface-tint": "#b4c5ff",
+                    "surface-container-highest": "#26364a",
+                    "dark-surface": "#0F172A",
+                    "surface": "#031427",
+                    "on-primary": "#002a78",
+                    "surface-container-low": "#0b1c30",
+                    "sync-active": "#FFD60A",
+                    "inverse-primary": "#0053db",
+                    "secondary": "#4cd7f6",
+                    "on-tertiary-fixed": "#161b2b",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "on-surface": "#d3e4fe",
+                    "on-surface-variant": "#c3c6d7",
+                    "mobile-success": "#00C853",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "tertiary": "#c1c5dc",
+                    "ai-cyan": "#06B6D4"
+            },
+            "borderRadius": {
+                    "DEFAULT": "8px",
+                    "lg": "8px",
+                    "xl": "12px",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "space-2": "8px",
+                    "web-margin": "32px",
+                    "touch-target": "52px",
+                    "space-4": "16px",
+                    "edge-mobile": "24px",
+                    "space-3": "12px",
+                    "space-1": "4px",
+                    "base": "4px"
+            },
+            "fontFamily": {
+                    "hero-mobile": ["Inter Tight"],
+                    "h2-web": ["Inter Tight"],
+                    "tiny-web": ["Inter Tight"],
+                    "label-mobile": ["Inter Tight"],
+                    "h1-web": ["Inter Tight"],
+                    "body-web": ["Inter Tight"],
+                    "body-mobile": ["Inter Tight"],
+                    "display-web": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #031427;
+            font-family: 'Inter Tight', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            color: #d3e4fe;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .industrial-glass {
+            background: rgba(16, 32, 52, 0.8);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(195, 198, 215, 0.1);
+        }
+        .status-badge {
+            font-family: 'Inter Tight', monospace;
+            letter-spacing: 0.05em;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+<!-- TopAppBar -->
+<header class="bg-surface sticky top-0 z-50 flex items-center justify-between h-16 px-edge-mobile border-b border-white/5">
+<div class="flex items-center gap-space-3">
+<img alt="COS Logo" class="w-8 h-8 rounded-sm" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBGJhFVL8Y5l8Hc-tk3P8ZDg7bd0axHzLdHQiC79TH657Mz4nrmKW98M5VhwAiz0DdI7V2KW5pDZkt5o4bcxApIwONRQGkTjPTQI-3IAxZckiHpKkVkgUSYhkEM_kF6O42I_6Wxukk5foknLqdI6HmoBx3Oc5X-U5XYN_VPFjZ6eTAEnBeOQ7L7QZsSq0QZ73hz5R3tz1U-37O9nWu-QF0W8PG74TxZN51dw9BYpgWpGSq6HO33gbccQRTLZeWpxInOTWZTw7rTca0"/>
+<div class="flex flex-col">
+<span class="font-hero-mobile text-xl font-bold tracking-tight text-on-surface">CONSTRUCTION OS</span>
+<span class="font-label-mobile text-[11px] text-primary uppercase tracking-widest">รายละเอียดสิทธิ์: ผู้จัดการโครงการ</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<div class="flex items-center bg-surface-variant/30 px-2 py-1 rounded-full border border-mobile-success/20">
+<span class="material-symbols-outlined text-[14px] text-mobile-success" style="font-variation-settings: 'FILL' 1;">circle</span>
+<span class="ml-1.5 font-tiny-web text-[10px] text-on-surface-variant font-bold tracking-wider">SYNCED</span>
+</div>
+</div>
+</header>
+<main class="flex-grow px-edge-mobile pt-space-4 pb-32">
+<!-- Summary Section -->
+<section class="mb-space-4 p-space-4 industrial-glass rounded-lg border-l-4 border-primary">
+<h1 class="font-hero-mobile text-2xl text-on-surface mb-space-1">ผู้จัดการโครงการ</h1>
+<p class="font-body-mobile text-body-mobile text-on-surface-variant leading-tight">
+                ดูแลภาพรวมโครงการทั้งหมด รวมถึงตารางเวลา งบประมาณ และการมอบหมายงาน
+            </p>
+</section>
+<!-- CORE_AI Assistant Banner -->
+<section class="mb-space-4 p-space-4 bg-ai-cyan/10 border border-ai-cyan/30 rounded-lg">
+<div class="flex gap-space-3 mb-2">
+<div class="flex-shrink-0">
+<span class="material-symbols-outlined text-ai-cyan" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+</div>
+<div>
+<h3 class="font-label-mobile text-label-mobile text-ai-cyan uppercase">ระบบช่วยเหลือ CORE_AI</h3>
+<p class="font-body-web text-body-web text-on-surface-variant mt-1">
+                        สิทธิ์เหล่านี้ได้รับการแนะนำตามมาตรฐานความปลอดภัยสำหรับการดำเนินงานทางอุตสาหกรรม
+                    </p>
+</div>
+</div>
+<div class="flex items-center justify-between pt-2 border-t border-ai-cyan/10">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-ai-cyan text-[14px]">verified</span>
+<span class="text-[10px] font-bold text-ai-cyan/80 uppercase">98% Confidence</span>
+</div>
+<span class="text-[10px] text-on-surface-variant/60">Verified against RBAC v4.2</span>
+</div>
+</section>
+<!-- Permission Categories -->
+<div class="space-y-space-2">
+<!-- PROJECTS -->
+<div class="min-h-[52px] p-space-3 bg-surface-container rounded-lg border border-outline-variant flex items-center justify-between">
+<div class="flex items-center gap-space-3">
+<div class="w-10 h-10 rounded-lg bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant">architecture</span>
+</div>
+<div>
+<h4 class="font-label-mobile text-label-mobile text-on-surface uppercase">โครงการ</h4>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant">เข้าถึงตารางเวลาและเอกสารทั้งหมด</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="status-badge px-2 py-1 bg-primary-container text-on-primary-container text-[10px] font-bold rounded">RW</span>
+<span class="font-tiny-web text-tiny-web text-primary font-bold">อ่าน/เขียน</span>
+</div>
+</div>
+<!-- FINANCE -->
+<div class="min-h-[52px] p-space-3 bg-surface-container rounded-lg border border-outline-variant flex items-center justify-between">
+<div class="flex items-center gap-space-3">
+<div class="w-10 h-10 rounded-lg bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant">account_balance_wallet</span>
+</div>
+<div>
+<h4 class="font-label-mobile text-label-mobile text-on-surface uppercase">การเงิน</h4>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant">ดูงบประมาณ ไม่สามารถอนุมัติได้</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="status-badge px-2 py-1 bg-surface-variant text-on-surface-variant text-[10px] font-bold rounded">R</span>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant font-bold">อ่านอย่างเดียว</span>
+</div>
+</div>
+<!-- PROCUREMENT -->
+<div class="min-h-[52px] p-space-3 bg-surface-container rounded-lg border border-outline-variant flex items-center justify-between">
+<div class="flex items-center gap-space-3">
+<div class="w-10 h-10 rounded-lg bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant">local_shipping</span>
+</div>
+<div>
+<h4 class="font-label-mobile text-label-mobile text-on-surface uppercase">การจัดซื้อ</h4>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant">สร้างใบขอซื้อและติดตามการส่งมอบ</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="status-badge px-2 py-1 bg-primary-container text-on-primary-container text-[10px] font-bold rounded">RW</span>
+<span class="font-tiny-web text-tiny-web text-primary font-bold">อ่าน/เขียน</span>
+</div>
+</div>
+<!-- SITE -->
+<div class="min-h-[52px] p-space-3 bg-surface-container rounded-lg border border-outline-variant flex items-center justify-between">
+<div class="flex items-center gap-space-3">
+<div class="w-10 h-10 rounded-lg bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant">foundation</span>
+</div>
+<div>
+<h4 class="font-label-mobile text-label-mobile text-on-surface uppercase">ไซต์งาน</h4>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant">อนุมัติรายงานและจัดการปัญหาหน้างาน</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="status-badge px-2 py-1 bg-mobile-success text-on-secondary text-[10px] font-bold rounded">FULL</span>
+<span class="font-tiny-web text-tiny-web text-mobile-success font-bold">เข้าถึงทั้งหมด</span>
+</div>
+</div>
+<!-- SAFETY -->
+<div class="min-h-[52px] p-space-3 bg-surface-container rounded-lg border border-outline-variant flex items-center justify-between">
+<div class="flex items-center gap-space-3">
+<div class="w-10 h-10 rounded-lg bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant">safety_check</span>
+</div>
+<div>
+<h4 class="font-label-mobile text-label-mobile text-on-surface uppercase">ความปลอดภัย</h4>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant">ตรวจสอบรายงานอุบัติการณ์</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="status-badge px-2 py-1 bg-surface-variant text-on-surface-variant text-[10px] font-bold rounded">R</span>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant font-bold">อ่านอย่างเดียว</span>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Action Area -->
+<footer class="fixed bottom-0 left-0 w-full p-edge-mobile bg-gradient-to-t from-background to-transparent pt-12 pb-safe z-40">
+<button class="w-full h-[52px] bg-mobile-primary text-white font-bold uppercase tracking-wider rounded-lg flex items-center justify-center gap-space-2 active:scale-95 transition-transform shadow-lg shadow-mobile-primary/20">
+<span class="material-symbols-outlined">arrow_back</span>
+            ย้อนกลับไปยังหน้าเชิญ
+        </button>
+</footer>
+<script>
+        document.querySelectorAll('button').forEach(button => {
+            button.addEventListener('click', function(e) {
+                let ripple = document.createElement('span');
+                ripple.classList.add('absolute', 'bg-white/20', 'rounded-full', 'animate-ping');
+                ripple.style.width = '20px';
+                ripple.style.height = '20px';
+                ripple.style.left = e.offsetX + 'px';
+                ripple.style.top = e.offsetY + 'px';
+                this.appendChild(ripple);
+                setTimeout(() => ripple.remove(), 600);
+                
+                // Navigation mock for the back button
+                if (this.innerText.includes('ย้อนกลับ')) {
+                    console.log('Navigating back...');
+                }
+            });
+        });
+    </script>
+</body></html>

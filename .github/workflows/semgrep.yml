@@ -1,0 +1,65 @@
+name: Semgrep
+
+# SAST — pattern-based analysis, and the offline-capable half of the pair with CodeQL (ADR-011).
+#
+# Two jobs with different purposes:
+#   - project-rules: OUR rules (.semgrep/), encoding the context.md §Never prohibitions that
+#     previously existed only as prose. These BLOCK the merge — they are project policy, not
+#     advisory findings.
+#   - security-audit: Semgrep's own OWASP/security rulesets. Reported to code scanning, NOT
+#     blocking, because generic SAST rulesets carry a well-documented false-positive rate and a
+#     blocking gate on them would train people to bypass the gate.
+#
+# Unlike CodeQL, Semgrep runs fully offline (`semgrep --config .semgrep/` needs no network once the
+# container is present), which is what makes it usable for on-premise/air-gapped customers where
+# CodeQL cannot run at all — see ADR-011.
+#
+# Licence: the Semgrep engine is LGPL-2.1. Semgrep-maintained registry rules are under the
+# proprietary Semgrep Rules License (Dec 2024), which permits internal business use — scanning your
+# own codebase — but forbids redistributing the rules inside a competing product or SaaS. COS scans
+# its own code, so this is permitted use. Rules in .semgrep/ are ours and carry no such condition.
+
+on:
+  push:
+    branches: [main, develop, staging]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  # ── Project policy rules — BLOCKING ─────────────────────────────────────────
+  project-rules:
+    name: Semgrep — COS project rules
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@v4
+      # No --config from the registry here: these are the repo's own rules, so the run is
+      # self-contained and reproducible offline.
+      - name: Run COS rules (blocking)
+        run: semgrep --config .semgrep/ --error --skip-unknown-extensions
+
+  # ── Generic security rulesets — REPORT ONLY ────────────────────────────────
+  security-audit:
+    name: Semgrep — security audit (advisory)
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+      actions: read
+    container:
+      image: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run security rulesets
+        # `|| true` is deliberate: findings surface in the code scanning UI alongside CodeQL rather
+        # than failing the build. Promote a ruleset into project-rules once it is proven clean.
+        run: |
+          semgrep --config p/security-audit --config p/owasp-top-ten \
+            --sarif --output semgrep.sarif || true
+      - name: Upload SARIF to code scanning
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep

@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Construction OS - CORE_AI Summary</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            background-color: #020617; /* dark-bg */
+            font-family: 'Inter Tight', sans-serif;
+            color: #d3e4fe; /* on-surface */
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .ai-cyan-border {
+            border-left: 2px solid #06B6D4;
+        }
+        .ai-glow-subtle {
+            box-shadow: 0 0 15px -5px rgba(6, 182, 212, 0.2);
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #0b1c30; }
+        ::-webkit-scrollbar-thumb { background: #26364a; border-radius: 2px; }
+    </style>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-highest": "#26364a",
+                    "tertiary-container": "#686c80",
+                    "on-surface-variant": "#c3c6d7",
+                    "error": "#ffb4ab",
+                    "sync-pending": "#94A3B8",
+                    "dark-surface": "#0F172A",
+                    "surface-container-lowest": "#000f21",
+                    "inverse-on-surface": "#213145",
+                    "on-secondary-fixed": "#001f26",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "surface-bright": "#2a3a4f",
+                    "cos-navy": "#0B1020",
+                    "on-tertiary-container": "#eeefff",
+                    "background": "#031427",
+                    "mobile-warning": "#FF9500",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "surface-tint": "#b4c5ff",
+                    "tertiary-fixed": "#dee1f9",
+                    "on-primary-fixed": "#00174b",
+                    "surface-container-high": "#1b2b3f",
+                    "on-primary-container": "#eeefff",
+                    "inverse-primary": "#0053db",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "secondary-container": "#03b5d3",
+                    "tertiary": "#c1c5dc",
+                    "on-surface": "#d3e4fe",
+                    "surface-dim": "#031427",
+                    "surface": "#031427",
+                    "dark-bg": "#020617",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "secondary-fixed": "#acedff",
+                    "surface-container": "#102034",
+                    "secondary": "#4cd7f6",
+                    "on-tertiary": "#2b3041",
+                    "surface-container-low": "#0b1c30",
+                    "on-error": "#690005",
+                    "outline-variant": "#434655",
+                    "on-error-container": "#ffdad6",
+                    "error-container": "#93000a",
+                    "cos-white": "#F8FAFC",
+                    "primary-fixed": "#dbe1ff",
+                    "mobile-danger": "#FF3B30",
+                    "sync-active": "#FFD60A",
+                    "inverse-surface": "#d3e4fe",
+                    "cos-blue": "#2563EB",
+                    "primary-container": "#2563eb",
+                    "on-background": "#d3e4fe",
+                    "surface-variant": "#26364a",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "on-primary": "#002a78",
+                    "primary": "#b4c5ff",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "outline": "#8d90a0",
+                    "mobile-primary": "#0066FF",
+                    "on-tertiary-fixed": "#161b2b",
+                    "on-secondary": "#003640",
+                    "on-secondary-container": "#00424e",
+                    "cos-cyan": "#06B6D4",
+                    "mobile-success": "#00C853"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "web-base": "4px",
+                    "web-space-4": "16px",
+                    "mobile-touch-target": "52px",
+                    "mobile-edge": "24px",
+                    "web-space-3": "12px",
+                    "web-space-2": "8px",
+                    "web-space-8": "32px",
+                    "web-space-1": "4px"
+            },
+            "fontFamily": {
+                    "mobile-text-hero": ["Inter Tight"],
+                    "web-text-display": ["Inter Tight"],
+                    "web-text-h2": ["Inter Tight"],
+                    "mobile-text-body": ["Inter Tight"],
+                    "web-text-small": ["Inter Tight"],
+                    "web-text-tiny": ["Inter Tight"],
+                    "web-text-body": ["Inter Tight"],
+                    "mobile-text-label": ["Inter Tight"],
+                    "web-text-h1": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "mobile-text-hero": ["28px", { "lineHeight": "34px", "fontWeight": "700" }],
+                    "web-text-display": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                    "web-text-h2": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                    "mobile-text-body": ["17px", { "lineHeight": "24px", "fontWeight": "400" }],
+                    "web-text-small": ["12px", { "lineHeight": "16px", "fontWeight": "400" }],
+                    "web-text-tiny": ["11px", { "lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                    "web-text-body": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                    "mobile-text-label": ["13px", { "lineHeight": "18px", "fontWeight": "600" }],
+                    "web-text-h1": ["24px", { "lineHeight": "32px", "fontWeight": "600" }]
+            }
+          },
+        },
+      }
+    </script>
+</head>
+<body class="bg-cos-navy text-on-surface selection:bg-cos-cyan/30">
+<!-- Sidebar (SideNavBar) -->
+<aside class="h-screen w-64 flex flex-col fixed left-0 top-0 border-r border-outline-variant bg-cos-navy py-web-space-4 z-50">
+<div class="px-web-space-4 mb-web-space-8">
+<h2 class="font-web-text-h2 text-web-text-h2 font-bold text-cos-white tracking-tight">Construction OS</h2>
+<p class="text-web-text-tiny font-web-text-tiny text-cos-cyan opacity-80 uppercase tracking-widest mt-1">V2.4.0-PRO</p>
+</div>
+<nav class="flex-1 space-y-web-space-1 px-web-space-2 overflow-y-auto">
+<!-- Active Tab: Dashboard -->
+<a class="flex items-center gap-3 px-3 py-2 text-cos-cyan border-l-2 border-cos-cyan bg-surface-variant/30 font-web-text-body text-web-text-body hover:bg-surface-container-high transition-colors duration-150 group" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant font-medium font-web-text-body text-web-text-body hover:bg-surface-container-high hover:text-cos-white transition-colors duration-150 group" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span>Assets</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant font-medium font-web-text-body text-web-text-body hover:bg-surface-container-high hover:text-cos-white transition-colors duration-150 group" href="#">
+<span class="material-symbols-outlined" data-icon="edit_note">edit_note</span>
+<span>Field Log</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant font-medium font-web-text-body text-web-text-body hover:bg-surface-container-high hover:text-cos-white transition-colors duration-150 group" href="#">
+<span class="material-symbols-outlined" data-icon="query_stats">query_stats</span>
+<span>Analytics</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant font-medium font-web-text-body text-web-text-body hover:bg-surface-container-high hover:text-cos-white transition-colors duration-150 group" href="#">
+<span class="material-symbols-outlined" data-icon="security_update_good">security_update_good</span>
+<span>Safety</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant font-medium font-web-text-body text-web-text-body hover:bg-surface-container-high hover:text-cos-white transition-colors duration-150 group" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span>Settings</span>
+</a>
+</nav>
+<div class="mt-auto px-web-space-2 space-y-web-space-1 pt-4 border-t border-outline-variant/30">
+<button class="w-full flex items-center justify-between px-3 py-2 bg-cos-blue/10 border border-cos-blue/20 rounded-lg text-cos-cyan hover:bg-cos-blue/20 transition-all mb-4">
+<span class="text-web-text-tiny font-bold uppercase tracking-wider">Sync Status</span>
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">sync</span>
+</button>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant font-web-text-body text-web-text-body hover:bg-surface-container-high hover:text-cos-white transition-colors duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span>Help</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant font-web-text-body text-web-text-body hover:bg-surface-container-high hover:text-cos-white transition-colors duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span>Logout</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="ml-64 min-h-screen flex flex-col">
+<!-- Top Navigation (TopNavBar) -->
+<header class="flex justify-between items-center h-12 w-full px-web-space-4 sticky top-0 z-40 border-b border-outline-variant bg-surface">
+<div class="flex items-center gap-web-space-8">
+<div class="relative flex items-center bg-surface-container-low border border-outline-variant px-3 py-1 rounded w-64 group focus-within:ring-2 focus-within:ring-cos-blue focus-within:ring-inset">
+<span class="material-symbols-outlined text-outline text-[18px]" data-icon="search">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-web-text-small w-full placeholder-on-surface-variant/50 ml-2" placeholder="Search Alpha-7 logs..." type="text"/>
+</div>
+<nav class="flex items-center gap-web-space-4">
+<a class="text-web-text-small font-web-text-small text-cos-blue border-b-2 border-cos-blue pb-1" href="#">Projects</a>
+<a class="text-web-text-small font-web-text-small text-on-surface-variant hover:text-cos-cyan transition-all" href="#">Personnel</a>
+<a class="text-web-text-small font-web-text-small text-on-surface-variant hover:text-cos-cyan transition-all" href="#">Equipment</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2 pr-4 border-r border-outline-variant">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-cos-cyan transition-all p-1" data-icon="notifications">notifications</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-cos-cyan transition-all p-1" data-icon="history">history</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-cos-cyan transition-all p-1" data-icon="help_outline">help_outline</button>
+</div>
+<div class="flex items-center gap-3 pl-2">
+<div class="text-right">
+<p class="text-web-text-tiny font-bold text-cos-white leading-none">J. Sterling</p>
+<p class="text-[10px] text-on-surface-variant opacity-70">Site Engineer</p>
+</div>
+<img class="w-8 h-8 rounded-full border border-cos-cyan/50 object-cover" data-alt="A professional close-up studio portrait of a construction site engineer in his 40s, wearing a dark navy tactical technical polo shirt. The lighting is sharp and cinematic, casting soft shadows that highlight the textures of his clothing. The background is a blurred industrial environment with high-tech blue-toned monitors and structural steel beams, maintaining a dark mode aesthetic with deep shadows and focused cyan highlights." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCebdjSedep3cLy5wPCQ9jNxAhAw6XfuEphvhcpUQ025pIQDoInyZMdkcnD-C2w8kyRKlwKxdQD_GxVey_pRpVFemPWOl4Nkj5BkhtpAbtQVcWrMpqQW5udxXpl6zNaeF-zqwQAk9ItHINV5NMZUD3O4qnLARBcFyS-D3WudXZ_ONBsfVHSA1NNCI6Vph8iLXU1j58jH1M37TNBZeHYr_1bPdStoUUB9wHs_wmQYofQqNmzDofwaKWpBv77UMslpBilPFoBIRKdmLA"/>
+</div>
+</div>
+</header>
+<!-- Canvas -->
+<div class="p-web-space-4 space-y-web-space-4 flex-1">
+<!-- Breadcrumbs / Top Actions -->
+<div class="flex justify-between items-end">
+<div>
+<div class="flex items-center gap-2 text-web-text-tiny text-on-surface-variant uppercase tracking-widest mb-1">
+<span>Projects</span>
+<span class="material-symbols-outlined text-[12px]">chevron_right</span>
+<span>Alpha-7 Sector</span>
+<span class="material-symbols-outlined text-[12px]">chevron_right</span>
+<span class="text-cos-cyan font-bold">Daily CORE_AI Synthesis</span>
+</div>
+<h1 class="font-web-text-h1 text-web-text-h1 text-cos-white">Shift Analysis Report: 2023-10-24</h1>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 px-4 py-2 border border-outline-variant text-cos-white text-web-text-small font-semibold hover:bg-surface-container-highest transition-all rounded-lg group">
+<span class="material-symbols-outlined text-[18px] group-hover:rotate-180 transition-transform duration-500" data-icon="refresh">refresh</span>
+                        RE-GENERATE
+                    </button>
+<button class="flex items-center gap-2 px-6 py-2 bg-cos-blue text-white text-web-text-small font-bold rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-cos-blue/20">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                        USE THIS SUMMARY
+                    </button>
+</div>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-12 gap-web-space-4">
+<!-- System Generated Synthesis (AI Block) -->
+<div class="col-span-8 bg-surface-container-low border border-outline-variant p-web-space-4 ai-cyan-border ai-glow-subtle relative overflow-hidden">
+<!-- Background AI pattern -->
+<div class="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+<span class="material-symbols-outlined text-[120px]" data-icon="psychology">psychology</span>
+</div>
+<div class="flex items-center gap-2 mb-4">
+<div class="w-2 h-2 rounded-full bg-cos-cyan animate-pulse"></div>
+<h3 class="text-web-text-tiny font-bold text-cos-cyan tracking-widest uppercase">CORE_AI Synthesis</h3>
+</div>
+<div class="space-y-4 font-web-text-body text-web-text-body text-on-surface leading-relaxed max-w-3xl">
+<p>The daily analysis for <span class="text-cos-cyan font-semibold">Alpha-7 Sector</span> indicates an optimized workflow despite intermittent weather delays. <span class="text-cos-cyan font-semibold">Structural reinforcement</span> on Level 4 is 12% ahead of schedule, primarily due to the deployment of the new robotic rebar tie-system.</p>
+<p><span class="text-cos-white font-bold">Manpower utilization</span> peaked at 09:30 AM with 142 active personnel. No critical safety incidents were logged, although two "Near Miss" reports were flagged by the vision sensors near the heavy lift zone; these have been automatically addressed in tomorrow's morning briefing.</p>
+<div class="bg-surface-container-highest/30 p-3 border-l border-cos-cyan/50 italic text-on-surface-variant">
+                            "AI Insight: Material consumption for structural grade concrete is trending 0.4% under budget. Current inventory levels suggest a re-order of Type II Portland Cement by Friday morning to avoid bottlenecking the Level 5 pouring schedule."
+                        </div>
+<p>Environmental conditions recorded a 2-hour delay due to precipitation (Precipitation Index 4.2), but crew efficiency remained high (94%) by pivoting to subterranean cabling tasks. Total material throughput for the shift is valued at $2.4M with minimal waste variance.</p>
+</div>
+</div>
+<!-- KPI Grid -->
+<div class="col-span-4 flex flex-col gap-web-space-4">
+<!-- Workforce Efficiency -->
+<div class="bg-surface-container-low border border-outline-variant p-4">
+<div class="flex justify-between items-start mb-2">
+<span class="text-web-text-tiny text-on-surface-variant uppercase font-bold tracking-tight">Workforce Efficiency</span>
+<span class="material-symbols-outlined text-cos-cyan" data-icon="groups">groups</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-3xl font-bold text-cos-white">94%</span>
+<span class="text-mobile-success text-web-text-tiny font-bold flex items-center">+2%</span>
+</div>
+<div class="w-full bg-surface-container-highest h-1.5 mt-3 rounded-full overflow-hidden">
+<div class="bg-cos-cyan h-full w-[94%]"></div>
+</div>
+</div>
+<!-- Material Variance -->
+<div class="bg-surface-container-low border border-outline-variant p-4">
+<div class="flex justify-between items-start mb-2">
+<span class="text-web-text-tiny text-on-surface-variant uppercase font-bold tracking-tight">Material Variance</span>
+<span class="material-symbols-outlined text-cos-cyan" data-icon="inventory_2">inventory_2</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-3xl font-bold text-cos-white">-0.4%</span>
+<span class="text-mobile-success text-web-text-tiny font-bold">Under Budget</span>
+</div>
+<p class="text-web-text-tiny text-on-surface-variant mt-2">Optimal consumption across all sectors.</p>
+</div>
+<!-- Predicted Risks -->
+<div class="bg-surface-container-low border border-outline-variant p-4 flex-1">
+<div class="flex justify-between items-start mb-2">
+<span class="text-web-text-tiny text-on-surface-variant uppercase font-bold tracking-tight">Predicted Risks</span>
+<span class="material-symbols-outlined text-cos-cyan" data-icon="warning">warning</span>
+</div>
+<div class="flex items-center gap-3">
+<span class="text-3xl font-bold text-mobile-success uppercase">Low</span>
+<div class="flex gap-1">
+<div class="w-3 h-3 rounded-full bg-mobile-success shadow-lg shadow-mobile-success/20"></div>
+<div class="w-3 h-3 rounded-full bg-surface-container-highest"></div>
+<div class="w-3 h-3 rounded-full bg-surface-container-highest"></div>
+</div>
+</div>
+<div class="mt-4 space-y-2">
+<div class="flex items-center gap-2 p-2 bg-surface-container-highest/50 rounded border border-outline-variant/30 text-web-text-tiny">
+<span class="material-symbols-outlined text-[14px] text-mobile-warning">schedule</span>
+<span>Upcoming weather front at 14:00 tomorrow.</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Active Site Overlay / BIM Map -->
+<div class="col-span-12 lg:col-span-7 h-[400px] bg-surface-container-low border border-outline-variant relative group overflow-hidden">
+<div class="absolute inset-0 z-0 grayscale contrast-125 opacity-40 group-hover:opacity-60 transition-opacity">
+<div class="w-full h-full bg-cover bg-center" data-alt="A highly technical top-down architectural BIM mapping visualization of a massive construction site, Alpha-7. The image features glowing neon blueprint lines in cyan and white over a dark navy background. Specific structural zones are highlighted with semi-transparent 3D wireframes, and digital data overlays show crane positions, heat maps of worker density, and structural stress points. The style is professional, mission-critical, and resembles a military-grade command and control interface." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBh7RcOTJpW0NeGqvdH6j8yiFGz2dlfkrZcw2-NFFF2Ha-W4Ai7lNdPaGHDxvbFJEDljfomaQ5S0Hh5j168_heK2delyEjmnGeLo4I7IomjKGXmEvlcXqAxScfLMpbBBdr4a8HlvlZUjUhrr3Px175nIrlovmPQftzmS-OI2QF2OlNpBFsKSGfnT5uABn71TBQNmSZKELFmZDVIrJGCveMp_8qG_jC8DU31aR00XjopUAfXwZDEbI8ggi_85oU-xq_tMrKN0dI-hQ4')"></div>
+</div>
+<!-- Map HUD Elements -->
+<div class="absolute inset-0 p-4 pointer-events-none flex flex-col justify-between z-10">
+<div class="flex justify-between items-start">
+<div class="bg-cos-navy/80 backdrop-blur-md border border-outline-variant p-2 pointer-events-auto">
+<h4 class="text-web-text-tiny font-bold text-cos-white flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-cos-cyan"></span>
+                                    LIVE FEED: ALPHA-7 / L4 REINFORCEMENT
+                                </h4>
+</div>
+<div class="flex gap-2 pointer-events-auto">
+<button class="bg-surface-container-highest/80 backdrop-blur p-2 hover:bg-cos-blue transition-colors rounded">
+<span class="material-symbols-outlined text-[18px]">layers</span>
+</button>
+<button class="bg-surface-container-highest/80 backdrop-blur p-2 hover:bg-cos-blue transition-colors rounded">
+<span class="material-symbols-outlined text-[18px]">videocam</span>
+</button>
+</div>
+</div>
+<div class="flex justify-end items-end gap-4">
+<div class="bg-cos-navy/80 backdrop-blur-md border border-outline-variant p-3 pointer-events-auto w-48">
+<p class="text-[10px] text-on-surface-variant uppercase tracking-tighter mb-1">Active Coordinates</p>
+<p class="text-web-text-small font-mono text-cos-cyan">42.3601° N, 71.0589° W</p>
+<div class="mt-2 grid grid-cols-2 gap-1">
+<div class="text-[9px] text-on-surface-variant">ALTITUDE: <span class="text-cos-white">42M</span></div>
+<div class="text-[9px] text-on-surface-variant">TEMP: <span class="text-cos-white">18°C</span></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Custom Marker for Alpha-7 -->
+<div class="absolute top-1/2 left-1/3 transform -translate-x-1/2 -translate-y-1/2 z-20">
+<div class="relative">
+<div class="absolute -inset-4 rounded-full border border-cos-cyan/50 animate-ping"></div>
+<div class="w-3 h-3 bg-cos-cyan rounded-full shadow-lg shadow-cos-cyan/50"></div>
+<div class="absolute left-6 top-0 bg-cos-navy/90 border border-cos-cyan px-2 py-1 whitespace-nowrap">
+<p class="text-[10px] font-bold text-cos-cyan">CORE_ANALYSIS_MARKER</p>
+<p class="text-[9px] text-cos-white">REBAR_ZONE_04</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Technical Breakdown Table -->
+<div class="col-span-12 lg:col-span-5 bg-surface-container-low border border-outline-variant flex flex-col">
+<div class="p-4 border-b border-outline-variant flex justify-between items-center">
+<h3 class="text-web-text-tiny font-bold text-cos-white uppercase tracking-widest">Technical Performance Metrics</h3>
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">more_horiz</span>
+</div>
+<div class="flex-1 overflow-x-auto">
+<table class="w-full text-left text-web-text-small">
+<thead>
+<tr class="border-b border-outline-variant/30 text-[10px] text-on-surface-variant uppercase font-bold">
+<th class="px-4 py-3">Metric Category</th>
+<th class="px-4 py-3">Current Status</th>
+<th class="px-4 py-3">Real-Time Delta</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/30">
+<tr class="hover:bg-surface-container-highest/20 transition-colors">
+<td class="px-4 py-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-cos-cyan text-[18px]">speed</span>
+<span class="text-cos-white font-medium">Work Efficiency</span>
+</div>
+</td>
+<td class="px-4 py-4">
+<span class="px-2 py-1 rounded-sm bg-mobile-success/10 text-mobile-success text-[10px] font-bold border border-mobile-success/20 uppercase tracking-tighter">Optimized</span>
+</td>
+<td class="px-4 py-4 text-mobile-success font-mono">+12.4%</td>
+</tr>
+<tr class="hover:bg-surface-container-highest/20 transition-colors">
+<td class="px-4 py-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-cos-cyan text-[18px]">precision_manufacturing</span>
+<span class="text-cos-white font-medium">Material Usage</span>
+</div>
+</td>
+<td class="px-4 py-4">
+<span class="px-2 py-1 rounded-sm bg-cos-blue/10 text-cos-blue text-[10px] font-bold border border-cos-blue/20 uppercase tracking-tighter">Efficient</span>
+</td>
+<td class="px-4 py-4 text-cos-blue font-mono">-0.42%</td>
+</tr>
+<tr class="hover:bg-surface-container-highest/20 transition-colors">
+<td class="px-4 py-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-cos-cyan text-[18px]">verified_user</span>
+<span class="text-cos-white font-medium">Safety Score</span>
+</div>
+</td>
+<td class="px-4 py-4">
+<span class="px-2 py-1 rounded-sm bg-mobile-warning/10 text-mobile-warning text-[10px] font-bold border border-mobile-warning/20 uppercase tracking-tighter">Monitoring</span>
+</td>
+<td class="px-4 py-4 text-mobile-warning font-mono">0.0%</td>
+</tr>
+<tr class="hover:bg-surface-container-highest/20 transition-colors">
+<td class="px-4 py-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-cos-cyan text-[18px]">cloud_sync</span>
+<span class="text-cos-white font-medium">Predicted Risk</span>
+</div>
+</td>
+<td class="px-4 py-4">
+<span class="px-2 py-1 rounded-sm bg-mobile-success/10 text-mobile-success text-[10px] font-bold border border-mobile-success/20 uppercase tracking-tighter">Optimized</span>
+</td>
+<td class="px-4 py-4 text-mobile-success font-mono">NOMINAL</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Micro-interaction Scripts -->
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Simulate AI generating data on load
+            const aiSynthesis = document.querySelector('.ai-cyan-border');
+            aiSynthesis.style.opacity = '0';
+            aiSynthesis.style.transform = 'translateY(10px)';
+            
+            setTimeout(() => {
+                aiSynthesis.style.transition = 'all 0.8s cubic-bezier(0.16, 1, 0.3, 1)';
+                aiSynthesis.style.opacity = '1';
+                aiSynthesis.style.transform = 'translateY(0)';
+            }, 300);
+
+            // Hover effects for the grid cards
+            const cards = document.querySelectorAll('.bg-surface-container-low');
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', () => {
+                    card.style.borderColor = 'rgba(6, 182, 212, 0.4)';
+                    card.style.transition = 'all 0.3s ease';
+                });
+                card.addEventListener('mouseleave', () => {
+                    card.style.borderColor = 'rgba(67, 70, 85, 1)';
+                });
+            });
+        });
+    </script>
+</body></html>

@@ -6,7 +6,10 @@
 FROM node:24-alpine AS deps
 WORKDIR /app
 RUN corepack enable pnpm
-COPY package.json pnpm-lock.yaml ./
+# pnpm-workspace.yaml is required, not optional: it carries the `overrides` block, and pnpm compares
+# it against the overrides recorded in the lockfile. Without it a frozen install aborts with
+# ERR_PNPM_LOCKFILE_CONFIG_MISMATCH (backend/Dockerfile has always copied it; this one did not).
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY apps/web/package.json apps/web/
 COPY packages/ packages/
 RUN pnpm install --frozen-lockfile

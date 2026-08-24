@@ -1,0 +1,275 @@
+<!DOCTYPE html><html class="dark" lang="th" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>Construction OS - Quick Add</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-surface": "#d3e4fe",
+                    "on-secondary-container": "#00424e",
+                    "surface-container-high": "#1b2b3f",
+                    "surface-variant": "#26364a",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "on-primary-fixed": "#00174b",
+                    "dark-surface": "#0F172A",
+                    "tertiary-container": "#686c80",
+                    "primary-fixed": "#dbe1ff",
+                    "mobile-success": "#00C853",
+                    "surface-container": "#102034",
+                    "mobile-danger": "#FF3B30",
+                    "on-tertiary": "#2b3041",
+                    "on-primary": "#002a78",
+                    "dark-bg": "#020617",
+                    "background": "#031427",
+                    "sync-active": "#FFD60A",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "surface-container-low": "#0b1c30",
+                    "outline": "#8d90a0",
+                    "inverse-primary": "#0053db",
+                    "primary": "#b4c5ff",
+                    "sync-pending": "#94A3B8",
+                    "surface": "#031427",
+                    "mobile-primary": "#0066FF",
+                    "tertiary-fixed": "#dee1f9",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "error": "#ffb4ab",
+                    "surface-bright": "#2a3a4f",
+                    "outline-variant": "#434655",
+                    "secondary-container": "#03b5d3",
+                    "on-secondary-fixed": "#001f26",
+                    "on-primary-container": "#eeefff",
+                    "on-tertiary-container": "#eeefff",
+                    "on-error": "#690005",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "surface-container-lowest": "#000f21",
+                    "inverse-on-surface": "#213145",
+                    "on-background": "#d3e4fe",
+                    "secondary-fixed": "#acedff",
+                    "surface-container-highest": "#26364a",
+                    "on-error-container": "#ffdad6",
+                    "secondary": "#4cd7f6",
+                    "primary-container": "#2563eb",
+                    "surface-dim": "#031427",
+                    "on-tertiary-fixed": "#161b2b",
+                    "tertiary": "#c1c5dc",
+                    "inverse-surface": "#d3e4fe",
+                    "error-container": "#93000a",
+                    "surface-tint": "#b4c5ff",
+                    "on-secondary": "#003640",
+                    "mobile-warning": "#FF9500",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "on-surface-variant": "#c3c6d7"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "space-2": "8px",
+                    "space-1": "4px",
+                    "edge-mobile": "24px",
+                    "space-4": "16px",
+                    "touch-target": "52px",
+                    "space-3": "12px",
+                    "web-margin": "32px",
+                    "base": "4px"
+            },
+            "fontFamily": {
+                    "tiny-web": ["Inter Tight"],
+                    "display-web": ["Inter Tight"],
+                    "label-mobile": ["Inter Tight"],
+                    "hero-mobile": ["Inter Tight"],
+                    "body-mobile": ["Inter Tight"],
+                    "body-web": ["Inter Tight"],
+                    "h2-web": ["Inter Tight"],
+                    "h1-web": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter Tight', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .action-item:active { transform: scale(0.97); transition: transform 0.1s; }
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+        .slide-up {
+            animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-background text-on-surface overflow-hidden">
+<!-- Background Layer (Simulating Admin Home) -->
+<div class="fixed inset-0 opacity-20 pointer-events-none">
+
+<div class="p-edge-mobile space-y-6">
+<div class="h-24 bg-surface-container rounded-xl"></div>
+<div class="grid grid-cols-2 gap-4">
+<div class="h-32 bg-surface-container rounded-xl"></div>
+<div class="h-32 bg-surface-container rounded-xl"></div>
+</div>
+<div class="h-64 bg-surface-container rounded-xl"></div>
+</div>
+</div>
+<!-- Full Screen Overlay Container -->
+<div class="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm flex flex-col">
+<!-- TopAppBar (Immutable Logic from JSON) -->
+<header class="flex justify-between items-center w-full px-edge-mobile h-touch-target bg-background dark:bg-background z-50"><div class="flex items-center gap-3">
+  <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDWMzxerAjV-NXpbgiAJ1jo5n4NICceC3MRzZo7NOZnbnzEyB4WoFOc59aBbIjzSLH3l1BYdJ5-VU278MJdHQCfnjrTNopOllHo8sA_o3rehxEe4dXEoDrqd4HGrs1yfuVZ2tIAgEPGGEConab1AeMKwUWK-soAAAd9rDzvj3QoxGPOSSDAEDOARkf5dMl6HstD09yl0032ikd6fOd4aULO_hSpIN_k2ydChWjeo8ZgnxPH6r75qfJRVyLMimkGMHKF-JN88sCvPEE" alt="COS Logo" class="w-7 h-7 object-contain">
+  <span class="font-h2-web font-black text-primary dark:text-primary-fixed-dim tracking-tight uppercase text-[16px]">CONSTRUCTION OS</span>
+</div>
+<div class="flex items-center gap-4">
+  <div class="flex items-center gap-2 px-2 py-0.5 bg-mobile-success/10 rounded-full">
+    <span class="material-symbols-outlined text-mobile-success text-[16px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+    <span class="text-[10px] font-bold text-mobile-success tracking-widest">SYNCED</span>
+  </div>
+  <button class="w-touch-target h-touch-target flex items-center justify-center text-primary hover:opacity-80 transition-opacity" onclick="history.back()">
+    <span class="material-symbols-outlined">close</span>
+  </button>
+</div></header>
+<!-- Main Content Area -->
+<main class="flex-1 overflow-y-auto px-edge-mobile pt-8 pb-24">
+<div class="mb-8">
+<h1 class="font-hero-mobile text-hero-mobile text-on-surface tracking-tight">คำสั่งด่วน</h1>
+<p class="font-body-mobile text-body-mobile text-on-surface-variant opacity-70">เลือกการดำเนินการที่ต้องการสร้างหรือปรับปรุง</p>
+</div>
+<!-- Bento Grid Quick Actions -->
+<div class="grid grid-cols-1 slide-up gap-2">
+<!-- 1. Invite New User -->
+<button class="action-item group relative flex items-center p-4 bg-surface-container border-l-4 border-primary rounded-xl overflow-hidden" style="opacity: 1; transform: translateY(0px); transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);">
+<div class="w-12 h-12 flex items-center justify-center rounded-lg bg-primary/10 text-primary mr-4">
+<span class="material-symbols-outlined text-[32px]">person_add</span>
+</div>
+<div class="text-left">
+<span class="block font-h2-web text-h2-web text-on-surface">เชิญผู้ใช้งานใหม่</span>
+<span class="block font-tiny-web text-tiny-web text-on-surface-variant uppercase">Invite New User</span>
+</div>
+<span class="material-symbols-outlined ml-auto text-on-surface-variant group-hover:translate-x-1 transition-transform">chevron_right</span>
+</button>
+<!-- 2. New System Integration -->
+<button class="action-item group relative flex items-center p-4 bg-surface-container border-l-4 border-secondary rounded-xl overflow-hidden" style="opacity: 1; transform: translateY(0px); transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);">
+<div class="w-12 h-12 flex items-center justify-center rounded-lg bg-secondary/10 text-secondary mr-4">
+<span class="material-symbols-outlined text-[32px]">hub</span>
+</div>
+<div class="text-left">
+<span class="block font-h2-web text-h2-web text-on-surface">เชื่อมต่อระบบใหม่</span>
+<span class="block font-tiny-web text-tiny-web text-on-surface-variant uppercase">New System Integration</span>
+</div>
+<span class="material-symbols-outlined ml-auto text-on-surface-variant group-hover:translate-x-1 transition-transform">chevron_right</span>
+</button>
+<!-- 3. Generate Usage Report (AI Module Styling) -->
+<button class="action-item group relative flex flex-col p-5 bg-surface-container/50 border-l-4 border-secondary-fixed-dim rounded-xl overflow-hidden" style="opacity: 1; transform: translateY(0px); transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);">
+<!-- AI Hint Background -->
+<div class="absolute inset-0 bg-secondary/5 pointer-events-none"></div>
+<div class="flex items-center mb-2">
+<div class="w-12 h-12 flex items-center justify-center rounded-lg bg-secondary-fixed-dim/20 text-secondary-fixed-dim mr-4">
+<span class="material-symbols-outlined text-[32px]" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+</div>
+<div class="text-left">
+<span class="block font-h2-web text-h2-web text-on-surface">สร้างรายงานการใช้งาน</span>
+<span class="block font-tiny-web text-tiny-web text-secondary-fixed-dim uppercase font-bold tracking-widest mb-0.5">AI REPORT GENERATION</span>
+<div class="flex items-center gap-2 mt-1">
+  <span class="text-[10px] font-bold text-secondary-fixed-dim/80 bg-secondary-fixed-dim/10 px-1.5 py-0.5 rounded">94% CONFIDENCE</span>
+  <span class="text-[10px] text-on-surface-variant/60 italic">Source: Site Daily Logs</span>
+</div></div>
+</div>
+<p class="font-body-mobile text-[14px] leading-snug text-on-surface-variant/80 mt-1">ประมวลผลข้อมูลการทำงานรายสัปดาห์ด้วย AI เพื่อสรุปประสิทธิภาพโครงการ</p>
+<div class="mt-4 flex items-center text-primary-fixed-dim font-label-mobile">
+<span class="">ดำเนินการทันที</span>
+<span class="material-symbols-outlined ml-2 text-sm">bolt</span>
+</div>
+</button>
+<!-- 4. Force System Sync -->
+<button class="action-item group relative flex items-center p-4 bg-surface-container border-l-4 border-sync-active rounded-xl overflow-hidden" id="syncBtn" style="opacity: 1; transform: translateY(0px); transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);">
+<div class="w-12 h-12 flex items-center justify-center rounded-lg bg-sync-active/10 text-sync-active mr-4" id="syncIcon">
+<span class="material-symbols-outlined text-[32px]">sync</span>
+</div>
+<div class="text-left">
+<span class="block font-h2-web text-h2-web text-on-surface">บังคับซิงค์ระบบ</span>
+<span class="block font-tiny-web text-tiny-web text-on-surface-variant uppercase">Force System Sync</span>
+</div>
+<span class="material-symbols-outlined ml-auto text-on-surface-variant">refresh</span>
+</button>
+</div>
+<!-- Visual Decorative Detail (Bento Context) -->
+<div class="mt-10 grid grid-cols-2 gap-4">
+<div class="bg-surface-container-low p-4 rounded-xl border border-outline-variant/10">
+<div class="w-full h-24 bg-cover bg-center rounded-lg mb-2 opacity-60" data-alt="A detailed digital architectural blueprint rendered in a glowing neon blue and slate gray palette. The image shows intricate structural lines and industrial measurements over a dark navy tech-infused grid background. The atmosphere is professional, precise, and high-tech." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBTuUXMJtFaurG1x6TYpKMoHYxdNmfl6MUR5vVIsqGNeV3o8c56v4jh_QyMDzq7zeSpsLFASHCHXsvuAJj1v5KX3VIjCUp5LQHiMSnKeKc2ZP63Ak1qPDviY1PfVvVoSeiBrrizTlj9HGFvZu-K3SAeDfq8tcBr4ULXUbn5qbvTTWR736Ytk0SRsBS6dnzl1HRMMGp2NWCbngdV1hxF6TfVjJD1arnFCb3w1gFJZ0L_3AJlxm42rYd6mGDI7GgwHMOEJlI2WV3e_F8')"></div>
+<span class="block font-tiny-web text-tiny-web text-outline uppercase">Active Projects</span>
+<span class="block font-h2-web text-h2-web text-on-surface">12</span>
+</div>
+<div class="bg-surface-container-low p-4 rounded-xl border border-outline-variant/10">
+<div class="w-full h-24 bg-cover bg-center rounded-lg mb-2 opacity-60" data-alt="A macro shot of professional server hardware glowing with systematic amber and white status lights in a dark industrial data center. The perspective is tilted, emphasizing depth and heavy-duty technological infrastructure. The lighting is low-key, moody, and conveys mission-critical stability." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBvzWCdWvxt_-MtNwcK7fYzO5uMVctEzhXULhR_GINjeVhofbV6gChzfb_GZjfIDIodaJxyTYPG-wPAASqEcEWWaPNJkQeKs2JW5bf2bKBPPiqRIMIUBuGXMz-QlDiUhufZhaeUwOed0PCXP2bCpdTl3AeqwdTY9n-uX_LjD5oQ0a7VMwfmvfDcyWj3vpGoGGI0fTlE3fHKlZn46j0j7UPccaNQ4BfC28akuynvmBrXBybj09WjOdvqfGZYDNdBt2pVQl0-bbDd0m8')"></div>
+<span class="block font-tiny-web text-tiny-web text-outline uppercase">System Health</span>
+<span class="block font-h2-web text-h2-web text-mobile-success">98.4%</span>
+</div>
+</div>
+</main>
+<!-- Bottom Safe Area Spacer -->
+<div class="h-safe pb-8 px-edge-mobile bg-background flex items-center justify-center">
+<div class="w-16 h-1 bg-surface-variant rounded-full opacity-30"></div>
+</div>
+</div>
+<!-- Micro-interaction Script -->
+<script>
+        const syncBtn = document.getElementById('syncBtn');
+        const syncIcon = document.getElementById('syncIcon').querySelector('span');
+        
+        syncBtn.addEventListener('click', () => {
+            syncIcon.classList.add('animate-spin');
+            syncBtn.classList.add('opacity-50', 'pointer-events-none');
+            
+            setTimeout(() => {
+                syncIcon.classList.remove('animate-spin');
+                syncBtn.classList.remove('opacity-50', 'pointer-events-none');
+                syncIcon.innerText = 'check_circle';
+                syncIcon.classList.add('text-mobile-success');
+                setTimeout(() => {
+                    syncIcon.innerText = 'sync';
+                    syncIcon.classList.remove('text-mobile-success');
+                }, 2000);
+            }, 3000);
+        });
+
+        // Simple scale transition on entry for action items
+        document.querySelectorAll('.action-item').forEach((item, index) => {
+            item.style.opacity = '0';
+            item.style.transform = 'translateY(20px)';
+            setTimeout(() => {
+                item.style.transition = 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)';
+                item.style.opacity = '1';
+                item.style.transform = 'translateY(0)';
+            }, 100 + (index * 50));
+        });
+    </script>
+
+
+</body></html>

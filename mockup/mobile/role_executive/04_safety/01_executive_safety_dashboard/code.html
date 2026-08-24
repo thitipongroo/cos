@@ -1,0 +1,394 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport">
+<title>Executive Portfolio Safety Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary-fixed-dim": "#b4c5ff",
+                        "on-surface": "#d3e4fe",
+                        "secondary": "#4cd7f6",
+                        "surface-tint": "#b4c5ff",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "mobile-warning": "#FF9500",
+                        "on-error-container": "#ffdad6",
+                        "tertiary-fixed": "#dee1f9",
+                        "surface-container-highest": "#26364a",
+                        "secondary-fixed": "#acedff",
+                        "surface-bright": "#2a3a4f",
+                        "surface-container": "#102034",
+                        "inverse-primary": "#0053db",
+                        "sync-pending": "#94A3B8",
+                        "on-primary": "#002a78",
+                        "on-surface-variant": "#c3c6d7",
+                        "tertiary": "#c1c5dc",
+                        "surface-dim": "#031427",
+                        "on-background": "#d3e4fe",
+                        "surface-container-low": "#0b1c30",
+                        "on-tertiary-fixed": "#161b2b",
+                        "primary": "#b4c5ff",
+                        "surface-container-lowest": "#000f21",
+                        "on-secondary": "#003640",
+                        "surface-container-high": "#1b2b3f",
+                        "mobile-primary": "#0066FF",
+                        "surface": "#031427",
+                        "dark-surface": "#0F172A",
+                        "primary-fixed": "#dbe1ff",
+                        "tertiary-container": "#686c80",
+                        "background": "#031427",
+                        "mobile-danger": "#FF3B30",
+                        "primary-container": "#2563eb",
+                        "error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "on-tertiary": "#2b3041",
+                        "on-secondary-fixed": "#001f26",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "secondary-container": "#03b5d3",
+                        "on-error": "#690005",
+                        "surface-variant": "#26364a",
+                        "error": "#ffb4ab",
+                        "sync-active": "#FFD60A",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "on-secondary-container": "#00424e",
+                        "dark-bg": "#020617",
+                        "on-primary-container": "#eeefff",
+                        "on-primary-fixed": "#00174b",
+                        "mobile-success": "#00C853",
+                        "outline-variant": "#434655",
+                        "inverse-on-surface": "#213145",
+                        "inverse-surface": "#d3e4fe",
+                        "outline": "#8d90a0",
+                        "on-tertiary-container": "#eeefff"
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.25rem",
+                        lg: "0.5rem",
+                        xl: "0.75rem",
+                        full: "9999px"
+                    },
+                    spacing: {
+                        "space-4": "16px",
+                        "web-margin": "32px",
+                        "space-3": "12px",
+                        "space-2": "8px",
+                        "touch-target": "52px",
+                        "edge-mobile": "24px",
+                        "base": "4px",
+                        "space-1": "4px",
+                        "safe-bottom": "env(safe-area-inset-bottom)"
+                    },
+                    fontFamily: {
+                        "display-web": ["Inter Tight"],
+                        "tiny-web": ["Inter Tight"],
+                        "hero-mobile": ["Inter Tight"],
+                        "h1-web": ["Inter Tight"],
+                        "body-web": ["Inter Tight"],
+                        "h2-web": ["Inter Tight"],
+                        "body-mobile": ["Inter Tight"],
+                        "label-mobile": ["Inter Tight"]
+                    },
+                    fontSize: {
+                        "display-web": ["32px", { lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "700" }],
+                        "tiny-web": ["11px", { lineHeight: "12px", letterSpacing: "0.05em", fontWeight: "500" }],
+                        "hero-mobile": ["28px", { lineHeight: "34px", fontWeight: "700" }],
+                        "h1-web": ["24px", { lineHeight: "32px", fontWeight: "600" }],
+                        "body-web": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+                        "h2-web": ["20px", { lineHeight: "28px", fontWeight: "600" }],
+                        "body-mobile": ["17px", { lineHeight: "24px", fontWeight: "400" }],
+                        "label-mobile": ["13px", { lineHeight: "18px", fontWeight: "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #020617; /* dark-bg */
+            color: #d3e4fe; /* on-surface */
+            font-family: 'Inter Tight', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        .shimmer {
+            position: relative;
+            overflow: hidden;
+        }
+        .shimmer::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            transform: translateX(-100%);
+            background-image: linear-gradient(
+                90deg,
+                rgba(255, 255, 255, 0) 0,
+                rgba(255, 255, 255, 0.05) 20%,
+                rgba(255, 255, 255, 0.1) 60%,
+                rgba(255, 255, 255, 0)
+            );
+            animation: shimmer 2s infinite;
+        }
+        @keyframes shimmer {
+            100% { transform: translateX(100%); }
+        }
+        /* Custom Scrollbar for hidden horizontal scroll */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col pt-touch-target pb-[calc(72px+env(safe-area-inset-bottom))]">
+<!-- TOP APP BAR -->
+<header class="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-edge-mobile h-touch-target bg-surface-dim dark:bg-dark-bg flat no shadows">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-primary text-[24px]">architecture</span>
+<h1 class="font-display-web text-display-web-mobile font-bold text-primary tracking-tight uppercase text-sm">Construction OS</h1>
+</div>
+<div class="flex items-center gap-space-2">
+<div class="flex items-center gap-1.5 px-2 py-1 rounded-full bg-surface-container-high border border-surface-bright/20">
+<div class="w-2 h-2 rounded-full bg-mobile-success animate-pulse"></div>
+<span class="font-tiny-web text-on-surface-variant uppercase tracking-wider">Synced</span>
+</div>
+<button class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant hover:bg-surface-bright/10 transition-colors flex items-center justify-center bg-surface-container cursor-pointer">
+<span class="font-tiny-web text-primary">EX</span>
+</button>
+</div>
+</header>
+<!-- MAIN CONTENT -->
+<main class="flex-1 px-edge-mobile flex flex-col gap-space-4 py-space-4 w-full max-w-[600px] mx-auto">
+<!-- Header / Context -->
+<div>
+<h2 class="font-hero-mobile text-hero-mobile text-primary">Executive Portfolio</h2>
+<p class="font-body-mobile text-body-mobile text-on-surface-variant">Safety &amp; Compliance Dashboard</p>
+</div>
+<!-- AI Executive Safety Intelligence (Cyan Theme) -->
+<section class="bg-secondary/5 border-l-4 border-secondary rounded-r-xl p-space-4 flex flex-col gap-space-3 shadow-lg relative overflow-hidden">
+<div class="absolute -right-4 -top-4 opacity-10">
+<span class="material-symbols-outlined text-[120px] text-secondary">memory</span>
+</div>
+<div class="flex items-center gap-space-2 relative z-10">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: &quot;FILL&quot; 1;">psychology</span>
+<h3 class="font-h2-web text-h2-web text-secondary font-bold tracking-tight">Safety Intelligence</h3>
+</div>
+<p class="font-body-mobile text-body-mobile text-on-surface leading-relaxed relative z-10">
+<strong class="text-secondary">Portfolio Safety Status: Optimal.</strong> 92% Compliance across 14 projects. <br>
+<span class="text-mobile-warning">Action Required:</span> Project Omega reports a minor safety breach but mitigation is underway.
+            </p>
+<div class="flex items-center gap-space-4 mt-space-2 relative z-10">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-secondary text-[16px]">verified</span>
+<span class="font-tiny-web text-on-surface-variant">CONF: 98%</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-secondary text-[16px]">database</span>
+<span class="font-tiny-web text-on-surface-variant">SOURCES: 14/14 SYN...</span>
+</div>
+</div>
+</section>
+<!-- Portfolio Safety KPIs (Bento Grid) -->
+<section class="grid grid-cols-2 gap-space-3">
+<!-- Main KPI -->
+<div class="col-span-2 bg-surface-container rounded-xl p-space-4 flex items-center justify-between shadow-lg border border-outline-variant/30 active:border-outline-variant active:scale-95 active:bg-surface-bright/10 transition-transform cursor-pointer relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-mobile-success"></div>
+<div class="flex flex-col">
+<span class="font-tiny-web text-on-surface-variant uppercase tracking-wider mb-1">Portfolio Compliance</span>
+<span class="font-display-web text-display-web-mobile text-primary">92%</span>
+<span class="font-label-mobile text-label-mobile text-mobile-success flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-[14px]">trending_up</span> +2.4% vs last month
+                    </span>
+</div>
+<!-- Circular Progress Ring & Chevron -->
+<div class="flex items-center gap-3">
+<div class="relative w-16 h-16 flex items-center justify-center">
+<svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+<path class="text-surface-bright stroke-current" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke-width="3"></path>
+<path class="text-mobile-success stroke-current" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke-dasharray="92, 100" stroke-linecap="round" stroke-width="3"></path>
+</svg>
+<span class="absolute font-label-mobile text-label-mobile text-on-surface">A</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</div>
+</div>
+<!-- Sub KPI 1 -->
+<div class="bg-surface-container rounded-xl p-space-4 flex flex-col gap-2 shadow-lg border border-outline-variant/30 border-l-4 border-l-mobile-warning active:border-outline-variant active:scale-95 active:bg-surface-bright/10 transition-transform cursor-pointer relative">
+<div class="flex justify-between items-start">
+<span class="material-symbols-outlined text-mobile-warning" style="font-variation-settings: &quot;FILL&quot; 1;">warning</span>
+<div class="flex items-center gap-1">
+<span class="font-h2-web text-h2-web text-on-surface">03</span>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</div>
+</div>
+<div>
+<span class="font-tiny-web text-on-surface-variant uppercase tracking-wider block">Active Incidents</span>
+<span class="font-label-mobile text-label-mobile text-on-surface-variant text-[11px] block mt-1">2 Low, 1 Med</span>
+</div>
+</div>
+<!-- Sub KPI 2 -->
+<div class="bg-surface-container rounded-xl p-space-4 flex flex-col gap-2 shadow-lg border border-outline-variant/30 border-l-4 border-l-mobile-primary active:border-outline-variant active:scale-95 active:bg-surface-bright/10 transition-transform cursor-pointer relative">
+<div class="flex justify-between items-start">
+<span class="material-symbols-outlined text-mobile-primary" style="font-variation-settings: &quot;FILL&quot; 1;">timer</span>
+<div class="flex items-center gap-1">
+<span class="font-h2-web text-h2-web text-on-surface">1.2M</span>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</div>
+</div>
+<div>
+<span class="font-tiny-web text-on-surface-variant uppercase tracking-wider block">Safe Man-Hours</span>
+<span class="font-label-mobile text-label-mobile text-mobile-success text-[11px] block mt-1">YTD Accumulation</span>
+</div>
+</div>
+</section>
+<!-- Compliance Trend Chart -->
+<section class="bg-surface-container rounded-xl p-space-4 shadow-lg border border-surface-bright/10 flex flex-col gap-space-3 cursor-pointer">
+<div class="flex justify-between items-center">
+<h3 class="font-label-mobile text-label-mobile text-on-surface uppercase tracking-wider">6-Month Trend</h3>
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">more_vert</span>
+</div>
+<!-- Simplified CSS-based Chart -->
+<div class="h-24 w-full flex items-end gap-2 pt-4 relative">
+<!-- Grid lines -->
+<div class="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-10">
+<div class="border-b border-surface-bright w-full h-0"></div>
+<div class="border-b border-surface-bright w-full h-0"></div>
+<div class="border-b border-surface-bright w-full h-0"></div>
+</div>
+<!-- Bars -->
+<div class="flex-1 bg-surface-bright/30 hover:bg-primary/20 transition-colors rounded-t-sm h-[60%] relative group">
+<div class="absolute -top-6 left-1/2 -translate-x-1/2 bg-surface-container-highest px-2 py-1 rounded text-[10px] opacity-0 group-hover:opacity-100 transition-opacity">85%</div>
+</div>
+<div class="flex-1 bg-surface-bright/30 hover:bg-primary/20 transition-colors rounded-t-sm h-[70%] relative group"></div>
+<div class="flex-1 bg-surface-bright/30 hover:bg-primary/20 transition-colors rounded-t-sm h-[65%] relative group"></div>
+<div class="flex-1 bg-surface-bright/30 hover:bg-primary/20 transition-colors rounded-t-sm h-[80%] relative group"></div>
+<div class="flex-1 bg-surface-bright/30 hover:bg-primary/20 transition-colors rounded-t-sm h-[88%] relative group"></div>
+<div class="flex-1 bg-primary hover:bg-primary-fixed transition-colors rounded-t-sm h-[92%] relative group shadow-[0_0_8px_rgba(180,197,255,0.4)]">
+<div class="absolute -top-6 left-1/2 -translate-x-1/2 bg-surface-container-highest px-2 py-1 rounded text-[10px] text-primary">92%</div>
+</div>
+</div>
+<div class="flex justify-between w-full font-tiny-web text-on-surface-variant px-1 mt-1">
+<span class="">Jun</span>
+<span class="">Jul</span>
+<span class="">Aug</span>
+<span class="">Sep</span>
+<span class="">Oct</span>
+<span class="text-primary font-bold">Nov</span>
+</div>
+</section>
+<!-- Project Safety Ranking List -->
+<section class="flex flex-col gap-space-3 mb-space-4">
+<h3 class="font-label-mobile text-label-mobile text-on-surface uppercase tracking-wider pl-1">Project Rankings</h3>
+<div class="flex flex-col gap-2">
+<!-- Project 1 -->
+<div class="bg-surface-container rounded-lg p-space-3 flex items-center justify-between border-l-4 border-l-mobile-success hover:bg-surface-bright/10 active:scale-[0.98] active:bg-surface-container-high transition-all cursor-pointer">
+<div class="flex flex-col gap-1">
+<span class="font-body-mobile text-body-mobile font-semibold text-on-surface">South Bay Terminal</span>
+<div class="flex items-center gap-3">
+<span class="font-tiny-web text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">shield</span> 96/100
+                            </span>
+<span class="font-tiny-web text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">warning</span> 0 Incidents
+                            </span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<div class="px-2 py-1 rounded bg-mobile-success/10 border border-mobile-success/20">
+<span class="font-tiny-web text-mobile-success font-bold">SECURE</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</div>
+</div>
+<!-- Project 2 -->
+<div class="bg-surface-container rounded-lg p-space-3 flex items-center justify-between border-l-4 border-l-mobile-success hover:bg-surface-bright/10 active:scale-[0.98] active:bg-surface-container-high transition-all cursor-pointer">
+<div class="flex flex-col gap-1">
+<span class="font-body-mobile text-body-mobile font-semibold text-on-surface">Metro Line Ext. Phase 2</span>
+<div class="flex items-center gap-3">
+<span class="font-tiny-web text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">shield</span> 94/100
+                            </span>
+<span class="font-tiny-web text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">warning</span> 0 Incidents
+                            </span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<div class="px-2 py-1 rounded bg-mobile-success/10 border border-mobile-success/20">
+<span class="font-tiny-web text-mobile-success font-bold">SECURE</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</div>
+</div>
+<!-- Project 3 -->
+<div class="bg-surface-container rounded-lg p-space-3 flex items-center justify-between border-l-4 border-l-mobile-warning hover:bg-surface-bright/10 active:scale-[0.98] active:bg-surface-container-high transition-all cursor-pointer">
+<div class="flex flex-col gap-1">
+<span class="font-body-mobile text-body-mobile font-semibold text-on-surface">Project Omega</span>
+<div class="flex items-center gap-3">
+<span class="font-tiny-web text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">shield</span> 78/100
+                            </span>
+<span class="font-tiny-web text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">warning</span> 2 Incidents
+                            </span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<div class="px-2 py-1 rounded bg-mobile-warning/10 border border-mobile-warning/20">
+<span class="font-tiny-web text-mobile-warning font-bold">MONITOR</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</div>
+</div>
+</div>
+<button class="w-full h-touch-target mt-2 rounded-lg border border-outline-variant text-primary font-label-mobile text-label-mobile hover:bg-surface-bright/10 active:scale-95 transition-all uppercase tracking-wider cursor-pointer">
+                View All 14 Projects
+            </button>
+</section>
+</main>
+<!-- BOTTOM NAVIGATION BAR -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-base pb-safe h-[72px] bg-surface-container dark:bg-surface-container-high shadow-lg">
+<!-- Tasks -->
+<button class="flex flex-col items-center justify-center w-[64px] h-[64px] gap-1 text-on-surface-variant hover:bg-surface-bright/20 rounded-xl transition-all cursor-pointer">
+<span class="material-symbols-outlined">assignment</span>
+<span class="font-label-mobile text-label-mobile text-[10px]">Tasks</span>
+</button>
+<!-- BIM -->
+<button class="flex flex-col items-center justify-center w-[64px] h-[64px] gap-1 text-on-surface-variant hover:bg-surface-bright/20 rounded-xl transition-all cursor-pointer">
+<span class="material-symbols-outlined">view_in_ar</span>
+<span class="font-label-mobile text-label-mobile text-[10px]">BIM</span>
+</button>
+<!-- Home -->
+<button class="flex flex-col items-center justify-center w-[64px] h-[64px] gap-1 text-on-surface-variant hover:bg-surface-bright/20 rounded-xl transition-all cursor-pointer">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-mobile text-label-mobile text-[10px]">Home</span>
+</button>
+<!-- Safety (ACTIVE) -->
+<button class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-xl px-space-4 py-space-2 min-w-[72px] scale-95 transition-all duration-200 cursor-pointer">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">health_and_safety</span>
+<span class="font-label-mobile text-label-mobile text-[10px] font-bold mt-1">Safety</span>
+</button>
+<!-- More -->
+<button class="flex flex-col items-center justify-center w-[64px] h-[64px] gap-1 text-on-surface-variant hover:bg-surface-bright/20 rounded-xl transition-all cursor-pointer">
+<span class="material-symbols-outlined">more_horiz</span>
+<span class="font-label-mobile text-label-mobile text-[10px]">More</span>
+</button>
+</nav>
+
+
+</body></html>

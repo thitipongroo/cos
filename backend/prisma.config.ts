@@ -1,8 +1,16 @@
 // Prisma 7 Config (ADR-041). Prisma no longer reads `url`/`directUrl` from schema.prisma; the
 // migration/CLI connection URL lives here. When a prisma.config.ts is present Prisma does NOT
 // auto-load .env, so we load it explicitly.
-import 'dotenv/config';
+// Two-file env scheme (spec §08): the only .env is the monorepo ROOT one. The Prisma CLI runs with
+// cwd = backend/ (via `pnpm --filter @cos/backend`), so the root .env is ../.env; the second path
+// covers an invocation from the repo root. dotenv does not override already-set vars.
+import { config } from 'dotenv';
+import { resolve } from 'node:path';
 import { defineConfig, env } from 'prisma/config';
+
+// Load the root .env BEFORE defineConfig()/env() below read process.env.
+config({ path: resolve(process.cwd(), '../.env') });
+config({ path: resolve(process.cwd(), '.env') });
 
 export default defineConfig({
   schema: 'prisma/schema.prisma',

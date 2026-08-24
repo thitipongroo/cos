@@ -1,8 +1,8 @@
 ---
 title: 'UX Flow'
-version: '1.5.0'
+version: '1.6.0'
 status: Active
-last_updated: '2026-07-03'
+last_updated: '2026-07-10'
 authors:
   - thitipongroo
 related_docs:
@@ -163,6 +163,8 @@ Not visible to tenant users.
 - Route: `/admin` (protected — SYSTEM_ADMIN role required)
 - Authentication: same Keycloak JWT flow as the main application
 - All actions are logged to `platform.audit_logs`
+- `/admin/central-prices` — ราคากลาง catalog: import (CSV/Excel) + API-sync status + browse (ADR-061).
+  Tenant-facing: the BOQ editor surfaces `reference_price` / variance + a project BOQ-vs-ราคากลาง view.
 
 ### 20.4.1 Tenant List
 
@@ -297,8 +299,9 @@ text in component source. Thai is the primary field language for site workers.
 
 ### Locale Codes and File Convention
 
-- **Default locale:** `th-TH` (Buddhist Era display configurable per tenant — see Thai-specific
-  Rules below). **Fallback locale:** `en-US`.
+- **Default locale:** `en-US` (product-owner decision 2026-07-26 — overrides the original `th-TH`
+  default). **Fallback locale:** `en-US`. Users switch to `th-TH` in-app; Buddhist Era display
+  (configurable per tenant — see Thai-specific Rules below) still applies when Thai is selected.
 - **Locale negotiation:** honour the `Accept-Language` HTTP header for API responses; a user's
   stored profile locale overrides the header when present.
 - **Translation file location:** `apps/{web,mobile}/src/i18n/{locale}.json` — one file per locale
@@ -311,7 +314,15 @@ text in component source. Thai is the primary field language for site workers.
 
 - Date format: `DD/MM/YYYY` (Buddhist Era optional, configurable per tenant)
 - Currency: THB as default for Thai tenants; format `฿1,234,567.89`
-- Phone numbers: `+66` prefix; 9-digit local format displayed as `0XX-XXX-XXXX`
+- Phone numbers: displayed as `(+66) 0XX-XXX-XXXX` — the dial code in parentheses, then the national
+  number with its leading trunk `0` and hyphen groups. Amended 2026-08-06; the rule previously said
+  only `0XX-XXX-XXXX`, which dropped the country from a screen a person may be reading precisely to
+  check which number the platform holds for them. Storage is unchanged: E.164 (`+66811000003`) on
+  the wire and in the database, this format on screen only.
+  - **Other countries keep their own grouping**, not Thailand's. The dial code is stripped, the
+    national number is grouped by that country's convention, and the same parenthesised `(+CC)`
+    prefix is applied. A number whose country has no grouping rule on file is shown as stored rather than
+    forced into 3-3-4 — a wrongly grouped phone number reads as a typo in the record.
 - Number separators: `.` for decimal, `,` for thousands (standard Thai business convention)
 
 ### Localisation Gap Tracking
@@ -358,6 +369,25 @@ The web login renders **both** authentication paths already defined in §5.4 (ma
 - **Post-login routing:** redirect to the role's landing page (first row of that role's table in
   §20.7), resolved from the JWT `role` claim.
 - **Logout:** `/logout` clears the local session and performs Keycloak RP-initiated logout.
+- **Device trust (mobile Path A):** the OTP verification screen shows a trusted/untrusted device
+  indicator — green when the device is trusted, red when not. "Trusted" is a **server-side fact**, not
+  a client claim: the mobile app holds a non-extractable P-256 key (Secure Enclave / Android Keystore)
+  whose SPKI public key is registered per user in `platform.trusted_devices`; the device proves
+  possession by signing a single-use challenge (`/auth/otp/request` → `challenge`, verified at
+  `/auth/otp/attest` → `deviceTrusted`) **before** the OTP step, so the banner shows a real state while
+  the user enters the code. Login (`/auth/otp/verify`) is plain OTP and never gated on trust. Trust is
+  **earned** — a device is untrusted on its first
+  login (the OTP is the authenticator) and enrols on success, so the next login from it is trusted;
+  trust has a 30-day sliding window and can be revoked (`/auth/devices`). Device trust is **additive
+  and non-blocking**: a failed check only shows red, it never prevents login. See ADR-054. The
+  hardened **v2 — platform attestation (Play Integrity on Android / App Attest on iOS, via
+  `@expo/app-integrity`, verified server-side) — is no longer deferred: it was accepted on
+  2026-08-04 (ADR-082)**, because the device-integrity rows on the transparency portal
+  (security patch level, root/jailbreak state) and the trust score of ADR-081 have no other honest
+  source. Attestation keeps ADR-054's safety property: it is additive and non-blocking, its registry
+  columns are nullable (absent attestation is a distinct state from failed), and it never gates
+  login. The `deviceId`/`signature` fields are optional in the OTP API
+  (`docs/api/auth.openapi.yaml`).
 
 ### 20.6.2 Web Application Shell (all authenticated pages)
 
@@ -401,14 +431,16 @@ Source: §20.2 Executive; master Phase 10 EXEC nav; Analytics (Phase 14) + AI re
 
 Source: §20.2 PM; master Phase 10 PM nav; Phases 3, 5, 6, 14.
 
-| Route                        | Page               | Purpose                                                               | Source                                                          |
-| ---------------------------- | ------------------ | --------------------------------------------------------------------- | --------------------------------------------------------------- |
-| `/projects`                  | Projects           | List/create projects; filter by status/type                           | Phase 3 Project APIs                                            |
-| `/projects/{id}`             | Project detail     | Status transitions, members, documents, BOQ summary                   | Phase 3 + Phase 4                                               |
-| `/projects/{id}/procurement` | Procurement status | RFQ/PO status (read), delivery tracking                               | Phase 5 (read)                                                  |
-| `/projects/{id}/finance`     | Budget variance    | Budget vs actual vs committed (read)                                  | Phase 7 (read)                                                  |
-| `/projects/{id}/site`        | Site summary       | Site report summary, issue triage                                     | Phase 6                                                         |
-| `/analytics/pm/{projectId}`  | PM dashboard       | Manpower trend, issues by severity, inspection rate, procurement KPIs | `GET /api/v1/analytics/pm/{projectId}` (Phase 14 — implemented) |
+| Route                           | Page               | Purpose                                                                    | Source                                                          |
+| ------------------------------- | ------------------ | -------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `/projects`                     | Projects           | List/create projects; filter by status/type                                | Phase 3 Project APIs                                            |
+| `/projects/{id}`                | Project detail     | Status transitions, members, documents, BOQ summary                        | Phase 3 + Phase 4                                               |
+| `/projects/{id}/procurement`    | Procurement status | RFQ/PO status (read), delivery tracking                                    | Phase 5 (read)                                                  |
+| `/projects/{id}/finance`        | Budget variance    | Budget vs actual vs committed (read)                                       | Phase 7 (read)                                                  |
+| `/projects/{id}/site`           | Site summary       | Site report summary, issue triage                                          | Phase 6                                                         |
+| `/projects/{id}/risks`          | Risk register      | Likelihood×impact heat map; raise/mitigate/close; AI-suggested triage      | §14, ADR-065                                                    |
+| `/projects/{id}/communications` | Doc-control        | Site instructions / meeting minutes / correspondence + action-item tracker | §14, ADR-066                                                    |
+| `/analytics/pm/{projectId}`     | PM dashboard       | Manpower trend, issues by severity, inspection rate, procurement KPIs      | `GET /api/v1/analytics/pm/{projectId}` (Phase 14 — implemented) |
 
 ### 20.7.3 Procurement Officer / Procurement Manager (`PROCUREMENT_OFFICER`, `PROC_MANAGER`)
 
@@ -422,17 +454,26 @@ Source: §20.2 Procurement Officer; master Phase 10 Procurement nav; Phase 5.
 | `/procurement/orders`     | Purchase orders      | PO list + approval chain + delivery timeline                                 | Phase 5 PO workflow  |
 | `/procurement/deliveries` | Deliveries           | Record/receive deliveries                                                    | Phase 5              |
 | `/procurement/vendors`    | Vendors              | Vendor master, vendor scoring                                                | Phase 5              |
+| `/procurement/warehouses` | Warehouses           | Warehouse list (site store / central)                                        | §14, ADR-060         |
+| `/procurement/inventory`  | Inventory            | Stock-on-hand by warehouse/material; low-stock (reorder) view                | §14, ADR-060         |
+| `/procurement/grn`        | Goods receipt        | Receive against deliveries (GRN); stock-movement ledger                      | §14, ADR-060         |
 
 ### 20.7.4 Finance (`FINANCE`)
 
 Source: §20.2 Finance; master Phase 10 FINANCE nav; Phase 7.
 
-| Route                         | Page            | Purpose                                           | Source                                 |
-| ----------------------------- | --------------- | ------------------------------------------------- | -------------------------------------- |
-| `/finance/payments`           | Payments        | Pending payment approvals; approve/record payment | Phase 7                                |
-| `/finance/budget/{projectId}` | Budget          | Budget vs actual vs committed; budget lines       | Phase 7                                |
-| `/finance/invoices`           | Invoices        | Invoice list/detail; verify/approve/dispute       | Phase 5/7 invoice flow                 |
-| `/finance/reports/variance`   | Variance report | Budget variance across projects                   | `GET /api/v1/finance/reports/variance` |
+| Route                                | Page               | Purpose                                                                                         | Source                                 |
+| ------------------------------------ | ------------------ | ----------------------------------------------------------------------------------------------- | -------------------------------------- |
+| `/finance/payments`                  | Payments           | Pending payment approvals; approve/record payment                                               | Phase 7                                |
+| `/finance/budget/{projectId}`        | Budget             | Budget vs actual vs committed; budget lines                                                     | Phase 7                                |
+| `/finance/invoices`                  | Invoices           | Invoice list/detail; verify/approve/dispute                                                     | Phase 5/7 invoice flow                 |
+| `/finance/reports/variance`          | Variance report    | Budget variance across projects                                                                 | `GET /api/v1/finance/reports/variance` |
+| `/finance/contracts`                 | Contracts          | Contract list; create; open detail                                                              | §14 `finance/contracts`                |
+| `/finance/contracts/{id}`            | Contract detail    | Attach/generate document · contractor sign (PKI/VC) · issue client magic-link · signature audit | §14, ADR-058                           |
+| `/finance/contracts/{id}/variations` | Variation Orders   | VO list/detail; create/submit/approve; BOQ + budget delta                                       | §14, ADR-059                           |
+| `/finance/claims`                    | Claims             | Claim list/detail; submit/accept (→ VO)/reject                                                  | §14, ADR-059                           |
+| `/finance/bonds`                     | Bonds              | Bank-guarantee register (type/bank/amount/expiry/status) + expiry alerts                        | §14, ADR-063                           |
+| `/compliance/permits`                | Permits & licences | Permit/licence register (building permit + company licence) + expiry alerts                     | §14, ADR-064                           |
 
 ### 20.7.5 Site Engineer (`SITE_ENGINEER`)
 
@@ -470,6 +511,23 @@ mobile nav; the functions are specified in §20.2 + §21.2 + master §9 (safety 
 | `/safety/permits`    | Work permits      | Permit approval (Safety Officer approves; PM final) | master §9 approval chain |
 | `/safety/compliance` | Compliance        | Compliance status + violation alerts                | §20.2 Safety Officer     |
 
+**Mobile (added 2026-08-13).** The sentence above — "master Phase 10 does not enumerate a Safety
+Officer mobile nav" — still holds, and the gap it describes is now closed by the mockups rather than
+by derivation. `mockup/mobile/07_safety_officer/` draws three screens, all carrying the same bottom
+bar, and the product owner settled the role's tab set from them: **Home · Incidents · Checklists ·
+Permits** (§32.7 records it and the reasoning). Three of the four routes above are on that bar;
+`/safety/compliance` is not, because the counts it returns are what the Home dashboard's
+open-incidents tile already reads — it would be the same query answered twice.
+
+**What those screens can and cannot show.** The drawings include a compliance **percentage**, a
+"safe hours since last LTI" figure, an AI-predicted risk score on an incident and an AI hazard alert
+sourced from "weather telemetry". None of the four has a source anywhere in this platform:
+`GET /safety/compliance` returns four COUNTS and no score, no table records hours against a
+lost-time injury, `/ai/reports/*` has no safety surface (SafetyVisionModel is Phase 23 and untrained
+per §22.6), and nothing ingests weather. Per the product owner's 2026-08-13 ruling each zone is
+DRAWN and states plainly that it is not available yet — the treatment §22.3 requires, since a
+surface must not read as AI-derived while a placeholder serves it.
+
 ### 20.7.8 Tenant Admin (`TENANT_ADMIN`)
 
 Source: master Phase 2 User Management API (§14.3) + tenant settings. Full access to all
@@ -502,6 +560,38 @@ CRM UI (pipeline kanban, dashboards, proposal generation) remains post-MVP.
 
 - Cross-tenant platform administration is the separate **`/admin` panel** specified in §20.4 —
   not part of the tenant-scoped page set above.
+
+### 20.7.12b Asset Management (post-MVP)
+
+Source: module permissions §06 §6.4 (Asset Management); entities §11 §11.2 (Unit, Assets).
+**IA decision: Hybrid** — tenant-level asset registry +
+project-scoped handover entry (registry: Yardi Voyager / MRI standalone pattern, aligned
+with the V3 direction in §28.9; handover: Procore / Autodesk Construction Cloud
+project-closeout pattern).
+
+| Route                 | Page           | Purpose                                                   | Source      |
+| --------------------- | -------------- | --------------------------------------------------------- | ----------- |
+| `/assets/units`       | Unit inventory | Unit list (unit_number, unit_type, status)                | §6.4, §11.2 |
+| `/projects/{id}`      | Handover tab   | Record handover; emits `AssetHandedOver`; writes registry | §6.4, §11.2 |
+| `/assets/warranty`    | Warranty       | warranty_expiry tracking (`WarrantyActivated`)            | §6.4, §11.2 |
+| `/assets/maintenance` | Maintenance    | maintenance_status (`MaintenanceScheduled`)               | §6.4, §11.2 |
+
+### 20.7.12c Preconstruction (post-MVP)
+
+Source: §01 §1.2 (Phase-2 extensions to the CRM Service). **UI decision (product owner,
+2026-07-10): separate "Preconstruction" nav section** (Procore Preconstruction /
+Autodesk BuildingConnected pattern — tender & bid management as its own product area);
+backend remains a CRM Service extension per §01 §1.2.
+
+| Route                          | Page                | Purpose                                                          | Source            |
+| ------------------------------ | ------------------- | ---------------------------------------------------------------- | ----------------- |
+| `/preconstruction/feasibility` | Feasibility studies | Feasibility study capability                                     | §01 §1.2          |
+| `/preconstruction/land`        | Land acquisition    | Land acquisition capability                                      | §01 §1.2          |
+| `/preconstruction/tenders`     | Tenders             | e-GP tender feed (sync/manual) + status; award import → Contract | §01 §1.2, ADR-062 |
+| `/preconstruction/bids`        | Contractor bids     | BOQ-priced bid prep (ราคากลาง) + submit (adapter/manual)         | §01 §1.2, ADR-062 |
+
+> Detailed screen contents for both sections are elaborated in `DESIGN.md` §15.3 /
+> §15.10; capability-level scope only is defined here until each phase begins.
 
 ### 20.7.12 Vendor Portal (`VENDOR_PORTAL`)
 
@@ -550,12 +640,27 @@ Non-negotiable for safety flows (incident / safety report): **color is never the
 
 ### Acceptance criteria / gate
 
-- [ ] Automated a11y lint in CI: `eslint-plugin-jsx-a11y` (web) + RN a11y checks — 0 errors on merge
-- [ ] Contrast audit of §32.7 tokens passes 4.5:1 / 3:1 (`docs/a11y/contrast-report.md`)
-- [ ] Every interactive RN component has `accessibilityLabel` + `accessibilityRole` (CI grep gate)
+- [x] Automated a11y lint in CI: `eslint-plugin-jsx-a11y` (web) + RN a11y checks — 0 errors on merge
+      — **done 2026-08-03.** jsx-a11y runs at error level over `apps/web/src/**/*.tsx` via the root
+      `eslint.config.mjs` (0 violations across 81 files); axe-core scans 6 routes in the Playwright
+      suite; the Lighthouse accessibility category is gated at 1.0 (see §30.9).
+- [x] Contrast audit of §32.7 tokens passes 4.5:1 / 3:1 (`docs/a11y/contrast-report.md`)
+      — **audit done 2026-08-03, and it does NOT pass.** 7 findings (F1–F7) against the §32.7 tokens
+      themselves, worst `--mobile-syncing #FFD60A` at 1.41:1 as a status indicator, and
+      `--cos-dark-elevated #111827` at 1.14:1 as the dark-surface input border. Each hex is a §32.7
+      product-owner decision, so none was changed — **awaiting product-owner decision.**
+- [~] Every interactive RN component has `accessibilityLabel` + `accessibilityRole` (CI grep gate)
+  — **gate built, target not met.** `scripts/a11y/check-rn-a11y.sh` runs in CI (`mobile-tests`).
+  Measured 2026-08-03: 24 of the 50 `apps/mobile` files with tappable elements have no
+  accessibility prop at all. It runs as a **ratchet** — warns on the 24, fails when the count
+  grows — because failing on the existing 24 would only mean disabling the check.
 - [ ] Manual screen-reader pass (VoiceOver + TalkBack) on the 5 critical flows (login, daily report,
       issue, safety incident, sync-status) — `docs/a11y/screenreader-checklist.md`
-- [ ] Layout verified at 200% font scale on the smallest supported device (375pt)
+      — **checklist written 2026-08-03, no pass recorded yet.** Not automatable; this remains open.
+- [x] Layout verified at 200% font scale on the smallest supported device (375pt)
+      — **done 2026-08-03** for `/login`, via `expectUsableAt200PercentText` in the Playwright suite
+      (375px viewport, asserts no horizontal overflow at `font-size: 200%`). The 5 authenticated
+      routes it also covers need a backend + Keycloak, so their first run is the staging pipeline.
 - **Gate:** a screen cannot ship if it fails automated a11y lint or lacks the screen-reader pass for
   a critical flow.
 

@@ -16,11 +16,16 @@ spec:
         runAsNonRoot: true
         runAsUser: 65534
         fsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: kg-ingestion-worker
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
+            # `http` must exist: the Service targets it by name (targetPort: http).
+            - name: http
+              containerPort: {{ .Values.service.port }}
             - name: metrics
               containerPort: {{ .Values.service.metricsPort }}
           env:

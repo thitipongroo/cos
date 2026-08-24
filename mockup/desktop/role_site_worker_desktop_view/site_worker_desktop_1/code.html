@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="th"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Construction OS - รายการงานประจำวัน</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "cos-navy": "#0B1020",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "primary-fixed": "#dbe1ff",
+                        "on-secondary": "#003640",
+                        "on-error-container": "#ffdad6",
+                        "surface-container": "#102034",
+                        "on-secondary-fixed": "#001f26",
+                        "on-primary": "#002a78",
+                        "tertiary-fixed": "#dee1f9",
+                        "surface-tint": "#b4c5ff",
+                        "on-primary-container": "#eeefff",
+                        "primary-container": "#2563eb",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "cos-cyan": "#06B6D4",
+                        "secondary": "#4cd7f6",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "primary": "#b4c5ff",
+                        "surface-bright": "#2a3a4f",
+                        "on-secondary-container": "#00424e",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "cos-white": "#F8FAFC",
+                        "mobile-success": "#00C853",
+                        "sync-pending": "#94A3B8",
+                        "on-error": "#690005",
+                        "on-tertiary-container": "#eeefff",
+                        "cos-blue": "#2563EB",
+                        "surface-dim": "#031427",
+                        "surface-container-highest": "#26364a",
+                        "dark-bg": "#020617",
+                        "outline": "#8d90a0",
+                        "sync-active": "#FFD60A",
+                        "surface-container-lowest": "#000f21",
+                        "surface-container-low": "#0b1c30",
+                        "error": "#ffb4ab",
+                        "tertiary": "#c1c5dc",
+                        "on-background": "#d3e4fe",
+                        "on-tertiary": "#2b3041",
+                        "mobile-warning": "#FF9500",
+                        "tertiary-container": "#686c80",
+                        "inverse-on-surface": "#213145",
+                        "mobile-primary": "#0066FF",
+                        "inverse-primary": "#0053db",
+                        "error-container": "#93000a",
+                        "on-tertiary-fixed": "#161b2b",
+                        "outline-variant": "#434655",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "surface-container-high": "#1b2b3f",
+                        "secondary-container": "#03b5d3",
+                        "surface-variant": "#26364a",
+                        "on-surface-variant": "#c3c6d7",
+                        "surface": "#031427",
+                        "on-primary-fixed": "#00174b",
+                        "inverse-surface": "#d3e4fe",
+                        "background": "#031427",
+                        "mobile-danger": "#FF3B30",
+                        "dark-surface": "#0F172A",
+                        "secondary-fixed": "#acedff",
+                        "on-surface": "#d3e4fe"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "web-space-1": "4px",
+                        "web-base": "4px",
+                        "web-space-2": "8px",
+                        "mobile-touch-target": "52px",
+                        "web-space-3": "12px",
+                        "web-space-8": "32px",
+                        "web-space-4": "16px",
+                        "mobile-edge": "24px"
+                    },
+                    "fontFamily": {
+                        "web-text-h1": ["Inter Tight"],
+                        "web-text-body": ["Inter Tight"],
+                        "web-text-tiny": ["Inter Tight"],
+                        "mobile-text-label": ["Inter Tight"],
+                        "mobile-text-body": ["Inter Tight"],
+                        "web-text-h2": ["Inter Tight"],
+                        "web-text-small": ["Inter Tight"],
+                        "web-text-display": ["Inter Tight"],
+                        "mobile-text-hero": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "web-text-h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "web-text-body": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "web-text-tiny": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "mobile-text-label": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                        "mobile-text-body": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "web-text-h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "web-text-small": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                        "web-text-display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "mobile-text-hero": ["28px", {"lineHeight": "34px", "fontWeight": "700"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #020617;
+            font-family: 'Inter Tight', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 16px;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #0b1c30;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #434655;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body class="text-on-surface custom-scrollbar">
+<!-- TopNavBar -->
+<header class="fixed top-0 w-full h-12 bg-cos-navy border-b border-outline-variant flex justify-between items-center px-4 z-50">
+<div class="flex items-center gap-6">
+<h1 class="font-web-text-h1 text-web-text-h1 text-cos-white tracking-tight">Construction OS</h1>
+<div class="hidden md:flex items-center bg-surface-container-low px-3 py-1 border border-outline-variant rounded-sm gap-2">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-web-text-small p-0 w-48 text-on-surface" placeholder="Search tasks..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-on-surface-variant hover:bg-surface-container-highest transition-colors p-1 rounded cursor-pointer">notifications</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:bg-surface-container-highest transition-colors p-1 rounded cursor-pointer">help</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:bg-surface-container-highest transition-colors p-1 rounded cursor-pointer">settings</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-cos-blue">
+<img class="w-full h-full object-cover" data-alt="A cinematic, high-resolution portrait of a professional construction site manager wearing a modern navy blue tactical uniform and clear safety glasses. The lighting is dramatic and technical, with cool blue tones and sharp industrial highlights. The background shows a blurred high-tech control center with multiple digital monitors displaying infrastructure blueprints and BIM data." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDayFoUbnriy14OsKuCfSkyv62UtWMGeZZ7dEABNsDvjzQSTd01ZJIZ-fkWGX8-rp2ofWn0ioDE1mKEAaSsVRDLLnVfWMzvotYr2y6_UlcUeubkvrrbNSVp5k6U0kBbkkh5sXxrNeHtFv7P9D3b7b5ftl31f65g5pAo_2G2sU9J3mntgYQeXlO-nS15T7IwQ30HjbTaadnLZoMFTX6P5SGsLLVgh3_tDb9Q8knz21px2OfzJgocB9H90o3zFnw2xOIBGZTpc7mgtpQ"/>
+</div>
+</div>
+</header>
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-12 h-[calc(100vh-48px)] w-64 bg-surface-dim border-r border-outline-variant flex flex-col py-4 gap-2 z-40">
+<div class="px-4 mb-6">
+<h2 class="font-web-text-h2 text-web-text-h2 text-cos-cyan">Site Worker</h2>
+<p class="font-web-text-small text-web-text-small text-on-surface-variant">Active: Sector 7G</p>
+</div>
+<nav class="flex-1">
+<a class="flex items-center gap-3 py-2 text-cos-blue font-bold border-l-2 border-cos-blue pl-3 bg-surface-container-high transition-all" href="#">
+<span class="material-symbols-outlined">assignment</span>
+<span class="font-web-text-small text-web-text-small">Tasks</span>
+</a>
+<a class="flex items-center gap-3 py-2 text-on-surface-variant pl-4 hover:bg-surface-container hover:text-on-surface transition-all" href="#">
+<span class="material-symbols-outlined">error_outline</span>
+<span class="font-web-text-small text-web-text-small">Issues</span>
+</a>
+<a class="flex items-center gap-3 py-2 text-on-surface-variant pl-4 hover:bg-surface-container hover:text-on-surface transition-all" href="#">
+<span class="material-symbols-outlined">assessment</span>
+<span class="font-web-text-small text-web-text-small">Reports</span>
+</a>
+<a class="flex items-center gap-3 py-2 text-on-surface-variant pl-4 hover:bg-surface-container hover:text-on-surface transition-all" href="#">
+<span class="material-symbols-outlined">security</span>
+<span class="font-web-text-small text-web-text-small">Safety</span>
+</a>
+</nav>
+<div class="mt-auto pt-4 border-t border-outline-variant">
+<a class="flex items-center gap-3 py-2 text-on-surface-variant pl-4 hover:bg-surface-container transition-all" href="#">
+<span class="material-symbols-outlined">support_agent</span>
+<span class="font-web-text-small text-web-text-small">Support</span>
+</a>
+<a class="flex items-center gap-3 py-2 text-on-surface-variant pl-4 hover:bg-surface-container transition-all" href="#">
+<span class="material-symbols-outlined">sync</span>
+<span class="font-web-text-small text-web-text-small">Sync</span>
+</a>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="ml-64 mt-12 min-h-[calc(100vh-48px)] p-6 bg-dark-bg">
+<!-- Offline Mode Banner -->
+<div class="mb-6 flex items-center justify-between bg-mobile-warning/10 border border-mobile-warning/30 px-4 py-2 rounded-lg">
+<div class="flex items-center gap-3 text-mobile-warning">
+<span class="material-symbols-outlined">cloud_off</span>
+<span class="font-web-text-body text-web-text-body font-semibold">สถานะออฟไลน์: กำลังบันทึกข้อมูลลงในเครื่อง ทันทีที่มีการเชื่อมต่อระบบจะทำการซิงค์โดยอัตโนมัติ</span>
+</div>
+<button class="text-web-text-tiny font-bold uppercase tracking-wider bg-mobile-warning text-cos-navy px-3 py-1 rounded">Force Sync</button>
+</div>
+<div class="flex flex-col gap-6">
+<!-- Header Section -->
+<div class="flex justify-between items-end">
+<div>
+<h2 class="font-web-text-display text-web-text-display text-cos-white">รายการงานประจำวัน</h2>
+<p class="text-on-surface-variant font-web-text-body">24 ตุลาคม 2566 | วิศวกรหน้างาน: สมชาย รักงาน</p>
+</div>
+<div class="flex bg-surface-container-low p-1 rounded-lg border border-outline-variant">
+<button class="px-6 py-1.5 font-web-text-small text-web-text-small rounded-md bg-cos-blue text-cos-white shadow-lg transition-all">ทั้งหมด</button>
+<button class="px-6 py-1.5 font-web-text-small text-web-text-small text-on-surface-variant hover:text-on-surface transition-all">รอดำเนินการ</button>
+<button class="px-6 py-1.5 font-web-text-small text-web-text-small text-on-surface-variant hover:text-on-surface transition-all">กำลังทำ</button>
+<button class="px-6 py-1.5 font-web-text-small text-web-text-small text-on-surface-variant hover:text-on-surface transition-all">เสร็จสิ้น</button>
+</div>
+</div>
+<!-- Dashboard Layout (Bento Grid) -->
+<div class="bento-grid">
+<!-- AI Insight Panel -->
+<div class="col-span-12 lg:col-span-4 bg-surface-dim border-l-4 border-cos-cyan bg-opacity-50 p-6 rounded-lg relative overflow-hidden group">
+<div class="absolute top-0 right-0 w-32 h-32 bg-cos-cyan/5 -mr-16 -mt-16 rounded-full blur-3xl"></div>
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-cos-cyan" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<h3 class="font-web-text-h2 text-web-text-h2 text-cos-cyan">AI Schedule Insight</h3>
+</div>
+<div class="space-y-4">
+<div class="bg-surface-container-high/50 p-3 rounded border border-cos-cyan/20">
+<p class="text-web-text-body text-cos-white font-medium mb-1">คำแนะนำการจัดลำดับงาน</p>
+<p class="text-web-text-small text-on-surface-variant">เนื่องจากพยากรณ์อากาศแจ้งว่าจะมีฝนในช่วงบ่าย AI แนะนำให้เร่งงานติดตั้งโครงสร้างเหล็ก (TSK-102) ให้เสร็จก่อนเวลา 13:00 น.</p>
+</div>
+<div class="bg-surface-container-high/50 p-3 rounded border border-cos-cyan/20">
+<p class="text-web-text-body text-cos-white font-medium mb-1">การใช้ทรัพยากร</p>
+<p class="text-web-text-small text-on-surface-variant">เครื่องเครนตัวที่ 2 พร้อมใช้งานแล้ว สามารถเรียกใช้เพื่อลดเวลาการยกของได้ 15%</p>
+</div>
+<button class="w-full py-2 bg-cos-cyan/10 hover:bg-cos-cyan/20 text-cos-cyan border border-cos-cyan/30 rounded font-web-text-small transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">rebase_edit</span>
+                            Apply Optimized Schedule
+                        </button>
+</div>
+</div>
+<!-- Task Cards Grid -->
+<div class="col-span-12 lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Task Card 1 (In Progress) -->
+<div class="bg-surface-container-low border border-outline-variant rounded-lg p-5 flex flex-col justify-between hover:border-cos-blue transition-all group relative">
+<div class="absolute top-4 right-4 flex items-center gap-2">
+<span class="px-2 py-0.5 rounded-full bg-mobile-danger text-cos-white text-[10px] font-bold tracking-tighter uppercase">HIGH</span>
+</div>
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="text-web-text-tiny font-bold text-cos-blue tracking-widest">TSK-102</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="text-web-text-tiny text-on-surface-variant">SECTOR 7G</span>
+</div>
+<h4 class="font-web-text-h2 text-web-text-h2 mb-2 leading-tight">งานติดตั้งโครงสร้างเหล็กชั้น 4 (ส่วนเอ)</h4>
+<div class="flex items-center gap-4 text-on-surface-variant mb-4">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[18px]">schedule</span>
+<span class="text-web-text-small">08:00 - 12:00</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[18px]">group</span>
+<span class="text-web-text-small">5 Workers</span>
+</div>
+</div>
+</div>
+<div class="pt-4 border-t border-outline-variant/30">
+<div class="flex justify-between items-center mb-2">
+<span class="text-web-text-tiny text-on-surface-variant">Progress</span>
+<span class="text-web-text-tiny text-cos-cyan font-bold">65%</span>
+</div>
+<div class="w-full h-1.5 bg-surface-container-highest rounded-full overflow-hidden mb-4">
+<div class="bg-cos-cyan h-full rounded-full" style="width: 65%;"></div>
+</div>
+<button class="w-full h-8 bg-cos-blue text-cos-white rounded flex items-center justify-center gap-2 hover:brightness-110 active:opacity-80 transition-all font-web-text-small">
+<span class="material-symbols-outlined text-[18px]">sync_alt</span>
+                                Update Progress
+                            </button>
+</div>
+</div>
+<!-- Task Card 2 (Pending) -->
+<div class="bg-surface-container-low border border-outline-variant rounded-lg p-5 flex flex-col justify-between hover:border-cos-blue transition-all group">
+<div class="absolute top-4 right-4 flex items-center gap-2">
+<span class="px-2 py-0.5 rounded-full bg-mobile-warning text-cos-white text-[10px] font-bold tracking-tighter uppercase">MEDIUM</span>
+</div>
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="text-web-text-tiny font-bold text-on-surface-variant tracking-widest">TSK-105</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="text-web-text-tiny text-on-surface-variant">SECTOR 8B</span>
+</div>
+<h4 class="font-web-text-h2 text-web-text-h2 mb-2 leading-tight">ตรวจสอบระบบประปาและจุดรั่วซึม</h4>
+<div class="flex items-center gap-4 text-on-surface-variant mb-4">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[18px]">schedule</span>
+<span class="text-web-text-small">13:00 - 15:30</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[18px]">group</span>
+<span class="text-web-text-small">2 Workers</span>
+</div>
+</div>
+</div>
+<div class="pt-4 border-t border-outline-variant/30">
+<div class="flex justify-between items-center mb-2">
+<span class="text-web-text-tiny text-on-surface-variant">Progress</span>
+<span class="text-web-text-tiny text-on-surface-variant font-bold">0%</span>
+</div>
+<div class="w-full h-1.5 bg-surface-container-highest rounded-full overflow-hidden mb-4">
+<div class="bg-surface-container-highest h-full rounded-full" style="width: 0%;"></div>
+</div>
+<button class="w-full h-8 border border-outline-variant text-on-surface rounded flex items-center justify-center gap-2 hover:bg-surface-container-highest transition-all font-web-text-small">
+<span class="material-symbols-outlined text-[18px]">play_arrow</span>
+                                Start Task
+                            </button>
+</div>
+</div>
+<!-- Task Card 3 (Pending) -->
+<div class="bg-surface-container-low border border-outline-variant rounded-lg p-5 flex flex-col justify-between hover:border-cos-blue transition-all group">
+<div class="absolute top-4 right-4 flex items-center gap-2">
+<span class="px-2 py-0.5 rounded-full bg-tertiary-container text-on-surface text-[10px] font-bold tracking-tighter uppercase">LOW</span>
+</div>
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="text-web-text-tiny font-bold text-on-surface-variant tracking-widest">TSK-108</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="text-web-text-tiny text-on-surface-variant">SECTOR 7G</span>
+</div>
+<h4 class="font-web-text-h2 text-web-text-h2 mb-2 leading-tight">จัดเตรียมหน้างานสำหรับเทปูนพรุ่งนี้</h4>
+<div class="flex items-center gap-4 text-on-surface-variant mb-4">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[18px]">schedule</span>
+<span class="text-web-text-small">16:00 - 17:30</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[18px]">group</span>
+<span class="text-web-text-small">4 Workers</span>
+</div>
+</div>
+</div>
+<div class="pt-4 border-t border-outline-variant/30">
+<div class="flex justify-between items-center mb-2">
+<span class="text-web-text-tiny text-on-surface-variant">Progress</span>
+<span class="text-web-text-tiny text-on-surface-variant font-bold">0%</span>
+</div>
+<div class="w-full h-1.5 bg-surface-container-highest rounded-full overflow-hidden mb-4">
+<div class="bg-surface-container-highest h-full rounded-full" style="width: 0%;"></div>
+</div>
+<button class="w-full h-8 border border-outline-variant text-on-surface rounded flex items-center justify-center gap-2 hover:bg-surface-container-highest transition-all font-web-text-small">
+<span class="material-symbols-outlined text-[18px]">play_arrow</span>
+                                Start Task
+                            </button>
+</div>
+</div>
+<!-- Task Card 4 (Completed) -->
+<div class="bg-surface-container-low/50 border border-outline-variant/30 opacity-80 rounded-lg p-5 flex flex-col justify-between group">
+<div class="absolute top-4 right-4 flex items-center gap-2">
+<span class="px-2 py-0.5 rounded-full bg-mobile-success/20 text-mobile-success text-[10px] font-bold tracking-tighter uppercase">COMPLETED</span>
+</div>
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="text-web-text-tiny font-bold text-on-surface-variant tracking-widest">TSK-101</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="text-web-text-tiny text-on-surface-variant">COMMON AREA</span>
+</div>
+<h4 class="font-web-text-h2 text-web-text-h2 mb-2 leading-tight">Safety Briefing เช้า</h4>
+<div class="flex items-center gap-4 text-on-surface-variant mb-4">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[18px]">schedule</span>
+<span class="text-web-text-small">07:30 - 08:00</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[18px]">check_circle</span>
+<span class="text-web-text-small">Done</span>
+</div>
+</div>
+</div>
+<div class="pt-4 border-t border-outline-variant/30">
+<div class="flex justify-between items-center mb-2">
+<span class="text-web-text-tiny text-on-surface-variant">Progress</span>
+<span class="text-web-text-tiny text-mobile-success font-bold">100%</span>
+</div>
+<div class="w-full h-1.5 bg-mobile-success/20 rounded-full overflow-hidden mb-4">
+<div class="bg-mobile-success h-full rounded-full" style="width: 100%;"></div>
+</div>
+<button class="w-full h-8 bg-surface-container-highest text-on-surface-variant rounded flex items-center justify-center gap-2 cursor-default font-web-text-small">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+                                View Log
+                            </button>
+</div>
+</div>
+</div>
+<!-- Site Visual Status (BIM Mini-viewer) -->
+<div class="col-span-12 lg:col-span-12 bg-surface-container-low border border-outline-variant rounded-lg p-6 overflow-hidden">
+<div class="flex items-center justify-between mb-6">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-cos-blue">location_city</span>
+<h3 class="font-web-text-h2 text-web-text-h2">Visual Site Progress - Sector 7G</h3>
+</div>
+<div class="flex gap-2">
+<button class="text-web-text-tiny font-bold uppercase tracking-wider bg-surface-container-high px-4 py-1.5 rounded border border-outline-variant hover:bg-surface-container-highest transition-all">2D Floor Plan</button>
+<button class="text-web-text-tiny font-bold uppercase tracking-wider bg-cos-blue text-cos-white px-4 py-1.5 rounded border border-cos-blue shadow-lg transition-all">3D BIM Model</button>
+</div>
+</div>
+<div class="h-64 bg-cos-navy rounded-lg relative flex items-center justify-center group border border-outline-variant/20">
+<!-- Simulated BIM Model Visualization -->
+<div class="absolute inset-0 bg-cover bg-center opacity-40 mix-blend-overlay" data-alt="A technical, high-density 3D BIM model of a building's steel structural skeleton in Sector 7G. The image is rendered in a dark-mode industrial aesthetic, with glowing neon blue lines indicating completed sections and bright cyan highlights for areas under active construction today. The background is a deep charcoal grey, minimalist environment typical of high-end architectural software. Information overlays with technical callouts are visible in the margins." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCgGsl8mhswteLCINUmSXVD74_ZVlHjnYLkNs3KvrntdTQvmuwFXlTxcHbBI6bNA5E5tHPJvOR6h80LXNYceFa5OpQ9Udazz_7u5Uj0GZPdEu1uL_EOmSRQRH-Hfjirkrq0r9prjTho0y7qMaSBzdwjClfBKuzxbehuRTRb3WuFJKBbYrh_kbuZiSPBV9DM40U2o4dvyjKu8jeLvzsSowuQSAy24miWSVnF0FD-pJDEQQGdmttTAuVsEf0Kz5XM4niqKUvLA6RXT1U')"></div>
+<div class="z-10 text-center">
+<span class="material-symbols-outlined text-[48px] text-cos-blue/50 mb-2">view_in_ar</span>
+<p class="text-on-surface-variant font-web-text-small">Interactive BIM Viewer Active</p>
+<p class="text-web-text-tiny text-outline">Drag to rotate • Pinch to zoom</p>
+</div>
+<!-- UI Overlays for BIM -->
+<div class="absolute bottom-4 left-4 flex flex-col gap-1">
+<div class="flex items-center gap-2 bg-dark-bg/80 px-2 py-1 rounded border border-outline-variant/30">
+<div class="w-2 h-2 rounded-full bg-cos-blue"></div>
+<span class="text-[10px] text-cos-white">Completed Structure</span>
+</div>
+<div class="flex items-center gap-2 bg-dark-bg/80 px-2 py-1 rounded border border-outline-variant/30">
+<div class="w-2 h-2 rounded-full bg-cos-cyan"></div>
+<span class="text-[10px] text-cos-white">Today's Assignment</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<script>
+        // Simple micro-interactions for the task list
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (btn.innerText.includes('Start Task')) {
+                    btn.innerHTML = '<span class="material-symbols-outlined text-[18px]">sync</span> Updating...';
+                    setTimeout(() => {
+                        btn.innerHTML = '<span class="material-symbols-outlined text-[18px]">sync_alt</span> Update Progress';
+                        btn.classList.remove('border', 'border-outline-variant');
+                        btn.classList.add('bg-cos-blue', 'text-cos-white');
+                    }, 1000);
+                }
+            });
+        });
+
+        // Simulating the "Offline" status fluctuation
+        setInterval(() => {
+            const banner = document.querySelector('.bg-mobile-warning\\/10');
+            if (banner) {
+                banner.classList.add('animate-pulse');
+                setTimeout(() => banner.classList.remove('animate-pulse'), 1000);
+            }
+        }, 5000);
+    </script>
+</body></html>

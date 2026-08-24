@@ -18,15 +18,24 @@ def _resolve_prompts_dir() -> Path:
         return Path(env)
     for parent in Path(__file__).resolve().parents:
         candidate = parent / "ai" / "prompts"
-        if candidate.is_dir():
+        # An `ai/prompts` that holds no .j2 does not count. The walk stops at the first *directory*
+        # otherwise, so an empty one nearer the file shadows the real templates further up, and every
+        # render then fails at request time with "Prompt template not found" — a 404 per call rather
+        # than a loud failure at startup. That is not hypothetical: a stray empty
+        # services/ai-gateway/ai/prompts left behind by a container build broke eight tests this way.
+        if candidate.is_dir() and any(candidate.glob("*.j2")):
             return candidate
-    raise FileNotFoundError("Could not locate ai/prompts; set the PROMPTS_DIR env var")
+    raise FileNotFoundError("Could not locate ai/prompts containing .j2 templates; set PROMPTS_DIR")
 
 
 _PROMPTS_DIR = _resolve_prompts_dir()
 
 
 def _get_env() -> Environment:
+    # autoescape=False is intentional (security review L11): the rendered output is an LLM PROMPT (plain
+    # text), not HTML — HTML-escaping it would corrupt the prompt (e.g. `&` → `&amp;`). Not an XSS/SSTI
+    # sink: variables are passed as render context (not compiled into template source), and the four
+    # templates are server-owned. Do NOT set autoescape=True here.
     return Environment(loader=FileSystemLoader(str(_PROMPTS_DIR)), autoescape=False)
 
 

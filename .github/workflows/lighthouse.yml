@@ -1,9 +1,37 @@
 name: Lighthouse CI
 
 # Spec §30.9: Lighthouse CI runs on every apps/web PR under a throttled mobile profile.
-# Gate (blocks merge): LCP ≤ 2.5s · CLS ≤ 0.1 · TBT ≤ 200ms · JS bundle ≤ 250KB per route
-# (budget numbers ratified by product owner 2026-07-04; assertions in apps/web/.lighthouserc.json).
+# Gate (blocks merge): lab LCP ≤ 3.2s · CLS ≤ 0.1 · TBT ≤ 200ms · JS bundle ≤ 250KB per route
+# (CLS/TBT/bundle ratified by product owner 2026-07-04; the 3.2s lab LCP ratified 2026-08-03;
+# assertions in apps/web/.lighthouserc.json).
+#
+# The lab LCP is 3.2s while the field SLO in §31.6 stays 2.5s — they measure different things. This
+# is one throttled profile on a `ubuntu-latest` runner, which is both slower and far more variable
+# than a developer machine: `benchmarkIndex` ranged 2,154–3,368 across five runs on 2026-08-03 while
+# the same page reported ~3,860 locally. 3.2s is the highest median observed across those runs
+# (2,913ms) plus ~10%. It is a regression gate, not a performance target.
+#
+# `aggregationMethod: median` is set in .lighthouserc.json rather than lhci's `optimistic` default.
+# Optimistic compares the best of the three runs, which is how a 1,190ms TBT — nearly 6x its budget
+# — passed unnoticed on 2026-08-03.
+#
+# The accessibility gate is `minScore: 1`, not a fraction. Measured on /login: the category has 24
+# scored audits totalling weight 163, and the lightest weighs 1 — so failing a single audit scores
+# 0.9939. Any floor below 1 would let a real regression through. 1.0 was measured three consecutive
+# runs after the contrast and label-in-name fixes, and the Lighthouse version is pinned by
+# pnpm-lock.yaml + --frozen-lockfile, so the audit set cannot shift underneath the gate without a
+# deliberate dependency PR. `color-contrast` is asserted separately only because its failure message
+# names the offending element — the category assertion already covers it.
+# Rationale and the measured ratios: docs/a11y/contrast-report.md.
 on:
+  # Manual trigger, so a baseline can be measured without inventing a pull request. Every budget
+  # asserted below is a measurement, and a measurement has to come from a real ubuntu-latest run —
+  # a developer's laptop reports its own CPU, not the runner's. Until 2026-08-03 there was no way
+  # to get one: this workflow fires on `pull_request` only, and no PR touching `apps/web` had been
+  # opened since it was added, so it had never executed even once and none of its assertions had
+  # ever been tested. GitHub only offers `workflow_dispatch` for workflows present on the default
+  # branch, so this becomes usable once the file reaches `main`.
+  workflow_dispatch:
   pull_request:
     paths:
       - 'apps/web/**'
@@ -28,12 +56,30 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Build web app
         run: pnpm --filter @cos/web build
+      # `pnpm run lighthouse`, not `lhci autorun`: the script starts the server, requests /login five
+      # times, and only then collects. With lhci starting the server via `startServerCommand`, its
+      # first of three runs also measured the server's first request — serverTTFB ~30 ms against
+      # ~5 ms for the other two on 2026-08-03. Warming fixed that specific metric: it now reads
+      # 4 / 4 / 3 ms across the three runs.
+      #
+      # It did NOT make the first run comparable. On the first green run the same first sample
+      # reported TBT 3,061 ms and CLS 0.133 with bootup-time 2,715 ms, against 72–82 ms / 0.000 /
+      # 493–541 ms for runs two and three — with its server already warm. That residue is Chrome's
+      # own first-run cost, and there is no verified fix for it here. It is the reason
+      # `aggregationMethod` is `median`: pessimistic would fail on that sample alone.
       - name: Run Lighthouse CI
         working-directory: apps/web
-        run: pnpm exec lhci autorun
+        run: pnpm run lighthouse
       - name: Upload Lighthouse reports
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: lighthouse-report-${{ github.run_id }}
           path: apps/web/.lighthouseci/
+          # Without this the artifact is always empty. `.lighthouseci` is a dotted directory, and
+          # upload-artifact@v4 skips hidden files unless told otherwise — it resolved
+          # `include-hidden-files: false` and reported "No files were found with the provided path"
+          # on run 30794467316, even though lhci had just logged "Dumping 3 reports to disk at
+          # /home/runner/work/cos/cos/apps/web/.lighthouseci". The step passed, so the gap was
+          # invisible until someone went looking for the reports.
+          include-hidden-files: true

@@ -12,27 +12,80 @@ import {
   OnModuleDestroy,
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
-import { Tenant } from '@prisma/client';
 import { createPrismaClient } from '../../shared/prisma/create-prisma-client';
-import { KafkaTopicProvisioner, OutboxPublisher } from '@cos/kafka';
+import { OutboxPublisher } from '@cos/kafka';
 import { buildOutboxEvent } from '../../shared/outbox/outbox.types';
 import { createLogger } from '@cos/logger';
 import { Connection, Client } from '@temporalio/client';
 import { CreateTenantDto } from './dto/create-tenant.dto';
+import { FeatureFlagService } from '../../shared/feature-flags/feature-flag.service';
+import { encryptDedicatedDbUrl, ENCRYPTED_DB_URL_FLAG } from './utils/dedicated-db-url-cipher';
 
 const logger = createLogger('tenant-service');
+
+/**
+ * Default IANA timezone for a data-residency region (Phase 20 §19.3/§19.6). Used to seed
+ * `tenants.timezone` at provisioning; a tenant may override it afterwards (PO 2026-07-23).
+ */
+const REGION_TIMEZONE: Record<string, string> = {
+  'ap-southeast-7': 'Asia/Bangkok',
+  'ap-southeast-1': 'Asia/Singapore',
+  'eu-west-1': 'Europe/Dublin',
+};
+
+export function defaultTimezoneForRegion(dataRegion: string): string {
+  return REGION_TIMEZONE[dataRegion] ?? 'Asia/Bangkok';
+}
+
+/**
+ * A tenant row as this service actually reads it — every column of platform.tenants EXCEPT
+ * `dedicated_db_url`, which is a database connection string complete with credentials and must never
+ * be serialized into a response or pulled into memory without a reason.
+ *
+ * Keys are snake_case because `$queryRaw` bypasses Prisma's field mapping and hands back RAW column
+ * names. The generated `Tenant` model declares camelCase (`tenantId` @map("tenant_id")), so every
+ * `$queryRaw<Tenant[]>` in this file described a shape that never existed at runtime — and reading
+ * `tenant.tenantId` off one of those rows silently produced `undefined`. That is not hypothetical:
+ * `identity.tenant.created.v1` was built from four such reads, and its Avro schema declares all four
+ * payload fields as non-null strings, so every publish failed to encode and was swallowed by
+ * publishEvent's catch. Tenant-created events have been dropped, not delivered.
+ *
+ * This type states what the query returns, so the compiler now rejects the camelCase reads.
+ */
+export interface TenantSummaryRow {
+  tenant_id: string;
+  tenant_code: string;
+  tenant_name: string;
+  keycloak_realm: string;
+  plan_type: string;
+  is_active: boolean;
+  data_region: string;
+  timezone: string;
+  created_at: Date;
+  updated_at: Date;
+}
 
 @Injectable()
 export class TenantService implements OnModuleDestroy {
   // Platform PrismaClient — NOT TenantPrismaService (this operates cross-tenant)
   private readonly prisma = createPrismaClient();
 
+  // FeatureFlagService gates whether dedicated_db_url is encrypted on write (s1.tenant.encrypted-db-url,
+  // security review F5b / QM-15). Injected rather than constructed so the Unleash client stays owned by
+  // Nest and is closed on shutdown (Rule 39).
+  constructor(private readonly flags: FeatureFlagService) {}
+
+  /** Encrypt-on-write decision for this tenant, honouring the QM-15 rollout flag. */
+  private encryptDbUrl(url: string, tenantId?: string): string {
+    return encryptDedicatedDbUrl(url, this.flags.isEnabled(ENCRYPTED_DB_URL_FLAG, { tenantId }));
+  }
+
   /** Close the Prisma connection on shutdown so the query-engine socket does not leak. */
   async onModuleDestroy(): Promise<void> {
     await this.prisma.$disconnect();
   }
 
-  async createTenant(dto: CreateTenantDto, createdBy: string): Promise<Tenant> {
+  async createTenant(dto: CreateTenantDto, createdBy: string): Promise<TenantSummaryRow> {
     const existing = await this.prisma.$queryRaw<Array<{ tenant_id: string }>>`
       SELECT tenant_id FROM platform.tenants
       WHERE tenant_code = ${dto.tenantCode}
@@ -57,10 +110,11 @@ export class TenantService implements OnModuleDestroy {
 
     // Create tenant record (ADR-008: shared DB + tenant_id, no per-tenant schema)
     const tenant = await this.prisma.$transaction(async (tx) => {
-      const [created] = await tx.$queryRaw<Tenant[]>`
-        INSERT INTO platform.tenants (tenant_code, tenant_name, keycloak_realm, plan_type, dedicated_db_url)
-        VALUES (${dto.tenantCode}, ${dto.tenantName}, ${keycloakRealm}, ${dto.planType}::"PlanType", ${dto.dedicatedDbUrl ?? null})
-        RETURNING *
+      const [created] = await tx.$queryRaw<TenantSummaryRow[]>`
+        INSERT INTO platform.tenants (tenant_code, tenant_name, keycloak_realm, plan_type, dedicated_db_url, data_region, timezone)
+        VALUES (${dto.tenantCode}, ${dto.tenantName}, ${keycloakRealm}, ${dto.planType}::"PlanType", ${dto.dedicatedDbUrl ? this.encryptDbUrl(dto.dedicatedDbUrl) : null},${dto.dataRegion ?? 'ap-southeast-1'}, ${dto.timezone ?? defaultTimezoneForRegion(dto.dataRegion ?? 'ap-southeast-1')})
+        RETURNING tenant_id, tenant_code, tenant_name, keycloak_realm, plan_type, is_active,
+                  data_region, timezone, created_at, updated_at
       `;
 
       // ESC-20: `$queryRaw` returns RAW DB column names — Prisma's `@map` (tenantId → tenant_id)
@@ -82,7 +136,7 @@ export class TenantService implements OnModuleDestroy {
         buildOutboxEvent({
           eventType: 'identity.tenant.created.v1',
           // The event is tenant-scoped (identity.* is not a platform.* type), so it routes to
-          // {tenant_id}.identity.tenant.created.v1 — the topic provisionTenantTopics creates below.
+          // {tenant_id}.identity.tenant.created.v1, which KafkaProducer creates on first use.
           // ESC-19: the previous envelope hardcoded tenant_id: 'platform', targeting a topic that
           // is never provisioned; with allowAutoTopicCreation:false that publish could not succeed.
           tenantId: row.tenant_id,
@@ -102,19 +156,20 @@ export class TenantService implements OnModuleDestroy {
       return created!;
     });
 
-    // Provision the tenant's per-tenant Kafka topic set (spec §7.3) before any of the
-    // tenant's events are produced. Idempotent; non-fatal so onboarding is not blocked
-    // by a transient Kafka outage (topics can be re-provisioned by re-running onboarding).
-    // ESC-20: read tenant_id, not tenantId — `tenant` is a raw `$queryRaw` row (snake_case
-    // columns), so the previous `tenant.tenantId` provisioned topics for `undefined`.
-    await this.provisionTenantTopics((tenant as unknown as { tenant_id: string }).tenant_id);
+    // Kafka topics are NOT provisioned here. KafkaProducer creates each per-tenant topic on the
+    // first event that needs it (§7.3), so a tenant costs topics in proportion to what it actually
+    // uses. Provisioning the whole catalogue at signup created 46 topics — 138 partitions, 414
+    // replicas at RF=3 — for every tenant regardless of usage, making broker capacity scale with
+    // customer count rather than traffic. KafkaTopicProvisioner still exists for operator-driven
+    // re-provisioning (e.g. rebuilding a cluster).
 
     logger.info(
       { tenantCode: dto.tenantCode, keycloakRealm },
       'Keycloak realm assigned to tenant record',
     );
 
-    // identity.tenant.created.v1 was already written to the outbox inside the transaction above.
+    // identity.tenant.created.v1 is NOT published here: it was written to the outbox inside the
+    // create transaction above, so a rollback emits nothing and a commit emits exactly once.
 
     return tenant;
   }
@@ -122,12 +177,15 @@ export class TenantService implements OnModuleDestroy {
   async deactivateTenant(tenantId: string, actorId: string): Promise<void> {
     // Outbox (§35.13 ESC-13): the UPDATE and its event share one transaction, so a tenant is never
     // deactivated without the event, and never emits the event without being deactivated.
+    //
+    // RETURNING one column, not `*`: the row is used only as an "did this update anything" check,
+    // so there is no reason to pull dedicated_db_url (a credentialed connection string) into memory.
     await this.prisma.$transaction(async (tx) => {
-      const [tenant] = await tx.$queryRaw<Tenant[]>`
+      const [tenant] = await tx.$queryRaw<Array<{ tenant_id: string }>>`
         UPDATE platform.tenants
         SET is_active = false, updated_at = now()
         WHERE tenant_id = ${tenantId}::uuid AND is_active = true
-        RETURNING *
+        RETURNING tenant_id
       `;
       if (!tenant) {
         throw new NotFoundException(`Tenant ${tenantId} not found or already inactive`);
@@ -148,11 +206,13 @@ export class TenantService implements OnModuleDestroy {
     });
   }
 
-  async findByCode(tenantCode: string): Promise<Tenant | null> {
-    const [tenant] = await this.prisma.$queryRaw<Tenant[]>`
-      SELECT * FROM platform.tenants
-      WHERE tenant_code = ${tenantCode} AND is_active = true
-      LIMIT 1
+  async findByCode(tenantCode: string): Promise<TenantSummaryRow | null> {
+    const [tenant] = await this.prisma.$queryRaw<TenantSummaryRow[]>`
+      SELECT tenant_id, tenant_code, tenant_name, keycloak_realm, plan_type, is_active,
+             data_region, timezone, created_at, updated_at
+        FROM platform.tenants
+       WHERE tenant_code = ${tenantCode} AND is_active = true
+       LIMIT 1
     `;
     return tenant ?? null;
   }
@@ -169,7 +229,7 @@ export class TenantService implements OnModuleDestroy {
     await this.prisma.$transaction(async (tx) => {
       const affected = await tx.$executeRaw`
         UPDATE platform.tenants
-        SET dedicated_db_url = ${dedicatedDbUrl}, updated_at = now()
+        SET dedicated_db_url = ${this.encryptDbUrl(dedicatedDbUrl, tenantId)}, updated_at = now()
         WHERE tenant_id = ${tenantId}::uuid AND is_active = true
       `;
       if (affected === 0) {
@@ -258,13 +318,38 @@ export class TenantService implements OnModuleDestroy {
     return { workflowId };
   }
 
-  async findById(tenantId: string): Promise<Tenant | null> {
-    const [tenant] = await this.prisma.$queryRaw<Tenant[]>`
-      SELECT * FROM platform.tenants
-      WHERE tenant_id = ${tenantId}::uuid
-      LIMIT 1
+  async findById(tenantId: string): Promise<TenantSummaryRow | null> {
+    const [tenant] = await this.prisma.$queryRaw<TenantSummaryRow[]>`
+      SELECT tenant_id, tenant_code, tenant_name, keycloak_realm, plan_type, is_active,
+             data_region, timezone, created_at, updated_at
+        FROM platform.tenants
+       WHERE tenant_id = ${tenantId}::uuid
+       LIMIT 1
     `;
     return tenant ?? null;
+  }
+
+  /**
+   * The signed-in user's OWN tenant identity — name + code + plan — for the Tenant Admin settings
+   * screen. Self-service (any authenticated role in the tenant); the tenant_id comes from the JWT, so
+   * a caller can only ever read their own tenant. This is NOT the SYSTEM_ADMIN cross-tenant listing.
+   */
+  async getMyTenant(
+    tenantId: string,
+  ): Promise<{ tenant_name: string; tenant_code: string; plan_type: string }> {
+    const [t] = await this.prisma.$queryRaw<
+      Array<{ tenant_name: string; tenant_code: string; plan_type: string }>
+    >`
+      SELECT tenant_name, tenant_code, plan_type::text AS plan_type
+      FROM platform.tenants
+      WHERE tenant_id = ${tenantId}::uuid AND is_active = true
+      LIMIT 1
+    `;
+    if (!t)
+      throw new NotFoundException({
+        error: { code: 'COS-TENANT-404', message: 'Tenant not found' },
+      });
+    return t;
   }
 
   private async getTemporalClient(): Promise<Client> {
@@ -274,23 +359,22 @@ export class TenantService implements OnModuleDestroy {
     return new Client({ connection });
   }
 
-  /** List all tenants for the SYSTEM_ADMIN panel (§20.4.1). */
-  async listTenants(): Promise<Tenant[]> {
-    return this.prisma.$queryRaw<Tenant[]>`
-      SELECT * FROM platform.tenants ORDER BY created_at DESC
+  /**
+   * List all tenants for the SYSTEM_ADMIN panel (§20.4.1).
+   *
+   * Columns are listed explicitly to EXCLUDE `dedicated_db_url`. It holds a full
+   * `postgresql://user:password@host/db` string (it is handed straight to createPrismaClient), so the
+   * previous `SELECT *` shipped live database credentials in the response body of
+   * GET /api/v1/admin/tenants — into browser history, proxy logs and client-side error reporting.
+   * SYSTEM_ADMIN-gating is the wrong control for a secret that has no reason to leave the server at
+   * all; getDbUrlForTenant() reads the column server-side when it is actually needed.
+   */
+  async listTenants(): Promise<TenantSummaryRow[]> {
+    return this.prisma.$queryRaw<TenantSummaryRow[]>`
+      SELECT tenant_id, tenant_code, tenant_name, keycloak_realm, plan_type, is_active,
+             data_region, timezone, created_at, updated_at
+        FROM platform.tenants
+       ORDER BY created_at DESC
     `;
-  }
-
-  private async provisionTenantTopics(tenantId: string): Promise<void> {
-    const provisioner = new KafkaTopicProvisioner();
-    try {
-      await provisioner.connect();
-      await provisioner.provisionTenant(tenantId);
-      logger.info({ tenantId }, 'tenant kafka topics provisioned');
-    } catch (err) {
-      logger.error({ tenantId, err }, 'kafka.topic.provision.failed');
-    } finally {
-      await provisioner.disconnect().catch(() => undefined);
-    }
   }
 }

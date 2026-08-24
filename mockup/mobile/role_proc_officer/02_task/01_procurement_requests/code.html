@@ -1,0 +1,292 @@
+<!DOCTYPE html><html class="dark" lang="th"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Procurement Requests</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,100..900;1,100..900&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed": "#dee1f9",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "secondary-fixed": "#acedff",
+                        "surface-dim": "#031427",
+                        "mobile-danger": "#FF3B30",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "dark-bg": "#020617",
+                        "inverse-surface": "#d3e4fe",
+                        "surface-container-lowest": "#000f21",
+                        "on-primary-fixed": "#00174b",
+                        "on-secondary": "#003640",
+                        "outline-variant": "#434655",
+                        "primary-fixed": "#dbe1ff",
+                        "secondary-container": "#03b5d3",
+                        "on-error-container": "#ffdad6",
+                        "surface-tint": "#b4c5ff",
+                        "surface": "#031427",
+                        "on-secondary-container": "#00424e",
+                        "surface-container-high": "#1b2b3f",
+                        "on-surface-variant": "#c3c6d7",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "on-tertiary-container": "#eeefff",
+                        "surface-variant": "#26364a",
+                        "mobile-warning": "#FF9500",
+                        "primary": "#b4c5ff",
+                        "on-primary-container": "#eeefff",
+                        "surface-bright": "#2a3a4f",
+                        "error-container": "#93000a",
+                        "on-error": "#690005",
+                        "outline": "#8d90a0",
+                        "tertiary-container": "#686c80",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "inverse-primary": "#0053db",
+                        "dark-surface": "#0F172A",
+                        "background": "#031427",
+                        "inverse-on-surface": "#213145",
+                        "on-tertiary-fixed": "#161b2b",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "sync-pending": "#94A3B8",
+                        "on-primary": "#002a78",
+                        "surface-container-low": "#0b1c30",
+                        "mobile-primary": "#0066FF",
+                        "surface-container": "#102034",
+                        "tertiary": "#c1c5dc",
+                        "on-secondary-fixed": "#001f26",
+                        "primary-container": "#2563eb",
+                        "on-background": "#d3e4fe",
+                        "secondary": "#4cd7f6",
+                        "error": "#ffb4ab",
+                        "surface-container-highest": "#26364a",
+                        "mobile-success": "#00C853",
+                        "sync-active": "#FFD60A",
+                        "on-surface": "#d3e4fe",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "on-tertiary": "#2b3041"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "edge-mobile": "24px",
+                        "base": "4px",
+                        "touch-target": "52px",
+                        "web-margin": "32px",
+                        "space-4": "16px",
+                        "space-1": "4px",
+                        "space-2": "8px",
+                        "space-3": "12px"
+                    },
+                    "fontFamily": {
+                        "body-web": ["Inter Tight"],
+                        "h1-web": ["Inter Tight"],
+                        "hero-mobile": ["Inter Tight"],
+                        "tiny-web": ["Inter Tight"],
+                        "label-mobile": ["Inter Tight"],
+                        "body-mobile": ["Inter Tight"],
+                        "display-web": ["Inter Tight"],
+                        "h2-web": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "body-web": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "h1-web": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "hero-mobile": ["28px", { "lineHeight": "34px", "fontWeight": "700" }],
+                        "tiny-web": ["11px", { "lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "label-mobile": ["13px", { "lineHeight": "18px", "fontWeight": "600" }],
+                        "body-mobile": ["17px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "display-web": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "h2-web": ["20px", { "lineHeight": "28px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-surface text-on-surface font-body-web antialiased selection:bg-primary-container selection:text-on-primary-container min-h-screen flex flex-col overflow-x-hidden">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-surface text-primary dark:text-primary-fixed border-b border-outline-variant dark:border-outline-variant sticky top-0 z-40">
+<div class="flex justify-between items-center px-edge-mobile h-touch-target w-full max-w-7xl mx-auto">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-2xl" data-icon="architecture" data-weight="fill" style="font-variation-settings: &quot;FILL&quot; 1;">architecture</span>
+<span class="text-h2-web font-h2-web font-bold tracking-tight text-on-surface dark:text-on-surface uppercase">CONSTRUCTION OS</span>
+</div>
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-variant border border-outline-variant">
+<span class="w-2 h-2 rounded-full bg-mobile-success shadow-[0_0_8px_rgba(0,200,83,0.5)]"></span>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase tracking-wider">SYNCED</span>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 px-edge-mobile py-space-4 pb-[100px] flex flex-col gap-6 max-w-3xl mx-auto w-full">
+<!-- Header & Search Section -->
+<section class="flex flex-col gap-space-3">
+<h1 class="font-h1-web text-h1-web text-on-surface">คำขอจัดซื้อ</h1>
+<div class="flex gap-space-2">
+<div class="relative flex-1">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline" data-icon="search">search</span>
+<input class="w-full h-11 bg-surface-container border border-outline-variant rounded-lg pl-10 pr-4 text-on-surface focus:border-secondary focus:ring-1 focus:ring-secondary outline-none transition-colors font-body-mobile text-body-mobile placeholder:text-outline-variant" placeholder="ค้นหาคำขอ..." type="text">
+</div>
+<button class="h-11 px-4 bg-surface-container border border-outline-variant rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-variant transition-colors group">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors" data-icon="tune">tune</span>
+</button>
+</div>
+</section>
+<!-- CORE_AI Insight Section -->
+<section class="bg-surface-container border border-outline-variant rounded-lg p-space-4 flex flex-col gap-space-3 relative overflow-hidden group">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-secondary opacity-80"></div>
+<div class="absolute -right-16 -top-16 w-32 h-32 bg-secondary opacity-5 blur-3xl rounded-full"></div>
+<div class="flex items-start justify-between z-10">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-secondary" data-icon="memory" data-weight="fill" style="font-variation-settings: &quot;FILL&quot; 1;">memory</span>
+<span class="font-label-mobile text-label-mobile text-secondary uppercase tracking-widest">วิเคราะห์ลำดับความสำคัญ</span>
+</div>
+<div class="flex items-center gap-1 bg-surface-variant px-2 py-0.5 rounded text-secondary font-tiny-web text-tiny-web">
+<span class="material-symbols-outlined text-[14px]" data-icon="auto_awesome">auto_awesome</span>
+<span class="">94% Confidence</span>
+</div>
+</div>
+<div class="z-10">
+<p class="font-body-web text-body-web text-on-surface-variant">
+                    พบคำขอจัดซื้อ <strong class="text-on-surface font-semibold text-mobile-danger">#PR-2024-001 (ปูนซีเมนต์ปอร์ตแลนด์ ประเภท 1)</strong> มีความเสี่ยงสูงที่จะกระทบแผนงานหลักของโครงการ Skyline Tower A แนะนำให้อนุมัติภายใน 24 ชั่วโมง
+                </p>
+</div>
+<div class="border-t border-outline-variant/30 pt-space-2 mt-space-1 z-10">
+<p class="font-tiny-web text-tiny-web text-outline">Source: Historical Lead Times &amp; Site Urgency</p>
+</div>
+</section>
+<!-- PR List Section -->
+<section class="flex flex-col gap-space-3">
+<!-- PR Card: Pending (High Urgency) -->
+<article class="bg-surface-container border border-outline-variant rounded-lg flex flex-col relative overflow-hidden group hover:border-outline transition-colors cursor-pointer">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-mobile-warning"></div>
+<div class="p-space-3 flex flex-col gap-space-2">
+<!-- Card Header -->
+<div class="flex justify-between items-start">
+<div class="flex flex-col">
+<span class="font-tiny-web text-tiny-web text-outline uppercase tracking-wider">Request ID</span>
+<span class="font-label-mobile text-label-mobile text-on-surface">#PR-2024-001</span>
+</div>
+<div class="bg-[#332115] border border-mobile-warning/30 px-2.5 py-1 rounded flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-mobile-warning"></span>
+<span class="font-tiny-web text-tiny-web text-mobile-warning font-semibold tracking-wider">PENDING</span>
+</div>
+</div>
+<!-- Main Info -->
+<div class="flex flex-col mt-space-1">
+<h3 class="font-h2-web text-h2-web text-on-surface">ปูนซีเมนต์ปอร์ตแลนด์ ประเภท 1</h3>
+<p class="font-body-web text-body-web text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]" data-icon="location_city">location_city</span>
+                            Skyline Tower A
+                        </p>
+</div>
+<!-- Metrics Row -->
+<div class="grid grid-cols-2 gap-space-2 mt-space-1 p-space-2 bg-surface-variant rounded border border-outline-variant/50">
+<div class="flex flex-col">
+<span class="font-tiny-web text-tiny-web text-outline">Quantity</span>
+<span class="font-label-mobile text-label-mobile text-on-surface">500 Tons</span>
+</div>
+<div class="flex flex-col">
+<span class="font-tiny-web text-tiny-web text-outline">Due Date</span>
+<span class="font-label-mobile text-label-mobile text-mobile-warning">Tomorrow, 10:00 AM</span>
+</div>
+</div>
+</div>
+</article>
+<!-- PR Card: Approved -->
+<article class="bg-surface-container border border-outline-variant rounded-lg flex flex-col relative overflow-hidden group hover:border-outline transition-colors cursor-pointer">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-mobile-success"></div>
+<div class="p-space-3 flex flex-col gap-space-2">
+<div class="flex justify-between items-start">
+<div class="flex flex-col">
+<span class="font-tiny-web text-tiny-web text-outline uppercase tracking-wider">Request ID</span>
+<span class="font-label-mobile text-label-mobile text-on-surface">#PR-2024-002</span>
+</div>
+<div class="bg-[#0e2718] border border-mobile-success/30 px-2.5 py-1 rounded flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-mobile-success"></span>
+<span class="font-tiny-web text-tiny-web text-mobile-success font-semibold tracking-wider">APPROVED</span>
+</div>
+</div>
+<div class="flex flex-col mt-space-1">
+<h3 class="font-h2-web text-h2-web text-on-surface">เหล็กเส้นกลม SR24 ขนาด 9 มม.</h3>
+<p class="font-body-web text-body-web text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]" data-icon="location_city">location_city</span>
+                            Riverfront Residence
+                        </p>
+</div>
+<div class="grid grid-cols-2 gap-space-2 mt-space-1 p-space-2 bg-surface-variant rounded border border-outline-variant/50">
+<div class="flex flex-col">
+<span class="font-tiny-web text-tiny-web text-outline">Quantity</span>
+<span class="font-label-mobile text-label-mobile text-on-surface">1,200 เส้น</span>
+</div>
+<div class="flex flex-col">
+<span class="font-tiny-web text-tiny-web text-outline">Due Date</span>
+<span class="font-label-mobile text-label-mobile text-on-surface">15 Oct 2024</span>
+</div>
+</div>
+</div>
+</article>
+<!-- PR Card: Rejected -->
+<article class="bg-surface-container border border-outline-variant rounded-lg flex flex-col relative overflow-hidden group hover:border-outline transition-colors opacity-75">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-mobile-danger"></div>
+<div class="p-space-3 flex flex-col gap-space-2">
+<div class="flex justify-between items-start">
+<div class="flex flex-col">
+<span class="font-tiny-web text-tiny-web text-outline uppercase tracking-wider">Request ID</span>
+<span class="font-label-mobile text-label-mobile text-on-surface-variant">#PR-2024-003</span>
+</div>
+<div class="bg-[#311116] border border-mobile-danger/30 px-2.5 py-1 rounded flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-mobile-danger"></span>
+<span class="font-tiny-web text-tiny-web text-mobile-danger font-semibold tracking-wider">REJECTED</span>
+</div>
+</div>
+<div class="flex flex-col mt-space-1">
+<h3 class="font-h2-web text-h2-web text-on-surface-variant line-through decoration-outline">ไม้แบบก่อสร้าง หนา 15 มม.</h3>
+<p class="font-body-web text-body-web text-outline flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]" data-icon="location_city">location_city</span>
+                            Skyline Tower A
+                        </p>
+</div>
+</div>
+</article>
+</section>
+</main>
+<!-- Quick Action FAB -->
+<button class="fixed right-edge-mobile bottom-[96px] w-[56px] h-[56px] bg-primary-container text-on-primary-container rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all z-40">
+<span class="material-symbols-outlined text-2xl" data-icon="add" data-weight="fill">add</span>
+</button>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-[72px] px-2 bg-surface-container dark:bg-surface-container pb-safe shadow-lg md:hidden border-t border-outline-variant/30">
+<!-- Home (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant w-16 hover:bg-surface-variant rounded-xl py-1 transition-colors" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="home">home</span>
+<span class="font-tiny-web text-tiny-web">Home</span>
+</a>
+<!-- Tasks (Active) -->
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl px-4 py-1 w-20 shadow-sm Active: scale-95 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="assignment" data-weight="fill" style="font-variation-settings: &quot;FILL&quot; 1;">assignment</span>
+<span class="font-tiny-web text-tiny-web font-bold">Tasks</span>
+</a>
+<!-- Chat (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant w-16 hover:bg-surface-variant rounded-xl py-1 transition-colors relative" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="chat">chat</span>
+<span class="font-tiny-web text-tiny-web">Chat</span>
+<span class="absolute top-1 right-3 w-2 h-2 bg-mobile-danger rounded-full border border-surface-container"></span>
+</a>
+<!-- More (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant w-16 hover:bg-surface-variant rounded-xl py-1 transition-colors" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="menu">menu</span>
+<span class="font-tiny-web text-tiny-web">More</span>
+</a>
+</nav>
+
+
+</body></html>

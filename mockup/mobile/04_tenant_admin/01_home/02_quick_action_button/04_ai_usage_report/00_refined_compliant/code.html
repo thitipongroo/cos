@@ -1,0 +1,207 @@
+<!DOCTYPE html><html class="dark" lang="th" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(6, 182, 212, 0.1), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .bento-border {
+            position: relative;
+        }
+        .bento-border::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background-color: #06B6D4;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "background": "#0B1020",
+                      "surface": "#12182B",
+                      "surface-container": "#1A2238",
+                      "surface-container-high": "#232D47",
+                      "primary": "#2563eb",
+                      "on-primary": "#FFFFFF",
+                      "secondary": "#4cd7f6",
+                      "ai-cyan": "#06B6D4",
+                      "mobile-success": "#00C853",
+                      "mobile-warning": "#FF9500",
+                      "outline-variant": "#2E3A59",
+                      "on-surface": "#D3E4FE",
+                      "on-surface-variant": "#8F9BB3"
+              },
+              "spacing": {
+                      "edge-mobile": "24px",
+                      "space-4": "16px",
+                      "space-3": "12px",
+                      "space-2": "8px"
+              },
+              "fontFamily": {
+                      "hero": ["Inter Tight", "sans-serif"],
+                      "body": ["Inter Tight", "sans-serif"]
+              }
+            },
+          },
+        }
+      </script>
+</head>
+<body class="bg-background text-on-surface font-body selection:bg-ai-cyan/30">
+<!-- Top App Bar -->
+<header class="fixed top-0 w-full z-50 bg-background border-b border-outline-variant/30 flex items-center justify-between px-edge-mobile h-16">
+<div class="flex items-center gap-3">
+<img alt="COS" class="w-8 h-8 object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA8FrbtEb4MiuNXUXhQ9B9kdD7703tCnhmR5bqgAxBE-mTgV-CS2oNR593np8UHwA7fc47jtL-Bxe-pGDAWjn-baoSkWYj27U7qIKZjB3atUC8jFAxFNJbT5ka_j72-ajN4bE3fqwSntn9pe4cB-wFWb2gdtYS6240q0JT3yR1s7bxwu795W_36pb5VARMbPvxF1zramtqNX_OPa-4bjHGcMw0E318f82JcKCK-kgiW3W-V5_XbIavXc3K9jPchA5GyJQ">
+<h1 class="font-hero font-bold text-xl tracking-tight text-white uppercase leading-none">CONSTRUCTION OS</h1>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex items-center bg-mobile-success/10 border border-mobile-success/30 px-2 py-1">
+<span class="w-1.5 h-1.5 rounded-full bg-mobile-success animate-pulse mr-2"></span>
+<span class="text-[10px] font-bold text-mobile-success uppercase tracking-widest">SYNCED</span>
+</div>
+</div>
+</header>
+<main class="pt-24 pb-40 px-edge-mobile space-y-6">
+<!-- Screen Header -->
+<div class="space-y-1">
+<div class="flex items-start justify-between">
+<div>
+<h2 class="text-2xl font-bold text-white leading-tight">AI WEEKLY USAGE REPORT</h2>
+
+</div>
+<span class="material-symbols-outlined text-ai-cyan text-3xl" style="font-variation-settings: &quot;FILL&quot; 1;">smart_toy</span>
+</div>
+</div>
+<!-- Status Card -->
+<div class="bg-surface border border-outline-variant/30 p-4 shimmer flex items-center gap-4">
+<span class="material-symbols-outlined text-ai-cyan animate-spin" data-icon="progress_activity">progress_activity</span>
+<div>
+<p class="text-xs font-bold text-ai-cyan uppercase tracking-widest">Ready to Review</p>
+<p class="text-[11px] text-on-surface-variant">Generated at 14:30 Today</p>
+</div>
+</div>
+<!-- AI Insight Card -->
+<section class="space-y-4">
+<div class="bento-border bg-surface p-5 border border-outline-variant/20 shadow-xl">
+<div class="flex items-center justify-between mb-5">
+<span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-[0.2em]">Platform Overview</span>
+<div class="flex items-center gap-1.5 text-ai-cyan">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: &quot;FILL&quot; 1;">verified</span>
+<span class="text-[11px] font-bold tracking-wider">98% Confidence</span>
+</div>
+</div>
+<p class="text-base leading-relaxed text-on-surface mb-8">
+                    In the last 7 days, your organization showed a <span class="text-ai-cyan font-bold border-b-2 border-ai-cyan/30">12% increase</span> in active engagement. Most activities are concentrated in the <span class="text-white font-semibold">Safety Logs</span> and <span class="text-white font-semibold">Inventory Management</span> modules.
+                </p>
+<!-- Metrics Grid -->
+<div class="grid grid-cols-2 gap-3">
+<div class="bg-surface-container p-4 border border-outline-variant/20">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-ai-cyan text-lg">group</span>
+<span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Users</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-xl font-bold text-white">1,240</span>
+<span class="text-[10px] font-bold text-mobile-success">↑ 4%</span>
+</div>
+</div>
+<div class="bg-surface-container p-4 border border-outline-variant/20">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-ai-cyan text-lg">database</span>
+<span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Storage</span>
+</div>
+<span class="text-xl font-bold text-white">84.2 GB</span>
+</div>
+<div class="bg-surface-container p-4 border border-outline-variant/20">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-ai-cyan text-lg">generating_tokens</span>
+<span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">AI Tokens</span>
+</div>
+<span class="text-xl font-bold text-white">42.5k</span>
+</div>
+<div class="bg-surface-container p-4 border border-outline-variant/20">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-mobile-warning text-lg">warning</span>
+<span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Safety</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-xl font-bold text-white">02</span>
+<span class="text-[10px] font-medium text-on-surface-variant">Low Risk</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Meta Information -->
+<div class="flex items-center justify-between px-1">
+<div class="flex items-center gap-1.5 opacity-60">
+<span class="material-symbols-outlined text-xs">analytics</span>
+<span class="text-[10px] font-medium uppercase tracking-tight">Source: System Audit Logs</span>
+</div>
+<div class="flex items-center gap-1.5 opacity-60">
+<span class="material-symbols-outlined text-xs">calendar_today</span>
+<span class="text-[10px] font-medium uppercase tracking-tight">Range: Oct 24 - Oct 31</span>
+</div>
+</div>
+</section>
+<!-- Visualization -->
+<div class="bg-surface border border-outline-variant/20 p-5 space-y-6">
+<h3 class="text-[10px] font-bold text-on-surface-variant uppercase tracking-[0.2em]">Daily Activity Distribution</h3>
+<div class="flex items-end justify-between h-32 gap-2 px-2">
+<!-- Bar chart elements using System Blue and AI Cyan -->
+<div class="flex-1 bg-primary/20 h-[50%]"></div>
+<div class="flex-1 bg-primary/20 h-[65%]"></div>
+<div class="flex-1 bg-ai-cyan h-[100%]"></div>
+<div class="flex-1 bg-primary/20 h-[40%]"></div>
+<div class="flex-1 bg-primary/20 h-[75%]"></div>
+<div class="flex-1 bg-primary/20 h-[90%]"></div>
+<div class="flex-1 bg-primary/20 h-[55%]"></div>
+</div>
+<div class="flex justify-between px-1">
+<span class="text-[9px] font-bold text-on-surface-variant">MON</span>
+<span class="text-[9px] font-bold text-on-surface-variant">TUE</span>
+<span class="text-[9px] font-bold text-ai-cyan">WED</span>
+<span class="text-[9px] font-bold text-on-surface-variant">THU</span>
+<span class="text-[9px] font-bold text-on-surface-variant">FRI</span>
+<span class="text-[9px] font-bold text-on-surface-variant">SAT</span>
+<span class="text-[9px] font-bold text-on-surface-variant">SUN</span>
+</div>
+</div>
+</main>
+<!-- Bottom Action Bar -->
+<footer class="fixed bottom-0 w-full bg-surface border-t border-outline-variant/30 px-edge-mobile py-4 pb-safe z-50 space-y-3">
+<button class="w-full h-[52px] bg-primary text-white font-bold text-sm uppercase tracking-widest flex items-center justify-center gap-3 active:brightness-90 transition-all">
+<span class="material-symbols-outlined">publish</span>
+            PUBLISH REPORT</button>
+<button class="w-full h-[52px] bg-transparent border border-outline-variant text-on-surface font-bold text-sm uppercase tracking-widest flex items-center justify-center gap-3 active:bg-white/5 transition-all">
+<span class="material-symbols-outlined">refresh</span>
+            RE-GENERATE</button>
+</footer>
+<script>
+        // Smooth interaction feedback
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('touchstart', () => btn.classList.add('scale-[0.98]'));
+            btn.addEventListener('touchend', () => btn.classList.remove('scale-[0.98]'));
+        });
+    </script>
+
+
+</body></html>

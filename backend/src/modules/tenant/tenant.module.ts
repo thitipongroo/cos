@@ -1,9 +1,11 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TenantService } from './tenant.service';
 import { TenantController } from './tenant.controller';
 import { TenantPrismaService } from './prisma/tenant-prisma.service';
 import { UserService } from './user.service';
 import { UserController } from './user.controller';
+import { UserMeController } from './user-me.controller';
+import { MyTenantController } from './my-tenant.controller';
 import { TenantSettingsService } from './settings.service';
 import { TenantSettingsRepository } from './settings.repository';
 import { TenantSettingsController } from './settings.controller';
@@ -15,7 +17,10 @@ import { IdentityModule } from '../identity/identity.module';
 // guards, so it never saw req.user and every authenticated request 401'd. The
 // TenantMiddleware class is kept only for the TenantRequest type and its unit tests.
 @Module({
-  imports: [IdentityModule],
+  // The other half of the identity ↔ files ↔ tenant cycle (see identity.module.ts). NestJS requires
+  // the lazy reference on BOTH sides of a circular edge; one side alone still leaves the other
+  // evaluating a partially-initialised binding.
+  imports: [forwardRef(() => IdentityModule)],
   providers: [
     TenantService,
     TenantPrismaService,
@@ -23,7 +28,13 @@ import { IdentityModule } from '../identity/identity.module';
     TenantSettingsService,
     TenantSettingsRepository,
   ],
-  controllers: [TenantController, UserController, TenantSettingsController],
+  controllers: [
+    TenantController,
+    UserController,
+    UserMeController,
+    MyTenantController,
+    TenantSettingsController,
+  ],
   exports: [TenantService, TenantPrismaService, UserService],
 })
 export class TenantModule {}

@@ -124,6 +124,18 @@ class TestPgVectorBackend:
         assert "ORDER BY" in sql
         assert "LIMIT $2" in sql
 
+    async def test_table_is_schema_qualified(self):
+        """Regression: the reader used the bare `document_embeddings` while ai-embedding-worker
+        writes to `ai.document_embeddings`, and nothing sets search_path — so against a real
+        database the query resolved to nothing. Mocked pools hide this, hence an explicit check."""
+        holder: dict = {}
+        pool = self._pool([], holder)
+        backend = PgVectorBackend(pool, self._embedder([0.0] * 3))
+        await backend.search("q", "t1", top_k=3)
+        sql = holder["conn"].fetch.call_args.args[0]
+        assert "FROM ai.document_embeddings" in sql
+        assert "FROM document_embeddings" not in sql
+
     async def test_entity_types_filter_passed_as_arg(self):
         holder: dict = {}
         pool = self._pool([], holder)

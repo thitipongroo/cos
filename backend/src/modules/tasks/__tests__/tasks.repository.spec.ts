@@ -126,4 +126,81 @@ describe('TasksRepository', () => {
     mockPrisma.$queryRaw.mockResolvedValueOnce([]);
     expect(await repo.getTaskBudgetRatio('task-1')).toBeNull();
   });
+
+  // §32.12 progress aggregates. The SQL itself is integration-tested; what matters here is the
+  // mapping out of Prisma — DECIMAL comes back as a string, and an empty result must read as 0
+  // rather than NaN/undefined, because the service divides by these.
+  it('findProgressSums maps the aggregate row to numbers', async () => {
+    mockPrisma.$queryRaw.mockResolvedValueOnce([
+      {
+        weight_total: 1000,
+        earned_total: 45000,
+        sched_weight_total: 800,
+        sched_earned_total: 40000,
+        sched_planned_total: 52000,
+      },
+    ]);
+
+    expect(await repo.findProgressSums('proj-1')).toEqual({
+      weightTotal: 1000,
+      earnedTotal: 45000,
+      schedWeightTotal: 800,
+      schedEarnedTotal: 40000,
+      schedPlannedTotal: 52000,
+    });
+  });
+
+  it('findProgressSums falls back to 0 for every sum when the project has no rows', async () => {
+    // A project with no BOQ-linked task returns no row at all — every field must degrade to 0.
+    mockPrisma.$queryRaw.mockResolvedValueOnce([]);
+
+    expect(await repo.findProgressSums('proj-empty')).toEqual({
+      weightTotal: 0,
+      earnedTotal: 0,
+      schedWeightTotal: 0,
+      schedEarnedTotal: 0,
+      schedPlannedTotal: 0,
+    });
+  });
+
+  it('findProgressSums coerces null sums to 0', async () => {
+    // COALESCE guards the SQL side, but a null still has to survive the mapping as 0.
+    mockPrisma.$queryRaw.mockResolvedValueOnce([
+      {
+        weight_total: null,
+        earned_total: null,
+        sched_weight_total: null,
+        sched_earned_total: null,
+        sched_planned_total: null,
+      },
+    ]);
+
+    expect(await repo.findProgressSums('proj-null')).toEqual({
+      weightTotal: 0,
+      earnedTotal: 0,
+      schedWeightTotal: 0,
+      schedEarnedTotal: 0,
+      schedPlannedTotal: 0,
+    });
+  });
+
+  it('findSchedulableTasks returns the rows as-is', async () => {
+    const rows = [
+      {
+        progress: 50,
+        planned_start: new Date('2026-07-01'),
+        planned_end: new Date('2026-07-10'),
+        weight: 100,
+      },
+    ];
+    mockPrisma.$queryRaw.mockResolvedValueOnce(rows);
+
+    expect(await repo.findSchedulableTasks('proj-1')).toBe(rows);
+  });
+
+  it('findSchedulableTasks returns an empty list when nothing is schedulable', async () => {
+    mockPrisma.$queryRaw.mockResolvedValueOnce([]);
+
+    expect(await repo.findSchedulableTasks('proj-empty')).toEqual([]);
+  });
 });

@@ -14,7 +14,9 @@
 The platform needs runtime secrets (DB credentials, API keys, JWT signing keys) across **cloud** and
 **on-premise/hybrid** deployments, with **no secrets in code or git history** (QM-4). The secret
 _store_ and the _delivery mechanism_ into pods are both part of the decision. This is fully specified
-in `05-security-compliance` §5.2 and was referenced as "ADR-013" in `context.md` (lines 204, 734, 824) — but the ADR file itself was never created. This ADR records the existing decision so those
+in `05-security-compliance` §5.2 and was referenced as "ADR-013" in `context.md`
+(lines 204, 734, 824) — but the ADR file itself was never created. This ADR records the
+existing decision so those
 references resolve.
 
 ## Decision

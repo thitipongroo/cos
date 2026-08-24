@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="th"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>Construction OS - Success</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            font-family: 'Inter Tight', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            background-color: #031427;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .success-glow {
+            box-shadow: 0 0 40px rgba(0, 200, 83, 0.2);
+        }
+        .shimmer-bg {
+            background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.03) 50%, rgba(255,255,255,0) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 3s infinite linear;
+        }
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "error-container": "#93000a",
+                      "outline-variant": "#434655",
+                      "mobile-danger": "#FF3B30",
+                      "on-tertiary-fixed-variant": "#414658",
+                      "background": "#031427",
+                      "on-tertiary": "#2b3041",
+                      "outline": "#8d90a0",
+                      "on-surface": "#d3e4fe",
+                      "surface-tint": "#b4c5ff",
+                      "surface-container": "#102034",
+                      "on-primary-fixed-variant": "#003ea8",
+                      "inverse-surface": "#d3e4fe",
+                      "on-secondary-fixed-variant": "#004e5c",
+                      "on-secondary-container": "#00424e",
+                      "sync-pending": "#94A3B8",
+                      "secondary-fixed": "#acedff",
+                      "surface-dim": "#031427",
+                      "inverse-on-surface": "#213145",
+                      "error": "#ffb4ab",
+                      "dark-surface": "#0F172A",
+                      "on-primary-fixed": "#00174b",
+                      "tertiary-fixed": "#dee1f9",
+                      "surface-container-low": "#0b1c30",
+                      "tertiary-container": "#686c80",
+                      "surface-bright": "#2a3a4f",
+                      "on-error": "#690005",
+                      "sync-active": "#FFD60A",
+                      "primary": "#b4c5ff",
+                      "on-surface-variant": "#c3c6d7",
+                      "on-secondary-fixed": "#001f26",
+                      "on-error-container": "#ffdad6",
+                      "on-tertiary-fixed": "#161b2b",
+                      "on-primary-container": "#eeefff",
+                      "surface": "#031427",
+                      "on-tertiary-container": "#eeefff",
+                      "surface-container-lowest": "#000f21",
+                      "mobile-warning": "#FF9500",
+                      "on-primary": "#002a78",
+                      "primary-fixed": "#dbe1ff",
+                      "surface-container-high": "#1b2b3f",
+                      "mobile-success": "#00C853",
+                      "mobile-primary": "#0066FF",
+                      "secondary": "#4cd7f6",
+                      "surface-variant": "#26364a",
+                      "tertiary-fixed-dim": "#c1c5dc",
+                      "primary-container": "#2563eb",
+                      "on-secondary": "#003640",
+                      "secondary-container": "#03b5d3",
+                      "on-background": "#d3e4fe",
+                      "inverse-primary": "#0053db",
+                      "dark-bg": "#020617",
+                      "secondary-fixed-dim": "#4cd7f6",
+                      "tertiary": "#c1c5dc",
+                      "primary-fixed-dim": "#b4c5ff",
+                      "surface-container-highest": "#26364a"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "web-margin": "32px",
+                      "touch-target": "52px",
+                      "edge-mobile": "24px",
+                      "space-3": "12px",
+                      "space-4": "16px",
+                      "space-1": "4px",
+                      "space-2": "8px",
+                      "base": "4px"
+              },
+              "fontFamily": {
+                      "label-mobile": ["Inter Tight"],
+                      "body-web": ["Inter Tight"],
+                      "tiny-web": ["Inter Tight"],
+                      "hero-mobile": ["Inter Tight"],
+                      "body-mobile": ["Inter Tight"],
+                      "h2-web": ["Inter Tight"],
+                      "display-web": ["Inter Tight"],
+                      "h1-web": ["Inter Tight"]
+              },
+              "fontSize": {
+                      "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                      "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                      "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                      "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+              }
+            },
+          },
+        }
+      </script>
+</head>
+<body class="bg-surface text-on-surface flex flex-col min-h-screen">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface-container-low flex items-center justify-between px-edge-mobile h-touch-target">
+<button class="flex items-center justify-center w-10 h-10 hover:bg-surface-container-high rounded-full transition-transform active:scale-95">
+<span class="material-symbols-outlined text-primary">arrow_back</span>
+</button>
+<div class="flex flex-col items-center">
+<span class="font-h1-mobile text-[16px] font-bold text-on-surface tracking-wider">CONSTRUCTION OS</span>
+<div class="flex items-center gap-1.5 mt-0.5">
+<div class="w-2 h-2 rounded-full bg-mobile-success animate-pulse"></div>
+<span class="text-[10px] font-bold text-mobile-success tracking-widest uppercase">SYNCED</span>
+</div>
+</div>
+<div class="w-10"></div> <!-- Spacer for centering -->
+</header>
+<main class="flex-grow flex flex-col items-center justify-start pt-24 px-edge-mobile pb-32">
+<!-- Large Success Visual -->
+<div class="relative mt-12 mb-8">
+<div class="w-28 h-28 rounded-full border-4 border-mobile-success/20 flex items-center justify-center success-glow">
+<div class="w-20 h-20 bg-mobile-success rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(0,200,83,0.4)]">
+<span class="material-symbols-outlined text-white text-5xl font-bold" style="font-variation-settings: 'wght' 700;">check</span>
+</div>
+</div>
+<!-- Decorative Orbitals -->
+<div class="absolute -top-4 -right-4 w-4 h-4 rounded-full bg-mobile-success/40"></div>
+<div class="absolute -bottom-2 -left-6 w-2 h-2 rounded-full bg-mobile-success/20"></div>
+</div>
+<!-- Typography Cluster -->
+<div class="text-center space-y-4 max-w-sm">
+<h1 class="font-hero-mobile text-hero-mobile text-on-surface">ส่งข้อความทดสอบสำเร็จ</h1>
+<p class="font-body-mobile text-body-mobile text-on-surface-variant leading-relaxed opacity-80">
+                ระบบได้ทำการส่งข้อความแจ้งเตือนทดสอบไปยังกลุ่ม LINE ที่เชื่อมต่อไว้เรียบร้อยแล้ว กรุณาตรวจสอบความถูกต้องในแอป LINE ของคุณ
+            </p>
+</div>
+<!-- CORE_AI Insight Panel -->
+<div class="w-full mt-10 bg-surface-container border-l-4 border-secondary/80 rounded-xl p-5 relative overflow-hidden shimmer-bg">
+<div class="flex items-center justify-between mb-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-lg" style="font-variation-settings: 'FILL' 1;">neurology</span>
+<span class="text-secondary font-bold text-xs tracking-widest">CORE_AI INSIGHT</span>
+</div>
+<div class="flex items-center gap-1.5 px-2 py-0.5 bg-secondary/10 rounded-full">
+<span class="text-[10px] font-bold text-secondary uppercase">Confidence 100%</span>
+</div>
+</div>
+<p class="font-mono text-[12px] text-on-surface/90 leading-tight">
+<span class="text-secondary opacity-70">&gt;</span> Message routed via AWS SES.<br/>
+<span class="text-secondary opacity-70">&gt;</span> End-to-end encryption verified.<br/>
+<span class="text-secondary opacity-70">&gt;</span> Latency: 38ms.
+            </p>
+</div>
+<!-- Action Buttons -->
+<div class="w-full mt-10 space-y-4">
+<button class="w-full h-touch-target bg-mobile-primary text-white rounded-xl font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-lg shadow-mobile-primary/20">
+                กลับไปที่การตั้งค่า
+            </button>
+<button class="w-full h-touch-target border border-outline-variant text-on-surface rounded-xl font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] hover:bg-surface-container-high">
+                ส่งข้อความอีกครั้ง
+                <span class="material-symbols-outlined text-[18px]">replay</span>
+</button>
+</div>
+<!-- Industrial Metadata -->
+<div class="mt-8 flex items-center gap-4 opacity-30">
+<div class="flex flex-col items-center">
+<span class="text-[9px] font-bold uppercase tracking-tighter">System ID</span>
+<span class="text-[10px] font-mono">LX-992-B</span>
+</div>
+<div class="h-4 w-px bg-outline-variant"></div>
+<div class="flex flex-col items-center">
+<span class="text-[9px] font-bold uppercase tracking-tighter">Enc Protocol</span>
+<span class="text-[10px] font-mono">AES-256-GCM</span>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 bg-surface-container-lowest pb-safe h-[72px] flex justify-around items-center px-2 shadow-lg">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:opacity-80 transition-all active:scale-95" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-mobile text-label-mobile mt-1">แดชบอร์ด</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:opacity-80 transition-all active:scale-95" href="#">
+<span class="material-symbols-outlined">architecture</span>
+<span class="font-label-mobile text-label-mobile mt-1">โครงการ</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:opacity-80 transition-all active:scale-95" href="#">
+<span class="material-symbols-outlined">assignment</span>
+<span class="font-label-mobile text-label-mobile mt-1">งาน</span>
+</a>
+<!-- Active Tab: Settings -->
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-4 py-1.5 transition-all active:scale-95" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">settings</span>
+<span class="font-label-mobile text-label-mobile mt-0.5">ตั้งค่า</span>
+</a>
+</nav>
+<script>
+        // Micro-interaction for buttons
+        document.querySelectorAll('button').forEach(button => {
+            button.addEventListener('touchstart', function() {
+                this.classList.add('scale-95');
+            });
+            button.addEventListener('touchend', function() {
+                this.classList.remove('scale-95');
+            });
+        });
+    </script>
+</body></html>

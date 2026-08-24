@@ -1,0 +1,330 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>Safety Incidents | Project North Star</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-tint": "#b4c5ff",
+                      "sync-pending": "#94A3B8",
+                      "surface-dim": "#031427",
+                      "surface-container-high": "#1b2b3f",
+                      "inverse-surface": "#d3e4fe",
+                      "inverse-on-surface": "#213145",
+                      "surface-container-lowest": "#000f21",
+                      "on-surface-variant": "#c3c6d7",
+                      "surface": "#031427",
+                      "on-secondary-container": "#00424e",
+                      "cos-white": "#F8FAFC",
+                      "tertiary-container": "#686c80",
+                      "on-error-container": "#ffdad6",
+                      "secondary": "#4cd7f6",
+                      "on-primary-fixed-variant": "#003ea8",
+                      "on-primary": "#002a78",
+                      "error-container": "#93000a",
+                      "primary-fixed-dim": "#b4c5ff",
+                      "on-error": "#690005",
+                      "on-primary-fixed": "#00174b",
+                      "sync-active": "#FFD60A",
+                      "primary": "#b4c5ff",
+                      "on-primary-container": "#eeefff",
+                      "mobile-danger": "#FF3B30",
+                      "error": "#ffb4ab",
+                      "on-tertiary": "#2b3041",
+                      "primary-fixed": "#dbe1ff",
+                      "outline-variant": "#434655",
+                      "cos-cyan": "#06B6D4",
+                      "outline": "#8d90a0",
+                      "surface-container-low": "#0b1c30",
+                      "surface-bright": "#2a3a4f",
+                      "secondary-fixed-dim": "#4cd7f6",
+                      "on-background": "#d3e4fe",
+                      "mobile-primary": "#0066FF",
+                      "mobile-success": "#00C853",
+                      "surface-container": "#102034",
+                      "on-surface": "#d3e4fe",
+                      "mobile-warning": "#FF9500",
+                      "surface-container-highest": "#26364a",
+                      "tertiary-fixed": "#dee1f9",
+                      "inverse-primary": "#0053db",
+                      "on-tertiary-container": "#eeefff",
+                      "cos-navy": "#0B1020",
+                      "on-secondary-fixed": "#001f26",
+                      "dark-surface": "#0F172A",
+                      "background": "#031427",
+                      "tertiary": "#c1c5dc",
+                      "primary-container": "#2563eb",
+                      "on-tertiary-fixed": "#161b2b",
+                      "on-secondary-fixed-variant": "#004e5c",
+                      "dark-bg": "#020617",
+                      "surface-variant": "#26364a",
+                      "on-tertiary-fixed-variant": "#414658",
+                      "tertiary-fixed-dim": "#c1c5dc",
+                      "secondary-container": "#03b5d3",
+                      "cos-blue": "#2563EB",
+                      "secondary-fixed": "#acedff",
+                      "on-secondary": "#003640"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "web-space-1": "4px",
+                      "web-space-4": "16px",
+                      "web-space-2": "8px",
+                      "mobile-edge": "24px",
+                      "web-space-8": "32px",
+                      "web-space-3": "12px",
+                      "mobile-touch-target": "52px",
+                      "web-base": "4px"
+              },
+              "fontFamily": {
+                      "web-text-small": ["Inter Tight"],
+                      "web-text-h1": ["Inter Tight"],
+                      "web-text-body": ["Inter Tight"],
+                      "web-text-tiny": ["Inter Tight"],
+                      "mobile-text-label": ["Inter Tight"],
+                      "mobile-text-body": ["Inter Tight"],
+                      "web-text-h2": ["Inter Tight"],
+                      "web-text-display": ["Inter Tight"],
+                      "mobile-text-hero": ["Inter Tight"]
+              },
+              "fontSize": {
+                      "web-text-small": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                      "web-text-h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "web-text-body": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "web-text-tiny": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                      "mobile-text-label": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                      "mobile-text-body": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "web-text-h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "web-text-display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "mobile-text-hero": ["28px", {"lineHeight": "34px", "fontWeight": "700"}]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #031427;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .card-shadow {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        /* One-handed scrolling optimization: extra padding at bottom */
+        .scrolling-content {
+            padding-bottom: 120px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="font-web-text-body text-on-surface dark:bg-dark-bg">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-mobile-edge h-web-space-8 bg-surface dark:bg-surface-dim border-b border-outline-variant dark:border-outline h-16"><div class="flex items-center gap-2 flex-shrink-0"><img alt="COS Logo" class="w-8 h-8 object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAeBTLIo1YGnLUy0vEVUiEt27boCzbTioO2c_fVVWySLzPY_WnUHYJIkGplNYeOhWfyGitD_RMt06aaRLe-uru2fL1xc7JN6YaQy1bOoaBHUPmXGQ4RWBKBJfKvpftNuasjcUBUjxL-zPMmlBhU4uBM-MHyKOJeIy57owrXKNbutLhGXOxBoD3TlfydOLA25T98WNn2EPSccRcW9Eho4rLb4QgQ5cagK9jRkaHpO_fLvpxXW-BwDCxmh-uet1evTOZh2w"><h1 class="font-web-text-h1 text-[16px] font-bold uppercase tracking-wider text-on-surface whitespace-nowrap">Construction OS</h1></div><div class="flex items-center gap-4"><div class="flex items-center gap-1 px-2 py-1 rounded bg-mobile-success/10 text-mobile-success border border-mobile-success/20"><span class="material-symbols-outlined text-[14px]">check_circle</span><span class="font-web-text-tiny text-[10px] font-bold">SYNCED</span></div><span class="material-symbols-outlined text-on-surface-variant">notifications</span></div></header><div class="fixed top-16 left-0 w-full z-40 bg-surface-container-high border-b border-outline-variant px-mobile-edge py-2 flex justify-between items-center">
+  <div class="flex items-center gap-2">
+    <span class="font-web-text-tiny text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Active Project:</span>
+    <span class="font-web-text-tiny text-[10px] font-bold text-on-surface uppercase tracking-wider">Skyline Tower A</span>
+  </div>
+  <button class="flex items-center gap-1 px-2 py-1 rounded bg-surface-container-highest text-cos-cyan border border-cos-cyan active:scale-90 transition-all shadow-sm">
+    <span class="material-symbols-outlined text-[14px]">sync_alt</span>
+    <span class="font-web-text-tiny text-[10px] font-bold">SWITCH</span>
+  </button>
+</div>
+<!-- Main Canvas -->
+<main class="px-mobile-edge pt-web-space-4 scrolling-content mt-28">
+<!-- Quick Filter Pills (AI Distinguishable) -->
+<div class="flex gap-web-space-2 overflow-x-auto pb-web-space-4 no-scrollbar"><button class="whitespace-nowrap px-4 py-2 rounded-full bg-mobile-primary text-cos-white font-mobile-text-label shadow-lg active:scale-95 transition-all">All Active</button><button class="whitespace-nowrap px-4 py-2 rounded-full bg-surface-container-high text-on-surface-variant border border-outline-variant font-mobile-text-label active:scale-95 transition-all hover:bg-surface-container-highest">Critical</button><button class="whitespace-nowrap px-4 py-2 rounded-full bg-surface-container-high text-on-surface-variant border border-outline-variant font-mobile-text-label active:scale-95 transition-all hover:bg-surface-container-highest">Near Miss</button><button class="whitespace-nowrap px-4 py-2 rounded-full bg-surface-container-high text-on-surface-variant border border-outline-variant font-mobile-text-label active:scale-95 transition-all hover:bg-surface-container-highest">PPE Violation</button></div>
+<!-- Incident Feed -->
+<div class="grid gap-web-space-4 max-w-2xl mx-auto">
+<!-- Card 1: Critical / Equipment Failure -->
+<div class="group relative flex overflow-hidden bg-surface-container rounded-xl border border-outline-variant hover:border-primary transition-all active:scale-[0.98] duration-150 dark:bg-dark-surface">
+<!-- Priority Accent Bar -->
+<div class="w-1.5 bg-mobile-danger"></div>
+<div class="flex-1 p-web-space-4 flex flex-col gap-web-space-2">
+<div class="flex justify-between items-start">
+<div>
+<span class="font-web-text-tiny text-web-text-tiny uppercase tracking-wider text-mobile-danger mb-1 block">Critical Severity</span>
+<h3 class="font-web-text-h2 text-web-text-h2 text-on-surface">Equipment Failure</h3>
+</div>
+<div class="flex flex-col items-end gap-1">
+<div class="flex items-center gap-1 text-sync-active">
+<span class="material-symbols-outlined text-[16px]">sync_saved_locally</span>
+<span class="font-web-text-tiny text-web-text-tiny">SYNCED</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-web-space-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">location_on</span>
+<p class="font-mobile-text-label text-mobile-text-label">Zone C, Level 4 (Main Deck)</p>
+</div>
+<div class="mt-web-space-2 flex items-center justify-between">
+<div class="flex -space-x-2">
+<div class="w-8 h-8 rounded-full border-2 border-surface-container overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A portrait of a male safety inspector in his 40s wearing a high-visibility orange vest and a white hard hat with a subtle blue logo. He is standing against a background of a construction site with steel girders and a bright blue sky. Professional industrial photography style, sharp focus, cinematic lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC-UezyQ1eS_pZd_f231gqotLzA362NIbebUjpKlHEiysFxujsSqhtNWpNf-5-rKP1sHylVB-6ueyNnBLBlt9L-WlQI8l9gGqjuaKxsaEKXi6-WwrKOcwDcE1pfYFdFnaUHnC4L77T_8_abp725Xp5bThrS0iiz_AiLXiP_3CVp0nr4L4Hn59xJOtIJisDHIbePYSZEoxCMuUjU9OFTjtVnnpyrDM-u-ML_alLTAhT9Gr-vcKZO-c47iqct9LKbQU0P1tRSfuQctAo">
+</div>
+</div>
+<span class="font-web-text-tiny text-web-text-tiny text-on-surface-variant">Reported 12m ago</span>
+</div>
+<div class="absolute right-2 top-1/2 -translate-y-1/2 text-on-surface-variant opacity-50 group-hover:opacity-100 transition-opacity"><span class="material-symbols-outlined">chevron_right</span></div></div>
+<!-- Thumbnail Attached -->
+<div class="w-32 h-full bg-surface-container-highest relative">
+<img class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-300" data-alt="A close-up shot of a frayed heavy-duty steel cable on a construction crane, with visible metal strands snapping. The lighting is harsh and direct, emphasizing the texture of the rusted metal against a dark, industrial background. High-contrast, mission-critical safety documentation aesthetic with deep blues and metallic grays." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC15ViZ-PX6ncwyqZ9j2Mi5WcgPd9aadd54oyO2z6vqQC27HRSSw6EwXZfKWxTchELfQF7iW0Ovrk-8GCAN5dUT1up8U6eA7MmmNJCySWRqXACvYjhrSX-QB7k1NLxhhFPMzJW-Dl2SDO9_KyYHamakEvwZXz_ijEBDttSre0ik5_qXYhooqXFxNwe-BSzQj3Cz3i8mMkmfATY6Azuksfpi370z52q3y1i1Bw7Mn4hpzwphfVq9Pp-iDXgjzo1wTWFuETqkh62mEDQ">
+<div class="absolute inset-0 bg-gradient-to-l from-transparent to-surface-container opacity-20"></div>
+</div>
+</div>
+<!-- Card 2: Medium / Near Miss -->
+<div class="group relative flex overflow-hidden bg-surface-container rounded-xl border border-outline-variant hover:border-primary transition-all active:scale-[0.98] duration-150 dark:bg-dark-surface">
+<div class="w-1.5 bg-mobile-warning"></div>
+<div class="flex-1 p-web-space-4 flex flex-col gap-web-space-2">
+<div class="flex justify-between items-start">
+<div>
+<span class="font-web-text-tiny text-web-text-tiny uppercase tracking-wider text-mobile-warning mb-1 block">Medium Severity</span>
+<h3 class="font-web-text-h2 text-web-text-h2 text-on-surface">Near Miss</h3>
+</div>
+<div class="flex flex-col items-end gap-1"><div class="flex items-center gap-1 px-1.5 py-0.5 rounded bg-sync-pending/10 text-sync-pending border border-sync-pending/20"><span class="material-symbols-outlined text-[12px]">sync</span><span class="font-web-text-tiny text-[10px] font-bold">PENDING</span></div></div>
+</div>
+<div class="flex items-center gap-web-space-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">location_on</span>
+<p class="font-mobile-text-label text-mobile-text-label">Basement 2, Segment G</p>
+</div>
+<div class="mt-web-space-2 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-web-text-tiny text-web-text-tiny">Falling Object</span>
+</div>
+<span class="font-web-text-tiny text-web-text-tiny text-on-surface-variant">Reported 45m ago</span>
+</div>
+<div class="absolute right-2 top-1/2 -translate-y-1/2 text-on-surface-variant opacity-50 group-hover:opacity-100 transition-opacity"><span class="material-symbols-outlined">chevron_right</span></div></div>
+<div class="w-32 h-full bg-surface-container-highest relative">
+<img class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-300" data-alt="A photograph of a yellow safety helmet lying on a dusty concrete floor in a dimly lit underground construction zone. Shadowy silhouettes of scaffolding are visible in the distance. The atmosphere is gritty and technical, using a palette of slate grays and muted yellows. Industrial minimalist photography style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCTawh99_dZyvrDpJXbkYBdpBkB68jXc5r44oS4xM5fgmzp8C9v5X6V8EjPEYV9L1lVbIti7IXgZIk16ddVu0h6Zm0ExFgTr0k3KwnfYq3qOx7PGsLs3un_oVQDRzgouxcFVjkKmYeGNFfAe0D8uL-zDCEgW28vy18P81w-5Q40MZkETEE0ZMfrbHDP_kzEb5nS8hz-I4XzWEGH_-1-7_avChrV7dbymBBcxBd0C25TaCyVE7mdxBc95cR24rKQFpwFtDfw0BAMy7A">
+</div>
+</div>
+<!-- Card 3: Low / PPE Violation -->
+<div class="group relative flex overflow-hidden bg-surface-container rounded-xl border border-outline-variant hover:border-primary transition-all active:scale-[0.98] duration-150 dark:bg-dark-surface">
+<div class="w-1.5 bg-mobile-success"></div>
+<div class="flex-1 p-web-space-4 flex flex-col gap-web-space-2">
+<div class="flex justify-between items-start">
+<div>
+<span class="font-web-text-tiny text-web-text-tiny uppercase tracking-wider text-mobile-success mb-1 block">Low Severity</span>
+<h3 class="font-web-text-h2 text-web-text-h2 text-on-surface">PPE Violation</h3>
+</div>
+<div class="flex flex-col items-end gap-1">
+<div class="flex items-center gap-1 text-sync-active">
+<span class="material-symbols-outlined text-[16px]">sync_saved_locally</span>
+<span class="font-web-text-tiny text-web-text-tiny">SYNCED</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-web-space-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">location_on</span>
+<p class="font-mobile-text-label text-mobile-text-label">Exterior Scaffolding, Level 12</p>
+</div>
+<div class="mt-web-space-2 flex items-center justify-between">
+<p class="font-web-text-tiny text-web-text-tiny text-on-surface-variant italic">Unsecured harness clip observed.</p>
+<span class="font-web-text-tiny text-web-text-tiny text-on-surface-variant">2h ago</span>
+</div>
+<div class="absolute right-2 top-1/2 -translate-y-1/2 text-on-surface-variant opacity-50 group-hover:opacity-100 transition-opacity"><span class="material-symbols-outlined">chevron_right</span></div></div>
+<div class="w-32 h-full bg-surface-container-highest relative">
+<div class="w-full h-full flex items-center justify-center text-outline-variant">
+<span class="material-symbols-outlined text-web-text-display">image</span>
+</div>
+</div>
+</div>
+<!-- Card 4: High / Fire Hazard (AI Highlighted) -->
+<div class="group relative flex overflow-hidden bg-surface-container rounded-xl border-l-4 border-l-cos-cyan border-y border-r border-outline-variant bg-opacity-50 transition-all active:scale-[0.98] duration-150" style="background-image: linear-gradient(to right, rgba(6, 182, 212, 0.05), transparent);">
+<div class="w-1.5 bg-mobile-danger"></div>
+<div class="flex-1 p-web-space-4 flex flex-col gap-web-space-2">
+<div class="flex justify-between items-start">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-cos-cyan text-[14px]" style="font-variation-settings: &quot;FILL&quot; 1;">auto_awesome</span>
+<span class="font-web-text-tiny text-web-text-tiny uppercase tracking-wider text-cos-cyan">Risk</span>
+</div>
+<h3 class="font-web-text-h2 text-web-text-h2 text-on-surface">Hot Work Hazard</h3>
+</div>
+<div class="flex flex-col items-end gap-1"><div class="flex items-center gap-1 px-1.5 py-0.5 rounded bg-sync-pending/10 text-sync-pending border border-sync-pending/20"><span class="material-symbols-outlined text-[12px] animate-spin">sync</span><span class="font-web-text-tiny text-[10px] font-bold">SYNCING</span></div></div>
+</div>
+<div class="flex items-center gap-web-space-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">location_on</span>
+<p class="font-mobile-text-label text-mobile-text-label">Fabrication Shop 4</p>
+</div>
+<div class="mt-web-space-2 p-2 rounded bg-surface-container-high border border-cos-cyan/20"><div class="flex justify-between items-center mb-1"><span class="text-[10px] font-bold text-cos-cyan">CONFIDENCE : 94%</span><span class="text-[10px] text-on-surface-variant">Source: Fire Watch Log</span></div><p class="font-web-text-tiny text-web-text-tiny text-cos-cyan">Incomplete fire watch log detected for active welding station. Immediate inspection required.</p><div class="mt-2 pt-2 border-t border-cos-cyan/10 flex justify-end"><div class="flex items-center gap-1 text-cos-cyan font-bold text-[10px] uppercase tracking-widest">View Details <span class="material-symbols-outlined text-[14px]">arrow_forward</span></div></div></div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-2 pb-safe h-mobile-touch-target bg-surface dark:bg-surface-dim border-t border-outline-variant dark:border-outline rounded-t-xl">
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-web-space-4 py-web-space-1 hover:bg-surface-container-low transition-all active:scale-90">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-mobile-text-label text-mobile-text-label">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-secondary-container dark:bg-secondary text-on-secondary-container dark:text-on-secondary rounded-full px-web-space-4 py-web-space-1 active:scale-90 transition-transform ring-2 ring-cos-cyan ring-offset-2 ring-offset-surface">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">warning</span>
+<span class="font-mobile-text-label text-mobile-text-label">Incidents</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-web-space-4 py-web-space-1 hover:bg-surface-container-low active:scale-90 transition-transform">
+<span class="material-symbols-outlined">assignment_turned_in</span>
+<span class="font-mobile-text-label text-mobile-text-label">Checklists</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-web-space-4 py-web-space-1 hover:bg-surface-container-low active:scale-90 transition-transform">
+<span class="material-symbols-outlined">person</span>
+<span class="font-mobile-text-label text-mobile-text-label">Profile</span>
+</button>
+</nav>
+<!-- FAB: Log New Incident (Contextual for Home/Dashboard/List) -->
+<button class="fixed bottom-24 right-6 w-14 h-14 bg-mobile-primary text-cos-white rounded-full flex items-center justify-center shadow-[0_8px_16px_rgba(0,102,255,0.3)] active:scale-90 active:shadow-md transition-all z-40" style="transform: translateY(0px) scale(1); opacity: 1;">
+<span class="material-symbols-outlined text-[32px]">add</span>
+</button>
+<script>
+        // Simple micro-interaction for cards
+        document.querySelectorAll('.group').forEach(card => {
+            card.addEventListener('click', () => {
+                // Flash interaction feedback
+                const bg = card.style.backgroundColor;
+                card.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+                setTimeout(() => {
+                    card.style.backgroundColor = bg;
+                }, 100);
+            });
+        });
+
+        // Hide FAB on deep scroll for focus
+        let lastScroll = 0;
+        const fab = document.querySelector('button.fixed.bottom-24');
+        window.addEventListener('scroll', () => {
+            const currentScroll = window.pageYOffset;
+            if (currentScroll > lastScroll && currentScroll > 100) {
+                fab.style.transform = 'translateY(150%) scale(0.5)';
+                fab.style.opacity = '0';
+            } else {
+                fab.style.transform = 'translateY(0) scale(1)';
+                fab.style.opacity = '1';
+            }
+            lastScroll = currentScroll;
+        });
+    </script>
+
+
+
+
+
+
+</body></html>

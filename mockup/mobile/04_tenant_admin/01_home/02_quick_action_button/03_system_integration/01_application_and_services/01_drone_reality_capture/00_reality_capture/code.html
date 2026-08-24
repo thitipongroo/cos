@@ -1,0 +1,349 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>Drone Reality Capture | Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "sync-active": "#FFD60A",
+                    "on-primary": "#002a78",
+                    "dark-bg": "#020617",
+                    "surface-container-high": "#1b2b3f",
+                    "tertiary-container": "#686c80",
+                    "surface-dim": "#031427",
+                    "inverse-primary": "#0053db",
+                    "on-tertiary-container": "#eeefff",
+                    "secondary-fixed": "#acedff",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "on-tertiary": "#2b3041",
+                    "mobile-success": "#00C853",
+                    "on-background": "#d3e4fe",
+                    "on-primary-fixed": "#00174b",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "inverse-surface": "#d3e4fe",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "mobile-primary": "#0066FF",
+                    "surface-container-low": "#0b1c30",
+                    "on-secondary-fixed": "#001f26",
+                    "on-surface": "#d3e4fe",
+                    "primary-fixed": "#dbe1ff",
+                    "outline": "#8d90a0",
+                    "secondary-container": "#03b5d3",
+                    "dark-surface": "#0F172A",
+                    "on-error-container": "#ffdad6",
+                    "surface-tint": "#b4c5ff",
+                    "secondary": "#4cd7f6",
+                    "mobile-danger": "#FF3B30",
+                    "surface-container-lowest": "#000f21",
+                    "surface-bright": "#2a3a4f",
+                    "sync-pending": "#94A3B8",
+                    "on-tertiary-fixed": "#161b2b",
+                    "background": "#031427",
+                    "error-container": "#93000a",
+                    "on-primary-container": "#eeefff",
+                    "on-surface-variant": "#c3c6d7",
+                    "mobile-warning": "#FF9500",
+                    "on-error": "#690005",
+                    "tertiary-fixed": "#dee1f9",
+                    "on-secondary-container": "#00424e",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "surface-container-highest": "#26364a",
+                    "inverse-on-surface": "#213145",
+                    "primary-container": "#2563eb",
+                    "surface": "#031427",
+                    "surface-container": "#102034",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "outline-variant": "#434655",
+                    "tertiary": "#c1c5dc",
+                    "primary": "#b4c5ff",
+                    "error": "#ffb4ab",
+                    "surface-variant": "#26364a",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "on-secondary": "#003640"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "space-2": "8px",
+                    "web-margin": "32px",
+                    "space-4": "16px",
+                    "space-3": "12px",
+                    "space-1": "4px",
+                    "touch-target": "52px",
+                    "edge-mobile": "24px",
+                    "base": "4px"
+            },
+            "fontFamily": {
+                    "label-mobile": ["Inter Tight"],
+                    "tiny-web": ["Inter Tight"],
+                    "display-web": ["Inter Tight"],
+                    "body-web": ["Inter Tight"],
+                    "h2-web": ["Inter Tight"],
+                    "h1-web": ["Inter Tight"],
+                    "hero-mobile": ["Inter Tight"],
+                    "body-mobile": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body {
+            background-color: #031427;
+            color: #d3e4fe;
+            font-family: 'Inter Tight', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+        .glass-card {
+            background: rgba(16, 32, 52, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(67, 70, 85, 0.3);
+        }
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .active-scale:active {
+            transform: scale(0.95);
+            transition: transform 0.15s;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-edge-mobile h-touch-target bg-surface-dim dark:bg-surface-container-lowest">
+<div class="flex items-center gap-space-2"><button class="w-10 h-10 flex items-center justify-center text-on-surface active-scale" aria-label="Go back"><span class="material-symbols-outlined">arrow_back</span></button><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuCYqyDcykKXBnGuE1FeOvLSVtXOcJEMJ3y5ZsLWy3b4O6TecYOcq_weqH4I55aLT2m40dCD0cPEoYT8ejwNJQu35bP42ho0tv4OjKY9dmfrtiEyMJto25FL2PNR6m2NLqnUYYIXTVpQvjioa2bfgbI5HwOTLAuQ59CmPy5aN_XqsT1KqYevZCdmaBufgwjydun55lxNAQUrpLIAQHcGf0Hf5OwxBLOaPYSAyuKRwu8ydhlSJl8Ip6aOq76wrm5M8dSZHElkPaUmDMk" alt="Construction OS Logo" class="w-8 h-8 object-cover rounded-lg"><h1 class="font-display-web font-bold text-primary tracking-tight uppercase text-body-web" style="opacity: 0;">CONSTRUCTION OS</h1></div>
+<div class="flex items-center gap-space-3">
+<div class="flex items-center bg-surface-container px-space-2 py-space-1 rounded-full border border-outline-variant/30">
+<div class="w-2 h-2 rounded-full bg-mobile-success mr-2 animate-pulse"></div>
+<span class="font-label-mobile text-[10px] text-on-surface-variant tracking-wider">SYNCED</span>
+</div>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-primary/20">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a male drone operator in safety gear, wearing a reflective vest and high-tech communication headset. The lighting is crisp and industrial with a shallow depth of field background showing a construction site at twilight. The overall aesthetic is clean, sharp, and corporate." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDHogFLR2uHsWYyxmPK68Y8uuudHvEpxbbk1gLuurAfYsOpwg6419EAIXQga84ScrgBWB7sLBCglLtqSW20hPAdobpgjB91ehgsJGqLIrkj32_r_T9Jvo50Br-kIyuIFkfh6zuwyJNOu8BKRu607ern0w5HH9iE9qPHU_3c6WoAcYSkLlbR58gZt3tMoh-Me3uEUdZ7_5-Ddj6-8xpwOSCVyxbl3ixXhGK2lgwVw-6Gj7l3mQzhROdJ-6BVVi_HoTnIWQ3gkPBkArw">
+</div>
+</div>
+</header>
+<main class="flex-1 mt-[52px] pb-[96px] px-edge-mobile pt-space-4 space-y-space-4">
+<!-- Live Telemetry Section -->
+<section class="space-y-space-2">
+<div class="flex justify-between items-center px-1">
+<h2 class="font-h2-web text-h2-web text-on-surface">Live Telemetry</h2>
+<span class="font-label-mobile text-primary">DJI M300 RTK</span>
+</div>
+<div class="grid grid-cols-4 gap-2">
+<div class="glass-card rounded-xl p-space-2 flex flex-col items-center justify-center text-center">
+<span class="material-symbols-outlined text-mobile-success mb-1" style="font-variation-settings: 'FILL' 1;">battery_charging_80</span>
+<span class="font-label-mobile text-on-surface">84%</span>
+<span class="font-tiny-web text-on-surface-variant uppercase">Power</span>
+</div>
+<div class="glass-card rounded-xl p-space-2 flex flex-col items-center justify-center text-center">
+<span class="material-symbols-outlined text-secondary mb-1">height</span>
+<span class="font-label-mobile text-on-surface">122m</span>
+<span class="font-tiny-web text-on-surface-variant uppercase">Alt</span>
+</div>
+<div class="glass-card rounded-xl p-space-2 flex flex-col items-center justify-center text-center border-b-2 border-b-sync-active">
+<span class="material-symbols-outlined text-sync-active mb-1" style="font-variation-settings: 'FILL' 1;">satellite_alt</span>
+<span class="font-label-mobile text-on-surface">18</span>
+<span class="font-tiny-web text-on-surface-variant uppercase">GPS Lock</span>
+</div>
+<div class="glass-card rounded-xl p-space-2 flex flex-col items-center justify-center text-center">
+<span class="material-symbols-outlined text-primary mb-1">signal_cellular_4_bar</span>
+<span class="font-label-mobile text-on-surface">-65dB</span>
+<span class="font-tiny-web text-on-surface-variant uppercase">Signal</span>
+</div>
+</div>
+</section>
+<!-- Main Viewport / Map Preview -->
+<div class="relative w-full aspect-video rounded-2xl overflow-hidden glass-card shadow-2xl border-2 border-outline-variant/20">
+<div class="absolute inset-0 bg-cover bg-center" data-alt="A high-altitude aerial drone view of a massive infrastructure project featuring a bridge under construction over a deep valley. The image has a technical overlay with grid lines, coordinate markers, and a semi-transparent heat map in shades of cyan and orange. The lighting is cinematic golden hour, emphasizing the textures of the concrete and steel against the natural terrain." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCB5FGnNl94hZu3WxD8-G90XFoXcKA_HkJp1OQktdc_9DmGCFRii5KhMM_gJbLsebneY6gk7eQRzF1fRMdCI2Xq0lRP4GeYGT0prlRF0wFeXsSAkHoAiG9WGF4bTBYpbUDmGCCjQjxafynEF91R7ln2Jh3XM-Wj7IloWBUzXmR2hObpgVETuUSQ2RHmQiSPcw0ucsL1ZPf70gzkCYfB3VC8oMYmoEkroBW6cEFH1HbT_YO_q8Veekp0NY0o9DUavqJYmnIfvtFZHWw')"></div>
+<!-- HUD Elements -->
+<div class="absolute top-4 left-4 right-4 flex justify-between items-start pointer-events-none">
+<div class="bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10">
+<span class="font-label-mobile text-white flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-mobile-danger animate-pulse"></span>
+                        REC 00:14:22
+                    </span>
+</div>
+<div class="flex flex-col gap-2">
+<button class="w-10 h-10 bg-black/60 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/10 active-scale pointer-events-auto">
+<span class="material-symbols-outlined">layers</span>
+</button>
+<button class="w-10 h-10 bg-black/60 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/10 active-scale pointer-events-auto">
+<span class="material-symbols-outlined">zoom_in</span>
+</button>
+</div>
+</div>
+<!-- Compass / Orientation -->
+<div class="absolute bottom-4 left-4 bg-black/60 backdrop-blur-md rounded-full p-2 border border-white/10">
+<div class="w-12 h-12 flex items-center justify-center relative">
+<span class="material-symbols-outlined text-white text-3xl rotate-45">navigation</span>
+<span class="absolute top-0 text-[10px] font-bold text-white">N</span>
+</div>
+</div>
+</div>
+<!-- Capture Controls -->
+<section class="space-y-space-3">
+<button class="w-full h-touch-target bg-primary text-on-primary font-label-mobile rounded-xl flex items-center justify-center gap-space-2 active-scale shadow-lg">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+                START REAL-TIME SURVEY
+            </button>
+<div class="grid grid-cols-2 gap-space-3">
+<button class="h-touch-target bg-surface-container-highest text-on-surface font-label-mobile rounded-xl flex items-center justify-center gap-space-2 active-scale border border-outline-variant/30">
+<span class="material-symbols-outlined text-secondary">cloud_done</span>
+                    POINT CLOUD
+                </button>
+<button class="h-touch-target bg-surface-container-highest text-on-surface font-label-mobile rounded-xl flex items-center justify-center gap-space-2 active-scale border border-outline-variant/30">
+<span class="material-symbols-outlined text-secondary">published_with_changes</span>
+                    ORBIT SCAN
+                </button>
+</div>
+</section>
+<!-- AI Reality Scan Module -->
+<section class="bg-secondary-container/5 border-l-4 border-secondary-container p-space-4 rounded-r-xl space-y-space-2 relative overflow-hidden">
+<div class="absolute top-0 right-0 w-32 h-full opacity-10 pointer-events-none">
+
+</div>
+<div class="flex items-center justify-between relative z-10">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-secondary-container" style="font-variation-settings: 'FILL' 1;">psychology</span>
+<h3 class="font-label-mobile text-secondary-container uppercase tracking-widest">AI Reality Scan</h3>
+</div>
+<span class="bg-secondary-container text-on-secondary-container px-2 py-0.5 rounded font-tiny-web font-bold">LIVE</span>
+</div>
+<div class="flex items-end justify-between relative z-10">
+<div>
+<p class="font-body-mobile text-on-surface-variant">Edge Processing Status</p>
+<p class="font-h1-web text-h1-web-mobile text-on-surface font-extrabold">98.2% <span class="text-sm font-medium text-secondary-container">Confidence</span></p>
+</div>
+<div class="text-right">
+<p class="font-tiny-web text-on-surface-variant uppercase">Detected Objects</p>
+<p class="font-label-mobile text-on-surface">14 Structural Elements</p>
+</div>
+</div>
+</section>
+<!-- Recent Missions -->
+<section class="space-y-space-3 pb-space-4">
+<div class="flex justify-between items-center px-1">
+<h2 class="font-h2-web text-h2-web text-on-surface">Recent Missions</h2>
+<button class="text-primary font-label-mobile">View All</button>
+</div>
+<!-- Mission Card 1 -->
+<div class="glass-card rounded-xl overflow-hidden border-l-4 border-l-mobile-success active-scale transition-transform">
+<div class="flex p-space-3 gap-space-3">
+<div class="w-20 h-20 rounded-lg bg-cover bg-center shrink-0 border border-outline-variant/30" data-alt="A detailed 3D point cloud mesh visualization of a skyscraper foundation. The mesh is composed of glowing blue dots and lines on a dark background, showing complex geometric patterns and topographical contours. The style is technical, futuristic, and high-precision." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuC6v1izOaRBBwCrZurQkQHbQyxJculwb0Ur1QFU6dswPzpkFBc4oUGluBLi186suQRublwf4wN24nYymb1HH7A4rAkLWBT154ErmeXK3lZxSaS3-slRXSaptqHxS3QRjdXETXRcjf-vKW4Q9Nl-B38tTOB-aVDVNVBq6kOMMnwqsMpf_e6Ee8UY9CplDF4YCyocsH06r4w79sEgxO1wyt-WF2KT4eGNw320F2Q2vetR9QxUfd-og1rSAbxd3j3orMGViWHfA4ztmh0')"></div>
+<div class="flex-1 flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start">
+<h4 class="font-label-mobile text-on-surface">Sector 7B Mesh Gen</h4>
+<span class="material-symbols-outlined text-mobile-success text-lg" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<p class="font-tiny-web text-on-surface-variant">24 Oct 2023 • 14:20</p>
+</div>
+<div class="flex items-center gap-space-2 mt-1">
+<span class="px-2 py-0.5 bg-surface-bright/30 rounded font-tiny-web text-on-surface">4.2 GB</span>
+<span class="px-2 py-0.5 bg-surface-bright/30 rounded font-tiny-web text-on-surface">12k Polygons</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Mission Card 2 -->
+<div class="glass-card rounded-xl overflow-hidden border-l-4 border-l-sync-pending opacity-80">
+<div class="flex p-space-3 gap-space-3">
+<div class="w-20 h-20 rounded-lg bg-cover bg-center shrink-0 border border-outline-variant/30 relative" data-alt="A grayscale aerial orthomosaic map of a suburban development site. The image shows cleared land, dirt paths, and heavy machinery parked in a row. The image has a slight grain and looks like it's in a processing state." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAZzmUPyIVMy73xyngmVEoGdsVBd1HtEpJyMwa2LLdxsNEVcmEkIFRsMHMlZz4XZJsGpFocUqmUHo1Ocb_R9-yV40OcaI6Dw9vXUa71Oerv2hRm7m0Fsk9hMMpDlG6eGnmnb-DJRjwnPGEkc-YO5apAOP9R12-jTBd0pir-7qAOTFMARGB5L4IVN2nVPtgPyXIBqwrtl-AtvHrkKG_7SQsNBH3lF1gir5D38xTE8xFcsvGGNqjYXjwiQZAquhK5621ouyZwbADG9CM')">
+<div class="absolute inset-0 bg-black/40 flex items-center justify-center">
+<span class="material-symbols-outlined text-white animate-spin">sync</span>
+</div>
+</div>
+<div class="flex-1 flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start">
+<h4 class="font-label-mobile text-on-surface">East Ramp Topography</h4>
+<span class="material-symbols-outlined text-sync-pending text-lg">pending</span>
+</div>
+<p class="font-tiny-web text-on-surface-variant">24 Oct 2023 • 11:05</p>
+</div>
+<div class="flex items-center gap-space-2 mt-1">
+<span class="px-2 py-0.5 bg-surface-bright/30 rounded font-tiny-web text-on-surface">Queued</span>
+<span class="px-2 py-0.5 bg-surface-bright/30 rounded font-tiny-web text-on-surface">Offline</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- FAB for Core Action -->
+<button class="fixed bottom-[88px] right-edge-mobile w-14 h-14 bg-mobile-primary rounded-full shadow-2xl flex items-center justify-center text-white active-scale z-[55]">
+<span class="material-symbols-outlined text-3xl">add_a_photo</span>
+</button>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-base pb-safe bg-surface-container dark:bg-surface-container-high h-[72px] shadow-lg">
+<div class="flex flex-col items-center justify-center text-on-surface-variant active-scale">
+<span class="material-symbols-outlined">description</span>
+<span class="font-label-mobile text-[10px] mt-1">Reports</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant active-scale">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-label-mobile text-[10px] mt-1">Inventory</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-xl px-space-4 py-space-1 active-scale shadow-inner">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">view_in_ar</span>
+<span class="font-label-mobile text-[10px] mt-0.5">BIM</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant active-scale">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-mobile text-[10px] mt-1">Users</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant active-scale">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-mobile text-[10px] mt-1">Settings</span>
+</div>
+</nav>
+<!-- UI Micro-interactions -->
+<script>
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Haptic feedback simulation
+                if (window.navigator.vibrate) {
+                    window.navigator.vibrate(10);
+                }
+            });
+        });
+    </script>
+
+
+</body></html>

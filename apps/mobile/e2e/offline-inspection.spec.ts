@@ -8,6 +8,29 @@ import { isVisible, setNetworkConnected, resetSession } from './helpers';
 
 const INSPECTOR_PHONE = process.env['E2E_INSPECTOR_PHONE'] || '+66800000004';
 
+/**
+ * Open the inspections list from wherever the app currently is.
+ *
+ * IT USED TO TAP `inspection-tab`, AND THERE IS NO SUCH TAB FOR THIS ROLE ANY MORE. The seeded
+ * inspector (+66800000004, scripts/dev/seed-e2e-users.sh) is a SITE_ENGINEER, and on 2026-08-12 that
+ * role's bar became Home | Issues | Tasks | Reports — Inspections moved to the navigation drawer,
+ * where `drawerLinksFor` had always kept a row for it, suppressed only while it was a tab.
+ *
+ * The role is deliberately UNCHANGED. Re-seeding the inspector as SAFETY_OFFICER (which still has the
+ * tab) would have been the smaller diff and the wrong one: it would quietly swap which role spec
+ * §30.5's "Inspector fills checklist offline" scenario actually exercises. Only the route in is
+ * different, so only the route in changed here.
+ */
+async function openInspections(): Promise<void> {
+  const menu = element(by.id('drawer-menu-button')).atIndex(0);
+  await waitFor(menu).toExist().withTimeout(5_000);
+  await menu.tap();
+
+  const row = element(by.id('drawer-link-/inspections')).atIndex(0);
+  await waitFor(row).toExist().withTimeout(5_000);
+  await row.tap();
+}
+
 describe('Offline Inspection — Inspector', () => {
   beforeAll(async () => {
     // reloadReactNative() crashes the RN bridge on this RN/Detox version (see capture.spec.ts) and is
@@ -27,12 +50,7 @@ describe('Offline Inspection — Inspector', () => {
   });
 
   it('inspector can log in via SMS OTP', async () => {
-    // Login screen shows both auth paths (ADR-050) — tap the field-worker OTP link first.
-    await waitFor(element(by.id('field-login-link')))
-      .toBeVisible()
-      .withTimeout(10_000);
-    await element(by.id('field-login-link')).tap();
-
+    // Login landing carries the Path-A phone form directly (ADR-050) — no phone-entry step to tap.
     await waitFor(element(by.id('phone-input')))
       .toBeVisible()
       .withTimeout(10_000);
@@ -41,7 +59,7 @@ describe('Offline Inspection — Inspector', () => {
     // regardless of the simulator's region) and enter the national digits (the login re-adds +66).
     await element(by.id('country-picker')).tap();
     await element(by.id('country-option-th')).tap();
-    await element(by.id('phone-input')).typeText(INSPECTOR_PHONE.replace(/^\+66/, ''));
+    await element(by.id('phone-input')).typeText(INSPECTOR_PHONE.replace(/^\+66/, '0'));
     await element(by.id('request-otp-button')).tap();
 
     await waitFor(element(by.id('otp-input')))
@@ -62,11 +80,7 @@ describe('Offline Inspection — Inspector', () => {
       .toExist()
       .withTimeout(10_000);
 
-    const inspectionTab = element(by.id('inspection-tab')).atIndex(0);
-    // Tab-bar buttons are wrappers whose own pixels are covered by their label/icon, so Detox's
-    // toBeVisible() false-negatives on them — assert existence and tap (the tap hit-tests fine).
-    await waitFor(inspectionTab).toExist().withTimeout(5_000);
-    await inspectionTab.tap();
+    await openInspections();
 
     await waitFor(element(by.id('inspection-list')))
       .toExist()
@@ -78,13 +92,11 @@ describe('Offline Inspection — Inspector', () => {
       .toExist()
       .withTimeout(10_000);
 
-    const inspectionTab = element(by.id('inspection-tab')).atIndex(0);
-    await waitFor(inspectionTab).toExist().withTimeout(5_000);
-    await inspectionTab.tap();
+    await openInspections();
 
     await setNetworkConnected(false);
 
-    await waitFor(element(by.id('offline-banner')))
+    await waitFor(element(by.id('sync-pill')))
       .toBeVisible()
       .withTimeout(5_000);
 
@@ -112,10 +124,7 @@ describe('Offline Inspection — Inspector', () => {
       .toExist()
       .withTimeout(10_000);
 
-    const inspectionTab = element(by.id('inspection-tab')).atIndex(0);
-    if (await isVisible(inspectionTab)) {
-      await inspectionTab.tap();
-    }
+    await openInspections();
 
     await setNetworkConnected(false);
 
@@ -123,7 +132,12 @@ describe('Offline Inspection — Inspector', () => {
     if (await isVisible(firstInspection)) {
       await firstInspection.tap();
 
-      const addPhotoButton = element(by.id('add-photo-button'));
+      // `capture-photo-button`, not `add-photo-button` — the id this spec drove has never existed
+      // on any screen. inspections.tsx renders <PhotoCapture /> in its default `grid` layout, whose
+      // shutter is `capture-photo-button`; the `photo-upload-tile` id belongs to the `strip` layout
+      // the report form uses. The old id sat behind an isVisible guard, so the block never ran and
+      // this test passed having photographed nothing (corrected 2026-08-20).
+      const addPhotoButton = element(by.id('capture-photo-button'));
       if (await isVisible(addPhotoButton)) {
         await addPhotoButton.tap();
 
@@ -144,11 +158,14 @@ describe('Offline Inspection — Inspector', () => {
     await setNetworkConnected(false);
     await setNetworkConnected(true);
 
-    await waitFor(element(by.id('sync-status-bar')))
+    // The full-width green sync strip was replaced by the top-bar <SyncPill /> for every role
+    // (PO decision 2026-08-04). The pill is icon-only, so the synced state is asserted on its
+    // accessibilityLabel (i18n sync.pill.synced) rather than on-screen text.
+    await waitFor(element(by.id('sync-pill')))
       .toBeVisible()
       .withTimeout(10_000);
 
-    await waitFor(element(by.text(/synced|up to date|ซิงค์แล้ว/i)))
+    await waitFor(element(by.label(/synced|ซิงค์แล้ว/i)))
       .toBeVisible()
       .withTimeout(30_000);
   });

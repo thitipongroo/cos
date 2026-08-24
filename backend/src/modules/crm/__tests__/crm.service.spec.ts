@@ -38,7 +38,7 @@ beforeEach(async () => {
   service = await moduleRef.resolve<CrmService>(CrmService);
 });
 
-it('constructor tolerates missing request context', async () => {
+it('constructor tolerates missing request context; userId falls back to empty', async () => {
   const m = await Test.createTestingModule({
     providers: [
       CrmService,

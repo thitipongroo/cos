@@ -3,18 +3,37 @@ Phase 11: AI Foundation — PDF/image text extraction via pytesseract.
 Source: context/00_master_construction_os.md §Phase 11 OCR Pipeline
 """
 import os
+from uuid import UUID
 
 import httpx
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
+import metrics
+
 from ocr_pipeline import process_file
 
-app = FastAPI(title="COS AI OCR Pipeline", version="0.1.0")
+@asynccontextmanager
+async def _lifespan(_app: FastAPI):
+    """Start the Prometheus exporter on :9464 (§31.3, QM-8 — see metrics.py)."""
+    metrics.start_metrics_server()
+    yield
+
+
+app = FastAPI(title="COS AI OCR Pipeline", version="0.1.0", lifespan=_lifespan)
+metrics.install(app)
 
 
 class OCRRequest(BaseModel):
-    file_id: str
+    # UUID, not str. This value is interpolated straight into the file-service URL below,
+    # so an unvalidated string let a caller walk the path with "../" and reach endpoints on
+    # file-service that were never meant to be reachable from here. file_id is a UUID
+    # everywhere it is stored (20260605000002_file_service), so constraining the type costs
+    # nothing and makes the interpolation safe by construction.
+    # Found by CodeQL py/partial-ssrf; neither bandit nor the Semgrep packs reported it.
+    file_id: UUID
     tenant_id: str
 
 
@@ -46,7 +65,9 @@ async def ocr_process(req: OCRRequest):
         if file_resp.status_code != 200:
             raise HTTPException(status_code=502, detail="Failed to fetch file from storage")
 
-    result = process_file(req.file_id, file_resp.content, mime_type)
+    # str() at the boundary: file_id is a UUID on the request model (see OCRRequest) while the
+    # pipeline and the response model both speak str.
+    result = process_file(str(req.file_id), file_resp.content, mime_type)
     return OCRResponse(
         file_id=result.file_id,
         extracted_text=result.extracted_text,

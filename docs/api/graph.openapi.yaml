@@ -6,8 +6,9 @@ info:
     Knowledge Graph query endpoints for Construction OS (Phase 13).
 
     All endpoints read from Neo4j via the Graph Query Service (NestJS).
-    Tenant isolation is enforced at the query level — every Cypher query
-    filters by `tenant_id`.
+    Tenant isolation is enforced server-side: the `tenant_id` is taken from the
+    authenticated JWT (never from a client-supplied parameter) and every Cypher
+    query filters by it.
 
 servers:
   - url: http://localhost:3000/api/v1
@@ -120,11 +121,6 @@ paths:
           schema:
             type: string
             format: uuid
-        - name: tenantId
-          in: query
-          required: true
-          schema:
-            type: string
       responses:
         '200':
           description: List of vendors
@@ -153,11 +149,6 @@ paths:
           schema:
             type: string
             format: uuid
-        - name: tenantId
-          in: query
-          required: true
-          schema:
-            type: string
       responses:
         '200':
           description: Supply chain items (material → vendor)
@@ -186,11 +177,6 @@ paths:
           schema:
             type: string
             format: uuid
-        - name: tenantId
-          in: query
-          required: true
-          schema:
-            type: string
       responses:
         '200':
           description: Inspection list with status
@@ -219,11 +205,6 @@ paths:
           schema:
             type: string
             format: uuid
-        - name: tenantId
-          in: query
-          required: true
-          schema:
-            type: string
       responses:
         '200':
           description: Projects that share this vendor
@@ -252,11 +233,6 @@ paths:
           schema:
             type: string
             format: uuid
-        - name: tenantId
-          in: query
-          required: true
-          schema:
-            type: string
       responses:
         '200':
           description: Invoice list for this vendor

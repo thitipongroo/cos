@@ -13,7 +13,14 @@ nodeLinker: hoisted
 # detox + dtrace-provider compile native code during install (needed for the iOS Detox runner —
 # macOS only; on this platform their postinstall builds are skipped, matching prior behavior where
 # pnpm ignored them by default).
+#
+# react-native-skia MUST be allowed: its postinstall (scripts/install-libs.js) copies the prebuilt
+# native libraries out of the sibling react-native-skia-{apple,android}-* packages into the package's
+# own libs/ dir, where the iOS/Android builds look for them. It compiles nothing and downloads
+# nothing (fs.cpSync only), so blocking it gains no safety and leaves the native build without its
+# binaries. Powers <PhotoAnnotation /> (ADR-056).
 allowBuilds:
+  '@shopify/react-native-skia': true
   detox: false
   dtrace-provider: false
   unrs-resolver: false

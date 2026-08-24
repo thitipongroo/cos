@@ -1,16 +1,13 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "module": "CommonJS",
-    "moduleResolution": "node",
-    // TypeScript 6 deprecates node10 resolution; ts-jest still needs CommonJS + node resolution to
-    // load the suite, so the deprecation is acknowledged explicitly rather than left as an error.
-    "ignoreDeprecations": "6.0",
+    "module": "Node16",
+    "moduleResolution": "Node16",
     "jsx": "react-jsx",
     "types": ["node", "jest"],
     "esModuleInterop": true,
     "rootDir": "."
   },
-  "include": ["src/**/*", "jest.config.ts"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "src/app/sw.ts"]
 }

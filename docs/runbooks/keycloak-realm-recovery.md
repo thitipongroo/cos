@@ -2,14 +2,25 @@
 
 **STUB** — detailed procedures to be defined before Stage 1→2 transition (production launch).
 
+> **Why this is still a STUB.** QM-11 closes a runbook by **executing it end-to-end in staging**. A
+> realm restore has never been rehearsed.
+
 ## Scope
 
 Recovery procedures for Keycloak realm corruption, accidental deletion, or configuration loss.
 
+**Keycloak is authoritative for identity on both auth paths** — Path A (SMS OTP) issues its token
+through Keycloak Direct Grant, so a lost realm blocks field workers and office users alike. Nothing
+rebuilds it from another store.
+
 ## Prevention
 
-- Keycloak realm export (JSON) backed up daily via CronJob — see `keycloak-realm-backup.md`
-- Backup stored in S3 bucket `cos-keycloak-backups/{environment}/` with 30-day retention
+- Keycloak realm export (JSON) backed up daily via the `keycloak-realm-backup` CronJob in namespace
+  `cos`, schedule `0 19 * * *` (02:00 ICT) — see [`keycloak-realm-backup.md`](keycloak-realm-backup.md)
+- Backup stored in S3 bucket `cos-keycloak-backups/{environment}/`, **90-day retention** (+ 30 days
+  for noncurrent versions) — `aws_s3_bucket.keycloak_backups` in
+  `infrastructure/terraform/aws/modules/s3/main.tf`. **90 days is the recovery window**: an export
+  older than that is gone.
 - Protocol mapper configuration is critical — missing mappers block all authentication
   (see `05-security-compliance` §5.4.2 and `07-multi-tenant-architecture` §7.6 step 3)
 
@@ -43,4 +54,17 @@ to become healthy and verify authentication resumes.
 - Confirm SYSTEM_ADMIN can log in
 - Confirm TENANT_ADMIN for at least one tenant can log in
 - Confirm Kong JWT plugin validates tokens correctly (test via `/api/v1/auth/me`)
+- **Confirm a Path A (SMS OTP) login still works**, not just Path B. OTP verification is a custom
+  NestJS module but token issuance is Keycloak Direct Grant against a username that is the **phone
+  number** (`provision-keycloak-demo.ts`) — a restore that brings back email-usernames leaves every
+  field worker unable to sign in while office users look fine.
+- Confirm MFA still enforces for `TENANT_ADMIN` and `FINANCE` (QM-4) — a realm restored without the
+  TOTP required action silently drops that control.
 - File incident report — see [incident-response.md](incident-response.md)
+
+## To close this STUB
+
+1. Restore a realm export into a scratch realm in staging and complete both login paths against it.
+2. Apply the Terraform that creates the bucket, and confirm the `expire-old-backups` rule is live.
+3. Record the real S3 bucket name per environment (this page uses a placeholder;
+   `s3_keycloak_backups_bucket_name` is the Terraform input).

@@ -31,7 +31,7 @@ jest.mock('@temporalio/client', () => ({
   Client: jest.fn(),
 }));
 
-import { TenantService } from '../tenant.service';
+import { TenantService, defaultTimezoneForRegion } from '../tenant.service';
 import { PrismaClient } from '@prisma/client';
 import { KafkaTopicProvisioner } from '@cos/kafka';
 import { Connection, Client } from '@temporalio/client';
@@ -51,7 +51,10 @@ describe('TenantService', () => {
   let prismaMock: jest.Mocked<PrismaClient>;
 
   beforeEach(() => {
-    service = new TenantService();
+    // FeatureFlagService gates encrypt-on-write for dedicated_db_url (security review F5b). Default
+    // the flag OFF so these existing assertions keep comparing against the plaintext URL; the cipher
+    // has its own dedicated spec.
+    service = new TenantService({ isEnabled: () => false } as never);
     prismaMock = (service as unknown as { prisma: jest.Mocked<PrismaClient> }).prisma;
     // §35.13 ESC-13: deactivateTenant / assignDedicatedDb now wrap their UPDATE and the outbox
     // write in one $transaction, so the default mock must actually run the callback. Individual
@@ -79,6 +82,45 @@ describe('TenantService', () => {
         'admin-1',
       );
       expect(result).toEqual(mockTenant);
+    });
+
+    // Regression: the payload was built from tenant.tenantId / .tenantCode / .tenantName /
+    // .planType, but `$queryRaw` returns RAW column names — Prisma's @map is not applied — so all
+    // four were undefined. identity.tenant.created.v1's Avro schema declares them non-null strings,
+    // so every encode failed and publishEvent's catch swallowed it: the event was never delivered.
+    it('writes identity.tenant.created.v1 with a fully populated payload', async () => {
+      (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([]);
+      (prismaMock.$transaction as jest.Mock).mockImplementation(
+        async (fn: (tx: unknown) => Promise<unknown>) =>
+          fn({ $queryRaw: jest.fn().mockResolvedValue([mockTenant]) }),
+      );
+      const { OutboxPublisher } = jest.requireMock('@cos/kafka') as {
+        OutboxPublisher: { write: jest.Mock };
+      };
+      OutboxPublisher.write.mockClear();
+
+      await service.createTenant(
+        { tenantCode: 'acme_corp', tenantName: 'ACME Construction', planType: 'STARTER' as never },
+        'admin-1',
+      );
+
+      const created = OutboxPublisher.write.mock.calls.find(
+        (c) => (c[1] as { event_type?: string })?.event_type === 'identity.tenant.created.v1',
+      );
+      expect(created).toBeDefined();
+      const payload = (created![1] as { payload: Record<string, unknown> }).payload;
+      expect(payload).toEqual({
+        tenant_id: 'tenant-1',
+        tenant_code: 'acme_corp',
+        tenant_name: 'ACME Construction',
+        plan_type: 'STARTER',
+      });
+      // ESC-20: `$queryRaw` returns raw snake_case columns — Prisma's @map is not applied — so the
+      // camelCase reads this envelope used to make were all undefined and every Avro encode failed.
+      // Each required field is asserted present, which is exactly what that bug removed.
+      for (const v of Object.values(payload)) {
+        expect(v).toBeDefined();
+      }
     });
 
     it('swallows Kafka topic-provisioning failures (tenant creation still succeeds)', async () => {
@@ -165,6 +207,114 @@ describe('TenantService', () => {
       // args[3] is keycloakRealm in the tagged template (after tenantCode and tenantName)
       expect(capturedInsertArgs[3]).toBe('cos-enterprise_co');
       expect(result).toBeDefined();
+    });
+
+    it('defaults data_region to ap-southeast-1 when not provided (§5.6)', async () => {
+      (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([]); // no existing
+      let capturedInsertArgs: unknown[] = [];
+      (prismaMock.$transaction as jest.Mock).mockImplementation(
+        async (fn: (tx: unknown) => Promise<unknown>) => {
+          const txQueryRaw = jest.fn().mockImplementation((...args: unknown[]) => {
+            capturedInsertArgs = args;
+            return Promise.resolve([mockTenant]);
+          });
+          return fn({ $queryRaw: txQueryRaw, $executeRawUnsafe: jest.fn() });
+        },
+      );
+
+      await service.createTenant(
+        { tenantCode: 'acme_corp', tenantName: 'ACME Construction', planType: 'STARTER' as never },
+        'admin-1',
+      );
+
+      // data_region is the 6th INSERT value (tenant_code, tenant_name, keycloak_realm, plan_type,
+      // dedicated_db_url, data_region) -> tagged-template arg index 6; the `?? 'ap-southeast-1'` default.
+      expect(capturedInsertArgs[6]).toBe('ap-southeast-1');
+    });
+
+    it('sets the explicit data_region in the INSERT when provided (§5.6)', async () => {
+      (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([]); // no existing
+      let capturedInsertArgs: unknown[] = [];
+      (prismaMock.$transaction as jest.Mock).mockImplementation(
+        async (fn: (tx: unknown) => Promise<unknown>) => {
+          const txQueryRaw = jest.fn().mockImplementation((...args: unknown[]) => {
+            capturedInsertArgs = args;
+            return Promise.resolve([{ ...mockTenant, data_region: 'ap-southeast-7' }]);
+          });
+          return fn({ $queryRaw: txQueryRaw, $executeRawUnsafe: jest.fn() });
+        },
+      );
+
+      await service.createTenant(
+        {
+          tenantCode: 'thai_co',
+          tenantName: 'Thai Construction',
+          planType: 'STARTER' as never,
+          dataRegion: 'ap-southeast-7',
+        },
+        'admin-1',
+      );
+
+      expect(capturedInsertArgs[6]).toBe('ap-southeast-7');
+    });
+
+    it('defaultTimezoneForRegion maps regions and falls back to Asia/Bangkok', () => {
+      expect(defaultTimezoneForRegion('ap-southeast-7')).toBe('Asia/Bangkok');
+      expect(defaultTimezoneForRegion('ap-southeast-1')).toBe('Asia/Singapore');
+      expect(defaultTimezoneForRegion('eu-west-1')).toBe('Europe/Dublin');
+      expect(defaultTimezoneForRegion('unknown-region')).toBe('Asia/Bangkok');
+    });
+
+    it('defaults timezone from data_region when not provided (§19.3/§19.6)', async () => {
+      (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([]); // no existing
+      let capturedInsertArgs: unknown[] = [];
+      (prismaMock.$transaction as jest.Mock).mockImplementation(
+        async (fn: (tx: unknown) => Promise<unknown>) => {
+          const txQueryRaw = jest.fn().mockImplementation((...args: unknown[]) => {
+            capturedInsertArgs = args;
+            return Promise.resolve([mockTenant]);
+          });
+          return fn({ $queryRaw: txQueryRaw, $executeRawUnsafe: jest.fn() });
+        },
+      );
+
+      // Thai region -> Asia/Bangkok; timezone is the 7th INSERT value -> tagged-template arg index 7.
+      await service.createTenant(
+        {
+          tenantCode: 'thai_co',
+          tenantName: 'Thai Construction',
+          planType: 'STARTER' as never,
+          dataRegion: 'ap-southeast-7',
+        },
+        'admin-1',
+      );
+      expect(capturedInsertArgs[7]).toBe('Asia/Bangkok');
+    });
+
+    it('sets the explicit timezone in the INSERT when provided', async () => {
+      (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([]); // no existing
+      let capturedInsertArgs: unknown[] = [];
+      (prismaMock.$transaction as jest.Mock).mockImplementation(
+        async (fn: (tx: unknown) => Promise<unknown>) => {
+          const txQueryRaw = jest.fn().mockImplementation((...args: unknown[]) => {
+            capturedInsertArgs = args;
+            return Promise.resolve([mockTenant]);
+          });
+          return fn({ $queryRaw: txQueryRaw, $executeRawUnsafe: jest.fn() });
+        },
+      );
+
+      await service.createTenant(
+        {
+          tenantCode: 'eu_co',
+          tenantName: 'EU Construction',
+          planType: 'STARTER' as never,
+          dataRegion: 'ap-southeast-1',
+          timezone: 'Europe/Paris',
+        },
+        'admin-1',
+      );
+      expect(capturedInsertArgs[7]).toBe('Europe/Paris');
     });
 
     it('throws BadRequestException when dedicatedDbUrl has invalid prefix', async () => {
@@ -377,11 +527,32 @@ describe('TenantService', () => {
       expect(await service.listTenants()).toHaveLength(2);
     });
   });
+
+  describe('getMyTenant', () => {
+    it('returns the caller own tenant identity (name, code, plan)', async () => {
+      const row = {
+        tenant_name: 'ACME Construction',
+        tenant_code: 'acme_corp',
+        plan_type: 'STARTER',
+      };
+      (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([row]);
+      const result = await service.getMyTenant('tenant-1');
+      expect(result).toEqual(row);
+    });
+
+    it('throws NotFoundException (COS-TENANT-404) when the tenant is missing or inactive', async () => {
+      (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([]);
+      await expect(service.getMyTenant('tenant-1')).rejects.toThrow(NotFoundException);
+      await expect(service.getMyTenant('tenant-1')).rejects.toMatchObject({
+        response: { error: { code: 'COS-TENANT-404', message: 'Tenant not found' } },
+      });
+    });
+  });
 });
 
 describe('TenantService onModuleDestroy', () => {
   it('disconnects Prisma on shutdown', async () => {
-    const svc = new TenantService();
+    const svc = new TenantService({ isEnabled: () => false } as never);
     await svc.onModuleDestroy();
     expect(
       (svc as unknown as { prisma: { $disconnect: jest.Mock } }).prisma.$disconnect,

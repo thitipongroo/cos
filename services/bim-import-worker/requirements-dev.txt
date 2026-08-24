@@ -1,0 +1,14 @@
+# Test dependencies for `pytest` (Python 3.12 in CI / local dev; not shipped in the runtime image,
+# which uses requirements.txt only). pytest 9.x matches the repo standard; pytest-asyncio is required
+# because pytest.ini sets asyncio_mode = auto; pytest-cov because pytest.ini enforces the QM-1
+# coverage gate through addopts.
+#
+# DELIBERATELY DOES NOT `-r requirements.txt`, unlike the sibling services.
+# bim_import.py imports nothing from ifcopenshell or asyncpg — both seams (`parse_ifc`, `register`)
+# are injected by the caller, which is what makes the mapping testable at all. Verified: the suite
+# passes with only the three packages below installed. Pulling ifcopenshell would add a large native
+# wheel to every CI run for a code path the module itself documents as never exercised here. Add
+# `-r requirements.txt` the moment a test needs the real parser.
+pytest==9.1.1
+pytest-asyncio==1.3.0
+pytest-cov==7.1.0

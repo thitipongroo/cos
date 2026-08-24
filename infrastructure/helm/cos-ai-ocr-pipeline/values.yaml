@@ -26,6 +26,8 @@ podDisruptionBudget:
 env:
   OTEL_SERVICE_NAME: 'ai-ocr-pipeline'
   OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector:4318'
+  # Served by metrics.py; matches service.metricsPort and the prometheus.yml scrape target.
+  PROMETHEUS_PORT: '9464'
 envFrom:
   # This service currently reads no secrets (only OTEL_SERVICE_NAME + FILE_SERVICE_URL via env).
   # Mark the secret optional so the pod starts without it; add keys here if/when it needs credentials.
@@ -46,13 +48,13 @@ affinity:
           topologyKey: kubernetes.io/hostname
 livenessProbe:
   httpGet:
-    path: /health
+    path: /health/live
     port: 8000
   initialDelaySeconds: 30
   periodSeconds: 10
 readinessProbe:
   httpGet:
-    path: /health
+    path: /health/live
     port: 8000
   initialDelaySeconds: 15
   periodSeconds: 5

@@ -4,7 +4,7 @@
 // release builds; Detox openURL avoids the "Open in COS?" system dialog that simctl openurl hits).
 // Run: G1_OUT=<dir> detox test -c ios.sim.release e2e/benchmark.spec.ts
 import { by, device, element } from 'detox';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 
@@ -28,7 +28,7 @@ async function loginIfNeeded(): Promise<void> {
   await element(by.id('country-picker')).tap();
   await element(by.id('country-option-th')).tap();
   await element(by.id('phone-input')).tap();
-  await element(by.id('phone-input')).replaceText(PHONE.replace(/^\+66/, ''));
+  await element(by.id('phone-input')).replaceText(PHONE.replace(/^\+66/, '0'));
   await delay(1500);
   await element(by.id('request-otp-button')).tap();
   await delay(6000);
@@ -53,9 +53,18 @@ describe('G1 offline-DB spike benchmark', () => {
     // (hostname form) is reserved for the root-layout Linking interceptor (network/reset).
     await device.openURL({ url: `cos:///e2e/benchmark?n=${N}` });
     await delay(60000); // 2 engines × 3 iterations × (batch upsert + query) + render (n up to 5000)
-    execSync(`xcrun simctl io booted screenshot "${OUT}/g1-benchmark-${N}.png"`, {
-      stdio: 'ignore',
-    });
+    // execFileSync, not execSync: no shell, so nothing in the path can be interpreted as a command.
+    // The screenshot paths are built from env vars (G1_OUT / G1_N) and interpolated straight into
+    // the command line before this. That is developer tooling rather than shipped code, but passing
+    // an argv array instead of a string removes the class outright and costs nothing.
+    // Found by CodeQL js/shell-command-injection-from-environment and js/indirect-command-line-injection.
+    execFileSync(
+      'xcrun',
+      ['simctl', 'io', 'booted', 'screenshot', `${OUT}/g1-benchmark-${N}.png`],
+      {
+        stdio: 'ignore',
+      },
+    );
   }, 180000);
 
   // Cold-read variant (§17.10 escalation, option C): seed both engines, KILL the process,
@@ -71,7 +80,9 @@ describe('G1 offline-DB spike benchmark', () => {
     await loginIfNeeded();
     await device.openURL({ url: `cos:///e2e/benchmark?mode=seed&n=${N}` });
     await delay(20000);
-    execSync(`xcrun simctl io booted screenshot "${OUT}/g1-seed-${N}.png"`, { stdio: 'ignore' });
+    execFileSync('xcrun', ['simctl', 'io', 'booted', 'screenshot', `${OUT}/g1-seed-${N}.png`], {
+      stdio: 'ignore',
+    });
 
     // Phase 2 — kill process, relaunch keeping the container (delete defaults false),
     // session restores from SecureStore → home, then cold-read is the first DB op.
@@ -82,6 +93,8 @@ describe('G1 offline-DB spike benchmark', () => {
     await delay(8000); // boot + session hydration (AuthGate → home)
     await device.openURL({ url: `cos:///e2e/benchmark?mode=cold&n=${N}` });
     await delay(20000);
-    execSync(`xcrun simctl io booted screenshot "${OUT}/g1-cold-${N}.png"`, { stdio: 'ignore' });
+    execFileSync('xcrun', ['simctl', 'io', 'booted', 'screenshot', `${OUT}/g1-cold-${N}.png`], {
+      stdio: 'ignore',
+    });
   }, 240000);
 });

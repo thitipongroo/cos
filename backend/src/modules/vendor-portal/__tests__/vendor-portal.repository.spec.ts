@@ -67,6 +67,17 @@ describe('VendorPortalRepository', () => {
     expect(await repo.listPurchaseOrdersByVendor('ven-1')).toBe(rows);
   });
 
+  it('findPurchaseOrderForVendor returns the PO when it belongs to the vendor', async () => {
+    const row = { po_id: 'po-1' };
+    queryRaw.mockResolvedValue([row]);
+    expect(await repo.findPurchaseOrderForVendor('po-1', 'ven-1')).toBe(row);
+  });
+
+  it('findPurchaseOrderForVendor returns null when the PO is not the vendor’s', async () => {
+    queryRaw.mockResolvedValue([]);
+    expect(await repo.findPurchaseOrderForVendor('po-x', 'ven-1')).toBeNull();
+  });
+
   it('createInvoice returns the inserted row', async () => {
     const row = { invoice_id: 'i-1' };
     queryRaw.mockResolvedValue([row]);

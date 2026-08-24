@@ -40,3 +40,18 @@ the 200 ms INP budget and capped by §17.7 limits. G2 on the migrated code: upse
 - R-01 mitigated at the source; WatermelonDB's warm-read record-cache advantage (§17.10 table) is
   forfeited — acceptable within §17.7 list-size caps.
 - Escape hatch: `drizzle-orm/op-sqlite` driver swap if data volume ever exceeds spec ceilings.
+
+## Update (2026-07-24) — at-rest encryption (security review M13)
+
+The offline DB (`cos_offline_v2.db`) stores worker/site PII (attendance, incidents, tasks, material
+consumption) in **plaintext** — expo-sqlite has no built-in encryption. A security review flagged this
+against the CIS/FIPS data-at-rest posture. Mitigations landed now:
+
+- **`android:allowBackup=false`** (`app.json` → `expo.android.allowBackup`, and the committed
+  `AndroidManifest.xml`) so the SQLite databases dir is excluded from Android Auto Backup / `adb backup`
+  (the secure-store keychain was already excluded via `dataExtractionRules`, but the DB was not).
+
+**Follow-up (not yet done):** encrypt the DB at rest with **SQLCipher**. expo-sqlite cannot do this, so
+it requires the `drizzle-orm/op-sqlite` driver swap noted in the escape hatch above (op-sqlite supports
+SQLCipher), with the passphrase stored in `expo-secure-store` (Keychain/Keystore). Tracked as a
+dedicated change because it is a driver migration with a device-data migration, not a config flip.

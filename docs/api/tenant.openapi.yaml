@@ -62,6 +62,21 @@ components:
             If omitted, the tenant uses the shared DB.
             Can also be assigned later via PATCH /admin/tenants/{tenantId}/dedicated-db.
           example: 'postgresql://user:pass@enterprise-db.example.com:5432/tenantdb'
+        dataRegion:
+          type: string
+          enum: [ap-southeast-7, ap-southeast-1, eu-west-1]
+          default: ap-southeast-1
+          description: |
+            Optional. Data-residency region (§5.6), assigned at provisioning and immutable after the
+            first data write. Thai tenants -> ap-southeast-7, EU -> eu-west-1, default -> ap-southeast-1.
+          example: ap-southeast-1
+        timezone:
+          type: string
+          default: Asia/Bangkok
+          description: |
+            Optional. IANA timezone for notification quiet hours + digest schedules (§19.3/§19.6).
+            Defaults from data_region when omitted.
+          example: Asia/Bangkok
 
     TenantResponse:
       type: object
@@ -83,6 +98,15 @@ components:
           enum: [STARTER, PROFESSIONAL, ENTERPRISE]
         isActive:
           type: boolean
+        dataRegion:
+          type: string
+          enum: [ap-southeast-7, ap-southeast-1, eu-west-1]
+          description: Data-residency region for the tenant (§5.6).
+          example: ap-southeast-1
+        timezone:
+          type: string
+          description: IANA timezone for notification quiet hours + digest schedules (§19.3/§19.6).
+          example: Asia/Bangkok
         createdAt:
           type: string
           format: date-time

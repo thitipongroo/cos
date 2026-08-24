@@ -17,11 +17,20 @@ if ! docker info >/dev/null 2>&1; then
   exit 1
 fi
 
-# Copy .env if missing
+# Two-file env scheme (spec §08): .env.example is the committed template; each environment
+# copies it to .env (gitignored) and fills its own values. Dev defaults already work.
 if [ ! -f .env ]; then
   echo "==> Creating .env from .env.example"
   cp .env.example .env
-  echo "    Edit .env with your local secrets before running."
+  echo "    Dev defaults already work. For staging/production set the values shown in the"
+  echo "    '# staging:/production:' comments and pull secrets from Vault/SM (never commit .env)."
+fi
+
+# apps/mobile keeps its own .env — Expo inlines EXPO_PUBLIC_* from the mobile package at bundle
+# time and cannot read the root .env (spec §08). Seed it from its committed template if missing.
+if [ ! -f apps/mobile/.env ]; then
+  echo "==> Creating apps/mobile/.env from apps/mobile/.env.example"
+  cp apps/mobile/.env.example apps/mobile/.env
 fi
 
 # Create .cos-stage if missing (default: stage 1 — BUILD)

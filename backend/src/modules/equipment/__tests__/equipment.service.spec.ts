@@ -233,8 +233,10 @@ describe('EquipmentService', () => {
   // ADR-031 / §35.13 ESC-16: the service previously read `req.user?.sub`, which nothing sets, so it
   // always produced the literal 'system' — a non-UUID that fails `assigned_by UUID NOT NULL`
   // (Postgres 22P02). It now reads `req.userId` with a CLS fallback, matching every other service.
-  describe('userId falls back to CLS when the request carries no context', () => {
-    it('emits an empty actor_id outside a CLS context', async () => {
+  // ADR-031 / §35.13 ESC-16 continued: the same fallback, asserted through the actor_id that
+  // reaches the outbox.
+  describe('userId fallback to system', () => {
+    it('uses "system" as actor_id when req.user is undefined', async () => {
       const noUserReq = { tenantId: 'tenant-1' };
       repo = makeRepo();
       service = new EquipmentService(

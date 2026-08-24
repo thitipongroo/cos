@@ -13,7 +13,12 @@ import { NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { REQUEST } from '@nestjs/core';
 import { FinanceService } from '../finance.service';
+import { EventOutboxService } from '../../../shared/events/event-outbox.service';
+import { makeOutboxDouble } from '../../../shared/events/__tests__/outbox-double';
 import { FinanceRepository } from '../finance.repository';
+import { CredentialClientService } from '../../credentials/credential-client.service';
+import { ContractSignLinkService } from '../contract-sign-link.service';
+import { FileServiceClient } from '../../files/file-service-client.service';
 
 // ── In-memory repository ────────────────────────────────────────────────────
 
@@ -56,7 +61,14 @@ async function buildSvc() {
   const module = await Test.createTestingModule({
     providers: [
       FinanceService,
+      { provide: EventOutboxService, useValue: makeOutboxDouble().service },
       { provide: FinanceRepository, useValue: mockRepo },
+      { provide: FileServiceClient, useValue: { getFileMetadata: jest.fn() } },
+      { provide: CredentialClientService, useValue: { issue: jest.fn(), verify: jest.fn() } },
+      {
+        provide: ContractSignLinkService,
+        useValue: { issue: jest.fn(), verify: jest.fn(), hashToken: jest.fn() },
+      },
       { provide: REQUEST, useValue: mockRequest },
     ],
   }).compile();

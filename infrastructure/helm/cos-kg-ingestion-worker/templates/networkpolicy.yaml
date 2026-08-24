@@ -1,0 +1,45 @@
+{{- if .Values.networkPolicy.enabled }}
+# Ingress policy for kg-ingestion-worker.
+#
+# Scope is deliberately narrow. This worker consumes Kafka and is called by nothing: no chart in
+# infrastructure/helm references it, no Ingress routes to it, and its Service is ClusterIP. What its
+# HTTP port does carry is /health/live and POST /admin/rebuild — an endpoint that replays the entire
+# topic. Until ADR-021 that endpoint took an unauthenticated request from any pod that could reach
+# the pod IP, because the repository's only other NetworkPolicy selects
+# `cos.io/cloudflare-protected: 'true'`, a label no chart sets, and there is no default-deny.
+#
+# OFF BY DEFAULT (networkPolicy.enabled), and that is not timidity — it is that the rules below have
+# been schema-validated but never enforced in a live cluster. Read the two caveats before enabling:
+#
+#   1. Kubelet probes. This chart's probes are `exec`, so they do not traverse the network and this
+#      policy cannot break them. cos-analytics-worker uses httpGet probes and its equivalent policy
+#      does need the node to reach the pod — whether that is implicitly allowed depends on the CNI.
+#      Verify on the target cluster before enabling it there.
+#   2. The allow-list is derived from what is observable in this repository. Anything that reaches
+#      this worker from outside the repository — an operator's port-forward, a debugging sidecar, a
+#      future caller — will be denied. That is the intent, but it must be a decision, not a surprise.
+#
+# Note what this does NOT replace: spec §5.4 specifies Istio mTLS for service-to-service trust, and
+# no Istio manifest exists anywhere in infrastructure/. A NetworkPolicy answers "which pods may
+# connect"; it does not authenticate them. Both controls are wanted; only one is written here.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "cos-kg-ingestion-worker.fullname" . }}
+  labels: {{ include "cos-kg-ingestion-worker.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels: {{ include "cos-kg-ingestion-worker.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Ingress
+  ingress:
+    # Prometheus scrapes :9464 (infrastructure/monitoring/prometheus/prometheus.yml). Nothing else
+    # has any reason to open a connection to this worker.
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: {{ .Values.networkPolicy.prometheusPodLabel }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.service.metricsPort }}
+{{- end }}

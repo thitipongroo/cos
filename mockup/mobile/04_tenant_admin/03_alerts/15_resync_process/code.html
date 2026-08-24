@@ -1,0 +1,248 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>Manual Resync Processing | Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary": "#4cd7f6",
+                    "dark-bg": "#020617",
+                    "sync-pending": "#94A3B8",
+                    "secondary-container": "#03b5d3",
+                    "tertiary-fixed": "#dee1f9",
+                    "secondary-fixed": "#acedff",
+                    "surface-dim": "#031427",
+                    "mobile-warning": "#FF9500",
+                    "surface": "#031427",
+                    "mobile-danger": "#FF3B30",
+                    "tertiary": "#c1c5dc",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "primary-container": "#2563eb",
+                    "on-error": "#690005",
+                    "error-container": "#93000a",
+                    "primary": "#b4c5ff",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "on-primary-fixed": "#00174b",
+                    "surface-container": "#102034",
+                    "on-tertiary-container": "#eeefff",
+                    "on-tertiary": "#2b3041",
+                    "on-surface-variant": "#c3c6d7",
+                    "surface-container-high": "#1b2b3f",
+                    "primary-fixed": "#dbe1ff",
+                    "error": "#ffb4ab",
+                    "on-background": "#d3e4fe",
+                    "inverse-primary": "#0053db",
+                    "on-secondary-fixed": "#001f26",
+                    "mobile-primary": "#0066FF",
+                    "background": "#031427",
+                    "surface-variant": "#26364a",
+                    "on-primary": "#002a78",
+                    "sync-active": "#FFD60A",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "on-surface": "#d3e4fe",
+                    "on-secondary-container": "#00424e",
+                    "inverse-surface": "#d3e4fe",
+                    "dark-surface": "#0F172A",
+                    "surface-container-lowest": "#000f21",
+                    "on-error-container": "#ffdad6",
+                    "outline": "#8d90a0",
+                    "mobile-success": "#00C853",
+                    "on-primary-container": "#eeefff",
+                    "inverse-on-surface": "#213145",
+                    "surface-container-highest": "#26364a",
+                    "outline-variant": "#434655",
+                    "on-tertiary-fixed": "#161b2b",
+                    "surface-tint": "#b4c5ff",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "on-secondary": "#003640",
+                    "surface-bright": "#2a3a4f",
+                    "surface-container-low": "#0b1c30",
+                    "tertiary-container": "#686c80"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "edge-mobile": "24px",
+                    "base": "4px",
+                    "touch-target": "52px",
+                    "space-1": "4px",
+                    "space-4": "16px",
+                    "space-3": "12px",
+                    "space-2": "8px",
+                    "web-margin": "32px"
+            },
+            "fontFamily": {
+                    "tiny-web": ["Inter Tight"],
+                    "hero-mobile": ["Inter Tight"],
+                    "body-web": ["Inter Tight"],
+                    "h2-web": ["Inter Tight"],
+                    "body-mobile": ["Inter Tight"],
+                    "h1-web": ["Inter Tight"],
+                    "display-web": ["Inter Tight"],
+                    "label-mobile": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        
+        @keyframes spin-slow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .animate-spin-custom {
+            animation: spin-slow 3s linear infinite;
+        }
+
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        .progress-ring__circle {
+            transition: stroke-dashoffset 0.35s;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+    </style>
+</head>
+<body class="bg-surface-dim text-on-surface font-body-mobile text-body-mobile select-none overflow-hidden">
+<!-- Top App Bar -->
+<header class="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-edge-mobile h-touch-target bg-surface-dim dark:bg-surface-container-lowest">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-primary text-[24px]">construction</span>
+<h1 class="font-display-web text-[20px] font-bold text-primary tracking-tight">CONSTRUCTION OS</h1>
+</div>
+<div class="flex items-center gap-space-2 bg-sync-active/10 px-space-2 py-1 rounded-full border border-sync-active/20">
+<div class="w-2 h-2 rounded-full bg-sync-active animate-pulse"></div>
+<span class="font-label-mobile text-[11px] text-sync-active font-bold tracking-widest uppercase">Syncing...</span>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="relative h-screen flex flex-col pt-touch-target pb-safe px-edge-mobile justify-between">
+<!-- Background Atmospheric Shader -->
+<div class="absolute inset-0 z-[-1] opacity-40 pointer-events-none">
+
+</div>
+<div class="flex-1 flex flex-col justify-center items-center py-space-4">
+<!-- Central Loading Area -->
+<div class="relative w-64 h-64 flex items-center justify-center mb-space-4">
+<!-- Outer Spinning Ring -->
+<svg class="absolute w-full h-full animate-spin-custom">
+<circle class="text-surface-variant" cx="128" cy="128" fill="transparent" r="120" stroke="currentColor" stroke-width="2"></circle>
+<circle class="text-secondary" cx="128" cy="128" fill="transparent" r="120" stroke="currentColor" stroke-dasharray="100 650" stroke-linecap="round" stroke-width="4"></circle>
+</svg>
+<!-- Inner Processing Unit -->
+<div class="z-10 flex flex-col items-center text-center px-space-4">
+<span class="material-symbols-outlined text-secondary text-[48px] mb-space-2" style="font-variation-settings: &quot;FILL&quot; 1;">sync</span>
+<p class="font-label-mobile text-label-mobile text-on-surface-variant uppercase tracking-tighter">Re-Syncing Record</p>
+<p class="font-h1-web text-h1-web-mobile text-primary font-bold">#SI-2024-089</p>
+</div>
+<!-- Pulsing Glow -->
+<div class="absolute w-48 h-48 bg-secondary/10 rounded-full blur-3xl animate-pulse"></div>
+</div>
+<!-- Data Context Bento Card -->
+<div class="w-full max-w-sm bg-surface-container border-l-4 border-secondary rounded-xl p-space-4 mb-space-4 shadow-lg">
+<div class="flex justify-between items-start mb-space-2">
+<span class="font-label-mobile text-[11px] text-secondary font-bold uppercase tracking-wider">Payload Source</span>
+<span class="font-label-mobile text-[11px] text-on-surface-variant">v2.4.0-build</span>
+</div>
+<h3 class="font-h2-web text-h2-web-mobile font-bold text-on-surface mb-1">Incident Report</h3>
+<div class="flex items-center gap-space-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">location_on</span>
+<span class="text-body-mobile text-[14px]">Site Alpha - Sector 7G</span>
+</div>
+<div class="mt-space-3 pt-space-3 border-t border-white/5 flex justify-between">
+<div class="flex flex-col">
+<span class="text-[10px] text-on-surface-variant uppercase">Owner</span>
+<span class="text-[13px] font-medium text-on-surface">J. Henderson</span>
+</div>
+<div class="flex flex-col text-right">
+<span class="text-[10px] text-on-surface-variant uppercase">Priority</span>
+<span class="text-[13px] font-medium text-mobile-danger">Critical</span>
+</div>
+</div>
+</div>
+<!-- AI Optimization Status -->
+<div class="w-full max-w-sm bg-secondary-container/10 border border-secondary-container/20 rounded-xl p-space-4 relative overflow-hidden">
+<div class="shimmer absolute inset-0 opacity-30"></div>
+<div class="relative z-10">
+<div class="flex items-center gap-space-2 mb-space-2">
+<span class="material-symbols-outlined text-secondary text-[20px]" style="font-variation-settings: &quot;FILL&quot; 1;">bolt</span>
+<span class="font-label-mobile text-label-mobile text-secondary font-bold uppercase tracking-wide">Core_AI: Payload Optimization</span>
+</div>
+<p class="text-[13px] text-on-surface leading-tight mb-space-2">
+                        Optimizing data fragments for SAP S/4HANA connectivity...
+                    </p>
+<!-- Small Progress Indicator -->
+<div class="w-full h-1 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-secondary w-1/3 transition-all duration-1000 ease-linear" id="ai-progress" style="width: 60.7679%;"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Action Button Section -->
+<div class="w-full pb-edge-mobile flex flex-col gap-space-4">
+<button class="w-full h-touch-target bg-transparent border-2 border-outline-variant text-on-surface font-label-mobile text-[15px] font-bold uppercase tracking-[0.05em] rounded-xl active:scale-95 transition-all duration-150 flex items-center justify-center gap-space-2">
+<span class="material-symbols-outlined">close</span>
+                Cancel Sync
+            </button>
+<div class="text-center">
+
+</div>
+</div>
+</main>
+<!-- Bottom Nav Suppression Check: Transactional screens like processing should NOT show bottom nav -->
+<script>
+        // Micro-interaction: AI Progress bar simulation
+        const progressEl = document.getElementById('ai-progress');
+        let width = 33;
+        setInterval(() => {
+            if (width < 95) {
+                width += Math.random() * 2;
+                progressEl.style.width = width + '%';
+            } else {
+                width = 33;
+                progressEl.style.width = width + '%';
+            }
+        }, 1500);
+
+        // Tactile feedback simulated via active classes (handled by Tailwind 'active:scale-95')
+    </script>
+
+
+</body></html>

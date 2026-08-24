@@ -1,0 +1,255 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>Construction OS - Request Manual Review</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-low": "#0b1c30",
+                    "dark-surface": "#0F172A",
+                    "error-container": "#93000a",
+                    "sync-active": "#FFD60A",
+                    "on-secondary-container": "#00424e",
+                    "tertiary": "#c1c5dc",
+                    "on-surface": "#d3e4fe",
+                    "on-primary-container": "#eeefff",
+                    "tertiary-container": "#686c80",
+                    "surface": "#031427",
+                    "on-tertiary-container": "#eeefff",
+                    "outline-variant": "#434655",
+                    "tertiary-fixed": "#dee1f9",
+                    "surface-tint": "#b4c5ff",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "outline": "#8d90a0",
+                    "surface-container": "#102034",
+                    "background": "#031427",
+                    "on-error-container": "#ffdad6",
+                    "primary-fixed": "#dbe1ff",
+                    "on-surface-variant": "#c3c6d7",
+                    "mobile-warning": "#FF9500",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "mobile-danger": "#FF3B30",
+                    "secondary": "#4cd7f6",
+                    "surface-bright": "#2a3a4f",
+                    "secondary-fixed": "#acedff",
+                    "surface-variant": "#26364a",
+                    "on-secondary-fixed": "#001f26",
+                    "on-background": "#d3e4fe",
+                    "on-primary-fixed": "#00174b",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "inverse-surface": "#d3e4fe",
+                    "inverse-primary": "#0053db",
+                    "mobile-primary": "#0066FF",
+                    "surface-dim": "#031427",
+                    "secondary-container": "#03b5d3",
+                    "primary": "#b4c5ff",
+                    "surface-container-highest": "#26364a",
+                    "surface-container-lowest": "#000f21",
+                    "on-error": "#690005",
+                    "mobile-success": "#00C853",
+                    "dark-bg": "#020617",
+                    "primary-container": "#2563eb",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "on-secondary": "#003640",
+                    "on-tertiary-fixed": "#161b2b",
+                    "on-tertiary": "#2b3041",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "surface-container-high": "#1b2b3f",
+                    "sync-pending": "#94A3B8",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "error": "#ffb4ab",
+                    "inverse-on-surface": "#213145",
+                    "on-primary": "#002a78"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "base": "4px",
+                    "edge-mobile": "24px",
+                    "touch-target": "52px",
+                    "space-1": "4px",
+                    "space-4": "16px",
+                    "web-margin": "32px",
+                    "space-2": "8px",
+                    "space-3": "12px"
+            },
+            "fontFamily": {
+                    "h1-web": ["Inter Tight"],
+                    "label-mobile": ["Inter Tight"],
+                    "body-mobile": ["Inter Tight"],
+                    "body-web": ["Inter Tight"],
+                    "tiny-web": ["Inter Tight"],
+                    "hero-mobile": ["Inter Tight"],
+                    "h2-web": ["Inter Tight"],
+                    "display-web": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #031427;
+            font-family: 'Inter Tight', sans-serif;
+            color: #d3e4fe;
+            -webkit-font-smoothing: antialiased;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .bento-card {
+            background-color: #102034;
+            border-left: 4px solid transparent;
+        }
+        .bento-card-active {
+            border-left-color: #b4c5ff;
+        }
+        .shimmer {
+            background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #b4c5ff !important;
+            box-shadow: 0 0 0 1px #b4c5ff;
+        }
+        .active-scale:active {
+            transform: scale(0.97);
+            transition: transform 0.1s ease;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="flex flex-col min-h-screen">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-edge-mobile h-touch-target bg-surface-dim dark:bg-surface-container-lowest"><div class="flex items-center gap-space-3"><button class="active-scale flex items-center justify-center w-10 h-10 rounded hover:bg-surface-bright/10 text-on-surface"><span class="material-symbols-outlined">arrow_back</span></button><div class="flex items-center gap-space-2"><img alt="COS Logo" class="w-6 h-6" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBVWMHWyPyvQacSAxL2_cy8E9GtJZIk4y_ZzqmXwthD8N8729_v99Ci0sSzoUHAal4cRjw7ZobQRdGL0DAuXe9HoqYgPXUS7b_8eBaniwM9Eqk6pY0i-ZGEPG-CxRDvWiS8e7QGCOi_XyZkgKVw45y0PEHMRO5jEIV1MnMyCeqeztJ63e5ShNg-q-I6UzzfudLEJCEHzNLFl2rtHsYON0aCtZFs_D8f7OAPHQ0zlrarOpjESl1YVbSd7YK5_najJbSWJ2yOKCnzwqY"><h1 class="font-display-web text-h1-web-mobile font-bold text-primary tracking-tight uppercase">CONSTRUCTION OS</h1></div></div><div class="flex items-center gap-space-2 bg-surface-container-high px-space-2 py-space-1 rounded"><span class="material-symbols-outlined text-mobile-success text-[16px]">check_circle</span><span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase tracking-widest">SYNCED</span></div></header>
+<!-- Main Content -->
+<main class="flex-grow pt-[72px] pb-32 px-edge-mobile space-y-space-4">
+<!-- Header Section -->
+<section class="mt-space-4">
+<h2 class="font-hero-mobile text-hero-mobile text-on-surface">Request Manual Review</h2>
+<p class="font-body-mobile text-body-mobile text-on-surface-variant mt-space-1">
+                Escalate <span class="text-primary font-bold">Risk ID: SEC-442-ANOMALY</span> to the High-Level Security Team for manual investigation.
+            </p>
+</section>
+<!-- Context Card (Bento Style) -->
+<div class="bento-card bento-card-active p-space-4 shadow-lg rounded">
+<div class="flex justify-between items-start mb-space-3">
+<div class="flex flex-col">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase tracking-widest">Incident Context</span>
+<h3 class="font-h2-web text-h2-web text-on-surface mt-1">Unauthorized Access Pattern</h3>
+</div>
+<div class="bg-error-container/30 text-error px-space-2 py-space-1 rounded border border-error/20 flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">warning</span>
+<span class="font-label-mobile text-label-mobile">92% Confidence</span>
+</div>
+</div>
+<div class="space-y-space-2">
+<div class="flex justify-between border-t border-white/5 pt-space-2">
+<span class="font-body-web text-body-web text-on-surface-variant">Source Node</span>
+<span class="font-body-web text-body-web text-on-surface">Gate_B_Primary</span>
+</div>
+<div class="flex justify-between">
+<span class="font-body-web text-body-web text-on-surface-variant">Auth Method</span>
+<span class="font-body-web text-body-web text-on-surface">RFID + Biometric Bypass</span>
+</div>
+</div>
+</div>
+<!-- Form Fields -->
+<form class="space-y-space-4">
+<!-- Reason for Request -->
+<div class="space-y-space-2">
+<label class="font-label-mobile text-label-mobile text-on-surface-variant uppercase ml-1" for="reason">Reason for Request</label>
+<textarea class="w-full bg-surface-container border-2 border-surface-container-high p-space-3 text-on-surface font-body-mobile placeholder:text-on-surface-variant/40 resize-none rounded" id="reason" placeholder="Describe the operational context or specific security concern..." rows="4"></textarea>
+</div>
+<!-- Urgency Level -->
+<div class="space-y-space-2">
+<label class="font-label-mobile text-label-mobile text-on-surface-variant uppercase ml-1">Urgency Level</label>
+<div class="grid grid-cols-2 gap-space-3">
+<button class="flex items-center justify-center gap-space-2 bg-surface-container border-2 border-surface-container-high text-on-surface font-label-mobile active-scale focus:bg-primary-container focus:border-primary-container focus:text-on-primary-container rounded h-touch-target" type="button">
+<span class="material-symbols-outlined">priority_high</span>
+                        HIGH
+                    </button>
+<button class="flex items-center justify-center gap-space-2 bg-surface-container border-2 border-mobile-danger/50 text-mobile-danger font-label-mobile active-scale focus:bg-mobile-danger focus:text-white rounded h-touch-target" type="button">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">emergency_home</span>
+                        CRITICAL
+                    </button>
+</div>
+</div>
+<!-- Attachment -->
+<div class="space-y-space-2">
+<label class="font-label-mobile text-label-mobile text-on-surface-variant uppercase ml-1">Attachment</label>
+<div class="border-2 border-dashed border-surface-container-high rounded p-space-4 flex flex-col items-center justify-center gap-space-2 bg-surface-container-low active-scale cursor-pointer h-32"><div class="flex items-center gap-2"><span class="material-symbols-outlined text-primary text-2xl">upload_file</span><span class="font-body-web text-body-web text-on-surface">Attach Logs or Evidence</span></div><span class="font-tiny-web text-tiny-web text-on-surface-variant">PDF, LOG, PNG (MAX 25MB)</span></div>
+</div>
+<!-- AI Insight Box -->
+<div class="bg-secondary-container/5 border-l-4 border-secondary p-space-4 rounded-r-lg relative overflow-hidden"><div class="absolute inset-0 shimmer pointer-events-none opacity-20"></div><div class="flex items-start gap-space-3"><div class="flex flex-col items-center gap-1"><span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">bolt</span><span class="font-tiny-web text-[10px] text-secondary font-bold">95%</span></div><div><p class="font-body-web text-body-web text-on-surface"><span class="font-bold text-secondary uppercase">CORE_AI:</span> Manual review typically provides resolution within 4 hours based on current system load.</p><p class="font-tiny-web text-tiny-web text-secondary/70 mt-1 uppercase tracking-widest">95% ETA CONFIDENCE</p></div></div></div>
+</form>
+</main>
+<!-- Fixed Bottom Actions -->
+<footer class="fixed bottom-0 left-0 w-full p-edge-mobile bg-gradient-to-t from-surface via-surface/95 to-transparent z-50">
+<div class="flex flex-col gap-space-3 mt-12">
+<button class="w-full h-touch-target bg-mobile-primary text-white rounded-lg font-label-mobile uppercase tracking-widest shadow-xl active-scale flex items-center justify-center gap-2">
+                SUBMIT FOR REVIEW
+                <span class="material-symbols-outlined">send</span>
+</button>
+<button class="w-full h-touch-target bg-transparent text-on-surface-variant rounded-lg font-label-mobile uppercase tracking-widest active-scale border border-outline-variant/30">
+                CANCEL
+            </button>
+</div>
+</footer>
+<script>
+        // Simple interaction for urgency buttons
+        const urgencyButtons = document.querySelectorAll('button[type="button"]');
+        urgencyButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                urgencyButtons.forEach(b => b.classList.remove('bg-primary-container', 'border-primary-container', 'text-on-primary-container', 'bg-mobile-danger', 'text-white'));
+                // In a real app, this would toggle based on which one was clicked.
+                // For demo, we just clear previous and let the focus styles do the work or add a class.
+            });
+        });
+
+        // Prevent layout shift on focus for mobile
+        const inputs = document.querySelectorAll('input, textarea');
+        inputs.forEach(input => {
+            input.addEventListener('focus', () => {
+                document.querySelector('footer').style.position = 'static';
+            });
+            input.addEventListener('blur', () => {
+                document.querySelector('footer').style.position = 'fixed';
+            });
+        });
+    </script>
+
+
+</body></html>

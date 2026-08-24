@@ -12,6 +12,7 @@ import {
   Tooltip,
   Legend,
 } from 'recharts';
+import { LoadingState } from '../ui/LoadingState';
 
 export interface PmDashboardRow {
   eventDate: string;
@@ -52,7 +53,16 @@ interface Props {
 }
 
 export function PMDashboard({ pmRows, costTrend, procurementTrend, siteTrend, isLoading }: Props) {
-  if (isLoading) return <div className="h-96 animate-pulse rounded-lg bg-gray-100" />;
+  // The §32.7 loading component (ADR-055) rather than the bare `bg-gray-100` block this rendered
+  // before — that block was off-token, which §32.7 "Tokens only" forbids. The wrapper keeps the
+  // dashboard's reserved height so settling data does not jump the page. No `label`: this component
+  // takes no `t`, and ADR-055 forbids baking a literal.
+  if (isLoading)
+    return (
+      <div className="h-96">
+        <LoadingState variant="widget" />
+      </div>
+    );
 
   // Headline KPIs from the latest day of the PM dashboard series (§20.7.2 — manpower, open issues,
   // inspection rate, reports). Data comes from GET /analytics/pm/{projectId}.

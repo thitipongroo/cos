@@ -1,9 +1,22 @@
 # Construction OS — Content Security Policy
 
 > **Purpose:** Define the Content-Security-Policy (CSP) header for all HTTP responses.
-> Source: QM-4. CSP is enforced via NestJS `helmet()` middleware in
-> `backend/src/shared/middleware/security-headers.middleware.ts` and
-> Next.js `next.config.js` custom headers.
+> Source: QM-4.
+>
+> **How it is applied:**
+>
+> - **Backend (NestJS):** `helmet()` / `security-headers.middleware.ts`.
+> - **Web (Next.js):** the nonce-based CSP is emitted per request from `apps/web/src/middleware.ts`
+>   (Edge middleware — static `next.config.js` `headers()` cannot inject a per-request nonce). The static
+>   security headers (HSTS, X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy)
+>   are set in `apps/web/next.config.mjs` `headers()`.
+>
+> **Rollout status (2026-07):** the web CSP ships in **Report-Only** mode (`CSP_ENFORCE` unset). It logs
+> violations without blocking, pending a staging smoke test (QM-16 progressive delivery); set
+> `CSP_ENFORCE=true` to switch the header to enforcing `Content-Security-Policy`. `connect-src` is derived
+> from `NEXT_PUBLIC_API_URL`; `img-src` uses `https:` for env-portable S3 presigned photos (tighten to the
+> explicit buckets below before enforcing). The auth-middleware matcher excludes `/login` and static
+> assets, so CSP currently rides the authenticated app routes — extending it to `/login` is a follow-up.
 >
 > **Hard constraints (QM-4):**
 >
@@ -17,7 +30,7 @@
 
 Applied to all `*.construction-os.app` origins in production.
 
-```
+```text
 Content-Security-Policy:
   default-src 'self';
   script-src 'self' 'nonce-{NONCE}';
@@ -59,7 +72,7 @@ there indicate a production risk.
 
 ## Development CSP (local only)
 
-```
+```text
 Content-Security-Policy-Report-Only:
   default-src 'self';
   script-src 'self' 'unsafe-inline' 'unsafe-eval';
@@ -89,7 +102,7 @@ In Stage 1, violations are logged to the browser console only.
 
 Stage 2 addition:
 
-```
+```text
 report-to cos-csp-violations;
 Report-To: {"group":"cos-csp-violations","max_age":10886400,"endpoints":[{"url":"https://api.construction-os.app/api/v1/security/csp-report"}]}
 ```

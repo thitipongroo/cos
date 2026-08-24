@@ -4,6 +4,7 @@
 import { Injectable, Scope, Inject } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import { TenantPrismaService } from '../tenant/prisma/tenant-prisma.service';
+import { clsTenantId } from '../../shared/context/cls-context';
 
 export type IncidentSeverity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type IncidentStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
@@ -38,6 +39,11 @@ export interface PermitRow {
   linked_task_id: string | null;
   created_by: string | null;
   created_at: Date;
+  /** Firm performing the work. Free text, NOT an FK to procurement.vendors — see the migration. */
+  contractor_name: string | null;
+  description: string | null;
+  /** Why status became REVOKED. NULL = never revoked, or revoked without a reason given. */
+  revoke_reason: string | null;
 }
 
 export interface ComplianceSummaryRow {
@@ -49,8 +55,12 @@ export interface ComplianceSummaryRow {
 
 @Injectable({ scope: Scope.REQUEST })
 export class SafetyRepository {
+  // CLS fallback is load-bearing, not cosmetic: under Fastify the REQUEST injected into a
+  // Scope.REQUEST provider is not guaranteed to be the object the auth layer decorated. The auth
+  // guards publish tenant_id into CLS (the same source TenantPrismaService reads for RLS), so this
+  // resolves even when the request copy does not carry it.
   private get tenantId(): string {
-    return (this.request as { tenantId?: string }).tenantId ?? '';
+    return (this.request as { tenantId?: string }).tenantId ?? clsTenantId();
   }
 
   constructor(
@@ -60,7 +70,20 @@ export class SafetyRepository {
 
   // ── Incidents ───────────────────────────────────────────────────────────────
 
+  /**
+   * Insert an incident under a caller-supplied id.
+   *
+   * ON CONFLICT DO NOTHING against the `incident_id` primary key, the same idempotency shape
+   * `insertCarbonRecord` uses in site-ops: a replayed offline incident must not become a second
+   * safety record. Returns null when the row already existed, so the caller can skip re-emitting
+   * `safety.incident.created.v1` — re-emitting is what would re-notify the Safety Officer and re-arm
+   * the §19.3 escalation timer for an incident that was already reported.
+   *
+   * `incident_id` is now passed explicitly rather than left to the column DEFAULT, because the
+   * conflict target has to be a value the client can repeat.
+   */
   async createIncident(params: {
+    incident_id: string;
     project_id: string;
     incident_type: string;
     severity: string;
@@ -68,20 +91,23 @@ export class SafetyRepository {
     task_id?: string | null;
     latitude?: number | null;
     longitude?: number | null;
-  }): Promise<IncidentRow> {
+  }): Promise<IncidentRow | null> {
     const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<IncidentRow[]>`
         INSERT INTO site_ops.incidents
-          (tenant_id, project_id, task_id, incident_type, severity, reported_by, latitude, longitude)
+          (incident_id, tenant_id, project_id, task_id, incident_type, severity, reported_by,
+           latitude, longitude)
         VALUES
-          (${this.tenantId}::uuid, ${params.project_id}::uuid, ${params.task_id ?? null}::uuid,
+          (${params.incident_id}::uuid, ${this.tenantId}::uuid, ${params.project_id}::uuid,
+           ${params.task_id ?? null}::uuid,
            ${params.incident_type}::text, ${params.severity}::text, ${params.reported_by}::uuid,
            ${params.latitude ?? null}::numeric, ${params.longitude ?? null}::numeric)
+        ON CONFLICT (incident_id) DO NOTHING
         RETURNING *
       `,
     );
-    return rows[0]!;
+    return rows[0] ?? null;
   }
 
   async findIncidents(params: {
@@ -153,6 +179,8 @@ export class SafetyRepository {
     linked_task_id?: string | null;
     valid_from?: string | null;
     valid_until?: string | null;
+    contractor_name?: string | null;
+    description?: string | null;
     created_by: string;
   }): Promise<PermitRow> {
     const rows = await this.db.run(
@@ -160,11 +188,12 @@ export class SafetyRepository {
         tx.$queryRaw<PermitRow[]>`
         INSERT INTO site_ops.permits
           (tenant_id, project_id, permit_type, permit_number, linked_task_id,
-           valid_from, valid_until, created_by)
+           valid_from, valid_until, contractor_name, description, created_by)
         VALUES
           (${this.tenantId}::uuid, ${params.project_id}::uuid, ${params.permit_type},
            ${params.permit_number}, ${params.linked_task_id ?? null}::uuid,
            ${params.valid_from ?? null}::date, ${params.valid_until ?? null}::date,
+           ${params.contractor_name ?? null}, ${params.description ?? null},
            ${params.created_by}::uuid)
         RETURNING *
       `,
@@ -213,11 +242,27 @@ export class SafetyRepository {
     return rows[0] ?? null;
   }
 
-  async updatePermitStatus(permitId: string, status: 'ACTIVE' | 'REVOKED'): Promise<PermitRow> {
+  /**
+   * PENDING → ACTIVE or PENDING → REVOKED.
+   *
+   * `revokeReason` is written ONLY on the REVOKED branch. The CASE is not decoration: writing the
+   * parameter unconditionally would let a later approve-after-revoke path erase the reason the
+   * permit was revoked for. No such transition exists today (§15.5 only leaves PENDING), which is
+   * exactly why the guard belongs in the statement rather than in a caller's memory.
+   */
+  async updatePermitStatus(
+    permitId: string,
+    status: 'ACTIVE' | 'REVOKED',
+    revokeReason?: string | null,
+  ): Promise<PermitRow> {
     const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<PermitRow[]>`
-        UPDATE site_ops.permits SET status = ${status}
+        UPDATE site_ops.permits
+        SET status = ${status},
+            revoke_reason = CASE WHEN ${status} = 'REVOKED'
+                                 THEN ${revokeReason ?? null}
+                                 ELSE revoke_reason END
         WHERE permit_id = ${permitId}::uuid AND tenant_id = ${this.tenantId}::uuid
         RETURNING *
       `,

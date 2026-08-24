@@ -17,11 +17,17 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../identity/guards/jwt-auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
+import { PolicyGuard } from '../../shared/guards/policy.guard';
 import { Roles } from '@cos/rbac';
 import { CosRole } from '@cos/types';
 import { SafetyService } from './safety.service';
 import { SiteOpsService } from '../site-ops/site-ops.service';
-import { CreateIncidentDto, CreatePermitDto, ApprovePermitDto } from './dto/safety.dto';
+import {
+  CreateIncidentDto,
+  CreatePermitDto,
+  ApprovePermitDto,
+  RejectPermitDto,
+} from './dto/safety.dto';
 import { SubmitInspectionDto } from '../site-ops/dto/submit-inspection.dto';
 
 const SAFETY_READ_ROLES = [
@@ -46,7 +52,7 @@ function parseLimit(limit: string): number {
 
 @ApiTags('safety')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, PolicyGuard)
 @Controller()
 export class SafetyController {
   constructor(
@@ -147,8 +153,10 @@ export class SafetyController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Reject a permit (PENDING → REVOKED)' })
   @ApiParam({ name: 'permitId', type: 'string', format: 'uuid' })
-  rejectPermit(@Param('permitId', ParseUUIDPipe) permitId: string) {
-    return this.svc.rejectPermit(permitId);
+  // `dto` is optional and so is its one field: this endpoint accepted NO body before 2026-08-13,
+  // and the mobile app still sends `{}`. Defaulting keeps a body-less call valid (QM-2).
+  rejectPermit(@Param('permitId', ParseUUIDPipe) permitId: string, @Body() dto?: RejectPermitDto) {
+    return this.svc.rejectPermit(permitId, dto?.reason);
   }
 
   // ── Checklists (delegated to SiteOps — ADR-027) ─────────────────────────────
@@ -170,8 +178,14 @@ export class SafetyController {
   }
 
   // POST /api/v1/safety/checklists  (submit a completed checklist = inspection)
+  //
+  // SITE_WORKER is included (product-owner decision 2026-08-08, ADR-089): the daily safety
+  // verification is the field worker's own pre-shift routine, and §6.8 grants the role RW on Safety.
+  // This resolves — for THIS route only — the §6.8-vs-§14 conflict that sync-authz.ts recorded as
+  // unresolved. Incident reporting (`POST /safety/incidents`) is deliberately NOT widened: §14 keeps
+  // that at Site Engineer / Safety Officer / Admin and the decision did not cover it.
   @Post('safety/checklists')
-  @Roles(CosRole.SITE_ENGINEER, CosRole.SAFETY_OFFICER, CosRole.TENANT_ADMIN)
+  @Roles(CosRole.SITE_WORKER, CosRole.SITE_ENGINEER, CosRole.SAFETY_OFFICER, CosRole.TENANT_ADMIN)
   @ApiOperation({ summary: 'Submit a completed safety checklist (recorded as an inspection)' })
   submitChecklist(@Body() dto: SubmitInspectionDto) {
     return this.siteOps.submitInspection(dto);

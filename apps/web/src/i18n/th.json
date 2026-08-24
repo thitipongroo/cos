@@ -1,42 +1,116 @@
 {
-  "common": {
-    "appName": "Construction OS",
-    "loading": "กำลังโหลด...",
-    "signOut": "ออกจากระบบ",
-    "retry": "ลองใหม่",
-    "offline": "ออฟไลน์",
-    "synced": "ซิงค์แล้ว",
-    "syncing": "กำลังซิงค์...",
-    "readOnly": "โหมดอ่านอย่างเดียว — บัญชีนี้ดูข้อมูลได้แต่ไม่สามารถแก้ไขได้",
-    "featureFlag": {
-      "disabled": "ฟีเจอร์นี้ถูกปิดใช้งานชั่วคราว"
+  "admin": {
+    "title": "แผงผู้ดูแลระบบ (System Admin)",
+    "unauthorized": "ต้องมีสิทธิ์ SYSTEM_ADMIN เท่านั้น",
+    "colCode": "รหัสองค์กร",
+    "colName": "ชื่อองค์กร",
+    "colPlan": "แพ็กเกจ",
+    "colDb": "Dedicated DB",
+    "shared": "แชร์",
+    "assignDb": "กำหนด DB",
+    "dbUrlOptional": "Dedicated DB URL (ไม่บังคับ)",
+    "createTenant": "สร้างองค์กร",
+    "markContracted": "ทำเครื่องหมายว่าทำสัญญาแล้ว",
+    "markContractedConfirm": "เริ่ม provisioning DB เฉพาะ — พิมพ์รหัส tenant เพื่อยืนยัน:",
+    "contractRef": "เลขอ้างอิงสัญญา (ถ้ามี)"
+  },
+  "auth": {
+    "login": {
+      "title": "เข้าสู่ระบบ",
+      "office": "สำหรับสำนักงาน / ผู้บริหาร",
+      "officeButton": "เข้าสู่ระบบด้วย Keycloak",
+      "emailButton": "เข้าสู่ระบบด้วยอีเมล",
+      "fieldLink": "เข้าสู่ระบบสำหรับหน้างาน (SMS OTP)",
+      "fieldAccess": "สำหรับผู้ปฏิบัติงานหน้างาน",
+      "error": "เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่",
+      "headline": "ชั้นข้อมูลอัจฉริยะสำหรับงานโครงสร้างพื้นฐานยุคใหม่",
+      "subtitle": "เทเลเมทรีแบบเรียลไทม์ ติดตามสินทรัพย์อย่างปลอดภัย และงานภาคสนามที่ขับเคลื่อนด้วย AI สำหรับโครงการระดับองค์กร",
+      "badgeEnterprise": "ระดับองค์กร",
+      "badgeNetwork": "เครือข่ายทั่วโลก",
+      "cardTitle": "เข้าถึงอย่างปลอดภัย",
+      "cardSubtitle": "เลือกวิธีเข้าสู่ศูนย์ควบคุมการทำงาน",
+      "credentialsSubtitle": "กรอกข้อมูลเข้าสู่ระบบเพื่อเข้าถึงศูนย์ควบคุมการทำงาน",
+      "sendPasscode": "ส่งรหัสผ่านนิรภัย",
+      "cloudSyncActive": "ซิงค์คลาวด์ทำงานอยู่",
+      "support": "ฝ่ายสนับสนุน",
+      "systemStatus": "สถานะระบบ",
+      "helpCenter": "ศูนย์ช่วยเหลือ",
+      "termsOfService": "เงื่อนไขการให้บริการ",
+      "privacyPolicy": "นโยบายความเป็นส่วนตัว",
+      "securityPolicy": "นโยบายความปลอดภัย",
+      "terms": "เงื่อนไข",
+      "footerUnit": "หน่วยข่าวกรองอุตสาหกรรม / ปฏิบัติการทั่วโลก",
+      "globalRegion": "GLOBAL: SFO-7",
+      "or": "หรือ",
+      "statusOperational": "ระบบทั้งหมดทำงานปกติ",
+      "copyright": "© 2026 Construction OS Enterprise"
+    },
+    "otp": {
+      "title": "เข้าสู่ระบบด้วย SMS OTP",
+      "phoneTitle": "สำหรับผู้ปฏิบัติงานหน้างาน",
+      "phoneSubtitle": "กรอกเบอร์โทรศัพท์เพื่อรับรหัสผ่านครั้งเดียว",
+      "phoneLabel": "เบอร์โทรศัพท์",
+      "phonePlaceholder": "เช่น 0812345678",
+      "requestButton": "ขอรหัส OTP",
+      "otpLabel": "รหัส OTP (6 หลัก)",
+      "verifyTitle": "ยืนยันตัวตนของคุณ",
+      "verifySubtitle": "กรอกรหัส 6 หลักที่ส่งไปยังเบอร์ที่ลงท้ายด้วย",
+      "verifyButton": "ยืนยันและดำเนินการต่อ",
+      "resendCode": "ส่งรหัสอีกครั้ง",
+      "expiresIn": "รหัสหมดอายุใน",
+      "aesActive": "AES-256 ทำงาน",
+      "securityNote": "เซสชันของคุณถูกตรวจสอบเพื่อความปลอดภัย อย่าเปิดเผยรหัสแก่ผู้ใด รวมถึงเจ้าหน้าที่ Construction OS",
+      "backToOffice": "กลับไปเข้าสู่ระบบสำนักงาน",
+      "sent": "ส่งรหัส OTP ไปยังเบอร์ของคุณแล้ว",
+      "requestError": "ขอรหัส OTP ไม่สำเร็จ",
+      "verifyError": "รหัส OTP ไม่ถูกต้องหรือหมดอายุ",
+      "countryLabel": "ประเทศ"
+    },
+    "logout": {
+      "title": "กำลังออกจากระบบ..."
+    },
+    "loading": {
+      "title": "กำลังยืนยันรหัสความปลอดภัย",
+      "status": "กำลังรักษาความปลอดภัยเซสชัน",
+      "inProgress": "ระบบกำลังยืนยันตัวตน",
+      "encryption": "การเข้ารหัส",
+      "nodeId": "Node ID",
+      "rootCert": "ROOT_CERT: VALIDATED",
+      "helpCenter": "ศูนย์ช่วยเหลือ"
+    },
+    "pending": {
+      "title": "โมดูลยังไม่พร้อมใช้งาน",
+      "body": "หน้าใช้งานสำหรับบทบาทของคุณกำลังอยู่ระหว่างพัฒนา (รอ backend)"
     }
   },
-  "shell": {
-    "notifications": "การแจ้งเตือน",
-    "noNotifications": "ไม่มีการแจ้งเตือน",
-    "markAllRead": "ทำเครื่องหมายว่าอ่านแล้วทั้งหมด",
-    "language": "ภาษา"
+  "common": {
+    "appName": "Construction OS",
+    "featureFlag": {
+      "disabled": "ฟีเจอร์นี้ถูกปิดใช้งานชั่วคราว"
+    },
+    "imageFailedToLoad": "โหลดไม่สำเร็จ",
+    "loading": "กำลังโหลด...",
+    "offline": "ออฟไลน์",
+    "readOnly": "โหมดอ่านอย่างเดียว — บัญชีนี้ดูข้อมูลได้แต่ไม่สามารถแก้ไขได้",
+    "retry": "ลองใหม่",
+    "signOut": "ออกจากระบบ",
+    "synced": "ซิงค์แล้ว",
+    "syncing": "กำลังซิงค์..."
   },
-  "table": {
-    "project": "โครงการ",
-    "code": "รหัส",
-    "status": "สถานะ",
-    "type": "ประเภท",
-    "budget": "งบประมาณ",
-    "actual": "ใช้จริง",
-    "utilization": "% การใช้งบ",
-    "severity": "ความรุนแรง",
-    "title": "หัวข้อ",
-    "createdAt": "สร้างเมื่อ",
-    "actions": "การดำเนินการ"
-  },
-  "projectStatus": {
-    "DRAFT": "ร่าง",
-    "ACTIVE": "ดำเนินการ",
-    "ON_HOLD": "พักไว้",
-    "COMPLETED": "เสร็จสิ้น",
-    "CANCELLED": "ยกเลิก"
+  "crm": {
+    "leadsTitle": "ลูกค้าเป้าหมาย (Leads)",
+    "opportunitiesTitle": "โอกาสการขาย",
+    "customersTitle": "ลูกค้า",
+    "colContact": "ผู้ติดต่อ",
+    "colCompany": "บริษัท",
+    "colSource": "แหล่งที่มา",
+    "colTitle": "หัวข้อ",
+    "colValue": "มูลค่า",
+    "colCloseDate": "คาดว่าจะปิด",
+    "createLead": "เพิ่ม Lead",
+    "createOpportunity": "สร้างโอกาส",
+    "convert": "แปลงเป็นลูกค้า",
+    "selectLead": "เลือก Lead"
   },
   "exec": {
     "homeTitle": "ภาพรวมพอร์ตโครงการ",
@@ -57,6 +131,93 @@
     "lowConfidence": "ความเชื่อมั่นต่ำ — ข้อมูลไม่เพียงพอ",
     "atRisk": "เสี่ยง",
     "onTrack": "ปกติ"
+  },
+  "finance": {
+    "paymentsTitle": "การชำระเงิน (AP)",
+    "budgetTitle": "งบประมาณ",
+    "invoicesTitle": "ใบแจ้งหนี้ผู้ขาย",
+    "varianceTitle": "รายงานส่วนต่างงบ",
+    "allStatuses": "ทุกสถานะ",
+    "approve": "อนุมัติ",
+    "overBudget": "เกินงบ",
+    "onBudget": "ในงบ",
+    "selectProject": "เลือกโครงการ",
+    "invoicesHint": "ใบแจ้งหนี้เป็นของโมดูลจัดซื้อ (AP) — Finance ดู/อนุมัติ/จ่าย",
+    "colNumber": "เลขที่",
+    "colVendor": "ผู้ขาย",
+    "colPo": "PO",
+    "colDueDate": "ครบกำหนด",
+    "colReference": "อ้างอิง",
+    "dispute": "โต้แย้ง",
+    "recordPayment": "บันทึกการจ่ายเงิน",
+    "amount": "จำนวนเงิน",
+    "paymentDate": "วันที่จ่าย",
+    "selectInvoice": "เลือกใบแจ้งหนี้",
+    "paymentReference": "เลขอ้างอิง (ไม่บังคับ)"
+  },
+  "location": {
+    "getLocation": "ระบุตำแหน่ง",
+    "locating": "กำลังระบุตำแหน่ง…",
+    "currentLocation": "ตำแหน่งปัจจุบัน",
+    "coordinates": "พิกัด",
+    "accuracy": "ความแม่นยำ",
+    "notSupported": "เบราว์เซอร์นี้ไม่รองรับบริการระบุตำแหน่ง",
+    "denied": "ไม่ได้รับอนุญาตให้เข้าถึงตำแหน่ง",
+    "timeout": "หมดเวลาการระบุตำแหน่ง",
+    "unavailable": "ไม่สามารถระบุตำแหน่งได้"
+  },
+  "nav": {
+    "exec": {
+      "home": "ภาพรวมพอร์ต",
+      "portfolio": "พอร์ตโครงการ",
+      "alerts": "การแจ้งเตือนความเสี่ยง",
+      "reports": "รายงานผู้บริหาร"
+    },
+    "pm": {
+      "projects": "โครงการ"
+    },
+    "procurement": {
+      "requests": "ใบขอซื้อ",
+      "rfqs": "ใบขอราคา (RFQ)",
+      "quotations": "เปรียบเทียบใบเสนอราคา",
+      "orders": "ใบสั่งซื้อ (PO)",
+      "deliveries": "การส่งมอบ",
+      "vendors": "ผู้ขาย"
+    },
+    "finance": {
+      "payments": "การชำระเงิน",
+      "budget": "งบประมาณ",
+      "invoices": "ใบแจ้งหนี้",
+      "variance": "รายงานส่วนต่างงบ"
+    },
+    "site": {
+      "reports": "รายงานหน้างาน",
+      "issues": "ปัญหา",
+      "inspections": "การตรวจสอบ",
+      "conflicts": "แก้ไขข้อขัดแย้ง"
+    },
+    "siteWorker": {
+      "newReport": "รายงานประจำวัน",
+      "newIssue": "แจ้งปัญหา",
+      "tasks": "งาน",
+      "checklists": "เช็คลิสต์"
+    },
+    "admin": {
+      "users": "จัดการผู้ใช้",
+      "tenant": "ตั้งค่าองค์กร",
+      "subjectRequests": "คำขอจากเจ้าของข้อมูล"
+    },
+    "safety": {
+      "incidents": "เหตุการณ์",
+      "permits": "ใบอนุญาต",
+      "checklists": "เช็คลิสต์",
+      "compliance": "การปฏิบัติตาม"
+    },
+    "crm": {
+      "leads": "Leads",
+      "opportunities": "โอกาสการขาย",
+      "customers": "ลูกค้า"
+    }
   },
   "pm": {
     "projectsTitle": "โครงการ",
@@ -79,6 +240,25 @@
     "tabProcurement": "จัดซื้อ",
     "tabFinance": "การเงิน",
     "tabSite": "หน้างาน",
+    "tabRisks": "ความเสี่ยง",
+    "tabDashboard": "แดชบอร์ด",
+    "tabGraph": "กราฟความรู้",
+    "graphTitle": "กราฟความรู้โครงการ",
+    "graphSubtitle": "ผู้ขาย ห่วงโซ่อุปทานวัสดุ และการตรวจสอบ ที่เชื่อมโยงกับโครงการนี้ (จากฐานข้อมูลกราฟ Neo4j)",
+    "graphVendors": "ผู้ขายที่ส่งของให้โครงการ",
+    "graphSupplyChain": "ห่วงโซ่อุปทานวัสดุ",
+    "graphInspections": "การตรวจสอบ",
+    "graphVendorDetail": "รายละเอียดผู้ขาย",
+    "graphOtherProjects": "โครงการอื่นที่ใช้ผู้ขายรายนี้ร่วมกัน",
+    "graphInvoices": "ใบแจ้งหนี้ของผู้ขาย",
+    "graphViewVendor": "ดูความสัมพันธ์",
+    "graphSelectVendor": "เลือกผู้ขายเพื่อดูโครงการที่ใช้ร่วมกันและใบแจ้งหนี้",
+    "graphEmpty": "ยังไม่มีข้อมูลในกราฟสำหรับโครงการนี้",
+    "colVendor": "ผู้ขาย",
+    "colMaterial": "วัสดุ",
+    "colProject": "โครงการ",
+    "colInvoice": "เลขที่ใบแจ้งหนี้",
+    "colCurrency": "สกุลเงิน",
     "procurementTitle": "สถานะจัดซื้อ",
     "financeTitle": "งบประมาณ vs ใช้จริง",
     "siteTitle": "สรุปหน้างาน",
@@ -98,12 +278,6 @@
     "colDeadline": "กำหนด",
     "colManpower": "แรงงาน",
     "colVersion": "เวอร์ชัน"
-  },
-  "projectType": {
-    "RESIDENTIAL": "ที่อยู่อาศัย",
-    "COMMERCIAL": "พาณิชย์",
-    "INFRASTRUCTURE": "โครงสร้างพื้นฐาน",
-    "INDUSTRIAL": "อุตสาหกรรม"
   },
   "proc": {
     "requestsTitle": "ใบขอซื้อ",
@@ -152,151 +326,63 @@
     "deadline": "กำหนดส่ง",
     "colScore": "คะแนนผู้ขาย"
   },
-  "finance": {
-    "paymentsTitle": "การชำระเงิน (AP)",
-    "budgetTitle": "งบประมาณ",
-    "invoicesTitle": "ใบแจ้งหนี้ผู้ขาย",
-    "varianceTitle": "รายงานส่วนต่างงบ",
-    "allStatuses": "ทุกสถานะ",
-    "approve": "อนุมัติ",
-    "overBudget": "เกินงบ",
-    "onBudget": "ในงบ",
-    "selectProject": "เลือกโครงการ",
-    "invoicesHint": "ใบแจ้งหนี้เป็นของโมดูลจัดซื้อ (AP) — Finance ดู/อนุมัติ/จ่าย",
-    "colNumber": "เลขที่",
-    "colVendor": "ผู้ขาย",
-    "colPo": "PO",
-    "colDueDate": "ครบกำหนด",
-    "colReference": "อ้างอิง",
-    "dispute": "โต้แย้ง",
-    "recordPayment": "บันทึกการจ่ายเงิน",
-    "amount": "จำนวนเงิน",
-    "paymentDate": "วันที่จ่าย",
-    "selectInvoice": "เลือกใบแจ้งหนี้",
-    "paymentReference": "เลขอ้างอิง (ไม่บังคับ)"
+  "profile": {
+    "title": "โปรไฟล์ของฉัน",
+    "link": "โปรไฟล์",
+    "name": "ชื่อ",
+    "email": "อีเมล",
+    "role": "บทบาท",
+    "tenant": "องค์กร",
+    "language": "ภาษา"
   },
-  "nav": {
-    "exec": {
-      "home": "ภาพรวมพอร์ต",
-      "portfolio": "พอร์ตโครงการ",
-      "alerts": "การแจ้งเตือนความเสี่ยง",
-      "reports": "รายงานผู้บริหาร"
-    },
-    "pm": {
-      "projects": "โครงการ"
-    },
-    "procurement": {
-      "requests": "ใบขอซื้อ",
-      "rfqs": "ใบขอราคา (RFQ)",
-      "quotations": "เปรียบเทียบใบเสนอราคา",
-      "orders": "ใบสั่งซื้อ (PO)",
-      "deliveries": "การส่งมอบ",
-      "vendors": "ผู้ขาย"
-    },
-    "finance": {
-      "payments": "การชำระเงิน",
-      "budget": "งบประมาณ",
-      "invoices": "ใบแจ้งหนี้",
-      "variance": "รายงานส่วนต่างงบ"
-    },
-    "site": {
-      "reports": "รายงานหน้างาน",
-      "issues": "ปัญหา",
-      "inspections": "การตรวจสอบ",
-      "conflicts": "แก้ไขข้อขัดแย้ง"
-    },
-    "siteWorker": {
-      "newReport": "รายงานประจำวัน",
-      "newIssue": "แจ้งปัญหา",
-      "tasks": "งาน",
-      "checklists": "เช็คลิสต์"
-    },
-    "admin": {
-      "users": "จัดการผู้ใช้",
-      "tenant": "ตั้งค่าองค์กร"
-    },
-    "safety": {
-      "incidents": "เหตุการณ์",
-      "permits": "ใบอนุญาต",
-      "checklists": "เช็คลิสต์",
-      "compliance": "การปฏิบัติตาม"
-    },
-    "crm": {
-      "leads": "Leads",
-      "opportunities": "โอกาสการขาย",
-      "customers": "ลูกค้า"
-    }
+  "projectStatus": {
+    "DRAFT": "ร่าง",
+    "ACTIVE": "ดำเนินการ",
+    "ON_HOLD": "พักไว้",
+    "COMPLETED": "เสร็จสิ้น",
+    "CANCELLED": "ยกเลิก"
   },
-  "auth": {
-    "login": {
-      "title": "เข้าสู่ระบบ",
-      "office": "สำหรับสำนักงาน / ผู้บริหาร",
-      "officeButton": "เข้าสู่ระบบด้วย Keycloak",
-      "fieldLink": "เข้าสู่ระบบสำหรับหน้างาน (SMS OTP)",
-      "error": "เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่"
-    },
-    "otp": {
-      "title": "เข้าสู่ระบบด้วย SMS OTP",
-      "phoneLabel": "เบอร์โทรศัพท์",
-      "phonePlaceholder": "เช่น 0812345678",
-      "requestButton": "ขอรหัส OTP",
-      "otpLabel": "รหัส OTP (6 หลัก)",
-      "verifyButton": "ยืนยันและเข้าสู่ระบบ",
-      "backToOffice": "กลับไปเข้าสู่ระบบสำนักงาน",
-      "sent": "ส่งรหัส OTP ไปยังเบอร์ของคุณแล้ว",
-      "requestError": "ขอรหัส OTP ไม่สำเร็จ",
-      "verifyError": "รหัส OTP ไม่ถูกต้องหรือหมดอายุ",
-      "countryLabel": "ประเทศ"
-    },
-    "logout": {
-      "title": "กำลังออกจากระบบ..."
-    },
-    "pending": {
-      "title": "โมดูลยังไม่พร้อมใช้งาน",
-      "body": "หน้าใช้งานสำหรับบทบาทของคุณกำลังอยู่ระหว่างพัฒนา (รอ backend)"
-    }
+  "projectType": {
+    "RESIDENTIAL": "ที่อยู่อาศัย",
+    "COMMERCIAL": "พาณิชย์",
+    "INFRASTRUCTURE": "โครงสร้างพื้นฐาน",
+    "INDUSTRIAL": "อุตสาหกรรม"
   },
-  "site": {
-    "reportsTitle": "รายงานหน้างาน",
-    "issuesTitle": "ปัญหาหน้างาน",
-    "inspectionsTitle": "ผลการตรวจสอบ",
-    "conflictsTitle": "การแก้ไขข้อขัดแย้ง",
-    "colDate": "วันที่",
-    "colSummary": "สรุป",
-    "colManpower": "จำนวนแรงงาน",
-    "colTitle": "หัวข้อ",
-    "colSeverity": "ความรุนแรง",
-    "colChecklist": "เช็คลิสต์",
-    "colInspectedAt": "ตรวจเมื่อ",
-    "colNotes": "หมายเหตุ",
-    "colEntity": "ประเภทข้อมูล",
-    "colEntityId": "รหัสข้อมูล",
-    "colConflictType": "ประเภทข้อขัดแย้ง",
-    "approve": "อนุมัติ",
-    "requestReinspection": "ขอตรวจซ้ำ",
-    "resolve": "แก้ไข",
-    "allStatuses": "ทุกสถานะ",
-    "tasksTitle": "งานที่ได้รับมอบหมาย",
-    "selectProject": "เลือกโครงการ",
-    "colTaskName": "ชื่องาน",
-    "colProgress": "ความคืบหน้า",
-    "complete": "เสร็จสิ้น",
-    "completeBlocked": "ปิดงานไม่ได้ — ติดเงื่อนไข (ตรวจสอบ/ปัญหา/งานก่อนหน้า/ใบอนุญาต)",
-    "reportsNewTitle": "ส่งรายงานประจำวัน",
-    "issuesNewTitle": "แจ้งปัญหา",
-    "checklistsTitle": "เช็คลิสต์ความปลอดภัย",
-    "colChecklistName": "ชื่อเช็คลิสต์",
-    "colVersion": "เวอร์ชัน",
-    "fieldDate": "วันที่",
-    "fieldManpower": "จำนวนแรงงาน",
-    "fieldSummary": "สรุป/อุปสรรค",
-    "fieldTitle": "หัวข้อ",
+  "risk": {
+    "aiSuggested": "AI",
+    "cancel": "ยกเลิก",
+    "colActions": "",
+    "colCategory": "หมวด",
+    "colScore": "โอกาส × ผลกระทบ",
+    "colStatus": "สถานะ",
+    "colTitle": "ความเสี่ยง",
+    "edit": "แก้ไข",
     "fieldDescription": "รายละเอียด",
-    "fieldPhoto": "รูปภาพ",
-    "submit": "ส่ง",
-    "submitted": "ส่งเรียบร้อย",
-    "fieldBlockers": "อุปสรรค/สิ่งกีดขวาง (ถ้ามี)",
-    "escalate": "ยกระดับ (แจ้ง PM)"
+    "fieldMitigation": "แนวทางลดความเสี่ยง",
+    "fieldOwner": "ผู้รับผิดชอบ",
+    "fieldTitle": "หัวข้อความเสี่ยง",
+    "filterAllCategory": "ทุกหมวด",
+    "filterAllStatus": "ทุกสถานะ",
+    "heatMap": "แผนภาพความเสี่ยง (โอกาส × ผลกระทบ)",
+    "impact": "ผลกระทบ",
+    "likelihood": "โอกาสเกิด",
+    "raise": "เพิ่มความเสี่ยง",
+    "save": "บันทึก",
+    "title": "ทะเบียนความเสี่ยง"
+  },
+  "riskCategory": {
+    "SAFETY": "ความปลอดภัย",
+    "FINANCIAL": "การเงิน",
+    "SCHEDULE": "กำหนดการ",
+    "TECHNICAL": "เทคนิค",
+    "EXTERNAL": "ปัจจัยภายนอก",
+    "OTHER": "อื่นๆ"
+  },
+  "riskStatus": {
+    "OPEN": "เปิด",
+    "MITIGATING": "กำลังลดความเสี่ยง",
+    "CLOSED": "ปิด",
+    "ACCEPTED": "ยอมรับความเสี่ยง"
   },
   "safety": {
     "incidentsTitle": "อุบัติเหตุ/เหตุการณ์ความปลอดภัย",
@@ -333,37 +419,113 @@
     "lineToken": "LINE Channel Access Token",
     "notifications": "เปิดการแจ้งเตือน",
     "save": "บันทึก",
-    "saved": "บันทึกแล้ว"
+    "saved": "บันทึกแล้ว",
+    "srTitle": "คำขอจากเจ้าของข้อมูล",
+    "srIntro": "คำขอจากบุคคลที่ไม่มีบัญชีในระบบนี้ — ผู้ติดต่อ CRM, lead, ผู้ติดต่อของผู้ขาย องค์กรของคุณเป็นผู้ควบคุมข้อมูล Construction OS เก็บข้อมูลนี้ตามคำสั่งของคุณ",
+    "srType": "ประเภท",
+    "srSubject": "เจ้าของข้อมูล",
+    "srStatus": "สถานะ",
+    "srReceived": "รับเรื่องเมื่อ",
+    "srOpen": "เปิดอยู่",
+    "srAccess": "ขอดูข้อมูล",
+    "srErasure": "ขอลบข้อมูล",
+    "srEmail": "อีเมล",
+    "srPhone": "โทรศัพท์",
+    "srReceivedAt": "วันเวลาที่รับเรื่อง",
+    "srNote": "หมายเหตุ",
+    "srCreate": "เปิดคำขอ",
+    "srViewMatches": "ดูข้อมูลที่เก็บไว้",
+    "srMatches": "ข้อมูลที่เก็บไว้",
+    "srNoMatches": "ไม่พบข้อมูลที่ตรงกับตัวระบุในคำขอนี้",
+    "srErase": "ลบข้อมูลส่วนบุคคล",
+    "srLegalHold": "เก็บสำเนาไว้ภายใต้ legal hold",
+    "srLegalHoldReason": "เหตุผลของ legal hold",
+    "srClose": "ปิดคำขอ",
+    "srOutcome": "ดำเนินการอะไรไป หรือปฏิเสธเพราะอะไร",
+    "srFulfilled": "ดำเนินการแล้ว",
+    "srRejected": "ปฏิเสธ",
+    "srErased": "ลบข้อมูลส่วนบุคคลแล้ว {total} รายการ",
+    "srVerify": "ส่งลิงก์ยืนยันตัวตน",
+    "srVerified": "ยืนยันแล้ว",
+    "srUnverified": "ยังไม่ยืนยัน",
+    "srVerifySent": "ส่งลิงก์ยืนยันไปที่ {to} แล้ว",
+    "srVerifyHint": "จะลบข้อมูลไม่ได้จนกว่าเจ้าของข้อมูลจะกดยืนยัน ลิงก์ส่งไปยังที่อยู่บนเรคคอร์ดที่ตรงกัน ไม่ใช่ที่กรอกด้านบน"
   },
-  "admin": {
-    "title": "แผงผู้ดูแลระบบ (System Admin)",
-    "unauthorized": "ต้องมีสิทธิ์ SYSTEM_ADMIN เท่านั้น",
-    "colCode": "รหัสองค์กร",
-    "colName": "ชื่อองค์กร",
-    "colPlan": "แพ็กเกจ",
-    "colDb": "Dedicated DB",
-    "shared": "แชร์",
-    "assignDb": "กำหนด DB",
-    "dbUrlOptional": "Dedicated DB URL (ไม่บังคับ)",
-    "createTenant": "สร้างองค์กร",
-    "markContracted": "ทำเครื่องหมายว่าทำสัญญาแล้ว",
-    "markContractedConfirm": "เริ่ม provisioning DB เฉพาะ — พิมพ์รหัส tenant เพื่อยืนยัน:",
-    "contractRef": "เลขอ้างอิงสัญญา (ถ้ามี)"
+  "shell": {
+    "notifications": "การแจ้งเตือน",
+    "noNotifications": "ไม่มีการแจ้งเตือน",
+    "markAllRead": "ทำเครื่องหมายว่าอ่านแล้วทั้งหมด",
+    "language": "ภาษา"
   },
-  "crm": {
-    "leadsTitle": "ลูกค้าเป้าหมาย (Leads)",
-    "opportunitiesTitle": "โอกาสการขาย",
-    "customersTitle": "ลูกค้า",
-    "colContact": "ผู้ติดต่อ",
-    "colCompany": "บริษัท",
-    "colSource": "แหล่งที่มา",
+  "site": {
+    "allStatuses": "ทุกสถานะ",
+    "approve": "อนุมัติ",
+    "checklistsTitle": "เช็คลิสต์ความปลอดภัย",
+    "colChecklist": "เช็คลิสต์",
+    "colChecklistName": "ชื่อเช็คลิสต์",
+    "colConflictType": "ประเภทข้อขัดแย้ง",
+    "colDate": "วันที่",
+    "colEntity": "ประเภทข้อมูล",
+    "colEntityId": "รหัสข้อมูล",
+    "colInspectedAt": "ตรวจเมื่อ",
+    "colManpower": "จำนวนแรงงาน",
+    "colNotes": "หมายเหตุ",
+    "colProgress": "ความคืบหน้า",
+    "colSeverity": "ความรุนแรง",
+    "colSummary": "สรุป",
+    "colTaskName": "ชื่องาน",
     "colTitle": "หัวข้อ",
-    "colValue": "มูลค่า",
-    "colCloseDate": "คาดว่าจะปิด",
-    "createLead": "เพิ่ม Lead",
-    "createOpportunity": "สร้างโอกาส",
-    "convert": "แปลงเป็นลูกค้า",
-    "selectLead": "เลือก Lead"
+    "colVersion": "เวอร์ชัน",
+    "complete": "เสร็จสิ้น",
+    "completeBlocked": "ปิดงานไม่ได้ — ติดเงื่อนไข (ตรวจสอบ/ปัญหา/งานก่อนหน้า/ใบอนุญาต)",
+    "conflictsTitle": "การแก้ไขข้อขัดแย้ง",
+    "escalate": "ยกระดับ (แจ้ง PM)",
+    "fieldBlockers": "อุปสรรค/สิ่งกีดขวาง (ถ้ามี)",
+    "fieldDate": "วันที่",
+    "fieldDescription": "รายละเอียด",
+    "fieldManpower": "จำนวนแรงงาน",
+    "fieldPhoto": "รูปภาพ",
+    "fieldSeverity": "ระดับความรุนแรง",
+    "fieldSummary": "สรุป/อุปสรรค",
+    "fieldTitle": "หัวข้อ",
+    "inspectionsTitle": "ผลการตรวจสอบ",
+    "issuesNewTitle": "แจ้งปัญหา",
+    "issuesTitle": "ปัญหาหน้างาน",
+    "reportsNewTitle": "ส่งรายงานประจำวัน",
+    "reportsTitle": "รายงานหน้างาน",
+    "requestReinspection": "ขอตรวจซ้ำ",
+    "resolve": "แก้ไข",
+    "selectProject": "เลือกโครงการ",
+    "submit": "ส่ง",
+    "submitted": "ส่งเรียบร้อย",
+    "tasksTitle": "งานที่ได้รับมอบหมาย"
+  },
+  "table": {
+    "project": "โครงการ",
+    "code": "รหัส",
+    "status": "สถานะ",
+    "type": "ประเภท",
+    "budget": "งบประมาณ",
+    "actual": "ใช้จริง",
+    "utilization": "% การใช้งบ",
+    "severity": "ความรุนแรง",
+    "title": "หัวข้อ",
+    "createdAt": "สร้างเมื่อ",
+    "actions": "การดำเนินการ"
+  },
+  "validation": {
+    "invalidOption": "กรุณาเลือกจากตัวเลือกที่มีให้",
+    "notACurrency": "กรุณากรอกรหัสสกุลเงิน 3 ตัวอักษร",
+    "notADate": "กรุณากรอกวันที่ให้ถูกต้อง",
+    "notAPhone": "กรุณากรอกเบอร์โทรให้ถูกต้อง",
+    "notAUuid": "ตัวเลือกไม่ถูกต้อง",
+    "notAnAmount": "กรุณากรอกจำนวนให้ถูกต้อง",
+    "notAnEmail": "กรุณากรอกอีเมลให้ถูกต้อง",
+    "notAnInteger": "กรุณากรอกเป็นจำนวนเต็ม",
+    "notAnOtp": "กรุณากรอกรหัส 6 หลัก",
+    "outOfRange": "ค่าอยู่นอกช่วงที่กำหนด",
+    "required": "กรุณากรอกข้อมูลนี้",
+    "tooLong": "ยาวเกินกำหนด"
   },
   "vendor": {
     "portalTitle": "พอร์ทัลผู้ขาย",
@@ -409,24 +571,99 @@
     "unavailable": "บริการถอดเสียงยังไม่พร้อมใช้งาน",
     "language": "ภาษา"
   },
-  "location": {
-    "getLocation": "ระบุตำแหน่ง",
-    "locating": "กำลังระบุตำแหน่ง…",
-    "currentLocation": "ตำแหน่งปัจจุบัน",
-    "coordinates": "พิกัด",
-    "accuracy": "ความแม่นยำ",
-    "notSupported": "เบราว์เซอร์นี้ไม่รองรับบริการระบุตำแหน่ง",
-    "denied": "ไม่ได้รับอนุญาตให้เข้าถึงตำแหน่ง",
-    "timeout": "หมดเวลาการระบุตำแหน่ง",
-    "unavailable": "ไม่สามารถระบุตำแหน่งได้"
-  },
-  "profile": {
-    "title": "โปรไฟล์ของฉัน",
-    "link": "โปรไฟล์",
-    "name": "ชื่อ",
-    "email": "อีเมล",
-    "role": "บทบาท",
-    "tenant": "องค์กร",
-    "language": "ภาษา"
+  "trust": {
+    "brand": "CONSTRUCTION OS",
+    "title": "ศูนย์ความเชื่อมั่น",
+    "intro": "สิ่งที่ปกป้องข้อมูลของคุณ ระบุไว้ในแบบที่คุณตรวจสอบได้ ทุกมาตรการด้านล่างอ้างอิงใบรับรอง ข้อเท็จจริงสาธารณะ หรือทะเบียนมาตรการในระบบของเรา และสิ่งที่เรายังไม่ได้ทำก็ระบุไว้ตรง ๆ แทนที่จะตัดออก",
+    "verifiedOn": "ตรวจสอบมาตรการกับระบบจริงเมื่อ",
+    "status": {
+      "live": "ใช้งานจริง",
+      "partial": "บางส่วน",
+      "planned": "ยังไม่ได้ทำ"
+    },
+    "controls": {
+      "heading": "มาตรการด้านความปลอดภัย",
+      "note": "“ยังไม่ได้ทำ” หมายถึงกำหนดไว้ในข้อกำหนดและมีแผนแล้ว แต่ยังไม่ได้ใช้งานจริงบนระบบ",
+      "keys": {
+        "label": "การปกป้องกุญแจเข้ารหัส",
+        "detail": "กุญแจเข้ารหัสข้อมูลถูกสร้างและใช้งานภายใน hardware security module ของ AWS Key Management Service ซึ่งผ่านการรับรองจาก NIST ใบรับรองอยู่ที่ลิงก์ด้านล่าง และมีผลถึง 17 พฤศจิกายน 2026 ซึ่งต้องตรวจสอบใหม่เมื่อถึงกำหนด"
+      },
+      "atRest": {
+        "label": "การเข้ารหัสขณะจัดเก็บ",
+        "detail": "ครอบคลุมฐานข้อมูล พื้นที่จัดเก็บไฟล์ และข้อมูลสำรอง โดยใช้กุญแจที่เราจัดการเอง"
+      },
+      "fieldLevel": {
+        "label": "การเข้ารหัสระดับฟิลด์",
+        "detail": "ฟิลด์ที่อ่อนไหวเป็นรายรายการ เช่น ความลับ MFA และกุญแจลงลายมือชื่อ ถูกเข้ารหัสแยกก่อนจัดเก็บ"
+      },
+      "inTransit": {
+        "label": "การเข้ารหัสระหว่างส่ง",
+        "detail": "ใช้ TLS 1.3 เป็นขั้นต่ำบนทุก endpoint สาธารณะ และปิด TLS รุ่นเก่าทั้งหมด"
+      },
+      "isolation": {
+        "label": "การแยกข้อมูลระหว่างองค์กร",
+        "detail": "ทุกตารางมีนโยบายที่บังคับใช้ในระดับฐานข้อมูล ทำให้องค์กรหนึ่งไม่สามารถอ่านข้อมูลของอีกองค์กรได้ แม้จะข้ามชั้นแอปพลิเคชันไปแล้วก็ตาม และมีการทดสอบข้ามองค์กรทุกครั้งที่ build"
+      },
+      "mesh": {
+        "label": "mTLS ระหว่างเซอร์วิส",
+        "detail": "การทำ mutual TLS ระหว่างเซอร์วิสภายในถูกกำหนดไว้แล้ว แต่ยังไม่ได้ติดตั้งใช้งาน"
+      },
+      "logRedaction": {
+        "label": "การปิดบังข้อมูลใน log อัตโนมัติ",
+        "detail": "ปัจจุบันอาศัยแนวปฏิบัติของทีมพัฒนาในการไม่บันทึกข้อมูลส่วนบุคคลลง log ยังไม่มีการบังคับอัตโนมัติ"
+      },
+      "subjectRights": {
+        "label": "การใช้สิทธิด้วยตนเอง",
+        "detail": "คำขอเข้าถึง โอนย้าย ลบ และระงับการใช้ข้อมูล ดำเนินการโดยเจ้าหน้าที่คุ้มครองข้อมูลส่วนบุคคล ยังไม่มีช่องทางทำเองในระบบ"
+      },
+      "breach": {
+        "label": "การแจ้งเหตุละเมิดอัตโนมัติ",
+        "detail": "ขั้นตอนแจ้งเหตุภายใน 72 ชั่วโมงตามที่ PDPA กำหนด ยังไม่ได้พัฒนา"
+      }
+    },
+    "certs": {
+      "heading": "การรับรองมาตรฐาน",
+      "note": "ปัจจุบันเรายังไม่ได้รับการรับรองใด ๆ ในรายการนี้ จึงระบุเป้าหมายไว้เพื่อไม่ให้สถานะกำกวม",
+      "soc2": {
+        "label": "SOC 2 Type II",
+        "detail": "ครอบคลุม Security, Availability, Confidentiality เริ่มตรวจ 6 เดือนก่อนเปลี่ยนผ่าน Stage 1→2"
+      },
+      "iso27001": {
+        "label": "ISO/IEC 27001:2022",
+        "detail": "ระบบบริหารความมั่นคงปลอดภัยสารสนเทศ ยังไม่ได้จัดตั้ง ISMS ซึ่งเป็นช่องว่างใหญ่ที่สุดต่อการรับรอง"
+      },
+      "pdpa": {
+        "label": "การตรวจสอบ PDPA (ไทย)",
+        "detail": "ตรวจประจำปี เริ่ม 6 เดือนก่อนรับลูกค้าองค์กรรายแรกในไทย"
+      }
+    },
+    "subprocessors": {
+      "heading": "ผู้ประมวลผลข้อมูลภายนอก",
+      "note": "บุคคลที่สามที่อาจประมวลผลข้อมูลส่วนบุคคลในนามของเรา",
+      "colName": "ผู้ประมวลผล",
+      "colPurpose": "วัตถุประสงค์",
+      "colRegion": "ภูมิภาค",
+      "aws": {
+        "name": "Amazon Web Services",
+        "purpose": "ฐานข้อมูล พื้นที่จัดเก็บไฟล์ ระบบจัดการความลับ และ Kubernetes"
+      },
+      "awsSns": {
+        "name": "AWS SNS",
+        "purpose": "ส่งรหัสเข้าสู่ระบบทาง SMS โดยตรึงไว้ที่ endpoint ที่รองรับ SMS"
+      },
+      "openai": {
+        "name": "OpenAI",
+        "purpose": "สร้างรายงานด้วย AI โดยตัดข้อมูลส่วนบุคคลออกก่อนส่งข้อความใด ๆ"
+      },
+      "cloudflare": {
+        "name": "Cloudflare",
+        "purpose": "ไฟร์วอลล์แอปพลิเคชันเว็บและ CDN"
+      }
+    },
+    "residency": {
+      "heading": "ถิ่นที่จัดเก็บข้อมูล",
+      "body": "ข้อมูลถูกจัดเก็บในภูมิภาคที่กำหนดให้องค์กรของคุณ ได้แก่ ไทย (ap-southeast-7) สำหรับองค์กรไทย ไอร์แลนด์ (eu-west-1) สำหรับองค์กรในสหภาพยุโรป และสิงคโปร์ (ap-southeast-1) สำหรับกรณีอื่น โดยมีสิงคโปร์เป็นภูมิภาคสำรองสำหรับข้อมูลของไทย การส่งข้อมูลข้ามพรมแดนตามปกติมีเพียงกรณีเดียวคือการส่งรหัสเข้าสู่ระบบทาง SMS"
+    },
+    "footer": "หากมีคำถามเกี่ยวกับหน้านี้ หรือต้องการใช้สิทธิเหนือข้อมูลของคุณ ติดต่อเจ้าหน้าที่คุ้มครองข้อมูลส่วนบุคคลของเรา โดยที่อยู่ติดต่อประกาศไว้ในนโยบายความเป็นส่วนตัวในแอป"
   }
 }

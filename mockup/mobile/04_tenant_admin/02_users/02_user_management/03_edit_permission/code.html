@@ -1,0 +1,386 @@
+<!DOCTYPE html><html class="dark" lang="th" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>แก้ไขสิทธิ์การใช้งาน - Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary-fixed-dim": "#b4c5ff",
+                    "inverse-primary": "#0053db",
+                    "on-tertiary-fixed": "#161b2b",
+                    "surface-bright": "#2a3a4f",
+                    "sync-active": "#FFD60A",
+                    "on-surface": "#d3e4fe",
+                    "surface-variant": "#26364a",
+                    "outline": "#8d90a0",
+                    "secondary": "#4cd7f6",
+                    "mobile-success": "#00C853",
+                    "surface-container-high": "#1b2b3f",
+                    "error": "#ffb4ab",
+                    "surface-container-low": "#0b1c30",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "on-primary-container": "#eeefff",
+                    "background": "#031427",
+                    "mobile-primary": "#0066FF",
+                    "inverse-surface": "#d3e4fe",
+                    "on-primary-fixed": "#00174b",
+                    "on-primary": "#002a78",
+                    "on-background": "#d3e4fe",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "sync-pending": "#94A3B8",
+                    "surface-container-highest": "#26364a",
+                    "outline-variant": "#434655",
+                    "on-surface-variant": "#c3c6d7",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "on-secondary-fixed": "#001f26",
+                    "on-secondary-container": "#00424e",
+                    "on-tertiary": "#2b3041",
+                    "secondary-container": "#03b5d3",
+                    "surface-container": "#102034",
+                    "secondary-fixed": "#acedff",
+                    "on-secondary": "#003640",
+                    "surface-tint": "#b4c5ff",
+                    "dark-surface": "#0F172A",
+                    "primary-container": "#2563eb",
+                    "tertiary": "#c1c5dc",
+                    "primary": "#b4c5ff",
+                    "primary-fixed": "#dbe1ff",
+                    "on-error-container": "#ffdad6",
+                    "error-container": "#93000a",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "on-error": "#690005",
+                    "on-tertiary-container": "#eeefff",
+                    "surface-container-lowest": "#000f21",
+                    "tertiary-fixed": "#dee1f9",
+                    "tertiary-container": "#686c80",
+                    "dark-bg": "#020617",
+                    "surface": "#031427",
+                    "surface-dim": "#031427",
+                    "inverse-on-surface": "#213145",
+                    "mobile-danger": "#FF3B30",
+                    "mobile-warning": "#FF9500"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "space-4": "16px",
+                    "space-3": "12px",
+                    "space-2": "8px",
+                    "space-1": "4px",
+                    "touch-target": "52px",
+                    "base": "4px",
+                    "edge-mobile": "24px",
+                    "web-margin": "32px"
+            },
+            "fontFamily": {
+                    "tiny-web": ["Inter Tight"],
+                    "body-web": ["Inter Tight"],
+                    "h1-web": ["Inter Tight"],
+                    "body-mobile": ["Inter Tight"],
+                    "hero-mobile": ["Inter Tight"],
+                    "label-mobile": ["Inter Tight"],
+                    "display-web": ["Inter Tight"],
+                    "h2-web": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #031427;
+            font-family: 'Inter Tight', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #26364a;
+            border-radius: 10px;
+        }
+        .shimmer {
+            background: linear-gradient(90deg, #102034 25%, #1b2b3f 50%, #102034 75%);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+    </style>
+</head>
+<body class="text-on-surface select-none">
+<!-- Top Navigation Bar (Shared Component: TopAppBar) -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-edge-mobile h-touch-target bg-surface dark:bg-surface border-b border-white/5"><div class="flex items-center gap-space-3">
+  <span class="material-symbols-outlined text-on-surface-variant active:scale-95 transition-transform">arrow_back</span>
+  <div class="flex items-center gap-2">
+    <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuBWUklbHH46p9UXieqnjcL2y7W1PADUWWtbM5YEKfp47PTvJCM0bG2oaeTxDkcIC53MkE2QZoVTO1fjm1BcN-NlLtZ2gr_01rVNU6e0aXqiWssIf_Msye9Q4zkEsNYlnJuW80vBCHRtxrKFk-wglVPn5ZTf1aGHI0ix2paN6CCRvLkSB_8iqZprd7-rRGp7TFF4uZehfoajAeMqVQkpL7m-h14cQv5-ILoqf-1CO9z0htfIGR_YtWN1oqaqhrV5nTT74Q" alt="COS Logo" class="w-8 h-8 rounded">
+    <span class="font-display-web text-lg font-extrabold tracking-tighter text-on-surface uppercase">CONSTRUCTION OS</span>
+  </div>
+</div>
+<div class="flex items-center gap-space-2">
+  <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-mobile-success/10 border border-mobile-success/20">
+    <div class="w-2 h-2 rounded-full bg-mobile-success animate-pulse"></div>
+    <span class="text-[10px] font-bold tracking-wider text-mobile-success">SYNCED</span>
+  </div>
+  <span class="material-symbols-outlined text-on-surface-variant">more_vert</span>
+</div></header>
+<main class="pt-[72px] pb-32 px-edge-mobile space-y-6">
+<!-- Branding Identity Section -->
+
+<!-- User Context Card -->
+<div class="bg-surface-container rounded-xl p-space-4 border-l-4 border-mobile-primary shadow-lg overflow-hidden relative"><div class="p-2 bg-secondary/10 rounded-lg">
+  <span class="material-symbols-outlined text-secondary" style="font-variation-settings: &quot;FILL&quot; 1;">auto_awesome</span>
+</div>
+<div class="flex-1">
+  <div class="flex items-center justify-between mb-1">
+    <span class="font-label-mobile text-label-mobile text-secondary uppercase tracking-widest">AI Insight</span>
+    <span class="text-[10px] px-2 py-1 rounded bg-secondary text-on-secondary font-bold shadow-sm">92% CONFIDENCE</span>
+  </div>
+  <p class="font-body-mobile text-sm text-on-surface-variant leading-relaxed mb-2">
+    คุณสมชายมีการเข้าถึงโมดูล <span class="text-secondary font-bold">Site Engineering</span> บ่อยครั้งในช่วง 30 วันที่ผ่านมา แนะนำให้คงระดับสิทธิ์เป็น <span class="text-secondary">Approve</span> เพื่อไม่ให้กระทบต่อกระบวนการทำงานหน้างาน
+  </p>
+  <div class="flex items-center gap-1 text-[10px] text-on-surface-variant/60 italic">
+    <span class="material-symbols-outlined text-[12px]">info</span>
+    <span class="">Source: Last 30 days activity log</span>
+  </div>
+</div></div>
+<!-- AI Guardrail Panel -->
+<div class="bg-secondary/5 border border-secondary/20 rounded-xl p-space-4 flex gap-3 items-start">
+<div class="p-2 bg-secondary/10 rounded-lg">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: &quot;FILL&quot; 1;">auto_awesome</span>
+</div>
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="font-label-mobile text-label-mobile text-secondary uppercase tracking-widest">AI Insight</span>
+<span class="text-[10px] px-1.5 py-0.5 rounded bg-secondary/20 text-secondary font-bold">92% CONFIDENCE</span>
+</div>
+<p class="font-body-mobile text-sm text-on-surface-variant leading-relaxed">
+                    คุณสมชายมีการเข้าถึงโมดูล <span class="text-secondary font-bold">Site Engineering</span> บ่อยครั้งในช่วง 30 วันที่ผ่านมา แนะนำให้คงระดับสิทธิ์เป็น <span class="text-secondary">Approve</span> เพื่อไม่ให้กระทบต่อกระบวนการทำงานหน้างาน
+                </p>
+</div>
+</div>
+<!-- Role Selection -->
+<div class="space-y-3">
+<label class="font-label-mobile text-label-mobile text-on-surface-variant px-1 uppercase tracking-widest">Primary Role</label>
+<div class="relative group">
+<select class="w-full h-touch-target bg-surface-container-high border border-outline-variant rounded-xl px-4 text-on-surface appearance-none focus:border-mobile-primary focus:ring-1 focus:ring-mobile-primary outline-none transition-all">
+<option>Executive</option>
+<option selected="">Project Manager</option>
+<option>Site Engineer</option>
+<option>Finance</option>
+<option>Safety Officer</option>
+</select>
+<span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant">expand_more</span>
+</div>
+</div>
+<!-- Granular Permissions Matrix -->
+<div class="space-y-4">
+<div class="flex items-center justify-between px-1">
+<label class="font-label-mobile text-label-mobile text-on-surface-variant uppercase tracking-widest">สิทธิ์การใช้งานรายโมดูล</label>
+<button class="text-tiny-web text-mobile-primary font-bold">RESET ALL</button>
+</div>
+<!-- Permission Rows -->
+<div class="space-y-2">
+<!-- Project Module -->
+<div class="bg-surface-container-low rounded-xl border border-white/5 p-4 space-y-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary-fixed-dim">assignment</span>
+<span class="font-h2-web text-sm font-bold">Project</span>
+</div>
+<div class="grid grid-cols-4 gap-2">
+<div class="flex flex-col items-center gap-2 py-2 rounded-lg bg-surface-container/50 border border-white/5 min-h-[52px]">
+<span class="text-[10px] font-bold text-on-surface-variant">READ</span>
+<div class="w-10 h-6 bg-mobile-success rounded-full flex items-center px-1">
+<div class="w-4 h-4 bg-white rounded-full translate-x-4 transition-transform"></div>
+</div>
+</div>
+<div class="flex flex-col items-center gap-2 py-2 rounded-lg bg-surface-container/50 border border-white/5 min-h-[52px]">
+<span class="text-[10px] font-bold text-on-surface-variant">WRITE</span>
+<div class="w-10 h-6 bg-mobile-success rounded-full flex items-center px-1">
+<div class="w-4 h-4 bg-white rounded-full translate-x-4 transition-transform"></div>
+</div>
+</div>
+<div class="flex flex-col items-center gap-2 py-2 rounded-lg bg-surface-container/50 border border-white/5 min-h-[52px]">
+<span class="text-[10px] font-bold text-on-surface-variant">APPROVE</span>
+<div class="w-10 h-6 bg-mobile-success rounded-full flex items-center px-1">
+<div class="w-4 h-4 bg-white rounded-full translate-x-4 transition-transform"></div>
+</div>
+</div>
+<div class="flex flex-col items-center gap-2 py-2 rounded-lg bg-surface-container/50 border border-white/5 min-h-[52px]">
+<span class="text-[10px] font-bold text-on-surface-variant">DELETE</span>
+<div class="w-10 h-6 bg-surface-container-highest rounded-full flex items-center px-1">
+<div class="w-4 h-4 bg-outline-variant rounded-full transition-transform"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Finance Module -->
+<div class="bg-surface-container-low rounded-xl border border-white/5 p-4 space-y-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-mobile-warning">payments</span>
+<span class="font-h2-web text-sm font-bold">Finance</span>
+</div>
+<div class="grid grid-cols-4 gap-2">
+<div class="flex flex-col items-center gap-2 py-2 rounded-lg bg-surface-container/50 border border-white/5 min-h-[52px]">
+<span class="text-[10px] font-bold text-on-surface-variant">READ</span>
+<div class="w-10 h-6 bg-mobile-success rounded-full flex items-center px-1">
+<div class="w-4 h-4 bg-white rounded-full translate-x-4 transition-transform"></div>
+</div>
+</div>
+<div class="flex flex-col items-center gap-2 py-2 rounded-lg bg-surface-container/50 border border-white/5 min-h-[52px]">
+<span class="text-[10px] font-bold text-on-surface-variant">WRITE</span>
+<div class="w-10 h-6 bg-surface-container-highest rounded-full flex items-center px-1">
+<div class="w-4 h-4 bg-outline-variant rounded-full transition-transform"></div>
+</div>
+</div>
+<div class="flex flex-col items-center gap-2 py-2 rounded-lg bg-surface-container/50 border border-white/5 opacity-40 min-h-[52px]">
+<span class="text-[10px] font-bold text-on-surface-variant">APPROVE</span>
+<div class="w-10 h-6 bg-surface-container-highest rounded-full flex items-center px-1">
+<div class="w-4 h-4 bg-outline-variant rounded-full transition-transform"></div>
+</div>
+</div>
+<div class="flex flex-col items-center gap-2 py-2 rounded-lg bg-surface-container/50 border border-white/5 opacity-40 min-h-[52px]">
+<span class="text-[10px] font-bold text-on-surface-variant">DELETE</span>
+<div class="w-10 h-6 bg-surface-container-highest rounded-full flex items-center px-1">
+<div class="w-4 h-4 bg-outline-variant rounded-full transition-transform"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Site Module -->
+<div class="bg-surface-container-low rounded-xl border border-white/5 p-4 space-y-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary">location_city</span>
+<span class="font-h2-web text-sm font-bold">Site</span>
+</div>
+<div class="grid grid-cols-4 gap-2">
+<div class="flex flex-col items-center gap-2 py-2 rounded-lg bg-surface-container/50 border border-white/5 min-h-[52px]">
+<span class="text-[10px] font-bold text-on-surface-variant">READ</span>
+<div class="w-10 h-6 bg-mobile-success rounded-full flex items-center px-1">
+<div class="w-4 h-4 bg-white rounded-full translate-x-4 transition-transform"></div>
+</div>
+</div>
+<div class="flex flex-col items-center gap-2 py-2 rounded-lg bg-surface-container/50 border border-white/5 min-h-[52px]">
+<span class="text-[10px] font-bold text-on-surface-variant">WRITE</span>
+<div class="w-10 h-6 bg-mobile-success rounded-full flex items-center px-1">
+<div class="w-4 h-4 bg-white rounded-full translate-x-4 transition-transform"></div>
+</div>
+</div>
+<div class="flex flex-col items-center gap-2 py-2 rounded-lg bg-surface-container/50 border border-white/5 min-h-[52px]">
+<span class="text-[10px] font-bold text-on-surface-variant">APPROVE</span>
+<div class="w-10 h-6 bg-mobile-success rounded-full flex items-center px-1">
+<div class="w-4 h-4 bg-white rounded-full translate-x-4 transition-transform"></div>
+</div>
+</div>
+<div class="flex flex-col items-center gap-2 py-2 rounded-lg bg-surface-container/50 border border-white/5 min-h-[52px]">
+<span class="text-[10px] font-bold text-on-surface-variant">DELETE</span>
+<div class="w-10 h-6 bg-mobile-success rounded-full flex items-center px-1">
+<div class="w-4 h-4 bg-white rounded-full translate-x-4 transition-transform"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Actions (Floating Overlay Style) -->
+<footer class="fixed bottom-0 w-full z-50 bg-background/80 backdrop-blur-xl border-t border-white/5 px-edge-mobile pt-4 pb-safe h-auto">
+<div class="flex flex-col gap-3 mb-4">
+<button class="w-full h-touch-target bg-mobile-primary text-white font-bold rounded-xl active:scale-[0.98] transition-transform shadow-xl shadow-mobile-primary/20 uppercase tracking-widest flex items-center justify-center gap-2">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">save</span>
+                บันทึกการเปลี่ยนแปลง
+            </button>
+<button class="w-full h-touch-target bg-surface-container text-on-surface-variant font-bold rounded-xl active:scale-[0.98] transition-transform border border-white/5 uppercase tracking-widest">
+                ยกเลิก
+            </button>
+</div>
+</footer>
+<!-- Bottom Navigation Bar (Contextual) -->
+<nav class="fixed bottom-0 w-full z-[60] flex justify-around items-center px-edge-mobile pb-safe h-[72px] bg-surface-container-low dark:bg-surface-container-low rounded-t-xl shadow-lg hidden">
+<div class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-space-3 py-space-1">
+<span class="material-symbols-outlined">construction</span>
+<span class="font-label-mobile text-label-mobile">Projects</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl px-space-3 py-space-1">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">group</span>
+<span class="font-label-mobile text-label-mobile">Team</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-space-3 py-space-1">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-label-mobile text-label-mobile">Insights</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-space-3 py-space-1">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-mobile text-label-mobile">Settings</span>
+</div>
+</nav>
+<script>
+        // Simple Interaction: Toggle switch animation simulation
+        document.querySelectorAll('.rounded-full.flex.items-center').forEach(toggle => {
+            toggle.addEventListener('click', () => {
+                const knob = toggle.querySelector('div');
+                const isOff = toggle.classList.contains('bg-surface-container-highest');
+                
+                if(isOff) {
+                    toggle.classList.replace('bg-surface-container-highest', 'bg-mobile-success');
+                    knob.classList.replace('bg-outline-variant', 'bg-white');
+                    knob.style.transform = 'translateX(16px)';
+                } else {
+                    toggle.classList.replace('bg-mobile-success', 'bg-surface-container-highest');
+                    knob.classList.replace('bg-white', 'bg-outline-variant');
+                    knob.style.transform = 'translateX(0px)';
+                }
+            });
+        });
+
+        // Feedback on Save
+        document.querySelector('button.bg-mobile-primary').addEventListener('click', () => {
+            const btn = document.querySelector('button.bg-mobile-primary');
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = '<span class="material-symbols-outlined animate-spin">sync</span> กำลังบันทึก...';
+            btn.disabled = true;
+            
+            setTimeout(() => {
+                btn.innerHTML = '<span class="material-symbols-outlined">check_circle</span> สำเร็จ';
+                btn.classList.replace('bg-mobile-primary', 'bg-mobile-success');
+                setTimeout(() => {
+                    btn.innerHTML = originalContent;
+                    btn.classList.replace('bg-mobile-success', 'bg-mobile-primary');
+                    btn.disabled = false;
+                }, 2000);
+            }, 1500);
+        });
+    </script>
+
+
+
+
+</body></html>

@@ -1,0 +1,374 @@
+<!DOCTYPE html><html lang="th" class="dark" style=""><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@100..900&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=block" rel="stylesheet"><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">try{
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "cos-navy": "#0B1020",
+                "primary-fixed-dim": "#b4c5ff",
+                "secondary-fixed-dim": "#4cd7f6",
+                "primary-fixed": "#dbe1ff",
+                "on-secondary": "#003640",
+                "on-error-container": "#ffdad6",
+                "surface-container": "#102034",
+                "on-secondary-fixed": "#001f26",
+                "on-primary": "#002a78",
+                "tertiary-fixed": "#dee1f9",
+                "surface-tint": "#b4c5ff",
+                "on-primary-container": "#eeefff",
+                "primary-container": "#2563eb",
+                "on-tertiary-fixed-variant": "#414658",
+                "cos-cyan": "#06B6D4",
+                "secondary": "#4cd7f6",
+                "tertiary-fixed-dim": "#c1c5dc",
+                "primary": "#b4c5ff",
+                "surface-bright": "#2a3a4f",
+                "on-secondary-container": "#00424e",
+                "on-secondary-fixed-variant": "#004e5c",
+                "cos-white": "#F8FAFC",
+                "mobile-success": "#00C853",
+                "sync-pending": "#94A3B8",
+                "on-error": "#690005",
+                "on-tertiary-container": "#eeefff",
+                "cos-blue": "#2563EB",
+                "surface-dim": "#031427",
+                "surface-container-highest": "#26364a",
+                "dark-bg": "#020617",
+                "outline": "#8d90a0",
+                "sync-active": "#FFD60A",
+                "surface-container-lowest": "#000f21",
+                "surface-container-low": "#0b1c30",
+                "error": "#ffb4ab",
+                "tertiary": "#c1c5dc",
+                "on-background": "#d3e4fe",
+                "on-tertiary": "#2b3041",
+                "mobile-warning": "#FF9500",
+                "tertiary-container": "#686c80",
+                "inverse-on-surface": "#213145",
+                "mobile-primary": "#0066FF",
+                "inverse-primary": "#0053db",
+                "error-container": "#93000a",
+                "on-tertiary-fixed": "#161b2b",
+                "outline-variant": "#434655",
+                "on-primary-fixed-variant": "#003ea8",
+                "surface-container-high": "#1b2b3f",
+                "secondary-container": "#03b5d3",
+                "surface-variant": "#26364a",
+                "on-surface-variant": "#c3c6d7",
+                "surface": "#031427",
+                "on-primary-fixed": "#00174b",
+                "inverse-surface": "#d3e4fe",
+                "background": "#031427",
+                "mobile-danger": "#FF3B30",
+                "dark-surface": "#0F172A",
+                "secondary-fixed": "#acedff",
+                "on-surface": "#d3e4fe"
+            },
+            "borderRadius": {
+                "DEFAULT": "0.125rem",
+                "lg": "0.25rem",
+                "xl": "0.5rem",
+                "full": "0.75rem"
+            },
+            "spacing": {
+                "web-space-1": "4px",
+                "web-base": "4px",
+                "web-space-2": "8px",
+                "mobile-touch-target": "52px",
+                "web-space-3": "12px",
+                "web-space-8": "32px",
+                "web-space-4": "16px",
+                "mobile-edge": "24px"
+            },
+            "fontSize": {
+                "web-text-h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                "web-text-body": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                "web-text-tiny": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                "web-text-h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                "web-text-small": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                "web-text-display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+            }
+          }
+        }
+      }
+    }catch(_e){}</script><meta charset="utf-8"></head><body class="bg-surface-dim selection:bg-cos-blue/30">
+<!-- TopNavBar -->
+<header class="fixed top-0 w-full h-12 bg-cos-navy flex justify-between items-center px-4 w-full z-50 border-b border-outline-variant font-web-text-body text-web-text-body">
+<div class="flex items-center gap-4">
+<span class="font-web-text-h1 text-web-text-h1 text-cos-white tracking-tight">Construction OS</span>
+<div class="hidden md:flex items-center ml-8 gap-6 h-full pt-1">
+<nav class="flex gap-6 h-full">
+<a href="#" class="text-on-surface-variant hover:bg-surface-container-highest transition-colors cursor-pointer active:opacity-80">Dashboard</a>
+<a href="#" class="text-cos-blue border-b-2 border-cos-blue pb-1 hover:bg-surface-container-highest transition-colors cursor-pointer active:opacity-80">Reports</a>
+<a href="#" class="text-on-surface-variant hover:bg-surface-container-highest transition-colors cursor-pointer active:opacity-80">Map</a>
+</nav>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-2 px-2 py-1 bg-surface-container-high rounded text-cos-cyan">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">cloud_done</span>
+<span class="text-web-text-tiny uppercase">Synced</span>
+</div>
+<div class="flex gap-4 text-on-surface-variant">
+<span class="material-symbols-outlined cursor-pointer hover:text-cos-blue transition-colors">notifications</span>
+<span class="material-symbols-outlined cursor-pointer hover:text-cos-blue transition-colors">help</span>
+<span class="material-symbols-outlined cursor-pointer hover:text-cos-blue transition-colors">settings</span>
+</div>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant ml-2">
+<img class="w-full h-full object-cover" data-alt="A close-up portrait of a professional male site engineer wearing a white hard hat and a safety vest, looking directly at the camera with a confident expression. The background is a blurred high-tech construction site at dusk with blue industrial lights and structural steel visible. Professional lighting emphasizes texture and clarity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBt-nyINZz_BWKEUB2R1GhrZeRgkGtyZRbhcBpTDi_c-EOCWcziRSJ68pGTsv9oMgxx72uFrTHnxDxZtY70LojDxrFI0H3xXOSele8W7B6fSbPSjJIyiIchn-eAXqgus8ztnn9FoBzjOAsLYdQKHPeLWZEihCbzD53lzCpFX4ksMv2RiReUacalT12dD-8JkfVWfO2L2yRXBEXCe3TPyg1Ifm6VRZychOcdar6Ruf4AbxKExsSyuMj7ornz0V71xvPIrPt_hvjVAtc">
+</div>
+</div>
+</header>
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-12 h-[calc(100vh-48px)] w-64 bg-surface-dim border-r border-outline-variant flex flex-col py-4 gap-2 z-40">
+<div class="px-4 mb-6">
+<div class="flex items-center gap-3 mb-1">
+<div class="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center text-cos-cyan">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">person</span>
+</div>
+<div>
+<h2 class="font-web-text-h2 text-web-text-h2 text-cos-cyan leading-none">Site Worker</h2>
+<p class="font-web-text-small text-web-text-small text-on-surface-variant mt-1">Active: Sector 7G</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 text-on-surface-variant pl-4 py-2 hover:bg-surface-container hover:text-on-surface transition-all font-web-text-small text-web-text-small" href="#">
+<span class="material-symbols-outlined">assignment</span>
+                Tasks
+            </a>
+<a class="flex items-center gap-3 text-cos-blue font-bold border-l-2 border-cos-blue pl-3 bg-surface-container-high py-2 transition-all font-web-text-small text-web-text-small" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">error_outline</span>
+                Issues
+            </a>
+<a class="flex items-center gap-3 text-on-surface-variant pl-4 py-2 hover:bg-surface-container hover:text-on-surface transition-all font-web-text-small text-web-text-small" href="#">
+<span class="material-symbols-outlined">assessment</span>
+                Reports
+            </a>
+<a class="flex items-center gap-3 text-on-surface-variant pl-4 py-2 hover:bg-surface-container hover:text-on-surface transition-all font-web-text-small text-web-text-small" href="#">
+<span class="material-symbols-outlined">security</span>
+                Safety
+            </a>
+</nav>
+<div class="mt-auto border-t border-outline-variant pt-4 space-y-1">
+<a class="flex items-center gap-3 text-on-surface-variant pl-4 py-2 hover:bg-surface-container hover:text-on-surface transition-all font-web-text-small text-web-text-small" href="#">
+<span class="material-symbols-outlined">support_agent</span>
+                Support
+            </a>
+<a class="flex items-center gap-3 text-on-surface-variant pl-4 py-2 hover:bg-surface-container hover:text-on-surface transition-all font-web-text-small text-web-text-small" href="#">
+<span class="material-symbols-outlined">sync</span>
+                Sync
+            </a>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-64 mt-12 p-6 h-[calc(100vh-48px)] overflow-y-auto">
+<div class="max-w-6xl mx-auto h-full flex flex-col">
+<header class="flex justify-between items-end mb-6">
+<div>
+<h1 class="font-web-text-display text-web-text-display text-cos-white">รายงานปัญหาด่วน - Site Worker (Desktop)</h1>
+<p class="font-web-text-body text-web-text-body text-on-surface-variant">Submit a new field issue with AI-assisted safety detection.</p>
+</div>
+<div class="flex gap-2">
+<button class="px-4 py-2 bg-surface-container-high border border-outline-variant text-cos-white rounded font-web-text-small hover:bg-surface-container-highest transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">history</span>
+                        Recent Logs
+                    </button>
+</div>
+</header>
+<!-- Two Column Layout -->
+<div class="grid grid-cols-12 gap-6 flex-1 mb-6">
+<!-- Left Column: Visual Capture -->
+<div class="col-span-12 lg:col-span-7 flex flex-col gap-4">
+<div class="relative flex-1 rounded-xl overflow-hidden glass-panel border border-cos-cyan/30 group">
+<!-- Simulated Camera Feed -->
+<div class="absolute inset-0 z-0">
+<div class="w-full h-full bg-cover bg-center transition-transform duration-700 group-hover:scale-105" data-alt="A high-resolution POV wide shot from a construction site worker's perspective, focusing on an area of exposed rebar and missing guardrails on a concrete floor deck. The lighting is harsh afternoon sun casting sharp shadows. The aesthetic is gritty and technical, with dark navy shadows and cool-toned steel and concrete textures." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBdS7do5H3etU_nJkmiGPQW-CuA5sV13ewFNbybW_PsZQhRhLO97gJcJzOk5VkEVQ4qhHJ-I49q_Pnk1pJDbGrek9TKOQaKmYDEZ6ieSPZX59kqd4XpknaaiEYEvYa77iKCq5SBwefz-RN-QQKnY1o1McVnDZ17Nkg35s1LSHhxJ2QNWmBlJi6BsN1SnTThTyccjRtLNHOoizrq9KMyPrlu_rBGUq9n9LuFp-berGktjbR1kZx6aBVUk_MWGfvJ8ZMh9VxKLBVmo18')"></div>
+<!-- Static Overlay Pattern -->
+<div class="absolute inset-0 bg-gradient-to-t from-dark-bg/80 via-transparent to-transparent"></div>
+</div>
+<!-- AI Suggestion Overlay -->
+<div class="absolute inset-0 z-10 pointer-events-none p-6">
+<!-- Bounding Box for AI detection -->
+<div class="absolute top-1/4 left-1/3 w-64 h-48 border-2 border-mobile-danger border-dashed animate-pulse ai-glow rounded-lg">
+<div class="absolute -top-6 left-0 bg-mobile-danger text-white text-[10px] px-2 py-0.5 rounded-t-sm font-bold uppercase tracking-widest">
+                                    Threat Detected: Fall Hazard
+                                </div>
+</div>
+<!-- AI Analysis Card -->
+<div class="absolute top-6 right-6 w-64 glass-panel p-4 border-l-4 border-l-cos-cyan pointer-events-auto">
+<div class="flex items-center gap-2 mb-2 text-cos-cyan">
+<span class="material-symbols-outlined text-[18px]">psychology</span>
+<span class="font-web-text-tiny font-bold uppercase tracking-tighter">AI Inspector</span>
+</div>
+<p class="text-web-text-small text-on-surface mb-3">Detected: <span class="text-mobile-danger font-bold">Incomplete Perimeter Guarding</span> at Sector 7G Deck.</p>
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-between text-web-text-tiny text-on-surface-variant">
+<span class="">Confidence</span>
+<span class="text-cos-cyan">94.2%</span>
+</div>
+<div class="w-full h-1 bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-cos-cyan" style="width: 94%"></div>
+</div>
+</div>
+</div>
+<!-- Capture Controls -->
+<div class="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 pointer-events-auto">
+<button class="w-14 h-14 rounded-full bg-cos-white/10 backdrop-blur-md flex items-center justify-center border border-cos-white/20 text-cos-white hover:bg-cos-white/20 transition-all">
+<span class="material-symbols-outlined text-[28px]">image</span>
+</button>
+<button class="w-20 h-20 rounded-full border-4 border-cos-blue bg-cos-blue/20 flex items-center justify-center group active:scale-95 transition-transform">
+<div class="w-16 h-16 rounded-full bg-cos-white border-4 border-transparent group-hover:scale-110 transition-transform"></div>
+</button>
+<button class="w-14 h-14 rounded-full bg-cos-white/10 backdrop-blur-md flex items-center justify-center border border-cos-white/20 text-cos-white hover:bg-cos-white/20 transition-all">
+<span class="material-symbols-outlined text-[28px]">videocam</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: Form Entry -->
+<div class="col-span-12 lg:col-span-5 flex flex-col gap-6 h-full overflow-y-auto pr-2">
+<!-- Category Selection -->
+<section>
+<h3 class="font-web-text-tiny uppercase text-on-surface-variant mb-3 tracking-widest font-bold">Issue Category</h3>
+<div class="grid grid-cols-2 gap-3">
+<button class="flex items-center gap-3 p-3 rounded-lg border-2 border-mobile-danger bg-mobile-danger/5 text-on-surface transition-all">
+<span class="material-symbols-outlined text-mobile-danger" style="font-variation-settings: 'FILL' 1;">warning</span>
+<span class="font-web-text-body font-bold">Safety</span>
+</button>
+<button class="flex items-center gap-3 p-3 rounded-lg border border-outline-variant bg-surface-container-high text-on-surface-variant hover:border-cos-blue hover:text-cos-blue transition-all">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-web-text-body">Material</span>
+</button>
+<button class="flex items-center gap-3 p-3 rounded-lg border border-outline-variant bg-surface-container-high text-on-surface-variant hover:border-cos-blue hover:text-cos-blue transition-all">
+<span class="material-symbols-outlined">engineering</span>
+<span class="font-web-text-body">Technical</span>
+</button>
+<button class="flex items-center gap-3 p-3 rounded-lg border border-outline-variant bg-surface-container-high text-on-surface-variant hover:border-cos-blue hover:text-cos-blue transition-all">
+<span class="material-symbols-outlined">block</span>
+<span class="font-web-text-body">Blocker</span>
+</button>
+</div>
+</section>
+<!-- Voice Note Recorder -->
+<section>
+<div class="flex justify-between items-center mb-3">
+<h3 class="font-web-text-tiny uppercase text-on-surface-variant tracking-widest font-bold">Voice Description</h3>
+<span class="text-web-text-tiny text-cos-cyan">AI Transcribing...</span>
+</div>
+<div class="glass-panel rounded-xl p-4 flex items-center gap-4 border-l-4 border-l-mobile-primary">
+<button class="w-12 h-12 rounded-full bg-mobile-primary flex items-center justify-center text-white shadow-lg active:scale-90 transition-transform" id="voiceTrigger">
+<span class="material-symbols-outlined" id="voiceIcon">mic</span>
+</button>
+<div class="flex-1 h-10 flex items-center gap-1 overflow-hidden" id="waveform">
+<!-- Waveform bars added via JS -->
+</div>
+<div class="text-web-text-small font-mono text-on-surface-variant">00:14</div>
+</div>
+</section>
+<!-- Description Field -->
+<section class="flex-1 flex flex-col">
+<label class="font-web-text-tiny uppercase text-on-surface-variant mb-3 tracking-widest font-bold block">Detailed Description</label>
+<div class="flex-1 min-h-[140px] relative">
+<textarea class="w-full h-full bg-surface-container-low border border-outline-variant rounded-lg p-4 font-web-text-body text-on-surface placeholder:text-on-surface-variant/40 focus:ring-2 focus:ring-cos-blue focus:border-transparent outline-none resize-none transition-all" placeholder="Enter details or let AI transcribe your voice note...">No guardrails at Sector 7G, Level 14 edge. Fall hazard is high. Need immediate temporary fencing installation.</textarea>
+<div class="absolute bottom-3 right-3 text-web-text-tiny text-on-surface-variant">
+                                122 / 500
+                            </div>
+</div>
+</section>
+<!-- Action Buttons -->
+<div class="mt-auto pt-2 grid grid-cols-4 gap-3">
+<button class="col-span-1 py-3 border border-outline-variant rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+<button class="col-span-3 py-4 bg-cos-blue text-white rounded-lg font-bold font-web-text-body flex items-center justify-center gap-3 hover:bg-blue-600 active:scale-[0.98] transition-all shadow-xl shadow-cos-blue/10">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">send</span>
+                            SUBMIT ISSUE
+                        </button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<script>
+        // Waveform Animation
+        const waveform = document.getElementById('waveform');
+        const barCount = 40;
+        const bars = [];
+
+        for (let i = 0; i < barCount; i++) {
+            const bar = document.createElement('div');
+            bar.className = 'waveform-bar';
+            const initialHeight = 10 + Math.random() * 20;
+            bar.style.height = initialHeight + 'px';
+            waveform.appendChild(bar);
+            bars.push(bar);
+        }
+
+        let isRecording = false;
+        let animationFrame;
+
+        function animateWaveform() {
+            if (!isRecording) return;
+            bars.forEach(bar => {
+                const h = 5 + Math.random() * 35;
+                bar.style.height = h + 'px';
+                bar.style.opacity = Math.random() * 0.5 + 0.5;
+            });
+            setTimeout(() => {
+                animationFrame = requestAnimationFrame(animateWaveform);
+            }, 80);
+        }
+
+        const voiceTrigger = document.getElementById('voiceTrigger');
+        const voiceIcon = document.getElementById('voiceIcon');
+
+        voiceTrigger.addEventListener('mousedown', () => {
+            isRecording = true;
+            voiceTrigger.classList.add('scale-110', 'bg-mobile-danger');
+            voiceTrigger.classList.remove('bg-mobile-primary');
+            voiceIcon.textContent = 'record_voice_over';
+            animateWaveform();
+        });
+
+        window.addEventListener('mouseup', () => {
+            if (isRecording) {
+                isRecording = false;
+                voiceTrigger.classList.remove('scale-110', 'bg-mobile-danger');
+                voiceTrigger.classList.add('bg-mobile-primary');
+                voiceIcon.textContent = 'mic';
+                cancelAnimationFrame(animationFrame);
+                // Reset bars
+                bars.forEach(bar => {
+                    bar.style.height = (10 + Math.random() * 10) + 'px';
+                    bar.style.opacity = 1;
+                });
+            }
+        });
+
+        // Simple tab switching effect for category
+        const categoryButtons = document.querySelectorAll('section:first-of-type button');
+        categoryButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                categoryButtons.forEach(b => {
+                    b.classList.remove('border-cos-blue', 'text-cos-blue', 'bg-cos-blue/5', 'border-mobile-danger', 'bg-mobile-danger/5');
+                    b.classList.add('border-outline-variant', 'bg-surface-container-high', 'text-on-surface-variant');
+                    const icon = b.querySelector('.material-symbols-outlined');
+                    if (icon) icon.style.fontVariationSettings = "'FILL' 0";
+                });
+                
+                // Specific logic for safety vs others
+                if (btn.innerText.includes('Safety')) {
+                    btn.classList.add('border-mobile-danger', 'bg-mobile-danger/5', 'text-on-surface');
+                    btn.querySelector('.material-symbols-outlined').style.fontVariationSettings = "'FILL' 1";
+                } else {
+                    btn.classList.add('border-cos-blue', 'bg-cos-blue/5', 'text-cos-blue');
+                    btn.querySelector('.material-symbols-outlined').style.fontVariationSettings = "'FILL' 1";
+                }
+                btn.classList.remove('border-outline-variant', 'bg-surface-container-high', 'text-on-surface-variant');
+            });
+        });
+    </script>
+
+</body></html>

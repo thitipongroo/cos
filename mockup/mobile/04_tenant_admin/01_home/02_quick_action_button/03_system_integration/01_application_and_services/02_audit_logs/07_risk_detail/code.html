@@ -1,0 +1,292 @@
+<!DOCTYPE html><html class="dark" lang="th" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>รายละเอียดความเสี่ยง: รูปแบบการเข้าถึงที่ไม่ได้รับอนุญาต - Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "sync-active": "#00C853",
+            "ai-cyan": "#06B6D4",
+            "inverse-primary": "#0053db",
+            "secondary": "#4cd7f6",
+            "surface-bright": "#2a3a4f",
+            "on-secondary-fixed": "#001f26",
+            "on-surface": "#d3e4fe",
+            "on-tertiary-fixed": "#161b2b",
+            "tertiary-fixed": "#dee1f9",
+            "secondary-fixed-dim": "#4cd7f6",
+            "tertiary": "#c1c5dc",
+            "on-secondary-container": "#00424e",
+            "inverse-on-surface": "#213145",
+            "on-secondary": "#003640",
+            "surface-tint": "#b4c5ff",
+            "on-error": "#690005",
+            "surface-container-high": "#1b2b3f",
+            "outline": "#8d90a0",
+            "primary-fixed": "#dbe1ff",
+            "mobile-primary": "#0066FF",
+            "surface-variant": "#26364a",
+            "sync-pending": "#94A3B8",
+            "primary-container": "#2563eb",
+            "on-tertiary-container": "#eeefff",
+            "on-secondary-fixed-variant": "#004e5c",
+            "on-error-container": "#ffdad6",
+            "on-tertiary-fixed-variant": "#414658",
+            "background": "#031427",
+            "tertiary-fixed-dim": "#c1c5dc",
+            "on-primary-fixed": "#00174b",
+            "mobile-warning": "#FF9500",
+            "surface-dim": "#031427",
+            "on-background": "#d3e4fe",
+            "dark-bg": "#020617",
+            "surface": "#031427",
+            "surface-container-highest": "#26364a",
+            "surface-container-low": "#0b1c30",
+            "primary-fixed-dim": "#b4c5ff",
+            "error-container": "#93000a",
+            "mobile-success": "#00C853",
+            "primary": "#b4c5ff",
+            "secondary-fixed": "#acedff",
+            "tertiary-container": "#686c80",
+            "dark-surface": "#0F172A",
+            "on-surface-variant": "#c3c6d7",
+            "mobile-danger": "#FF3B30",
+            "on-tertiary": "#2b3041",
+            "on-primary-container": "#eeefff",
+            "error": "#ffb4ab",
+            "surface-container-lowest": "#000f21",
+            "on-primary": "#002a78",
+            "secondary-container": "#03b5d3",
+            "inverse-surface": "#d3e4fe",
+            "surface-container": "#102034",
+            "on-primary-fixed-variant": "#003ea8",
+            "outline-variant": "#434655"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-2": "8px",
+            "space-1": "4px",
+            "edge-mobile": "24px",
+            "web-margin": "32px",
+            "touch-target": "52px",
+            "space-4": "16px",
+            "base": "4px",
+            "space-3": "12px"
+          },
+          "fontFamily": {
+            "display-web": ["Inter Tight"],
+            "hero-mobile": ["Inter Tight"],
+            "body-web": ["Inter Tight"],
+            "h2-web": ["Inter Tight"],
+            "h1-web": ["Inter Tight"],
+            "tiny-web": ["Inter Tight"],
+            "body-mobile": ["Inter Tight"],
+            "label-mobile": ["Inter Tight"]
+          },
+          "fontSize": {
+            "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+            "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+            "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+            "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+            "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+            "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+            "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+            "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    body {
+      background-color: #031427;
+      color: #d3e4fe;
+      -webkit-font-smoothing: antialiased;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .active-scale:active {
+      transform: scale(0.95);
+      transition: transform 0.1s;
+    }
+    .shimmer {
+      background: linear-gradient(90deg, transparent, rgba(6, 182, 212, 0.05), transparent);
+      background-size: 200% 100%;
+      animation: shimmer 2s infinite linear;
+    }
+    @keyframes shimmer {
+      to { background-position: -200% 0; }
+    }
+  </style>
+</head>
+<body class="font-body-mobile text-body-mobile min-h-screen">
+<!-- Top AppBar -->
+<header class="bg-surface-container-low fixed top-0 w-full z-50 flex justify-between items-center px-edge-mobile h-[60px] border-b border-outline-variant/30">
+<div class="flex items-center gap-space-2">
+<img alt="COS Logo" class="w-8 h-8 object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAYgSutDhx9sI4zo_bGHONa_-81acetVvMBb3u1TZG6Z9bCmFuvyYIzOpeyU39WWgQCZJBWBh2bxK5fPb6qngSh_q_ICsoM616RPwIZEVmC_f1PrbXTH7pmKOH6UREG1W1s6A--3MkkjReSny1YSEYapBLliLBw0-SRnfOuoQuE7evupew8ESIOUvUW8kuuJ9VCc3T3nFLi7rC57gyE8b9p31UHix8XGeJ1zO34WMQmI4R9M9Z6efB6vNEm2Fdc-uqX6KWXLQi3_g8">
+<h1 class="font-h1-web text-[18px] font-bold tracking-tighter text-mobile-primary uppercase">CONSTRUCTION OS</h1>
+</div>
+<div class="flex items-center gap-space-1 active-scale text-sync-active">
+<span class="material-symbols-outlined text-[18px]" data-icon="check_circle">check_circle</span>
+<span class="font-tiny-web uppercase font-bold">SYNCED</span>
+</div>
+</header>
+<main class="pt-[84px] pb-32 px-edge-mobile space-y-space-4">
+<!-- Title & Back -->
+<section class="flex flex-col gap-space-1">
+<button class="flex items-center text-on-surface-variant gap-space-1 -ml-1 py-1">
+<span class="material-symbols-outlined text-[20px]" data-icon="arrow_back">arrow_back</span>
+<span class="font-label-mobile">Audit Overview</span>
+</button>
+<h2 class="font-hero-mobile text-hero-mobile text-on-surface leading-tight">Risk Detail: Unauthorized Access Pattern</h2>
+<div class="flex items-center gap-space-2 mt-space-1">
+<span class="px-2 py-0.5 bg-error-container text-on-error-container font-tiny-web uppercase tracking-wider rounded-sm font-bold">CRITICAL</span>
+<span class="text-on-surface-variant font-tiny-web">ID: SEC-442-ANOMALY</span>
+</div>
+</section>
+<!-- AI Insight Card -->
+<section class="bg-surface-container border-l-4 border-ai-cyan p-space-4 relative overflow-hidden rounded-sm">
+<div class="absolute inset-0 bg-ai-cyan/5 pointer-events-none shimmer"></div>
+<div class="relative z-10 space-y-space-3">
+<div class="flex justify-between items-start">
+<div class="flex items-center gap-space-2 text-ai-cyan">
+<span class="material-symbols-outlined" data-icon="psychology" style="font-variation-settings: &quot;FILL&quot; 1;">psychology</span>
+<span class="font-h2-web text-h2-web">AI Insight</span>
+</div>
+<div class="text-right">
+<div class="text-ai-cyan font-hero-mobile text-hero-mobile leading-none">92%</div>
+<div class="text-[10px] uppercase font-bold text-ai-cyan/70">CONFIDENCE</div>
+</div>
+</div>
+<p class="text-on-surface leading-relaxed text-[15px]">
+          Multiple login attempts from an irregular IP address <span class="text-ai-cyan font-bold">(Sector 7-B backup server)</span> between 02:00 - 04:00 AM.
+        </p>
+<div class="pt-space-2 border-t border-outline-variant/30">
+<div class="flex items-center gap-space-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px] text-ai-cyan" data-icon="database">database</span>
+<span class="font-tiny-web uppercase tracking-tight">DATA SOURCE: SYSTEM LOGS &amp; IDENTITY PROVIDER</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Technical Evidence -->
+<section class="space-y-space-2">
+<h3 class="font-label-mobile text-on-surface-variant uppercase tracking-widest px-1">TECHNICAL EVIDENCE</h3>
+<div class="bg-surface-container border border-outline-variant rounded-sm overflow-hidden">
+<table class="w-full text-left font-body-web text-[13px]">
+<thead>
+<tr class="bg-surface-container-high text-on-surface-variant border-b border-outline-variant">
+<th class="py-2.5 px-4 font-semibold">IP ADDRESS</th>
+<th class="py-2.5 px-4 font-semibold">DEVICE ID</th>
+<th class="py-2.5 px-4 font-semibold text-right">TIMESTAMP</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/20">
+<tr class="text-on-surface">
+<td class="py-2.5 px-4 font-mono">192.168.44.12</td>
+<td class="py-2.5 px-4 font-mono">NODE-7B-SRV</td>
+<td class="py-2.5 px-4 text-right">02:14:02</td>
+</tr>
+<tr class="text-on-surface">
+<td class="py-2.5 px-4 font-mono">192.168.44.12</td>
+<td class="py-2.5 px-4 font-mono">NODE-7B-SRV</td>
+<td class="py-2.5 px-4 text-right">02:55:18</td>
+</tr>
+<tr class="bg-mobile-danger/10 text-mobile-danger">
+<td class="py-2.5 px-4 font-mono">192.168.44.12</td>
+<td class="py-2.5 px-4 font-mono font-bold">NODE-7B-SRV</td>
+<td class="py-2.5 px-4 text-right font-bold">03:42:01</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<!-- Recommendation -->
+<section class="bg-surface-container-low border border-outline-variant p-space-4 space-y-space-3 rounded-sm">
+<div class="flex items-center gap-space-2 text-mobile-warning">
+<span class="material-symbols-outlined" data-icon="lightbulb">lightbulb</span>
+<span class="font-h2-web text-h2-web">Recommendation</span>
+</div>
+<p class="text-on-surface-variant leading-relaxed">
+        Immediate password reset recommended for Admin account <span class="text-on-surface font-semibold">#442</span>. Enable Geo-fencing for backup server access to prevent further lateral movement within Sector 7-B.
+      </p>
+<div class="pt-space-2 border-t border-outline-variant/30">
+<div class="flex items-center gap-space-2 text-on-surface-variant/70">
+<span class="material-symbols-outlined text-[16px]" data-icon="source">source</span>
+<span class="font-tiny-web uppercase tracking-tight">แหล่งข้อมูล: นโยบายความปลอดภัยและแผนผังเครือข่าย</span>
+</div>
+</div>
+</section>
+<!-- Map Visualization Placeholder -->
+<section class="h-32 bg-surface-container rounded-sm border border-outline-variant relative overflow-hidden">
+<div class="absolute inset-0 grayscale opacity-30 mix-blend-overlay">
+<img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDgubELBVV2zT3L19vmY_snU3IzKK7KFuPGp-ejJhm3VPRIhY7azzPBG2KKUi4d5NQy8FEUTqvsw3v33VX8tnGKRFSqyl25TcA4PLpe-yndXKi2vpkoGY6H_57wYp6dBCaRYx-OoztolyC7rFmX9rYhQ8osi0IeHlj0T6JaiUZLsXz1UHv0ZoB6S4rwZyNVIE9i02X4QKdGkidsalUQHnCc0LBNYoYZYktu7cEYeupHo9OclmkA8t9Uw6BRbo9HSPUhay7idkcGgCI">
+</div>
+<div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+<div class="bg-surface-container/90 backdrop-blur-sm px-3 py-1 rounded-sm border border-ai-cyan/30 flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-ai-cyan animate-pulse"></span>
+<span class="font-tiny-web text-ai-cyan uppercase font-bold">Sector 7-B Anomaly Location</span>
+</div>
+</div>
+</section>
+<!-- Action Buttons -->
+<section class="space-y-space-2 pt-space-2">
+<button class="w-full h-touch-target bg-mobile-primary text-white font-bold uppercase tracking-widest active-scale rounded-sm flex items-center justify-center gap-space-2 shadow-lg shadow-mobile-primary/20">
+<span class="material-symbols-outlined" data-icon="bolt" style="font-variation-settings: &quot;FILL&quot; 1;">bolt</span>
+        ดำเนินการแก้ไข (EXECUTE MITIGATION)
+      </button>
+<div class="grid grid-cols-2 gap-space-2">
+<button class="h-touch-target border border-outline text-on-surface font-bold uppercase tracking-widest active-scale rounded-sm text-[11px] px-2 text-center flex items-center justify-center">
+          ขอตรวจสอบด้วยตนเอง
+        </button>
+<button class="h-touch-target border border-mobile-danger/50 text-mobile-danger font-bold uppercase tracking-widest active-scale rounded-sm text-[11px] px-2 text-center flex items-center justify-center">
+          ยกเลิก
+        </button>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center h-20 pb-safe px-space-2 bg-surface-container border-t border-outline-variant/20 shadow-2xl">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label-mobile text-[11px]">หน้าแรก</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-label-mobile text-[11px]">ผู้ใช้งาน</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary-container/20 text-primary border border-primary/30 rounded-xl px-5 py-2 active-scale" href="#">
+<span class="material-symbols-outlined" data-icon="notifications" style="font-variation-settings: &quot;FILL&quot; 1;">notifications</span>
+<span class="font-label-mobile text-[11px]">แจ้งเตือน</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-mobile text-[11px]">ตั้งค่า</span>
+</a>
+</nav>
+<script>
+    document.querySelector('button.bg-mobile-primary').addEventListener('click', function() {
+      const originalContent = this.innerHTML;
+      this.innerHTML = '<span class="material-symbols-outlined animate-spin" data-icon="sync">sync</span> กำลังดำเนินการ...';
+      this.classList.add('opacity-80');
+      setTimeout(() => {
+        this.innerHTML = '<span class="material-symbols-outlined" data-icon="check_circle">check_circle</span> แก้ไขแล้ว';
+        this.classList.replace('bg-mobile-primary', 'bg-mobile-success');
+      }, 1500);
+    });
+  </script>
+
+
+</body></html>

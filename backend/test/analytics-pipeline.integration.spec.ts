@@ -44,6 +44,20 @@ const CH_DIR = path.join(REPO_ROOT, 'infrastructure/clickhouse');
 
 const noCache = { get: async () => undefined, set: async () => undefined } as never;
 
+/**
+ * AnalyticsService also takes a Redis client, used only by the cache-invalidation scan. None of the
+ * cases here exercise that path, so an object that throws on use is the honest stand-in: if a test
+ * ever reaches it, it fails loudly rather than silently passing against a no-op.
+ */
+const noRedis = new Proxy(
+  {},
+  {
+    get(_t, prop) {
+      throw new Error(`Redis was used unexpectedly: .${String(prop)}()`);
+    },
+  },
+) as never;
+
 async function applyDdl(ch: ClickHouseClient, file: string): Promise<void> {
   const sql = fs.readFileSync(path.join(CH_DIR, 'initdb.d', file), 'utf8');
   // Strip whole-line -- comments before splitting on ';': the DDL documents each table in prose
@@ -255,7 +269,7 @@ describe('Kafka → ClickHouse → API (Testcontainers)', () => {
 
     await publish(TOPIC, '11111111-0000-4000-8000-000000000001');
 
-    service = new AnalyticsService(ch, noCache);
+    service = new AnalyticsService(ch, noCache, noRedis);
   }, 1_200_000);
 
   afterAll(async () => {

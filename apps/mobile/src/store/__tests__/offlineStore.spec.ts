@@ -11,7 +11,7 @@ const makeConflict = (itemId: number): Conflict => ({
 
 describe('offlineStore', () => {
   beforeEach(() => {
-    useOfflineStore.setState({ isOnline: true, conflicts: [] });
+    useOfflineStore.setState({ isOnline: true, conflicts: [], localDbStatus: 'OK' });
   });
 
   it('initial state is correct', () => {
@@ -52,5 +52,20 @@ describe('offlineStore', () => {
     useOfflineStore.getState().addConflict(makeConflict(2));
     useOfflineStore.getState().clearConflicts();
     expect(useOfflineStore.getState().conflicts).toHaveLength(0);
+  });
+
+  // §17.7 local-cache verdict. `checkLocalDbLimit()` computed it on every entry to the app and threw
+  // it away apart from a console.warn — invisible in the only build a site foreman ever runs.
+  describe('localDbStatus', () => {
+    it('starts OK', () => {
+      expect(useOfflineStore.getState().localDbStatus).toBe('OK');
+    });
+
+    it('records the verdict for the Support screen to state', () => {
+      useOfflineStore.getState().setLocalDbStatus('WARN');
+      expect(useOfflineStore.getState().localDbStatus).toBe('WARN');
+      useOfflineStore.getState().setLocalDbStatus('FULL');
+      expect(useOfflineStore.getState().localDbStatus).toBe('FULL');
+    });
   });
 });

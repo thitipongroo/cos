@@ -1,0 +1,333 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Construction OS - Leads Directory</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "secondary-container": "#03b5d3",
+                      "surface": "#031427",
+                      "outline-variant": "#434655",
+                      "on-tertiary-fixed-variant": "#414658",
+                      "on-secondary": "#003640",
+                      "on-primary-fixed": "#00174b",
+                      "primary-fixed": "#dbe1ff",
+                      "surface-dim": "#031427",
+                      "tertiary-fixed": "#dee1f9",
+                      "inverse-surface": "#d3e4fe",
+                      "on-surface": "#d3e4fe",
+                      "background": "#031427",
+                      "on-secondary-fixed": "#001f26",
+                      "surface-container-low": "#0b1c30",
+                      "outline": "#8d90a0",
+                      "secondary-fixed": "#acedff",
+                      "on-primary": "#002a78",
+                      "on-tertiary-fixed": "#161b2b",
+                      "on-error": "#690005",
+                      "surface-variant": "#26364a",
+                      "error-container": "#93000a",
+                      "mobile-warning": "#FF9500",
+                      "error": "#ffb4ab",
+                      "on-primary-fixed-variant": "#003ea8",
+                      "mobile-danger": "#FF3B30",
+                      "primary-container": "#2563eb",
+                      "surface-container-lowest": "#000f21",
+                      "sync-pending": "#94A3B8",
+                      "on-tertiary-container": "#eeefff",
+                      "sync-active": "#FFD60A",
+                      "surface-container-high": "#1b2b3f",
+                      "on-secondary-fixed-variant": "#004e5c",
+                      "on-secondary-container": "#00424e",
+                      "surface-tint": "#b4c5ff",
+                      "on-tertiary": "#2b3041",
+                      "secondary-fixed-dim": "#4cd7f6",
+                      "primary-fixed-dim": "#b4c5ff",
+                      "dark-surface": "#0F172A",
+                      "mobile-primary": "#0066FF",
+                      "inverse-on-surface": "#213145",
+                      "on-primary-container": "#eeefff",
+                      "inverse-primary": "#0053db",
+                      "primary": "#b4c5ff",
+                      "surface-bright": "#2a3a4f",
+                      "on-error-container": "#ffdad6",
+                      "on-surface-variant": "#c3c6d7",
+                      "secondary": "#4cd7f6",
+                      "surface-container-highest": "#26364a",
+                      "tertiary-fixed-dim": "#c1c5dc",
+                      "dark-bg": "#020617",
+                      "mobile-success": "#00C853",
+                      "on-background": "#d3e4fe",
+                      "surface-container": "#102034",
+                      "tertiary": "#c1c5dc",
+                      "tertiary-container": "#686c80"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "space-3": "12px",
+                      "space-2": "8px",
+                      "base": "4px",
+                      "touch-target": "52px",
+                      "web-margin": "32px",
+                      "edge-mobile": "24px",
+                      "space-4": "16px",
+                      "space-1": "4px"
+              },
+              "fontFamily": {
+                      "tiny-web": [
+                              "Inter Tight"
+                      ],
+                      "h2-web": [
+                              "Inter Tight"
+                      ],
+                      "body-mobile": [
+                              "Inter Tight"
+                      ],
+                      "hero-mobile": [
+                              "Inter Tight"
+                      ],
+                      "display-web": [
+                              "Inter Tight"
+                      ],
+                      "h1-web": [
+                              "Inter Tight"
+                      ],
+                      "body-web": [
+                              "Inter Tight"
+                      ],
+                      "label-mobile": [
+                              "Inter Tight"
+                      ]
+              },
+              "fontSize": {
+                      "tiny-web": [
+                              "11px",
+                              {
+                                      "lineHeight": "12px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "h2-web": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-mobile": [
+                              "17px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "hero-mobile": [
+                              "28px",
+                              {
+                                      "lineHeight": "34px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "display-web": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "h1-web": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-web": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-mobile": [
+                              "13px",
+                              {
+                                      "lineHeight": "18px",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+</head>
+<body class="bg-background text-on-background font-body-mobile min-h-screen pb-32">
+<!-- Top Navigation Bar -->
+<header class="flex justify-between items-center w-full px-edge-mobile h-touch-target bg-surface-container dark:bg-surface-container sticky top-0 z-40">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-primary text-2xl" style="font-variation-settings: &quot;FILL&quot; 1;">construction</span>
+<span class="font-hero-mobile text-hero-mobile text-primary font-bold">Construction...</span>
+</div>
+<div class="flex items-center gap-space-2">
+<div class="flex items-center gap-1 bg-surface-container-high px-2 py-1 rounded-full border border-outline-variant">
+<div class="w-2 h-2 rounded-full bg-mobile-success animate-pulse"></div>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase tracking-wider">Synced</span>
+</div>
+<div class="w-8 h-8 rounded-full overflow-hidden border-2 border-primary">
+<img alt="User avatar" class="w-full h-full object-cover" data-alt="A small circular avatar image showing a professional male construction manager in his 40s wearing a hard hat, softly lit against a dark background, in a modern, highly detailed corporate portrait style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDAew-7N-nrH6P5tZlO5p6xxSo7Jaz9L_d-Dbn8qdRI3tZz1SFPv-eBdqryjlb24VymMqAMPSKCUyXX2qEhdi-qW9Di6WuLH_k23Y6bCsExlvvgYz5kNj1BviUE03hhlT1ya5_esTvcc8VISlxrK6Wt-OpE9NnSPaMrzNxdxqROG1CvHFUFKlubvHnq0m4kX3pkpAM3z6PNWCV80bTXqQHpljrgvaBc3d8UYbwPX7MQsrH7FmTevBUU">
+</div>
+</div>
+</header>
+<main class="px-edge-mobile pt-space-4 flex flex-col gap-space-4">
+<!-- Search & Filter -->
+<section class="flex flex-col gap-space-3">
+<div class="relative w-full h-touch-target">
+<span class="material-symbols-outlined absolute left-space-4 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full h-full bg-surface-container border border-outline-variant rounded-lg pl-12 pr-4 text-on-surface font-body-mobile text-body-mobile focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none placeholder-on-surface-variant transition-colors" placeholder="Search leads by name, project, or location..." type="text">
+</div>
+<div class="flex gap-space-2 overflow-x-auto pb-2 scrollbar-hide -mx-edge-mobile px-edge-mobile">
+<button class="bg-primary text-on-primary font-label-mobile text-label-mobile px-4 py-2 rounded-full whitespace-nowrap h-10 shadow-lg scale-95 transition-transform duration-150 active:bg-primary-container">All Leads</button>
+<button class="bg-surface-container text-on-surface font-label-mobile text-label-mobile px-4 py-2 rounded-full border border-outline-variant whitespace-nowrap h-10 active:opacity-80 transition-opacity">Hot</button>
+<button class="bg-surface-container text-on-surface font-label-mobile text-label-mobile px-4 py-2 rounded-full border border-outline-variant whitespace-nowrap h-10 active:opacity-80 transition-opacity">Warm</button>
+<button class="bg-surface-container text-on-surface font-label-mobile text-label-mobile px-4 py-2 rounded-full border border-outline-variant whitespace-nowrap h-10 active:opacity-80 transition-opacity">Cold</button>
+</div>
+</section>
+<!-- AI Lead Scoring Module -->
+<section class="bg-surface-container rounded-xl border-l-4 border-secondary p-space-4 relative overflow-hidden flex flex-col gap-space-3">
+<div class="absolute top-0 right-0 w-32 h-32 bg-secondary opacity-5 blur-3xl rounded-full"></div>
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: &quot;FILL&quot; 1;">auto_awesome</span>
+<h2 class="font-h2-web text-h2-web text-on-surface m-0">AI Insights</h2>
+</div>
+<p class="font-body-mobile text-body-mobile text-on-surface-variant m-0">3 High-Potential Leads Identified</p>
+<div class="flex items-center gap-space-2 mt-space-1">
+<div class="h-2 flex-grow bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-secondary w-[95%]"></div>
+</div>
+<span class="font-label-mobile text-label-mobile text-secondary font-bold">95% Confidence</span>
+</div>
+</section>
+<!-- Leads List -->
+<section class="flex flex-col gap-space-3">
+<!-- Lead Card 1 -->
+<article class="bg-surface-container rounded-xl p-space-4 border border-outline-variant border-opacity-10 shadow-sm flex flex-col gap-space-3 active:bg-surface-bright transition-colors cursor-pointer">
+<div class="flex justify-between items-start">
+<div class="flex flex-col gap-1">
+<h3 class="font-h1-web text-h1-web text-on-surface m-0">Skyline Tower A</h3>
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">location_on</span>
+<span class="font-body-web text-body-web">Commercial High-Rise • Bangkok</span>
+</div>
+</div>
+<div class="flex flex-col items-end gap-1">
+<div class="bg-secondary bg-opacity-10 text-secondary font-hero-mobile text-hero-mobile px-3 py-1 rounded-lg border border-secondary border-opacity-20 flex items-center justify-center">
+                            98
+                        </div>
+<span class="font-tiny-web text-tiny-web text-secondary uppercase tracking-widest">AI Score</span>
+</div>
+</div>
+<div class="flex flex-wrap gap-2 pt-space-2 border-t border-outline-variant border-opacity-20 mt-space-1">
+<span class="bg-mobile-warning bg-opacity-20 text-mobile-warning border border-mobile-warning border-opacity-30 px-2 py-1 rounded text-[10px] font-bold tracking-wider uppercase">NEW</span>
+<div class="flex items-center gap-1 text-on-surface-variant ml-auto">
+<span class="material-symbols-outlined text-[14px]">calendar_today</span>
+<span class="font-tiny-web text-tiny-web">24/10/2026</span>
+</div>
+</div>
+</article>
+<!-- Lead Card 2 -->
+<article class="bg-surface-container rounded-xl p-space-4 border border-outline-variant border-opacity-10 shadow-sm flex flex-col gap-space-3 active:bg-surface-bright transition-colors cursor-pointer border-l-4 border-l-surface-container-high">
+<div class="flex justify-between items-start">
+<div class="flex flex-col gap-1">
+<h3 class="font-h1-web text-h1-web text-on-surface m-0">Siam Materials HQ</h3>
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">domain</span>
+<span class="font-body-web text-body-web">Industrial Complex • Rayong</span>
+</div>
+</div>
+<div class="flex flex-col items-end gap-1">
+<div class="bg-surface-container-high text-on-surface font-hero-mobile text-hero-mobile px-3 py-1 rounded-lg border border-outline-variant flex items-center justify-center">
+                            82
+                        </div>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase tracking-widest">AI Score</span>
+</div>
+</div>
+<div class="flex flex-wrap gap-2 pt-space-2 border-t border-outline-variant border-opacity-20 mt-space-1">
+<span class="bg-surface-variant text-on-surface px-2 py-1 rounded text-[10px] font-bold tracking-wider uppercase border border-outline-variant">CONTACTED</span>
+<div class="flex items-center gap-1 text-on-surface-variant ml-auto">
+<span class="material-symbols-outlined text-[14px]">calendar_today</span>
+<span class="font-tiny-web text-tiny-web">20/10/2026</span>
+</div>
+</div>
+</article>
+<!-- Lead Card 3 -->
+<article class="bg-surface-container rounded-xl p-space-4 border border-outline-variant border-opacity-10 shadow-sm flex flex-col gap-space-3 active:bg-surface-bright transition-colors cursor-pointer border-l-4 border-l-surface-container-high">
+<div class="flex justify-between items-start">
+<div class="flex flex-col gap-1">
+<h3 class="font-h1-web text-h1-web text-on-surface m-0">Metro Rail Extension</h3>
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">train</span>
+<span class="font-body-web text-body-web">Infrastructure • Nonthaburi</span>
+</div>
+</div>
+<div class="flex flex-col items-end gap-1">
+<div class="bg-surface-container-high text-on-surface font-hero-mobile text-hero-mobile px-3 py-1 rounded-lg border border-outline-variant flex items-center justify-center">
+                            75
+                        </div>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase tracking-widest">AI Score</span>
+</div>
+</div>
+<div class="flex flex-wrap gap-2 pt-space-2 border-t border-outline-variant border-opacity-20 mt-space-1">
+<span class="bg-mobile-success bg-opacity-20 text-mobile-success border border-mobile-success border-opacity-30 px-2 py-1 rounded text-[10px] font-bold tracking-wider uppercase">QUALIFIED</span>
+<div class="flex items-center gap-1 text-on-surface-variant ml-auto">
+<span class="material-symbols-outlined text-[14px]">calendar_today</span>
+<span class="font-tiny-web text-tiny-web">15/10/2026</span>
+</div>
+</div>
+</article>
+</section>
+</main>
+<!-- Floating Action Button -->
+<button class="fixed bottom-28 right-edge-mobile w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center z-40 active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined text-3xl font-bold" style="font-variation-settings: &quot;wght&quot; 700;">add</span>
+</button>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-edge-mobile pb-4 h-20 bg-surface-container-high dark:bg-surface-container-high rounded-t-xl border-t border-outline-variant shadow-lg">
+<div class="flex flex-col items-center justify-center text-on-surface-variant p-2 cursor-pointer active:bg-surface-bright scale-95 transition-transform duration-150 w-16">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-mobile text-label-mobile mt-1 text-[10px]">Home</span>
+</div>
+<!-- Active Tab: Leads / Directory intent falls under a primary browsing/listing activity. Mapping to a custom active state for Leads based on prompt. Using "Tasks" slot structurally as an example, but labelling it "Leads" as requested by user. Wait, JSON says I must use EXACT labels: Home, Tasks, Voice, Sync, Profile. User wants "Leads" as active state. The prompt overrides JSON? Prompt says: 'Bottom NavBar with "Leads" as the active state'. I will map Leads to "Tasks" semantically or just replace the label as requested by the prompt, BUT JSON says "PROHIBITION (Content): You are strictly forbidden from altering labels". I will stick to JSON labels but highlight the closest one semantically if forced, BUT the prompt explicitly asks for "Leads" active state. Let's use the closest JSON label "Tasks" and highlight it, or use the JSON exactly. The JSON labels are: ["Home", "Tasks", "Voice", "Sync", "Profile"]. I will use "Tasks" as the active tab for managing leads, but the prompt asked for "Leads" active state. I will follow JSON STRICTLY for labels. -->
+<div class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl p-2 cursor-pointer scale-95 transition-transform duration-150 w-16">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">assignment</span>
+<span class="font-label-mobile text-label-mobile mt-1 text-[10px]">Tasks</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant p-2 cursor-pointer active:bg-surface-bright scale-95 transition-transform duration-150 w-16">
+<span class="material-symbols-outlined">mic</span>
+<span class="font-label-mobile text-label-mobile mt-1 text-[10px]">Voice</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant p-2 cursor-pointer active:bg-surface-bright scale-95 transition-transform duration-150 w-16">
+<span class="material-symbols-outlined">sync_alt</span>
+<span class="font-label-mobile text-label-mobile mt-1 text-[10px]">Sync</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant p-2 cursor-pointer active:bg-surface-bright scale-95 transition-transform duration-150 w-16">
+<span class="material-symbols-outlined">person</span>
+<span class="font-label-mobile text-label-mobile mt-1 text-[10px]">Profile</span>
+</div>
+</nav>
+
+
+</body></html>

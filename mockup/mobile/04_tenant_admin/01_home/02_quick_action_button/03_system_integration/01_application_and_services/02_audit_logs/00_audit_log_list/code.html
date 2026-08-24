@@ -1,0 +1,310 @@
+<!DOCTYPE html><html class="dark" lang="th"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(42, 58, 79, 0.4), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite linear;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        body {
+            font-family: 'Inter Tight', sans-serif;
+            background-color: #031427;
+            color: #d3e4fe;
+            -webkit-font-smoothing: antialiased;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-dim": "#031427",
+                        "dark-bg": "#020617",
+                        "surface-bright": "#2a3a4f",
+                        "mobile-warning": "#FF9500",
+                        "tertiary-fixed": "#dee1f9",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "mobile-success": "#00C853",
+                        "on-primary": "#002a78",
+                        "on-tertiary": "#2b3041",
+                        "sync-pending": "#94A3B8",
+                        "secondary-container": "#03b5d3",
+                        "on-tertiary-fixed": "#161b2b",
+                        "primary": "#b4c5ff",
+                        "dark-surface": "#0F172A",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "inverse-on-surface": "#213145",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "tertiary": "#c1c5dc",
+                        "on-surface-variant": "#c3c6d7",
+                        "outline": "#8d90a0",
+                        "surface-container-low": "#0b1c30",
+                        "on-tertiary-container": "#eeefff",
+                        "on-secondary-container": "#00424e",
+                        "primary-container": "#2563eb",
+                        "inverse-primary": "#0053db",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "on-secondary": "#003640",
+                        "on-background": "#d3e4fe",
+                        "on-secondary-fixed": "#001f26",
+                        "on-error": "#690005",
+                        "sync-active": "#FFD60A",
+                        "surface-container-high": "#1b2b3f",
+                        "secondary-fixed": "#acedff",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "on-primary-fixed": "#00174b",
+                        "on-error-container": "#ffdad6",
+                        "surface-container-lowest": "#000f21",
+                        "mobile-primary": "#0066FF",
+                        "outline-variant": "#434655",
+                        "surface-tint": "#b4c5ff",
+                        "on-surface": "#d3e4fe",
+                        "error-container": "#93000a",
+                        "background": "#031427",
+                        "inverse-surface": "#d3e4fe",
+                        "surface-container": "#102034",
+                        "error": "#ffb4ab",
+                        "secondary": "#4cd7f6",
+                        "surface-container-highest": "#26364a",
+                        "primary-fixed": "#dbe1ff",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "surface-variant": "#26364a",
+                        "surface": "#031427",
+                        "tertiary-container": "#686c80",
+                        "on-primary-container": "#eeefff",
+                        "mobile-danger": "#FF3B30",
+                        "ai-cyan": "#06B6D4"
+                    },
+                    "spacing": {
+                        "web-margin": "32px",
+                        "space-3": "12px",
+                        "space-1": "4px",
+                        "space-2": "8px",
+                        "base": "4px",
+                        "edge-mobile": "24px",
+                        "touch-target": "52px",
+                        "space-4": "16px"
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+<body class="dark overflow-x-hidden pb-24 bg-surface-dim">
+<!-- Top App Bar -->
+<header class="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-edge-mobile h-touch-target bg-surface-dim border-b border-outline-variant/10">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-on-surface" data-icon="arrow_back">arrow_back</span>
+<img alt="COS Icon" class="w-8 h-8 object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDutMz0mjkKN3JJE7o_JJo91y3ZXJ2CpKOQDDGg05ig4ckfcXka7VwCshOSVR-TGJ7NYMbMK_Y1qwMMKIJlRqSSH2GDorExQjATIrr1nKLStZdvkdlspmzOuKJY5OORyUVNME8ye1owokqvL_n9G9OgF20Kp6aZTeanI0ABkGYzOOpJyq8QWCalm6HZv6u_9BqrbcW-byInSU2BpAfqRg_NF2_8Fw_xQhQ2L2oX95hA7QmyAYWyS27PgRzPySROgm0NviS5fyqbI_E">
+<h1 class="font-['Inter_Tight'] text-[14px] font-bold text-primary tracking-tighter uppercase">CONSTRUCTION OS</h1>
+</div>
+<div class="flex items-center gap-space-3">
+<div class="flex items-center gap-1.5 bg-surface-container-high px-space-2 py-1 rounded-full border border-outline-variant/30">
+<span class="material-symbols-outlined text-mobile-success text-[14px] font-bold" style="font-variation-settings: 'FILL' 1">check_circle</span>
+<span class="text-[10px] text-on-surface uppercase font-bold tracking-widest">SYNCED</span>
+</div>
+<div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center border border-primary/20">
+<span class="material-symbols-outlined text-on-primary-container text-[18px]" data-icon="person">person</span>
+</div>
+</div>
+</header>
+<main class="mt-[64px] px-edge-mobile space-y-space-4">
+<!-- Search & Filter Section -->
+<section class="pt-space-4">
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within:text-primary transition-colors" data-icon="search">search</span>
+<input class="w-full h-touch-target pl-12 pr-4 bg-surface-container rounded-none border-none text-body-mobile focus:ring-1 focus:ring-primary transition-all placeholder:text-on-surface-variant/50" placeholder="ค้นหาตามผู้ใช้, การดำเนินการ หรือวันที่..." type="text">
+<button class="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="tune">tune</span>
+</button>
+</div>
+</section>
+<!-- AI Compliance Audit Module -->
+<section class="bg-surface-container rounded-none overflow-hidden relative border-l-4 border-secondary-container">
+<div class="relative p-space-4 bg-secondary-container/5 space-y-space-3">
+<div class="flex justify-between items-start">
+<div class="space-y-1">
+<div class="flex items-center gap-space-2 text-secondary">
+<span class="material-symbols-outlined text-[20px]" data-icon="auto_awesome_motion">auto_awesome_motion</span>
+<h2 class="font-['Inter_Tight'] text-[14px] font-bold uppercase tracking-wider">AI Compliance Audit</h2>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] text-ai-cyan font-bold uppercase tracking-tighter">Data Sources</span>
+<span class="text-[9px] text-on-surface-variant/80 uppercase">System Access Logs, Identity Provider, Network Telemetry</span>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="text-tiny-web text-on-surface-variant uppercase">92% Confidence</span>
+<span class="text-h2-web font-bold text-secondary">92%</span>
+</div>
+</div>
+<div class="bg-dark-bg/40 p-space-3 rounded-none border border-outline-variant/10">
+<p class="text-label-mobile text-on-surface leading-snug">
+                        พบรูปแบบการเข้าถึงที่ผิดปกติในช่วงเวลา 02:00 - 04:00 น. จากบัญชี Admin ในระบบสำรอง แนะนำให้ตรวจสอบการเปลี่ยนรหัสผ่านล่าสุด
+                    </p>
+</div>
+<button class="w-full h-touch-target bg-secondary-container/20 text-secondary font-bold text-tiny-web rounded-none uppercase tracking-widest active:scale-95 transition-transform flex items-center justify-center">
+                    ดูรายละเอียดความเสี่ยง
+                </button>
+</div>
+</section>
+<!-- Audit Log List -->
+<div class="flex items-center justify-between py-space-2">
+<h3 class="font-['Inter_Tight'] text-[18px] font-bold text-on-surface uppercase">บันทึกการตรวจสอบระบบ</h3>
+<span class="text-tiny-web text-on-surface-variant">วันนี้, 24 พฤษภาคม</span>
+</div>
+<section class="space-y-space-2">
+<!-- Log Entry 1 -->
+<div class="bg-surface-container p-space-4 rounded-none border border-outline-variant/10 flex flex-col gap-space-2 active:scale-[0.98] transition-all">
+<div class="flex justify-between items-start">
+<div class="flex gap-space-3 items-center">
+<div class="w-10 h-10 rounded-none bg-surface-bright flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="manage_accounts">manage_accounts</span>
+</div>
+<div>
+<p class="font-bold text-body-mobile text-on-surface">สมชาย วิศวกรรม</p>
+<p class="text-label-mobile text-on-surface-variant">Tenant Admin</p>
+</div>
+</div>
+<div class="flex items-center gap-1 bg-surface-container-high px-space-2 py-0.5 rounded-none border border-mobile-success/30">
+<span class="material-symbols-outlined text-mobile-success text-[10px]" style="font-variation-settings: 'FILL' 1">check_circle</span>
+<span class="text-[9px] text-mobile-success font-bold uppercase">SYNCED</span>
+</div>
+</div>
+<div class="mt-space-1 space-y-1">
+<p class="text-body-mobile font-medium text-primary">แก้ไขการตั้งค่าระบบ (Security Protocols)</p>
+<p class="text-label-mobile text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="database">database</span>
+                        ผลกระทบ: <span class="text-on-surface">System Core Settings</span>
+</p>
+</div>
+<div class="flex justify-between items-center pt-space-2 border-t border-outline-variant/10">
+<span class="text-tiny-web text-on-surface-variant font-medium">24/05/2024 14:22</span>
+<button class="h-touch-target px-space-4 text-secondary text-tiny-web font-bold uppercase tracking-widest flex items-center">ตรวจสอบ</button>
+</div>
+</div>
+<!-- Log Entry 2 -->
+<div class="bg-surface-container p-space-4 rounded-none border border-outline-variant/10 flex flex-col gap-space-2 active:scale-[0.98] transition-all">
+<div class="flex justify-between items-start">
+<div class="flex gap-space-3 items-center">
+<div class="w-10 h-10 rounded-none bg-surface-bright flex items-center justify-center text-mobile-warning">
+<span class="material-symbols-outlined" data-icon="person_remove">person_remove</span>
+</div>
+<div>
+<p class="font-bold text-body-mobile text-on-surface">นารี สิทธิผล</p>
+<p class="text-label-mobile text-on-surface-variant">Project Manager</p>
+</div>
+</div>
+<div class="flex items-center gap-1 bg-surface-container-high px-space-2 py-0.5 rounded-none border border-mobile-success/30">
+<span class="material-symbols-outlined text-mobile-success text-[10px]" style="font-variation-settings: 'FILL' 1">check_circle</span>
+<span class="text-[9px] text-mobile-success font-bold uppercase">SYNCED</span>
+</div>
+</div>
+<div class="mt-space-1 space-y-1">
+<p class="text-body-mobile font-medium text-primary">ลบคำร้องขอผู้ใช้งาน (User Request #442)</p>
+<p class="text-label-mobile text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="group">group</span>
+                        ผลกระทบ: <span class="text-on-surface">User Access Pool</span>
+</p>
+</div>
+<div class="flex justify-between items-center pt-space-2 border-t border-outline-variant/10">
+<span class="text-tiny-web text-on-surface-variant font-medium">24/05/2024 13:05</span>
+<button class="h-touch-target px-space-4 text-secondary text-tiny-web font-bold uppercase tracking-widest flex items-center">ตรวจสอบ</button>
+</div>
+</div>
+<!-- Log Entry 3 -->
+<div class="bg-surface-container p-space-4 rounded-none border border-outline-variant/10 flex flex-col gap-space-2 active:scale-[0.98] transition-all">
+<div class="flex justify-between items-start">
+<div class="flex gap-space-3 items-center">
+<div class="w-10 h-10 rounded-none bg-surface-bright flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+</div>
+<div>
+<p class="font-bold text-body-mobile text-on-surface">วิชัย รัตนะ</p>
+<p class="text-label-mobile text-on-surface-variant">Inventory Lead</p>
+</div>
+</div>
+<div class="flex items-center gap-1 bg-surface-container-high px-space-2 py-0.5 rounded-none border border-mobile-success/30">
+<span class="material-symbols-outlined text-mobile-success text-[10px]" style="font-variation-settings: 'FILL' 1">check_circle</span>
+<span class="text-[9px] text-mobile-success font-bold uppercase">SYNCED</span>
+</div>
+</div>
+<div class="mt-space-1 space-y-1">
+<p class="text-body-mobile font-medium text-primary">อนุมัติการสั่งซื้อวัสดุ (PO-2024-001)</p>
+<p class="text-label-mobile text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="payments">payments</span>
+                        ผลกระทบ: <span class="text-on-surface">Project Site Alpha</span>
+</p>
+</div>
+<div class="flex justify-between items-center pt-space-2 border-t border-outline-variant/10">
+<span class="text-tiny-web text-on-surface-variant font-medium">24/05/2024 11:40</span>
+<button class="h-touch-target px-space-4 text-secondary text-tiny-web font-bold uppercase tracking-widest flex items-center">ตรวจสอบ</button>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Nav Bar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-base pb-safe bg-surface-container border-t border-outline-variant/10 h-[72px] shadow-lg">
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-bright/20 rounded-none px-space-4 py-space-2 active:scale-95 transition-all duration-200">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+<span class="font-label-mobile text-[11px] uppercase tracking-tighter">Reports</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-bright/20 rounded-none px-space-4 py-space-2 active:scale-95 transition-all duration-200">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="font-label-mobile text-[11px] uppercase tracking-tighter">Inventory</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-bright/20 rounded-none px-space-4 py-space-2 active:scale-95 transition-all duration-200">
+<span class="material-symbols-outlined" data-icon="view_in_ar">view_in_ar</span>
+<span class="font-label-mobile text-[11px] uppercase tracking-tighter">BIM</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-bright/20 rounded-none px-space-4 py-space-2 active:scale-95 transition-all duration-200">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-label-mobile text-[11px] uppercase tracking-tighter">Users</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-none px-space-4 py-space-2 active:scale-95 transition-all duration-200">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-mobile text-[11px] uppercase tracking-tighter">Settings</span>
+</button>
+</nav>
+<script>
+        // Micro-interaction for feedback
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (window.navigator.vibrate) {
+                    window.navigator.vibrate(5);
+                }
+            });
+        });
+
+        // Simulating some dynamic sync state updates
+        setInterval(() => {
+            const pendingBadge = document.querySelector('.bg-sync-pending')?.closest('.bg-surface-container-high');
+            if (pendingBadge && Math.random() > 0.8) {
+                pendingBadge.classList.replace('border-sync-pending/30', 'border-mobile-success/30');
+                const indicator = pendingBadge.querySelector('.bg-sync-pending');
+                indicator.outerHTML = `<span class="material-symbols-outlined text-mobile-success text-[10px]" style="font-variation-settings: 'FILL' 1">check_circle</span>`;
+                pendingBadge.querySelector('span:last-child').textContent = 'SYNCED';
+                pendingBadge.querySelector('span:last-child').classList.replace('text-sync-pending', 'text-mobile-success');
+            }
+        }, 5000);
+    </script>
+
+
+</body></html>

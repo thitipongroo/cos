@@ -4,5 +4,12 @@ variable "subnet_ids"          { type = list(string) }
 variable "eks_security_group"  { type = string }
 variable "instance_class"      { type = string }
 variable "allocated_storage"   { type = number }
-variable "master_password"     { type = string; sensitive = true }
+variable "master_password" {
+  type      = string
+  sensitive = true
+}
+variable "kms_key_id" {
+  type        = string
+  description = "Customer-managed KMS CMK ARN for storage encryption (QM-4)"
+}
 variable "tags"                { type = map(string) }

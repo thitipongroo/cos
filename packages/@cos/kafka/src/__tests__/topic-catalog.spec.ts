@@ -1,5 +1,7 @@
 // Unit tests for the per-tenant topic/subject derivation helpers — spec §7.3, §15.6/15.7, §32.4.
 
+import { readdirSync } from 'fs';
+import { join } from 'path';
 import {
   EVENT_AVSC_MAP,
   CANONICAL_EVENT_TYPES,
@@ -24,6 +26,19 @@ describe('topic-catalog', () => {
       for (const et of CANONICAL_EVENT_TYPES) {
         expect(et).toMatch(/^[a-z]+\.[a-z_]+\.[a-z_]+\.v\d+$/);
       }
+    });
+
+    // Regression guard for the Phase 21/22 class of bug: an event's Avro schema file and its emit
+    // call exist, but the developer forgot the EVENT_AVSC_MAP entry — so KafkaProducer throws "No
+    // Avro schema registered" at publish time and the event is silently dropped. Any .avsc file in
+    // avro/ (except the shared base envelope) MUST be registered.
+    it('has no orphaned event Avro schema (every avro/*.avsc is in EVENT_AVSC_MAP)', () => {
+      const EXEMPT = new Set(['base-event-envelope.avsc']); // shared envelope, not an event type
+      const mapped = new Set(Object.values(EVENT_AVSC_MAP));
+      const orphans = readdirSync(join(__dirname, '..', 'avro'))
+        .filter((f) => f.endsWith('.avsc') && !EXEMPT.has(f))
+        .filter((f) => !mapped.has(f));
+      expect(orphans).toEqual([]);
     });
   });
 
@@ -82,11 +97,59 @@ describe('topic-catalog', () => {
     });
   });
 
+  describe('tenantTopicPattern escapes regex metacharacters', () => {
+    // The event type is interpolated into `new RegExp`. Escaping only `.` left every other
+    // metacharacter live, so an event type containing one matched a different set of topics than it
+    // names — a shared-cluster consumer would silently subscribe to the wrong thing.
+    // CodeQL js/incomplete-sanitization.
+    it.each([
+      ['a quantifier', 'a+b'],
+      ['a wildcard', 'a*b'],
+      ['an alternation', 'a|b'],
+      ['a group', 'a(b)c'],
+      ['a character class', 'a[bc]d'],
+      ['a repetition range', 'a{1,2}b'],
+      ['an anchor', 'a$b'],
+      ['a backslash', 'a\\b'],
+    ])('treats %s as a literal', (_label, eventType) => {
+      const pattern = tenantTopicPattern(eventType);
+
+      expect(pattern.test(`tenant-1.${eventType}`)).toBe(true);
+    });
+
+    it('does not let a quantifier widen the match', () => {
+      // Unescaped, /^[^.]+\.a+b$/ would also match "tenant-1.aaab".
+      const pattern = tenantTopicPattern('a+b');
+
+      expect(pattern.test('tenant-1.aaab')).toBe(false);
+      expect(pattern.test('tenant-1.a+b')).toBe(true);
+    });
+
+    it('does not let an alternation broaden the match', () => {
+      const pattern = tenantTopicPattern('alpha|beta');
+
+      expect(pattern.test('tenant-1.alpha')).toBe(false);
+      expect(pattern.test('tenant-1.beta')).toBe(false);
+      expect(pattern.test('tenant-1.alpha|beta')).toBe(true);
+    });
+  });
+
   describe('dlqTopicFor', () => {
-    it('derives {tenant_id}.{domain}.dlq from a per-tenant topic', () => {
-      expect(dlqTopicFor('tenant-1.construction.project.created.v1')).toBe(
-        'tenant-1.construction.dlq',
-      );
+    it('derives {tenant_id}.dlq from a per-tenant topic', () => {
+      expect(dlqTopicFor('tenant-1.construction.project.created.v1')).toBe('tenant-1.dlq');
+    });
+
+    // One DLQ per tenant, not per tenant-and-domain: every domain of a tenant lands in the same
+    // DLQ, which is what keeps the per-tenant topic count from being multiplied by the domain count.
+    it('routes every domain of a tenant to that tenant single DLQ', () => {
+      expect(dlqTopicFor('tenant-1.finance.payment.processed.v1')).toBe('tenant-1.dlq');
+      expect(dlqTopicFor('tenant-1.site.issue.created.v1')).toBe('tenant-1.dlq');
+    });
+
+    // The §7.3 guarantee that survives the collapse.
+    it('never routes one tenant failures into another tenant DLQ', () => {
+      expect(dlqTopicFor('tenant-a.site.issue.created.v1')).toBe('tenant-a.dlq');
+      expect(dlqTopicFor('tenant-b.site.issue.created.v1')).toBe('tenant-b.dlq');
     });
 
     it('maps the shared platform.events topic to platform.dlq', () => {

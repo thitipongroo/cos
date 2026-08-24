@@ -1,0 +1,225 @@
+<!DOCTYPE html><html class="dark" lang="th" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+<title>User Rights Portal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error-container": "#93000a",
+                        "on-secondary": "#002a78",
+                        "on-error": "#690005",
+                        "primary-fixed-dim": "#c1c5dc",
+                        "on-secondary-fixed": "#00174b",
+                        "tertiary-container": "#001318",
+                        "outline": "#909097",
+                        "secondary-container": "#0053db",
+                        "secondary-fixed": "#dbe1ff",
+                        "mobile-primary": "#0066FF",
+                        "surface": "#031427",
+                        "primary-container": "#0b1020",
+                        "primary-fixed": "#dee1f9",
+                        "surface-container-highest": "#26364a",
+                        "on-error-container": "#ffdad6",
+                        "inverse-surface": "#d3e4fe",
+                        "background": "#031427",
+                        "on-tertiary-fixed": "#001f26",
+                        "surface-container-high": "#1b2b3f",
+                        "secondary-fixed-dim": "#b4c5ff",
+                        "syncing": "#FFD60A",
+                        "surface-dim": "#031427",
+                        "surface-container": "#102034",
+                        "on-surface-variant": "#c7c6cd",
+                        "on-surface": "#d3e4fe",
+                        "on-primary": "#2b3041",
+                        "on-primary-fixed": "#161b2b",
+                        "surface-tint": "#c1c5dc",
+                        "danger": "#EF4444",
+                        "tertiary-fixed": "#acedff",
+                        "concrete-white": "#F8FAFC",
+                        "secondary": "#b4c5ff",
+                        "success": "#10B981",
+                        "on-tertiary-container": "#0088a0",
+                        "inverse-on-surface": "#213145",
+                        "surface-container-lowest": "#000f21",
+                        "on-tertiary-fixed-variant": "#004e5c",
+                        "tertiary": "#4cd7f6",
+                        "tertiary-fixed-dim": "#4cd7f6",
+                        "warning": "#F59E0B",
+                        "offline": "#8E8E93",
+                        "inverse-primary": "#595e71",
+                        "surface-variant": "#26364a",
+                        "surface-container-low": "#0b1c30",
+                        "on-primary-container": "#777c90",
+                        "error": "#ffb4ab",
+                        "on-tertiary": "#003640",
+                        "surface-bright": "#2a3a4f",
+                        "on-primary-fixed-variant": "#414658",
+                        "on-secondary-container": "#cdd7ff",
+                        "outline-variant": "#46464c",
+                        "on-background": "#d3e4fe",
+                        "primary": "#c1c5dc",
+                        "on-secondary-fixed-variant": "#003ea8"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "mobile-base": "8px",
+                        "touch-target-optimum": "52px",
+                        "web-page-gap": "64px",
+                        "touch-target-min": "44px",
+                        "mobile-edge-margin": "24px",
+                        "web-base": "4px",
+                        "web-padding-card": "16px",
+                        "mobile-card-pad": "12px",
+                        "mobile-icon-pad": "8px",
+                        "mobile-section-pad": "16px",
+                        "web-gap-tight": "4px",
+                        "web-margin-component": "32px"
+                    },
+                    "fontFamily": {
+                        "body-sm": ["Inter"],
+                        "headline-h3": ["Inter"],
+                        "mobile-body": ["Inter"],
+                        "body-md": ["Inter"],
+                        "mobile-hero": ["Inter"],
+                        "headline-h2": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "headline-h1": ["Inter"],
+                        "mobile-title": ["Inter"],
+                        "label-tiny": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-sm": ["12px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "headline-h3": ["16px", { "lineHeight": "1.3", "fontWeight": "500" }],
+                        "mobile-body": ["17px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "body-md": ["14px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "mobile-hero": ["28px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "headline-h2": ["20px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "display-lg": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-h1": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "mobile-title": ["22px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "label-tiny": ["11px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior-y: none;
+        }
+        .pb-safe {
+            padding-bottom: env(safe-area-inset-bottom, 20px);
+        }
+        .pt-safe {
+            padding-top: env(safe-area-inset-top, 20px);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md h-screen flex flex-col overflow-hidden">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-surface fixed top-0 w-full border-b border-outline-variant z-50 pt-safe transition-transform active:scale-95 flex items-center justify-between px-mobile-edge-margin h-touch-target-optimum">
+<button class="flex items-center justify-center w-[44px] h-[44px] hover:bg-surface-container-highest rounded-full text-mobile-primary active:scale-95 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 0;">arrow_back</span>
+</button>
+<h1 class="font-headline-h1 text-headline-h1 font-bold text-on-surface">USER RIGHTS</h1>
+
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 overflow-y-auto mt-[calc(env(safe-area-inset-top,20px)+52px)] mb-[calc(env(safe-area-inset-bottom,20px)+52px)]">
+<!-- Hero Section -->
+<section class="px-mobile-edge-margin py-8 flex flex-col items-center text-center">
+<div class="w-20 h-20 bg-surface-container-high rounded-full flex items-center justify-center mb-6 shadow-sm border border-outline-variant">
+<span class="material-symbols-outlined text-[40px] text-tertiary" style="font-variation-settings: &quot;FILL&quot; 1;">shield_person</span>
+</div>
+
+<p class="font-mobile-body text-mobile-body text-on-surface-variant max-w-[280px]">Framework for transparency and control in compliance with PDPA guidelines.</p>
+</section>
+<!-- Rights List (Informational Cards) -->
+<section class="px-mobile-edge-margin space-y-4 pb-8">
+<!-- Card 1 -->
+<div class="bg-surface-container rounded-lg p-mobile-card-pad border border-outline-variant flex flex-col gap-2">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded bg-surface-container-highest flex items-center justify-center border border-outline-variant">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: &quot;FILL&quot; 0;">visibility</span>
+</div>
+<h3 class="font-headline-h2 text-headline-h2 text-on-surface">Right to Access</h3>
+</div>
+<div class="pl-13">
+<span class="inline-block font-label-tiny text-label-tiny text-on-surface-variant uppercase tracking-wider mb-1">สิทธิในการเข้าถึงข้อมูล</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Request access to and obtain a copy of your personal data collected and processed by our systems.</p>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container rounded-lg p-mobile-card-pad border border-outline-variant flex flex-col gap-2">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded bg-surface-container-highest flex items-center justify-center border border-outline-variant">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: &quot;FILL&quot; 0;">edit_square</span>
+</div>
+<h3 class="font-headline-h2 text-headline-h2 text-on-surface">Right to Rectification</h3>
+</div>
+<div class="pl-13">
+<span class="inline-block font-label-tiny text-label-tiny text-on-surface-variant uppercase tracking-wider mb-1">สิทธิในการแก้ไขข้อมูล</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Request correction of inaccurate personal data or completion of incomplete personal data records.</p>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container rounded-lg p-mobile-card-pad border border-outline-variant flex flex-col gap-2">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded bg-surface-container-highest flex items-center justify-center border border-outline-variant">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: &quot;FILL&quot; 0;">move_down</span>
+</div>
+<h3 class="font-headline-h2 text-headline-h2 text-on-surface">Right to Data Portability</h3>
+</div>
+<div class="pl-13">
+<span class="inline-block font-label-tiny text-label-tiny text-on-surface-variant uppercase tracking-wider mb-1">สิทธิในการโอนย้ายข้อมูล</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Receive your personal data in a structured, commonly used, and machine-readable format.</p>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="bg-surface-container rounded-lg p-mobile-card-pad border border-outline-variant flex flex-col gap-2">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded bg-surface-container-highest flex items-center justify-center border border-outline-variant">
+<span class="material-symbols-outlined text-danger" style="font-variation-settings: &quot;FILL&quot; 0;">delete_forever</span>
+</div>
+<h3 class="font-headline-h2 text-headline-h2 text-on-surface">Right to Erasure</h3>
+</div>
+<div class="pl-13">
+<span class="inline-block font-label-tiny text-label-tiny text-on-surface-variant uppercase tracking-wider mb-1">สิทธิในการลบข้อมูล</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Request the deletion or anonymization of your personal data under specific conditions.</p>
+</div>
+</div>
+</section>
+<!-- Pre-Login Call to Action -->
+<section class="px-mobile-edge-margin pb-12 pt-4">
+<div class="bg-surface-container-highest rounded-xl p-6 flex flex-col items-center text-center border border-outline-variant relative overflow-hidden">
+<!-- AI Cyan Accent Border Top -->
+<div class="absolute top-0 left-0 w-full h-[2px] bg-tertiary"></div>
+<span class="material-symbols-outlined text-[32px] text-on-surface-variant mb-3" style="font-variation-settings: &quot;FILL&quot; 0;">lock_person</span>
+<p class="font-mobile-body text-mobile-body text-on-surface mb-6">Log in to manage your privacy settings and exercise your rights.</p>
+<button class="w-full h-touch-target-optimum bg-mobile-primary text-concrete-white rounded-lg font-headline-h3 text-headline-h3 active:scale-[0.98] transition-transform shadow-sm flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: &quot;FILL&quot; 1;">login</span>
+                    Authenticate
+                </button>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+
+
+
+
+
+</body></html>

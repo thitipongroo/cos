@@ -1,0 +1,299 @@
+<!DOCTYPE html><html class="dark" lang="th" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>Confirm Delete Tenant Account | Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "sync-active": "#FFD60A",
+                    "mobile-primary": "#0066FF",
+                    "surface-container-lowest": "#000f21",
+                    "surface-bright": "#2a3a4f",
+                    "tertiary-fixed": "#dee1f9",
+                    "outline": "#8d90a0",
+                    "tertiary": "#c1c5dc",
+                    "on-tertiary-container": "#eeefff",
+                    "on-secondary": "#003640",
+                    "secondary": "#4cd7f6",
+                    "mobile-warning": "#FF9500",
+                    "on-tertiary-fixed": "#161b2b",
+                    "surface-container-highest": "#26364a",
+                    "secondary-fixed": "#acedff",
+                    "mobile-success": "#00C853",
+                    "tertiary-container": "#686c80",
+                    "primary-fixed": "#dbe1ff",
+                    "inverse-primary": "#0053db",
+                    "on-surface-variant": "#c3c6d7",
+                    "on-primary-fixed": "#00174b",
+                    "on-error": "#690005",
+                    "surface-tint": "#b4c5ff",
+                    "on-primary": "#002a78",
+                    "sync-pending": "#94A3B8",
+                    "surface": "#031427",
+                    "on-primary-container": "#eeefff",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "dark-surface": "#0F172A",
+                    "secondary-container": "#03b5d3",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "error": "#ffb4ab",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "background": "#031427",
+                    "on-secondary-fixed": "#001f26",
+                    "surface-dim": "#031427",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "surface-container-low": "#0b1c30",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "on-surface": "#d3e4fe",
+                    "inverse-on-surface": "#213145",
+                    "surface-container-high": "#1b2b3f",
+                    "primary": "#b4c5ff",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "outline-variant": "#434655",
+                    "error-container": "#93000a",
+                    "on-error-container": "#ffdad6",
+                    "primary-container": "#2563eb",
+                    "on-background": "#d3e4fe",
+                    "surface-variant": "#26364a",
+                    "on-secondary-container": "#00424e",
+                    "mobile-danger": "#FF3B30",
+                    "surface-container": "#102034",
+                    "on-tertiary": "#2b3041",
+                    "inverse-surface": "#d3e4fe",
+                    "dark-bg": "#020617"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "space-3": "12px",
+                    "space-1": "4px",
+                    "edge-mobile": "24px",
+                    "web-margin": "32px",
+                    "touch-target": "52px",
+                    "base": "4px",
+                    "space-4": "16px",
+                    "space-2": "8px"
+            },
+            "fontFamily": {
+                    "label-mobile": ["Inter Tight"],
+                    "body-web": ["Inter Tight"],
+                    "body-mobile": ["Inter Tight"],
+                    "h2-web": ["Inter Tight"],
+                    "hero-mobile": ["Inter Tight"],
+                    "h1-web": ["Inter Tight"],
+                    "tiny-web": ["Inter Tight"],
+                    "display-web": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #031427;
+            font-family: 'Inter Tight', sans-serif;
+            color: #d3e4fe;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .status-pill {
+            animation: pulse-sync 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse-sync {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+            background-size: 200% 100%;
+            animation: shimmer-effect 3s infinite;
+        }
+
+        @keyframes shimmer-effect {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        input:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(0, 102, 255, 0.5);
+        }
+
+        .danger-card {
+            border-left: 4px solid #FF3B30;
+        }
+
+        .bottom-sheet {
+            transform: translateY(100%);
+            animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes slide-up {
+            to { transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface-container-low dark:bg-surface-container-low h-16 flex justify-between items-center px-edge-mobile">
+<div class="flex items-center gap-space-2">
+<img alt="Construction OS Logo" class="w-8 h-8 object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCBQDKu-lJIYJAps3-El5fzpjWGsntRyIfwqrr62vmAqJy4AXbcYcUjnAw4GDuep5qk8mVbT5xceEAz6b3jXkpvn6tN12ScfP775Bp9ehBd5oL_2e29hl-nl6cuW5lhTj8ubaSll5_kEctzXw9HLrpUedebBxpI3L-hF8E-_b86Rq4XqR5n82kfgBgedQcYj5pMYpWnoru9TVhoy42VPxoGkLgQHcr4xZ05fZZVogR1Rn9DVN68HTXCpy-yzRCMpeFjiA">
+<h1 class="font-hero-mobile text-[18px] font-bold tracking-tight text-on-surface uppercase">CONSTRUCTION OS</h1>
+</div>
+<div class="flex items-center gap-space-2">
+<div class="status-pill flex items-center gap-1 bg-sync-active/10 px-2 py-0.5 rounded-full border border-sync-active/20">
+<span class="material-symbols-outlined text-[14px] text-sync-active">sync</span>
+<span class="text-tiny-web text-sync-active uppercase">SYNCED</span>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow pt-24 pb-32 px-edge-mobile space-y-6 overflow-y-auto">
+<!-- Screen Title -->
+<div class="space-y-1">
+
+<p class="font-body-mobile text-label-mobile text-on-surface-variant">การลบบัญชีผู้เช่าจะส่งผลถาวรต่อข้อมูลทั้งหมด</p>
+</div>
+<!-- Danger Warning Card -->
+<div class="danger-card bg-surface-container rounded-xl p-space-4 space-y-4 shadow-lg shimmer">
+<div class="flex items-start gap-space-3">
+<div class="w-12 h-12 rounded-full bg-mobile-danger/10 flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-mobile-danger text-[32px]">warning</span>
+</div>
+<div class="space-y-1">
+<p class="font-label-mobile text-mobile-danger uppercase tracking-wider">คำเตือนสำคัญ</p>
+<p class="font-body-mobile text-on-surface font-semibold">การดำเนินการนี้ไม่สามารถย้อนกลับได้</p>
+</div>
+</div>
+<div class="border-t border-white/5 pt-4 space-y-3">
+<p class="font-label-mobile text-on-surface-variant uppercase text-[11px]">ผลกระทบที่จะเกิดขึ้น:</p>
+<ul class="space-y-3">
+<li class="flex items-center gap-space-2 text-on-surface">
+<span class="material-symbols-outlined text-mobile-danger text-[20px]">dangerous</span>
+<span class="font-body-mobile text-body-web">โครงการทั้งหมดจะถูกลบ</span>
+</li>
+<li class="flex items-center gap-space-2 text-on-surface">
+<span class="material-symbols-outlined text-mobile-danger text-[20px]">history_toggle_off</span>
+<span class="font-body-mobile text-body-web">สัญญาและข้อมูลการเงินจะหายไป</span>
+</li>
+<li class="flex items-center gap-space-2 text-on-surface">
+<span class="material-symbols-outlined text-mobile-danger text-[20px]">person_off</span>
+<span class="font-body-mobile text-body-web">ข้อมูลผู้ใช้งานทั้งหมดจะถูกระงับ</span>
+</li>
+</ul>
+</div>
+</div>
+<!-- Inputs Section -->
+<section class="space-y-space-4">
+<!-- Reason Input -->
+<div class="space-y-2">
+<label class="font-label-mobile text-on-surface-variant text-[12px] uppercase ml-1" for="reason">เหตุผลในการลบ</label>
+<textarea class="w-full bg-surface-container-high border-none rounded-xl p-4 font-body-mobile text-on-surface placeholder-on-surface-variant/40 resize-none" id="reason" placeholder="ระบุเหตุผลในการขอยกเลิกบัญชี..." rows="3"></textarea>
+</div>
+<!-- Verification Input -->
+<div class="space-y-2">
+<label class="font-label-mobile text-on-surface-variant text-[12px] uppercase ml-1" for="verify">ยืนยันโดยการพิมพ์ 'DELETE'</label>
+<input class="w-full h-14 bg-surface-container-high border-none rounded-xl px-4 font-body-mobile text-on-surface placeholder-on-surface-variant/40" id="verify" placeholder="พิมพ์ข้อความยืนยันที่นี่" type="text">
+</div>
+</section>
+<!-- Action Buttons -->
+<div class="flex flex-col gap-space-3 pt-4">
+<button class="w-full h-[52px] bg-mobile-danger text-white font-label-mobile text-lg rounded-xl uppercase tracking-wider flex items-center justify-center gap-2 active:scale-95 transition-all duration-150 shadow-lg shadow-mobile-danger/20 disabled:opacity-50 disabled:grayscale disabled:scale-100" disabled="" id="delete-btn">
+<span class="material-symbols-outlined">delete_forever</span>
+                ลบบัญชีถาวร
+            </button>
+<button class="w-full h-[52px] bg-transparent border-2 border-surface-container-highest text-on-surface font-label-mobile text-lg rounded-xl uppercase tracking-wider active:scale-95 transition-all duration-150">
+                ยกเลิก
+            </button>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 pb-safe h-[72px] bg-surface-container dark:bg-surface-container shadow-lg flex justify-around items-center px-4">
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-bright transition-colors px-4 py-1 rounded-full">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-label-mobile text-label-mobile">Projects</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-bright transition-colors px-4 py-1 rounded-full">
+<span class="material-symbols-outlined">description</span>
+<span class="font-label-mobile text-label-mobile">Reports</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-bright transition-colors px-4 py-1 rounded-full">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-mobile text-label-mobile">Team</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-4 py-1 scale-105 transition-all">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">settings</span>
+<span class="font-label-mobile text-label-mobile">Settings</span>
+</button>
+</nav>
+<!-- Success Feedback Overlay (Hidden by Default) -->
+<div class="fixed inset-0 bg-surface z-[100] hidden flex-col items-center justify-center p-edge-mobile text-center" id="success-overlay">
+<div class="w-24 h-24 rounded-full bg-mobile-success/10 flex items-center justify-center mb-6">
+<span class="material-symbols-outlined text-mobile-success text-6xl">check_circle</span>
+</div>
+<h3 class="font-hero-mobile text-2xl text-on-surface mb-2">บัญชีถูกลบเรียบร้อยแล้ว</h3>
+<p class="font-body-mobile text-on-surface-variant">ระบบกำลังนำท่านออกจากโปรแกรม</p>
+</div>
+<script>
+        // Simple Interaction Logic
+        const verifyInput = document.getElementById('verify');
+        const deleteBtn = document.getElementById('delete-btn');
+        const successOverlay = document.getElementById('success-overlay');
+
+        verifyInput.addEventListener('input', (e) => {
+            if (e.target.value.trim().toUpperCase() === 'DELETE') {
+                deleteBtn.disabled = false;
+                deleteBtn.classList.remove('opacity-50', 'grayscale');
+            } else {
+                deleteBtn.disabled = true;
+                deleteBtn.classList.add('opacity-50', 'grayscale');
+            }
+        });
+
+        deleteBtn.addEventListener('click', () => {
+            if (!deleteBtn.disabled) {
+                // Mock deletion process
+                deleteBtn.innerHTML = '<span class="material-symbols-outlined animate-spin">sync</span> กำลังดำเนินการ...';
+                deleteBtn.disabled = true;
+                
+                setTimeout(() => {
+                    successOverlay.classList.remove('hidden');
+                    successOverlay.classList.add('flex');
+                }, 1500);
+            }
+        });
+
+        // Prevention of accidental touch moves on header/nav
+        document.querySelector('header').addEventListener('touchmove', (e) => e.preventDefault());
+        document.querySelector('nav').addEventListener('touchmove', (e) => e.preventDefault());
+    </script>
+
+
+</body></html>

@@ -1,6 +1,9 @@
 # Feast Feature Store Configuration — Phase 23
 # Online store: Redis (existing cluster)
-# Offline store: PostgreSQL (existing RDS)
+# Offline store: PostgreSQL (existing RDS). NOT ClickHouse: both are Feast contrib (unstable) offline
+#   stores and ClickHouse's own guidance is that a Feast "literal store" underutilises ClickHouse; the
+#   postgres path reuses the existing RDS. ClickHouse analytics are bridged into feast_offline by
+#   dag-update-feature-store. (Reconciles master §Phase 23 Feature Store; decision 2026-07-23.)
 # Registry: PostgreSQL (reuses existing RDS, separate schema)
 # Project: construction-os
 

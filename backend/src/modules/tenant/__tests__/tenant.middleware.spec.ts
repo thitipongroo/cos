@@ -78,7 +78,27 @@ describe('TenantMiddleware', () => {
     await middleware.use(req, res, noop);
     expect(req.tenantCode).toBe('acme_corp');
     expect(req.userId).toBe('user-1');
+    // Shared-DB tenant (STARTER/PROFESSIONAL): no dedicated URL to hand downstream.
+    expect(req.dedicatedDbUrl).toBeUndefined();
     expect(noop).toHaveBeenCalledTimes(1);
+  });
+
+  it('resolves dedicated_db_url for an ENTERPRISE tenant through the cipher helper', async () => {
+    // ENTERPRISE tenants route to their own database (spec §7.1), so this branch decides whether
+    // downstream queries hit the right server at all. A legacy PLAINTEXT value is used here because
+    // decryptDedicatedDbUrl passes those through by design (security review F5b kept both shapes
+    // readable) — it exercises the same call without this unit test needing an encryption key.
+    const url = 'postgresql://enterprise-host/cosdb';
+    (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([
+      { tenant_code: 'big_corp', dedicated_db_url: url },
+    ]);
+    const req = {
+      url: '/api/v1/projects',
+      user: { tenant_id: 'tenant-2', user_id: 'user-2', role: 'PROJECT_MANAGER' },
+    } as unknown as TenantRequest;
+
+    await middleware.use(req, res, noop);
+    expect(req.dedicatedDbUrl).toBe(url);
   });
 });
 

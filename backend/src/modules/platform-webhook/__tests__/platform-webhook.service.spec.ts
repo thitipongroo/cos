@@ -122,4 +122,146 @@ describe('PlatformWebhookService', () => {
       process.env['PLATFORM_WEBHOOK_SECRET'] = TEST_SECRET;
     });
   });
+
+  // The HMAC proves authenticity but not freshness — without a timestamp a captured request could be
+  // replayed forever, re-triggering enterprise provisioning each time.
+  describe('replay protection', () => {
+    const stampedHmac = (ts: string, body: Buffer) =>
+      computeHmac(TEST_SECRET, Buffer.concat([Buffer.from(`${ts}.`, 'utf8'), body]));
+
+    afterEach(() => {
+      delete process.env['WEBHOOK_REPLAY_PROTECTION'];
+    });
+
+    it('accepts a fresh stamped request (signature covers timestamp + body)', async () => {
+      process.env['WEBHOOK_REPLAY_PROTECTION'] = 'true';
+      const rawBody = Buffer.from('{}', 'utf8');
+      const ts = String(Date.now());
+
+      await svc.handleEnterpriseContractSigned(
+        TENANT_ID,
+        undefined,
+        stampedHmac(ts, rawBody),
+        rawBody,
+        ts,
+      );
+
+      expect(tenantService.markAsEnterpriseContracted).toHaveBeenCalled();
+    });
+
+    it('rejects a stale timestamp — the replay case', async () => {
+      process.env['WEBHOOK_REPLAY_PROTECTION'] = 'true';
+      const rawBody = Buffer.from('{}', 'utf8');
+      const ts = String(Date.now() - 10 * 60 * 1000); // 10 min old, window is 5
+
+      await expect(
+        svc.handleEnterpriseContractSigned(
+          TENANT_ID,
+          undefined,
+          stampedHmac(ts, rawBody),
+          rawBody,
+          ts,
+        ),
+      ).rejects.toThrow(UnauthorizedException);
+      expect(tenantService.markAsEnterpriseContracted).not.toHaveBeenCalled();
+    });
+
+    it('rejects a malformed timestamp instead of treating it as epoch 0', async () => {
+      // Date.parse('yesterday') is NaN. Without the isFinite guard the skew check compares against
+      // NaN, `NaN > window` is false, and every replay with a garbage stamp would be ACCEPTED —
+      // the exact opposite of what replay protection is for.
+      process.env['WEBHOOK_REPLAY_PROTECTION'] = 'true';
+      const rawBody = Buffer.from('{}', 'utf8');
+      const ts = 'yesterday';
+
+      await expect(
+        svc.handleEnterpriseContractSigned(
+          TENANT_ID,
+          undefined,
+          stampedHmac(ts, rawBody),
+          rawBody,
+          ts,
+        ),
+      ).rejects.toThrow(UnauthorizedException);
+      expect(tenantService.markAsEnterpriseContracted).not.toHaveBeenCalled();
+    });
+
+    it('accepts an ISO-8601 timestamp, not just epoch milliseconds', async () => {
+      // The header is documented as accepting both shapes; only the all-digits path was covered.
+      process.env['WEBHOOK_REPLAY_PROTECTION'] = 'true';
+      const rawBody = Buffer.from('{}', 'utf8');
+      const ts = new Date().toISOString();
+
+      await expect(
+        svc.handleEnterpriseContractSigned(
+          TENANT_ID,
+          undefined,
+          stampedHmac(ts, rawBody),
+          rawBody,
+          ts,
+        ),
+      ).resolves.toMatchObject({ tenantId: TENANT_ID, message: 'Webhook accepted' });
+    });
+
+    it('rejects a timestamp far in the future', async () => {
+      process.env['WEBHOOK_REPLAY_PROTECTION'] = 'true';
+      const rawBody = Buffer.from('{}', 'utf8');
+      const ts = String(Date.now() + 10 * 60 * 1000);
+
+      await expect(
+        svc.handleEnterpriseContractSigned(
+          TENANT_ID,
+          undefined,
+          stampedHmac(ts, rawBody),
+          rawBody,
+          ts,
+        ),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('rejects a timestamp swapped for a different one than was signed', async () => {
+      process.env['WEBHOOK_REPLAY_PROTECTION'] = 'true';
+      const rawBody = Buffer.from('{}', 'utf8');
+      const signedTs = String(Date.now());
+      const sentTs = String(Date.now() - 1000);
+
+      await expect(
+        svc.handleEnterpriseContractSigned(
+          TENANT_ID,
+          undefined,
+          stampedHmac(signedTs, rawBody),
+          rawBody,
+          sentTs,
+        ),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('requires the header once enforcement is on', async () => {
+      process.env['WEBHOOK_REPLAY_PROTECTION'] = 'true';
+      const rawBody = Buffer.from('{}', 'utf8');
+
+      await expect(
+        svc.handleEnterpriseContractSigned(
+          TENANT_ID,
+          undefined,
+          computeHmac(TEST_SECRET, rawBody),
+          rawBody,
+          '',
+        ),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('still accepts legacy unstamped requests while enforcement is off (rollout gate)', async () => {
+      const rawBody = Buffer.from('{}', 'utf8');
+
+      await svc.handleEnterpriseContractSigned(
+        TENANT_ID,
+        undefined,
+        computeHmac(TEST_SECRET, rawBody),
+        rawBody,
+      );
+
+      expect(tenantService.markAsEnterpriseContracted).toHaveBeenCalled();
+    });
+  });
 });

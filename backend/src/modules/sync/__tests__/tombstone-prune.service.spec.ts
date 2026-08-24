@@ -12,7 +12,12 @@ jest.mock('@prisma/client', () => ({
   })),
 }));
 
-import { TombstonePruneService } from '../tombstone-prune.service';
+import {
+  TombstonePruneService,
+  TOMBSTONE_PRUNE_JOB,
+  TOMBSTONE_PRUNE_LEASE_SECONDS,
+} from '../tombstone-prune.service';
+import { makeLockDouble } from '../../../shared/scheduling/__tests__/lock-double';
 
 describe('TombstonePruneService', () => {
   let service: TombstonePruneService;
@@ -21,7 +26,7 @@ describe('TombstonePruneService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     delete process.env['SYNC_TOMBSTONE_RETENTION_DAYS'];
-    service = new TombstonePruneService();
+    service = new TombstonePruneService(makeLockDouble().service);
   });
 
   afterAll(() => {
@@ -60,5 +65,29 @@ describe('TombstonePruneService', () => {
   it('disconnects the privileged client on module destroy', async () => {
     await service.onModuleDestroy();
     expect(mockDisconnect).toHaveBeenCalledTimes(1);
+  });
+});
+
+// The DELETE is idempotent, so this was never wrong the way the notification jobs were — but three
+// replicas running one full-table DELETE is triple the lock contention and WAL, and each one then
+// logs a fraction of the real row count.
+describe('TombstonePruneService — single-replica prune', () => {
+  it('issues no DELETE on a replica that does not hold the lease, and reports null', async () => {
+    const lock = makeLockDouble(false);
+    const other = new TombstonePruneService(lock.service);
+
+    await expect(other.pruneOldTombstones()).resolves.toBeNull();
+    expect(mockExecuteRaw).not.toHaveBeenCalled();
+  });
+
+  it('claims the lease under the job name', async () => {
+    mockExecuteRaw.mockResolvedValue(0);
+    const lock = makeLockDouble();
+    const other = new TombstonePruneService(lock.service);
+
+    await other.pruneOldTombstones();
+    expect(lock.calls).toEqual([
+      { jobName: TOMBSTONE_PRUNE_JOB, leaseSeconds: TOMBSTONE_PRUNE_LEASE_SECONDS },
+    ]);
   });
 });

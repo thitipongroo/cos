@@ -58,9 +58,6 @@
     "seed": {
       "cache": false,
       "dependsOn": ["migrate"]
-    },
-    "proto-gen": {
-      "cache": false
     }
   }
 }

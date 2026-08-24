@@ -10,15 +10,23 @@ import {
   Inject,
   NotFoundException,
   UnprocessableEntityException,
+  ConflictException,
 } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
 import { randomUUID } from 'crypto';
 import { Client as OpenSearchClient } from '@opensearch-project/opensearch';
+import { EventOutboxService } from '../../shared/events/event-outbox.service';
 import { createLogger } from '@cos/logger';
 import { buildOutboxEvent } from '../../shared/outbox/outbox.types';
 import { SiteOpsRepository } from './site-ops.repository';
-import type { IssueRow, SiteReportRow, InspectionRow } from './site-ops.repository';
+import type {
+  IssueRow,
+  SiteReportRow,
+  InspectionRow,
+  MaterialConsumptionRow,
+} from './site-ops.repository';
+import { UUID_PATTERN } from '../../shared/prisma/assert-safe-tenant-id';
 import { resolveReportConflict, resolveIssueConflict } from './conflict-handler';
 import type { ConflictStatus } from './conflict-handler';
 import type { CreateSiteReportDto } from './dto/create-site-report.dto';
@@ -33,6 +41,13 @@ import type { CreateMaterialConsumptionDto } from './dto/create-material-consump
 const logger = createLogger('site-ops-service');
 const OS_REPORTS_INDEX = 'site-reports';
 const OS_ISSUES_INDEX = 'site-issues';
+/**
+ * Hours recorded for a manpower line whose caller sent none. site_ops.manpower_logs.hours_worked is
+ * NOT NULL with no default, and the daily-report form collects headcount per trade without hours, so
+ * omitting it must not fail the insert. A full shift is the honest stand-in for "the trade worked
+ * today"; a caller that knows better (a timesheet import) sends the real figure and overrides it.
+ */
+const DEFAULT_SHIFT_HOURS = 8;
 
 @Injectable({ scope: Scope.REQUEST })
 export class SiteOpsService {
@@ -53,6 +68,7 @@ export class SiteOpsService {
       userId?: string;
       correlationId?: string;
     },
+    private readonly outbox: EventOutboxService,
   ) {
     this.correlationId = request.correlationId ?? randomUUID();
     this.openSearch = new OpenSearchClient({
@@ -72,12 +88,15 @@ export class SiteOpsService {
         report_date: dto.report_date,
         summary: dto.summary ?? null,
         blockers: dto.blockers ?? null,
+        blocker_category: dto.blocker_category ?? null,
         weather: dto.weather ?? null,
         manpower_count: dto.manpower_count ?? null,
+        shift: dto.shift ?? null,
         client_submitted_at: dto.client_submitted_at ?? null,
         latitude: dto.latitude ?? null,
         longitude: dto.longitude ?? null,
       },
+      // site.report.created.v1 rides the INSERT (§35.13 ESC-13), so it is not published again below.
       this.outboxEvent('site.report.created.v1', {
         report_id: reportId,
         project_id: dto.project_id,
@@ -88,6 +107,23 @@ export class SiteOpsService {
         photo_count: 0,
       }),
     );
+
+    // Per-trade breakdown → site_ops.manpower_logs. Written against the row's OWN report_id, not
+    // `reportId`: createSiteReport upserts on (project_id, report_date, submitted_by), so resubmitting
+    // the same day returns the EXISTING report and the freshly generated UUID is discarded. Keying the
+    // logs off the generated id would orphan every line on a resubmit.
+    if (dto.manpower_lines) {
+      await this.repo.replaceManpowerLogs(
+        report.report_id,
+        dto.manpower_lines.map((line) => ({
+          trade_type: line.trade_type,
+          worker_count: line.worker_count,
+          // The column is NOT NULL; the mockup's form collects headcount per trade and no hours, so a
+          // standard 8-hour shift stands in when the caller omits it (spec 11 manpower_logs).
+          hours_worked: line.hours_worked ?? DEFAULT_SHIFT_HOURS,
+        })),
+      );
+    }
 
     logger.info({
       event: 'site-report.created',
@@ -104,9 +140,16 @@ export class SiteOpsService {
   async getSiteReport(reportId: string) {
     const report = await this.repo.findReportById(reportId);
     if (!report) {
-      throw new NotFoundException({ code: 'COS-SITE-001', message: 'Site report not found' });
+      throw new NotFoundException({
+        error: { code: 'COS-SITE-001', message: 'Site report not found' },
+      });
     }
-    return report;
+    // The per-trade breakdown is returned with the detail, not the list: it is one query per report,
+    // and a list of 50 reports would issue 50 of them for data no list view shows. Additive field, so
+    // no version bump (QM-2) — clients that ignore it are unaffected. A report with no breakdown
+    // recorded gets `[]`, which is the truth, not an error.
+    const manpower_lines = await this.repo.listManpowerLogs(reportId);
+    return { ...report, manpower_lines };
   }
 
   async listSiteReports(params: {
@@ -134,8 +177,20 @@ export class SiteOpsService {
       conflict_status: ConflictStatus;
     }> = [];
 
+    // One lookup for the whole batch instead of one per item. This loop used to call
+    // findReportById(item.client_id) on every element — each a separate round trip inside its own
+    // db.run transaction — so a device coming back from a week offline opened one transaction per
+    // queued report before performing a single write.
+    //
+    // Only well-formed UUIDs are sent: client_id comes from the device, and one malformed value
+    // would break the `::uuid[]` cast for the entire batch. A non-UUID simply misses the map and
+    // takes the create path, which is exactly what the old per-item `.catch(() => null)` did.
+    const existingById = await this.repo
+      .findReportsByIds(dto.items.map((i) => i.client_id).filter((id) => UUID_PATTERN.test(id)))
+      .catch(() => new Map<string, SiteReportRow>());
+
     for (const item of dto.items) {
-      const existing = await this.repo.findReportById(item.client_id).catch(() => null);
+      const existing = existingById.get(item.client_id) ?? null;
 
       if (!existing) {
         // New report — accept directly
@@ -181,6 +236,36 @@ export class SiteOpsService {
         item.client_submitted_at ?? new Date().toISOString(),
       );
 
+      // Persist the resolved row. This write used to be missing entirely: the branch computed a
+      // resolution, wrote a conflict record when flagged, and returned ACCEPTED without ever
+      // touching the report — so every offline EDIT of an existing report was acknowledged and
+      // then silently discarded (clients drop their pending queue on ACCEPTED). Only the
+      // create-path was ever wired up. `should_persist` comes from the resolver so the LWW rule
+      // stays in one place: false means resolved_payload IS the untouched server row.
+      if (resolution.should_persist) {
+        const resolved = resolution.resolved_payload;
+        const updated = await this.repo.updateSiteReport(existing.report_id, {
+          summary: (resolved['summary'] as string | undefined) ?? null,
+          blockers: (resolved['blockers'] as string | undefined) ?? null,
+          weather: (resolved['weather'] as string | undefined) ?? null,
+          manpower_count: (resolved['manpower_count'] as number | undefined) ?? null,
+          client_submitted_at: (resolved['client_submitted_at'] as string | undefined) ?? null,
+          latitude: (resolved['latitude'] as number | undefined) ?? null,
+          longitude: (resolved['longitude'] as number | undefined) ?? null,
+        });
+        // The row was read a moment ago under the same tenant context; a null here means it was
+        // deleted in between. Never report ACCEPTED for a write that did not land — that is the
+        // exact failure mode this branch used to have.
+        if (!updated) {
+          results.push({
+            client_id: item.client_id,
+            report_id: existing.report_id,
+            conflict_status: 'CONFLICT_REJECTED',
+          });
+          continue;
+        }
+      }
+
       if (resolution.conflict_status === 'CONFLICT_FLAGGED') {
         const conflictId = randomUUID();
         await this.repo.createConflictRecord(
@@ -213,22 +298,59 @@ export class SiteOpsService {
 
   // ── Issues ────────────────────────────────────────────────────────────────
 
+  /**
+   * Raise an issue, at most once per `client_id`.
+   *
+   * The id half of this has been here since G-M11 — a client UUID becomes the `issue_id` so that
+   * photos captured offline against it link up on sync. What was missing until 2026-08-19 is that
+   * the write was not IDEMPOTENT on that id: `/sync/push` replays a queued create after a timeout or
+   * any retry, and the replay hit the primary key and came back a 500, which the device's outbox
+   * treats as a retryable failure. Five attempts later §17.2 discarded the item. The issue existed on
+   * the server the whole time, and the person who raised it was never told anything.
+   *
+   * The existence check comes first so a replay does not re-read the issue-number sequence or reach
+   * the insert at all; the ON CONFLICT in the repository still covers two replays racing each other.
+   */
   async createIssue(dto: CreateIssueDto) {
     // Use the client-provided id when present (offline create → photo linkage, G-M11); else generate.
     const issueId = dto.client_id ?? randomUUID();
-    const issue = await this.repo.createIssue(
+
+    if (dto.client_id) {
+      const existing = await this.repo.findIssueById(dto.client_id);
+      if (existing) {
+        logger.info({
+          event: 'issue.created.duplicate_ignored',
+          issue_id: dto.client_id,
+          tenant_id: this.tenantId,
+          trace_id: this.correlationId,
+        });
+        return existing;
+      }
+    }
+
+    // Server assigns the human-readable number (ADR-069) — not the offline client, which cannot know
+    // the tenant's next ISS-<year>-<seq>.
+    const issueNumber = await this.repo.nextIssueNumber(new Date().getFullYear());
+    const created = await this.repo.createIssue(
       {
         issue_id: issueId,
+        issue_number: issueNumber,
         project_id: dto.project_id,
         report_id: dto.report_id ?? null,
         title: dto.title,
         description: dto.description ?? null,
         severity: dto.severity,
+        issue_type: dto.issue_type ?? null, // null → the column DEFAULT 'GENERAL' (see repository)
         assigned_to: dto.assigned_to ?? null,
+        // The same value the event carries — now persisted on the row too, so a PDPA export can find
+        // it. The event stream is a publish queue, not a queryable record of who raised what.
+        created_by: this.userId,
         client_submitted_at: dto.client_submitted_at ?? null,
         latitude: dto.latitude ?? null,
         longitude: dto.longitude ?? null,
       },
+      // Written inside the INSERT's transaction (§35.13 ESC-13). On a replayed create the INSERT
+      // does nothing and returns no row, so no second event is written either.
       this.outboxEvent('site.issue.created.v1', {
         issue_id: issueId,
         project_id: dto.project_id,
@@ -238,6 +360,22 @@ export class SiteOpsService {
         created_by: this.userId,
       }),
     );
+
+    // Nothing returned means a concurrent replay inserted it between the check above and the INSERT.
+    if (!created) {
+      const existing = await this.repo.findIssueById(issueId);
+      if (existing) return existing;
+      // The id conflicted but is invisible here, so it belongs to another tenant — RLS hides the row
+      // while the primary key still rejects the insert.
+      throw new ConflictException({
+        error: {
+          code: 'COS-SITE-409',
+          message: 'client_id is already in use',
+          messageKey: 'siteOps.issue.duplicateId',
+        },
+      });
+    }
+    const issue = created;
 
     logger.info({
       event: 'issue.created',
@@ -256,7 +394,7 @@ export class SiteOpsService {
   async escalateIssue(issueId: string) {
     const issue = await this.repo.findIssueById(issueId);
     if (!issue) {
-      throw new NotFoundException({ code: 'COS-SITE-002', message: 'Issue not found' });
+      throw new NotFoundException({ error: { code: 'COS-SITE-002', message: 'Issue not found' } });
     }
     // Non-destructive by design: no issue field changes, so there is no row to be atomic *with*.
     // The outbox is still used, as the durable at-least-once relay the direct publish was not.
@@ -335,7 +473,7 @@ export class SiteOpsService {
   async updateIssue(issueId: string, dto: UpdateIssueDto) {
     const existing = await this.repo.findIssueById(issueId);
     if (!existing) {
-      throw new NotFoundException({ code: 'COS-SITE-002', message: 'Issue not found' });
+      throw new NotFoundException({ error: { code: 'COS-SITE-002', message: 'Issue not found' } });
     }
 
     // Apply FIELD_LEVEL_MERGE conflict strategy
@@ -405,7 +543,9 @@ export class SiteOpsService {
   async submitInspection(dto: SubmitInspectionDto) {
     const checklist = await this.repo.findChecklistById(dto.checklist_id);
     if (!checklist) {
-      throw new NotFoundException({ code: 'COS-SITE-003', message: 'Safety checklist not found' });
+      throw new NotFoundException({
+        error: { code: 'COS-SITE-003', message: 'Safety checklist not found' },
+      });
     }
 
     const inspectionId = randomUUID();
@@ -452,6 +592,9 @@ export class SiteOpsService {
         inspected_at: dto.inspected_at,
         notes: dto.notes ?? null,
         issue_severity: dto.issue_severity ?? null, // spec 11 §517 — set on FAILED/conditional
+        // Drawn attestation mark (migration 20260808000002). Absent → NULL, i.e. "not signed"; the
+        // authoritative attribution stays `inspected_by` + `inspected_at`, which are always set.
+        signature: dto.signature ?? null,
         latitude: dto.latitude ?? null,
         longitude: dto.longitude ?? null,
       },
@@ -482,7 +625,9 @@ export class SiteOpsService {
   async getInspection(inspectionId: string): Promise<InspectionRow> {
     const inspection = await this.repo.findInspectionById(inspectionId);
     if (!inspection) {
-      throw new NotFoundException({ code: 'COS-SITE-006', message: 'Inspection not found' });
+      throw new NotFoundException({
+        error: { code: 'COS-SITE-006', message: 'Inspection not found' },
+      });
     }
     return inspection;
   }
@@ -495,8 +640,11 @@ export class SiteOpsService {
     const inspection = await this.getInspection(inspectionId);
     if (inspection.status === 'PASSED') {
       throw new UnprocessableEntityException({
-        code: 'COS-SITE-007',
-        message: 'Inspection already PASSED (terminal); create a new inspection for re-inspection',
+        error: {
+          code: 'COS-SITE-007',
+          message:
+            'Inspection already PASSED (terminal); create a new inspection for re-inspection',
+        },
       });
     }
 
@@ -550,10 +698,17 @@ export class SiteOpsService {
   async createMaterialConsumption(reportId: string, dto: CreateMaterialConsumptionDto) {
     const report = await this.repo.findReportById(reportId);
     if (!report) {
-      throw new NotFoundException({ code: 'COS-SITE-005', message: 'Site report not found' });
+      throw new NotFoundException({
+        error: { code: 'COS-SITE-005', message: 'Site report not found' },
+      });
     }
     const consumptionId = randomUUID();
-    const materialId = randomUUID();
+    // Resolve the typed name against the tenant's material master so the consumption carries a real
+    // material id wherever possible (Phase 24 needs it to price carbon). The mobile app is
+    // offline-first and has no master-data cache, so an unknown name is expected, not an error —
+    // fall back to the historical random id and let the consumption through unchanged.
+    const masterMaterialId = await this.repo.findMaterialIdByName(dto.material_name);
+    const materialId = masterMaterialId ?? randomUUID();
     const row = await this.repo.insertMaterialConsumption(
       {
         consumption_id: consumptionId,
@@ -585,15 +740,76 @@ export class SiteOpsService {
       tenant_id: this.tenantId,
       trace_id: this.correlationId,
     });
+    if (masterMaterialId) {
+      await this.recordEmbodiedCarbon(row, masterMaterialId);
+    }
     return row;
+  }
+
+  /**
+   * Phase 24 (§33.4) — embodied carbon (GHG Protocol Scope 3) for one material consumption.
+   *
+   * Deliberately silent when there is nothing to price: §33.4 says the platform ships no factor
+   * database, so a tenant that has loaded none simply produces no carbon records. Consumption
+   * logging must never fail because carbon accounting is unconfigured.
+   *
+   * The factor value and its source are copied onto the record rather than joined at read time —
+   * a tenant may revise a factor later and an emitted record must stay reproducible for audit.
+   */
+  private async recordEmbodiedCarbon(
+    row: MaterialConsumptionRow,
+    materialId: string,
+  ): Promise<void> {
+    const factor = await this.repo.findCarbonFactor(materialId);
+    if (!factor) return;
+
+    const record = await this.repo.insertCarbonRecord({
+      carbon_record_id: randomUUID(),
+      project_id: row.project_id,
+      consumption_id: row.consumption_id,
+      material_id: materialId,
+      quantity_consumed: row.quantity,
+      unit: row.unit,
+      carbon_factor: factor.carbon_factor,
+      carbon_factor_source: factor.source,
+    });
+    // Null means the unique index on consumption_id rejected a duplicate — a replay. Do not
+    // re-emit, or the analytics store would double-count the project's footprint.
+    if (!record) return;
+
+    await this.emitEvent('carbon.record.created.v1', {
+      carbon_record_id: record.carbon_record_id,
+      project_id: record.project_id,
+      consumption_id: record.consumption_id,
+      material_id: record.material_id,
+      quantity_consumed: record.quantity_consumed,
+      unit: record.unit,
+      carbon_factor: record.carbon_factor,
+      carbon_factor_source: record.carbon_factor_source,
+      carbon_kgco2e: record.carbon_kgco2e,
+      // §33.4 GHG Protocol: embodied carbon in materials (EN 15804 modules A1–A3) is Scope 3.
+      // Scope 1 (on-site fuel) and Scope 2 (grid electricity) come from equipment/workforce
+      // telemetry, not from material consumption, so this producer only ever emits Scope 3.
+      ghg_scope: 'SCOPE_3',
+      recorded_at: new Date(record.recorded_at).toISOString(),
+    });
+    logger.info({
+      event: 'carbon.record.created',
+      carbon_record_id: record.carbon_record_id,
+      consumption_id: record.consumption_id,
+      tenant_id: this.tenantId,
+      trace_id: this.correlationId,
+    });
   }
 
   async resolveConflict(conflictId: string) {
     const record = await this.repo.resolveConflictRecord(conflictId, this.userId);
     if (!record) {
       throw new UnprocessableEntityException({
-        code: 'COS-SITE-004',
-        message: 'Conflict record not found or already resolved',
+        error: {
+          code: 'COS-SITE-004',
+          message: 'Conflict record not found or already resolved',
+        },
       });
     }
     logger.info({
@@ -620,6 +836,23 @@ export class SiteOpsService {
       tenantId: this.tenantId,
       actorId: this.userId,
       correlationId: this.correlationId,
+      payload,
+    });
+  }
+
+  /**
+   * Queue a domain event with no row of its own to anchor to. Durable and off the request path
+   * (EventOutboxService), but not transactional: prefer outboxEvent() above whenever the event
+   * accompanies a write this service controls.
+   */
+  private async emitEvent(eventType: string, payload: Record<string, unknown>): Promise<void> {
+    await this.outbox.publish({
+      event_type: eventType,
+      event_version: '1.0',
+      tenant_id: this.tenantId,
+      actor_id: this.userId,
+      occurred_at: new Date().toISOString(),
+      correlation_id: this.correlationId,
       payload,
     });
   }

@@ -4,6 +4,7 @@
 // Sets x-request-id response header so callers can correlate logs.
 
 import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import { Observable } from 'rxjs';
 
 interface IncomingRequest {
@@ -15,14 +16,6 @@ interface OutgoingResponse {
   header(name: string, value: string): void;
 }
 
-function uuidV4(): string {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === 'x' ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
-}
-
 @Injectable()
 export class RequestIdInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
@@ -31,7 +24,8 @@ export class RequestIdInterceptor implements NestInterceptor {
     const response = ctx.getResponse<OutgoingResponse>();
 
     const incoming = request.headers['x-request-id'];
-    const requestId = (Array.isArray(incoming) ? incoming[0] : incoming) ?? uuidV4();
+    // crypto.randomUUID() — CSPRNG, RFC-4122 v4 (replaces a Math.random() generator).
+    const requestId = (Array.isArray(incoming) ? incoming[0] : incoming) ?? randomUUID();
 
     request.requestId = requestId;
     response.header('x-request-id', requestId);

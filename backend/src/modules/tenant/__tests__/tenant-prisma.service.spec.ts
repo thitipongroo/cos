@@ -30,6 +30,16 @@ import { TenantPrismaService } from '../prisma/tenant-prisma.service';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 
+// createPrismaClient now hands PrismaPg a SHARED pg.Pool (one per connection string) instead of a
+// bare `{ connectionString }` config — see shared/prisma/create-prisma-client.ts. What these tests
+// care about is unchanged and still worth asserting: WHICH datasource each client was routed to.
+// Read it back off the pool the adapter was constructed with.
+function adapterUrl(nth: number): string | undefined {
+  const arg = (PrismaPg as jest.Mock).mock.calls[nth]?.[0] as
+    { options?: { connectionString?: string }; connectionString?: string } | undefined;
+  return arg?.options?.connectionString ?? arg?.connectionString;
+}
+
 const VALID_UUID = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
 
 // Run fn inside a CLS context, optionally seeding the tenant context the service reads. Passing
@@ -132,25 +142,19 @@ describe('TenantPrismaService', () => {
       delete process.env['DATABASE_URL'];
       stubClient();
       await runInCls({ tenantId: VALID_UUID }, () => new TenantPrismaService().run(noop));
-      expect(PrismaPg).toHaveBeenCalledWith({ connectionString: 'postgresql://app@localhost/app' });
+      expect(adapterUrl(0)).toBe('postgresql://app@localhost/app');
     });
 
-    it('falls back to DATABASE_URL when APP_DATABASE_URL is unset', async () => {
+    it('throws when APP_DATABASE_URL is unset — never falls back to the superuser DATABASE_URL', async () => {
+      // H1: a shared tenant with no app-role URL must fail loudly rather than connect as a
+      // RLS-bypassing superuser. DATABASE_URL being present must NOT rescue it.
       delete process.env['APP_DATABASE_URL'];
       process.env['DATABASE_URL'] = 'postgresql://super@localhost/db';
       stubClient();
-      await runInCls({ tenantId: VALID_UUID }, () => new TenantPrismaService().run(noop));
-      expect(PrismaPg).toHaveBeenCalledWith({
-        connectionString: 'postgresql://super@localhost/db',
-      });
-    });
-
-    it('falls back to empty string when neither env var is set', async () => {
-      delete process.env['APP_DATABASE_URL'];
-      delete process.env['DATABASE_URL'];
-      stubClient();
-      await runInCls({ tenantId: VALID_UUID }, () => new TenantPrismaService().run(noop));
-      expect(PrismaPg).toHaveBeenCalledWith({ connectionString: '' });
+      await expect(
+        runInCls({ tenantId: VALID_UUID }, () => new TenantPrismaService().run(noop)),
+      ).rejects.toThrow(/APP_DATABASE_URL is not set/);
+      expect(PrismaPg).not.toHaveBeenCalled();
     });
 
     it('uses the dedicated DB URL when present (enterprise tenant)', async () => {
@@ -160,7 +164,17 @@ describe('TenantPrismaService', () => {
       await runInCls({ tenantId: VALID_UUID, dedicatedDbUrl: dedicated }, () =>
         new TenantPrismaService().run(noop),
       );
-      expect(PrismaPg).toHaveBeenCalledWith({ connectionString: dedicated });
+      expect(adapterUrl(0)).toBe(dedicated);
+    });
+
+    it('uses the dedicated DB URL even when APP_DATABASE_URL is unset (enterprise never needs it)', async () => {
+      delete process.env['APP_DATABASE_URL'];
+      stubClient();
+      const dedicated = 'postgresql://app@dedicated/ent';
+      await runInCls({ tenantId: VALID_UUID, dedicatedDbUrl: dedicated }, () =>
+        new TenantPrismaService().run(noop),
+      );
+      expect(adapterUrl(0)).toBe(dedicated);
     });
 
     it('reuses a cached client for the same URL across runs', async () => {

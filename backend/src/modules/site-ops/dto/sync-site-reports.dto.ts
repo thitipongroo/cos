@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import {
   IsArray,
+  ArrayMaxSize,
   ValidateNested,
   IsString,
   IsOptional,
@@ -22,8 +23,12 @@ export class SyncItemDto extends CreateSiteReportDto {
 }
 
 export class SyncSiteReportsDto {
-  @ApiProperty({ type: [SyncItemDto] })
+  // Each item costs a read plus a write, run sequentially, so an unbounded batch is an unbounded
+  // request. A device syncing a longer backlog sends several batches — which is also what the client
+  // must already do to make progress across a flaky link.
+  @ApiProperty({ type: [SyncItemDto], maxItems: 200 })
   @IsArray()
+  @ArrayMaxSize(200)
   @ValidateNested({ each: true })
   @Type(() => SyncItemDto)
   items!: SyncItemDto[];

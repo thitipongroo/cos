@@ -13,6 +13,8 @@ export type * from './events/construction.project.created.v1';
 export type * from './events/construction.project.updated.v1';
 export type * from './events/construction.project.status_changed.v1';
 export type * from './events/construction.project.archived.v1';
+export type * from './events/construction.project.risk_raised.v1';
+export type * from './events/construction.project.risk_status_changed.v1';
 export type * from './events/construction.boq.version_created.v1';
 export type * from './events/construction.boq.version_approved.v1';
 export type * from './events/construction.boq.created.v1';

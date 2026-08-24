@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="th"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>Security Policy | Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-tertiary-container": "#eeefff",
+                    "mobile-success": "#00C853",
+                    "outline": "#8d90a0",
+                    "mobile-warning": "#FF9500",
+                    "surface-container-high": "#1b2b3f",
+                    "surface-tint": "#b4c5ff",
+                    "secondary-fixed": "#acedff",
+                    "background": "#031427",
+                    "dark-surface": "#0F172A",
+                    "tertiary": "#c1c5dc",
+                    "surface": "#031427",
+                    "inverse-on-surface": "#213145",
+                    "sync-active": "#FFD60A",
+                    "on-primary-container": "#eeefff",
+                    "primary-container": "#2563eb",
+                    "inverse-surface": "#d3e4fe",
+                    "on-error": "#690005",
+                    "outline-variant": "#434655",
+                    "on-error-container": "#ffdad6",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "surface-container-low": "#0b1c30",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "error": "#ffb4ab",
+                    "surface-container-highest": "#26364a",
+                    "tertiary-fixed": "#dee1f9",
+                    "on-secondary": "#003640",
+                    "mobile-primary": "#0066FF",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "surface-container-lowest": "#000f21",
+                    "tertiary-container": "#686c80",
+                    "surface-bright": "#2a3a4f",
+                    "surface-dim": "#031427",
+                    "inverse-primary": "#0053db",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "on-primary-fixed": "#00174b",
+                    "sync-pending": "#94A3B8",
+                    "mobile-danger": "#FF3B30",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "secondary": "#4cd7f6",
+                    "primary-fixed": "#dbe1ff",
+                    "on-secondary-container": "#00424e",
+                    "on-tertiary": "#2b3041",
+                    "surface-container": "#102034",
+                    "secondary-container": "#03b5d3",
+                    "primary": "#b4c5ff",
+                    "on-primary": "#002a78",
+                    "dark-bg": "#020617",
+                    "surface-variant": "#26364a",
+                    "on-surface-variant": "#c3c6d7",
+                    "error-container": "#93000a",
+                    "on-tertiary-fixed": "#161b2b",
+                    "on-secondary-fixed": "#001f26",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "on-surface": "#d3e4fe",
+                    "on-background": "#d3e4fe"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "edge-mobile": "24px",
+                    "space-2": "8px",
+                    "touch-target": "52px",
+                    "space-4": "16px",
+                    "space-3": "12px",
+                    "base": "4px",
+                    "web-margin": "32px",
+                    "space-1": "4px"
+            },
+            "fontFamily": {
+                    "body-web": ["Inter Tight"],
+                    "tiny-web": ["Inter Tight"],
+                    "label-mobile": ["Inter Tight"],
+                    "display-web": ["Inter Tight"],
+                    "body-mobile": ["Inter Tight"],
+                    "h1-web": ["Inter Tight"],
+                    "hero-mobile": ["Inter Tight"],
+                    "h2-web": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            font-family: 'Inter Tight', sans-serif;
+            background-color: #031427;
+            color: #d3e4fe;
+            -webkit-font-smoothing: antialiased;
+        }
+        .bento-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+        .industrial-card {
+            background: #102034;
+            border-left: 4px solid #2563eb;
+            transition: all 0.2s ease-in-out;
+        }
+        .industrial-card:active {
+            transform: scale(0.98);
+            background: #1b2b3f;
+        }
+        .status-pill {
+            background: rgba(0, 200, 83, 0.1);
+            color: #00C853;
+            border: 1px solid rgba(0, 200, 83, 0.2);
+        }
+        .shimmer {
+            background: linear-gradient(90deg, #102034 25%, #1b2b3f 50%, #102034 75%);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .safe-bottom {
+            padding-bottom: calc(env(safe-area-inset-bottom) + 16px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="dark overflow-x-hidden">
+<!-- Top Navigation Header -->
+<header class="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-edge-mobile h-touch-target bg-surface-dim dark:bg-surface-container-lowest">
+<div class="flex items-center gap-space-2">
+<button class="flex items-center justify-center w-10 h-10 hover:bg-surface-bright/10 active:scale-95 transition-transform" onclick="window.history.back()">
+<span class="material-symbols-outlined text-primary">arrow_back</span>
+</button>
+<div class="flex flex-col">
+<span class="font-display-web text-[14px] leading-tight font-bold text-primary tracking-tighter">CONSTRUCTION OS</span>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[10px] text-mobile-success" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="text-[10px] font-bold text-mobile-success uppercase tracking-widest">Synced</span>
+</div>
+</div>
+</div>
+<div class="w-10 h-10 rounded-full border border-primary/20 flex items-center justify-center overflow-hidden bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a corporate IT administrator with a serious expression, shot in low-key industrial office lighting. The aesthetic is dark and moody with blue highlights reflecting off a glass background, conveying a high-tech security atmosphere." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDsqdbxiie5pMjNUdThULvXKcAnt3QPaScZN1b3N_e2mAlpp54knhd9Xaqbp_J35m25DbToT2gRyEFD4Lk7TXwBUMwts3vzatSQ-DZMUMtu8B6uWpdVjbY1wOVc_GAJJfgm0ortzszUmv64JE_qLeIxJV-BWdsF_GhoXUQ5XGnrOgm10irDjDzkFjUaLHD74xRvBDx5MjuH0yoWiHnOD1QDpBBVneGbBSE94AumASgjnFKTTEiBZ65u"/>
+</div>
+</header>
+<main class="pt-[72px] px-edge-mobile pb-32">
+<!-- Main Title Section -->
+<section class="mt-space-4 mb-space-4">
+<h1 class="font-hero-mobile text-hero-mobile text-on-surface tracking-tight">นโยบายความปลอดภัย</h1>
+<p class="font-body-mobile text-body-mobile text-on-surface-variant opacity-80 mt-1">ข้อกำหนดและมาตรฐานความปลอดภัยของข้อมูลองค์กร</p>
+</section>
+<!-- Section 1: Data Security -->
+<div class="mt-8">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-secondary text-xl">shield</span>
+<h2 class="font-h1-web text-h1-web-mobile uppercase tracking-widest text-on-surface-variant text-sm">การรักษาความปลอดภัยข้อมูล</h2>
+</div>
+<div class="bento-grid">
+<!-- Encryption Item -->
+<div class="industrial-card p-space-4 rounded-r-xl flex items-start justify-between">
+<div>
+<h3 class="font-label-mobile text-label-mobile text-on-surface">Data Encryption</h3>
+<p class="text-xs text-on-surface-variant mt-1">มาตรฐานการเข้ารหัส AES-256 (At Rest &amp; Transit)</p>
+</div>
+<span class="material-symbols-outlined text-mobile-success" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+</div>
+<!-- Sovereignty Item -->
+<div class="industrial-card p-space-4 rounded-r-xl flex items-start justify-between">
+<div>
+<h3 class="font-label-mobile text-label-mobile text-on-surface">Thailand Data Sovereignty</h3>
+<p class="text-xs text-on-surface-variant mt-1">จัดเก็บข้อมูลในศูนย์ข้อมูลภายในประเทศไทย (PDPA Compliance)</p>
+</div>
+<span class="material-symbols-outlined text-primary">location_on</span>
+</div>
+</div>
+</div>
+<!-- Section 2: Access Control -->
+<div class="mt-10">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-secondary text-xl">lock_open</span>
+<h2 class="font-h1-web text-h1-web-mobile uppercase tracking-widest text-on-surface-variant text-sm">การเข้าถึงระบบ</h2>
+</div>
+<div class="bento-grid">
+<!-- MFA -->
+<div class="industrial-card p-space-4 rounded-r-xl">
+<div class="flex justify-between items-start mb-2">
+<h3 class="font-label-mobile text-label-mobile text-on-surface">MFA Enforcement</h3>
+<span class="status-pill px-2 py-0.5 rounded text-[10px] font-bold">ACTIVE</span>
+</div>
+<p class="text-xs text-on-surface-variant">บังคับใช้การยืนยันตัวตนหลายชั้นสำหรับ Admin และแผนกการเงิน</p>
+</div>
+<!-- Password Policy -->
+<div class="industrial-card p-space-4 rounded-r-xl flex items-center justify-between">
+<div>
+<h3 class="font-label-mobile text-label-mobile text-on-surface">Password Policy</h3>
+<p class="text-xs text-on-surface-variant mt-1">ขั้นต่ำ 12 ตัวอักษร พร้อมอักขระพิเศษ</p>
+</div>
+<span class="material-symbols-outlined text-outline">settings_input_component</span>
+</div>
+</div>
+</div>
+<!-- Section 3: Session Management -->
+<div class="mt-10">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-secondary text-xl">timer</span>
+<h2 class="font-h1-web text-h1-web-mobile uppercase tracking-widest text-on-surface-variant text-sm">การจัดการเซสชัน</h2>
+</div>
+<div class="bg-surface-container rounded-xl p-space-4 border border-outline-variant/30">
+<div class="flex items-center justify-between">
+<div>
+<h3 class="font-label-mobile text-label-mobile text-on-surface">Auto Session Timeout</h3>
+<p class="text-xs text-on-surface-variant">ตัดการเชื่อมต่อเมื่อไม่มีการใช้งาน</p>
+</div>
+<div class="flex items-center gap-2 bg-background px-3 py-1.5 rounded-lg border border-primary/20">
+<span class="text-primary font-bold">15</span>
+<span class="text-[10px] text-on-surface-variant">MINS</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Section 4: Certifications -->
+<div class="mt-10">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-secondary text-xl">workspace_premium</span>
+<h2 class="font-h1-web text-h1-web-mobile uppercase tracking-widest text-on-surface-variant text-sm">มาตรฐานการรับรอง</h2>
+</div>
+<div class="industrial-card p-space-4 rounded-r-xl flex items-center gap-4">
+<div class="w-12 h-12 bg-surface-container-high rounded flex items-center justify-center border border-outline-variant/20">
+<span class="material-symbols-outlined text-primary text-3xl" style="font-variation-settings: 'FILL' 1;">domain</span>
+</div>
+<div>
+<h3 class="font-label-mobile text-label-mobile text-on-surface">Tier 4 Infrastructure</h3>
+<p class="text-xs text-on-surface-variant mt-1">Uptime 99.995% ตามมาตรฐานสากล</p>
+</div>
+</div>
+</div>
+</main>
+<!-- Fixed Bottom Action Area -->
+<div class="fixed bottom-0 left-0 w-full z-40 bg-surface-dim/95 backdrop-blur-md px-edge-mobile safe-bottom">
+<button class="w-full h-touch-target bg-primary text-on-primary font-bold uppercase tracking-wider rounded-lg flex items-center justify-center gap-2 active:scale-95 transition-transform">
+<span class="material-symbols-outlined">download</span>
+            DOWNLOAD PDF
+        </button>
+</div>
+<!-- Background Decorative Element (Industrial Grid Pattern) -->
+<div class="fixed inset-0 pointer-events-none opacity-5 z-[-1]" style="background-image: radial-gradient(#2563eb 0.5px, transparent 0.5px); background-size: 24px 24px;"></div>
+<script>
+        // Micro-interaction for industrial cards
+        document.querySelectorAll('.industrial-card').forEach(card => {
+            card.addEventListener('touchstart', () => {
+                card.style.borderColor = '#4cd7f6';
+            });
+            card.addEventListener('touchend', () => {
+                card.style.borderColor = '#2563eb';
+            });
+        });
+
+        // Simple visibility observer for scroll reveal feel
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('opacity-100', 'translate-y-0');
+                    entry.target.classList.remove('opacity-0', 'translate-y-4');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('section, div.mt-8, div.mt-10').forEach(el => {
+            el.classList.add('transition-all', 'duration-500', 'opacity-0', 'translate-y-4');
+            observer.observe(el);
+        });
+    </script>
+</body></html>

@@ -13,6 +13,9 @@ export function ProjectTabs({ id }: { id: string }) {
     { href: `/projects/${id}/procurement`, labelKey: 'pm.tabProcurement' },
     { href: `/projects/${id}/finance`, labelKey: 'pm.tabFinance' },
     { href: `/projects/${id}/site`, labelKey: 'pm.tabSite' },
+    { href: `/projects/${id}/risks`, labelKey: 'pm.tabRisks' },
+    { href: `/analytics/pm/${id}`, labelKey: 'pm.tabDashboard' },
+    { href: `/projects/${id}/graph`, labelKey: 'pm.tabGraph' },
   ];
   return (
     <nav className="mb-6 flex gap-1 border-b border-gray-200">

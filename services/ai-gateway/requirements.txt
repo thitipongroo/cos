@@ -10,13 +10,20 @@ pydantic==2.13.4
 pydantic-settings==2.14.2
 opentelemetry-sdk==1.43.0
 opentelemetry-instrumentation-fastapi==0.64b0
-# opentelemetry-instrumentation imports pkg_resources, which Python 3.12 venvs no longer bundle.
-# Provide setuptools (<81, where pkg_resources still ships) so FastAPIInstrumentor imports.
-setuptools<81
+# setuptools is not bundled by Python 3.12 venvs, so it is requested explicitly. The old `<81` cap
+# was there because opentelemetry-instrumentation imported pkg_resources, which setuptools dropped
+# in 81 — that is no longer true of 0.64b0 (FastAPIInstrumentor.instrument_app runs with 83.0.0 and
+# never loads pkg_resources), and the cap was pinning us to 80.10.2 / PYSEC-2026-3447.
+setuptools>=83
 opentelemetry-exporter-otlp-proto-http==1.43.0
 opentelemetry-instrumentation-httpx==0.64b0
 httpx==0.28.1
 python-dotenv==1.2.2
+# In-service Keycloak JWT verification (auth.py) — RS256 via JWKS. [crypto] pulls the `cryptography`
+# backend required for RS256. Defense-in-depth alongside the Kong `jwt` plugin (spec §5.9.4): the
+# gateway verifies + injects x-tenant-id, and this service re-verifies the token and derives tenant
+# from the claim, so no endpoint trusts a client-supplied tenant_id.
+pyjwt[crypto]>=2.9,<3
 # Runtime deps imported by the report pipeline, cache, and digital-twin modules — these were
 # missing from requirements (service never started). Lower-bound pins; pip resolves compatible.
 asyncpg>=0.29
@@ -26,3 +33,35 @@ jinja2>=3.1
 # RAG keyword-retrieval backend (BM25 over the tenant's OpenSearch embeddings index).
 # [async] pulls aiohttp so the AsyncOpenSearch client is available (used by OpenSearchKeywordBackend).
 opensearch-py[async]>=2.6
+
+# ─── AI providers (§22.7) ────────────────────────────────────────────────────
+# LLM: OpenAI GPT-4o primary; Anthropic Claude cloud fallback; Ollama on-prem via OpenAI-compatible API.
+openai>=1.0
+anthropic>=0.40
+# RAG chain + reranking (§22.7 LangChain Configuration, RAG-001, Cross-Encoder Reranking).
+langchain>=0.3
+langchain-openai>=0.2
+langchain-community>=0.3
+# Cross-encoder reranker (§22.7 Cross-Encoder Reranking / RAG-001) — DEPENDENCY DELIBERATELY OMITTED.
+#
+# `sentence-transformers` pulls the default PyPI torch wheel, which is the CUDA build: it added
+# ~4.5 GB to this image (nvidia 2.7 GB + torch 1.1 GB + triton 0.7 GB) and took the image to 8.8 GB.
+# Nothing imports it today: `SentenceTransformerReranking` is never constructed in application code
+# (rag/retrieval.py does not call a reranker yet), its `from sentence_transformers import CrossEncoder`
+# is lazy inside `_ensure_model()`, and the tests inject a fake model. So the whole CUDA stack shipped
+# on every build, to every environment, for a code path with zero callers — and the deployment target
+# (ai-pool = t3.2xlarge, no GPU; no Helm chart requests nvidia.com/gpu) could not have used it anyway.
+#
+# TO ACTIVATE the reranker stage (§22.7 trigger: RAG p95 relevance < 0.7 over a 7-day window), add it
+# back CPU-only — do NOT restore the bare requirement, or the CUDA stack returns:
+#   --extra-index-url https://download.pytorch.org/whl/cpu
+#   sentence-transformers>=3.0
+# Revisit the CPU pin only if a GPU node pool is actually introduced (§18 "GPU inference pools").
+
+# Prometheus exposition for the :9464 scrape target (§31.3, QM-8) — see metrics.py.
+prometheus-client>=0.21
+# Shared :9464 endpoint implementation behind metrics.py (ADR-021). Non-editable local path so pip
+# bakes it into the venv (the runtime image needs no libs/python copy); the relative path resolves
+# from the service dir in CI and from /app (root context) in the Docker build.
+../../libs/python/cosmetrics
+../../libs/python/cosembedding

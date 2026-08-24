@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="th"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-container": "#eeefff",
+                        "mobile-success": "#00C853",
+                        "background": "#031427",
+                        "on-primary": "#002a78",
+                        "outline": "#8d90a0",
+                        "inverse-on-surface": "#213145",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "error-container": "#93000a",
+                        "error": "#ffb4ab",
+                        "surface-dim": "#031427",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "on-error-container": "#ffdad6",
+                        "inverse-primary": "#0053db",
+                        "tertiary": "#c1c5dc",
+                        "dark-surface": "#0F172A",
+                        "on-primary-fixed": "#00174b",
+                        "surface-container-low": "#0b1c30",
+                        "on-surface": "#d3e4fe",
+                        "on-tertiary-container": "#eeefff",
+                        "surface-container-high": "#1b2b3f",
+                        "surface": "#031427",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "tertiary-fixed": "#dee1f9",
+                        "on-secondary-container": "#00424e",
+                        "inverse-surface": "#d3e4fe",
+                        "on-surface-variant": "#c3c6d7",
+                        "surface-bright": "#2a3a4f",
+                        "mobile-primary": "#0066FF",
+                        "surface-container-lowest": "#000f21",
+                        "secondary-fixed": "#acedff",
+                        "surface-container": "#102034",
+                        "mobile-danger": "#FF3B30",
+                        "on-background": "#d3e4fe",
+                        "surface-tint": "#b4c5ff",
+                        "tertiary-container": "#686c80",
+                        "primary-fixed": "#dbe1ff",
+                        "on-secondary-fixed": "#001f26",
+                        "primary": "#b4c5ff",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "on-tertiary": "#2b3041",
+                        "on-error": "#690005",
+                        "mobile-warning": "#FF9500",
+                        "surface-container-highest": "#26364a",
+                        "dark-bg": "#020617",
+                        "on-tertiary-fixed": "#161b2b",
+                        "on-secondary": "#003640",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "secondary": "#4cd7f6",
+                        "primary-container": "#2563eb",
+                        "outline-variant": "#434655",
+                        "secondary-container": "#03b5d3",
+                        "surface-variant": "#26364a",
+                        "sync-pending": "#94A3B8",
+                        "sync-active": "#FFD60A",
+                        "ai-cyan": "#06B6D4"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "space-1": "4px",
+                        "touch-target": "52px",
+                        "base": "4px",
+                        "edge-mobile": "24px",
+                        "space-3": "12px",
+                        "web-margin": "32px",
+                        "space-4": "16px",
+                        "space-2": "8px"
+                    },
+                    "fontFamily": {
+                        "tiny-web": ["Inter Tight"],
+                        "h1-web": ["Inter Tight"],
+                        "label-mobile": ["Inter Tight"],
+                        "h2-web": ["Inter Tight"],
+                        "display-web": ["Inter Tight"],
+                        "body-web": ["Inter Tight"],
+                        "body-mobile": ["Inter Tight"],
+                        "hero-mobile": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                        "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .ai-glow {
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.15);
+            border-left-width: 4px;
+            border-left-color: #06B6D4;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-background font-body-mobile text-on-surface">
+<!-- Top Navigation Bar -->
+<header class="bg-surface-container sticky top-0 z-50 flex justify-between items-center px-edge-mobile h-touch-target w-full border-b border-outline-variant/30">
+<div class="flex items-center gap-space-2">
+<img alt="COS Icon" class="w-8 h-8 object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDk2xvGHwl1S37o8IyJ1FTPTX4yuDGT5GRYW2waTnNexSdidZ2x3wp3d6JIPVwc2WhhOn-bTar7BFSRuEB6Z4SI2wdCaRu4-Ao8xqZlrT610NwWPifhxiRBcf89nj2y2YV59kpKSRuXXLPO9ZnNDn4NEbPm-E5PwCWQVja4UpDuxEHl4W11ZD283opCRDwI9kJgsyWWl0YXlcu0wmC5W3LIE7dazHWVKHxmhQz76YauPwrWzYr4oBCMPmLvME3V38G5GXdHkYK_jvU"/>
+<h1 class="font-h2-web uppercase tracking-tight text-on-surface text-[18px]">CONSTRUCTION OS</h1>
+</div>
+<div class="flex items-center">
+<div class="flex items-center gap-1.5 bg-mobile-success/10 px-2.5 py-1 rounded-full border border-mobile-success/20">
+<span class="material-symbols-outlined text-[16px] text-mobile-success" style="font-variation-settings: 'wght' 700;">check_circle</span>
+<span class="text-mobile-success font-bold text-[11px] tracking-wide">SYNCED</span>
+</div>
+</div>
+</header>
+<main class="pb-32 px-edge-mobile space-y-space-4 mt-space-4">
+<h2 class="text-on-surface font-h1-web px-1">บันทึกการตรวจสอบระบบ</h2>
+<!-- CORE_AI LOG ANALYSIS MODULE -->
+<section class="relative overflow-hidden bg-surface-container rounded-xl p-space-4 ai-glow">
+<div class="flex justify-between items-start mb-space-3">
+<div class="flex items-center gap-space-2 text-ai-cyan">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">psychology</span>
+<span class="font-label-mobile text-label-mobile tracking-wider uppercase">การวิเคราะห์โดย CORE_AI</span>
+</div>
+<div class="bg-ai-cyan/10 py-1 rounded border border-ai-cyan/20 px-2 flex flex-col items-center min-w-[80px]">
+<span class="text-ai-cyan font-bold text-[14px]">94%</span>
+<span class="text-ai-cyan/70 text-[9px] uppercase font-bold tracking-tighter">ความเชื่อมั่น</span>
+</div>
+</div>
+<p class="text-on-surface font-body-mobile text-[15px] leading-snug mb-space-3">
+            ตรวจพบรูปแบบที่ผิดปกติในการอนุมัติ <span class="text-ai-cyan font-semibold">Bulk Payout</span> มีการพยายามเข้าถึงโดยไม่ได้รับอนุญาต 3 ครั้งจาก IP 192.168.1.104 ข้อแนะนำ: ตรวจสอบบันทึกการซิงค์โหนด
+        </p>
+<div class="flex flex-col gap-space-1 mb-space-3">
+<span class="text-tiny-web text-outline font-medium">แหล่งที่มา: บันทึกการเข้าถึงระบบและไฟล์บันทึกเครือข่าย</span>
+</div>
+<div class="flex gap-space-2 overflow-x-auto no-scrollbar">
+<div class="flex-shrink-0 bg-surface-container-high px-space-3 py-space-1 rounded-full border border-outline-variant text-tiny-web text-on-surface-variant">
+                เกณฑ์ความปลอดภัย: ปกติ
+            </div>
+<div class="flex-shrink-0 bg-surface-container-high px-space-3 py-space-1 rounded-full border border-outline-variant text-tiny-web text-on-surface-variant">
+                ความหน่วงผิดปกติ: Node_B
+            </div>
+</div>
+</section>
+<!-- SEARCH & FILTER BAR -->
+<div class="space-y-space-2">
+<div class="relative h-touch-target">
+<span class="material-symbols-outlined absolute left-space-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full h-full bg-surface-container-low border border-outline-variant rounded-xl pl-12 pr-space-4 text-on-surface focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all" placeholder="ค้นหาบันทึกระบบ..." type="text"/>
+</div>
+<div class="flex gap-space-2 overflow-x-auto no-scrollbar py-2">
+<button class="flex-shrink-0 h-touch-target px-space-4 bg-primary text-on-primary rounded-xl font-label-mobile flex items-center gap-space-2 transition-transform active:scale-95">
+<span class="material-symbols-outlined text-[18px]">filter_list</span> เหตุการณ์ทั้งหมด
+            </button>
+<button class="flex-shrink-0 h-touch-target px-space-4 bg-surface-container-high text-on-surface-variant rounded-xl font-label-mobile flex items-center gap-space-2 border border-outline-variant transition-transform active:scale-95">
+                ประเภทเหตุการณ์ <span class="material-symbols-outlined text-[18px]">expand_more</span>
+</button>
+<button class="flex-shrink-0 h-touch-target px-space-4 bg-surface-container-high text-on-surface-variant rounded-xl font-label-mobile flex items-center gap-space-2 border border-outline-variant transition-transform active:scale-95">
+                ระดับความสำคัญ <span class="material-symbols-outlined text-[18px]">expand_more</span>
+</button>
+</div>
+</div>
+<!-- LOG LIST ENTRIES -->
+<div class="space-y-space-3">
+<h2 class="text-on-surface-variant font-label-mobile uppercase tracking-widest pt-space-2">กิจกรรมล่าสุด</h2>
+<!-- Log Entry 1: Security - Urgent -->
+<div class="bg-surface-container rounded-xl p-space-4 relative transition-all duration-200 active:bg-surface-bright active:scale-[0.98] border-l-4 border-mobile-warning min-h-touch-target flex flex-col justify-center">
+<div class="flex justify-between items-start mb-space-2">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-mobile-warning">security</span>
+<span class="text-on-surface font-bold text-[16px]">เปลี่ยนการกำหนดค่า MFA</span>
+</div>
+<span class="text-tiny-web text-on-surface-variant">14:22:10</span>
+</div>
+<div class="flex justify-between items-end">
+<div class="space-y-1">
+<div class="text-tiny-web text-on-surface-variant font-medium">ผู้ดำเนินการ: ADMIN_4402</div>
+<div class="text-tiny-web text-on-surface-variant">IP: 18.233.12.10</div>
+</div>
+<div class="bg-mobile-warning/20 text-mobile-warning px-space-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-tighter">เร่งด่วน</div>
+</div>
+</div>
+<!-- Log Entry 2: System - Critical -->
+<div class="bg-surface-container rounded-xl p-space-4 relative transition-all duration-200 active:bg-surface-bright active:scale-[0.98] border-l-4 border-mobile-danger min-h-touch-target flex flex-col justify-center">
+<div class="flex justify-between items-start mb-space-2">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-mobile-danger">sensors</span>
+<span class="text-on-surface font-bold text-[16px]">ตรวจพบความหน่วงสูงที่ Node_B</span>
+</div>
+<span class="text-tiny-web text-on-surface-variant">14:15:33</span>
+</div>
+<div class="flex justify-between items-end">
+<div class="space-y-1">
+<div class="text-tiny-web text-on-surface-variant font-medium">แหล่งที่มา: SYSTEM_MONITOR</div>
+<div class="text-tiny-web text-on-surface-variant">เกณฑ์: &gt; 450ms P99</div>
+</div>
+<div class="bg-mobile-danger/20 text-mobile-danger px-space-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-tighter">วิกฤต</div>
+</div>
+</div>
+<!-- Log Entry 3: Transaction - Success -->
+<div class="bg-surface-container rounded-xl p-space-4 relative transition-all duration-200 active:bg-surface-bright active:scale-[0.98] border-l-4 border-mobile-success min-h-touch-target flex flex-col justify-center">
+<div class="flex justify-between items-start mb-space-2">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-mobile-success">payments</span>
+<span class="text-on-surface font-bold text-[16px]">อนุมัติ Bulk Payout สำเร็จ</span>
+</div>
+<span class="text-tiny-web text-on-surface-variant">13:58:02</span>
+</div>
+<div class="flex justify-between items-end">
+<div class="space-y-1">
+<div class="text-tiny-web text-on-surface-variant font-medium">ผู้ดำเนินการ: PM_JENNINGS</div>
+<div class="text-tiny-web text-on-surface-variant">รหัส: TXN_882910-B</div>
+</div>
+<div class="bg-mobile-success/20 text-mobile-success px-space-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-tighter">สำเร็จ</div>
+</div>
+</div>
+<!-- Log Entry 4: Sync - Normal -->
+<div class="bg-surface-container rounded-xl p-space-4 relative transition-all duration-200 active:bg-surface-bright active:scale-[0.98] border-l-4 border-primary min-h-touch-target flex flex-col justify-center">
+<div class="flex justify-between items-start mb-space-2">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-primary">cloud_sync</span>
+<span class="text-on-surface font-bold text-[16px]">รอบการซิงค์เสร็จสมบูรณ์</span>
+</div>
+<span class="text-tiny-web text-on-surface-variant">13:45:00</span>
+</div>
+<div class="flex justify-between items-end">
+<div class="space-y-1">
+<div class="text-tiny-web text-on-surface-variant font-medium">แหล่งที่มา: CLOUD_BRIDGE</div>
+<div class="text-tiny-web text-on-surface-variant">รายการที่อัปเดต: 1,244 รายการ</div>
+</div>
+<div class="bg-primary/20 text-primary px-space-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-tighter">ปกติ</div>
+</div>
+</div>
+<!-- Log Entry 5: Blocked - Urgent -->
+<div class="bg-surface-container rounded-xl p-space-4 relative transition-all duration-200 active:bg-surface-bright active:scale-[0.98] border-l-4 border-mobile-warning min-h-touch-target flex flex-col justify-center">
+<div class="flex justify-between items-start mb-space-2">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-mobile-warning">lock_open</span>
+<span class="text-on-surface font-bold text-[16px]">พยายามเข้าสู่ระบบ: IP ต้องห้าม</span>
+</div>
+<span class="text-tiny-web text-on-surface-variant">13:30:12</span>
+</div>
+<div class="flex justify-between items-end">
+<div class="space-y-1">
+<div class="text-tiny-web text-on-surface-variant font-medium">รหัส: UNKNOWN_SOURCE</div>
+<div class="text-tiny-web text-on-surface-variant">พิกัด: Moscow, RU</div>
+</div>
+<div class="bg-mobile-warning/20 text-mobile-warning px-space-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-tighter">ถูกบล็อก</div>
+</div>
+</div>
+</div>
+<!-- Load More Button -->
+<button class="w-full h-touch-target rounded-xl border border-outline-variant flex items-center justify-center gap-space-2 text-on-surface font-label-mobile hover:bg-surface-container active:bg-surface-bright transition-colors mt-space-4">
+        โหลดคลังบันทึกย้อนหลัง <span class="material-symbols-outlined">history</span>
+</button>
+</main>
+<!-- Navigation Shell -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center px-edge-mobile pb-safe h-[72px] bg-surface-container-lowest border-t border-outline-variant shadow-lg">
+<a class="flex flex-col items-center justify-center text-on-surface-variant transition-transform duration-150 active:scale-90 hover:text-on-surface" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">dashboard</span>
+<span class="font-label-mobile text-[11px]">แดชบอร์ด</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant transition-transform duration-150 active:scale-90 hover:text-on-surface" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">account_tree</span>
+<span class="font-label-mobile text-[11px]">โมดูล</span>
+</a>
+<!-- ACTIVE TAB: AI Logs -->
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-space-4 py-space-1 transition-transform duration-150 active:scale-90" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">psychology</span>
+<span class="font-label-mobile text-[11px]">บันทึก AI</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant transition-transform duration-150 active:scale-90 hover:text-on-surface" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">settings</span>
+<span class="font-label-mobile text-[11px]">การตั้งค่า</span>
+</a>
+</nav>
+<script>
+    // Micro-interactions
+    document.querySelectorAll('.active\\:scale-\\[0\\.98\\]').forEach(card => {
+        card.addEventListener('touchstart', () => {
+            card.style.transform = 'scale(0.98)';
+        });
+        card.addEventListener('touchend', () => {
+            card.style.transform = 'scale(1)';
+        });
+    });
+</script>
+</body></html>

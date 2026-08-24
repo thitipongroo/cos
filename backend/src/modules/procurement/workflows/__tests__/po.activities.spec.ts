@@ -1,10 +1,5 @@
-// Unit tests — PO Workflow Activities (Phase 5)
-// getDbUrlForTenant and PrismaClient are mocked.
-//
-// §35.13 ESC-13: the activities no longer hold a KafkaProducer. Each event is written to
-// platform.outbox_events through a tenant transaction — the SAME one as the business UPDATE where
-// there is one — so these tests assert on the outbox INSERT issued via that tx handle.
-// OutboxPublisher is used for real (not mocked): it is part of what these tests cover.
+﻿// Unit tests — PO Workflow Activities (Phase 5)
+// getDbUrlForTenant, PrismaClient, and KafkaProducer are all mocked.
 
 jest.mock('../../../tenant/utils/get-db-url', () => ({
   getDbUrlForTenant: jest.fn().mockResolvedValue('postgresql://tenant-db/testdb'),
@@ -28,6 +23,22 @@ jest.mock('@cos/logger', () => {
 const { __loggerMock: loggerMock } = jest.requireMock('@cos/logger');
 
 import { PrismaClient } from '@prisma/client';
+// publishEvent() queues through EventOutboxService now instead of building a KafkaProducer per
+// activity. The envelope assertions below are unchanged and still the point — only the collaborator
+// that receives it moved, so `mockKafkaPublish` is rebound to the outbox.
+jest.mock('../../../../shared/events/event-outbox.service', () => ({
+  // A plain class, NOT jest.fn().mockImplementation(...): the suites below call jest.resetAllMocks()
+  // in beforeEach, which strips a mock constructor's implementation and leaves `new` returning a bare
+  // object with no publish(). Delegating at CALL time keeps mockKafkaPublish resettable as usual.
+  EventOutboxService: class {
+    publish(...args: unknown[]): Promise<unknown> {
+      return mockKafkaPublish(...args) as Promise<unknown>;
+    }
+    onModuleDestroy(): Promise<void> {
+      return Promise.resolve();
+    }
+  },
+}));
 import { updatePoStatus, notifyApprover, compensateCancelledPo } from '../po.activities';
 
 const mockExecuteRaw = jest.fn().mockResolvedValue(1);
@@ -35,25 +46,32 @@ const mockExecuteRawUnsafe = jest.fn().mockResolvedValue(undefined);
 const mockPrismaDisconnect = jest.fn().mockResolvedValue(undefined);
 const mockTransaction = jest.fn();
 
+const mockKafkaPublish = jest.fn().mockResolvedValue(undefined);
+
 const baseParams = {
   po_id: 'po-uuid-001',
   project_id: 'proj-uuid-001',
   vendor_id: 'vendor-uuid-001',
-  tenant_id: 'tenant-uuid-001',
+  tenant_id: '00000000-0000-4000-8000-000000000001',
   correlation_id: 'corr-uuid-001',
 };
 
+/**
+ * The outbox INSERT issued inside the activity's transaction, parsed back into the envelope. The
+ * activities that own a business write no longer call EventOutboxService.publish() — the event goes
+ * in through OutboxPublisher.write(tx, …) so it commits or rolls back with the row.
+ */
 const OUTBOX_SQL = 'INSERT INTO platform.outbox_events';
-
-/** Reads the envelope out of the outbox INSERT that OutboxPublisher.write issued. */
 function outboxEnvelope(): Record<string, unknown> | undefined {
   const call = mockExecuteRaw.mock.calls.find(([t]: [TemplateStringsArray]) =>
     t.join('').includes(OUTBOX_SQL),
   );
-  return call ? (JSON.parse(call[3] as string) as Record<string, unknown>) : undefined;
+  if (!call) return undefined;
+  const json = call.find((v: unknown) => typeof v === 'string' && v.startsWith('{'));
+  return json ? (JSON.parse(json as string) as Record<string, unknown>) : undefined;
 }
 
-/** The business UPDATE — the `$executeRaw` call that is not the outbox INSERT. */
+/** The business statement — the `$executeRaw` call that is not the outbox INSERT. */
 function businessUpdateCall(): [TemplateStringsArray, ...unknown[]] | undefined {
   return mockExecuteRaw.mock.calls.find(
     ([t]: [TemplateStringsArray]) => !t.join('').includes(OUTBOX_SQL),
@@ -73,6 +91,7 @@ beforeEach(() => {
     $transaction: mockTransaction,
     $disconnect: mockPrismaDisconnect,
   }));
+  mockKafkaPublish.mockResolvedValue(undefined);
 });
 
 describe('module wiring', () => {
@@ -82,19 +101,23 @@ describe('module wiring', () => {
 });
 
 describe('updatePoStatus', () => {
-  it('executes the DB update and the outbox insert in ONE transaction', async () => {
+  it('executes DB update and publishes event', async () => {
     await updatePoStatus(baseParams, 'DRAFT', 'PENDING_APPROVAL');
     expect(mockTransaction).toHaveBeenCalledTimes(1);
     expect(mockExecuteRawUnsafe).toHaveBeenCalledTimes(1);
-    // one UPDATE + one outbox INSERT, both through the same tx handle
+    // one business UPDATE + one outbox INSERT, both through the same tx handle
     expect(mockExecuteRaw).toHaveBeenCalledTimes(2);
-    expect(mockPrismaDisconnect).toHaveBeenCalledTimes(1);
+    expect(mockKafkaPublish).not.toHaveBeenCalled();
+    // Pooling (ADR-021): the client is reused across activities and closed only by
+    // disconnectActivityClients() on worker shutdown. Disconnecting per activity is what made every
+    // workflow step pay for a fresh pg pool.
+    expect(mockPrismaDisconnect).not.toHaveBeenCalled();
   });
 
   it('sets RLS tenant context with the exact SET LOCAL statement', async () => {
     await updatePoStatus(baseParams, 'DRAFT', 'PENDING_APPROVAL');
     expect(mockExecuteRawUnsafe).toHaveBeenCalledWith(
-      "SET LOCAL app.current_tenant_id = 'tenant-uuid-001'",
+      "SET LOCAL app.current_tenant_id = '00000000-0000-4000-8000-000000000001'",
     );
   });
 
@@ -105,7 +128,11 @@ describe('updatePoStatus', () => {
     expect(sql).toContain('UPDATE procurement.purchase_orders SET status =');
     expect(sql).toContain('WHERE po_id =');
     expect(sql).toContain('AND tenant_id =');
-    expect(values).toEqual(['PENDING_APPROVAL', 'po-uuid-001', 'tenant-uuid-001']);
+    expect(values).toEqual([
+      'PENDING_APPROVAL',
+      'po-uuid-001',
+      '00000000-0000-4000-8000-000000000001',
+    ]);
   });
 
   it('writes the exact status_changed envelope to the outbox and logs the transition', async () => {
@@ -114,7 +141,7 @@ describe('updatePoStatus', () => {
       event_id: expect.any(String),
       event_type: 'procurement.po.status_changed.v1',
       event_version: '1.0',
-      tenant_id: 'tenant-uuid-001',
+      tenant_id: '00000000-0000-4000-8000-000000000001',
       actor_id: 'system',
       occurred_at: expect.any(String),
       correlation_id: 'corr-uuid-001',
@@ -135,46 +162,31 @@ describe('updatePoStatus', () => {
     );
   });
 
-  // ESC-13: the old publishEvent caught the Kafka error and returned normally, so Temporal saw a
-  // success and never retried — the event was simply lost. The outbox write is part of the
-  // transaction, so its failure must roll the UPDATE back and surface to Temporal for retry.
-  it('propagates an outbox write failure so Temporal retries the activity', async () => {
-    mockExecuteRaw
-      .mockResolvedValueOnce(1)
-      .mockRejectedValueOnce(new Error('outbox insert failed'));
-    await expect(updatePoStatus(baseParams, 'DRAFT', 'PENDING_APPROVAL')).rejects.toThrow(
-      'outbox insert failed',
-    );
-    expect(mockPrismaDisconnect).toHaveBeenCalledTimes(1);
-  });
-
   it('propagates DB error from withTenantTx', async () => {
     mockTransaction.mockRejectedValueOnce(new Error('DB write failed'));
     await expect(updatePoStatus(baseParams, 'DRAFT', 'PENDING_APPROVAL')).rejects.toThrow(
       'DB write failed',
     );
-    expect(mockPrismaDisconnect).toHaveBeenCalledTimes(1);
+    // Pooling (ADR-021): the client is reused across activities and closed only by
+    // disconnectActivityClients() on worker shutdown. Disconnecting per activity is what made every
+    // workflow step pay for a fresh pg pool.
+    expect(mockPrismaDisconnect).not.toHaveBeenCalled();
   });
 });
 
 describe('notifyApprover', () => {
-  // No business row changes here, so there is nothing to be atomic *with* — the outbox is used
-  // purely as the durable at-least-once relay (§35.13 ESC-13).
-  it('writes the event in its own transaction, with no business UPDATE', async () => {
+  it('publishes approval_requested event without touching DB', async () => {
     await notifyApprover(baseParams, 'approver-uuid-001', 'L1', 'PO-2025-001', '50000', 'THB');
-    expect(mockTransaction).toHaveBeenCalledTimes(1);
-    expect(mockExecuteRaw).toHaveBeenCalledTimes(1);
-    expect(businessUpdateCall()).toBeUndefined();
-    expect(mockPrismaDisconnect).toHaveBeenCalledTimes(1);
+    expect(mockTransaction).not.toHaveBeenCalled();
+    expect(mockKafkaPublish).toHaveBeenCalledTimes(1);
   });
 
-  it('writes the exact approval_requested envelope and logs the request', async () => {
+  it('publishes the exact approval_requested envelope and logs the request', async () => {
     await notifyApprover(baseParams, 'approver-uuid-001', 'L1', 'PO-2025-001', '50000', 'THB');
-    expect(outboxEnvelope()).toEqual({
-      event_id: expect.any(String),
+    expect(mockKafkaPublish).toHaveBeenCalledWith({
       event_type: 'procurement.po.approval_requested.v1',
       event_version: '1.0',
-      tenant_id: 'tenant-uuid-001',
+      tenant_id: '00000000-0000-4000-8000-000000000001',
       actor_id: 'system',
       occurred_at: expect.any(String),
       correlation_id: 'corr-uuid-001',
@@ -199,46 +211,33 @@ describe('notifyApprover', () => {
       'po.approval.requested',
     );
   });
-
-  it('propagates an outbox write failure so Temporal retries the activity', async () => {
-    mockExecuteRaw.mockRejectedValueOnce(new Error('outbox insert failed'));
-    await expect(
-      notifyApprover(baseParams, 'approver-uuid-001', 'L1', 'PO-2025-001', '50000', 'THB'),
-    ).rejects.toThrow('outbox insert failed');
-  });
 });
 
 describe('compensateCancelledPo', () => {
-  it('writes the event in its own transaction, with no business UPDATE', async () => {
+  it('publishes status_changed event without touching DB', async () => {
     await compensateCancelledPo(baseParams);
-    expect(mockTransaction).toHaveBeenCalledTimes(1);
-    expect(mockExecuteRaw).toHaveBeenCalledTimes(1);
-    expect(businessUpdateCall()).toBeUndefined();
+    expect(mockTransaction).not.toHaveBeenCalled();
+    expect(mockKafkaPublish).toHaveBeenCalledTimes(1);
   });
 
-  it('writes the exact compensation envelope (PENDING_APPROVAL → DRAFT) and logs it', async () => {
+  it('publishes the exact compensation envelope (PENDING_APPROVAL → DRAFT) and logs it', async () => {
     await compensateCancelledPo(baseParams);
-    expect(outboxEnvelope()).toEqual(
-      expect.objectContaining({
-        event_type: 'procurement.po.status_changed.v1',
-        tenant_id: 'tenant-uuid-001',
-        actor_id: 'system',
-        correlation_id: 'corr-uuid-001',
-        payload: {
-          po_id: 'po-uuid-001',
-          from_status: 'PENDING_APPROVAL',
-          to_status: 'DRAFT',
-        },
-      }),
-    );
+    expect(mockKafkaPublish).toHaveBeenCalledWith({
+      event_type: 'procurement.po.status_changed.v1',
+      event_version: '1.0',
+      tenant_id: '00000000-0000-4000-8000-000000000001',
+      actor_id: 'system',
+      occurred_at: expect.any(String),
+      correlation_id: 'corr-uuid-001',
+      payload: {
+        po_id: 'po-uuid-001',
+        from_status: 'PENDING_APPROVAL',
+        to_status: 'DRAFT',
+      },
+    });
     expect(loggerMock.info).toHaveBeenCalledWith(
       { po_id: 'po-uuid-001', correlation_id: 'corr-uuid-001' },
       'po.cancelled.compensation',
     );
-  });
-
-  it('propagates an outbox write failure so Temporal retries the compensation', async () => {
-    mockExecuteRaw.mockRejectedValueOnce(new Error('outbox insert failed'));
-    await expect(compensateCancelledPo(baseParams)).rejects.toThrow('outbox insert failed');
   });
 });

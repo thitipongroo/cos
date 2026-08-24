@@ -1,7 +1,8 @@
 // VendorPortalService — orchestrates the four §28 Vendor Portal capabilities (ADR-030):
 //   receive RFQ · submit quotation · track PO status · submit invoice
 // plus the buyer-side "issue invitation" trigger. Reuses procurement RFQ/quotation/PO/invoice
-// tables (no duplicate data model). Tenant + vendor context come from VendorAuthMiddleware.
+// tables (no duplicate data model). Tenant + vendor context come from VendorAuthGuard (vendor side)
+// or JwtAuthGuard (buyer side); both publish into CLS.
 
 import {
   Injectable,
@@ -14,6 +15,7 @@ import {
 } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import { randomUUID } from 'crypto';
+import { clsTenantId } from '../../shared/context/cls-context';
 import { MagicLinkService } from './magic-link.service';
 import { VendorIdentityRepository } from './vendor-identity.repository';
 import {
@@ -28,8 +30,10 @@ import {
 
 @Injectable({ scope: Scope.REQUEST })
 export class VendorPortalService {
+  // See VendorPortalRepository: CLS is the reliable carrier under Fastify, the request object is a
+  // mirror. Covers both the vendor path (VendorAuthGuard) and the buyer path (JwtAuthGuard).
   private get tenantId(): string {
-    return (this.request as { tenantId?: string }).tenantId ?? '';
+    return (this.request as { tenantId?: string }).tenantId ?? clsTenantId();
   }
 
   constructor(
@@ -113,7 +117,7 @@ export class VendorPortalService {
     return this.repo.listPurchaseOrdersByVendor(vendorId);
   }
 
-  submitInvoice(
+  async submitInvoice(
     vendorId: string,
     dto: {
       po_id: string;
@@ -124,6 +128,14 @@ export class VendorPortalService {
       due_date: string;
     },
   ): Promise<InvoiceRow> {
+    // Object-level authorization: a Tier-2 vendor may only invoice against a PO issued to THEM. The
+    // invoice's vendor_id is already forced to the authenticated caller, but po_id is caller-supplied,
+    // so without this check vendor A could attach an invoice to vendor B's PO in the same tenant.
+    // Verify ownership (tenant-scoped by RLS inside the repo's db.run) before creating the invoice.
+    const po = await this.repo.findPurchaseOrderForVendor(dto.po_id, vendorId);
+    if (!po) {
+      throw new NotFoundException('Purchase order not found for this vendor');
+    }
     return this.repo.createInvoice({
       poId: dto.po_id,
       vendorId,

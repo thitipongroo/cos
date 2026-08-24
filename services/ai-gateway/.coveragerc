@@ -1,18 +1,20 @@
-# Coverage config for the QM-1 line-coverage gate (--cov-fail-under=99).
-# Tests are omitted: measuring a suite against itself inflates the figure — including tests/
-# reported 45-87% for these services where the source alone is 35-73%.
+# Coverage config for ai-gateway (QM-1: 99% line coverage for Python services).
+#
+# `source = .` with `tests` omitted is deliberate: measuring the test files themselves inflates the
+# number, because they are 100% covered by definition. Mirrors the other Python services.
 [run]
-branch = False
+source = .
 omit =
     tests/*
     */tests/*
     */site-packages/*
-    setup.py
 
 [report]
 exclude_lines =
+    # coverage.py's default, restated because setting exclude_lines replaces it
     pragma: no cover
-    # the module-run guard is executed by the interpreter, never by an import under test
+    # CLI entrypoints: the module body is tested by calling main() directly
     if __name__ == .__main__.:
-show_missing = True
-skip_covered = False
+    # abstract method bodies carry no logic
+    ^\s*\.\.\.$
+    @abstractmethod

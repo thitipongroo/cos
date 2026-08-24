@@ -1,0 +1,221 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+<title>Construction OS | Field Intelligence</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;display=swap" rel="stylesheet">
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .pulse-success {
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+        /* Mobile-first constraints */
+        body {
+            background-color: #031427; /* Fallback for dark theme foundation */
+            overscroll-behavior-y: contain;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "error-container": "#93000a",
+                      "on-error": "#690005",
+                      "on-primary": "#2b3041",
+                      "inverse-primary": "#595e71",
+                      "success": "#10B981",
+                      "on-secondary": "#002a78",
+                      "surface-dim": "#031427",
+                      "surface-container-low": "#0b1c30",
+                      "inverse-surface": "#d3e4fe",
+                      "surface-bright": "#2a3a4f",
+                      "danger": "#EF4444",
+                      "surface-variant": "#26364a",
+                      "surface-container-lowest": "#000f21",
+                      "on-surface": "#d3e4fe",
+                      "surface-container": "#102034",
+                      "tertiary": "#4cd7f6",
+                      "on-surface-variant": "#c7c6cd",
+                      "surface-container-high": "#1b2b3f",
+                      "background": "#031427",
+                      "tertiary-container": "#001318",
+                      "outline": "#909097",
+                      "on-tertiary-fixed-variant": "#004e5c",
+                      "on-tertiary": "#003640",
+                      "on-primary-fixed": "#161b2b",
+                      "mobile-primary": "#0066FF",
+                      "tertiary-fixed": "#acedff",
+                      "surface-container-highest": "#26364a",
+                      "primary-fixed-dim": "#c1c5dc",
+                      "syncing": "#FFD60A",
+                      "secondary": "#b4c5ff",
+                      "offline": "#8E8E93",
+                      "inverse-on-surface": "#213145",
+                      "on-secondary-fixed": "#00174b",
+                      "surface": "#031427",
+                      "on-tertiary-fixed": "#001f26",
+                      "on-secondary-fixed-variant": "#003ea8",
+                      "primary-container": "#0b1020",
+                      "on-primary-container": "#777c90",
+                      "on-secondary-container": "#cdd7ff",
+                      "outline-variant": "#46464c",
+                      "warning": "#F59E0B",
+                      "primary": "#c1c5dc",
+                      "primary-fixed": "#dee1f9",
+                      "on-tertiary-container": "#0088a0",
+                      "on-error-container": "#ffdad6",
+                      "surface-tint": "#c1c5dc",
+                      "secondary-fixed": "#dbe1ff",
+                      "concrete-white": "#F8FAFC",
+                      "error": "#ffb4ab",
+                      "on-background": "#d3e4fe",
+                      "tertiary-fixed-dim": "#4cd7f6",
+                      "secondary-fixed-dim": "#b4c5ff",
+                      "on-primary-fixed-variant": "#414658",
+                      "secondary-container": "#0053db"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "web-gap-tight": "4px",
+                      "web-padding-card": "16px",
+                      "mobile-icon-pad": "8px",
+                      "web-base": "4px",
+                      "mobile-section-pad": "16px",
+                      "mobile-edge-margin": "24px",
+                      "touch-target-optimum": "52px",
+                      "mobile-base": "8px",
+                      "mobile-card-pad": "12px",
+                      "touch-target-min": "44px",
+                      "web-page-gap": "64px",
+                      "web-margin-component": "32px"
+              },
+              "fontFamily": {
+                      "mobile-title": ["Inter"],
+                      "body-md": ["Inter"],
+                      "headline-h3": ["Inter"],
+                      "label-tiny": ["Inter"],
+                      "mobile-body": ["Inter"],
+                      "body-sm": ["Inter"],
+                      "display-lg": ["Inter"],
+                      "mobile-hero": ["Inter"],
+                      "headline-h2": ["Inter"],
+                      "headline-h1": ["Inter"]
+              },
+              "fontSize": {
+                      "mobile-title": ["22px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                      "body-md": ["14px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                      "headline-h3": ["16px", {"lineHeight": "1.3", "fontWeight": "500"}],
+                      "label-tiny": ["11px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                      "mobile-body": ["17px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                      "body-sm": ["12px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                      "display-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "mobile-hero": ["28px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                      "headline-h2": ["20px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                      "headline-h1": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col font-body-md overflow-x-hidden"><main class="relative z-10 min-h-screen flex flex-col max-w-md mx-auto bg-background shadow-2xl">
+<header class="w-full top-0 bg-surface border-b border-outline-variant flex justify-between items-center px-mobile-edge-margin h-touch-target-optimum sticky z-30">
+<div class="flex items-center gap-2">
+<img alt="Construction OS Logo" class="w-8 h-8 object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAg-Y26zdVXyBHorQz8wN8vQpAPL4NLQtb8ol8K_WdsUKkvtCPZuuj4tjF-ofNMHIWh4szqMsvPf0g3WSQpkNF4jjXyyCNyQcDlsOtd57adzCAIfbivkMFgBSy5oMgofkTcABx9njyWb7StyR5iu8ITMzR0rdxpt4f7kUbmIVWzA5og4siUItbNukXBpY0SpmmnIpN_RzrWvSNGQuVyQMYwBwKSWWu5hAFEBO_spWPdx7pVa9BULitSAthR-5_fklBKHuc">
+<h1 class="text-headline-h1 font-headline-h1 font-bold text-mobile-primary tracking-tight">CONSTRUCTION OS</h1>
+</div>
+<div class="flex gap-4">
+<span class="material-symbols-outlined text-steel-gray cursor-pointer active:scale-95 duration-150">info</span>
+</div>
+</header>
+<section class="px-mobile-edge-margin pt-12 pb-8 flex flex-col items-center text-center">
+<div class="w-24 h-24 bg-primary-container flex items-center justify-center mb-6 border border-outline-variant rounded-2xl">
+<img alt="Construction OS Logo" class="w-full h-full object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD4Taf1aMcojWgvMUh6Qv9O3BBX6dc3XA-b4eX7KRunI7LvGfr7WiVfR33F-C1qlMfQSMjic24w1NJbUaC0BnxWn8pvtIiV2-VMjalrY4bJIjdaWOOEKTNaoWJAAqIiNtellvDZJZpGBxVGPf5dDJTTfRyGDuXSw7RDMtpY3H1QX60rDj31bpfx7LgQMP1eWXsfonL_QaEFr-jxKlAqdw8IDJxNBLCYW1S1iCO-pP-81vfGO2xq7jGA_fU-ZJ1qQaVm7I4">
+</div>
+<h2 class="font-mobile-hero text-mobile-hero mb-2 tracking-tight text-on-surface">AI-NATIVE<div class="">Construction Platform</div></h2>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-[280px]">Secure access for field operations and enterprise project management.</p>
+</section>
+<section class="px-mobile-edge-margin py-mobile-section-pad flex-grow">
+<div class="bg-surface-container border border-outline-variant rounded-xl p-mobile-card-pad shadow-sm mb-6">
+<div class="space-y-4">
+<div class="flex items-center gap-2 mb-2">
+<label class="font-label-tiny text-label-tiny text-on-surface-variant uppercase mb-3 block" style="margin-bottom: 1.8px;">Field Worker Access</label>
+</div>
+<div class="flex gap-2">
+<div class="relative w-1/4">
+<select class="w-full h-touch-target-optimum bg-surface-container-low border border-outline-variant rounded-lg text-body-md px-2 appearance-none focus:ring-2 focus:ring-mobile-primary outline-none">
+<option>+1</option>
+<option>+44</option>
+<option>+61</option>
+<option>+91</option>
+</select>
+<span class="material-symbols-outlined absolute right-1 top-1/2 -translate-y-1/2 text-steel-gray pointer-events-none">expand_more</span>
+</div>
+<input class="flex-grow h-touch-target-optimum bg-surface-container-low border border-outline-variant rounded-lg px-4 text-body-md focus:ring-2 focus:ring-mobile-primary outline-none" placeholder="Phone Number" type="tel">
+</div>
+<button class="w-full h-touch-target-optimum bg-mobile-primary text-white font-headline-h3 rounded-lg flex items-center justify-center gap-2 active:scale-98 transition-transform shadow-md shadow-mobile-primary/20">
+<span class="">SEND OTP</span>
+<span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+<div class="flex items-center gap-4 py-4 mb-2">
+<div class="flex-grow h-px bg-outline-variant"></div>
+<span class="font-label-tiny text-label-tiny text-steel-gray tracking-widest uppercase">OR</span>
+<div class="flex-grow h-px bg-outline-variant"></div>
+</div>
+<div class="space-y-4">
+<button class="w-full h-touch-target-optimum bg-surface-container border border-outline-variant text-on-surface font-headline-h3 rounded-lg flex items-center justify-center gap-3 active:scale-98 transition-transform"><span class="material-symbols-outlined text-primary">corporate_fare</span><span class="">Login with Email</span></button>
+<p class="font-body-sm text-body-sm text-steel-gray text-center px-4">
+Office staff and project managers can login using their corporate credentials.
+</p>
+</div>
+</div>
+</section>
+<section class="mt-auto px-mobile-edge-margin py-mobile-section-pad flex flex-col items-center gap-6">
+<div class="w-full h-24 rounded-xl overflow-hidden relative border border-outline-variant">
+<div class="absolute inset-0 bg-cover bg-center" style="background-image: url(&quot;https://lh3.googleusercontent.com/aida-public/AB6AXuD_Z_KA1q0GmT3o0T0qGcw01hEq9Kygzf0LGB5BkEjFEE1vWqz3H-X4VO2XcRB65vwTcTDN0hwUl0wZe0cNOYLGFpvqwjy8zqKo0iL_fmoreu_Q_9k8-x7kwRdPA8f5hez7QoCsCaCCCaKuoTUnZ3-Ns-_vFjxutMV9uqdWX40iM37bHrpRtJZzmSDDETepBI7FYjtBPYI-uGuO-gOv0HQ2jgOkZQK_wXeH-891hwlpRJk-uP9SqXYqZA&quot;);"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container-lowest to-transparent opacity-60"></div>
+<div class="absolute bottom-2 left-3 flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-success pulse-success"></div>
+<span class="font-label-tiny text-label-tiny text-white uppercase tracking-widest">System Operational: Site v2.4.12</span>
+</div>
+</div>
+<footer class="w-full flex flex-col items-center gap-4">
+<div class="flex gap-6">
+<a class="font-label-tiny text-label-tiny text-steel-gray hover:text-concrete-white transition-colors" href="#">PRIVACY POLICY</a>
+<a class="font-label-tiny text-label-tiny text-steel-gray hover:text-concrete-white transition-colors" href="#">TERMS OF USE</a>
+</div>
+<p class="font-body-sm text-body-sm text-steel-gray opacity-70 flex items-center justify-center gap-1 pb-8">
+<span class="material-symbols-outlined text-[14px]">verified_user</span>
+© 2024 CONSTRUCTION OS. INDUSTRIAL GRADE SECURITY.
+</p>
+</footer>
+</section>
+</main>
+
+
+
+
+</body></html>

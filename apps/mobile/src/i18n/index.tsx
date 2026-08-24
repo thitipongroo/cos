@@ -1,6 +1,8 @@
 // I18nProvider + hooks (QM-3) — mirrors the apps/web/src/i18n API adapted for React Native:
-// dot-path keys, default locale 'th', fallback 'en'. Locale state lives in the zustand
-// localeStore (SecureStore-persisted); ICU/plural + Buddhist-calendar dates in ./translate.
+// dot-path keys, with the default and fallback locales owned by ./translate (both 'en' — PO decision
+// 2026-07-26, which overrides QM-3's th-TH; this header said 'th' until 2026-08-20). Locale state
+// lives in the zustand localeStore (SecureStore-persisted); ICU/plural + Buddhist-calendar dates in
+// ./translate.
 
 import { createContext, useCallback, useContext, useMemo } from 'react';
 import type { ReactNode } from 'react';

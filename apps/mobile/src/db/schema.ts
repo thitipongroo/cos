@@ -11,7 +11,16 @@ import { sqliteTable, text, real, integer } from 'drizzle-orm/sqlite-core';
 
 export type SyncStatus = 'PENDING' | 'SYNCED' | 'CONFLICT';
 export type UploadStatus = 'PENDING' | 'UPLOADING' | 'UPLOADED' | 'FAILED';
-export type PhotoEntityType = 'site_report' | 'issue' | 'inspection';
+/**
+ * What a queued photo is attached to. Sent verbatim as `entity_type` on the file upload
+ * (PhotoUploadQueue), where it lands in `files.file_metadata.entity_type` — a plain VARCHAR(100)
+ * with no CHECK constraint, so adding a value here needs no migration.
+ *
+ * 'permit' added 2026-08-13 for the permit request form. Unlike the other three, a permit's id does
+ * not exist until the server creates it, so those photos are captured against a draft id and
+ * re-keyed by `reassignPhotoEntity()` once the POST returns.
+ */
+export type PhotoEntityType = 'site_report' | 'issue' | 'inspection' | 'permit';
 
 // ── local_site_reports — mirrors server site_ops.site_reports (offline subset) ──
 export const localSiteReports = sqliteTable('local_site_reports', {
@@ -36,6 +45,14 @@ export const localIssues = sqliteTable('local_issues', {
   description: text('description'),
   severity: text('severity').notNull(), // LOW | MEDIUM | HIGH | CRITICAL
   status: text('status').notNull(), // OPEN | IN_PROGRESS | RESOLVED | CLOSED
+  // DEFECT | REWORK | PUNCH | GENERAL — site_ops.issues.issue_type, CHECK-constrained since
+  // migration 20260619000002. The app has always SENT it on create (it is what the Phase 6
+  // task-completion gate reads) and never kept it, so the issue board could not say what kind of
+  // issue a card was. Nullable: rows cached before DDL v6 have no value until the next delta pull.
+  issueType: text('issue_type'),
+  // site_ops.issues.created_at (TIMESTAMPTZ NOT NULL) — when the issue was RAISED. The board prints
+  // its age from this; nullable here for the same pre-v6 reason as `issueType`.
+  createdAt: text('created_at'),
   offlineSyncStatus: text('sync_status').notNull().$type<SyncStatus>(),
 });
 
@@ -48,6 +65,25 @@ export const localPhotos = sqliteTable('local_photos', {
   localPath: text('local_path').notNull(), // expo-file-system URI
   uploadStatus: text('upload_status').notNull().$type<UploadStatus>(),
   serverFileId: text('server_file_id'), // populated after upload
+  // Attempts already spent uploading this photo. On the ROW, not in memory: PhotoUploadQueue is
+  // rebuilt every sync cycle, so an in-memory counter reset to zero each time and its retry ceiling
+  // was never reached. Null on rows cached before DDL v8 — read as 0.
+  uploadRetryCount: integer('upload_retry_count'),
+});
+
+// ── local_photo_annotations — re-editable markup on a photo (ADR-056) ──
+// Keyed by the LOCAL photo row (local_photos.id), because a photo has no server file_id until it is
+// uploaded. On upload success (markUploaded), a dirty annotation is enqueued to /sync/push addressed
+// to the now-known serverFileId — enqueue-after-parent, so SyncManager needs no dependency ordering.
+// `strokes` is the retained-mode stroke list as JSON (normalised 0..1 coords), never a raster.
+// `baseVersion` is the optimistic-concurrency token the client read; the server bumps it and flags a
+// mismatch as CONFLICT_FLAGGED (§17.5). `dirty` = has unsynced local edits.
+export const localPhotoAnnotations = sqliteTable('local_photo_annotations', {
+  localPhotoId: text('local_photo_id').primaryKey(), // FK → local_photos.id (one annotation per photo)
+  strokes: text('strokes').notNull(), // JSON: AnnotationStroke[]
+  baseVersion: integer('base_version').notNull(), // last server version the client saw (0 = never synced)
+  dirty: integer('dirty').notNull(), // 0/1 — has local edits not yet pushed
+  updatedAt: text('updated_at').notNull(), // ISO 8601
 });
 
 // ── local_tasks — offline subset; progress_percent is Max-wins (§17.5) ──
@@ -59,6 +95,15 @@ export const localTasks = sqliteTable('local_tasks', {
   status: text('status').notNull(), // NOT_STARTED | IN_PROGRESS | DONE | BLOCKED
   progressPercent: real('progress_percent').notNull(), // 0–100, monotonic (Max-wins)
   assignedTo: text('assigned_to'),
+  // Cached from projects.tasks via /sync/delta (DDL v4). Nullable: a task may have no planned dates,
+  // and rows cached before v4 stay empty until the next delta pull refreshes them.
+  workType: text('work_type'), // FOUNDATION | STRUCTURE | MEP | … (the trade, shown on the card)
+  plannedStart: text('planned_start'), // ISO date yyyy-MM-dd
+  plannedEnd: text('planned_end'), // ISO date yyyy-MM-dd
+  // The planned working window within those days (DDL v5), from the TIME columns migration
+  // 20260811000001 added. "HH:MM:SS" as Postgres renders a TIME. Null where none was recorded.
+  plannedStartTime: text('planned_start_time'),
+  plannedEndTime: text('planned_end_time'),
   offlineSyncStatus: text('sync_status').notNull().$type<SyncStatus>(),
 });
 
@@ -123,6 +168,7 @@ export const localMaterialConsumptions = sqliteTable('local_material_consumption
 export type SiteReport = typeof localSiteReports.$inferSelect;
 export type Issue = typeof localIssues.$inferSelect;
 export type Photo = typeof localPhotos.$inferSelect;
+export type PhotoAnnotationRow = typeof localPhotoAnnotations.$inferSelect;
 export type Task = typeof localTasks.$inferSelect;
 export type Attendance = typeof localAttendance.$inferSelect;
 export type SafetyChecklist = typeof localSafetyChecklists.$inferSelect;

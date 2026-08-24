@@ -6,11 +6,13 @@
 // transcribeAudio() (upload to File Service → POST /ai/transcribe).
 
 import { useEffect, useRef, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, Animated, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Animated } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
+import { LoadingState } from './LoadingState';
 import { useAudioRecorder, RecordingPresets, requestRecordingPermissionsAsync } from 'expo-audio';
 import { useT } from '../i18n';
 import { transcribeAudio } from '../api/transcribe';
-import { colors, fontFamily, spacing, typography } from '../theme/tokens';
+import { colors, fontFamily, radius, spacing, typography } from '../theme/tokens';
 
 type Phase = 'idle' | 'recording' | 'transcribing';
 
@@ -21,6 +23,21 @@ interface VoiceNoteButtonProps {
   language?: string;
   disabled?: boolean;
   testID?: string;
+  /**
+   * 'bar' (default) — the full-width labelled pill used inside report/issue forms.
+   * 'fab' — a round 56×56 icon-only button for the SITE_ENGINEER home FAB (mockup parity);
+   *   drops the label, same hold-to-record behaviour.
+   */
+  shape?: 'bar' | 'fab';
+  /** `round` for a button that floats over content; `square` where it IS the panel. */
+  fabShape?: 'round' | 'square';
+  /**
+   * FAB diameter. Defaults to the 56px project standard (the Site Engineer home, the Tasks list).
+   * The issue screen's VOICE NOTE panel passes 80, which is what its mockup draws
+   * (05_site_worker/01_home/03_sw_issue: `w-20 h-20 rounded-full`) — there the button is the whole
+   * point of a dedicated panel rather than an accessory floating over a list.
+   */
+  fabSize?: number;
 }
 
 export function VoiceNoteButton({
@@ -28,6 +45,9 @@ export function VoiceNoteButton({
   language,
   disabled,
   testID,
+  shape = 'bar',
+  fabShape = 'round',
+  fabSize = 56,
 }: VoiceNoteButtonProps) {
   const t = useT();
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
@@ -114,6 +134,14 @@ export function VoiceNoteButton({
         accessibilityLabel={label}
         style={[
           styles.button,
+          shape === 'fab' ? styles.fab : null,
+          shape === 'fab' ? { width: fabSize, height: fabSize } : null,
+          // ROUND WHERE IT FLOATS, SQUARE WHERE IT IS THE SUBJECT (PO decision 2026-08-11). On the
+          // task list it hovers over rows and reads as an action you can start from anywhere — the
+          // universal shape for that. Inside the issue form's VOICE NOTE panel it is the panel's
+          // whole point, sitting in a column of rounded plates, and a lone circle there read as a
+          // floating action button, which it is not.
+          shape === 'fab' && fabShape === 'square' ? { borderRadius: radius.xl } : null,
           phase === 'recording' ? styles.recording : null,
           isBusy ? styles.busy : null,
         ]}
@@ -125,11 +153,20 @@ export function VoiceNoteButton({
             ))}
           </View>
         ) : phase === 'transcribing' ? (
-          <ActivityIndicator color={colors.bg} />
+          // The §32.7 loading component (ADR-055) — the mockup's "inside a button" case. This button
+          // is theme-fixed on the light tokens (every glyph beside this one takes `colors.bg`), and
+          // `tone="onPrimary"` resolves to exactly that token, so the ring keeps the white it had.
+          <LoadingState variant="micro" theme="light" tone="onPrimary" />
+        ) : shape === 'fab' ? (
+          // Round FAB (SITE_ENGINEER home) — the mockup's clean line mic, white on the blue button.
+          <MaterialIcons name="mic" size={Math.round(fabSize * 0.46)} color={colors.bg} />
         ) : (
-          <Text style={styles.mic}>🎙️</Text>
+          // The SAME clean-line mic as the FAB, not an emoji (PO decision 2026-08-08 — the engineer
+          // Home's mic is the project standard). An emoji renders in the system font, so it changed
+          // shape and colour between Android versions and could never take the button's tint.
+          <MaterialIcons name="mic" size={22} color={colors.bg} />
         )}
-        <Text style={styles.label}>{label}</Text>
+        {shape === 'fab' ? null : <Text style={styles.label}>{label}</Text>}
       </Pressable>
       {error ? (
         <Text testID="voice-note-error" style={styles.error}>
@@ -150,11 +187,30 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingHorizontal: spacing.md,
     backgroundColor: colors.primary,
-    borderRadius: 12,
+    borderRadius: radius.md,
+  },
+  // Round icon-only FAB variant (mockup parity, SITE_ENGINEER home). 56×56 per the DESIGN.md FAB spec.
+  //
+  // A BLACK drop shadow, never a coloured one. The mockups put `shadow-2xl` under this button and it
+  // earns its keep on the Tasks list, where the FAB floats over cards whose "Update progress" button
+  // is the same blue — without separation the two read as one shape. A shadow tinted with the
+  // button's own colour would be the FAB glow §32.7 prohibits; plain Material elevation is not.
+  fab: {
+    minHeight: 0,
+    width: 56,
+    height: 56,
+    // A circle by default; `fabShape="square"` overrides it above.
+    borderRadius: 999,
+    paddingHorizontal: 0,
+    gap: 0,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.45,
+    shadowRadius: 12,
+    elevation: 8,
   },
   recording: { backgroundColor: colors.danger },
   busy: { opacity: 0.7 },
-  mic: { fontSize: 22 },
   label: {
     color: colors.bg,
     fontSize: typography.body.fontSize,
@@ -164,7 +220,7 @@ const styles = StyleSheet.create({
   bar: {
     width: 4,
     height: 24,
-    borderRadius: 2,
+    borderRadius: radius.sm,
     backgroundColor: colors.bg,
   },
   error: {

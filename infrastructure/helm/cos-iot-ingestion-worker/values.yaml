@@ -1,0 +1,88 @@
+# MUST stay 1. main.go connects with the fixed MQTT ClientID "iot-ingestion-worker" on a plain
+# (non-shared) subscription. MQTT requires the broker to disconnect the existing session when a
+# second client presents the same ClientID, so two replicas would evict each other in a loop and
+# telemetry would be lost. Raising this requires a per-pod ClientID AND an MQTT shared subscription
+# ($share/...) — a code change, not a values change.
+replicaCount: 1
+image:
+  repository: ''
+  tag: 'latest'
+  pullPolicy: IfNotPresent
+service:
+  type: ClusterIP
+  # Must equal the PORT env below and internal/health.DefaultPort. cos-analytics-worker probes 8080
+  # while its binary defaults to PORT=8091 and its chart never sets PORT — the liveness probe there
+  # can never succeed. Pinning both ends here makes that mismatch impossible.
+  port: 8080
+  # NO metricsPort: this worker exports no Prometheus metrics (no prom-client, no /metrics handler —
+  # grep the service). Declaring one produces a permanently-down scrape target. Add the port, the
+  # containerPort, the Service port and the scrape annotation together when metrics land.
+resources:
+  # Master §Phase 17 "Resource requests/limits per Go worker".
+  requests:
+    cpu: '200m'
+    memory: '128Mi'
+  limits:
+    cpu: '1000m'
+    memory: '256Mi'
+autoscaling:
+  # DISABLED deliberately. This worker is an MQTT subscriber on a single shared topic filter
+  # (cos/v1/devices/+/telemetry, QoS 1); extra replicas each receive their own copy of every
+  # message, so scaling out duplicates telemetry into Kafka rather than sharing the load.
+  # Revisit only alongside an MQTT shared-subscription ($share/) change.
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 1
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+podDisruptionBudget:
+  # DISABLED: with replicaCount 1 (see above), a minAvailable-1 PDB would block every voluntary
+  # eviction — node drains and cluster upgrades would hang on this pod forever. A single-replica
+  # MQTT subscriber has no availability to protect; it is restarted, not kept up.
+  enabled: false
+  minAvailable: 0
+env:
+  OTEL_SERVICE_NAME: 'iot-ingestion-worker'
+  OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector:4318'
+  # Set explicitly so the probe port and the listen port cannot drift apart (see service.port).
+  PORT: '8080'
+  MQTT_BROKER_URL: 'tcp://emqx:1883'
+  KAFKA_BROKERS: 'kafka:9092'
+  # Topic geometry for topics this worker creates on first publish. Must match the TypeScript
+  # producer's defaults (packages/@cos/shared/src/kafka/producer.ts) so a tenant's topic is the same
+  # shape whichever side creates it.
+  KAFKA_TOPIC_PARTITIONS: '3'
+  KAFKA_TOPIC_REPLICATION_FACTOR: '1'
+envFrom:
+  # Credentials (MQTT / Kafka SASL) land here. Optional so the pod still starts in environments
+  # that run an unauthenticated broker.
+  - secretRef:
+      name: cos-iot-ingestion-worker-secrets
+      optional: true
+serviceAccount:
+  create: true
+  name: 'cos-iot-ingestion-worker'
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: cos-iot-ingestion-worker
+          topologyKey: kubernetes.io/hostname
+# GET /health/live is served by internal/health (verified by internal/health/health_test.go, which
+# also asserts the path and the 8080 default). ADR-039: four charts once probed a path the service
+# did not serve — only a real deploy catches that, lint and dry-run do not.
+livenessProbe:
+  httpGet:
+    path: /health/live
+    port: 8080
+  initialDelaySeconds: 10
+  periodSeconds: 10
+readinessProbe:
+  httpGet:
+    path: /health/live
+    port: 8080
+  initialDelaySeconds: 5
+  periodSeconds: 5

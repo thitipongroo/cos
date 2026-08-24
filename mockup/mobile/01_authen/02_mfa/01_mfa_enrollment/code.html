@@ -1,0 +1,305 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>MFA Enrollment | Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .six-digit-input:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+            outline: none;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .shimmer-bg {
+            background: linear-gradient(90deg, transparent, rgba(6, 182, 212, 0.05), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 3s infinite linear;
+        }
+        /* Custom scrollbar for dark mode industrial feel */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #031427; }
+        ::-webkit-scrollbar-thumb { background: #26364a; border-radius: 2px; }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "primary-fixed-dim": "#b4c5ff",
+                      "surface": "#031427",
+                      "secondary": "#4cd7f6",
+                      "on-error-container": "#ffdad6",
+                      "outline-variant": "#434655",
+                      "on-primary": "#002a78",
+                      "surface-tint": "#b4c5ff",
+                      "on-surface-variant": "#c3c6d7",
+                      "error": "#ffb4ab",
+                      "on-error": "#690005",
+                      "tertiary-fixed-dim": "#c1c5dc",
+                      "surface-variant": "#26364a",
+                      "mobile-danger": "#FF3B30",
+                      "on-tertiary": "#2b3041",
+                      "surface-container-lowest": "#000f21",
+                      "secondary-fixed-dim": "#4cd7f6",
+                      "primary-container": "#2563eb",
+                      "surface-container-low": "#0b1c30",
+                      "on-surface": "#d3e4fe",
+                      "outline": "#8d90a0",
+                      "surface-dim": "#031427",
+                      "on-background": "#d3e4fe",
+                      "inverse-primary": "#0053db",
+                      "on-primary-fixed-variant": "#003ea8",
+                      "on-secondary": "#003640",
+                      "mobile-success": "#00C853",
+                      "tertiary-container": "#686c80",
+                      "tertiary": "#c1c5dc",
+                      "sync-pending": "#94A3B8",
+                      "inverse-surface": "#d3e4fe",
+                      "dark-bg": "#020617",
+                      "inverse-on-surface": "#213145",
+                      "primary-fixed": "#dbe1ff",
+                      "on-primary-fixed": "#00174b",
+                      "error-container": "#93000a",
+                      "surface-bright": "#2a3a4f",
+                      "mobile-primary": "#0066FF",
+                      "on-secondary-fixed-variant": "#004e5c",
+                      "tertiary-fixed": "#dee1f9",
+                      "dark-surface": "#0F172A",
+                      "sync-active": "#FFD60A",
+                      "primary": "#b4c5ff",
+                      "on-tertiary-fixed": "#161b2b",
+                      "secondary-fixed": "#acedff",
+                      "on-primary-container": "#eeefff",
+                      "on-tertiary-fixed-variant": "#414658",
+                      "on-secondary-container": "#00424e",
+                      "secondary-container": "#03b5d3",
+                      "on-tertiary-container": "#eeefff",
+                      "on-secondary-fixed": "#001f26",
+                      "surface-container-high": "#1b2b3f",
+                      "background": "#031427",
+                      "mobile-warning": "#FF9500",
+                      "surface-container": "#102034",
+                      "surface-container-highest": "#26364a"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "space-2": "8px",
+                      "touch-target": "52px",
+                      "edge-mobile": "24px",
+                      "base": "4px",
+                      "web-margin": "32px",
+                      "space-3": "12px",
+                      "space-4": "16px",
+                      "space-1": "4px"
+              },
+              "fontFamily": {
+                      "h2-web": ["Inter Tight"],
+                      "display-web": ["Inter Tight"],
+                      "hero-mobile": ["Inter Tight"],
+                      "label-mobile": ["Inter Tight"],
+                      "tiny-web": ["Inter Tight"],
+                      "body-web": ["Inter Tight"],
+                      "h1-web": ["Inter Tight"],
+                      "body-mobile": ["Inter Tight"]
+              },
+              "fontSize": {
+                      "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                      "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                      "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                      "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}]
+              }
+            },
+          },
+        }
+    </script>
+</head>
+<body class="bg-surface text-on-surface min-h-screen flex flex-col font-body-mobile text-body-mobile selection:bg-primary/30">
+<!-- Top App Bar (Shared Component) -->
+<header class="sticky top-0 z-50 w-full h-mobile-touch-target flex items-center justify-between px-edge-mobile bg-surface-dim shadow-sm border-b border-white/5"><div class="flex items-center gap-space-2">
+<div class="w-7 h-7">
+<img src="https://lh3.googleusercontent.com/aida-public/AB6AXuCDwaDlT1G-dIxWPU4dTacHiVgGbCCb6QAULlY_uBkOZaT4Pv1L8oQAo5cTQ9GSbLRxtDyf7WAFkYSTx9kfB1AzHrw8HhrSXnrO9nX9cd2A_x2J0Ssc16_xi661XFBX2gNNFcyNBkWKeoaBaBtCeRJQe5nmnw95BNtAGJfFfehbcAPg_zWV-lIy91wkdFfog9jQPx05IRnSoLa4KammeAyJUZed96ZrS1oPu6JXcmSKGAA1ycwjRYfDflxqsAWD2DF6yKuuGbVrnhU" alt="COS Logo" class="w-full h-full object-contain">
+</div>
+<span class="font-hero-mobile text-primary tracking-tighter uppercase text-h2-web">CONSTRUCTION OS</span>
+</div>
+<div class="flex items-center gap-1 bg-surface-container px-2 py-0.5 rounded-full border border-outline/10">
+<span class="material-symbols-outlined text-mobile-success text-xs" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-label-mobile text-[9px] text-mobile-success tracking-widest uppercase">SYNCED</span>
+</div></header>
+<main class="flex-1 px-edge-mobile py-space-4 space-y-6 pb-24">
+<!-- Welcome & Identity -->
+<section>
+<h1 class="font-hero-mobile text-hero-mobile leading-tight">MFA Enrollment</h1>
+<p class="text-on-surface-variant text-sm mt-1">Tenant Administrator Security Protocol</p>
+</section>
+<!-- AI Mandatory Guardrail -->
+<section class="relative overflow-hidden bg-secondary/5 border-l-4 border-secondary rounded-lg p-space-3 shimmer-bg">
+<div class="flex gap-space-3">
+<span class="material-symbols-outlined text-secondary">info</span>
+<div class="space-y-1">
+<p class="font-label-mobile text-secondary uppercase tracking-wider">Security Compliance Notice</p>
+<p class="text-xs text-on-surface leading-relaxed">Multi-Factor Authentication is mandatory for all Tenant Admins to comply with <span class="font-bold">Tier 4 Infrastructure Security standards</span>. This protects mission-critical project data.</p>
+</div>
+</div>
+</section>
+<!-- Step 1: Scan QR -->
+<div class="space-y-4">
+<div class="flex items-center gap-space-2">
+<span class="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-on-primary text-[10px] font-bold">01</span>
+<h2 class="font-label-mobile uppercase tracking-wide">Setup Authenticator</h2>
+</div>
+<div class="bg-surface-container rounded-xl p-space-4 flex flex-col items-center border border-outline-variant/20">
+<p class="text-sm text-on-surface-variant text-center mb-6">Scan the QR code below using your preferred authenticator app (Google, Microsoft, or Authy).</p>
+<!-- Industrial QR Code Frame -->
+<div class="relative p-2 bg-white rounded-lg group">
+<div class="absolute -top-2 -left-2 w-6 h-6 border-t-4 border-l-4 border-primary-container rounded-tl-sm"></div>
+<div class="absolute -top-2 -right-2 w-6 h-6 border-t-4 border-r-4 border-primary-container rounded-tr-sm"></div>
+<div class="absolute -bottom-2 -left-2 w-6 h-6 border-b-4 border-l-4 border-primary-container rounded-bl-sm"></div>
+<div class="absolute -bottom-2 -right-2 w-6 h-6 border-b-4 border-r-4 border-primary-container rounded-br-sm"></div>
+<img class="w-48 h-48 block" data-alt="A clean, high-resolution digital QR code displayed on a white rectangular background. The QR code is perfectly square with sharp black modules against the white field. It is presented in a modern UI context with a technological aesthetic, avoiding any distracting shadows or reflections, focused purely on clear scannability for a professional software application." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCb_ZkCFNzHFsvE61_tHrd0qMAN1ccCq7feR0Ebb_2eI8AG-Y85hxAFEsuds-R44IdX9vf74OFEgM_imsuELHkeej7GYBQ-m9PzdDZuH_pOnTUtNoc-aWaIN_ANNbLx4fnKboTzQ1J0tvhev0djebzqoF25Vlee99RoHqXeGU71zz0dofg7SeTBQQjouBZOdh5ygYGwrP70jKaj9kRKa-eu8f5pQi7kZ05JbH_fSSNmWRDjvX9G2pudckPlt6YM2Dly7EJ9b3exBVU">
+</div>
+<!-- Secret Key Display -->
+<div class="mt-8 w-full">
+<label class="text-[10px] uppercase text-on-surface-variant font-bold tracking-widest block mb-2 px-1">Manual Entry Secret Key</label>
+<div class="flex items-center justify-between bg-surface-container-low border border-outline-variant/30 rounded-lg p-space-3">
+<code class="text-primary font-mono font-bold tracking-widest text-sm uppercase">BX47 - K9R2 - ML9P - 22WX</code>
+<button class="p-2 hover:bg-surface-bright rounded-md active:scale-95 transition-all text-on-surface-variant">
+<span class="material-symbols-outlined text-sm">content_copy</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Step 2: Verification -->
+<div class="space-y-4 pt-4">
+<div class="flex items-center gap-space-2">
+<span class="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-on-primary text-[10px] font-bold">02</span>
+<h2 class="font-label-mobile uppercase tracking-wide">Enter Verification Code</h2>
+</div>
+<div class="flex justify-between gap-space-2 px-1">
+<input class="six-digit-input w-full h-14 bg-surface-container border border-outline-variant/30 rounded-lg text-center text-2xl font-bold text-primary focus:ring-0 focus:border-primary-container" maxlength="1" type="number">
+<input class="six-digit-input w-full h-14 bg-surface-container border border-outline-variant/30 rounded-lg text-center text-2xl font-bold text-primary focus:ring-0 focus:border-primary-container" maxlength="1" type="number">
+<input class="six-digit-input w-full h-14 bg-surface-container border border-outline-variant/30 rounded-lg text-center text-2xl font-bold text-primary focus:ring-0 focus:border-primary-container" maxlength="1" type="number">
+<div class="w-2 flex items-center justify-center opacity-30">—</div>
+<input class="six-digit-input w-full h-14 bg-surface-container border border-outline-variant/30 rounded-lg text-center text-2xl font-bold text-primary focus:ring-0 focus:border-primary-container" maxlength="1" type="number">
+<input class="six-digit-input w-full h-14 bg-surface-container border border-outline-variant/30 rounded-lg text-center text-2xl font-bold text-primary focus:ring-0 focus:border-primary-container" maxlength="1" type="number">
+<input class="six-digit-input w-full h-14 bg-surface-container border border-outline-variant/30 rounded-lg text-center text-2xl font-bold text-primary focus:ring-0 focus:border-primary-container" maxlength="1" type="number">
+</div>
+<button class="w-full h-touch-target bg-primary-container text-on-primary-container font-label-mobile uppercase tracking-widest rounded-lg shadow-lg active:scale-95 transition-transform duration-150 flex items-center justify-center gap-2">
+                Complete Enrollment
+                <span class="material-symbols-outlined text-sm">verified</span>
+</button>
+</div>
+<!-- Backup Codes Bento Section -->
+<section class="bg-surface-container-high rounded-xl p-space-4 border-l-4 border-mobile-warning/40">
+<div class="flex justify-between items-start mb-4">
+<div>
+<h3 class="font-label-mobile text-on-surface uppercase tracking-wide">Backup Recovery Codes</h3>
+<p class="text-xs text-on-surface-variant mt-1 leading-relaxed">Save these safely. Use them if you lose access to your device.</p>
+</div>
+<span class="material-symbols-outlined text-mobile-warning">warning</span>
+</div>
+<div class="grid grid-cols-2 gap-2 font-mono text-xs">
+<div class="bg-surface-container p-2 rounded border border-outline-variant/20 text-on-surface/70">8831-2910</div>
+<div class="bg-surface-container p-2 rounded border border-outline-variant/20 text-on-surface/70">1294-0048</div>
+<div class="bg-surface-container p-2 rounded border border-outline-variant/20 text-on-surface/70">5561-9921</div>
+<div class="bg-surface-container p-2 rounded border border-outline-variant/20 text-on-surface/70">3409-7712</div>
+</div>
+<div class="flex gap-2 mt-4">
+<button class="flex-1 flex items-center justify-center gap-2 py-3 bg-surface-bright rounded text-xs font-bold uppercase tracking-tighter border border-outline-variant/30 hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-sm">download</span>
+                    PDF Download
+                </button>
+<button class="flex-1 flex items-center justify-center gap-2 py-3 bg-surface-bright rounded text-xs font-bold uppercase tracking-tighter border border-outline-variant/30 hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-sm">content_copy</span>
+                    Copy All
+                </button>
+</div>
+</section>
+<!-- Security History Log -->
+<section class="space-y-3 pb-8">
+<h3 class="font-label-mobile text-[10px] text-on-surface-variant uppercase tracking-[0.2em] px-1">Audit Trail History</h3>
+<div class="bg-surface-container-low rounded-lg divide-y divide-outline-variant/10 border border-outline-variant/10 overflow-hidden">
+<div class="p-3 flex justify-between items-center bg-surface-container-highest/30">
+<div class="flex gap-3 items-center">
+<span class="material-symbols-outlined text-mobile-warning text-lg">edit_note</span>
+<div>
+<p class="text-xs font-bold">MFA Setup Initiated</p>
+<p class="text-[10px] text-on-surface-variant">2023-10-27 14:32:01 • IP: 192.168.1.44</p>
+</div>
+</div>
+<span class="text-[9px] font-bold text-mobile-warning bg-mobile-warning/10 px-2 py-0.5 rounded">PENDING</span>
+</div>
+<div class="p-3 flex justify-between items-center opacity-70">
+<div class="flex gap-3 items-center">
+<span class="material-symbols-outlined text-mobile-success text-lg">login</span>
+<div>
+<p class="text-xs font-bold">Successfull Login (Password)</p>
+<p class="text-[10px] text-on-surface-variant">2023-10-27 14:30:12 • Mobile Web</p>
+</div>
+</div>
+<span class="text-[9px] font-bold text-on-surface-variant">15M AGO</span>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation (Shared Component Integration) -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center px-edge-mobile py-web-space-2 bg-surface-container-low border-t border-white/5"><div class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-variant transition-transform active:scale-95 duration-100 p-2 rounded-xl">
+<span class="material-symbols-outlined">description</span>
+<span class="font-label-mobile text-[10px]">Permits</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-variant transition-transform active:scale-95 duration-100 p-2 rounded-xl">
+<span class="material-symbols-outlined">security</span>
+<span class="font-label-mobile text-[10px]">Security</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-variant transition-transform active:scale-95 duration-100 p-2 rounded-xl">
+<span class="material-symbols-outlined">notifications</span>
+<span class="font-label-mobile text-[10px]">Alerts</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl px-4 py-1 transition-transform active:scale-95 duration-100">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-mobile text-[10px]">Settings</span>
+</div></nav>
+<script>
+        // Auto-focus next input in MFA code fields
+        const inputs = document.querySelectorAll('.six-digit-input');
+        inputs.forEach((input, index) => {
+            input.addEventListener('input', (e) => {
+                if (e.target.value.length === 1 && index < inputs.length - 1) {
+                    inputs[index + 1].focus();
+                }
+            });
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && e.target.value === '' && index > 0) {
+                    inputs[index - 1].focus();
+                }
+            });
+        });
+
+        // Simple tactile interaction feedback
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('touchstart', () => btn.classList.add('opacity-80'));
+            btn.addEventListener('touchend', () => btn.classList.remove('opacity-80'));
+        });
+    </script>
+
+
+</body></html>

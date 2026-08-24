@@ -12,20 +12,13 @@
 import { Injectable, OnModuleDestroy, UnauthorizedException } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { createPrismaClient } from '../../../shared/prisma/create-prisma-client';
+import { appDatabaseUrl } from '../../../shared/prisma/app-database-url';
+import { assertSafeTenantId } from '../../../shared/prisma/assert-safe-tenant-id';
 import { withRetry } from '@cos/database';
 import { createLogger } from '@cos/logger';
 import { clsTenantId, clsDedicatedDbUrl } from '../../../shared/context/cls-context';
 
 const logger = createLogger('tenant-prisma');
-
-// UUID validation — prevents injection via app.current_tenant_id
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-function assertSafeTenantId(id: string): void {
-  if (!UUID_PATTERN.test(id)) {
-    throw new UnauthorizedException(`Invalid tenant_id format: ${id}`);
-  }
-}
 
 @Injectable()
 export class TenantPrismaService implements OnModuleDestroy {
@@ -44,10 +37,10 @@ export class TenantPrismaService implements OnModuleDestroy {
 
   private getClient(dedicatedDbUrl?: string): PrismaClient {
     // Tenant-scoped queries connect as the non-superuser app role (APP_DATABASE_URL) so PostgreSQL RLS
-    // is enforced. Falls back to DATABASE_URL if APP_DATABASE_URL is unset. Enterprise dedicated DBs
-    // pass dedicatedDbUrl (already an app-role URL).
-    const sharedUrl = process.env['APP_DATABASE_URL'] ?? process.env['DATABASE_URL'];
-    const url = dedicatedDbUrl ?? sharedUrl ?? '';
+    // is enforced. appDatabaseUrl() throws if it is unset — we must NEVER fall back to the
+    // RLS-bypassing DATABASE_URL superuser (spec §7.7, QM-18). Enterprise dedicated DBs pass
+    // dedicatedDbUrl (already an app-role URL), so shared resolution is evaluated lazily via `??`.
+    const url = dedicatedDbUrl ?? appDatabaseUrl();
     let client = this.clients.get(url);
     if (!client) {
       client = createPrismaClient(url);

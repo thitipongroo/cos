@@ -427,7 +427,7 @@ carries real integration surface.
 
 - Objective: full test suite + quality gates.
 - Exit: coverage 100/100 (QM-1); mutation score ≥ 70%; load test passes at target concurrency;
-  Lighthouse CI frontend gate (Core Web Vitals + bundle budget) green (`30 §30.9`).
+  Lighthouse CI frontend gate (Core Web Vitals + bundle budget + accessibility category = 1.0) green (`30 §30.9`).
 
 **Phase 19 — Final Production Readiness** · deps `Ph1–18` · risk `R-05, R-06`
 
@@ -504,7 +504,10 @@ ARCHITECTURE DECISION (authoritative — from file 01):
   Exception:  AI services (Python ecosystem) and Go workers are ALWAYS separate —
               different language runtime, cannot run inside Node.js process.
 
-DEPLOYABLE UNITS (derived from: docs/specifications/32-implementation-specifications.md §32.2):
+DEPLOYABLE UNITS — MIRROR ONLY. The CANONICAL runtime table is
+docs/specifications/32-implementation-specifications.md §32.2. Never edit a Runtime value here
+first: change §32.2, then propagate. scripts/readiness/check-service-runtimes.sh verifies both
+against the build files in services/<name>/ and fails CI on a mismatch.
 ┌────────────────────────────────┬──────────────────┬────────────────────────────┐
 │ Deployable                     │ Runtime          │ Contents                   │
 ├────────────────────────────────┼──────────────────┼────────────────────────────┤
@@ -517,14 +520,22 @@ DEPLOYABLE UNITS (derived from: docs/specifications/32-implementation-specificat
 │ File Service                   │ Fastify          │ Multipart upload I/O       │
 │ (services/file-service/)       │                  │ (extracted for throughput) │
 ├────────────────────────────────┼──────────────────┼────────────────────────────┤
-│ AI Gateway                     │ FastAPI (Python)  │ LLM routing, RAG          │
-│ AI Embedding Worker            │ FastAPI (Python)  │ Embedding generation       │
-│ AI OCR Pipeline                │ FastAPI (Python)  │ OCR processing             │
+│ AI Gateway                     │ FastAPI (Python) │ LLM routing, RAG           │
+│ AI Embedding Worker            │ FastAPI (Python) │ Embedding generation       │
+│ AI OCR Pipeline                │ FastAPI (Python) │ OCR processing             │
 │ (services/ai-*)                │                  │                            │
+├────────────────────────────────┼──────────────────┼────────────────────────────┤
+│ AI Transcription Pipeline      │ FastAPI (Python) │ Voice-note transcription   │
+│ (services/ai-transcription-…)  │                  │ (ADR-052)                  │
 ├────────────────────────────────┼──────────────────┼────────────────────────────┤
 │ Analytics Worker               │ Go               │ ClickHouse aggregation     │
 │ KG Ingestion Worker            │ Go               │ Neo4j ingestion            │
+│ IoT Ingestion Worker           │ Go               │ EMQX (MQTT) → Kafka        │
+│ BIM Import Worker              │ Python           │ IFC parse / quantities     │
 │ (services/*-worker/)           │                  │                            │
+├────────────────────────────────┼──────────────────┼────────────────────────────┤
+│ Credential Service             │ Node             │ W3C DID/VC issuance +      │
+│ (services/credential-service/) │                  │ verification (ADR-019/058) │
 ├────────────────────────────────┼──────────────────┼────────────────────────────┤
 │ Web App (apps/web/)            │ Next.js+Serwist  │ Tablet/laptop online+offline│
 │ Mobile (apps/mobile/)          │ React Native     │ Smartphone native app      │
@@ -1009,6 +1020,33 @@ Avoid in all visual work:
   ✗ Rounded playful shapes
   ✗ Gradients or glow effects
 
+  TWO EXCEPTIONS to the gradient/glow rule — both because no project data is on screen yet:
+    1. Pre-auth entry screens (login, OTP verify, verification overlay, Privacy Policy) —
+       rotating gear, `architecture` mark, cyan glow. PO decision 2026-07-16; Privacy Policy
+       added by PO decision 2026-08-03 (reached from the login footer, so still pre-auth).
+       THIS LIST IS NOT "every pre-auth screen". The Terms of Use and Support Centre
+       routes (2026-08-09) are pre-auth, are pinned dark like the rest, and ship with NO
+       glow — they are opened FROM an entry screen rather than being one. Adding a
+       pre-auth screen does not add it here.
+       SUPPORT CENTRE IS NO LONGER PRE-AUTH ONLY (PO decision 2026-08-17): it gained a
+       POST-AUTH twin at app/(app)/support.tsx, opened by the TopBar "?" — which until
+       then showed a "coming soon" note, because AuthGate bounces a signed-in user out
+       of the (auth) group and the only Support route lived there. The line above still
+       holds for the PRE-AUTH route, which keeps its pinned dark surface and no glow.
+       The post-auth twin follows the USER'S THEME, exactly like app/(app)/privacy-policy
+       .tsx (PO 2026-08-04) — pinning is a property of the pre-auth surfaces only, so a
+       screen having a pre-auth copy never makes its post-auth copy dark. The two are not
+       the same screen either; the split is authoritative in spec §32.7
+       "Support Centre — two routes".
+    2. <LoadingState /> `ai` variant only — cyan glow; unmounts the moment data renders.
+       PO decision 2026-07-17; ADR-055. THE REST OF THE MOTIF IS PER PLATFORM (PO 2026-08-17):
+       mobile adds a scan-line + waveform (mockup/mobile/00_loading C), web adds a pulsing
+       processor plate + ping dot and has NEITHER (mockup/desktop/imp_002_… C). One component,
+       two drawings — do not port one platform's pair onto the other. Spec §32.7 Exception 2.
+  Everywhere the signed-in app shows project data, the prohibition holds.
+  Amber stays a semantic warning token — only its use as a *brand* colour is prohibited.
+  Authoritative: spec §32.7 "Exception 1 / Exception 2".
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 BRAND COLOR TOKENS (global — web/PWA + mobile)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1022,8 +1060,30 @@ Source: construction_os_wordmark_brand_palette_v_1.md §5
   --cos-white:        #F8FAFC   Concrete White — page backgrounds, surfaces, reports
 
 Dark theme tokens (source: brand_palette §6):
-  --cos-dark-bg:          #020617   Page background
+  --cos-dark-bg:          #020617   Page background — AND the mobile <TopBar /> (PO decision
+                                    2026-08-06, reversing the 2026-07-16 rule that put chrome "on a
+                                    surface background distinct from the content area").
+                                    --cos-dark-surface is the CARD colour, so chrome drawn in it read
+                                    as a card welded to the edge of the screen. Source: mockup/mobile/
+                                    04_tenant_admin/01_home/01_home_dashboard/code.html — header is
+                                    `bg-surface dark:bg-dark-bg`, and with <html class="dark"> +
+                                    darkMode:"class" the dark: utility wins on SPECIFICITY (.dark
+                                    .dark\:bg-dark-bg = 2 classes) over the 1-class utilities, so
+                                    source order does not decide it. Light is unaffected — there `bg`
+                                    is the grey page and `surface` the white card, already distinct.
   --cos-dark-surface:     #0F172A   Card / panel surface
+  --cos-dark-surface-container:
+                          #102034   The mobile <MobileNav /> bottom bar, and ONLY it (added
+                                    2026-08-06, PO decision). The two bars deliberately DIFFER: the
+                                    nav is `bg-surface-container dark:bg-surface-container` — same
+                                    value both modes — plus rounded-t-xl + top border, i.e. a raised
+                                    sheet, while the header is flat against the page. The set had no
+                                    token meaning "chrome sheet", which is why the nav sat on the card
+                                    colour. Recounted 2026-08-08 over all 321 mockup/mobile/**
+                                    code.html: 312 define surface-container as #102034, 5 as
+                                    #0F172A, and four are one-offs (#12182b, #141d2b, #1a2238,
+                                    #1e293b). Previous figures (217 / 5) were counted on 2026-08-06
+                                    against 226 files and went stale as the mockup set grew.
   --cos-dark-elevated:    #111827   Elevated modal / dropdown surface
   --cos-dark-text:        #F8FAFC   Primary text
   --cos-dark-muted:       #94A3B8   Secondary text / inactive
@@ -1032,6 +1092,31 @@ Dark theme tokens (source: brand_palette §6):
   --cos-dark-success:     #10B981   Success state
   --cos-dark-warning:     #F59E0B   Warning state
   --cos-dark-danger:      #EF4444   Error / danger state
+  --cos-dark-accent:      #4CD7F6   Accent ON dark bg — icons, eyebrows, card titles, tags
+                                    (added 2026-08-06, ACCESSIBILITY not style: --mobile-primary
+                                    #0066FF is 4.17:1 on --cos-dark-bg — passes 3:1 for a non-text
+                                    control, FAILS the 4.5:1 AA text threshold that §20.8 gates on.
+                                    #4CD7F6 is 11.87:1. CTAs KEEP --mobile-primary: a filled button
+                                    puts blue behind white text, so contrast is the button's.)
+  --cos-dark-outline:     #46464C   Card / input border on dark surfaces (added 2026-08-06). This is
+                                    the MINORITY mockup value and is kept on purpose (PO decision
+                                    2026-08-07): recounted 2026-08-08 over all 321 mockup/mobile/**
+                                    code.html, outline-variant is #434655 in 186 files and #46464C in
+                                    126, with #334155 in 4 and four one-offs; 1 file declares none.
+                                    (Was 189 / 28 on 2026-08-06 against 226 files — the minority is
+                                    now much larger, but still the minority, so the ruling stands.)
+                                    The spec once
+                                    justified it as "the value the mockups use" — untrue, and that
+                                    sentence is gone. (70,70,76) vs (67,70,85): the neutral grey reads
+                                    as an EDGE on a navy surface where the bluer one blends in, which
+                                    is why the translucent glow was replaced at all. It is also every
+                                    card/row/chip/chrome hairline in the dark app — 16,504 px in
+                                    01-identity.png alone — so changing it invalidates every dark
+                                    capture for 9 points of blue. See §32.7 before "correcting" it.
+                                    Before this the set had NO outline token and borders were
+                                    invented per call site — mobile had drifted to
+                                    rgba(148,163,184,0.24), a glow rather than an edge.
+                                    Value is the outline-variant used by mockup/mobile/**.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 MOBILE COLOR TOKENS (field app — React Native)
@@ -1066,7 +1151,7 @@ TYPOGRAPHY TOKENS
 
 Brand font (source: brand_palette §7):
   Primary:     Inter Tight
-  Package:     @fontsource/inter-tight (via npm — add to web/PWA)
+  Package:     @fontsource-variable/inter-tight (via npm — add to web/PWA)
                React Native: expo-font with Inter Tight from Google Fonts
   Fallback:    Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif
   Weight used: 400 (body), 500 (labels/UI), 600 (headings), 700 (wordmark OS)
@@ -1110,6 +1195,65 @@ SPACING TOKENS (mobile — source: MOBILE_UX_GUIDELINES.md)
   --mobile-space-md: 16px   Section padding
   --mobile-space-lg: 24px   Screen edge padding
   --mobile-space-xl: 32px   Major section separation
+
+  Mobile border radius (added 2026-08-05, corrected 2026-08-06 — TIGHTER THAN WEB, from the mockups):
+  --mobile-radius-sm:   2px   Chips, inline tags, small status pills
+  --mobile-radius-md:   4px   List rows, icon tiles, accordion items, BUTTONS
+  --mobile-radius-lg:   8px   Cards, inputs
+  --mobile-radius-xl:  12px   Hero / summary cards, emphasised panels
+  --mobile-radius-2xl: 16px   Dashed closing panel (left at Tailwind's default in the mockups)
+  EVERY status pill / badge takes xl 12px — one token, no exceptions. The mockups DISAGREE: counted
+  2026-08-08 over all 321 mockup/mobile/**/code.html, 155 keep rounded-full at 9999px (154 declare it,
+  1 omits `full` and inherits Tailwind's default) and 146 override it to 0.75rem = 12px; the remaining
+  20 ship no borderRadius config at all. (Was 153 / 52 of 226 on 2026-08-06 — the 12px family has
+  grown from a fifth of the set to nearly half as the mockups expanded, which strengthens rather than
+  weakens the ruling.) This is a platform ruling, not a reading, and
+  it costs nothing: these badges are 18-26px tall, so 12px is at or within 1px of a capsule and the
+  two families were never apart on screen. 999 stays for circles only (avatars, status dots, radio
+  marks, round icon plates) where the radius is half the width, off this scale entirely.
+
+  Card body length (added 2026-08-06): a card's detail text renders at most THREE lines and
+  truncates with an ellipsis. Two layers — CARD_BODY_LINES=3 + ellipsizeMode="tail" in
+  TransparencyKit is the runtime guarantee (holds under Thai, larger system fonts, narrow
+  handsets); a 140-character budget on *Body / *.body / *.desc i18n keys, tested by
+  cardBodyLength.spec.ts, is the editorial rule that stops the clamp ever firing. 140 = three lines
+  at the 42-48 chars/line a card body gets between a 44px icon tile and a chevron. Truncation is a
+  SAFETY NET: an ellipsis on a transparency screen hides what the reader opened it for. 17 bodies
+  were over budget when the rule landed (retentionBody was 306 chars = 5 lines); all were shortened,
+  none clamped. Does NOT apply to user- or API-supplied text.
+
+  A heading is stated once (added 2026-08-06, PO approval): a card directly under a SectionLabel
+  does not repeat that label as its own title, so InfoCard's `title` is OPTIONAL. Eight pairs
+  shipped reading the same i18n key twice — delete.why, delete.how, identity.access, iot.note,
+  location.where, logs.retention, network.retention, portal.rights — giving "HOW LONG THIS IS KEPT /
+  How long this is kept" on seven screens. The mockups head a section once. Both elements set
+  accessibilityRole="header", so the duplicate was also announced twice in a row. A card that is one
+  of SEVERAL in a section KEEPS its title: there it names the card, not the section. Held by
+  headingStutter.spec.ts, which scans screen SOURCE — a redundantly-titled card renders perfectly,
+  so no render test can see it.
+
+  HOW FAR MOCKUP AUTHORITY RUNS (ADR-085, 2026-08-06). Mockups are authoritative for STYLE — radius,
+  colour, spacing, alignment, badge shape, copy length — and a difference there is a bug in the code.
+  They are NOT authoritative for COMPOSITION. Where a screen's structure has outgrown its mockup, the
+  IMPLEMENTED STRUCTURE STANDS; a drawing does not remove reviewed working capability. Examples on
+  record: the user list keeps its search, role filter chips and audit card (the mockup has none of
+  them); the transparency hub keeps navigation rows rather than the mockup's accordion, whose
+  contents — biometric hash, 500m geofence, employee ID, "real-time" sync — this platform does not
+  have. EVERY structural deviation carries its reason in the screen's header comment; an unrecorded
+  one cannot be told apart from an oversight, which is how the hub's rows were flagged as a gap when
+  they were correct. Mockup files are NOT edited to match — that would erase the record of what was
+  originally specified.
+
+  mobile-radius-lg 8px =/= web-radius-lg 12px. Shared names, different values, held at different
+  distances — do NOT harmonise them. Source: mockup/mobile/**/code.html overrides Tailwind
+  borderRadius to lg 0.25rem / xl 0.5rem (full varies as counted above).
+  Before 2026-08-05 mobile had NO radius token while web did, so each RN component invented its own:
+  253 literals in 56 files using 21 distinct numbers. The 2026-08-06 sweep took that to 28 and
+  theme/__tests__/radiusRatchet.spec.ts holds the count so it can only fall. SQUARE ICON PLATES
+  (tinted glyph tiles, avatar boxes, logo boxes) are neither on the scale nor circles: a plate >=28px
+  takes plateRadius(side) = round(side/4) so the corner scales with the plate; below 28px it takes
+  md; round means HALF the width, a different shape. What remains after that is circles plus ONE
+  named exception — the bottom-nav active-tab highlight at 20, neither a square plate nor a capsule.
 
 Web/Desktop spacing scale:
   Base unit: 4px (industry standard — compatible with Tailwind's default scale)
@@ -1162,14 +1306,84 @@ MOBILE COMPONENT LIBRARY (source: MOBILE_UX_GUIDELINES.md)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Core components (React Native — implement in apps/mobile/):
-  <MobileNav />         Bottom navigation, 4–5 items max, icons + labels
-  <QuickActionCard />   60px min height, icon + label + badge, single tap
+  <MobileNav />         Bottom navigation, exactly 4 items (PO 2026-08-04), icons + labels, no Profile tab
+  <QuickActionCard />   60px min height, icon + label + badge, single tap. The TILE form, used on a
+                        home screen (SITE_ENGINEER's four shortcuts). Not the menu form below.
+  <QuickActionRow />    THE PROJECT'S QUICK-ACTION BUTTON (PO decision 2026-08-09). Every
+                        quick-action MENU draws its actions with this and no other shape:
+                        a coloured left accent strip, a tinted rounded-square icon plate, a title,
+                        an uppercase subtitle saying what the action does, and a trailing glyph.
+                        The accent is per-action and groups like with like — it is the caller's
+                        signal, not decoration, and callers pass a palette colour, never a hex.
+                        `variant="dark"` for modal hosts that stay dark on both themes (the Tenant
+                        Admin quick-command overlay); omit it on ordinary screens, which follow the
+                        user's theme. It began as that overlay's private ActionCard and was lifted
+                        out when the Site Worker menu was told to match it: two menus drawing one
+                        button two ways is a copy waiting to drift.
+  <ProcurementInsight /> The manager dashboard's AI Insights panel (PO 2026-08-10). Renders ONLY
+                        what /ai/reports/procurement-summary returns: the model's own text, its
+                        `confidence`, and the required `low_confidence` verdict. Leads with a BAND
+                        (lib/aiConfidence.ts) rather than a bare percentage, per Google PAIR's
+                        guidance, using the band edges spec §33.8 already defines (0.9 / 0.7). The
+                        endpoint is per-project, so the dashboard carries a <ProjectPicker /> and
+                        the panel names the project its figures came from.
+  <ProjectContextBar /> THE PROJECT'S "ACTIVE PROJECT" BAR (PO decision 2026-08-12). Every working
+                        screen that belongs to one project opens with it, for EVERY role: a 6px
+                        leading accent, a tinted `apartment` plate, an "ACTIVE PROJECT" eyebrow over
+                        the project name and its building, and a 44pt switch button at the trailing
+                        edge. Tapping anywhere on it opens <SelectProjectSheet />; the button is a
+                        target, not a second action. Renders NOTHING when no project is chosen —
+                        that state means the picker has not been answered yet, and the picker is
+                        already over the user.
+                        The shape is the restructured SITE_ENGINEER set's, which draws the same bar
+                        on all four of its screens (01_home/01_se_home_dashboard · 03_tasks/
+                        01_se_tasks · 04_reports/04_se_reports); it replaced the Site Worker
+                        drawing's location-pin line so that one question is not answered two ways in
+                        one product. EYEBROW AND PLATE GLYPH TAKE --cos-dark-accent, NOT the
+                        drawings' --mobile-primary: unfilled text and icons on a dark surface must
+                        clear 4.5:1 themselves and #0066FF is 4.17:1 there (§20.8). The 6px strip
+                        keeps primary — nobody reads a bar of colour.
+  <SelectProjectSheet /> The project picker OVERLAY, and the project's one project-selection shape
+                        (PO decision 2026-08-12): a centred card on a dimmed backdrop, always
+                        closeable, never a route. Source drawings: 05_site_worker/01_home/
+                        00_sw_project_selection and 03_site_engineer/01_home/00_project_selection.
+  <OverlaySyncPill />   The LABELLED sync pill an overlay's own top bar carries (PO 2026-08-09).
+                        Distinct from <SyncPill />, which is glyph-only because the shared TopBar
+                        also holds the brand and two icon buttons; a full-screen overlay has room
+                        for the word, and the quick-action mockups draw it. Same four states and
+                        precedence as every other sync indicator — and since 2026-08-20 that is
+                        enforced rather than asserted: both pills read useSyncPillView, so the
+                        precedence exists once and only the presentation is each pill's own.
   <PhotoCapture />      Camera + gallery grid, inline annotation, offline queue
   <VoiceNoteButton />   Hold-to-record, waveform animation, auto-transcription
-  <OfflineBanner />     Fixed top, queue count, auto-dismiss on reconnect
+  <SyncPill />          Top-bar glyph carrying EVERY sync state, offline included.
+                        States: error > syncing > pending > synced. Offline is NOT a
+                        separate state — it PRODUCES pending (writes enqueue), and
+                        offline with an empty queue genuinely is synced.
+                        OfflineBanner deleted 2026-08-06 (PO): two indicators of one
+                        subject in one shell, and the red strip pushed pages down.
+                        SYNCED IS cloud-done, APP-WIDE (PO 2026-08-06, reaffirmed
+                        2026-08-20). check-circle is the rejected option: one state
+                        may not have two glyphs, and a cloud says WHERE the work is —
+                        on the server — which a tick leaves open. <OverlaySyncPill />
+                        had drawn the tick from 01_quick_action_menu's "✓ SYNCED"
+                        since it was extracted; a mockup is authoritative for style,
+                        not for what a symbol means (ADR-085). The drawer and the
+                        sync queue already drew the cloud. Held by useSyncPillView,
+                        where it is a constant rather than a caller's choice.
   <TaskCard />          Swipeable (swipe-right = done), status badge, photo count
   <StatusChip />        Visual status: Todo / InProgress / Done / Syncing / Synced
   <OptimisticList />    Instant UI update, rollback on failure, retry option
+  <LoadingState />      Loading placeholder / progress. Presentational only — caller owns
+                        `progress` (0–100, omit = indeterminate) and `label` (pre-translated).
+                        Mobile variants: widget | list | ai | micro (no `table` — see below).
+                        Web variants:    widget | table | ai | micro (no `list`).
+                        `tone="onPrimary"` (mobile, micro only) for a loader inside a
+                        primary-filled button — the default ink is that button's own fill.
+                        A DETERMINATE LOADER FINISHES ITS RUN before it is replaced: the bar is
+                        driven to 100 and held one fill duration, then <LoadingBoundary />
+                        crossfades to the content (PO 2026-08-17). Indeterminate holds 0ms.
+                        Full contract: spec §32.7 "Loading State"; ADR-055.
 
 Form components:
   <LocationPicker />    Map + auto-detect GPS
@@ -1235,7 +1449,7 @@ This was the actual failure mode once. Required files (all must exist):
                                  Tight stack). Use extend so the default palette keeps working.
   apps/web/src/app/globals.css   @tailwind base/components/utilities + :root{ --cos-* / --web-* }
                                  + .dark{} overrides (dark-theme tokens)
-  apps/web/src/app/layout.tsx    import '@fontsource/inter-tight/{400,500,600,700}.css' then
+  apps/web/src/app/layout.tsx    import '@fontsource-variable/inter-tight' then
                                  import './globals.css'  (global CSS only loads from a layout)
 
   Spacing: do NOT override — Tailwind default 4px scale already equals the --web-space-* tokens.
@@ -1314,7 +1528,7 @@ Purchase Order Workflow:
   Approval Chain Additional Rules (spec §15.5):
     - Vendor Invoice (AP): FINANCE approves up to configured limit; above limit requires EXECUTIVE
     - Client Billing (AR): PM approves up to configured limit; above limit requires EXECUTIVE
-    - Safety permit: SITE_WORKER/SITE_ENGINEER initiates → SAFETY_OFFICER approves → PM (final)
+    - Safety permit: SITE_WORKER/SITE-ENGINEER initiates → SAFETY_OFFICER approves → PM (final)
     - All approval decisions: logged with approver_id, decision, timestamp, comment (audit_logs table)
 
 RULES:
@@ -1411,8 +1625,20 @@ backend/prisma/           — Database schema and migrations
   migrations/             — Prisma migration files (per tenant schema)
 
 ai/
-  prompts/                — Prompt templates (versioned)
-  chains/                 — LangChain chain definitions
+  prompts/                — Prompt templates (versioned). Repo-root, and BAKED INTO the ai-gateway
+                            image (its Dockerfile builds from the repo-root context and COPYs this
+                            directory to /app/ai/prompts). A service-scoped build context cannot
+                            reach it, and the image then dies at import with
+                            "Could not locate ai/prompts" — compose hid that behind a bind mount
+                            while the Helm chart had no equivalent.
+  chains/                 — DEPRECATED as a chain-config location; kept empty. LangChain chain
+                            definitions are service-local: services/ai-gateway/ai/chains/*.yaml,
+                            resolved via providers.langchain_config.CHAINS_DIR (override:
+                            AI_CHAINS_DIR). Two divergent rag.yaml files on different schemas existed
+                            here and there — retrieval.py read the repo-root one via a parents[3]
+                            walk that IndexErrors inside the container, while langchain_config.py
+                            read the service-local one. Product-owner decision 2026-07-21:
+                            service-local is canonical; the repo-root copy was merged in and deleted.
   (AI output evaluation — it is operationalized via MLflow / Evidently AI on a monthly cadence; see docs/specifications/30-testing-strategy.md §30.11)
 
 docs/
@@ -1428,7 +1654,10 @@ scripts/
 Tooling:
 
 - Node.js runtime: 24.x (root `package.json` `engines.node` `>=24.0.0`; Docker images use `node:24-alpine`)
-- Package manager: pnpm 11.9.x with workspace protocol (root `package.json` pins `packageManager: pnpm@11.9.0`; `engines.pnpm` `>=11.0.0`)
+- Package manager: pnpm — latest stable 11.x with workspace protocol. Do NOT pin a fixed patch
+  version in this spec: root `package.json` `packageManager` carries whatever 11.x release the repo
+  is currently on (Corepack pins the exact build for reproducibility), and `engines.pnpm` stays
+  `>=11.0.0`. Only the major line (11) is normative — a patch/minor bump is not a spec deviation.
 - Monorepo orchestration: Turborepo 2.x
 - TypeScript: 6.x (strict mode, no implicit any)
 - Linting: ESLint 10.x flat config (root `eslint.config.mjs`)
@@ -1448,7 +1677,16 @@ Generate:
     packages/@cos/: shared, database, rbac, validation, logger, tracing, financial,
                     types, config
     Each README must contain: purpose, public API, dependencies, configuration, usage example (QM-11)
-- root pnpm-workspace.yaml with all packages listed
+- root pnpm-workspace.yaml listing every workspace member: `apps/*`, `backend`, `services/*`,
+  `packages/@cos/*`.
+  **Mobile workspace exception (mirrors the tsconfig exception below):** `apps/mobile` is explicitly
+  EXCLUDED via `!apps/mobile`. React Native + Expo + Metro + CocoaPods assume a flat (hoisted)
+  `node_modules`, which pnpm's isolated linker breaks — Metro cannot resolve transitive
+  `expo-*` / `@react-native/*` packages. `apps/mobile` installs standalone as its OWN pnpm workspace:
+  `apps/mobile/pnpm-workspace.yaml` sets `nodeLinker: hoisted` (pnpm 10/11 reads the linker setting
+  there, NOT `apps/mobile/.npmrc` — which only documents this) — run `cd apps/mobile && pnpm install`,
+  consuming `@cos/types` as a `file:` dependency. Nothing in turbo/CI references `@cos/mobile`; mobile lint,
+  type-check and tests run as their own CI job. This exclusion is REQUIRED, not a deviation.
 - turbo.json with build, test, lint, dev pipelines
 - root tsconfig.base.json (strict, paths for @cos/* packages)
 - per-service tsconfig.json extending base
@@ -2355,9 +2593,22 @@ Offline Conflict Resolution Strategy (authoritative):
       - description:  last writer wins (client_submitted_at)
       - status:       server wins (status changes are authoritative)
       - photos:       union of both (no conflict — additive)
+                      SCOPE: this resolves WHICH photos are attached; the set only grows.
+                      A photo's own annotation is NOT covered here — see below.
       - resolution_note: last writer wins
     Conflict flag: if status was changed server-side while client had offline edit,
                    create ConflictRecord for ROLE: SITE_ENGINEER to review
+
+  Entity: photo annotation (the ADR-056 stroke list on a photo)
+    Strategy: CONFLICT_FLAGGED — no auto-resolution
+    Rationale: an annotation stays editable after sync, so two people can mark up the same
+               photo offline. Merging strokes would silently blend two readings of one defect;
+               last-write-wins would silently discard one. Neither is acceptable on a record
+               used to evidence site defects.
+    Implementation: on sync, server checks for concurrent server-side modification since the
+                    client's last sync; if found → status CONFLICT_FLAGGED, notify
+                    ROLE: SITE_ENGINEER; never auto-merge, auto-overwrite, or discard.
+    Product-owner decision 2026-07-17; ADR-056. Authoritative rule table: spec §17.5.
 
   Entity: safety_checklists
     Strategy: SERVER_WINS
@@ -2370,19 +2621,17 @@ Offline Conflict Resolution Strategy (authoritative):
     Implementation: compare client progress_percent vs server progress_percent; apply max(client, server)
     Conflict flag: none — Max-wins resolves silently (no human review required)
 
-  Financial entities (BOQ line items, payment approvals, budget entries, invoice records):
-    Strategy: NO_AUTO_RESOLUTION — financial data must never be auto-merged or auto-overwritten
-    Rationale: financial integrity requires human review of all concurrent-edit conflicts
-    Implementation:
-      - Offline WRITE operations on financial entities are held in sync_queue with status PENDING
-      - Before applying: server checks for concurrent server-side modification since client's last sync
-      - If conflict detected → set status CONFLICT_FLAGGED; push notification to FINANCE
-        or PROJECT_MANAGER for manual resolution
-      - NEVER auto-merge, auto-overwrite, or silently discard financial data
-      - Conflict must be resolved manually by FINANCE or PROJECT_MANAGER before payload
-        is applied to server state
-    Entities covered: BOQ line items, payment_approvals, budget_entries, invoice_records
-    Note: this rule was added to QM-9 (context.md v3.1.0 GAP-2) — authoritative source is here
+  Financial entities — ONLINE-REQUIRED, not offline-writable (spec §17.4):
+    Entities: POs, vendor invoices / AR / AP, payments, budget-line mutations.
+    (BOQ line items are read-only cache per §17.4 — also never offline-mutated.)
+    Rule: financial records require server-side validation before any mutation (dual-write
+          risk); the mobile client never queues them offline (§17.4 online-required scope).
+    Enforcement: the sync push endpoint (POST /sync/push, POST /sync/resolve) has NO case for a
+          financial entity_type — any such write falls through to the default and is rejected
+          with BadRequestException. Financial data therefore never enters the sync queue and is
+          never auto-merged, auto-overwritten, or silently discarded.
+    Source of truth: spec §17.4 (Entity Offline Scope). The §17.5 conflict table has no financial
+          row because financial entities are never synced offline.
 
   Sync Protocol:
     Client sends: { entity_type, entity_id, client_version, payload, client_submitted_at }
@@ -2619,6 +2868,9 @@ IMPORTANT SCOPE CLARIFICATION:
   - AR Client Billing (§11/§15): create → approve (Finance → PM ≤ limit → Executive) → paid
   - AR Receipts (client payments; settle billing to PAID) + Contracts + Customers (§11)
   - Cash Flow Forecast — deterministic 13-week direct method (ADR-024; §09 AI forecast deferred)
+  - Client contract signing (e-signature) — bilateral PKI/VC via CredentialService (§5.4); contractor
+    authorized-role signs directly + client signs via magic-link (ADR-030); contract document uploaded OR
+    generated in-app; status → signed when both signatures verify → emit ContractSigned (ADR-058; §11 ContractSignature)
 
 Financial Precision: follow FINANCIAL PRECISION SPEC section above.
 
@@ -2705,6 +2957,11 @@ APIs (canonical prefix /api/v1/finance/*; spec §14 Financial APIs; AIP-132; see
   GET  /api/v1/finance/customers                       — list customers
   POST /api/v1/finance/contracts                       — create a contract (client-/vendor-side, §11)
   GET  /api/v1/finance/contracts                       — list contracts (tenant-wide; ?project_id=)
+  POST /api/v1/finance/contracts/:id/document          — attach contract doc (upload|generate) (ADR-058)
+  POST /api/v1/finance/contracts/:id/sign              — contractor-side PKI/VC signature (ADR-058)
+  POST /api/v1/finance/contracts/:id/sign-links        — issue client magic-link to sign (ADR-058)
+  POST /api/v1/finance/contracts/sign/:token           — external client signs via magic-link (tenant-mw excluded)
+  GET  /api/v1/finance/contracts/:id/signatures        — signature audit trail (ADR-058)
   POST /api/v1/finance/billing                         — create AR client billing (DRAFT)
   GET  /api/v1/finance/billing                         — list AR billings (tenant-wide; ?project_id=&status=)
   GET  /api/v1/finance/billing/:billingId              — get a single AR billing
@@ -2721,6 +2978,11 @@ Generate:
 - Decimal.js used for all calculations
 - DTOs with validation
 - OpenAPI 3.1 spec
+- Client contract signing (ADR-058): ContractSignature migration (§11) + Contract.signed_document_id;
+  endpoints /contracts/:id/document|sign|sign-links + /contracts/sign/:token (magic-link, tenant-mw
+  excluded, ADR-030) + /contracts/:id/signatures; PKI/VC via CredentialService (§5.4); document upload OR
+  in-app generation; signed when both INTERNAL+CLIENT signatures verify → emit ContractSigned (§16);
+  signature rows + document hash to WORM audit (§9); data classification RESTRICTED
 - Unit tests: aggregation accuracy, Kafka consumer handlers
 - Integration tests: full budget lifecycle + procurement event consumption
 - Kafka event producers:
@@ -2817,10 +3079,17 @@ Kafka Configuration:
                 e.g. tenant_abc.construction.project.created.v1, tenant_abc.procurement.po.created.v1
                 CloudEvents type / event_type (no tenant prefix): {domain}.{entity}.{action}.v{N}
                 Platform events (platform.*): shared "platform.events" topic, not tenant-scoped (§15.7)
-                DLQ: {tenant_id}.{domain}.dlq
-  Topic provisioning: explicit (producers use allowAutoTopicCreation:false); per-tenant topic set
-                created idempotently at onboarding — SMB Phase 2, Enterprise Phase 25 workflow,
-                local dev via seed (source: spec §7.3 Topic provisioning)
+                DLQ: {tenant_id}.dlq — ONE per tenant, not per domain. The §7.3 guarantee is
+                about tenants; a DLQ per domain multiplied every tenant's topic count by ten.
+                Originating domain stays readable from the dlq.original_topic header.
+  Topic provisioning: explicit — producers use allowAutoTopicCreation:false AND
+                auto.create.topics.enable is false on every real broker, so Kafka never creates a
+                topic implicitly. Topics are created ON FIRST PUBLISH by KafkaProducer, and a
+                tenant's DLQ on first failure. Do NOT provision the catalogue at onboarding: that
+                made topic count scale with customer headcount (46 topics / 414 replicas per
+                tenant at RF=3) instead of usage. Exception: enterprise tenants get a dedicated
+                namespace/cluster and stay eagerly provisioned (Phase 25 workflow).
+                (source: spec §7.3 Topic provisioning)
   Consumer subscription: shared group {service}.shared subscribes per-tenant topics via RegExp
                 (^[^.]+\.{event_type}$) + validates tenant_id header before processing (§7.3)
   Default retention: 7 days
@@ -3092,14 +3361,70 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
 
   Role-based navigation (React Native — authoritative, ทุก role):
     SITE_WORKER:
-      Bottom nav: Home | Tasks | Report | Issues | Profile
+      Bottom nav: Home | Issues | Reports | Safety  (PO decision 2026-08-08; supersedes
+                  "Home | Tasks | Report | Issues | Profile" above-left)
+                  Profile left every role's nav on 2026-08-04 (top-bar avatar instead), and §32.7
+                  allows exactly four items — so Safety, a daily obligation with no entry point at
+                  all before, took the fourth slot and TASKS became a pushed child of Home, reached
+                  from the Tasks quick action FieldHome already carried. The role's mockups
+                  (mockup/mobile/05_site_worker) drew Tasks | Issues | Reports | Safety with no
+                  Home; the product owner chose Home-first so the bar starts in the same place for
+                  all twelve roles. The 2026-08-08 mockup restructure (527231f) did NOT settle
+                  this: its five drawings carry four DIFFERENT bars between them — Projects |
+                  Tasks | Safety | Directory, the old Tasks | Issues | Reports | Safety, Projects |
+                  Daily Logs | Safety | Directory, and a FIVE-item one ending in Profile. The
+                  product owner kept Home | Issues | Reports | Safety on 2026-08-08 rather than
+                  pick between them, then settled it on 2026-08-09 as Home | Tasks | Safety |
+                  Directory — the 01_home/01_sw_dashboard bar with Home in the Projects slot, since a
+                  field worker has no project-portfolio screen. Issues and the daily Report gave up
+                  their slots and are pushed from the Home FAB's quick-action menu, which carries
+                  exactly those two plus Safety.
+      Check-in:   REMOVED from the product on 2026-08-09 (product-owner). Self check-in was on the
+                  Home screen, moved briefly into the navigation drawer, and was then cut with its
+                  project picker, its POST /workers/:id/attendance client and its strings. The Home
+                  "Shift hours" tile survives it: `attendance` is one of the six entity types
+                  /sync/delta streams down, so its rows are recorded elsewhere and synced — the
+                  button was never their only source.
       Workflows:  daily report, quick issue, task list, safety checklist
+      Quick actions: an OVERLAY opened by the Home FAB, not a route (PO 2026-08-09) — the mockups
+                  head that surface with a close X, and a pushed route gets the shared TopBar's back
+                  chevron instead. Same shape as the Tenant Admin quick-command overlay.
+      Forms:      The daily report has NO free-text summary and the issue capture has ONE text
+                  field, both 2026-08-09 to match the mockups. `site_reports.summary` is nullable
+                  and is sent null; `issues.title` is NOT NULL and capped at 255, so the issue's
+                  single field supplies the first 255 characters as the title and anything beyond
+                  stays in the unbounded `description`.
 
     SITE_ENGINEER:
-      Bottom nav: Home | Reports | Issues | Inspections | Profile
+      Bottom nav: Home | Issues | Tasks | Reports  (PO decision 2026-08-12; dark tab bar — the
+                  role's landing is the dark dashboard; order per mockup, PO decision 2026-07-16)
+                  TASKS REPLACED INSPECTIONS on 2026-08-12. The role's mockup set was restructured
+                  that day (mockup/mobile/03_site_engineer/ went from ~120 files to 5 screens:
+                  01_home/00_project_selection · 01_home/01_se_home_dashboard ·
+                  02_issues/02_se_issue_dashboard · 03_tasks/01_se_tasks · 04_reports/04_se_reports)
+                  and all four bar-bearing screens draw Home | Issues | Tasks | Reports. Unlike the
+                  SITE_WORKER case above — where a mockup restructure produced four DIFFERENT bars
+                  between five drawings and therefore settled nothing — this set is unanimous, and
+                  the product owner took it as the bar.
+                  Inspections is NOT dropped: `/inspections` is a derived drawer row for this role
+                  (module "Inspections / QC"), suppressed only while it was a tab, so it reappears
+                  in the drawer the moment it leaves the bar. `/tasks` makes the opposite move.
+                  SAFETY_OFFICER keeps the same ROUTE on its own bar, labelled "Checklists" there
+                  (PO decision 2026-08-13) — one screen, one name per surface; see that role below.
       Workflows:  review reports, conflict resolution, inspection approval,
-                  manpower overview, issue escalation
+                  manpower overview, issue escalation, material requisition
       Extra:      ConflictBadge, conflict review screen
+      Profile:    NOT a bottom-nav tab for this role — reached from the avatar in the Home
+                  header, next to the notification bell (product-owner decision 2026-07-16,
+                  from mockup/mobile/03_site_engineer/01_home/01_se_home_dashboard/, renamed from
+                  01_dashboard/ in the 2026-08-11 restructure). Four tabs is within the 4–5
+                  that spec §32.7 allows for <MobileNav />.
+                  SUPERSEDED 2026-08-09 (product-owner): THE NAVIGATION DRAWER IS THE PROFILE, for
+                  every role. There is no /profile route any more — the screen was deleted and its
+                  content is <AccountSettings />, rendered inside the drawer the avatar opens. The
+                  avatar is still the way in; what it opens changed.
+      Material requisition: SITE_ENGINEER raises purchase requests — 06-rbac-permission-matrix
+                  gives the role RW on "Purchase requests", and a shortage is noticed on site.
 
     PROJECT_MANAGER:
       Bottom nav: Home | Projects | Procurement | Dashboard | Profile
@@ -3148,8 +3473,22 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
         Profile:   account settings
       Offline:    lists cached, delivery recording works fully offline
 
+    TENANT_ADMIN:
+      Bottom nav: Home | Users | Alerts | Settings  (dark tab bar — the role's landing is the dark
+                  admin dashboard; product-owner decision 2026-07-28, from
+                  mockup/mobile/04_tenant_admin/01_home/01_home_dashboard/)
+      Screens:
+        Home:      admin dashboard — system status, AI token usage vs quota (§26 / §31.3),
+                   pending approvals (payments + POs), AI insights
+        Users:     tenant user list with role + MFA status (GET /users, TENANT_ADMIN-only, §14.3);
+                   Invite action — full mobile invite flow is a follow-up (web console for now)
+        Alerts:    notification inbox (the top-bar bell route, promoted to a tab for this role)
+        Settings:  notification preferences (§19.6; the notification-preferences route)
+      Profile:    NOT a bottom-nav tab — reached from the avatar in the top bar (as SITE_ENGINEER).
+                  Four tabs is within the 4–5 spec §32.7 allows for <MobileNav />.
+
     RBAC enforcement: JWT role claim → bottom nav + screen access
-    Shared components: PhotoCapture, VoiceNoteButton, OfflineBanner, SyncStatusBar
+    Shared components: PhotoCapture, VoiceNoteButton, SyncPill (OfflineBanner + SyncStatusBar deleted)
 
   React Native App Stack:
     Framework:      React Native + Expo (managed workflow)
@@ -3205,7 +3544,7 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
     - React hooks: useSyncStatus(), usePendingCount(), useConflicts()
     - Zustand store slices: syncStore, offlineStore
     - Unit tests: SyncManager, ConflictHandler, DeltaSyncClient
-    - UI components: SyncStatusBar, ConflictBadge, OfflineBanner
+    - UI components: SyncPill, ConflictBadge
     - Feature screens (role-based, FULL functional + offline + testIDs — per the Role-based
       navigation spec above). ADDED per product-owner ruling: the role screens were specified in
       the navigation section but were absent from this Generate list; the mobile feature UI is owned
@@ -3220,8 +3559,19 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
         * SITE_ENGINEER: reports (review + record material consumption per report — enqueues 'material'
           with report_id → /sync/push, PO ruling M1/M2) · issues (escalation) · inspections (list →
           checklist → pass/fail + photo) · conflict-review screen · profile
-        * SAFETY_OFFICER: home · incidents (report safety incident offline — local_incidents PENDING +
-          enqueue 'safety' → /sync/push → createIncident, PO ruling D1/D2) · profile
+        * SAFETY_OFFICER: home (safety dashboard — open-incident count from GET /safety/compliance,
+          daily-checklist card, recent incidents) · incidents (report safety incident offline —
+          local_incidents PENDING + enqueue 'safety' → /sync/push → createIncident, PO ruling D1/D2;
+          feed + filter pills + acknowledge) · checklists (the /inspections route, relabelled —
+          fill a template, PASS/FAIL per item, sign, submit) · permits (register + approve/reject,
+          §20.7.7 + §6.4 "Permits" RW; a SAFETY_PERMIT is PM-final per §9, so this role is not
+          offered that control) · profile
+          Bar (PO decision 2026-08-13, mockup/mobile/07_safety_officer): Home | Incidents |
+          Checklists | Permits. Master enumerates no nav for this role — see spec 20 §20.7.7, which
+          says so outright — so the drawings settled it; §32.7's per-role table now records it.
+          THE DRAWINGS SHOW FOUR THINGS THIS PLATFORM CANNOT COMPUTE — a compliance percentage,
+          safe-hours-since-last-LTI, an AI risk score per incident, and a weather-sourced hazard
+          alert. Each is DRAWN and states that it is not available yet; none is given a number.
         * PROJECT_MANAGER: home (triage) · projects · procurement (status) · dashboard · profile
         * EXECUTIVE: home (KPI) · portfolio (health cards) · alerts (risk feed) · reports
           (AI summary) — read-only/offline-cached · profile
@@ -3230,11 +3580,14 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
         * PROCUREMENT_OFFICER/PROC_MANAGER: home · rfqs · orders · deliveries (record via
           POST /procurement/deliveries, photo + qty, offline) · profile
     - Shared mobile components (§32.7 Mobile Core Component Library): MobileNav, PhotoCapture,
-      VoiceNoteButton, TaskCard, QuickActionCard, StatusChip, OptimisticList, OfflineBanner
+      VoiceNoteButton, TaskCard, QuickActionCard, StatusChip, OptimisticList, SyncPill
     - Every screen exposes the testIDs consumed by the Detox E2E specs (apps/mobile/e2e/*)
 
   Generate (Web App — apps/web/):
     - Serwist configuration (@serwist/turbopack: withSerwist + createSerwistRoute) with runtime caching strategies
+      createSerwistRoute MUST pass `useNativeEsbuild: false` — it defaults to `platform === 'win32'`, which
+      imports the native `esbuild` (not a dependency; only `esbuild-wasm` is) and breaks `next build` on
+      Windows while Linux CI stays green. Authoritative: spec §32.7 → Web Implementation build constraints.
     - IndexedDB schema using idb library (typed, versioned)
     - PWA sync service using Background Sync API + IndexedDB queue
     - Service worker registration via SerwistProvider in the Next.js App Router root layout (app/layout.tsx)
@@ -3256,6 +3609,11 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
         PATCH /api/v1/crm/opportunities/:id/convert · GET|POST /api/v1/crm/contacts
         GET /api/v1/crm/customers
       RBAC: read = EXECUTIVE + CRM_SALES_MANAGER; write = CRM_SALES_MANAGER (+ TENANT_ADMIN).
+      PDPA: `crm.contacts.{name,email,phone}` and `crm.leads.contact_name` are personal data about
+      people with NO platform account. The TENANT is the controller and COS the PROCESSOR, so a
+      subject request is routed to the tenant rather than answered here — ADR-090; tagged by
+      migration 20260816000002; flows in docs/compliance/data-flow-map.md §9. `crm.leads.company`
+      is NOT tagged: a juristic person is not a data subject. There is no B2B exemption in Thai law.
 
 Local SQLite Schema (mirrors server entities for offline use):
   sync_queue:
@@ -3377,7 +3735,8 @@ AI Provider Decision:
     Consuming: Embedding Worker — ทุก embedding call ผ่าน interface นี้
     Embedding storage: pgvector (vector(1536)) + OpenSearch k-NN index
 
-  LangChain: langchain>=0.3, langchain-openai>=0.2 (langgraph: candidate only — LAYER-C-001 decision pending)
+  LangChain: langchain>=0.3, langchain-openai>=0.2 (langgraph: fallback candidate only — LAYER-C-001
+    provisionally resolved to Temporal.io, PO decision 2026-07-10; final commit gated by spec §22.6 benchmark)
     LangChainProviderConfig
     Interface: { getProviderPackage(): str, getModelClass(): type }
 
@@ -3409,7 +3768,9 @@ AI Services (FastAPI — all in ai/ directory):
          Chunking strategy:
            - Documents: recursive character splitter, chunk_size=500, overlap=100
            - Site reports: treat each report as one chunk (typically <500 tokens)
-         Chain config: stored in ai/chains/ as YAML per chain type
+         Chain config: stored in services/ai-gateway/ai/chains/ as YAML per chain type
+                       (service-local — resolved via providers.langchain_config.CHAINS_DIR,
+                        override AI_CHAINS_DIR; NOT repo-root ai/chains/ — PO decision 2026-07-21)
          Interface: LangChainProviderConfig.buildChain(chainType, tenantId): Chain
    API: POST /api/v1/ai/completions  { template_name, variables, model_hint? }
         POST /api/v1/rag/query       { query, tenant_id, entity_types?, top_k? }
@@ -3598,7 +3959,8 @@ APIs:
 
 Orchestration:
   Framework: plain Python sequential pipeline (no Agent Orchestrator — Layer A scope;
-             LangGraph deferred to LAYER-C-001 decision for Layer C autonomous AI;
+             Layer C orchestration = LAYER-C-001, provisionally resolved to Temporal.io
+             (PO 2026-07-10; final commit gated by §22.6 benchmark);
              see docs/specifications/22-ai-architecture.md §22.3)
   Step 1: RAG retrieval (via Phase 11 RAG API)
   Step 2: Context assembly and token budget check
@@ -3675,12 +4037,16 @@ Neo4j Sync Strategy (authoritative):
     - Graph is for traversal and relationship queries only
 
   Consumer groups for kg-ingestion-worker:
-    kg-consumer-group: subscribes to all cross-service events
+    kg-ingestion-worker.shared: subscribes to all cross-service events (§7.3 shared-tier convention
+      {service_name}.shared; supersedes the earlier literal name "kg-consumer-group")
     Topics consumed (regex): ^[^.]+\.(construction|procurement|site|finance)\..*
       (cross-tenant wildcard — all tenant-scoped topics for these domains;
        see docs/specifications/07-multi-tenant-architecture §7.3 and
        docs/specifications/15-event-driven-workflow §15.6)
-  Go Kafka client: github.com/IBM/sarama (pure Go; see docs/specifications/32-implementation-specifications)
+  Go Kafka client: github.com/twmb/franz-go v1.21.5 via the shared coskafka pipeline (kgo.ConsumeRegex).
+    sarama was replaced — it has no regex topic subscription (which the pattern above requires) and it
+    json.Unmarshal'd Avro-framed bytes; both broke against a real broker. The analytics-worker uses the
+    same franz-go/coskafka path. See docs/specifications/32-implementation-specifications
 
   Conflict handling: last-event-wins (graph is derived, not authoritative)
   Replay: on kg-worker restart, replay from last committed offset
@@ -3757,6 +4123,13 @@ Neo4j Node Labels and Properties:
     structure_type: String (enum: column/beam/slab/wall)
     material_type:  String
 
+  NOTE — Building/Floor/Room/Structure are NOT ingested into the KG (PO decision 2026-07-05).
+    They are backing/reference data and emit no Kafka events (see
+    backend/src/modules/project/{buildings,floors,rooms,structures}/*.service.ts). KG sync is
+    event-driven only (Neo4j Sync Strategy above — NOT CDC/batch), so with no events these four
+    labels cannot be materialised in Neo4j; they are intentionally absent from the mapper and the
+    constraints (8 event-backed labels only). Retained here to document the intended graph model.
+
 Relationships:
   (:Project)-[:HAS_MATERIAL]->(:Material)
   (:Material)-[:SUPPLIED_BY]->(:Vendor)
@@ -3772,6 +4145,8 @@ Relationships:
   (:Building)-[:CONTAINS_STRUCTURE]->(:Structure) — 1:N
   (:Task)-[:LOCATED_IN]->(:Floor)                — N:1 (task room-assignment; offline-cached per 17 §17.4)
   (:Task)-[:LOCATED_IN]->(:Room)                 — N:1
+  (The five relationships above all touch Building/Floor/Room/Structure and are therefore NOT
+   materialised in the KG — see the physical-hierarchy NOTE under Node Labels; PO 2026-07-05.)
 
   Note: DEPENDS_ON and USES relationships for Tasks derive from BOQ item hierarchy
         (task_id = boq_item_id; BOQ parent-child = DEPENDS_ON)
@@ -3838,9 +4213,19 @@ ClickHouse Strategy:
   Data ingestion: Kafka → ClickHouse via Kafka engine tables (native integration)
   Materialized views: pre-aggregate metrics at ingestion time
     (NOT query-time aggregation — ensures P95 SLA is met)
-  Table engine: ReplacingMergeTree for fact tables, AggregatingMergeTree for aggs
-  Partitioning: by toYYYYMM(event_date) for all fact tables
-  TTL: raw events retained 2 years, aggregated tables indefinite
+  Table engine: AggregatingMergeTree for the daily aggregate tables (the Gold layer). ClickHouse holds
+    pre-aggregated metrics only — there is no raw-event "fact" table here. Raw/cold retention lives in the
+    S3 + Apache Iceberg Data Lake (Path 2 — Debezium CDC → Kafka Connect S3 Sink; scheduled for Phase 17
+    but currently FUTURE/deferred per §9.4 — architected, not yet built),
+    which back-feeds ClickHouse cold storage. (ReplacingMergeTree is used only for carbon_records, Phase 24.)
+    This is the medallion split: Iceberg lake = Bronze/raw, ClickHouse = Gold/aggregates.
+  Partitioning: by toYYYYMM(event_date) for all aggregate tables
+  TTL: ClickHouse aggregate tables are indefinite (no TTL). Raw-event retention (2 yr operational, 10 yr
+    cold) is provided by PostgreSQL (source of truth, 2 yr rolling) + the Iceberg Data Lake (Path 2 —
+    deferred/FUTURE per §9.4), NOT by a ClickHouse raw table. Interim (until the Data Lake lands —
+    Phase 17+ per §9.4): raw events persist only for the Kafka retention window, so rebuilding a
+    materialized view or backfilling a new metric is limited until then — a new metric aggregates from
+    go-live forward, and PostgreSQL remains the authoritative rebuild source via event re-emission.
 
 ClickHouse Tables (analytics schema):
   project_cost_daily (AggregatingMergeTree):
@@ -3976,6 +4361,13 @@ Distributed Tracing:
   Go workers: trace every Kafka consume iteration and DB write
   Trace propagation: W3C TraceContext headers on HTTP, Kafka headers for async
   Sampling: 1% of requests in production (100% for errors — tail-based sampling; source: spec §31.5 — production rate corrected from 10% staging rate to 1% production rate)
+    Sampling happens ONLY at the OTel Collector (ADR-075). No SDK — Go (libs/go/cosotel), Python
+    (services/ai-gateway/otel.py) or Node (@cos/tracing) — may configure a sampler: head-sampling
+    discards spans inside the service, before the Collector's tail_sampling can apply its
+    error / AI-LLM / financial policies, so the "100% for errors" guarantee silently fails.
+    Baseline set via OTEL_SAMPLING_PERCENTAGE (PERCENT 0–100, NOT a ratio) on the Collector
+    Deployment; per §31.5 development=100, staging=10, production=1. Collector 0.103.0 accepts
+    only ${env:VAR} — the older ${VAR:-default} form makes the Collector refuse to start.
 
 Grafana Dashboards (required):
   Implementation dashboards (technology-based — spec §31.8):
@@ -4158,7 +4550,8 @@ Cloud Provider Decision:
   Note to agent: mark all cloud-specific resources with comment: # CLOUD: AWS
 
 Kubernetes Cluster Specification (production):
-  Control plane: cloud = managed (EKS); on-premise = self-managed — k3s (default) / RKE2 (CIS-/FIPS-regulated tenants) — RESOLVED ADR-039 (dev: k3s)
+  Control plane: cloud = managed (EKS); on-premise = self-managed — RKE2 with profile:cis for ALL production on-prem clusters (dev: k3s) — ADR-039 REVISED 2026-07-20, supersedes the old k3s-default/RKE2-for-regulated tiering. Reason: COS has real CIS/FIPS customers so RKE2 is required anyway, and k3s cannot produce a CIS self-assessment at all. Host OS = Ubuntu 24.04 + community RKE2 build (PO: no RHEL/SLES procurement) — this is OUTSIDE both FIPS certificates' tested operating environments, so FIPS status is user-ported: say "uses the FIPS 140-3 validated BoringCrypto module (CMVP #4735) on a user-ported OE", NEVER "FIPS 140-3 validated".
+    Linux POC 2026-07-20: BOTH VALIDATED. k3s — air-gap, etcd restore RTO 90s, full HA drill. RKE2 profile:cis — air-gap, etcd restore RTO 277s, full 3-node failover drill, FIPS BoringCrypto in the stock binary (no special build), and real helm install running 1/1. Two chart blockers found+fixed: (1) profile:cis enforces PodSecurity restricted but the charts had no seccompProfile, so Pods were rejected while Deployments were admitted (silent failure) — all 8 now set seccompProfile.type=RuntimeDefault, DO NOT REMOVE; (2) four charts probed a health path the service does not serve (/health or /healthz vs the real /health/live) and would CrashLoop in production — only a real deploy catches this, lint and dry-run do not. cos-file-service and cos-web probes remain UNVERIFIED. CIS caveat: k3s has no profile:cis switch and runs the apiserver in-process, so kube-bench cannot read its config and reports false negatives — hardening k3s changed the score by zero checks. Use RKE2 where an auditable CIS self-assessment is required. Pin K8s <= 1.34 while CIS is required (kube-bench cis-1.12 covers 1.32-1.34 only).
   Node groups:
     system-pool:    2x nodes, t3.medium (control plane components)
     app-pool:       min 3, max 10 nodes, t3.xlarge (application services)
@@ -4385,7 +4778,7 @@ Generate:
 - Shared testcontainers setup utility (@cos/test-utils package)
 - packages/@cos/test-utils/README.md (required per QM-11 — purpose, public API, dependencies, configuration, usage example; same README standard as all packages/@cos/* per Rule 31; per spec §30.13)
 - k6 load test scripts for all 4 scenarios above
-- Playwright E2E tests (web — location: tests/e2e/; runs on merge to `staging` (ADR-048); source: spec §30.5 + Phase 18 Generate):
+- Playwright E2E tests (web — location: tests/e2e/; runs on merge to `staging` (ADR-020); source: spec §30.5 + Phase 18 Generate):
     1. login — user authentication via SMS OTP and email/password flows; JWT issued; protected route accessible
     2. project create — PM creates project; status transitions DRAFT → ACTIVE
     3. report submit — Site Engineer submits daily site report; Kafka event emitted; PM notified
@@ -4396,10 +4789,10 @@ Generate:
     8. Safety incident — Safety Officer reports incident → PM receives push notification → acknowledged within 30 min SLA
     9. QC inspection — Inspector fills checklist → result recorded as fail → issue_severity populated → photo uploaded
     10. Approval escalation — Approver does not respond in 48 hours → next approver is notified
-- Detox E2E tests (React Native mobile — location: apps/mobile/e2e/; runs on merge to `staging` (ADR-048); source: spec §30.5, §30.7):
-    1. Offline check-in — Worker checks in with no connectivity → record queued → sync on reconnect
-    2. Offline inspection — Inspector fills checklist offline → photo attached → sync on reconnect
-    3. Sync conflict resolution — Two users update same task progress_percent while offline → Max-wins applied on sync (higher value wins; progress is monotonic)
+- Detox E2E tests (React Native mobile — location: apps/mobile/e2e/; runs on merge to `staging` (ADR-020); source: spec §30.5, §30.7):
+    1. Offline inspection — Inspector fills checklist offline → photo attached → sync on reconnect
+    2. Sync conflict resolution — Two users update same task progress_percent while offline → Max-wins applied on sync (higher value wins; progress is monotonic)
+    - RETIRED 2026-08-21 (PO): "Offline check-in — Worker checks in with no connectivity → record queued → sync on reconnect". Self check-in was removed from the mobile product on 2026-08-09, so the scenario had no control to drive; see spec §30 "Mobile E2E (Detox)". Note that 21-mvp-scope.md still places check-in/check-out inside MVP workforce scope — that is a separate open question, not settled by this.
 - Pact consumer test examples for Finance ← Procurement
 - GitHub Actions integration: lint + type-check + build + unit (incl. serial Temporal workflow step) + integration + isolation + contract + dependency-audit on every PR (spec §30.12); load tests weekly scheduled on staging (not per-deploy; spec §30.9)
 - Test data factories (factory_bot pattern — plain TypeScript functions, minimal required fields, spread overrides) per entity — location: packages/@cos/test-utils/src/factories.ts, naming: build<EntityName>Dto for request DTOs; RESOLVED 2026-06-13, see spec §30.13
@@ -4953,6 +5346,7 @@ Model Types (from source §19.3):
   Computer vision (SafetyVisionModel):       XGBoost classifier on ViT image embeddings; requires 10,000+ labeled site photos (see spec §22.6)
   Graph ML (GraphMLModel):              XGBoost on Neo4j graph-derived features (PageRank, centrality); requires 6+ months data (see spec §22.6)
   Classification (RiskClassifier):        XGBoost multi-class (LOW/MEDIUM/HIGH/CRITICAL); features: budget variance, schedule delay, procurement, safety incidents; requires 50+ projects (see spec §22.6)
+  Device trust (DeviceTrustModel):        XGBoost binary classifier, calibrated probability rendered 0–100; features: attestation verdict, enrolment age, last_seen_at recency, revocation history, ingress ASN stability; NO count threshold — promoted only by beating the rule-based baseline on a held-out set (PR-AUC), because the positive class is rare by design (see spec §22.6; ADR-081)
   Anomaly detection (CostAnomalyModel):   flags unusual cost entries and procurement patterns.
     Added 2026-08-22 — it had an evaluation threshold in spec §30.11 (Precision ≥ 0.85, secondary
     Recall) but was missing from this phase and from §22.6. Algorithm, input features and minimum
@@ -4965,7 +5359,13 @@ Feature Store (Feast):
     procurement_features: avg_delivery_delay, rfq_to_po_days, overdue_invoice_count
     site_features:        manpower_7d_avg, inspection_fail_rate, report_submission_rate
   Online store: Redis (for real-time inference)
-  Offline store: ClickHouse (for training)
+  Offline store: PostgreSQL — Feast `postgres` contrib store (feast_offline schema on the existing RDS).
+    NOT ClickHouse: both ClickHouse and PostgreSQL are Feast community/contrib offline stores (neither is
+    a stable core store — core = BigQuery/Snowflake/Redshift/Dask), and ClickHouse's own guidance is that
+    a Feast "literal store" underutilises ClickHouse (it recommends Featureform for a virtual store).
+    PostgreSQL reuses the existing RDS and is the more widely-used contrib path. Training features that
+    originate in ClickHouse analytics (cost_history etc.) are bridged into feast_offline by the
+    dag-update-feature-store Airflow DAG. (Decision 2026-07-23 — see feature_store.yaml.)
 
 Airflow DAGs (generate stubs for all):
   dag-export-training-data:    daily export from PostgreSQL/ClickHouse → MinIO (parquet)
@@ -5043,6 +5443,20 @@ Stubs in Phase 23 (generate stub — algorithms RESOLVED in spec §22-ai-archite
     RiskLevel: ENUM(LOW, MEDIUM, HIGH, CRITICAL)
     Algorithm: RESOLVED — XGBoost multi-class (LOW/MEDIUM/HIGH/CRITICAL); source: spec §22-ai-architecture §22.6
     Framework: scikit-learn + XGBoost
+
+  DeviceTrustModel:  (added 2026-08-04 — ADR-081; the fifth §22.6 model)
+    Trigger:  NOT a data count. Promoted only when it beats the rule-based baseline on a held-out
+              set (PR-AUC). The positive class ("device later revoked as compromised") is rare by
+              design, so a count/calendar trigger would promote an untrained model, and accuracy and
+              ROC-AUC both stay flattering under that imbalance.
+    Day one:  a deterministic rule-based scorer serves behind the same interface and IS the baseline
+              the model must beat. While it serves, the surface must NOT be described as AI-derived.
+    Interface: { score(deviceId: string, userId: string): TrustScore }
+    TrustScore: { score: int 0..100, scorer: 'RULE_BASED'|'MODEL', signals: SignalState[] }
+    Algorithm: RESOLVED — XGBoost binary classifier, calibrated; source: spec §22-ai-architecture §22.6
+    Framework: scikit-learn + XGBoost
+    Governance: ADVISORY ONLY — never revokes a device, never blocks a login (§22.3 autonomous-mode
+              prohibition). Model card records the PR-AUC margin that authorised promotion (§22.9).
 
 Constraints:
 
@@ -5248,10 +5662,40 @@ ROOT CAUSE PREVENTION RULES (prevent recurring bugs):
     If the task is already covered by an existing turbo task, add a comment explaining why.
 
   Rule 28 — pnpm lock file (prevents Bug-class-C: CI frozen-lockfile failing):
-    After ANY package.json change (add/remove/update dependency), run `pnpm install`
-    locally to regenerate pnpm-lock.yaml and commit it in the same PR.
+    After changing anything that MOVES DEPENDENCY RESOLUTION, run `pnpm install` locally to
+    regenerate pnpm-lock.yaml and commit it in the SAME commit. That means:
+      - package.json: dependencies, devDependencies, peerDependencies, optionalDependencies,
+        resolutions, or the `pnpm` block
+      - pnpm-workspace.yaml: the `overrides:` block
     pnpm-lock.yaml must exist and be up-to-date before CI `--frozen-lockfile` will pass.
     If pnpm-lock.yaml does not exist: run `pnpm install` immediately before any other work.
+
+    NOT every package.json edit. Scripts, description, engines and `packageManager` do not affect
+    resolution, and `pnpm install` produces no lockfile diff for them — there is nothing to commit.
+    The rule used to say "ANY package.json change", which made commit 2840dd7 (2026-08-07) a
+    violation for bumping `packageManager` 11.18.0 -> 11.20.0 and nothing else: the lockfile records
+    lockfileVersion and resolutions, not the pnpm binary version, so no `pnpm install` could have
+    produced the file that rule demanded. Narrowed 2026-08-08 to the fields that carry the risk.
+
+    WHICH lockfile: the nearest one ABOVE the package.json, not always the root. `apps/mobile` is its
+    own pnpm workspace (pnpm-workspace.yaml excludes it — Metro needs a hoisted node_modules), so its
+    dependencies resolve into `apps/mobile/pnpm-lock.yaml` and a root `pnpm install` produces no diff
+    for them: run `cd apps/mobile && pnpm install` and commit THAT file. Every other package resolves
+    into the root lockfile.
+
+    Enforced by `scripts/ci/check-lockfile-staged.sh`, wired into `.husky/pre-commit`. The older
+    `.claude/hooks/rule-28-check-lockfile.sh` stays, but it is a PostToolUse hook and therefore only
+    sees the agent's own edits — 2840dd7 did not come through the agent, which is why nothing
+    objected. The git hook covers every author and every tool. Escape hatch for a change that
+    genuinely yields no lockfile diff: `SKIP_LOCKFILE_CHECK=1 git commit`, with the reason in the
+    commit message.
+
+    The git hook originally accepted ONLY a staged root `pnpm-lock.yaml` (`grep -qx`), which made a
+    mobile dependency change impossible to commit at all: the correct lockfile was staged and still
+    rejected, and the only way through was the escape hatch — which would have been a lie, since the
+    change does produce a lockfile diff, just not in the root file. Fixed 2026-08-08 (first mobile
+    dependency change after the hook landed the same day) to pair each package.json with its own
+    lockfile and name that file in the error.
 
   Rule 29 — ADR reference verification (prevents Bug-class-D: referencing non-existent ADRs):
     Before writing `(see ADR-NNN)` in ANY spec file or code comment, verify:
@@ -5395,6 +5839,56 @@ ROOT CAUSE PREVENTION RULES (prevent recurring bugs):
     identity/otp/otp.service.ts, shared/tracing-shutdown.service.ts.
     (root cause: ~12 providers created clients with no cleanup → BOQ integration ran
     32 min before being killed; pods severed connections abruptly on SIGTERM)
+
+  Rule 40 — Every surface that waits for data renders its wait through <LoadingState />
+    (prevents Bug-class: a specified component drifting out of use while screens hand-roll
+    their own indicators). Authoritative component: spec §32.7 "Loading State"; ADR-055.
+    Applies whenever a screen, region, list, card or button gains an async state — a fetch,
+    a submit, a sync flush, an AI job:
+    (a) Render the loading state with <LoadingState />, choosing the variant by the SHAPE of
+        what it stands in for, not by convenience:
+          widget — a card, tile or dashboard panel
+          list   — a stacked list or feed (mobile)
+          table  — data-table rows (web; §32.7 prohibits tables on mobile)
+          ai     — an AI job, not a plain fetch
+          micro  — inline, or inside a button
+    (b) NEVER hand-roll one. No <ActivityIndicator>. No View/div doing its own skeleton or
+        spinner. No line of text standing in for a loading state. No placeholder glyph ("…").
+        The last two have no signature a script can match — they are ordinary markup — so they
+        are caught in review or not at all. That is why this rule is written down.
+    (c) Mobile: a region that reveals content once it settles is wrapped in <LoadingBoundary>,
+        not swapped by a ternary. A determinate loader is driven to 100 and held one fill
+        before the crossfade, so the run the user is watching actually completes.
+    (d) Copy is the caller's: `label` takes an already-translated string from an i18n key
+        (QM-3). The component holds no key and no literal.
+    (e) Progress is the caller's: pass `progress` only when a real percentage exists. Omitted
+        means indeterminate, which renders NO percentage — never fabricate one.
+        A PERCENTAGE NEEDS TWO OR MORE LOAD STEPS. A surface that loads with one request can only
+        report 0% then 100% — the number never moves and reads as a stuck loader, the same reason a
+        `micro` ring in a submit button stays wordless. Use loadProgress(done, total) from
+        lib/loadingState.ts; it returns null below two steps. COUNT THE STEPS THAT SETTLE WHILE THE
+        LOADER IS ON SCREEN, not the APIs the file imports — the vendor directory looks multi-step
+        and is not: its list fetch clears the loader and the scores arrive afterwards.
+    (g) Skeletons animate PER ELEMENT, never as one band across the card. The mockup puts
+        `.skeleton-pulse` on each bar and plate separately, each with its own sweep; one band over
+        the whole card reads as a pane sliding across it and lights unrelated elements.
+    (h) The bar and the percentage are ONE animated value, and it is JS-driven. Do not move the bar
+        to React Native's native driver for smoothness: that driver exists to keep animating WHILE
+        THE JS THREAD IS BLOCKED, and only JS can write text, so on the app launch the bar filled
+        while the percentage sat at 0 (observed and reverted 2026-08-17). Smoothness comes from
+        animating a translateX transform rather than a width, and from isolating the counting text
+        so a 1% tick re-renders one node instead of every skeleton on the card.
+    (f) Any ink override (`tone`, `color`) must clear WCAG SC 1.4.11 (3:1) against the surface
+        it actually sits on, and 4.5:1 if it also colours text (§20.8). MEASURE it — on
+        2026-08-17 every cyan in the product measured below 3:1 on a --mobile-primary button,
+        while reading as obviously fine.
+    Enforced for the two machine-checkable classes by scripts/ci/check-loading-state.sh,
+    wired into the CI lint job. A PASS there does NOT mean (b)'s text and placeholder cases
+    are clean.
+    (root cause: 24 hand-rolled indicators accumulated after <LoadingState /> was specified —
+    22 <ActivityIndicator> in apps/mobile and 2 raw skeleton blocks in apps/web — and web's
+    own <LoadingState /> reached zero production consumers, with ~35 list pages rendering a
+    plain "Loading…" line through one shared DataTable)
 
 25. When a rule in this document conflicts with a command in a Phase:
 

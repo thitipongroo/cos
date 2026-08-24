@@ -6,6 +6,10 @@ import { useApi } from './client';
 import type {
   BoqVersionRow,
   CreateProjectInput,
+  RiskRow,
+  RiskStatus,
+  CreateRiskInput,
+  UpdateRiskInput,
   DeliveryRow,
   PurchaseOrderDetail,
   RecordDeliveryInput,
@@ -57,6 +61,12 @@ import type {
   RfqRow,
   SiteReportListResponse,
   VendorRow,
+  SubjectRequestRow,
+  CreateSubjectRequestInput,
+  CloseSubjectRequestInput,
+  EraseSubjectRequestInput,
+  SubjectMatchResult,
+  ErasureResult,
 } from './types';
 
 function filterQuery(filter: ProcurementListFilter): string {
@@ -89,7 +99,7 @@ export function useExecutiveDashboard(projectIds: string[], dateRange: string) {
     enabled: projectIds.length > 0 && tenantId !== '',
     queryFn: () => {
       const params = new URLSearchParams({ tenantId, dateRange });
-      projectIds.forEach((id) => params.append('projectIds[]', id));
+      projectIds.forEach((id) => params.append('projectIds', id));
       return api<ExecutiveDashboardRow[]>(`/analytics/executive?${params.toString()}`);
     },
   });
@@ -852,5 +862,136 @@ export function useCrmCustomers() {
   return useQuery({
     queryKey: ['crm', 'customers'],
     queryFn: () => api<CrmCustomerRow[]>('/crm/customers'),
+  });
+}
+
+// ── Project risk register (ADR-065, §20:426) ──────────────────────────────────
+
+export function useProjectRisks(id: string, filters?: { status?: string; category?: string }) {
+  const api = useApi();
+  const qs = new URLSearchParams();
+  if (filters?.status) qs.set('status', filters.status);
+  if (filters?.category) qs.set('category', filters.category);
+  const suffix = qs.toString() ? `?${qs.toString()}` : '';
+  return useQuery({
+    queryKey: ['project', id, 'risks', filters?.status ?? '', filters?.category ?? ''],
+    enabled: id !== '',
+    queryFn: () => api<RiskRow[]>(`/projects/${id}/risks${suffix}`),
+  });
+}
+
+export function useRaiseRisk(id: string) {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateRiskInput) =>
+      api<RiskRow>(`/projects/${id}/risks`, { method: 'POST', body: JSON.stringify(input) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['project', id, 'risks'] }),
+  });
+}
+
+export function useUpdateRisk(id: string) {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ riskId, input }: { riskId: string; input: UpdateRiskInput }) =>
+      api<RiskRow>(`/risks/${riskId}`, { method: 'PATCH', body: JSON.stringify(input) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['project', id, 'risks'] }),
+  });
+}
+
+export function useTransitionRiskStatus(id: string) {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ riskId, status }: { riskId: string; status: RiskStatus }) =>
+      api<RiskRow>(`/risks/${riskId}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['project', id, 'risks'] }),
+  });
+}
+
+// ─── Subject requests (ADR-090; PDPA-48) ────────────────────────────────────
+// TENANT_ADMIN only. The request row is the authorisation to search: `useSubjectMatches` is enabled
+// only once a request id is chosen, so opening the page never runs a lookup on its own.
+
+export function useSubjectRequests(status?: string) {
+  const api = useApi();
+  return useQuery({
+    queryKey: ['subject-requests', status ?? 'all'],
+    queryFn: () =>
+      api<SubjectRequestRow[]>(`/subject-requests${status ? `?status=${status}` : ''}`),
+  });
+}
+
+export function useCreateSubjectRequest() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateSubjectRequestInput) =>
+      api<SubjectRequestRow>('/subject-requests', { method: 'POST', body: JSON.stringify(input) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['subject-requests'] }),
+  });
+}
+
+/**
+ * What the tenant holds about the subject of one request.
+ *
+ * `enabled` is what keeps this from being a lookup tool: with no request selected the query never
+ * fires, and the identifiers it searches on come from the row on the server, not from this client.
+ * Each call writes an audit row server-side, so it is deliberately NOT refetched on window focus.
+ */
+export function useSubjectMatches(requestId: string | null) {
+  const api = useApi();
+  return useQuery({
+    queryKey: ['subject-requests', requestId, 'matches'],
+    queryFn: () => api<SubjectMatchResult>(`/subject-requests/${requestId}/matches`),
+    enabled: requestId !== null,
+    refetchOnWindowFocus: false,
+    staleTime: Infinity,
+  });
+}
+
+export function useEraseSubjectRequest() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ requestId, input }: { requestId: string; input: EraseSubjectRequestInput }) =>
+      api<ErasureResult>(`/subject-requests/${requestId}/erase`, {
+        method: 'POST',
+        body: JSON.stringify(input),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['subject-requests'] }),
+  });
+}
+
+export function useCloseSubjectRequest() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ requestId, input }: { requestId: string; input: CloseSubjectRequestInput }) =>
+      api<SubjectRequestRow>(`/subject-requests/${requestId}/close`, {
+        method: 'PATCH',
+        body: JSON.stringify(input),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['subject-requests'] }),
+  });
+}
+
+/**
+ * Send the verification challenge (ADR-090 §6).
+ *
+ * Takes no address: the server picks it from the MATCHED RECORD, which is the whole point — a
+ * client-supplied address would prove control of a claimed address and nothing more.
+ */
+export function useSendSubjectVerification() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (requestId: string) =>
+      api<{ sent_to: string }>(`/subject-requests/${requestId}/verify`, { method: 'POST' }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['subject-requests'] }),
   });
 }

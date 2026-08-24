@@ -1,0 +1,29 @@
+{
+  "type": "record",
+  "name": "SafetyIncidentCreatedEvent",
+  "namespace": "com.constructionos.events.safety",
+  "doc": "safety.incident.created.v1 — Phase 6 Safety; consumed by Notification Service (§19.3 escalation)",
+  "fields": [
+    { "name": "event_id",       "type": "string" },
+    { "name": "event_type",     "type": "string" },
+    { "name": "event_version",  "type": "string" },
+    { "name": "tenant_id",      "type": "string" },
+    { "name": "actor_id",       "type": "string" },
+    { "name": "occurred_at",    "type": "string" },
+    { "name": "correlation_id", "type": "string" },
+    { "name": "trace_id",       "type": ["null", "string"], "default": null },
+    { "name": "span_id",        "type": ["null", "string"], "default": null },
+    { "name": "payload", "type": {
+      "type": "record", "name": "SafetyIncidentCreatedPayload",
+      "fields": [
+        { "name": "incident_id",   "type": "string" },
+        { "name": "project_id",    "type": "string" },
+        { "name": "incident_type", "type": "string" },
+        { "name": "severity", "type": { "type": "enum", "name": "IncidentSeverity",
+            "symbols": ["LOW", "MEDIUM", "HIGH", "CRITICAL"] } },
+        { "name": "task_id",     "type": ["null", "string"], "default": null },
+        { "name": "reported_by", "type": "string" }
+      ]
+    }}
+  ]
+}

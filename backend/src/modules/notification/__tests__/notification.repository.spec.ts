@@ -19,6 +19,7 @@ const mockRun = jest.fn();
 const mockDb = { run: mockRun };
 
 const mockPlatformQueryRaw = jest.fn();
+const mockPlatformExecuteRaw = jest.fn();
 const mockPrismaTransaction = jest.fn();
 
 let repo: NotificationRepository;
@@ -28,8 +29,9 @@ beforeEach(() => {
   // Re-establish db.run implementation after resetAllMocks clears it
   mockRun.mockImplementation((_tenantId: string, fn: (tx: typeof mockTx) => unknown) => fn(mockTx));
   // Re-establish platformPrisma.$transaction after resetAllMocks clears it
-  mockPrismaTransaction.mockImplementation((fn: (tx: { $queryRaw: jest.Mock }) => unknown) =>
-    fn({ $queryRaw: mockPlatformQueryRaw }),
+  mockPrismaTransaction.mockImplementation(
+    (fn: (tx: { $queryRaw: jest.Mock; $executeRaw: jest.Mock }) => unknown) =>
+      fn({ $queryRaw: mockPlatformQueryRaw, $executeRaw: mockPlatformExecuteRaw }),
   );
   (PrismaClient as jest.Mock).mockImplementation(() => ({
     $transaction: mockPrismaTransaction,
@@ -61,6 +63,69 @@ describe('findTemplate', () => {
     mockQueryRaw.mockResolvedValueOnce([]);
     const result = await repo.findTemplate('tenant-001', 'unknown.event.v1', 'EMAIL');
     expect(result).toBeNull();
+  });
+});
+
+// ── batch lookups (one query per notified user, not one per channel) ────────
+
+describe('findTemplatesByChannel', () => {
+  it('keys the resolved templates by channel', async () => {
+    mockQueryRaw.mockResolvedValueOnce([
+      { template_id: 't1', channel: 'IN_APP', body_template: 'a' },
+      { template_id: 't2', channel: 'EMAIL', body_template: 'b' },
+    ]);
+    const result = await repo.findTemplatesByChannel('tenant-001', 'evt.v1', [
+      'IN_APP',
+      'EMAIL',
+      'LINE',
+    ]);
+    expect(result.get('IN_APP')?.template_id).toBe('t1');
+    expect(result.get('EMAIL')?.template_id).toBe('t2');
+    expect(result.get('LINE')).toBeUndefined();
+    expect(mockQueryRaw).toHaveBeenCalledTimes(1);
+  });
+
+  it('picks one template per channel, tenant-specific ahead of the shared default', async () => {
+    mockQueryRaw.mockResolvedValueOnce([]);
+    await repo.findTemplatesByChannel('tenant-001', 'evt.v1', ['IN_APP']);
+    const sql = (mockQueryRaw.mock.calls[0][0] as string[]).join('?');
+    // Same precedence findTemplate applies, expressed per channel inside one statement.
+    expect(sql).toContain('DISTINCT ON (channel)');
+    expect(sql).toContain('tenant_id NULLS LAST');
+  });
+
+  it('short-circuits an empty channel list', async () => {
+    const result = await repo.findTemplatesByChannel('tenant-001', 'evt.v1', []);
+    expect(result.size).toBe(0);
+    expect(mockQueryRaw).not.toHaveBeenCalled();
+  });
+});
+
+describe('findDisabledChannels', () => {
+  // Returns explicit OPT-OUTS: a channel with no preference row is enabled, which is what
+  // isChannelEnabled's `?? true` default meant.
+  it('returns only the channels explicitly switched off', async () => {
+    mockQueryRaw.mockResolvedValueOnce([{ channel: 'EMAIL' }]);
+    const result = await repo.findDisabledChannels('tenant-001', 'user-1', 'evt.v1', [
+      'IN_APP',
+      'EMAIL',
+      'LINE',
+    ]);
+    expect(result.has('EMAIL')).toBe(true);
+    expect(result.has('IN_APP')).toBe(false);
+    expect(result.has('LINE')).toBe(false);
+  });
+
+  it('returns an empty set when the user has opted out of nothing', async () => {
+    mockQueryRaw.mockResolvedValueOnce([]);
+    const result = await repo.findDisabledChannels('tenant-001', 'user-1', 'evt.v1', ['IN_APP']);
+    expect(result.size).toBe(0);
+  });
+
+  it('short-circuits an empty channel list', async () => {
+    const result = await repo.findDisabledChannels('tenant-001', 'user-1', 'evt.v1', []);
+    expect(result.size).toBe(0);
+    expect(mockQueryRaw).not.toHaveBeenCalled();
   });
 });
 
@@ -296,6 +361,17 @@ describe('upsertPreference', () => {
   });
 });
 
+// ── updateQuietHours ──────────────────────────────────────────────────────────
+
+describe('updateQuietHours', () => {
+  it('updates the window on the user rows and returns the affected count', async () => {
+    mockExecuteRaw.mockResolvedValueOnce(3);
+    const result = await repo.updateQuietHours('tenant-001', 'user-001', '22:00', '07:00');
+    expect(result.updated).toBe(3);
+    expect(mockExecuteRaw).toHaveBeenCalledTimes(1);
+  });
+});
+
 // ── upsertDeviceToken ───────────────────────────────────────────────────────
 
 describe('upsertDeviceToken', () => {
@@ -375,5 +451,63 @@ describe('NotificationRepository onModuleDestroy', () => {
       (repo as unknown as { platformPrisma: { $disconnect: jest.Mock } }).platformPrisma
         .$disconnect,
     ).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ── quiet hours + timezone (§19.6) ────────────────────────────────────────────
+
+describe('getTenantTimezone', () => {
+  it('returns the tenant timezone', async () => {
+    mockPlatformQueryRaw.mockResolvedValueOnce([{ timezone: 'Asia/Singapore' }]);
+    expect(await repo.getTenantTimezone('tenant-001')).toBe('Asia/Singapore');
+  });
+  it('falls back to Asia/Bangkok when the tenant row is missing', async () => {
+    mockPlatformQueryRaw.mockResolvedValueOnce([]);
+    expect(await repo.getTenantTimezone('tenant-001')).toBe('Asia/Bangkok');
+  });
+});
+
+describe('getUserQuietHours', () => {
+  it('returns the stored window', async () => {
+    mockQueryRaw.mockResolvedValueOnce([
+      { quiet_hours_start: '23:00:00', quiet_hours_end: '06:00:00' },
+    ]);
+    expect(await repo.getUserQuietHours('tenant-001', 'user-001')).toEqual({
+      start: '23:00:00',
+      end: '06:00:00',
+    });
+  });
+  it('defaults to 22:00–07:00 when no preference row exists', async () => {
+    mockQueryRaw.mockResolvedValueOnce([]);
+    expect(await repo.getUserQuietHours('tenant-001', 'user-001')).toEqual({
+      start: '22:00:00',
+      end: '07:00:00',
+    });
+  });
+});
+
+// ── escalation + digest sweeps (§19.3) ────────────────────────────────────────
+
+describe('findEscalationCandidates', () => {
+  it('returns unacknowledged candidates', async () => {
+    const rows = [{ notification_id: 'n1', tenant_id: 't1' }];
+    mockPlatformQueryRaw.mockResolvedValueOnce(rows);
+    expect(await repo.findEscalationCandidates('safety.incident.created.v1', 1800)).toEqual(rows);
+  });
+});
+
+describe('markEscalated', () => {
+  it('stamps escalated_at via the platform executeRaw', async () => {
+    mockPlatformExecuteRaw.mockResolvedValueOnce(1);
+    await repo.markEscalated('n1');
+    expect(mockPlatformExecuteRaw).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('listActiveTenants', () => {
+  it('returns active tenants with their timezone', async () => {
+    const rows = [{ tenant_id: 't1', timezone: 'Asia/Bangkok' }];
+    mockPlatformQueryRaw.mockResolvedValueOnce(rows);
+    expect(await repo.listActiveTenants()).toEqual(rows);
   });
 });

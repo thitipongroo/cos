@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="th"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>ยืนยันการโรลแบ็ค | CONSTRUCTION OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-bright": "#2a3a4f",
+                        "outline-variant": "#434655",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "tertiary-container": "#686c80",
+                        "outline": "#8d90a0",
+                        "on-error": "#690005",
+                        "mobile-success": "#00C853",
+                        "on-tertiary-container": "#eeefff",
+                        "sync-pending": "#94A3B8",
+                        "dark-surface": "#0F172A",
+                        "on-background": "#d3e4fe",
+                        "secondary-container": "#03b5d3",
+                        "secondary-fixed": "#acedff",
+                        "on-surface": "#d3e4fe",
+                        "surface-tint": "#b4c5ff",
+                        "surface-container-high": "#1b2b3f",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "dark-bg": "#020617",
+                        "error": "#ffb4ab",
+                        "surface-dim": "#031427",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "on-secondary-fixed": "#001f26",
+                        "on-primary-fixed": "#00174b",
+                        "primary": "#b4c5ff",
+                        "tertiary-fixed": "#dee1f9",
+                        "surface-variant": "#26364a",
+                        "surface-container-lowest": "#000f21",
+                        "mobile-warning": "#FF9500",
+                        "surface-container-low": "#0b1c30",
+                        "surface": "#031427",
+                        "on-primary-container": "#eeefff",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "surface-container": "#102034",
+                        "primary-container": "#2563eb",
+                        "on-tertiary": "#2b3041",
+                        "inverse-primary": "#0053db",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "on-error-container": "#ffdad6",
+                        "on-primary": "#002a78",
+                        "on-secondary": "#003640",
+                        "secondary": "#4cd7f6",
+                        "mobile-danger": "#FF3B30",
+                        "inverse-on-surface": "#213145",
+                        "sync-active": "#FFD60A",
+                        "surface-container-highest": "#26364a",
+                        "background": "#031427",
+                        "inverse-surface": "#d3e4fe",
+                        "on-surface-variant": "#c3c6d7",
+                        "on-secondary-container": "#00424e",
+                        "error-container": "#93000a",
+                        "primary-fixed": "#dbe1ff",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "tertiary": "#c1c5dc",
+                        "mobile-primary": "#0066FF",
+                        "on-tertiary-fixed": "#161b2b"
+                    },
+                    "spacing": {
+                        "web-margin": "32px",
+                        "space-4": "16px",
+                        "base": "4px",
+                        "space-1": "4px",
+                        "space-3": "12px",
+                        "space-2": "8px",
+                        "edge-mobile": "24px",
+                        "touch-target": "52px"
+                    },
+                    "fontFamily": {
+                        "hero-mobile": ["Inter Tight"],
+                        "body-mobile": ["Inter Tight"],
+                        "label-mobile": ["Inter Tight"],
+                        "h1-web": ["Inter Tight"],
+                        "h2-web": ["Inter Tight"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter Tight', sans-serif;
+            background-color: #020617;
+            color: #d3e4fe;
+            -webkit-font-smoothing: antialiased;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .status-strip {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+        }
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .active-press:active {
+            transform: scale(0.96);
+            transition: transform 0.1s ease-out;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="flex flex-col min-h-screen">
+<!-- Top App Bar -->
+<header class="bg-surface-container-low fixed top-0 w-full z-50 flex justify-between items-center px-edge-mobile h-touch-target">
+<div class="flex items-center gap-space-3">
+<button class="active-press">
+<span class="material-symbols-outlined text-primary">arrow_back</span>
+</button>
+<img alt="COS Logo" class="w-6 h-6 object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDJA1mbgeJJB1-33cd6JGcaGoQmO885u0FIvhe5JNPrehLBFtUvmGO9PnwsQpnsnCDzYAO8i8qTAj-2ZKBZAwNXLHC91f5EfPHoStGjzOJTqmPmxESJOTDpdoVAKrzPw8jUgBZXbd672rGh67129l7KRM24FTZNUPQaFw1C0f_GNNUGcLRq4d2A8UAMOZh27Am4pM4LkOyM6d90kD1_zD4HbUqcy0jqFxM0OPDb1lLwK3310biLBumXZV4B8g8nrKE3708CzbteIPQ"/><div class="flex flex-col">
+<span class="font-h1-web text-[18px] font-bold tracking-tighter text-mobile-primary leading-none">CONSTRUCTION OS</span>
+</div>
+</div>
+<div class="flex items-center gap-space-2 bg-surface-variant/30 px-3 py-1 rounded-full"><span class="material-symbols-outlined text-mobile-success text-[16px]" style="font-variation-settings: 'FILL' 1;">check_circle</span><span class="text-[11px] font-bold tracking-wider text-mobile-success uppercase">SYNCED</span></div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 mt-20 px-edge-mobile pb-32 space-y-space-4">
+<!-- Status Card: Warning -->
+<section class="relative bg-surface-container overflow-hidden shadow-lg border border-white/5 rounded">
+<div class="status-strip bg-mobile-warning"></div>
+<div class="p-space-4 flex gap-space-3 items-start">
+<div class="bg-mobile-warning/10 p-2 rounded-lg">
+<span class="material-symbols-outlined text-mobile-warning">warning</span>
+</div>
+<div>
+<h2 class="text-on-surface font-bold text-[18px]">คำขอโรลแบ็คระบบ</h2>
+<p class="text-on-surface-variant text-[14px] leading-relaxed mt-1">คุณกำลังจะทำการยกเลิกการเปลี่ยนแปลงล่าสุดและย้อนกลับไปสู่สถานะก่อนหน้าใน 'การตั้งค่าระบบ'</p>
+</div>
+</div>
+</section>
+<!-- Delta Summary: Comparison -->
+<section class="space-y-space-2">
+<h3 class="text-on-surface-variant text-[12px] font-bold tracking-widest uppercase px-1">สรุปการเปลี่ยนแปลง (Delta Summary)</h3>
+<!-- Item 1 -->
+<div class="bg-surface-container border border-white/5 p-space-4 space-y-space-3 rounded">
+<div class="flex justify-between items-center">
+<span class="text-on-surface font-semibold text-[15px]">Default MFA</span>
+<span class="text-[12px] bg-surface-variant px-2 py-0.5 rounded text-on-surface-variant font-mono">ID: SEC-042</span>
+</div>
+<div class="grid grid-cols-2 gap-space-4 relative">
+<div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+<span class="material-symbols-outlined text-outline text-[20px]">arrow_forward</span>
+</div>
+<div class="space-y-1">
+<p class="text-[11px] text-outline uppercase font-bold">ปัจจุบัน</p>
+<div class="bg-surface-variant/50 p-2 rounded border border-white/5">
+<span class="text-mobile-success font-bold text-[14px]">เปิดใช้งาน (ON)</span>
+</div>
+</div>
+<div class="space-y-1 text-right">
+<p class="text-[11px] text-outline uppercase font-bold">หลังโรลแบ็ค</p>
+<div class="bg-mobile-danger/10 p-2 rounded border border-mobile-danger/20">
+<span class="text-mobile-danger font-bold text-[14px]">ปิดใช้งาน (OFF)</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="bg-surface-container border border-white/5 p-space-4 space-y-space-3 rounded">
+<div class="flex justify-between items-center">
+<span class="text-on-surface font-semibold text-[15px]">Session Timeout</span>
+<span class="text-[12px] bg-surface-variant px-2 py-0.5 rounded text-on-surface-variant font-mono">ID: SYS-119</span>
+</div>
+<div class="grid grid-cols-2 gap-space-4 relative">
+<div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+<span class="material-symbols-outlined text-outline text-[20px]">arrow_forward</span>
+</div>
+<div class="space-y-1">
+<p class="text-[11px] text-outline uppercase font-bold">ปัจจุบัน</p>
+<div class="bg-surface-variant/50 p-2 rounded border border-white/5">
+<span class="text-on-surface font-bold text-[14px]">60 นาที</span>
+</div>
+</div>
+<div class="space-y-1 text-right">
+<p class="text-[11px] text-outline uppercase font-bold">หลังโรลแบ็ค</p>
+<div class="bg-mobile-primary/10 p-2 rounded border border-mobile-primary/20">
+<span class="text-mobile-primary font-bold text-[14px]">15 นาที</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- AI Safety Check -->
+<section class="bg-secondary-container/5 border-l-4 border-secondary-container overflow-hidden rounded">
+<div class="p-space-4">
+<div class="flex items-center gap-space-2 mb-2">
+<span class="material-symbols-outlined text-secondary-container text-[20px]" style="font-variation-settings: 'FILL' 1;">psychology</span>
+<h3 class="text-secondary-container font-bold text-[14px] tracking-tight">CORE_AI: การตรวจสอบผลกระทบ</h3>
+</div>
+<div class="flex items-baseline gap-space-2">
+<span class="text-[24px] font-bold text-on-surface">98%</span>
+<span class="text-on-surface-variant text-[14px]">ความมั่นใจ (Confidence Score)</span>
+</div><div class="text-[10px] text-outline uppercase tracking-widest mt-1 font-mono">SOURCE: SECURITY AUDIT LOGS</div>
+<p class="mt-2 text-on-surface-variant text-[13px] leading-relaxed italic border-t border-white/5 pt-2">
+                    "การโรลแบ็คนี้จะช่วยกู้คืนการปฏิบัติตามกฎเกณฑ์ (Compliance) กลับสู่ระดับมาตรฐานความปลอดภัยที่เคยบันทึกไว้ และไม่พบความขัดแย้งกับโมดูลอื่นๆ ในระบบปัจจุบัน"
+                </p>
+</div>
+</section>
+<!-- Technical Metadata -->
+<footer class="pt-space-4 space-y-1 opacity-60">
+<div class="flex justify-between items-center text-[11px] font-mono">
+<span class="text-outline uppercase">ผู้ดำเนินการ (Actor)</span>
+<span class="text-on-surface">Somchai S. (Tenant Admin)</span>
+</div>
+<div class="flex justify-between items-center text-[11px] font-mono">
+<span class="text-outline uppercase">เวลาบันทึก (Timestamp)</span>
+<span class="text-on-surface">2023-10-27 14:32:01 UTC+7</span>
+</div>
+<div class="flex justify-between items-center text-[11px] font-mono">
+<span class="text-outline uppercase">ที่อยู่ไอพี (IP Address)</span>
+<span class="text-on-surface">192.168.1.104</span>
+</div>
+</footer>
+</main>
+<!-- Bottom Actions Layer -->
+<div class="fixed bottom-0 w-full p-edge-mobile space-y-space-3 bg-gradient-to-t from-dark-bg via-dark-bg to-transparent pb-safe">
+<button class="w-full h-touch-target bg-mobile-danger text-white font-bold active-press flex items-center justify-center gap-2 shadow-xl shadow-mobile-danger/20 rounded">
+<span class="material-symbols-outlined text-[20px]">history</span>
+<span class="tracking-wider">ยืนยันการโรลแบ็ค</span>
+</button>
+<button class="w-full h-touch-target border border-outline/30 text-on-surface font-semibold active-press flex items-center justify-center rounded">
+<span>ยกเลิก</span>
+</button>
+</div>
+<!-- Background Subtle Glows (Industrial Modern Accents) -->
+<div class="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
+<div class="absolute -top-[10%] -right-[10%] w-[50%] h-[50%] bg-mobile-primary/5 rounded-full blur-[120px]"></div>
+<div class="absolute top-[40%] -left-[10%] w-[40%] h-[40%] bg-mobile-warning/5 rounded-full blur-[100px]"></div>
+</div>
+<script>
+        // Simple Micro-interaction for feedback
+        document.querySelectorAll('.active-press').forEach(button => {
+            button.addEventListener('mousedown', () => {
+                button.style.transform = 'scale(0.96)';
+            });
+            button.addEventListener('mouseup', () => {
+                button.style.transform = 'scale(1)';
+            });
+            button.addEventListener('mouseleave', () => {
+                button.style.transform = 'scale(1)';
+            });
+        });
+
+        // Simulating the 'Sync' pulsing
+        const syncBadge = document.querySelector('.text-sync-active');
+        if (syncBadge) {
+            setInterval(() => {
+                syncBadge.classList.add('opacity-50');
+                setTimeout(() => syncBadge.classList.remove('opacity-50'), 1000);
+            }, 3000);
+        }
+    </script>
+</body></html>

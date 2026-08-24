@@ -10,7 +10,7 @@
 // app.current_tenant_id for correctness.
 //
 // Run:  DATABASE_URL=<direct pg url> pnpm exec ts-node prisma/seed-realistic.ts
-import 'dotenv/config';
+import './load-root-env';
 import { createHash } from 'node:crypto';
 import { PrismaClient } from '@prisma/client';
 import { createPrismaClient } from '../src/shared/prisma/create-prisma-client';
@@ -21,7 +21,7 @@ const prisma = createPrismaClient();
 
 // Deterministic UUID (v5-shaped) from a stable key → idempotent inserts.
 function uid(key: string): string {
-  const h = createHash('sha1').update(`cos-demo:${key}`).digest('hex');
+  const h = createHash('sha256').update(`cos-demo:${key}`).digest('hex');
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-5${h.slice(13, 16)}-8${h.slice(17, 20)}-${h.slice(20, 32)}`;
 }
 
@@ -32,6 +32,23 @@ function addDays(iso: string, n: number): string {
   d.setUTCDate(d.getUTCDate() + n);
   return d.toISOString().slice(0, 10);
 }
+/**
+ * The real current date, for the handful of rows that must be RECENT rather than stable.
+ *
+ * Everything else in this file is pinned to fixed calendar dates so a reseed produces the same
+ * history twice. The progress-claim ledger cannot be: the Finance tiles compare the last 30 days
+ * against the 30 before them, and a fixed anchor drifts out of both windows the moment the wall
+ * clock moves past it — the arrows would go blank a month after the seed was written.
+ */
+const TODAY: string = new Date().toISOString().slice(0, 10);
+
+/** Whole days from `from` to `to`, both ISO dates. */
+function daysBetween(from: string, to: string): number {
+  return Math.round(
+    (new Date(`${to}T00:00:00Z`).getTime() - new Date(`${from}T00:00:00Z`).getTime()) / 86_400_000,
+  );
+}
+
 function isWeekend(iso: string): boolean {
   const day = new Date(`${iso}T00:00:00Z`).getUTCDay();
   return day === 0 || day === 6;
@@ -50,40 +67,66 @@ function ts(iso: string, hhmm: string): string {
 }
 
 const TENANT_ID = uid('tenant/ekachai');
-const REALM = 'construction-os';
+const REALM = 'construction-os-dev';
 const THB = 'THB';
 const SEED_END = D('2026-07-03'); // last working Friday of the ~1-month window
 
 // ─── Users (one per role area; Thai names, company domain) ───────────────────
 type SeedUser = { key: string; name: string; email: string; role: string; phone?: string };
+// Every seeded user carries a phone_number so the React Native app (which renders BOTH auth paths for
+// every role — master §Phase 10) can be driven through Path A (phone + SMS OTP) for per-role screen
+// capture. Office/management roles still use Path B (Keycloak) in real usage per §5.4; the phone here
+// is demo/test data only.
 const USERS: SeedUser[] = [
-  { key: 'exec', name: 'Wichai Ekachai', email: 'wichai.e@ekachai.co.th', role: 'EXECUTIVE' },
+  {
+    key: 'exec',
+    name: 'Wichai Ekachai',
+    email: 'wichai.e@ekachai.co.th',
+    role: 'EXECUTIVE',
+    phone: '+66811000001',
+  },
   {
     key: 'admin',
     name: 'Suphaporn Rattanakul',
     email: 'suphaporn.r@ekachai.co.th',
     role: 'TENANT_ADMIN',
+    phone: '+66811000002',
   },
   {
     key: 'pm1',
     name: 'Thanawat Boonmee',
     email: 'thanawat.b@ekachai.co.th',
     role: 'PROJECT_MANAGER',
+    phone: '+66811000003',
   },
-  { key: 'pm2', name: 'Kanya Srisawat', email: 'kanya.s@ekachai.co.th', role: 'PROJECT_MANAGER' },
+  {
+    key: 'pm2',
+    name: 'Kanya Srisawat',
+    email: 'kanya.s@ekachai.co.th',
+    role: 'PROJECT_MANAGER',
+    phone: '+66811000004',
+  },
   {
     key: 'proc',
     name: 'Nattapong Wongchai',
     email: 'nattapong.w@ekachai.co.th',
     role: 'PROCUREMENT_OFFICER',
+    phone: '+66811000005',
   },
   {
     key: 'procmgr',
     name: 'Rungnapa Chaiyo',
     email: 'rungnapa.c@ekachai.co.th',
     role: 'PROC_MANAGER',
+    phone: '+66811000006',
   },
-  { key: 'fin', name: 'Pimchanok Thongchai', email: 'pimchanok.t@ekachai.co.th', role: 'FINANCE' },
+  {
+    key: 'fin',
+    name: 'Pimchanok Thongchai',
+    email: 'pimchanok.t@ekachai.co.th',
+    role: 'FINANCE',
+    phone: '+66811000011',
+  },
   {
     key: 'safety',
     name: 'Decha Phumipat',
@@ -117,9 +160,37 @@ const USERS: SeedUser[] = [
     name: 'Chalermsak Nithat',
     email: 'chalermsak.n@ekachai.co.th',
     role: 'CRM_SALES_MANAGER',
+    phone: '+66811000012',
   },
 ];
 const U = (k: string): string => uid(`user/${k}`);
+
+// Demo HR department per role (platform.users.department — supports future HR features).
+function deptFor(role: string): string {
+  switch (role) {
+    case 'EXECUTIVE':
+      return 'Executive Office';
+    case 'TENANT_ADMIN':
+      return 'Administration';
+    case 'PROJECT_MANAGER':
+      return 'Project Management';
+    case 'PROCUREMENT_OFFICER':
+    case 'PROC_MANAGER':
+      return 'Procurement';
+    case 'FINANCE':
+      return 'Finance';
+    case 'SAFETY_OFFICER':
+      return 'Safety & Compliance';
+    case 'SITE_ENGINEER':
+      return 'Structural Engineering';
+    case 'SITE_WORKER':
+      return 'Field Operations';
+    case 'CRM_SALES_MANAGER':
+      return 'Sales & CRM';
+    default:
+      return 'General';
+  }
+}
 
 // ─── Projects ────────────────────────────────────────────────────────────────
 type SeedProject = {
@@ -128,6 +199,16 @@ type SeedProject = {
   name: string;
   type: string;
   budget: number;
+  /**
+   * Actual spend to date as a fraction of `budget`, used to seed a realistic mix of budget health.
+   *
+   * The purchase orders below add up to a few million against budgets of hundreds of millions, which
+   * left every project on the Finance dashboard reading HEALTHY with a bar too short to see — a
+   * demo that shows one of three states is not a demo of the screen. These ratios put the portfolio
+   * where a real one sits partway through: mostly under, one close to the line, one over.
+   * lib/budgetHealth.ts bands them: < 0.8 HEALTHY · 0.8–0.99 WARNING · >= 1.0 OVERRUN.
+   */
+  spendRatio: number;
   start: string;
   end: string;
   pm: string;
@@ -144,6 +225,7 @@ const PROJECTS: SeedProject[] = [
     name: 'The Sukhumvit 45 Residences',
     type: 'RESIDENTIAL',
     budget: 450_000_000,
+    spendRatio: 0.46, // well inside its budget
     start: D('2026-06-02'),
     end: D('2028-05-31'),
     pm: 'pm1',
@@ -159,6 +241,7 @@ const PROJECTS: SeedProject[] = [
     name: 'Rama IX Corporate Tower',
     type: 'COMMERCIAL',
     budget: 320_000_000,
+    spendRatio: 0.62, // inside
     start: D('2026-06-05'),
     end: D('2028-02-28'),
     pm: 'pm2',
@@ -174,6 +257,7 @@ const PROJECTS: SeedProject[] = [
     name: 'Bangna Logistics Warehouse Phase 2',
     type: 'INDUSTRIAL',
     budget: 145_000_000,
+    spendRatio: 1.07, // OVERRUN — excavation hit rock, the case the dashboard must be able to show
     start: D('2026-06-08'),
     end: D('2027-04-30'),
     pm: 'pm1',
@@ -189,6 +273,7 @@ const PROJECTS: SeedProject[] = [
     name: 'Chaeng Watthana Access Road Upgrade',
     type: 'INFRASTRUCTURE',
     budget: 88_000_000,
+    spendRatio: 0.33, // early, barely spent
     start: D('2026-06-01'),
     end: D('2027-01-31'),
     pm: 'pm2',
@@ -203,6 +288,7 @@ const PROJECTS: SeedProject[] = [
     name: 'Ladprao Garden Townhomes',
     type: 'RESIDENTIAL',
     budget: 210_000_000,
+    spendRatio: 0.88, // WARNING — inside the budget but past the 80% line
     start: D('2026-06-10'),
     end: D('2027-09-30'),
     pm: 'pm1',
@@ -215,6 +301,16 @@ const PROJECTS: SeedProject[] = [
 ];
 
 // ─── Shared reference data ───────────────────────────────────────────────────
+// `category` and `verification_status` were added by migration 20260810000001 for the vendor
+// directory. Two rules held here:
+//
+//   1. CATEGORY IS THE TRUTH ABOUT THE FIRM. All six of these are real Thai suppliers and all six
+//      genuinely sell materials, so all six are MATERIALS — none is re-filed under LOGISTICS or
+//      EQUIPMENT to make the directory's other filter chips look populated. A screenshot that shows
+//      three empty chips is the honest state of this seed.
+//   2. NO REJECTED. Verification status is the tenant's own record of a document check; stamping
+//      REJECTED on a named real company would be a negative claim about a real firm, in a file that
+//      exists to demo a screen. VERIFIED and PENDING carry both badge states without doing that.
 const VENDORS = [
   {
     key: 'insee',
@@ -223,6 +319,8 @@ const VENDORS = [
     tax: '0107536000123',
     email: 'sales@siamcitycement.com',
     phone: '+6626676000',
+    category: 'MATERIALS',
+    verification: 'VERIFIED',
   },
   {
     key: 'tpi',
@@ -231,6 +329,8 @@ const VENDORS = [
     tax: '0107537001234',
     email: 'order@tpipolene.co.th',
     phone: '+6622139000',
+    category: 'MATERIALS',
+    verification: 'VERIFIED',
   },
   {
     key: 'millcon',
@@ -239,6 +339,8 @@ const VENDORS = [
     tax: '0107556002345',
     email: 'sales@millconsteel.com',
     phone: '+6627634000',
+    category: 'MATERIALS',
+    verification: 'VERIFIED',
   },
   {
     key: 'scg',
@@ -247,6 +349,8 @@ const VENDORS = [
     tax: '0105537003456',
     email: 'contact@scgbuildingmaterials.com',
     phone: '+6625860000',
+    category: 'MATERIALS',
+    verification: 'VERIFIED',
   },
   {
     key: 'crm',
@@ -255,6 +359,8 @@ const VENDORS = [
     tax: '0105537004567',
     email: 'rmc@cpac.co.th',
     phone: '+6625555000',
+    category: 'MATERIALS',
+    verification: 'VERIFIED',
   },
   {
     key: 'boon',
@@ -263,6 +369,8 @@ const VENDORS = [
     tax: '0105530005678',
     email: 'sales@boonthavorn.com',
     phone: '+6627213000',
+    category: 'MATERIALS',
+    verification: 'PENDING',
   },
 ];
 const V = (k: string): string => uid(`vendor/${k}`);
@@ -282,22 +390,22 @@ const MATERIALS = [
 const M = (k: string): string => uid(`material/${k}`);
 
 const WEATHER = [
-  'Clear',
-  'Partly cloudy',
-  'Hot and humid',
-  'Overcast',
-  'Afternoon thunderstorm',
-  'Light rain',
+  'แจ่มใส',
+  'มีเมฆบางส่วน',
+  'ร้อนชื้น',
+  'ครึ้มฟ้าครึ้มฝน',
+  'ฝนฟ้าคะนองช่วงบ่าย',
+  'ฝนตกเล็กน้อย',
 ];
 const TRADES = [
-  'Steel Fixer',
-  'Mason',
-  'Carpenter',
-  'Electrician',
-  'Plumber',
-  'General Labour',
-  'Welder',
-  'Painter',
+  'ช่างเหล็ก',
+  'ช่างปูน',
+  'ช่างไม้',
+  'ช่างไฟฟ้า',
+  'ช่างประปา',
+  'กรรมกรทั่วไป',
+  'ช่างเชื่อม',
+  'ช่างสี',
 ];
 
 // Worker pool (shared; allocated across projects).
@@ -410,15 +518,22 @@ async function run(): Promise<void> {
     ON CONFLICT (tenant_id) DO NOTHING`;
   for (const u of USERS) {
     await prisma.$executeRaw`
-      INSERT INTO platform.users (user_id, tenant_id, keycloak_user_id, email, display_name, phone_number, is_active, mfa_enabled)
+      INSERT INTO platform.users (user_id, tenant_id, keycloak_user_id, email, display_name, phone_number, is_active, mfa_enabled, department)
       VALUES (${U(u.key)}::uuid, ${TENANT_ID}::uuid, ${uid(`kc/${u.key}`)}, ${u.email}, ${u.name}, ${u.phone ?? null}, true,
-              ${u.role === 'TENANT_ADMIN' || u.role === 'FINANCE'})
-      ON CONFLICT (user_id) DO NOTHING`;
+              ${u.role === 'TENANT_ADMIN' || u.role === 'FINANCE'}, ${deptFor(u.role)})
+      ON CONFLICT (user_id) DO UPDATE SET department = EXCLUDED.department`;
     await prisma.$executeRaw`
       INSERT INTO platform.tenant_memberships (tenant_id, user_id, role)
       VALUES (${TENANT_ID}::uuid, ${U(u.key)}::uuid, ${u.role}::platform."CosRoleEnum")
       ON CONFLICT (tenant_id, user_id) DO NOTHING`;
   }
+  // Multi-role demo (NIST RBAC / Keycloak union model — one person, several jobs): the Project Manager
+  // Thanawat also serves as the site's Safety Officer, so he holds SAFETY_OFFICER as an additional role
+  // on top of his primary PROJECT_MANAGER. Effective permissions = union of both roles.
+  await prisma.$executeRaw`
+    INSERT INTO platform.user_additional_roles (user_id, tenant_id, role, assigned_by)
+    VALUES (${U('pm1')}::uuid, ${TENANT_ID}::uuid, 'SAFETY_OFFICER'::platform."CosRoleEnum", ${U('admin')}::uuid)
+    ON CONFLICT (user_id, tenant_id, role) DO NOTHING`;
   logger.info({ users: USERS.length }, 'seed-realistic: tenant + users');
 
   await prisma.$transaction(
@@ -435,14 +550,20 @@ async function run(): Promise<void> {
       await tx.$executeRawUnsafe(
         `DELETE FROM equipment_telemetry.equipment_utilization WHERE tenant_id = '${TENANT_ID}'`,
       );
+      // Full reset of this tenant's domain rows so re-runs pick up edited (e.g. Thai) content —
+      // deterministic-UUID rows are otherwise kept by ON CONFLICT DO NOTHING.
+      await wipeTenant(tx);
       await seedMasterData(tx);
       await seedVendorsMaterials(tx);
       await seedWorkersEquipment(tx);
       for (const p of PROJECTS) await seedProject(tx, p);
+      await seedOnHoldProject(tx);
+      await seedPendingApprovals(tx);
+      await seedCrm(tx);
       await seedNotifications(tx);
       await seedAiReports(tx);
     },
-    { timeout: 120_000 },
+    { timeout: 180_000 },
   );
 
   logger.info('seed-realistic: complete');
@@ -529,9 +650,10 @@ async function seedMasterData(tx: Tx): Promise<void> {
 
 async function seedVendorsMaterials(tx: Tx): Promise<void> {
   for (const v of VENDORS) {
-    await tx.$executeRaw`INSERT INTO procurement.vendors (vendor_id, tenant_id, vendor_code, vendor_name, tax_id, contact_email, contact_phone, is_active)
-      VALUES (${V(v.key)}::uuid, ${TENANT_ID}::uuid, ${v.code}, ${v.name}, ${v.tax}, ${v.email}, ${v.phone}, true)
-      ON CONFLICT (vendor_id) DO NOTHING`;
+    await tx.$executeRaw`INSERT INTO procurement.vendors (vendor_id, tenant_id, vendor_code, vendor_name, tax_id, contact_email, contact_phone, is_active, category, verification_status)
+      VALUES (${V(v.key)}::uuid, ${TENANT_ID}::uuid, ${v.code}, ${v.name}, ${v.tax}, ${v.email}, ${v.phone}, true, ${v.category}, ${v.verification})
+      ON CONFLICT (vendor_id) DO UPDATE
+        SET category = EXCLUDED.category, verification_status = EXCLUDED.verification_status`;
   }
   for (const m of MATERIALS) {
     await tx.$executeRaw`INSERT INTO procurement.materials (material_id, tenant_id, name, category, unit, is_active, created_by)
@@ -615,17 +737,24 @@ const BOQ_TEMPLATE = [
 async function seedProject(tx: Tx, p: SeedProject): Promise<void> {
   const pid = uid(`project/${p.key}`);
   await tx.$executeRaw`
-    INSERT INTO projects.projects (project_id, tenant_id, project_code, project_name, project_type, status, budget_amount, budget_currency, start_date, end_date, created_by)
-    VALUES (${pid}::uuid, ${TENANT_ID}::uuid, ${p.code}, ${p.name}, ${p.type}::"ProjectType", 'ACTIVE'::"ProjectStatus", ${p.budget}, ${THB}, ${p.start}::date, ${p.end}::date, ${U(p.pm)}::uuid)
+    INSERT INTO projects.projects (project_id, tenant_id, project_code, project_name, project_type, status, budget_amount, budget_currency, start_date, end_date, work_hours_start, work_hours_end, created_by)
+    VALUES (${pid}::uuid, ${TENANT_ID}::uuid, ${p.code}, ${p.name}, ${p.type}::"ProjectType", 'ACTIVE'::"ProjectStatus", ${p.budget}, ${THB}, ${p.start}::date, ${p.end}::date, '07:00'::time, '18:00'::time, ${U(p.pm)}::uuid)
     ON CONFLICT (project_id) DO NOTHING`;
 
-  // Members: PM, site engineer, safety officer, finance, executive.
+  // Members: PM, site engineer, safety officer, finance, executive, site worker.
+  //
+  // `sw1` was missing until 2026-08-08 and its absence was not cosmetic: `GET /projects/mine` reads
+  // projects.project_members, so the seeded SITE_WORKER belonged to nothing and every screen the role
+  // owns — the project picker, tasks, the daily report, issue create — rendered an empty state on a
+  // fully seeded database. A crew member IS a member of the project they work on, so seeding it is
+  // the realistic fixture, not a convenience for screenshots (product-owner decision 2026-08-08).
   for (const [k, role] of [
     [p.pm, 'PROJECT_MANAGER'],
     [p.se, 'SITE_ENGINEER'],
     ['safety', 'SAFETY_OFFICER'],
     ['fin', 'FINANCE'],
     ['exec', 'EXECUTIVE'],
+    ['sw1', 'SITE_WORKER'],
   ] as const) {
     await tx.$executeRaw`INSERT INTO projects.project_members (membership_id, project_id, tenant_id, user_id, role, assigned_by)
       VALUES (${uid(`pm/${p.key}/${k}`)}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, ${U(k)}::uuid, ${role}::"ProjectMemberRole", ${U('admin')}::uuid)
@@ -700,58 +829,170 @@ async function seedProject(tx: Tx, p: SeedProject): Promise<void> {
   }
 
   // Procurement chain — 3 POs (concrete, rebar, formwork) per project with delivery + invoice.
+  // Refresh this project's transactional procurement + finance rows so re-runs pick up updated
+  // volumes (deterministic-UUID rows would otherwise be kept by ON CONFLICT DO NOTHING).
+  await tx.$executeRawUnsafe(`DELETE FROM finance.payments WHERE project_id = '${pid}'`);
+  await tx.$executeRawUnsafe(
+    `DELETE FROM procurement.invoices WHERE po_id IN (SELECT po_id FROM procurement.purchase_orders WHERE project_id = '${pid}')`,
+  );
+  await tx.$executeRawUnsafe(
+    `DELETE FROM procurement.deliveries WHERE po_id IN (SELECT po_id FROM procurement.purchase_orders WHERE project_id = '${pid}')`,
+  );
+  await tx.$executeRawUnsafe(
+    `DELETE FROM procurement.po_line_items WHERE po_id IN (SELECT po_id FROM procurement.purchase_orders WHERE project_id = '${pid}')`,
+  );
+  await tx.$executeRawUnsafe(`DELETE FROM finance.cost_transactions WHERE project_id = '${pid}'`);
+  await tx.$executeRawUnsafe(`DELETE FROM procurement.purchase_orders WHERE project_id = '${pid}'`);
+  await tx.$executeRawUnsafe(
+    `DELETE FROM procurement.quotations WHERE rfq_id IN (SELECT rfq_id FROM procurement.rfqs WHERE project_id = '${pid}')`,
+  );
+  await tx.$executeRawUnsafe(`DELETE FROM procurement.rfqs WHERE project_id = '${pid}'`);
+  await tx.$executeRawUnsafe(
+    `DELETE FROM procurement.purchase_requests WHERE project_id = '${pid}'`,
+  );
   let committed = 0,
     actual = 0;
-  const poDefs = [
+  // Volumes reflect ~1 month of substructure/superstructure works so committed/actual read as a
+  // progressed month (most delivered + invoiced, several paid; a couple still in transit).
+  const poDefs: {
+    key: string;
+    vendor: string;
+    mat: string;
+    qty: number;
+    unit: string;
+    price: number;
+    days: number;
+    delivered: boolean;
+    paid: boolean;
+  }[] = [
     {
       key: 'concrete',
       vendor: 'crm',
       mat: 'rmc',
-      qty: Math.round(180 * scale),
+      qty: Math.round(3200 * scale),
       unit: 'M3',
       price: 2650,
-      days: 4,
+      days: 3,
       delivered: true,
+      paid: true,
     },
     {
       key: 'rebar',
       vendor: 'millcon',
       mat: 'db16',
-      qty: Math.round(45 * scale),
+      qty: Math.round(340 * scale),
       unit: 'TON',
       price: 24500,
-      days: 9,
+      days: 6,
       delivered: true,
+      paid: true,
+    },
+    {
+      key: 'rebar2',
+      vendor: 'millcon',
+      mat: 'db12',
+      qty: Math.round(180 * scale),
+      unit: 'TON',
+      price: 23800,
+      days: 8,
+      delivered: true,
+      paid: true,
+    },
+    {
+      key: 'cement',
+      vendor: 'insee',
+      mat: 'cement',
+      qty: Math.round(9500 * scale),
+      unit: 'BAG',
+      price: 185,
+      days: 4,
+      delivered: true,
+      paid: true,
     },
     {
       key: 'formwork',
       vendor: 'scg',
       mat: 'ply',
-      qty: Math.round(1200 * scale),
+      qty: Math.round(8500 * scale),
       unit: 'M2',
       price: 320,
-      days: 6,
+      days: 5,
+      delivered: true,
+      paid: false,
+    },
+    {
+      key: 'block',
+      vendor: 'scg',
+      mat: 'block',
+      qty: Math.round(22000 * scale),
+      unit: 'UNIT',
+      price: 42,
+      days: 11,
+      delivered: true,
+      paid: false,
+    },
+    {
+      key: 'formwork2',
+      vendor: 'scg',
+      mat: 'ply',
+      qty: Math.round(4200 * scale),
+      unit: 'M2',
+      price: 325,
+      days: 14,
       delivered: false,
+      paid: false,
+    },
+    {
+      key: 'sand',
+      vendor: 'crm',
+      mat: 'sand',
+      qty: Math.round(1800 * scale),
+      unit: 'M3',
+      price: 480,
+      days: 16,
+      delivered: false,
+      paid: false,
     },
   ];
-  for (const po of poDefs) {
+  // HOW FAR BACK THIS PROJECT'S HISTORY GOES. Every date below is measured from the project's own
+  // start, never from a fixed calendar anchor: these projects begin 2026-06-01..06-10, so a ledger
+  // spread over "the last eight months" would put purchase orders and progress claims on projects
+  // that did not exist yet.
+  const spanDays = daysBetween(p.start, TODAY);
+
+  for (const [poIndex, po] of poDefs.entries()) {
     const prId = uid(`pr/${p.key}/${po.key}`);
     const rfqId = uid(`rfq/${p.key}/${po.key}`);
     const poId = uid(`po/${p.key}/${po.key}`);
     const total = po.qty * po.price;
-    const orderedAt = addDays(p.start, po.days);
+    // ORDERS ARE SPREAD ACROSS THE PROJECT'S LIFE, not bunched into its first fortnight. They used
+    // to be `p.start + po.days` with `days` running 3..16, which put every purchase order in one
+    // calendar month — and the Finance tiles, which compare the last 30 days with the 30 before
+    // them, then read a −78% collapse that was an artefact of the seed's shape rather than anything
+    // a project did. `po.days` survives as the WITHIN-STEP jitter so two orders never share a date.
+    //
+    // The lag keeps the whole chain in the past: an order is followed by its delivery (+12), its
+    // invoice (+14) and its payment (+20), and a delivery dated tomorrow would be counted by the
+    // Procurement tab's "deliveries today".
+    const lag = po.paid ? 24 : po.delivered ? 16 : 14;
+    const lastSafeDay = Math.max(2, spanDays - lag);
+    const step = poDefs.length === 1 ? 1 : poIndex / (poDefs.length - 1);
+    const orderedAt = addDays(
+      p.start,
+      Math.min(lastSafeDay, Math.round(step * lastSafeDay) + (po.days % 5)),
+    );
     await tx.$executeRaw`INSERT INTO procurement.purchase_requests (pr_id, project_id, tenant_id, pr_number, status, requested_by, required_date)
-      VALUES (${prId}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, ${`PR-${p.code}-${po.key.slice(0, 3).toUpperCase()}`}, 'PO_CREATED', ${U('proc')}::uuid, ${addDays(orderedAt, 10)}::date)
+      VALUES (${prId}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, ${`PR-${p.code}-${po.key.toUpperCase()}`}, 'PO_CREATED', ${U('proc')}::uuid, ${addDays(orderedAt, 10)}::date)
       ON CONFLICT (pr_id) DO NOTHING`;
     await tx.$executeRaw`INSERT INTO procurement.rfqs (rfq_id, pr_id, project_id, tenant_id, rfq_number, status, deadline, created_by)
-      VALUES (${rfqId}::uuid, ${prId}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, ${`RFQ-${p.code}-${po.key.slice(0, 3).toUpperCase()}`}, 'AWARDED', ${ts(addDays(orderedAt, 3), '17:00')}::timestamptz, ${U('proc')}::uuid)
+      VALUES (${rfqId}::uuid, ${prId}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, ${`RFQ-${p.code}-${po.key.toUpperCase()}`}, 'AWARDED', ${ts(addDays(orderedAt, 3), '17:00')}::timestamptz, ${U('proc')}::uuid)
       ON CONFLICT (rfq_id) DO NOTHING`;
     await tx.$executeRaw`INSERT INTO procurement.quotations (quotation_id, rfq_id, vendor_id, tenant_id, total_amount, currency_code, validity_days, submitted_at, is_selected)
       VALUES (${uid(`quo/${p.key}/${po.key}`)}::uuid, ${rfqId}::uuid, ${V(po.vendor)}::uuid, ${TENANT_ID}::uuid, ${total}, ${THB}, 30, ${ts(addDays(orderedAt, 2), '11:00')}::timestamptz, true)
       ON CONFLICT (quotation_id) DO NOTHING`;
     const poStatus = po.delivered ? 'INVOICED' : 'ACKNOWLEDGED';
     await tx.$executeRaw`INSERT INTO procurement.purchase_orders (po_id, rfq_id, vendor_id, project_id, tenant_id, po_number, status, total_amount, currency_code, delivery_date, created_by)
-      VALUES (${poId}::uuid, ${rfqId}::uuid, ${V(po.vendor)}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, ${`PO-${p.code}-${po.key.slice(0, 3).toUpperCase()}`}, ${poStatus}, ${total}, ${THB}, ${addDays(orderedAt, 12)}::date, ${U('procmgr')}::uuid)
+      VALUES (${poId}::uuid, ${rfqId}::uuid, ${V(po.vendor)}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, ${`PO-${p.code}-${po.key.toUpperCase()}`}, ${poStatus}, ${total}, ${THB}, ${addDays(orderedAt, 12)}::date, ${U('procmgr')}::uuid)
       ON CONFLICT (po_id) DO NOTHING`;
     await tx.$executeRaw`INSERT INTO procurement.po_line_items (line_id, po_id, tenant_id, boq_item_id, description, quantity, unit, unit_price, line_total)
       VALUES (${uid(`poli/${p.key}/${po.key}`)}::uuid, ${poId}::uuid, ${TENANT_ID}::uuid, NULL, ${MATERIALS.find((m) => m.key === po.mat)?.name ?? po.key}, ${po.qty}, ${po.unit}, ${po.price}, ${total})
@@ -764,38 +1005,188 @@ async function seedProject(tx: Tx, p: SeedProject): Promise<void> {
     if (po.delivered) {
       const invId = uid(`inv/${p.key}/${po.key}`);
       await tx.$executeRaw`INSERT INTO procurement.deliveries (delivery_id, po_id, tenant_id, delivery_note, delivered_at, received_by, notes)
-        VALUES (${uid(`del/${p.key}/${po.key}`)}::uuid, ${poId}::uuid, ${TENANT_ID}::uuid, ${`DN-${p.code}-${po.key.slice(0, 3).toUpperCase()}`}, ${ts(addDays(orderedAt, 12), '10:30')}::timestamptz, ${U(p.se)}::uuid, 'Received in full, quantity verified')
+        VALUES (${uid(`del/${p.key}/${po.key}`)}::uuid, ${poId}::uuid, ${TENANT_ID}::uuid, ${`DN-${p.code}-${po.key.toUpperCase()}`}, ${ts(addDays(orderedAt, 12), '10:30')}::timestamptz, ${U(p.se)}::uuid, 'รับครบตามจำนวน ตรวจสอบปริมาณเรียบร้อย')
         ON CONFLICT (delivery_id) DO NOTHING`;
       await tx.$executeRaw`INSERT INTO procurement.invoices (invoice_id, po_id, vendor_id, tenant_id, invoice_number, amount, currency_code, invoice_date, due_date, status)
-        VALUES (${invId}::uuid, ${poId}::uuid, ${V(po.vendor)}::uuid, ${TENANT_ID}::uuid, ${`INV-${p.code}-${po.key.slice(0, 3).toUpperCase()}`}, ${total}, ${THB}, ${addDays(orderedAt, 14)}::date, ${addDays(orderedAt, 44)}::date, 'APPROVED')
+        VALUES (${invId}::uuid, ${poId}::uuid, ${V(po.vendor)}::uuid, ${TENANT_ID}::uuid, ${`INV-${p.code}-${po.key.toUpperCase()}`}, ${total}, ${THB}, ${addDays(orderedAt, 14)}::date, ${addDays(orderedAt, 44)}::date, 'APPROVED')
         ON CONFLICT (invoice_id) DO NOTHING`;
       actual += total;
       await tx.$executeRaw`INSERT INTO finance.cost_transactions (transaction_id, project_id, tenant_id, source_type, source_id, amount, currency_code, transaction_date, description, recorded_by)
         VALUES (${uid(`ct-inv/${p.key}/${po.key}`)}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, 'INVOICE'::finance."CostSourceType", ${invId}::uuid, ${total}, ${THB}, ${addDays(orderedAt, 14)}::date, ${`Actual: ${po.key} delivered`}, ${U('fin')}::uuid)
         ON CONFLICT (transaction_id) DO NOTHING`;
-      // payment for the concrete invoice only (rest outstanding)
-      if (po.key === 'concrete') {
-        await tx.$executeRaw`INSERT INTO finance.payments (payment_id, invoice_id, project_id, tenant_id, amount, currency_code, payment_date, payment_reference, status, recorded_by)
-          VALUES (${uid(`pay/${p.key}/${po.key}`)}::uuid, ${invId}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, ${total}, ${THB}, ${addDays(orderedAt, 20)}::date, ${`TT-${p.code}-001`}, 'PROCESSED'::finance."PaymentStatus", ${U('fin')}::uuid)
-          ON CONFLICT (payment_id) DO NOTHING`;
-      }
+      // EVERY DELIVERED + INVOICED ORDER GETS A PAYMENT ROW; `po.paid` decides its STATUS, not
+      // whether the row exists. A delivered order whose invoice is APPROVED has money owed on it, and
+      // the way this platform records that is a `finance.payments` row awaiting the FINANCE approval
+      // (`PATCH /finance/payments/:id/approve`, PENDING → PROCESSED). Seeding only the settled half
+      // left the AP queue permanently empty: the Tenant-Admin dashboard's "Payments awaiting
+      // approval" read 0 on a fully seeded database, and the Finance Payments screen had nothing to
+      // approve — neither could be photographed doing its job.
+      //
+      // Four of the eight orders per project are `paid`, two more are `delivered` but not paid, so
+      // this yields TWO pending payments per project — ten across the five active ones. The date rule
+      // is deliberately the SAME (+20 days from the order): only the status differs between a
+      // settled payment and one still waiting, and inventing a second date rule would be inventing a
+      // fact about when finance records things.
+      await tx.$executeRaw`INSERT INTO finance.payments (payment_id, invoice_id, project_id, tenant_id, amount, currency_code, payment_date, payment_reference, status, recorded_by)
+        VALUES (${uid(`pay/${p.key}/${po.key}`)}::uuid, ${invId}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, ${total}, ${THB}, ${addDays(orderedAt, 20)}::date, ${`TT-${p.code}-${po.key.toUpperCase()}`},
+                ${po.paid ? 'PROCESSED' : 'PENDING'}::finance."PaymentStatus", ${U('fin')}::uuid)
+        ON CONFLICT (payment_id) DO UPDATE SET status = EXCLUDED.status`;
     }
   }
-  await tx.$executeRaw`UPDATE finance.project_budgets SET committed_amount=${committed}, actual_amount=${actual} WHERE budget_id=${bid}::uuid`;
+  // Progress claims — งวดงาน, what a project of this size has actually certified and paid to date
+  // beyond the handful of material orders above. Typed `INVOICE`, which is what a certified progress
+  // claim is: money owed for work done. (`CostSourceType` has exactly PURCHASE_ORDER · INVOICE ·
+  // ADJUSTMENT — ADJUSTMENT would be wrong, that is a correction to a figure, not a cost.) Without this the dashboards read a few million against
+  // hundreds of millions and every project looks identically healthy. One row, so the figure has a
+  // cost transaction behind it rather than being written straight onto the aggregate.
+  const spentToDate = Math.round(p.budget * p.spendRatio);
+  const progressClaims = Math.max(0, spentToDate - actual);
+  if (progressClaims > 0) {
+    // SPREAD OVER MONTHS, NOT DUMPED ON THE START DATE. The Finance tiles compare the last 30 days
+    // of cost transactions with the 30 before them (lib/spendTrend.ts), so a single row dated at
+    // project start gives both windows nothing and the arrow has no baseline to report. Monthly
+    // claims are also what actually happens: งวดงาน are certified and invoiced month by month.
+    //
+    // The instalments rise slightly month over month, the way a project's burn does once it is out
+    // of the ground, so the two most recent windows differ and the comparison has something to say.
+    // As many monthly instalments as this project has months. Two is the floor — with one the
+    // trend has no baseline and the tiles show a placeholder instead of an arrow.
+    const CLAIM_MONTHS = Math.max(2, Math.min(8, Math.floor((spanDays - 2) / 30)));
+    const weights = Array.from({ length: CLAIM_MONTHS }, (_, i) => 1 + i * 0.12);
+    const weightSum = weights.reduce((a, b) => a + b, 0);
+    let claimed = 0;
+    for (let i = 0; i < CLAIM_MONTHS; i++) {
+      // i = 0 is the oldest; the last instalment lands inside the current month.
+      const monthsAgo = CLAIM_MONTHS - 1 - i;
+      const when = addDays(TODAY, -monthsAgo * 30 - 2);
+      const amount =
+        i === CLAIM_MONTHS - 1
+          ? progressClaims - claimed // the remainder, so the instalments sum EXACTLY to the total
+          : Math.round((progressClaims * weights[i]!) / weightSum);
+      claimed += amount;
+      if (amount <= 0) continue;
+      await tx.$executeRaw`INSERT INTO finance.cost_transactions (transaction_id, project_id, tenant_id, source_type, source_id, amount, currency_code, transaction_date, description, recorded_by)
+        VALUES (${uid(`ct-claim/${p.key}/${i}`)}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, 'INVOICE'::finance."CostSourceType", ${uid(`claim/${p.key}/${i}`)}::uuid, ${amount}, ${THB}, ${when}::date, ${`งวดงานที่รับรองแล้ว งวดที่ ${i + 1}`}, ${U('fin')}::uuid)
+        ON CONFLICT (transaction_id) DO NOTHING`;
+    }
+    // The commitment side of the same months — purchase orders raised but not yet invoiced. Without
+    // these the Commit Costs tile has no ledger of its own and its arrow stays blank.
+    for (let i = 0; i < CLAIM_MONTHS; i++) {
+      const when = addDays(TODAY, -(CLAIM_MONTHS - 1 - i) * 30 - 9);
+      const amount = Math.round((committed * weights[i]!) / weightSum);
+      if (amount <= 0) continue;
+      await tx.$executeRaw`INSERT INTO finance.cost_transactions (transaction_id, project_id, tenant_id, source_type, source_id, amount, currency_code, transaction_date, description, recorded_by)
+        VALUES (${uid(`ct-commit/${p.key}/${i}`)}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, 'PURCHASE_ORDER'::finance."CostSourceType", ${uid(`commit/${p.key}/${i}`)}::uuid, ${amount}, ${THB}, ${when}::date, ${`ผูกพันตามใบสั่งซื้อ งวดที่ ${i + 1}`}, ${U('fin')}::uuid)
+        ON CONFLICT (transaction_id) DO NOTHING`;
+    }
+  }
+  await tx.$executeRaw`UPDATE finance.project_budgets SET committed_amount=${committed}, actual_amount=${spentToDate} WHERE budget_id=${bid}::uuid`;
 
   // Tasks (a handful with progress).
+  //
+  // The last column is the BOQ_TEMPLATE line each task delivers (`<group code>/<item index>`), which
+  // is what gives the project-progress metric its weights: §32.12 weights progress_percent by the
+  // linked item's estimated_total and EXCLUDES tasks with boq_item_id = null. Without these links the
+  // metric has nothing to sum and reports "not computable" for every project.
+  //
+  // Waterproofing maps to null on purpose — BOQ_TEMPLATE has no waterproofing line, and inventing a
+  // link to an unrelated item would silently mis-weight the figure. It is real, unmeasured scope.
+  // The last number is `planned_end` IN DAYS PAST TODAY (negative = still to come), before the
+  // per-project shift below.
+  //
+  // ANCHORED TO TODAY, NOT TO THE PROJECT START (PO decision 2026-08-11). These windows used to be
+  // `start + ti*3 … +20`, which put every deadline months behind whatever day the demo was run —
+  // so lib/delaySeverity.ts, doing its job correctly, banded all 25 tasks CRITICAL. A chip whose
+  // every card reads the same carries no information: the screen showed a wall of red and could not
+  // demonstrate the four bands DESIGN.md §15.4 defines. Seeding relative to TODAY is what makes the
+  // severity mean something, and it keeps meaning it however long after the seed the demo is run.
+  //
+  // The two COMPLETED tasks sit comfortably in the past: finished work is never late (whatever its
+  // date), and a completed task with next week's deadline would read as a mistake.
+  //
+  // The last pair is the PLANNED WORKING WINDOW (migration 20260811000001) — the "08:00 - 12:00" the
+  // dashboard card is headed by. Real Thai site hours: the morning pour before the heat, the
+  // afternoon block, and the electrical work that runs the full day.
   const taskDefs = [
-    ['Pile foundation - Zone A', 'FOUNDATION', 'COMPLETED', 100],
-    ['Pile cap & tie beam', 'FOUNDATION', 'IN_PROGRESS', 65],
-    ['Ground floor columns', 'STRUCTURE', 'IN_PROGRESS', 40],
-    ['Basement waterproofing', 'STRUCTURE', 'NOT_STARTED', 0],
-    ['Temporary electrical supply', 'MEP', 'COMPLETED', 100],
+    ['งานเสาเข็ม โซน A', 'FOUNDATION', 'COMPLETED', 100, 'B/0', 30, '08:00', '12:00'], // Bored pile ø600mm
+    ['ฐานรากและคานคอดิน', 'FOUNDATION', 'IN_PROGRESS', 65, 'B/1', 16, '08:00', '12:00'], // Pile cap concrete 240ksc
+    ['เสาคอนกรีตชั้นล่าง', 'STRUCTURE', 'IN_PROGRESS', 40, 'C/0', 9, '13:00', '17:00'], // RC columns
+    ['งานกันซึมชั้นใต้ดิน', 'STRUCTURE', 'NOT_STARTED', 0, null, 2, '13:00', '15:00'], // no BOQ line for waterproofing
+    ['ระบบไฟฟ้าชั่วคราวหน้างาน', 'MEP', 'COMPLETED', 100, 'E/0', 34, '08:00', '17:00'], // Electrical conduit & wiring
   ] as const;
+
+  /**
+   * Days to pull THIS project's deadlines forward, so the bands vary DOWN THE LIST as well as
+   * across each project.
+   *
+   * The site worker's task list is every project's tasks in one scroll — five names repeating — so
+   * without this the same three bands would repeat five times over. The numbers are not a ramp: a
+   * ramp would sort the list into "the late ones, then the fine ones", which is tidier than any real
+   * site. Across the six they yield roughly 2 CRITICAL · 4 HIGH · 2 MEDIUM · 2 LOW and the rest not
+   * late at all — those last fall back to the status badge, which is the point of having both.
+   */
+  const DUE_SHIFT = [0, 2, 11, 5, 18, 8];
+  const projectIndex = Math.max(
+    0,
+    PROJECTS.findIndex((x) => x.key === p.key),
+  );
+  const shift = DUE_SHIFT[projectIndex % DUE_SHIFT.length]!;
+
+  /**
+   * Days of progress to add or remove from THIS project's in-flight tasks.
+   *
+   * Every project is seeded from the same five-task template, so before this they all computed the
+   * SAME §32.12 figure — the project picker showed five sites at an identical 76%, which is the one
+   * thing a portfolio view must never do: a bar that reads the same everywhere carries no
+   * information, and a reviewer cannot tell a working metric from a hardcoded one (PO decision
+   * 2026-08-12, "seed realistic data เพื่อให้ข้อมูลมีความหลากหลาย").
+   *
+   * Applied to IN_PROGRESS tasks ONLY. A COMPLETED task is 100 by definition and its QC gate is
+   * keyed on that; a NOT_STARTED one is 0 for the same kind of reason. Nudging either would make the
+   * seed contradict itself.
+   */
+  const PROGRESS_SHIFT = [0, -28, 17, -14, 24, -8];
+  const progressShift = PROGRESS_SHIFT[projectIndex % PROGRESS_SHIFT.length]!;
   for (let ti = 0; ti < taskDefs.length; ti++) {
-    const [tname, wt, status, prog] = taskDefs[ti];
-    await tx.$executeRaw`INSERT INTO projects.tasks (task_id, tenant_id, project_id, task_name, work_type, status, assigned_to, planned_start, planned_end, progress_percent, qc_status)
-      VALUES (${uid(`task/${p.key}/${ti}`)}::uuid, ${TENANT_ID}::uuid, ${pid}::uuid, ${tname}, ${wt}, ${status}, ${U(p.se)}::uuid, ${addDays(p.start, ti * 3)}::date, ${addDays(p.start, ti * 3 + 20)}::date, ${prog}, ${prog === 100 ? 'QC_PASSED' : 'NONE'})
-      ON CONFLICT (task_id) DO NOTHING`;
+    const [tname, wt, status, baseProg, boqKey, lateDays, startTime, endTime] = taskDefs[ti];
+    // Spread the in-flight figures per project — see PROGRESS_SHIFT. Clamped to 1..99 so a shift can
+    // never turn an IN_PROGRESS task into a silent 0 or a 100 that the QC gate would then disagree
+    // with (`qc_status` below is keyed on exactly 100).
+    const prog =
+      status === 'IN_PROGRESS' ? Math.max(1, Math.min(99, baseProg + progressShift)) : baseProg;
+    // A 20-day window ending on the seeded deadline — the same span the fixed dates used, so the
+    // cards still read as three-week packages of work rather than open-ended ones.
+    const dueEnd = addDays(TODAY, -(lateDays - shift));
+    const dueStart = addDays(dueEnd, -20);
+    const boqItemId = boqKey === null ? null : uid(`boqi/${p.key}/${boqKey}`);
+    // DO UPDATE, not DO NOTHING: these tasks predate both the BOQ link and the today-relative
+    // dates, so a plain insert-or-skip would leave every existing database with the metric unusable
+    // and every deadline still months in the past — the exact wall of CRITICAL this change fixes.
+    // The dates are re-stamped on every seed run for the same reason they are relative at all: a
+    // demo run a month from now must still show the four bands.
+    await tx.$executeRaw`INSERT INTO projects.tasks (task_id, tenant_id, project_id, task_name, work_type, status, assigned_to, planned_start, planned_end, planned_start_time, planned_end_time, progress_percent, qc_status, boq_item_id)
+      VALUES (${uid(`task/${p.key}/${ti}`)}::uuid, ${TENANT_ID}::uuid, ${pid}::uuid, ${tname}, ${wt}, ${status}, ${U(p.se)}::uuid, ${dueStart}::date, ${dueEnd}::date, ${startTime}::time, ${endTime}::time, ${prog}, ${prog === 100 ? 'QC_PASSED' : 'NONE'}, ${boqItemId}::uuid)
+      ON CONFLICT (task_id) DO UPDATE SET boq_item_id = EXCLUDED.boq_item_id, planned_start = EXCLUDED.planned_start, planned_end = EXCLUDED.planned_end, planned_start_time = EXCLUDED.planned_start_time, planned_end_time = EXCLUDED.planned_end_time`;
+  }
+
+  // Project phases (ADR-070) — the construction execution stages the SITE_ENGINEER dashboard's phase
+  // card reads. phase.status is PM-set here (phases are not linked to tasks in this increment, so it is
+  // not rolled up) but is kept coherent with the seeded tasks: the foundation tasks are still in
+  // progress (piles done, pile-caps ~65%) and the columns have started, so Foundation and Structure
+  // are both IN_PROGRESS and the DERIVED current phase — the lowest-seq IN_PROGRESS one (ADR-070) — is
+  // Foundation. actual_end stays null on both (only COMPLETED phases are signed off).
+  const phaseDefs = [
+    ['งานฐานราก (Foundation)', 'IN_PROGRESS', 0, 45, 0, null],
+    ['งานโครงสร้าง (Structure)', 'IN_PROGRESS', 40, 140, 45, null],
+    ['งานระบบประกอบอาคาร (MEP)', 'NOT_STARTED', 130, 210, null, null],
+    ['งานสถาปัตยกรรม (Architecture)', 'NOT_STARTED', 200, 290, null, null],
+    ['ส่งมอบงาน (Handover)', 'NOT_STARTED', 285, 300, null, null],
+  ] as const;
+  for (let phi = 0; phi < phaseDefs.length; phi++) {
+    const [pname, pstatus, ps, pe, astart, aend] = phaseDefs[phi];
+    await tx.$executeRaw`INSERT INTO projects.project_phases (phase_id, tenant_id, project_id, seq, name, status, planned_start, planned_end, actual_start, actual_end, created_by)
+      VALUES (${uid(`phase/${p.key}/${phi}`)}::uuid, ${TENANT_ID}::uuid, ${pid}::uuid, ${phi + 1}, ${pname}, ${pstatus}, ${addDays(p.start, ps)}::date, ${addDays(p.start, pe)}::date, ${astart === null ? null : addDays(p.start, astart)}::date, ${aend === null ? null : addDays(p.start, aend)}::date, ${U(p.pm)}::uuid)
+      ON CONFLICT (phase_id) DO NOTHING`;
   }
 
   // Permit (active work permit).
@@ -805,23 +1196,68 @@ async function seedProject(tx: Tx, p: SeedProject): Promise<void> {
 
   // Daily site reports across the ~1-month window (weekdays).
   const days = workdays(addDays(p.start, 1), SEED_END);
+  // Backfill for rows written before the rule above. The insert below is ON CONFLICT DO NOTHING, so
+  // re-running the seed cannot fix an existing row on its own — and the product owner's instruction
+  // was explicitly about what is already in the database ("ถ้าการ์ดไหนในฐานข้อมูลไม่มี blocker
+  // category ให้ใส่ Other เข้าไป"). Idempotent: it only touches NULLs.
+  await tx.$executeRaw`
+    UPDATE site_ops.site_reports
+    SET blocker_category = 'OTHER'
+    WHERE tenant_id = ${TENANT_ID}::uuid AND blocker_category IS NULL`;
+
   const summaries = [
-    'Excavation ongoing at zone A; pile rig operating on schedule.',
-    'Pile cap reinforcement fixed; concrete pour scheduled tomorrow.',
-    'Column formwork erected on ground floor; QC checked rebar.',
-    'Concrete delivered and poured for slab section B; cube samples taken.',
-    'Masonry work progressing on level 1; MEP conduit first-fix started.',
-    'Backfill and compaction completed at north side; density test passed.',
-    'Steel delivery received and stacked; formwork stripping on columns.',
+    'ขุดดินโซน A ต่อเนื่อง เครื่องเจาะเสาเข็มทำงานตามแผน',
+    'ผูกเหล็กฐานรากเสร็จ เตรียมเทคอนกรีตวันพรุ่งนี้',
+    'ตั้งแบบเสาชั้นล่าง QC ตรวจเหล็กเสริมเรียบร้อย',
+    'เทคอนกรีตพื้นส่วน B และเก็บตัวอย่างลูกปูนทดสอบ',
+    'งานก่ออิฐชั้น 1 คืบหน้า เริ่มเดินท่อร้อยสายระบบ MEP',
+    'ถมดินบดอัดฝั่งทิศเหนือเสร็จ ผ่านการทดสอบความหนาแน่น',
+    'รับเหล็กเข้าไซต์และจัดเก็บ ถอดแบบเสาบางส่วน',
   ];
   for (let di = 0; di < days.length; di++) {
     const day = days[di];
     const rid = uid(`report/${p.key}/${day}`);
     const manpower = 32 + ((di * 7) % 28);
-    const blockers =
-      di % 9 === 4 ? 'Ready-mix concrete delivery delayed 2 hours due to traffic.' : null;
-    await tx.$executeRaw`INSERT INTO site_ops.site_reports (report_id, project_id, tenant_id, report_date, submitted_by, status, summary, weather, manpower_count, client_submitted_at, latitude, longitude, blockers)
-      VALUES (${rid}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, ${day}::date, ${U(p.se)}::uuid, 'SUBMITTED', ${summaries[di % summaries.length]}, ${WEATHER[di % WEATHER.length]}, ${manpower}, ${ts(day, '17:30')}::timestamptz, ${p.lat}, ${p.lng}, ${blockers})
+    // BLOCKERS, AND THE CATEGORY THAT NAMES THEM. One report in nine carried a blocker and none
+    // carried a `blocker_category` at all, so the reports list — whose card headline IS the blocker
+    // text and whose left accent is decided by that category — had almost nothing to show and every
+    // card came out the same green (PO decision 2026-08-12, "การ์ดขาด Blockers").
+    // The categories are the column's own CHECK values (migration 20260808000001): WEATHER,
+    // MATERIAL, POWER, OTHER. Each line is a real Thai site cause matched to its own category, so a
+    // reader can check the accent against the words rather than taking the colour on trust.
+    const BLOCKED: ReadonlyArray<readonly [string, string]> = [
+      ['คอนกรีตผสมเสร็จส่งล่าช้า 2 ชั่วโมง เนื่องจากการจราจร', 'MATERIAL'],
+      ['ฝนตกหนักช่วงบ่าย งานเทพื้นหยุด 3 ชั่วโมง', 'WEATHER'],
+      ['ไฟฟ้าชั่วคราวดับ ปั๊มน้ำและเครื่องเชื่อมหยุดทำงาน', 'POWER'],
+      ['เหล็กเส้น 12 มม. ขาดสต็อก รอส่งรอบถัดไป', 'MATERIAL'],
+      ['ทางเข้าไซต์ปิดชั่วคราวจากงานสาธารณูปโภคของเขต', 'OTHER'],
+    ];
+    // Roughly one report in three, and rotating through the five above so consecutive days do not
+    // repeat a cause. `di % 3 === 1` rather than `=== 0` keeps the newest report — the top card —
+    // from always being a blocked one.
+    const blocked = di % 3 === 1 ? BLOCKED[Math.floor(di / 3) % BLOCKED.length]! : null;
+    const blockers = blocked === null ? null : blocked[0];
+    // EVERY REPORT CARRIES A CATEGORY (PO decision 2026-08-12). A day with nothing blocking it is
+    // filed as OTHER, which is what the daily-report form now requires of a real submitter too
+    // (app/(app)/report.tsx). The column stays nullable in the database — this is what the SEED
+    // writes, not a schema change — but no seeded row is left without one, so the reports list
+    // never has a card whose category row is simply absent.
+    const blockerCategory = blocked === null ? 'OTHER' : blocked[1];
+    /**
+     * THE TWO NEWEST REPORTS ON EACH PROJECT ARE STILL DRAFTS (PO decision 2026-08-12).
+     *
+     * Every seeded report was SUBMITTED, so the reports list drew the same green chip on every card
+     * and the screen could not show its DRAFT state at all — the amber chip and the yellow left
+     * accent were unreachable code as far as any reviewer could tell.
+     *
+     * The NEWEST, not a scattering: a draft is work the engineer has not finished writing up, and
+     * that is what today's and yesterday's report are. A three-week-old draft would be a different
+     * story — a report someone abandoned — and nothing in the seed means to tell that one.
+     * `days` runs oldest → newest, so the tail is the recent end.
+     */
+    const isDraft = di >= days.length - 2;
+    await tx.$executeRaw`INSERT INTO site_ops.site_reports (report_id, project_id, tenant_id, report_date, submitted_by, status, summary, weather, manpower_count, client_submitted_at, latitude, longitude, blockers, blocker_category)
+      VALUES (${rid}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, ${day}::date, ${U(p.se)}::uuid, ${isDraft ? 'DRAFT' : 'SUBMITTED'}, ${summaries[di % summaries.length]}, ${WEATHER[di % WEATHER.length]}, ${manpower}, ${isDraft ? null : ts(day, '17:30')}::timestamptz, ${p.lat}, ${p.lng}, ${blockers}, ${blockerCategory})
       ON CONFLICT (report_id) DO NOTHING`;
     // manpower breakdown (2 trades per report)
     for (let mi = 0; mi < 2; mi++) {
@@ -834,20 +1270,77 @@ async function seedProject(tx: Tx, p: SeedProject): Promise<void> {
 
   // Issues (mix of open/resolved).
   const issueDefs = [
-    ['Rebar spacing exceeds tolerance at grid C3', 'Quality', 'MEDIUM', 'RESOLVED', 'DEFECT'],
-    ['Water seepage in basement pit', 'Design', 'HIGH', 'IN_PROGRESS', 'DEFECT'],
-    ['Late formwork delivery affecting slab pour', 'Delay', 'MEDIUM', 'OPEN', 'GENERAL'],
-    ['Damaged tiles found in delivery batch', 'Material', 'LOW', 'RESOLVED', 'GENERAL'],
-    ['Missing edge protection on level 2', 'Safety', 'HIGH', 'OPEN', 'PUNCH'],
+    ['ระยะเหล็กเสริมเกินพิกัดที่แนวเสา C3', 'Quality', 'MEDIUM', 'RESOLVED', 'DEFECT'],
+    ['มีน้ำซึมบริเวณบ่อพักชั้นใต้ดิน', 'Design', 'HIGH', 'IN_PROGRESS', 'DEFECT'],
+    ['ไม้แบบส่งล่าช้า กระทบการเทพื้น', 'Delay', 'MEDIUM', 'OPEN', 'GENERAL'],
+    ['พบกระเบื้องชำรุดในล็อตที่ส่งมอบ', 'Material', 'LOW', 'RESOLVED', 'GENERAL'],
+    ['ขาดราวกันตกบริเวณชั้น 2', 'Safety', 'HIGH', 'OPEN', 'PUNCH'],
   ] as const;
   for (let ai = 0; ai < issueDefs.length; ai++) {
     const [title, , sev, status, itype] = issueDefs[ai];
     await tx.$executeRaw`INSERT INTO site_ops.issues (issue_id, project_id, tenant_id, title, description, severity, status, assigned_to, issue_type, client_submitted_at, latitude, longitude)
-      VALUES (${uid(`issue/${p.key}/${ai}`)}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, ${title}, ${`${title}. Reported during daily inspection.`}, ${sev}, ${status}, ${U(p.se)}::uuid, ${itype}, ${ts(addDays(p.start, 5 + ai * 3), '14:00')}::timestamptz, ${p.lat}, ${p.lng})
+      VALUES (${uid(`issue/${p.key}/${ai}`)}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, ${title}, ${`${title} — พบระหว่างการตรวจงานประจำวัน`}, ${sev}, ${status}, ${U(p.se)}::uuid, ${itype}, ${ts(addDays(p.start, 5 + ai * 3), '14:00')}::timestamptz, ${p.lat}, ${p.lng})
       ON CONFLICT (issue_id) DO NOTHING`;
   }
 
-  // Inspections (against seeded checklists).
+  // Safety checklists — the TEMPLATES the inspections below are recorded against.
+  //
+  // This block was missing until 2026-08-08, and the omission was not cosmetic: the loop underneath
+  // has always inserted `checklist_id = uid('chk/…')` and its comment has always claimed the
+  // inspections ran "against seeded checklists", but nothing ever wrote a row to
+  // site_ops.safety_checklists — so every seeded inspection pointed at a checklist that did not
+  // exist, and `GET /safety/checklists` returned `[]` on a fully seeded database. That is also what
+  // the Site Worker safety screen reads, so the screen had nothing to render.
+  //
+  // Item shape is the one master §Phase 6 specifies for this column — { item_id, description,
+  // is_required } — not the { item, required } shape site_ops.inspection_types uses for its
+  // `checklist_template`. The two are different columns on different tables and are not interchanged.
+  const checklistDefs = [
+    [
+      'Foundation Inspection',
+      [
+        ['rebar', 'ตรวจการวางเหล็กเสริมตามแบบ', true],
+        ['cover', 'ระยะหุ้มคอนกรีตอยู่ในเกณฑ์', true],
+      ],
+    ],
+    [
+      'Concrete Pour Inspection',
+      [
+        ['slump', 'ทดสอบค่ายุบตัวผ่านเกณฑ์', true],
+        ['cubes', 'เก็บตัวอย่างลูกปูนครบ', true],
+      ],
+    ],
+    // The pre-shift verification the SITE_WORKER files — three items, matching what the safety
+    // mockup draws (PPE, live electrical hazards, exclusion-zone signage).
+    [
+      'Safety Walkthrough',
+      [
+        ['ppe', 'สวมใส่หมวกนิรภัยและรองเท้าเซฟตี้', true],
+        ['electrical', 'ตรวจสอบพื้นที่ทำงานไม่มีสายไฟรั่ว', true],
+        ['signage', 'ติดตั้งป้ายเตือนพื้นที่เขตก่อสร้าง', false],
+      ],
+    ],
+    [
+      'MEP Rough-In Inspection',
+      [
+        ['conduit', 'การเดินท่อร้อยสายตรงตามแบบ', true],
+        ['supports', 'ติดตั้งอุปกรณ์รองรับท่อครบถ้วน', true],
+      ],
+    ],
+  ] as const;
+  for (let ci = 0; ci < checklistDefs.length; ci++) {
+    const [name, items] = checklistDefs[ci]!;
+    const payload = items.map(([itemId, description, isRequired]) => ({
+      item_id: itemId,
+      description,
+      is_required: isRequired,
+    }));
+    await tx.$executeRaw`INSERT INTO site_ops.safety_checklists (checklist_id, project_id, tenant_id, checklist_name, version, items)
+      VALUES (${uid(`chk/${p.key}/${ci}`)}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, ${name}, 1, ${JSON.stringify(payload)}::jsonb)
+      ON CONFLICT (checklist_id) DO NOTHING`;
+  }
+
+  // Inspections (against the checklists seeded immediately above — same uid('chk/…') keys).
   const inspNames = [
     'Foundation Inspection',
     'Concrete Pour Inspection',
@@ -857,7 +1350,7 @@ async function seedProject(tx: Tx, p: SeedProject): Promise<void> {
   for (let ni = 0; ni < inspNames.length; ni++) {
     const status = ni === 1 ? 'FAILED' : 'PASSED';
     await tx.$executeRaw`INSERT INTO site_ops.inspections (inspection_id, project_id, tenant_id, checklist_id, status, inspected_by, inspected_at, notes, issue_severity)
-      VALUES (${uid(`insp/${p.key}/${ni}`)}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, ${uid(`chk/${p.key}/${ni}`)}::uuid, ${status}, ${U(p.se)}::uuid, ${ts(addDays(p.start, 8 + ni * 4), '11:00')}::timestamptz, ${status === 'FAILED' ? 'Slump test out of range; re-pour required.' : 'All checklist items satisfied.'}, ${status === 'FAILED' ? 'HIGH' : null})
+      VALUES (${uid(`insp/${p.key}/${ni}`)}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, ${uid(`chk/${p.key}/${ni}`)}::uuid, ${status}, ${U(p.se)}::uuid, ${ts(addDays(p.start, 8 + ni * 4), '11:00')}::timestamptz, ${status === 'FAILED' ? 'ค่ายุบตัวคอนกรีตเกินพิกัด ต้องเทใหม่' : 'ผ่านทุกรายการตรวจสอบ'}, ${status === 'FAILED' ? 'HIGH' : null})
       ON CONFLICT (inspection_id) DO NOTHING`;
   }
 
@@ -871,8 +1364,60 @@ async function seedProject(tx: Tx, p: SeedProject): Promise<void> {
 
   // Safety incident (one acknowledged).
   await tx.$executeRaw`INSERT INTO site_ops.incidents (incident_id, tenant_id, project_id, incident_type, severity, reported_by, status, acknowledged_by, acknowledged_at, latitude, longitude)
-    VALUES (${uid(`inc/${p.key}`)}::uuid, ${TENANT_ID}::uuid, ${pid}::uuid, 'Near Miss', 'MEDIUM', ${U(p.se)}::uuid, 'IN_PROGRESS', ${U('safety')}::uuid, ${ts(addDays(p.start, 12), '15:20')}::timestamptz, ${p.lat}, ${p.lng})
+    VALUES (${uid(`inc/${p.key}`)}::uuid, ${TENANT_ID}::uuid, ${pid}::uuid, 'เกือบเกิดอุบัติเหตุ (Near Miss)', 'MEDIUM', ${U(p.se)}::uuid, 'IN_PROGRESS', ${U('safety')}::uuid, ${ts(addDays(p.start, 12), '15:20')}::timestamptz, ${p.lat}, ${p.lng})
     ON CONFLICT (incident_id) DO NOTHING`;
+
+  // Sync-failure conflict records (site_ops.conflict_records) — the Tenant Admin "Alerts" sync-review
+  // queue (mockup 04_tenant_admin/03_alerts). A realistic tenant accumulates field-sync conflicts, so
+  // seed a handful of varied entity + conflict types (unresolved: reviewed_at NULL) once — they are
+  // tenant-level, not project-scoped — so the review queue is demonstrable. conflict_type is the real
+  // enum (FIELD_CONFLICT | STATUS_CONFLICT | REJECTED); client/server payloads carry the actual diff.
+  if (PROJECTS.indexOf(p) === 0) {
+    const CONFLICTS = [
+      {
+        et: 'site_report',
+        ct: 'FIELD_CONFLICT',
+        hrs: 2,
+        client: { manpower_count: 25, weather: 'sunny', summary: 'เทพื้นชั้น 3 เสร็จ 80%' },
+        server: { manpower_count: 22, weather: 'cloudy', summary: 'เทพื้นชั้น 3 เสร็จ 75%' },
+      },
+      {
+        et: 'issue',
+        ct: 'STATUS_CONFLICT',
+        hrs: 5,
+        client: { status: 'in_progress', title: 'รอยแตกผนังชั้น 2' },
+        server: { status: 'resolved', title: 'รอยแตกผนังชั้น 2' },
+      },
+      {
+        et: 'inspection',
+        ct: 'REJECTED',
+        hrs: 8,
+        client: { result: 'pass', notes: 'ผ่านการตรวจ' },
+        server: { result: 'fail', notes: 'ค่ายุบตัวคอนกรีตเกินพิกัด' },
+      },
+      {
+        et: 'manpower_log',
+        ct: 'FIELD_CONFLICT',
+        hrs: 13,
+        client: { worker_count: 12, trade_type: 'concrete' },
+        server: { worker_count: 10, trade_type: 'concrete' },
+      },
+      {
+        et: 'material_consumption',
+        ct: 'REJECTED',
+        hrs: 26,
+        client: { material_name: 'ปูนซีเมนต์', quantity: 50 },
+        server: { material_name: 'ปูนซีเมนต์', quantity: 45 },
+      },
+    ] as const;
+    for (let ci = 0; ci < CONFLICTS.length; ci++) {
+      const c = CONFLICTS[ci];
+      const createdAt = new Date(Date.now() - c.hrs * 3600 * 1000).toISOString();
+      await tx.$executeRaw`INSERT INTO site_ops.conflict_records (conflict_id, tenant_id, entity_type, entity_id, client_payload, server_payload, conflict_type, created_at)
+        VALUES (${uid(`conflict/${ci}`)}::uuid, ${TENANT_ID}::uuid, ${c.et}, ${uid(`conflict-entity/${ci}`)}::uuid, ${JSON.stringify(c.client)}::jsonb, ${JSON.stringify(c.server)}::jsonb, ${c.ct}, ${createdAt}::timestamptz)
+        ON CONFLICT (conflict_id) DO NOTHING`;
+    }
+  }
 
   // Workforce allocation + attendance + timesheets for a subset of workers.
   const projWorkers = WORKERS.slice(
@@ -891,6 +1436,20 @@ async function seedProject(tx: Tx, p: SeedProject): Promise<void> {
     }
     await tx.$executeRaw`INSERT INTO workforce_telemetry.timesheets (timesheet_id, period_date, worker_id, project_id, tenant_id, regular_hours, overtime_hours, status)
       VALUES (${uid(`ts/${p.key}/${w.key}`)}::uuid, ${SEED_END}::date, ${W(w.key)}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, 160, ${12 + (TRADES.indexOf(w.trade) % 6)}, 'APPROVED'::workforce_telemetry.timesheet_status_enum)
+      ON CONFLICT DO NOTHING`;
+  }
+
+  // An OPEN shift for the first worker on each project — checked in this morning, no check-out.
+  //
+  // Every row above is a finished past day (08:00 → 17:00), which makes `on_site` false for the
+  // whole crew and leaves the team directory (GET /projects/:id/workforce/directory, mockup
+  // 04_directory) unable to show the state it exists for. `now()` rather than a fixed timestamp
+  // because "today" has to follow whenever the seed is run, and the derived flag reads the check-in's
+  // own calendar day.
+  const onSiteWorker = projWorkers[0];
+  if (onSiteWorker) {
+    await tx.$executeRaw`INSERT INTO workforce_telemetry.attendance_logs (log_id, recorded_at, worker_id, project_id, tenant_id, check_in_at, check_out_at, hours_worked, latitude, longitude)
+      VALUES (${uid(`att-open/${p.key}/${onSiteWorker.key}`)}::uuid, date_trunc('day', now()) + interval '7 hours', ${W(onSiteWorker.key)}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, date_trunc('day', now()) + interval '7 hours', NULL, NULL, ${p.lat}, ${p.lng})
       ON CONFLICT DO NOTHING`;
   }
 
@@ -915,8 +1474,8 @@ async function seedNotifications(tx: Tx): Promise<void> {
       to: 'exec',
       ch: 'IN_APP',
       evt: 'finance.variance.alert.v1',
-      subj: 'Budget variance alert — Rama IX Corporate Tower',
-      body: 'Actual cost has reached 82% of the allocated concrete budget line.',
+      subj: 'แจ้งเตือนงบประมาณเกินเกณฑ์ — Rama IX Corporate Tower',
+      body: 'ค่าใช้จ่ายจริงถึง 82% ของงบหมวดคอนกรีตที่จัดสรรไว้',
       status: 'READ',
     },
     {
@@ -924,8 +1483,8 @@ async function seedNotifications(tx: Tx): Promise<void> {
       to: 'pm2',
       ch: 'IN_APP',
       evt: 'site.inspection.failed.v1',
-      subj: 'Inspection failed — Concrete Pour',
-      body: 'Slump test out of range on slab section B. Re-pour required.',
+      subj: 'ตรวจงานไม่ผ่าน — การเทคอนกรีต',
+      body: 'ค่ายุบตัวคอนกรีตพื้นส่วน B เกินพิกัด ต้องเทใหม่',
       status: 'SENT',
     },
     {
@@ -933,8 +1492,8 @@ async function seedNotifications(tx: Tx): Promise<void> {
       to: 'safety',
       ch: 'IN_APP',
       evt: 'site.incident.reported.v1',
-      subj: 'Safety near-miss reported',
-      body: 'A near-miss incident was reported at The Sukhumvit 45 Residences.',
+      subj: 'แจ้งเหตุเกือบเกิดอุบัติเหตุ',
+      body: 'มีการแจ้งเหตุเกือบเกิดอุบัติเหตุที่โครงการ The Sukhumvit 45 Residences',
       status: 'READ',
     },
     {
@@ -942,8 +1501,8 @@ async function seedNotifications(tx: Tx): Promise<void> {
       to: 'proc',
       ch: 'EMAIL',
       evt: 'procurement.po.status_changed.v1',
-      subj: 'PO acknowledged by vendor',
-      body: 'Millcon Steel acknowledged PO-SKV45-REB.',
+      subj: 'ผู้ขายยืนยันรับใบสั่งซื้อ',
+      body: 'Millcon Steel ยืนยันรับใบสั่งซื้อ PO-SKV45-REBAR',
       status: 'SENT',
     },
     {
@@ -951,8 +1510,8 @@ async function seedNotifications(tx: Tx): Promise<void> {
       to: 'fin',
       ch: 'IN_APP',
       evt: 'procurement.invoice.received.v1',
-      subj: 'New vendor invoice received',
-      body: 'CPAC invoice INV-R9CT-CON is ready for approval.',
+      subj: 'ได้รับใบแจ้งหนี้จากผู้ขายรายใหม่',
+      body: 'ใบแจ้งหนี้ CPAC เลขที่ INV-R9CT-CONCRETE รอการอนุมัติ',
       status: 'PENDING',
     },
   ];
@@ -967,10 +1526,10 @@ async function seedAiReports(tx: Tx): Promise<void> {
   for (const p of PROJECTS.slice(0, 3)) {
     const pid = uid(`project/${p.key}`);
     const content = {
-      summary: `Over the past month, ${p.name} progressed steadily. Foundation works are largely complete and superstructure has commenced. Procurement of concrete and steel is on track; one inspection failure (concrete pour) was remediated.`,
+      summary: `เดือนที่ผ่านมา โครงการ ${p.name} มีความคืบหน้าอย่างต่อเนื่อง งานฐานรากเสร็จเป็นส่วนใหญ่และเริ่มงานโครงสร้างส่วนบนแล้ว การจัดซื้อคอนกรีตและเหล็กเป็นไปตามแผน มีการตรวจงานไม่ผ่าน 1 ครั้ง (การเทคอนกรีต) ซึ่งได้แก้ไขเรียบร้อยแล้ว`,
       key_issues: [
-        'Water seepage in basement pit under remediation',
-        'Formwork delivery delay affecting one slab pour',
+        'อยู่ระหว่างแก้ไขปัญหาน้ำซึมบริเวณบ่อพักชั้นใต้ดิน',
+        'ไม้แบบส่งล่าช้า กระทบการเทพื้น 1 จุด',
       ],
       confidence: 0.82,
       data_gaps: [],
@@ -979,6 +1538,316 @@ async function seedAiReports(tx: Tx): Promise<void> {
       VALUES (${uid(`ai/${p.key}`)}::uuid, ${TENANT_ID}::uuid, ${pid}::uuid, 'SITE_SUMMARY'::ai.report_type_enum, ${JSON.stringify(content)}::jsonb, 0.82, 'gpt-4o', 1450, ${U('pm1')}::uuid)
       ON CONFLICT (report_id) DO NOTHING`;
   }
+}
+
+// Delete this tenant's domain rows in FK-safe (children-first) order.
+async function wipeTenant(tx: Tx): Promise<void> {
+  const tables = [
+    'site_ops.manpower_logs',
+    'finance.payments',
+    'procurement.invoices',
+    'procurement.deliveries',
+    'procurement.po_line_items',
+    'finance.cost_transactions',
+    'procurement.purchase_orders',
+    'procurement.quotations',
+    'procurement.rfqs',
+    'procurement.purchase_requests',
+    'site_ops.issues',
+    'site_ops.inspections',
+    'site_ops.incidents',
+    'site_ops.material_consumptions',
+    'site_ops.permits',
+    'site_ops.site_reports',
+    'projects.tasks',
+    'workforce_telemetry.attendance_logs',
+    'workforce_telemetry.timesheets',
+    'workforce.project_workforce',
+    'equipment_telemetry.equipment_utilization',
+    'equipment.equipment_maintenance',
+    'equipment.equipment_assignments',
+    'boq.boq_items',
+    'boq.boq_categories',
+    'boq.boq_versions',
+    'projects.rooms',
+    'projects.floors',
+    'projects.buildings',
+    'projects.project_members',
+    'finance.budget_lines',
+    'finance.project_budgets',
+    'finance.contracts',
+    'finance.customers',
+    'crm.contacts',
+    'crm.opportunities',
+    'crm.leads',
+    'notifications.notifications',
+    'ai.ai_generated_reports',
+    'workforce.workers',
+    'equipment.equipment',
+    'procurement.materials',
+    'projects.projects',
+  ];
+  for (const t of tables) {
+    await tx.$executeRawUnsafe(`DELETE FROM ${t} WHERE tenant_id = '${TENANT_ID}'`);
+  }
+}
+
+// CRM pipeline (sales) — leads → opportunities → contacts. Thai company/contact details.
+/**
+ * Purchase orders and RFQs that are WAITING ON A DECISION.
+ *
+ * Everything seedProject() creates is already settled — its POs land on ACKNOWLEDGED or INVOICED and
+ * its RFQs on AWARDED — so the manager Approvals queue (mockup 06_project_manager/02_approvals) came
+ * up empty on a fresh database and the screen could not be shown doing its job. These are the rows it
+ * exists to act on.
+ *
+ * WHY THE DEADLINES ARE RELATIVE TO now(). One RFQ closes in four hours so the urgency chip and the
+ * "Nh remaining" countdown have something real to measure, and one closes in five days so the Urgent
+ * filter actually filters. A fixed date would be in the past by the time anyone ran this.
+ *
+ * The two POs stay OUT of committed spend on purpose — `committedSpend` excludes PENDING_APPROVAL
+ * (lib/procurementKpi.ts), because money nobody has approved is not committed — so adding them does
+ * not move the dashboard's total.
+ */
+/**
+ * A sixth project, paused.
+ *
+ * The Site Worker's project picker draws a status on every card and the drawing shows two of them —
+ * Active and On Hold — while every seeded project was ACTIVE, so the picker could only ever show one
+ * state (PO decision 2026-08-11). A paused site is also an ordinary thing for a contractor to have.
+ *
+ * DELIBERATELY THIN. It carries a building (the picker's location line), one site-worker membership
+ * so it appears in `GET /projects/mine`, and nothing else — no budget, no BOQ, no purchase orders.
+ * That is what ON_HOLD means: work stopped, and inventing a month of activity on a paused site would
+ * make the seed less true, not more complete. The screens that read those tables already handle a
+ * project that has none (the Finance list drops it; the manager Home shows no progress figure).
+ */
+async function seedOnHoldProject(tx: Tx): Promise<void> {
+  const pid = uid('project/tlpk');
+  await tx.$executeRaw`INSERT INTO projects.projects (project_id, tenant_id, project_code, project_name, project_type, status, budget_amount, budget_currency, start_date, end_date, work_hours_start, work_hours_end, created_by)
+    VALUES (${pid}::uuid, ${TENANT_ID}::uuid, 'TLPK', 'Thonglor Park Residences', 'RESIDENTIAL'::"ProjectType", 'ON_HOLD'::"ProjectStatus", 165000000, ${THB},
+            ${addDays(TODAY, -120)}::date, ${addDays(TODAY, 400)}::date, '07:00'::time, '18:00'::time, ${U('pm1')}::uuid)
+    ON CONFLICT (project_id) DO UPDATE SET status = 'ON_HOLD'::"ProjectStatus"`;
+  await tx.$executeRaw`INSERT INTO projects.buildings (building_id, project_id, tenant_id, building_name, building_type, total_floors, location, status, created_by)
+    VALUES (${uid('bld/tlpk')}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, 'Tower B', 'RESIDENTIAL', 24, 'Thonglor Park Residences', 'ON_HOLD', ${U('pm1')}::uuid)
+    ON CONFLICT (building_id) DO NOTHING`;
+  // The site worker and the manager only — the picker reads `GET /projects/mine`, which is scoped to
+  // membership, so without this row the paused site would exist and never be seen.
+  for (const [k, role] of [
+    ['pm1', 'PROJECT_MANAGER'],
+    ['sw1', 'SITE_WORKER'],
+    // BOTH site engineers too (2026-08-12). Without these rows every project in that role's picker
+    // was ACTIVE and the status chip was the same green on every card — the paused site existed and
+    // the one role whose drawing shows a paused card could not see one. Both, not one: the five
+    // active projects split between se1 and se2, so seeding only se1 would have left the other
+    // engineer with exactly the uniform list this is fixing.
+    ['se1', 'SITE_ENGINEER'],
+    ['se2', 'SITE_ENGINEER'],
+  ] as const) {
+    await tx.$executeRaw`INSERT INTO projects.project_members (membership_id, project_id, tenant_id, user_id, role, assigned_by)
+      VALUES (${uid(`pm/tlpk/${k}`)}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, ${U(k)}::uuid, ${role}::"ProjectMemberRole", ${U('admin')}::uuid)
+      ON CONFLICT (membership_id) DO NOTHING`;
+  }
+}
+
+async function seedPendingApprovals(tx: Tx): Promise<void> {
+  const items = [
+    {
+      key: 'rebar-q3',
+      project: 'r9ct',
+      vendor: 'millcon',
+      number: 'PO-R9CT-REBAR-Q3',
+      amount: 1_240_000,
+      days: 9,
+    },
+    {
+      key: 'safety-bulk',
+      project: 'lpgh',
+      vendor: 'scg',
+      number: 'PO-LPGH-SAFETY',
+      amount: 85_000,
+      days: 6,
+    },
+  ];
+  for (const po of items) {
+    await tx.$executeRaw`INSERT INTO procurement.purchase_orders (po_id, rfq_id, vendor_id, project_id, tenant_id, po_number, status, total_amount, currency_code, delivery_date, created_by)
+      VALUES (${uid(`po-pending/${po.key}`)}::uuid, NULL, ${V(po.vendor)}::uuid, ${uid(`project/${po.project}`)}::uuid, ${TENANT_ID}::uuid,
+              ${po.number}, 'PENDING_APPROVAL', ${po.amount}, ${THB}, (now() + make_interval(days => ${po.days}))::date, ${U('procmgr')}::uuid)
+      ON CONFLICT (po_id) DO UPDATE SET status = 'PENDING_APPROVAL', total_amount = EXCLUDED.total_amount`;
+  }
+
+  // RFQs sitting in EVALUATED — quotations compared, awaiting the award decision. Each carries three
+  // bids, which is what makes "Multiple bids" on the card true rather than a label.
+  const rfqs = [
+    { key: 'machinery', project: 'skv45', number: 'RFQ-SKV45-MACHINERY', hours: 4 },
+    { key: 'finishes', project: 'bnw2', number: 'RFQ-BNW2-FINISHES', hours: 120 },
+  ];
+  // Vendor KEYS, not codes: V-CPAC is keyed 'crm' in VENDORS above.
+  const bidders = ['insee', 'tpi', 'crm'] as const;
+  for (const rfq of rfqs) {
+    const rfqId = uid(`rfq-evaluated/${rfq.key}`);
+    await tx.$executeRaw`INSERT INTO procurement.rfqs (rfq_id, pr_id, project_id, tenant_id, rfq_number, status, deadline, created_by)
+      VALUES (${rfqId}::uuid, NULL, ${uid(`project/${rfq.project}`)}::uuid, ${TENANT_ID}::uuid, ${rfq.number}, 'EVALUATED',
+              now() + make_interval(hours => ${rfq.hours}), ${U('proc')}::uuid)
+      ON CONFLICT (rfq_id) DO UPDATE SET status = 'EVALUATED', deadline = EXCLUDED.deadline`;
+    for (let i = 0; i < bidders.length; i++) {
+      await tx.$executeRaw`INSERT INTO procurement.quotations (quotation_id, rfq_id, vendor_id, tenant_id, total_amount, currency_code, validity_days, submitted_at, is_selected)
+        VALUES (${uid(`quo-evaluated/${rfq.key}/${bidders[i]}`)}::uuid, ${rfqId}::uuid, ${V(bidders[i]!)}::uuid, ${TENANT_ID}::uuid,
+                ${450_000 + i * 18_000}, ${THB}, 30, now() - make_interval(days => 2), false)
+        ON CONFLICT (quotation_id) DO NOTHING`;
+    }
+  }
+
+  // RFQs STILL OUT TO VENDORS. The Procurement tab's "Active RFQs" counts `PUBLISHED` — the state
+  // where bids can still arrive (lib/procurementKpi.ts) — and the seed had none, so that counter
+  // read 0 on a dashboard whose whole subject is procurement in flight. An active site always has
+  // enquiries open; these are the next packages out to tender.
+  const openRfqs = [
+    { key: 'mep-riser', project: 'skv45', number: 'RFQ-SKV45-MEP-RISER', days: 6 },
+    { key: 'curtain-wall', project: 'r9ct', number: 'RFQ-R9CT-CURTAIN-WALL', days: 11 },
+    { key: 'lift-install', project: 'bnw2', number: 'RFQ-BNW2-LIFT', days: 3 },
+  ];
+  for (const rfq of openRfqs) {
+    await tx.$executeRaw`INSERT INTO procurement.rfqs (rfq_id, pr_id, project_id, tenant_id, rfq_number, status, deadline, created_by)
+      VALUES (${uid(`rfq-open/${rfq.key}`)}::uuid, NULL, ${uid(`project/${rfq.project}`)}::uuid, ${TENANT_ID}::uuid, ${rfq.number}, 'PUBLISHED',
+              now() + make_interval(days => ${rfq.days}), ${U('proc')}::uuid)
+      ON CONFLICT (rfq_id) DO UPDATE SET status = 'PUBLISHED', deadline = EXCLUDED.deadline`;
+  }
+
+  // MATERIAL ARRIVING TODAY. "Deliveries today" filters on the DEVICE's current date, and the
+  // seeded deliveries all sit weeks back with their purchase orders, so it read 0 as well. A site
+  // pouring foundations takes deliveries most working days; these are today's.
+  //
+  // ANCHORED TO BANGKOK, NOT TO UTC. The first version used Postgres' `CURRENT_DATE`, which is UTC,
+  // and the counter still read 0: at 18:00 UTC a phone in Bangkok is already on the next calendar
+  // day, so for seven hours out of every twenty-four the two disagree about what "today" is. The
+  // tenant is Thai and its sites take delivery on Thai dates.
+  //
+  // Attached to purchase orders that already exist and are already delivered — a delivery row needs
+  // a real `po_id`, and inventing one would leave a delivery against an order nobody raised.
+  const arrivals = [
+    {
+      key: 'concrete',
+      project: 'skv45',
+      code: 'SKV45',
+      at: '09:15',
+      note: 'เทคอนกรีตฐานราก โซน A',
+    },
+    {
+      key: 'rebar',
+      project: 'r9ct',
+      code: 'R9CT',
+      at: '11:40',
+      note: 'เหล็กเส้นเข้าไซต์ ล็อตที่ 2',
+    },
+  ];
+  for (const a of arrivals) {
+    await tx.$executeRaw`INSERT INTO procurement.deliveries (delivery_id, po_id, tenant_id, delivery_note, delivered_at, received_by, notes)
+      VALUES (${uid(`del-today/${a.key}`)}::uuid, ${uid(`po/${a.project}/${a.key}`)}::uuid, ${TENANT_ID}::uuid,
+              ${`DN-${a.code}-${a.key.toUpperCase()}-TODAY`}, (((now() AT TIME ZONE 'Asia/Bangkok')::date + ${a.at}::time) AT TIME ZONE 'Asia/Bangkok'),
+              ${U('se1')}::uuid, ${a.note})
+      ON CONFLICT (delivery_id) DO UPDATE SET delivered_at = EXCLUDED.delivered_at`;
+  }
+}
+
+async function seedCrm(tx: Tx): Promise<void> {
+  const leads = [
+    {
+      key: 'l1',
+      contact: 'คุณสมชาย วัฒนกิจ',
+      company: 'บริษัท ริเวอร์ไซด์ ดีเวลลอปเมนท์ จำกัด',
+      status: 'QUALIFIED',
+      source: 'อ้างอิงจากลูกค้าเดิม',
+    },
+    {
+      key: 'l2',
+      contact: 'คุณอรุณี พาณิชย์',
+      company: 'บริษัท กรีนพาร์ค พร็อพเพอร์ตี้ จำกัด',
+      status: 'NEW',
+      source: 'งานแสดงสินค้าอสังหาริมทรัพย์',
+    },
+    {
+      key: 'l3',
+      contact: 'คุณวีรพงษ์ ศรีสุข',
+      company: 'ห้างหุ้นส่วนจำกัด เมืองทองการโยธา',
+      status: 'QUALIFIED',
+      source: 'เว็บไซต์บริษัท',
+    },
+    {
+      key: 'l4',
+      contact: 'คุณนภัสสร ทองใบ',
+      company: 'บริษัท เดอะเมทริกซ์ เรสซิเดนซ์ จำกัด',
+      status: 'NEW',
+      source: 'โทรศัพท์เข้าสอบถาม',
+    },
+    {
+      key: 'l5',
+      contact: 'คุณกิตติ ชาญวิทย์',
+      company: 'บริษัท อีสเทิร์น โลจิสติกส์ จำกัด',
+      status: 'DISQUALIFIED',
+      source: 'อีเมล',
+    },
+  ];
+  for (const l of leads) {
+    await tx.$executeRaw`INSERT INTO crm.leads (lead_id, tenant_id, contact_name, company, status, source, assigned_to, created_by)
+      VALUES (${uid(`lead/${l.key}`)}::uuid, ${TENANT_ID}::uuid, ${l.contact}, ${l.company}, ${l.status}, ${l.source}, ${U('crm')}::uuid, ${U('crm')}::uuid)
+      ON CONFLICT (lead_id) DO NOTHING`;
+  }
+  const opps = [
+    {
+      key: 'o1',
+      lead: 'l1',
+      title: 'อาคารชุดพักอาศัยริมแม่น้ำ 28 ชั้น',
+      value: 520_000_000,
+      status: 'OPEN',
+      close: '2026-09-30',
+    },
+    {
+      key: 'o2',
+      lead: 'l3',
+      title: 'อาคารสำนักงานให้เช่า 12 ชั้น ย่านรัชดาภิเษก',
+      value: 180_000_000,
+      status: 'WON',
+      close: '2026-06-15',
+    },
+    {
+      key: 'o3',
+      lead: 'l1',
+      title: 'งานปรับปรุงสโมสรและสระว่ายน้ำส่วนกลาง',
+      value: 35_000_000,
+      status: 'OPEN',
+      close: '2026-10-31',
+    },
+  ];
+  for (const o of opps) {
+    await tx.$executeRaw`INSERT INTO crm.opportunities (opportunity_id, tenant_id, lead_id, title, value, status, expected_close_date, assigned_to, created_by)
+      VALUES (${uid(`opp/${o.key}`)}::uuid, ${TENANT_ID}::uuid, ${uid(`lead/${o.lead}`)}::uuid, ${o.title}, ${o.value}, ${o.status}, ${o.close}::date, ${U('crm')}::uuid, ${U('crm')}::uuid)
+      ON CONFLICT (opportunity_id) DO NOTHING`;
+  }
+  const contacts = [
+    {
+      key: 'c1',
+      lead: 'l1',
+      name: 'คุณสมชาย วัฒนกิจ',
+      email: 'somchai@riverside-dev.co.th',
+      phone: '+66818880001',
+      role: 'กรรมการผู้จัดการ',
+    },
+    {
+      key: 'c2',
+      lead: 'l3',
+      name: 'คุณวีรพงษ์ ศรีสุข',
+      email: 'weerapong@mtcivil.co.th',
+      phone: '+66818880003',
+      role: 'ผู้จัดการโครงการ',
+    },
+  ];
+  for (const c of contacts) {
+    await tx.$executeRaw`INSERT INTO crm.contacts (contact_id, tenant_id, lead_id, name, email, phone, role, created_by)
+      VALUES (${uid(`contact/${c.key}`)}::uuid, ${TENANT_ID}::uuid, ${uid(`lead/${c.lead}`)}::uuid, ${c.name}, ${c.email}, ${c.phone}, ${c.role}, ${U('crm')}::uuid)
+      ON CONFLICT (contact_id) DO NOTHING`;
+  }
+  logger.info({ leads: leads.length, opps: opps.length }, 'seed-realistic: CRM done');
 }
 
 run()

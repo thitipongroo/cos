@@ -1,0 +1,3 @@
+# replicaCount stays 1 in every environment — see values.yaml (fixed MQTT ClientID).
+podDisruptionBudget:
+  enabled: false

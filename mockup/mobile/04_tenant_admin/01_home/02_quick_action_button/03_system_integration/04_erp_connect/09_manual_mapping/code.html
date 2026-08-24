@@ -1,0 +1,282 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>Manual Mapping Override | Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .mono-tech { font-family: 'JetBrains Mono', monospace; }
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(180, 197, 255, 0.05), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite linear;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .ai-glow {
+            box-shadow: 0 0 15px -3px rgba(76, 215, 246, 0.2);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "outline-variant": "#434655",
+                      "surface-tint": "#b4c5ff",
+                      "mobile-primary": "#0066FF",
+                      "mobile-warning": "#FF9500",
+                      "tertiary-fixed": "#dee1f9",
+                      "on-primary-fixed": "#00174b",
+                      "on-primary": "#002a78",
+                      "dark-bg": "#020617",
+                      "surface-container-low": "#0b1c30",
+                      "surface-container-high": "#1b2b3f",
+                      "on-error": "#690005",
+                      "secondary-fixed": "#acedff",
+                      "secondary": "#4cd7f6",
+                      "mobile-danger": "#FF3B30",
+                      "secondary-container": "#03b5d3",
+                      "background": "#031427",
+                      "on-tertiary-container": "#eeefff",
+                      "on-secondary-fixed-variant": "#004e5c",
+                      "on-secondary-container": "#00424e",
+                      "surface-container-lowest": "#000f21",
+                      "primary-fixed-dim": "#b4c5ff",
+                      "on-error-container": "#ffdad6",
+                      "error": "#ffb4ab",
+                      "mobile-success": "#00C853",
+                      "sync-pending": "#94A3B8",
+                      "on-secondary": "#003640",
+                      "sync-active": "#FFD60A",
+                      "surface-container": "#102034",
+                      "tertiary-container": "#686c80",
+                      "primary-fixed": "#dbe1ff",
+                      "on-tertiary-fixed-variant": "#414658",
+                      "tertiary-fixed-dim": "#c1c5dc",
+                      "error-container": "#93000a",
+                      "inverse-on-surface": "#213145",
+                      "secondary-fixed-dim": "#4cd7f6",
+                      "on-secondary-fixed": "#001f26",
+                      "surface-dim": "#031427",
+                      "on-tertiary-fixed": "#161b2b",
+                      "on-surface": "#d3e4fe",
+                      "outline": "#8d90a0",
+                      "surface-container-highest": "#26364a",
+                      "primary": "#b4c5ff",
+                      "on-primary-container": "#eeefff",
+                      "inverse-surface": "#d3e4fe",
+                      "tertiary": "#c1c5dc",
+                      "surface-variant": "#26364a",
+                      "on-background": "#d3e4fe",
+                      "on-surface-variant": "#c3c6d7",
+                      "on-primary-fixed-variant": "#003ea8",
+                      "primary-container": "#2563eb",
+                      "on-tertiary": "#2b3041",
+                      "dark-surface": "#0F172A",
+                      "surface-bright": "#2a3a4f",
+                      "inverse-primary": "#0053db",
+                      "surface": "#031427"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0px",
+                      "lg": "0px",
+                      "xl": "0px",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "space-1": "4px",
+                      "edge-mobile": "24px",
+                      "web-margin": "32px",
+                      "touch-target": "52px",
+                      "space-3": "12px",
+                      "space-4": "16px",
+                      "space-2": "8px",
+                      "base": "4px"
+              },
+              "fontFamily": {
+                      "display-web": ["Inter Tight"],
+                      "h2-web": ["Inter Tight"],
+                      "body-web": ["Inter Tight"],
+                      "h1-web": ["Inter Tight"],
+                      "tiny-web": ["Inter Tight"],
+                      "hero-mobile": ["Inter Tight"],
+                      "body-mobile": ["Inter Tight"],
+                      "label-mobile": ["Inter Tight"]
+              },
+              "fontSize": {
+                      "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                      "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                      "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}]
+              }
+            },
+          },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-mobile text-body-mobile min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface-container dark:bg-surface-container-highest border-b border-outline-variant/10 shadow-sm flex items-center justify-between px-edge-mobile h-14">
+<div class="flex items-center gap-space-2">
+<img src="https://lh3.googleusercontent.com/aida-public/AB6AXuD5LXoHGlohm1Uvszz_j0eFrfX4cBaBhoM_GkT0FzZKEOwG-6Fjg8QvgphBY8Z7Noeo_VR4w0mFRqnrtzHhqBX4tu197-xy7R1Kr3dYl2CzQIympJgG_-UCYouyTUVM0YNpzKYGP4x4cig6HgjYzg6q6DCZjwrR-SxlUsCJJM-sZKtL7U09SwtwtxNzVs36o7oKpOOfra6T3pMVfzViECRcej9Fic-w4Jnp7-JJV-_XnujS4ngP3nKg24YtjdFiQtlrnmLzWZ68YTM" alt="Construction OS Logo" class="w-8 h-8 object-contain">
+<span class="font-h1-web-mobile text-h1-web-mobile text-primary tracking-tight uppercase whitespace-nowrap">CONSTRUCTION OS</span>
+</div>
+<div class="flex items-center gap-space-2">
+<div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-mobile-success/10 border border-mobile-success/20">
+<span class="w-1.5 h-1.5 rounded-full bg-mobile-success animate-pulse"></span>
+<span class="text-[10px] font-bold text-mobile-success tracking-widest uppercase">Synced</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant active:scale-95 transition-transform duration-150" data-icon="sync">sync</span>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 mt-14 mb-[72px] p-edge-mobile flex flex-col gap-space-4">
+<!-- Screen Title Section -->
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2 text-primary">
+<span class="material-symbols-outlined text-sm" data-icon="edit_note">edit_note</span>
+<span class="font-tiny-web text-tiny-web uppercase tracking-[0.2em]">Data Correction Module</span>
+</div>
+<h1 class="font-h1-web-mobile text-h1-web-mobile uppercase font-extrabold text-on-surface tracking-tight">Manual Edit</h1>
+</div>
+<!-- Technical Context Card -->
+<div class="bg-surface-container-high border-l-4 border-primary p-space-4 flex flex-col gap-space-3 relative overflow-hidden">
+<div class="absolute inset-0 shimmer pointer-events-none opacity-30"></div>
+<div class="flex flex-col gap-1">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase tracking-wider">Target Field</span>
+<span class="mono-tech text-primary font-bold">FIELD: COST_CENTER</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase tracking-wider">Current OS Value</span>
+<span class="mono-tech text-on-surface bg-surface-container-highest px-2 py-1 border border-outline-variant/30">CC-BLDG-A12</span>
+</div>
+</div>
+<!-- Manual Input Area -->
+<div class="flex flex-col gap-space-2">
+<label class="font-label-mobile text-label-mobile text-on-surface-variant uppercase tracking-widest px-1" for="override-value">
+                New Override Value
+            </label>
+<div class="relative">
+<input class="w-full h-touch-target bg-surface-container-lowest border-2 border-outline-variant focus:border-mobile-primary focus:ring-0 text-on-surface mono-tech px-space-4 transition-colors placeholder:text-outline/40" id="override-value" oninput="validateInput(this.value)" placeholder="Enter manual mapping..." type="text">
+<span class="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline" data-icon="keyboard">keyboard</span>
+</div>
+</div>
+<!-- AI Integrity Check (Dynamic) -->
+<div class="bg-secondary/5 border border-secondary/20 p-space-3 flex items-center justify-between ai-glow transition-all duration-300 opacity-50" id="ai-validation">
+<div class="flex items-center gap-space-3">
+<span class="material-symbols-outlined text-secondary" data-icon="auto_awesome" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<div class="flex flex-col">
+<span class="font-tiny-web text-tiny-web text-secondary uppercase tracking-[0.15em] font-bold">AI Integrity Check</span>
+<span class="font-label-mobile text-label-mobile text-on-surface" id="validation-status">Awaiting Input...</span>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">Confidence</span>
+<span class="mono-tech text-secondary font-bold" id="confidence-score">--%</span>
+</div>
+</div>
+<!-- ERP Specification Box -->
+<div class="bg-surface-container p-space-4 border border-outline-variant/30 flex flex-col gap-space-3">
+<div class="flex items-center gap-2 pb-2 border-b border-outline-variant/20">
+<span class="material-symbols-outlined text-mobile-warning text-lg" data-icon="terminal">terminal</span>
+<span class="font-label-mobile text-label-mobile text-on-surface uppercase tracking-widest">SAP Requirement Docs</span>
+</div>
+<ul class="flex flex-col gap-space-2">
+<li class="flex items-start gap-3">
+<span class="w-1.5 h-1.5 rounded-full bg-mobile-warning mt-2"></span>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant leading-relaxed">
+<strong class="text-on-surface">FORMAT:</strong> Alphanumeric 8 characters max
+                    </span>
+</li>
+<li class="flex items-start gap-3">
+<span class="w-1.5 h-1.5 rounded-full bg-mobile-warning mt-2"></span>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant leading-relaxed">
+<strong class="text-on-surface">RESTRICTION:</strong> No special characters or spaces permitted
+                    </span>
+</li>
+<li class="flex items-start gap-3">
+<span class="w-1.5 h-1.5 rounded-full bg-mobile-warning mt-2"></span>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant leading-relaxed">
+<strong class="text-on-surface">MAPPING:</strong> Primary Key for CC Object Type A
+                    </span>
+</li>
+</ul>
+</div>
+<!-- Action Buttons -->
+<div class="mt-auto flex flex-col gap-space-3 pt-space-4">
+<button class="h-[52px] bg-mobile-primary text-white font-bold uppercase tracking-widest active:scale-95 transition-all duration-150 flex items-center justify-center gap-2">
+                Apply &amp; Preview
+                <span class="material-symbols-outlined" data-icon="chevron_right">chevron_right</span>
+</button>
+<button class="h-[52px] border border-outline-variant text-on-surface-variant font-bold uppercase tracking-widest active:bg-surface-variant/20 transition-all duration-150">
+                Cancel Override
+            </button>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full pb-safe z-50 bg-surface-container-low dark:bg-surface-container-lowest border-t border-outline-variant/10 shadow-lg flex justify-around items-center h-[72px] px-base">
+<div class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl p-2 min-w-[64px] active:scale-90 transition-all duration-200">
+<span class="material-symbols-outlined" data-icon="report_problem">report_problem</span>
+<span class="font-label-mobile text-label-mobile">Issues</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:bg-surface-variant/30 active:scale-90 transition-all duration-200">
+<span class="material-symbols-outlined" data-icon="map">map</span>
+<span class="font-label-mobile text-label-mobile">Map</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:bg-surface-variant/30 active:scale-90 transition-all duration-200">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="font-label-mobile text-label-mobile">Inventory</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:bg-surface-variant/30 active:scale-90 transition-all duration-200">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-mobile text-label-mobile">Profile</span>
+</div>
+</nav>
+<script>
+        function validateInput(val) {
+            const validationBox = document.getElementById('ai-validation');
+            const statusText = document.getElementById('validation-status');
+            const scoreText = document.getElementById('confidence-score');
+            
+            if (val.length === 0) {
+                validationBox.classList.add('opacity-50');
+                statusText.innerText = 'Awaiting Input...';
+                scoreText.innerText = '--%';
+                return;
+            }
+
+            validationBox.classList.remove('opacity-50');
+            
+            // Logic: Alphanumeric, max 8
+            const isAlphanumeric = /^[a-z0-9]+$/i.test(val);
+            const isCorrectLength = val.length <= 8;
+
+            if (isAlphanumeric && isCorrectLength) {
+                statusText.innerText = 'Format Validated';
+                statusText.className = 'font-label-mobile text-label-mobile text-mobile-success';
+                scoreText.innerText = '99.8%';
+                validationBox.style.borderColor = 'rgba(0, 200, 83, 0.4)';
+            } else {
+                statusText.innerText = 'Invalid Format Detected';
+                statusText.className = 'font-label-mobile text-label-mobile text-mobile-danger';
+                scoreText.innerText = '12.4%';
+                validationBox.style.borderColor = 'rgba(255, 59, 48, 0.4)';
+            }
+        }
+    </script>
+
+
+</body></html>

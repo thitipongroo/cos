@@ -219,6 +219,33 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  /projects/{projectId}/workforce/directory:
+    parameters:
+      - $ref: '#/components/parameters/projectId'
+
+    get:
+      tags: [Project Workforce]
+      operationId: getProjectDirectory
+      summary: Project crew as a contact list, with today's on-site state
+      description: >-
+        Backs the Site Worker's team directory (mockup 05_site_worker/04_directory/01_sw_worker_list),
+        added 2026-08-08. A projection over project_workforce + workers + today's attendance, served
+        as ONE query because the screen is one card per worker and a client-side join would be N+1
+        on site 3G (§17.7). Any authenticated member of the tenant may read it — a field worker needs
+        to reach the colleague standing in the next bay. It carries no daily rate, no employment
+        terms and no identity documents; tenant isolation is RLS (ADR-008).
+      responses:
+        '200':
+          description: Directory entries, ordered by name
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DirectoryEntry'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
   # ─── Timesheets ───────────────────────────────────────────────────────────────
 
   /timesheets:
@@ -347,6 +374,39 @@ components:
       enum: [DRAFT, SUBMITTED, APPROVED]
 
     # ─── Core entities ────────────────────────────────────────────────────────
+
+    DirectoryEntry:
+      type: object
+      required: [worker_id, full_name, trade_type, on_site]
+      description: >-
+        One card of the team directory. Not a table row — a projection, so it has no id of its own
+        beyond the worker's.
+      properties:
+        worker_id:
+          type: string
+          format: uuid
+        full_name:
+          type: string
+          example: Anan Sombat
+        trade_type:
+          type: string
+          example: Carpenter
+        contact_phone:
+          type: string
+          nullable: true
+          example: '+66812345678'
+        role_on_project:
+          type: string
+          nullable: true
+          description: From the allocation, not the worker — the same person can be a foreman here
+            and a fitter elsewhere.
+          example: Site Foreman
+        on_site:
+          type: boolean
+          description: >-
+            DERIVED, never stored — the worker's latest attendance row for TODAY on THIS project,
+            checked in and not yet checked out. No row today reads as `false`, never null: "no record
+            of them arriving" and "they have left" are the same fact to someone looking for them.
 
     Worker:
       type: object

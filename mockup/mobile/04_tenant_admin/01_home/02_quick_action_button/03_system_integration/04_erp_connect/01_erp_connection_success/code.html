@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>ERP Connection Success | Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind Config -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "tertiary-fixed": "#dee1f9",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "on-secondary-fixed": "#001f26",
+                    "on-primary-fixed": "#00174b",
+                    "on-tertiary-container": "#eeefff",
+                    "primary": "#b4c5ff",
+                    "primary-container": "#2563eb",
+                    "surface-bright": "#2a3a4f",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "surface-container-highest": "#26364a",
+                    "mobile-success": "#00C853",
+                    "mobile-warning": "#FF9500",
+                    "secondary-container": "#03b5d3",
+                    "error-container": "#93000a",
+                    "tertiary-container": "#686c80",
+                    "on-tertiary": "#2b3041",
+                    "on-primary": "#002a78",
+                    "dark-bg": "#020617",
+                    "secondary": "#06B6D4", // Updated AI Cyan
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "surface-tint": "#b4c5ff",
+                    "inverse-primary": "#0053db",
+                    "sync-pending": "#94A3B8",
+                    "on-tertiary-fixed": "#161b2b",
+                    "mobile-primary": "#0066FF",
+                    "surface-container-low": "#0b1c30",
+                    "inverse-surface": "#d3e4fe",
+                    "surface-dim": "#031427",
+                    "background": "#020617", // Updated cos-dark-bg
+                    "surface-container-lowest": "#000f21",
+                    "primary-fixed": "#dbe1ff",
+                    "on-surface-variant": "#c3c6d7",
+                    "on-error": "#690005",
+                    "secondary-fixed": "#acedff",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "on-error-container": "#ffdad6",
+                    "mobile-danger": "#FF3B30",
+                    "on-surface": "#d3e4fe",
+                    "on-secondary": "#003640",
+                    "on-secondary-container": "#00424e",
+                    "on-background": "#d3e4fe",
+                    "outline": "#8d90a0",
+                    "surface-container-high": "#1b2b3f",
+                    "dark-surface": "#0F172A", // Updated cos-dark-surface
+                    "primary-fixed-dim": "#b4c5ff",
+                    "outline-variant": "#434655",
+                    "surface-variant": "#26364a",
+                    "surface": "#031427",
+                    "error": "#ffb4ab",
+                    "sync-active": "#FFD60A",
+                    "tertiary": "#c1c5dc",
+                    "on-primary-container": "#eeefff",
+                    "surface-container": "#102034",
+                    "inverse-on-surface": "#213145"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "touch-target": "52px",
+                    "space-3": "12px",
+                    "space-4": "16px",
+                    "space-2": "8px",
+                    "space-1": "4px",
+                    "base": "4px",
+                    "web-margin": "32px",
+                    "edge-mobile": "24px"
+            },
+            "fontFamily": {
+                    "body-web": ["Inter Tight"],
+                    "h2-web": ["Inter Tight"],
+                    "h1-web": ["Inter Tight"],
+                    "display-web": ["Inter Tight"],
+                    "body-mobile": ["Inter Tight"],
+                    "hero-mobile": ["Inter Tight"],
+                    "label-mobile": ["Inter Tight"],
+                    "tiny-web": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #020617;
+            color: #d3e4fe;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+            font-family: 'Inter Tight', sans-serif;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .shimmer-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(6, 182, 212, 0.3), transparent);
+            animation: shimmer 1.5s infinite;
+        }
+
+        .success-glow {
+            filter: drop-shadow(0 0 16px rgba(0, 200, 83, 0.5));
+        }
+        
+        .bento-card {
+            background: #0F172A;
+            border: 1px solid rgba(67, 70, 85, 0.4);
+            transition: transform 0.2s ease, border-color 0.2s ease;
+            min-height: 52px;
+        }
+        
+        .bento-card:active {
+            transform: scale(0.98);
+        }
+
+        .pulse-slow {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+<!-- TopAppBar -->
+<header class="bg-dark-surface flex justify-between items-center px-edge-mobile h-touch-target w-full sticky top-0 z-50 border-b border-outline-variant/20">
+<div class="flex items-center gap-space-2">
+<img alt="COS Icon" class="w-8 h-8 object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAtA1t38aAmbYE6gg3gbLloqbBuBdjiPiVNfzQmTTeJ0dB4bo71efCpxfqiWNfaFfxprIOmhVBAabS5XxKOSKGD8L0-az3w_OWGJvzFHrUDGdT3CAGKhqYHKkdbniCoKOOkk1H2hAz7kYoUaCnEQW0gD0-cJHGdxViMg5dPy0F-djs8GII16uQDNN191qLnTjpIPYxruKsBdl9f7on4C4lDEHYa8bbb7tZA18QaDqnVMplSvJBpaBWbjDwRdF9r9v4hmGPhKlz6aN0"/>
+<h1 class="font-bold text-on-surface tracking-tight uppercase" style="font-size: 18px;">CONSTRUCTION OS</h1>
+</div>
+<div class="flex items-center gap-space-3">
+<div class="flex items-center gap-space-1 px-3 py-1 rounded-full bg-mobile-success/15 border border-mobile-success/30">
+<span class="material-symbols-outlined text-sm text-mobile-success leading-none" style="font-variation-settings: 'FILL' 1, 'wght' 700;">check_circle</span>
+<span class="font-label-mobile text-label-mobile text-mobile-success uppercase">SYNCED</span>
+</div>
+<span class="material-symbols-outlined text-sync-active animate-spin-slow" data-icon="sync" style="animation: spin 3s linear infinite;">sync</span>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-grow flex flex-col items-center px-edge-mobile pt-10 pb-36">
+<!-- Success State -->
+<div class="flex flex-col items-center text-center mb-12 w-full">
+<div class="relative mb-8">
+<div class="absolute inset-0 bg-mobile-success/20 rounded-full blur-3xl"></div>
+<div class="relative w-28 h-28 rounded-full border-4 border-mobile-success flex items-center justify-center success-glow bg-dark-bg/40 backdrop-blur-sm">
+<span class="material-symbols-outlined text-7xl text-mobile-success" style="font-variation-settings: 'wght' 700;">check</span>
+</div>
+</div>
+<h2 class="font-hero-mobile text-hero-mobile text-on-surface mb-space-3 tracking-tight uppercase">ERP LINKED SUCCESSFULLY</h2>
+<p class="font-body-mobile text-body-mobile text-on-surface-variant max-w-[320px]">
+                Your financial systems are now securely synchronized with Construction OS. AI is currently mapping your project budgets.
+            </p>
+</div>
+<!-- AI Insight Card -->
+<div class="w-full mb-6">
+<div class="bento-card p-space-4 border-l-4 border-l-secondary relative overflow-hidden rounded-xl">
+<div class="absolute top-0 right-0 p-space-3 opacity-5 pointer-events-none">
+<span class="material-symbols-outlined text-6xl" data-icon="psychology">psychology</span>
+</div>
+<div class="flex items-center justify-between mb-space-3">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-secondary text-xl" data-icon="auto_awesome">auto_awesome</span>
+<span class="font-tiny-web text-tiny-web text-secondary uppercase tracking-widest font-bold">CORE_AI: INSIGHT</span>
+</div>
+<span class="font-tiny-web text-tiny-web text-secondary/70 bg-secondary/10 px-2 py-0.5 rounded-full border border-secondary/20">SOURCE: ERP TRANSACTION LOGS</span>
+</div>
+<p class="font-body-mobile text-on-surface font-medium mb-space-4">Processing initial sync. 420 BOQ items identified. <span class="text-secondary font-bold">98% MATCHING ACCURACY</span>.</p>
+<!-- Progress Activity -->
+<div class="space-y-2">
+<div class="flex justify-between items-end">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">SYNCING ASSETS (กำลังซิงค์)...</span>
+<span class="font-tiny-web text-tiny-web text-secondary font-bold animate-pulse">ACTIVE</span>
+</div>
+<div class="h-2 w-full bg-surface-container-highest rounded-full overflow-hidden relative shimmer-bar">
+<div class="h-full bg-secondary w-3/4 rounded-full transition-all duration-500 ease-out" id="dynamic-progress"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Summary List -->
+<div class="w-full grid grid-cols-1 gap-space-2">
+<div class="bento-card p-space-4 flex justify-between items-center rounded-xl min-h-touch-target">
+<div>
+<p class="font-label-mobile text-label-mobile text-on-surface-variant uppercase mb-0.5">Provider (ผู้ให้บริการ)</p>
+<p class="font-body-mobile text-on-surface font-semibold">Custom REST ERP</p>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant/60" data-icon="database">database</span>
+</div>
+<div class="bento-card p-space-4 flex justify-between items-center rounded-xl min-h-touch-target">
+<div>
+<p class="font-label-mobile text-label-mobile text-on-surface-variant uppercase mb-0.5">Endpoint (จุดเชื่อมต่อ)</p>
+<p class="font-body-mobile text-on-surface font-mono text-sm">/api/v1/sync</p>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant/60" data-icon="link">link</span>
+</div>
+<div class="bento-card p-space-4 flex justify-between items-center rounded-xl min-h-touch-target">
+<div>
+<p class="font-label-mobile text-label-mobile text-on-surface-variant uppercase mb-0.5">Last Sync (ซิงค์ล่าสุด)</p>
+<p class="font-body-mobile text-on-surface font-semibold">Just now</p>
+</div>
+<span class="material-symbols-outlined text-mobile-success" data-icon="schedule" style="font-variation-settings: 'FILL' 1;">schedule</span>
+</div>
+</div>
+</main>
+<!-- Bottom Actions -->
+<div class="fixed bottom-0 w-full z-50 bg-dark-bg/90 backdrop-blur-xl px-edge-mobile pb-10 pt-5 border-t border-outline-variant/20 flex flex-col gap-space-3">
+<button class="w-full min-h-touch-target bg-mobile-primary text-on-primary font-label-mobile text-label-mobile rounded-xl flex items-center justify-center gap-space-2 shadow-lg shadow-mobile-primary/20 active:scale-[0.97] transition-all duration-150 uppercase tracking-widest font-bold">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+            VIEW BUDGET DASHBOARD
+        </button>
+<button class="w-full min-h-touch-target border border-outline-variant/40 text-on-surface font-label-mobile text-label-mobile rounded-xl flex items-center justify-center gap-space-2 active:bg-dark-surface transition-colors duration-200 uppercase tracking-widest font-bold">
+<span class="material-symbols-outlined" data-icon="list_alt">list_alt</span>
+            SYNC LOGS
+        </button>
+</div>
+<!-- Background Decoration -->
+<div class="fixed inset-0 pointer-events-none -z-10 opacity-30 overflow-hidden">
+<div class="absolute top-0 right-0 w-[600px] h-[600px] bg-secondary/10 rounded-full blur-[140px] -translate-y-1/3 translate-x-1/4"></div>
+<div class="absolute bottom-0 left-0 w-[500px] h-[500px] bg-mobile-primary/10 rounded-full blur-[120px] translate-y-1/3 -translate-x-1/4"></div>
+<!-- Grid Pattern Overlay -->
+<div class="absolute inset-0" style="background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 40px 40px;"></div>
+</div>
+<script>
+        // Simple micro-interaction for cards
+        document.querySelectorAll('.bento-card').forEach(card => {
+            card.addEventListener('touchstart', () => {
+                card.style.borderColor = 'rgba(6, 182, 212, 0.5)';
+            });
+            card.addEventListener('touchend', () => {
+                card.style.borderColor = 'rgba(67, 70, 85, 0.4)';
+            });
+        });
+
+        // Dynamic Progress bar logic
+        let progress = 75;
+        const progressBar = document.getElementById('dynamic-progress');
+        setInterval(() => {
+            if (progress < 99.5) {
+                // Slower increment as it nears 100
+                const increment = (100 - progress) * 0.02;
+                progress += increment;
+                progressBar.style.width = `${progress}%`;
+            }
+        }, 1200);
+    </script>
+</body></html>

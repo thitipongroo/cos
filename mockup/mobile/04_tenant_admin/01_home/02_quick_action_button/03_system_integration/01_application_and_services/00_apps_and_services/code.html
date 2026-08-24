@@ -1,0 +1,362 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>Construction OS - Apps &amp; Services</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+        body {
+            font-family: 'Inter Tight', sans-serif;
+            background-color: #031427;
+            color: #d3e4fe;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .ai-cyan-accent {
+            border-left: 3px solid #4cd7f6;
+            background: linear-gradient(90deg, rgba(76, 215, 246, 0.08) 0%, transparent 100%);
+        }
+
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .scroll-hide::-webkit-scrollbar {
+            display: none;
+        }
+
+        .active-scale:active {
+            transform: scale(0.96);
+            transition: transform 0.1s ease;
+        }
+
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.03), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+    </style>
+<!-- Tailwind Config Execution -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "mobile-success": "#00C853",
+                    "on-surface-variant": "#c3c6d7",
+                    "dark-surface": "#0F172A",
+                    "primary": "#b4c5ff",
+                    "on-secondary-container": "#00424e",
+                    "on-secondary": "#003640",
+                    "on-primary-fixed": "#00174b",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "secondary": "#4cd7f6",
+                    "on-primary-container": "#eeefff",
+                    "inverse-surface": "#d3e4fe",
+                    "surface-bright": "#2a3a4f",
+                    "inverse-primary": "#0053db",
+                    "tertiary": "#c1c5dc",
+                    "surface-dim": "#031427",
+                    "primary-container": "#2563eb",
+                    "on-error": "#690005",
+                    "on-secondary-fixed": "#001f26",
+                    "on-primary": "#002a78",
+                    "primary-fixed": "#dbe1ff",
+                    "background": "#031427",
+                    "mobile-primary": "#0066FF",
+                    "surface-tint": "#b4c5ff",
+                    "on-tertiary-fixed": "#161b2b",
+                    "secondary-container": "#03b5d3",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "dark-bg": "#020617",
+                    "surface-container-low": "#0b1c30",
+                    "on-surface": "#d3e4fe",
+                    "surface-container-lowest": "#000f21",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "outline": "#8d90a0",
+                    "error-container": "#93000a",
+                    "on-tertiary-container": "#eeefff",
+                    "inverse-on-surface": "#213145",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "surface": "#031427",
+                    "outline-variant": "#434655",
+                    "on-error-container": "#ffdad6",
+                    "surface-container-highest": "#26364a",
+                    "tertiary-container": "#686c80",
+                    "mobile-danger": "#FF3B30",
+                    "sync-pending": "#94A3B8",
+                    "on-tertiary": "#2b3041",
+                    "tertiary-fixed": "#dee1f9",
+                    "secondary-fixed": "#acedff",
+                    "sync-active": "#FFD60A",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "surface-container-high": "#1b2b3f",
+                    "on-background": "#d3e4fe",
+                    "mobile-warning": "#FF9500",
+                    "surface-container": "#102034",
+                    "error": "#ffb4ab",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "surface-variant": "#26364a"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "touch-target": "52px",
+                    "base": "4px",
+                    "space-4": "16px",
+                    "space-1": "4px",
+                    "web-margin": "32px",
+                    "space-3": "12px",
+                    "space-2": "8px",
+                    "edge-mobile": "24px"
+            },
+            "fontFamily": {
+                    "body-web": ["Inter Tight"],
+                    "label-mobile": ["Inter Tight"],
+                    "hero-mobile": ["Inter Tight"],
+                    "h2-web": ["Inter Tight"],
+                    "display-web": ["Inter Tight"],
+                    "h1-web": ["Inter Tight"],
+                    "body-mobile": ["Inter Tight"],
+                    "tiny-web": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}]
+            }
+          },
+        },
+      }
+    </script>
+</head>
+<body class="bg-surface select-none overflow-hidden h-screen flex flex-col">
+<!-- TopAppBar Content & Identity Mapping -->
+<header class="flex justify-between items-center w-full px-edge-mobile h-touch-target fixed top-0 z-50 shadow-xl bg-surface-container-highest">
+<div class="flex items-center gap-4">
+<button class="active-scale flex items-center justify-center w-10 h-10 rounded-full hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-primary">arrow_back</span>
+</button>
+<h1 class="font-h1-web text-h1-web-mobile font-bold tracking-tighter text-on-surface">CONSTRUCTION OS</h1>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-1.5 px-2.5 py-1 bg-surface-container-high rounded-full">
+<span class="material-symbols-outlined text-sync-active text-[14px]">sync</span>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">Synced</span>
+</div>
+<div class="w-8 h-8 rounded-full border border-outline-variant overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A professional close-up portrait of a senior construction project manager in a clean white safety helmet. The background is a blurred high-tech architectural office with blue ambient lighting. The style is sharp, corporate photography with high-end editorial lighting, emphasizing expertise and authority in a dark industrial aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC5LkRFW9s7XKTvrOMMRnMvtazC8bpoH9gjgA6yqZtS0i1DEGuiff9LeAvgHpVDiwMEs4LL4vnkht933oM_2TIji8efQqqnArvPuFwLWZBPJpUX5DDyJBaUqFTGfKYpa6fSTeqPoCbHD_4zOJNidNytg04CEgMku1Y5V2Ido48nVKJpllq10O7r5oRrYwD4l8-EYhZ1jGiHSbeftS-HBRol0yfyqq391L7xQoPdr22kWUnEnenE5ShDCoXW4O8ZpaoHh5QjQWVCOHs">
+</div>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="flex-1 overflow-y-auto pt-20 pb-32 px-edge-mobile scroll-hide">
+<!-- Search Bar Shimmer Integration -->
+<div class="relative mb-8">
+<div class="bg-surface-container-high h-12 rounded-xl flex items-center px-4 border border-outline-variant/30">
+<span class="material-symbols-outlined text-on-surface-variant mr-3">search</span>
+<span class="text-on-surface-variant font-body-mobile text-body-mobile opacity-60">Search modules...</span>
+</div>
+</div>
+<!-- CORE MODULES -->
+<section class="mb-10">
+<div class="flex items-center justify-between mb-4">
+<h2 class="font-tiny-web text-tiny-web text-on-surface-variant tracking-[0.2em] uppercase">Core Modules</h2>
+<span class="w-12 h-px bg-outline-variant/30"></span>
+</div>
+<div class="bento-grid">
+<!-- Site Reports -->
+<div class="active-scale bg-surface-container p-4 rounded-xl flex flex-col items-start gap-4 border border-outline-variant/10 shadow-lg">
+<div class="w-10 h-10 rounded-lg bg-primary-container/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">assignment</span>
+</div>
+<span class="font-label-mobile text-label-mobile text-on-surface">Site Reports</span>
+</div>
+<!-- Issue Management -->
+<div class="active-scale bg-surface-container p-4 rounded-xl flex flex-col items-start gap-4 border border-outline-variant/10 shadow-lg">
+<div class="w-10 h-10 rounded-lg bg-mobile-warning/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-mobile-warning">report_problem</span>
+</div>
+<span class="font-label-mobile text-label-mobile text-on-surface">Issue Management</span>
+</div>
+<!-- Inventory -->
+<div class="active-scale bg-surface-container p-4 rounded-xl flex flex-col items-start gap-4 border border-outline-variant/10 shadow-lg">
+<div class="w-10 h-10 rounded-lg bg-tertiary-container/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary">inventory_2</span>
+</div>
+<span class="font-label-mobile text-label-mobile text-on-surface">Inventory</span>
+</div>
+<!-- BIM Viewer (AI Powered) -->
+<div class="active-scale ai-cyan-accent bg-surface-container p-4 rounded-xl flex flex-col items-start gap-4 border border-outline-variant/10 shadow-lg relative overflow-hidden">
+<div class="w-10 h-10 rounded-lg bg-secondary/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary" style="color: rgb(6, 182, 212);">view_in_ar</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-mobile text-label-mobile text-on-surface">BIM Viewer</span>
+<span class="font-tiny-web text-[9px] text-secondary tracking-widest uppercase" style="color: rgb(6, 182, 212);">AI Enhanced</span>
+</div>
+<div class="absolute -top-1 -right-1 opacity-20">
+<span class="material-symbols-outlined text-[48px] text-secondary" style="color: rgb(6, 182, 212);">auto_awesome</span>
+</div>
+</div>
+<div class="active-scale bg-surface-container p-4 rounded-xl flex flex-col items-start gap-4 border border-outline-variant/10 shadow-lg relative overflow-hidden"><div class="w-10 h-10 rounded-lg bg-secondary/20 flex items-center justify-center"><span class="material-symbols-outlined text-secondary" style="color: rgb(6, 182, 212);">flight</span></div><div class="flex flex-col"><span class="font-label-mobile text-label-mobile text-on-surface">Drone Reality Capture</span><span class="font-tiny-web text-[9px] text-secondary tracking-widest uppercase" style="color: rgb(6, 182, 212);">PHASE 5</span></div></div></div>
+</section>
+<!-- ADMIN TOOLS -->
+<section class="mb-10">
+<div class="flex items-center justify-between mb-4">
+<h2 class="font-tiny-web text-tiny-web text-on-surface-variant tracking-[0.2em] uppercase">Admin Tools</h2>
+<span class="w-12 h-px bg-outline-variant/30"></span>
+</div>
+<div class="space-y-3">
+<!-- User Management -->
+<div class="active-scale flex items-center justify-between p-4 bg-surface-container-low rounded-xl border border-outline-variant/10">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface">group</span>
+</div>
+<span class="font-body-mobile text-body-mobile text-on-surface">User Management</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</div>
+<!-- System Settings -->
+<div class="active-scale flex items-center justify-between p-4 bg-surface-container-low rounded-xl border border-outline-variant/10">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface">settings</span>
+</div>
+<span class="font-body-mobile text-body-mobile text-on-surface">System Settings</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</div>
+<!-- Audit Logs -->
+<div class="active-scale flex items-center justify-between p-4 bg-surface-container-low rounded-xl border border-outline-variant/10">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface">history_edu</span>
+</div>
+<span class="font-body-mobile text-body-mobile text-on-surface">Audit Logs</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</div>
+</div>
+</section>
+<!-- EXTENSIONS -->
+<section>
+<div class="flex items-center justify-between mb-4">
+<h2 class="font-tiny-web text-tiny-web text-on-surface-variant tracking-[0.2em] uppercase">Extensions</h2>
+<span class="w-12 h-px bg-outline-variant/30"></span>
+</div>
+<div class="grid grid-cols-1 gap-3">
+<!-- Drone Reality Capture (AI Highlighted) -->
+<div class="active-scale ai-cyan-accent bg-surface-container p-5 rounded-2xl border border-outline-variant/10 flex items-center gap-5">
+<div class="relative">
+<div class="w-14 h-14 rounded-2xl bg-secondary/10 flex items-center justify-center border border-secondary/20">
+<span class="material-symbols-outlined text-secondary text-3xl">flight</span>
+</div>
+<div class="absolute -bottom-1 -right-1 w-6 h-6 bg-secondary rounded-full flex items-center justify-center border-2 border-surface">
+<span class="material-symbols-outlined text-on-secondary text-[14px]" style="color: rgb(6, 182, 212);">auto_awesome</span>
+</div>
+</div>
+<div class="flex-1">
+<h4 class="font-label-mobile text-label-mobile text-on-surface">Drone Reality Capture</h4>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant mt-0.5">Autonomous inspection &amp; mapping</p>
+</div>
+<span class="material-symbols-outlined text-secondary">open_in_new</span>
+</div>
+<!-- ERP Connect -->
+<div class="active-scale bg-surface-container p-5 rounded-2xl border border-outline-variant/10 flex items-center gap-5">
+<div class="w-14 h-14 rounded-2xl bg-surface-container-highest flex items-center justify-center border border-outline-variant/20">
+<span class="material-symbols-outlined text-on-surface text-3xl">hub</span>
+</div>
+<div class="flex-1">
+<h4 class="font-label-mobile text-label-mobile text-on-surface">ERP Connect</h4>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant mt-0.5">SAP &amp; Oracle direct integration</p>
+</div>
+</div>
+<!-- Line Messaging -->
+<div class="active-scale bg-surface-container p-5 rounded-2xl border border-outline-variant/10 flex items-center gap-5">
+<div class="w-14 h-14 rounded-2xl bg-mobile-success/10 flex items-center justify-center border border-mobile-success/20">
+<span class="material-symbols-outlined text-mobile-success text-3xl">chat_bubble</span>
+</div>
+<div class="flex-1">
+<h4 class="font-label-mobile text-label-mobile text-on-surface">Line Messaging</h4>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant mt-0.5">Field-office coordination</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar (Execution of style_active_navigation) -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center h-20 pb-safe px-space-2 bg-surface-container rounded-t-xl shadow-lg">
+<!-- Home -->
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-all active:scale-95 duration-200">
+<span class="material-symbols-outlined mb-1">home</span>
+<span class="font-label-mobile text-label-mobile">Home</span>
+</div>
+<!-- Users -->
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-all active:scale-95 duration-200">
+<span class="material-symbols-outlined mb-1">group</span>
+<span class="font-label-mobile text-label-mobile">Users</span>
+</div>
+<!-- Alerts -->
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-all active:scale-95 duration-200">
+<span class="material-symbols-outlined mb-1">notifications</span>
+<span class="font-label-mobile text-label-mobile">Alerts</span>
+</div>
+<!-- Settings (Mapped to Profile Intent) -->
+<div class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-4 py-1 active:scale-95 duration-200">
+<span class="material-symbols-outlined mb-0.5">settings</span>
+<span class="font-label-mobile text-label-mobile">Settings</span>
+</div>
+</nav>
+<!-- Interactive Layer -->
+<script>
+        // Micro-interaction for feedback
+        document.querySelectorAll('.active-scale').forEach(button => {
+            button.addEventListener('touchstart', () => {
+                button.style.transform = 'scale(0.96)';
+            });
+            button.addEventListener('touchend', () => {
+                button.style.transform = 'scale(1)';
+            });
+        });
+
+        // Simple visibility check for header background transition
+        const scrollContainer = document.querySelector('main');
+        const header = document.querySelector('header');
+        scrollContainer.addEventListener('scroll', () => {
+            if (scrollContainer.scrollTop > 10) {
+                header.classList.add('shadow-xl', 'bg-surface-container-highest');
+                header.classList.remove('bg-surface-container-low');
+            } else {
+                header.classList.remove('shadow-xl', 'bg-surface-container-highest');
+                header.classList.add('bg-surface-container-low');
+            }
+        });
+    </script>
+
+
+</body></html>

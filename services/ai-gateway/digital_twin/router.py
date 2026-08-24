@@ -11,7 +11,6 @@ Source: spec §Phase 24 query interface
 
 from __future__ import annotations
 
-import json
 import os
 from datetime import datetime, timezone
 from typing import Any
@@ -19,18 +18,17 @@ from uuid import UUID
 
 import asyncpg
 import redis.asyncio as aioredis
+from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException, Query
-from fastapi.responses import StreamingResponse
 
+from auth import get_verified_tenant
 from .divergence import generate_divergence_report
 from .models import (
     DivergenceReport,
     EntityType,
     TwinEntity,
     TwinSnapshot,
-    StateSource,
 )
-from .sync_service import get_current_state
 
 router = APIRouter(prefix="/api/v1/twin", tags=["Digital Twin"])
 
@@ -58,7 +56,7 @@ async def get_twin_state(
     project_id: UUID,
     entity_type: EntityType | None = Query(None, description="Filter by entity type"),
     timestamp: datetime | None = Query(None, description="Point-in-time query; bypasses cache"),
-    tenant_id: str = Query(..., description="Tenant ID from JWT"),
+    tenant_id: str = Depends(get_verified_tenant),
     db: asyncpg.Pool = Depends(_get_db),
     redis_client: aioredis.Redis = Depends(_get_redis),
 ):
@@ -103,7 +101,7 @@ async def get_twin_state(
 )
 async def get_divergence_report(
     project_id: UUID,
-    tenant_id: str = Query(..., description="Tenant ID from JWT"),
+    tenant_id: str = Depends(get_verified_tenant),
     db: asyncpg.Pool = Depends(_get_db),
 ):
     return await generate_divergence_report(
@@ -123,7 +121,7 @@ async def get_divergence_report(
 async def list_entities(
     project_id: UUID,
     entity_type: EntityType | None = None,
-    tenant_id: str = Query(...),
+    tenant_id: str = Depends(get_verified_tenant),
     db: asyncpg.Pool = Depends(_get_db),
 ):
     query = """
@@ -144,13 +142,6 @@ async def list_entities(
 
 # ─── POST /api/v1/twin/projects/{projectId}/entities ─────────────────────────
 
-class _RegisterEntityRequest:
-    pass
-
-
-from pydantic import BaseModel
-
-
 class RegisterEntityRequest(BaseModel):
     entity_type: EntityType
     physical_ref: str | None = None
@@ -166,7 +157,7 @@ class RegisterEntityRequest(BaseModel):
 async def register_entity(
     project_id: UUID,
     body: RegisterEntityRequest,
-    tenant_id: str = Query(...),
+    tenant_id: str = Depends(get_verified_tenant),
     db: asyncpg.Pool = Depends(_get_db),
 ):
     row = await db.fetchrow(

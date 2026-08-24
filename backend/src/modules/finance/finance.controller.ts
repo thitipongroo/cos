@@ -13,6 +13,7 @@ import {
   ParseUUIDPipe,
   Body,
   Query,
+  Ip,
   HttpCode,
   HttpStatus,
   UseGuards,
@@ -21,7 +22,9 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiQuery } from '@nestj
 import { FeatureFlag } from '../../shared/feature-flags/feature-flag.decorator';
 import { JwtAuthGuard } from '../identity/guards/jwt-auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
-import { Roles } from '@cos/rbac';
+import { PermissionsGuard } from '../../shared/guards/permissions.guard';
+import { PolicyGuard } from '../../shared/guards/policy.guard';
+import { Roles, RequirePermissions } from '@cos/rbac';
 import { CosRole } from '@cos/types';
 import { FinanceService } from './finance.service';
 import { CreateBudgetDto } from './dto/create-budget.dto';
@@ -33,6 +36,8 @@ import {
   CreateBillingDto,
   ApproveBillingDto,
   RecordArReceiptDto,
+  AttachContractDocumentDto,
+  IssueSignLinkDto,
 } from './dto/ar-billing.dto';
 
 const READ_ROLES = [
@@ -57,6 +62,12 @@ const BILLING_APPROVE_ROLES = [
 ] as const;
 const PAYMENT_APPROVE_ROLES = [CosRole.FINANCE, CosRole.TENANT_ADMIN] as const;
 const CONTRACT_WRITE_ROLES = [CosRole.PROJECT_MANAGER, CosRole.TENANT_ADMIN] as const;
+// ADR-058 §RBAC: attach-document / sign / issue-link — an authorized role signs directly (no chain).
+const CONTRACT_SIGN_ROLES = [
+  CosRole.TENANT_ADMIN,
+  CosRole.EXECUTIVE,
+  CosRole.PROJECT_MANAGER,
+] as const;
 const CUSTOMER_WRITE_ROLES = [
   CosRole.FINANCE,
   CosRole.PROJECT_MANAGER,
@@ -73,7 +84,7 @@ function parseLimit(limit: string): number {
 
 @ApiTags('finance')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard, PolicyGuard)
 @Controller()
 export class FinanceController {
   constructor(private readonly svc: FinanceService) {}
@@ -139,20 +150,29 @@ export class FinanceController {
     return this.svc.recordPayment(dto);
   }
 
-  // GET /api/v1/finance/payments  (tenant-wide AP payment queue, AIP-132; ?project_id= to scope)
+  // GET /api/v1/finance/payments  (tenant-wide AP payment queue, AIP-132; ?project_id= / ?status= to scope)
+  //
+  // `status` added 2026-08-11 — an OPTIONAL query param, so no version bump (QM-2: additive, not
+  // breaking). It brings this list level with `/finance/billing` and
+  // `/procurement/purchase-orders`, which already take one: without it a caller wanting "how many
+  // payments await approval" had to page the whole list or count the first page, and the
+  // Tenant-Admin dashboard did the latter.
   @Get('finance/payments')
   @Roles(...READ_ROLES)
-  @ApiOperation({ summary: 'List payments across the tenant (filterable by project)' })
+  @ApiOperation({ summary: 'List payments across the tenant (filterable by project and status)' })
   @ApiQuery({ name: 'project_id', required: false, type: String })
+  @ApiQuery({ name: 'status', required: false, type: String })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   listPayments(
     @Query('project_id') project_id?: string,
+    @Query('status') status?: string,
     @Query('page') page = '1',
     @Query('limit') limit = '20',
   ) {
     return this.svc.listPayments({
       project_id,
+      status,
       page: parsePage(page),
       limit: parseLimit(limit),
     });
@@ -160,6 +180,7 @@ export class FinanceController {
 
   @Patch('finance/payments/:paymentId/approve')
   @Roles(...PAYMENT_APPROVE_ROLES)
+  @RequirePermissions('finance:approve') // fine-grained least-privilege enforcement (spec §6.4)
   @FeatureFlag('s1.finance.payment-mutations') // QM-15 retrofit kill-switch (ADR-049)
   @ApiOperation({ summary: 'Approve a pending payment (FINANCE) → PROCESSED' })
   @ApiParam({ name: 'paymentId', type: 'string', format: 'uuid' })
@@ -212,6 +233,63 @@ export class FinanceController {
   @ApiQuery({ name: 'project_id', required: false, type: String })
   listContracts(@Query('project_id') project_id?: string) {
     return this.svc.listContracts(project_id);
+  }
+
+  // POST /api/v1/finance/contracts/:id/document — attach the contract document (ADR-058 CT-2)
+  @Post('finance/contracts/:id/document')
+  @Roles(...CONTRACT_SIGN_ROLES)
+  @ApiOperation({ summary: 'Attach a document to a contract (upload mode — File Service file_id)' })
+  @ApiParam({ name: 'id', format: 'uuid' })
+  attachContractDocument(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AttachContractDocumentDto,
+  ) {
+    return this.svc.attachDocument(id, dto);
+  }
+
+  // POST /api/v1/finance/contracts/:id/sign — contractor-side signature (ADR-058 CT-3)
+  @Post('finance/contracts/:id/sign')
+  @Roles(...CONTRACT_SIGN_ROLES)
+  @ApiOperation({ summary: 'Contractor-side signature (PKI/VC, binds the document SHA-256)' })
+  @ApiParam({ name: 'id', format: 'uuid' })
+  signContract(@Param('id', ParseUUIDPipe) id: string, @Ip() ip: string) {
+    return this.svc.signContract(id, ip);
+  }
+
+  // POST /api/v1/finance/contracts/:id/sign-links — issue a client magic-link to sign (ADR-058 CT-4)
+  @Post('finance/contracts/:id/sign-links')
+  @Roles(...CONTRACT_SIGN_ROLES)
+  @ApiOperation({ summary: 'Issue a single-use client magic-link to sign the contract' })
+  @ApiParam({ name: 'id', format: 'uuid' })
+  issueContractSignLink(@Param('id', ParseUUIDPipe) id: string, @Body() dto: IssueSignLinkDto) {
+    return this.svc.issueSignLink(id, dto);
+  }
+
+  // GET /api/v1/finance/contracts/:id/signatures — signature audit trail (ADR-058 CT-6)
+  @Get('finance/contracts/:id/signatures')
+  @Roles(...BILLING_READ_ROLES)
+  @ApiOperation({ summary: 'Signature audit trail for a contract' })
+  @ApiParam({ name: 'id', format: 'uuid' })
+  listContractSignatures(@Param('id', ParseUUIDPipe) id: string) {
+    return this.svc.listContractSignatures(id);
+  }
+
+  // POST /api/v1/finance/contracts/:id/activate — put a signed contract into force (ADR-058 CT-8)
+  @Post('finance/contracts/:id/activate')
+  @Roles(...CONTRACT_WRITE_ROLES)
+  @ApiOperation({ summary: 'Activate a fully-signed contract (SIGNED → ACTIVE)' })
+  @ApiParam({ name: 'id', format: 'uuid' })
+  activateContract(@Param('id', ParseUUIDPipe) id: string) {
+    return this.svc.activateContract(id);
+  }
+
+  // POST /api/v1/finance/contracts/:id/terminate — end a live contract (ADR-058 CT-8)
+  @Post('finance/contracts/:id/terminate')
+  @Roles(...CONTRACT_WRITE_ROLES)
+  @ApiOperation({ summary: 'Terminate a contract (SIGNED | ACTIVE → TERMINATED)' })
+  @ApiParam({ name: 'id', format: 'uuid' })
+  terminateContract(@Param('id', ParseUUIDPipe) id: string) {
+    return this.svc.terminateContract(id);
   }
 
   // ── Client Billing (AR — §11, §14, §15) ─────────────────────────────────────

@@ -173,10 +173,20 @@ Scenarios for MVP:
 
 Scenarios:
 
-1. **Offline check-in** — Worker checks in with no connectivity → record queued → sync on reconnect
-2. **Offline inspection** — Inspector fills checklist offline → photo attached → sync on reconnect
-3. **Sync conflict resolution** — Two users update same task `progress_percent` while offline → Max-wins applied on sync
+1. **Offline inspection** — Inspector fills checklist offline → photo attached → sync on reconnect
+2. **Sync conflict resolution** — Two users update same task `progress_percent` while offline → Max-wins applied on sync
    (higher value wins; progress is monotonic)
+
+> **Offline check-in was scenario 1 until 2026-08-21, and was retired with the feature it tested.**
+> Self check-in was removed from the mobile product on 2026-08-09 (product-owner decision, recorded
+> in `apps/mobile/src/components/home/FieldHome.tsx`): it left the Site Worker home, then the
+> navigation drawer, then the product. Attendance rows are still READ — the Shift Hours tile counts
+> them and they arrive through `/sync/delta` — but nothing in the app writes one, so there was no
+> control left for the scenario to drive. The offline queue-and-sync path it covered is exercised by
+> scenario 1 above.
+>
+> This retires the E2E SCENARIO only. `21-mvp-scope.md` still lists check-in/check-out inside MVP
+> workforce scope — see the note there.
 
 ### Environment
 
@@ -325,10 +335,46 @@ The k6 tests above cover the backend; the web app's user-perceived performance i
 
 - **Lighthouse CI** runs on every `apps/web` PR under a **throttled mobile profile** (mid/low-end device + slow network)
   — matching the field-worker reality.
-- **Gate (blocks merge):** a Core Web Vitals lab metric regressing past budget — **LCP ≤ 2.5 s**, **CLS ≤ 0.1**, and
+- **Gate (blocks merge):** a Core Web Vitals lab metric regressing past budget — **lab LCP ≤ 3.2 s**, **CLS ≤ 0.1**, and
   **TBT ≤ 200 ms** (Total Blocking Time, Lighthouse's lab proxy for INP; matches the INP ≤ 200 ms RUM SLO) — or the JS
   **bundle-size budget ≤ 250 KB** (script transfer size per audited route) exceeded. Budgets live in the CI config
   (`apps/web/.lighthouserc.json`; workflow `.github/workflows/lighthouse.yml`).
+- **The lab LCP budget is 3.2 s and the field SLO is 2.5 s. They are different numbers on purpose.** §31.6's 2.5 s is
+  a RUM p75 across real devices and networks. This one is a single throttled profile — 1,638 Kbps, 150 ms RTT, 4× CPU —
+  on a GitHub `ubuntu-latest` runner, which is slower and far more variable than a developer machine: measured
+  2026-08-03, `benchmarkIndex` ranged 2,154–3,368 across five runs while the same page reported ~3,860 locally. Holding
+  the lab gate to the field number would have meant a gate that has never once passed.
+  3,200 ms is the highest median observed across those five runs (2,913 ms) plus ~10 % headroom. It is a
+  **regression gate, not a performance target**: it catches a change that makes `/login` ~10 % slower, and it does not
+  say the page is fast enough.
+- **`aggregationMethod: median`,** not lhci's `optimistic` default. Optimistic compares the _best_ of the three runs,
+  which is how a 1,190 ms TBT — nearly 6× its budget — passed unnoticed on 2026-08-03. Median is what the numbers above
+  are calibrated against.
+- **The server is started and warmed before collection** (`pnpm run lighthouse`, not `lhci autorun`). Letting lhci
+  start it through `startServerCommand` made the first of the three runs partly a cold-server measurement: on
+  2026-08-03 that run reported `server-response-time` ~30 ms against ~5 ms for the other two. Warming it fixed exactly
+  that — the same metric now reads 4 / 4 / 3 ms across the three runs.
+- **The first run is still an outlier, and warming the server did not change that.** On the first fully green run
+  (2026-08-03), run one reported **TBT 3,061 ms** and **CLS 0.133** with `bootup-time` 2,715 ms, against 72–82 ms TBT,
+  0.000 CLS and 493–541 ms bootup for runs two and three — while its `server-response-time` was already warm at 4 ms.
+  What remains is Chrome's own first-run cost (V8 compilation, no code cache), which a warm-up request to the server
+  cannot touch. **No verified fix is in place.** A discarded Lighthouse run before the measured ones would be the
+  obvious candidate; lhci exposes no option for it and it has not been tested.
+  This is why `aggregationMethod` is `median` and not `pessimistic`: pessimistic would fail today on both TBT
+  (3,061 > 200) and CLS (0.133 > 0.1), from a first run that says nothing about the application.
+- **Measured baselines (2026-08-03, five CI runs each).** Before the `/login` server-rendering and font fixes: median
+  LCP up to 3,673 ms. After: **up to 2,913 ms**. Script transfer size 223,234 B against the 256,000 B budget;
+  accessibility 1.0 on every run.
+- **Accessibility is gated in the same run:** the Lighthouse **accessibility category must score 1.0**
+  (`categories:accessibility` `minScore: 1`), which is the automated half of the §20.8 gate. The floor is 1.0 rather
+  than a fraction because the category has 24 scored audits totalling weight 163 and the lightest weighs 1 — failing a
+  single audit still scores 0.9939, so any threshold below 1 would let a real regression through. Measured 1.0 across
+  three consecutive runs on 2026-08-03; the Lighthouse version is pinned by `pnpm-lock.yaml` + `--frozen-lockfile`, so
+  the audit set cannot shift without a deliberate dependency PR. `color-contrast` is asserted separately only because
+  its failure message names the offending element.
+- **Measured baseline (2026-08-03):** `/login` script transfer size **194,995 B** before the react-hook-form migration
+  and **223,086 B** after it, against the 256,000 B budget — 32,914 B of headroom. Recorded because it is what the
+  per-route field budget in `apps/web/src/components/form/README.md` is computed against.
 - **Complements RUM:** Lighthouse catches regressions pre-merge (lab); production Core Web Vitals are measured from
   real users at p75 (`31 §31.6 Frontend Web Vitals SLO`).
 
@@ -338,19 +384,24 @@ The k6 tests above cover the backend; the web app's user-perceived performance i
 
 ### SAST (Static Analysis)
 
-- **CodeQL** (`github/codeql-action`) — security scanning on every PR; blocks merge on any alert of
-  severity **High** or above. Languages analysed: JavaScript/TypeScript, Python, Go.
-  Workflow: `.github/workflows/codeql.yml`.
-  > **Replaced SonarQube 2026-08-22 — ADR-054.** SonarQube required a self-hosted EKS server that was
-  > never provisioned, so the gate had been ⏸ DEFERRED and was blocking Phase 19 automated check #4
-  > (the Stage 1→2 gate). CodeQL runs server-free in GitHub Actions and is free for this public
-  > repository. Coverage thresholds (100% lines / 100% branches, QM-1) remain enforced where they
-  > always were — in each package's `jest.config.js` — not by the SAST tool. The
-  > "0% duplication on new code" clause of the former SonarQube quality gate is **dropped**: CodeQL
-  > does not measure duplication, and it is not claimed elsewhere.
-  > If the repository ever becomes private, GitHub Advanced Security is required — revisit ADR-054.
-- **ESLint security plugin** — SQL injection, XSS patterns
-- **npm audit / pip-audit** — dependency vulnerability scanning in CI
+- **CodeQL** — semantic SAST with cross-file taint analysis, on every PR. Languages: JS/TS, Python,
+  Go (`.github/workflows/codeql.yml`). Free on this public repository; a private repository would
+  require a GitHub Code Security licence per active committer. Cannot run air-gapped.
+- **Semgrep CE** — pattern SAST (`.github/workflows/semgrep.yml`). Two tiers: project-policy rules in
+  `.semgrep/` **block the merge**; registry security rulesets are advisory and reported to code
+  scanning. Runs fully offline, so it is the scanner available to on-premise/air-gapped deployments
+  where CodeQL cannot run.
+- **jscpd** — duplication, run in the CI lint job against the ratchet in `.jscpd.json`.
+- **npm audit / pip-audit / govulncheck / Trivy** — dependency and container scanning (SCA). Note
+  these scan _dependencies_, not first-party code; CodeQL and Semgrep are what read code we wrote.
+
+> Replaced SonarQube (ADR-011). SonarQube **Community** Build has no branch or pull-request
+> analysis, so the "before merge, on new code" gate this section requires is not achievable on it,
+> and it has no taint analysis; both start at Developer Edition (paid).
+>
+> ⚠️ An earlier version of this list also claimed an **ESLint security plugin** covering SQL
+> injection and XSS. No such plugin was ever installed — `eslint.config.mjs` carries only
+> `@typescript-eslint`. It is listed here as a gap, not a control.
 
 ### DAST (Dynamic Analysis)
 
@@ -451,26 +502,29 @@ unit tests. Integration tests against a real Redis are covered in the e2e test s
 
 CI pipeline (GitHub Actions) enforces these gates per `04-tech-stack` section 4.9:
 
-| Gate                                      | Trigger               | Blocks                                |
-| ----------------------------------------- | --------------------- | ------------------------------------- |
-| Lint + type check                         | Every PR              | PR merge                              |
-| YAML lint (yamllint)                      | Every PR              | PR merge                              |
-| SQL lint (sqlfluff, PostgreSQL)           | Every PR              | PR merge                              |
-| Markdown lint (markdownlint, changed .md) | Every PR              | PR merge                              |
-| Build (`turbo run build`)                 | Every PR              | PR merge                              |
-| Unit tests                                | Every PR              | PR merge                              |
-| Unit coverage 100% lines + 100% branches  | Every PR              | PR merge                              |
-| Integration tests                         | Every PR              | PR merge                              |
-| Temporal workflow tests (serial)          | Every PR              | PR merge — own jest config            |
-| Multi-tenant isolation tests              | Every PR              | PR merge                              |
-| API contract tests (Pact)                 | Every PR              | PR merge                              |
-| Dependency audit (pnpm/govulncheck/pip)   | Every PR              | PR merge (High/Critical)              |
-| Security SAST (CodeQL — ADR-054)          | Every PR              | PR merge (High severity)              |
-| Smoke tests (ArgoCD PostSync wave 1)      | Post-deploy (staging) | Blocks E2E wave 2                     |
-| E2E tests (Playwright)                    | Merge to `staging`    | Production promotion                  |
-| E2E tests (Detox — React Native mobile)   | Merge to `staging`    | Production promotion                  |
-| Load tests (k6)                           | Weekly scheduled      | Alert only (not blocking)             |
-| DAST (OWASP ZAP)                          | Weekly scheduled      | Alert only (not blocking)             |
+| Gate                                      | Trigger               | Blocks                     |
+| ----------------------------------------- | --------------------- | -------------------------- |
+| Lint + type check                         | Every PR              | PR merge                   |
+| YAML lint (yamllint)                      | Every PR              | PR merge                   |
+| SQL lint (sqlfluff, PostgreSQL)           | Every PR              | PR merge                   |
+| Markdown lint (markdownlint, changed .md) | Every PR              | PR merge                   |
+| Build (`turbo run build`)                 | Every PR              | PR merge                   |
+| Unit tests                                | Every PR              | PR merge                   |
+| Unit coverage 100% lines + 100% branches  | Every PR              | PR merge                   |
+| Integration tests                         | Every PR              | PR merge                   |
+| Temporal workflow tests (serial)          | Every PR              | PR merge — own jest config |
+| Multi-tenant isolation tests              | Every PR              | PR merge                   |
+| API contract tests (Pact)                 | Every PR              | PR merge                   |
+| Dependency audit (pnpm/govulncheck/pip)   | Every PR              | PR merge (High/Critical)   |
+| Security SAST (CodeQL)                    | Every PR              | PR merge                   |
+| Security SAST (Semgrep — project rules)   | Every PR              | PR merge                   |
+| Security SAST (Semgrep — registry rules)  | Every PR              | Alert only (code scanning) |
+| Duplication (jscpd, ratchet)              | Every PR              | PR merge                   |
+| Smoke tests (ArgoCD PostSync wave 1)      | Post-deploy (staging) | Blocks E2E wave 2          |
+| E2E tests (Playwright)                    | Merge to `staging`    | Production promotion       |
+| E2E tests (Detox — React Native mobile)   | Merge to `staging`    | Production promotion       |
+| Load tests (k6)                           | Weekly scheduled      | Alert only (not blocking)  |
+| DAST (OWASP ZAP)                          | Weekly scheduled      | Alert only (not blocking)  |
 
 ---
 
@@ -483,7 +537,9 @@ CI pipeline (GitHub Actions) enforces these gates per `04-tech-stack` section 4.
 | [Pact]       | Pact Contract Testing Documentation                                | [docs.pact.io](https://docs.pact.io/)                                    |
 | [k6]         | k6 Load Testing Documentation                                      | [k6.io/docs](https://k6.io/docs/)                                        |
 | [Playwright] | Playwright End-to-End Testing Documentation                        | [playwright.dev/docs/intro](https://playwright.dev/docs/intro)           |
-| [SonarQube]  | SonarQube Static Analysis Documentation                            | [docs.sonarqube.org](https://docs.sonarqube.org/)                        |
+| [CodeQL]     | CodeQL Documentation                                               | [codeql.github.com/docs](https://codeql.github.com/docs/)                |
+| [Semgrep]    | Semgrep Documentation                                              | [semgrep.dev/docs](https://semgrep.dev/docs/)                            |
+| [jscpd]      | jscpd — Copy/Paste Detector                                        | [github.com/kucherenko/jscpd](https://github.com/kucherenko/jscpd)       |
 | [OWASP-ZAP]  | OWASP ZAP Dynamic Application Security Testing                     | [zaproxy.org/docs](https://www.zaproxy.org/docs/)                        |
 | [Jest]       | Jest JavaScript Testing Framework                                  | [jestjs.io/docs/getting-started](https://jestjs.io/docs/getting-started) |
 

@@ -20,12 +20,16 @@ export class GeoController {
     const longitude = parseFloat(lon);
     if (Number.isNaN(latitude) || Number.isNaN(longitude)) {
       throw new BadRequestException({
-        code: 'COS-GEO-001',
-        message: 'lat and lon are required numeric query params',
+        error: {
+          code: 'COS-GEO-001',
+          message: 'lat and lon are required numeric query params',
+        },
       });
     }
     if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
-      throw new BadRequestException({ code: 'COS-GEO-002', message: 'lat/lon out of range' });
+      throw new BadRequestException({
+        error: { code: 'COS-GEO-002', message: 'lat/lon out of range' },
+      });
     }
     return this.svc.reverseGeocode(latitude, longitude);
   }

@@ -1,9 +1,13 @@
 'use client';
 
-import { useState, use } from 'react';
+import { quotationSubmitSchema } from '@cos/schemas';
 import Link from 'next/link';
+import { use } from 'react';
+import { Controller } from 'react-hook-form';
+import { TextInputField } from '../../../../components/form/TextInputField';
 import { useI18n } from '../../../../i18n';
 import { useVendorRfq, useSubmitQuotation } from '../../../../lib/api/vendor';
+import { useValidatedForm } from '../../../../lib/forms';
 
 /** Tier-1 magic-link page (§20.7.12): open an invited RFQ and submit a quotation — no account. */
 export default function VendorRfqPage(props: { params: Promise<{ token: string }> }) {
@@ -13,18 +17,21 @@ export default function VendorRfqPage(props: { params: Promise<{ token: string }
   const rfq = useVendorRfq(token);
   const submit = useSubmitQuotation(token);
 
-  const [totalAmount, setTotalAmount] = useState('');
-  const [currency, setCurrency] = useState('THB');
-  const [validityDays, setValidityDays] = useState('30');
+  // Declared before the loading/error early returns below — hooks cannot be called conditionally.
+  const {
+    control,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useValidatedForm({
+    schema: quotationSubmitSchema,
+    defaultValues: { total_amount: '', currency_code: 'THB', validity_days: 30 },
+  });
 
-  const onSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    submit.mutate({
-      total_amount: totalAmount,
-      currency_code: currency,
-      validity_days: Number(validityDays),
-    });
-  };
+  const messageFor = (key?: string) => (key ? t(key) : undefined);
+
+  const onSubmit = handleSubmit((values) => {
+    submit.mutate(values);
+  });
 
   if (rfq.isLoading) return <p>{t('common.loading')}</p>;
   if (rfq.isError || !rfq.data) return <p className="text-red-600">{t('vendor.rfqUnavailable')}</p>;
@@ -54,44 +61,55 @@ export default function VendorRfqPage(props: { params: Promise<{ token: string }
         </dl>
       </section>
 
-      <form onSubmit={onSubmit} className="space-y-3">
+      <form onSubmit={onSubmit} noValidate className="space-y-3">
         <h2 className="font-medium">{t('vendor.submitQuotation')}</h2>
-        <label className="block text-sm">
-          {t('vendor.totalAmount')}
-          <input
-            required
-            value={totalAmount}
-            onChange={(e) => setTotalAmount(e.target.value)}
-            className="mt-1 w-full rounded border px-3 py-2"
-            inputMode="decimal"
-          />
-        </label>
-        <label className="block text-sm">
-          {t('vendor.currency')}
-          <input
-            required
-            value={currency}
-            onChange={(e) => setCurrency(e.target.value.toUpperCase())}
-            maxLength={3}
-            className="mt-1 w-full rounded border px-3 py-2"
-          />
-        </label>
-        <label className="block text-sm">
-          {t('vendor.validityDays')}
-          <input
-            required
-            type="number"
-            min={1}
-            max={365}
-            value={validityDays}
-            onChange={(e) => setValidityDays(e.target.value)}
-            className="mt-1 w-full rounded border px-3 py-2"
-          />
-        </label>
-        {submit.isError && <p className="text-sm text-red-600">{t('vendor.submitFailed')}</p>}
+        <Controller
+          name="total_amount"
+          control={control}
+          render={({ field }) => (
+            <TextInputField
+              {...field}
+              label={t('vendor.totalAmount')}
+              errorMessage={messageFor(errors.total_amount?.message)}
+            />
+          )}
+        />
+        <Controller
+          name="currency_code"
+          control={control}
+          render={({ field }) => (
+            <TextInputField
+              name={field.name}
+              onBlur={field.onBlur}
+              value={field.value}
+              onChange={(v) => field.onChange(v.toUpperCase())}
+              label={t('vendor.currency')}
+              errorMessage={messageFor(errors.currency_code?.message)}
+            />
+          )}
+        />
+        <Controller
+          name="validity_days"
+          control={control}
+          render={({ field }) => (
+            <TextInputField
+              name={field.name}
+              onBlur={field.onBlur}
+              value={field.value == null ? '' : String(field.value)}
+              onChange={(v) => field.onChange(v === '' ? undefined : Number(v))}
+              label={t('vendor.validityDays')}
+              errorMessage={messageFor(errors.validity_days?.message)}
+            />
+          )}
+        />
+        {submit.isError && (
+          <p role="alert" className="text-sm text-red-600">
+            {t('vendor.submitFailed')}
+          </p>
+        )}
         <button
           type="submit"
-          disabled={submit.isPending}
+          disabled={isSubmitting || submit.isPending}
           className="rounded bg-blue-600 px-4 py-2 text-white disabled:opacity-50"
         >
           {t('vendor.submitQuotation')}

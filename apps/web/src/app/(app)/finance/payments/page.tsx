@@ -1,6 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { paymentRecordSchema } from '@cos/schemas';
+import { Controller } from 'react-hook-form';
+import { DateField } from '../../../../components/form/DateField';
+import { NativeSelectField } from '../../../../components/form/NativeSelectField';
+import { TextInputField } from '../../../../components/form/TextInputField';
 import { DataTable, type Column } from '../../../../components/ui/DataTable';
 import { useI18n } from '../../../../i18n';
 import {
@@ -13,6 +17,7 @@ import {
 import type { PaymentRow } from '../../../../lib/api/types';
 import { formatDate, formatMoney } from '../../../../lib/format';
 import { useReadOnly } from '../../../../lib/auth/useReadOnly';
+import { useValidatedForm } from '../../../../lib/forms';
 
 /** Tenant-wide AP payment queue (§20.7.4 → GET /finance/payments; approve via
  *  PATCH /finance/payments/:id/approve). Records a payment against a vendor invoice
@@ -26,40 +31,53 @@ export default function PaymentsPage() {
   const invoices = useFinanceInvoices('');
   const readOnly = useReadOnly();
 
-  const [projectId, setProjectId] = useState('');
-  const [invoiceId, setInvoiceId] = useState('');
-  const [amount, setAmount] = useState('');
-  const [currencyCode, setCurrencyCode] = useState('THB');
-  const [paymentDate, setPaymentDate] = useState('');
-  const [reference, setReference] = useState('');
+  const {
+    control,
+    handleSubmit,
+    reset,
+    setValue,
+    getValues,
+    formState: { errors, isSubmitting },
+  } = useValidatedForm({
+    schema: paymentRecordSchema,
+    defaultValues: {
+      project_id: '',
+      invoice_id: '',
+      amount: '',
+      currency_code: 'THB',
+      payment_date: '',
+      payment_reference: '',
+    },
+  });
+
+  const messageFor = (key?: string) => (key ? t(key) : undefined);
 
   const onSelectInvoice = (id: string) => {
-    setInvoiceId(id);
+    setValue('invoice_id', id, { shouldValidate: true });
     // Pre-fill amount + currency from the chosen invoice (still editable so a partial or
     // over-budget amount can be recorded).
     const inv = invoices.data?.items.find((i) => i.invoice_id === id);
     if (inv) {
-      setAmount(inv.amount);
-      setCurrencyCode(inv.currency_code);
+      setValue('amount', inv.amount, { shouldValidate: true });
+      setValue('currency_code', inv.currency_code, { shouldValidate: true });
     }
   };
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const submit = handleSubmit(async (values) => {
     await record.mutateAsync({
-      project_id: projectId,
-      invoice_id: invoiceId,
-      amount,
-      currency_code: currencyCode,
-      payment_date: paymentDate,
-      payment_reference: reference || undefined,
+      ...values,
+      payment_reference: values.payment_reference || undefined,
     });
-    setAmount('');
-    setReference('');
-    setPaymentDate('');
-  };
-
-  const field = 'rounded-md border border-gray-300 px-3 py-1.5 text-sm';
+    // Keep project and invoice: recording a second instalment against the same invoice is common.
+    reset({
+      project_id: getValues('project_id'),
+      invoice_id: getValues('invoice_id'),
+      amount: '',
+      currency_code: getValues('currency_code'),
+      payment_date: '',
+      payment_reference: '',
+    });
+  });
 
   const columns: Column<PaymentRow>[] = [
     { headerKey: 'pm.colNumber', cell: (p) => p.invoice_id },
@@ -90,62 +108,82 @@ export default function PaymentsPage() {
       <h1 className="mb-6 text-2xl font-bold text-gray-800">{t('finance.paymentsTitle')}</h1>
 
       {!readOnly && (
-        <form onSubmit={submit} className="mb-4 flex flex-wrap items-end gap-2">
-          <select
-            required
-            value={projectId}
-            onChange={(e) => setProjectId(e.target.value)}
-            className={field}
-          >
-            <option value="">{t('finance.selectProject')}</option>
-            {projects.data?.items.map((p) => (
-              <option key={p.project_id} value={p.project_id}>
-                {p.project_name}
-              </option>
-            ))}
-          </select>
-          <select
-            required
-            value={invoiceId}
-            onChange={(e) => onSelectInvoice(e.target.value)}
-            className={field}
-          >
-            <option value="">{t('finance.selectInvoice')}</option>
-            {invoices.data?.items.map((i) => (
-              <option key={i.invoice_id} value={i.invoice_id}>
-                {i.invoice_number}
-              </option>
-            ))}
-          </select>
-          <input
-            required
-            type="number"
-            min="0"
-            step="0.01"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            placeholder={t('finance.amount')}
-            className={field}
+        <form onSubmit={submit} noValidate className="mb-4 flex flex-wrap items-start gap-2">
+          <Controller
+            name="project_id"
+            control={control}
+            render={({ field }) => (
+              <NativeSelectField
+                {...field}
+                label={t('finance.selectProject')}
+                placeholder={t('finance.selectProject')}
+                options={
+                  projects.data?.items.map((p) => ({ id: p.project_id, label: p.project_name })) ??
+                  []
+                }
+                errorMessage={messageFor(errors.project_id?.message)}
+              />
+            )}
           />
-          <input
-            required
-            type="date"
-            value={paymentDate}
-            onChange={(e) => setPaymentDate(e.target.value)}
-            aria-label={t('finance.paymentDate')}
-            className={field}
+          <Controller
+            name="invoice_id"
+            control={control}
+            render={({ field }) => (
+              <NativeSelectField
+                {...field}
+                // Not field.onChange: picking an invoice also pre-fills amount and currency.
+                onChange={onSelectInvoice}
+                label={t('finance.selectInvoice')}
+                placeholder={t('finance.selectInvoice')}
+                options={
+                  invoices.data?.items.map((i) => ({
+                    id: i.invoice_id,
+                    label: i.invoice_number,
+                  })) ?? []
+                }
+                errorMessage={messageFor(errors.invoice_id?.message)}
+              />
+            )}
           />
-          <input
-            value={reference}
-            onChange={(e) => setReference(e.target.value)}
-            placeholder={t('finance.paymentReference')}
-            maxLength={100}
-            className={field}
+          <Controller
+            name="amount"
+            control={control}
+            render={({ field }) => (
+              <TextInputField
+                {...field}
+                label={t('finance.amount')}
+                errorMessage={messageFor(errors.amount?.message)}
+              />
+            )}
+          />
+          {/* DateField, not <input type="date">: the OS picker is always Gregorian, and a payment
+              date is one a Thai finance user reads in Buddhist Era (QM-3). */}
+          <Controller
+            name="payment_date"
+            control={control}
+            render={({ field }) => (
+              <DateField
+                {...field}
+                label={t('finance.paymentDate')}
+                errorMessage={messageFor(errors.payment_date?.message)}
+              />
+            )}
+          />
+          <Controller
+            name="payment_reference"
+            control={control}
+            render={({ field }) => (
+              <TextInputField
+                {...field}
+                label={t('finance.paymentReference')}
+                errorMessage={messageFor(errors.payment_reference?.message)}
+              />
+            )}
           />
           <button
             type="submit"
-            disabled={record.isPending || !projectId || !invoiceId || !amount || !paymentDate}
-            className="rounded-md bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+            disabled={isSubmitting || record.isPending}
+            className="mt-6 rounded-md bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
           >
             {t('finance.recordPayment')}
           </button>

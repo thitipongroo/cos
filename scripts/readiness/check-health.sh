@@ -15,10 +15,10 @@ check() {
   code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "$url" 2>/dev/null || echo "000")
   if [[ "$code" == "200" ]]; then
     echo "  ✓ $name ($url)"
-    ((PASS++))
+    PASS=$((PASS + 1))
   else
     echo "  ✗ $name ($url) — HTTP $code"
-    ((FAIL++))
+    FAIL=$((FAIL + 1))
   fi
 }
 
@@ -29,7 +29,7 @@ for svc in "${SERVICES[@]}"; do
   pod=$(kubectl get pods -n "$NS" -l "app.kubernetes.io/name=$svc" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
   if [[ -z "$pod" ]]; then
     echo "  ✗ $svc — no pod found"
-    ((FAIL++))
+    FAIL=$((FAIL + 1))
     continue
   fi
   port=$(kubectl get svc "$svc" -n "$NS" -o jsonpath='{.spec.ports[0].port}' 2>/dev/null || echo "3000")

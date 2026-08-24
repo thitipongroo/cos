@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="th"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Const OS - System Authentication</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-dim": "#031427",
+                        "secondary": "#4cd7f6",
+                        "dark-surface": "#0F172A",
+                        "primary": "#b4c5ff",
+                        "on-tertiary": "#2b3041",
+                        "background": "#031427",
+                        "cos-blue": "#2563EB",
+                        "mobile-success": "#00C853",
+                        "surface": "#031427",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "on-error": "#690005",
+                        "inverse-primary": "#0053db",
+                        "secondary-fixed": "#acedff",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "sync-active": "#FFD60A",
+                        "inverse-on-surface": "#213145",
+                        "on-tertiary-fixed": "#161b2b",
+                        "tertiary-fixed": "#dee1f9",
+                        "outline": "#8d90a0",
+                        "primary-fixed": "#dbe1ff",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "surface-variant": "#26364a",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "on-secondary-fixed": "#001f26",
+                        "surface-container": "#102034",
+                        "tertiary": "#c1c5dc",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "mobile-danger": "#FF3B30",
+                        "error-container": "#93000a",
+                        "on-surface": "#d3e4fe",
+                        "surface-container-high": "#1b2b3f",
+                        "on-secondary": "#003640",
+                        "on-primary": "#002a78",
+                        "mobile-primary": "#0066FF",
+                        "surface-bright": "#2a3a4f",
+                        "inverse-surface": "#d3e4fe",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "tertiary-container": "#686c80",
+                        "on-surface-variant": "#c3c6d7",
+                        "surface-tint": "#b4c5ff",
+                        "dark-bg": "#020617",
+                        "on-primary-fixed": "#00174b",
+                        "cos-white": "#F8FAFC",
+                        "surface-container-low": "#0b1c30",
+                        "cos-navy": "#0B1020",
+                        "surface-container-lowest": "#000f21",
+                        "error": "#ffb4ab",
+                        "mobile-warning": "#FF9500",
+                        "secondary-container": "#03b5d3",
+                        "on-tertiary-container": "#eeefff",
+                        "sync-pending": "#94A3B8",
+                        "on-primary-container": "#eeefff",
+                        "on-background": "#d3e4fe",
+                        "surface-container-highest": "#26364a",
+                        "on-error-container": "#ffdad6",
+                        "on-secondary-container": "#00424e",
+                        "primary-container": "#2563eb",
+                        "cos-cyan": "#06B6D4",
+                        "outline-variant": "#434655"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "web-space-4": "16px",
+                        "web-base": "4px",
+                        "web-space-2": "8px",
+                        "mobile-touch-target": "52px",
+                        "web-space-8": "32px",
+                        "web-space-3": "12px",
+                        "web-space-1": "4px",
+                        "mobile-edge": "24px"
+                    },
+                    "fontFamily": {
+                        "web-text-tiny": ["Inter Tight"],
+                        "web-text-small": ["Inter Tight"],
+                        "web-text-h1": ["Inter Tight"],
+                        "web-text-body": ["Inter Tight"],
+                        "web-text-display": ["Inter Tight"],
+                        "web-text-h2": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "web-text-tiny": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "web-text-small": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                        "web-text-h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "web-text-body": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "web-text-display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "web-text-h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #031427;
+            font-family: 'Inter Tight', sans-serif;
+            overflow: hidden;
+        }
+        
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(6, 182, 212, 0.2), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite linear;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        .hex-pulse {
+            animation: hex-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes hex-pulse {
+            0%, 100% { opacity: 1; transform: scale(1); filter: drop-shadow(0 0 0px rgba(6, 182, 212, 0)); }
+            50% { opacity: 0.8; transform: scale(1.05); filter: drop-shadow(0 0 15px rgba(6, 182, 212, 0.4)); }
+        }
+
+        .progress-fill {
+            width: 0%;
+            animation: progress-load 5s ease-in-out forwards;
+        }
+
+        @keyframes progress-load {
+            0% { width: 0%; }
+            20% { width: 15%; }
+            45% { width: 42%; }
+            70% { width: 78%; }
+            100% { width: 92%; }
+        }
+
+        .status-dot {
+            animation: blink 1.5s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col bg-surface-dim text-on-surface">
+<!-- Top Navigation Shell -->
+<header class="h-16 w-full flex items-center justify-between px-web-space-8 z-50">
+<div class="flex items-center">
+<img alt="Const OS Logo" class="h-6 w-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDH1BgTcRtVN323SErWNJdkAWRc5Qx2mMI8hGIhzLTxm38gDUK3jpqvDjGCOqfzcbKXNDMLITXG1mrcOgoSw3Of4fdP4vrTq892CvrmVKJSPc1IHShrerZjYF4kIzofXdXdofu3RLquPcopyYWoRRjZW3MVRIbmTytF7gU3P4MoUDa1DaIeJwZShtFZDGxRIA2MSujSRneqN5SR2xGvgcraTNXgcZLFCH59WPC52NCBMTPpE6QE2ExcRJOlLMbO4GEO0nLueUIdDTc"/>
+</div>
+<div class="flex items-center space-x-web-space-4">
+<button class="flex items-center space-x-web-space-2 text-on-surface-variant hover:text-cos-cyan transition-colors group">
+<span class="material-symbols-outlined text-[20px]">help_outline</span>
+<span class="font-web-text-small text-web-text-small uppercase tracking-wider">Help Center</span>
+</button>
+</div>
+</header>
+<!-- Main Loading Canvas -->
+<main class="flex-1 flex items-center justify-center relative px-web-space-4">
+<!-- Background Atmosphere -->
+<div class="absolute inset-0 overflow-hidden pointer-events-none">
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-cos-blue/5 rounded-full blur-[120px]"></div>
+</div>
+<!-- Central Identity Card -->
+<div class="w-full max-w-[480px] bg-surface-container-low border border-outline-variant/30 rounded-lg p-web-space-8 relative z-10 shadow-2xl">
+<!-- Hexagonal Shield Icon Section -->
+<div class="flex flex-col items-center mb-web-space-8">
+<div class="relative w-24 h-24 flex items-center justify-center hex-pulse">
+<!-- Custom SVG Hex Shield -->
+<svg class="w-full h-full fill-none stroke-cos-cyan stroke-[1.5]" viewbox="0 0 100 100">
+<path d="M50 5 L85 22.5 V55 C85 75 50 95 50 95 C50 95 15 75 15 55 V22.5 L50 5Z"></path>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center">
+<span class="material-symbols-outlined text-cos-cyan text-[40px]" style="font-variation-settings: 'FILL' 1;">shield</span>
+</div>
+<!-- Decorative scanning line -->
+<div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cos-cyan to-transparent opacity-50 blur-sm translate-y-12 animate-bounce"></div>
+</div>
+</div>
+<!-- Text Content -->
+<div class="text-center space-y-web-space-2 mb-web-space-8">
+<h1 class="font-web-text-h1 text-web-text-h1 text-on-surface">กำลังยืนยันรหัสความปลอดภัย .</h1>
+<div class="flex items-center justify-center space-x-web-space-2">
+<span class="status-dot w-1.5 h-1.5 rounded-full bg-cos-cyan shadow-[0_0_8px_#06B6D4]"></span>
+<p class="font-web-text-tiny text-web-text-tiny text-on-surface-variant tracking-[0.2em] uppercase">
+                        SYSTEM AUTHENTICATION IN PROGRESS
+                    </p>
+</div>
+</div>
+<!-- AI Modules Styled Progress Section -->
+<div class="space-y-web-space-4 border-t border-outline-variant/20 pt-web-space-6 bg-cos-cyan/[0.02] -mx-web-space-8 px-web-space-8">
+<div class="flex justify-between items-end">
+<span class="font-web-text-tiny text-web-text-tiny text-cos-cyan font-bold">SECURING SESSION CONTEXT</span>
+<span class="font-web-text-tiny text-web-text-tiny text-on-surface-variant tabular-nums" id="percentage">0%</span>
+</div>
+<!-- Custom Progress Bar -->
+<div class="h-1.5 w-full bg-surface-variant rounded-full overflow-hidden relative">
+<div class="progress-fill absolute top-0 left-0 h-full bg-cos-cyan rounded-full flex items-center justify-end">
+<div class="w-12 h-full shimmer"></div>
+</div>
+</div>
+<!-- Technical Metadata -->
+<div class="grid grid-cols-2 gap-web-space-4 pt-web-space-2">
+<div class="space-y-1">
+<p class="text-[9px] uppercase tracking-tighter text-outline">ENCRYPTION</p>
+<p class="font-web-text-tiny text-web-text-tiny text-on-surface">AES-256-GCM</p>
+</div>
+<div class="space-y-1 text-right">
+<p class="text-[9px] uppercase tracking-tighter text-outline">NODE_ID</p>
+<p class="font-web-text-tiny text-web-text-tiny text-on-surface">OS_VAULT_04</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer Terminal Feedback (Subtle) -->
+<div class="absolute bottom-web-space-8 left-1/2 -translate-x-1/2 w-full max-w-2xl px-web-space-4 flex justify-between opacity-40">
+<div class="font-web-text-tiny text-web-text-tiny text-outline flex items-center space-x-web-space-3">
+<span class="material-symbols-outlined text-[14px]">terminal</span>
+<span>ROOT_CERT: VALIDATED</span>
+</div>
+<div class="font-web-text-tiny text-web-text-tiny text-outline">
+                v2.4.102-STABLE
+            </div>
+</div>
+</main>
+<script>
+        // Micro-interaction for percentage increment
+        const percentageEl = document.getElementById('percentage');
+        let progress = 0;
+        
+        const updateProgress = () => {
+            if (progress < 92) {
+                // Mimic irregular loading speeds
+                const increment = Math.random() > 0.8 ? Math.floor(Math.random() * 5) + 1 : 1;
+                progress = Math.min(92, progress + increment);
+                percentageEl.textContent = `${progress}%`;
+                
+                const nextTick = Math.random() * 150 + 50;
+                setTimeout(updateProgress, nextTick);
+            }
+        };
+
+        // Start after a short delay
+        setTimeout(updateProgress, 500);
+
+        // Vanilla mouse parallax effect for the glow
+        document.addEventListener('mousemove', (e) => {
+            const glow = document.querySelector('.bg-cos-blue\\/5');
+            const x = (e.clientX / window.innerWidth - 0.5) * 40;
+            const y = (e.clientY / window.innerHeight - 0.5) * 40;
+            glow.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
+        });
+    </script>
+</body></html>

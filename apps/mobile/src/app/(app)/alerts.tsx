@@ -1,11 +1,14 @@
 // Alerts screen — EXECUTIVE risk feed. Source: GET /analytics/executive → ExecutiveDashboardRow[]
 // (one row per project). At-risk projects are surfaced first with utilization + overdue invoices.
 
-import { useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { get } from '../../api/client';
+import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { useT } from '../../i18n';
-import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
+import type { TranslateFn } from '../../i18n';
+import { colors, fontFamily, radius, spacing, typography } from '../../theme/tokens';
+import { screen } from '../../theme/screenStyles';
 
 interface ExecutiveDashboardRow {
   projectId: string;
@@ -32,74 +35,91 @@ function severityOf(r: ExecutiveDashboardRow): Severity {
   return 'LOW';
 }
 
+/**
+ * One project's risk card, memoized.
+ *
+ * Severity is derived from this row's own metrics, so it belongs with the row rather than being
+ * computed in a shared renderer — and memo then lets the feed skip every card whose figures have
+ * not moved.
+ */
+const AlertItem = memo(function AlertItem({
+  alert,
+  t,
+}: {
+  alert: ExecutiveDashboardRow;
+  t: TranslateFn;
+}) {
+  return (
+    // === 1, not truthiness: atRisk is 0 | 1 (§35.13 ESC-34), and a 0 in a style array relies on
+    // StyleSheet.flatten skipping falsy entries rather than saying what it means (ESC-36).
+    <View testID="alert-item" style={[styles.card, alert.atRisk === 1 ? styles.cardRisk : null]}>
+      <View style={styles.row}>
+        <Text style={styles.project}>{alert.projectId.slice(0, 8)}</Text>
+        <Text
+          style={[styles.badge, severityOf(alert) === 'LOW' ? styles.badgeOk : styles.badgeRisk]}
+        >
+          {t(`status.${severityOf(alert)}`)}
+        </Text>
+      </View>
+      <Text style={styles.metric}>
+        {t('exec.alerts.utilization', { value: alert.utilizationPct })}
+      </Text>
+      <Text style={styles.metric}>
+        {t('exec.alerts.budgetLine', {
+          budget: alert.totalBudget,
+          committed: alert.totalCommitted,
+          actual: alert.totalActual,
+        })}
+      </Text>
+      <Text style={styles.metric}>
+        {t('exec.alerts.overdueInvoices', { count: alert.overdueInvoiceCount })}
+      </Text>
+    </View>
+  );
+});
+
 export default function AlertsScreen() {
   const [rows, setRows] = useState<ExecutiveDashboardRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const t = useT();
 
+  const renderAlert = useCallback(
+    ({ item }: { item: ExecutiveDashboardRow }) => <AlertItem alert={item} t={t} />,
+    [t],
+  );
+
   useEffect(() => {
+    // rows is [] both before the fetch and when genuinely empty, so a dedicated flag drives the loader.
     get<ExecutiveDashboardRow[]>('/analytics/executive')
       .then((data) =>
         setRows([...data].sort((a, b) => SEV_RANK[severityOf(b)] - SEV_RANK[severityOf(a)])),
       )
       .catch(() => {
         /* offline — keep last */
-      });
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   return (
-    <View testID="alerts-screen" style={styles.container}>
-      <Text style={styles.heading}>{t('exec.alerts.title')}</Text>
-      <FlatList
-        testID="alerts-list"
-        data={rows}
-        keyExtractor={(r, i) => r.projectId || String(i)}
-        ListEmptyComponent={<Text style={styles.empty}>{t('exec.alerts.empty')}</Text>}
-        renderItem={({ item }) => (
-          <View
-            testID="alert-item"
-            style={[styles.card, item.atRisk === 1 ? styles.cardRisk : null]}
-          >
-            <View style={styles.row}>
-              <Text style={styles.project}>{item.projectId.slice(0, 8)}</Text>
-              <Text
-                style={[
-                  styles.badge,
-                  severityOf(item) === 'LOW' ? styles.badgeOk : styles.badgeRisk,
-                ]}
-              >
-                {t(`status.${severityOf(item)}`)}
-              </Text>
-            </View>
-            <Text style={styles.metric}>
-              {t('exec.alerts.utilization', { value: item.utilizationPct })}
-            </Text>
-            <Text style={styles.metric}>
-              {t('exec.alerts.budgetLine', {
-                budget: item.totalBudget,
-                committed: item.totalCommitted,
-                actual: item.totalActual,
-              })}
-            </Text>
-            <Text style={styles.metric}>
-              {t('exec.alerts.overdueInvoices', { count: item.overdueInvoiceCount })}
-            </Text>
-          </View>
-        )}
-      />
+    <View testID="alerts-screen" style={screen.container}>
+      <LoadingBoundary loading={loading} variant="widget" theme="light" style={styles.boundary}>
+        <FlatList
+          testID="alerts-list"
+          data={rows}
+          keyExtractor={(r, i) => r.projectId || String(i)}
+          ListEmptyComponent={<Text style={screen.empty}>{t('exec.alerts.empty')}</Text>}
+          renderItem={renderAlert}
+        />
+      </LoadingBoundary>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: spacing.md, gap: spacing.sm },
-  heading: {
-    fontSize: typography.title.fontSize,
-    fontFamily: fontFamily.semibold,
-    color: colors.textPrimary,
-  },
+  boundary: { flex: 1 },
   card: {
     backgroundColor: colors.surface,
-    borderRadius: 8,
+    borderRadius: radius.lg,
     padding: spacing.md,
     marginBottom: spacing.sm,
     gap: spacing.xs,
@@ -123,5 +143,4 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.regular,
     color: colors.textSecondary,
   },
-  empty: { color: colors.textSecondary, fontFamily: fontFamily.regular, padding: spacing.md },
 });

@@ -19,6 +19,7 @@ const makeRepo = () => ({
   findWorkerByUserId: jest.fn(),
   allocateWorker: jest.fn(),
   getProjectWorkforce: jest.fn(),
+  getProjectDirectory: jest.fn(),
   recordAttendance: jest.fn(),
   getAttendanceHistory: jest.fn(),
   submitTimesheet: jest.fn(),
@@ -79,7 +80,13 @@ describe('WorkforceService', () => {
       expect(callArg.hours_worked).toBe(7.5);
     });
 
-    it('writes the checkin event to the outbox with the attendance INSERT', async () => {
+    it('writes the checkin event to the outbox when only check_in_at is set', async () => {
+      repo = makeRepo();
+      service = new WorkforceService(
+        req as unknown as ConstructorParameters<typeof WorkforceService>[0],
+        repo as unknown as WorkforceRepository,
+      );
+
       repo.findWorkerById.mockResolvedValue({ worker_id: 'w1' });
       repo.recordAttendance.mockResolvedValue({ log_id: 'log-1' });
 
@@ -113,6 +120,12 @@ describe('WorkforceService', () => {
 
   describe('timesheet aggregation', () => {
     it('approves timesheet and builds the outbox event from the UPDATEd row', async () => {
+      repo = makeRepo();
+      service = new WorkforceService(
+        req as unknown as ConstructorParameters<typeof WorkforceService>[0],
+        repo as unknown as WorkforceRepository,
+      );
+
       const ts = {
         timesheet_id: 'ts-1',
         worker_id: 'w1',
@@ -243,6 +256,15 @@ describe('WorkforceService', () => {
     });
   });
 
+  describe('getProjectDirectory', () => {
+    it('returns the project crew with its on-site state', async () => {
+      repo.getProjectDirectory.mockResolvedValue([{ worker_id: 'w1', on_site: true }]);
+      const result = await service.getProjectDirectory('proj-1');
+      expect(result).toEqual([{ worker_id: 'w1', on_site: true }]);
+      expect(repo.getProjectDirectory).toHaveBeenCalledWith('proj-1');
+    });
+  });
+
   describe('getAttendanceHistory', () => {
     it('returns attendance logs for worker in date range', async () => {
       repo.findWorkerById.mockResolvedValue({ worker_id: 'w1' });
@@ -282,8 +304,9 @@ describe('WorkforceService', () => {
 
   // ADR-031 / 35.13 ESC-16: the service previously read `req.user?.sub`, which nothing sets, so it
   // always produced the literal 'system'. It now reads `req.userId` with a CLS fallback.
-  describe('userId falls back to CLS when the request carries no context', () => {
-    it('emits an empty actor_id outside a CLS context', async () => {
+  // ADR-031 continued: the same fallback, asserted through the actor_id that reaches the outbox.
+  describe('userId fallback to system', () => {
+    it('uses "system" as actor_id when req.user is undefined', async () => {
       const noUserReq = { tenantId: 'tenant-1' };
       repo = makeRepo();
       service = new WorkforceService(

@@ -41,6 +41,33 @@ scrape_configs:
         target_label: service
         replacement: file-service
 
+  # The remaining FastAPI services. They were never listed here even though their Helm charts
+  # annotate the pods for scraping — so their metrics existed in Kubernetes and nowhere in the
+  # compose stack. All four AI services now serve :9464 (metrics.py).
+  - job_name: ai-ocr-pipeline
+    static_configs:
+      - targets: ['ai-ocr-pipeline:9464']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: service
+        replacement: ai-ocr-pipeline
+
+  - job_name: ai-embedding-worker
+    static_configs:
+      - targets: ['ai-embedding-worker:9464']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: service
+        replacement: ai-embedding-worker
+
+  - job_name: ai-transcription-pipeline
+    static_configs:
+      - targets: ['ai-transcription-pipeline:9464']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: service
+        replacement: ai-transcription-pipeline
+
   # ── Go workers ──────────────────────────────────────────────────────────────
   - job_name: kg-ingestion-worker
     static_configs:

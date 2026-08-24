@@ -143,10 +143,14 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       return;
     }
 
+    // Log the error OBJECT, not just its message. The response deliberately hides the stack (QM-10),
+    // so this line is the only place it can be recovered — logging `.message` alone left a 500 with
+    // nothing but a traceId to debug. The stack never leaves the server: the response body below is
+    // built independently and carries no part of `exception`.
     logger.error(
       {
         requestId: request.requestId,
-        err: exception instanceof Error ? exception.message : String(exception),
+        err: exception instanceof Error ? exception : { message: String(exception) },
       },
       'unhandled.exception',
     );

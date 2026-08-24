@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Construction OS - Settings &amp; Project Tools</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "error": "#ffb4ab",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "tertiary-container": "#686c80",
+                    "on-surface-variant": "#c3c6d7",
+                    "primary-container": "#2563eb",
+                    "on-primary": "#002a78",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "on-secondary": "#003640",
+                    "on-background": "#d3e4fe",
+                    "cos-blue": "#2563EB",
+                    "mobile-success": "#00C853",
+                    "inverse-surface": "#d3e4fe",
+                    "surface-container-highest": "#26364a",
+                    "surface-tint": "#b4c5ff",
+                    "on-primary-container": "#eeefff",
+                    "dark-bg": "#020617",
+                    "cos-navy": "#0B1020",
+                    "dark-surface": "#0F172A",
+                    "on-tertiary": "#2b3041",
+                    "tertiary-fixed": "#dee1f9",
+                    "secondary-container": "#03b5d3",
+                    "error-container": "#93000a",
+                    "outline": "#8d90a0",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "surface-variant": "#26364a",
+                    "surface-container-high": "#1b2b3f",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "primary-fixed": "#dbe1ff",
+                    "surface-container-lowest": "#000f21",
+                    "surface": "#031427",
+                    "on-secondary-fixed": "#001f26",
+                    "outline-variant": "#434655",
+                    "mobile-warning": "#FF9500",
+                    "surface-container": "#102034",
+                    "on-tertiary-fixed": "#161b2b",
+                    "surface-container-low": "#0b1c30",
+                    "on-error-container": "#ffdad6",
+                    "sync-pending": "#94A3B8",
+                    "secondary-fixed": "#acedff",
+                    "sync-active": "#FFD60A",
+                    "surface-dim": "#031427",
+                    "on-tertiary-container": "#eeefff",
+                    "on-primary-fixed": "#00174b",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "primary": "#b4c5ff",
+                    "inverse-on-surface": "#213145",
+                    "cos-cyan": "#06B6D4",
+                    "secondary": "#4cd7f6",
+                    "on-error": "#690005",
+                    "surface-bright": "#2a3a4f",
+                    "on-secondary-container": "#00424e",
+                    "mobile-primary": "#0066FF",
+                    "inverse-primary": "#0053db",
+                    "background": "#031427",
+                    "tertiary": "#c1c5dc",
+                    "on-surface": "#d3e4fe",
+                    "mobile-danger": "#FF3B30",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "cos-white": "#F8FAFC"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "web-space-8": "32px",
+                    "web-space-4": "16px",
+                    "web-space-2": "8px",
+                    "web-space-1": "4px",
+                    "mobile-edge": "24px",
+                    "web-base": "4px",
+                    "web-space-3": "12px",
+                    "mobile-touch-target": "52px"
+            },
+            "fontFamily": {
+                    "web-text-h1": ["Inter Tight"],
+                    "mobile-text-label": ["Inter Tight"],
+                    "web-text-h2": ["Inter Tight"],
+                    "web-text-tiny": ["Inter Tight"],
+                    "web-text-small": ["Inter Tight"],
+                    "mobile-text-body": ["Inter Tight"],
+                    "mobile-text-hero": ["Inter Tight"],
+                    "web-text-display": ["Inter Tight"],
+                    "web-text-body": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "web-text-h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "mobile-text-label": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "web-text-h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "web-text-tiny": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "web-text-small": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                    "mobile-text-body": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "mobile-text-hero": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "web-text-display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "web-text-body": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { background-color: #031427; color: #d3e4fe; -webkit-font-smoothing: antialiased; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; }
+        .glass-panel { background: rgba(16, 32, 52, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(141, 144, 160, 0.1); }
+        .bento-card { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid rgba(141, 144, 160, 0.1); }
+        .bento-card:hover { border-color: #2563EB; background-color: rgba(37, 99, 235, 0.05); }
+        .sync-glow { animation: pulse-opacity 2s infinite; }
+        @keyframes pulse-opacity { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body class="font-web-text-body overflow-hidden">
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 h-14 bg-surface-container-low border-b border-outline-variant flex items-center justify-between px-web-space-4">
+<div class="flex items-center gap-web-space-4">
+<span class="font-web-text-h1 text-web-text-h1 font-extrabold text-cos-blue">Construction OS</span>
+<div class="hidden md:flex gap-web-space-4 ml-web-space-8 h-14 items-center">
+<a class="font-web-text-body text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer" href="#">Dashboard</a>
+<a class="font-web-text-body text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer" href="#">Field View</a>
+<a class="font-web-text-body text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer" href="#">Reports</a>
+<a class="font-web-text-body text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer" href="#">BIM</a>
+</div>
+</div>
+<div class="flex items-center gap-web-space-3">
+<button class="p-2 hover:bg-surface-container-highest rounded-lg transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-primary" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 hover:bg-surface-container-highest rounded-lg transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-primary" data-icon="help_outline">help_outline</span>
+</button>
+<div class="h-8 w-8 rounded-full bg-primary-container flex items-center justify-center overflow-hidden ml-2 border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of Alex Rivers, a male site engineer in his 30s, wearing a dark blue tactical work shirt and a serious, focused expression. The portrait is taken in a studio with high-contrast, moody industrial lighting and a background suggesting a modern construction office with blue architectural schematics. High fidelity, corporate portraiture style with a cool, monochromatic navy and blue color palette." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBk8vvU2glTiTU2N4m1DpKi9Hqk5x_Sxdep2OmDk1shW41voO1PNDYjgwSxJhdi6bslJP85hraVJ7XZKdIH2FwZ0MtDbA45TfuVqdUhCCF0Qo8b3zWxHOZllFA-MyXJLvUB5K0D9AD2x1sYg4QHAHGiDBRHP1GTn0ll_4sJ_qCS-pkAiNBNK9O21SXJ3zsEaQX1ww18Rj2-t5GK1YQ3h_GUGGOoom_MZ12jkVAt24Uj8laL-4iZnx8f5v3elKk3DeDNeZ1iks3yFjs"/>
+</div>
+</div>
+</nav>
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-14 h-[calc(100vh-3.5rem)] w-64 bg-surface-container border-r border-outline-variant flex flex-col p-web-space-2 gap-y-1">
+<div class="p-3 mb-4 flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-cos-blue flex items-center justify-center font-bold text-white">A</div>
+<div>
+<div class="font-web-text-h2 text-web-text-h2 text-on-surface">Project Alpha</div>
+<div class="font-web-text-small text-web-text-small text-on-surface-variant">Site Admin Hub</div>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 p-2 bg-primary-container text-on-primary-container font-semibold rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-web-text-small">Profile</span>
+</a>
+<a class="flex items-center gap-3 p-2 text-on-surface-variant hover:bg-surface-variant hover:text-on-surface rounded-lg transition-all scale-98 active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="map">map</span>
+<span class="font-web-text-small">Offline Maps</span>
+</a>
+<a class="flex items-center gap-3 p-2 text-on-surface-variant hover:bg-surface-variant hover:text-on-surface rounded-lg transition-all scale-98 active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="precision_manufacturing">precision_manufacturing</span>
+<span class="font-web-text-small">Equipment Log</span>
+</a>
+<a class="flex items-center gap-3 p-2 text-on-surface-variant hover:bg-surface-variant hover:text-on-surface rounded-lg transition-all scale-98 active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="font-web-text-small">Material Inventory</span>
+</a>
+<a class="flex items-center gap-3 p-2 text-on-surface-variant hover:bg-surface-variant hover:text-on-surface rounded-lg transition-all scale-98 active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="groups">groups</span>
+<span class="font-web-text-small">Team Directory</span>
+</a>
+<a class="flex items-center gap-3 p-2 text-on-surface-variant hover:bg-surface-variant hover:text-on-surface rounded-lg transition-all scale-98 active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="sync">sync</span>
+<span class="font-web-text-small">Sync Settings</span>
+</a>
+</nav>
+<div class="mt-auto border-t border-outline-variant pt-2 space-y-1">
+<button class="w-full flex items-center justify-center gap-2 py-2 mb-2 bg-cos-blue text-white rounded font-web-text-small font-bold hover:brightness-110 transition-all">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span> Add Tool
+            </button>
+<a class="flex items-center gap-3 p-2 text-on-surface-variant hover:bg-surface-variant hover:text-on-surface rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="contact_support">contact_support</span>
+<span class="font-web-text-small">Support</span>
+</a>
+<a class="flex items-center gap-3 p-2 text-error hover:bg-error-container/20 rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span class="font-web-text-small">Logout</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-64 mt-14 p-web-space-8 min-h-[calc(100vh-3.5rem)] bg-dark-bg relative overflow-y-auto">
+<!-- Technical Background Element -->
+
+<div class="max-w-6xl mx-auto relative z-10">
+<!-- Header Section -->
+<header class="flex justify-between items-end mb-web-space-8">
+<div>
+<h1 class="font-web-text-display text-web-text-display text-on-surface mb-1">Settings &amp; Project Tools</h1>
+<p class="font-web-text-body text-on-surface-variant">System configuration and mission-critical field utilities for Project Alpha.</p>
+</div>
+<div class="flex items-center gap-2 bg-surface-container-high px-3 py-1.5 rounded border border-outline-variant">
+<span class="w-2 h-2 rounded-full bg-mobile-success"></span>
+<span class="font-web-text-tiny uppercase text-on-surface-variant">Systems Nominal</span>
+</div>
+</header>
+<!-- Bento Layout Grid -->
+<div class="grid grid-cols-12 gap-web-space-4">
+<!-- Profile Section (Spans 4 columns) -->
+<div class="col-span-12 lg:col-span-4 flex flex-col gap-web-space-4">
+<div class="glass-panel p-web-space-4 rounded-xl flex flex-col items-center text-center">
+<div class="relative group cursor-pointer mb-web-space-4">
+<div class="w-24 h-24 rounded-full border-2 border-cos-blue p-1">
+<img class="w-full h-full rounded-full object-cover" data-alt="Close up high-resolution professional portrait of Alex Rivers, a site supervisor in construction safety gear. Sharp focus on face, soft bokeh of structural steel in the background. Industrial corporate photography with cyan and navy blue color tones. Minimalist and authoritative vibe." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC0FMFYQOIx-HiZpQQ1Jwdq-12x5Hu1E74j_g4I7mgjsutDFtJGo_hKsMHZ3ALzFR1pBqFcJPRx54bLNGinQBBIkb_XXVo6KriQnNja5nuito3yVmcazEfu8ElKAm2zv2K9tW9iMF_-uvnXchz8x_qNp-eLradZqMjO-UiKKlqaVxLLDfajlizUlbsbyfoiMiVmZC_kRvlPwikk8N61fo8HghrMxSow8DwkNxPrZigZITbc0nmTPddHEa0EYsEsXkdI-ejHGz6G9wc"/>
+</div>
+<div class="absolute bottom-0 right-0 bg-cos-blue w-8 h-8 rounded-full border-2 border-surface flex items-center justify-center">
+<span class="material-symbols-outlined text-[16px] text-white" data-icon="edit">edit</span>
+</div>
+</div>
+<h2 class="font-web-text-h1 text-web-text-h1 text-on-surface">Alex Rivers</h2>
+<p class="font-web-text-body text-on-secondary-container bg-secondary-container/20 px-3 py-0.5 rounded-full mt-1 border border-secondary-container/30">Supervisor - Site A</p>
+<div class="w-full mt-web-space-8 grid grid-cols-2 gap-2 text-left">
+<div class="p-3 bg-surface-container rounded-lg border border-outline-variant/30">
+<span class="font-web-text-tiny text-on-surface-variant block uppercase mb-1">Employee ID</span>
+<span class="font-web-text-body text-on-surface font-mono">COS-9928-ALPHA</span>
+</div>
+<div class="p-3 bg-surface-container rounded-lg border border-outline-variant/30">
+<span class="font-web-text-tiny text-on-surface-variant block uppercase mb-1">Active Shifts</span>
+<span class="font-web-text-body text-on-surface">14 Consecutive</span>
+</div>
+</div>
+</div>
+<!-- Sync Status Widget -->
+<div class="glass-panel p-web-space-4 rounded-xl border-l-4 border-l-mobile-warning">
+<div class="flex justify-between items-center mb-2">
+<h3 class="font-web-text-small font-bold text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-mobile-warning text-sm" data-icon="cloud_sync" style="font-variation-settings: 'FILL' 1;">cloud_sync</span>
+                                DATA SYNCHRONIZATION
+                            </h3>
+<span class="font-web-text-tiny px-2 py-0.5 bg-mobile-warning/20 text-mobile-warning rounded border border-mobile-warning/30 sync-glow">PENDING</span>
+</div>
+<p class="font-web-text-tiny text-on-surface-variant">42 field updates queued for local storage. Last sync 2h ago.</p>
+<button class="w-full mt-3 py-2 bg-surface-container-highest hover:bg-cos-blue transition-colors text-white text-web-text-tiny font-bold rounded uppercase">Force Sync Now</button>
+</div>
+</div>
+<!-- Project Tools Grid (Spans 8 columns) -->
+<div class="col-span-12 lg:col-span-8">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-web-space-4">
+<!-- Offline Map Tool -->
+<div class="bento-card glass-panel rounded-xl overflow-hidden group cursor-pointer h-full min-h-[160px]">
+<div class="p-web-space-4 flex justify-between items-start h-full">
+<div class="flex flex-col h-full justify-between">
+<div>
+<div class="w-10 h-10 bg-cos-blue/10 rounded flex items-center justify-center mb-3">
+<span class="material-symbols-outlined text-cos-blue" data-icon="map">map</span>
+</div>
+<h3 class="font-web-text-h2 text-web-text-h2">Offline Map</h3>
+<p class="font-web-text-body text-on-surface-variant text-xs">แผนที่ออฟไลน์</p>
+</div>
+<p class="font-web-text-small text-on-surface-variant opacity-70 mt-4">Cached blueprints and geospatial site maps for no-signal zones.</p>
+</div>
+<div class="w-24 h-full bg-surface-container-highest/50 rounded-lg relative overflow-hidden">
+<div class="absolute inset-0 opacity-40 grayscale group-hover:grayscale-0 transition-all" data-alt="A highly detailed topographic site survey map of a massive infrastructure project. The map features sharp contour lines, technical coordinates, and highlighted sectors in blue and cyan. The visual style is that of a modern digital CAD drawing with a dark, high-contrast palette. Professional GIS data visualization for heavy construction." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuA5Yawc6NivKtNHY1-qkZRt_3Tr1u9x-DmFJvvJ2yo3MiMgKgzb4hxb2LtZIsGV3_FBV6FKHG2GckOfVCUVcGZHN8bvwqOTWEzn-Rt_sKix5KIvxRNOw3zqtQO7pMeUS3y52pbmTz0iDFbAE8CKsR6rj-q53iMGpjLMV9XURGj30cddZbWN65b_Ylp0vZkn2W3rcJXCXjdj6fQ3818gkgFbrxH_E1p-B3KzvE0nvkb9ORxqDiXMljGAFzrJIx9UcAObu_dKTHzFBhs')"></div>
+</div>
+</div>
+</div>
+<!-- Equipment Log Tool -->
+<div class="bento-card glass-panel rounded-xl group cursor-pointer">
+<div class="p-web-space-4 h-full flex flex-col">
+<div class="w-10 h-10 bg-cos-cyan/10 rounded flex items-center justify-center mb-3">
+<span class="material-symbols-outlined text-cos-cyan" data-icon="precision_manufacturing">precision_manufacturing</span>
+</div>
+<h3 class="font-web-text-h2 text-web-text-h2">Equipment Log</h3>
+<p class="font-web-text-body text-on-surface-variant text-xs">บันทึกเครื่องจักร</p>
+<div class="mt-auto pt-6 flex items-center gap-4 border-t border-outline-variant/10">
+<div>
+<span class="block font-web-text-tiny text-on-surface-variant uppercase">Active Units</span>
+<span class="font-web-text-h2 text-cos-cyan">24</span>
+</div>
+<div class="w-px h-8 bg-outline-variant/30"></div>
+<div>
+<span class="block font-web-text-tiny text-on-surface-variant uppercase">Maintenance</span>
+<span class="font-web-text-h2 text-mobile-warning">3</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Material Inventory -->
+<div class="bento-card glass-panel rounded-xl group cursor-pointer md:col-span-2">
+<div class="p-web-space-4 flex flex-col md:flex-row gap-6">
+<div class="flex-1">
+<div class="w-10 h-10 bg-primary-container/10 rounded flex items-center justify-center mb-3">
+<span class="material-symbols-outlined text-primary" data-icon="inventory_2">inventory_2</span>
+</div>
+<h3 class="font-web-text-h2 text-web-text-h2">Material Inventory</h3>
+<p class="font-web-text-body text-on-surface-variant text-xs">คลังวัสดุ</p>
+<p class="font-web-text-small text-on-surface-variant mt-4 max-w-sm">Live tracking of cement, steel, and fuel levels across all site sectors.</p>
+</div>
+<div class="flex gap-2">
+<div class="w-32 h-24 bg-surface-container rounded-lg border border-outline-variant/30 flex flex-col items-center justify-center">
+<div class="w-12 h-1.5 bg-surface-container-highest rounded-full mb-2 overflow-hidden">
+<div class="h-full bg-cos-blue w-4/5"></div>
+</div>
+<span class="font-web-text-tiny text-on-surface-variant">STEEL REBAR</span>
+</div>
+<div class="w-32 h-24 bg-surface-container rounded-lg border border-outline-variant/30 flex flex-col items-center justify-center">
+<div class="w-12 h-1.5 bg-surface-container-highest rounded-full mb-2 overflow-hidden">
+<div class="h-full bg-mobile-danger w-1/5"></div>
+</div>
+<span class="font-web-text-tiny text-on-surface-variant text-mobile-danger">CEMENT MIX</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Administration List/Grid -->
+<div class="md:col-span-2 mt-4">
+<h4 class="font-web-text-tiny uppercase text-on-surface-variant tracking-widest mb-4">Administration &amp; Management</h4>
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+<div class="glass-panel p-3 rounded-lg border border-outline-variant/30 hover:bg-surface-variant/40 cursor-pointer transition-colors flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface text-lg" data-icon="groups">groups</span>
+</div>
+<div>
+<p class="font-web-text-small font-bold">Team Directory</p>
+<p class="font-web-text-tiny text-on-surface-variant">รายชื่อทีม</p>
+</div>
+</div>
+<div class="glass-panel p-3 rounded-lg border border-outline-variant/30 hover:bg-surface-variant/40 cursor-pointer transition-colors flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface text-lg" data-icon="sync">sync</span>
+</div>
+<div>
+<p class="font-web-text-small font-bold">Sync Settings</p>
+<p class="font-web-text-tiny text-on-surface-variant">การตั้งค่าซิงค์</p>
+</div>
+</div>
+<div class="glass-panel p-3 rounded-lg border border-outline-variant/30 hover:bg-surface-variant/40 cursor-pointer transition-colors flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface text-lg" data-icon="contact_support">contact_support</span>
+</div>
+<div>
+<p class="font-web-text-small font-bold">Support</p>
+<p class="font-web-text-tiny text-on-surface-variant">ความช่วยเหลือ</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- AI Insight Module (Contextual) -->
+<div class="mt-web-space-8 glass-panel p-web-space-4 rounded-xl border-l-4 border-l-cos-cyan flex items-start gap-4 bg-cos-cyan/5">
+<span class="material-symbols-outlined text-cos-cyan mt-1" data-icon="auto_awesome" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<div>
+<h5 class="font-web-text-small font-bold text-cos-cyan">AI ENGINEER INSIGHT</h5>
+<p class="font-web-text-body text-on-surface-variant mt-1">
+                        Predictive maintenance alert: Excavator #04 is showing early hydraulic vibration patterns consistent with seal fatigue. Recommended inspection before the night shift begins to prevent 4h of downtime.
+                    </p>
+</div>
+<button class="ml-auto px-4 py-2 bg-cos-cyan text-on-secondary rounded font-web-text-small font-bold hover:brightness-110 transition-all">Review Telemetry</button>
+</div>
+</div>
+</main>
+<!-- Footer Action Overlay (Desktop) -->
+<div class="fixed bottom-0 left-64 right-0 h-16 glass-panel border-t border-outline-variant px-web-space-8 flex items-center justify-between z-40">
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2">
+<span class="font-web-text-tiny text-on-surface-variant uppercase">Local DB Status:</span>
+<span class="font-web-text-tiny text-mobile-success font-bold">ENCRYPTED</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-web-text-tiny text-on-surface-variant uppercase">Last Auth:</span>
+<span class="font-web-text-tiny text-on-surface font-bold">08:00 AM Today</span>
+</div>
+</div>
+<button class="group flex items-center gap-2 px-6 py-2 bg-error/10 hover:bg-error text-error hover:text-on-error border border-error/20 rounded transition-all duration-300">
+<span class="material-symbols-outlined text-lg group-hover:rotate-12 transition-transform" data-icon="logout">logout</span>
+<span class="font-web-text-small font-bold uppercase tracking-wider">Logout Session</span>
+</button>
+</div>
+<script>
+        // Micro-interaction for hover effects on bento cards
+        document.querySelectorAll('.bento-card').forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                card.style.setProperty('--mouse-x', `${x}px`);
+                card.style.setProperty('--mouse-y', `${y}px`);
+            });
+        });
+    </script>
+</body></html>

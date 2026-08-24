@@ -1,12 +1,14 @@
 // Budget screen — FINANCE: budget vs committed vs actual per project (read-only).
 // Pick a project → GET /finance/budget/:projectId → { budget, lines, variance_percentage }.
 
-import { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { memo, useCallback, useState } from 'react';
+import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { get } from '../../api/client';
 import { ProjectPicker } from '../../components/ProjectPicker';
+import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { useT } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
+import { screen } from '../../theme/screenStyles';
 
 interface ProjectBudget {
   total_budget_amount: string;
@@ -22,20 +24,38 @@ interface BudgetResponse {
   variance_percentage: string;
 }
 
+/** One budget line, memoized — the row of the only unbounded list on this screen. */
+const BudgetLine = memo(function BudgetLine({
+  line,
+}: {
+  line: { line_id: string; line_name: string; allocated_amount: string };
+}) {
+  return (
+    <View style={screen.kvRow}>
+      <Text style={screen.kvKey}>{line.line_name}</Text>
+      <Text style={screen.kvValue}>{line.allocated_amount}</Text>
+    </View>
+  );
+});
+
 export default function BudgetScreen() {
   const [projectId, setProjectId] = useState('');
   const [data, setData] = useState<BudgetResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const t = useT();
 
   const onSelect = async (id: string): Promise<void> => {
     setProjectId(id);
     setError(null);
+    setLoading(true);
     try {
       setData(await get<BudgetResponse>(`/finance/budget/${id}`));
     } catch {
       setError(t('finance.budget.loadError'));
       setData(null);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -65,69 +85,61 @@ export default function BudgetScreen() {
       ] as Array<[string, string, string | null]>)
     : [];
 
+  const renderLine = useCallback(
+    ({ item }: { item: { line_id: string; line_name: string; allocated_amount: string } }) => (
+      <BudgetLine line={item} />
+    ),
+    [],
+  );
+
   return (
-    <ScrollView
-      testID="budget-screen"
-      style={styles.container}
-      contentContainerStyle={styles.content}
-    >
-      <Text style={styles.heading}>{t('finance.budget.title')}</Text>
-      <ProjectPicker selectedId={projectId} onSelect={onSelect} />
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      {data ? (
-        <>
-          <View testID="budget-figures">
-            {figures.map(([label, value, color]) => (
-              <View key={label} style={styles.row}>
-                <Text style={styles.key}>{label}</Text>
-                <Text style={[styles.value, color ? { color } : null]}>{value}</Text>
-              </View>
-            ))}
-          </View>
-          {data.lines.length > 0 ? (
-            <View testID="budget-lines" style={styles.lines}>
-              <Text style={styles.linesHeading}>{t('finance.budget.lines')}</Text>
-              {data.lines.map((line) => (
-                <View key={line.line_id} style={styles.row}>
-                  <Text style={styles.key}>{line.line_name}</Text>
-                  <Text style={styles.value}>{line.allocated_amount}</Text>
+    <View testID="budget-screen" style={styles.container}>
+      <FlatList
+        contentContainerStyle={styles.content}
+        // `lines` is the one unbounded thing here: findLinesByBudget carries no LIMIT and
+        // POST /finance/budget/:id/lines adds rows without bound, so a long-running project's
+        // budget mounted every line at once. The five summary FIGURES above it are a fixed tuple
+        // and stay in the header, along with the picker and the error line, so they scroll with the
+        // list exactly as they did inside the ScrollView this replaced.
+        data={data?.lines ?? []}
+        keyExtractor={(line) => line.line_id}
+        renderItem={renderLine}
+        ListHeaderComponent={
+          <View style={styles.header}>
+            <ProjectPicker selectedId={projectId} onSelect={onSelect} />
+            {error ? <Text style={styles.error}>{error}</Text> : null}
+            {/* Loader only while a picked project's budget is in flight — never on the prompt. */}
+            <LoadingBoundary loading={loading} variant="widget" theme="light">
+              {data ? (
+                <View testID="budget-figures">
+                  {figures.map(([label, value, color]) => (
+                    <View key={label} style={screen.kvRow}>
+                      <Text style={screen.kvKey}>{label}</Text>
+                      <Text style={[screen.kvValue, color ? { color } : null]}>{value}</Text>
+                    </View>
+                  ))}
                 </View>
-              ))}
-            </View>
-          ) : null}
-        </>
-      ) : (
-        <Text style={styles.empty}>{t('finance.budget.selectPrompt')}</Text>
-      )}
-    </ScrollView>
+              ) : (
+                <Text style={screen.empty}>{t('finance.budget.selectPrompt')}</Text>
+              )}
+            </LoadingBoundary>
+            {/* The heading belongs to the lines, so it appears only when there are lines to head. */}
+            {data && data.lines.length > 0 ? (
+              <View testID="budget-lines" style={styles.lines}>
+                <Text style={styles.linesHeading}>{t('finance.budget.lines')}</Text>
+              </View>
+            ) : null}
+          </View>
+        }
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   content: { padding: spacing.md, gap: spacing.sm },
-  heading: {
-    fontSize: typography.title.fontSize,
-    fontFamily: fontFamily.semibold,
-    color: colors.textPrimary,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surface,
-  },
-  key: {
-    fontSize: typography.body.fontSize,
-    fontFamily: fontFamily.regular,
-    color: colors.textSecondary,
-  },
-  value: {
-    fontSize: typography.body.fontSize,
-    fontFamily: fontFamily.semibold,
-    color: colors.textPrimary,
-  },
+  header: { gap: spacing.sm },
   lines: { marginTop: spacing.md },
   linesHeading: {
     fontSize: typography.body.fontSize,
@@ -140,5 +152,4 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.regular,
     fontSize: typography.caption.fontSize,
   },
-  empty: { color: colors.textSecondary, fontFamily: fontFamily.regular, padding: spacing.md },
 });

@@ -2,6 +2,8 @@
 
 **Date:** 2026-07-01
 **Status:** Accepted
+**Supersedes (in part):** the `next-pwa` / Workbox library choice in **ADR-016** (that ADR's
+unification decision — one `apps/web/` for online + offline — still stands)
 **Deciders:** Product owner / engineering lead
 **Tags:** architecture, web
 

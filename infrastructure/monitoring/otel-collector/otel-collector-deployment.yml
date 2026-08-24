@@ -23,6 +23,18 @@ spec:
         - name: otel-collector
           image: otel/opentelemetry-collector-contrib:0.103.0
           args: ['--config=/conf/otel-collector-config.yml']
+          # BOTH vars are MANDATORY. Collector 0.103.0 has no default-value substitution syntax
+          # (`${env:VAR:-default}` is rejected), and an unset var resolves to an empty string —
+          # so omitting either yields an invalid config, not a safe fallback. See ADR-075.
+          env:
+            # Populates deployment.environment on every span. Override per overlay:
+            # development | staging | production.
+            - name: ENV
+              value: 'production'
+            # tail_sampling probabilistic baseline, in PERCENT (0–100) — spec §31.5:
+            # development=100, staging=10, production=1.
+            - name: OTEL_SAMPLING_PERCENTAGE
+              value: '1'
           ports:
             - containerPort: 4317 # OTLP gRPC
               name: otlp-grpc
@@ -60,16 +72,13 @@ spec:
         - name: config
           configMap:
             name: otel-collector-config
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: otel-collector-config
-  namespace: monitoring
-data:
-  otel-collector-config.yml: |
-    # See infrastructure/monitoring/otel-collector/otel-collector-config.yml
-    # Mounted from this ConfigMap at runtime
+
+
+# NOTE: the otel-collector-config ConfigMap is NOT declared in this file. It is generated from the
+# real otel-collector-config.yml by the kustomize configMapGenerator in kustomization.yaml, which
+# also appends a content hash to the name so a config change rolls the pods. A hand-written
+# ConfigMap used to sit here containing only two comment lines — the collector would have mounted an
+# empty config. Deploy with `kubectl apply -k` on an overlay, never `kubectl apply -f` on this file.
 ---
 apiVersion: v1
 kind: Service

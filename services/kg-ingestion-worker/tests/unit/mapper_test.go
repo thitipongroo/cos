@@ -189,11 +189,11 @@ func TestMapDeliveryReceived_TenantIsolationInAllOps(t *testing.T) {
 
 func TestMapVendorInvoiceApproved_FourOps(t *testing.T) {
 	env := envelope("procurement.vendor_invoice.approved.v1", "ev-6", "t-abc", map[string]any{
-		"invoice_id": "inv-99",
-		"po_id":      "po-555",
-		"project_id": "proj-001",
-		"vendor_id":  "vendor-77",
-		"amount":     map[string]any{"amount": "250000", "currency_code": "THB"},
+		"invoice_id":  "inv-99",
+		"po_id":       "po-555",
+		"project_id":  "proj-001",
+		"vendor_id":   "vendor-77",
+		"amount":      map[string]any{"amount": "250000", "currency_code": "THB"},
 		"approved_at": "2026-06-07T12:00:00Z",
 	})
 

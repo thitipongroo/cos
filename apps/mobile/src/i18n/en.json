@@ -2,6 +2,7 @@
   "common": {
     "appName": "Construction OS",
     "back": "← Back",
+    "optional": "(optional)",
     "featureFlag": {
       "disabled": "This feature is temporarily disabled"
     },
@@ -10,8 +11,13 @@
     },
     "project": {
       "label": "Project",
-      "empty": "No projects cached — connect once to load"
-    }
+      "empty": "No projects cached — connect once to load",
+      "option": "Project {code}"
+    },
+    "loadingLabel": "Loading…",
+    "comingSoon": "Not available yet.",
+    "onlineOnly": "This action needs a connection — it cannot be saved offline.",
+    "close": "Close"
   },
   "nav": {
     "tabs": {
@@ -21,6 +27,8 @@
       "reports": "Reports",
       "issues": "Issues",
       "inspections": "Inspections",
+      "checklists": "Checklists",
+      "permits": "Permits",
       "projects": "Projects",
       "procurement": "Procurement",
       "dashboard": "Dashboard",
@@ -33,32 +41,662 @@
       "orders": "Orders",
       "deliveries": "Deliveries",
       "incidents": "Incidents",
-      "profile": "Profile"
+      "profile": "Profile",
+      "users": "Users",
+      "settings": "Settings",
+      "leads": "Leads",
+      "opportunities": "Opportunities",
+      "customers": "Customers",
+      "directory": "Directory",
+      "safety": "Safety",
+      "approvals": "Approvals",
+      "vendors": "Vendors",
+      "finance": "Finance",
+      "more": "More"
     }
   },
   "auth": {
     "login": {
-      "phonePlaceholder": "+66812345678",
+      "phonePlaceholder": "e.g. 0812345678",
+      "phoneLabel": "Phone number",
       "otpPlaceholder": "6-digit code",
       "sendOtp": "Send OTP",
       "verify": "Verify",
+      "verifyContinue": "Verify & Continue",
+      "verifyTitle": "Verify identity",
+      "verifySubtitle": "Enter the 6-digit code sent to",
+      "resendPrompt": "Didn't receive code?",
+      "resendCode": "Resend Code",
+      "securityProtocol": "Security Protocol",
+      "heroTitle": "AI-NATIVE",
+      "heroSubtitle": "Secure access for field operations and enterprise project management.",
+      "fieldWorkerAccess": "Field Worker Access",
+      "or": "or",
+      "loginEmail": "Login with Email",
+      "officeHelper": "OFFICE STAFF AND PROJECT MANAGEMENT",
+      "systemOperational": "System Operational",
       "otpSendError": "Could not send OTP. Check the phone number and try again.",
       "otpVerifyError": "Invalid or expired OTP. Please try again.",
       "office": "Office login (email / password)",
       "fieldWorker": "Field worker — sign in with phone (OTP)",
-      "backToOffice": "← Back to office login",
+      "backToOffice": "← Back to main screen",
       "oidcError": "Sign-in failed. Please try again.",
-      "countryLabel": "Country"
+      "countryLabel": "Country",
+      "heroTitle2": "Construction Platform",
+      "appName": "CONSTRUCTION OS",
+      "privacyPolicy": "PRIVACY POLICY",
+      "termsOfUse": "TERMS OF USE",
+      "copyright": "© {year} CONSTRUCTION OS.",
+      "getSupport": "Get Support",
+      "privacyData": "Privacy Data",
+      "statusOk": "System",
+      "statusError": "Error",
+      "footerStatus": "{status} : Version {version}",
+      "securityNoteTrusted": "This device is verified as trusted",
+      "securityNoteUntrusted": "This device is not yet verified",
+      "securityNoteChecking": "Checking device…",
+      "resendCodeIn": "Resend in {seconds}s"
+    },
+    "loading": {
+      "title": "Verifying security code",
+      "status": "System Authentication in Progress",
+      "securing": "Securing Session Context"
+    }
+  },
+  "privacy": {
+    "policy": {
+      "title": "Privacy Policy",
+      "back": "Back",
+      "encrypted": "Encrypted",
+      "brandName": "Construction OS",
+      "subtitle": "Personal Data Protection Framework v{version}",
+      "complianceBadge": "Compliant with PDPA & GDPR",
+      "intro": "This policy explains what personal data Construction OS collects, how it is processed, and the rights you can exercise over it. It applies to the mobile app, the web app, and the platform services behind them.",
+      "lastUpdated": "Last updated: {date}",
+      "sections": {
+        "collection": {
+          "title": "Data Collection",
+          "body": "We collect only the personal data needed to run construction operations and to meet safety and legal obligations:",
+          "items": {
+            "identity": "Identity — your full name, and your employee code on workforce records.",
+            "contact": "Contact — your phone number and email address, used for sign-in and notifications.",
+            "location": "Location — GPS coordinates attached to check-in/check-out, daily site reports, issues, safety incidents and inspections. Coordinates are optional on every one of those records. Check-in coordinates are kept for 90 days and then reduced to a daily count; coordinates on the other records are kept for as long as the record itself.",
+            "photos": "Site photos — images attached to site reports and inspections. Faces may appear; no facial recognition is performed.",
+            "financial": "Payroll — your agreed daily rate on a project. No bank account details are stored."
+          },
+          "note": "We do not collect biometric identifiers such as fingerprints or face scans, and we run no facial recognition on any image. Site photos may incidentally show a person's face; those images are protected by the same project access controls as the record they belong to. We also do not collect national ID numbers or dates of birth. The retention period for each data type is defined in our data retention policy."
+        },
+        "usage": {
+          "title": "Data Usage",
+          "body": "Your data is used to operate your projects, to record safety and quality compliance, and to produce the reports your organisation relies on.",
+          "quote": "Analytics run on aggregated figures and pseudonymous identifiers, and personal data is removed before any text is sent to an AI model.",
+          "processors": "Processing takes place on our platform and with a limited set of service providers under data processing agreements: cloud infrastructure and storage, identity, edge protection, workflow, and the AI report service.",
+          "residency": "Data is stored in your organisation's assigned home region — Thailand (ap-southeast-7) for Thai organisations, Ireland (eu-west-1) for EU organisations, and Singapore (ap-southeast-1) otherwise — with Singapore acting as the disaster-recovery region for Thai data. One exception: sign-in codes are delivered through an SMS gateway in Singapore, so your phone number reaches that gateway when you sign in."
+        },
+        "compliance": {
+          "title": "PDPA & GDPR",
+          "body": "Under the Thai Personal Data Protection Act and the GDPR you may exercise the following rights:",
+          "rights": {
+            "access": "Right to access — obtain a copy of the personal data we hold about you.",
+            "portability": "Right to portability — receive your data in a machine-readable format.",
+            "erasure": "Right to erasure — have your identity data removed. Records subject to a legal retention period are anonymised rather than deleted.",
+            "restrict": "Right to restrict processing — have processing of your data suspended."
+          },
+          "deadline": "We respond to a verified request within 30 days."
+        },
+        "security": {
+          "title": "Technical Security",
+          "body": "Personal data is protected by the following controls:",
+          "controls": {
+            "atRest": "AES-256 encryption at rest, with keys held in cloud hardware security modules",
+            "fieldLevel": "AES-256-GCM field-level encryption for secrets",
+            "tls": "TLS 1.3 minimum on all public endpoints",
+            "mesh": "Zero-trust service mesh with mutual TLS",
+            "isolation": "Row-level security isolating each organisation"
+          },
+          "trustCenter": "Full control status, certificate references and our sub-processor list are published on our Trust Center."
+        },
+        "rights": {
+          "title": "User Rights",
+          "body": "Change which notifications you receive in notification settings. Access, portability, erasure and restriction requests go to our DPO.",
+          "contact": "Withdrawing consent for safety-related data collection may limit access to areas of a site where that data is required."
+        }
+      },
+      "contact": {
+        "label": "Contact Data Protection Office",
+        "form": "Send a request",
+        "pending": "Contact address not yet published"
+      },
+      "downloadPdf": "DOWNLOAD PDF POLICY",
+      "comingSoon": "Coming soon",
+      "copyright": "© {year} CONSTRUCTION OS, All rights reserved."
+    },
+    "detail": {
+      "dataCollection": {
+        "title": "Data Collection",
+        "intro": "These are the categories of information the platform records while work is carried out on a site.",
+        "sections": {
+          "collected": {
+            "label": "Collected today"
+          },
+          "planned": {
+            "label": "Planned — not collected yet"
+          }
+        },
+        "cards": {
+          "identity": {
+            "title": "Identity",
+            "body": "Your full name and your employee code on workforce records, used to confirm who carried out a piece of work."
+          },
+          "location": {
+            "title": "Location & GPS",
+            "body": "GPS points optionally attached to check-in, daily reports, issues, incidents and inspections. Check-in points are kept 90 days."
+          },
+          "technicalLogs": {
+            "title": "Technical logs",
+            "body": "Request traces, errors and performance figures, used to keep the platform running and to investigate faults."
+          },
+          "aiOcr": {
+            "title": "AI & OCR extraction",
+            "body": "Photographed documents are read on our servers to pull out figures. Personal data is removed before any text reaches a model."
+          },
+          "geofencing": {
+            "title": "Site geofencing",
+            "body": "Boundary alerts around a site perimeter. Not built: no geofence exists anywhere in the platform, and none is collected from you."
+          },
+          "iot": {
+            "title": "IoT & machine sensors",
+            "body": "Environment and machinery telemetry from connected site equipment. The pipeline is specified but is not running at this stage."
+          },
+          "onDeviceAi": {
+            "title": "On-device AI",
+            "body": "Running extraction on the handset rather than our servers. Today every model runs server-side; nothing is inferred on your device."
+          }
+        },
+        "footnote": "We do not collect biometric identifiers, national ID numbers or dates of birth, and we run no facial recognition on any image. The retention period for each category is set in our data retention policy."
+      },
+      "dataUsage": {
+        "title": "Data Usage",
+        "intro": "What the information above is used for, and what it is not used for.",
+        "sections": {
+          "today": {
+            "label": "In use today"
+          },
+          "planned": {
+            "label": "Planned — not in use yet"
+          }
+        },
+        "cards": {
+          "safety": {
+            "title": "Safety & security",
+            "body": "Incident records, permit checks and sign-in evidence, so everyone on site is accounted for and hazards stay traceable."
+          },
+          "efficiency": {
+            "title": "Operational efficiency",
+            "body": "Scheduling, material movements and progress tracking, so delays and cost overruns are visible while they can still be acted on."
+          },
+          "compliance": {
+            "title": "Compliance & legal",
+            "body": "Audit records and retained evidence, produced when a regulator, client or insurer needs proof of how work was carried out."
+          },
+          "aiTraining": {
+            "title": "AI model training",
+            "body": "Training forecasting and risk models on operational data. Nothing is trained today: each model has a data threshold this stage has not met."
+          }
+        },
+        "footnote": "Analytics run on aggregated figures and pseudonymous identifiers, and personal data is removed before any text is sent to an AI model."
+      },
+      "pdpaGdpr": {
+        "title": "PDPA & GDPR",
+        "intro": "This platform is built to the Thai Personal Data Protection Act and the EU General Data Protection Regulation.",
+        "sections": {
+          "principles": {
+            "label": "Protection principles"
+          },
+          "regional": {
+            "label": "Regional compliance"
+          },
+          "residency": {
+            "label": "Data residency"
+          },
+          "certifications": {
+            "label": "Certifications"
+          }
+        },
+        "cards": {
+          "sovereignty": {
+            "title": "Sovereignty",
+            "body": "You keep control of your own data, including the right to see it, correct it and have it erased."
+          },
+          "integrity": {
+            "title": "Integrity",
+            "body": "Data is encrypted both at rest and in transit, so it cannot be read by anyone who is not authorised to."
+          },
+          "purpose": {
+            "title": "Purpose limitation",
+            "body": "Processing is confined to the purposes named in this notice. A new purpose needs a new lawful basis."
+          },
+          "thaiPdpa": {
+            "title": "Thai PDPA",
+            "body": "Personal Data Protection Act B.E. 2562 — the framework this notice is written against for Thai organisations."
+          },
+          "euGdpr": {
+            "title": "EU GDPR",
+            "body": "General Data Protection Regulation — applied whenever an EU resident's personal data is processed."
+          },
+          "region": {
+            "title": "ap-southeast-7 (Bangkok)",
+            "body": "Thai organisations' data is held in Bangkok, with Singapore as the recovery region. EU organisations are held in Ireland."
+          },
+          "iso27001": {
+            "title": "ISO/IEC 27001:2022",
+            "body": "Information security management certification. Targeted six months before the Stage 2 to Stage 3 transition; not yet held."
+          },
+          "soc2": {
+            "title": "SOC 2 Type II",
+            "body": "Security, availability and confidentiality audit. Targeted six months before the Stage 1 to Stage 2 transition; not yet held."
+          }
+        },
+        "footnote": "Certification status is reported here rather than claimed. Where a certificate is not yet held, the row says so."
+      },
+      "technicalSecurity": {
+        "title": "Technical Security",
+        "intro": "The controls that protect personal data on this platform, described in general terms.",
+        "sections": {
+          "core": {
+            "label": "Core protection"
+          },
+          "infrastructure": {
+            "label": "Infrastructure"
+          }
+        },
+        "cards": {
+          "encryption": {
+            "title": "Data encryption",
+            "body": "AES-256 on stored data, with keys held in cloud hardware security modules and field-level encryption for secrets."
+          },
+          "networkGuard": {
+            "title": "Network guard",
+            "body": "A web application firewall in front of the platform, with the origin restricted so traffic cannot bypass it."
+          },
+          "tenantIsolation": {
+            "title": "Tenant isolation",
+            "body": "PostgreSQL row-level security separates each organisation's records at the database, not only in application code."
+          },
+          "region": {
+            "title": "Primary region",
+            "body": "Production runs in ap-southeast-7 (Bangkok), with ap-southeast-1 (Singapore) held as the disaster-recovery region."
+          },
+          "liveStatus": {
+            "title": "Live status page",
+            "body": "A public health feed for these services. Not published yet — this screen states the architecture, not a real-time reading."
+          }
+        },
+        "tags": {
+          "aes256": "AES-256",
+          "atRest": "At rest",
+          "waf": "WAF",
+          "tls13": "TLS 1.3",
+          "rls": "RLS",
+          "postgres": "PostgreSQL"
+        },
+        "footnote": "Certification status is on the PDPA & GDPR screen. This is a general description of the controls, not an audit report."
+      },
+      "userRights": {
+        "title": "User Rights",
+        "intro": "Transparency and control over your own data, under PDPA and GDPR.",
+        "sections": {
+          "rights": {
+            "label": "Your rights"
+          }
+        },
+        "cards": {
+          "access": {
+            "title": "Right to access",
+            "body": "Ask for a copy of the personal data held about you, and for confirmation of how it is being processed."
+          },
+          "rectification": {
+            "title": "Right to rectification",
+            "body": "Ask for inaccurate personal data to be corrected, or for an incomplete record to be completed."
+          },
+          "portability": {
+            "title": "Right to data portability",
+            "body": "Receive your data in a structured, commonly used, machine-readable format that another system can read."
+          },
+          "erasure": {
+            "title": "Right to erasure",
+            "body": "Ask for your data to be removed. Records under a legal retention period are anonymised in place rather than deleted."
+          }
+        },
+        "footnote": "Sign in to exercise these rights from your account, or send a request to our Data Protection Office from the Privacy Policy screen.",
+        "cta": "Authenticate"
+      }
+    },
+    "contact": {
+      "title": "Contact Support",
+      "fields": {
+        "fullName": "Full name",
+        "email": "Email address",
+        "phone": "Phone number",
+        "category": "Inquiry category",
+        "subject": "Subject",
+        "message": "Detailed message",
+        "attachment": "Supporting documents"
+      },
+      "placeholders": {
+        "fullName": "Enter your full name",
+        "email": "Enter your email address",
+        "phone": "Enter your phone number",
+        "subject": "Brief description of your request",
+        "message": "Please provide specific details to help us process your request…"
+      },
+      "categories": {
+        "GENERAL": "General",
+        "DATA_ACCESS": "Data access",
+        "DATA_CORRECTION": "Correction",
+        "DATA_DELETION": "Deletion",
+        "SECURITY_CONCERN": "Security"
+      },
+      "attach": "Attach documents",
+      "submit": "Submit inquiry",
+      "assurance": "Your message is sent over an encrypted connection and recorded with a reference you can quote.",
+      "error": "We could not send your inquiry. Check your connection and try again, or email our Data Protection Office instead."
+    },
+    "contactSent": {
+      "title": "Inquiry submitted",
+      "headline": "Inquiry received",
+      "lede": "Your message has been recorded and is waiting to be reviewed.",
+      "referenceLabel": "Reference number",
+      "pending": "Pending review",
+      "referenceHelp": "Save this reference. Quote it in any further correspondence about this request.",
+      "nextTitle": "What happens next",
+      "nextBody": "We route this to the organisation holding your data. They are the controller, and the 30-day PDPA and GDPR period runs for them.",
+      "receivedLabel": "Received",
+      "done": "Done"
+    },
+    "downloaded": {
+      "title": "Download status",
+      "headline": "Download complete",
+      "lede": "Privacy Policy v{version} has been saved to this device.",
+      "format": "PDF",
+      "integrityTitle": "Integrity check",
+      "integrityOk": "The file matches the digest published by the platform, so it is the policy we issued.",
+      "integrityMismatch": "The file does not match the digest published by the platform. Download it again, and if it still differs do not rely on this copy.",
+      "at": "Downloaded {date}",
+      "open": "Open PDF",
+      "backToPolicy": "Back to the policy"
+    }
+  },
+  "terms": {
+    "title": "Terms of Use",
+    "back": "Back",
+    "intro": "Please review the following legal requirements for operating within the Construction OS industrial ecosystem.",
+    "summary": {
+      "status": {
+        "label": "Status",
+        "value": "Legally binding"
+      },
+      "aiUsage": {
+        "label": "AI usage",
+        "value": "Monitoring"
+      }
+    },
+    "sections": {
+      "acceptance": {
+        "title": "Acceptance of Terms",
+        "body": "By accessing or using the Construction OS platform, including all field-service modules, real-time safety tracking, and automated reporting systems, you acknowledge that you have read, understood, and agreed to be bound by these Terms of Use and our Privacy Policy."
+      },
+      "license": {
+        "title": "Industrial Usage License",
+        "body": "Construction OS grants you a non-exclusive, non-transferable, limited license to access and use the software solely for professional construction project management and site supervision. Use for benchmarking or competitive analysis is strictly prohibited."
+      },
+      "responsibilities": {
+        "title": "User Responsibilities",
+        "body": "Users must maintain active PPE compliance as logged within the Safety Module. Failure to report site incidents or intentional bypassing of the AI Safety Guardian will result in immediate platform restriction. You are responsible for ensuring all field data entered is accurate and representative of actual site conditions."
+      },
+      "ownership": {
+        "title": "Data Ownership & IP",
+        "body": "Project-specific data remains the property of the contracting entity. However, Construction OS retains ownership of the underlying algorithms, interface designs, and aggregated, anonymized industrial performance metrics used for system optimization."
+      },
+      "liability": {
+        "title": "Limitation of Liability",
+        "body": "Construction OS is a management tool and does not replace professional structural engineering or legal safety oversight. Construction OS is not liable for structural failures, site accidents, or financial losses resulting from incorrect data interpretation or sensor failure in extreme environmental conditions."
+      },
+      "termination": {
+        "title": "Termination of Access",
+        "body": "We reserve the right to suspend or terminate access without notice if security protocols are breached or if payment for enterprise-tier services remains outstanding for more than 30 business days."
+      }
+    },
+    "safety": {
+      "eyebrow": "Safety first",
+      "headline": "Zero incident policy"
+    },
+    "version": "Version {version}",
+    "lastUpdated": "Last updated: {date}",
+    "downloadPdf": "Download PDF",
+    "agree": "Agree to all terms",
+    "downloaded": {
+      "title": "Download PDF",
+      "headline": "Download complete",
+      "lede": "Terms of Use v{version} has been saved to this device.",
+      "metadataTitle": "File metadata",
+      "file": "File",
+      "size": "Size",
+      "hash": "Hash",
+      "hashValue": "SHA-256: {digest}",
+      "timestamp": "Timestamp",
+      "integrityOk": "The file matches the digest published by the platform, so it is the edition we issued.",
+      "integrityMismatch": "The file does not match the digest published by the platform. Download it again, and if it still differs do not rely on this copy.",
+      "open": "Open PDF",
+      "backToTerms": "Back to the terms"
+    }
+  },
+  "support": {
+    "title": "Support",
+    "back": "Back",
+    "version": "v{version}",
+    "status": {
+      "operational": "System operational",
+      "unreachable": "System unreachable",
+      "checking": "Checking system status",
+      "lastChecked": "Last checked: {when}",
+      "justNow": "just now",
+      "minutesAgo": "{minutes} min ago"
+    },
+    "search": {
+      "placeholder": "Search help articles…"
+    },
+    "comingSoon": "Coming soon",
+    "emergency": {
+      "heading": "Emergency assistance",
+      "priorityLine": "Priority line",
+      "supportCenter": "Call Support Center",
+      "itHotline": "IT Hotline",
+      "quickChat": "Quick help chat",
+      "noNumber": "No number set for this site"
+    },
+    "troubleshooting": {
+      "heading": "Field troubleshooting",
+      "login": {
+        "title": "I can't log in",
+        "answer": "Check the number or email you are signing in with, and that the device has a connection — the status above says whether the platform is reachable. After five failed attempts the account locks for 15 minutes. If it stays locked, your supervisor or tenant admin can reset it for you."
+      },
+      "photos": {
+        "title": "Photos aren't syncing",
+        "answer": "Photos are held on the device and upload by themselves once you are back in range; the sync indicator in the top bar shows how many items are still waiting. The queue holds 100 photos and warns you at 80 — past that, get back in range before shooting more."
+      },
+      "gps": {
+        "title": "GPS is inaccurate",
+        "answer": "Move into the open, away from heavy machinery and steel structures, and turn on high-accuracy location in the device settings. Coordinates are optional on every record, so a poor fix never blocks you from saving one."
+      },
+      "permit": {
+        "title": "Safety permit issues",
+        "answer": "A permit needs current certification on file. Check your own record for anything expired, and raise it with the safety officer on site — they can clear the work while the paperwork is corrected."
+      }
+    },
+    "assistant": {
+      "label": "Field assistant",
+      "offline": "This device has no connection right now. Keep working — everything you record is saved on the device and uploads by itself once you are back in range.",
+      "unreachable": "The device is connected, but the platform did not answer the last check. Keep working: your records stay on the device and upload once the service responds again.",
+      "online": "The device is connected and the platform answered the last check. If something still fails, the topics above cover what field crews hit most."
+    },
+    "context": {
+      "heading": "Your session",
+      "signedInAs": "Signed in as",
+      "project": "Active project",
+      "noProject": "No project selected yet"
+    },
+    "diagnostics": {
+      "heading": "Device diagnostics",
+      "note": "Read these out if you call — they are the three things support asks for first.",
+      "connection": "Connection",
+      "online": "Online",
+      "offline": "Offline",
+      "queued": "Changes waiting to sync",
+      "conflicts": "Unresolved conflicts",
+      "appVersion": "App version",
+      "storage": "Device storage",
+      "storageOk": "OK",
+      "storageWarn": "Nearly full",
+      "storageFull": "Full"
+    },
+    "modules": {
+      "heading": "What your role can open",
+      "note": "The modules your role has access to. Not a help-article list — this platform has none."
+    }
+  },
+  "approvals": {
+    "title": "Approvals",
+    "empty": "Nothing is waiting on you.",
+    "failed": "Could not load the approvals queue.",
+    "filterAll": "All",
+    "filterRfq": "RFQ",
+    "filterPo": "PO",
+    "filterUrgent": "Urgent",
+    "vendorLabel": "Vendor",
+    "projectLabel": "Project",
+    "multiVendor": "Multiple bids",
+    "hoursRemaining": "{hours}h remaining",
+    "overdue": "Overdue",
+    "approve": "Approve",
+    "viewDetails": "View details",
+    "approved": "Approval sent",
+    "approveFailed": "Could not send the approval. It was not recorded.",
+    "awardOnly": "Awarding an RFQ is the Procurement Manager's decision",
+    "readOnly": "Your role can review this but not approve it"
+  },
+  "vendors": {
+    "title": "Vendors",
+    "searchPlaceholder": "Search vendors",
+    "empty": "No vendors in this category.",
+    "failed": "Could not load the vendor directory.",
+    "filterAll": "All",
+    "categoryMaterials": "Materials",
+    "categoryLogistics": "Logistics",
+    "categoryServices": "Services",
+    "categoryEquipment": "Equipment",
+    "trustScore": "Trust score",
+    "noScore": "No score yet",
+    "activeProjects": "{count} active projects",
+    "badgeVerified": "Verified",
+    "badgeUnderReview": "Under review",
+    "badgeRejected": "Rejected",
+    "badgeTopRated": "Top rated",
+    "viewProfile": "View profile",
+    "manage": "Manage vendor",
+    "viewProfileUnavailable": "There is no vendor profile screen yet.",
+    "manageViewOnly": "Your role can view vendors but not manage them."
+  },
+  "insight": {
+    "title": "Insights",
+    "idle": "No report has been generated for this project yet.",
+    "failed": "The report was not produced. Nothing was recorded.",
+    "noSummary": "The report came back without a readable summary.",
+    "source": "Source: project {project}",
+    "action": "Generate report",
+    "bandHigh": "High confidence",
+    "bandMedium": "Medium confidence",
+    "bandLow": "Low confidence — check before acting",
+    "bandUnknown": "Confidence not reported",
+    "recommendation": "Recommendation",
+    "risk": "Risk flagged"
+  },
+  "more": {
+    "title": "More",
+    "roleLine": "{role} • {project}",
+    "active": "Active",
+    "noProject": "No project selected",
+    "comingSoon": "This screen does not exist yet.",
+    "intelligence": "Intelligence",
+    "soon": "Coming soon",
+    "projectSettings": {
+      "title": "Project settings",
+      "body": "Project details and milestones"
+    },
+    "team": {
+      "title": "Team management",
+      "body": "Roles and permissions"
+    },
+    "documents": {
+      "title": "Documents & drawings",
+      "body": "Technical files"
+    },
+    "cost": {
+      "title": "Budget analysis",
+      "body": "Budget against actual spend"
+    },
+    "contractors": {
+      "title": "Contractor performance",
+      "body": "Trust scores and delivery reliability"
+    },
+    "siteMap": {
+      "title": "Site map",
+      "body": "Project map layers"
     }
   },
   "home": {
     "main": {
       "title": "Home",
       "openIssues": "Open issues",
-      "pendingSync": "Pending sync",
-      "checkIn": "Check in",
-      "checkedIn": "Checked in — will sync when online",
-      "checkInError": "Check-in unavailable: no worker profile linked to your account."
+      "pendingSync": "Pending sync"
+    },
+    "field": {
+      "myTasks": "My tasks",
+      "ofDone": "/ {total} done",
+      "shiftHours": "Shift hours",
+      "hoursUnit": "h",
+      "insightLabel": "Workflow optimization",
+      "insightConfidence": "CONF: 94%",
+      "insightBody": "Temperature projected to reach 38°C at 14:00. Schedule heavy slab pouring before noon to avoid heat-stress delays.",
+      "insightAction": "Adjust schedule",
+      "priorityTasks": "Today's priority tasks",
+      "moreScheduled": "+ {count} more scheduled"
+    },
+    "engineer": {
+      "seeAll": "See all",
+      "appName": "CONSTRUCTION OS",
+      "notifications": "Notifications",
+      "progressTitle": "Project progress",
+      "progressEmpty": "No BOQ-linked task yet",
+      "phaseTitle": "Current phase",
+      "phaseSeq": "Phase {seq}",
+      "projectStart": "Start",
+      "projectEnd": "Goal",
+      "ahead": "Ahead by {days} d",
+      "onTrack": "On schedule",
+      "behind": "Behind by {days} d",
+      "dailyReport": "Daily report",
+      "capturePhoto": "Capture photo",
+      "safetyCheck": "Safety check",
+      "materialRequest": "Request materials",
+      "activeIssues": "Active Issues",
+      "noIssues": "No open issues",
+      "upcomingTasks": "Upcoming Tasks",
+      "noTasks": "No upcoming tasks",
+      "starts": "Starts {date}",
+      "overdueLabel": "Overdue",
+      "dueSoonLabel": "Due soon",
+      "taskProgress": "{pct}% progress"
     },
     "exec": {
       "title": "Executive Overview",
@@ -76,18 +714,43 @@
       "title": "Procurement",
       "openRfqs": "Open RFQs",
       "awaitingAck": "POs awaiting ack",
-      "deliveries": "Deliveries"
+      "deliveries": "Deliveries",
+      "committedSpend": "Total committed spend",
+      "urgentRfqs": "RFQs closing within 24h"
     },
     "pm": {
       "title": "Project Overview",
       "activeProjects": "Active projects",
-      "openIssues": "Open issues"
+      "openIssues": "Open issues",
+      "committedSpend": "Total committed spend",
+      "pendingApprovals": "Waiting on your approval",
+      "totalVariance": "Total variance",
+      "analysisTitle": "Portfolio analysis",
+      "varianceUnavailable": "No allocation",
+      "varianceUnknown": "Not loaded",
+      "projectsUnavailable": "Your projects could not be loaded. Nothing here is missing — it has not arrived.",
+      "blockers": "Critical blockers",
+      "blockerCount": "{count} {severity} issues",
+      "noBlockers": "No open issues on your projects.",
+      "manage": "Manage",
+      "portfolioAnalysis": "Portfolio analysis",
+      "yourProjects": "Your projects",
+      "phase": "Phase: {phase}",
+      "noPhase": "No phase recorded",
+      "retry": "Try again",
+      "progress": "Progress",
+      "progressUnavailable": "Progress not computable",
+      "noProjects": "You are not a member of any project yet."
     }
   },
   "tasks": {
+    "insightTitle": "Schedule insight",
     "list": {
-      "title": "Tasks",
-      "empty": "No tasks synced yet"
+      "empty": "No tasks synced yet",
+      "heading": "Tasks",
+      "outstanding": "{count} outstanding",
+      "showMore": "Show more tasks",
+      "phase": "Phase {seq} : {name}"
     },
     "detail": {
       "progressLabel": "Progress %",
@@ -95,21 +758,103 @@
       "back": "← Back to tasks"
     },
     "card": {
-      "done": "Done"
+      "done": "Done",
+      "idPrefix": "ID: #{id}",
+      "updateProgress": "Update progress",
+      "criticalWarning": "Critically overdue — this task is holding up the work after it",
+      "plannedWindow": "{start} → {end}"
+    },
+    "filters": {
+      "all": "All",
+      "pending": "Pending",
+      "inProgress": "In progress",
+      "done": "Done",
+      "open": "Filter tasks",
+      "close": "Close"
     }
   },
+  "quickActions": {
+    "title": "Quick actions",
+    "reportIssue": {
+      "title": "Report an issue",
+      "body": "Log a problem or an obstruction on site right away"
+    },
+    "safetyChecklist": {
+      "title": "Safety checklist",
+      "body": "Run the safety check before starting work"
+    },
+    "logActivity": {
+      "title": "Log today's activity",
+      "body": "Summarise the work done and the manpower on site"
+    },
+    "subtitle": "Choose an action"
+  },
+  "directory": {
+    "title": "Team Directory",
+    "searchPlaceholder": "Search by name or job…",
+    "onSiteCount": "{onSite} of {total} on site",
+    "onSite": "On site",
+    "offSite": "Not on site",
+    "chat": "Chat",
+    "chatWith": "Message {name}",
+    "call": "Call {name}",
+    "pickProject": "Pick a project to see its crew",
+    "empty": "No one is allocated to this project yet",
+    "unavailable": "The directory needs a connection — who is on site right now cannot be answered offline."
+  },
   "site": {
+    "insight": {
+      "title": "Site insight"
+    },
     "report": {
-      "title": "Daily Report",
-      "summaryPlaceholder": "Summary — manpower, progress, blockers",
       "save": "Save report",
       "saved": "Saved offline — will sync when online",
       "manpowerPlaceholder": "Manpower count",
-      "blockersPlaceholder": "Blockers (if any)"
+      "blockersPlaceholder": "Blockers (if any)",
+      "manpower": "Manpower",
+      "manpowerTotal": "Total workers on site",
+      "manpowerIncrement": "Add one worker",
+      "manpowerDecrement": "Remove one worker",
+      "shift": "Shift",
+      "shifts": {
+        "DAY": "Day",
+        "NIGHT": "Night"
+      },
+      "trades": {
+        "STRUCTURAL": "Structural",
+        "ELECTRICAL": "Electrical",
+        "PLUMBING": "Plumbing",
+        "FINISHING": "Finishing",
+        "GENERAL": "General labour"
+      },
+      "breakdownLocked": "Enter the total headcount first",
+      "aiSuggestion": "AI suggestion: at the current rate, the installation should finish by 18:00.",
+      "blockers": "Blockers",
+      "blockerCategories": {
+        "WEATHER": "Weather",
+        "MATERIAL": "Material",
+        "POWER": "Power",
+        "OTHER": "Other"
+      },
+      "photos": "Photos",
+      "saveDraft": "Save as draft",
+      "submit": "Submit report",
+      "savedDraft": "Draft saved offline — will sync when online",
+      "blockersRequired": "Blockers (required)",
+      "blockerCategoryHint": "Choose a blocker category — pick “Other” when nothing held the work up."
     },
     "reports": {
       "title": "Site Reports",
       "empty": "No reports",
+      "recent": "Recent reports",
+      "total": "{count} total",
+      "untitled": "Daily site report",
+      "searchPlaceholder": "Search reports…",
+      "searchClear": "Clear search",
+      "filter": "Filter reports (coming soon)",
+      "insightTitle": "Insight",
+      "loadMore": "Load more history",
+      "newReport": "New report",
       "materialTitle": "Record material used",
       "materialPlaceholder": "Material (e.g. Portland Cement 50kg)",
       "qtyPlaceholder": "Qty (e.g. 12.5)",
@@ -119,11 +864,35 @@
     },
     "issues": {
       "title": "Issues",
-      "titlePlaceholder": "Describe the issue",
       "submit": "Report issue",
+      "backToBoard": "Back to issues",
       "empty": "No issues yet",
+      "insightTitle": "Issue insight",
       "escalate": "Escalate",
-      "escalated": "Escalated"
+      "escalated": "Escalated",
+      "categoryLabel": "Category",
+      "voiceLabel": "Voice note",
+      "voiceHint": "Hold to record a spoken description of the problem",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Describe the issue",
+      "types": {
+        "DEFECT": "Defect",
+        "REWORK": "Rework",
+        "PUNCH": "Punch item",
+        "GENERAL": "General"
+      },
+      "age": {
+        "now": "just now",
+        "hours": "{hours}h ago",
+        "days": "{days}d ago"
+      },
+      "filters": {
+        "all": "All",
+        "critical": "Critical",
+        "high": "High",
+        "open": "Open",
+        "resolved": "Resolved"
+      }
     },
     "inspections": {
       "title": "Inspections",
@@ -138,14 +907,145 @@
       "fail": "Fail",
       "failed": "Failed",
       "severityLabel": "Issue severity"
+    },
+    "photo": {
+      "annotate": {
+        "title": "Annotate photo",
+        "pen": "Pen",
+        "arrow": "Arrow",
+        "text": "Text",
+        "undo": "Undo",
+        "clear": "Clear all",
+        "save": "Save",
+        "conflictBanner": "Edited elsewhere — pending review"
+      }
     }
   },
   "safety": {
+    "age": {
+      "minutes": "{value}m ago",
+      "hours": "{value}h ago",
+      "days": "{value}d ago",
+      "unknown": "No time recorded"
+    },
+    "home": {
+      "openIncidents": "Open incidents",
+      "activeCases": "Active cases",
+      "compliance": "Compliance",
+      "complianceUnavailable": "No compliance score is calculated yet.",
+      "safeHours": "Safe hours",
+      "safeHoursUnavailable": "Hours since the last lost-time injury are not recorded.",
+      "checklistTitle": "Daily safety checklist",
+      "checklistProgressUnavailable": "Per-item progress is not stored — an inspection records one result for the whole checklist.",
+      "checklistEmpty": "No checklist template for this project yet",
+      "recentIncidents": "Recent incidents",
+      "viewAll": "View all",
+      "noIncidents": "No incidents recorded for this project",
+      "reportNew": "Report new incident"
+    },
     "incidents": {
       "title": "Incidents",
       "typePlaceholder": "Incident type (e.g. fall, electrical)",
       "submit": "Report incident",
-      "empty": "No incidents yet"
+      "empty": "No incidents yet",
+      "severityLabel": "Severity",
+      "needsProject": "Choose a project in the bar above before reporting an incident.",
+      "filterAll": "All active",
+      "filterCritical": "Critical",
+      "filterNearMiss": "Near miss",
+      "filterPpe": "PPE violation",
+      "filterUnavailable": "Incident type is free text, so there is no near-miss or PPE category to filter on.",
+      "severityEyebrow": "{severity} severity",
+      "locationUnavailable": "No location recorded",
+      "photoUnavailable": "No photo — an incident carries no attachment",
+      "acknowledge": "Acknowledge",
+      "acknowledgeOffline": "Acknowledging needs a connection. It is not queued for later.",
+      "overdue": "Unacknowledged over 30 min — escalates to the project manager",
+      "aiRiskTitle": "AI predicted risk",
+      "aiRiskBody": "No model scores safety incidents yet."
+    },
+    "permits": {
+      "empty": "No permits for this project yet",
+      "filterAll": "All",
+      "filterPending": "Awaiting decision",
+      "approve": "Approve",
+      "reject": "Reject",
+      "create": "Raise a permit",
+      "decisionFailed": "The decision could not be saved. Check the connection and try again.",
+      "typeLabel": "Permit type",
+      "numberPlaceholder": "Permit number",
+      "needsProject": "Choose a project in the bar above before raising a permit.",
+      "validity": "Valid {from} – {until}",
+      "noValidity": "No validity dates recorded",
+      "pmFinal": "A safety permit is approved by the project manager as the final step.",
+      "filterAllTypes": "All types",
+      "idPrefix": "ID: {number}",
+      "contractor": "Contractor",
+      "noContractor": "Not recorded",
+      "expiry": "Expiry",
+      "expiryToday": "Expires today",
+      "expiryIn": "In {days} days",
+      "expiryOverdue": "Expired {days} days ago",
+      "reason": "Reason",
+      "aiUnavailable": "Safety analysis is drawn here in the design. No AI reads permits yet, so there is nothing to show.",
+      "aiCheckUnavailable": "No automatic conflict check runs on a permit yet.",
+      "type": {
+        "WORK_PERMIT": "Work permit",
+        "SAFETY_PERMIT": "Safety permit",
+        "DRAWING_APPROVAL": "Drawing approval",
+        "ENTRY_PERMIT": "Entry permit"
+      }
+    },
+    "permitRequest": {
+      "title": "Request a permit",
+      "typeLabel": "Permit type",
+      "numberLabel": "Permit number",
+      "contractorLabel": "Contractor",
+      "contractorPlaceholder": "Who is doing the work",
+      "startDate": "Start date",
+      "endDate": "End date",
+      "datePlaceholder": "Choose a date",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Scope of work and safety measures",
+      "photosLabel": "Photos",
+      "submit": "Submit for approval",
+      "failed": "The request could not be submitted. Check the connection and try again.",
+      "aiUnavailable": "A compliance check is drawn here in the design. Nothing in this platform checks a permit against site protocol yet."
+    },
+    "permitSubmitted": {
+      "title": "Request submitted",
+      "requestId": "Request ID",
+      "type": "Type",
+      "status": "Status",
+      "backHome": "Back to home",
+      "viewStatus": "View request status",
+      "aiUnavailable": "A progress note is drawn here in the design. The permit is waiting for a person to review it — nothing tracks it automatically."
+    },
+    "checklist": {
+      "untitled": "Untitled checklist",
+      "attachments": "Attachments",
+      "completeInspection": "Complete inspection",
+      "flaggedTitle": "Flagged",
+      "hazardAlertTitle": "AI hazard alert",
+      "hazardAlertBody": "No weather or hazard forecast reaches this app yet.",
+      "groupUnavailable": "Checklist items carry no group, so PPE and structure sections cannot be separated.",
+      "itemExtrasUnavailable": "A note per item is not stored. The photo above is attached to the whole inspection.",
+      "voiceTitle": "Voice log",
+      "voiceUnavailable": "A voice log has nowhere to attach on an inspection yet.",
+      "required": "Required",
+      "verification": "Daily safety verification — {done}/{total}",
+      "confirm": "Confirm safety",
+      "submitted": "Checklist submitted — will sync when online",
+      "empty": "No safety checklist is available for your projects yet",
+      "all": "All",
+      "authorization": "Digital authorization",
+      "signHere": "Sign here to confirm adherence",
+      "signed": "Signed",
+      "signer": "Site operator: {name}",
+      "clearPad": "Clear pad",
+      "aiScanTitle": "AI Safety Scan",
+      "aiScanBody": "Automated PPE detection. Verify your safety equipment using computer vision.",
+      "aiScanStart": "Start scan"
     }
   },
   "voiceNote": {
@@ -177,15 +1077,74 @@
       "field": "Field",
       "client": "Client",
       "server": "Server"
+    },
+    "pill": {
+      "synced": "SYNCED",
+      "syncing": "SYNCING",
+      "pending": "{count} PENDING",
+      "error": "SYNC ERROR"
+    },
+    "conflict": {
+      "flagged": "A conflict was detected — please review the item.",
+      "rejected": "Your change was overridden by the server version."
+    },
+    "exhausted": {
+      "discarded": "A change could not be saved and has been discarded."
     }
   },
   "photos": {
     "capture": {
       "enable": "Enable camera",
       "capture": "Capture photo",
+      "done": "Done",
+      "addPhoto": "Add photo",
+      "upload": "UPLOAD",
+      "live": "Live",
+      "shutterHint": "Tap the shutter to capture a photo",
       "queued": "{count, plural, one {# photo queued} other {# photos queued}}",
       "queueWarn": "Photo queue is filling up — upload soon (80+ pending)",
       "queueFull": "Photo queue is full (100). Connect to upload before capturing more."
+    },
+    "gallery": {
+      "title": "Photos",
+      "empty": "No photos yet",
+      "tapToAnnotate": "Tap to annotate",
+      "annotated": "Annotated",
+      "pending": "Pending upload",
+      "uploaded": "Uploaded",
+      "delete": "Delete",
+      "deleteConfirmTitle": "Delete photo?",
+      "deleteConfirmBody": "This photo and any markup on it will be removed from this device. This cannot be undone.",
+      "deleteConfirmCancel": "Cancel",
+      "deleteConfirmOk": "Delete"
+    }
+  },
+  "project": {
+    "select": {
+      "title": "Select the site you are working on",
+      "subtitle": "Select active project",
+      "recommendedLabel": "Recommended",
+      "recommendedConf": "Conf: 98%",
+      "recommendedProgress": "Current progress",
+      "recommendedBadge": "Priority action",
+      "recommendedRisk": "Critical-path risk detection",
+      "recommendedSource": "Source: site telemetry",
+      "recommendedSoon": "Coming soon",
+      "sectionTitle": "Projects in progress",
+      "searchPlaceholder": "Search projects…",
+      "current": "Current",
+      "status": "Status",
+      "progress": "Progress",
+      "progressUnknown": "No data",
+      "filter": "Filter projects (coming soon)",
+      "none": "You are not assigned to any site yet.",
+      "noMatch": "No site matches “{query}”.",
+      "loadFailed": "Your sites could not be loaded. Nothing here is missing — it has not arrived."
+    },
+    "context": {
+      "change": "Working on {project}. Change site.",
+      "on": "Project: {project}",
+      "eyebrow": "Active project"
     }
   },
   "pm": {
@@ -193,9 +1152,48 @@
       "title": "Projects",
       "empty": "No projects cached"
     },
+    "finance": {
+      "title": "Finance",
+      "portfolioSummary": "Portfolio financial summary",
+      "totalBudget": "Total budget",
+      "commitCosts": "Commit costs",
+      "actualSpent": "Actual spent",
+      "acrossProjects": "Across {count} projects",
+      "shareOfBudget": "{percent}%",
+      "shareOfBudgetLong": "{percent}% of budget",
+      "trend": "{percent}%",
+      "trendLong": "{percent}% against the previous 30 days",
+      "noBaseline": "No previous period to compare with",
+      "otherCurrencies": "{count} project(s) budgeted in another currency are not in these totals.",
+      "insightTitle": "Insight",
+      "activeProjectsHealth": "Active projects health",
+      "healthy": "Healthy",
+      "warning": "Warning",
+      "overrun": "Overrun",
+      "healthUnknown": "Not budgeted",
+      "actualFigure": "Actual: {value}",
+      "budgetFigure": "Budget: {value}",
+      "noBudgets": "None of your projects has a budget recorded yet.",
+      "loadFailed": "These figures could not be loaded. Nothing here is zero — it has not arrived.",
+      "scaleMillion": "M",
+      "scaleBillion": "B",
+      "reviewAdjustments": "Review adjustments",
+      "newRequest": "New purchase request",
+      "sourceNote": "Figures come from each project's budget record. Projects without one are left out."
+    },
     "procurement": {
       "title": "Procurement",
-      "empty": "No purchase orders"
+      "empty": "No purchase orders",
+      "pendingApprovals": "Pending approvals",
+      "activeRfqs": "Active RFQs",
+      "todayDeliveries": "Deliveries today",
+      "viewAll": "View all",
+      "waiting": "Waiting {age}",
+      "hoursAgo": "{hours}h",
+      "daysAgo": "{days}d",
+      "justNow": "just now",
+      "analysisTitle": "Procurement analysis",
+      "noneWaiting": "Nothing is waiting on approval."
     },
     "dashboard": {
       "title": "Dashboard",
@@ -296,20 +1294,205 @@
       "linesOffline": "PO lines unavailable (offline) — note-only record"
     }
   },
+  "notifications": {
+    "title": "Notifications",
+    "markAllRead": "Mark all read",
+    "empty": "No notifications",
+    "settings": {
+      "channelsLabel": "Delivery channels",
+      "typesLabel": "Notification types",
+      "channels": {
+        "IN_APP": "In-app",
+        "EMAIL": "Email",
+        "LINE": "LINE"
+      },
+      "channelDesc": {
+        "IN_APP": "Alerts inside the app",
+        "EMAIL": "Alerts sent to your email",
+        "LINE": "Alerts sent over LINE"
+      },
+      "groups": {
+        "immediate": "Immediate",
+        "digest": "Daily & weekly digest",
+        "escalation": "Escalation"
+      },
+      "groupDesc": {
+        "IMMEDIATE": "Sent the moment the event happens.",
+        "DIGEST": "Batched into a scheduled summary.",
+        "ESCALATION": "Sent when an alert goes unacknowledged."
+      },
+      "alwaysOn": "Always on",
+      "quietLabel": "Quiet hours",
+      "quietWindow": "Mute notifications automatically",
+      "quietStart": "Start",
+      "quietEnd": "End",
+      "quietExempt": "* Critical safety notifications are always delivered.",
+      "saveFailed": "Could not save your notification settings. Check your connection and try again."
+    },
+    "itemUnread": "Unread: {subject}",
+    "itemRead": "{subject}",
+    "preferences": {
+      "title": "Notification Settings",
+      "subtitle": "Tenant Admin control panel",
+      "required": "Required",
+      "save": "Save changes",
+      "section": {
+        "critical": "Critical infrastructure",
+        "events": "Project & operations",
+        "quiet": "Quiet hours (Push only)"
+      },
+      "events": {
+        "safety": {
+          "label": "Safety incident (immediate)",
+          "desc": "OSHA non-compliance or a hazard detected on site"
+        },
+        "dailyReport": {
+          "label": "Daily site report",
+          "desc": "A site engineer's daily progress and blockers"
+        },
+        "inspectionFailed": {
+          "label": "Inspection failed",
+          "desc": "A QC checklist recorded a failing result"
+        },
+        "budgetVariance": {
+          "label": "Budget variance alert",
+          "desc": "A cost transaction pushed a project over budget"
+        },
+        "poApproval": {
+          "label": "Purchase approval requested",
+          "desc": "A purchase order is awaiting your approval"
+        },
+        "riskPrediction": {
+          "label": "AI risk prediction",
+          "desc": "A delay or safety risk the model flagged for review"
+        }
+      },
+      "quiet": {
+        "start": "Start",
+        "end": "End",
+        "note": "Push is muted during this window. Critical safety alerts are never quieted (§19.6)."
+      },
+      "saved": {
+        "title": "Changes saved",
+        "body": "Your notification preferences were updated and synced.",
+        "status": "Status",
+        "active": "Active",
+        "lastSync": "Last sync",
+        "justNow": "Just now",
+        "back": "Back"
+      }
+    }
+  },
+  "drawer": {
+    "open": "Open menu",
+    "close": "Close menu",
+    "member": "Member",
+    "online": "Online & synced",
+    "fieldTools": "Field tools",
+    "settings": "Settings",
+    "more": "More ({count})",
+    "privacyPolicy": "Privacy policy",
+    "logout": "Log out",
+    "projects": "Project overview",
+    "reports": "Daily site reports",
+    "incidents": "Safety incident logs",
+    "inspections": "Inspections",
+    "materials": "Materials",
+    "deliveries": "Deliveries"
+  },
+  "mfa": {
+    "enroll": {
+      "title": "Two-factor authentication",
+      "body": "Add a second step at login with an authenticator app. Required for admin and finance roles.",
+      "step1": "Open your authenticator app (Google Authenticator, Authy, 1Password)",
+      "step2": "Scan the QR code shown by Construction OS security",
+      "step3": "Enter the 6-digit code to confirm, then save your backup codes",
+      "cta": "Set up authenticator",
+      "hint": "You'll continue in a secure Construction OS window.",
+      "cancelled": "Setup was cancelled. You can try again anytime.",
+      "error": "Could not start setup. Please try again."
+    },
+    "success": {
+      "title": "Enrollment successful",
+      "body": "Your account is now protected with multi-factor authentication. You'll be asked for a verification code at your next login.",
+      "summary": "Security audit summary",
+      "status": "Status",
+      "active": "Active",
+      "method": "Method",
+      "methodValue": "Authenticator app",
+      "backupCodes": "Backup codes",
+      "saved": "Saved",
+      "done": "Go to dashboard",
+      "viewSecurity": "View Security Settings"
+    },
+    "downloaded": {
+      "title": "Backup Codes Downloaded",
+      "body": "Your MFA recovery codes have been saved to your device. Please store them in a safe location.",
+      "fileName": "cos-recovery-codes.txt",
+      "fileMeta": "Recovery codes • Document",
+      "savedBadge": "Saved",
+      "encrypted": "Secure storage",
+      "viewFile": "View File",
+      "returnSecurity": "Return to Security",
+      "goDashboard": "Go to Dashboard"
+    },
+    "recovery": {
+      "title": "Backup security codes",
+      "body": "Generate single-use recovery codes to sign in if you lose access to your authenticator.",
+      "cta": "Set up backup codes"
+    }
+  },
+  "materialRequest": {
+    "title": "Request materials",
+    "item": "Item {n}",
+    "descriptionPlaceholder": "What do you need? e.g. DB12 rebar",
+    "quantityPlaceholder": "Quantity",
+    "unitPlaceholder": "Unit",
+    "addItem": "Add item",
+    "removeItem": "Remove",
+    "requiredDate": "Needed by",
+    "submit": "Send request",
+    "created": "Request sent",
+    "queued": "Saved — will send when online",
+    "error": "Could not send the request",
+    "removeItemAt": "Remove item {number}"
+  },
   "profile": {
     "main": {
       "title": "Profile",
+      "securitySection": "Security",
+      "preferencesSection": "Preferences",
+      "aboutSection": "About",
       "userId": "User ID",
       "role": "Role",
       "language": "Language",
       "thai": "ไทย",
       "english": "English",
-      "logout": "Log out"
+      "version": "Version",
+      "logout": "Log out",
+      "theme": "Appearance",
+      "themeDark": "Dark",
+      "themeLight": "Light",
+      "changePin": "Change Secure PIN"
     },
     "notifications": {
       "title": "Notifications",
       "on": "On",
       "off": "Off"
+    },
+    "biometric": {
+      "title": "Biometric Login",
+      "face": "Face ID",
+      "fingerprint": "Fingerprint",
+      "iris": "Iris",
+      "on": "On",
+      "off": "Off",
+      "unavailable": "Not supported on this device",
+      "lockPrompt": "Unlock Construction OS",
+      "lockTitle": "App locked",
+      "lockBody": "Unlock to continue.",
+      "unlockAction": "Unlock",
+      "signOut": "Sign out instead"
     }
   },
   "status": {
@@ -327,6 +1510,10 @@
     "CONFLICT": "Conflict",
     "HIGH": "High",
     "NOT_STARTED": "Not started",
+    "ACTIVE": "Active",
+    "ON_HOLD": "On hold",
+    "COMPLETED": "Completed",
+    "CANCELLED": "Cancelled",
     "DRAFT": "Draft",
     "LOW": "Low",
     "MEDIUM": "Medium"
@@ -337,6 +1524,1149 @@
     "processing": "Transcribing…",
     "unavailable": "Transcription service unavailable",
     "error": "Recording/transcription failed",
-    "denied": "Microphone permission denied"
+    "denied": "Microphone permission denied",
+    "commandUnavailable": "Voice command unavailable",
+    "searchUnavailable": "Voice search is not available yet",
+    "unknownScreen": "That screen isn't available",
+    "unrecognized": "Sorry, I didn't catch a command"
+  },
+  "adminHome": {
+    "systemOverview": "System Overview",
+    "aiTokens": "AI Token Usage",
+    "systemStatus": "System Status",
+    "statusChecking": "Checking…",
+    "statusOperational": "Operational",
+    "statusUnavailable": "Unavailable",
+    "pendingApprovals": "Pending Approvals",
+    "itemsBadge": "{count} items",
+    "paymentsAwaiting": "Payments awaiting approval",
+    "posAwaiting": "Purchase orders awaiting approval",
+    "review": "Review",
+    "aiInsights": "AI System Insights",
+    "insightsAllClear": "AI usage is within budget — no alerts.",
+    "insightWarning": "AI token usage at {percent}% of your monthly quota.",
+    "insightCritical": "AI token quota reached ({percent}%). New AI requests are paused."
+  },
+  "adminUsers": {
+    "title": "User Management",
+    "count": "{count} members",
+    "invite": "Invite user",
+    "inviteTitle": "Invite user",
+    "inviteSoon": "The mobile invite flow is coming soon — use the web console to invite users for now.",
+    "error": "Couldn't load users.",
+    "empty": "No users yet.",
+    "mfaOn": "MFA enabled",
+    "subtitle": "Manage roles and data access across projects",
+    "searchPlaceholder": "Search users…",
+    "filterAll": "All",
+    "roleLabel": "Role",
+    "statusLabel": "Status",
+    "active": "Active",
+    "inactive": "Inactive",
+    "emailLogin": "Email Login",
+    "otpLogin": "OTP Login",
+    "uid": "UID",
+    "auditTitle": "AI User Audit",
+    "auditFlagged": "{count} users haven't signed in for 30+ days — review them for project security.",
+    "auditClear": "All active users have signed in within the last 30 days.",
+    "auditReview": "Review flagged users",
+    "auditSource": "Source: last-seen activity",
+    "actionsTitle": "User actions",
+    "actionsSoon": "Edit role / deactivate is coming to mobile — use the web console for now.",
+    "sheetEdit": "Edit permissions",
+    "sheetReset": "Reset password",
+    "sheetActivity": "View activity",
+    "sheetDeactivate": "Deactivate account",
+    "sheetSoon": "This action isn't available on mobile yet.",
+    "auditBadgeFlagged": "{count} FLAGGED",
+    "auditBadgeClear": "ALL CLEAR"
+  },
+  "quickAdd": {
+    "title": "Quick Commands",
+    "close": "Close",
+    "fab": "Quick add",
+    "inviteTitle": "Invite New User",
+    "inviteSub": "Add a phone or email account",
+    "integrationTitle": "New System Integration",
+    "integrationSub": "Connect an external system",
+    "reportTitle": "Generate Usage Report",
+    "reportSub": "AI report generation",
+    "syncTitle": "Force System Sync",
+    "syncSub": "Flush the queue and pull updates",
+    "syncing": "Syncing…",
+    "comingSoon": "Coming soon on mobile — use the web console for now.",
+    "reportDesc": "Summarise weekly site performance with AI.",
+    "reportCta": "Run now",
+    "activeProjects": "Active Projects",
+    "systemHealth": "System Health",
+    "healthChecking": "Checking…",
+    "healthOptimal": "Optimal",
+    "healthDown": "Degraded",
+    "appsTitle": "Apps & Services",
+    "appsSub": "BROWSE MODULES & TOOLS"
+  },
+  "syncQueue": {
+    "title": "Sync Review Queue",
+    "subtitle": "{count} field-sync conflicts awaiting review",
+    "filterAll": "All",
+    "typeRejected": "Rejected",
+    "typeStatus": "Status Conflict",
+    "typeField": "Field Conflict",
+    "reasonLabel": "Error reason",
+    "reasonRejected": "\"The server rejected this write — the server copy was kept (server wins).\"",
+    "reasonStatus": "\"The record's status changed on the server before this update arrived.\"",
+    "reasonField": "\"The device and the server edited the same fields — review the differences.\"",
+    "ref": "REF",
+    "failedAt": "Failed at",
+    "review": "Review data",
+    "resolve": "Mark resolved",
+    "field": "Field",
+    "client": "Device",
+    "server": "Server",
+    "empty": "The sync queue is clear — no conflicts to review.",
+    "error": "Couldn't load the sync queue."
+  },
+  "systemSettings": {
+    "title": "System Settings",
+    "subtitle": "Manage your organization's infrastructure and identity.",
+    "error": "Couldn't load settings.",
+    "orgSection": "Organization Info",
+    "orgName": "Organization name",
+    "orgCode": "Organization code",
+    "copyCode": "Copy organization code",
+    "brandSection": "Brand & Identity",
+    "logoTitle": "Organization logo",
+    "logoSub": "PNG or SVG, up to 2MB",
+    "primaryColor": "Primary color",
+    "primaryColorValue": "#B4C5FF (Blue Industrial)",
+    "changeColor": "Change",
+    "integrationsSection": "External Integrations",
+    "lineTitle": "LINE Notification",
+    "lineSub": "Send job alerts via the LINE Messaging API",
+    "lineToken": "LINE Channel Token",
+    "lineTokenPlaceholder": "Enter LINE channel token",
+    "showToken": "Show token",
+    "hideToken": "Hide token",
+    "bimTitle": "Autodesk BIM 360 Sync",
+    "bimSub": "Sync 3D models and documents from ACC",
+    "bimConnect": "Connect",
+    "othersSection": "Others",
+    "language": "System language",
+    "securityPolicy": "Security policy",
+    "deleteTenant": "Delete tenant account",
+    "aiTitle": "AI System Insight",
+    "aiEmpty": "No AI insights available yet.",
+    "soonTitle": "Coming soon",
+    "soonBody": "This isn't available on mobile yet.",
+    "deleteTitle": "Delete tenant account",
+    "deleteBody": "Deleting a tenant is irreversible and is handled by the platform administrator. Contact support to proceed.",
+    "saveErrorTitle": "Save failed",
+    "saveErrorBody": "Couldn't save the change. Please try again."
+  },
+  "inviteUser": {
+    "title": "Invite user",
+    "methodLabel": "METHOD",
+    "pathSelection": "Path Selection",
+    "phoneTab": "PHONE NUMBER",
+    "emailTab": "EMAIL ADDRESS",
+    "nameLabel": "FULL NAME",
+    "namePlaceholder": "Recipient's full name…",
+    "contactLabel": "CONTACT DETAIL",
+    "phonePlaceholder": "Enter mobile number…",
+    "emailPlaceholder": "Enter email address…",
+    "otpHelper": "An OTP will be sent to this number for verification.",
+    "emailHelper": "A sign-in invitation will be sent to this address.",
+    "roleLabel": "ROLE ASSIGNMENT",
+    "viewPermissions": "View Permissions",
+    "showMore": "Show more roles ({count})",
+    "showLess": "Show fewer roles",
+    "projectsLabel": "ASSIGN PROJECTS (OPTIONAL)",
+    "projectSearch": "Search active projects…",
+    "projectsNote": "Project assignment is applied after the account is created.",
+    "aiTitle": "CORE_AI ASSISTANT",
+    "aiConfidence": "94% CONFIDENCE",
+    "aiBody": "Permission templates are applied automatically based on the selected role.",
+    "aiBodyRole": "Permission templates have been pre-applied for the {role} role.",
+    "send": "SEND INVITATION",
+    "cancel": "CANCEL",
+    "permTitle": "Role permissions",
+    "permBody": "Detailed permission breakdown is available on the web console.",
+    "errName": "Enter the recipient's full name.",
+    "errContact": "Enter a contact detail.",
+    "errPhone": "Enter a valid mobile number.",
+    "errEmail": "Enter a valid email address.",
+    "errRole": "Select a role.",
+    "sending": "Sending…",
+    "successTitle": "Invitation sent",
+    "successBody": "{name} has been added as {role}.",
+    "errorTitle": "Could not send",
+    "errorBody": "The invitation failed. Please try again.",
+    "conflictBody": "A user with this phone or email already exists.",
+    "roleDesc": {
+      "SITE_ENGINEER": "Field reporting, daily logs, and technical spec oversight.",
+      "SITE_WORKER": "On-site task execution, photo reports, and issue logging.",
+      "PROJECT_MANAGER": "Project oversight — schedules, budgets, and team assignments.",
+      "EXECUTIVE": "Portfolio dashboards and high-level reporting.",
+      "FINANCE": "Payments, budgets, and invoices.",
+      "PROCUREMENT_OFFICER": "RFQs, purchase orders, and deliveries.",
+      "PROC_MANAGER": "Procurement approvals and supplier management.",
+      "SAFETY_OFFICER": "Safety incidents and compliance checks.",
+      "CRM_SALES_MANAGER": "Sales pipeline and client relationships.",
+      "TENANT_ADMIN": "User management, settings, and tenant administration.",
+      "VIEWER": "Read-only access to shared data."
+    }
+  },
+  "help": {
+    "title": "Help & Support"
+  },
+  "rolePermissions": {
+    "title": "Role permissions",
+    "aiTitle": "CORE_AI Assistant",
+    "aiBody": "These permissions follow recommended safety standards for industrial operations.",
+    "aiConfidence": "98% Confidence",
+    "aiVerified": "Verified against RBAC v4.2",
+    "backToInvite": "Back to invitation",
+    "error": "Couldn't load permissions. Check your connection and try again.",
+    "empty": "This role has no module permissions.",
+    "level": {
+      "full": "Full access",
+      "rw": "Read / Write",
+      "r": "Read only"
+    }
+  },
+  "res": {
+    "project": {
+      "label": "Projects",
+      "desc": "Schedules, documents & project data"
+    },
+    "boq": {
+      "label": "BOQ",
+      "desc": "Bills of quantities & costing"
+    },
+    "procurement": {
+      "label": "Procurement",
+      "desc": "Purchase requests & deliveries"
+    },
+    "finance": {
+      "label": "Finance",
+      "desc": "Budgets, invoices & payments"
+    },
+    "siteOps": {
+      "label": "Site Operations",
+      "desc": "Daily logs & on-site work"
+    },
+    "inspection": {
+      "label": "Inspections",
+      "desc": "Checklists & QA sign-off"
+    },
+    "issue": {
+      "label": "Issues",
+      "desc": "Site issues & defects"
+    },
+    "task": {
+      "label": "Tasks",
+      "desc": "Assigned tasks & progress"
+    },
+    "safety": {
+      "label": "Safety",
+      "desc": "Safety reports & incidents"
+    },
+    "vendor": {
+      "label": "Vendors",
+      "desc": "Vendor directory & records"
+    },
+    "crm": {
+      "label": "CRM",
+      "desc": "Leads & customer records"
+    },
+    "analytics": {
+      "label": "Analytics",
+      "desc": "Dashboards & reporting"
+    },
+    "ai": {
+      "label": "AI Assistant",
+      "desc": "CORE_AI insights & suggestions"
+    }
+  },
+  "rolesSelection": {
+    "title": "Select roles",
+    "searchPlaceholder": "Search roles...",
+    "available": "Available roles ({count})",
+    "supportRoles": "Support roles",
+    "confirm": "Confirm roles",
+    "noMatch": "No roles match your search.",
+    "infoPickFirst": "Select a role first to view its permissions.",
+    "aiTitle": "CORE_AI Context",
+    "aiConfidence": "98% Confidence",
+    "aiBody": "RBAC templates are synced automatically — choosing these roles provisions the right dashboards and access for each position instantly.",
+    "aiSource": "Source: Tenant Policy v4.2",
+    "badge": {
+      "chief": "Chief",
+      "lead": "Lead",
+      "field": "Field",
+      "hse": "HSE"
+    }
+  },
+  "invitationSuccess": {
+    "heading": "Invitation sent!",
+    "summaryTitle": "Invitation summary",
+    "recipient": "Recipient",
+    "role": "Role",
+    "projects": "Projects",
+    "aiTitle": "CORE_AI",
+    "aiMeta": "98% Confidence | RBAC policy v4.2",
+    "aiBody": "Access has been provisioned and activates the moment the recipient verifies their identity.",
+    "status": "Status: Awaiting response",
+    "inviteAnother": "Invite another member",
+    "goToDashboard": "Go to dashboard"
+  },
+  "systemIntegration": {
+    "title": "New integration",
+    "subtitle": "Select a connector to link your project data.",
+    "searchPlaceholder": "Search connectors...",
+    "aiTitle": "CORE_AI",
+    "aiBody": "Ready to help you configure tokens securely",
+    "aiConfidence": "98% Confidence",
+    "comingSoon": "This integration is coming soon.",
+    "noMatch": "No connectors match your search.",
+    "enterpriseTag": "Enterprise ready",
+    "enterpriseText": "Security in every connection",
+    "line": {
+      "name": "LINE Messaging API",
+      "desc": "Send key event alerts and project status via LINE",
+      "badge": "Notifications"
+    },
+    "bim360": {
+      "name": "Autodesk BIM 360",
+      "desc": "Access 3D models and building data",
+      "badge": "3D Models"
+    },
+    "erp": {
+      "name": "ERP Connect",
+      "desc": "Connect financial and budget data",
+      "badge": "Financial"
+    }
+  },
+  "appsServices": {
+    "title": "Apps & Services",
+    "searchPlaceholder": "Search modules...",
+    "coreModules": "Core Modules",
+    "adminTools": "Admin Tools",
+    "extensions": "Extensions",
+    "noMatch": "No modules match your search.",
+    "comingSoon": "This module is coming soon.",
+    "module": {
+      "siteReports": "Site Reports",
+      "issueManagement": "Issue Management",
+      "inventory": "Inventory",
+      "bimViewer": "BIM Viewer",
+      "drone": "Drone Reality Capture",
+      "userManagement": "User Management",
+      "systemSettings": "System Settings",
+      "auditLogs": "Audit Logs",
+      "droneExt": "Drone Reality Capture",
+      "erp": "ERP Connect",
+      "line": "LINE Messaging API",
+      "bim360Ext": "Autodesk BIM 360"
+    },
+    "badge": {
+      "aiEnhanced": "AI Enhanced",
+      "phase5": "Phase 5"
+    },
+    "ext": {
+      "droneExt": "Autonomous inspection & mapping",
+      "erp": "SAP & Oracle direct integration",
+      "line": "Field-office coordination",
+      "bim360Ext": "Access 3D models and building data"
+    }
+  },
+  "userProfile": {
+    "title": "User Profile",
+    "aiTitle": "AI ANALYTICS ENGINE",
+    "lastActive": "Last active",
+    "aiSource": "Source: last-seen activity",
+    "personalInfo": "Personal Information",
+    "email": "Email",
+    "phone": "Phone",
+    "projects": "Projects",
+    "projectCode": "Project code",
+    "noProjects": "Not a member of any project.",
+    "department": "Department"
+  },
+  "editPermission": {
+    "title": "Edit Permissions",
+    "primaryRole": "Primary role",
+    "additionalRoles": "Additional roles",
+    "modules": "Module permissions",
+    "resetAll": "Reset all",
+    "aiTitle": "AI ANALYTICS ENGINE",
+    "aiBody": "Effective access is the union of {count} assigned role(s).",
+    "read": "READ",
+    "write": "WRITE",
+    "approve": "APPROVE",
+    "delete": "DELETE",
+    "save": "Save changes",
+    "cancel": "Cancel",
+    "selectPrimary": "Select primary role",
+    "savedTitle": "Permissions updated",
+    "savedBody": "The user's roles have been saved.",
+    "errorTitle": "Couldn't save",
+    "errorBody": "Please try again.",
+    "primaryRoleIs": "Primary role: {role}"
+  },
+  "permissionSuccess": {
+    "heading": "Permissions saved",
+    "body": "{name}'s access has been updated.",
+    "bodyGeneric": "The user's access has been updated.",
+    "aiTitle": "AI SYNC LOG",
+    "aiBody": "The change applies to the account's effective permissions and is recorded in the audit log.",
+    "backToUsers": "Back to user management",
+    "viewProfile": "View user profile"
+  },
+  "resetPassword": {
+    "title": "Password reset",
+    "aiTitle": "AI SECURITY CHECK",
+    "aiBody": "This reset is recorded in the audit log for review — no risk score is inferred.",
+    "deliveryMethod": "Delivery method",
+    "emailTitle": "Send reset link (email)",
+    "emailNone": "No email on file",
+    "emailUnavailable": "Email server not configured in this deployment",
+    "tempTitle": "Generate temporary password",
+    "tempSub": "For manual hand-off — the user sets a new password at next sign-in",
+    "authLevel": "Auth level",
+    "authTenantAdmin": "TENANT ADMIN",
+    "confirm": "Confirm reset",
+    "cancel": "Cancel",
+    "errorTitle": "Reset failed",
+    "errorBody": "Could not reset the password. Please try again.",
+    "crumbParent": "User management",
+    "crumbCurrent": "Password reset",
+    "recommended": "Recommended",
+    "emailLinkNote": "Single-use link — expires in 15 minutes"
+  },
+  "resetSuccess": {
+    "heading": "Temp password created",
+    "body": "{name}'s account now has a temporary password. Share it securely — they'll be asked to set a new one at next sign-in.",
+    "bodyGeneric": "The account now has a temporary password. Share it securely — the user sets a new one at next sign-in.",
+    "tempLabel": "Temporary password",
+    "reveal": "Reveal",
+    "hide": "Hide",
+    "tempNote": "Shown once — it isn't stored and can't be displayed again.",
+    "logTitle": "SYSTEM SECURITY LOG",
+    "logBody": "Password reset recorded — event identity.user.password_reset.v1.",
+    "returnToUsers": "Return to user list",
+    "forUser": "For {name}",
+    "badge": "Shown once",
+    "aiTitle": "CORE_AI INSIGHT",
+    "aiBody": "Hand this password to the user through a secure channel. It stays valid until they sign in and set a new one.",
+    "deliveryTitle": "Or send a reset link instead",
+    "sendEmail": "Send reset link — Email",
+    "sendEmailNote": "Email server not configured in this deployment",
+    "sendSms": "Send reset link — SMS",
+    "sendSmsNote": "SMS delivery not available yet",
+    "done": "Done"
+  },
+  "resetLinkSent": {
+    "title": "Reset link sent",
+    "heading": "Reset link sent",
+    "body": "A password-reset link was sent to {email}. The link is single-use and expires in 15 minutes.",
+    "logTitle": "SYSTEM SECURITY LOG",
+    "logBody": "Password reset link sent — event identity.user.password_reset.v1 (method: email_link).",
+    "returnToUsers": "Return to user list"
+  },
+  "breadcrumb": {
+    "userManagement": "User management"
+  },
+  "transparency": {
+    "status": {
+      "live": "In use",
+      "planned": "Planned"
+    },
+    "comingSoon": "Coming soon",
+    "portal": {
+      "title": "Data Collection",
+      "entry": "Transparency Portal",
+      "entryHint": "See exactly what this app collects about you",
+      "lede": "What Construction OS records about you, category by category. Each entry names the data, why it exists, and how long it is kept. Capabilities marked Planned are described in our specifications but are not running yet — nothing under them is being collected today.",
+      "summaryLabel": "Categories in use",
+      "summaryValue": "5 data categories",
+      "summaryNote": "Identity, contact, location, payroll and operational records. Encrypted at rest with AES-256; separated per organisation by database-enforced policy.",
+      "breakdown": "What is collected",
+      "inputs": "How it reaches us",
+      "retention": "How long it is kept",
+      "retentionBody": "Each record type has its own period: coordinates 90 days, worker records two years after employment, site reports the project plus 7 years.",
+      "rights": "Your rights",
+      "rightsBody": "Ask for a copy, a correction, or erasure. A copy is self-service below; the other two are answered by our DPO within 30 days.",
+      "cat": {
+        "identity": {
+          "title": "Identity & contact",
+          "body": "Your name, phone number and email address, plus your profile photo if you set one."
+        },
+        "location": {
+          "title": "Site & location",
+          "body": "GPS coordinates attached to check-in, site reports, issues, incidents and inspections."
+        },
+        "logs": {
+          "title": "Technical logs",
+          "body": "Who did what and when, with the network address and device the request came from."
+        },
+        "manual": {
+          "title": "What you enter",
+          "body": "Daily site reports, safety incidents and inspection results you submit yourself."
+        },
+        "payroll": {
+          "title": "Payroll",
+          "body": "Your agreed daily rate on a project. No bank account details are stored."
+        }
+      },
+      "input": {
+        "manual": {
+          "title": "Forms you fill in",
+          "body": "Reports, incidents and inspections you submit in the app."
+        },
+        "camera": {
+          "title": "Camera",
+          "body": "Photos you attach to a report or inspection."
+        },
+        "iot": {
+          "title": "Equipment sensors",
+          "body": "Automatic telemetry from machinery."
+        }
+      },
+      "exportBody": "Ask for a copy of everything this platform holds about you, in a file you can keep or move elsewhere.",
+      "preferences": {
+        "title": "Contact preferences",
+        "body": "Choose which notifications reach you, and by which channel."
+      },
+      "technical": "How the platform itself works",
+      "tech": {
+        "network": {
+          "title": "Network origin",
+          "body": "What your connection’s address tells us, and the one behavioural label derived from it."
+        },
+        "device": {
+          "title": "This device",
+          "body": "How this handset is identified, how much it is trusted, and why."
+        },
+        "security": {
+          "title": "Account security",
+          "body": "Every device signed in to your account, and how this one unlocks."
+        },
+        "session": {
+          "title": "Session details",
+          "body": "How long you stay signed in, and how that is protected."
+        },
+        "timestamps": {
+          "title": "Timestamps",
+          "body": "How the time of every record is captured and how long it is kept."
+        }
+      },
+      "requestDeletion": "Request data deletion"
+    },
+    "identity": {
+      "title": "Identity & contact",
+      "lede": "These are the values stored on your account right now, read from your own record. Only you and administrators in your organisation can see them.",
+      "stored": "Stored on your account",
+      "purpose": "Why it is needed",
+      "access": "Who can see it",
+      "accessBody": "Role-based: administrators in your organisation and the project managers you are assigned to. Every administrative read is audit-logged.",
+      "manage": "Manage this data",
+      "field": {
+        "employeeCode": "Employee code",
+        "noEmployeeCode": "None issued to you",
+        "uid": "User ID",
+        "name": "Full name",
+        "email": "Email address",
+        "phone": "Phone number",
+        "photo": "Profile photo",
+        "role": "Role",
+        "photoSet": "Set",
+        "photoNone": "Not set",
+        "none": "Not set"
+      },
+      "purposeAuth": {
+        "title": "Signing in",
+        "body": "Your phone number receives the sign-in code; your email is the alternative sign-in route."
+      },
+      "purposeSafety": {
+        "title": "Safety notifications",
+        "body": "Reaching you quickly when a safety incident affects a site you work on."
+      },
+      "purposeAudit": {
+        "title": "Audit record",
+        "body": "Attributing each action to a person, which safety and accounting rules require."
+      },
+      "actionExport": "Request a copy of my data",
+      "actionUpdate": "Change contact preferences",
+      "offline": "Showing what is cached on this device — connect to load your current record.",
+      "heroEyebrow": "Identity schema",
+      "schemaTag": "ENCRYPTED AT REST",
+      "sourceAccount": "From your account",
+      "sourceWorkforce": "From your employer’s workforce records"
+    },
+    "location": {
+      "title": "Site & location",
+      "lede": "Coordinates are attached to field records, not tracked continuously. Your device is not followed between records, and location is optional on every one of them.",
+      "where": "Where coordinates are attached",
+      "whereBody": "Five record types can carry one: check-in/out, site reports, issues, incidents and inspections. No coordinate means none was captured.",
+      "pipeline": "What happens to a coordinate",
+      "safeguards": "Safeguards",
+      "rec": {
+        "attendance": {
+          "title": "Check-in and check-out",
+          "body": "Confirms attendance at a site. Reduced to a daily count after 90 days."
+        },
+        "reports": {
+          "title": "Daily site reports",
+          "body": "Places a report on the site it describes."
+        },
+        "issues": {
+          "title": "Issues",
+          "body": "Locates a defect so it can be found again."
+        },
+        "incidents": {
+          "title": "Safety incidents",
+          "body": "Locates a hazard for the safety response."
+        },
+        "inspections": {
+          "title": "Inspections",
+          "body": "Records where an inspection was carried out."
+        }
+      },
+      "flow": {
+        "capture": {
+          "title": "Captured on your device",
+          "caption": "Only at the moment you save a record"
+        },
+        "transit": {
+          "title": "Sent over TLS 1.3",
+          "caption": "Encrypted in transit"
+        },
+        "geocode": {
+          "title": "Turned into an address",
+          "caption": "By our own server — coordinates are not sent to any mapping company"
+        },
+        "store": {
+          "title": "Stored with the record",
+          "caption": "Encrypted at rest, isolated per organisation"
+        }
+      },
+      "safeguard": {
+        "optional": {
+          "title": "Always optional",
+          "body": "A record saves normally without a coordinate."
+        },
+        "noTracking": {
+          "title": "No continuous tracking",
+          "body": "Nothing is recorded between the moments you save a record."
+        },
+        "purge": {
+          "title": "90-day reduction",
+          "body": "Check-in coordinates become a daily count after 90 days."
+        },
+        "geofence": {
+          "title": "Site geofencing",
+          "body": "Automatic site-boundary detection is specified but not implemented."
+        }
+      }
+    },
+    "logs": {
+      "title": "Technical logs",
+      "lede": "Every action that changes data is recorded so it can be attributed later. This is an accountability record, not analytics — it is never used to profile you.",
+      "collected": "What each entry holds",
+      "path": "Where an entry travels",
+      "retention": "Retention",
+      "retentionBody": "Application logs: 30 days live, then a year archived. Audit entries: seven years, write-once, as safety and accounting rules require.",
+      "item": {
+        "actor": {
+          "title": "Who",
+          "body": "The account that performed the action."
+        },
+        "action": {
+          "title": "What and when",
+          "body": "The action, the record it touched, and a timestamp in UTC."
+        },
+        "ip": {
+          "title": "Network address",
+          "body": "The IP address the request came from."
+        },
+        "device": {
+          "title": "Device",
+          "body": "The browser or app build that made the request."
+        }
+      },
+      "flow": {
+        "app": {
+          "title": "The app",
+          "caption": "The entry is written as the action completes"
+        },
+        "gateway": {
+          "title": "API gateway",
+          "caption": "Authenticates and rate-limits before anything reaches the platform"
+        },
+        "store": {
+          "title": "Log store",
+          "caption": "Indexed for search, retained on the schedule above"
+        },
+        "archive": {
+          "title": "Archive",
+          "caption": "Audit entries copied to storage that cannot be rewritten"
+        }
+      },
+      "redaction": {
+        "title": "Automatic redaction",
+        "body": "Stripping personal data from logs automatically is not implemented; today it depends on engineering practice."
+      }
+    },
+    "manual": {
+      "title": "What you enter",
+      "lede": "Most of what the platform knows is what your team types in. These are the forms that create records, and what each one is used for.",
+      "channels": "Forms that create records",
+      "rules": "How entries are handled",
+      "ch": {
+        "reports": {
+          "title": "Daily site reports",
+          "body": "Progress, weather, manpower counts and blockers for a working day."
+        },
+        "incidents": {
+          "title": "Safety incidents",
+          "body": "Hazards and accidents, routed immediately to the safety officer and project manager."
+        },
+        "inspections": {
+          "title": "Inspections",
+          "body": "Checklist results, including failures that open an issue."
+        },
+        "issues": {
+          "title": "Issues",
+          "body": "Defects and rework raised against a task or location."
+        },
+        "materials": {
+          "title": "Material consumption",
+          "body": "What was used on a task, recorded against the project."
+        }
+      },
+      "rule": {
+        "attribution": {
+          "title": "Attributed to you",
+          "body": "Each submission is stored with your account and the time it was saved."
+        },
+        "offline": {
+          "title": "Works offline",
+          "body": "Entries are queued on your device and sent when you reconnect; nothing is lost."
+        },
+        "immutable": {
+          "title": "Corrections, not deletions",
+          "body": "A submitted record is corrected by a later entry — the original stays in the audit trail."
+        }
+      }
+    },
+    "iot": {
+      "title": "Equipment sensors",
+      "lede": "None of this is running today. Sensor telemetry is specified for a later phase, and no device data is being collected from you or your equipment now.",
+      "planned": "Planned capabilities",
+      "note": "Why it is listed",
+      "noteBody": "Listed so the picture is complete: if equipment telemetry is switched on, you will read about it here first, with its own retention period.",
+      "cap": {
+        "location": {
+          "title": "Machinery location",
+          "body": "Position of heavy equipment on a site."
+        },
+        "health": {
+          "title": "Equipment health",
+          "body": "Engine hours, fuel use and load, read from the machine."
+        },
+        "environment": {
+          "title": "Site conditions",
+          "body": "Noise, dust and temperature measured on site."
+        }
+      }
+    },
+    "ai": {
+      "title": "Automated processing",
+      "lede": "Where the platform uses automated analysis, and what it is given. No automated decision is taken about you as a person, and nothing here decides pay, discipline or employment.",
+      "inuse": "In use",
+      "plannedHeading": "Planned",
+      "safeguards": "Safeguards",
+      "cap": {
+        "ocr": {
+          "title": "Reading documents",
+          "body": "Extracting line items from invoices and delivery notes you photograph."
+        },
+        "summary": {
+          "title": "Report summaries",
+          "body": "Drafting a summary of site reports for a manager to review."
+        },
+        "ppe": {
+          "title": "Safety equipment detection",
+          "body": "Checking photos for helmets and vests."
+        },
+        "progress": {
+          "title": "Progress from photos",
+          "body": "Comparing site photos against the design model."
+        }
+      },
+      "safeguard": {
+        "strip": {
+          "title": "Personal data removed first",
+          "body": "Text is stripped of personal data before it is sent to a language model."
+        },
+        "advisory": {
+          "title": "Advisory only",
+          "body": "Generated output is a draft for a person to accept or reject, never an automatic action."
+        },
+        "confidence": {
+          "title": "Confidence is shown",
+          "body": "Low-confidence output is withheld rather than presented as fact."
+        }
+      }
+    },
+    "delete": {
+      "title": "Erasing your data",
+      "lede": "What we can and cannot erase, and what happens to the rest. Please read this before making a request — parts of it are fixed by law, not by preference.",
+      "what": "What happens to each type",
+      "how": "How to make a request",
+      "howBody": "Send the request to our Data Protection Office — the address is in the Privacy Policy. We answer within 30 days. No self-service button yet.",
+      "rec": {
+        "identity": {
+          "title": "Your identity and contact details",
+          "body": "Erased or replaced with an anonymous placeholder."
+        },
+        "location": {
+          "title": "Location history",
+          "body": "Erased. Check-in coordinates older than 90 days are already reduced to a count."
+        },
+        "reports": {
+          "title": "Site reports and inspections",
+          "body": "Kept — accounting and safety law require them — but your name is replaced so they no longer identify you."
+        },
+        "audit": {
+          "title": "Audit entries",
+          "body": "Kept for their full retention period. They exist to prove who did what and cannot be rewritten."
+        }
+      },
+      "why": "Why some records stay",
+      "whyBody": "Erasure cannot override a duty in law to keep a record. Where one must be kept, its personal parts are removed so it stops identifying you.",
+      "action": "Request erasure"
+    },
+    "session": {
+      "title": "Session details",
+      "lede": "How this app keeps you signed in, and for how long. Every value below is what the platform actually does — read from the specification it is implemented against, not from a description of it.",
+      "how": "How your session works",
+      "parameters": "Session parameters",
+      "minutes": "{n} minutes",
+      "days": "{n} days",
+      "card": {
+        "offlineQueue": {
+          "title": "Working offline",
+          "body": "When the signal drops, what you write is queued on this device and sent when you are back online. Nothing is lost between the two."
+        },
+        "rolePermissions": {
+          "title": "What your role may do",
+          "body": "Every request is checked against the permissions granted to your role. The list is fixed in the platform specification, not set per person."
+        },
+        "tokenRotation": {
+          "title": "Renewing your session",
+          "body": "Your sign-in renews in the background so you are not interrupted. Each renewal replaces the previous credential rather than extending it."
+        }
+      },
+      "param": {
+        "accessToken": "Sign-in credential",
+        "accessTokenNote": "How long a single credential is valid before it is renewed.",
+        "refreshToken": "Renewal window",
+        "refreshTokenNote": "How long you can stay signed in without entering a code again. Renewing replaces the credential; it is never reused.",
+        "transport": "In transit",
+        "transportNote": "Every request between this app and the platform is encrypted in transit.",
+        "tokenId": "Credential id",
+        "tokenIdNote": "The identifier of the credential this device is using right now, shortened. It changes every time your session is renewed."
+      }
+    },
+    "timestamps": {
+      "title": "Timestamps",
+      "lede": "Every record this platform keeps carries the moment it happened. These are the four things that are true about how those moments are recorded.",
+      "how": "How time is recorded",
+      "fact": {
+        "utc": {
+          "title": "One clock, everywhere",
+          "body": "Times are stored in UTC in a standard format, so a record made on one site and read on another cannot disagree about when it happened."
+        },
+        "precision": {
+          "title": "Down to the microsecond",
+          "body": "Timestamps are stored finer than the events they order, so two actions a fraction of a second apart stay in the order they happened."
+        },
+        "appendOnly": {
+          "title": "Audit entries cannot be deleted",
+          "body": "The app cannot delete rows from the audit log. The database enforces this, not application code, so it holds even if the app is wrong."
+        },
+        "retention": {
+          "title": "How long they are kept",
+          "body": "Application logs: {hot} days live, then {cold} year in cold storage. Audit entries: {worm} years in write-once storage."
+        }
+      }
+    },
+    "network": {
+      "title": "Network origin",
+      "lede": "What your network address tells this platform. Everything on this screen is worked out when you open it and then discarded — none of it is stored.",
+      "unavailable": "Could not be loaded",
+      "unavailableBody": "The panel could not be read just now. Rather than guessing, nothing is shown — pull back and try again.",
+      "origin": "Where your connection appears to come from",
+      "place": "Approximate location",
+      "placeNote": "City level only, looked up on our own servers. Your address is never sent to another company for this.",
+      "placeUnknown": "Not known",
+      "isp": "Internet provider",
+      "ispNote": "The network operator your connection belongs to.",
+      "noOrigin": "Location lookup not available",
+      "noOriginBody": "This installation has no location database, so your address is not resolved to a place at all. The lookup simply is not running here.",
+      "device": "Measured on this device",
+      "connection": "Connection type",
+      "connectionNote": "Read from this handset, not guessed from your address.",
+      "conn": {
+        "wifi": "Wi-Fi",
+        "cellular": "Mobile data",
+        "ethernet": "Wired",
+        "vpn": "VPN",
+        "bluetooth": "Bluetooth",
+        "wimax": "WiMAX",
+        "other": "Other",
+        "none": "Offline",
+        "unknown": "Not known"
+      },
+      "latency": "Round trip",
+      "latencyNote": "How long this screen’s own request took. Measured here, not estimated.",
+      "ms": "{n} ms",
+      "behaviour": "Behavioural context",
+      "behaviourOff": "Not enabled",
+      "behaviourOffBody": "You have not agreed to operational profiling, so no behavioural label is worked out for you. This is not the same as having too little data.",
+      "context": {
+        "STATIONARY": "Stationary",
+        "MOBILE": "Moving between sites",
+        "INSUFFICIENT_DATA": "Not enough check-ins"
+      },
+      "contextBody": {
+        "STATIONARY": "Your last {points} check-ins were all within {radius} m of the same point.",
+        "MOBILE": "Your check-ins over the last {days} days spread up to {metres} m apart, which is wider than a single site.",
+        "INSUFFICIENT_DATA": "Fewer than {min} check-ins with a location in the last {days} days. Not enough to say anything, so nothing is said."
+      },
+      "rule": "The rule",
+      "ruleBody": "Stationary: all located check-ins in the last {days} days within {radius} m of their centre, at least {min}. Fewer is never stationary.",
+      "retention": "How long this is kept",
+      "retentionBody": "Your address is stored with each audit entry: logs 30 days then a year archived, audit entries 7 years. Place and provider are not stored.",
+      "reattest": "Re-verify this device"
+    }
+  },
+  "crm": {
+    "leads": {
+      "title": "Leads",
+      "contactName": "Contact name",
+      "company": "Company",
+      "create": "Add lead",
+      "saving": "Saving…",
+      "empty": "No leads yet.",
+      "untitled": "Unnamed lead"
+    },
+    "opportunities": {
+      "title": "Opportunities",
+      "fromLead": "From lead",
+      "noLeads": "No leads to qualify yet.",
+      "titleField": "Opportunity title",
+      "value": "Value",
+      "create": "Add opportunity",
+      "saving": "Saving…",
+      "empty": "No opportunities yet.",
+      "convert": "Convert to customer",
+      "converting": "Converting…"
+    },
+    "customers": {
+      "title": "Customers",
+      "empty": "No customers yet."
+    }
+  },
+  "reattest": {
+    "title": "Device re-verification",
+    "running": "Re-verifying this device…",
+    "refreshed": "Device re-verified",
+    "refreshedBody": "This device proved it still holds its security key. Its trusted period has been extended and the check has been written to your audit log.",
+    "at": "Verified at",
+    "atNote": "Recorded in UTC.",
+    "unavailable": "Could not be re-verified",
+    "unavailableBody": "This device could not produce its security key just now. Nothing is wrong with your account — no proof was made, and nothing changed.",
+    "back": "Back"
+  },
+  "deviceDetails": {
+    "title": "Device details",
+    "lede": "What this platform knows about the device you are holding, and how much it currently trusts it.",
+    "notEnrolled": "This device is not registered",
+    "notEnrolledBody": "It has not been registered for trusted sign-in yet. It will register itself the next time you sign in with a code.",
+    "score": "Trust score",
+    "outOf": "out of {max}",
+    "scorer": {
+      "RULE_BASED": "Worked out from fixed rules",
+      "AI_VERIFIED": "Worked out by a trained model"
+    },
+    "capped": "One finding is holding this score down",
+    "cappedBy": {
+      "FAILED": "The platform reported that this device did not pass its integrity check. That alone limits the score, however long the device has been in use.",
+      "COMPROMISE_ON_RECORD": "A device on your account was reported compromised. That limits the score for every device on the account until it is resolved."
+    },
+    "signal": {
+      "attestation": "Platform integrity",
+      "recency": "Recent use",
+      "enrolmentAge": "How long registered",
+      "revocationHistory": "Account history",
+      "asnStability": "Network stability"
+    },
+    "band": {
+      "PASSED_STRONG": "Strong platform integrity",
+      "PASSED_NO_TIER": "App attested on genuine Apple hardware",
+      "PASSED_DEVICE": "Device integrity confirmed",
+      "PASSED_BASIC": "Basic integrity only",
+      "NOT_ATTEMPTED": "Never checked",
+      "UNAVAILABLE": "Could not be checked",
+      "FAILED": "Did not pass",
+      "SEEN_WITHIN_FRESH_WINDOW": "Used in the last 7 days",
+      "SEEN_WITHIN_TRUST_WINDOW": "Used in the last 30 days",
+      "STALE": "Not used for over 30 days",
+      "AT_LEAST_90_DAYS": "Registered over 90 days ago",
+      "AT_LEAST_30_DAYS": "Registered over 30 days ago",
+      "AT_LEAST_7_DAYS": "Registered over 7 days ago",
+      "UNDER_7_DAYS": "Registered less than a week ago",
+      "CLEAN": "No revocations on your account",
+      "NON_COMPROMISE_RECENT": "A device was removed recently",
+      "COMPROMISE_ON_RECORD": "A device on your account was reported compromised",
+      "SINGLE_ASN": "One network",
+      "TWO_ASNS": "Two networks",
+      "THREE_TO_FOUR_ASNS": "Three or four networks",
+      "FIVE_OR_MORE_ASNS": "Five or more networks",
+      "INSUFFICIENT_DATA": "Not established"
+    },
+    "points": "{points} of {max} points",
+    "rulesVersion": "Scoring rules version {v}",
+    "identity": "This device",
+    "installId": "Installation id",
+    "installIdNote": "Created by this app and kept in secure storage. It is not a hardware serial number — reinstalling the app produces a new one.",
+    "model": "Model",
+    "modelNote": "Reported by the device itself.",
+    "unknownModel": "Not reported",
+    "binding": "How sign-in is bound",
+    "bindingValue": "Hardware-backed key",
+    "bindingNote": "A key held in this device’s secure hardware, which cannot be copied off it. It signs silently at sign-in and is separate from app unlock, which you can turn on under Account Security.",
+    "platformIntegrity": "Platform integrity",
+    "rootCheck": "Root / jailbreak check",
+    "integrity": {
+      "PASSED": "Passed",
+      "FAILED": "Did not pass",
+      "UNAVAILABLE": "Could not be checked",
+      "NOT_ATTEMPTED": "Never checked"
+    },
+    "integrityNote": {
+      "PASSED": "Google or Apple confirmed this device’s integrity when it registered.",
+      "FAILED": "The platform answered, and this device did not pass. This usually means it is rooted, modified, or not a physical device.",
+      "UNAVAILABLE": "We asked and could not be told — for example, no Play services on this device. This is not a finding against your device.",
+      "NOT_ATTEMPTED": "This device registered before the check existed. It has not failed anything; it was simply never asked."
+    },
+    "tier": "Integrity level",
+    "tierValue": {
+      "STRONG": "Strong",
+      "DEVICE": "Device",
+      "BASIC": "Basic"
+    },
+    "tierNone": "Not reported on this platform",
+    "tierNote": "Shown instead of a security patch date. Neither Google nor Apple reports a patch date to an app, and on recent Android a Strong result already means the device was updated within the last year."
+  },
+  "accountSecurity": {
+    "title": "Account security",
+    "lede": "The devices signed in to your account, and how this one unlocks.",
+    "devices": "Your devices",
+    "noDevices": "No registered devices",
+    "noDevicesBody": "No device is registered for trusted sign-in yet. The one you are using will register itself the next time you sign in with a code.",
+    "platform": {
+      "ios": "iPhone or iPad",
+      "android": "Android device"
+    },
+    "thisDevice": "This device",
+    "lastSeen": "Last used {at}",
+    "viewDetails": "View device details",
+    "revoke": "Remove this device",
+    "whyRevoke": "Why are you removing it?",
+    "revokeSelfWarning": "This is the device you are using. Removing it means your next sign-in here will need a code again.",
+    "reason": {
+      "USER_REVOKED": "I no longer use it",
+      "LOST_OR_STOLEN": "It was lost or stolen",
+      "COMPROMISED": "Someone else got into it"
+    },
+    "settings": "Security settings",
+    "biometric": "Unlock with biometrics",
+    "biometricNote": "Ask for your face or fingerprint when the app is reopened. This is separate from signing in, and it does not leave this device.",
+    "biometricUnavailable": "Biometric unlock was not turned on",
+    "biometricUnavailableBody": "Your device declined, or no face or fingerprint is set up on it. The switch stays off rather than showing a lock that would never appear.",
+    "cancel": "Cancel"
+  },
+  "dataExport": {
+    "title": "Get a copy of your data",
+    "lede": "You can ask for a copy of the personal data this platform holds about you. Choose what to include, confirm it is you, and the archive is prepared for you to download.",
+    "categories": "What to include",
+    "cat": {
+      "identity": {
+        "title": "Identity",
+        "body": "Your name, and the account details that identify you."
+      },
+      "contact": {
+        "title": "Contact",
+        "body": "Your phone number and email address."
+      },
+      "location": {
+        "title": "Location",
+        "body": "Coordinates attached to your check-ins, reports and inspections."
+      },
+      "financial": {
+        "title": "Financial",
+        "body": "Your recorded hours and the pay rates agreed with you."
+      },
+      "operational": {
+        "title": "Activity",
+        "body": "What you did and when, including the network address each request came from."
+      }
+    },
+    "format": "File format",
+    "formatHint": {
+      "JSON": "One structured file that keeps the original data types. Best if you plan to move it to another system.",
+      "CSV": "One spreadsheet file per table. Best if you plan to open it yourself."
+    },
+    "verification": "You will be asked to confirm it is you",
+    "verificationBody": "A code goes to your registered phone or email before the archive is built. It holds everything about you, so confirming is worth it.",
+    "request": "Request my data",
+    "stepUpFailed": "The confirmation code could not be sent. Please try again.",
+    "codeSent": {
+      "SMS": "We sent a 6-digit code to your phone ending {hint}. Enter it below to confirm this request.",
+      "EMAIL": "We sent a 6-digit code to {hint}. Enter it below to confirm this request."
+    },
+    "codeLabel": "Confirmation code",
+    "codeRejected": "That code was not accepted. Check it and try again.",
+    "verify": "Confirm and request",
+    "stage": {
+      "QUEUED": {
+        "title": "Request received",
+        "body": "Your request is waiting to be picked up. You can leave this screen — it will keep going without you."
+      },
+      "PREPARING": {
+        "title": "Preparing your archive",
+        "body": "Your data is being gathered from across the platform. This can take a while for a long history."
+      },
+      "READY": {
+        "title": "Your archive is ready",
+        "body": "Download it below. The link is created fresh each time you tap, so nothing shareable is left lying around."
+      },
+      "FAILED": {
+        "title": "It did not finish",
+        "body": "Your archive could not be built. Nothing about your data has changed, and you can ask again."
+      },
+      "EXPIRED": {
+        "title": "This archive has expired",
+        "body": "The download period has passed and the file has been deleted. You can request a new copy at any time."
+      }
+    },
+    "expiresIn": "Available to download for {n} more days",
+    "download": "Download archive",
+    "linkFailed": "The download link could not be opened. Please try again.",
+    "notAvailableYet": "Not available yet. Requesting a copy of your data is not switched on for this organisation yet — nothing has gone wrong, and you can ask our Data Protection Office in the meantime."
   }
 }

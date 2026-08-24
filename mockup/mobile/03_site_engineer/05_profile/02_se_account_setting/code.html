@@ -1,0 +1,521 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Account &amp; Notification Settings | Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "inverse-primary": "#0053db",
+                "surface-dim": "#031427",
+                "surface-container": "#102034",
+                "surface-container-high": "#1b2b3f",
+                "outline": "#8d90a0",
+                "on-primary-container": "#eeefff",
+                "tertiary-fixed": "#dee1f9",
+                "mobile-success": "#00C853",
+                "mobile-danger": "#FF3B30",
+                "on-primary": "#002a78",
+                "background": "#031427",
+                "surface-container-highest": "#26364a",
+                "surface": "#031427",
+                "on-error-container": "#ffdad6",
+                "on-surface-variant": "#c3c6d7",
+                "primary-fixed-dim": "#b4c5ff",
+                "inverse-surface": "#d3e4fe",
+                "on-tertiary-fixed-variant": "#414658",
+                "on-secondary-fixed": "#001f26",
+                "sync-active": "#FFD60A",
+                "on-secondary": "#003640",
+                "outline-variant": "#434655",
+                "surface-container-low": "#0b1c30",
+                "dark-surface": "#0F172A",
+                "primary-container": "#2563eb",
+                "error-container": "#93000a",
+                "tertiary": "#c1c5dc",
+                "secondary-fixed": "#acedff",
+                "error": "#ffb4ab",
+                "mobile-warning": "#FF9500",
+                "mobile-primary": "#0066FF",
+                "secondary-container": "#03b5d3",
+                "primary": "#b4c5ff",
+                "tertiary-fixed-dim": "#c1c5dc",
+                "secondary": "#4cd7f6",
+                "on-surface": "#d3e4fe",
+                "tertiary-container": "#686c80",
+                "on-primary-fixed-variant": "#003ea8",
+                "sync-pending": "#94A3B8",
+                "surface-container-lowest": "#000f21",
+                "on-tertiary-fixed": "#161b2b",
+                "on-secondary-fixed-variant": "#004e5c",
+                "on-primary-fixed": "#00174b",
+                "on-tertiary": "#2b3041",
+                "dark-bg": "#020617",
+                "on-error": "#690005",
+                "surface-variant": "#26364a",
+                "inverse-on-surface": "#213145",
+                "primary-fixed": "#dbe1ff",
+                "surface-tint": "#b4c5ff",
+                "secondary-fixed-dim": "#4cd7f6",
+                "on-tertiary-container": "#eeefff",
+                "surface-bright": "#2a3a4f",
+                "on-background": "#d3e4fe",
+                "on-secondary-container": "#00424e",
+                "cos-blue": "#2563EB"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+        },
+        "spacing": {
+                "base": "4px",
+                "space-1": "4px",
+                "space-3": "12px",
+                "space-2": "8px",
+                "edge-mobile": "24px",
+                "web-margin": "32px",
+                "touch-target": "52px",
+                "space-4": "16px"
+        },
+        "fontFamily": {
+                "body-web": [
+                        "Inter Tight"
+                ],
+                "hero-mobile": [
+                        "Inter Tight"
+                ],
+                "h1-web": [
+                        "Inter Tight"
+                ],
+                "body-mobile": [
+                        "Inter Tight"
+                ],
+                "label-mobile": [
+                        "Inter Tight"
+                ],
+                "h2-web": [
+                        "Inter Tight"
+                ],
+                "tiny-web": [
+                        "Inter Tight"
+                ],
+                "display-web": [
+                        "Inter Tight"
+                ]
+        },
+        "fontSize": {
+                "body-web": [
+                        "14px",
+                        {
+                                "lineHeight": "20px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "hero-mobile": [
+                        "28px",
+                        {
+                                "lineHeight": "34px",
+                                "fontWeight": "700"
+                        }
+                ],
+                "h1-web": [
+                        "24px",
+                        {
+                                "lineHeight": "32px",
+                                "fontWeight": "600"
+                        }
+                ],
+                "body-mobile": [
+                        "17px",
+                        {
+                                "lineHeight": "24px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "label-mobile": [
+                        "13px",
+                        {
+                                "lineHeight": "18px",
+                                "fontWeight": "600"
+                        }
+                ],
+                "h2-web": [
+                        "20px",
+                        {
+                                "lineHeight": "28px",
+                                "fontWeight": "600"
+                        }
+                ],
+                "tiny-web": [
+                        "11px",
+                        {
+                                "lineHeight": "12px",
+                                "letterSpacing": "0.05em",
+                                "fontWeight": "500"
+                        }
+                ],
+                "display-web": [
+                        "32px",
+                        {
+                                "lineHeight": "40px",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "700"
+                        }
+                ]
+        }
+},
+    },
+  }
+</script>
+<style>
+        body {
+            font-family: 'Inter Tight', sans-serif;
+            background-color: #031427;
+            color: #d3e4fe;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+            min-height: max(884px, 100dvh);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .icon-fill { font-variation-settings: 'FILL' 1; }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #031427;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #1b2b3f;
+            border-radius: 10px;
+        }
+        .glass-panel {
+            background: rgba(16, 32, 52, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(67, 70, 85, 0.3);
+        }
+        .active-ring {
+            box-shadow: inset 0 0 0 2px #2563eb;
+        }
+        
+        /* Custom Toggle Switch Styles */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #2563eb;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #2563eb;
+        }
+        .toggle-checkbox:disabled + .toggle-label {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* Time Input centering fix for Safari/WebKit */
+        input[type="time"]::-webkit-datetime-edit {
+            display: flex;
+            justify-content: center;
+        }
+        input[type="time"]::-webkit-calendar-picker-indicator {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-surface custom-scrollbar text-on-surface">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky z-50 bg-surface dark:bg-dark-bg border-b border-outline-variant/30 dark:border-surface-container-highest flex justify-between items-center px-edge-mobile h-[64px]">
+<div class="flex items-center gap-space-4">
+<button aria-label="Go back" class="text-primary dark:text-primary-fixed hover:bg-surface-container-low dark:hover:bg-surface-container transition-colors rounded-full p-2 active:scale-95 duration-100 flex items-center justify-center -ml-2 min-w-[44px] min-h-[44px]">
+<span class="material-symbols-outlined text-2xl" data-icon="arrow_back">arrow_back</span>
+</button>
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded bg-surface-container flex items-center justify-center border border-outline-variant">
+<span class="material-symbols-outlined text-cos-blue dark:text-secondary text-xl icon-fill" data-icon="construction">construction</span>
+</div>
+<h1 class="font-h1-web text-h1-web font-bold tracking-tight text-on-surface">CONSTRUCTION OS</h1>
+</div>
+</div>
+</header>
+<main class="pt-6 pb-40 px-mobile-edge px-edge-mobile max-w-2xl mx-auto space-y-8">
+<h2 class="font-hero-mobile text-hero-mobile">Settings</h2>
+<!-- Application Settings Group -->
+<section class="space-y-3">
+<h3 class="font-label-mobile text-on-surface-variant uppercase tracking-widest text-[11px] px-1">Application Settings</h3>
+<div class="glass-panel rounded-xl overflow-hidden divide-y divide-outline-variant/20 shadow-lg">
+<!-- Language Toggle -->
+<div class="flex items-center justify-between p-4 min-h-[52px]">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface-variant">language</span>
+<div>
+<p class="font-label-mobile">Language</p>
+</div>
+</div>
+<div class="flex bg-surface-container rounded p-1 gap-1">
+<button class="px-3 py-1 text-xs font-bold rounded bg-primary text-on-primary min-h-[32px] min-w-[44px]">TH</button>
+<button class="px-3 py-1 text-xs font-bold rounded text-on-surface-variant min-h-[32px] min-w-[44px]">EN</button>
+</div>
+</div>
+<!-- Theme Switcher -->
+<div class="flex items-center justify-between p-4 min-h-[52px]">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface-variant">dark_mode</span>
+<div>
+<p class="font-label-mobile">Theme</p>
+</div>
+</div>
+<div class="flex bg-surface-container rounded-full p-1 border border-outline-variant/30">
+<button class="w-10 h-10 flex items-center justify-center rounded-full text-on-surface-variant"><span class="material-symbols-outlined text-sm">light_mode</span></button>
+<button class="w-10 h-10 flex items-center justify-center rounded-full bg-primary text-on-primary"><span class="material-symbols-outlined text-sm" style="font-variation-settings: &quot;FILL&quot; 1;">dark_mode</span></button>
+<button class="w-10 h-10 flex items-center justify-center rounded-full text-on-surface-variant"><span class="material-symbols-outlined text-sm">settings_brightness</span></button>
+</div>
+</div>
+<!-- Biometric Login -->
+
+</div>
+</section>
+<!-- Notification Settings Section -->
+<section class="space-y-3">
+<h3 class="font-label-mobile text-on-surface-variant uppercase tracking-widest text-[11px] px-1">Notification Settings</h3>
+<!-- Delivery Channels -->
+<div class="mb-4">
+<h4 class="font-tiny-web text-on-surface-variant uppercase tracking-wider mb-2 px-1">ช่องทางรับแจ้ง</h4>
+<div class="bg-surface-container rounded-xl border border-outline-variant/30 overflow-hidden divide-y divide-outline-variant/30 shadow-lg">
+<div class="p-4 flex justify-between items-center bg-surface-container min-h-[52px]">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-bright flex items-center justify-center text-primary-fixed">
+<span class="material-symbols-outlined icon-fill" data-icon="notifications">notifications</span>
+</div>
+<div>
+<p class="font-body-mobile">In-App</p>
+<p class="font-tiny-web text-on-surface-variant">การแจ้งเตือนในแอปพลิเคชัน</p>
+</div>
+</div>
+<div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-transform duration-200 ease-in-out border-outline-variant" id="toggle-inapp" name="toggle" style="right: 0px; border-color: rgb(37, 99, 235);" type="checkbox">
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-outline-variant cursor-pointer" for="toggle-inapp" style="background-color: rgb(37, 99, 235);"></label>
+</div>
+</div>
+<div class="p-4 flex justify-between items-center bg-surface-container min-h-[52px]">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-bright flex items-center justify-center text-primary-fixed">
+<span class="material-symbols-outlined icon-fill" data-icon="phone_iphone">phone_iphone</span>
+</div>
+<div>
+<p class="font-body-mobile">Push</p>
+<p class="font-tiny-web text-on-surface-variant">การแจ้งเตือนบนหน้าจอมือถือ</p>
+</div>
+</div>
+<div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-transform duration-200 ease-in-out border-outline-variant" id="toggle-push" name="toggle" style="right: 0px; border-color: rgb(37, 99, 235);" type="checkbox">
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-outline-variant cursor-pointer" for="toggle-push" style="background-color: rgb(37, 99, 235);"></label>
+</div>
+</div>
+<div class="p-4 flex justify-between items-center bg-surface-container min-h-[52px]">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-bright flex items-center justify-center text-primary-fixed">
+<span class="material-symbols-outlined icon-fill" data-icon="mail">mail</span>
+</div>
+<div>
+<p class="font-body-mobile">Email</p>
+<p class="font-tiny-web text-on-surface-variant">การแจ้งเตือนทางอีเมล</p>
+</div>
+</div>
+<div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+<input class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-transform duration-200 ease-in-out border-outline-variant" id="toggle-email" name="toggle" type="checkbox">
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-outline-variant cursor-pointer" for="toggle-email"></label>
+</div>
+</div>
+</div>
+</div>
+<!-- Alert Categories -->
+<div class="mb-4">
+<h4 class="font-tiny-web text-on-surface-variant uppercase tracking-wider mb-2 px-1">ประเภทการแจ้งเตือน</h4>
+<div class="bg-surface-container rounded-xl border border-outline-variant/30 overflow-hidden divide-y divide-outline-variant/30 shadow-lg">
+<!-- Safety Alerts (Locked) -->
+<div class="p-4 bg-surface-container border-l-4 border-l-mobile-danger">
+<div class="flex justify-between items-start mb-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-mobile-danger" data-icon="warning">warning</span>
+<h4 class="font-body-mobile font-semibold text-mobile-danger">ความปลอดภัย</h4>
+</div>
+<div class="flex items-center gap-1 bg-surface-bright px-2 py-1 rounded text-outline text-xs font-tiny-web">
+<span class="material-symbols-outlined text-[14px]" data-icon="lock">lock</span>
+<span class="">บังคับเปิด</span>
+</div>
+</div>
+<p class="font-tiny-web text-on-surface-variant mb-3">การแจ้งเตือนเหตุฉุกเฉินด้านความปลอดภัย และการตรวจสอบที่ไม่ผ่านเกณฑ์</p>
+<div class="space-y-3 pl-8">
+<div class="flex justify-between items-center min-h-[32px]">
+<span class="font-body-web">Critical Incidents</span>
+<div class="relative inline-block w-12 mr-2 align-middle">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none border-primary-container z-10" disabled="" style="right:0;" type="checkbox">
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-primary-container opacity-50"></label>
+</div>
+</div>
+<div class="flex justify-between items-center min-h-[32px]">
+<span class="font-body-web">Inspection Failed</span>
+<div class="relative inline-block w-12 mr-2 align-middle">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none border-primary-container z-10" disabled="" style="right:0;" type="checkbox">
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-primary-container opacity-50"></label>
+</div>
+</div>
+</div>
+</div>
+<!-- Daily Tasks -->
+<div class="p-4 bg-surface-container border-l-4 border-l-primary-container">
+<div class="flex justify-between items-start mb-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-fixed" data-icon="assignment">assignment</span>
+<h4 class="font-body-mobile font-semibold">งานประจำวัน</h4>
+</div>
+</div>
+<p class="font-tiny-web text-on-surface-variant mb-3">การมอบหมายงานใหม่ และการเปลี่ยนแปลงสถานะงาน</p>
+<div class="space-y-3 pl-8">
+<div class="flex justify-between items-center min-h-[32px]">
+<span class="font-body-web">Task Assignments</span>
+<div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-transform duration-200 ease-in-out border-outline-variant" id="toggle-task-assign" name="toggle" style="right: 0px; border-color: rgb(37, 99, 235);" type="checkbox">
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-outline-variant cursor-pointer" for="toggle-task-assign" style="background-color: rgb(37, 99, 235);"></label>
+</div>
+</div>
+<div class="flex justify-between items-center min-h-[32px]">
+<span class="font-body-web">Status Changes</span>
+<div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-transform duration-200 ease-in-out border-outline-variant" id="toggle-task-status" name="toggle" style="right: 0px; border-color: rgb(37, 99, 235);" type="checkbox">
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-outline-variant cursor-pointer" for="toggle-task-status" style="background-color: rgb(37, 99, 235);"></label>
+</div>
+</div>
+</div>
+</div>
+<!-- Materials & Equipment -->
+<div class="p-4 bg-surface-container border-l-4 border-l-mobile-warning">
+<div class="flex justify-between items-start mb-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-mobile-warning" data-icon="inventory_2">inventory_2</span>
+<h4 class="font-body-mobile font-semibold text-mobile-warning">วัสดุและอุปกรณ์</h4>
+</div>
+</div>
+<p class="font-tiny-web text-on-surface-variant mb-3">การจัดส่งวัสดุ และการแจ้งเตือนวัสดุคงคลังต่ำ</p>
+<div class="space-y-3 pl-8">
+<div class="flex justify-between items-center min-h-[32px]">
+<span class="font-body-web">Delivery Updates</span>
+<div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-transform duration-200 ease-in-out border-outline-variant" id="toggle-mat-delivery" name="toggle" style="right: 0px; border-color: rgb(37, 99, 235);" type="checkbox">
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-outline-variant cursor-pointer" for="toggle-mat-delivery" style="background-color: rgb(37, 99, 235);"></label>
+</div>
+</div>
+<div class="flex justify-between items-center min-h-[32px]">
+<span class="font-body-web">Low Stock Alerts</span>
+<div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+<input class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-transform duration-200 ease-in-out border-outline-variant" id="toggle-mat-stock" name="toggle" type="checkbox">
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-outline-variant cursor-pointer" for="toggle-mat-stock"></label>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Quiet Hours -->
+<div>
+<h4 class="font-tiny-web text-on-surface-variant uppercase tracking-wider mb-2 px-1">ช่วงเวลาพัก</h4>
+<div class="bg-surface-container rounded-xl border border-outline-variant/30 overflow-hidden shadow-lg p-4">
+<div class="flex justify-between items-center mb-4 min-h-[52px]">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-fixed" data-icon="do_not_disturb_on">do_not_disturb_on</span>
+<p class="font-body-mobile">ปิดการแจ้งเตือนอัตโนมัติ</p>
+</div>
+<div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-transform duration-200 ease-in-out border-outline-variant" id="toggle-quiet-hours" name="toggle" style="right: 0px; border-color: rgb(37, 99, 235);" type="checkbox">
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-outline-variant cursor-pointer" for="toggle-quiet-hours" style="background-color: rgb(37, 99, 235);"></label>
+</div>
+</div>
+<div class="flex items-center gap-4 bg-surface-dim p-4 rounded-lg border border-outline-variant/50"><div class="flex-1 min-w-0">
+<label class="block font-tiny-web text-on-surface-variant mb-1">Start</label>
+<div class="flex items-center bg-surface-container-high rounded px-3 py-2 border border-outline-variant focus-within:border-primary-container transition-colors min-h-[44px]">
+<input class="bg-transparent border-none p-0 text-on-surface text-center focus:ring-0 w-full font-body-web font-medium outline-none" type="time" value="22:00">
+</div>
+</div>
+<div class="flex items-center justify-center text-outline-variant pt-5 shrink-0">
+<span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+</div>
+<div class="flex-1 min-w-0">
+<label class="block font-tiny-web text-on-surface-variant mb-1">End</label>
+<div class="flex items-center bg-surface-container-high rounded px-3 py-2 border border-outline-variant focus-within:border-primary-container transition-colors min-h-[44px]">
+<input class="bg-transparent border-none p-0 text-on-surface text-center focus:ring-0 w-full font-body-web font-medium outline-none" type="time" value="07:00">
+</div>
+</div></div>
+<p class="font-tiny-web text-on-surface-variant mt-3 italic">* ยกเว้นการแจ้งเตือนความปลอดภัยระดับวิกฤต</p>
+</div>
+</div>
+</section>
+<!-- Security Group -->
+<section class="space-y-3">
+<h3 class="font-label-mobile text-on-surface-variant uppercase tracking-widest text-[11px] px-1">Security &amp; Access</h3>
+<div class="glass-panel rounded-xl overflow-hidden divide-y divide-outline-variant/20">
+<!-- Password -->
+<button class="w-full flex items-center justify-between p-4 min-h-[64px] text-left">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface-variant">lock</span>
+<div>
+<p class="font-label-mobile">Password</p>
+<p class="font-body-web text-sm text-on-surface-variant">Last changed 3 months ago</p>
+</div>
+</div>
+<span class="text-primary font-label-mobile px-2 py-1">Change</span>
+</button>
+<!-- 2FA -->
+<div class="flex items-center justify-between p-4 min-h-[64px]">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface-variant">security</span>
+<div>
+<p class="font-label-mobile">Two-Factor Authentication</p>
+<p class="font-body-web text-sm text-on-surface-variant">Status: <span class="text-mobile-success">Active</span></p>
+</div>
+</div>
+<span class="material-symbols-outlined text-mobile-success" style="font-variation-settings: &quot;FILL&quot; 1;">check_circle</span>
+</div>
+<div class="flex items-center justify-between p-4 min-h-[64px]"><div class="flex items-center gap-4"><span class="material-symbols-outlined text-on-surface-variant">fingerprint</span><div><p class="font-label-mobile">เข้าใช้งานด้วยไบโอเมตริก</p></div></div><div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in"><input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-transform duration-200 ease-in-out border-outline-variant" id="toggle-bio-security" name="toggle" style="right: 0px; border-color: rgb(37, 99, 235);" type="checkbox"><label class="toggle-label block overflow-hidden h-6 rounded-full bg-outline-variant cursor-pointer" for="toggle-bio-security" style="background-color: rgb(37, 99, 235);"></label></div></div></div>
+</section>
+</main>
+<!-- Fixed Footer Actions -->
+<div class="fixed bottom-0 left-0 w-full bg-surface-container-low/90 backdrop-blur-md border-t border-outline-variant/30 p-edge-mobile pb-safe z-40 space-y-3">
+<button class="w-full h-touch-target bg-primary-container hover:bg-inverse-primary text-on-primary font-label-mobile uppercase tracking-wider rounded-lg shadow-lg active:scale-95 transition-all duration-150 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined" data-icon="save">save</span>
+    SAVE CHANGES
+</button>
+
+</div>
+<script>
+        // Simple script to handle visual toggle states for standard toggles
+        document.querySelectorAll('.toggle-checkbox:not(:disabled)').forEach(toggle => {
+            toggle.addEventListener('change', function() {
+                if(this.checked) {
+                    this.style.right = '0';
+                    this.style.borderColor = '#2563eb'; // primary-container
+                    this.nextElementSibling.style.backgroundColor = '#2563eb';
+                } else {
+                    this.style.right = 'auto'; // Reset, rely on CSS
+                    this.style.borderColor = ''; 
+                    this.nextElementSibling.style.backgroundColor = '';
+                }
+            });
+            // Initialize state based on HTML attributes
+            if(toggle.checked) {
+                toggle.style.right = '0';
+                toggle.style.borderColor = '#2563eb';
+                toggle.nextElementSibling.style.backgroundColor = '#2563eb';
+            }
+        });
+    </script>
+
+
+</body></html>

@@ -4,8 +4,11 @@ import { Injectable, Scope, Inject } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
 import { TenantPrismaService } from '../../tenant/prisma/tenant-prisma.service';
+import { clsTenantId } from '../../../shared/context/cls-context';
 import type { CreateStructureDto } from './dto/create-structure.dto';
 import type { UpdateStructureDto } from './dto/update-structure.dto';
+import { decodeCursor, paginate, type CursorListOptions } from '../../../shared/pagination/cursor';
+import { buildingExistsInTenant } from '../shared/parent-existence';
 
 export interface StructureRow {
   structure_id: string;
@@ -18,29 +21,14 @@ export interface StructureRow {
   updated_at: Date;
 }
 
-export interface ListStructuresOptions {
-  cursor?: string;
-  limit: number;
-}
-
-function encodeCursor(id: string, createdAt: Date): string {
-  return Buffer.from(`${id}:${createdAt.toISOString()}`).toString('base64');
-}
-
-function decodeCursor(cursor: string): { id: string; createdAt: string } | null {
-  const decoded = Buffer.from(cursor, 'base64').toString('utf-8');
-  const colonIdx = decoded.indexOf(':');
-  if (colonIdx === -1) return null;
-  const id = decoded.slice(0, colonIdx);
-  const createdAt = decoded.slice(colonIdx + 1);
-  if (!id || !createdAt) return null;
-  return { id, createdAt };
-}
-
 @Injectable({ scope: Scope.REQUEST })
 export class StructuresRepository {
+  // CLS fallback is load-bearing, not cosmetic: under Fastify the REQUEST injected into a
+  // Scope.REQUEST provider is not guaranteed to be the object the auth layer decorated. The auth
+  // guards publish tenant_id into CLS (the same source TenantPrismaService reads for RLS), so this
+  // resolves even when the request copy does not carry it.
   private get tenantId(): string {
-    return (this.request as { tenantId?: string }).tenantId ?? '';
+    return (this.request as { tenantId?: string }).tenantId ?? clsTenantId();
   }
 
   constructor(
@@ -49,16 +37,7 @@ export class StructuresRepository {
   ) {}
 
   async buildingExists(buildingId: string): Promise<boolean> {
-    const rows = await this.tenantPrisma.run(
-      async (tx) =>
-        await tx.$queryRaw<Array<{ exists: boolean }>>`
-        SELECT EXISTS(
-          SELECT 1 FROM projects.buildings
-          WHERE building_id = ${buildingId}::uuid AND tenant_id = ${this.tenantId}::uuid
-        ) AS exists
-      `,
-    );
-    return rows[0]?.exists ?? false;
+    return buildingExistsInTenant(this.tenantPrisma, buildingId, this.tenantId);
   }
 
   async create(
@@ -93,7 +72,7 @@ export class StructuresRepository {
 
   async list(
     buildingId: string,
-    opts: ListStructuresOptions,
+    opts: CursorListOptions,
   ): Promise<{ items: StructureRow[]; nextCursor: string | null }> {
     const limit = Math.min(opts.limit, 100);
     const parsed = opts.cursor ? decodeCursor(opts.cursor) : null;
@@ -118,14 +97,12 @@ export class StructuresRepository {
       `;
     });
 
-    const hasMore = items.length > limit;
-    const page = hasMore ? items.slice(0, limit) : items;
-    const nextCursor =
-      hasMore && page.length > 0
-        ? encodeCursor(page[page.length - 1]!.structure_id, page[page.length - 1]!.created_at)
-        : null;
-
-    return { items: page, nextCursor };
+    return paginate(
+      items,
+      limit,
+      (r) => r.structure_id,
+      (r) => r.created_at,
+    );
   }
 
   async update(structureId: string, dto: UpdateStructureDto): Promise<StructureRow> {

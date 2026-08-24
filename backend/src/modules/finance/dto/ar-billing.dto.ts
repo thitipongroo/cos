@@ -1,6 +1,15 @@
 // DTOs for the AR Billing increment (§11 Customer / Contract / Billing / AR Receipt, §15 approval).
 
-import { IsString, IsNotEmpty, IsUUID, IsDateString, IsOptional, IsIn } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsUUID,
+  IsDateString,
+  IsOptional,
+  IsIn,
+  IsEmail,
+  ValidateIf,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsDecimalString } from '@cos/validation';
 
@@ -49,6 +58,58 @@ export class CreateContractDto {
   @IsOptional()
   @IsUUID()
   vendor_id?: string;
+
+  @ApiPropertyOptional({
+    description: 'Free-text contract terms (used when generating the document)',
+  })
+  @IsOptional()
+  @IsString()
+  terms?: string;
+}
+
+// 'upload' references a document already uploaded to the File Service (file_id required); 'generate'
+// builds the PDF in-app from Contract + BOQ snapshot + terms (ADR-058 CT-2c-3) — no file_id.
+const CONTRACT_DOCUMENT_MODES = ['upload', 'generate'] as const;
+
+export class AttachContractDocumentDto {
+  @ApiProperty({
+    description: 'How the contract document is attached',
+    enum: CONTRACT_DOCUMENT_MODES,
+  })
+  @IsIn(CONTRACT_DOCUMENT_MODES)
+  mode!: (typeof CONTRACT_DOCUMENT_MODES)[number];
+
+  @ApiPropertyOptional({
+    description: 'File Service file_id of the pre-uploaded document (required for mode=upload)',
+    format: 'uuid',
+  })
+  @ValidateIf((o: AttachContractDocumentDto) => o.mode === 'upload')
+  @IsUUID()
+  file_id?: string;
+}
+
+export class IssueSignLinkDto {
+  @ApiPropertyOptional({ description: 'Client contact name (shown on the signing page)' })
+  @IsOptional()
+  @IsString()
+  client_name?: string;
+
+  @ApiPropertyOptional({ description: 'Client email the sign link is issued to' })
+  @IsOptional()
+  @IsEmail()
+  client_email?: string;
+}
+
+export class ClientSignDto {
+  @ApiPropertyOptional({ description: 'Signing client name (captured on the signature)' })
+  @IsOptional()
+  @IsString()
+  client_name?: string;
+
+  @ApiPropertyOptional({ description: 'Signing client email (captured on the signature)' })
+  @IsOptional()
+  @IsEmail()
+  client_email?: string;
 }
 
 export class CreateBillingDto {

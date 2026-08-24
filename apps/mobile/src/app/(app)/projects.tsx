@@ -1,18 +1,35 @@
 // Projects screen — PROJECT_MANAGER project status list. Reads the offline project cache
 // (local_projects) and refreshes from GET /projects when online.
 
-import { useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { memo, useCallback, useEffect } from 'react';
+import { View, Text, FlatList } from 'react-native';
 import type { Project } from '../../db/database';
 import { useCollection } from '../../hooks/useCollection';
 import { refreshProjectsCache } from '../../api/projects';
 import { StatusChip } from '../../components/StatusChip';
 import { useT } from '../../i18n';
-import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
+import { screen } from '../../theme/screenStyles';
+
+/** One project, memoized — the row of a list read whole from the local cache. */
+const ProjectItem = memo(function ProjectItem({ project }: { project: Project }) {
+  return (
+    <View testID="project-item" style={screen.item}>
+      <Text style={screen.itemTitle}>
+        {project.projectCode} · {project.projectName}
+      </Text>
+      <StatusChip label={project.status} />
+    </View>
+  );
+});
 
 export default function ProjectsScreen() {
   const projects = useCollection<Project>('local_projects');
   const t = useT();
+
+  const renderProject = useCallback(
+    ({ item }: { item: Project }) => <ProjectItem project={item} />,
+    [],
+  );
 
   useEffect(() => {
     refreshProjectsCache().catch(() => {
@@ -21,43 +38,14 @@ export default function ProjectsScreen() {
   }, []);
 
   return (
-    <View testID="projects-screen" style={styles.container}>
-      <Text style={styles.heading}>{t('pm.projects.title')}</Text>
+    <View testID="projects-screen" style={screen.container}>
       <FlatList
         testID="projects-list"
         data={projects}
         keyExtractor={(p) => p.id}
-        ListEmptyComponent={<Text style={styles.empty}>{t('pm.projects.empty')}</Text>}
-        renderItem={({ item }) => (
-          <View testID="project-item" style={styles.item}>
-            <Text style={styles.itemTitle}>
-              {item.projectCode} · {item.projectName}
-            </Text>
-            <StatusChip label={item.status} />
-          </View>
-        )}
+        ListEmptyComponent={<Text style={screen.empty}>{t('pm.projects.empty')}</Text>}
+        renderItem={renderProject}
       />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: spacing.md, gap: spacing.sm },
-  heading: {
-    fontSize: typography.title.fontSize,
-    fontFamily: fontFamily.semibold,
-    color: colors.textPrimary,
-  },
-  item: {
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surface,
-    gap: spacing.xs,
-  },
-  itemTitle: {
-    fontSize: typography.body.fontSize,
-    fontFamily: fontFamily.medium,
-    color: colors.textPrimary,
-  },
-  empty: { color: colors.textSecondary, fontFamily: fontFamily.regular, padding: spacing.md },
-});

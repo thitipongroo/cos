@@ -5,14 +5,15 @@
 
 import {
   Injectable,
+  Inject,
   BadRequestException,
   HttpException,
   HttpStatus,
   OnModuleDestroy,
 } from '@nestjs/common';
-import { SNSClient, PublishCommand } from '@aws-sdk/client-sns';
 import { Redis } from 'ioredis';
 import { createLogger } from '@cos/logger';
+import { SMS_SENDER, type SmsSender } from './sms-sender';
 
 // node:crypto builtin — loaded via require() (the in-repo idiom for builtins, cf.
 // platform-webhook.service.ts) so it resolves under CommonJS without a package.json dep.
@@ -25,16 +26,22 @@ const OTP_TTL_SECONDS = 300; // 5 minutes
 const OTP_MAX_ATTEMPTS = 3;
 const OTP_DAILY_LIMIT = 10;
 const OTP_LENGTH = 6;
+// Minimum interval between two OTP sends to the same phone (§5.5 send-rate cap). Enforced server-side
+// (a Redis cooldown key) AND surfaced to the client so it can disable "resend" with a countdown.
+const RESEND_COOLDOWN_SECONDS = 60;
 
-function generateOtp(): string {
+// Exported so the step-up flow (ADR-078) mints and checks its codes with the SAME primitives rather
+// than a second copy. A divergence here — a weaker RNG, or a `===` comparison — would be a
+// credential bug in one flow that the other's tests could never catch.
+export function generateOtp(): string {
   // crypto.randomInt is a CSPRNG — Math.random() is predictable and must never mint a credential.
   return randomInt(0, 10 ** OTP_LENGTH)
     .toString()
     .padStart(OTP_LENGTH, '0');
 }
 
-// Constant-time OTP comparison — avoids leaking how many leading digits matched via response timing.
-function otpMatches(submitted: string, expected: string): boolean {
+/** Constant-time comparison — avoids leaking how many leading digits matched via response timing. */
+export function otpMatches(submitted: string, expected: string): boolean {
   const a = Buffer.from(submitted);
   const b = Buffer.from(expected);
   return a.length === b.length && timingSafeEqual(a, b);
@@ -54,11 +61,11 @@ function e2eFixedOtp(): string | null {
 
 @Injectable()
 export class OtpService implements OnModuleDestroy {
-  private readonly sns: SNSClient;
   private readonly redis: Redis;
 
-  constructor() {
-    this.sns = new SNSClient({ region: process.env['AWS_REGION'] ?? 'ap-southeast-1' });
+  // SMS goes through the ADR-040 port, not a hardcoded SNSClient: the on-premise / air-gapped
+  // deployments cannot reach AWS, and SMS-OTP is the ONLY login SITE_WORKER has.
+  constructor(@Inject(SMS_SENDER) private readonly sms: SmsSender) {
     this.redis = new Redis(process.env['REDIS_URL'] ?? 'redis://localhost:6379');
   }
 
@@ -73,11 +80,17 @@ export class OtpService implements OnModuleDestroy {
    * or git, and a hash of a 6-digit code is trivially brute-forced (10^6 preimages) so it adds no real
    * protection. Confidentiality rests on Redis access control + short TTL.
    */
-  async requestOtp(phoneNumber: string): Promise<{ expiresInSeconds: number }> {
+  async requestOtp(
+    phoneNumber: string,
+  ): Promise<{ expiresInSeconds: number; resendCooldownSeconds: number }> {
     const fixedOtp = e2eFixedOtp();
-    // The E2E bypass also skips the per-phone daily rate limit: automated suites request many OTPs for
-    // the same test phone. Production (bypass inactive) always enforces the limit.
-    if (!fixedOtp) await this.enforceDailyLimit(phoneNumber);
+    // The E2E bypass skips BOTH the resend cooldown and the per-phone daily limit: automated suites
+    // request many OTPs for the same test phone back-to-back. Production always enforces both.
+    let claimedDailyKey: string | null = null;
+    if (!fixedOtp) {
+      await this.enforceResendCooldown(phoneNumber);
+      claimedDailyKey = await this.enforceDailyLimit(phoneNumber);
+    }
 
     const otp = fixedOtp ?? generateOtp();
     const attemptsKey = `otp:attempts:${phoneNumber}`;
@@ -87,29 +100,74 @@ export class OtpService implements OnModuleDestroy {
     await this.redis.set(otpKey, otp, 'EX', OTP_TTL_SECONDS);
     await this.redis.set(attemptsKey, '0', 'EX', OTP_TTL_SECONDS);
 
-    await this.sendSms(phoneNumber, otp);
+    try {
+      await this.sendSms(phoneNumber, otp);
+    } catch (err) {
+      // The daily slot is claimed BEFORE the send, because the INCR is what makes the limit atomic
+      // under concurrency (the same reason verifyOtp spends its attempt budget up front). That left a
+      // gateway failure burning one of the caller's ten daily codes for a message that never arrived
+      // — and SMS OTP is the ONLY login SITE_WORKER has, so ten failed sends locked them out for the
+      // day. Hand the slot back. The cooldown needs no unwinding: it is only opened after a
+      // successful send.
+      if (claimedDailyKey) await this.refundDailyLimit(claimedDailyKey);
+      throw err;
+    }
+    // Open the cooldown window only after a send actually went out (a failed send lets the user retry).
+    if (!fixedOtp) await this.startResendCooldown(phoneNumber);
 
     // @pdpa: phone_number is PII — log as [REDACTED]
     logger.info({ phone: '[REDACTED]' }, 'OTP sent');
-    return { expiresInSeconds: OTP_TTL_SECONDS };
+    // The client always applies the cooldown countdown; the E2E bypass only relaxes SERVER enforcement
+    // (so suites can re-request via the API), not the advertised duration.
+    return { expiresInSeconds: OTP_TTL_SECONDS, resendCooldownSeconds: RESEND_COOLDOWN_SECONDS };
   }
 
-  /** Verify OTP — returns true on success, throws on failure/expiry/max attempts. */
+  /**
+   * Reject a resend that arrives before the per-phone cooldown elapses, returning how many seconds are
+   * left so the client can sync its countdown. HTTP 429, distinct from the daily-limit 429 by its
+   * `retryAfterSeconds`.
+   */
+  private async enforceResendCooldown(phoneNumber: string): Promise<void> {
+    const remaining = await this.redis.ttl(`otp:cooldown:${phoneNumber}`);
+    if (remaining > 0) {
+      throw new HttpException(
+        {
+          message: 'An OTP was sent recently — please wait before requesting a new one',
+          retryAfterSeconds: remaining,
+        },
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+  }
+
+  private async startResendCooldown(phoneNumber: string): Promise<void> {
+    await this.redis.set(`otp:cooldown:${phoneNumber}`, '1', 'EX', RESEND_COOLDOWN_SECONDS);
+  }
+
+  /**
+   * Verify OTP — returns true on success, throws on failure/expiry/max attempts.
+   *
+   * The attempt budget is spent BEFORE the comparison, via a single atomic INCR (security review F6).
+   * The previous order — read the counter, compare, then increment only on a miss — was a TOCTOU: N
+   * concurrent requests all read the same pre-increment value, all passed the `attempts >= 3` check,
+   * and all got to guess. That turned a 3-guess budget into "3 guesses per round trip of parallelism"
+   * against a 6-digit space.
+   *
+   * INCR preserves the TTL requestOtp set on the key, so the budget still expires with the OTP.
+   */
   async verifyOtp(phoneNumber: string, otp: string): Promise<boolean> {
     const attemptsKey = `otp:attempts:${phoneNumber}`;
     const otpKey = `otp:value:${phoneNumber}`;
 
-    const [storedOtp, attemptsStr] = await Promise.all([
-      this.redis.get(otpKey),
-      this.redis.get(attemptsKey),
-    ]);
-
+    const storedOtp = await this.redis.get(otpKey);
     if (!storedOtp) {
       throw new BadRequestException('OTP expired or not requested');
     }
 
-    const attempts = parseInt(attemptsStr ?? /* istanbul ignore next */ '0', 10);
-    if (attempts >= OTP_MAX_ATTEMPTS) {
+    // Claim this attempt atomically. A concurrent burst gets 1, 2, 3, 4… — exactly one request per
+    // slot — so only OTP_MAX_ATTEMPTS of them ever reach the comparison below.
+    const attempts = await this.redis.incr(attemptsKey);
+    if (attempts > OTP_MAX_ATTEMPTS) {
       await this.redis.del(otpKey, attemptsKey);
       throw new HttpException(
         'Maximum OTP attempts exceeded — request a new OTP',
@@ -118,7 +176,6 @@ export class OtpService implements OnModuleDestroy {
     }
 
     if (!otpMatches(otp, storedOtp)) {
-      await this.redis.incr(attemptsKey);
       logger.warn({ phone: '[REDACTED]' }, 'OTP verification failed');
       throw new BadRequestException('Invalid OTP');
     }
@@ -128,7 +185,9 @@ export class OtpService implements OnModuleDestroy {
     return true;
   }
 
-  private async enforceDailyLimit(phoneNumber: string): Promise<void> {
+  /** Claim one of the day's OTP slots. Returns the Redis key that was charged, so a failed send can
+   *  refund exactly that key even if the call straddles the UTC date rollover. */
+  private async enforceDailyLimit(phoneNumber: string): Promise<string> {
     const dailyKey = `otp:daily:${phoneNumber}:${new Date().toISOString().slice(0, 10)}`;
     const count = await this.redis.incr(dailyKey);
     if (count === 1) {
@@ -137,24 +196,32 @@ export class OtpService implements OnModuleDestroy {
     if (count > OTP_DAILY_LIMIT) {
       throw new HttpException('Daily OTP limit exceeded', HttpStatus.TOO_MANY_REQUESTS);
     }
+    return dailyKey;
+  }
+
+  /**
+   * Return an unused daily slot after a failed send.
+   *
+   * Guarded by EXISTS inside the script rather than a bare DECR: the key carries a 24h TTL, and a
+   * plain DECR arriving after it expired would RECREATE it at -1 with no expiry, which then lets the
+   * next day start from a negative count (eleven sends, forever). Doing the check and the decrement
+   * in one Lua call keeps them atomic — a DECR guarded by a separate EXISTS round trip has the same
+   * race, just narrower.
+   */
+  private async refundDailyLimit(dailyKey: string): Promise<void> {
+    await this.redis.eval(
+      "if redis.call('EXISTS', KEYS[1]) == 1 then return redis.call('DECR', KEYS[1]) end return 0",
+      1,
+      dailyKey,
+    );
   }
 
   private async sendSms(phoneNumber: string, otp: string): Promise<void> {
-    if (process.env['NODE_ENV'] === 'development') {
-      // Log OTP in dev mode only — never in production
-      logger.debug({ otp, phone: '[REDACTED]' }, '[DEV] OTP generated (not sent via SMS)');
-      return;
-    }
-
-    await this.sns.send(
-      new PublishCommand({
-        PhoneNumber: phoneNumber,
-        Message: `Your Construction OS verification code is: ${otp}. Valid for 5 minutes.`,
-        MessageAttributes: {
-          'AWS.SNS.SMS.SMSType': { DataType: 'String', StringValue: 'Transactional' },
-          'AWS.SNS.SMS.SenderID': { DataType: 'String', StringValue: 'COS' },
-        },
-      }),
+    // Delivery — including the dev-mode short-circuit — belongs to the adapter (ADR-040). This method
+    // now owns only the message copy, which is a product concern, not a gateway one.
+    await this.sms.sendSms(
+      phoneNumber,
+      `Your Construction OS verification code is: ${otp}. Valid for 5 minutes.`,
     );
   }
 }

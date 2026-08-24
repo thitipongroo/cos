@@ -1,38 +1,44 @@
 'use client';
 
-import { useState } from 'react';
+import { leadCreateSchema } from '@cos/schemas';
+import { Controller } from 'react-hook-form';
+import { TextInputField } from '../../../../components/form/TextInputField';
 import { DataTable, type Column } from '../../../../components/ui/DataTable';
 import { useI18n } from '../../../../i18n';
 import { useCrmLeads, useCreateLead } from '../../../../lib/api/queries';
 import type { LeadRow } from '../../../../lib/api/types';
 import { formatDate } from '../../../../lib/format';
+import { useValidatedForm } from '../../../../lib/forms';
 
 /** CRM leads — list + create (§20.7.10 → /crm/leads, ADR-029). */
 export default function CrmLeadsPage() {
   const { t, locale } = useI18n();
   const query = useCrmLeads();
   const create = useCreateLead();
-  const [contactName, setContactName] = useState('');
-  const [company, setCompany] = useState('');
-  const [source, setSource] = useState('');
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useValidatedForm({
+    schema: leadCreateSchema,
+    defaultValues: { contact_name: '', company: '', source: '' },
+  });
 
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const messageFor = (key?: string) => (key ? t(key) : undefined);
+
+  const submit = handleSubmit((values) => {
+    // Empty strings become undefined so the API receives no key at all rather than a blank one —
+    // CreateLeadInput declares every field optional.
     create.mutate(
       {
-        contact_name: contactName || undefined,
-        company: company || undefined,
-        source: source || undefined,
+        contact_name: values.contact_name || undefined,
+        company: values.company || undefined,
+        source: values.source || undefined,
       },
-      {
-        onSuccess: () => {
-          setContactName('');
-          setCompany('');
-          setSource('');
-        },
-      },
+      { onSuccess: () => reset({ contact_name: '', company: '', source: '' }) },
     );
-  };
+  });
 
   const columns: Column<LeadRow>[] = [
     { headerKey: 'crm.colContact', cell: (l) => l.contact_name ?? '—' },
@@ -42,34 +48,49 @@ export default function CrmLeadsPage() {
     { headerKey: 'site.colDate', cell: (l) => formatDate(locale, l.created_at) },
   ];
 
-  const field = 'rounded-md border border-gray-300 px-3 py-1.5 text-sm';
-
   return (
     <div>
       <h1 className="mb-4 text-2xl font-bold text-gray-800">{t('crm.leadsTitle')}</h1>
-      <form onSubmit={submit} className="mb-6 flex flex-wrap items-center gap-2">
-        <input
-          value={contactName}
-          onChange={(e) => setContactName(e.target.value)}
-          placeholder={t('crm.colContact')}
-          className={field}
+      <form onSubmit={submit} noValidate className="mb-6 flex flex-wrap items-start gap-2">
+        <Controller
+          name="contact_name"
+          control={control}
+          render={({ field }) => (
+            <TextInputField
+              {...field}
+              label={t('crm.colContact')}
+              errorMessage={messageFor(errors.contact_name?.message)}
+            />
+          )}
         />
-        <input
-          value={company}
-          onChange={(e) => setCompany(e.target.value)}
-          placeholder={t('crm.colCompany')}
-          className={field}
+        <Controller
+          name="company"
+          control={control}
+          render={({ field }) => (
+            <TextInputField
+              {...field}
+              label={t('crm.colCompany')}
+              errorMessage={messageFor(errors.company?.message)}
+            />
+          )}
         />
-        <input
-          value={source}
-          onChange={(e) => setSource(e.target.value)}
-          placeholder={t('crm.colSource')}
-          className={field}
+        <Controller
+          name="source"
+          control={control}
+          render={({ field }) => (
+            <TextInputField
+              {...field}
+              label={t('crm.colSource')}
+              errorMessage={messageFor(errors.source?.message)}
+            />
+          )}
         />
+        {/* The button is no longer disabled on "contact or company empty": the schema owns that
+            rule now, and a disabled submit gives a screen-reader user no reason why. */}
         <button
           type="submit"
-          disabled={create.isPending || (!contactName && !company)}
-          className="rounded-md bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+          disabled={isSubmitting || create.isPending}
+          className="mt-6 rounded-md bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
         >
           {t('crm.createLead')}
         </button>

@@ -56,11 +56,7 @@ describe('Sync Conflict Resolution — Max-Wins for progress_percent', () => {
   });
 
   it('user A can log in and navigate to task', async () => {
-    // Login screen shows both auth paths (ADR-050) — tap the field-worker OTP link first.
-    await waitFor(element(by.id('field-login-link')))
-      .toBeVisible()
-      .withTimeout(10_000);
-    await element(by.id('field-login-link')).tap();
+    // Login landing carries the Path-A phone form directly (ADR-050) — no phone-entry step to tap.
     await waitFor(element(by.id('phone-input')))
       .toBeVisible()
       .withTimeout(10_000);
@@ -68,7 +64,7 @@ describe('Sync Conflict Resolution — Max-Wins for progress_percent', () => {
     // regardless of the simulator's region) and enter the national digits (the login re-adds +66).
     await element(by.id('country-picker')).tap();
     await element(by.id('country-option-th')).tap();
-    await element(by.id('phone-input')).typeText(USER_A_PHONE.replace(/^\+66/, ''));
+    await element(by.id('phone-input')).typeText(USER_A_PHONE.replace(/^\+66/, '0'));
     await element(by.id('request-otp-button')).tap();
     await waitFor(element(by.id('otp-input')))
       .toBeVisible()
@@ -86,7 +82,7 @@ describe('Sync Conflict Resolution — Max-Wins for progress_percent', () => {
       .withTimeout(10_000);
 
     await setNetworkConnected(false);
-    await waitFor(element(by.id('offline-banner')))
+    await waitFor(element(by.id('sync-pill')))
       .toBeVisible()
       .withTimeout(5_000);
 
@@ -113,10 +109,13 @@ describe('Sync Conflict Resolution — Max-Wins for progress_percent', () => {
 
     await setNetworkConnected(true);
 
-    await waitFor(element(by.id('sync-status-bar')))
+    // The full-width green sync strip was replaced by the top-bar <SyncPill /> for every role
+    // (PO decision 2026-08-04). The pill is icon-only, so the synced state is asserted on its
+    // accessibilityLabel (i18n sync.pill.synced) rather than on-screen text.
+    await waitFor(element(by.id('sync-pill')))
       .toBeVisible()
       .withTimeout(10_000);
-    await waitFor(element(by.text(/synced|up to date|ซิงค์แล้ว/i)))
+    await waitFor(element(by.label(/synced|ซิงค์แล้ว/i)))
       .toBeVisible()
       .withTimeout(30_000);
 
@@ -150,7 +149,7 @@ describe('Sync Conflict Resolution — Max-Wins for progress_percent', () => {
       .toExist()
       .withTimeout(10_000);
 
-    await waitFor(element(by.text(/synced|up to date|ซิงค์แล้ว/i)))
+    await waitFor(element(by.label(/synced|ซิงค์แล้ว/i)))
       .toBeVisible()
       .withTimeout(15_000);
 

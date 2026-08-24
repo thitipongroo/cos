@@ -8,138 +8,41 @@ import type { Request } from 'express';
 import { OutboxPublisher } from '@cos/kafka';
 import { TenantPrismaService } from '../tenant/prisma/tenant-prisma.service';
 import type { OutboxEventInput } from '../../shared/outbox/outbox.types';
+import { applyCap, capLimit } from '../../shared/pagination/list-cap';
+import { clsTenantId } from '../../shared/context/cls-context';
 
-// ── Row types ──────────────────────────────────────────────────────────────
+// Row types live in ./finance.rows; imported here for the method signatures below and re-exported so
+// existing `from './finance.repository'` type imports (service, consumer, util, specs) keep resolving.
+import type {
+  ProjectBudgetRow,
+  BudgetLineRow,
+  CostTransactionRow,
+  PaymentRow,
+  WhtRuleRow,
+  CustomerRow,
+  ContractRow,
+  BoqSnapshotItem,
+  SignerParty,
+  SignatureVerificationStatus,
+  ContractSignatureRow,
+  ContractSignTokenRow,
+  BillingRow,
+  ArReceiptRow,
+  CashflowDueRow,
+} from './finance.rows';
 
-export interface ProjectBudgetRow {
-  budget_id: string;
-  project_id: string;
-  tenant_id: string;
-  total_budget_amount: string;
-  total_budget_currency: string;
-  allocated_amount: string;
-  committed_amount: string;
-  actual_amount: string;
-  variance_alert_threshold: string;
-  created_at: Date;
-  updated_at: Date;
-}
-
-export interface BudgetLineRow {
-  line_id: string;
-  budget_id: string;
-  project_id: string;
-  tenant_id: string;
-  boq_category_id: string | null;
-  line_name: string;
-  allocated_amount: string;
-  currency_code: string;
-  created_at: Date;
-}
-
-export interface CostTransactionRow {
-  transaction_id: string;
-  project_id: string;
-  tenant_id: string;
-  source_type: 'PURCHASE_ORDER' | 'INVOICE' | 'ADJUSTMENT';
-  source_id: string;
-  budget_line_id: string | null;
-  amount: string;
-  currency_code: string;
-  transaction_date: Date;
-  description: string | null;
-  recorded_at: Date;
-  recorded_by: string | null;
-}
-
-export interface PaymentRow {
-  payment_id: string;
-  invoice_id: string;
-  project_id: string;
-  tenant_id: string;
-  amount: string;
-  currency_code: string;
-  payment_date: Date;
-  payment_reference: string | null;
-  wht_certificate_ref: string | null;
-  status: 'PENDING' | 'PROCESSED' | 'FAILED';
-  recorded_by: string;
-  created_at: Date;
-}
-
-export interface WhtRuleRow {
-  rule_id: string;
-  tenant_id: string;
-  jurisdiction_code: string;
-  service_type: string;
-  rate: string; // DECIMAL returned as string by Prisma
-  is_active: boolean;
-}
-
-// AR Billing increment (§11) ─────────────────────────────────────────────────
-
-export interface CustomerRow {
-  customer_id: string;
-  tenant_id: string;
-  opportunity_id: string | null;
-  company_name: string;
-  customer_type: string | null;
-  status: string;
-  created_at: Date;
-}
-
-export interface ContractRow {
-  contract_id: string;
-  tenant_id: string;
-  project_id: string;
-  contract_type: 'MAIN_CONTRACT' | 'SUBCONTRACT' | 'SUPPLY_AGREEMENT';
-  contract_value: string | null;
-  customer_id: string | null;
-  vendor_id: string | null;
-  status: string;
-  created_at: Date;
-}
-
-export interface BillingRow {
-  billing_id: string;
-  tenant_id: string;
-  project_id: string;
-  contract_id: string;
-  billing_number: string;
-  amount: string;
-  due_date: Date;
-  status: 'DRAFT' | 'ISSUED' | 'PAID';
-  issued_at: Date | null;
-  approved_by: string | null;
-  created_at: Date;
-}
-
-export interface ArReceiptRow {
-  ar_receipt_id: string;
-  tenant_id: string;
-  project_id: string;
-  billing_id: string;
-  customer_id: string;
-  amount_received: string;
-  received_date: Date;
-  payment_method: string | null;
-  payment_reference: string | null;
-  received_by: string;
-  created_at: Date;
-}
-
-/** A dated amount feeding the direct-method cash flow forecast. */
-export interface CashflowDueRow {
-  due_date: Date;
-  amount: string;
-}
+export type * from './finance.rows';
 
 // ── Repository ─────────────────────────────────────────────────────────────
 
 @Injectable({ scope: Scope.REQUEST })
 export class FinanceRepository {
+  // CLS fallback is load-bearing, not cosmetic: under Fastify the REQUEST injected into a
+  // Scope.REQUEST provider is not guaranteed to be the object the auth layer decorated. The auth
+  // guards publish tenant_id into CLS (the same source TenantPrismaService reads for RLS), so this
+  // resolves even when the request copy does not carry it.
   private get tenantId(): string {
-    return (this.request as { tenantId?: string }).tenantId ?? '';
+    return (this.request as { tenantId?: string }).tenantId ?? clsTenantId();
   }
 
   constructor(
@@ -399,9 +302,20 @@ export class FinanceRepository {
     return rows[0] ?? null;
   }
 
-  // Tenant-wide payments (AIP-132 AP queue); optional project_id filter (spec §14).
+  // Tenant-wide payments (AIP-132 AP queue); optional project_id + status filters (spec §14).
+  //
+  // `status` is filtered SERVER-SIDE for the same reason `/procurement/purchase-orders` and
+  // `/finance/billing` already do it: a caller that wants a count of one status cannot get it by
+  // filtering the page it happened to receive. This list paginates at 20 and the tenant holds
+  // thirty-odd payments, so a client-side filter over page one is not a count — the defect the
+  // Tenant-Admin dashboard's "Payments awaiting approval" tile hit. `total` is what a counter reads.
+  //
+  // Cast through the enum, not `::text`, mirroring the billing filter below: `status` is
+  // `finance."PaymentStatus"`, so comparing it to a bare parameter has no operator. An unknown value
+  // is rejected by Postgres as an invalid enum input rather than silently matching nothing.
   async findPayments(params: {
     project_id?: string;
+    status?: string;
     page: number;
     limit: number;
   }): Promise<{ rows: PaymentRow[]; total: number }> {
@@ -412,6 +326,7 @@ export class FinanceRepository {
         SELECT * FROM finance.payments
         WHERE tenant_id = ${this.tenantId}::uuid
           AND (${params.project_id ?? null}::uuid IS NULL OR project_id = ${params.project_id ?? null}::uuid)
+          AND (${params.status ?? null}::text IS NULL OR status = (${params.status ?? null})::finance."PaymentStatus")
         ORDER BY payment_date DESC
         LIMIT ${params.limit} OFFSET ${offset}
       `,
@@ -422,6 +337,7 @@ export class FinanceRepository {
         SELECT COUNT(*)::bigint AS count FROM finance.payments
         WHERE tenant_id = ${this.tenantId}::uuid
           AND (${params.project_id ?? null}::uuid IS NULL OR project_id = ${params.project_id ?? null}::uuid)
+          AND (${params.status ?? null}::text IS NULL OR status = (${params.status ?? null})::finance."PaymentStatus")
       `,
     );
     return { rows, total: Number(countRows[0]?.count ?? 0) };
@@ -447,14 +363,16 @@ export class FinanceRepository {
   // ── variance report ───────────────────────────────────────────────────────
 
   async findAllBudgets(): Promise<ProjectBudgetRow[]> {
-    return this.db.run(
+    const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<ProjectBudgetRow[]>`
         SELECT * FROM finance.project_budgets
         WHERE tenant_id = ${this.tenantId}::uuid
         ORDER BY created_at DESC
+        LIMIT ${capLimit()}
       `,
     );
+    return applyCap(rows, 'finance.project_budgets');
   }
 
   // ── customers (§11) ─────────────────────────────────────────────────────────
@@ -488,14 +406,16 @@ export class FinanceRepository {
   }
 
   async listCustomers(): Promise<CustomerRow[]> {
-    return this.db.run(
+    const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<CustomerRow[]>`
         SELECT * FROM finance.customers
         WHERE tenant_id = ${this.tenantId}::uuid
         ORDER BY created_at DESC
+        LIMIT ${capLimit()}
       `,
     );
+    return applyCap(rows, 'finance.customers');
   }
 
   // ── contracts (§11) ─────────────────────────────────────────────────────────
@@ -506,17 +426,19 @@ export class FinanceRepository {
     contract_value?: string | null;
     customer_id?: string | null;
     vendor_id?: string | null;
+    terms?: string | null;
   }): Promise<ContractRow> {
     const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<ContractRow[]>`
         INSERT INTO finance.contracts
-          (tenant_id, project_id, contract_type, contract_value, customer_id, vendor_id)
+          (tenant_id, project_id, contract_type, contract_value, customer_id, vendor_id, terms)
         VALUES
           (${this.tenantId}::uuid, ${params.project_id}::uuid,
            ${params.contract_type}::finance."ContractType",
            ${params.contract_value ?? null}::decimal,
-           ${params.customer_id ?? null}::uuid, ${params.vendor_id ?? null}::uuid)
+           ${params.customer_id ?? null}::uuid, ${params.vendor_id ?? null}::uuid,
+           ${params.terms ?? null}::text)
         RETURNING *
       `,
     );
@@ -535,15 +457,186 @@ export class FinanceRepository {
   }
 
   async listContracts(project_id?: string): Promise<ContractRow[]> {
-    return this.db.run(
+    const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<ContractRow[]>`
         SELECT * FROM finance.contracts
         WHERE tenant_id = ${this.tenantId}::uuid
           AND (${project_id ?? null}::uuid IS NULL OR project_id = ${project_id ?? null}::uuid)
         ORDER BY created_at DESC
+        LIMIT ${capLimit()}
       `,
     );
+    return applyCap(rows, 'finance.contracts');
+  }
+
+  /** Update a contract's lifecycle status; returns the updated row. */
+  async updateContractStatus(contract_id: string, status: string): Promise<ContractRow> {
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<ContractRow[]>`
+        UPDATE finance.contracts SET status = ${status}
+         WHERE contract_id = ${contract_id}::uuid AND tenant_id = ${this.tenantId}::uuid
+        RETURNING *
+      `,
+    );
+    return rows[0]!;
+  }
+
+  /** Bind an attached/generated document (File Service file_id) to a contract (ADR-058 CT-2). */
+  async attachSignedDocument(
+    contract_id: string,
+    signed_document_id: string,
+  ): Promise<ContractRow> {
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<ContractRow[]>`
+        UPDATE finance.contracts
+           SET signed_document_id = ${signed_document_id}::uuid
+         WHERE contract_id = ${contract_id}::uuid AND tenant_id = ${this.tenantId}::uuid
+        RETURNING *
+      `,
+    );
+    return rows[0]!;
+  }
+
+  /**
+   * Replace the materialized BOQ line snapshot for a version (ADR-058 CT-2c-2). DELETE + re-INSERT in one
+   * tenant transaction → idempotent on event re-delivery. Materializes construction.boq.items_published.v1
+   * so contract-document generation reads the itemized schedule without a cross-schema BOQ read.
+   */
+  /** Record a contract signature (ADR-058 CT-3/CT-5). Binds a signer + document hash + VC reference. */
+  async recordContractSignature(params: {
+    contract_id: string;
+    signer_party: SignerParty;
+    signer_identity: Record<string, unknown>;
+    credential_ref: string;
+    document_hash: string;
+    ip_address: string;
+    verification_status: SignatureVerificationStatus;
+    magic_link_token_id?: string | null;
+  }): Promise<ContractSignatureRow> {
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<ContractSignatureRow[]>`
+        INSERT INTO finance.contract_signatures
+          (tenant_id, contract_id, signer_party, signer_identity, credential_ref,
+           document_hash, ip_address, magic_link_token_id, verification_status)
+        VALUES
+          (${this.tenantId}::uuid, ${params.contract_id}::uuid,
+           ${params.signer_party}::finance."SignerParty",
+           ${JSON.stringify(params.signer_identity)}::jsonb, ${params.credential_ref},
+           ${params.document_hash}, ${params.ip_address}::inet,
+           ${params.magic_link_token_id ?? null}::uuid,
+           ${params.verification_status}::finance."SignatureVerificationStatus")
+        RETURNING *
+      `,
+    );
+    return rows[0]!;
+  }
+
+  /** All signatures recorded against a contract, oldest first (ADR-058 CT-6 audit trail). */
+  async listContractSignatures(contract_id: string): Promise<ContractSignatureRow[]> {
+    return this.db.run(
+      (tx) =>
+        tx.$queryRaw<ContractSignatureRow[]>`
+        SELECT * FROM finance.contract_signatures
+         WHERE contract_id = ${contract_id}::uuid AND tenant_id = ${this.tenantId}::uuid
+         ORDER BY signed_at
+      `,
+    );
+  }
+
+  /**
+   * Atomically consume a sign-link token (single-use, ADR-058 CT-5). Returns the row on success, or
+   * null when the token does not exist for this tenant, is expired, or was ALREADY consumed.
+   *
+   * This is a compare-and-set, not a read followed by a write, and that is the whole point. The
+   * previous shape was `findActiveSignToken(...)` → issue a VC → verify it → record the signature →
+   * `markSignTokenUsed(...)`: a check and a consume in separate transactions with two CredentialService
+   * round-trips in between. Two concurrent POSTs to /finance/contracts/sign/:token both passed the
+   * check and both recorded a CLIENT signature, so "single-use" held only when nobody raced it.
+   *
+   * `UPDATE ... WHERE used_at IS NULL` closes that: under READ COMMITTED the second transaction blocks
+   * on the row lock, re-evaluates the predicate once the first commits, and matches zero rows.
+   */
+  async consumeSignToken(token_hash: string): Promise<ContractSignTokenRow | null> {
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<ContractSignTokenRow[]>`
+        UPDATE finance.contract_sign_tokens SET used_at = now()
+         WHERE tenant_id = ${this.tenantId}::uuid AND token_hash = ${token_hash}
+           AND used_at IS NULL AND expires_at > now()
+        RETURNING *
+      `,
+    );
+    return rows[0] ?? null;
+  }
+
+  /** Persist an issued client sign-link token (ADR-058 CT-4). Only the token_hash is stored. */
+  async createSignToken(params: {
+    contract_id: string;
+    token_hash: string;
+    invited_name?: string | null;
+    invited_email?: string | null;
+    expires_at: Date;
+  }): Promise<ContractSignTokenRow> {
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<ContractSignTokenRow[]>`
+        INSERT INTO finance.contract_sign_tokens
+          (tenant_id, contract_id, token_hash, invited_name, invited_email, expires_at)
+        VALUES
+          (${this.tenantId}::uuid, ${params.contract_id}::uuid, ${params.token_hash},
+           ${params.invited_name ?? null}, ${params.invited_email ?? null}, ${params.expires_at})
+        RETURNING *
+      `,
+    );
+    return rows[0]!;
+  }
+
+  /** The materialized BOQ lines of the latest approved version for a project (ADR-058 CT-2c-3). */
+  async findBoqSnapshotByProject(project_id: string): Promise<BoqSnapshotItem[]> {
+    return this.db.run(
+      (tx) =>
+        tx.$queryRaw<BoqSnapshotItem[]>`
+        SELECT item_code, description, unit,
+               quantity::text AS quantity, unit_cost::text AS unit_cost, estimated_total::text AS estimated_total
+          FROM finance.boq_line_snapshots
+         WHERE tenant_id = ${this.tenantId}::uuid
+           AND version_id = (
+             SELECT version_id FROM finance.boq_line_snapshots
+              WHERE tenant_id = ${this.tenantId}::uuid AND project_id = ${project_id}::uuid
+              ORDER BY materialized_at DESC LIMIT 1
+           )
+         ORDER BY line_no
+      `,
+    );
+  }
+
+  async replaceBoqSnapshot(
+    version_id: string,
+    project_id: string,
+    items: BoqSnapshotItem[],
+  ): Promise<void> {
+    await this.db.run(async (tx) => {
+      await tx.$executeRaw`
+        DELETE FROM finance.boq_line_snapshots
+        WHERE tenant_id = ${this.tenantId}::uuid AND version_id = ${version_id}::uuid
+      `;
+      for (let i = 0; i < items.length; i++) {
+        const it = items[i]!;
+        await tx.$executeRaw`
+          INSERT INTO finance.boq_line_snapshots
+            (tenant_id, version_id, project_id, line_no,
+             item_code, description, unit, quantity, unit_cost, estimated_total)
+          VALUES
+            (${this.tenantId}::uuid, ${version_id}::uuid, ${project_id}::uuid, ${i + 1},
+             ${it.item_code}, ${it.description}, ${it.unit},
+             ${it.quantity}::decimal, ${it.unit_cost}::decimal, ${it.estimated_total}::decimal)
+        `;
+      }
+    });
   }
 
   // ── billings (AR — §11) ───────────────────────────────────────────────────

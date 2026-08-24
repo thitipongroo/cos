@@ -3,6 +3,8 @@
 const mockProjectService = {
   create: jest.fn(),
   list: jest.fn(),
+  listMine: jest.fn(),
+  listForUser: jest.fn(),
   findById: jest.fn(),
   update: jest.fn(),
   transition: jest.fn(),
@@ -39,6 +41,20 @@ describe('ProjectController', () => {
     mockProjectService.list.mockReturnValue(page);
     expect(controller.list(dto)).toBe(page);
     expect(mockProjectService.list).toHaveBeenCalledWith(dto);
+  });
+
+  it('listMine — delegates to projectService.listMine', () => {
+    const page = { items: [{ project_id: PROJECT_ID }] };
+    mockProjectService.listMine.mockReturnValue(page);
+    expect(controller.listMine()).toBe(page);
+    expect(mockProjectService.listMine).toHaveBeenCalledWith();
+  });
+
+  it('listForUser — delegates to projectService.listForUser', () => {
+    const page = { items: [{ project_id: PROJECT_ID }] };
+    mockProjectService.listForUser.mockReturnValue(page);
+    expect(controller.listForUser(USER_ID)).toBe(page);
+    expect(mockProjectService.listForUser).toHaveBeenCalledWith(USER_ID);
   });
 
   it('findOne — delegates to projectService.findById', () => {

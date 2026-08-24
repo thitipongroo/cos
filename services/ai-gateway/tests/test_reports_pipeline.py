@@ -45,6 +45,22 @@ class _FakePool:
         self.executed.append((query, args))
 
 
+def _report_insert(pool):
+    """The ai_generated_reports INSERT, picked out by its SQL.
+
+    The pool is shared with per-tenant usage metering (QM-7/QM-8), which writes ai.ai_usage_logs on
+    the same connection, so the report row is not reliably the first statement executed.
+    """
+    for query, args in pool.executed:
+        if "ai.ai_generated_reports" in query:
+            return args
+    raise AssertionError("no ai_generated_reports INSERT was executed")
+
+
+def _report_inserts(pool):
+    return [q for q, _ in pool.executed if "ai.ai_generated_reports" in q]
+
+
 def _valid_output(**overrides) -> dict:
     out = {"summary": "word " * 60, "confidence": 0.9}
     out.update(overrides)
@@ -106,7 +122,7 @@ class TestHappyPath:
         assert result.content == output
         assert result.report_id is not None
         # step 5 actually wrote a row, with the model and token count from the LLM response
-        args = pool.executed[0][1]
+        args = _report_insert(pool)
         assert args[6] == "claude-sonnet-5"
         assert args[7] == 120
 
@@ -143,7 +159,11 @@ class TestHappyPath:
 
     @pytest.mark.asyncio
     async def test_a_flagged_but_passing_report_is_still_persisted(self, monkeypatch, caplog):
-        """hallucination_flagged is a warning for operators, not a refusal to the user."""
+        """hallucination_flagged is not a refusal: the report is persisted and returned.
+
+        It comes back marked low_confidence so the UI shows the uncertainty rather than presenting
+        the report as trustworthy — see the note in pipeline.py above the warning it logs.
+        """
         provider = _FakeProvider(content=json.dumps(_valid_output()))
         pool = _FakePool()
         monkeypatch.setattr(
@@ -155,8 +175,9 @@ class TestHappyPath:
         with caplog.at_level("WARNING"):
             result = await _run(provider, pool)
 
-        assert result.low_confidence is False
-        assert len(pool.executed) == 1
+        assert result.low_confidence is True
+        assert result.report_id is not None
+        assert len(_report_inserts(pool)) == 1
         assert any("POTENTIAL_HALLUCINATION" in r.message for r in caplog.records)
 
 
@@ -175,7 +196,7 @@ class TestRefusalPaths:
         assert result.report_id is None
         assert result.confidence is None
         assert result.content["status"] == "LOW_CONFIDENCE"
-        assert pool.executed == []  # nothing written
+        assert _report_inserts(pool) == []  # no report row written
         assert any("non-JSON output" in r.message for r in caplog.records)
 
     @pytest.mark.asyncio
@@ -188,7 +209,11 @@ class TestRefusalPaths:
         """
 
         class _NoContentResponse:
+            # `content` is deliberately absent — that is the case under test. The token fields are
+            # present because per-tenant metering (QM-7/QM-8) reads them before the parse.
             model_used = "gpt-4o-mini"
+            prompt_tokens = 8
+            completion_tokens = 2
             total_tokens = 10
 
         class _NoContentProvider:
@@ -203,7 +228,7 @@ class TestRefusalPaths:
 
         assert result.low_confidence is True
         assert result.report_id is None
-        assert pool.executed == []
+        assert _report_inserts(pool) == []
 
     @pytest.mark.asyncio
     async def test_guard_low_confidence_keeps_the_models_confidence_value(self, monkeypatch):
@@ -221,7 +246,7 @@ class TestRefusalPaths:
         assert result.report_id is None
         # the caller can see HOW confident the model was, even though the report is withheld
         assert result.confidence == pytest.approx(0.31)
-        assert pool.executed == []
+        assert _report_inserts(pool) == []
 
     @pytest.mark.asyncio
     async def test_any_other_guard_failure_withholds_the_report_entirely(
@@ -241,5 +266,5 @@ class TestRefusalPaths:
         assert result.low_confidence is True
         assert result.report_id is None
         assert result.confidence is None  # not surfaced for a structural failure
-        assert pool.executed == []
+        assert _report_inserts(pool) == []
         assert any("HallucinationGuard failed" in r.message for r in caplog.records)

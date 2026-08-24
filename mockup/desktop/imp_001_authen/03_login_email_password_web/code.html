@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>CONSTRUCTION OS - Secure Login</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        /* Custom scrollbar for technical feel */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #031427;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #46464c;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #909097;
+        }
+        /* Optimistic UI transitions */
+        .btn-interaction {
+            transition: transform 150ms cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-interaction:active {
+            transform: scale(0.96);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-surface": "#d3e4fe",
+                        "inverse-on-surface": "#213145",
+                        "surface-container-high": "#1b2b3f",
+                        "on-tertiary-fixed-variant": "#004e5c",
+                        "on-secondary": "#002a78",
+                        "error": "#ffb4ab",
+                        "warning": "#F59E0B",
+                        "secondary-fixed": "#dbe1ff",
+                        "offline": "#8E8E93",
+                        "background": "#031427",
+                        "tertiary-fixed-dim": "#4cd7f6",
+                        "primary": "#c1c5dc",
+                        "primary-container": "#0b1020",
+                        "on-tertiary-container": "#0088a0",
+                        "on-error": "#690005",
+                        "danger": "#EF4444",
+                        "syncing": "#FFD60A",
+                        "on-primary-fixed-variant": "#414658",
+                        "on-primary-fixed": "#161b2b",
+                        "concrete-white": "#F8FAFC",
+                        "on-secondary-fixed-variant": "#003ea8",
+                        "secondary": "#b4c5ff",
+                        "primary-fixed": "#dee1f9",
+                        "tertiary-fixed": "#acedff",
+                        "inverse-primary": "#595e71",
+                        "surface-container-lowest": "#000f21",
+                        "secondary-container": "#0053db",
+                        "surface-dim": "#031427",
+                        "success": "#10B981",
+                        "on-background": "#d3e4fe",
+                        "on-primary-container": "#777c90",
+                        "surface-variant": "#26364a",
+                        "on-tertiary-fixed": "#001f26",
+                        "tertiary": "#4cd7f6",
+                        "surface-container-highest": "#26364a",
+                        "surface-container": "#102034",
+                        "on-secondary-container": "#cdd7ff",
+                        "outline": "#909097",
+                        "error-container": "#93000a",
+                        "secondary-fixed-dim": "#b4c5ff",
+                        "on-secondary-fixed": "#00174b",
+                        "surface-tint": "#c1c5dc",
+                        "on-primary": "#2b3041",
+                        "on-error-container": "#ffdad6",
+                        "surface-container-low": "#0b1c30",
+                        "on-surface-variant": "#c7c6cd",
+                        "mobile-primary": "#0066FF",
+                        "outline-variant": "#46464c",
+                        "surface-bright": "#2a3a4f",
+                        "tertiary-container": "#001318",
+                        "on-tertiary": "#003640",
+                        "surface": "#031427",
+                        "on-surface": "#d3e4fe",
+                        "primary-fixed-dim": "#c1c5dc"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "web-padding-card": "16px",
+                        "mobile-section-pad": "16px",
+                        "mobile-icon-pad": "8px",
+                        "web-margin-component": "32px",
+                        "web-gap-tight": "4px",
+                        "touch-target-optimum": "52px",
+                        "mobile-base": "8px",
+                        "web-page-gap": "64px",
+                        "web-base": "4px",
+                        "mobile-card-pad": "12px",
+                        "touch-target-min": "44px",
+                        "mobile-edge-margin": "24px"
+                    },
+                    "fontFamily": {
+                        "body-sm": ["Inter"],
+                        "mobile-title": ["Inter"],
+                        "mobile-body": ["Inter"],
+                        "label-tiny": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-h1": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "headline-h3": ["Inter"],
+                        "headline-h2": ["Inter"],
+                        "mobile-hero": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-sm": ["12px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "mobile-title": ["22px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "mobile-body": ["17px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "label-tiny": ["11px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "body-md": ["14px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "headline-h1": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "display-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-h3": ["16px", {"lineHeight": "1.3", "fontWeight": "500"}],
+                        "headline-h2": ["20px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "mobile-hero": ["28px", {"lineHeight": "1.2", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface font-body-md min-h-screen flex flex-col selection:bg-tertiary-fixed selection:text-on-tertiary-fixed">
+<!-- TopAppBar Shell Component -->
+<header class="bg-surface dark:bg-surface border-b border-outline-variant dark:border-outline-variant w-full top-0 sticky z-50">
+<div class="flex justify-between items-center px-mobile-edge-margin h-touch-target-optimum w-full max-w-7xl mx-auto">
+<!-- Brand Anchor -->
+<div class="flex items-center gap-web-base">
+<span class="material-symbols-outlined text-primary dark:text-primary">hexagon</span>
+<h1 class="text-headline-h1 font-headline-h1 font-bold text-primary dark:text-primary tracking-tight">CONSTRUCTION OS</h1>
+</div>
+<!-- Global Nav Actions -->
+<nav class="hidden md:flex items-center gap-web-margin-component">
+<a class="text-on-surface-variant dark:text-on-surface-variant font-label-tiny text-label-tiny uppercase tracking-widest hover:bg-surface-variant dark:hover:bg-surface-variant transition-colors px-2 py-1 rounded-sm flex items-center gap-1" href="#">
+<span class="material-symbols-outlined text-[18px]">help</span>
+                    Support
+                </a>
+<a class="text-on-surface-variant dark:text-on-surface-variant font-label-tiny text-label-tiny uppercase tracking-widest hover:bg-surface-variant dark:hover:bg-surface-variant transition-colors px-2 py-1 rounded-sm flex items-center gap-1" href="#">
+<span class="material-symbols-outlined text-[18px] text-success">check_circle</span>
+                    System Status
+                </a>
+</nav>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow flex items-center justify-center relative overflow-hidden px-mobile-edge-margin py-10">
+<!-- Background Atmospheric Effect -->
+<div class="absolute inset-0 pointer-events-none opacity-20">
+<div class="absolute top-0 right-0 w-[500px] h-[500px] bg-secondary-container rounded-full blur-[120px]"></div>
+<div class="absolute bottom-0 left-0 w-[400px] h-[400px] bg-tertiary-container rounded-full blur-[100px]"></div>
+</div>
+<!-- Central Login Bento-style Card -->
+<div class="relative z-10 w-full max-w-[480px]">
+<div class="bg-surface-container border border-outline-variant rounded-xl overflow-hidden shadow-2xl">
+<!-- Branding Header -->
+<div class="p-8 flex flex-col items-center text-center border-b border-outline-variant/30 bg-surface-container-high/50">
+<div class="w-16 h-16 mb-6 rounded-xl overflow-hidden shadow-inner border border-outline/20">
+<img alt="Construction OS Identity" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDeSPq59cpcEzjyYs_f30kEkEztGEfe-ZBUuJTnbT2Idd2bqX6Ngv86IDFzC--WWNHudNbzzd4FIpRdSacDHdcB6zthxR1ddN6I94hNuGkv53540neVjr_krOU0HU6vUVYH1e9tYWufcjSjse30SlIKJFPcMPoGXy3ZCWIVNjEX72HJIxa6ae3PEAZp-4G3bdpE19abB6EhWAvA6CkYIJmobXGSDzyv0BJzRuY0rrjX2OQiaNLNFkRqIJKB3n4wBceWZ3Y"/>
+</div>
+<h2 class="font-headline-h2 text-headline-h2 text-on-surface mb-2 tracking-tight">Secure Access</h2>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-[300px]">Manage your fleet and projects in real-time.</p>
+</div>
+<!-- Auth Form -->
+<form class="p-8 space-y-6" onsubmit="event.preventDefault();">
+<div class="space-y-4">
+<!-- Email Input -->
+<div class="space-y-1.5">
+<label class="font-label-tiny text-label-tiny uppercase tracking-widest text-on-surface-variant block ml-1">Email Address</label>
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-tertiary transition-colors">mail</span>
+<input class="w-full h-[52px] bg-surface-container-low border border-outline-variant rounded-lg pl-12 pr-4 text-on-surface font-body-md focus:border-tertiary focus:ring-2 focus:ring-tertiary/20 outline-none transition-all placeholder:text-outline/50" placeholder="name@company.com" required="" type="email"/>
+</div>
+</div>
+<!-- Password Input -->
+<div class="space-y-1.5">
+<div class="flex justify-between items-center px-1">
+<label class="font-label-tiny text-label-tiny uppercase tracking-widest text-on-surface-variant block">Password</label>
+<a class="font-label-tiny text-label-tiny text-secondary hover:text-tertiary transition-colors uppercase tracking-wider" href="#">Forgot Password?</a>
+</div>
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-tertiary transition-colors">lock</span>
+<input class="w-full h-[52px] bg-surface-container-low border border-outline-variant rounded-lg pl-12 pr-4 text-on-surface font-body-md focus:border-tertiary focus:ring-2 focus:ring-tertiary/20 outline-none transition-all placeholder:text-outline/50" placeholder="••••••••" required="" type="password"/>
+<button class="absolute right-4 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface transition-colors" type="button">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Security Banner -->
+<div class="flex items-center gap-3 p-3 bg-surface-container-lowest/50 border border-outline-variant/30 rounded-lg">
+<span class="material-symbols-outlined text-secondary text-[20px]">verified_user</span>
+<div class="flex flex-col">
+<span class="font-label-tiny text-label-tiny text-on-surface font-bold">AES-256 ENCRYPTION</span>
+<span class="font-label-tiny text-[10px] text-on-surface-variant uppercase">Enterprise-grade secure tunnel active</span>
+</div>
+</div>
+<!-- Submit Button -->
+<button class="w-full h-touch-target-optimum bg-mobile-primary hover:bg-secondary-container text-concrete-white font-bold rounded-lg flex items-center justify-center gap-2 btn-interaction shadow-lg shadow-mobile-primary/20" type="submit">
+                        Sign In
+                        <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+<div class="text-center">
+<a class="font-label-tiny text-label-tiny text-on-surface-variant hover:text-on-surface transition-colors inline-flex items-center gap-1" href="#">
+                            Unable to login? <span class="text-secondary">Contact Administrator</span>
+</a>
+</div>
+</form>
+</div>
+<!-- Footer Trust Indicators -->
+<div class="mt-8 flex justify-center items-center gap-6 opacity-40 grayscale hover:grayscale-0 transition-all duration-300">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[20px]">security</span>
+<span class="font-label-tiny text-[10px] tracking-tighter">SOC2 TYPE II</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[20px]">cloud_done</span>
+<span class="font-label-tiny text-[10px] tracking-tighter">GDPR COMPLIANT</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[20px]">shield_person</span>
+<span class="font-label-tiny text-[10px] tracking-tighter">ISO 27001</span>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer Shell Component -->
+<footer class="bg-surface-container-lowest dark:bg-surface-container-lowest border-t border-outline-variant dark:border-outline-variant w-full bottom-0">
+<div class="flex flex-col md:flex-row justify-between items-center px-mobile-edge-margin py-mobile-section-pad w-full max-w-7xl mx-auto gap-4">
+<p class="font-label-tiny text-label-tiny uppercase tracking-widest text-on-surface-variant dark:text-on-surface-variant">
+                © 2024 <span class="font-bold text-primary">CONSTRUCTION OS</span>. INDUSTRIAL INTELLIGENCE UNIT.
+            </p>
+<div class="flex gap-6">
+<a class="font-label-tiny text-label-tiny uppercase tracking-widest text-on-surface-variant hover:text-primary dark:hover:text-tertiary transition-colors cursor-pointer" href="#">Terms of Service</a>
+<a class="font-label-tiny text-label-tiny uppercase tracking-widest text-on-surface-variant hover:text-primary dark:hover:text-tertiary transition-colors cursor-pointer" href="#">Privacy Policy</a>
+<a class="font-label-tiny text-label-tiny uppercase tracking-widest text-on-surface-variant hover:text-primary dark:hover:text-tertiary transition-colors cursor-pointer" href="#">System Status</a>
+</div>
+</div>
+</footer>
+<!-- Micro-interaction Script -->
+<script>
+        document.querySelectorAll('input').forEach(input => {
+            input.addEventListener('focus', () => {
+                input.parentElement.parentElement.classList.add('scale-[1.01]');
+            });
+            input.addEventListener('blur', () => {
+                input.parentElement.parentElement.classList.remove('scale-[1.01]');
+            });
+        });
+
+        // Toggle password visibility
+        const togglePass = document.querySelector('button[type="button"]');
+        const passInput = document.querySelector('input[type="password"]');
+        if(togglePass && passInput) {
+            togglePass.addEventListener('click', () => {
+                const isPass = passInput.getAttribute('type') === 'password';
+                passInput.setAttribute('type', isPass ? 'text' : 'password');
+                togglePass.querySelector('span').textContent = isPass ? 'visibility_off' : 'visibility';
+            });
+        }
+    </script>
+</body></html>

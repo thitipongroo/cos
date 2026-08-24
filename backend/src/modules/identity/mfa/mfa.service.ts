@@ -2,6 +2,12 @@
 // TOTP-based MFA for TENANT_ADMIN and FINANCE roles (Path B office users).
 // Enrollment: generate secret → store in Redis → user verifies → commit to DB.
 // Authentication: verify TOTP token against DB-stored secret during login.
+//
+// DEPRECATED (H4 / MFA enforcement decision — see docs/architecture/adr and
+// docs/runbooks/mfa-enforcement.md): this custom TOTP module is NOT wired into any real login flow —
+// no web/mobile client calls /api/v1/auth/mfa/*, and Path B login goes browser → Keycloak directly.
+// MFA is now enforced by Keycloak-native OTP (Layer 1) + the backend acr gate
+// (shared/guards/mfa-enforcement.ts, Layer 2). Kept to avoid test churn; remove in a dedicated change.
 
 import {
   Injectable,

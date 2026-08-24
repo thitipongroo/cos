@@ -3,15 +3,20 @@
 // booted-simulator screen straight to docs/screens/ios/. Not a functional test — a documentation
 // generator. Run explicitly: `detox test -c ios.sim.release e2e/capture.spec.ts`.
 import { by, device, element } from 'detox';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const OUT = resolve(__dirname, '../../../docs/screens/ios');
-const PHONE = '+66800000002'; // PROJECT_MANAGER (set via Keycloak) — sees the widest data set
+// Pranee Suksai — SITE_ENGINEER. The comment here read "PROJECT_MANAGER … sees the widest data set"
+// until 2026-08-06; it never matched the fixture. Both sources of truth say SITE_ENGINEER: the realm
+// import (users[+66800000002].attributes.role) mints the claim, and platform.tenant_memberships is
+// what keycloak-jwt.strategy.ts re-reads and OVERWRITES the claim with on every request. Routes that
+// need an office role therefore capture as empty or forbidden — expected, not a broken capture.
+const PHONE = '+66800000002';
 const OTP = '123456';
-// Seeded project in the PM user's tenant; project-scoped screens use a picker (no auto-select),
-// so we tap this chip to load its KPIs/budget/analytics.
+// Seeded project in this user's tenant (EKC — demo-seed.sql); project-scoped screens use a picker
+// (no auto-select), so we tap this chip to load its KPIs/budget/analytics.
 const PROJECT_ID = 'b0000000-0000-4000-8000-000000000001';
 
 // Ordered for a coherent walkthrough: entry → overview → delivery/finance → site → account.
@@ -35,11 +40,17 @@ const ROUTES = [
   'report',
   'alerts',
   'conflict-review',
-  'profile',
 ];
 
 function shot(name: string): void {
-  execSync(`xcrun simctl io booted screenshot "${OUT}/${name}.png"`, { stdio: 'ignore' });
+  // execFileSync, not execSync: no shell, so nothing in the path can be interpreted as a command.
+  // The screenshot paths are built from env vars (G1_OUT / G1_N) and interpolated straight into
+  // the command line before this. That is developer tooling rather than shipped code, but passing
+  // an argv array instead of a string removes the class outright and costs nothing.
+  // Found by CodeQL js/shell-command-injection-from-environment and js/indirect-command-line-injection.
+  execFileSync('xcrun', ['simctl', 'io', 'booted', 'screenshot', `${OUT}/${name}.png`], {
+    stdio: 'ignore',
+  });
 }
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -63,7 +74,7 @@ describe('mobile screen capture', () => {
     await element(by.id('country-picker')).tap();
     await element(by.id('country-option-th')).tap();
     await element(by.id('phone-input')).tap();
-    await element(by.id('phone-input')).replaceText(PHONE.replace(/^\+66/, ''));
+    await element(by.id('phone-input')).replaceText(PHONE.replace(/^\+66/, '0'));
     await delay(1500); // onChangeText → button un-disables
     await element(by.id('request-otp-button')).tap();
     await delay(6000); // OTP round-trip + step render

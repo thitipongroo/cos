@@ -1,0 +1,262 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>AI Mapping Proposal | Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .ai-shimmer {
+            background: linear-gradient(90deg, transparent, rgba(76, 215, 246, 0.05), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 3s infinite linear;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .safe-bottom {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "sync-pending": "#94A3B8",
+                        "sync-active": "#FFD60A",
+                        "primary-container": "#2563eb",
+                        "on-primary": "#002a78",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "on-tertiary-fixed": "#161b2b",
+                        "surface-bright": "#2a3a4f",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "inverse-primary": "#0053db",
+                        "dark-bg": "#020617",
+                        "inverse-surface": "#d3e4fe",
+                        "on-tertiary-container": "#eeefff",
+                        "inverse-on-surface": "#213145",
+                        "secondary-fixed": "#acedff",
+                        "on-surface-variant": "#c3c6d7",
+                        "secondary": "#4cd7f6",
+                        "on-background": "#d3e4fe",
+                        "tertiary-container": "#686c80",
+                        "outline-variant": "#434655",
+                        "surface-container-highest": "#26364a",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "surface-dim": "#031427",
+                        "surface": "#031427",
+                        "on-secondary": "#003640",
+                        "on-secondary-fixed": "#001f26",
+                        "outline": "#8d90a0",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "tertiary-fixed": "#dee1f9",
+                        "on-surface": "#d3e4fe",
+                        "dark-surface": "#0F172A",
+                        "on-secondary-container": "#00424e",
+                        "on-primary-container": "#eeefff",
+                        "on-primary-fixed": "#00174b",
+                        "surface-tint": "#b4c5ff",
+                        "mobile-danger": "#FF3B30",
+                        "mobile-warning": "#FF9500",
+                        "tertiary": "#c1c5dc",
+                        "surface-variant": "#26364a",
+                        "primary-fixed": "#dbe1ff",
+                        "surface-container-high": "#1b2b3f",
+                        "surface-container-low": "#0b1c30",
+                        "error-container": "#93000a",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "surface-container": "#102034",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "mobile-success": "#00C853",
+                        "surface-container-lowest": "#000f21",
+                        "on-error": "#690005",
+                        "background": "#031427",
+                        "on-tertiary": "#2b3041",
+                        "secondary-container": "#03b5d3",
+                        "error": "#ffb4ab",
+                        "mobile-primary": "#0066FF",
+                        "primary": "#b4c5ff",
+                        "on-error-container": "#ffdad6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "web-margin": "32px",
+                        "space-1": "4px",
+                        "space-2": "8px",
+                        "touch-target": "52px",
+                        "space-3": "12px",
+                        "edge-mobile": "24px",
+                        "space-4": "16px",
+                        "base": "4px"
+                    },
+                    "fontFamily": {
+                        "tiny-web": ["Inter Tight"],
+                        "h2-web": ["Inter Tight"],
+                        "hero-mobile": ["Inter Tight"],
+                        "label-mobile": ["Inter Tight"],
+                        "h1-web": ["Inter Tight"],
+                        "body-web": ["Inter Tight"],
+                        "display-web": ["Inter Tight"],
+                        "body-mobile": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                        "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                        "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface font-body-mobile text-body-mobile selection:bg-primary/30">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface-container dark:bg-surface-container-highest border-b border-outline-variant/10 shadow-sm flex items-center justify-between px-edge-mobile h-14">
+<div class="flex items-center gap-space-3">
+<div class="w-8 h-8 flex items-center justify-center"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuC9y194eB6WpErFYVMmfSyaTrJ66aOHR8FRpQzywMIfxzYQa8PQxSn_WGKIssfAUGLUoY6WXd7eHfXiU8-cJOyaWWIjIUJtvVpbToH54hlKJ_A3kHc9TWkqGfMo9hd2MBIRRO2hkeEC1LgW1rjP_jRhs3HI4_bIRHYIPAj6xd1_gxJzYVRHWkHdadAGqlFuFNGJlHSaFCVO07NEi0PBOrEIQAp4sgdGEXkvAyQE8s8iKCPULNW3Boa19A6ca2M56yUd5_YFSWHleRk" alt="Construction OS Logo" class="w-full h-full object-contain"></div>
+<h1 class="font-hero-mobile text-primary tracking-tight uppercase leading-none text-[18px] whitespace-nowrap">CONSTRUCTION OS</h1>
+</div>
+<div class="flex items-center gap-space-2 bg-surface-container-low px-space-3 py-1 rounded-full border border-outline-variant/20">
+<span class="material-symbols-outlined text-sync-active text-[18px]" data-icon="sync" style="font-variation-settings: &quot;FILL&quot; 1; transform: rotate(0deg); transition: transform 0.6s ease-in-out;">sync</span>
+<span class="font-tiny-web text-tiny-web text-sync-active uppercase">Synced</span>
+</div>
+</header>
+<main class="pt-20 pb-40 px-edge-mobile min-h-screen">
+<!-- 1. Technical Context -->
+<section class="mb-space-4">
+<div class="flex items-center gap-space-2 mb-1">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span class="font-label-mobile text-label-mobile text-secondary uppercase tracking-widest">Conflict Resolution Flow</span>
+</div>
+<h2 class="font-hero-mobile text-hero-mobile text-on-surface mb-1">AI MAPPING PROPOSAL</h2>
+<p class="font-body-mobile text-body-mobile text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]" data-icon="database">database</span>
+                FIELD: <span class="text-on-surface font-bold">COST_CENTER</span>
+</p>
+</section>
+<!-- 2. Comparison Module -->
+<section class="relative mb-space-4 bg-surface-container rounded-xl p-space-4 border border-outline-variant/20 overflow-hidden">
+<div class="absolute top-0 left-0 w-1 h-full bg-primary-container"></div>
+<div class="space-y-space-4 relative z-10">
+<!-- Source -->
+<div class="flex flex-col">
+<span class="font-label-mobile text-label-mobile text-on-surface-variant mb-1 uppercase opacity-60">Source Value</span>
+<div class="bg-surface-container-low p-space-3 rounded-lg border border-outline-variant/10">
+<code class="font-mono text-on-surface text-[18px] tracking-tight">CC-BLDG-A12</code>
+</div>
+</div>
+<!-- Large Arrow -->
+<div class="flex justify-center -my-2 relative">
+<div class="bg-primary-container text-on-primary rounded-full p-2 shadow-lg z-20 border-4 border-surface-container">
+<span class="material-symbols-outlined text-[24px]" data-icon="arrow_downward">arrow_downward</span>
+</div>
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="w-px h-full bg-outline-variant/30"></div>
+</div>
+</div>
+<!-- Proposed -->
+<div class="flex flex-col">
+<span class="font-label-mobile text-label-mobile text-secondary mb-1 uppercase flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="auto_awesome" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+                        Proposed Value
+                    </span>
+<div class="bg-secondary-container/10 p-space-3 rounded-lg border border-secondary/30 ring-1 ring-secondary/20">
+<code class="font-mono text-secondary text-[20px] font-bold tracking-tight">BLDG_A12</code>
+</div>
+</div>
+</div>
+</section>
+<!-- 3. AI Transparency Card -->
+<section class="mb-space-4 bg-surface-container-high rounded-xl p-space-4 border-l-4 border-secondary overflow-hidden ai-shimmer relative">
+<div class="flex justify-between items-start mb-space-3">
+<div>
+<h3 class="font-label-mobile text-label-mobile text-on-surface uppercase flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary" data-icon="analytics" style="font-variation-settings: 'FILL' 1;">analytics</span>
+                        Intelligence Profile
+                    </h3>
+</div>
+<div class="bg-surface-container-highest px-3 py-1 rounded-full border border-secondary/20">
+<span class="font-label-mobile text-label-mobile text-secondary">96% CONFIDENCE</span>
+</div>
+</div>
+<div class="space-y-space-2">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">Data Sources</span>
+<ul class="space-y-1">
+<li class="flex items-center gap-2 font-label-mobile text-label-mobile text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-primary" data-icon="check_circle">check_circle</span>
+                        SAP S/4HANA Schema Docs
+                    </li>
+<li class="flex items-center gap-2 font-label-mobile text-label-mobile text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-primary" data-icon="check_circle">check_circle</span>
+                        Historical Project Mapping Patterns
+                    </li>
+</ul>
+</div>
+</section>
+<!-- 4. Reasoning Section -->
+<section class="mb-space-4 bg-surface-container-low rounded-xl p-space-4 border border-outline-variant/10">
+<div class="flex items-center gap-2 mb-space-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]" data-icon="lightbulb">lightbulb</span>
+<span class="font-label-mobile text-label-mobile uppercase">AI Analysis</span>
+</div>
+<p class="font-body-mobile text-body-mobile text-on-surface-variant leading-relaxed">
+                The input exceeds the <span class="text-on-surface font-bold">8-character limit</span> required by SAP. Pattern recognition suggests removing the <span class="text-error italic">'CC-'</span> prefix (Legacy Tag) to satisfy the constraint while preserving the unique identifier.
+            </p>
+</section>
+</main>
+<!-- Bottom Actions -->
+<div class="fixed bottom-0 w-full z-50 bg-surface-container-low dark:bg-surface-container-lowest border-t border-outline-variant/10 shadow-lg safe-bottom">
+<div class="flex flex-col gap-space-3 px-edge-mobile py-space-4">
+<button class="h-[52px] w-full bg-mobile-primary text-white font-label-mobile text-label-mobile uppercase tracking-widest rounded-xl shadow-lg flex items-center justify-center gap-2 active:scale-[0.98] transition-all duration-200">
+<span class="material-symbols-outlined" data-icon="done_all">done_all</span>
+                ACCEPT &amp; APPLY
+            </button>
+<button class="h-[52px] w-full border-2 border-outline-variant text-on-surface-variant font-label-mobile text-label-mobile uppercase tracking-widest rounded-xl flex items-center justify-center gap-2 active:scale-[0.98] transition-all duration-200">
+<span class="material-symbols-outlined" data-icon="close">close</span>
+                DISCARD PROPOSAL
+            </button>
+</div>
+</div>
+<script>
+        // Simple touch feedback micro-interaction
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('touchstart', () => {
+                btn.style.opacity = '0.8';
+            });
+            btn.addEventListener('touchend', () => {
+                btn.style.opacity = '1';
+            });
+        });
+
+        // Simulating the "Synced" pulse
+        const syncIcon = document.querySelector('[data-icon="sync"]');
+        if(syncIcon) {
+            setInterval(() => {
+                syncIcon.style.transform = 'rotate(180deg)';
+                syncIcon.style.transition = 'transform 0.6s ease-in-out';
+                setTimeout(() => {
+                    syncIcon.style.transform = 'rotate(0deg)';
+                }, 1000);
+            }, 5000);
+        }
+    </script>
+
+
+</body></html>

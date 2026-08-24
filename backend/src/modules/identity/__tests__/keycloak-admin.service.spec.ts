@@ -6,7 +6,11 @@ jest.mock('@cos/logger', () => ({
   createLogger: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }),
 }));
 
-import { UnauthorizedException, InternalServerErrorException } from '@nestjs/common';
+import {
+  UnauthorizedException,
+  InternalServerErrorException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { KeycloakAdminService } from '../keycloak-admin.service';
 
 // @keycloak/keycloak-admin-client is ESM-only; a static default import emits a require() of an ES
@@ -31,7 +35,14 @@ describe('KeycloakAdminService', () => {
   let mockFetch: jest.SpyInstance;
   let mockKcInstance: {
     auth: jest.Mock;
-    users: { create: jest.Mock; del: jest.Mock; resetPassword: jest.Mock };
+    users: {
+      create: jest.Mock;
+      del: jest.Mock;
+      resetPassword: jest.Mock;
+      update: jest.Mock;
+      logout: jest.Mock;
+      findOne: jest.Mock;
+    };
   };
 
   beforeEach(() => {
@@ -47,6 +58,12 @@ describe('KeycloakAdminService', () => {
         create: jest.fn().mockResolvedValue({ id: 'kc-created-id' }),
         del: jest.fn().mockResolvedValue(undefined),
         resetPassword: jest.fn().mockResolvedValue(undefined),
+        update: jest.fn().mockResolvedValue(undefined),
+        logout: jest.fn().mockResolvedValue(undefined),
+        findOne: jest.fn().mockResolvedValue({
+          id: 'kc-1',
+          attributes: { tenant_id: ['t-1'], user_id: ['u-1'], role: ['SITE_WORKER'] },
+        }),
       },
     };
     MockKcAdminClient.mockImplementation(() => mockKcInstance);
@@ -140,7 +157,11 @@ describe('KeycloakAdminService', () => {
       expect(result.access_token).toBe('at-abc');
     });
 
-    it('throws InternalServerErrorException when token endpoint fails (covers non-refresh error branch)', async () => {
+    it('reports a Keycloak failure as 503, not 500 (PO decision 2026-08-06)', async () => {
+      // Changed from InternalServerErrorException. A tenant pointing at a realm that does not exist,
+      // an account missing from the realm and Keycloak being down used to be indistinguishable from
+      // a bug in our own code — all three surfaced as `500 COS-GENERAL-500`. 503 says "dependency",
+      // matching what AnalyticsService already does for ClickHouse.
       mockFetch.mockResolvedValue({
         ok: false,
         status: 500,
@@ -148,7 +169,24 @@ describe('KeycloakAdminService', () => {
       } as unknown as Response);
       await expect(
         service.exchangeOtpForTokens('kc-uuid-1', '+66', 'tenant-acme', 'cred'),
-      ).rejects.toBeInstanceOf(InternalServerErrorException);
+      ).rejects.toBeInstanceOf(ServiceUnavailableException);
+    });
+
+    it('carries COS-AUTH-503 and leaks nothing about the account', async () => {
+      // The code is what an operator alerts on; the message must stay generic, because a caller
+      // must not learn from an error whether a given phone number has a Keycloak account.
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 404,
+        text: jest.fn().mockResolvedValue('Realm not found.'),
+      } as unknown as Response);
+      await expect(
+        service.exchangeOtpForTokens('kc-uuid-1', '+66800000001', 'missing-realm', 'cred'),
+      ).rejects.toMatchObject({
+        // Nested under `error` on purpose — that is the only shape GlobalExceptionFilter passes
+        // through. A flat { code, message } silently becomes COS-GENERAL-503 on the wire.
+        response: { error: { code: 'COS-AUTH-503', message: 'Identity provider unavailable' } },
+      });
     });
   });
 
@@ -193,6 +231,99 @@ describe('KeycloakAdminService', () => {
     it('deletes Keycloak user by id', async () => {
       await service.deleteUser('kc-uuid-1', 'tenant-acme');
       expect(mockKcInstance.users.del).toHaveBeenCalledWith({ id: 'kc-uuid-1' });
+    });
+  });
+
+  // ─── Security review F1 — deactivation must revoke access at the identity store ───────────
+  describe('disableUser', () => {
+    it('disables the account and terminates every live session', async () => {
+      await expect(service.disableUser('kc-uuid-1', 'tenant-acme')).resolves.toBeUndefined();
+
+      expect(mockKcInstance.users.update).toHaveBeenCalledWith(
+        { id: 'kc-uuid-1' },
+        { enabled: false },
+      );
+      // enabled:false alone only blocks NEW logins — an existing refresh token would keep minting
+      // access tokens until it expired, so the sessions must be killed too.
+      expect(mockKcInstance.users.logout).toHaveBeenCalledWith({ id: 'kc-uuid-1' });
+    });
+  });
+
+  // ─── Security review F2 — the JWT `role` claim is mapped from this user attribute ──────────
+  describe('syncUserRole', () => {
+    it('rewrites the role attribute while PRESERVING tenant_id and user_id', async () => {
+      await expect(
+        service.syncUserRole('kc-uuid-1', 'tenant-acme', 'PROJECT_MANAGER'),
+      ).resolves.toBeUndefined();
+
+      // Keycloak REPLACES the whole attribute map when `attributes` is present, so sending only
+      // { role } would silently drop the two claims every guard and RLS transaction depends on.
+      expect(mockKcInstance.users.update).toHaveBeenCalledWith(
+        { id: 'kc-uuid-1' },
+        {
+          attributes: {
+            tenant_id: ['t-1'],
+            user_id: ['u-1'],
+            role: ['PROJECT_MANAGER'],
+          },
+        },
+      );
+    });
+
+    it('tolerates a Keycloak user that carries no attributes yet', async () => {
+      mockKcInstance.users.findOne.mockResolvedValue({ id: 'kc-1' });
+
+      await service.syncUserRole('kc-uuid-1', 'tenant-acme', 'FINANCE');
+
+      expect(mockKcInstance.users.update).toHaveBeenCalledWith(
+        { id: 'kc-uuid-1' },
+        { attributes: { role: ['FINANCE'] } },
+      );
+    });
+
+    it('throws when the Keycloak user does not exist — never writes a partial attribute map', async () => {
+      mockKcInstance.users.findOne.mockResolvedValue(undefined);
+
+      await expect(service.syncUserRole('missing', 'tenant-acme', 'FINANCE')).rejects.toThrow(
+        InternalServerErrorException,
+      );
+      expect(mockKcInstance.users.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('setTemporaryPassword', () => {
+    it('admin-resets the credential as temporary=true (forces UPDATE_PASSWORD at next sign-in)', async () => {
+      await expect(
+        service.setTemporaryPassword('kc-uuid-1', 'tenant-acme', 'Temp-Pass-123'),
+      ).resolves.toBeUndefined();
+      expect(mockKcInstance.users.resetPassword).toHaveBeenCalledWith({
+        id: 'kc-uuid-1',
+        credential: { type: 'password', value: 'Temp-Pass-123', temporary: true },
+      });
+    });
+  });
+
+  describe('sendPasswordResetEmail', () => {
+    it('sends an UPDATE_PASSWORD action email with the default 900s lifespan', async () => {
+      const executeActionsEmail = jest.fn().mockResolvedValue(undefined);
+      (mockKcInstance.users as unknown as { executeActionsEmail: jest.Mock }).executeActionsEmail =
+        executeActionsEmail;
+      await expect(
+        service.sendPasswordResetEmail('kc-uuid-1', 'tenant-acme'),
+      ).resolves.toBeUndefined();
+      expect(executeActionsEmail).toHaveBeenCalledWith({
+        id: 'kc-uuid-1',
+        actions: ['UPDATE_PASSWORD'],
+        lifespan: 900,
+      });
+    });
+
+    it('honours a caller-supplied lifespan (covers the non-default lifespanSec branch)', async () => {
+      const executeActionsEmail = jest.fn().mockResolvedValue(undefined);
+      (mockKcInstance.users as unknown as { executeActionsEmail: jest.Mock }).executeActionsEmail =
+        executeActionsEmail;
+      await service.sendPasswordResetEmail('kc-uuid-2', 'tenant-acme', 600);
+      expect(executeActionsEmail).toHaveBeenCalledWith(expect.objectContaining({ lifespan: 600 }));
     });
   });
 });

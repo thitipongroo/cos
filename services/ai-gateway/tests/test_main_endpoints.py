@@ -107,10 +107,13 @@ class TestTranscribeProxy:
 
         assert resp.status_code == 200
         assert resp.json()["transcript"] == "เทคอนกรีต"
-        # the request is forwarded verbatim to the transcription service
+        # The forwarded body carries the VERIFIED tenant, not the one the caller put in the request:
+        # the downstream pipeline and the usage meter are both scoped by it, so accepting the body's
+        # value would let a client transcribe and bill as another tenant.
         url, body = captured[0].posts[0]
         assert url.endswith("/api/v1/ai/transcribe")
-        assert body == {"file_id": "a1", "tenant_id": "t1", "language": "th"}
+        assert body == {"file_id": "a1", "tenant_id": "tenant-abc", "language": "th"}
+        assert body["tenant_id"] != "t1"
         # 90s rounds up to 2 billed minutes and is emitted for the billing aggregator
         assert any("ai.usage" in r.message for r in caplog.records)
 

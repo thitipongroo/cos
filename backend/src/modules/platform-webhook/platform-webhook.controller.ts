@@ -36,11 +36,14 @@ export class PlatformWebhookController {
     @Req() req: WebhookRequest,
   ) {
     const signature = (req.headers['x-webhook-signature'] as string) ?? '';
+    // Replay protection: the sender stamps the request and signs timestamp + body together.
+    const timestamp = (req.headers['x-webhook-timestamp'] as string) ?? '';
     return this.webhookService.handleEnterpriseContractSigned(
       dto.tenant_id,
       dto.contract_reference,
       signature,
       req.rawBody,
+      timestamp,
     );
   }
 }

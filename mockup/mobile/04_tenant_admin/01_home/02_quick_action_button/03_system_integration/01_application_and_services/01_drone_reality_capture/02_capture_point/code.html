@@ -1,0 +1,284 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>Construction OS - Capture Point</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary-fixed": "#dbe1ff",
+                    "mobile-danger": "#FF3B30",
+                    "surface-bright": "#2a3a4f",
+                    "tertiary-fixed": "#dee1f9",
+                    "inverse-primary": "#0053db",
+                    "surface": "#031427",
+                    "surface-variant": "#26364a",
+                    "secondary-fixed": "#acedff",
+                    "surface-dim": "#031427",
+                    "on-primary": "#002a78",
+                    "secondary-container": "#03b5d3",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "on-tertiary-fixed": "#161b2b",
+                    "on-tertiary-container": "#eeefff",
+                    "error-container": "#93000a",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "on-secondary-container": "#00424e",
+                    "dark-bg": "#020617",
+                    "surface-container": "#102034",
+                    "outline-variant": "#434655",
+                    "surface-container-low": "#0b1c30",
+                    "secondary": "#4cd7f6",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "on-background": "#d3e4fe",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "on-error-container": "#ffdad6",
+                    "surface-tint": "#b4c5ff",
+                    "surface-container-highest": "#26364a",
+                    "dark-surface": "#0F172A",
+                    "sync-active": "#FFD60A",
+                    "primary-container": "#2563eb",
+                    "mobile-success": "#00C853",
+                    "primary": "#b4c5ff",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "on-secondary": "#003640",
+                    "sync-pending": "#94A3B8",
+                    "on-primary-fixed": "#00174b",
+                    "background": "#031427",
+                    "tertiary": "#c1c5dc",
+                    "on-tertiary": "#2b3041",
+                    "mobile-primary": "#0066FF",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "on-secondary-fixed": "#001f26",
+                    "outline": "#8d90a0",
+                    "on-surface-variant": "#c3c6d7",
+                    "mobile-warning": "#FF9500",
+                    "on-surface": "#d3e4fe",
+                    "on-primary-container": "#eeefff",
+                    "error": "#ffb4ab",
+                    "on-error": "#690005",
+                    "inverse-on-surface": "#213145",
+                    "tertiary-container": "#686c80",
+                    "surface-container-high": "#1b2b3f",
+                    "inverse-surface": "#d3e4fe",
+                    "surface-container-lowest": "#000f21"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "base": "4px",
+                    "edge-mobile": "24px",
+                    "web-margin": "32px",
+                    "space-3": "12px",
+                    "space-2": "8px",
+                    "touch-target": "52px",
+                    "space-4": "16px",
+                    "space-1": "4px"
+            },
+            "fontFamily": {
+                    "h2-web": ["Inter Tight"],
+                    "h1-web": ["Inter Tight"],
+                    "body-web": ["Inter Tight"],
+                    "body-mobile": ["Inter Tight"],
+                    "label-mobile": ["Inter Tight"],
+                    "hero-mobile": ["Inter Tight"],
+                    "tiny-web": ["Inter Tight"],
+                    "display-web": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #031427;
+            font-family: 'Inter Tight', sans-serif;
+            color: #d3e4fe;
+            -webkit-font-smoothing: antialiased;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .reticle-corner {
+            width: 24px;
+            height: 24px;
+            border-color: #4cd7f6;
+            position: absolute;
+        }
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(76, 215, 246, 0.1), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite linear;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .ai-pulse {
+            animation: ai-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes ai-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+    </style>
+</head>
+<body class="flex flex-col h-screen overflow-hidden">
+<!-- Top AppBar (from JSON guidance) -->
+<header class="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-edge-mobile h-touch-target bg-surface-dim dark:bg-surface-container-lowest">
+<div class="flex items-center gap-space-3">
+<button class="active:scale-95 transition-transform duration-150 text-on-surface">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<div class="flex items-center gap-space-3">
+<div class="w-8 h-8 rounded-sm flex items-center justify-center"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuBVGEdp9fCPDu9sg9B-Y7xOLb70pid5hQ-tR1V6bY28FKS-tveviwWzLqWL7anhSRcDdgcl8sKJsKbuKUPrCvGZndc0lHMCGYyyJTq-62Xpw-367Lmjboe52M4JkL0KMdTgBnXq1sicRK7vXm29uB1BrmyK41QdrZhccoh8oLdgkdrtOUylfl9YGH4k0jsLRma0MGgpQzIAxILQxYgSHYGAeQcQtoJtx10SBh3ZTcQuOcUTCkme0F6jfNpQ-Qj8g2JObM-LTV-wN0M" alt="Construction OS Logo" class="w-full h-full object-contain"></div>
+<h1 class="font-h1-web text-primary tracking-tight text-body-mobile">CONSTRUCTION OS</h1>
+</div>
+</div>
+<div class="flex items-center bg-surface-container-high px-space-3 py-1 rounded-full">
+<span class="w-2 h-2 bg-mobile-success rounded-full"></span>
+<span class="font-label-mobile text-label-mobile text-mobile-success uppercase tracking-wider">Synced</span>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 flex flex-col pt-[52px] pb-[72px] overflow-hidden">
+<!-- Viewport Container (Bento Logic: Single Column Stack) -->
+<div class="relative flex-1 bg-black overflow-hidden m-space-2 rounded-xl">
+<!-- Camera Viewfinder Placeholder -->
+<div class="absolute inset-0 bg-cover bg-center" data-alt="A high-resolution first-person drone view of a construction site foundation. Steel rebar grids are laid out over a dirt and concrete base. The lighting is bright, direct midday sun creating high-contrast shadows. The camera shows a slightly wide-angle perspective with technical digital overlays and scanning lines, maintaining a professional industrial SaaS aesthetic." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAii3-IgL-vgz8Rbtxh0WapqOSt9zWJlw1XBuXWPGmXJPW5vR3pmqhYxoRBtmv7KozVqIQW0jphwqzg25yxqYB66jAXYPXbKBYeAz8BkdGvfZMWB1ziqHxjNe3TUif53gHof7qevsm0_4bXvnX9ZdY8xiN2PBJ5-2jAWEr3ioliQPU0J3ZQBRaAsfWyqz-wt_3bGaVQ3AhU-EXmW8nBTh8082-wdDamD-P4KeSl2TDOec7HvsMQT3-945pf7di919lY1cIhMO0K_N4')">
+<!-- AI Targeting Overlay -->
+<div class="absolute inset-0 flex items-center justify-center">
+<!-- Scanning Line Effect -->
+<div class="absolute w-full h-[2px] bg-secondary/30 top-1/2 -translate-y-1/2 shimmer"></div>
+<!-- Central Reticle -->
+<div class="relative w-48 h-48 border border-secondary/20 flex items-center justify-center">
+<div class="reticle-corner top-0 left-0 border-t-2 border-l-2"></div>
+<div class="reticle-corner top-0 right-0 border-t-2 border-r-2"></div>
+<div class="reticle-corner bottom-0 left-0 border-b-2 border-l-2"></div>
+<div class="reticle-corner bottom-0 right-0 border-b-2 border-r-2"></div>
+<!-- AI Point Indicator -->
+<div class="w-2 h-2 bg-secondary rounded-full ai-pulse"></div>
+<div class="absolute w-12 h-12 border border-secondary/50 rounded-full animate-ping opacity-40"></div>
+<div class="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-surface-container/90 px-3 py-1 border border-secondary/30 rounded backdrop-blur-md">
+<span class="font-label-mobile text-secondary text-[10px] whitespace-nowrap uppercase tracking-widest font-bold">Locking...</span>
+</div>
+</div>
+</div>
+</div>
+<!-- AI Insight Overlay (Top) -->
+<div class="absolute top-space-4 left-space-4 right-space-4">
+<div class="bg-surface-container-high/80 border-l-4 border-secondary backdrop-blur-xl p-space-3 rounded-r-lg">
+<div class="flex items-center justify-between mb-1">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-secondary text-sm">psychology</span>
+<span class="font-label-mobile text-secondary tracking-widest text-[11px] uppercase">Core_AI: Targeting Point #PT-082</span>
+</div>
+<span class="font-label-mobile text-mobile-success text-[12px] font-bold">98.7% ACCURACY</span>
+</div>
+<p class="font-tiny-web text-on-surface-variant leading-none uppercase">Source: RTK-GNSS + BIM Alignment</p>
+</div>
+</div>
+<!-- Technical Gauges (Left Side) -->
+<div class="absolute left-space-4 top-1/2 -translate-y-1/2 flex flex-col gap-space-4">
+<div class="flex flex-col gap-1">
+<div class="h-24 w-1 bg-surface-variant rounded-full overflow-hidden">
+<div class="h-16 w-full bg-secondary"></div>
+</div>
+<span class="font-tiny-web text-secondary uppercase text-[10px]">Signal</span>
+</div>
+<div class="flex flex-col gap-1">
+<div class="h-24 w-1 bg-surface-variant rounded-full overflow-hidden">
+<div class="h-10 w-full bg-mobile-warning"></div>
+</div>
+<span class="font-tiny-web text-mobile-warning uppercase text-[10px]">Bat</span>
+</div>
+</div>
+</div>
+<!-- Metadata Bar -->
+<div class="px-edge-mobile py-space-3 grid grid-cols-3 gap-space-4 border-b border-surface-variant/20 bg-surface-container-low">
+<div class="flex flex-col">
+<span class="font-tiny-web text-on-surface-variant uppercase tracking-widest">Lat</span>
+<span class="font-body-mobile text-body-mobile font-bold text-on-surface">13.7563</span>
+</div>
+<div class="flex flex-col border-x border-surface-variant/30 px-space-3">
+<span class="font-tiny-web text-on-surface-variant uppercase tracking-widest">Long</span>
+<span class="font-body-mobile text-body-mobile font-bold text-on-surface">100.5018</span>
+</div>
+<div class="flex flex-col text-right">
+<span class="font-tiny-web text-on-surface-variant uppercase tracking-widest">Elev</span>
+<span class="font-body-mobile text-body-mobile font-bold text-on-surface">12.4m</span>
+</div>
+</div>
+<!-- Action Area -->
+<div class="p-edge-mobile flex flex-col gap-space-3">
+<button class="w-full h-touch-target bg-mobile-primary text-white rounded-lg flex items-center justify-center gap-space-2 active:scale-95 transition-all duration-200">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add_a_photo</span>
+<span class="font-label-mobile text-[15px] uppercase tracking-wider font-extrabold">Confirm Capture</span>
+</button>
+<button class="w-full h-touch-target border-2 border-outline-variant text-on-surface rounded-lg flex items-center justify-center gap-space-2 active:scale-95 transition-all duration-200">
+<span class="material-symbols-outlined">refresh</span>
+<span class="font-label-mobile text-[15px] uppercase tracking-wider font-bold">Retake</span>
+</button>
+</div>
+</main>
+<!-- Bottom Navigation Bar (from JSON guidance) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-base pb-safe bg-surface-container dark:bg-surface-container-high h-[72px] shadow-lg">
+<!-- Reports -->
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-bright/20 rounded-xl px-space-4 py-space-2">
+<span class="material-symbols-outlined">description</span>
+<span class="font-label-mobile text-label-mobile">Reports</span>
+</div>
+<!-- Inventory -->
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-bright/20 rounded-xl px-space-4 py-space-2">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-label-mobile text-label-mobile">Inventory</span>
+</div>
+<!-- BIM (Active) -->
+<div class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-xl px-space-4 py-space-2 active:scale-95 transition-all duration-200">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">view_in_ar</span>
+<span class="font-label-mobile text-label-mobile">BIM</span>
+</div>
+<!-- Users -->
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-bright/20 rounded-xl px-space-4 py-space-2">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-mobile text-label-mobile">Users</span>
+</div>
+<!-- Settings -->
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-bright/20 rounded-xl px-space-4 py-space-2">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-mobile text-label-mobile">Settings</span>
+</div>
+</nav>
+<script>
+        // Simple Micro-interaction for the viewfinder
+        const viewfinder = document.querySelector('[data-alt]');
+        viewfinder.addEventListener('touchstart', () => {
+            viewfinder.style.transition = 'filter 0.1s ease';
+            viewfinder.style.filter = 'brightness(1.5) contrast(1.2)';
+            setTimeout(() => {
+                viewfinder.style.filter = 'none';
+            }, 100);
+        });
+    </script>
+
+
+</body></html>

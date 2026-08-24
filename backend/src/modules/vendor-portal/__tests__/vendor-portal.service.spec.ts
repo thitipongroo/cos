@@ -38,6 +38,7 @@ function build(
     createQuotation: jest.fn().mockResolvedValue({ quotation_id: 'q-1' }),
     markInvitationResponded: jest.fn().mockResolvedValue(undefined),
     listPurchaseOrdersByVendor: jest.fn().mockResolvedValue([{ po_id: 'po-1' }]),
+    findPurchaseOrderForVendor: jest.fn().mockResolvedValue({ po_id: 'po-1' }),
     createInvoice: jest.fn().mockResolvedValue({ invoice_id: 'i-1' }),
     listInvoicesByVendor: jest.fn().mockResolvedValue([{ invoice_id: 'i-1' }]),
     listQuotationsByVendor: jest.fn().mockResolvedValue([{ quotation_id: 'q-1' }]),
@@ -189,6 +190,7 @@ describe('VendorPortalService', () => {
         due_date: '2026-07-20',
       };
       expect(await service.submitInvoice('ven-1', dto)).toEqual({ invoice_id: 'i-1' });
+      expect(repo.findPurchaseOrderForVendor).toHaveBeenCalledWith('po-1', 'ven-1');
       expect(repo.createInvoice).toHaveBeenCalledWith({
         poId: 'po-1',
         vendorId: 'ven-1',
@@ -198,6 +200,22 @@ describe('VendorPortalService', () => {
         invoiceDate: '2026-06-20',
         dueDate: '2026-07-20',
       });
+    });
+
+    it('submitInvoice rejects a PO that is not the vendor’s own (object-level authorization)', async () => {
+      const { service, repo } = build();
+      repo.findPurchaseOrderForVendor.mockResolvedValueOnce(null);
+      await expect(
+        service.submitInvoice('ven-1', {
+          po_id: 'po-belonging-to-another-vendor',
+          invoice_number: 'INV-2',
+          amount: '50.00',
+          currency_code: 'THB',
+          invoice_date: '2026-06-20',
+          due_date: '2026-07-20',
+        }),
+      ).rejects.toThrow('Purchase order not found for this vendor');
+      expect(repo.createInvoice).not.toHaveBeenCalled();
     });
 
     it('listInvoices', async () => {

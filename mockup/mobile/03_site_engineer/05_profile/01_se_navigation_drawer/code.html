@@ -1,0 +1,296 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Construction OS - Navigation Drawer</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-tertiary-container": "#eeefff",
+                    "on-surface": "#d3e4fe",
+                    "on-secondary": "#003640",
+                    "secondary-container": "#03b5d3",
+                    "on-tertiary": "#2b3041",
+                    "background": "#031427",
+                    "surface": "#031427",
+                    "sync-active": "#FFD60A",
+                    "primary-fixed": "#dbe1ff",
+                    "on-background": "#d3e4fe",
+                    "on-error-container": "#ffdad6",
+                    "tertiary-container": "#686c80",
+                    "mobile-success": "#00C853",
+                    "surface-container": "#102034",
+                    "outline-variant": "#434655",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "secondary-fixed": "#acedff",
+                    "surface-container-lowest": "#000f21",
+                    "inverse-on-surface": "#213145",
+                    "on-primary-fixed": "#00174b",
+                    "mobile-danger": "#FF3B30",
+                    "surface-tint": "#b4c5ff",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "tertiary-fixed": "#dee1f9",
+                    "on-secondary-fixed": "#001f26",
+                    "error-container": "#93000a",
+                    "on-primary-container": "#eeefff",
+                    "primary": "#b4c5ff",
+                    "on-surface-variant": "#c3c6d7",
+                    "error": "#ffb4ab",
+                    "surface-variant": "#26364a",
+                    "on-secondary-container": "#00424e",
+                    "outline": "#8d90a0",
+                    "dark-surface": "#0F172A",
+                    "on-error": "#690005",
+                    "tertiary": "#c1c5dc",
+                    "surface-container-highest": "#26364a",
+                    "dark-bg": "#020617",
+                    "surface-bright": "#2a3a4f",
+                    "mobile-primary": "#0066FF",
+                    "mobile-warning": "#FF9500",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "surface-dim": "#031427",
+                    "inverse-surface": "#d3e4fe",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "on-primary": "#002a78",
+                    "on-tertiary-fixed": "#161b2b",
+                    "surface-container-high": "#1b2b3f",
+                    "inverse-primary": "#0053db",
+                    "sync-pending": "#94A3B8",
+                    "surface-container-low": "#0b1c30",
+                    "secondary": "#4cd7f6",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "primary-container": "#2563eb"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "web-margin": "32px",
+                    "touch-target": "52px",
+                    "space-4": "16px",
+                    "space-1": "4px",
+                    "space-2": "8px",
+                    "base": "4px",
+                    "space-3": "12px",
+                    "edge-mobile": "24px"
+            },
+            "fontFamily": {
+                    "display-web": ["Inter Tight"],
+                    "label-mobile": ["Inter Tight"],
+                    "body-web": ["Inter Tight"],
+                    "h1-web": ["Inter Tight"],
+                    "hero-mobile": ["Inter Tight"],
+                    "tiny-web": ["Inter Tight"],
+                    "body-mobile": ["Inter Tight"],
+                    "h2-web": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .active-pill {
+            position: relative;
+        }
+        .active-pill::before {
+            content: '';
+            position: absolute;
+            left: -12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 24px;
+            background-color: #b4c5ff;
+            border-radius: 0 4px 4px 0;
+        }
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-mobile text-body-mobile overflow-hidden h-screen">
+<!-- Overlay / Backdrop -->
+<div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300" id="drawer-backdrop"></div>
+<!-- Navigation Drawer (Predicted Shared Component: NavigationDrawer) -->
+<aside class="fixed top-0 left-0 z-50 h-full w-[310px] bg-surface-container dark:bg-surface-container-low shadow-xl rounded-r-xl transform transition-transform duration-300 ease-out flex flex-col" id="main-drawer">
+<!-- Drawer Content Shell (style_shell_layout: flex flex-col p-mobile-edge) -->
+<div class="flex flex-col h-full py-6 px-6">
+<!-- Branding Header (Predicted Shared Component: TopAppBar branding logic) -->
+<div class="flex items-center gap-3 mb-10">
+<div class="w-10 h-10 bg-primary-container rounded-lg flex items-center justify-center"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuCVxH__txb0904YRLhX2suP-6RE3grayCrn33_Tc82KE3grL6ZpnkOgeathvy9DP5aSa4Rikpv9lzuz5AglmOKUrBoCVtqmbMj5EcoHXmgMQL98RiW1qRZaoMEHUX_eMi-Ok0u0NCZfxEfbwpS0stbPMGvuu52ZObsZIyTdwAE6ux4cwOvjLnzixIxFoOVeaGL94UVvpZRb_1u-kgHbWCjpEAW3cKdjAZpGW4R4CKnNhj7hJ54cS6LdDSifzDhb8vo__XeSLr1O0r8" alt="Construction OS Logo" class="w-full h-full object-cover"></div>
+<h1 class="font-hero-mobile text-hero-mobile font-extrabold tracking-tight text-cos-blue dark:text-primary">CONSTRUCTION</h1>
+</div>
+<!-- Profile Header (JSON header_type: profile, header_layout: left_align) -->
+<div class="mb-8 p-4 bg-surface-container-highest rounded-xl border hover:bg-surface-variant active:scale-95 transition-all cursor-pointer border-outline-variant/30">
+<div class="flex items-center gap-4">
+<div class="relative">
+<img class="w-14 h-14 rounded-full object-cover border-2 border-primary/30" data-alt="A high-resolution portrait of a professional Site Engineer named Alex Rivers, wearing a clean white hard hat and a high-visibility orange safety vest. The background is a blurred architectural construction site with steel beams and a clear blue sky. The lighting is bright and natural, emphasizing a high-utility, mission-critical professional aesthetic consistent with a modern SaaS platform." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC8wIJCRaeb7wsJGRuUuTyEex8Cnf7KDKAU7VVItkaGTBifS5m-t0WOkYn6tnOaZDJMXzRDSIbVgdvnA1iuZOSV7WtivpR_FIdF6gYZPLFpxRtkIfbGmHfZD6bsKRKP_ZBYqmIcPNgPZ5iHQ1RKVStOnwy28B_hVweVwA6GzH5ucWqudZkAQJtU0LSwSua2NrbpaQb-v3sFcHM_o8UrnAsSyLhs8b4GBbJN4qwMkRJg3MRWhobiL4V2zrrux2RBY2wyjJG3PFxMHYE">
+<div class="absolute bottom-0 right-0 w-4 h-4 bg-mobile-success border-2 border-surface-container rounded-full"></div>
+</div>
+<div class="flex-1">
+<h2 class="font-h2-web text-h2-web text-on-surface truncate">Alex Rivers</h2>
+<p class="text-tiny-web uppercase tracking-wider text-outline">Supervisor - Site A</p>
+</div><span class="material-symbols-outlined text-outline opacity-50 ml-auto">chevron_right</span>
+</div>
+
+</div>
+<!-- Navigation Items (Predicted Shared Component: NavigationDrawer label_texts & icons) -->
+<nav class="flex-1 space-y-1 overflow-y-auto"><div class="text-tiny-web font-bold text-outline-variant uppercase mb-2 tracking-widest px-3">Field Tools</div>
+<!-- Project Overview -->
+<a class="flex items-center gap-4 px-3 py-4 rounded-lg text-on-surface-variant hover:bg-surface-variant border border-transparent hover:border-outline-variant/30 transition-all duration-150 mb-2" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-medium">Project Overview</span>
+<span class="ml-auto material-symbols-outlined text-sm opacity-50">chevron_right</span>
+</a>
+<!-- Daily Site Reports -->
+<a class="flex items-center gap-4 px-3 py-4 rounded-lg text-on-surface-variant hover:bg-surface-variant border border-transparent hover:border-outline-variant/30 transition-all duration-150 mb-2" href="#">
+<span class="material-symbols-outlined">description</span>
+<span class="font-medium">Daily Site Reports</span>
+<span class="ml-auto material-symbols-outlined text-sm opacity-50">chevron_right</span>
+</a>
+<!-- Safety Incident Logs -->
+<a class="flex items-center gap-4 px-3 py-4 rounded-lg text-on-surface-variant hover:bg-surface-variant border border-transparent hover:border-outline-variant/30 transition-all duration-150 mb-2" href="#">
+<span class="material-symbols-outlined">health_and_safety</span>
+<span class="font-medium">Safety Incident Logs</span>
+<span class="ml-auto material-symbols-outlined text-sm opacity-50">chevron_right</span>
+</a>
+<!-- Material Inventory -->
+<a class="flex items-center gap-4 px-3 py-4 rounded-lg text-on-surface-variant hover:bg-surface-variant border border-transparent hover:border-outline-variant/30 transition-all duration-150 mb-2" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-medium">Material Inventory</span>
+<span class="ml-auto material-symbols-outlined text-sm opacity-50">chevron_right</span>
+</a>
+<!-- Equipment Logs -->
+<a class="flex items-center gap-4 px-3 py-4 rounded-lg text-on-surface-variant hover:bg-surface-variant border border-transparent hover:border-outline-variant/30 transition-all duration-150 mb-2" href="#">
+<span class="material-symbols-outlined">engineering</span>
+<span class="font-medium">Equipment Logs</span>
+<span class="ml-auto material-symbols-outlined text-sm opacity-50">chevron_right</span>
+</a>
+<!-- Drawing Viewer -->
+<a class="flex items-center gap-4 px-3 py-4 rounded-lg text-on-surface-variant hover:bg-surface-variant border border-transparent hover:border-outline-variant/30 transition-all duration-150 mb-2" href="#">
+<span class="material-symbols-outlined">architecture</span>
+<span class="font-medium">Drawing Viewer</span>
+<span class="ml-auto material-symbols-outlined text-sm opacity-50">chevron_right</span>
+</a>
+<div class="pt-4 pb-2">
+<div class="border-t border-outline-variant/20 w-full mb-4"></div>
+</div>
+<!-- Settings (ACTIVE) -->
+<a class="flex items-center gap-4 px-3 py-4 rounded-lg text-primary font-bold bg-primary/10 active-pill border border-primary/20 transition-all duration-150 mb-2" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">settings</span>
+<span class="font-bold">Settings</span>
+<span class="ml-auto material-symbols-outlined text-sm">chevron_right</span>
+</a>
+<!-- Privacy Policy -->
+<a class="flex items-center gap-4 px-3 py-4 rounded-lg text-on-surface-variant hover:bg-surface-variant border border-transparent hover:border-outline-variant/30 transition-all duration-150" href="#">
+<span class="material-symbols-outlined">policy</span>
+<span class="font-medium">Privacy Policy</span>
+<span class="ml-auto material-symbols-outlined text-sm opacity-50">chevron_right</span>
+</a></nav>
+<!-- Footer (Logout) -->
+<div class="mt-auto pt-6">
+<button class="w-full flex items-center gap-4 px-3 py-4 rounded-xl bg-error-container/20 text-error hover:bg-error-container/30 transition-all duration-200 active:scale-95">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-bold">Logout</span>
+<span class="ml-auto material-symbols-outlined text-sm">chevron_right</span>
+</button>
+
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas (Background placeholder) -->
+<main class="h-full w-full relative pl-0">
+<!-- Animated Background Shader (per Design System) -->
+
+<div class="p-8 max-w-lg mx-auto flex flex-col justify-center h-full">
+<div class="bg-surface-container/60 backdrop-blur-xl p-8 rounded-2xl border border-white/5 shadow-2xl">
+<div class="w-12 h-1 bg-primary/40 rounded-full mb-6"></div>
+<h3 class="font-hero-mobile text-hero-mobile text-on-surface mb-2">Construction OS</h3>
+<p class="text-on-surface-variant leading-relaxed">
+                    The side drawer is currently being previewed. In field conditions, high-contrast typography and clear touch targets ensure rapid navigation between project data and site logs.
+                </p>
+<div class="mt-8 grid grid-cols-2 gap-3">
+<div class="p-4 bg-surface-container rounded-xl border border-outline-variant/30">
+<p class="text-tiny-web text-outline uppercase mb-1">Active Site</p>
+<p class="font-bold text-on-surface">Skybridge A</p>
+</div>
+<div class="p-4 bg-surface-container rounded-xl border border-outline-variant/30">
+<p class="text-tiny-web text-outline uppercase mb-1">Local Time</p>
+<p class="font-bold text-on-surface">09:42 AM</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+<script>
+        // Micro-interactions for the drawer
+        const drawer = document.getElementById('main-drawer');
+        const backdrop = document.getElementById('drawer-backdrop');
+        
+        // Simple toggle logic for demo purposes (start open)
+        let isOpen = true;
+
+        function toggleDrawer() {
+            if (isOpen) {
+                drawer.style.transform = 'translateX(-100%)';
+                backdrop.style.opacity = '0';
+                setTimeout(() => backdrop.classList.add('pointer-events-none'), 300);
+            } else {
+                drawer.style.transform = 'translateX(0)';
+                backdrop.classList.remove('pointer-events-none');
+                backdrop.style.opacity = '1';
+            }
+            isOpen = !isOpen;
+        }
+
+        backdrop.addEventListener('click', toggleDrawer);
+
+        // Visual feedback on nav items
+        const navItems = document.querySelectorAll('nav a');
+        navItems.forEach(item => {
+            item.addEventListener('touchstart', () => {
+                item.classList.add('scale-[0.98]', 'bg-surface-variant/80');
+            });
+            item.addEventListener('touchend', () => {
+                item.classList.remove('scale-[0.98]', 'bg-surface-variant/80');
+            });
+        });
+    </script>
+
+
+
+
+
+
+
+
+</body></html>

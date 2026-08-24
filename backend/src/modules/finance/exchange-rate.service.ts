@@ -8,23 +8,38 @@ import { Cron } from '@nestjs/schedule';
 import { Redis } from 'ioredis';
 import { Decimal } from '@cos/financial';
 import { createLogger } from '@cos/logger';
+import { ScheduledJobLockService } from '../../shared/scheduling/scheduled-job-lock.service';
 
 const logger = createLogger('exchange-rate-service');
 
 const BASE_CURRENCY = 'USD';
 const CACHE_TTL_SECONDS = 86400; // 24h
 const REDIS_KEY = 'finance:exchange_rates:usd_base';
+// getRates() falls through to a live fetch on a cache miss, so this call sits on a request path. An
+// unbounded fetch would pin that request to however long the upstream takes to give up. Matches the
+// AbortSignal.timeout() every other outbound client here uses (geo, file-service, credentials).
+const FETCH_TIMEOUT_MS = 5000;
 
 interface OerResponse {
   base: string;
   rates: Record<string, number>;
 }
 
+/** @Cron name and the lease key in platform.scheduled_job_locks — the same string on purpose. */
+export const EXCHANGE_RATE_JOB = 'exchange-rate-refresh';
+
+/**
+ * Lease length. Fifteen minutes for one HTTP fetch is deliberately generous: the schedule is daily,
+ * so there is no next tick to protect, and the only thing a too-short lease could buy is a second
+ * replica starting the same fetch while the first is still waiting on a slow provider.
+ */
+export const EXCHANGE_RATE_LEASE_SECONDS = 900;
+
 @Injectable()
 export class ExchangeRateService implements OnModuleDestroy {
   private readonly redis: Redis;
 
-  constructor() {
+  constructor(private readonly locks: ScheduledJobLockService) {
     this.redis = new Redis(process.env['REDIS_URL'] ?? 'redis://localhost:6379');
   }
 
@@ -55,15 +70,24 @@ export class ExchangeRateService implements OnModuleDestroy {
     return this.convert(new Decimal('1'), fromCurrency, toCurrency);
   }
 
-  /** Daily refresh at 00:00 UTC — cron expression: minute 0, hour 0, every day. */
-  @Cron('0 0 * * *', { timeZone: 'UTC', name: 'exchange-rate-refresh' })
+  /**
+   * Daily refresh at 00:00 UTC — cron expression: minute 0, hour 0, every day.
+   *
+   * ONE replica refreshes. The result lands in a SHARED Redis key, so three replicas refreshing was
+   * not incorrect the way the notification jobs were — but it spent three calls of a metered
+   * third-party quota (Open Exchange Rates) on one day's rates, and three writers racing one key is
+   * a needless way to find out how the provider behaves under a partial outage.
+   */
+  @Cron('0 0 * * *', { timeZone: 'UTC', name: EXCHANGE_RATE_JOB })
   async refreshRates(): Promise<void> {
-    logger.info('Refreshing exchange rates from Open Exchange Rates API');
-    try {
-      await this.fetchAndCache();
-    } catch (err) {
-      logger.error({ err }, 'Failed to refresh exchange rates — stale cache remains active');
-    }
+    await this.locks.runExclusively(EXCHANGE_RATE_JOB, EXCHANGE_RATE_LEASE_SECONDS, async () => {
+      logger.info('Refreshing exchange rates from Open Exchange Rates API');
+      try {
+        await this.fetchAndCache();
+      } catch (err) {
+        logger.error({ err }, 'Failed to refresh exchange rates — stale cache remains active');
+      }
+    });
   }
 
   async onModuleDestroy(): Promise<void> {
@@ -91,7 +115,7 @@ export class ExchangeRateService implements OnModuleDestroy {
     const appId = process.env['OPEN_EXCHANGE_RATES_APP_ID'] ?? '';
     const url = `https://openexchangerates.org/api/latest.json?app_id=${appId}&base=${BASE_CURRENCY}`;
 
-    const res = await fetch(url);
+    const res = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
     if (!res.ok) {
       throw new Error(`Open Exchange Rates API error: ${res.status} ${res.statusText}`);
     }

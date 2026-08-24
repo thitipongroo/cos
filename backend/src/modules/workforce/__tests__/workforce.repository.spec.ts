@@ -106,6 +106,29 @@ describe('WorkforceRepository', () => {
     });
   });
 
+  describe('getProjectDirectory', () => {
+    it('returns the crew and binds the project id', async () => {
+      const rows = [{ worker_id: 'w-1', full_name: 'Anan S.', on_site: true }];
+      mockPrisma.$queryRaw.mockResolvedValue(rows);
+      const result = await repo.getProjectDirectory('proj-1');
+      expect(result).toBe(rows);
+      expect(mockPrisma.$queryRaw.mock.calls.at(-1)!.slice(1)).toContain('proj-1');
+    });
+
+    it('derives on_site from TODAY only, and only on this project', async () => {
+      // The two predicates that make `on_site` mean what the card says. Asserted on the SQL text
+      // because they live in the query, not in TypeScript: drop `date_trunc` and yesterday's
+      // check-in marks a worker present; drop the project match and someone on another site does.
+      mockPrisma.$queryRaw.mockResolvedValue([]);
+      await repo.getProjectDirectory('proj-1');
+      const sql = (mockPrisma.$queryRaw.mock.calls.at(-1)![0] as string[]).join('?');
+      expect(sql).toContain("date_trunc('day', now())");
+      expect(sql).toContain('al.project_id = pw.project_id');
+      // Rotated-off allocations are excluded, so the directory is the CURRENT crew.
+      expect(sql).toContain('pw.end_date IS NULL OR pw.end_date >= CURRENT_DATE');
+    });
+  });
+
   describe('recordAttendance', () => {
     it('inserts attendance log and returns first row', async () => {
       const row = { log_id: 'log-1' };

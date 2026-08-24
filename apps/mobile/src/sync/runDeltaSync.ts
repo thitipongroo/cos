@@ -5,13 +5,37 @@
 // All six server entity types are applied: task/site_report/issue/attendance/safety/material, each
 // to its local table. The server tags each updated row with `entity_type`; `deleted` is a flat id
 // list (matched across tables via each table's server-key column). Writes go through the
-// upsertByKey/deleteByKey seams in db/database.ts (also the unit-test mock point).
+// existingKeys/insertMany/upsertByKey/deleteByKeys/clearTable seams in db/database.ts (also the
+// unit-test mock point).
+//
+// PAGED, because the server pages. /sync/delta caps each entity type at 500 rows and answers with
+// `has_more` plus the cursor to resume from; this read the first page and stopped, silently dropping
+// everything behind it. It also ignored `full_resync_required`, the server's way of saying its
+// tombstone list is incomplete for a cursor this old — see the loop below for both.
 
-import { upsertByKey, deleteByKey, TableName } from '../db/database';
+import {
+  deleteByKeys,
+  existingKeys,
+  insertMany,
+  upsertByKey,
+  clearTable,
+  TableName,
+} from '../db/database';
 import { fetchDelta } from '../api/client';
 import { useSyncStore } from '../store/syncStore';
 
 const EPOCH = '1970-01-01T00:00:00.000Z';
+
+/**
+ * Hard stop on the paging loop.
+ *
+ * The server pages at 500 rows per entity type and advances the cursor to the lowest truncated
+ * watermark, so a normal catch-up converges in a handful of passes. The cap is a guard against the
+ * one case the server itself documents as unpageable — 500 rows sharing an identical microsecond
+ * timestamp, where the cursor cannot advance — which without it would spin forever on a device in
+ * someone's pocket. Reaching it leaves the cursor where it got to; the next sync resumes there.
+ */
+const MAX_PAGES = 50;
 
 interface ApplySpec {
   table: TableName;
@@ -31,6 +55,14 @@ const APPLY: Record<string, ApplySpec> = {
       status: 'status',
       progress_percent: 'progressPercent',
       assigned_to: 'assignedTo',
+      // Shown on the task card (DDL v4). The server already sent these — /sync/delta selects the
+      // whole row — and the client dropped them, so a card had only a name and a percentage.
+      work_type: 'workType',
+      planned_start: 'plannedStart',
+      planned_end: 'plannedEnd',
+      // The working window the dashboard card is headed by (DDL v5).
+      planned_start_time: 'plannedStartTime',
+      planned_end_time: 'plannedEndTime',
     },
   },
   site_report: {
@@ -55,6 +87,11 @@ const APPLY: Record<string, ApplySpec> = {
       description: 'description',
       severity: 'severity',
       status: 'status',
+      // Kept from the delta since DDL v6. The server has always sent both — /sync/delta selects the
+      // whole site_ops.issues row — and the client dropped them, so the issue board could say
+      // neither what kind of issue a card was nor how old it is.
+      issue_type: 'issueType',
+      created_at: 'createdAt',
     },
   },
   attendance: {
@@ -108,30 +145,96 @@ const KEY_TS: Record<string, string> = {
 };
 
 export async function runDeltaSync(): Promise<void> {
-  const since = useSyncStore.getState().lastSyncAt ?? EPOCH;
-  const { updated, deleted, server_timestamp } = await fetchDelta<Record<string, unknown>>(
-    DELTA_TYPES,
-    since,
-  );
+  let since = useSyncStore.getState().lastSyncAt ?? EPOCH;
+  let wiped = false;
 
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const response = await fetchDelta<Record<string, unknown>>(DELTA_TYPES, since);
+    const { updated, deleted, server_timestamp, has_more, full_resync_required } = response;
+
+    // THE SERVER SAYS OUR CURSOR IS TOO OLD TO TRUST. Its `deleted` list cannot include rows that
+    // were deleted and then pruned while this device was away, so anything of that kind is still
+    // sitting in the local cache and no future delta will ever mention it. Dropping the cached rows
+    // first — once, before the first page is applied — is what the server's contract asks for. The
+    // pages that follow repopulate them.
+    //
+    // Only read caches are cleared. The outbox (sync_queue, a different database) is untouched: a
+    // stale cursor says nothing about mutations this device has not yet pushed.
+    if (full_resync_required && !wiped) {
+      for (const spec of Object.values(APPLY)) {
+        await clearTable(spec.table);
+      }
+      wiped = true;
+    }
+
+    await applyUpdated(updated);
+    await applyDeleted(deleted);
+
+    // Persisted per page, not once at the end: a pull interrupted half way (the app is backgrounded,
+    // the signal drops) then resumes from the last page it actually applied instead of starting over.
+    await useSyncStore.getState().setLastSyncAt(server_timestamp);
+    since = server_timestamp;
+
+    if (!has_more) return;
+  }
+}
+
+/** Apply one page's `updated` rows, grouped by table so each table costs a constant few statements. */
+async function applyUpdated(updated: Array<Record<string, unknown>>): Promise<void> {
+  // Group first: the rows arrive interleaved by entity type, and applying them in arrival order was
+  // what forced a SELECT + an INSERT/UPDATE per row.
+  const byType = new Map<string, Array<Record<string, unknown>>>();
   for (const row of updated) {
-    const spec = APPLY[String(row['entity_type'])];
-    if (!spec) continue;
-    const id = String(row[spec.idColumn] ?? '');
-    if (!id) continue;
-
-    const values: Record<string, unknown> = { offlineSyncStatus: 'SYNCED' };
-    for (const [serverKey, tsName] of Object.entries(spec.fields)) {
-      values[tsName] = row[serverKey] ?? null;
-    }
-    await upsertByKey(spec.table, KEY_TS[spec.idColumn]!, id, values);
+    const type = String(row['entity_type']);
+    // `Object.hasOwn`, not truthiness — `APPLY['constructor']` is truthy and would be treated as a
+    // spec. The server guards its own registry the same way and says why (SyncService.delta).
+    if (!Object.hasOwn(APPLY, type)) continue;
+    const bucket = byType.get(type);
+    if (bucket) bucket.push(row);
+    else byType.set(type, [row]);
   }
 
-  for (const id of deleted) {
-    for (const spec of Object.values(APPLY)) {
-      await deleteByKey(spec.table, KEY_TS[spec.idColumn]!, id);
-    }
-  }
+  for (const [type, rows] of byType) {
+    const spec = APPLY[type]!;
+    const keyTs = KEY_TS[spec.idColumn]!;
 
-  useSyncStore.getState().setLastSyncAt(server_timestamp);
+    // Last occurrence wins if a page carries the same id twice — the rows are ordered by the delta
+    // column, so the later one is the newer state.
+    const values = new Map<string, Record<string, unknown>>();
+    for (const row of rows) {
+      const id = String(row[spec.idColumn] ?? '');
+      if (!id) continue;
+      const mapped: Record<string, unknown> = { offlineSyncStatus: 'SYNCED' };
+      for (const [serverKey, tsName] of Object.entries(spec.fields)) {
+        mapped[tsName] = row[serverKey] ?? null;
+      }
+      values.set(id, mapped);
+    }
+    if (values.size === 0) continue;
+
+    const ids = [...values.keys()];
+    const present = await existingKeys(spec.table, keyTs, ids);
+
+    // New rows go in one statement; rows that already exist still need their own UPDATE, because
+    // each carries different values.
+    const inserts: Array<Record<string, unknown>> = [];
+    for (const [id, mapped] of values) {
+      if (present.has(id)) await upsertByKey(spec.table, keyTs, id, mapped);
+      else inserts.push(mapped);
+    }
+    await insertMany(spec.table, inserts);
+  }
+}
+
+/**
+ * Apply one page's tombstones.
+ *
+ * `deleted` is a flat id list with no entity type, so every id is tried against every table — but
+ * once per table for the whole page rather than once per table per id.
+ */
+async function applyDeleted(deleted: string[]): Promise<void> {
+  if (deleted.length === 0) return;
+  for (const spec of Object.values(APPLY)) {
+    await deleteByKeys(spec.table, KEY_TS[spec.idColumn]!, deleted);
+  }
 }

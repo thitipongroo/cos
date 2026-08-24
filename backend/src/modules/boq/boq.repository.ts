@@ -9,6 +9,7 @@ import type { Request } from 'express';
 import { OutboxPublisher } from '@cos/kafka';
 import { TenantPrismaService } from '../tenant/prisma/tenant-prisma.service';
 import type { OutboxEventInput } from '../../shared/outbox/outbox.types';
+import { clsTenantId } from '../../shared/context/cls-context';
 
 export interface BoqVersionRow {
   version_id: string;
@@ -58,8 +59,12 @@ export interface BoqItemRow {
 
 @Injectable({ scope: Scope.REQUEST })
 export class BoqRepository {
+  // CLS fallback is load-bearing, not cosmetic: under Fastify the REQUEST injected into a
+  // Scope.REQUEST provider is not guaranteed to be the object the auth layer decorated. The auth
+  // guards publish tenant_id into CLS (the same source TenantPrismaService reads for RLS), so this
+  // resolves even when the request copy does not carry it.
   private get tenantId(): string {
-    return (this.request as { tenantId?: string }).tenantId ?? '';
+    return (this.request as { tenantId?: string }).tenantId ?? clsTenantId();
   }
 
   constructor(
@@ -68,6 +73,78 @@ export class BoqRepository {
   ) {}
 
   // ── Versions ──────────────────────────────────────────────────────────────
+
+  /**
+   * Claim the next BOQ version for a project: reject an existing DRAFT, allocate version_number and
+   * insert — all in ONE transaction, serialised per project.
+   *
+   * The service used to do this as three separate transactions (findDraftVersion, then
+   * findMaxVersionNumber, then createVersion). Two concurrent creates could both pass the
+   * "one DRAFT per project" check and both compute the same version_number.
+   *
+   * pg_advisory_xact_lock serialises the whole read-then-write per project_id and releases on
+   * COMMIT/ROLLBACK, so it is safe under PgBouncer transaction mode like the rest of ADR-008. It is
+   * used instead of a unique constraint because adding one is a schema change; a
+   * UNIQUE (tenant_id, project_id, version_number) index is still worth having as a backstop, and
+   * this lock is what makes the application correct without it.
+   *
+   * Returns null when the project already has a DRAFT — the caller turns that into a 409.
+   */
+  async claimNextVersion(
+    params: {
+      project_id: string;
+      version_name: string | null;
+      currency_code: string;
+      created_by: string;
+    },
+    buildOutboxEvents?: (row: BoqVersionRow) => OutboxEventInput[],
+  ): Promise<{ version: BoqVersionRow; version_number: number } | null> {
+    return this.db.run(async (prisma) => {
+      // hashtextextended (PostgreSQL 11+) gives a stable bigint key for the advisory lock; the key
+      // includes the tenant so two tenants never contend on the same lock slot. The ::text casts
+      // keep Postgres from having to infer a type for the concatenated parameters.
+      await prisma.$executeRaw`
+        SELECT pg_advisory_xact_lock(
+          hashtextextended(
+            ${this.tenantId}::text || ':' || ${params.project_id}::text || ':boq_version', 0
+          )
+        )
+      `;
+
+      const drafts = await prisma.$queryRaw<Array<{ version_id: string }>>`
+        SELECT version_id FROM boq.boq_versions
+        WHERE project_id = ${params.project_id}::uuid
+          AND tenant_id  = ${this.tenantId}::uuid
+          AND status     = 'DRAFT'
+        LIMIT 1
+      `;
+      if (drafts.length > 0) return null;
+
+      const rows = await prisma.$queryRaw<BoqVersionRow[]>`
+        INSERT INTO boq.boq_versions (
+          project_id, tenant_id, version_number, version_name,
+          total_estimated_currency, created_by
+        )
+        SELECT
+          ${params.project_id}::uuid, ${this.tenantId}::uuid,
+          COALESCE(MAX(version_number), 0) + 1, ${params.version_name},
+          ${params.currency_code}, ${params.created_by}::uuid
+        FROM boq.boq_versions
+        WHERE project_id = ${params.project_id}::uuid
+          AND tenant_id  = ${this.tenantId}::uuid
+        RETURNING *
+      `;
+      const version = rows[0]!;
+      // Inside the same transaction as the INSERT and the advisory lock, so a rollback emits
+      // nothing and the payload carries the real generated version_id (§35.13 ESC-13).
+      if (buildOutboxEvents) {
+        for (const event of buildOutboxEvents(version)) {
+          await OutboxPublisher.write(prisma, event);
+        }
+      }
+      return { version, version_number: version.version_number };
+    });
+  }
 
   async createVersion(
     params: {
@@ -262,6 +339,35 @@ export class BoqRepository {
         SET subtotal_amount = ${subtotal}::decimal
         WHERE category_id = ${category_id}::uuid
           AND tenant_id   = ${this.tenantId}::uuid
+      `;
+    });
+  }
+
+  /**
+   * Write every category subtotal for a version in ONE statement.
+   *
+   * recalculateVersionTotal updated them in a loop — one UPDATE, in one db.run transaction, per
+   * category — so re-costing a BOQ with 80 categories issued 80 sequential transactions. Worse than
+   * slow: because each committed on its own, a failure partway left some categories carrying new
+   * subtotals and the rest the old ones, with the version total never written. A single UPDATE ...
+   * FROM (VALUES …) makes the recalculation atomic as well as one round trip.
+   */
+  async updateCategorySubtotals(
+    rows: Array<{ category_id: string; subtotal: string }>,
+  ): Promise<void> {
+    if (rows.length === 0) return;
+    const ids = rows.map((r) => r.category_id);
+    const subtotals = rows.map((r) => r.subtotal);
+    await this.db.run(async (prisma) => {
+      await prisma.$executeRaw`
+        UPDATE boq.boq_categories c
+           SET subtotal_amount = v.subtotal
+          FROM (
+            SELECT UNNEST(${ids}::uuid[]) AS category_id,
+                   UNNEST(${subtotals}::decimal[]) AS subtotal
+          ) AS v
+         WHERE c.category_id = v.category_id
+           AND c.tenant_id   = ${this.tenantId}::uuid
       `;
     });
   }

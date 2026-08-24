@@ -29,6 +29,20 @@ const noCache = {
   set: async () => undefined,
 } as never;
 
+/**
+ * AnalyticsService also takes a Redis client, used only by the cache-invalidation scan. None of the
+ * cases here exercise that path, so an object that throws on use is the honest stand-in: if a test
+ * ever reaches it, it fails loudly rather than silently passing against a no-op.
+ */
+const noRedis = new Proxy(
+  {},
+  {
+    get(_t, prop) {
+      throw new Error(`Redis was used unexpectedly: .${String(prop)}()`);
+    },
+  },
+) as never;
+
 describe('Analytics query layer (Testcontainers — ClickHouse)', () => {
   let container: StartedTestContainer;
   let ch: ClickHouseClient;
@@ -75,7 +89,7 @@ describe('Analytics query layer (Testcontainers — ClickHouse)', () => {
       }
     }
 
-    service = new AnalyticsService(ch, noCache);
+    service = new AnalyticsService(ch, noCache, noRedis);
   }, 300_000);
 
   afterAll(async () => {
@@ -280,7 +294,7 @@ describe('Analytics query layer (Testcontainers — ClickHouse)', () => {
         url: 'http://127.0.0.1:1',
         request_timeout: 1_000,
       });
-      const broken = new AnalyticsService(brokenClient, noCache);
+      const broken = new AnalyticsService(brokenClient, noCache, noRedis);
 
       await expect(
         broken.getExecutiveDashboard(TENANT_A, [PROJECT_1], '2026-06-01,2026-06-30'),

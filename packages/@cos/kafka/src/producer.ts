@@ -20,10 +20,22 @@ export interface ProduceOptions {
   spanId?: string;
 }
 
+/**
+ * Partition/replication settings for topics created on first publish. Same env vars the
+ * provisioner reads, so a topic created lazily is shaped identically to a pre-provisioned one.
+ */
+const TOPIC_PARTITIONS = parseInt(process.env['KAFKA_TOPIC_PARTITIONS'] ?? '3', 10);
+const TOPIC_REPLICATION_FACTOR = parseInt(process.env['KAFKA_TOPIC_REPLICATION_FACTOR'] ?? '1', 10);
+
 export class KafkaProducer {
   private readonly kafka: Kafka;
   private producer: Producer | null = null;
   private readonly schemaIds = new Map<string, number>();
+  /**
+   * Topics this process has already created or confirmed. Bounds the admin round-trip to once per
+   * topic per process, not once per message.
+   */
+  private readonly knownTopics = new Set<string>();
 
   constructor() {
     this.kafka = new Kafka({
@@ -53,22 +65,31 @@ export class KafkaProducer {
   /**
    * Publish a typed event. The event envelope is Avro-encoded using the
    * registered schema for this event type.
-   * Idempotency key: event_id (UUID v4 — unique per publish call).
+   * Idempotency key: event_id (UUID v4). Supplied by the caller when the event has a durable
+   * identity (the outbox), otherwise minted here.
    */
   async publish<T>(
-    event: Omit<BaseEventEnvelope<T>, 'event_id'>,
+    event: Omit<BaseEventEnvelope<T>, 'event_id'> & { event_id?: string },
     options: ProduceOptions = {},
   ): Promise<void> {
     if (!this.producer) throw new Error('KafkaProducer not connected — call connect() first');
 
+    // Honour a caller-supplied event_id; mint one only when there is none.
+    //
+    // KafkaConsumer dedupes on event_id (a Redis key, 24h TTL — consumer.ts), so the id is the
+    // IDENTITY of the event, not a per-attempt tag. Minting a fresh one on every publish made that
+    // dedupe unreachable for anything republished: the outbox poller retries a delivery it is not
+    // sure landed, and with a new id each time every retry looked like a brand-new event to every
+    // consumer. Callers that pass no id (direct publishers) behave exactly as before.
     const envelope: BaseEventEnvelope<T> = {
       ...event,
-      event_id: randomUUID(),
+      event_id: event.event_id ?? randomUUID(),
     };
 
     // Per-tenant topic name (§7.3): {tenant_id}.{event_type}; platform events use the
     // shared platform.events topic. The event_type (CloudEvents `type`) keeps no prefix.
     const topic = topicForEvent(envelope.event_type, envelope.tenant_id);
+    await this.ensureTopic(topic);
     const schemaId = await this.getOrRegisterSchema(envelope.event_type);
     const encoded = await encodeAvro(schemaId, envelope);
 
@@ -99,6 +120,42 @@ export class KafkaProducer {
       },
       'Kafka event published',
     );
+  }
+
+  /**
+   * Create the topic if this process has not already seen it.
+   *
+   * Topics are created on first publish rather than eagerly at tenant onboarding: provisioning the
+   * whole catalogue per tenant made the topic count scale with customer headcount instead of actual
+   * usage (55 topics / 495 partition replicas per tenant, most of them never written to). Kafka
+   * cannot do this for us — `auto.create.topics.enable` is false on both the MSK and Kubernetes
+   * brokers, and the producer sets `allowAutoTopicCreation: false` — so it happens here.
+   *
+   * createTopics is idempotent: KafkaJS resolves false when the topic already exists, so two
+   * services publishing a tenant's first event concurrently is safe. Failure is NOT swallowed —
+   * publishing to a topic that does not exist would fail anyway, and the outbox poller retries.
+   */
+  private async ensureTopic(topic: string): Promise<void> {
+    if (this.knownTopics.has(topic)) return;
+
+    const admin = this.kafka.admin();
+    try {
+      await admin.connect();
+      const created = await admin.createTopics({
+        topics: [
+          {
+            topic,
+            numPartitions: TOPIC_PARTITIONS,
+            replicationFactor: TOPIC_REPLICATION_FACTOR,
+          },
+        ],
+        waitForLeaders: true,
+      });
+      if (created) logger.info({ topic }, 'Kafka topic created on first publish');
+    } finally {
+      await admin.disconnect();
+    }
+    this.knownTopics.add(topic);
   }
 
   private async getOrRegisterSchema(eventType: string): Promise<number> {

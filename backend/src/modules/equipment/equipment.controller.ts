@@ -12,16 +12,20 @@ import {
   HttpCode,
   HttpStatus,
   ParseUUIDPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../identity/guards/jwt-auth.guard';
 import { EquipmentService } from './equipment.service';
 import { CreateEquipmentDto } from './dto/create-equipment.dto';
 import { AssignEquipmentDto, ReturnEquipmentDto } from './dto/assign-equipment.dto';
+import { UpdateEquipmentStatusDto } from './dto/update-status.dto';
 import { LogMaintenanceDto } from './dto/log-maintenance.dto';
 import { RecordUtilizationDto } from './dto/record-utilization.dto';
 
 @ApiTags('Equipment')
 @ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('equipment')
 export class EquipmentController {
   constructor(private readonly service: EquipmentService) {}
@@ -49,8 +53,8 @@ export class EquipmentController {
 
   @Patch(':id/status')
   @ApiOperation({ summary: 'Update equipment status' })
-  updateStatus(@Param('id', ParseUUIDPipe) id: string, @Body('status') status: string) {
-    return this.service.updateStatus(id, status);
+  updateStatus(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateEquipmentStatusDto) {
+    return this.service.updateStatus(id, dto.status);
   }
 
   @Post(':id/assignments')
@@ -87,6 +91,7 @@ export class EquipmentController {
 
 @ApiTags('Equipment')
 @ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('projects/:projectId/equipment')
 export class ProjectEquipmentController {
   constructor(private readonly service: EquipmentService) {}

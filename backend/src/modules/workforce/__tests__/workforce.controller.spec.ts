@@ -18,6 +18,7 @@ const makeSvc = () => ({
   getAttendanceHistory: jest.fn().mockResolvedValue([]),
   allocateToProject: jest.fn().mockResolvedValue({ allocation_id: 'alloc-1' }),
   getProjectWorkforce: jest.fn().mockResolvedValue([]),
+  getProjectDirectory: jest.fn().mockResolvedValue([]),
   getManpowerSummary: jest.fn().mockResolvedValue({}),
   submitTimesheet: jest.fn().mockResolvedValue({ timesheet_id: 'ts-1' }),
   approveTimesheet: jest.fn().mockResolvedValue({ timesheet_id: 'ts-1', status: 'APPROVED' }),
@@ -94,6 +95,13 @@ describe('ProjectWorkforceController', () => {
     const ctrl = new ProjectWorkforceController(svc as never);
     ctrl.list('proj-1');
     expect(svc.getProjectWorkforce).toHaveBeenCalledWith('proj-1');
+  });
+
+  it('directory — delegates to service.getProjectDirectory', () => {
+    const svc = makeSvc();
+    const ctrl = new ProjectWorkforceController(svc as never);
+    ctrl.directory('proj-1');
+    expect(svc.getProjectDirectory).toHaveBeenCalledWith('proj-1');
   });
 
   it('summary — delegates to service.getManpowerSummary', () => {

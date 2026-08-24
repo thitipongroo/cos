@@ -18,6 +18,12 @@ const mockSvc = {
   listCustomers: jest.fn(),
   createContract: jest.fn(),
   listContracts: jest.fn(),
+  attachDocument: jest.fn(),
+  signContract: jest.fn(),
+  issueSignLink: jest.fn(),
+  listContractSignatures: jest.fn(),
+  activateContract: jest.fn(),
+  terminateContract: jest.fn(),
   createBilling: jest.fn(),
   listBillings: jest.fn(),
   getBilling: jest.fn(),
@@ -96,14 +102,20 @@ describe('FinanceController', () => {
   });
 
   it('listPayments parses params and delegates (tenant-wide AP queue)', () => {
-    ctrl.listPayments('p-001', '2', '50');
-    expect(mockSvc.listPayments).toHaveBeenCalledWith({ project_id: 'p-001', page: 2, limit: 50 });
+    ctrl.listPayments('p-001', 'PENDING', '2', '50');
+    expect(mockSvc.listPayments).toHaveBeenCalledWith({
+      project_id: 'p-001',
+      status: 'PENDING',
+      page: 2,
+      limit: 50,
+    });
   });
 
-  it('listPayments uses query defaults when page/limit omitted', () => {
+  it('listPayments uses query defaults when status/page/limit omitted', () => {
     ctrl.listPayments();
     expect(mockSvc.listPayments).toHaveBeenCalledWith({
       project_id: undefined,
+      status: undefined,
       page: 1,
       limit: 20,
     });
@@ -136,6 +148,38 @@ describe('FinanceController', () => {
   it('listContracts delegates to svc.listContracts', () => {
     ctrl.listContracts('p-001');
     expect(mockSvc.listContracts).toHaveBeenCalledWith('p-001');
+  });
+
+  it('attachContractDocument delegates to svc.attachDocument', () => {
+    const dto = { mode: 'upload', file_id: 'file-1' };
+    ctrl.attachContractDocument('con-1', dto as never);
+    expect(mockSvc.attachDocument).toHaveBeenCalledWith('con-1', dto);
+  });
+
+  it('signContract delegates to svc.signContract with the client IP', () => {
+    ctrl.signContract('con-1', '203.0.113.9');
+    expect(mockSvc.signContract).toHaveBeenCalledWith('con-1', '203.0.113.9');
+  });
+
+  it('issueContractSignLink delegates to svc.issueSignLink', () => {
+    const dto = { client_name: 'ACME', client_email: 'a@acme.com' };
+    ctrl.issueContractSignLink('con-1', dto as never);
+    expect(mockSvc.issueSignLink).toHaveBeenCalledWith('con-1', dto);
+  });
+
+  it('listContractSignatures delegates to svc.listContractSignatures', () => {
+    ctrl.listContractSignatures('con-1');
+    expect(mockSvc.listContractSignatures).toHaveBeenCalledWith('con-1');
+  });
+
+  it('activateContract delegates to svc.activateContract', () => {
+    ctrl.activateContract('con-1');
+    expect(mockSvc.activateContract).toHaveBeenCalledWith('con-1');
+  });
+
+  it('terminateContract delegates to svc.terminateContract', () => {
+    ctrl.terminateContract('con-1');
+    expect(mockSvc.terminateContract).toHaveBeenCalledWith('con-1');
   });
 
   it('createBilling delegates to svc.createBilling', () => {

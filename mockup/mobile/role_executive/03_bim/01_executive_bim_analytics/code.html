@@ -1,0 +1,239 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Construction OS - BIM Analytics</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "outline": "#8d90a0",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "on-primary-container": "#eeefff",
+                        "on-tertiary-container": "#eeefff",
+                        "on-primary-fixed": "#00174b",
+                        "primary-container": "#2563eb",
+                        "on-error-container": "#ffdad6",
+                        "mobile-success": "#00C853",
+                        "surface-container-highest": "#26364a",
+                        "sync-pending": "#94A3B8",
+                        "secondary-fixed": "#acedff",
+                        "secondary-container": "#03b5d3",
+                        "primary": "#b4c5ff",
+                        "sync-active": "#FFD60A",
+                        "mobile-warning": "#FF9500",
+                        "on-secondary": "#003640",
+                        "mobile-primary": "#0066FF",
+                        "background": "#031427",
+                        "on-primary": "#002a78",
+                        "primary-fixed": "#dbe1ff",
+                        "on-surface-variant": "#c3c6d7",
+                        "on-secondary-fixed": "#001f26",
+                        "on-tertiary": "#2b3041",
+                        "surface-container-low": "#0b1c30",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "surface-bright": "#2a3a4f",
+                        "outline-variant": "#434655",
+                        "surface-dim": "#031427",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "inverse-on-surface": "#213145",
+                        "inverse-primary": "#0053db",
+                        "surface-container": "#102034",
+                        "tertiary": "#c1c5dc",
+                        "error": "#ffb4ab",
+                        "surface-container-lowest": "#000f21",
+                        "error-container": "#93000a",
+                        "on-error": "#690005",
+                        "surface-container-high": "#1b2b3f",
+                        "tertiary-fixed": "#dee1f9",
+                        "secondary": "#4cd7f6",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "on-surface": "#d3e4fe",
+                        "on-secondary-container": "#00424e",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "tertiary-container": "#686c80",
+                        "surface-tint": "#b4c5ff",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "dark-bg": "#020617",
+                        "surface": "#031427",
+                        "surface-variant": "#26364a",
+                        "on-background": "#d3e4fe",
+                        "dark-surface": "#0F172A",
+                        "mobile-danger": "#FF3B30",
+                        "inverse-surface": "#d3e4fe",
+                        "on-tertiary-fixed": "#161b2b"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0rem", /* Overriding to 0 for sharp lines industrial feel as requested, though JSON says otherwise, prioritizing prompt constraint for sharp lines / no rounded playful shapes */
+                        "lg": "0rem",
+                        "xl": "0rem",
+                        "full": "9999px" /* Keeping full for active nav pill only if needed */
+                    },
+                    "spacing": {
+                        "base": "4px",
+                        "space-4": "16px",
+                        "web-margin": "32px",
+                        "edge-mobile": "24px",
+                        "space-3": "12px",
+                        "space-1": "4px",
+                        "touch-target": "52px",
+                        "space-2": "8px"
+                    },
+                    "fontFamily": {
+                        "tiny-web": ["Inter Tight"],
+                        "label-mobile": ["Inter Tight"],
+                        "display-web": ["Inter Tight"],
+                        "body-mobile": ["Inter Tight"],
+                        "h1-web": ["Inter Tight"],
+                        "hero-mobile": ["Inter Tight"],
+                        "h2-web": ["Inter Tight"],
+                        "body-web": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "tiny-web": ["11px", { "lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "label-mobile": ["13px", { "lineHeight": "18px", "fontWeight": "600" }],
+                        "display-web": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-mobile": ["17px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "h1-web": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "hero-mobile": ["28px", { "lineHeight": "34px", "fontWeight": "700" }],
+                        "h2-web": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "body-web": ["14px", { "lineHeight": "20px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter Tight', sans-serif; background-color: #031427; color: #d3e4fe; }
+        .sharp-edges { border-radius: 0 !important; }
+        .mesh-grid { background-size: 20px 20px; background-image: linear-gradient(to right, rgba(141, 144, 160, 0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(141, 144, 160, 0.1) 1px, transparent 1px); }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background min-h-screen flex flex-col pb-[90px] antialiased">
+<!-- TopAppBar -->
+<header class="docked full-width top-0 sticky z-50 bg-surface dark:bg-surface bg-surface-container dark:bg-surface-container border-b border-surface-variant flex justify-between items-center px-edge-mobile h-touch-target w-full">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary dark:text-primary">account_tree</span>
+<span class="font-display-web text-display-web tracking-tighter text-primary dark:text-primary" style="font-size: 20px;">CONSTRUCTION OS</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-tiny-web text-tiny-web text-mobile-success uppercase tracking-widest flex items-center gap-1">
+<div class="w-2 h-2 rounded-full bg-mobile-success"></div>
+                SYNCED
+            </span>
+<span class="material-symbols-outlined text-on-surface-variant">sync</span>
+</div>
+</header>
+<main class="flex-1 flex flex-col px-edge-mobile py-space-4 gap-6">
+<!-- Header / Context -->
+<div class="flex flex-col gap-1">
+<h1 class="font-hero-mobile text-hero-mobile text-on-background">Skybridge Central</h1>
+<p class="font-body-mobile text-body-mobile text-on-surface-variant">BIM Analytics &amp; Execution Metrics</p>
+</div>
+<!-- 3D Digital Twin Viewport (Placeholder) -->
+<section class="bg-surface-container border border-surface-variant relative overflow-hidden flex flex-col" style="height: 320px;">
+<div class="p-3 border-b border-surface-variant flex justify-between items-center bg-surface-container-high z-10 relative">
+<span class="font-tiny-web text-tiny-web text-on-surface uppercase">Live Viewport</span>
+<div class="flex gap-2">
+<span class="w-2 h-2 bg-mobile-success mt-1"></span> <span class="font-tiny-web text-tiny-web text-on-surface-variant">On Track</span>
+<span class="w-2 h-2 bg-mobile-warning mt-1 ml-2"></span> <span class="font-tiny-web text-tiny-web text-on-surface-variant">Delayed</span>
+<span class="w-2 h-2 bg-mobile-danger mt-1 ml-2"></span> <span class="font-tiny-web text-tiny-web text-on-surface-variant">Critical Gap</span>
+</div>
+</div>
+<div class="flex-1 w-full bg-surface-container-lowest mesh-grid relative" data-alt="High fidelity isometric 3D wireframe render of a complex construction site showing steel structural elements. Deep dark blue industrial background with bright cyan grid lines. Some structural parts are highlighted in bright neon green, a small section in warning amber, and a specific joint flashing in critical neon red indicating a clash. The visual style is highly technical, precise, akin to advanced architectural software visualization." style="background-image: url(&quot;https://lh3.googleusercontent.com/aida-public/AB6AXuBd2T1pQUuQer-3AM-McTJp5t4bXv02TL_sZMKjHhEvHznxdwM3nO3sD40o0S_li8iKh4uK_VhZ-ap7FZnPCs6C6HNC4zpmsQHBQNuST0AZUIy1nIMLvB5D3g13061UJe_ESXJhrBUMpHecAYaVXS4kpMDshwWrSMyDF1mKO9u2V4huGMP98Y8riXUXWBv_fAKgyM1Bls_eVKVZ4Mcb_bhssVFxY1TiSc6SZ9ovqfkPjqgSggQHj4Fg&quot;);">
+<!-- Overlay details representing the visualization -->
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container to-transparent opacity-80 pointer-events-none"></div>
+<div class="absolute bottom-4 left-4 flex gap-2">
+<button class="bg-surface-variant text-on-surface font-tiny-web text-tiny-web px-2 py-1 border border-outline-variant hover:bg-surface-bright transition-colors">ISO</button>
+<button class="bg-surface text-on-surface-variant font-tiny-web text-tiny-web px-2 py-1 border border-outline-variant hover:bg-surface-bright transition-colors">PLAN</button>
+<button class="bg-surface text-on-surface-variant font-tiny-web text-tiny-web px-2 py-1 border border-outline-variant hover:bg-surface-bright transition-colors">ELEV</button>
+</div>
+<div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+<div class="w-16 h-16 border-2 border-mobile-danger animate-pulse flex items-center justify-center bg-mobile-danger/20">
+<span class="material-symbols-outlined text-mobile-danger">warning</span>
+</div>
+<div class="absolute top-0 right-0 w-[120px] bg-surface-container-high border border-mobile-danger p-2 transform translate-x-4 -translate-y-full">
+<span class="block font-tiny-web text-tiny-web text-mobile-danger uppercase mb-1">Sector B-12</span>
+<span class="block font-tiny-web text-tiny-web text-on-surface">Deviation: 120mm</span>
+</div>
+</div>
+</div>
+</section>
+<!-- AI Divergence Analysis -->
+<section class="bg-surface-container border-l-[4px] border-l-secondary bg-secondary/5 p-4 flex flex-col gap-3">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[20px]">smart_toy</span>
+<h2 class="font-label-mobile text-label-mobile text-secondary uppercase tracking-wider">Divergence Detected</h2>
+</div>
+<span class="bg-surface-variant px-2 py-1 font-tiny-web text-tiny-web text-secondary border border-secondary/30">CONF: 94%</span>
+</div>
+<p class="font-body-mobile text-body-mobile text-on-background leading-relaxed">
+                Structural steel installation at <strong class="text-mobile-danger">Sector B-12</strong> deviates 120mm from BIM design. 
+            </p>
+<div class="bg-surface-container-highest p-3 border border-outline-variant mt-1">
+<p class="font-tiny-web text-tiny-web text-on-surface-variant uppercase mb-1">Predicted Impact</p>
+<p class="font-label-mobile text-label-mobile text-mobile-warning flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">schedule</span> 4-day delay in structural sign-off
+                </p>
+</div>
+<div class="flex gap-2 mt-2">
+<button class="flex-1 bg-surface-variant border border-outline-variant text-on-surface font-tiny-web text-tiny-web py-2 uppercase hover:bg-surface-bright transition-colors active:scale-95 transition-transform"><span class="flex items-center justify-center gap-1">View Log <span class="material-symbols-outlined text-[16px]">chevron_right</span></span></button>
+<button class="flex-1 bg-mobile-danger/20 border border-mobile-danger text-mobile-danger font-tiny-web text-tiny-web py-2 uppercase hover:bg-mobile-danger/30 transition-colors active:scale-95 transition-transform">Issue RFI</button>
+</div>
+</section>
+<!-- Executive KPIs -->
+<section class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- KPI 1 -->
+<div class="bg-surface-container border border-surface-variant p-4 flex flex-col gap-1 hover:bg-surface-bright active:scale-98 transition-all cursor-pointer"><div class="flex justify-between items-start"><span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase tracking-wider">BIM Coverage</span><span class="material-symbols-outlined text-on-surface-variant text-[18px]">arrow_outward</span></div><div class="flex items-end justify-between mt-1"><span class="font-display-web text-display-web text-on-background">98.4<span class="text-[20px] text-on-surface-variant">%</span></span><span class="material-symbols-outlined text-mobile-success" style="font-variation-settings: &quot;FILL&quot; 1;">trending_up</span></div><div class="w-full bg-surface-variant h-1 mt-2 relative"><div class="absolute top-0 left-0 h-full bg-mobile-success" style="width: 98.4%;"></div></div></div>
+<!-- KPI 2 -->
+<div class="bg-surface-container border border-surface-variant p-4 flex flex-col gap-1 hover:bg-surface-bright active:scale-98 transition-all cursor-pointer"><div class="flex justify-between items-start"><span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase tracking-wider">Volumetric Progress (Act vs Plan)</span><span class="material-symbols-outlined text-on-surface-variant text-[18px]">arrow_outward</span></div><div class="flex items-end gap-3 mt-1"><span class="font-display-web text-display-web text-on-background">82<span class="text-[20px] text-on-surface-variant">%</span></span><span class="font-h2-web text-h2-web text-on-surface-variant">/ 85%</span></div><div class="w-full bg-surface-variant h-2 mt-2 relative flex"><div class="absolute top-0 left-0 h-full bg-surface-bright" style="width: 85%;"></div><div class="absolute top-0 left-0 h-full bg-mobile-warning" style="width: 82%;"></div></div></div>
+<!-- KPI 3 -->
+<div class="bg-surface-container border border-surface-variant p-4 flex flex-col gap-1 md:col-span-2 hover:bg-surface-bright active:scale-98 transition-all cursor-pointer"><div class="flex justify-between items-start"><div class="flex flex-col"><span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase tracking-wider">Material Waste Index</span><span class="bg-mobile-success/20 text-mobile-success border border-mobile-success/30 px-2 py-0.5 font-tiny-web text-tiny-web uppercase w-fit mt-1">Optimized</span></div><span class="material-symbols-outlined text-on-surface-variant text-[18px]">arrow_outward</span></div><div class="flex items-end mt-1"><span class="font-display-web text-display-web text-on-background">-4.2<span class="text-[20px] text-on-surface-variant">%</span></span></div><p class="font-tiny-web text-tiny-web text-on-surface-variant mt-2">Below baseline allocation for structural members.</p></div>
+</section>
+</main>
+<!-- BottomNavBar (Customized for Executive Portfolio focus as per prompt, ignoring strictly non-matching JSON active state but keeping structure) -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-safe h-[72px] bg-surface-container dark:bg-surface-container z-50 border-t border-surface-variant">
+<!-- Home -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant p-2 hover:opacity-80 transition-all duration-150 ease-in-out w-16 h-touch-target">
+<span class="material-symbols-outlined mb-1">home</span>
+<span class="font-label-mobile text-label-mobile text-[10px]">Home</span>
+</button>
+<!-- Tasks -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant p-2 hover:opacity-80 transition-all duration-150 ease-in-out w-16 h-touch-target">
+<span class="material-symbols-outlined mb-1">assignment</span>
+<span class="font-label-mobile text-label-mobile text-[10px]">Tasks</span>
+</button>
+<!-- Portfolio (Active based on Prompt Intent) -->
+<button class="flex flex-col items-center justify-center bg-secondary-container dark:bg-secondary-container text-on-secondary-container dark:text-on-secondary-container px-4 py-1 hover:opacity-80 scale-95 transition-all duration-150 ease-in-out rounded-full min-w-[64px] h-touch-target">
+<span class="material-symbols-outlined mb-0.5" style="font-variation-settings: &quot;FILL&quot; 1;">business_center</span>
+<span class="font-label-mobile text-label-mobile text-[10px] font-bold">BIM</span>
+</button>
+<!-- Safety -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant p-2 hover:opacity-80 transition-all duration-150 ease-in-out w-16 h-touch-target">
+<span class="material-symbols-outlined mb-1">health_and_safety</span>
+<span class="font-label-mobile text-label-mobile text-[10px]">Safety</span>
+</button>
+<!-- More -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant p-2 hover:opacity-80 transition-all duration-150 ease-in-out w-16 h-touch-target">
+<span class="material-symbols-outlined mb-1">menu</span>
+<span class="font-label-mobile text-label-mobile text-[10px]">More</span>
+</button>
+</nav>
+
+
+
+
+
+
+</body></html>

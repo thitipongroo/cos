@@ -16,6 +16,39 @@ const logger = createLogger('notification-service');
 const CHANNELS = ['IN_APP', 'EMAIL', 'LINE'] as const;
 type Channel = (typeof CHANNELS)[number];
 
+// Critical safety notifications are NEVER quieted (§19.6 — "cannot be disabled or quieted"). Only the
+// safety-incident event qualifies; every other event's push is suppressed inside the quiet window.
+const CRITICAL_EVENT_TYPES = new Set<string>(['safety.incident.created.v1']);
+
+/** Minutes-since-midnight for a 'HH:MM[:SS]' string. */
+function minutesOfDay(hms: string): number {
+  const [h, m] = hms.split(':');
+  return Number(h) * 60 + Number(m);
+}
+
+/**
+ * True when `now` falls inside the [start, end) quiet window evaluated in `tz` (§19.6). Handles the
+ * overnight-wrap default (22:00–07:00): quiet if the local time is at/after start OR before end.
+ */
+export function isWithinQuietHours(now: Date, tz: string, start: string, end: string): boolean {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: tz,
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(now);
+  /* istanbul ignore next -- Intl always yields hour+minute for these options; fallback is defensive */
+  const hh = parts.find((p) => p.type === 'hour')?.value ?? '00';
+  /* istanbul ignore next -- defensive */
+  const mm = parts.find((p) => p.type === 'minute')?.value ?? '00';
+  const nowMin = Number(hh) * 60 + Number(mm);
+  const startMin = minutesOfDay(start);
+  const endMin = minutesOfDay(end);
+  return startMin <= endMin
+    ? nowMin >= startMin && nowMin < endMin // same-day window
+    : nowMin >= startMin || nowMin < endMin; // overnight wrap
+}
+
 // Maps event_type → recipients. Three routing modes:
 //   - string[]                 → notify all users holding any of these roles (findUsersByRole)
 //   - 'actor'                  → notify the actor_id from the event envelope
@@ -34,6 +67,9 @@ const EVENT_ROLE_MAP: Record<string, string[] | 'actor' | { payloadUserId: strin
   'finance.variance.alert.v1': ['FINANCE', 'TENANT_ADMIN'],
   'site.report.created.v1': ['PROJECT_MANAGER'],
   'procurement.invoice.received.v1': ['FINANCE'],
+  // §19.4 routing — safety incident (Exec/PM/Site Engineer/Safety Officer) + AI risk (Exec/PM)
+  'safety.incident.created.v1': ['EXECUTIVE', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SAFETY_OFFICER'],
+  'ai.risk_prediction.generated.v1': ['EXECUTIVE', 'PROJECT_MANAGER'],
   // Phase 25 — platform-level events (tenant_id='platform', routed to all SYSTEM_ADMINs)
   'platform.enterprise.contract_signed.v1': ['SYSTEM_ADMIN'],
   'platform.enterprise.db_provisioned.v1': ['SYSTEM_ADMIN'],
@@ -99,16 +135,20 @@ export class NotificationService {
     event_type: string;
     payload: Record<string, unknown>;
   }): Promise<void> {
-    for (const channel of CHANNELS) {
-      const enabled = await this.repo.isChannelEnabled(
-        params.tenant_id,
-        params.user_id,
-        params.event_type,
-        channel,
-      );
-      if (!enabled) continue;
+    // Two queries for the whole channel set, not two per channel. This loop previously ran
+    // isChannelEnabled + findTemplate for each of IN_APP/EMAIL/LINE, and each call opens its own
+    // db.run transaction — six transactions per recipient before any notification was written,
+    // multiplied by every recipient of the event.
+    const [disabledChannels, templatesByChannel] = await Promise.all([
+      this.repo.findDisabledChannels(params.tenant_id, params.user_id, params.event_type, CHANNELS),
+      this.repo.findTemplatesByChannel(params.tenant_id, params.event_type, CHANNELS),
+    ]);
 
-      const template = await this.repo.findTemplate(params.tenant_id, params.event_type, channel);
+    for (const channel of CHANNELS) {
+      // Absent preference row = enabled, matching isChannelEnabled's `?? true` default.
+      if (disabledChannels.has(channel)) continue;
+
+      const template = templatesByChannel.get(channel);
       if (!template) continue;
 
       const subject = template.subject_template
@@ -139,19 +179,25 @@ export class NotificationService {
   ): Promise<void> {
     try {
       if (channel === 'IN_APP') {
+        // In-app SSE is always delivered (the user sees it when the app is open); only the PUSH alert
+        // is subject to quiet hours (§19.6). Critical safety pushes are never suppressed.
         this.sse.push(userId, notif);
-        // Also deliver via Expo push to any registered device tokens
-        const tokens = await this.repo.findDeviceTokens(notif.tenant_id, userId);
-        await Promise.allSettled(
-          tokens.map((t) =>
-            this.push.send({
-              pushToken: t.push_token,
-              title: notif.subject,
-              body: notif.body,
-              notificationId: notif.notification_id,
-            }),
-          ),
-        );
+        const suppressPush =
+          !CRITICAL_EVENT_TYPES.has(notif.event_type) &&
+          (await this.isInQuietHours(notif.tenant_id, userId));
+        if (!suppressPush) {
+          const tokens = await this.repo.findDeviceTokens(notif.tenant_id, userId);
+          await Promise.allSettled(
+            tokens.map((t) =>
+              this.push.send({
+                pushToken: t.push_token,
+                title: notif.subject,
+                body: notif.body,
+                notificationId: notif.notification_id,
+              }),
+            ),
+          );
+        }
         await this.repo.markSent(notif.tenant_id, notif.notification_id);
         return;
       }
@@ -180,6 +226,55 @@ export class NotificationService {
       );
       await this.repo.markFailed(notif.tenant_id, notif.notification_id).catch(() => undefined);
     }
+  }
+
+  /** Whether it is currently within the user's quiet-hours window, evaluated in the tenant timezone. */
+  private async isInQuietHours(tenantId: string, userId: string): Promise<boolean> {
+    const [tz, window] = await Promise.all([
+      this.repo.getTenantTimezone(tenantId),
+      this.repo.getUserQuietHours(tenantId, userId),
+    ]);
+    return isWithinQuietHours(new Date(), tz, window.start, window.end);
+  }
+
+  /**
+   * Deliver an escalation notice (§19.3) to every user holding `roles`. Composed inline (no template
+   * lookup) as an IN_APP + email alert; the caller marks the source notification escalated afterwards.
+   */
+  async escalate(tenantId: string, roles: string[], subject: string, body: string): Promise<void> {
+    const recipients = await this.repo.findUsersByRole(tenantId, roles);
+    await Promise.allSettled(
+      recipients.map(async (r) => {
+        const notif = await this.repo.createNotification({
+          tenant_id: tenantId,
+          recipient_id: r.user_id,
+          channel: 'IN_APP',
+          event_type: 'notification.escalated.v1',
+          subject,
+          body,
+        });
+        this.sse.push(r.user_id, notif);
+        await this.repo.markSent(tenantId, notif.notification_id);
+        if (r.email) {
+          await this.email.send({ to: r.email, subject, body }).catch(() => undefined);
+        }
+      }),
+    );
+  }
+
+  /** Deliver a scheduled digest (§19.3) via email to every user holding `roles`. Email-only by spec. */
+  async deliverDigest(
+    tenantId: string,
+    roles: string[],
+    subject: string,
+    body: string,
+  ): Promise<void> {
+    const recipients = await this.repo.findUsersByRole(tenantId, roles);
+    await Promise.allSettled(
+      recipients
+        .filter((r) => r.email)
+        .map((r) => this.email.send({ to: r.email, subject, body }).catch(() => undefined)),
+    );
   }
 
   // ── Push token registration ────────────────────────────────────────────────
@@ -216,8 +311,9 @@ export class NotificationService {
     tenantId: string,
     userId: string,
     preferences: Array<{ event_type: string; channel: string; is_enabled: boolean }>,
+    quietHours?: { start: string; end: string },
   ) {
-    return Promise.all(
+    const results = await Promise.all(
       preferences.map((p) =>
         this.repo.upsertPreference({
           tenant_id: tenantId,
@@ -228,6 +324,12 @@ export class NotificationService {
         }),
       ),
     );
+    // Quiet hours (§19.6) live on the denormalised preference rows, so upsert the rows first, then
+    // stamp the window on all of them. Skipped unless the caller supplied a validated window.
+    if (quietHours) {
+      await this.repo.updateQuietHours(tenantId, userId, quietHours.start, quietHours.end);
+    }
+    return results;
   }
 
   // ── Template rendering ─────────────────────────────────────────────────────
