@@ -11,8 +11,8 @@ info:
     All operations work on the `platform` schema (cross-tenant identity tables).
 
 servers:
-  - url: http://localhost:3000/api/v1
-    description: Local development
+  - url: /api/v1
+    description: Current version — relative, so the document works behind whatever host serves it
 
 components:
   securitySchemes:
@@ -444,6 +444,7 @@ paths:
           description: User not found in this tenant
   /admin/tenants:
     get:
+      operationId: getAdminTenants
       summary: List all tenants on the platform (SYSTEM_ADMIN only — §20.4.1)
       tags: [tenants]
       security:
@@ -460,6 +461,7 @@ paths:
         '403':
           description: Insufficient role — SYSTEM_ADMIN required
     post:
+      operationId: postAdminTenants
       summary: Provision a new tenant (SYSTEM_ADMIN only)
       description: |
         Creates a tenant record and queues Keycloak realm creation.
@@ -494,6 +496,7 @@ paths:
 
   /admin/tenants/{tenantId}/deactivate:
     patch:
+      operationId: patchAdminTenantsByTenantidDeactivate
       summary: Deactivate a tenant (SYSTEM_ADMIN only)
       description: |
         Sets `is_active = false`. Tenant data is preserved.
@@ -532,6 +535,7 @@ paths:
 
   /admin/tenants/{tenantId}/dedicated-db:
     patch:
+      operationId: patchAdminTenantsByTenantidDedicatedDb
       summary: Assign dedicated DB to a tenant (SYSTEM_ADMIN only)
       description: |
         Sets `dedicated_db_url` on the tenant record. Once set, all domain queries
@@ -594,6 +598,7 @@ paths:
 
   /admin/tenants/{tenantId}/mark-contracted:
     patch:
+      operationId: patchAdminTenantsByTenantidMarkContracted
       summary: Mark Enterprise tenant as contracted (SYSTEM_ADMIN only)
       description: |
         Signals that an Enterprise tenant has signed a contract requiring dedicated DB isolation.
@@ -672,6 +677,7 @@ paths:
 
   /users:
     get:
+      operationId: getUsers
       summary: List active users in the tenant (TENANT_ADMIN only)
       description: |
         Returns a paginated list of all active users within the caller's tenant.
@@ -710,6 +716,7 @@ paths:
           description: Insufficient role — TENANT_ADMIN required
 
     post:
+      operationId: postUsers
       summary: Create a user within the tenant (TENANT_ADMIN only)
       description: |
         Provisions a new user in Keycloak and creates a COS user record.
@@ -753,6 +760,7 @@ paths:
 
   /users/{userId}/role:
     patch:
+      operationId: patchUsersByUseridRole
       summary: Change a user's role within the tenant (TENANT_ADMIN only)
       description: |
         Updates the user's role in `platform.tenant_memberships`.
@@ -790,6 +798,7 @@ paths:
 
   /users/{userId}/deactivate:
     patch:
+      operationId: patchUsersByUseridDeactivate
       summary: Deactivate a user — revokes access, preserves data (TENANT_ADMIN only)
       description: |
         Sets `is_active = false` on the user record. The user's data is preserved.
@@ -820,6 +829,7 @@ paths:
           description: Insufficient role — TENANT_ADMIN required
   /tenant/settings:
     get:
+      operationId: getTenantSettings
       summary: Get the current tenant settings (TENANT_ADMIN only)
       description: Returns defaults (10.00 / 5.00 / null / true) when no row exists yet. ADR-028.
       tags: [tenant-settings]
@@ -835,6 +845,7 @@ paths:
         '403':
           description: Insufficient role — TENANT_ADMIN required
     patch:
+      operationId: patchTenantSettings
       summary: Update tenant settings (partial; TENANT_ADMIN only)
       tags: [tenant-settings]
       security:

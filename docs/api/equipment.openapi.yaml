@@ -99,6 +99,8 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Equipment' }
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
     get:
       operationId: listEquipment
       summary: List equipment
@@ -114,6 +116,8 @@ paths:
               schema:
                 type: array
                 items: { $ref: '#/components/schemas/Equipment' }
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
 
   /equipment/{id}:
     get:
@@ -128,6 +132,8 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Equipment' }
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
 
   /equipment/{id}/status:
     patch:
@@ -151,6 +157,8 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Equipment' }
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
 
   /equipment/{id}/assignments:
     post:
@@ -167,6 +175,8 @@ paths:
       responses:
         '201':
           description: Assignment created
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
 
   /equipment/{id}/assignments/{aid}/return:
     patch:
@@ -192,6 +202,8 @@ paths:
       responses:
         '200':
           description: Equipment returned
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
 
   /equipment/{id}/maintenance:
     post:
@@ -208,6 +220,8 @@ paths:
       responses:
         '201':
           description: Maintenance logged
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
 
   /equipment/{id}/utilization:
     post:
@@ -224,6 +238,8 @@ paths:
       responses:
         '201':
           description: Utilization recorded
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
 
   /projects/{projectId}/equipment:
     get:
@@ -240,3 +256,5 @@ paths:
               schema:
                 type: array
                 items: { $ref: '#/components/schemas/Equipment' }
+        '401':
+          description: Unauthenticated — missing or invalid bearer token

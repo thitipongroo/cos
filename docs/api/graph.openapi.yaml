@@ -11,8 +11,8 @@ info:
     query filters by it.
 
 servers:
-  - url: http://localhost:3000/api/v1
-    description: Local development
+  - url: /api/v1
+    description: Current version — relative, so the document works behind whatever host serves it
 
 components:
   securitySchemes:
@@ -136,6 +136,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
 
   /graph/projects/{projectId}/supply-chain:
     get:
@@ -164,6 +166,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
 
   /graph/projects/{projectId}/inspections:
     get:
@@ -192,6 +196,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
 
   /graph/vendors/{vendorId}/projects:
     get:
@@ -220,6 +226,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
 
   /graph/vendors/{vendorId}/invoices:
     get:
@@ -248,3 +256,5 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated — missing or invalid bearer token

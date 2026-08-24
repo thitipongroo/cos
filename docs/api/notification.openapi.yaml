@@ -15,6 +15,7 @@ tags:
 paths:
   /notifications:
     get:
+      operationId: getNotifications
       tags: [notifications]
       summary: List my notifications (paginated)
       security:
@@ -52,6 +53,7 @@ paths:
 
   /notifications/{id}/read:
     patch:
+      operationId: patchNotificationsByIdRead
       tags: [notifications]
       summary: Mark a notification as read
       security:
@@ -68,6 +70,7 @@ paths:
 
   /notifications/read-all:
     patch:
+      operationId: patchNotificationsReadAll
       tags: [notifications]
       summary: Mark all my notifications as read
       security:
@@ -88,6 +91,7 @@ paths:
 
   /notifications/preferences:
     get:
+      operationId: getNotificationsPreferences
       tags: [notifications]
       summary: Get my notification channel preferences
       security:
@@ -104,6 +108,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
     patch:
+      operationId: patchNotificationsPreferences
       tags: [notifications]
       summary: Update my notification channel preferences
       security:
@@ -130,6 +135,7 @@ paths:
 
   /notifications/device-token:
     post:
+      operationId: postNotificationsDeviceToken
       tags: [notifications]
       summary: Register Expo push device token for push notifications
       security:
@@ -154,6 +160,7 @@ paths:
 
   /notifications/stream:
     get:
+      operationId: getNotificationsStream
       tags: [notifications]
       summary: SSE stream of real-time in-app notifications (NOT WebSocket — spec §19.2)
       description: |

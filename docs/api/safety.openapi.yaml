@@ -23,6 +23,7 @@ components:
 paths:
   /safety/incidents:
     post:
+      operationId: postSafetyIncidents
       tags: [safety]
       summary: Report a safety incident
       requestBody:
@@ -47,7 +48,10 @@ paths:
       responses:
         '201':
           description: Incident reported
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
     get:
+      operationId: getSafetyIncidents
       tags: [safety]
       summary: List incidents (filter by project, status, severity)
       parameters:
@@ -59,8 +63,11 @@ paths:
       responses:
         '200':
           description: Paginated incidents
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
   /safety/incidents/{incidentId}/acknowledge:
     patch:
+      operationId: patchSafetyIncidentsByIncidentidAcknowledge
       tags: [safety]
       summary: Acknowledge an incident (OPEN → IN_PROGRESS)
       parameters:
@@ -72,6 +79,7 @@ paths:
           description: Incident not found
   /safety/permits:
     post:
+      operationId: postSafetyPermits
       tags: [safety]
       summary: Create a permit request (PENDING)
       requestBody:
@@ -113,7 +121,10 @@ paths:
       responses:
         '201':
           description: Permit created (PENDING)
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
     get:
+      operationId: getSafetyPermits
       tags: [safety]
       summary: List permits (filter by project, status)
       parameters:
@@ -124,8 +135,11 @@ paths:
       responses:
         '200':
           description: Paginated permits
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
   /safety/permits/{permitId}/approve:
     patch:
+      operationId: patchSafetyPermitsByPermitidApprove
       tags: [safety]
       summary: Approve a permit (§15.5; PENDING → ACTIVE; SAFETY_PERMIT needs PM final)
       parameters:
@@ -150,6 +164,7 @@ paths:
           description: Permit is not PENDING
   /safety/permits/{permitId}/reject:
     patch:
+      operationId: patchSafetyPermitsByPermitidReject
       tags: [safety]
       summary: Reject a permit (PENDING → REVOKED)
       parameters:
@@ -177,6 +192,7 @@ paths:
           description: Permit is not PENDING
   /safety/checklists:
     get:
+      operationId: getSafetyChecklists
       tags: [safety]
       summary: List safety checklists (delegated to site-ops)
       parameters:
@@ -184,7 +200,10 @@ paths:
       responses:
         '200':
           description: Checklist list
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
     post:
+      operationId: postSafetyChecklists
       tags: [safety]
       summary: Submit a completed safety checklist (recorded as an inspection)
       description: >-
@@ -234,8 +253,11 @@ paths:
       responses:
         '201':
           description: Checklist submitted
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
   /safety/compliance:
     get:
+      operationId: getSafetyCompliance
       tags: [safety]
       summary: Compliance summary — open incidents and bad permits
       parameters:
@@ -256,3 +278,5 @@ paths:
                     type: integer
                   revoked_permits:
                     type: integer
+        '401':
+          description: Unauthenticated — missing or invalid bearer token

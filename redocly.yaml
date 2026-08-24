@@ -1,0 +1,56 @@
+# Redocly ruleset for docs/api/*.openapi.yaml — enforced by CI (`pnpm run lint:openapi`).
+#
+# The gate treats WARNINGS AS FAILURES (`--max-problems 0` plus a non-zero exit on any problem, see
+# the script in package.json). That is the product-owner decision of 2026-08-24, taken after a
+# route-level audit found 62 of 276 routes carried by no document at all and a validity pass found
+# 155 structural errors in the documents that did exist — including `nullable: true`, which is
+# OpenAPI 3.0 syntax that a 3.1 validator silently treats as an unknown keyword, leaving the field
+# NON-nullable in every generated client.
+#
+# Two rules are turned off here rather than satisfied. Both would have to be answered by inventing
+# something or by breaking a live URL, and a gate that is passed by inventing is worse than no gate.
+
+extends:
+  - recommended-strict
+
+rules:
+  # ── OFF: nothing in this repository states a licence ────────────────────────────────────
+  #
+  # There is no LICENSE file, no `license` field in any package.json, and no copyright or ownership
+  # statement in any specification or legal document — checked 2026-08-24. `package.json` says
+  # `"private": true`, which establishes that the product is not published, but that is not the same
+  # as knowing what licence its API description should carry.
+  #
+  # Writing `name: Proprietary` would be asserting a legal fact nobody in the repository has stated.
+  # Turn this rule back on and fill `info.license` in all 22 documents the moment somebody says what
+  # the licence is; until then, silence is the honest answer.
+  info-license: 'off'
+
+  # ── OFF: the ambiguity is real, deliberate, and load-bearing ────────────────────────────
+  #
+  # Fourteen warnings, all the same shape: a literal segment competing with a path parameter at the
+  # same position — `/projects/user/{userId}` against `/projects/{id}/…`,
+  # `/finance/contracts/sign/{token}` against `/finance/contracts/{id}/…`, and
+  # `/subject-requests/verify/{token}` against `/subject-requests/{requestId}/…`.
+  #
+  # These are the URLs the service serves and `apps/web` calls. NestJS resolves them by declaration
+  # order and the controllers say so where it matters — see the comment above `@Get('mine')` in
+  # project.controller.ts: "Declared before @Get(':id') so the literal path 'mine' is not captured
+  # as an :id param." Satisfying this rule means renaming live endpoints, which is a breaking change
+  # made to quiet a linter.
+  #
+  # What the rule is right about is that declaration order is the only thing keeping them apart. A
+  # reordering would route `/projects/user/x` into the `:id` handler with `id="user"`, and nothing
+  # would fail loudly. That risk is accepted here and guarded in the controllers, not by this file.
+  no-ambiguous-paths: 'off'
+
+  # ── ON, with one file excused ───────────────────────────────────────────────────────────
+  #
+  # `StateSource` in digital-twin.openapi.yaml is flagged as unused, and it is — but Phase 24 has no
+  # backend module at all (§14.3: "not created before Phase 24 begins"), while the enum is real in
+  # both `digital_twin.twin_states.source` and `twin.state.updated.v1`. Deleting it would strip
+  # vocabulary out of a contract that has not shipped yet. Every other unused component was removed
+  # or wired up on 2026-08-24.
+  # (no override — `recommended-strict` makes it an error, which is what we want everywhere else.
+  # The CI script lints digital-twin with `--skip-rule no-unused-components` and every other
+  # document without the skip, so the exception is one file wide and visible in package.json.)

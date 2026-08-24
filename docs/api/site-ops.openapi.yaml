@@ -140,26 +140,6 @@ components:
           items:
             $ref: '#/components/schemas/ManpowerLine'
 
-    SiteReportMinimal:
-      type: object
-      properties:
-        report_id:
-          type: string
-          format: uuid
-        project_id:
-          type: string
-          format: uuid
-        report_date:
-          type: string
-          format: date
-        submitted_by:
-          type: string
-          format: uuid
-        status:
-          $ref: '#/components/schemas/SiteReportStatus'
-        manpower_count:
-          type: [integer, 'null']
-
     Issue:
       type: object
       properties:
@@ -623,6 +603,8 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/SyncResultItem'
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
 
   /site/issues:
     post:
@@ -665,6 +647,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Issue'
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
 
     get:
       summary: List issues (filterable by severity, status, project)
@@ -702,6 +686,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedIssues'
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
 
   /site/issues/{issueId}:
     patch:
@@ -813,6 +799,8 @@ paths:
       responses:
         '200':
           description: Paginated inspection results
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
 
   /site/inspections/{inspectionId}:
     get:
@@ -917,6 +905,8 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/ConflictRecord'
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
 
   /site/conflict-records/{conflictId}/resolve:
     patch:

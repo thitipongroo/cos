@@ -691,6 +691,12 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/VendorRow'
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /procurement/vendors/directory:
     get:
       tags:
@@ -836,6 +842,12 @@ paths:
                     type: integer
                   limit:
                     type: integer
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     post:
       tags:
         - RFQs
@@ -854,6 +866,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RfqRow'
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /procurement/rfqs/{rfqId}/publish:
     post:
       tags:
@@ -888,6 +906,12 @@ paths:
       responses:
         '200':
           description: Signal sent
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /procurement/rfqs/{rfqId}/cancel:
     post:
       tags:
@@ -904,6 +928,12 @@ paths:
       responses:
         '200':
           description: Signal sent
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /procurement/rfqs/{rfqId}/award:
     post:
       tags:
@@ -1033,6 +1063,12 @@ paths:
                     type: integer
                   limit:
                     type: integer
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     post:
       tags:
         - Purchase Orders
@@ -1087,6 +1123,12 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/PoLineItemRow'
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /procurement/purchase-orders/{poId}/submit:
     post:
       tags:
@@ -1103,6 +1145,12 @@ paths:
       responses:
         '200':
           description: Signal sent
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /procurement/purchase-orders/{poId}/approve:
     post:
       tags:
@@ -1135,6 +1183,12 @@ paths:
       responses:
         '200':
           description: Approval signal sent
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /procurement/purchase-orders/{poId}/reject:
     post:
       tags:
@@ -1162,6 +1216,12 @@ paths:
       responses:
         '200':
           description: Rejection signal sent
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /procurement/purchase-orders/{poId}/acknowledge:
     post:
       tags:
@@ -1178,6 +1238,12 @@ paths:
       responses:
         '200':
           description: Signal sent
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /procurement/purchase-orders/{poId}/mark-paid:
     post:
       tags:
@@ -1194,6 +1260,12 @@ paths:
       responses:
         '200':
           description: Signal sent
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /procurement/purchase-orders/{poId}/dispute:
     post:
       tags:
@@ -1221,6 +1293,12 @@ paths:
       responses:
         '200':
           description: Signal sent
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /procurement/purchase-requests:
     get:
       tags:
@@ -1269,6 +1347,12 @@ paths:
                     type: integer
                   limit:
                     type: integer
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     post:
       tags:
         - Purchase Requests
@@ -1287,6 +1371,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PurchaseRequestRow'
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /procurement/deliveries:
     get:
       tags:
@@ -1330,6 +1420,12 @@ paths:
                     type: integer
                   limit:
                     type: integer
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     post:
       tags:
         - Deliveries
@@ -1353,6 +1449,12 @@ paths:
                     $ref: '#/components/schemas/DeliveryRow'
                   is_partial:
                     type: boolean
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /procurement/purchase-orders/{poId}/deliveries:
     get:
       tags:
@@ -1375,6 +1477,12 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/DeliveryRow'
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /procurement/vendor-invoices:
     post:
       tags:
@@ -1394,6 +1502,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InvoiceRow'
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     get:
       tags:
         - Invoices
@@ -1441,6 +1555,12 @@ paths:
                     type: integer
                   limit:
                     type: integer
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /procurement/vendor-invoices/{invoiceId}/approve:
     post:
       tags:
@@ -1461,3 +1581,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InvoiceRow'
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'

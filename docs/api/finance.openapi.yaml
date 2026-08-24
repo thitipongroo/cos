@@ -249,6 +249,7 @@ paths:
           description: Not in a terminable state
   /finance/budget/{projectId}:
     get:
+      operationId: getFinanceBudgetByProjectid
       tags:
         - finance
       summary: Budget detail with lines
@@ -262,7 +263,10 @@ paths:
       responses:
         '200':
           description: Budget detail
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
     post:
+      operationId: postFinanceBudgetByProjectid
       tags:
         - finance
       summary: Create or update project budget
@@ -296,8 +300,11 @@ paths:
       responses:
         '201':
           description: Budget created or updated
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
   /finance/budget/{projectId}/lines:
     post:
+      operationId: postFinanceBudgetByProjectidLines
       tags:
         - finance
       summary: Add a budget line
@@ -333,8 +340,11 @@ paths:
       responses:
         '201':
           description: Budget line added
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
   /finance/cost-transactions:
     get:
+      operationId: getFinanceCostTransactions
       tags:
         - finance
       summary: List cost transactions (paginated)
@@ -359,8 +369,11 @@ paths:
       responses:
         '200':
           description: Paginated cost transactions
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
   /finance/payments:
     get:
+      operationId: getFinancePayments
       tags:
         - finance
       summary: List payments across the tenant (filterable by project and status)
@@ -396,7 +409,10 @@ paths:
       responses:
         '200':
           description: Payments list
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
     post:
+      operationId: postFinancePayments
       tags:
         - finance
       summary: Record a payment against an invoice
@@ -434,16 +450,22 @@ paths:
       responses:
         '201':
           description: Payment recorded
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
   /finance/reports/variance:
     get:
+      operationId: getFinanceReportsVariance
       tags:
         - finance
       summary: Budget variance report across all projects
       responses:
         '200':
           description: Variance report
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
   /finance/customers:
     post:
+      operationId: postFinanceCustomers
       tags:
         - finance
       summary: Register a client/customer
@@ -466,15 +488,21 @@ paths:
       responses:
         '201':
           description: Customer created
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
     get:
+      operationId: getFinanceCustomers
       tags:
         - finance
       summary: List customers
       responses:
         '200':
           description: Customer list
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
   /finance/contracts:
     post:
+      operationId: postFinanceContracts
       tags:
         - finance
       summary: Create a contract (client-side or vendor-side)
@@ -509,7 +537,10 @@ paths:
       responses:
         '201':
           description: Contract created
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
     get:
+      operationId: getFinanceContracts
       tags:
         - finance
       summary: List contracts (filterable by project)
@@ -523,8 +554,11 @@ paths:
       responses:
         '200':
           description: Contract list
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
   /finance/billing:
     post:
+      operationId: postFinanceBilling
       tags:
         - finance
       summary: Create a client billing (AR) invoice in DRAFT
@@ -558,7 +592,10 @@ paths:
       responses:
         '201':
           description: Billing created (DRAFT)
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
     get:
+      operationId: getFinanceBilling
       tags:
         - finance
       summary: List client billings (filterable by project and status)
@@ -593,8 +630,11 @@ paths:
       responses:
         '200':
           description: Billing list
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
   /finance/billing/{billingId}:
     get:
+      operationId: getFinanceBillingByBillingid
       tags:
         - finance
       summary: Get a single client billing
@@ -608,8 +648,11 @@ paths:
       responses:
         '200':
           description: Billing
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
   /finance/billing/{billingId}/approve:
     patch:
+      operationId: patchFinanceBillingByBillingidApprove
       tags:
         - finance
       summary: Approve a client billing (PM up to limit; Executive above)
@@ -638,8 +681,11 @@ paths:
       responses:
         '200':
           description: Billing approved (DRAFT → ISSUED)
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
   /finance/ar-receipts:
     post:
+      operationId: postFinanceArReceipts
       tags:
         - finance
       summary: Record a client payment (AR receipt) against an ISSUED billing
@@ -678,8 +724,11 @@ paths:
       responses:
         '201':
           description: AR receipt recorded (billing → PAID)
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
   /finance/cashflow-forecast/{projectId}:
     get:
+      operationId: getFinanceCashflowForecastByProjectid
       tags:
         - finance
       summary: 13-week direct-method cash flow forecast for a project
@@ -693,3 +742,5 @@ paths:
       responses:
         '200':
           description: Weekly forecast periods (inflow, outflow, net, cumulative)
+        '401':
+          description: Unauthenticated — missing or invalid bearer token

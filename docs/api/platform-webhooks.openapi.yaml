@@ -11,8 +11,8 @@ info:
     signature in the `X-Webhook-Signature` header instead.
 
 servers:
-  - url: http://localhost:3000/api/v1
-    description: Local development
+  - url: /api/v1
+    description: Current version — relative, so the document works behind whatever host serves it
 
 components:
   securitySchemes:
@@ -85,6 +85,7 @@ components:
 paths:
   /platform/webhooks/enterprise-contract-signed:
     post:
+      operationId: postPlatformWebhooksEnterpriseContractSigned
       summary: Receive enterprise contract-signed signal from external system
       description: |
         Generic webhook endpoint. Called by any external system (CRM, contract management

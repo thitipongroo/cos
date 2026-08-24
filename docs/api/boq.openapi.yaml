@@ -64,6 +64,8 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/BoqVersion'
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
 
   /projects/{projectId}/boq/versions/{versionId}:
     get:
@@ -216,6 +218,8 @@ paths:
               example: |
                 version_number,category_code,category_name,item_code,description,unit,quantity,unit_cost,estimated_total,currency_code,carbon_factor_kg_co2e,carbon_total_kg_co2e
                 1,CAT-01,Concrete,ITM-01,Cement bag,bag,10.0000,150.0000,1500.0000,THB,,
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
 
 components:
   securitySchemes:

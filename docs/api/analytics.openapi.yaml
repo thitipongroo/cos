@@ -14,8 +14,8 @@ info:
     - Trend endpoints: < 3 seconds
 
 servers:
-  - url: http://localhost:3000/api/v1
-    description: Local development
+  - url: /api/v1
+    description: Current version — relative, so the document works behind whatever host serves it
 
 components:
   securitySchemes:
@@ -207,6 +207,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
 
   /analytics/pm/{projectId}:
     get:
@@ -247,6 +249,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
 
   /analytics/projects/{projectId}/cost-trend:
     get:
@@ -287,6 +291,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
 
   /analytics/projects/{projectId}/procurement-trend:
     get:
@@ -327,6 +333,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
 
   /analytics/projects/{projectId}/site-trend:
     get:
@@ -367,3 +375,5 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated — missing or invalid bearer token

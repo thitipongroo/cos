@@ -12,8 +12,8 @@ info:
     All tokens are RS256-signed JWTs. Access token TTL: 15 minutes.
 
 servers:
-  - url: http://localhost:3000/api/v1
-    description: Local development
+  - url: /api/v1
+    description: Current version — relative, so the document works behind whatever host serves it
 
 components:
   securitySchemes:
@@ -426,6 +426,7 @@ components:
 paths:
   /auth/otp/request:
     post:
+      operationId: postAuthOtpRequest
       # PUBLIC — no credential. Stated rather than left silent, so a generated
       # client does not attach a token to a route that must work without one.
       security: []
@@ -465,6 +466,7 @@ paths:
 
   /auth/otp/verify:
     post:
+      operationId: postAuthOtpVerify
       # PUBLIC — no credential. Stated rather than left silent, so a generated
       # client does not attach a token to a route that must work without one.
       security: []
@@ -498,6 +500,7 @@ paths:
 
   /auth/otp/attest:
     post:
+      operationId: postAuthOtpAttest
       # PUBLIC — no credential. Stated rather than left silent, so a generated
       # client does not attach a token to a route that must work without one.
       security: []
@@ -522,9 +525,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AttestDeviceResponse'
+        '400':
+          description: Malformed request
 
   /auth/devices:
     post:
+      operationId: postAuthDevices
       summary: Enrol this device for trust (§20.6.1)
       description: |
         Registers the device's SPKI public key for the authenticated user. Idempotent on
@@ -545,6 +551,7 @@ paths:
         '401':
           description: Unauthenticated
     get:
+      operationId: getAuthDevices
       summary: List the authenticated user's trusted devices (§20.6.1)
       tags: [auth, device-trust]
       security:
@@ -563,6 +570,7 @@ paths:
 
   /auth/devices/{deviceId}:
     delete:
+      operationId: deleteAuthDevicesByDeviceid
       summary: Revoke a trusted device (§20.6.1)
       tags: [auth, device-trust]
       security:
@@ -581,6 +589,7 @@ paths:
 
   /auth/refresh:
     post:
+      operationId: postAuthRefresh
       # PUBLIC — no credential. Stated rather than left silent, so a generated
       # client does not attach a token to a route that must work without one.
       security: []
@@ -608,6 +617,7 @@ paths:
 
   /auth/logout:
     post:
+      operationId: postAuthLogout
       summary: Logout — revoke refresh token
       tags: [auth]
       security:
@@ -625,9 +635,12 @@ paths:
       responses:
         '204':
           description: Logged out successfully
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
 
   /auth/mfa/enroll:
     post:
+      operationId: postAuthMfaEnroll
       summary: Initiate TOTP MFA enrollment (Path B office users)
       description: |
         Returns an `otpauth://` URI and raw secret. Client renders the URI as a QR
@@ -649,6 +662,7 @@ paths:
 
   /auth/mfa/verify:
     post:
+      operationId: postAuthMfaVerify
       summary: Confirm TOTP token to complete MFA enrollment
       description: |
         Verifies the TOTP token against the pending secret. On success, writes the
@@ -687,6 +701,7 @@ paths:
 
   /auth/mfa/authenticate:
     post:
+      operationId: postAuthMfaAuthenticate
       summary: Verify TOTP token during login (Path B only)
       description: |
         Called after Keycloak password authentication succeeds for roles that
@@ -730,6 +745,7 @@ paths:
   # authenticate to read is not a notice.
   /privacy/policy/metadata:
     get:
+      operationId: getPrivacyPolicyMetadata
       summary: Version, effective date, file name and SHA-256 of the policy PDF
       description: |
         Fetched BEFORE the download so the client can verify the bytes it receives rather than trust
@@ -744,9 +760,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LegalDocumentMetadata'
+        '400':
+          description: Malformed request
 
   /privacy/policy/pdf:
     get:
+      operationId: getPrivacyPolicyPdf
       summary: The Privacy Policy as a PDF
       description: |
         `ETag` is the content digest, so a conditional request costs nothing and a proxy cannot serve
@@ -773,6 +792,8 @@ paths:
               schema:
                 type: string
                 format: binary
+        '400':
+          description: Malformed request
 
   # ─── The Terms of Use document (ADR-092) ─────────────────────────────────────────────────────
   #
@@ -781,6 +802,7 @@ paths:
   # client can verify the transfer rather than trust it.
   /terms/metadata:
     get:
+      operationId: getTermsMetadata
       summary: Version, effective date, file name and SHA-256 of the Terms of Use PDF
       description: |
         Fetched BEFORE the download so the client can verify the bytes it receives. The digest is
@@ -795,9 +817,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LegalDocumentMetadata'
+        '400':
+          description: Malformed request
 
   /terms/pdf:
     get:
+      operationId: getTermsPdf
       summary: The Terms of Use as a PDF
       description: |
         `ETag` is the content digest, so a conditional request costs nothing and a proxy cannot serve
@@ -824,6 +849,8 @@ paths:
               schema:
                 type: string
                 format: binary
+        '400':
+          description: Malformed request
 
   # ─── Pre-auth privacy inquiries (ADR-091) ────────────────────────────────────────────────────
   #
@@ -838,6 +865,7 @@ paths:
   # An inquiry that is matched to a tenant is routed into one of those rows; the two chain.
   /privacy/inquiries:
     post:
+      operationId: postPrivacyInquiries
       summary: Lodge a privacy inquiry without an account (ADR-091)
       description: |
         Public. Rate-limited at the QM-7 AUTH tier (10 req/min per IP) rather than the general tier,
@@ -871,6 +899,7 @@ paths:
         '503':
           description: COS-FLAG-001 — `s1.identity.privacy-inquiry` is off
     get:
+      operationId: getPrivacyInquiries
       summary: The triage queue, oldest received first (SYSTEM_ADMIN)
       description: |
         SYSTEM_ADMIN, not TENANT_ADMIN. The queue is cross-tenant by construction — the sender has
@@ -900,6 +929,7 @@ paths:
 
   /privacy/inquiries/{reference}:
     get:
+      operationId: getPrivacyInquiriesByReference
       summary: One inquiry, by the reference the sender was given (SYSTEM_ADMIN)
       tags: [privacy-inquiries]
       security:
@@ -931,6 +961,7 @@ paths:
   # compliance desk rather than a data subject. All are TENANT_ADMIN-only.
   /subject-requests:
     post:
+      operationId: postSubjectRequests
       summary: Open a subject request (ADR-090)
       description: |
         The row is also the AUTHORISATION to search: no search runs without one, which is what stops
@@ -959,6 +990,7 @@ paths:
         '403':
           description: Not a TENANT_ADMIN
     get:
+      operationId: getSubjectRequests
       summary: The tenant's request queue, oldest received first
       tags: [subject-requests]
       security:
@@ -979,9 +1011,12 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/SubjectRequest'
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
 
   /subject-requests/{requestId}/matches:
     get:
+      operationId: getSubjectRequestsByRequestidMatches
       summary: What the tenant holds about the subject of this request
       description: |
         Identifiers come from the REQUEST ROW, never from the query string. Writes an audit row
@@ -1016,6 +1051,7 @@ paths:
 
   /subject-requests/{requestId}/erase:
     post:
+      operationId: postSubjectRequestsByRequestidErase
       summary: Anonymise in place (QM-5) — clears personal columns, keeps the rows
       description: |
         ERASURE requests only. Irreversible by design: a hard delete would break
@@ -1044,6 +1080,7 @@ paths:
 
   /subject-requests/{requestId}/close:
     patch:
+      operationId: patchSubjectRequestsByRequestidClose
       summary: Close the request as FULFILLED or REJECTED
       description: |
         The outcome note is required on BOTH outcomes: a refusal that does not name its basis is
@@ -1076,6 +1113,7 @@ paths:
 
   /subject-requests/{requestId}/verify:
     post:
+      operationId: postSubjectRequestsByRequestidVerify
       summary: Email a verification link to the address ON THE MATCHED RECORD
       description: |
         Proves the answerer CONTROLS THE IDENTIFIER THE TENANT ALREADY HOLDS — not that they are who
@@ -1115,6 +1153,7 @@ paths:
 
   /subject-requests/verify/{token}:
     post:
+      operationId: postSubjectRequestsVerifyByToken
       # PUBLIC — no credential. Stated rather than left silent, so a generated
       # client does not attach a token to a route that must work without one.
       security: []

@@ -1161,6 +1161,8 @@ paths:
       responses:
         '200':
           description: Paginated tasks
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
     post:
       summary: Create a task
       operationId: createTask
@@ -1204,6 +1206,8 @@ paths:
       responses:
         '201':
           description: Task created
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
   /projects/{projectId}/progress:
     get:
       summary: Project progress — BOQ-value-weighted earned percent, planned percent, and SPI
@@ -1263,6 +1267,8 @@ paths:
                       ahead. The date the plan expected today's earned percent, versus today. Null when
                       there is no schedulable task.
                     example: 21
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
   /tasks/{taskId}:
     patch:
       summary: Update task progress / status (completion gate on COMPLETED)
@@ -1342,6 +1348,8 @@ paths:
                   - type: object
                     properties:
                       items: { type: array, items: { $ref: '#/components/schemas/Building' } }
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
   /buildings/{id}:
     parameters:
       - { in: path, name: id, required: true, schema: { type: string, format: uuid } }
@@ -1417,6 +1425,8 @@ paths:
                   - type: object
                     properties:
                       items: { type: array, items: { $ref: '#/components/schemas/Floor' } }
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
   /floors/{id}:
     parameters:
       - { in: path, name: id, required: true, schema: { type: string, format: uuid } }
@@ -1488,6 +1498,8 @@ paths:
                   - type: object
                     properties:
                       items: { type: array, items: { $ref: '#/components/schemas/Room' } }
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
   /rooms/{id}:
     parameters:
       - { in: path, name: id, required: true, schema: { type: string, format: uuid } }
@@ -1559,6 +1571,8 @@ paths:
                   - type: object
                     properties:
                       items: { type: array, items: { $ref: '#/components/schemas/Structure' } }
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
   /structures/{id}:
     parameters:
       - { in: path, name: id, required: true, schema: { type: string, format: uuid } }
@@ -1630,6 +1644,8 @@ paths:
                   - type: object
                     properties:
                       items: { type: array, items: { $ref: '#/components/schemas/Unit' } }
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
   /units/{id}:
     parameters:
       - { in: path, name: id, required: true, schema: { type: string, format: uuid } }
@@ -1701,6 +1717,8 @@ paths:
                   - type: object
                     properties:
                       items: { type: array, items: { $ref: '#/components/schemas/Asset' } }
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
   /assets/{id}:
     parameters:
       - { in: path, name: id, required: true, schema: { type: string, format: uuid } }

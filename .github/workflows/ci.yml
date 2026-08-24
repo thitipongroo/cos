@@ -116,6 +116,17 @@ jobs:
       - name: OpenAPI documents are no older than the code they describe
         run: bash ./scripts/readiness/check-openapi-freshness.sh
 
+      # Freshness answers "was this touched after its code". It says nothing about whether the file
+      # means what it appears to mean — on 2026-08-24 it reported every document fresh while 155
+      # structural problems sat in them, 102 of which were `nullable: true`: OpenAPI 3.0 syntax in
+      # files declaring 3.1, where a validator treats the keyword as unknown and the field as
+      # NON-nullable, so a generated client rejects a null the API really sends.
+      #
+      # Warnings count as failures (recommended-strict). Two rules are off in redocly.yaml with the
+      # reasoning beside the switch, and one file carries one documented skip — see the script.
+      - name: OpenAPI documents are structurally valid
+        run: pnpm run lint:openapi
+
       # Same class of failure as the runtime table, one layer down: a ConfigService.getOrThrow() in a
       # module factory that CI has no value for takes the whole unit-test suite with it. Broke three
       # times in a row, one key at a time, before this check existed.

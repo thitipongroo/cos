@@ -10,8 +10,8 @@ info:
     name: Construction OS Engineering
 
 servers:
-  - url: http://localhost:3001/api/v1
-    description: Local development
+  - url: /api/v1
+    description: Current version — relative, so the document works behind whatever host serves it
 
 security:
   - KongJWT: []
@@ -22,19 +22,50 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
-      description: JWT validated by Kong Gateway. Kong forwards X-Tenant-ID and X-User-ID headers.
+      description: |
+        A bearer token, and it decides where the identity comes from — this service verifies it
+        itself rather than trusting a gateway to have done so.
 
-  headers:
-    X-Tenant-ID:
-      description: Tenant UUID injected by Kong after JWT validation
+        **User token** — identity comes from the CLAIMS. The identity headers below may accompany
+        it but may only AGREE with it; a header naming a different tenant is a 401, not an override.
+
+        **Service token** — the caller is authenticated as the backend, acting on someone's behalf,
+        and all three identity headers are then REQUIRED. This path exists because the backend calls
+        this service from Temporal activities and Kafka consumers, which hold no user token to
+        forward. Sending the headers now costs a credential; before that, an unauthenticated pod in
+        the namespace could have sent `x-user-role: SYSTEM_ADMIN` with any tenant it liked.
+
+  parameters:
+    # Declared as PARAMETERS, not `components.headers` — that section is for headers a RESPONSE
+    # carries, and these travel on the request. They were sitting there unused and mislabelled
+    # "injected by Kong", which stopped being true when this service began verifying tokens itself.
+    XTenantId:
+      name: X-Tenant-ID
+      in: header
+      required: false
+      description: |
+        Required with a SERVICE token; with a user token it is optional and may only agree with the
+        claim. Disagreeing with it is a 401.
       schema:
         type: string
         format: uuid
-    X-User-ID:
-      description: User UUID injected by Kong after JWT validation
+    XUserId:
+      name: X-User-ID
+      in: header
+      required: false
+      description: Required with a SERVICE token — who the backend is acting for.
       schema:
         type: string
         format: uuid
+    XUserRole:
+      name: X-User-Role
+      in: header
+      required: false
+      description: |
+        Required with a SERVICE token; the role the action runs under. Never consulted when a user
+        token is present — the claim wins.
+      schema:
+        type: string
 
   schemas:
     FileStatus:
@@ -137,6 +168,9 @@ paths:
       operationId: getFileAnnotation
       tags: [annotations]
       parameters:
+        - $ref: '#/components/parameters/XTenantId'
+        - $ref: '#/components/parameters/XUserId'
+        - $ref: '#/components/parameters/XUserRole'
         - name: fileId
           in: path
           required: true
@@ -159,6 +193,9 @@ paths:
         Optional query params: entity_type, entity_id to associate with a business entity.
       tags: [Files]
       parameters:
+        - $ref: '#/components/parameters/XTenantId'
+        - $ref: '#/components/parameters/XUserId'
+        - $ref: '#/components/parameters/XUserRole'
         - in: query
           name: entity_type
           schema: { type: string }
@@ -205,6 +242,9 @@ paths:
       summary: Get a pre-signed download URL (TTL 1 hour)
       tags: [Files]
       parameters:
+        - $ref: '#/components/parameters/XTenantId'
+        - $ref: '#/components/parameters/XUserId'
+        - $ref: '#/components/parameters/XUserRole'
         - in: path
           name: fileId
           required: true
@@ -232,6 +272,9 @@ paths:
       summary: Get file metadata
       tags: [Files]
       parameters:
+        - $ref: '#/components/parameters/XTenantId'
+        - $ref: '#/components/parameters/XUserId'
+        - $ref: '#/components/parameters/XUserRole'
         - in: path
           name: fileId
           required: true
@@ -253,6 +296,9 @@ paths:
       summary: Soft-delete a file (hard-deleted after 30 days)
       tags: [Files]
       parameters:
+        - $ref: '#/components/parameters/XTenantId'
+        - $ref: '#/components/parameters/XUserId'
+        - $ref: '#/components/parameters/XUserRole'
         - in: path
           name: fileId
           required: true
@@ -272,6 +318,9 @@ paths:
       summary: List files for the authenticated tenant (paginated)
       tags: [Files]
       parameters:
+        - $ref: '#/components/parameters/XTenantId'
+        - $ref: '#/components/parameters/XUserId'
+        - $ref: '#/components/parameters/XUserRole'
         - in: query
           name: limit
           schema: { type: integer, default: 20, maximum: 100 }
@@ -284,6 +333,8 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ListFilesResponse' }
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
 
   /files/by-entity/{entityType}/{entityId}:
     get:
@@ -291,6 +342,9 @@ paths:
       summary: List files associated with a specific business entity
       tags: [Files]
       parameters:
+        - $ref: '#/components/parameters/XTenantId'
+        - $ref: '#/components/parameters/XUserId'
+        - $ref: '#/components/parameters/XUserRole'
         - in: path
           name: entityType
           required: true
@@ -309,9 +363,15 @@ paths:
                 type: object
                 properties:
                   data: { type: array, items: { $ref: '#/components/schemas/FileDto' } }
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
 
   /files/retention-policies:
     get:
+      parameters:
+        - $ref: '#/components/parameters/XTenantId'
+        - $ref: '#/components/parameters/XUserId'
+        - $ref: '#/components/parameters/XUserRole'
       operationId: listRetentionPolicies
       summary: List per-category retention policies (TENANT_ADMIN)
       tags: [Retention]
@@ -326,6 +386,10 @@ paths:
                   data: { type: array, items: { $ref: '#/components/schemas/RetentionPolicy' } }
         '403': { description: Forbidden — TENANT_ADMIN only }
     put:
+      parameters:
+        - $ref: '#/components/parameters/XTenantId'
+        - $ref: '#/components/parameters/XUserId'
+        - $ref: '#/components/parameters/XUserRole'
       operationId: upsertRetentionPolicy
       summary: Create or update a category retention policy (TENANT_ADMIN)
       tags: [Retention]
@@ -356,6 +420,9 @@ paths:
       summary: Place a legal hold on a file — blocks all deletion (WORM; TENANT_ADMIN)
       tags: [Retention]
       parameters:
+        - $ref: '#/components/parameters/XTenantId'
+        - $ref: '#/components/parameters/XUserId'
+        - $ref: '#/components/parameters/XUserRole'
         - in: path
           name: fileId
           required: true
@@ -385,6 +452,9 @@ paths:
       summary: Release a legal hold on a file (TENANT_ADMIN)
       tags: [Retention]
       parameters:
+        - $ref: '#/components/parameters/XTenantId'
+        - $ref: '#/components/parameters/XUserId'
+        - $ref: '#/components/parameters/XUserRole'
         - in: path
           name: fileId
           required: true
