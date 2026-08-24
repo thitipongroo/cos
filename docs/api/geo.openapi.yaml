@@ -2,6 +2,9 @@ openapi: 3.1.0
 info:
   title: Construction OS — Geo API
   version: v1
+  license:
+    name: Proprietary — all rights reserved
+    identifier: LicenseRef-Proprietary
   description: |
     Reverse geocoding for the coordinates the platform already records — a site report's location,
     a check-in, a photo.

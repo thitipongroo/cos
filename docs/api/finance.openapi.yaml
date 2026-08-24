@@ -2,6 +2,9 @@ openapi: 3.1.0
 info:
   title: Finance Service API
   version: 1.0.0
+  license:
+    name: Proprietary — all rights reserved
+    identifier: LicenseRef-Proprietary
   description: 'Phase 7 — Project cost tracking service.
 
     Tracks budget vs actual vs committed. Does NOT implement accounting or ERP posting.

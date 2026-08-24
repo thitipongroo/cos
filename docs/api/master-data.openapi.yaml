@@ -2,6 +2,9 @@ openapi: 3.1.0
 info:
   title: Construction OS — Master Data API
   version: v1
+  license:
+    name: Proprietary — all rights reserved
+    identifier: LicenseRef-Proprietary
   description: |
     The tenant's controlled vocabularies: materials, work categories, issue categories and cost
     categories. `09-data-architecture.md` §9.5 is the governing principle — every transactional

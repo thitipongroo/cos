@@ -2,6 +2,9 @@ openapi: '3.1.0'
 info:
   title: Construction OS — Platform Webhooks API
   version: '1.0.0'
+  license:
+    name: Proprietary — all rights reserved
+    identifier: LicenseRef-Proprietary
   description: |
     Generic webhook receivers for external system integrations.
     These endpoints are called by external systems (CRM, contract management) to signal

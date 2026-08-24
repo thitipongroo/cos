@@ -2,6 +2,9 @@ openapi: 3.1.0
 info:
   title: Notification Service API
   version: 1.0.0
+  license:
+    name: Proprietary — all rights reserved
+    identifier: LicenseRef-Proprietary
   description: |
     Phase 20 — Multi-channel notification service.
     Channels: IN_APP (SSE), EMAIL (SendGrid), LINE (Messaging API), Expo Push.

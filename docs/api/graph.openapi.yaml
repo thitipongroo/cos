@@ -2,6 +2,9 @@ openapi: '3.1.0'
 info:
   title: Construction OS — Graph API
   version: '1.0.0'
+  license:
+    name: Proprietary — all rights reserved
+    identifier: LicenseRef-Proprietary
   description: |
     Knowledge Graph query endpoints for Construction OS (Phase 13).
 

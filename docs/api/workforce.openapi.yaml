@@ -2,6 +2,9 @@ openapi: 3.1.0
 info:
   title: Construction OS — Workforce API
   version: v1
+  license:
+    name: Proprietary — all rights reserved
+    identifier: LicenseRef-Proprietary
   description: |
     Workforce Service — Phase 22.
     Manages worker profiles, project allocations, attendance logs, and timesheets.

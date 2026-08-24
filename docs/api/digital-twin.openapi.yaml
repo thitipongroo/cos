@@ -2,6 +2,9 @@ openapi: 3.1.0
 info:
   title: Construction OS — Digital Twin API
   version: v1
+  license:
+    name: Proprietary — all rights reserved
+    identifier: LicenseRef-Proprietary
   description: |
     Digital Twin query endpoints — Phase 24.
     READ-OPTIMIZED. All state writes arrive via Kafka from source systems (IoT, inspection, schedule).

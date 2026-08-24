@@ -2,6 +2,9 @@ openapi: 3.1.0
 info:
   title: Construction OS — Site Operations API
   version: v1
+  license:
+    name: Proprietary — all rights reserved
+    identifier: LicenseRef-Proprietary
   description: |
     Site Operations Service — Phase 6.
     Manages site reports, issues, inspections, and offline sync conflict resolution.

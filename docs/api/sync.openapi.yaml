@@ -2,6 +2,9 @@ openapi: 3.1.0
 info:
   title: Construction OS — Offline Sync API
   version: v1
+  license:
+    name: Proprietary — all rights reserved
+    identifier: LicenseRef-Proprietary
   description: |
     The offline-sync transport between a field device and the server — Phase 10, specified in
     `17-offline-mobile-sync.md` (§17.2 review queue, §17.5 conflict-resolution rules, §17.9 delta

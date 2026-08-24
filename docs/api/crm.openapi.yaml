@@ -2,6 +2,9 @@ openapi: 3.1.0
 info:
   title: Construction OS — CRM API
   version: 1.0.0
+  license:
+    name: Proprietary — all rights reserved
+    identifier: LicenseRef-Proprietary
   description: |
     CRM Service — Lead → Opportunity → Customer (§11.3, §20.7.10, ADR-029).
     `convert` wins an opportunity and creates a finance.customers row (the canonical Customer

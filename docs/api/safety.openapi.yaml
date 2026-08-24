@@ -2,6 +2,9 @@ openapi: 3.1.0
 info:
   title: Construction OS — Safety API
   version: 1.0.0
+  license:
+    name: Proprietary — all rights reserved
+    identifier: LicenseRef-Proprietary
   description: |
     Safety Officer operations (§20.7.7): incidents, work-permit approval (§15.5), safety
     checklists, and a deterministic compliance view (ADR-027). Canonical prefix /api/v1/safety/*.

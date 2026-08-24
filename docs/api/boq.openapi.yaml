@@ -2,6 +2,9 @@ openapi: 3.1.0
 info:
   title: Construction OS — BOQ Service API
   version: '1.0.0'
+  license:
+    name: Proprietary — all rights reserved
+    identifier: LicenseRef-Proprietary
   description: |
     Bill of Quantities (BOQ) Service — Phase 4.
     Financial precision: all monetary fields are DECIMAL(19,4) returned as string.

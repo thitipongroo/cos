@@ -2,6 +2,9 @@ openapi: 3.1.0
 info:
   title: Construction OS — AI API
   version: v1
+  license:
+    name: Proprietary — all rights reserved
+    identifier: LicenseRef-Proprietary
   description: |
     AI / ML API surface — Phase 11 (AI Foundation), Phase 12 (Report Assistant), Phase 13 (RAG/embeddings).
     Backed by three FastAPI services:

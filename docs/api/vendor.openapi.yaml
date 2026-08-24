@@ -2,6 +2,9 @@ openapi: 3.1.0
 info:
   title: Construction OS — Vendor Portal API
   version: v1
+  license:
+    name: Proprietary — all rights reserved
+    identifier: LicenseRef-Proprietary
   description: |
     Vendor Portal — external vendor self-service (ADR-030; brought into MVP). Two tiers (§05 §5.4.3):
       - Tier 1 (no account): respond to an invited RFQ via a single-use magic-link token (in the URL

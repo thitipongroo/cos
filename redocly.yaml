@@ -14,17 +14,25 @@ extends:
   - recommended-strict
 
 rules:
-  # ── OFF: nothing in this repository states a licence ────────────────────────────────────
+  # ── info-license is ENFORCED (recommended-strict) ──────────────────────────────────────
   #
-  # There is no LICENSE file, no `license` field in any package.json, and no copyright or ownership
-  # statement in any specification or legal document — checked 2026-08-24. `package.json` says
-  # `"private": true`, which establishes that the product is not published, but that is not the same
-  # as knowing what licence its API description should carry.
+  # It was off until 2026-08-24, because nothing in this repository stated a licence and writing one
+  # would have been asserting a legal fact nobody had. All 22 documents now carry:
   #
-  # Writing `name: Proprietary` would be asserting a legal fact nobody in the repository has stated.
-  # Turn this rule back on and fill `info.license` in all 22 documents the moment somebody says what
-  # the licence is; until then, silence is the honest answer.
-  info-license: 'off'
+  #     license:
+  #       name: Proprietary — all rights reserved
+  #
+  # That records what IS established — no LICENSE file, no `license` field in any package.json,
+  # `"private": true` — and nothing more. Absence of a licence is not absence of status: under
+  # copyright the default is that all rights are reserved.
+  #
+  # The identifier is `LicenseRef-Proprietary` — SPDX's own form for a licence that is not on the
+  # SPDX List, which is exactly the situation. It names no terms and points at no document; it says
+  # "a licence outside the list, referenced locally". `info-license-strict` requires an identifier
+  # or a url, and a url would mean inventing a licence document to point at.
+  #
+  # Deliberately absent: a licensor, a jurisdiction, any terms. Two lines per file change all of it
+  # the moment somebody states what the licence actually is.
 
   # ── OFF: the ambiguity is real, deliberate, and load-bearing ────────────────────────────
   #
