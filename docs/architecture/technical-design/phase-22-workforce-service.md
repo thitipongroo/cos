@@ -7,9 +7,9 @@ authors:
   - thitipongroo
 related_docs:
   - README.md
-  - ../specifications/32-implementation-specifications.md
-  - ../specifications/11-database-schema.md
-  - ../../context/00_master_construction_os.md
+  - ../../specifications/32-implementation-specifications.md
+  - ../../specifications/11-database-schema.md
+  - ../../../context/00_master_construction_os.md
 ---
 
 # Phase 22 — Workforce Service

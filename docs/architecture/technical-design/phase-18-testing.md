@@ -7,8 +7,8 @@ authors:
   - thitipongroo
 related_docs:
   - README.md
-  - ../specifications/30-testing-strategy.md
-  - ../../context/00_master_construction_os.md
+  - ../../specifications/30-testing-strategy.md
+  - ../../../context/00_master_construction_os.md
 ---
 
 # Phase 18 — Testing

@@ -14,7 +14,7 @@
 // RFQ stayed DRAFT forever, no `procurement.rfq.status_changed.v1` was ever emitted, and the RFQ
 // deadline timer never fired. The workflow unit tests pass because `TestWorkflowEnvironment` starts
 // its own in-process worker; nothing in the gate set checks that a built component is reachable in
-// production. See docs/technical-design/README.md OQ-32.
+// production. See docs/architecture/technical-design/README.md OQ-32.
 //
 // Product-owner decision 2026-08-22: run the workers as their OWN Deployment, separate from the API.
 // A worker crash-loop must not take the request path down with it, and worker replicas scale on

@@ -328,6 +328,21 @@ work as drawn; that is a different list and still applies.
 
 ---
 
+## Per-phase technical design — [`technical-design/`](technical-design/)
+
+Phase 1–25, one page each, compiled from `docs/specifications/` and
+`context/00_master_construction_os.md`. It moved under this folder on 2026-08-24; it was
+`docs/technical-design/`.
+
+**It decides nothing.** Where a page there disagrees with a specification, the specification wins and
+the page is the bug — which is the opposite of the ADRs below, where the record IS the decision. The
+two sit together because both are architecture writing, not because they carry the same authority.
+
+Its [README](technical-design/README.md) also holds the open-questions register: every gap the
+compilation found between the specifications and the code, with what closed it.
+
+---
+
 ## Architecture Decision Records — [`adr/`](adr/)
 
 95 ADRs plus the template (highest number: 095). Format and process: QM-11. Before writing `(see ADR-NNN)` anywhere,

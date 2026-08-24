@@ -7,10 +7,10 @@ authors:
   - thitipongroo
 related_docs:
   - README.md
-  - ../specifications/17-offline-mobile-sync.md
-  - ../specifications/14-api-architecture.md
-  - ../architecture/adr/056-photo-annotation.md
-  - ../../context/00_master_construction_os.md
+  - ../../specifications/17-offline-mobile-sync.md
+  - ../../specifications/14-api-architecture.md
+  - ../adr/056-photo-annotation.md
+  - ../../../context/00_master_construction_os.md
 ---
 
 # Phase 6 — Site Operations
@@ -325,7 +325,7 @@ Phase 9's File Service for photos — neither is in the register's dependency li
 
 ## 14. Open questions / NOT SPECIFIED
 
-| #     | Question                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Status                  |
-| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| #     | Question                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Status            |
+| ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
 | OQ-28 | **Closed 2026-08-23 — capped at the server clock, forward only.** Nothing bounded `client_submitted_at`, so a handset running fast won every LAST_WRITE_WINS merge — and a phone offline on a site for a week is exactly the device whose clock has drifted. `clampClientTimestamp` caps it with 5 minutes of tolerance, the same window a signed platform webhook gets. The past is honoured however old: a report written Tuesday and synced Friday happened on Tuesday, and rewriting it would let a stale edit overwrite a server-side correction made in between. Only the impossible future is capped; an unparseable value orders oldest. Both raise `sync.clock_skew_clamped`. Documented in §17.5 and `00_master`. | Closed 2026-08-23 |
-| OQ-29 | **Closed 2026-08-23 — deleted.** No importer anywhere, and the Phase 9 activation it promised never came because photo linkage was built the other way round: the mobile app uploads to the File Service directly with an `entity_type`/`entity_id` and the link lands in `files.file_metadata`. This module is not in that path, so its README's `FILE_SERVICE_URL` row went with it — nothing here ever read it. | Closed 2026-08-23 |
+| OQ-29 | **Closed 2026-08-23 — deleted.** No importer anywhere, and the Phase 9 activation it promised never came because photo linkage was built the other way round: the mobile app uploads to the File Service directly with an `entity_type`/`entity_id` and the link lands in `files.file_metadata`. This module is not in that path, so its README's `FILE_SERVICE_URL` row went with it — nothing here ever read it.                                                                                                                                                                                                                                                                                                          | Closed 2026-08-23 |

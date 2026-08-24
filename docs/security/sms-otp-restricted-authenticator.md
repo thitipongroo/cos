@@ -124,7 +124,7 @@ read. QM-7's other clause — 10 req/min per IP — **is** enforced on Path A, b
 
 #### Risk accepted — Path A gets no account lockout of its own
 
-**Product-owner decision, 2026-08-22 ([OQ-17](../technical-design/README.md), now closed).** Path A
+**Product-owner decision, 2026-08-22 ([OQ-17](../architecture/technical-design/README.md), now closed).** Path A
 keeps the controls it has. No per-account lock will be added.
 
 The reasoning, recorded so a later reviewer does not have to reconstruct it:

@@ -7,10 +7,10 @@ authors:
   - thitipongroo
 related_docs:
   - README.md
-  - ../specifications/11-database-schema.md
-  - ../specifications/14-api-architecture.md
-  - ../specifications/06-rbac-permission-matrix.md
-  - ../../context/00_master_construction_os.md
+  - ../../specifications/11-database-schema.md
+  - ../../specifications/14-api-architecture.md
+  - ../../specifications/06-rbac-permission-matrix.md
+  - ../../../context/00_master_construction_os.md
 ---
 
 # Phase 3 — Project Service
@@ -65,7 +65,7 @@ Exit condition: "project APIs pass the isolation-test suite; RLS enforced"
 ## 3. Architecture
 
 The `project` module is one of the 23 backend modules in the C4 Level 3 view
-([`architecture/README.md`](../architecture/README.md) § Level 3 — Component). It is a NestJS module
+([`architecture/README.md`](../README.md) § Level 3 — Component). It is a NestJS module
 inside the modular monolith, not a separate deployable.
 
 Internally it is not one service but nine, each with the same controller → service → repository

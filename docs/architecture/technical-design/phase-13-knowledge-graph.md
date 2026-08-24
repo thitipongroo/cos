@@ -7,9 +7,9 @@ authors:
   - thitipongroo
 related_docs:
   - README.md
-  - ../specifications/12-construction-knowledge-graph.md
-  - ../specifications/07-multi-tenant-architecture.md
-  - ../../context/00_master_construction_os.md
+  - ../../specifications/12-construction-knowledge-graph.md
+  - ../../specifications/07-multi-tenant-architecture.md
+  - ../../../context/00_master_construction_os.md
 ---
 
 # Phase 13 — Knowledge Graph

@@ -7,11 +7,11 @@ authors:
   - thitipongroo
 related_docs:
   - README.md
-  - ../specifications/14-api-architecture.md
-  - ../specifications/32-implementation-specifications.md
-  - ../architecture/adr/022-procurement-tenant-wide-list-endpoints.md
-  - ../architecture/adr/030-vendor-portal-mvp.md
-  - ../../context/00_master_construction_os.md
+  - ../../specifications/14-api-architecture.md
+  - ../../specifications/32-implementation-specifications.md
+  - ../adr/022-procurement-tenant-wide-list-endpoints.md
+  - ../adr/030-vendor-portal-mvp.md
+  - ../../../context/00_master_construction_os.md
 ---
 
 # Phase 5 — Procurement Service

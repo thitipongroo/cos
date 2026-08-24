@@ -279,7 +279,7 @@ you have to know what they are still on. Both are tenant-scoped like every other
 cannot ask about a user in another tenant.
 
 Recorded here 2026-08-22. Both were built and gated but named in no specification —
-[OQ-21](../technical-design/README.md#open-questions-register). This paragraph also claimed they were
+[OQ-21](../architecture/technical-design/README.md#open-questions-register). This paragraph also claimed they were
 "documented in OpenAPI"; they were not, in this or any other file, until 2026-08-24.
 
 **Project phases** (ADR-070) and the **risk register** (ADR-065) hang off a project and are tabled
@@ -1093,7 +1093,7 @@ and `revoke` are **not** routed at the edge at all — they are mesh-only (§5.9
 ### Traffic Type Distinction
 
 > ⚠️ **This subsection describes a gateway that is not deployed.** Verified 2026-08-22 —
-> [OQ-46](../technical-design/README.md#open-questions-register).
+> [OQ-46](../architecture/technical-design/README.md#open-questions-register).
 > `infrastructure/kubernetes/kong/kong-declarative.yml` is referenced by no ArgoCD Application (every
 > one targets a Helm chart or the otel overlays), there are no `KongPlugin` CRDs anywhere, no chart
 > carries an Ingress template at all, and the repository's only `kind: Ingress` uses
@@ -1114,7 +1114,7 @@ Kong identifies external OAuth2 client credential traffic by Consumer lookup on 
 mints the token with that client. The row previously read "absent". It matters here because it means
 `cos-backend` must never be registered as a Kong Consumer: if it were, every Path A field worker would
 be matched to a consumer and metered by the monthly quota plugin as though they were an external API
-integration ([OQ-13](../technical-design/README.md#open-questions-register)).
+integration ([OQ-13](../architecture/technical-design/README.md#open-questions-register)).
 
 `jwt` plugin is intended to be configured with:
 

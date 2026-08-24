@@ -7,9 +7,9 @@ authors:
   - thitipongroo
 related_docs:
   - README.md
-  - ../specifications/08-enterprise-deployment.md
-  - ../architecture/adr/039-production-onprem-k8s-distro.md
-  - ../../context/00_master_construction_os.md
+  - ../../specifications/08-enterprise-deployment.md
+  - ../adr/039-production-onprem-k8s-distro.md
+  - ../../../context/00_master_construction_os.md
 ---
 
 # Phase 17 — DevOps + Deployment

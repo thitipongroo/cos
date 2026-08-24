@@ -7,8 +7,8 @@ authors:
   - thitipongroo
 related_docs:
   - README.md
-  - ../specifications/31-monitoring-observability.md
-  - ../../context/00_master_construction_os.md
+  - ../../specifications/31-monitoring-observability.md
+  - ../../../context/00_master_construction_os.md
 ---
 
 # Phase 19 — Final Production Readiness

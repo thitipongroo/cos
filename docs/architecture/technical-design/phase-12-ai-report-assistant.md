@@ -8,8 +8,8 @@ authors:
 related_docs:
   - README.md
   - phase-11-ai-foundation.md
-  - ../specifications/22-ai-architecture.md
-  - ../../context/00_master_construction_os.md
+  - ../../specifications/22-ai-architecture.md
+  - ../../../context/00_master_construction_os.md
 ---
 
 # Phase 12 — AI Report Assistant
@@ -214,21 +214,21 @@ requirement that each guard check be tested independently and that the full pipe
 
 Verified on **2026-08-22** against this working tree (Rule 36 — commands run, output summarised).
 
-| Generate item                                  | Status                         | Evidence                                                              |
-| ---------------------------------------------- | ------------------------------ | --------------------------------------------------------------------- |
-| Sequential pipeline per report type            | ✅ present                     | `reports/pipeline.py` — plain Python, no LangGraph                    |
-| `HallucinationGuard` with all 5 checks         | ✅ present                     | `reports/guard.py`; ordering documented in the source                 |
-| Structured Pydantic models per report type     | ✅ present                     | `reports/models.py` — 4 output models + the fallback shape            |
-| Prompt template per report type                | ✅ present                     | 4 `.j2` files under `ai/prompts/`                                     |
-| Report persistence service                     | ✅ present                     | `reports/persistence.py`                                              |
-| `ai_generated_reports` migration               | ✅ present                     | `ai.ai_generated_reports`                                             |
-| 5 FastAPI routes                               | ✅ present                     | all five paths on `ai-gateway`                                        |
-| Token budget 4000 / 1000                       | ✅ present                     | `MAX_INPUT_TOKENS = 4000`, `MAX_OUTPUT_TOKENS = 1000`                 |
-| Delay-risk thresholds LOW/MEDIUM/HIGH/CRITICAL | ✅ present                     | day bands 1–2 / 3–6 / 7–13 / 14+ carried in `report-delay-risk-v1.j2` |
-| Unit tests per guard check                     | ✅ present                     | `test_hallucination_guard.py`                                         |
-| Integration tests on `StubLLMProvider`         | ✅ present                     | `test_integration_reports.py`                                         |
-| `CrossEncoderReranking` stub                   | ✅ present                     | `providers/cross_encoder_reranking.py` (Phase 11 tree)                |
-| Source attribution (guard check 2)             | ✅ present                     | `sources[]` verified against the retrieval context — OQ-41            |
+| Generate item                                  | Status     | Evidence                                                              |
+| ---------------------------------------------- | ---------- | --------------------------------------------------------------------- |
+| Sequential pipeline per report type            | ✅ present | `reports/pipeline.py` — plain Python, no LangGraph                    |
+| `HallucinationGuard` with all 5 checks         | ✅ present | `reports/guard.py`; ordering documented in the source                 |
+| Structured Pydantic models per report type     | ✅ present | `reports/models.py` — 4 output models + the fallback shape            |
+| Prompt template per report type                | ✅ present | 4 `.j2` files under `ai/prompts/`                                     |
+| Report persistence service                     | ✅ present | `reports/persistence.py`                                              |
+| `ai_generated_reports` migration               | ✅ present | `ai.ai_generated_reports`                                             |
+| 5 FastAPI routes                               | ✅ present | all five paths on `ai-gateway`                                        |
+| Token budget 4000 / 1000                       | ✅ present | `MAX_INPUT_TOKENS = 4000`, `MAX_OUTPUT_TOKENS = 1000`                 |
+| Delay-risk thresholds LOW/MEDIUM/HIGH/CRITICAL | ✅ present | day bands 1–2 / 3–6 / 7–13 / 14+ carried in `report-delay-risk-v1.j2` |
+| Unit tests per guard check                     | ✅ present | `test_hallucination_guard.py`                                         |
+| Integration tests on `StubLLMProvider`         | ✅ present | `test_integration_reports.py`                                         |
+| `CrossEncoderReranking` stub                   | ✅ present | `providers/cross_encoder_reranking.py` (Phase 11 tree)                |
+| Source attribution (guard check 2)             | ✅ present | `sources[]` verified against the retrieval context — OQ-41            |
 
 ---
 
@@ -246,6 +246,6 @@ field Phase 3 added by `20260723000001`.
 
 ## 14. Open questions / NOT SPECIFIED
 
-| #     | Question                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Status                     |
-| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| #     | Question                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Status |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
 | OQ-41 | **Closed 2026-08-23 — the guard's source-attribution check now checks source attribution.** The command's check 2 is "every factual claim must be traceable to input context (implementation: **require LLM to cite source in structured output**)"; `guard.py` implemented it as `confidence == 0.0 → fail`, and no output model carried a citation field at all. All four output models now carry `sources: string[]`, the four prompts instruct the model to copy the lines it drew on verbatim, and the guard fails an output whose sources are missing, empty, blank, or absent from the retrieval context after whitespace normalisation. Written into spec 22 §22.3 and `00_master` § PHASE 12 check 2. | Closed |

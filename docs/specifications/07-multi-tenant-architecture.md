@@ -263,14 +263,14 @@ Topic lifecycle management :
 
 Topics are created **explicitly** — producers run with `allowAutoTopicCreation: false`; the broker's
 auto-create is never relied upon. **When** they are created differs by tier, and this procedure
-describes the enterprise one ([OQ-4](../technical-design/README.md#open-questions-register),
+describes the enterprise one ([OQ-4](../architecture/technical-design/README.md#open-questions-register),
 corrected 2026-08-23 — it previously read as though it applied to every tenant, contradicting the
 bullet above):
 
-| Tier           | When                              | Where                                                    |
-| -------------- | --------------------------------- | -------------------------------------------------------- |
-| **Shared**     | On first publish                   | `KafkaProducer.ensureTopic` — `TenantService.createTenant` provisions no topics |
-| **Enterprise** | Eagerly, at onboarding             | `provisionKafkaTopicsActivity` → `KafkaTopicProvisioner`  |
+| Tier           | When                   | Where                                                                           |
+| -------------- | ---------------------- | ------------------------------------------------------------------------------- |
+| **Shared**     | On first publish       | `KafkaProducer.ensureTopic` — `TenantService.createTenant` provisions no topics |
+| **Enterprise** | Eagerly, at onboarding | `provisionKafkaTopicsActivity` → `KafkaTopicProvisioner`                        |
 
 The split is the arithmetic in the bullet above: eager provisioning costs the full catalogue per
 tenant regardless of usage, so on a **shared** cluster broker capacity would scale with customer
@@ -377,9 +377,10 @@ Steps :
    > tenant it claims. Signature and audience prove a token is genuine, not which tenant it may act
    > as — `tenant_id` is a Keycloak user attribute, so without the binding any trusted realm could
    > name another realm'''s tenant.
-   **Protocol mappers MUST be configured** on every realm (shared or dedicated) per `05-security-compliance`
-   §5.4.2 — mappers for `tenant_id`, `user_id`, and `role` are required before any user can authenticate.
-   Missing mappers cause Kong Gateway to reject all requests.
+   > **Protocol mappers MUST be configured** on every realm (shared or dedicated) per `05-security-compliance`
+   > §5.4.2 — mappers for `tenant_id`, `user_id`, and `role` are required before any user can authenticate.
+   > Missing mappers cause Kong Gateway to reject all requests.
+
 4. Database provisioning:
    - SMB: no migration needed — `tenant_id` already in all tables
    - Mid-market: no migration needed — same Shared DB + tenant_id model as SMB

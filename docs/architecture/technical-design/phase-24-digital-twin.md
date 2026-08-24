@@ -7,10 +7,10 @@ authors:
   - thitipongroo
 related_docs:
   - README.md
-  - ../specifications/33-digital-twin-iot.md
+  - ../../specifications/33-digital-twin-iot.md
   - phase-13-knowledge-graph.md
   - phase-21-equipment-service.md
-  - ../../context/00_master_construction_os.md
+  - ../../../context/00_master_construction_os.md
 ---
 
 # Phase 24 — Digital Twin

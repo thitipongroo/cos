@@ -7,10 +7,10 @@ authors:
   - thitipongroo
 related_docs:
   - README.md
-  - ../specifications/11-database-schema.md
-  - ../specifications/14-api-architecture.md
-  - ../architecture/adr/058-client-contract-signing-mechanism.md
-  - ../../context/00_master_construction_os.md
+  - ../../specifications/11-database-schema.md
+  - ../../specifications/14-api-architecture.md
+  - ../adr/058-client-contract-signing-mechanism.md
+  - ../../../context/00_master_construction_os.md
 ---
 
 # Phase 7 — Finance Service

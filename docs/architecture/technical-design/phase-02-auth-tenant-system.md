@@ -7,10 +7,10 @@ authors:
   - thitipongroo
 related_docs:
   - README.md
-  - ../specifications/05-security-compliance.md
-  - ../specifications/06-rbac-permission-matrix.md
-  - ../specifications/07-multi-tenant-architecture.md
-  - ../../context/00_master_construction_os.md
+  - ../../specifications/05-security-compliance.md
+  - ../../specifications/06-rbac-permission-matrix.md
+  - ../../specifications/07-multi-tenant-architecture.md
+  - ../../../context/00_master_construction_os.md
 ---
 
 # Phase 2 — Auth + Tenant System

@@ -13,7 +13,7 @@
 --
 -- NOTE: no additional-roles table appears in `11-database-schema` §11.1, and §6.4 / ADR-014 describe
 -- one role per membership. Recorded as OQ-8 in
--- `docs/technical-design/phase-02-auth-tenant-system.md`; this rollback reverses the migration as
+-- `docs/architecture/technical-design/phase-02-auth-tenant-system.md`; this rollback reverses the migration as
 -- committed and takes no position on whether the table should exist.
 
 DROP INDEX IF EXISTS platform.idx_user_additional_roles_user;

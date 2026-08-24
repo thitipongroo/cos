@@ -233,7 +233,7 @@ Versioning Rules :
 - **Envelope:** the **Base Event Envelope** of §15.6 wraps Avro payloads for metadata consistency.
   It is CloudEvents v1.0-**inspired**, not normative CloudEvents — this line said "CloudEvents
   v1.0 (normative)" until 2026-08-23, contradicting §15.6 four paragraphs above
-  ([OQ-3](../technical-design/README.md#open-questions-register)). §15.6 is the accurate one, and
+  ([OQ-3](../architecture/technical-design/README.md#open-questions-register)). §15.6 is the accurate one, and
   the committed schemas settle it: `base-event-envelope.avsc` carries `event_id`, `event_type`,
   `event_version`, `tenant_id`, `actor_id`, `occurred_at`, `correlation_id`, `trace_id`,
   `span_id` — and **none** of CloudEvents v1.0's four REQUIRED attributes (`id`, `source`,
@@ -242,7 +242,7 @@ Versioning Rules :
 - **External delivery:** Avro deserialised to JSON for webhook subscribers who cannot consume Avro
   directly. **Unbuilt, and this line named a component that is not deployed** — it read "at Kong
   Gateway layer" until 2026-08-23, and there is no deployed Kong
-  ([OQ-46](../technical-design/README.md#open-questions-register)). Nor is there a bridge elsewhere:
+  ([OQ-46](../architecture/technical-design/README.md#open-questions-register)). Nor is there a bridge elsewhere:
   the only webhook code in the repository is `modules/platform-webhook`, an **inbound** receiver for
   `POST /platform/webhooks/enterprise-contract-signed`. Nothing subscribes an external party to an
   event stream, and nothing deserialises Avro for one

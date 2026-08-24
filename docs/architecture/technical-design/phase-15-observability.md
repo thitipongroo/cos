@@ -7,9 +7,9 @@ authors:
   - thitipongroo
 related_docs:
   - README.md
-  - ../specifications/31-monitoring-observability.md
-  - ../architecture/adr/075-tail-based-trace-sampling.md
-  - ../../context/00_master_construction_os.md
+  - ../../specifications/31-monitoring-observability.md
+  - ../adr/075-tail-based-trace-sampling.md
+  - ../../../context/00_master_construction_os.md
 ---
 
 # Phase 15 — Observability

@@ -171,7 +171,7 @@ The platform deploys as distinct units. Do **not** merge runtimes or split prema
 > RFQ stayed `DRAFT`; soft-deleted files were never hard-deleted. The workflow unit tests pass
 > because `TestWorkflowEnvironment` starts its own in-process worker — no gate in the pipeline checks
 > that a built component is reachable in production. Recorded as OQ-32 in
-> `docs/technical-design/README.md`; resolved by product-owner decision on 2026-08-22.
+> `docs/architecture/technical-design/README.md`; resolved by product-owner decision on 2026-08-22.
 >
 > **Why the rule exists.** On 2026-08-07 commit `8857bb1` added a BIM Import Worker row reading
 > **Go**, inferred from the three `*-worker` rows above it rather than from the directory — which has
@@ -436,7 +436,7 @@ compatibility) before first producer deployment.
 }
 ```
 
-> **`trace_id` / `span_id` added here 2026-08-23** ([OQ-2](../technical-design/README.md#open-questions-register)).
+> **`trace_id` / `span_id` added here 2026-08-23** ([OQ-2](../architecture/technical-design/README.md#open-questions-register)).
 > They were already declared in `base-event-envelope.avsc` and in every event `.avsc` as
 > `["null","string"]` with a `null` default — this section listed eight fields and
 > `15-event-driven-workflow` §15.6 listed ten, and the wire schema agreed with §15.6.
@@ -462,7 +462,7 @@ compatibility) before first producer deployment.
 > Kafka topic names include a `{tenant_id}.` prefix per 07-multi-tenant-architecture section 7.3.
 
 **Event #9 — `method` was made nullable on 2026-08-23**
-([OQ-36](../technical-design/README.md#open-questions-register)). The service emitted
+([OQ-36](../architecture/technical-design/README.md#open-questions-register)). The service emitted
 `{ worker_id, project_id, checked_in_at }` — three fields, one misnamed, against the six this row
 declares. It could not be Avro-encoded at all (`invalid "string": undefined`), and since
 [ADR-094](../architecture/adr/094-durable-event-outbox.md) that failure lands in the outbox poller,
@@ -591,7 +591,7 @@ work.** Verified against `packages/@cos/shared/src/avro/`:
 
 **The one naming conflict is resolved.** Row #16 read `finance.budget.variance_detected.v1` until
 2026-08-23; the name on the wire is `finance.variance.alert.v1`, and the table now says so
-([OQ-16](../technical-design/README.md#open-questions-register)).
+([OQ-16](../architecture/technical-design/README.md#open-questions-register)).
 
 The spec name had **no implementation at all** — no producer, no consumer, no `.avsc`, no
 `EVENT_AVSC_MAP` entry — so aligning the code to it would have been a breaking `.v2` migration
@@ -612,7 +612,7 @@ renaming it is a breaking change by this section's own Event Versioning rules, w
 major version plus a migration consumer bridge — not an edit to a filename. Whether §32.4 #16 changes
 to match the implementation, or the implementation migrates to `.v2` under the spec name, is a
 product-owner decision. Recorded as OQ-16 in
-`docs/technical-design/phase-08-event-infrastructure.md`.
+`docs/architecture/technical-design/phase-08-event-infrastructure.md`.
 
 ---
 

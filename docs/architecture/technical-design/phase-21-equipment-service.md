@@ -7,9 +7,9 @@ authors:
   - thitipongroo
 related_docs:
   - README.md
-  - ../specifications/33-digital-twin-iot.md
-  - ../specifications/32-implementation-specifications.md
-  - ../../context/00_master_construction_os.md
+  - ../../specifications/33-digital-twin-iot.md
+  - ../../specifications/32-implementation-specifications.md
+  - ../../../context/00_master_construction_os.md
 ---
 
 # Phase 21 — Equipment Service

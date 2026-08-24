@@ -191,7 +191,7 @@ These entities are cached for offline reference but not mutated offline :
 ### Clock skew on `client_submitted_at`
 
 **A client's timestamp is capped at the server's clock, with five minutes of tolerance.** Added
-2026-08-23 ([OQ-28](../technical-design/README.md#open-questions-register)); before it, nothing
+2026-08-23 ([OQ-28](../architecture/technical-design/README.md#open-questions-register)); before it, nothing
 bounded the value, so a handset running fast won every last-write-wins merge until someone noticed
 and corrected it — and a phone that has been offline on a site for a week is exactly the device whose
 clock has drifted.

@@ -7,9 +7,9 @@ authors:
   - thitipongroo
 related_docs:
   - README.md
-  - ../specifications/09-data-architecture.md
-  - ../specifications/32-implementation-specifications.md
-  - ../../context/00_master_construction_os.md
+  - ../../specifications/09-data-architecture.md
+  - ../../specifications/32-implementation-specifications.md
+  - ../../../context/00_master_construction_os.md
 ---
 
 # Phase 9 — File + Document System

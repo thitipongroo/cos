@@ -8,9 +8,9 @@ authors:
 related_docs:
   - README.md
   - phase-11-ai-foundation.md
-  - ../specifications/22-ai-architecture.md
-  - ../architecture/adr/038-mlflow-evidently-replace-wandb.md
-  - ../../context/00_master_construction_os.md
+  - ../../specifications/22-ai-architecture.md
+  - ../adr/038-mlflow-evidently-replace-wandb.md
+  - ../../../context/00_master_construction_os.md
 ---
 
 # Phase 23 — MLOps Pipeline

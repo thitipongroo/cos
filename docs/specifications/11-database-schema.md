@@ -570,7 +570,7 @@ Procurement — Delivery :
 
 Procurement — Delivery Item :
 
-Added 2026-08-23 ([OQ-27](../technical-design/README.md#open-questions-register)). The table existed
+Added 2026-08-23 ([OQ-27](../architecture/technical-design/README.md#open-questions-register)). The table existed
 and was load-bearing — it is what the platform sums to decide whether a PO line is fulfilled — but
 §11 never defined it and the Phase 5 entity list omitted it; the only description anywhere was a
 passing sentence in `17-offline-mobile-sync` §17.4.
@@ -1128,7 +1128,7 @@ Relationship :
 
 ## 11.4 Architectural Principle
 
-> **Corrected 2026-08-23** ([OQ-15](../technical-design/README.md#open-questions-register)). This
+> **Corrected 2026-08-23** ([OQ-15](../architecture/technical-design/README.md#open-questions-register)). This
 > section said every record carries `created_by` and `deleted_at` and that **all** records soft-delete.
 > Measured against the live schema: of **271** tables, **22** have `created_by` and **6** have
 > `deleted_at`. The rule was never built, and stating it universally contradicted both §11.0's actual
@@ -1182,7 +1182,7 @@ columns are overwritten, the row stays. A hard delete is not used: it would brea
 (ADR-090 §5). `TENANT_ADMIN` runs it through `POST /api/v1/subject-requests/{id}/erase`, optionally
 snapshotting the rows to a WORM file first under legal hold. It is irreversible by design.
 
-> **Corrected 2026-08-23** ([OQ-48](../technical-design/README.md#open-questions-register)). This
+> **Corrected 2026-08-23** ([OQ-48](../architecture/technical-design/README.md#open-questions-register)). This
 > section said PII-bearing entities "carry a `pii_erased_at` field (nullable timestamp)". **No table
 > in the database has that column** — the mechanism built instead overwrites the values, so there is
 > no timestamp to stamp and no second lifecycle flag. The `Employee` row below is also a
@@ -1256,7 +1256,7 @@ A Keycloak failure is REPORTED, never swallowed and never rolled back: the datab
 already gone and cannot be restored, so the response carries `keycloak_erase_failed` naming any
 account that is erased in Construction OS but still live in the identity provider.
 
-> **Corrected 2026-08-23** ([OQ-48](../technical-design/README.md#open-questions-register)). The
+> **Corrected 2026-08-23** ([OQ-48](../architecture/technical-design/README.md#open-questions-register)). The
 > procedure here previously specified `pii_erased_at = NOW()`, a `WHERE pii_erased_at IS NULL` filter
 > on end-user views, and a four-state lifecycle table built from `deleted_at` × `pii_erased_at`.
 > **No table in the database has that column**, so there is no flag to stamp, nothing to filter on,

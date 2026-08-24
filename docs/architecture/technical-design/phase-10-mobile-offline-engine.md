@@ -7,10 +7,10 @@ authors:
   - thitipongroo
 related_docs:
   - README.md
-  - ../specifications/17-offline-mobile-sync.md
-  - ../specifications/32-implementation-specifications.md
-  - ../architecture/adr/048-drizzle-expo-sqlite-offline-db.md
-  - ../../context/00_master_construction_os.md
+  - ../../specifications/17-offline-mobile-sync.md
+  - ../../specifications/32-implementation-specifications.md
+  - ../adr/048-drizzle-expo-sqlite-offline-db.md
+  - ../../../context/00_master_construction_os.md
 ---
 
 # Phase 10 — Mobile Offline Engine
