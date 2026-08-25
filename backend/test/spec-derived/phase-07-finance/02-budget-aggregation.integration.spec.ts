@@ -369,4 +369,43 @@ describe('Phase 7 · budget aggregation from procurement events (real database)'
       expect(await varianceAlerts(projectId)).toHaveLength(0);
     });
   });
+
+  // ── DTO validation at the HTTP boundary ─────────────────────────────────
+  //
+  // Absorbed from backend/test/finance.integration.spec.ts (deleted 2026-08-25). Of that file's six
+  // cases only these three asserted anything this suite does not: the other three ("returns 201 with
+  // a valid budget payload", "returns a budget summary", "returns 200") are the happy paths the
+  // aggregation tests above already drive end to end, and two of them accepted a 500.
+  //
+  // Money DTOs are worth guarding at this level specifically: the amounts are STRINGS (master:991,
+  // DECIMAL(19,4)), so a missing one is not a type error anywhere — it is a NULL reaching a NOT NULL
+  // column, or worse, a silent zero.
+
+  describe('rejects an incomplete money payload', () => {
+    it('refuses a budget with no total_budget_amount', async () => {
+      const projectId = await newProject();
+      const res = await http()
+        .post(`/api/v1/finance/budget/${projectId}`)
+        .set('x-test-role', 'FINANCE')
+        .send({ total_budget_currency: 'THB' });
+      expect(res.status).toBe(400);
+    });
+
+    it('refuses a budget line with no line_name', async () => {
+      const projectId = await newBudgetedProject();
+      const res = await http()
+        .post(`/api/v1/finance/budget/${projectId}/lines`)
+        .set('x-test-role', 'FINANCE')
+        .send({ allocated_amount: '100000.0000', currency_code: 'THB' });
+      expect(res.status).toBe(400);
+    });
+
+    it('refuses a payment with no invoice_id', async () => {
+      const res = await http()
+        .post('/api/v1/finance/payments')
+        .set('x-test-role', 'FINANCE')
+        .send({ amount: '50000.0000', currency_code: 'THB', payment_date: '2026-06-01' });
+      expect(res.status).toBe(400);
+    });
+  });
 });

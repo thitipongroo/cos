@@ -251,113 +251,12 @@ describe('Project Integration (Testcontainers — PostgreSQL)', () => {
 
   // ─── State Transition Flows ────────────────────────────────────────────────
 
-  describe('State transitions — full lifecycle', () => {
-    let transProjectId: string;
-
-    beforeAll(async () => {
-      mockRole = 'PROJECT_MANAGER';
-      // end_date in the past — required by the COMPLETED transition check
-      const res = await request(app.getHttpServer())
-        .post('/api/v1/projects')
-        .send(
-          buildCreateProjectDto({
-            project_code: 'INT-TRANS-001',
-            project_name: 'Transition Project',
-            project_type: 'RESIDENTIAL',
-            end_date: '2025-01-01',
-          }),
-        )
-        .expect(201);
-      transProjectId = res.body.project_id;
-    });
-
-    it('DRAFT → ACTIVE (PROJECT_MANAGER, allowed)', async () => {
-      mockRole = 'PROJECT_MANAGER';
-      const res = await request(app.getHttpServer())
-        .post(`/api/v1/projects/${transProjectId}/transitions`)
-        .send({ to: 'ACTIVE' })
-        .expect(200);
-
-      expect(res.body.status).toBe('ACTIVE');
-    });
-
-    it('ACTIVE → ON_HOLD (PROJECT_MANAGER + reason, allowed)', async () => {
-      mockRole = 'PROJECT_MANAGER';
-      const res = await request(app.getHttpServer())
-        .post(`/api/v1/projects/${transProjectId}/transitions`)
-        .send({ to: 'ON_HOLD', reason: 'Budget review required' })
-        .expect(200);
-
-      expect(res.body.status).toBe('ON_HOLD');
-      expect(res.body.on_hold_reason).toBe('Budget review required');
-    });
-
-    it('ON_HOLD → ACTIVE (PROJECT_MANAGER, allowed)', async () => {
-      mockRole = 'PROJECT_MANAGER';
-      const res = await request(app.getHttpServer())
-        .post(`/api/v1/projects/${transProjectId}/transitions`)
-        .send({ to: 'ACTIVE' })
-        .expect(200);
-
-      expect(res.body.status).toBe('ACTIVE');
-    });
-
-    it('ACTIVE → COMPLETED (TENANT_ADMIN + past end_date, allowed)', async () => {
-      mockRole = 'TENANT_ADMIN';
-      const res = await request(app.getHttpServer())
-        .post(`/api/v1/projects/${transProjectId}/transitions`)
-        .send({ to: 'COMPLETED' })
-        .expect(200);
-
-      expect(res.body.status).toBe('COMPLETED');
-    });
-
-    it('COMPLETED → ACTIVE → 422 (COMPLETED is terminal)', async () => {
-      mockRole = 'TENANT_ADMIN';
-      await request(app.getHttpServer())
-        .post(`/api/v1/projects/${transProjectId}/transitions`)
-        .send({ to: 'ACTIVE' })
-        .expect(422);
-    });
-  });
-
-  describe('State transitions — CANCELLED terminal', () => {
-    let cancelProjectId: string;
-
-    beforeAll(async () => {
-      mockRole = 'PROJECT_MANAGER';
-      const res = await request(app.getHttpServer())
-        .post('/api/v1/projects')
-        .send(
-          buildCreateProjectDto({
-            project_code: 'INT-CANCEL-001',
-            project_name: 'Cancellation Project',
-            project_type: 'INDUSTRIAL',
-          }),
-        )
-        .expect(201);
-      cancelProjectId = res.body.project_id;
-    });
-
-    it('DRAFT → CANCELLED (TENANT_ADMIN + reason, allowed)', async () => {
-      mockRole = 'TENANT_ADMIN';
-      const res = await request(app.getHttpServer())
-        .post(`/api/v1/projects/${cancelProjectId}/transitions`)
-        .send({ to: 'CANCELLED', reason: 'Client withdrew funding' })
-        .expect(200);
-
-      expect(res.body.status).toBe('CANCELLED');
-      expect(res.body.cancellation_reason).toBe('Client withdrew funding');
-    });
-
-    it('CANCELLED → ACTIVE → 422 (CANCELLED is terminal)', async () => {
-      mockRole = 'TENANT_ADMIN';
-      await request(app.getHttpServer())
-        .post(`/api/v1/projects/${cancelProjectId}/transitions`)
-        .send({ to: 'ACTIVE' })
-        .expect(422);
-    });
-  });
+  // The state machine is NOT tested here any more. spec-derived/phase-03-project/02-state-machine
+  // asserts every edge master:2055-2062 declares AND the refusals this block never had — the role
+  // gate on COMPLETED/CANCELLED, the missing-reason refusals, and the non-edges (DRAFT -> COMPLETED,
+  // DRAFT -> ON_HOLD). The two cases that were unique here — DRAFT -> CANCELLED for a TENANT_ADMIN
+  // with a reason, and CANCELLED being terminal — were moved there before this block was dropped
+  // (2026-08-25), reason persistence included.
 
   // ─── Member Management ─────────────────────────────────────────────────────
 

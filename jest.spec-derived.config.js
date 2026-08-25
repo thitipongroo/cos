@@ -16,7 +16,8 @@ module.exports = {
   testEnvironment: 'node',
   rootDir: __dirname,
   testMatch: ['<rootDir>/tests/spec-derived/**/*.spec.ts'],
-  // *.integration.spec.ts belong to jest.spec-derived-integration.config.js — they boot the
+  // *.integration.spec.ts live under backend/test/spec-derived/ and are run by
+  // backend/jest.integration.config.js (the config CI's test:integration uses) — they boot the
   // NestJS app against Testcontainers. Without this exclusion the offline run matches them too
   // and silently starts a second set of containers alongside the integration run.
   testPathIgnorePatterns: ['/node_modules/', '\\.integration\\.spec\\.ts$'],

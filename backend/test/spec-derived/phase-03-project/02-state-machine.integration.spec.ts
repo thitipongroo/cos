@@ -300,5 +300,31 @@ describe('Phase 3 · project state machine over HTTP (master:2046-2065)', () => 
       const res = await transition(id, 'ARCHIVED_FOREVER', 'TENANT_ADMIN');
       expect(res.status).toBe(400);
     });
+
+    // Absorbed from backend/test/project.integration.spec.ts when its transition block was dropped as
+    // duplicated (2026-08-25). These two were NOT duplicated: the suite above proves CANCELLED is
+    // refused without a reason and refused to a PROJECT_MANAGER, but never that a TENANT_ADMIN with a
+    // reason can actually reach it — and never that it is terminal once reached. A state you can
+    // enter and then leave is not the same state machine.
+
+    it('DRAFT -> CANCELLED is allowed for TENANT_ADMIN with a reason', async () => {
+      const id = await createProject();
+      const res = await transition(id, 'CANCELLED', 'TENANT_ADMIN', 'Client withdrew funding');
+      expect(res.status).toBeLessThan(400);
+      expect(await statusOf(id)).toBe('CANCELLED');
+      // The reason is PERSISTED, not just accepted. A cancellation whose reason was dropped leaves
+      // nobody able to say why the project ended.
+      expect((res.body as { cancellation_reason?: string }).cancellation_reason).toBe(
+        'Client withdrew funding',
+      );
+    });
+
+    it('CANCELLED -> ACTIVE is refused — CANCELLED is terminal', async () => {
+      const id = await createProject();
+      await transition(id, 'CANCELLED', 'TENANT_ADMIN', 'client withdrew');
+      const res = await transition(id, 'ACTIVE', 'TENANT_ADMIN');
+      expect(res.status).toBeGreaterThanOrEqual(400);
+      expect(await statusOf(id)).toBe('CANCELLED');
+    });
   });
 });

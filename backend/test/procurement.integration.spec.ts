@@ -88,7 +88,7 @@ describe('Procurement Integration (Phase 5)', () => {
             contact_email: 'vendor@test.com',
           }),
         );
-      expect([201, 409, 500]).toContain(res.status);
+      expect([201, 409]).toContain(res.status);
     });
 
     it('returns 400 when vendor_code is missing', async () => {
@@ -109,7 +109,7 @@ describe('Procurement Integration (Phase 5)', () => {
           ...buildCreatePurchaseRequestDto({ pr_number: 'PR-001' }),
           project_id: '3fa85f64-5717-4562-b3fc-2c963f66afa6', // required @IsUUID (not in factory type)
         });
-      expect([201, 409, 500]).toContain(res.status);
+      expect([201, 409]).toContain(res.status);
     });
 
     it('returns 400 when pr_number is missing', async () => {
@@ -152,12 +152,34 @@ describe('Procurement Integration (Phase 5)', () => {
   });
 
   describe('POST /api/v1/procurement/purchase-orders/:poId/approve', () => {
-    it('processes the approve route (auth guard overridden in integration → 404 for missing PO)', async () => {
+    // The body used to be typed inline (`@Body() body: { tier: 'PM' | ... }`). A type is erased at
+    // runtime, so ValidationPipe had no class to validate: a request with no body reached
+    // `body.tier` and threw TypeError, which the caller saw as 500. These three assert the DTO is
+    // doing its job — the first two would have been 500 before it existed.
+    it('answers 400 when no body is sent at all', async () => {
       const res = await request(app.getHttpServer()).post(
         '/api/v1/procurement/purchase-orders/00000000-0000-0000-0000-000000000000/approve',
       );
-      // Real JWT can't be issued here, so the guard is overridden; a missing PO resolves to 404.
-      expect([401, 403, 404, 500]).toContain(res.status);
+      expect(res.status).toBe(400);
+    });
+
+    it('answers 400 for a tier outside the approval chain', async () => {
+      // master:1513-1517 names PM / FINANCE / EXECUTIVE / TENANT_ADMIN. Anything else used to be
+      // forwarded straight to the workflow signal.
+      const res = await request(app.getHttpServer())
+        .post('/api/v1/procurement/purchase-orders/00000000-0000-0000-0000-000000000000/approve')
+        .send({ tier: 'INTERN' });
+      expect(res.status).toBe(400);
+    });
+
+    it('gets past validation for a valid tier — the control', async () => {
+      // The PO does not exist, so this cannot succeed; what matters is that it is no longer the
+      // BODY being rejected, and that an unknown PO is not a 500 either.
+      const res = await request(app.getHttpServer())
+        .post('/api/v1/procurement/purchase-orders/00000000-0000-0000-0000-000000000000/approve')
+        .send({ tier: 'PM' });
+      expect(res.status).not.toBe(400);
+      expect(res.status).toBeLessThan(500);
     });
   });
 
@@ -166,7 +188,7 @@ describe('Procurement Integration (Phase 5)', () => {
       const res = await request(app.getHttpServer())
         .get('/api/v1/procurement/vendors')
         .set('Authorization', PROC_TOKEN);
-      expect([200, 500]).toContain(res.status);
+      expect(res.status).toBe(200);
     });
   });
 

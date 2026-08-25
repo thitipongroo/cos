@@ -75,7 +75,33 @@ export class SiteOpsService {
 
   // ── Site Reports ──────────────────────────────────────────────────────────
 
+  /**
+   * Refuse a write whose project does not exist in this tenant, before it reaches the FOREIGN KEY.
+   *
+   * site_reports, issues and inspections all reference projects.projects. Letting an unknown
+   * project_id through produced SQLSTATE 23503, which nothing maps, so the client received a bare
+   * 500 for a request error. buildings.service already answers 404 with a COS-* code for the same
+   * mistake (COS-BLDG-002); this is that rule, applied where the other half of the codebase needed it.
+   *
+   * Tenant-scoped on purpose: a project in ANOTHER tenant must read as "not found", not as a
+   * permission error, so the check cannot be used to probe for foreign project ids.
+   */
+  private async assertProjectExists(projectId: string): Promise<void> {
+    if (!(await this.repo.projectExists(projectId))) {
+      throw new NotFoundException({
+        error: {
+          code: 'COS-SITE-004',
+          message: 'Project not found',
+          messageKey: 'siteops.error.projectNotFound',
+          traceId: this.correlationId,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+  }
+
   async createSiteReport(dto: CreateSiteReportDto) {
+    await this.assertProjectExists(dto.project_id);
     const reportId = randomUUID();
     const report = await this.repo.createSiteReport({
       report_id: reportId,
@@ -304,6 +330,7 @@ export class SiteOpsService {
    * the insert at all; the ON CONFLICT in the repository still covers two replays racing each other.
    */
   async createIssue(dto: CreateIssueDto) {
+    await this.assertProjectExists(dto.project_id);
     // Use the client-provided id when present (offline create → photo linkage, G-M11); else generate.
     const issueId = dto.client_id ?? randomUUID();
 
@@ -492,6 +519,7 @@ export class SiteOpsService {
   // ── Inspections ───────────────────────────────────────────────────────────
 
   async submitInspection(dto: SubmitInspectionDto) {
+    await this.assertProjectExists(dto.project_id);
     const checklist = await this.repo.findChecklistById(dto.checklist_id);
     if (!checklist) {
       throw new NotFoundException({

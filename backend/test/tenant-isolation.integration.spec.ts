@@ -10,7 +10,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { PrismaClient } from '@prisma/client';
-import { createPrismaClient } from '../src/shared/prisma/create-prisma-client';
 import { ClsServiceManager } from 'nestjs-cls';
 import {
   startIntegrationInfra,
@@ -30,21 +29,11 @@ const USER_B_ID = 'bbbbbbbb-0002-4000-8000-000000000022';
 describe('Cross-tenant Isolation (Integration — Testcontainers)', () => {
   let infra: IntegrationInfra;
   let prisma: PrismaClient;
-  // RLS is only enforced for the non-superuser app_user role; the container superuser bypasses it.
-  // A dedicated app_user connection is required to actually exercise the RLS policies.
-  let appUserPrisma: PrismaClient;
   let app: INestApplication;
 
   beforeAll(async () => {
     infra = await startIntegrationInfra();
     prisma = infra.prisma;
-
-    // app_user gets LOGIN + password via migration 20260623000001; build its connection URL by
-    // swapping the superuser credentials on the container URI.
-    const appUrl = new URL(infra.pgUrl);
-    appUrl.username = 'app_user';
-    appUrl.password = 'app_user_dev_password';
-    appUserPrisma = createPrismaClient(appUrl.toString());
 
     // Seed: two tenants with one user each (enums live in the platform schema)
     await prisma.$executeRaw`
@@ -121,37 +110,17 @@ describe('Cross-tenant Isolation (Integration — Testcontainers)', () => {
 
   afterAll(async () => {
     await app?.close();
-    await appUserPrisma?.$disconnect();
     await stopIntegrationInfra(infra);
   });
 
   // ── Layer 1: PostgreSQL RLS ────────────────────────────────────────────────
 
-  describe('PostgreSQL RLS isolation', () => {
-    // SET LOCAL is transaction-scoped and cannot take a bind parameter, so set + query must run in
-    // one transaction via $executeRawUnsafe. Use the app_user connection so RLS is actually enforced.
-    it('returns zero rows when querying tenant B user records with tenant A context', async () => {
-      const rows = await appUserPrisma.$transaction(async (tx) => {
-        await tx.$executeRawUnsafe(`SET LOCAL app.current_tenant_id = '${TENANT_A_ID}'`);
-        return tx.$queryRawUnsafe<{ user_id: string }[]>(
-          `SELECT user_id FROM platform.users WHERE tenant_id = '${TENANT_B_ID}'::uuid`,
-        );
-      });
-      // RLS policy: USING (tenant_id = current_setting('app.current_tenant_id')::uuid)
-      // tenant_id = TENANT_B ≠ current_tenant_id = TENANT_A → filtered out
-      expect(rows).toHaveLength(0);
-    });
-
-    it('returns rows belonging to the current tenant context', async () => {
-      const rows = await appUserPrisma.$transaction(async (tx) => {
-        await tx.$executeRawUnsafe(`SET LOCAL app.current_tenant_id = '${TENANT_A_ID}'`);
-        return tx.$queryRawUnsafe<{ user_id: string }[]>(
-          `SELECT user_id FROM platform.users WHERE tenant_id = '${TENANT_A_ID}'::uuid`,
-        );
-      });
-      expect(rows.length).toBeGreaterThan(0);
-    });
-  });
+  // Layer 1 — PostgreSQL RLS — is NOT here. spec-derived/phase-16-security/01 asserts the same rule
+  // against the same database and goes further: that app_user is neither superuser nor BYPASSRLS
+  // (without which every RLS assertion is vacuous), that an UNSET tenant sees nothing rather than
+  // everything, and that WITH CHECK refuses an insert stamped with another tenant. The two cases
+  // that used to sit here were a strict subset, so they were dropped rather than kept in duplicate
+  // (2026-08-25). What remains below is the HTTP layer, which that suite does not boot.
 
   // ── Layer 2: API layer isolation ──────────────────────────────────────────
 
@@ -162,8 +131,9 @@ describe('Cross-tenant Isolation (Integration — Testcontainers)', () => {
         .set('Authorization', 'Bearer test-token-a')
         .set('x-test-tenant', TENANT_A_ID);
 
-      // 200 or 404 (no projects seeded) — NOT 401 or 403
-      expect([200, 404]).toContain(res.status);
+      // The point is that the request is NOT refused. Listing a tenant's own projects answers 200
+      // with an empty page when none are seeded — a 404 here would mean the route itself is wrong.
+      expect(res.status).toBe(200);
     });
 
     it('returns 403 when user attempts cross-tenant access via PolicyGuard', async () => {

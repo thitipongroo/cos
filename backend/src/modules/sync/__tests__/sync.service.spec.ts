@@ -32,7 +32,7 @@ function harness() {
     // §17.2 exhaustion reports publish through the outbox; every other path here ignores it.
     outbox as never,
   );
-  return { svc, tx, db, siteOps, safety, workforce, annotations, procurement, outbox };
+  return { svc, tx, db, siteOps, safety, workforce, annotations, procurement, equipment, outbox };
 }
 
 const push = (over: Partial<PushItemDto>): PushItemDto => ({
@@ -528,5 +528,174 @@ describe('SyncService', () => {
         't1',
       );
     });
+  });
+});
+
+// ── push: equipment utilization (§17.4, sync priority 7) ───────────────────
+//
+// entity_id is the equipment_id: a utilization row has no id of its own, its identity is the
+// equipment plus the instant. The repository INSERT is ON CONFLICT DO NOTHING against that natural
+// key, which is what makes the retries §17.2 guarantees safe — a replayed push must not inflate
+// summed hours or fuel.
+
+describe('push: equipment', () => {
+  it('records the utilization against the equipment named by entity_id', async () => {
+    const { svc, equipment } = harness();
+    equipment.recordUtilization.mockResolvedValue(undefined);
+
+    await svc.push(
+      push({
+        entity_type: 'equipment',
+        entity_id: 'eq-1',
+        payload: { hours_used: 4.5, fuel_consumed: 12 },
+      }),
+    );
+
+    expect(equipment.recordUtilization).toHaveBeenCalledWith('eq-1', {
+      hours_used: 4.5,
+      fuel_consumed: 12,
+    });
+  });
+
+  it('answers ACCEPTED and echoes the payload back', async () => {
+    // A utilization row has no server-side identity to return, so the client's own payload is the
+    // server_payload — the device needs a shaped answer to clear the item from its queue.
+    const { svc, equipment } = harness();
+    equipment.recordUtilization.mockResolvedValue(undefined);
+    const payload = { hours_used: 4.5 };
+
+    const res = await svc.push(push({ entity_type: 'equipment', entity_id: 'eq-1', payload }));
+
+    expect(res).toEqual({ status: 'ACCEPTED', server_payload: payload });
+  });
+
+  it('does not swallow a failure from the equipment service', async () => {
+    // The device retries on failure; reporting ACCEPTED over a failed write would lose the reading.
+    const { svc, equipment } = harness();
+    equipment.recordUtilization.mockRejectedValue(new Error('equipment not found'));
+
+    await expect(
+      svc.push(push({ entity_type: 'equipment', entity_id: 'eq-1', payload: {} })),
+    ).rejects.toThrow('equipment not found');
+  });
+});
+
+// ── reportExhausted (§17.2) ────────────────────────────────────────────────
+//
+// The device gives up after its retry budget and reports the item once. Two things are load-bearing:
+// the row is idempotent per (tenant_id, client_id) so a resend cannot fill the review queue with
+// duplicates of one failure, and the tenant comes back FROM the insert rather than being read
+// separately — the GUC that RLS enforces the row against is the single source of truth.
+
+describe('reportExhausted', () => {
+  const exhausted = {
+    entity_type: 'safety',
+    entity_id: '00000000-0000-4000-8000-000000000001',
+    operation: 'CREATE',
+    client_id: 'client-abc',
+    payload: { severity: 'HIGH' },
+    retry_count: 5,
+  };
+
+  it('writes the row and returns its id', async () => {
+    const { svc, tx } = harness();
+    tx.$queryRawUnsafe.mockResolvedValue([{ item_id: 'item-1', tenant_id: 'tenant-1' }]);
+
+    await expect(svc.reportExhausted(exhausted as never)).resolves.toEqual({ item_id: 'item-1' });
+  });
+
+  it('takes the tenant from the GUC inside the INSERT, not from TypeScript', async () => {
+    const { svc, tx } = harness();
+    tx.$queryRawUnsafe.mockResolvedValue([{ item_id: 'item-1', tenant_id: 'tenant-1' }]);
+
+    await svc.reportExhausted(exhausted as never);
+
+    const sql = tx.$queryRawUnsafe.mock.calls[0][0] as string;
+    expect(sql).toContain("current_setting('app.current_tenant_id'");
+    expect(sql).toContain('RETURNING item_id, tenant_id');
+  });
+
+  it('is idempotent per client_id', async () => {
+    // ON CONFLICT DO NOTHING returns no row on the repeat. A duplicate report must not create a
+    // second review-queue entry for one failure.
+    const { svc, tx } = harness();
+    tx.$queryRawUnsafe.mockResolvedValue([]);
+
+    const sql = () => tx.$queryRawUnsafe.mock.calls[0][0] as string;
+    await expect(svc.reportExhausted(exhausted as never)).resolves.toEqual({ item_id: null });
+    expect(sql()).toContain('ON CONFLICT (tenant_id, client_id) DO NOTHING');
+  });
+
+  it('emits no second event on the repeat', async () => {
+    // The alert is what pages a human. Re-emitting it on every resend would page them repeatedly for
+    // one stuck item.
+    const { svc, tx, outbox } = harness();
+    tx.$queryRawUnsafe.mockResolvedValue([]);
+
+    await svc.reportExhausted(exhausted as never);
+
+    expect(outbox.publish).not.toHaveBeenCalled();
+  });
+
+  it('publishes platform.sync.exhausted.v1 under the tenant the insert returned', async () => {
+    const { svc, tx, outbox } = harness();
+    tx.$queryRawUnsafe.mockResolvedValue([{ item_id: 'item-1', tenant_id: 'tenant-1' }]);
+
+    await svc.reportExhausted(exhausted as never);
+
+    expect(outbox.publish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event_type: 'platform.sync.exhausted.v1',
+        event_version: '1.0',
+        tenant_id: 'tenant-1',
+      }),
+    );
+  });
+
+  it('carries what the reviewer needs to find the item', async () => {
+    // entity_type drives the notification audience (TENANT_ADMIN plus the operational owner), and
+    // item_id is how the reviewer opens the queue row.
+    const { svc, tx, outbox } = harness();
+    tx.$queryRawUnsafe.mockResolvedValue([{ item_id: 'item-1', tenant_id: 'tenant-1' }]);
+
+    await svc.reportExhausted(exhausted as never);
+
+    expect(outbox.publish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payload: expect.objectContaining({
+          item_id: 'item-1',
+          entity_type: 'safety',
+          entity_id: exhausted.entity_id,
+          operation: 'CREATE',
+          client_id: 'client-abc',
+          retry_count: 5,
+        }),
+      }),
+    );
+  });
+
+  it('defaults an omitted retry_count to 0 in both the row and the event', async () => {
+    const { svc, tx, outbox } = harness();
+    tx.$queryRawUnsafe.mockResolvedValue([{ item_id: 'item-1', tenant_id: 'tenant-1' }]);
+    const { retry_count: _omitted, ...withoutCount } = exhausted;
+
+    await svc.reportExhausted(withoutCount as never);
+
+    // 6th positional arg of the INSERT is retry_count.
+    expect(tx.$queryRawUnsafe.mock.calls[0][6]).toBe(0);
+    expect(outbox.publish).toHaveBeenCalledWith(
+      expect.objectContaining({ payload: expect.objectContaining({ retry_count: 0 }) }),
+    );
+  });
+
+  it('serialises an omitted payload as an empty object, not null', async () => {
+    // The column is jsonb NOT NULL; passing null would fail the insert rather than record the item.
+    const { svc, tx } = harness();
+    tx.$queryRawUnsafe.mockResolvedValue([{ item_id: 'item-1', tenant_id: 'tenant-1' }]);
+    const { payload: _omitted, ...withoutPayload } = exhausted;
+
+    await svc.reportExhausted(withoutPayload as never);
+
+    expect(tx.$queryRawUnsafe.mock.calls[0][5]).toBe('{}');
   });
 });

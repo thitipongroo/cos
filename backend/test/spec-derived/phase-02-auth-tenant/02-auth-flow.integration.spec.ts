@@ -33,7 +33,8 @@ import { AppModule } from '../../../src/app.module';
 import { JwtAuthGuard } from '../../../src/modules/identity/guards/jwt-auth.guard';
 import { KeycloakAdminService } from '../../../src/modules/identity/keycloak-admin.service';
 
-// Matches jest.spec-derived-integration.config.js's testTimeout rather than undercutting it. The
+// Set here rather than left to the config: backend/jest.integration.config.js defaults to 120s for
+// the older route-shaped specs, and a container start plus `prisma migrate deploy` does not fit. The
 // hook cost here is `prisma migrate deploy`, which grows with the migration count — 97 as of
 // 2026-08-25, up from 92 that morning — and this file blew the 240s budget on a run where its two
 // sibling Phase 2 suites still passed. A per-file budget below the config's only turns a slow
@@ -226,10 +227,42 @@ describe('Phase 2 · OTP auth flow end-to-end (master:1963-1966)', () => {
 
   describe('logout (master:1965)', () => {
     it('accepts a logout for the authenticated session', async () => {
+      // 204 exactly: the controller declares @HttpCode(NO_CONTENT), and a body on a revocation reply
+      // is something a client would have to decide whether to trust. Widening this to [200,201,204]
+      // let any of the three pass, which is not a contract.
       const res = await request(app.getHttpServer())
         .post('/api/v1/auth/logout')
         .send({ refreshToken: buildRealmJwt(REALM) });
-      expect([200, 201, 204]).toContain(res.status);
+      expect(res.status).toBe(204);
+    });
+  });
+
+  // ── absorbed from backend/test/auth.integration.spec.ts (2026-08-25) ─────
+  //
+  // The two cases that suite asserted and this one did not. Everything else it held was already
+  // covered here, usually more thoroughly (this suite also proves the 3-attempt lockout and that the
+  // refresh token comes back ROTATED, neither of which it had).
+
+  describe('the OTP request contract', () => {
+    it('tells the caller how long the OTP lasts', async () => {
+      // The client shows a countdown from this number. Without it the only way to learn the window
+      // is to wait for a rejection, and a value that silently drifted from the Redis TTL would have
+      // the UI claim a code is alive after it expired.
+      const res = await request(app.getHttpServer())
+        .post('/api/v1/auth/otp/request')
+        .send({ phoneNumber: PHONE })
+        .expect(200);
+
+      expect((res.body as { expiresInSeconds: number }).expiresInSeconds).toBe(300);
+    });
+
+    it('rejects an OTP of the wrong length at the validation gate', async () => {
+      // Distinct from "wrong OTP": a 4-digit code never reaches the comparison at all, so it must
+      // not consume one of the three attempts the lockout counts.
+      await request(app.getHttpServer())
+        .post('/api/v1/auth/otp/verify')
+        .send({ phoneNumber: PHONE, otp: '1234' })
+        .expect(400);
     });
   });
 });

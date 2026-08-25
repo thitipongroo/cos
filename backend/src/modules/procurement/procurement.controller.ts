@@ -40,6 +40,7 @@ import { CreatePurchaseOrderDto } from './dto/create-purchase-order.dto';
 import { RecordDeliveryDto } from './dto/record-delivery.dto';
 import { ReceiveInvoiceDto } from './dto/receive-invoice.dto';
 import { SetInvoiceNoteDto } from './dto/set-invoice-note.dto';
+import { ApprovePoDto, AwardRfqDto, DisputeInvoiceDto, RejectPoDto } from './dto/po-approval.dto';
 
 // Read access across procurement (spec §06): all office/management + procurement roles.
 const READ_ROLES = [
@@ -267,7 +268,7 @@ export class ProcurementController {
   @ApiOperation({ summary: 'Award RFQ to selected quotation (EVALUATED → AWARDED)' })
   @ApiParam({ name: 'rfqId', type: 'string', format: 'uuid' })
   @HttpCode(HttpStatus.OK)
-  awardRfq(@Param('rfqId', ParseUUIDPipe) rfqId: string, @Body() body: { quotation_id: string }) {
+  awardRfq(@Param('rfqId', ParseUUIDPipe) rfqId: string, @Body() body: AwardRfqDto) {
     return this.svc.awardRfq(rfqId, body.quotation_id);
   }
 
@@ -339,10 +340,7 @@ export class ProcurementController {
   })
   @ApiParam({ name: 'poId', type: 'string', format: 'uuid' })
   @HttpCode(HttpStatus.OK)
-  approvePo(
-    @Param('poId', ParseUUIDPipe) poId: string,
-    @Body() body: { tier: 'PM' | 'FINANCE' | 'EXECUTIVE' | 'TENANT_ADMIN' },
-  ) {
+  approvePo(@Param('poId', ParseUUIDPipe) poId: string, @Body() body: ApprovePoDto) {
     return this.svc.approvePo(poId, body.tier);
   }
 
@@ -352,7 +350,7 @@ export class ProcurementController {
   @ApiOperation({ summary: 'Reject PO — returns to DRAFT for revision' })
   @ApiParam({ name: 'poId', type: 'string', format: 'uuid' })
   @HttpCode(HttpStatus.OK)
-  rejectPo(@Param('poId', ParseUUIDPipe) poId: string, @Body() body: { reason: string }) {
+  rejectPo(@Param('poId', ParseUUIDPipe) poId: string, @Body() body: RejectPoDto) {
     return this.svc.rejectPo(poId, body.reason);
   }
 
@@ -382,7 +380,7 @@ export class ProcurementController {
   @ApiOperation({ summary: 'Dispute invoice (INVOICED → DISPUTED)' })
   @ApiParam({ name: 'poId', type: 'string', format: 'uuid' })
   @HttpCode(HttpStatus.OK)
-  disputeInvoice(@Param('poId', ParseUUIDPipe) poId: string, @Body() body: { reason: string }) {
+  disputeInvoice(@Param('poId', ParseUUIDPipe) poId: string, @Body() body: DisputeInvoiceDto) {
     return this.svc.disputeInvoice(poId, body.reason);
   }
 

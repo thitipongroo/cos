@@ -113,7 +113,7 @@ describe('BOQ Integration (Phase 4)', () => {
       const res = await request(app.getHttpServer())
         .delete('/api/v1/boq/items/00000000-0000-0000-0000-000000000000')
         .set('Authorization', PM_TOKEN);
-      expect([404, 500]).toContain(res.status);
+      expect(res.status).toBe(404);
     });
   });
 

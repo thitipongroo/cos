@@ -119,6 +119,121 @@ describe('WorkforceService', () => {
     });
   });
 
+  // ── check-in event payload (§32.4 row 9) ─────────────────────────────────
+  //
+  // checkin_id, checkin_at and method are REQUIRED with no default in
+  // workforce.checkin.created.v1.avsc. The master:5338 shorthand omitted all three, so the event
+  // could not Avro-encode and every check-in died at the outbox poller — silently, because nothing
+  // downstream complained. analytics-worker builds site_activity_daily.manpower_total from this
+  // event, so the PM dashboard's manpower read zero.
+
+  describe('check-in event payload', () => {
+    const outboxOf = (): ReturnType<typeof makeOutboxDouble> => {
+      const outboxMock = makeOutboxDouble();
+      service = new WorkforceService(
+        req as unknown as ConstructorParameters<typeof WorkforceService>[0],
+        repo as unknown as WorkforceRepository,
+        outboxMock.service,
+      );
+      repo.findWorkerById.mockResolvedValue({ worker_id: 'w1' });
+      repo.recordAttendance.mockResolvedValue({ log_id: 'log-1' });
+      return outboxMock;
+    };
+
+    it('carries the three fields the Avro schema requires with no default', async () => {
+      const outboxMock = outboxOf();
+
+      await service.recordAttendance('w1', {
+        project_id: 'proj-1',
+        check_in_at: '2026-06-08T08:00:00Z',
+        method: 'BIOMETRIC',
+        latitude: 13.75,
+        longitude: 100.5,
+      } as never);
+
+      expect(outboxMock.publish).toHaveBeenCalledWith(
+        expect.objectContaining({
+          payload: expect.objectContaining({
+            checkin_id: 'log-1',
+            checkin_at: '2026-06-08T08:00:00Z',
+            method: 'BIOMETRIC',
+          }),
+        }),
+      );
+    });
+
+    it('defaults the method to MANUAL when the client sends none', async () => {
+      // `method` has no Avro default, so omitting it is not an option — the service supplies one.
+      const outboxMock = outboxOf();
+
+      await service.recordAttendance('w1', {
+        project_id: 'proj-1',
+        check_in_at: '2026-06-08T08:00:00Z',
+      });
+
+      expect(outboxMock.publish).toHaveBeenCalledWith(
+        expect.objectContaining({ payload: expect.objectContaining({ method: 'MANUAL' }) }),
+      );
+    });
+
+    it('sends the location only when BOTH coordinates are present', async () => {
+      const outboxMock = outboxOf();
+
+      await service.recordAttendance('w1', {
+        project_id: 'proj-1',
+        check_in_at: '2026-06-08T08:00:00Z',
+        latitude: 13.75,
+        longitude: 100.5,
+      } as never);
+
+      expect(outboxMock.publish).toHaveBeenCalledWith(
+        expect.objectContaining({
+          payload: expect.objectContaining({ location: { lat: 13.75, lng: 100.5 } }),
+        }),
+      );
+    });
+
+    it.each([
+      ['only a latitude', { latitude: 13.75 }],
+      ['only a longitude', { longitude: 100.5 }],
+      ['neither coordinate', {}],
+    ])('sends a null location for %s', async (_label, coords) => {
+      // Half a coordinate pair is not a location. Emitting { lat, lng: undefined } would either fail
+      // the encode or place the check-in on the equator.
+      const outboxMock = outboxOf();
+
+      await service.recordAttendance('w1', {
+        project_id: 'proj-1',
+        check_in_at: '2026-06-08T08:00:00Z',
+        ...coords,
+      } as never);
+
+      expect(outboxMock.publish).toHaveBeenCalledWith(
+        expect.objectContaining({ payload: expect.objectContaining({ location: null }) }),
+      );
+    });
+
+    it('does not put the check-in shape on a check-OUT event', async () => {
+      // check-out is a different schema: hours_worked, no checkin_id. Sending the check-in payload
+      // under the check-out type would fail the encode the same way.
+      const outboxMock = outboxOf();
+
+      await service.recordAttendance('w1', {
+        project_id: 'proj-1',
+        check_in_at: '2026-06-08T08:00:00Z',
+        check_out_at: '2026-06-08T17:00:00Z',
+      });
+
+      const call = outboxMock.publish.mock.calls[0][0] as {
+        event_type: string;
+        payload: Record<string, unknown>;
+      };
+      expect(call.event_type).toBe('workforce.checkout.created.v1');
+      expect(call.payload).not.toHaveProperty('checkin_id');
+      expect(call.payload).toHaveProperty('hours_worked');
+    });
+  });
+
   describe('timesheet aggregation', () => {
     it('approves timesheet and emits event with total_hours', async () => {
       const outboxMock = makeOutboxDouble();

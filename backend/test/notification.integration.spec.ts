@@ -84,63 +84,63 @@ describe('Notification Integration (Phase 20)', () => {
   // ── GET /notifications ─────────────────────────────────────────────────────
 
   describe('GET /api/v1/notifications', () => {
-    it('returns paginated list (200 or 500 depending on DB availability)', async () => {
+    it('returns paginated list', async () => {
       const res = await request(app.getHttpServer())
         .get('/api/v1/notifications')
         .set('Authorization', USER_TOKEN);
-      expect([200, 500]).toContain(res.status);
+      expect(res.status).toBe(200);
     });
 
     it('accepts page and limit query params', async () => {
       const res = await request(app.getHttpServer())
         .get('/api/v1/notifications?page=2&limit=10')
         .set('Authorization', USER_TOKEN);
-      expect([200, 500]).toContain(res.status);
+      expect(res.status).toBe(200);
     });
   });
 
   // ── PATCH /notifications/read-all ─────────────────────────────────────────
 
   describe('PATCH /api/v1/notifications/read-all', () => {
-    it('returns updated count (200 or 500 depending on DB availability)', async () => {
+    it('returns updated count', async () => {
       const res = await request(app.getHttpServer())
         .patch('/api/v1/notifications/read-all')
         .set('Authorization', USER_TOKEN);
-      expect([200, 500]).toContain(res.status);
+      expect(res.status).toBe(200);
     });
   });
 
   // ── PATCH /notifications/:id/read ─────────────────────────────────────────
 
   describe('PATCH /api/v1/notifications/:id/read', () => {
-    it('returns 204 or 500 depending on DB availability', async () => {
+    it('marks a single notification read', async () => {
       const res = await request(app.getHttpServer())
         .patch(`/api/v1/notifications/${NOTIF_ID}/read`)
         .set('Authorization', USER_TOKEN);
-      expect([204, 500]).toContain(res.status);
+      expect(res.status).toBe(204);
     });
   });
 
   // ── GET /notifications/preferences ────────────────────────────────────────
 
   describe('GET /api/v1/notifications/preferences', () => {
-    it('returns preference list (200 or 500 depending on DB availability)', async () => {
+    it('returns preference list', async () => {
       const res = await request(app.getHttpServer())
         .get('/api/v1/notifications/preferences')
         .set('Authorization', USER_TOKEN);
-      expect([200, 500]).toContain(res.status);
+      expect(res.status).toBe(200);
     });
   });
 
   // ── PATCH /notifications/preferences ──────────────────────────────────────
 
   describe('PATCH /api/v1/notifications/preferences', () => {
-    it('returns 200 with valid preferences payload (or 500 without DB)', async () => {
+    it('returns 200 with valid preferences payload', async () => {
       const res = await request(app.getHttpServer())
         .patch('/api/v1/notifications/preferences')
         .set('Authorization', USER_TOKEN)
         .send({ preferences: [buildNotificationPreferenceDto({ is_enabled: false })] });
-      expect([200, 500]).toContain(res.status);
+      expect(res.status).toBe(200);
     });
 
     it('returns 400 when preferences array is missing', async () => {
@@ -167,12 +167,12 @@ describe('Notification Integration (Phase 20)', () => {
   // ── POST /notifications/device-token ──────────────────────────────────────
 
   describe('POST /api/v1/notifications/device-token', () => {
-    it('returns 200 with valid push token payload (or 500 without DB)', async () => {
+    it('returns 200 with valid push token payload', async () => {
       const res = await request(app.getHttpServer())
         .post('/api/v1/notifications/device-token')
         .set('Authorization', USER_TOKEN)
         .send(buildRegisterDeviceDto());
-      expect([200, 201, 500]).toContain(res.status);
+      expect([200, 201]).toContain(res.status);
     });
 
     it('returns 400 when push_token is missing', async () => {

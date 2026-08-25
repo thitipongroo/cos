@@ -5,6 +5,7 @@ function ctrl() {
   const service = {
     delta: jest.fn().mockResolvedValue({ updated: [], deleted: [], server_timestamp: 't' }),
     push: jest.fn().mockResolvedValue({ status: 'ACCEPTED' }),
+    reportExhausted: jest.fn().mockResolvedValue({ item_id: 'item-1' }),
   };
   return { controller: new SyncController(service as never), service };
 }
@@ -40,5 +41,25 @@ describe('SyncController', () => {
     const { controller, service } = ctrl();
     await controller.resolve(dto);
     expect(service.push).toHaveBeenCalledWith(dto);
+  });
+
+  it('exhausted delegates to reportExhausted, not to push', async () => {
+    // §17.2: a report of a mutation the device STOPPED retrying is not another attempt at it.
+    // Routing it to push() would re-apply the failing write instead of queueing it for review.
+    const { controller, service } = ctrl();
+    const report = {
+      entity_type: 'safety',
+      entity_id: 'e1',
+      operation: 'CREATE',
+      client_id: 'c1',
+      payload: {},
+      retry_count: 5,
+    };
+
+    await expect(controller.reportExhausted(report as never)).resolves.toEqual({
+      item_id: 'item-1',
+    });
+    expect(service.reportExhausted).toHaveBeenCalledWith(report);
+    expect(service.push).not.toHaveBeenCalled();
   });
 });

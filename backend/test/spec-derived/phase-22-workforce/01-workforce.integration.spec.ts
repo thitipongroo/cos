@@ -321,4 +321,77 @@ describe('Phase 22 · workforce over HTTP', () => {
       expect(actors).toEqual([USER_ID]);
     });
   });
+
+  // ── DTO validation at the HTTP boundary ─────────────────────────────────
+  //
+  // Absorbed from backend/test/workforce.integration.spec.ts (deleted 2026-08-25) when the two
+  // workforce suites were merged. Only the STRICT cases came across: 10 of that file's 17 asserted
+  // `expect([201, 404, 500]).toContain(res.status)`, which passes when the endpoint 500s, so they
+  // could not fail and were not worth carrying. These seven assert one status and do fail.
+  //
+  // They belong at this level rather than in a unit test: whether a missing field is rejected
+  // depends on the ValidationPipe being wired with the same options main.ts uses, which only a
+  // booted app can show.
+
+  describe('rejects a malformed payload before it reaches the database', () => {
+    it('refuses a worker with no employee_code', async () => {
+      const res = await api().post('/api/v1/workers').send({
+        full_name: 'Somchai Jaidee',
+        trade_type: 'Carpenter',
+        employment_type: 'PERMANENT',
+      });
+      expect(res.status).toBe(400);
+    });
+
+    it('refuses an employment_type outside the enum', async () => {
+      const res = await api().post('/api/v1/workers').send({
+        employee_code: 'EMP-BAD',
+        full_name: 'Somchai Jaidee',
+        trade_type: 'Carpenter',
+        employment_type: 'FREELANCE',
+      });
+      expect(res.status).toBe(400);
+    });
+
+    it('refuses attendance with no project_id', async () => {
+      // A check-in that names no project cannot be counted into any site's manpower total.
+      const workerId = await createWorker();
+      const res = await api()
+        .post(`/api/v1/workers/${workerId}/attendance`)
+        .send({ check_in_at: '2026-06-12T08:00:00Z' });
+      expect(res.status).toBe(400);
+    });
+
+    it('refuses an allocation whose worker_id is not a UUID', async () => {
+      const res = await api()
+        .post(`/api/v1/projects/${PROJECT_ID}/workforce`)
+        .send({ worker_id: 'not-a-uuid', start_date: '2026-06-12' });
+      expect(res.status).toBe(400);
+    });
+
+    it('refuses an allocation with no start_date', async () => {
+      const workerId = await createWorker();
+      const res = await api()
+        .post(`/api/v1/projects/${PROJECT_ID}/workforce`)
+        .send({ worker_id: workerId });
+      expect(res.status).toBe(400);
+    });
+
+    it('refuses a timesheet with no period_date', async () => {
+      const workerId = await createWorker();
+      const res = await api()
+        .post('/api/v1/timesheets')
+        .send({ worker_id: workerId, project_id: PROJECT_ID });
+      expect(res.status).toBe(400);
+    });
+
+    it('refuses a timesheet whose worker_id is not a UUID', async () => {
+      const res = await api().post('/api/v1/timesheets').send({
+        worker_id: 'not-a-uuid',
+        project_id: PROJECT_ID,
+        period_date: '2026-06-01',
+      });
+      expect(res.status).toBe(400);
+    });
+  });
 });

@@ -8,6 +8,7 @@ import type { Request } from 'express';
 import { TenantPrismaService } from '../tenant/prisma/tenant-prisma.service';
 import { applyCap, capLimit } from '../../shared/pagination/list-cap';
 import { clsTenantId } from '../../shared/context/cls-context';
+import { projectExistsInTenant } from '../project/shared/parent-existence';
 
 // Row types live in ./site-ops.rows; imported here for the method signatures below and re-exported so
 // existing `from './site-ops.repository'` type imports (service, specs) keep resolving.
@@ -39,6 +40,19 @@ export class SiteOpsRepository {
   // resolves even when the request copy does not carry it.
   private get tenantId(): string {
     return this.request.tenantId ?? clsTenantId();
+  }
+
+  /**
+   * True when the project exists in the caller's tenant.
+   *
+   * Delegates to the same helper the spatial repositories use, so the existence SQL lives in one
+   * place. Needed because site_reports, issues and inspections all carry a FOREIGN KEY to
+   * projects.projects (20260822000002_site_ops_foreign_keys): without this check a client-supplied
+   * project_id that does not exist reached PostgreSQL and came back as SQLSTATE 23503, which no
+   * filter maps — so the caller got a bare 500 for what is a request error.
+   */
+  async projectExists(projectId: string): Promise<boolean> {
+    return projectExistsInTenant(this.db, projectId, this.tenantId);
   }
 
   // ── Site Reports ───────────────────────────────────────────────────────

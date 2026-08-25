@@ -10,6 +10,8 @@ import {
   isWithinQuietHours,
   CRITICAL_EVENT_TYPES,
   EVENT_ROLE_MAP,
+  PLATFORM_TENANT_SENTINEL,
+  PLATFORM_HUMAN_GATE_EVENT_TYPE,
 } from '../notification.service';
 import { CANONICAL_EVENT_TYPES } from '@cos/shared';
 
@@ -28,6 +30,7 @@ const templatesFor = (template: unknown): Map<string, unknown> =>
 
 const mockRepo = {
   findUsersByRole: jest.fn(),
+  findSystemAdmins: jest.fn(),
   findDisabledChannels: jest.fn().mockResolvedValue(new Set<string>()),
   findTemplatesByChannel: jest.fn().mockResolvedValue(new Map()),
   createNotification: jest.fn(),
@@ -945,5 +948,231 @@ describe('deliverDigest', () => {
     ).resolves.toBeUndefined();
 
     expect(mockEmail.send).toHaveBeenCalledTimes(2);
+  });
+});
+
+// ── Platform-level delivery (§19.8 human gate) ─────────────────────────────
+//
+// Two entry points reach SYSTEM_ADMINs: an event carrying the platform sentinel as its tenant, and
+// notifySystemAdmins() for the gate that never travels over Kafka at all. Both store the row under
+// the RECIPIENT's tenant — an admin belongs to a tenant of their own, and a row written under
+// "platform" would sit outside every tenant-scoped inbox query and RLS policy, i.e. be invisible.
+
+describe('platform-level events', () => {
+  const admins = [
+    { user_id: 'admin-1', email: 'a1@ops.example', tenant_id: 'tenant-aaa' },
+    { user_id: 'admin-2', email: 'a2@ops.example', tenant_id: 'tenant-bbb' },
+  ];
+
+  // The Kafka-borne platform events. The §19.8 human gate is deliberately NOT one of them — see the
+  // test at the end of this block.
+  const PLATFORM_EVENT = 'platform.enterprise.contract_signed.v1';
+
+  it('resolves recipients from findSystemAdmins, not from the event tenant', async () => {
+    mockRepo.findSystemAdmins.mockResolvedValue(admins);
+    mockRepo.findDisabledChannels.mockResolvedValue(allDisabled()); // isolate routing from delivery
+
+    await svc.handleEvent({
+      event_type: PLATFORM_EVENT,
+      tenant_id: PLATFORM_TENANT_SENTINEL,
+      actor_id: 'system',
+      payload: { tenant_name: 'Acme' },
+    } as never);
+
+    expect(mockRepo.findSystemAdmins).toHaveBeenCalledTimes(1);
+    // A role lookup scoped to "platform" would return nobody — that tenant does not exist.
+    expect(mockRepo.findUsersByRole).not.toHaveBeenCalled();
+  });
+
+  it('stores each row under the admin own tenant, never under the sentinel', async () => {
+    mockRepo.findSystemAdmins.mockResolvedValue(admins);
+    mockRepo.findDisabledChannels.mockResolvedValue(new Set<string>());
+    mockRepo.findTemplatesByChannel.mockResolvedValue(
+      templatesFor({ subject_template: 'Approval needed', body_template: '{{tenant_name}}' }),
+    );
+    mockRepo.createNotification.mockResolvedValue(notifRow);
+
+    await svc.handleEvent({
+      event_type: PLATFORM_EVENT,
+      tenant_id: PLATFORM_TENANT_SENTINEL,
+      actor_id: 'system',
+      payload: { tenant_name: 'Acme' },
+    } as never);
+
+    const tenants = mockRepo.createNotification.mock.calls.map(
+      (c) => (c[0] as { tenant_id: string }).tenant_id,
+    );
+    expect(tenants.length).toBeGreaterThan(0);
+    expect(new Set(tenants)).toEqual(new Set(['tenant-aaa', 'tenant-bbb']));
+    expect(tenants).not.toContain(PLATFORM_TENANT_SENTINEL);
+  });
+
+  it('keeps the human-gate event OUT of the Kafka routing table', async () => {
+    // An entry here would claim a Kafka audience for a message no consumer subscribes to — the exact
+    // shape that left both enterprise events unreachable. It is delivered by notifySystemAdmins()
+    // instead, so handleEvent must decline it rather than half-handle it.
+    expect(EVENT_ROLE_MAP[PLATFORM_HUMAN_GATE_EVENT_TYPE]).toBeUndefined();
+
+    await svc.handleEvent({
+      event_type: PLATFORM_HUMAN_GATE_EVENT_TYPE,
+      tenant_id: PLATFORM_TENANT_SENTINEL,
+      actor_id: 'system',
+      payload: { tenant_name: 'Acme' },
+    } as never);
+
+    expect(mockRepo.findSystemAdmins).not.toHaveBeenCalled();
+    expect(mockRepo.createNotification).not.toHaveBeenCalled();
+  });
+});
+
+describe('notifySystemAdmins', () => {
+  const admins = [
+    { user_id: 'admin-1', email: 'a1@ops.example', tenant_id: 'tenant-aaa' },
+    { user_id: 'admin-2', email: 'a2@ops.example', tenant_id: 'tenant-bbb' },
+  ];
+
+  it('notifies every system admin under their own tenant', async () => {
+    // The §19.8 gate is sent directly by the provisioning workflow — no Kafka event exists to carry
+    // it, which is why this path is not reachable through handleEvent.
+    mockRepo.findSystemAdmins.mockResolvedValue(admins);
+    mockRepo.findDisabledChannels.mockResolvedValue(new Set<string>());
+    mockRepo.findTemplatesByChannel.mockResolvedValue(
+      templatesFor({ subject_template: 'Approval needed', body_template: '{{tenant_name}}' }),
+    );
+    mockRepo.createNotification.mockResolvedValue(notifRow);
+
+    await svc.notifySystemAdmins(PLATFORM_HUMAN_GATE_EVENT_TYPE, { tenant_name: 'Acme' });
+
+    const rows = mockRepo.createNotification.mock.calls.map(
+      (c) => c[0] as { tenant_id: string; recipient_id: string; event_type: string },
+    );
+    expect(rows.length).toBeGreaterThan(0);
+    expect(new Set(rows.map((r) => r.tenant_id))).toEqual(new Set(['tenant-aaa', 'tenant-bbb']));
+    expect(new Set(rows.map((r) => r.recipient_id))).toEqual(new Set(['admin-1', 'admin-2']));
+    expect(rows.every((r) => r.event_type === PLATFORM_HUMAN_GATE_EVENT_TYPE)).toBe(true);
+  });
+
+  it('carries the payload into the rendered body', async () => {
+    mockRepo.findSystemAdmins.mockResolvedValue([admins[0]]);
+    mockRepo.findDisabledChannels.mockResolvedValue(onlyEnabled('IN_APP'));
+    mockRepo.findTemplatesByChannel.mockResolvedValue(
+      templatesFor({
+        subject_template: 'Approval needed',
+        body_template: '{{tenant_name}} waiting',
+      }),
+    );
+    mockRepo.createNotification.mockResolvedValue(notifRow);
+
+    await svc.notifySystemAdmins(PLATFORM_HUMAN_GATE_EVENT_TYPE, { tenant_name: 'Acme' });
+
+    expect(mockRepo.createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({ body: 'Acme waiting' }),
+    );
+  });
+
+  it('does nothing when the installation has no system admins', async () => {
+    mockRepo.findSystemAdmins.mockResolvedValue([]);
+
+    await expect(
+      svc.notifySystemAdmins(PLATFORM_HUMAN_GATE_EVENT_TYPE, { tenant_name: 'Acme' }),
+    ).resolves.toBeUndefined();
+
+    expect(mockRepo.createNotification).not.toHaveBeenCalled();
+  });
+
+  it('one failing admin does not stop the others', async () => {
+    // allSettled, not all: the gate blocks a provisioning workflow, so losing every admin because
+    // one has a broken row would stall the tenant.
+    mockRepo.findSystemAdmins.mockResolvedValue(admins);
+    mockRepo.findDisabledChannels.mockResolvedValue(new Set<string>());
+    mockRepo.findTemplatesByChannel.mockResolvedValue(
+      templatesFor({ subject_template: 'Approval needed', body_template: 'x' }),
+    );
+    mockRepo.createNotification
+      .mockRejectedValueOnce(new Error('insert failed'))
+      .mockResolvedValue(notifRow);
+
+    await expect(
+      svc.notifySystemAdmins(PLATFORM_HUMAN_GATE_EVENT_TYPE, { tenant_name: 'Acme' }),
+    ).resolves.toBeUndefined();
+
+    expect(mockRepo.createNotification.mock.calls.length).toBeGreaterThan(1);
+  });
+});
+
+// ── §17.2 retry-exhaustion audience ────────────────────────────────────────
+//
+// platform.sync.exhausted.v1 is the one route whose audience depends on the PAYLOAD: the review
+// queue belongs to TENANT_ADMIN for every entity type, and the operational alert is added only for
+// the types that have an operational owner. A flat role list would page a safety officer about a
+// material-consumption row.
+
+describe('platform.sync.exhausted.v1 audience', () => {
+  const selector = EVENT_ROLE_MAP['platform.sync.exhausted.v1'] as {
+    rolesFromPayload: (p: Record<string, unknown>) => string[];
+  };
+
+  it('adds the safety owners for a safety entity', () => {
+    expect(selector.rolesFromPayload({ entity_type: 'safety' })).toEqual([
+      'TENANT_ADMIN',
+      'PROJECT_MANAGER',
+      'SAFETY_OFFICER',
+    ]);
+  });
+
+  it.each(['attendance', 'inspection'])('adds the project manager for %s', (entityType) => {
+    expect(selector.rolesFromPayload({ entity_type: entityType })).toEqual([
+      'TENANT_ADMIN',
+      'PROJECT_MANAGER',
+    ]);
+  });
+
+  it('tells only the tenant admin about material_consumption', () => {
+    // §17.2 asks for no operational alert here — the review queue is the whole response.
+    expect(selector.rolesFromPayload({ entity_type: 'material_consumption' })).toEqual([
+      'TENANT_ADMIN',
+    ]);
+  });
+
+  it('still reaches the tenant admin when the payload names no entity type', () => {
+    // The review queue row is written regardless, so an audience of nobody would leave it unowned.
+    expect(selector.rolesFromPayload({})).toEqual(['TENANT_ADMIN']);
+  });
+
+  it('routes the event through the payload selector rather than a fixed role list', async () => {
+    mockRepo.findUsersByRole.mockResolvedValue([{ user_id: 'u1', email: 'a@b.com' }]);
+    mockRepo.findDisabledChannels.mockResolvedValue(allDisabled());
+
+    await svc.handleEvent({
+      event_type: 'platform.sync.exhausted.v1',
+      tenant_id: 'tenant-001',
+      actor_id: 'sync-service',
+      payload: { entity_type: 'safety', entity_id: 'e1' },
+    } as never);
+
+    expect(mockRepo.findUsersByRole).toHaveBeenCalledWith('tenant-001', [
+      'TENANT_ADMIN',
+      'PROJECT_MANAGER',
+      'SAFETY_OFFICER',
+    ]);
+  });
+
+  it('queries nobody when the selector returns an empty audience', async () => {
+    // Guarding on roles.length keeps an empty IN () list out of the query.
+    const empty = { rolesFromPayload: (): string[] => [] };
+    const saved = EVENT_ROLE_MAP['platform.sync.exhausted.v1'];
+    EVENT_ROLE_MAP['platform.sync.exhausted.v1'] = empty;
+    try {
+      await svc.handleEvent({
+        event_type: 'platform.sync.exhausted.v1',
+        tenant_id: 'tenant-001',
+        actor_id: 'sync-service',
+        payload: {},
+      } as never);
+      expect(mockRepo.findUsersByRole).not.toHaveBeenCalled();
+      expect(mockRepo.createNotification).not.toHaveBeenCalled();
+    } finally {
+      EVENT_ROLE_MAP['platform.sync.exhausted.v1'] = saved;
+    }
   });
 });

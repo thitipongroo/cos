@@ -99,6 +99,20 @@ describe('SiteOps Integration (Phase 6)', () => {
       INSERT INTO platform.tenants (tenant_id, tenant_code, tenant_name, keycloak_realm, plan_type, is_active)
       VALUES (${TENANT_ID}::uuid, 'acme_corp', 'SiteOps Integration Tenant', 'siteops-realm', 'STARTER'::platform."PlanType", true)
     `;
+    // The two acting users and the project every site_report hangs off. Seeding only the tenant left
+    // audit_logs.actor_id and site_reports.project_id pointing at rows that do not exist, so the
+    // create endpoint answered 500 on a VALID payload — hidden for as long as the assertion here read
+    // `expect([201, 500]).toContain(res.status)`.
+    await infra.prisma.$executeRaw`
+      INSERT INTO platform.users (user_id, tenant_id, keycloak_user_id, email, display_name)
+      VALUES (${ADMIN_ID}::uuid, ${TENANT_ID}::uuid, 'kc-siteops-admin', 'admin@siteops.test', 'Admin'),
+             (${ENGINEER_ID}::uuid, ${TENANT_ID}::uuid, 'kc-siteops-eng', 'eng@siteops.test', 'Engineer')
+    `;
+    await infra.prisma.$executeRaw`
+      INSERT INTO projects.projects (project_id, tenant_id, project_code, project_name, project_type, status, created_by)
+      VALUES (${PROJECT_ID}::uuid, ${TENANT_ID}::uuid, 'SITEOPS-1', 'SiteOps Project',
+              'RESIDENTIAL'::"ProjectType", 'ACTIVE'::"ProjectStatus", ${ADMIN_ID}::uuid)
+    `;
 
     const module: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
@@ -142,8 +156,8 @@ describe('SiteOps Integration (Phase 6)', () => {
       const res = await request(app.getHttpServer())
         .post('/api/v1/site/reports')
         .set('Authorization', ENGINEER_TOKEN)
-        .send(buildCreateSiteReportDto(REPORT_ID_A, { report_date: '2026-06-04' }));
-      expect([201, 500]).toContain(res.status);
+        .send(buildCreateSiteReportDto(PROJECT_ID, { report_date: '2026-06-04' }));
+      expect(res.status).toBe(201);
     });
 
     it('returns 400 when report_date is missing', async () => {
@@ -194,7 +208,7 @@ describe('SiteOps Integration (Phase 6)', () => {
       const res = await request(app.getHttpServer())
         .get('/api/v1/site/conflict-records')
         .set('Authorization', ENGINEER_TOKEN);
-      expect([200, 500]).toContain(res.status);
+      expect(res.status).toBe(200);
     });
   });
 

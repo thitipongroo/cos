@@ -196,6 +196,22 @@ describe('Phase 15 · HTTP metrics on a booted application', () => {
         expect(paths.size).toBeGreaterThan(1);
       });
   });
+
+  // ── liveness ────────────────────────────────────────────────────────────
+  //
+  // Absorbed from backend/test/auth.integration.spec.ts (deleted 2026-08-25) — it had nothing to do
+  // with auth and was the only HTTP-level assertion on the probe anywhere. This is the endpoint
+  // Kubernetes restarts the pod on, so it has to answer without a tenant, without a token, and
+  // without touching anything that can be slow.
+
+  describe('GET /api/v1/health/live', () => {
+    it('answers 200 with status ok to an unauthenticated caller', async () => {
+      const res = await http().get('/api/v1/health/live');
+
+      expect(res.status).toBe(200);
+      expect((res.body as { status: string }).status).toBe('ok');
+    });
+  });
 });
 
 describe('Phase 15 · W3C trace context (master:4399)', () => {

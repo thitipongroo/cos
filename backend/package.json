@@ -12,7 +12,7 @@
     "type-check": "tsc --noEmit",
     "test": "jest",
     "test:unit": "jest --testPathPatterns='src/'",
-    "test:integration": "jest --config jest.integration.config.js --runInBand",
+    "test:integration": "node --max-old-space-size=8192 ./node_modules/jest/bin/jest.js --config jest.integration.config.js --runInBand",
     "test:workflows": "jest --config jest.workflows.config.js",
     "test:cov": "jest --coverage",
     "test:mutation": "stryker run",

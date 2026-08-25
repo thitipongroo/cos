@@ -11,7 +11,11 @@ const { testRegex: _testRegex, ...base } = baseConfig;
 module.exports = {
   ...base,
   // Re-include test/ (base ignores it for the unit run) and match only the integration specs.
-  testPathIgnorePatterns: ['<rootDir>/node_modules/'],
+  // Temporal *.workflow.spec.ts are EXCLUDED: jest.workflows.config.js owns them and runs them at
+  // maxWorkers 1 because each starts its own time-skipping server. Matching them here too ran the
+  // same file twice, the second time alongside container suites — the exact starvation its own
+  // header warns about.
+  testPathIgnorePatterns: ['<rootDir>/node_modules/', '\\.workflow\\.spec\\.ts$'],
   testMatch: ['<rootDir>/test/**/*.spec.ts'],
   // Stub the Kafka/OpenSearch network clients for every integration spec (AppModule boots them).
   setupFilesAfterEnv: ['<rootDir>/test/helpers/integration-mocks.ts'],

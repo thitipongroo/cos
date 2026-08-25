@@ -187,6 +187,24 @@ describe('MasterDataService', () => {
       ).rejects.toBeInstanceOf(ConflictException);
     });
 
+    it.each([
+      ['a string', 'boom'],
+      ['null', null],
+      ['undefined', undefined],
+    ])('re-throws a %s rejection instead of reading properties off it', async (_label, thrown) => {
+      // The classifier reaches into err.meta.driverAdapterError.cause. A rejection that is not an
+      // object would throw a TypeError inside the CATCH block, replacing the real failure with a
+      // confusing one — so the guard must return false before any property access.
+      mockRepo.createMaterial.mockRejectedValue(thrown);
+      await expect(
+        svc.createMaterial({
+          name: 'X',
+          category: MaterialCategory.STEEL,
+          unit: MaterialUnit.KG,
+        }),
+      ).rejects.toBe(thrown);
+    });
+
     it('re-throws non-unique errors', async () => {
       const dbErr = new Error('connection lost');
       mockRepo.createMaterial.mockRejectedValue(dbErr);

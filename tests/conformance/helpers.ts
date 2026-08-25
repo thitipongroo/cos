@@ -1,5 +1,20 @@
 /**
- * Shared helpers for the spec-derived suite.
+ * Shared helpers for the CONFORMANCE suite.
+ *
+ * These tests do not execute product code. They read source files, migrations, schemas and configs
+ * as text and assert on their content, which buys exactly two things no runtime test can:
+ *
+ *   1. CROSS-SOURCE agreement — two artifacts that must say the same thing but are never loaded
+ *      together at runtime (a Python consumer's topic regex and the Go producer that builds the
+ *      name; an Avro schema, the topic catalogue and the publisher; an OpenAPI document and the
+ *      routes it claims to describe). Nothing exercises both sides in one process, so drift is
+ *      silent until production.
+ *   2. ABSENCE — a rule of the form "this must NOT appear". A passing integration test proves a
+ *      path works; it can never prove a forbidden path is missing.
+ *
+ * Anything an integration test can assert behaviourally belongs there instead, and was removed from
+ * here on 2026-08-25 rather than kept in duplicate.
+ *
  * Not a test file (testMatch only picks up *.spec.ts).
  */
 import * as fs from 'fs';
