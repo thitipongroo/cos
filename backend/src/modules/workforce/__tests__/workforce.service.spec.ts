@@ -14,7 +14,7 @@ jest.mock('@cos/logger', () => ({
 
 import type { WorkforceRepository } from '../workforce.repository';
 
-type MockRequest = { tenantId: string; user: { sub: string } };
+type MockRequest = { tenantId: string; userId: string };
 
 const makeRepo = () => ({
   createWorker: jest.fn(),
@@ -31,9 +31,12 @@ const makeRepo = () => ({
   getManpowerSummary: jest.fn(),
 });
 
+// req.userId — the PLATFORM user UUID. The mock used to supply `user: { sub }`, which is the
+// KEYCLOAK id and, under the Fastify adapter, does not reliably reach a Scope.REQUEST provider at
+// all — so the service read undefined and attributed every event to the literal 'system'.
 const makeReq = (userId = 'user-1', tenantId = 'tenant-1'): MockRequest => ({
   tenantId,
-  user: { sub: userId },
+  userId,
 });
 
 import { NotFoundException } from '@nestjs/common';
@@ -273,8 +276,12 @@ describe('WorkforceService', () => {
     });
   });
 
-  describe('userId fallback to system', () => {
-    it('uses "system" as actor_id when req.user is undefined', async () => {
+  describe('actor attribution when the request carries no user id', () => {
+    it('records the CLS user rather than the literal "system"', async () => {
+      // This used to assert actor_id: 'system'. Every workforce event was then attributed to nobody
+      // — an audit trail that answers "who checked this worker in?" with a placeholder. It did not
+      // crash, unlike the equipment module's version of the same getter, because actor_id lands in
+      // the outbox payload JSON rather than in a UUID column. That is exactly why it survived.
       const outboxMock = makeOutboxDouble();
       const noUserReq = { tenantId: 'tenant-1' };
       repo = makeRepo();
@@ -291,9 +298,9 @@ describe('WorkforceService', () => {
         check_in_at: '2026-06-08T08:00:00Z',
       });
 
-      expect(outboxMock.publish).toHaveBeenCalledWith(
-        expect.objectContaining({ actor_id: 'system' }),
-      );
+      // No CLS context in a bare unit test, so clsUserId() returns '' — the point is that the
+      // fabricated 'system' identity is gone, not that a specific id appears here.
+      expect(outboxMock.publish).toHaveBeenCalledWith(expect.objectContaining({ actor_id: '' }));
     });
   });
 

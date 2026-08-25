@@ -87,7 +87,33 @@ const mockRepo = {
 const mockRequest = { userId: 'user-uuid-001' };
 const mockRequestNoUser = {};
 
-function uniqueError(): Error & { code: string } {
+/**
+ * The error a duplicate ACTUALLY produces on this path.
+ *
+ * Every write in master-data.repository goes through `tx.$queryRaw`, and Prisma 7 on a driver
+ * adapter wraps a failed raw query as P2010 with the driver's SQLSTATE nested underneath. The old
+ * factory set `err.code = '23505'` at the top level — a shape this path never yields — so the tests
+ * below passed against a service whose catch sites could not fire in production. Copied from a real
+ * failure captured in the equipment integration suite.
+ */
+function uniqueError(): Error & { code: string; meta: unknown } {
+  const err = new Error('unique constraint') as Error & { code: string; meta: unknown };
+  err.code = 'P2010';
+  err.meta = {
+    driverAdapterError: {
+      name: 'DriverAdapterError',
+      cause: {
+        kind: 'UniqueConstraintViolation',
+        originalCode: '23505',
+        originalMessage: 'duplicate key value violates unique constraint',
+      },
+    },
+  };
+  return err;
+}
+
+/** The plain driver shape, for a caller that is not on the Prisma raw path. */
+function plainUniqueError(): Error & { code: string } {
   const err = new Error('unique constraint') as Error & { code: string };
   err.code = '23505';
   return err;
@@ -138,6 +164,20 @@ describe('MasterDataService', () => {
 
     it('throws ConflictException on unique violation', async () => {
       mockRepo.createMaterial.mockRejectedValue(uniqueError());
+      await expect(
+        svc.createMaterial({
+          name: 'Dup',
+          category: MaterialCategory.STEEL,
+          unit: MaterialUnit.KG,
+        }),
+      ).rejects.toBeInstanceOf(ConflictException);
+    });
+
+    it('recognises the plain driver shape too, not only the Prisma wrapper', async () => {
+      // A caller off the Prisma raw path reports SQLSTATE at the top level. Both shapes must map to
+      // 409 — narrowing the check to whichever one the tests happened to fabricate is how this went
+      // wrong the first time.
+      mockRepo.createMaterial.mockRejectedValue(plainUniqueError());
       await expect(
         svc.createMaterial({
           name: 'Dup',

@@ -29,7 +29,10 @@ type Channel = (typeof CHANNELS)[number];
 // SafetyVisionModel is built (see that phase's Generate list for the five halves it ships with).
 // The guard in notification.service.spec.ts fails the build if a safety incident/violation event
 // ever enters the catalogue without being added to this set.
-export const CRITICAL_EVENT_TYPES = new Set<string>(['safety.incident.created.v1']);
+export const CRITICAL_EVENT_TYPES = new Set<string>([
+  'safety.incident.created.v1',
+  'safety.violation.detected.v1',
+]);
 
 /**
  * Envelope tenant_id used by platform-level producers (§19.8). It is a sentinel, not a UUID, so it
@@ -144,6 +147,13 @@ export const EVENT_ROLE_MAP: Record<
   'procurement.invoice.received.v1': ['FINANCE'],
   // §19.4 routing — safety incident (Exec/PM/Site Engineer/Safety Officer) + AI risk (Exec/PM)
   'safety.incident.created.v1': ['EXECUTIVE', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SAFETY_OFFICER'],
+  // Same audience as an incident: a detected violation is the thing that precedes one.
+  'safety.violation.detected.v1': [
+    'EXECUTIVE',
+    'PROJECT_MANAGER',
+    'SITE_ENGINEER',
+    'SAFETY_OFFICER',
+  ],
   'ai.risk_prediction.generated.v1': ['EXECUTIVE', 'PROJECT_MANAGER'],
   // Phase 25 — platform-level events (tenant_id='platform', routed to all SYSTEM_ADMINs)
   'platform.enterprise.contract_signed.v1': ['SYSTEM_ADMIN'],

@@ -9,6 +9,7 @@ import { randomUUID } from 'crypto';
 import { Decimal } from '@cos/financial';
 import { EventOutboxService } from '../../shared/events/event-outbox.service';
 import { createLogger } from '@cos/logger';
+import { clsUserId } from '../../shared/context/cls-context';
 import { WorkforceRepository } from './workforce.repository';
 import type {
   WorkerRow,
@@ -37,7 +38,18 @@ export class WorkforceService {
   }
 
   private get userId(): string {
-    return (this.req as Request & { user?: { sub: string } }).user?.sub ?? 'system';
+    // req.userId — the PLATFORM user UUID (TenantContextInterceptor / TenantMiddleware) — with a CLS
+    // fallback, the pattern workforce.controller's /me route already documents: under the Fastify
+    // adapter req.userId may be absent, and JwtAuthGuard publishes the same value to CLS.
+    //
+    // This used to read req.user?.sub. Two things were wrong: `sub` is the KEYCLOAK id
+    // (platform.users.keycloak_user_id per jwt.payload.ts), not the platform user_id; and Passport's
+    // req.user does not reliably reach a Scope.REQUEST provider under Fastify — JwtAuthGuard says so
+    // in its own header. So it fell through to the literal 'system' and every workforce event was
+    // attributed to nobody. Nothing crashed, which is why it went unnoticed: actor_id lands in the
+    // outbox payload JSON, not in a UUID column.
+    const req = this.req as Request & { userId?: string };
+    return req.userId ?? clsUserId();
   }
 
   async createWorker(dto: CreateWorkerDto): Promise<WorkerRow> {
@@ -130,9 +142,25 @@ export class WorkforceService {
         ? 'workforce.checkin.created.v1'
         : 'workforce.checkout.created.v1';
 
+    // The check-in payload is §32.4 row 9, NOT the master:5338 shorthand. checkin_id, checkin_at and
+    // method are required with no default in workforce.checkin.created.v1.avsc, so the shorthand
+    // ({ worker_id, project_id, checked_in_at }) could not Avro-encode at all: every check-in event
+    // failed at the outbox poller instead of reaching Kafka. Nothing surfaced it, and the cost was
+    // downstream — analytics-worker subscribes to this event to build site_activity_daily's
+    // manpower_total, so the PM dashboard's manpower has been reading zero.
     const eventPayload =
       eventType === 'workforce.checkin.created.v1'
-        ? { worker_id: workerId, project_id: dto.project_id, checked_in_at: dto.check_in_at }
+        ? {
+            checkin_id: log.log_id,
+            worker_id: workerId,
+            project_id: dto.project_id,
+            checkin_at: dto.check_in_at,
+            method: dto.method ?? 'MANUAL',
+            location:
+              dto.latitude != null && dto.longitude != null
+                ? { lat: dto.latitude, lng: dto.longitude }
+                : null,
+          }
         : { worker_id: workerId, project_id: dto.project_id, hours_worked: hoursWorked };
 
     await this.emitEvent(eventType, eventPayload);

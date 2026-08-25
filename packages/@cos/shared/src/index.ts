@@ -112,5 +112,6 @@ export type * from './events/finance.contract.signature_recorded.v1';
 export type * from './events/finance.contract.signed.v1';
 export type * from './events/identity.user.password_reset.v1';
 export type * from './events/safety.incident.created.v1';
+export type * from './events/safety.violation.detected.v1';
 export type * from './events/site.issue.escalated.v1';
 export type * from './events/platform.sync.exhausted.v1';

@@ -2649,11 +2649,20 @@ Task Completion Gates (server-side validation — not enforced offline):
     6. Delay        — task.status != 'BLOCKED'
                       The gate itself is live: tasks.service.ts reads the status, and BLOCKED is a
                       valid value a PM can set by hand via PATCH /tasks/:id.
-                      The AUTOMATIC path is NOT built (recorded 2026-08-23). This line used to read
-                      "(construction.delay.detected.v1 event auto-sets task.status = BLOCKED)" as
-                      though it were in place; nothing consumes that event to set the status, and
-                      nothing publishes it either. Both halves are Phase 23 work — see the PRODUCER
-                      item in that phase's Generate list.
+                      The AUTOMATIC path IS built as of 2026-08-25 (Phase 23, product-owner
+                      decision): services/ai-gateway/reports/delay_event.py publishes
+                      construction.delay.detected.v1 and TasksDelayConsumer sets the status.
+                      Between 2026-08-23 and then this line claimed a path that did not exist —
+                      nothing consumed the event and nothing published it either.
+                      SCOPE OF THE AUTOMATIC TRANSITION: only a task in NOT_STARTED or IN_PROGRESS
+                      is moved to BLOCKED. A COMPLETED or CANCELLED task is left alone. The event
+                      carries no ordering guarantee against a completion, so applying it literally
+                      would let a late or replayed forecast un-finish work that is already done —
+                      and the gate exists to stop a delayed task being completed, not to reopen one
+                      that was. A project-level forecast (task_id null) blocks nothing; it still
+                      reaches the Knowledge Graph.
+                      The producer emits only while DelayForecastModel returns a prediction, and
+                      that model is a stub until it has 90+ days of production data.
     7. Material     — linked BOQ item's purchase order has at least one delivery record.
                       Corrected 2026-08-22: this line used to read "with status != 'PENDING'",
                       but `deliveries` has no status column and the entity definition above
@@ -5420,7 +5429,13 @@ Generate:
 - AI provider decisions documented in docs/specifications/22-ai-architecture.md §22.6
 - Unit tests: DAG task functions (with mocked data sources)
 - Integration tests: end-to-end Airflow DAG run with test data
-- PRODUCER for `construction.delay.detected.v1` — added 2026-08-23 after an audit found the event has
+- PRODUCER for `construction.delay.detected.v1` — DONE 2026-08-25. Producer:
+  services/ai-gateway/reports/delay_event.py (beside risk_event.py, which already had the Kafka
+  producer). Second consumer: backend TasksDelayConsumer, which sets task.status = BLOCKED within the
+  scope recorded at §Phase 6 completion gate 6. The Knowledge Graph consumer was already built. The
+  producer emits only once DelayForecastModel returns a prediction, and that model is still a stub.
+  The account of why it was deferred, kept because it is the reason the shape existed at all:
+  added 2026-08-23 after an audit found the event has
   a schema, a topic, a catalogue entry and TWO documented consumers, but nothing anywhere in the
   repository publishes it. `DelayForecastModel` below is the AI_FORECAST source the payload's
   `detected_by` names, which is why the producer belongs to this phase rather than to Phase 12
@@ -5455,10 +5470,15 @@ Generate:
     4. `EVENT_ROLE_MAP` routing AND `SUBSCRIBED_EVENT_TYPES` subscription (a routing entry alone
        decides an audience for a message no consumer asks for)
     5. a system-default notification template — `notifyUser` drops any channel with no template row
-  A guard is already in place: the `§19.6 critical event set` block in
-  `notification.service.spec.ts` fails the build the moment a canonical `safety.*` incident or
-  violation event enters the catalogue without being marked critical. Until then the omission is
-  recorded here rather than invented in code.
+  DONE 2026-08-25 (product-owner decision to build rather than defer again). All five halves shipped:
+  `safety.violation.detected.v1` + .avsc + catalogue entry (payload in spec §32.4 row 22); producer at
+  services/ai-gateway/reports/safety_violation_event.py; membership of CRITICAL_EVENT_TYPES;
+  EVENT_ROLE_MAP routing AND the consumer subscription; and the system-default template in migration
+  20260825000003. The producer emits only once SafetyVisionModel returns an analysis, and that model
+  is still a stub until it has 10,000+ labeled photos.
+  The guard that protected the gap — the `§19.6 critical event set` block in
+  `notification.service.spec.ts` — fired exactly as designed when the event was minted, and now
+  asserts the wiring instead of the absence.
   Product-owner decision 2026-08-25: deferred to this phase rather than named speculatively now,
   because an event type minted before the model exists would fix a name and a payload that the
   model's actual output may not match.

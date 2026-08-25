@@ -56,6 +56,9 @@ export const EVENT_AVSC_MAP: Record<string, string> = {
   'site.conflict.flagged.v1': 'site.conflict.flagged.v1.avsc',
   // Safety (Phase 6) — consumed by Notification Service for §19.3 escalation
   'safety.incident.created.v1': 'safety.incident.created.v1.avsc',
+  // Minted Phase 23 (PO decision 2026-08-25) — the second event §19.6 names as impossible to
+  // disable. Its producer is the SafetyVisionModel serving path in the AI gateway.
+  'safety.violation.detected.v1': 'safety.violation.detected.v1.avsc',
   // Finance
   // Offline sync engine (§17.2): a device gave up delivering a queued mutation. A platform.*
   // event, so it rides the shared platform.events topic rather than a per-tenant one.

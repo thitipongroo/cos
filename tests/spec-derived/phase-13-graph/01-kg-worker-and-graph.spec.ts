@@ -297,8 +297,15 @@ describe('Phase 13 · the Delay node has no source yet — deferred to Phase 23'
           }
         } else if (/\.(ts|py|go)$/.test(e.name) && !/\.(spec|test)\./.test(e.name)) {
           const body = fs.readFileSync(full, 'utf8');
-          // A publish call naming the event — not a type export, not a catalogue entry.
-          if (/publish\w*\([^)]*construction\.delay\.detected/.test(body)) {
+          // A file that BOTH names the event and sends something. The first version looked only for
+          // `publish(...construction.delay.detected...)` on one line, and missed the producer that
+          // actually shipped: the AI gateway holds the event type in a constant and calls
+          // `send_and_wait(topic, ...)` with an f-string topic. It kept answering "nothing publishes
+          // it" after something did — the exact blind spot this estate exists to remove.
+          const namesEvent = /construction\.delay\.detected/.test(body);
+          const sends = /\b(publish\w*|send_and_wait|sendMessage|produce)\s*\(/.test(body);
+          const isConsumer = /kafka\.on\(|ConsumeRegex|case "construction\.delay/.test(body);
+          if (namesEvent && sends && !isConsumer) {
             hits.push(path.relative(repoRoot, full));
           }
         }
@@ -317,16 +324,28 @@ describe('Phase 13 · the Delay node has no source yet — deferred to Phase 23'
     );
   });
 
-  it('nothing publishes it yet', () => {
-    expect(publishers).toEqual([]);
+  it('something publishes it', () => {
+    // Was 'nothing publishes it yet' until Phase 23 (2026-08-25). The deferral is resolved: the
+    // producer ships with BOTH consumers, which is the condition master set for closing it.
+    expect(publishers.length).toBeGreaterThan(0);
+    expect(publishers.some((f) => /delay_event\.py$/.test(f))).toBe(true);
   });
 
-  it('master records the deferral rather than describing it as built', () => {
-    // master:2650 used to state the auto-block as fact. Both halves are now written down as Phase 23
-    // work, which is what makes Rule 38 pick them up when that phase starts.
+  it('the second consumer — the task auto-block — exists too', () => {
+    // The Knowledge Graph consumer was never the problem. §Phase 6 gate 6 stated the auto-block as
+    // fact while no code performed it, so the event was only half-observable: a Delay node appeared
+    // in the graph and nothing changed in the product.
+    expect(exists('backend/src/modules/tasks/tasks.delay.consumer.ts')).toBe(true);
+    expect(read('backend/src/modules/tasks/tasks.module.ts')).toContain('TasksDelayConsumer');
+  });
+
+  it('master describes it as built, with the scope of the transition', () => {
     const master = read('context/00_master_construction_os.md');
-    expect(master).toMatch(/PRODUCER for `construction\.delay\.detected\.v1`/);
-    expect(master).toMatch(/The AUTOMATIC path is NOT built/);
+    expect(master).toMatch(/The AUTOMATIC path IS built/);
+    // The literal reading of "auto-sets task.status = BLOCKED" would let a late or replayed forecast
+    // un-finish completed work, so the consumer narrows it — and the spec now says so rather than
+    // leaving the code quietly stricter than the sentence it implements.
+    expect(master).toMatch(/SCOPE OF THE AUTOMATIC TRANSITION/);
   });
 
   it('the task-completion gate still works without it', () => {

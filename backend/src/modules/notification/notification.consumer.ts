@@ -27,6 +27,7 @@ export const SUBSCRIBED_EVENT_TYPES = [
   'file.document.quarantined.v1',
   // §19.3/§19.4 — consumed so they are notified AND armed for escalation (safety 30m, AI-risk 24h)
   'safety.incident.created.v1',
+  'safety.violation.detected.v1',
   'ai.risk_prediction.generated.v1',
   // §19.8 — platform-level events on the shared platform.events topic, routed to every active
   // SYSTEM_ADMIN. They were present in EVENT_ROLE_MAP but absent here, so the routing entry decided

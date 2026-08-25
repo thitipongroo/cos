@@ -9,6 +9,7 @@ import {
   NotificationService,
   isWithinQuietHours,
   CRITICAL_EVENT_TYPES,
+  EVENT_ROLE_MAP,
 } from '../notification.service';
 import { CANONICAL_EVENT_TYPES } from '@cos/shared';
 
@@ -388,13 +389,18 @@ describe('§19.6 critical event set', () => {
     expect(phantom).toEqual([]);
   });
 
-  it('records that SafetyViolationDetected has no canonical event type yet', () => {
-    // Documents the gap rather than asserting a name that does not exist. Product-owner decision
-    // 2026-08-25: the producer is deferred to Phase 23, where SafetyVisionModel — the only thing in
-    // the specs that detects a violation — is built; see the Phase 23 Generate list in
-    // context/00_master_construction_os.md for the five halves it must ship with. When that lands,
-    // the first test above starts failing and this one is what points at why.
-    expect(CANONICAL_EVENT_TYPES.filter((e) => e.includes('violation'))).toEqual([]);
+  it('has the violation event wired, not merely named', () => {
+    // This slot used to assert that no canonical `violation` event existed — a placeholder for the
+    // §19.6 gap, written so it would fail the day someone minted one. It did (Phase 23, product-owner
+    // decision 2026-08-25), so the assertion becomes the thing the placeholder was protecting:
+    // a critical event is only real when it is ALSO routed, subscribed and templated. Membership of
+    // CRITICAL_EVENT_TYPES alone would mean "cannot be disabled" on a notification never created.
+    const violations = CANONICAL_EVENT_TYPES.filter((e) => e.includes('violation'));
+    expect(violations).toEqual(['safety.violation.detected.v1']);
+    for (const event of violations) {
+      expect(CRITICAL_EVENT_TYPES.has(event)).toBe(true);
+      expect(Object.hasOwn(EVENT_ROLE_MAP, event)).toBe(true);
+    }
   });
 });
 

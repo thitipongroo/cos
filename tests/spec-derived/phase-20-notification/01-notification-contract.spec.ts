@@ -204,10 +204,18 @@ describe('Phase 20 · quiet hours and critical safety (master:5100-5101)', () =>
     expect(svc).toMatch(/if \(!critical && disabledChannels\.has\(channel\)\) continue;/);
   });
 
-  it('treats the safety incident event as critical', () => {
-    expect(svc).toMatch(
-      /export const CRITICAL_EVENT_TYPES = new Set<string>\(\['safety\.incident\.created\.v1'\]\)/,
+  it('treats BOTH events §19.6 names as critical', () => {
+    // §19.6 names SafetyIncidentReported and SafetyViolationDetected. Only the first had a canonical
+    // type when Phase 20 was written, so this asserted a single-entry set. The second was minted in
+    // Phase 23 (`safety.violation.detected.v1`), which is why the assertion is now on membership
+    // rather than on the literal contents — pinning the exact array made a correct addition look
+    // like a regression.
+    const set = svc.slice(
+      svc.indexOf('export const CRITICAL_EVENT_TYPES'),
+      svc.indexOf(']);', svc.indexOf('export const CRITICAL_EVENT_TYPES')),
     );
+    expect(set).toContain("'safety.incident.created.v1'");
+    expect(set).toContain("'safety.violation.detected.v1'");
   });
 });
 

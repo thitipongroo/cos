@@ -17,6 +17,7 @@ import type { Request } from 'express';
 import { randomUUID } from 'crypto';
 import { EventOutboxService } from '../../shared/events/event-outbox.service';
 import { createLogger } from '@cos/logger';
+import { clsUserId } from '../../shared/context/cls-context';
 import { EquipmentRepository } from './equipment.repository';
 import type { EquipmentRow, AssignmentRow, MaintenanceRow } from './equipment.repository';
 import type { CreateEquipmentDto } from './dto/create-equipment.dto';
@@ -86,7 +87,10 @@ export class EquipmentService {
     // why it publishes the context to CLS instead. The getter therefore fell through to the
     // literal 'system', and assigned_by is a NOT NULL UUID: every assignment and every maintenance
     // log died with 22P02 invalid input syntax for type uuid.
-    const userId = (this.req as Request & { userId?: string }).userId;
+    // The CLS fallback is not belt-and-braces: workforce.controller's /me route documents that
+    // under Fastify req.userId "may be absent", and JwtAuthGuard publishes the same value to CLS.
+    // Without it this would 401 on exactly the paths the interceptor misses.
+    const userId = (this.req as Request & { userId?: string }).userId ?? clsUserId();
     if (!userId) throw new UnauthorizedException('No authenticated user on request');
     return userId;
   }

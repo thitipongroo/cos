@@ -156,11 +156,35 @@ export class MasterDataService {
   }
 }
 
+/**
+ * PostgreSQL unique_violation (SQLSTATE 23505).
+ *
+ * Checked in three places because the SQLSTATE sits somewhere different depending on how the query
+ * ran. This repository issues every write through `tx.$queryRaw`, and Prisma 7 on a driver adapter
+ * reports a failed raw query as PrismaClientKnownRequestError with `code: 'P2010'`, burying the
+ * driver's own code at `meta.driverAdapterError.cause.originalCode`:
+ *   {"code":"P2010","meta":{"driverAdapterError":{"cause":{"originalCode":"23505",
+ *    "kind":"UniqueConstraintViolation", ...}}}}
+ * VERIFIED against a live error, not inferred.
+ *
+ * The previous version tested only the top-level `code`, which a raw query never carries — so every
+ * catch site below was dead and a duplicate name answered 500 instead of 409. The unit tests did not
+ * notice because they fabricated `err.code = '23505'`, a shape this path cannot produce.
+ */
 function isUniqueViolation(err: unknown): boolean {
+  if (typeof err !== 'object' || err === null) return false;
+  const e = err as {
+    code?: unknown;
+    meta?: {
+      code?: unknown;
+      driverAdapterError?: { cause?: { originalCode?: unknown; kind?: unknown } };
+    };
+  };
+  const cause = e.meta?.driverAdapterError?.cause;
   return (
-    typeof err === 'object' &&
-    err !== null &&
-    'code' in err &&
-    (err as { code: unknown }).code === '23505'
+    e.code === '23505' ||
+    e.meta?.code === '23505' ||
+    cause?.originalCode === '23505' ||
+    cause?.kind === 'UniqueConstraintViolation'
   );
 }
