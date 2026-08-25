@@ -26,7 +26,9 @@ class TestHandleIoTTelemetryEvent:
         conn = AsyncMock()
         entity_id = uuid4()
         # fetchrow returns entity lookup
-        conn.fetchrow.return_value = {"entity_id": entity_id}
+        # project_id comes back with the entity: twin.state.updated.v1 requires it, and the emitter
+        # used to substitute the entity id for it.
+        conn.fetchrow.return_value = {"entity_id": entity_id, "project_id": uuid4()}
         # execute for INSERT and UPDATE always succeeds
         conn.execute.return_value = None
         # The handler acquires a connection and opens a transaction so it can set
@@ -120,32 +122,100 @@ class TestHandleIoTTelemetryEvent:
 # ─── End-to-end: IoT → TwinState → Kafka divergence event ────────────────────
 
 class TestEndToEndTwinFlow:
+    """IoT telemetry in, twin state out, divergence detected on the state that resulted.
+
+    The previous version of this class ran only generate_divergence_report and asserted that
+    `divergences` was a list and `risk_level` was one of four strings — both true no matter what the
+    engine computed, and neither reached by an IoT event. Its docstring described the full flow, so
+    the gap was invisible to anyone reading the name.
+    """
+
+    @staticmethod
+    def _pool_for(conn):
+        db = asyncmock_pool(conn)
+        db.conn = conn
+        return db
+
     @pytest.mark.asyncio
-    async def test_iot_event_triggers_divergence_detection(self):
-        """
-        Simulate: IoT telemetry event processed → twin state updated →
-        divergence detection run → divergence event produced.
-        """
+    async def test_telemetry_becomes_state_and_a_disagreeing_plan_diverges(self):
         from digital_twin.divergence import generate_divergence_report
 
-        conn = AsyncMock()
-        # Entity list: 1 EQUIPMENT entity
         entity_id = uuid4()
-        conn.fetch.return_value = [
+        redis_client = AsyncMock()
+        redis_client.setex.return_value = None
+
+        # ── Stage 1: the IoT event actually goes through the sync service.
+        sync_conn = AsyncMock()
+        sync_conn.fetchrow.return_value = {"entity_id": entity_id, "project_id": uuid4()}
+        sync_conn.execute.return_value = None
+
+        event = {
+            "equipment_id": "EXCAVATOR-07",
+            "tenant_id": TENANT_ID,
+            "fuel_level": 0.20,
+            "event_type": "equipment.telemetry.location.v1",
+        }
+        twin_state = await handle_iot_telemetry_event(
+            event, db_pool=self._pool_for(sync_conn), redis_client=redis_client
+        )
+
+        assert twin_state is not None
+        assert twin_state.source == StateSource.IOT
+        assert twin_state.attributes["fuel_level"] == 0.20
+
+        # ── Stage 2: divergence runs against THAT state, with a plan that disagrees.
+        div_conn = AsyncMock()
+        div_conn.fetch.return_value = [
             {
                 "entity_id": entity_id,
                 "entity_type": "EQUIPMENT",
-                "digital_ref": None,
-                "confidence": 1.0,
+                # Planned state comes from digital_ref (BIM/schedule). The plan says the machine
+                # should be near-full; the telemetry says it is nearly empty.
+                "digital_ref": json.dumps({"fuel_level": 0.90}),
+                "confidence": twin_state.confidence,
             }
         ]
-        # Latest state: fuel_level 0.2 (low)
-        conn.fetchrow.return_value = {"attributes": json.dumps({"fuel_level": 0.2})}
-        db = asyncmock_pool(conn)
+        div_conn.fetchrow.return_value = {
+            "attributes": json.dumps(dict(twin_state.attributes))
+        }
 
-        report = await generate_divergence_report(PROJECT_ID, TENANT_ID, db_pool=db)
+        report = await generate_divergence_report(
+            PROJECT_ID, TENANT_ID, db_pool=self._pool_for(div_conn)
+        )
 
-        assert report.project_id == UUID(PROJECT_ID)
-        # Divergences may be empty (planned_state is {} until BIM integration)
-        assert isinstance(report.divergences, list)
-        assert report.risk_level in {"LOW", "MEDIUM", "HIGH", "CRITICAL"}
+        # BIM integration is a Phase 24 PREREQUISITE that is not built, so planned_state is empty
+        # for every entity and no divergence can be computed for any of them. The entity is reported
+        # as UNASSESSED rather than as a HIGH divergence against a plan nobody has (product-owner
+        # decision 2026-08-25). The first version of this test asserted a divergence and passed —
+        # for the wrong reason: gap was 1.0 because the plan was EMPTY, not because it disagreed.
+        assert report.divergences == []
+        assert len(report.unassessed) == 1
+        unassessed = report.unassessed[0]
+        assert unassessed.entity_id == entity_id
+        assert unassessed.reason == "NO_PLANNED_STATE"
+        # The reading that came off the telemetry event is carried through, so an operator can see
+        # what IS known even when the plan is not.
+        assert unassessed.actual_state["fuel_level"] == 0.20
+        # An unknown plan is not evidence of risk in either direction.
+        assert report.risk_level == "LOW"
+
+    @pytest.mark.asyncio
+    async def test_the_comparison_still_works_when_a_plan_exists(self):
+        """The engine itself is sound — it is the missing PLAN that makes it unusable today.
+
+        Asserted directly on compute_divergence, because generate_divergence_report cannot supply a
+        plan until BIM integration lands. Without this the UNASSESSED path above would look like the
+        whole story, and a reader could not tell whether the comparison logic worked at all.
+        """
+        from digital_twin.divergence import compute_divergence
+
+        # A plan and a reading that disagree: severity follows the gap.
+        gap, severity = compute_divergence({"fuel_level": 0.90}, {"fuel_level": 0.20}, "EQUIPMENT")
+        assert gap > 0
+        assert severity in {"LOW", "MEDIUM", "HIGH"}
+
+        # CONTROL: identical plan and reading produce no gap at all.
+        same_gap, _ = compute_divergence(
+            {"fuel_level": 0.75}, {"fuel_level": 0.75}, "EQUIPMENT"
+        )
+        assert same_gap == 0.0

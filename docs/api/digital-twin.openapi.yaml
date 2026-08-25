@@ -24,6 +24,34 @@ tags:
     description: Twin entity registration and listing
 
 paths:
+  # Declared before /state so the literal path is not read as a variation of it. master:5610 —
+  # subscribeToStateChanges(projectId): AsyncIterable<TwinStateEvent>. SSE, not WebSocket: the stream
+  # is one-way, it rides the existing L7 path with no upgrade handshake or sticky sessions, and
+  # nothing in this platform speaks WebSocket (§19.2 forbids it for notifications).
+  /projects/{projectId}/state/stream:
+    parameters:
+      - $ref: '#/components/parameters/projectId'
+
+    get:
+      tags: [Twin State]
+      operationId: subscribeToStateChanges
+      summary: Subscribe to twin state changes (Server-Sent Events)
+      description: |
+        A `text/event-stream` of `twin.state.updated` frames for one project, fed by the Digital
+        Twin's Kafka consumer.
+
+        NOT durable: a client that disconnects misses the interval and should re-read
+        `GET /projects/{projectId}/state` on reconnect. The twin is eventually consistent.
+      responses:
+        '200':
+          description: An open event stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
   /projects/{projectId}/state:
     parameters:
       - $ref: '#/components/parameters/projectId'

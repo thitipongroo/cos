@@ -11,6 +11,7 @@ Source: spec §Phase 24 query interface
 
 from __future__ import annotations
 
+import json
 import os
 from datetime import datetime, timezone
 from typing import Any
@@ -20,8 +21,10 @@ import asyncpg
 import redis.asyncio as aioredis
 from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
 
 from auth import get_verified_tenant
+from . import state_stream
 from .divergence import generate_divergence_report
 from .models import (
     DivergenceReport,
@@ -93,6 +96,46 @@ async def get_twin_state(
 
 
 # ─── GET /api/v1/twin/projects/{projectId}/divergence ────────────────────────
+
+@router.get(
+    "/projects/{project_id}/state/stream",
+    summary="Subscribe to twin state changes (Server-Sent Events)",
+    response_class=StreamingResponse,
+)
+async def subscribe_to_state_changes(
+    project_id: UUID,
+    tenant_id: str = Depends(get_verified_tenant),
+):
+    """master:5610 — subscribeToStateChanges(projectId): AsyncIterable<TwinStateEvent>.
+
+    SSE rather than WebSocket: the stream is one-way, which is what the spec's signature says, and a
+    one-way stream rides the existing L7 path with no sticky sessions and no upgrade handshake for a
+    load balancer to get wrong. Nothing in this platform speaks WebSocket and §19.2 forbids it for
+    notifications; introducing the first one for a case with no client-to-server traffic would be
+    the expensive direction to be wrong in.
+
+    Not durable: a client that disconnects misses the interval and re-reads
+    GET /projects/{id}/state on reconnect. The twin is eventually consistent (master:5646).
+    """
+
+    async def _events():
+        # A comment frame first, so the client sees the connection open even before any telemetry
+        # arrives, and so an idle proxy does not close a stream that is working correctly.
+        yield ": twin state stream open\n\n"
+        async for payload in state_stream.subscribe(tenant_id, str(project_id)):
+            yield f"event: twin.state.updated\ndata: {json.dumps(payload)}\n\n"
+
+    return StreamingResponse(
+        _events(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            # Tells nginx not to buffer the stream — buffering turns a live feed into a batch that
+            # arrives when the connection closes.
+            "X-Accel-Buffering": "no",
+        },
+    )
+
 
 @router.get(
     "/projects/{project_id}/divergence",

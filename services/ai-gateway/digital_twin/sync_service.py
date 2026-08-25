@@ -60,7 +60,7 @@ async def handle_iot_telemetry_event(
     async with tenant_scoped(db_pool, tenant_id) as conn:
         row = await conn.fetchrow(
             """
-            SELECT entity_id
+            SELECT entity_id, project_id
             FROM digital_twin.twin_entities
             WHERE physical_ref = $1
               AND tenant_id = $2::uuid
@@ -72,6 +72,7 @@ async def handle_iot_telemetry_event(
             return None
 
         entity_id = row["entity_id"]
+        project_id = row["project_id"]
         recorded_at = datetime.now(timezone.utc)
         confidence = compute_confidence(StateSource.IOT, recorded_at)
 
@@ -114,6 +115,7 @@ async def handle_iot_telemetry_event(
 
     return TwinState(
         entity_id=UUID(str(entity_id)),
+        project_id=UUID(str(project_id)),
         tenant_id=UUID(tenant_id),
         recorded_at=recorded_at,
         attributes=attributes,
