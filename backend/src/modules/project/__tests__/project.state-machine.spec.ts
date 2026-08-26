@@ -7,20 +7,25 @@ import type { ProjectStatus } from '../project.state-machine';
 
 describe('Project State Machine', () => {
   describe('allowedTransitions()', () => {
-    it('returns correct targets from DRAFT', () => {
-      expect(allowedTransitions('DRAFT')).toEqual(expect.arrayContaining(['ACTIVE', 'CANCELLED']));
+    // EXACT sets, not arrayContaining. master:2065 says "Do NOT invent additional states or
+    // transitions", and arrayContaining only proves the listed edges are PRESENT — adding
+    // COMPLETED to DRAFT's targets left all three of these green while breaking the one rule the
+    // spec states as a prohibition. Sorted so the assertion is about membership, not declaration
+    // order, which the spec does not fix.
+    it('DRAFT goes to exactly ACTIVE and CANCELLED (master:2048, 2051)', () => {
+      expect([...allowedTransitions('DRAFT')].sort()).toEqual(['ACTIVE', 'CANCELLED']);
     });
 
-    it('returns correct targets from ACTIVE', () => {
-      expect(allowedTransitions('ACTIVE')).toEqual(
-        expect.arrayContaining(['ON_HOLD', 'COMPLETED', 'CANCELLED']),
-      );
+    it('ACTIVE goes to exactly ON_HOLD, COMPLETED and CANCELLED (master:2048-2050)', () => {
+      expect([...allowedTransitions('ACTIVE')].sort()).toEqual([
+        'CANCELLED',
+        'COMPLETED',
+        'ON_HOLD',
+      ]);
     });
 
-    it('returns correct targets from ON_HOLD', () => {
-      expect(allowedTransitions('ON_HOLD')).toEqual(
-        expect.arrayContaining(['ACTIVE', 'CANCELLED']),
-      );
+    it('ON_HOLD goes to exactly ACTIVE and CANCELLED (master:2048, 2052)', () => {
+      expect([...allowedTransitions('ON_HOLD')].sort()).toEqual(['ACTIVE', 'CANCELLED']);
     });
 
     it('returns empty array from COMPLETED (terminal)', () => {
@@ -82,6 +87,31 @@ describe('Project State Machine', () => {
         endDate: '2020-01-01',
       });
       expect(result.allowed).toBe(true);
+    });
+
+    // master:2061 says ANY -> CANCELLED, and master:2048-2052 lists three sources: DRAFT, ACTIVE and
+    // ON_HOLD. Only the DRAFT one was ever proven to WORK — the other two appeared solely in
+    // refusal cases, so a rule that blocked them outright would have looked correct.
+    it('ACTIVE → CANCELLED succeeds for TENANT_ADMIN with reason (master:2050)', () => {
+      expect(
+        validateTransition({
+          currentStatus: 'ACTIVE',
+          toStatus: 'CANCELLED',
+          actorRole: 'TENANT_ADMIN',
+          reason: 'client withdrew funding',
+        }).allowed,
+      ).toBe(true);
+    });
+
+    it('ON_HOLD → CANCELLED succeeds for TENANT_ADMIN with reason (master:2052)', () => {
+      expect(
+        validateTransition({
+          currentStatus: 'ON_HOLD',
+          toStatus: 'CANCELLED',
+          actorRole: 'TENANT_ADMIN',
+          reason: 'permit permanently revoked',
+        }).allowed,
+      ).toBe(true);
     });
 
     it('DRAFT → CANCELLED succeeds for TENANT_ADMIN with reason', () => {
