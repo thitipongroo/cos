@@ -13,6 +13,40 @@ import { LineMessagingAdapter } from './adapters/line-messaging.adapter';
 
 const logger = createLogger('notification-service');
 
+/**
+ * Run a fan-out where one failure must not stop the rest — and LOG every failure.
+ *
+ * Five call sites in this service used `Promise.allSettled` directly. The isolation is deliberate:
+ * a Safety Officer must still be paged when a Project Manager's row fails to write. What was NOT
+ * deliberate is that `allSettled` absorbs every rejection and returns, so a delivery that failed
+ * left no error, no warning and no trace anywhere — the notification simply never existed, and the
+ * only symptom was a person who was not told something.
+ *
+ * That cost real time on 2026-08-26: an end-to-end test wrote nothing, and locating the reason meant
+ * instrumenting four layers by hand because the failure had already been swallowed. In production
+ * nobody would have been instrumenting.
+ *
+ * Behaviour is unchanged — every task still runs, and this never throws. Only the silence is gone.
+ */
+async function settleAll(
+  operation: string,
+  context: Record<string, unknown>,
+  tasks: ReadonlyArray<Promise<unknown>>,
+): Promise<void> {
+  const results = await Promise.allSettled(tasks);
+  const failures = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
+  if (failures.length === 0) return;
+  logger.error(
+    { ...context, operation, failed: failures.length, of: results.length },
+    'Fan-out had failures — the remaining recipients were still served',
+  );
+  // Each reason separately: one bad address and one broken template are different problems, and a
+  // count alone sends whoever reads this looking in one place for both.
+  for (const f of failures) {
+    logger.error({ ...context, operation, err: f.reason }, 'Fan-out task failed');
+  }
+}
+
 const CHANNELS = ['IN_APP', 'EMAIL', 'LINE'] as const;
 type Channel = (typeof CHANNELS)[number];
 
@@ -207,7 +241,9 @@ export class NotificationService {
         typeof targetId === 'string' && targetId ? [{ user_id: targetId, email: '' }] : [];
     }
 
-    await Promise.allSettled(
+    await settleAll(
+      'handleEvent',
+      { event_type: event.event_type, tenant_id: event.tenant_id },
       recipients.map((r) =>
         this.notifyUser({
           tenant_id: r.tenant_id ?? event.tenant_id,
@@ -230,7 +266,9 @@ export class NotificationService {
    */
   async notifySystemAdmins(eventType: string, payload: Record<string, unknown>): Promise<void> {
     const recipients = await this.repo.findSystemAdmins();
-    await Promise.allSettled(
+    await settleAll(
+      'notifySystemAdmins',
+      { event_type: eventType },
       recipients.map((r) =>
         this.notifyUser({
           tenant_id: r.tenant_id,
@@ -310,7 +348,9 @@ export class NotificationService {
           (await this.isInQuietHours(notif.tenant_id, userId));
         if (!suppressPush) {
           const tokens = await this.repo.findDeviceTokens(notif.tenant_id, userId);
-          await Promise.allSettled(
+          await settleAll(
+            'pushToDevices',
+            { notification_id: notif.notification_id, tenant_id: notif.tenant_id },
             tokens.map((t) =>
               this.push.send({
                 pushToken: t.push_token,
@@ -366,7 +406,9 @@ export class NotificationService {
    */
   async escalate(tenantId: string, roles: string[], subject: string, body: string): Promise<void> {
     const recipients = await this.repo.findUsersByRole(tenantId, roles);
-    await Promise.allSettled(
+    await settleAll(
+      'escalate',
+      { tenant_id: tenantId, roles },
       recipients.map(async (r) => {
         const notif = await this.repo.createNotification({
           tenant_id: tenantId,
@@ -379,7 +421,15 @@ export class NotificationService {
         this.sse.push(r.user_id, notif);
         await this.repo.markSent(tenantId, notif.notification_id);
         if (r.email) {
-          await this.email.send({ to: r.email, subject, body }).catch(() => undefined);
+          // The IN_APP row is already written and marked sent, so a bounce here must not undo the
+          // escalation — but it is still a Project Manager who did not get the mail, so it is logged
+          // rather than discarded.
+          await this.email.send({ to: r.email, subject, body }).catch((err: unknown) => {
+            logger.error(
+              { err, tenant_id: tenantId, recipient_id: r.user_id },
+              'Escalation email failed — the in-app notification was still delivered',
+            );
+          });
         }
       }),
     );
@@ -393,10 +443,21 @@ export class NotificationService {
     body: string,
   ): Promise<void> {
     const recipients = await this.repo.findUsersByRole(tenantId, roles);
-    await Promise.allSettled(
+    await settleAll(
+      'deliverDigest',
+      { tenant_id: tenantId, roles },
       recipients
         .filter((r) => r.email)
-        .map((r) => this.email.send({ to: r.email, subject, body }).catch(() => undefined)),
+        // The per-recipient catch is what keeps one hard bounce from rejecting the whole scheduled
+        // batch (18:00 daily / Mon 08:00). It used to discard the reason with it.
+        .map((r) =>
+          this.email.send({ to: r.email, subject, body }).catch((err: unknown) => {
+            logger.error(
+              { err, tenant_id: tenantId, recipient_id: r.user_id },
+              'Digest email failed for one recipient',
+            );
+          }),
+        ),
     );
   }
 

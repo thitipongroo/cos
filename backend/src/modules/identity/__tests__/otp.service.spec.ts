@@ -162,6 +162,45 @@ describe('OtpService', () => {
     redisMock[dailyKey] = '10';
     await expect(service.requestOtp('+66812345678')).rejects.toMatchObject({ status: 429 });
   });
+
+  // ── the two numbers master:1786-1787 states, asserted as numbers ────────
+  //
+  // Both were only implied before. "TTL 5 minutes" was checked through the `expiresInSeconds` the
+  // response CLAIMS, which is a separate return statement from the `EX` the key is actually stored
+  // with — the two can diverge and the client would count down five minutes for a code that already
+  // died. And "10 per phone per day" was checked by seeding the counter at 10 and expecting a
+  // refusal, which is equally true of a limit of 3: nothing pinned the number.
+
+  it('stores the code with a 5-minute expiry, not just a 5-minute promise (master:1786)', async () => {
+    const phone = '+66812345601';
+    const result = await service.requestOtp(phone);
+
+    // What the caller is TOLD…
+    expect(result.expiresInSeconds).toBe(300);
+    // …and what the key is actually stored with. The attempts counter shares the window on purpose:
+    // an attempts key that outlived the code would carry failures into the next request.
+    expect(expiryMock[`otp:value:${phone}`]).toBe(300);
+    expect(expiryMock[`otp:attempts:${phone}`]).toBe(300);
+  });
+
+  it('allows the tenth request of the day and refuses the eleventh (master:1787)', async () => {
+    // The boundary is the requirement. Seeding the counter at the limit and expecting a refusal
+    // passes for any limit at or below 10; only the pair of assertions fixes it at ten.
+    const phone = '+66812345602';
+    const dailyKey = `otp:daily:${phone}:${new Date().toISOString().slice(0, 10)}`;
+
+    // Nine already spent — the tenth must go through.
+    redisMock[dailyKey] = '9';
+    await expect(service.requestOtp(phone)).resolves.toMatchObject({ expiresInSeconds: 300 });
+    expect(redisMock[dailyKey]).toBe('10');
+
+    // The cooldown is a separate rule and would mask the daily one; clear it so this test is about
+    // the daily limit alone.
+    delete redisMock[`otp:cooldown:${phone}`];
+    delete expiryMock[`otp:cooldown:${phone}`];
+
+    await expect(service.requestOtp(phone)).rejects.toMatchObject({ status: 429 });
+  });
 });
 
 describe('OtpService — delivery is env-independent now (ADR-040)', () => {

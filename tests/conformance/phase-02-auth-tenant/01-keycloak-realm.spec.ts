@@ -88,6 +88,47 @@ describe('Phase 2 · realm protocol mappers (master:1927-1928)', () => {
     const names = files.map((f) => (JSON.parse(read(f)) as { realm?: string }).realm);
     expect(names.every((n) => typeof n === 'string' && n.length > 0)).toBe(true);
   });
+
+  // ── the session contract lives in this file, so it is checked here ──────
+  //
+  // master:1763 and 1772 fix the access token at 15 minutes and the refresh token at 7 days, and
+  // master:1956 requires refresh-token ROTATION. None of the three is implemented in application
+  // code: identity.service.refreshAccessToken proxies the grant to Keycloak and its own comment
+  // says "Keycloak rotates the refresh token (revokeRefreshToken=true, refreshTokenMaxReuse=0)".
+  // The realm JSON IS the implementation.
+  //
+  // Nothing in the estate asserted any of the four values before 2026-08-26. Setting
+  // revokeRefreshToken to false would leave every suite green while refresh tokens stopped rotating
+  // — a stolen refresh token then stays usable for the full seven days. There is no runtime test
+  // that could catch it either: it would take a live Keycloak and a stopwatch.
+
+  const realmJson = (f: string): Record<string, unknown> =>
+    JSON.parse(read(f)) as Record<string, unknown>;
+
+  it('sets the access token to 15 minutes (master:1763, 1772)', () => {
+    for (const f of files) {
+      expect(realmJson(f)['accessTokenLifespan']).toBe(900);
+    }
+  });
+
+  it('sets the session to 7 days, the refresh-token lifetime the spec names', () => {
+    // ssoSessionMaxLifespan is the hard ceiling on the refresh token: Keycloak will not refresh past
+    // it however recently the user was active.
+    for (const f of files) {
+      expect(realmJson(f)['ssoSessionMaxLifespan']).toBe(604800);
+    }
+  });
+
+  it('rotates the refresh token and forbids reuse (master:1956)', () => {
+    // The two settings only work as a pair. revokeRefreshToken alone still permits
+    // refreshTokenMaxReuse replays of the old token, which is not rotation — it is rotation with an
+    // exception, and the exception is the whole attack.
+    for (const f of files) {
+      const realm = realmJson(f);
+      expect(realm['revokeRefreshToken']).toBe(true);
+      expect(realm['refreshTokenMaxReuse']).toBe(0);
+    }
+  });
 });
 
 describe('Phase 2 · shared realm name (master:1932; context.md:214)', () => {

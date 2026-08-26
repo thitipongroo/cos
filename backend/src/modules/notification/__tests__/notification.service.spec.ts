@@ -1,9 +1,20 @@
 // Unit tests — Notification Service (Phase 20)
 // Focus: template rendering, consumer routing, preference filtering.
 
-jest.mock('@cos/logger', () => ({
-  createLogger: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }),
-}));
+// The logger's fns are HOISTED so tests can assert on them. The previous mock built a fresh object
+// on every createLogger() call, so nothing could see what was logged — which is precisely how a
+// fan-out that swallowed every failure stayed green for as long as it did.
+jest.mock('@cos/logger', () => {
+  const error = jest.fn();
+  const warn = jest.fn();
+  return {
+    createLogger: () => ({ info: jest.fn(), warn, error, debug: jest.fn() }),
+    __log: { error, warn },
+  };
+});
+const { __log: log } = jest.requireMock('@cos/logger') as {
+  __log: { error: jest.Mock; warn: jest.Mock };
+};
 
 import {
   NotificationService,
@@ -1174,5 +1185,142 @@ describe('platform.sync.exhausted.v1 audience', () => {
     } finally {
       EVENT_ROLE_MAP['platform.sync.exhausted.v1'] = saved;
     }
+  });
+});
+
+// ── a failed delivery is never silent ──────────────────────────────────────
+//
+// Every fan-out in this service isolates its recipients on purpose: a Safety Officer must still be
+// paged when a Project Manager's row fails to write. `Promise.allSettled` gave that isolation and
+// took the reason with it — a delivery that failed produced no error, no warning and no trace, and
+// the only symptom was a person who was not told something.
+//
+// These assert the LOG, not the isolation. The isolation is already covered above, and it stayed
+// green throughout the years the failures were invisible — which is the point: coverage of the
+// resilience path says nothing about whether anyone can find out what went wrong.
+
+describe('fan-out failures are reported', () => {
+  /**
+   * Every message passed to logger.error, with the err's MESSAGE pulled out.
+   *
+   * Not JSON.stringify on the call args: an Error's `message` and `stack` are non-enumerable, so a
+   * stringified `{ err }` reads as `{}` and an assertion against it fails while the code is correct.
+   * Pino's own err serializer does the equivalent unwrapping at runtime.
+   */
+  const loggedReasons = (): string[] =>
+    log.error.mock.calls.map((c) => {
+      const ctx = c[0] as { err?: unknown };
+      const err = ctx.err;
+      const reason = err instanceof Error ? err.message : String(err ?? '');
+      return `${JSON.stringify({ ...ctx, err: undefined })} ${reason}`;
+    });
+  const admins = [
+    { user_id: 'admin-1', email: 'a1@ops.example', tenant_id: 'tenant-aaa' },
+    { user_id: 'admin-2', email: 'a2@ops.example', tenant_id: 'tenant-bbb' },
+  ];
+
+  const routedEvent = {
+    event_type: 'site.inspection.failed.v1',
+    tenant_id: 'tenant-001',
+    actor_id: 'user-1',
+    payload: { project_id: 'proj-1' },
+  } as never;
+
+  it('logs the reason when a recipient fails in handleEvent', async () => {
+    mockRepo.findUsersByRole.mockResolvedValue([{ user_id: 'u1', email: 'a@b.com' }]);
+    mockRepo.findDisabledChannels.mockResolvedValue(new Set<string>());
+    mockRepo.findTemplatesByChannel.mockResolvedValue(
+      templatesFor({ subject_template: 'S', body_template: 'B' }),
+    );
+    mockRepo.createNotification.mockRejectedValue(new Error('insert exploded'));
+
+    await svc.handleEvent(routedEvent);
+
+    expect(log.error).toHaveBeenCalled();
+    // The REASON, not just a count: "2 of 5 failed" sends whoever reads it looking with nothing.
+    const logged = loggedReasons().join(' | ');
+    expect(logged).toContain('insert exploded');
+    expect(logged).toContain('handleEvent');
+  });
+
+  it('says how many of how many failed', async () => {
+    // One bad address and one broken template are different problems; the ratio is what tells an
+    // operator whether this is one recipient or the whole route.
+    mockRepo.findUsersByRole.mockResolvedValue([
+      { user_id: 'u1', email: 'a@b.com' },
+      { user_id: 'u2', email: 'c@d.com' },
+    ]);
+    mockRepo.findDisabledChannels.mockResolvedValue(new Set<string>());
+    mockRepo.findTemplatesByChannel.mockResolvedValue(
+      templatesFor({ subject_template: 'S', body_template: 'B' }),
+    );
+    mockRepo.createNotification
+      .mockRejectedValueOnce(new Error('first failed'))
+      .mockResolvedValue(notifRow);
+
+    await svc.handleEvent(routedEvent);
+
+    const summary = log.error.mock.calls.find((c) => (c[0] as { failed?: number }).failed);
+    expect(summary).toBeDefined();
+    expect((summary![0] as { failed: number; of: number }).failed).toBe(1);
+    expect((summary![0] as { failed: number; of: number }).of).toBe(2);
+  });
+
+  it('stays silent when every recipient succeeds', async () => {
+    // The control. A fan-out that logged on success would bury the real failures in noise, which is
+    // the other way to make them invisible.
+    mockRepo.findUsersByRole.mockResolvedValue([{ user_id: 'u1', email: 'a@b.com' }]);
+    mockRepo.findDisabledChannels.mockResolvedValue(new Set<string>());
+    mockRepo.findTemplatesByChannel.mockResolvedValue(
+      templatesFor({ subject_template: 'S', body_template: 'B' }),
+    );
+    mockRepo.createNotification.mockResolvedValue(notifRow);
+
+    await svc.handleEvent(routedEvent);
+
+    expect(log.error).not.toHaveBeenCalled();
+  });
+
+  it('logs the reason when a system admin fails in notifySystemAdmins', async () => {
+    mockRepo.findSystemAdmins.mockResolvedValue(admins);
+    mockRepo.findDisabledChannels.mockResolvedValue(new Set<string>());
+    mockRepo.findTemplatesByChannel.mockResolvedValue(
+      templatesFor({ subject_template: 'S', body_template: 'B' }),
+    );
+    mockRepo.createNotification.mockRejectedValue(new Error('admin insert failed'));
+
+    await svc.notifySystemAdmins(PLATFORM_HUMAN_GATE_EVENT_TYPE, { tenant_name: 'Acme' });
+
+    expect(loggedReasons().join(' | ')).toContain('admin insert failed');
+  });
+
+  it('logs a digest email that bounced, per recipient', async () => {
+    // The digest is a scheduled fan-out. The per-recipient catch is what stops one hard bounce
+    // rejecting the batch; it used to discard the bounce with it.
+    mockRepo.findUsersByRole.mockResolvedValue([
+      { user_id: 'pm1', email: 'bounces@b.com' },
+      { user_id: 'pm2', email: 'ok@b.com' },
+    ]);
+    mockEmail.send
+      .mockRejectedValueOnce(new Error('550 mailbox unavailable'))
+      .mockResolvedValueOnce(undefined);
+
+    await svc.deliverDigest('tenant-001', ['PROJECT_MANAGER'], 'Daily site summary', 'Body');
+
+    const logged = loggedReasons().join(' | ');
+    expect(logged).toContain('550 mailbox unavailable');
+    expect(logged).toContain('pm1');
+  });
+
+  it('logs an escalation email that bounced, and still keeps the in-app row', async () => {
+    mockRepo.findUsersByRole.mockResolvedValue([{ user_id: 'pm1', email: 'bounces@b.com' }]);
+    mockRepo.createNotification.mockResolvedValue(notifRow);
+    mockRepo.markSent.mockResolvedValue(undefined);
+    mockEmail.send.mockRejectedValue(new Error('550 escalation bounce'));
+
+    await svc.escalate('tenant-001', ['PROJECT_MANAGER'], 'Escalated', 'Body');
+
+    expect(mockRepo.markSent).toHaveBeenCalled();
+    expect(loggedReasons().join(' | ')).toContain('550 escalation bounce');
   });
 });
