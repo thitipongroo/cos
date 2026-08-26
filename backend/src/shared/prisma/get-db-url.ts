@@ -5,9 +5,9 @@
 // enterprise tenants (already an app-role URL), else APP_DATABASE_URL for shared tenants. It must
 // never return the RLS-bypassing DATABASE_URL superuser (spec §7.7, QM-18, ADR-008).
 
-import { createPrismaClient } from '../../../shared/prisma/create-prisma-client';
-import { appDatabaseUrl } from '../../../shared/prisma/app-database-url';
-import { decryptDedicatedDbUrl } from './dedicated-db-url-cipher';
+import { createPrismaClient } from './create-prisma-client';
+import { appDatabaseUrl } from './app-database-url';
+import { decryptDedicatedDbUrl } from '../crypto/dedicated-db-url-cipher';
 
 export async function getDbUrlForTenant(tenantId: string): Promise<string> {
   const prisma = createPrismaClient(process.env['DATABASE_URL']);

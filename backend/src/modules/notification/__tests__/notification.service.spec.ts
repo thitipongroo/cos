@@ -16,6 +16,21 @@ const { __log: log } = jest.requireMock('@cos/logger') as {
   __log: { error: jest.Mock; warn: jest.Mock };
 };
 
+/**
+ * Every message passed to logger.error, with the err's MESSAGE pulled out.
+ *
+ * Not JSON.stringify on the call args: an Error's `message` and `stack` are non-enumerable, so a
+ * stringified `{ err }` reads as `{}` and the assertion fails while the code is correct. Pino's own
+ * err serializer does the equivalent unwrapping at runtime.
+ */
+const loggedReasons = (): string[] =>
+  log.error.mock.calls.map((c) => {
+    const ctx = c[0] as { err?: unknown };
+    const err = ctx.err;
+    const reason = err instanceof Error ? err.message : String(err ?? '');
+    return `${JSON.stringify({ ...ctx, err: undefined })} ${reason}`;
+  });
+
 import {
   NotificationService,
   isWithinQuietHours,
@@ -1200,20 +1215,6 @@ describe('platform.sync.exhausted.v1 audience', () => {
 // resilience path says nothing about whether anyone can find out what went wrong.
 
 describe('fan-out failures are reported', () => {
-  /**
-   * Every message passed to logger.error, with the err's MESSAGE pulled out.
-   *
-   * Not JSON.stringify on the call args: an Error's `message` and `stack` are non-enumerable, so a
-   * stringified `{ err }` reads as `{}` and an assertion against it fails while the code is correct.
-   * Pino's own err serializer does the equivalent unwrapping at runtime.
-   */
-  const loggedReasons = (): string[] =>
-    log.error.mock.calls.map((c) => {
-      const ctx = c[0] as { err?: unknown };
-      const err = ctx.err;
-      const reason = err instanceof Error ? err.message : String(err ?? '');
-      return `${JSON.stringify({ ...ctx, err: undefined })} ${reason}`;
-    });
   const admins = [
     { user_id: 'admin-1', email: 'a1@ops.example', tenant_id: 'tenant-aaa' },
     { user_id: 'admin-2', email: 'a2@ops.example', tenant_id: 'tenant-bbb' },
@@ -1322,5 +1323,91 @@ describe('fan-out failures are reported', () => {
 
     expect(mockRepo.markSent).toHaveBeenCalled();
     expect(loggedReasons().join(' | ')).toContain('550 escalation bounce');
+  });
+});
+
+// ── notifyUserCritical (master:5041) ───────────────────────────────────────
+//
+// The single-recipient door. Three places in identity sent mail with SendGridAdapter directly
+// because this service could not address one person — every other entry resolves recipients from a
+// ROLE or an event envelope. Two now come through here; the third cannot, because its recipient is
+// a crm.contacts row rather than a platform user.
+//
+// The point of the method is what it does NOT consult: preferences and quiet hours. A verification
+// code the user silenced is a user who cannot finish their own login, and a statutory data-subject
+// notice that a preference suppressed is a compliance failure.
+
+describe('notifyUserCritical', () => {
+  const params = {
+    tenant_id: 'tenant-001',
+    user_id: 'user-1',
+    email: 'user@example.com',
+    event_type: 'identity.step_up.challenge.v1',
+    subject: 'Construction OS verification code',
+    body: 'Your code is 123456',
+  };
+
+  beforeEach(() => {
+    mockRepo.createNotification.mockResolvedValue(notifRow);
+    mockRepo.markSent.mockResolvedValue(undefined);
+    mockEmail.send.mockResolvedValue(undefined);
+  });
+
+  it('writes the row under the named recipient and marks it sent', async () => {
+    // The row is the whole reason this exists rather than a direct SendGrid call: it is the record
+    // that the person WAS notified.
+    await svc.notifyUserCritical(params);
+
+    expect(mockRepo.createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenant_id: 'tenant-001',
+        recipient_id: 'user-1',
+        channel: 'IN_APP',
+        event_type: 'identity.step_up.challenge.v1',
+        subject: params.subject,
+        body: params.body,
+      }),
+    );
+    expect(mockRepo.markSent).toHaveBeenCalled();
+  });
+
+  it('sends the email without consulting preferences or quiet hours', async () => {
+    // The assertion that matters is the ABSENCE of the two lookups. A future refactor that routed
+    // this through the ordinary channel loop would start honouring an opt-out, and the symptom
+    // would be one user who never receives their code — not an error anywhere.
+    await svc.notifyUserCritical(params);
+
+    expect(mockEmail.send).toHaveBeenCalledWith(
+      expect.objectContaining({ to: 'user@example.com', subject: params.subject }),
+    );
+    expect(mockRepo.findDisabledChannels).not.toHaveBeenCalled();
+    expect(mockRepo.getUserQuietHours).not.toHaveBeenCalled();
+  });
+
+  it('pushes to the in-app stream as well as the mailbox', async () => {
+    await svc.notifyUserCritical(params);
+    expect(mockSse.push).toHaveBeenCalledWith('user-1', notifRow);
+  });
+
+  it('keeps the in-app row when the email bounces, and says so', async () => {
+    // A bounce must not undo a challenge that is already recorded — but a code nobody received is a
+    // person who cannot finish what they started, so it has to be findable.
+    mockEmail.send.mockRejectedValue(new Error('550 mailbox unavailable'));
+
+    await expect(svc.notifyUserCritical(params)).resolves.toBeUndefined();
+
+    expect(mockRepo.markSent).toHaveBeenCalled();
+    const logged = loggedReasons().join(' | ');
+    expect(logged).toContain('550 mailbox unavailable');
+    expect(logged).toContain('identity.step_up.challenge.v1');
+  });
+
+  it('still writes the row when the recipient has no address on file', async () => {
+    // phone_number is nullable and so, for some seeded accounts, is email. The in-app row is then
+    // the only delivery — dropping it as well would leave nothing at all.
+    await svc.notifyUserCritical({ ...params, email: '' });
+
+    expect(mockRepo.createNotification).toHaveBeenCalled();
+    expect(mockEmail.send).not.toHaveBeenCalled();
   });
 });

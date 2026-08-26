@@ -25,7 +25,7 @@ import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { ConsentService } from './consent.service';
 import { NetworkOriginService } from '../network-origin/network-origin.service';
 import { RecordConsentDto } from '../dto/record-consent.dto';
-import type { TenantRequest } from '../../tenant/tenant.middleware';
+import type { TenantRequest } from '../../../shared/context/tenant-request';
 
 @ApiTags('users')
 @ApiBearerAuth()

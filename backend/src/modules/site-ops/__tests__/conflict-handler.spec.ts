@@ -418,3 +418,90 @@ describe('resolveAnnotationConflict', () => {
     expect(result.server_version).toBe(1);
   });
 });
+
+// ── what the merge does NOT take from the client ───────────────────────────
+//
+// master:2583-2589 names exactly four merged fields and gives a rule for each: description and
+// resolution_note last-writer-wins, status server-wins, photos "union of both — the set only
+// grows". Photos are not a column on site_ops.issues at all: they are rows in files.file_metadata
+// keyed by (entity_type, entity_id), so the union holds because nothing in the issue payload can
+// touch them.
+//
+// What makes that TRUE is one line in the resolver — `{ ...serverRow, <three fields> }`. It spreads
+// the SERVER row and overrides only what has a stated merge rule, so a key the client invents is
+// dropped rather than applied. Spread clientPayload instead, or add a fourth field, and an offline
+// device with a stale copy silently overwrites whatever moved while it was away — photo links
+// included, which is the one thing the spec says can only grow.
+//
+// Nothing asserted this. It is an ABSENCE, and the tests above all check fields that ARE merged.
+
+describe('resolveIssueConflict — the merge is server-shaped (master:2583-2589)', () => {
+  const serverRow = {
+    issue_id: 'iss-1',
+    description: 'server text',
+    resolution_note: 'server note',
+    status: 'IN_PROGRESS',
+    severity: 'HIGH',
+    assigned_to: 'user-server',
+    photos: ['server-photo-1', 'server-photo-2'],
+    modified_at: '2026-06-01T00:00:00.000Z',
+    version: 3,
+  };
+
+  it('drops a photos list the client sent — the set is never shortened by a sync', () => {
+    // The stale device knows about one photo; the server has two. Applying the client's list would
+    // DELETE a photo somebody else attached, which master:2586-2587 forbids in as many words.
+    const result = resolveIssueConflict(
+      { description: 'client text', photos: ['server-photo-1'] },
+      serverRow,
+      '2026-07-01T00:00:00.000Z', // client newer
+    );
+
+    expect(result.resolved_payload['photos']).toEqual(['server-photo-1', 'server-photo-2']);
+  });
+
+  it('takes ONLY the three fields the spec gives a merge rule to', () => {
+    // Enumerated rather than spot-checked: the failure is a FOURTH field being merged, and a test
+    // that names the three cannot see one that was added.
+    const client = {
+      description: 'client text',
+      resolution_note: 'client note',
+      status: 'RESOLVED',
+      // everything below has no merge rule in the spec
+      severity: 'LOW',
+      assigned_to: 'user-client',
+      issue_id: 'hijacked',
+      photos: [],
+      version: 99,
+    };
+
+    const result = resolveIssueConflict(client, serverRow, '2026-07-01T00:00:00.000Z');
+    const merged = result.resolved_payload;
+
+    // The three that do have a rule, taken from the client because it is newer.
+    expect(merged['description']).toBe('client text');
+    expect(merged['resolution_note']).toBe('client note');
+    expect(merged['status']).toBe('RESOLVED');
+
+    // Everything else still comes from the server.
+    expect(merged['severity']).toBe('HIGH');
+    expect(merged['assigned_to']).toBe('user-server');
+    expect(merged['issue_id']).toBe('iss-1');
+    expect(merged['photos']).toEqual(['server-photo-1', 'server-photo-2']);
+    expect(merged['version']).toBe(3);
+  });
+
+  it('refreshes modified_at, which is the one field neither side supplies', () => {
+    // The merge is a new write, so it carries a new modification time — that is what the NEXT
+    // sync's last_known_modified_at is compared against.
+    const before = Date.now();
+    const result = resolveIssueConflict(
+      { description: 'client text' },
+      serverRow,
+      '2026-07-01T00:00:00.000Z',
+    );
+
+    const modifiedAt = new Date(result.resolved_payload['modified_at'] as string).getTime();
+    expect(modifiedAt).toBeGreaterThanOrEqual(before);
+  });
+});

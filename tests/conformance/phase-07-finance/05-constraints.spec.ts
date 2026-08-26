@@ -77,3 +77,82 @@ describe('Phase 7 · retention is entered, never derived (master:2931-2935)', ()
     expect(allSrc).not.toMatch(/DEFAULT_RETENTION/i);
   });
 });
+
+// ── the five things this service does NOT do (master:2866-2872) ────────────
+//
+// The scope clarification opens the phase and is unusually emphatic: this is a PROJECT COST
+// TRACKING system, and double-entry bookkeeping, a chart of accounts, GL posting and external
+// ERP/accounting integration are "UNSPECIFIED — escalate to product owner for decision; do not
+// generate stubs."
+//
+// That last clause is what makes this checkable and worth checking. The normal way a boundary like
+// this erodes is not a decision to build an accounting system — it is one `journal_entries` table
+// added because an invoice needed a counterpart, then a `posting_date`, then a trial balance. Each
+// step is small, each is defensible on its own, and the escalation the spec asks for never happens
+// because nobody notices a line has been crossed.
+//
+// Matched on IDENTIFIERS in code, not on prose: this file and the module's own README describe the
+// exclusion, and a scan that read comments would flag the text that records the rule.
+
+describe('finance stays a cost tracker, not an accounting system (master:2866-2872)', () => {
+  /** Source with comment lines removed, so the rule's own description cannot match itself. */
+  const codeOnly = (body: string): string =>
+    body
+      .split('\n')
+      .filter((l) => {
+        const t = l.trimStart();
+        return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*');
+      })
+      .join('\n');
+
+  it.each([
+    ['double-entry bookkeeping', /\b(journal_entr|double_entry|doubleEntry)\w*/i],
+    ['a chart of accounts', /\b(chart_of_accounts|chartOfAccounts|account_code|accountCode)\w*/i],
+    [
+      'general-ledger posting',
+      /\b(general_ledger|generalLedger|gl_posting|glPosting|post_to_gl)\w*/i,
+    ],
+    ['debit/credit pairs', /\b(debit_amount|debitAmount|credit_amount|creditAmount)\b/i],
+  ])('implements no %s', (_label, pattern) => {
+    const offenders = sources
+      .filter(([, body]) => pattern.test(codeOnly(body)))
+      .map(([f]) => path.relative(repoRoot, f));
+    expect(offenders).toEqual([]);
+  });
+
+  it('has no migration adding an accounting table to the finance schema', () => {
+    // The other half: the boundary can be crossed in SQL without a line of TypeScript. A migration
+    // creating finance.journal_entries would leave every source scan above clean.
+    const migrations = path.join(repoRoot, 'backend/prisma/migrations');
+    const offenders: string[] = [];
+    for (const dir of fs.readdirSync(migrations)) {
+      const sql = path.join(migrations, dir, 'migration.sql');
+      if (!fs.existsSync(sql)) continue;
+      const body = fs.readFileSync(sql, 'utf8');
+      if (
+        /CREATE TABLE\s+(finance\.)?(journal_entries|chart_of_accounts|general_ledger)/i.test(body)
+      ) {
+        offenders.push(dir);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it('ships ERP adapters as stubs, not as integrations (master:3029, 3040-3046)', () => {
+    // The ERP decision is the opposite shape from the four above: three adapters are REQUIRED to
+    // exist, and required to stay stubs "until first customer with that ERP onboards". A stub that
+    // quietly grew a real SAP client would be the same boundary crossed from the other side.
+    const names = ['SAPAdapter', 'OracleAdapter', 'DynamicsAdapter'];
+    const declared = sources.filter(([, body]) => names.some((n) => body.includes(n)));
+    expect(declared.length).toBeGreaterThan(0);
+
+    const vendorSdk = sources
+      .filter(([, body]) =>
+        /(?:from\s+['"]|require\(\s*['"])[^'"]*(?:sap-|@sap\/|oracledb|@microsoft\/dynamics)/i.test(
+          codeOnly(body),
+        ),
+      )
+      .map(([f]) => path.relative(repoRoot, f));
+    expect(vendorSdk).toEqual([]);
+  });
+});

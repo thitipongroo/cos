@@ -30,7 +30,7 @@ import { FeatureFlag } from '../../../shared/feature-flags/feature-flag.decorato
 import { DataExportService } from './data-export.service';
 import { RequestDataExportDto } from '../dto/request-data-export.dto';
 import type { ExportCategory } from './data-export.collector';
-import type { TenantRequest } from '../../tenant/tenant.middleware';
+import type { TenantRequest } from '../../../shared/context/tenant-request';
 
 /**
  * QM-15 / ADR-049 kill switch.

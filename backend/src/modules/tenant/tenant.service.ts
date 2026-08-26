@@ -16,7 +16,10 @@ import { createLogger } from '@cos/logger';
 import { Connection, Client } from '@temporalio/client';
 import { CreateTenantDto } from './dto/create-tenant.dto';
 import { FeatureFlagService } from '../../shared/feature-flags/feature-flag.service';
-import { encryptDedicatedDbUrl, ENCRYPTED_DB_URL_FLAG } from './utils/dedicated-db-url-cipher';
+import {
+  encryptDedicatedDbUrl,
+  ENCRYPTED_DB_URL_FLAG,
+} from '../../shared/crypto/dedicated-db-url-cipher';
 
 const logger = createLogger('tenant-service');
 

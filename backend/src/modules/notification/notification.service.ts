@@ -401,6 +401,72 @@ export class NotificationService {
   }
 
   /**
+   * Deliver a CRITICAL message to ONE named user, exempt from preferences and quiet hours.
+   *
+   * master:5041 says no service sends notifications directly — everything routes through here. Three
+   * places in the identity module did anyway (step-up codes, data-subject request verification, the
+   * data-export link), and they were right to: this service had no door for them. Every public entry
+   * resolved its recipients from a ROLE or from an event envelope, and none of them can address one
+   * person. A verification code has exactly one recipient and no role.
+   *
+   * They also could not use the normal path even if it existed: §19.6 preferences and quiet hours
+   * would let a user silence the one message that answers a statutory request, or the code that
+   * completes their own login. That is what `critical` means here — the same exemption
+   * CRITICAL_EVENT_TYPES already grants a safety incident, applied to one addressed recipient.
+   *
+   * Routing through the service rather than around it is what the industry does with these: Knock
+   * models a password reset as a workflow with "override recipient preferences" and Courier as a
+   * category that bypasses preference checks — in both, the message still goes through the
+   * notification system. What that buys, and what a direct SendGrid call loses, is the row in
+   * notifications.notifications. For a PDPA/GDPR data-subject response the record that the subject
+   * WAS notified is part of the obligation; a mail sent outside the service leaves none.
+   *
+   * Composed inline like {@link escalate} — no template lookup, because these bodies carry one-time
+   * tokens and links that no template table should ever hold.
+   */
+  async notifyUserCritical(params: {
+    tenant_id: string;
+    user_id: string;
+    email: string;
+    event_type: string;
+    subject: string;
+    body: string;
+  }): Promise<void> {
+    const notif = await this.repo.createNotification({
+      tenant_id: params.tenant_id,
+      recipient_id: params.user_id,
+      channel: 'IN_APP',
+      event_type: params.event_type,
+      subject: params.subject,
+      body: params.body,
+    });
+    this.sse.push(params.user_id, notif);
+    await this.repo.markSent(params.tenant_id, notif.notification_id);
+
+    // The email is the channel that matters for these — phone_number is nullable, so email is the
+    // only one every account is reachable on. It is sent WITHOUT consulting findDisabledChannels or
+    // the quiet window, which is the whole point of the method.
+    if (params.email) {
+      await this.email
+        .send({ to: params.email, subject: params.subject, body: params.body })
+        .catch((err: unknown) => {
+          // The in-app row is already written and marked sent, so a bounce must not undo it — but a
+          // verification code nobody received is a person who cannot finish what they started, and
+          // that has to be findable.
+          logger.error(
+            {
+              err,
+              tenant_id: params.tenant_id,
+              recipient_id: params.user_id,
+              event_type: params.event_type,
+            },
+            'Critical user notification email failed — the in-app row was still written',
+          );
+        });
+    }
+  }
+
+  /**
    * Deliver an escalation notice (§19.3) to every user holding `roles`. Composed inline (no template
    * lookup) as an IN_APP + email alert; the caller marks the source notification escalated afterwards.
    */

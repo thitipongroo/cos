@@ -240,7 +240,7 @@ describe('Phase 25 · platform tables never move (master:5708)', () => {
     // If the platform schema followed a tenant onto its dedicated instance, the very lookup that
     // finds the dedicated URL would have to run on the instance it is trying to find — the system
     // could not answer a single request after provisioning.
-    const getDbUrl = read('backend/src/modules/tenant/utils/get-db-url.ts');
+    const getDbUrl = read('backend/src/shared/prisma/get-db-url.ts');
     expect(getDbUrl).toMatch(/createPrismaClient\(process\.env\['DATABASE_URL'\]\)/);
     expect(getDbUrl).toMatch(/FROM platform\.tenants/);
   });

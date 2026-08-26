@@ -33,7 +33,7 @@ import { Redis } from 'ioredis';
 import { PrismaClient } from '@prisma/client';
 import { createLogger } from '@cos/logger';
 import { createPrismaClient } from '../../../shared/prisma/create-prisma-client';
-import { SendGridAdapter } from '../../notification/adapters/sendgrid.adapter';
+import { NotificationService } from '../../notification/notification.service';
 import { SMS_SENDER, type SmsSender } from '../otp/sms-sender';
 import { generateOtp, otpMatches } from '../otp/otp.service';
 
@@ -75,7 +75,10 @@ export class StepUpService implements OnModuleDestroy {
 
   constructor(
     @Inject(SMS_SENDER) private readonly sms: SmsSender,
-    private readonly email: SendGridAdapter,
+    // The SERVICE, not its SendGrid adapter. master:5041 routes every notification through it, and
+    // reaching past it to the adapter left the code outside the notifications table — no record that
+    // a step-up challenge was ever issued to this account, which is the trail a security review reads.
+    private readonly notifications: NotificationService,
   ) {
     this.redis = new Redis(process.env['REDIS_URL'] ?? 'redis://localhost:6379');
   }
@@ -109,7 +112,9 @@ export class StepUpService implements OnModuleDestroy {
 
     const user = await this.prisma.user.findUnique({
       where: { userId },
-      select: { phoneNumber: true, email: true, isActive: true },
+      // tenantId is read for the notification row: notifications.tenant_id is NOT NULL and RLS is
+      // enforced against it.
+      select: { tenantId: true, phoneNumber: true, email: true, isActive: true },
     });
     // A deactivated account must not be able to mint a token for an action it can no longer perform.
     if (!user?.isActive) {
@@ -132,8 +137,11 @@ export class StepUpService implements OnModuleDestroy {
       };
     }
 
-    await this.email.send({
-      to: user.email,
+    await this.notifications.notifyUserCritical({
+      tenant_id: user.tenantId,
+      user_id: userId,
+      email: user.email,
+      event_type: 'identity.step_up.challenge.v1',
       subject: 'Construction OS verification code',
       body: message,
     });

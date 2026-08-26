@@ -25,16 +25,7 @@ import { WorkforceService } from '../workforce/workforce.service';
 import { AnnotationService } from '../files/annotation.service';
 import { ProcurementService } from '../procurement/procurement.service';
 import { EventOutboxService } from '../../shared/events/event-outbox.service';
-import type { CreateIssueDto } from '../site-ops/dto/create-issue.dto';
-import type { CreateMaterialConsumptionDto } from '../site-ops/dto/create-material-consumption.dto';
 import { EquipmentService } from '../equipment/equipment.service';
-import type { RecordUtilizationDto } from '../equipment/dto/record-utilization.dto';
-import type { SubmitInspectionDto } from '../site-ops/dto/submit-inspection.dto';
-import type { SyncSiteReportsDto } from '../site-ops/dto/sync-site-reports.dto';
-import type { RecordAttendanceDto } from '../workforce/dto/attendance.dto';
-import type { RecordDeliveryDto } from '../procurement/dto/record-delivery.dto';
-import type { CreatePurchaseRequestDto } from '../procurement/dto/create-purchase-request.dto';
-import type { CreateIncidentDto } from '../safety/dto/safety.dto';
 import {
   PushItemDto,
   ReportExhaustedDto,
@@ -78,6 +69,21 @@ const ENTITY_REGISTRY: Record<string, EntityRegistryEntry> = {
     deltaColumn: 'recorded_at',
   },
 };
+
+/**
+ * The declared type of one argument of a domain-service method.
+ *
+ * `push()` hands `dto.payload` — an opaque `Record<string, unknown>` off the wire — to whichever
+ * domain service owns the entity type. Each cast used to import that module's DTO class directly,
+ * which reached past the module's public API (master:1608) for nine DTOs across six modules. The
+ * services themselves are legitimate dependencies: they are exported providers, injected through
+ * DI, which is the channel master:551 sanctions.
+ *
+ * Deriving the type from the method signature keeps the cast honest without the extra import — and
+ * it is strictly better than importing the DTO, because it tracks the method. If `createIssue` ever
+ * takes something other than CreateIssueDto, this follows it; the import would not have.
+ */
+type ArgOf<M, N extends number> = M extends (...args: infer A) => unknown ? A[N] : never;
 
 @Injectable({ scope: Scope.REQUEST })
 export class SyncService {
@@ -225,13 +231,15 @@ export class SyncService {
         const items = [{ ...dto.payload, client_id: dto.entity_id }];
         const results = await this.siteOps.syncSiteReports({
           items,
-        } as unknown as SyncSiteReportsDto);
+        } as unknown as ArgOf<SiteOpsService['syncSiteReports'], 0>);
         const status = (results[0]?.conflict_status ?? 'ACCEPTED') as ServerSyncStatus;
         return { status };
       }
 
       case 'issue': {
-        const row = await this.siteOps.createIssue(dto.payload as unknown as CreateIssueDto);
+        const row = await this.siteOps.createIssue(
+          dto.payload as unknown as ArgOf<SiteOpsService['createIssue'], 0>,
+        );
         return { status: 'ACCEPTED', server_payload: row };
       }
 
@@ -239,13 +247,15 @@ export class SyncService {
         const workerId = (dto.payload['worker_id'] as string) ?? dto.entity_id;
         const row = await this.workforce.recordAttendance(
           workerId,
-          dto.payload as unknown as RecordAttendanceDto,
+          dto.payload as unknown as ArgOf<WorkforceService['recordAttendance'], 1>,
         );
         return { status: 'ACCEPTED', server_payload: row };
       }
 
       case 'safety': {
-        const row = await this.safety.createIncident(dto.payload as unknown as CreateIncidentDto);
+        const row = await this.safety.createIncident(
+          dto.payload as unknown as ArgOf<SafetyService['createIncident'], 0>,
+        );
         return { status: 'ACCEPTED', server_payload: row };
       }
 
@@ -253,7 +263,7 @@ export class SyncService {
         const reportId = dto.payload['report_id'] as string;
         const row = await this.siteOps.createMaterialConsumption(
           reportId,
-          dto.payload as unknown as CreateMaterialConsumptionDto,
+          dto.payload as unknown as ArgOf<SiteOpsService['createMaterialConsumption'], 1>,
         );
         return { status: 'ACCEPTED', server_payload: row };
       }
@@ -262,7 +272,7 @@ export class SyncService {
         // Offline inspection submission (§17.4 offline read/write; QM-1 mobile E2E #2). The payload
         // carries the full SubmitInspectionDto (project_id, checklist_id, status, inspected_at).
         const row = await this.siteOps.submitInspection(
-          dto.payload as unknown as SubmitInspectionDto,
+          dto.payload as unknown as ArgOf<SiteOpsService['submitInspection'], 0>,
         );
         return { status: 'ACCEPTED', server_payload: row };
       }
@@ -273,7 +283,7 @@ export class SyncService {
         // other pushable type: delivery_items are the quantities `sumDeliveredQuantity` adds up, so a
         // double-applied replay can mark a PO fulfilled on goods that arrived once.
         const result = await this.procurement.recordDelivery({
-          ...(dto.payload as unknown as RecordDeliveryDto),
+          ...(dto.payload as unknown as ArgOf<ProcurementService['recordDelivery'], 0>),
           client_id: dto.entity_id,
         });
         return { status: 'ACCEPTED', server_payload: result.delivery };
@@ -285,7 +295,7 @@ export class SyncService {
         // resolves to the request already filed rather than raising a second one and consuming
         // another PR number.
         const row = await this.procurement.createPurchaseRequest({
-          ...(dto.payload as unknown as CreatePurchaseRequestDto),
+          ...(dto.payload as unknown as ArgOf<ProcurementService['createPurchaseRequest'], 0>),
           client_id: dto.entity_id,
         });
         return { status: 'ACCEPTED', server_payload: row };
@@ -298,7 +308,7 @@ export class SyncService {
         // that natural key, so the retries §17.2 guarantees cannot inflate summed hours or fuel.
         await this.equipment.recordUtilization(
           dto.entity_id,
-          dto.payload as unknown as RecordUtilizationDto,
+          dto.payload as unknown as ArgOf<EquipmentService['recordUtilization'], 1>,
         );
         return { status: 'ACCEPTED', server_payload: dto.payload };
       }

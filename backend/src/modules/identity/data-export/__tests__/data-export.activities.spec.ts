@@ -14,6 +14,7 @@ const prismaMock = {
 };
 const uploadMock = jest.fn().mockResolvedValue({ file_id: 'file-9' });
 const sendMock = jest.fn().mockResolvedValue(undefined);
+const disposeMock = jest.fn().mockResolvedValue(undefined);
 const withTenantTxMock = jest.fn();
 
 jest.mock('../../../../shared/prisma/create-prisma-client', () => ({
@@ -33,10 +34,16 @@ jest.mock('../../../files/file-service-client.service', () => ({
     upload = uploadMock;
   },
 }));
-jest.mock('../../../notification/adapters/sendgrid.adapter', () => ({
-  SendGridAdapter: class {
-    send = sendMock;
-  },
+// The activity now routes through NotificationService.notifyUserCritical (master:5041) rather than
+// constructing SendGridAdapter — a mail sent outside the service left no row in
+// notifications.notifications, and for a PDPA/GDPR subject response the record that the subject was
+// notified is part of the obligation. A Temporal activity runs outside the Nest container, so the
+// service arrives through createStandaloneNotifier(), the same seam the §19.8 human gate uses.
+jest.mock('../../../notification/notification.standalone', () => ({
+  createStandaloneNotifier: () => ({
+    service: { notifyUserCritical: sendMock },
+    dispose: disposeMock,
+  }),
 }));
 
 import {
@@ -229,8 +236,8 @@ describe('notifySubjectActivity', () => {
     given([[{ email: 'somchai@example.com' }]]);
     await notifySubjectActivity({ ...JOB, ready: true });
 
-    const [msg] = sendMock.mock.calls[0] as [{ to: string; subject: string; body: string }];
-    expect(msg.to).toBe('somchai@example.com');
+    const [msg] = sendMock.mock.calls[0] as [{ email: string; subject: string; body: string }];
+    expect(msg.email).toBe('somchai@example.com');
     expect(msg.subject).toContain('ready');
     expect(msg.body).toContain(`/privacy/data-export/${EXPORT}`);
     expect(msg.body).not.toMatch(/X-Amz-Signature|\?.*Signature=/);

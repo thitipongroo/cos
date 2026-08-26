@@ -48,6 +48,22 @@ describe('Phase 25 · provisioning entry points', () => {
   const sign = (body: string, timestamp: string): string =>
     'sha256=' + createHmac('sha256', SECRET).update(`${timestamp}.${body}`).digest('hex');
 
+  /**
+   * A signature that is definitely NOT the correct one.
+   *
+   * This used to be `sign(...).replace(/.$/, '0')`, and it was flaky at exactly 1 in 16: the digest
+   * is hex, so one time in sixteen the last character ALREADY was '0', the "corrupted" signature
+   * equalled the real one, and the webhook answered 202 — correctly. The timestamp goes into the
+   * HMAC and changes every run, so which case you get is a coin flip per run. Two full-suite runs
+   * lost to it before the message was captured (2026-08-26).
+   *
+   * Flipping to a character the last one is not makes the corruption unconditional.
+   */
+  const corrupt = (signature: string): string => {
+    const last = signature.slice(-1);
+    return signature.slice(0, -1) + (last === '0' ? '1' : '0');
+  };
+
   beforeAll(async () => {
     process.env['PLATFORM_WEBHOOK_SECRET'] = SECRET;
     infra = await startIntegrationInfra();
@@ -136,7 +152,7 @@ describe('Phase 25 · provisioning entry points', () => {
         .post('/api/v1/platform/webhooks/enterprise-contract-signed')
         .set('Content-Type', 'application/json')
         .set('X-Webhook-Timestamp', ts)
-        .set('X-Webhook-Signature', sign(raw, ts).replace(/.$/, '0'))
+        .set('X-Webhook-Signature', corrupt(sign(raw, ts)))
         .send(raw);
 
       expect(res.status).toBe(401);

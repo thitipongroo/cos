@@ -21,7 +21,7 @@
 // it stays safe to flip in either direction at any time.
 
 import { createLogger } from '@cos/logger';
-import { encryptSecret, decryptSecret } from '../../../shared/crypto/secret-cipher';
+import { encryptSecret, decryptSecret } from './secret-cipher';
 
 const logger = createLogger('dedicated-db-url-cipher');
 

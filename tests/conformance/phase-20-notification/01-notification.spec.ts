@@ -82,6 +82,33 @@ describe('the forbidden channels stay absent (master:5044-5053)', () => {
 // ── Absence: nothing bypasses the service ──────────────────────────────────
 
 describe('no service sends notifications directly (master:5041)', () => {
+  it('confines the notification ADAPTERS to one documented exception', () => {
+    // The SDK check below catches a module that pulls in @sendgrid/mail. It does NOT catch a module
+    // that imports the notification module's own SendGridAdapter — which three places in identity
+    // did until 2026-08-26, sending mail that never reached notifications.notifications. Two were
+    // moved onto NotificationService.notifyUserCritical; the third cannot be, and is named here
+    // rather than allowed by module, so a fourth cannot appear quietly.
+    //
+    // subject-request's recipient is a crm.contacts row matched by email, not a platform user, and
+    // notifications.recipient_id is a NOT NULL UUID naming a platform user. There is no row that
+    // notification could be written against.
+    const ALLOWED = [path.join('identity', 'subject-request', 'subject-request.service.ts')];
+    const offenders = backendSources
+      .filter((f) => !f.includes(path.join('modules', 'notification')))
+      // A spec file importing the adapter is typing a mock, not sending mail.
+      .filter((f) => !f.endsWith('.spec.ts'))
+      .filter((f) =>
+        /(?:from\s+['"]|require\(\s*['"])[^'"]*notification\/adapters\//.test(
+          fs.readFileSync(f, 'utf8'),
+        ),
+      )
+      .map((f) => path.relative(abs('backend/src/modules'), f))
+      // identity.module.ts provides the adapter for the caller above; providing is not sending.
+      .filter((f) => f !== 'identity/identity.module.ts')
+      .filter((f) => !ALLOWED.includes(f));
+    expect(offenders).toEqual([]);
+  });
+
   it('confines every delivery SDK to the notification module', () => {
     // "No service should send notifications directly — route through this service only." The check
     // that matters is not whether the module exists but whether anything goes around it: a module

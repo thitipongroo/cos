@@ -4,20 +4,19 @@
 
 import { Injectable, NestMiddleware, UnauthorizedException, OnModuleDestroy } from '@nestjs/common';
 // @types/express added to devDeps — NestJS uses express-compatible types even with Fastify adapter
-import type { Request, Response, NextFunction } from 'express';
+import type { Response, NextFunction } from 'express';
 import { createPrismaClient } from '../../shared/prisma/create-prisma-client';
 import { createLogger } from '@cos/logger';
-import { decryptDedicatedDbUrl } from './utils/dedicated-db-url-cipher';
+import { decryptDedicatedDbUrl } from '../../shared/crypto/dedicated-db-url-cipher';
 
 const logger = createLogger('tenant-middleware');
 
-export interface TenantRequest extends Request {
-  tenantId?: string;
-  tenantCode?: string;
-  userId?: string;
-  userRole?: string;
-  dedicatedDbUrl?: string;
-}
+// Re-exported so this module's own files keep their existing import, and so a reader landing on the
+// middleware still finds the shape it sets. The definition moved to shared/context on 2026-08-26 —
+// an interface cannot appear in a NestJS `exports:` array, so importing it from here was a
+// cross-module reach past the public API for every consumer outside this module (master:1608).
+import type { TenantRequest } from '../../shared/context/tenant-request';
+export type { TenantRequest };
 
 @Injectable()
 export class TenantMiddleware implements NestMiddleware, OnModuleDestroy {

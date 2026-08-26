@@ -11,7 +11,7 @@ import type { Logger } from '@cos/logger';
 
 import { createPrismaClient } from '../../../shared/prisma/create-prisma-client';
 import { assertSafeTenantId } from '../../../shared/prisma/assert-safe-tenant-id';
-import { getDbUrlForTenant } from '../../tenant/utils/get-db-url';
+import { getDbUrlForTenant } from '../../../shared/prisma/get-db-url';
 import { EventOutboxService } from '../../../shared/events/event-outbox.service';
 
 // Clients pooled per datasource URL. Building a PrismaClient per activity (and disconnecting it in a

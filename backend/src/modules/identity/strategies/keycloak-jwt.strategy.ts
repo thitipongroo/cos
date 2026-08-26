@@ -7,8 +7,8 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { passportJwtSecret } from 'jwks-rsa';
 import { createPrismaClient } from '../../../shared/prisma/create-prisma-client';
-import { JwtPayload } from '../jwt.payload';
-import { decryptDedicatedDbUrl } from '../../tenant/utils/dedicated-db-url-cipher';
+import { JwtPayload } from '../../../shared/context/jwt-payload';
+import { decryptDedicatedDbUrl } from '../../../shared/crypto/dedicated-db-url-cipher';
 import { FeatureFlagService } from '../../../shared/feature-flags/feature-flag.service';
 import { createLogger } from '@cos/logger';
 

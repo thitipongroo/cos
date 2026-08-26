@@ -11,7 +11,7 @@
 // run() validates the tenant id and issues SET LOCAL app.current_tenant_id so the notifications-schema
 // RLS policies apply (H1 fix — the path previously ran as superuser with no SET LOCAL).
 
-jest.mock('../../tenant/utils/get-db-url', () => ({
+jest.mock('../../../shared/prisma/get-db-url', () => ({
   getDbUrlForTenant: jest.fn().mockResolvedValue('postgresql://tenant-db/testdb'),
 }));
 
@@ -56,7 +56,7 @@ function adapterUrl(nth: number): string | undefined {
   return arg?.options?.connectionString ?? arg?.connectionString;
 }
 
-import { getDbUrlForTenant } from '../../tenant/utils/get-db-url';
+import { getDbUrlForTenant } from '../../../shared/prisma/get-db-url';
 import { NotificationPrismaService } from '../notification-prisma.service';
 
 const TENANT_A = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';

@@ -1,7 +1,7 @@
 ﻿// Unit tests — RFQ Workflow Activities (Phase 5)
 // getDbUrlForTenant, PrismaClient, and KafkaProducer are all mocked.
 
-jest.mock('../../../tenant/utils/get-db-url', () => ({
+jest.mock('../../../../shared/prisma/get-db-url', () => ({
   getDbUrlForTenant: jest.fn().mockResolvedValue('postgresql://tenant-db/testdb'),
 }));
 

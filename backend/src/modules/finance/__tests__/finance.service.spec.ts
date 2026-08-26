@@ -211,6 +211,20 @@ describe('createOrUpdateBudget', () => {
     );
   });
 
+  it('defaults the variance threshold to 10% when none is given (master:3016)', async () => {
+    // "DECIDED: default threshold = 10%". Only the OVERRIDE branch was covered, so the default was
+    // free to be any number at all — and the number decides when finance.variance.alert.v1 fires,
+    // which is the event that pages FINANCE and TENANT_ADMIN.
+    mockRepo.upsertBudget.mockResolvedValue(budgetRow);
+    await service.createOrUpdateBudget('proj-uuid-001', {
+      total_budget_amount: '1000000.0000',
+      total_budget_currency: 'THB',
+    });
+    expect(mockRepo.upsertBudget).toHaveBeenCalledWith(
+      expect.objectContaining({ variance_alert_threshold: '10.00' }),
+    );
+  });
+
   it('Decimal precision: 1.123 + 0.001 = 1.124 exactly (no float error)', async () => {
     mockRepo.upsertBudget.mockResolvedValue(budgetRow);
     await service.createOrUpdateBudget('proj-uuid-001', {
@@ -255,6 +269,40 @@ describe('getBudgetSummary', () => {
     const result = await service.getBudgetSummary('proj-uuid-001');
     // (0+110-100)/100*100 = 10%
     expect(result.variance_percentage).toBe('10.0000');
+  });
+
+  it('counts ACTUAL as well as committed (master:2989)', async () => {
+    // The case above uses actual = 0, so it proves `committed` is in the formula and says nothing
+    // about `actual` — dropping `actual.plus(...)` leaves it green. Both non-zero and different, so
+    // neither term can be removed without moving the answer:
+    //   (30 + 90 - 100) / 100 * 100 = 20%
+    // Missing `actual`  → -10%.  Missing `committed` → -70%.  Either is unmistakable.
+    const budget = {
+      ...budgetRow,
+      allocated_amount: '100.0000',
+      committed_amount: '90.0000',
+      actual_amount: '30.0000',
+    };
+    mockRepo.findBudgetByProject.mockResolvedValue(budget);
+    mockRepo.findLinesByBudget.mockResolvedValue([]);
+    const result = await service.getBudgetSummary('proj-uuid-001');
+    expect(result.variance_percentage).toBe('20.0000');
+  });
+
+  it('reports a NEGATIVE variance while a project is under budget', async () => {
+    // The sign carries the meaning: a project 40% underspent must not read as 40% over. The variance
+    // alert compares this figure against a threshold, so a lost sign fires an overrun alert on a
+    // project that is doing fine.
+    const budget = {
+      ...budgetRow,
+      allocated_amount: '100.0000',
+      committed_amount: '40.0000',
+      actual_amount: '20.0000',
+    };
+    mockRepo.findBudgetByProject.mockResolvedValue(budget);
+    mockRepo.findLinesByBudget.mockResolvedValue([]);
+    const result = await service.getBudgetSummary('proj-uuid-001');
+    expect(result.variance_percentage).toBe('-40.0000');
   });
 
   it('throws NotFoundException when budget not found', async () => {

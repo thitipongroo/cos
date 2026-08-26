@@ -1,5 +1,12 @@
 // JWT payload shape — RS256 signed by Keycloak (Path B) or COS identity service (Path A).
 // Claim names defined in spec §5.4.1 (05-security-compliance.md).
+//
+// Lives in shared/ rather than in the identity MODULE. spec §6.9 puts RolesGuard and PolicyGuard in
+// backend/src/shared/guards/ precisely "because they depend on JwtPayload" — so the shape those
+// guards need cannot itself sit inside a module, or the shared layer depends on a module it is
+// meant to sit beneath. It did: roles.guard, policy.guard, permissions.guard and audit.interceptor
+// all reached into modules/identity for it, and so did sync's own auth guard, which was a
+// cross-module reach past identity's public API (master:1608). Moved 2026-08-26.
 
 export interface JwtPayload {
   // Standard OIDC claims

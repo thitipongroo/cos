@@ -15,7 +15,7 @@ import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '@cos/rbac';
 import { CosRole } from '@cos/types';
 import { createLogger } from '@cos/logger';
-import { JwtPayload } from '../../modules/identity/jwt.payload';
+import { JwtPayload } from '../context/jwt-payload';
 import { createPrismaClient } from '../prisma/create-prisma-client';
 
 const logger = createLogger('roles-guard');

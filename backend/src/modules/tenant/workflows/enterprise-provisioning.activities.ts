@@ -4,7 +4,7 @@ import { KafkaTopicProvisioner } from '@cos/shared';
 import { createLogger } from '@cos/logger';
 import { randomUUID } from 'crypto';
 import { readMasterPassword, ensureAppUserPassword } from './tenant-db-secrets';
-import { encryptDedicatedDbUrl } from '../utils/dedicated-db-url-cipher';
+import { encryptDedicatedDbUrl } from '../../../shared/crypto/dedicated-db-url-cipher';
 import { createStandaloneNotifier } from '../../notification/notification.standalone';
 import { PLATFORM_HUMAN_GATE_EVENT_TYPE } from '../../notification/notification.service';
 

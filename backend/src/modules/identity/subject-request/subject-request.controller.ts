@@ -30,7 +30,7 @@ import { CreateSubjectRequestDto } from './dto/create-subject-request.dto';
 import { CloseSubjectRequestDto } from './dto/close-subject-request.dto';
 import { EraseSubjectRequestDto } from './dto/erase-subject-request.dto';
 import { SubjectVerifyTokenGuard } from './subject-verify-token.guard';
-import type { TenantRequest } from '../../tenant/tenant.middleware';
+import type { TenantRequest } from '../../../shared/context/tenant-request';
 
 @ApiTags('subject-requests')
 @ApiBearerAuth()

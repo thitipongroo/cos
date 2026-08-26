@@ -24,7 +24,7 @@ import { ClsService } from 'nestjs-cls';
 import { createLogger } from '@cos/logger';
 import { RolesGuard } from '../../shared/guards/roles.guard';
 import { CLS_SYNC_ALLOWED_ENTITY_TYPES } from '../../shared/context/cls-context';
-import { JwtPayload } from '../identity/jwt.payload';
+import { JwtPayload } from '../../shared/context/jwt-payload';
 import { PUSH_ROLES, DELTA_ROLES } from './sync-authz';
 
 const logger = createLogger('sync-auth-guard');
