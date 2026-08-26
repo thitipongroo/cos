@@ -57,3 +57,15 @@ describe('§17.6 sync priority order', () => {
     }
   });
 });
+
+// Absorbed from tests/spec-derived/phase-10-mobile/01-sync-engine.spec.ts (2026-08-25), which
+// imported this module and so was a unit test living outside the app.
+describe('what the queue deliberately does NOT carry', () => {
+  it('has no photo/media entry at all (master:3568 item 8)', () => {
+    // "photo/media (deferred last)" — they are the largest payload by far and go through
+    // PhotoUploadQueue instead. A 'photo' entry here would put megabytes ahead of a safety incident
+    // on a site connection that just came back.
+    expect(SYNC_PRIORITY_ORDER).not.toContain('photo');
+    expect(SYNC_PRIORITY_ORDER).not.toContain('media');
+  });
+});

@@ -539,6 +539,37 @@ jobs:
       - name: Run contract tests
         run: pnpm run test:contract
 
+  # ─── Step 4d: Conformance Tests ─────────────────────────────────────────────
+  # Static checks over the repo's own source: agreements between artifacts that nothing loads in the
+  # same process (a Python consumer's topic pattern vs the Go producer that builds the name; an Avro
+  # schema, the topic catalogue and the publisher; an OpenAPI document vs the routes it describes),
+  # and rules of the form "this must NOT exist" — which a passing runtime test can never establish.
+  #
+  # No database, no containers, no build: the whole suite is ~3s. It boots nothing, so it is the one
+  # test job that does not need `build` or Docker.
+  conformance-tests:
+    name: Conformance Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [lint, type-check]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      # phase-17-devops/02-rendered-manifests runs `helm template` over every chart in every
+      # environment and asserts on the Kubernetes objects that come out — the spec's own 2026-07-20
+      # POC note says "only a real deploy catches this, lint and dry-run do not". The suite asserts
+      # helm is PRESENT rather than skipping when it is missing, so without this step 10 of its 11
+      # cases fail. Installed explicitly rather than relying on whatever the runner image happens to
+      # ship, so a runner-image change cannot silently turn this job red.
+      - uses: azure/setup-helm@v4
+      - run: pnpm install --frozen-lockfile
+      - name: Run conformance tests
+        run: pnpm run test:conformance
+
   # ─── Step 4: Build Docker Images ────────────────────────────────────────────
   build-docker:
     name: Build Docker — ${{ matrix.service }}
@@ -553,6 +584,7 @@ jobs:
         integration-tests,
         isolation-tests,
         contract-tests,
+        conformance-tests,
         go-tests,
         python-tests,
       ]

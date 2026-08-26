@@ -251,7 +251,7 @@ describe('Project Integration (Testcontainers — PostgreSQL)', () => {
 
   // ─── State Transition Flows ────────────────────────────────────────────────
 
-  // The state machine is NOT tested here any more. spec-derived/phase-03-project/02-state-machine
+  // The state machine is NOT tested here any more. backend/test/phase-03-project/02-state-machine
   // asserts every edge master:2055-2062 declares AND the refusals this block never had — the role
   // gate on COMPLETED/CANCELLED, the missing-reason refusals, and the non-edges (DRAFT -> COMPLETED,
   // DRAFT -> ON_HOLD). The two cases that were unique here — DRAFT -> CANCELLED for a TENANT_ADMIN

@@ -115,7 +115,7 @@ describe('Cross-tenant Isolation (Integration — Testcontainers)', () => {
 
   // ── Layer 1: PostgreSQL RLS ────────────────────────────────────────────────
 
-  // Layer 1 — PostgreSQL RLS — is NOT here. spec-derived/phase-16-security/01 asserts the same rule
+  // Layer 1 — PostgreSQL RLS — is NOT here. backend/test/phase-16-security/01 asserts the same rule
   // against the same database and goes further: that app_user is neither superuser nor BYPASSRLS
   // (without which every RLS assertion is vacuous), that an UNSET tenant sees nothing rather than
   // everything, and that WITH CHECK refuses an insert stamped with another tenant. The two cases

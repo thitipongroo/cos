@@ -13,6 +13,8 @@ import {
   subjectForEvent,
   tenantTopicPattern,
   dlqTopicFor,
+  entityStateKeyField,
+  ENTITY_STATE_TOPICS,
 } from '../topic-catalog';
 
 describe('topic-catalog', () => {
@@ -159,5 +161,48 @@ describe('topic-catalog', () => {
     it('maps any platform.* topic to platform.dlq', () => {
       expect(dlqTopicFor('platform.enterprise.db_provisioned.v1')).toBe(PLATFORM_DLQ_TOPIC);
     });
+  });
+});
+
+// Absorbed from tests/spec-derived/phase-08-events/03-topics-and-schema.spec.ts (deleted
+// 2026-08-25). It called entityStateKeyField and read ENTITY_STATE_TOPICS directly, so it was a
+// unit test of this module living outside it — and nothing here covered log compaction keying.
+describe('entity state topics (master:3104)', () => {
+  it('declares the project family, which is what master names', () => {
+    // master:725 maps project.created -> [construction.project.created.v1], so "project.project.*"
+    // is the canonical construction.project.* family.
+    for (const event of [
+      'construction.project.created.v1',
+      'construction.project.updated.v1',
+      'construction.project.status_changed.v1',
+      'construction.project.archived.v1',
+    ]) {
+      expect(entityStateKeyField(event)).toBe('project_id');
+    }
+  });
+
+  it('excludes risk events, which carry project_id but are not project state', () => {
+    // Keying these by project would collapse every risk on a project into the last one raised.
+    expect(entityStateKeyField('construction.project.risk_raised.v1')).toBeUndefined();
+    expect(entityStateKeyField('construction.project.risk_status_changed.v1')).toBeUndefined();
+  });
+
+  it('excludes records of occurrences', () => {
+    // Each is a separate fact with no newer version to replace it; compaction would delete history.
+    for (const event of [
+      'site.report.created.v1',
+      'procurement.delivery.received.v1',
+      'workforce.checkin.created.v1',
+      'finance.payment.processed.v1',
+    ]) {
+      expect(entityStateKeyField(event)).toBeUndefined();
+    }
+  });
+
+  it('every declared entity state topic is a real event type', () => {
+    // A typo here is a topic that is never compacted and never keyed, silently.
+    for (const event of Object.keys(ENTITY_STATE_TOPICS)) {
+      expect(CANONICAL_EVENT_TYPES).toContain(event);
+    }
   });
 });

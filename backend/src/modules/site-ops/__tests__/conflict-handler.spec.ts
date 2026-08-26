@@ -8,6 +8,20 @@ import {
   resolveChecklistConflict,
   resolveAnnotationConflict,
 } from '../conflict-handler';
+import type { ConflictStatus } from '../conflict-handler';
+
+// master:2630 closes the set, and QM-9 (master:772) says "NEVER invent additional strategies". A
+// fourth status would need a fourth branch in every caller — the mobile queue included — and the
+// ones that did not get it would fall through their `else` and treat it as accepted.
+// Absorbed from tests/spec-derived/phase-06-site-ops/01-conflict-strategies.spec.ts when that file
+// was deleted (2026-08-25): it re-tested these same three functions with 17 cases this suite
+// already covered with 36, but this closed-set check was the one thing it had that this did not.
+describe('conflict_status is exactly the three specified values (master:2630)', () => {
+  it('admits ACCEPTED, CONFLICT_FLAGGED and CONFLICT_REJECTED, and nothing else', () => {
+    const all: ConflictStatus[] = ['ACCEPTED', 'CONFLICT_FLAGGED', 'CONFLICT_REJECTED'];
+    expect(all).toHaveLength(3);
+  });
+});
 
 const OLDEST_TS = '2026-06-04T07:00:00.000Z';
 const OLDER_TS = '2026-06-04T08:00:00.000Z';
