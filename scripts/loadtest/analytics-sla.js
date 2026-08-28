@@ -28,14 +28,25 @@ export const options = {
     { duration: '30s', target: 0 },
   ],
   thresholds: {
-    // SLA: P95 < 3 000 ms across ALL analytics endpoints
+    // master:4288-4289 states TWO budgets, not one:
+    //   Executive Dashboard: P95 < 3 seconds
+    //   PM Dashboard:        P95 < 2 seconds
+    // Every threshold here was 3 000 ms until 2026-08-29, including the PM endpoint's. A PM
+    // dashboard answering in 2.9 s therefore passed this test while missing its own budget by 45%,
+    // and the tighter of the two numbers was enforced nowhere in the repository.
+    //
+    // The global threshold stays at the LOOSER budget on purpose: it spans every analytics path, so
+    // tightening it to 2 s would fail the run for an executive dashboard that is within spec.
     http_req_duration: ['p(95)<3000'],
-    // Per-endpoint P95 thresholds
+    // Per-endpoint P95 thresholds — each endpoint against the budget master gives IT.
     'http_req_duration{endpoint:executive}': ['p(95)<3000'],
-    'http_req_duration{endpoint:pm}': ['p(95)<3000'],
-    'http_req_duration{endpoint:cost-trend}': ['p(95)<3000'],
-    'http_req_duration{endpoint:procurement-trend}': ['p(95)<3000'],
-    'http_req_duration{endpoint:site-trend}': ['p(95)<3000'],
+    'http_req_duration{endpoint:pm}': ['p(95)<2000'],
+    // The three trend endpoints back the PM dashboard's charts (master:4352-4356), so they are held
+    // to the PM budget rather than the executive one: a 2.9 s cost-trend makes a 2 s PM dashboard
+    // impossible no matter how fast the page's own query is.
+    'http_req_duration{endpoint:cost-trend}': ['p(95)<2000'],
+    'http_req_duration{endpoint:procurement-trend}': ['p(95)<2000'],
+    'http_req_duration{endpoint:site-trend}': ['p(95)<2000'],
     // Error rate < 1%
     http_req_failed: ['rate<0.01'],
   },

@@ -3837,7 +3837,26 @@ AI Services (FastAPI — all in ai/ directory):
      - Embed text documents via EmbeddingProvider interface
      - Store in pgvector: vector column dimensions set per provider config
      - Store in OpenSearch: index to {tenant_id}-embeddings index (k-NN)
-     - Batch processing: Kafka consumer on file.uploaded and report.submitted events
+     - Batch processing: Kafka consumer on file.document.uploaded.v1 and site.report.created.v1
+       AMENDED 2026-08-29. This line read "file.uploaded and report.submitted events". Both names
+       were wrong in a way that mattered:
+         · `site.report.submitted.v1` exists and is NOT the one to consume — its payload is
+           report_id / project_id / report_date / submitted_by, with no text in it at all. The event
+           that carries the report's prose is `site.report.created.v1` (payload adds `summary`), and
+           the worker's own README had named that one correctly the whole time. Spec §32:510 records
+           that both events exist deliberately and are distinct, so this was a choice between two
+           real events, and the wrong one was named.
+         · `file.uploaded` is not an event type either; the catalogue name is
+           `file.document.uploaded.v1`, which is what consumer.py actually subscribes to.
+       WHAT IS NOT WIRED, and why it stays that way for now: only the file consumer exists. The
+       report consumer is deliberately not built here, because the whole embedding path is a stub —
+       `main.py` wires `StubEmbeddingProvider`, `ingestion.py` states "no OPENAI_API_KEY here, so
+       real vectors have never been produced", and docs/architecture/service-interaction.md records
+       the AI/RAG layer as stubbed by design pending §22. A second consumer feeding a stub embedder
+       would add a pipeline nobody can observe. There is a further reason to wait: master:3434-3438
+       removed the free-text summary from the mobile daily report (`summary` is nullable and is sent
+       null), so today the only site-report prose to embed at all is what a web user types.
+       Pinned by tests/conformance/phase-11-ai/02-rag-prompts-ocr.spec.ts so the gap stays visible.
    API: POST /api/v1/embeddings/generate  { text, entity_type, entity_id, tenant_id }
 
 3. OCR Pipeline (ai-ocr-pipeline):

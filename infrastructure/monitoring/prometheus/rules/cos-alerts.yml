@@ -63,11 +63,17 @@ groups:
           runbook: 'https://docs.construction-os.internal/runbooks/slow-queries'
 
       # ── AnalyticsSLABreach ────────────────────────────────────────────────────
+      # master:4288-4289 sets TWO budgets: Executive P95 < 3s, PM P95 < 2s. This rule matched
+      # /api/v1/analytics/.* against a single 3s threshold until 2026-08-29, so a PM dashboard at
+      # 2.9s breached its budget by 45% and paged nobody. The PM paths are excluded here and carry
+      # their own rule below; splitting rather than tightening keeps an in-spec executive dashboard
+      # from paging on-call.
       - alert: AnalyticsSLABreach
         expr: |
           histogram_quantile(0.95,
             sum by (service, le) (
-              rate(http_request_duration_seconds_bucket{path=~"/api/v1/analytics/.*"}[5m])
+              rate(http_request_duration_seconds_bucket{path=~"/api/v1/analytics/.*",
+                                                        path!~"/api/v1/analytics/(pm|projects)/.*"}[5m])
             )
           ) > 3
         for: 0m
@@ -77,6 +83,26 @@ groups:
         annotations:
           summary: 'Analytics SLA breach: P95 > 3s'
           description: 'Analytics API P95 latency is {{ $value }}s (SLA: 3s). Immediate investigation required.'
+          runbook: 'https://docs.construction-os.internal/runbooks/analytics-sla'
+
+      # ── AnalyticsPMSLABreach ──────────────────────────────────────────────────
+      # master:4289 — "PM Dashboard: P95 < 2 seconds". The three trend endpoints are included
+      # because they back that dashboard's charts (master:4352-4356): a 2.9s cost-trend makes a 2s
+      # PM dashboard impossible however fast the page's own query is.
+      - alert: AnalyticsPMSLABreach
+        expr: |
+          histogram_quantile(0.95,
+            sum by (service, le) (
+              rate(http_request_duration_seconds_bucket{path=~"/api/v1/analytics/(pm|projects)/.*"}[5m])
+            )
+          ) > 2
+        for: 0m
+        labels:
+          severity: critical
+          team: analytics
+        annotations:
+          summary: 'PM dashboard SLA breach: P95 > 2s'
+          description: 'PM dashboard P95 is {{ $value }}s against the 2s budget master:4289 sets. The executive budget is 3s and is a different rule.'
           runbook: 'https://docs.construction-os.internal/runbooks/analytics-sla'
 
       # ── AIHighTokenUsage ──────────────────────────────────────────────────────

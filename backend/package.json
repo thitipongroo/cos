@@ -2,7 +2,7 @@
   "name": "@cos/backend",
   "version": "0.1.0",
   "private": true,
-  "description": "Construction OS — NestJS Modular Monolith",
+  "description": "Construction OS \u2014 NestJS Modular Monolith",
   "scripts": {
     "build": "nest build",
     "dev": "nest start --watch",
@@ -20,7 +20,8 @@
     "migrate": "prisma migrate deploy",
     "migrate:dev": "prisma migrate dev",
     "seed": "ts-node prisma/seed.ts",
-    "studio": "prisma studio"
+    "studio": "prisma studio",
+    "reconcile:contracts": "ts-node src/modules/graph/maintenance/reconcile-contracts.script.ts"
   },
   "dependencies": {
     "@aws-sdk/client-rds": "^3.600.0",

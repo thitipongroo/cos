@@ -357,3 +357,58 @@ describe('Phase 13 · the Delay node has no source yet — deferred to Phase 23'
     expect(read('backend/src/modules/tasks/dto/update-task.dto.ts')).toMatch(/BLOCKED = 'BLOCKED'/);
   });
 });
+
+/**
+ * master:4156 — "(:Contract) contract_id: String — maps to po_id of APPROVED Purchase Orders
+ * (APPROVED PO = contractual agreement; no separate Contract module needed)".
+ *
+ * The word APPROVED is the whole rule, and it was dropped: until 2026-08-29 the mapper wrote a
+ * :Contract on `procurement.po.created.v1`, which fires while the PO is still a DRAFT — that
+ * event carries no status field at all, and `purchase_orders.status` defaults to DRAFT. So the
+ * graph held a node meaning "there is a binding agreement with this vendor" for every document
+ * anyone had ever started, including the ones later rejected.
+ *
+ * Nothing caught it. The Go test was called TestMapPOCreated_ContractIDIsPoID and asserted that
+ * contract_id equalled po_id — true, and beside the point. No conformance case mentioned Contract
+ * except to count it among the eight constrained labels. And no query reads :Contract yet, so the
+ * wrong data was never in front of anyone; it was simply accumulating.
+ *
+ * Asserted here as a cross-source rule because the Go tests can only see the mapper's output for
+ * an input they choose, while this can see which EVENT the label is bound to at all.
+ */
+describe('Phase 13 · :Contract is an APPROVED purchase order (master:4156)', () => {
+  it('is materialised from the status-changed event, not from po.created', () => {
+    const poCreated = mapper.slice(
+      mapper.indexOf('func mapPOCreated'),
+      mapper.indexOf('func mapPOStatusChanged'),
+    );
+    // Cypher only. The function's comment names :Contract to point at where it moved, and an
+    // assertion over the raw text matched that prose instead of the code — caught on the first
+    // run, and worth keeping in mind for every other source-text check in this file.
+    const cypher = poCreated.replace(/\/\/[^\n]*/g, '');
+    expect(cypher).not.toMatch(/:Contract/);
+    expect(cypher).toMatch(/:Vendor/);
+  });
+
+  it('the worker consumes procurement.po.status_changed.v1', () => {
+    // Already inside the subscription regex (^[^.]+\.(construction|procurement|site|finance)\..*),
+    // so what was missing was only the case arm.
+    expect(mapper).toContain('procurement.po.status_changed.v1');
+  });
+
+  it('gates the write on APPROVED rather than writing on any transition', () => {
+    const fn = mapper.slice(mapper.indexOf('func mapPOStatusChanged'));
+    expect(fn).toMatch(/ToStatus\s*!=\s*"APPROVED"/);
+    // The refusal must come BEFORE the MERGE, or the gate decides nothing.
+    expect(fn.indexOf('"APPROVED"')).toBeLessThan(fn.indexOf(':Contract'));
+  });
+
+  it('still keys the node on po_id', () => {
+    // The half the old test had right, kept.
+    const fn = mapper.slice(mapper.indexOf('func mapPOStatusChanged'));
+    expect(fn).toMatch(
+      /MERGE \(n:Contract \{contract_id: \$contract_id, tenant_id: \$tenant_id\}\)/,
+    );
+    expect(fn).toMatch(/"contract_id":\s*p\.POID/);
+  });
+});

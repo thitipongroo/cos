@@ -245,3 +245,58 @@ describe('Phase 11 · Mode C is specified but NOT built here (master:3897-3908)'
     );
   });
 });
+
+/**
+ * What the embedding worker actually consumes, and what it does not.
+ *
+ * master:3840 asked for two consumers — files and site reports — and named both events wrongly:
+ * `file.uploaded` is not a catalogue name, and `site.report.submitted.v1`, which does exist, carries
+ * no text to embed. The line was corrected on 2026-08-29; these cases stop it drifting back and, more
+ * usefully, keep the UNBUILT half visible.
+ *
+ * The report consumer is deliberately absent while the embedding path is a stub — see the amended
+ * master:3840 for the full reasoning. An absent thing is exactly what nothing notices, so it is
+ * asserted rather than remembered: when §22 wires the real provider and the second consumer, these
+ * cases fail and have to be rewritten to describe what is then true.
+ */
+describe('Phase 11 · the embedding corpus — what is wired, and what is not yet', () => {
+  const consumer = read(`${worker}/consumer.py`);
+  const workerMain = read(`${worker}/main.py`);
+
+  it('subscribes to the file event by its catalogue name', () => {
+    // `file.uploaded` from the old spec line matches no topic. The regex is what runs.
+    expect(consumer).toMatch(/file\\\.document\\\.uploaded\\\.v1/);
+  });
+
+  it('consumes no site-report event yet', () => {
+    // The gap master:3840 describes. It shrinks by deletion, not by editing a number.
+    //
+    // The dots are OPTIONALLY backslash-escaped because the pattern lives in a Python raw string
+    // (`r"^[^.]+\.file\.document\.uploaded\.v1$"`). The first version of this case wrote
+    // /site\.report\./ and did not fire when site.report.created was actually added to the pattern:
+    // the source says `site\.report`, and a regex demanding a dot straight after "site" met a
+    // backslash. Another case in this describe caught the mutation, which is the only reason it was
+    // noticed — the case NAMED for the gap was blind to it.
+    expect(consumer).not.toMatch(/site\\?\.report/);
+  });
+
+  it('still runs the stub embedder, so no real vector exists anywhere', () => {
+    // The reason the missing consumer is not urgent, and the thing most likely to be forgotten when
+    // someone reads "RAG" in the architecture docs and assumes a populated index.
+    expect(workerMain).toMatch(/StubEmbeddingProvider\(\)/);
+  });
+
+  it('site.report.created carries the prose and site.report.submitted does not', () => {
+    // The cross-source fact that decides WHICH event a future consumer must take. Both schemas
+    // exist on purpose (spec §32:510); only one has anything to embed.
+    const avsc = (name: string): string => read(`packages/@cos/shared/src/avro/${name}.avsc`);
+    expect(avsc('site.report.created.v1')).toContain('summary');
+    expect(avsc('site.report.submitted.v1')).not.toContain('summary');
+  });
+
+  it('the mobile daily report sends no summary, so web is the only source of that prose', () => {
+    // master:3434-3438. Without this, "wire the report consumer" reads like it would index every
+    // daily report on every site.
+    expect(read('apps/mobile/src/app/(app)/report.tsx')).toMatch(/summary:\s*null/);
+  });
+});

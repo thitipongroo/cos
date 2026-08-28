@@ -205,3 +205,78 @@ describe('Phase 14 · the topic documentation matches the code', () => {
     expect(topics).not.toMatch(/^# Topic naming: \{service\}\.\{entity\}\.\{event\}$/m);
   });
 });
+
+/**
+ * The performance SLA (master:4287-4291).
+ *
+ * Four numbers are stated. Before 2026-08-29 exactly one of them was enforced, and one of the other
+ * three was enforced at the WRONG value — which is worse, because a green run reads as coverage:
+ *
+ *   Executive P95 < 3s   enforced (load test + AnalyticsSLABreach)
+ *   PM P95 < 2s          "enforced" at 3s in BOTH places, so a 2.9s PM dashboard passed the load
+ *                        test and paged nobody, missing its own budget by 45%
+ *   freshness 15 min     nothing measures it — see the case at the end of this block
+ *   real-time < 30s      likewise
+ *
+ * These cases read the k6 script and the Prometheus rules as text on purpose. Both are configuration
+ * that no test executes: k6 runs on demand in CI's load stage, and an alert expression is only ever
+ * evaluated by a Prometheus that is not running here. A wrong number in either is invisible until
+ * the day it matters, which is the day it is too late.
+ */
+describe('Phase 14 · the two dashboard latency budgets are enforced separately (master:4288-4289)', () => {
+  const loadtest = read('scripts/loadtest/analytics-sla.js');
+  const alerts = read('infrastructure/monitoring/prometheus/rules/cos-alerts.yml');
+
+  it('the load test holds the PM endpoint to 2s, not 3s', () => {
+    expect(loadtest).toMatch(/'http_req_duration\{endpoint:pm\}':\s*\['p\(95\)<2000'\]/);
+  });
+
+  it('the load test still allows the executive endpoint its 3s', () => {
+    // The budgets differ; collapsing them in either direction is the bug. Tightening executive to
+    // 2s would fail a dashboard that is within spec.
+    expect(loadtest).toMatch(/'http_req_duration\{endpoint:executive\}':\s*\['p\(95\)<3000'\]/);
+  });
+
+  it('the trend endpoints are held to the PM budget', () => {
+    // They back the PM dashboard's charts (master:4352-4356). A 2.9s trend query makes a 2s PM
+    // dashboard impossible however fast the page's own query is.
+    for (const ep of ['cost-trend', 'procurement-trend', 'site-trend']) {
+      expect(loadtest).toMatch(
+        new RegExp(`'http_req_duration\\{endpoint:${ep}\\}':\\s*\\['p\\(95\\)<2000'\\]`),
+      );
+    }
+  });
+
+  it('runs the load at the 100 concurrent users master:4376 names', () => {
+    expect(loadtest).toMatch(/target:\s*100/);
+  });
+
+  it('a Prometheus rule pages on the PM budget at 2s', () => {
+    expect(alerts).toContain('alert: AnalyticsPMSLABreach');
+    const rule = alerts.slice(alerts.indexOf('alert: AnalyticsPMSLABreach'));
+    expect(rule.slice(0, rule.indexOf('labels:'))).toMatch(/\)\s*>\s*2\b/);
+  });
+
+  it('the 3s rule no longer swallows the PM paths', () => {
+    // Without the exclusion, the PM paths match BOTH rules and the looser one makes the tighter one
+    // decorative: the 3s rule stays quiet at 2.9s and the reader sees a rule named for analytics
+    // that is silent.
+    const rule = alerts.slice(alerts.indexOf('alert: AnalyticsSLABreach'));
+    expect(rule.slice(0, rule.indexOf('labels:'))).toMatch(
+      /path!~"\/api\/v1\/analytics\/\(pm\|projects\)/,
+    );
+  });
+
+  it('records that pipeline freshness is stated but not measured (master:4290-4291)', () => {
+    // master fixes 15-minute freshness and a 30-second real-time lag. Nothing emits a metric for
+    // either: services/analytics-worker registers no Prometheus collector at all, so an alert on
+    // ingestion lag would reference a series that never exists — a rule that cannot fire, which
+    // reads as health. Asserted as an ABSENCE so the gap is visible rather than assumed covered;
+    // when the worker starts emitting lag, this case fails and must be replaced by a real threshold.
+    const workerSrc = ['internal/metrics/consumer.go', 'cmd/analytics-worker/main.go']
+      .map((f) => read(`services/analytics-worker/${f}`))
+      .join('\n');
+    expect(workerSrc).not.toMatch(/promauto|prometheus\.New/);
+    expect(alerts).not.toContain('AnalyticsFreshness');
+  });
+});
