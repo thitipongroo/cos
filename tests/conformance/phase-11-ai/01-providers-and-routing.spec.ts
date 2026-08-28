@@ -7,7 +7,10 @@
  * needs a Python interpreter belongs in each service's own pytest suite, and is called out where it
  * matters below.
  */
-import { exists, read, readYaml } from '../helpers';
+import * as fs from 'fs';
+import * as path from 'path';
+
+import { abs, exists, read, readYaml } from '../helpers';
 
 const gateway = 'services/ai-gateway';
 const worker = 'services/ai-embedding-worker';
@@ -130,6 +133,79 @@ describe('Phase 11 · model names are not spelled into source (master:3795)', ()
     const src = read(`${gateway}/providers/llm_provider.py`);
     const code = src.replace(/"""[\s\S]*?"""/g, ' ').replace(/#[^\n]*/g, ' ');
     expect(code).not.toMatch(/["']gpt-[\w.-]+["']/);
+  });
+});
+
+/**
+ * master:3769 — "LLMProvider (implement via interface — never call OpenAI SDK directly)", restated
+ * at master:3808 as "LLM client management via LLMProvider interface (no direct SDK calls)".
+ *
+ * The rule holds today and nothing was enforcing it. That combination is the one worth a test: the
+ * whole point of the interface is master:3778's swap path — Claude, Azure OpenAI or a self-hosted
+ * Ollama as a drop-in — and a swap is only drop-in while every caller goes through the seam. One
+ * `from openai import ...` in a route handler or a chain is invisible in review, costs nothing at
+ * the time, and turns the provider swap into a search-and-replace across services.
+ *
+ * The allowlist is by LOCATION, not by name: a provider module is where the SDK is supposed to be.
+ * Anything else importing it is the breach.
+ */
+describe('Phase 11 · the OpenAI SDK is reached only through a provider (master:3769, 3808)', () => {
+  const PY_ROOTS = [
+    'services/ai-gateway',
+    'services/ai-embedding-worker',
+    'services/ai-ocr-pipeline',
+    'services/ai-transcription-pipeline',
+    'libs/python/cosembedding',
+  ];
+
+  // Directories permitted to name the SDK. `libs/python/cosembedding` is the shared embedding client
+  // — a provider implementation that happens to live in a library rather than under a service.
+  const PROVIDER_PATHS = [/\/providers\//, /^libs\/python\/cosembedding\//];
+
+  const pythonSources = (): string[] => {
+    const out: string[] = [];
+    const walk = (dir: string): void => {
+      if (!fs.existsSync(dir)) return;
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          // Skip the virtualenv, build output, caches and each service's own pytest suite — a test
+          // may legitimately patch `openai` to keep itself off the network.
+          if (['.venv', 'build', '__pycache__', 'tests'].includes(entry.name)) continue;
+          if (entry.name.endsWith('.egg-info')) continue;
+          walk(full);
+        } else if (entry.name.endsWith('.py')) {
+          out.push(path.relative(abs('.'), full));
+        }
+      }
+    };
+    for (const root of PY_ROOTS) walk(abs(root));
+    return out;
+  };
+
+  it('finds Python sources to scan, so a moved directory cannot empty this suite', () => {
+    expect(pythonSources().length).toBeGreaterThan(20);
+  });
+
+  it('no module outside a provider imports the OpenAI SDK', () => {
+    const offenders = pythonSources().filter((rel) => {
+      if (PROVIDER_PATHS.some((re) => re.test(rel))) return false;
+      const src = fs.readFileSync(abs(rel), 'utf8');
+      return /^\s*(?:import\s+openai|from\s+openai(?:\.\w+)*\s+import)/m.test(src);
+    });
+    expect(offenders).toEqual([]);
+  });
+
+  it('a provider DOES reach the SDK — otherwise the rule above is vacuous', () => {
+    // CONTROL. If the scan or the import pattern were broken, the case above would pass over an
+    // empty set and report green forever.
+    const providers = pythonSources().filter((rel) => PROVIDER_PATHS.some((re) => re.test(rel)));
+    const reaching = providers.filter((rel) =>
+      /^\s*(?:import\s+openai|from\s+openai(?:\.\w+)*\s+import)/m.test(
+        fs.readFileSync(abs(rel), 'utf8'),
+      ),
+    );
+    expect(reaching.length).toBeGreaterThan(0);
   });
 });
 
