@@ -33,9 +33,19 @@ describe('Phase 6 · module and offline sync controller (master:2792)', () => {
     ['service', 'backend/src/modules/site-ops/site-ops.service.ts'],
     ['repository', 'backend/src/modules/site-ops/site-ops.repository.ts'],
     ['controller', 'backend/src/modules/site-ops/site-ops.controller.ts'],
-    ['conflict handler', 'backend/src/modules/site-ops/conflict-handler.ts'],
+    // Not under site-ops/ since 2026-08-27. master names the component (ConflictHandler, three
+    // strategies) but never its path; this test had fixed one. The strategies serve modules/files
+    // as well as site-ops, and the file imports nothing at all, so it moved to shared/sync/ and the
+    // cross-module import that used to reach for it stopped being a boundary breach.
+    ['conflict handler', 'backend/src/shared/sync/conflict-handler.ts'],
   ])('the %s exists', (_label, file) => {
     expect(exists(file)).toBe(true);
+  });
+
+  it('the conflict handler is no longer filed under site-ops', () => {
+    // Absence half: without it, someone re-creating the old file would leave two copies of the
+    // three strategies with nothing to say which one runs.
+    expect(exists('backend/src/modules/site-ops/conflict-handler.ts')).toBe(false);
   });
 
   it('a dedicated sync controller serves the offline protocol', () => {

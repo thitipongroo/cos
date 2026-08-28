@@ -7,7 +7,7 @@ import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis'
 import { ClsModule } from 'nestjs-cls';
 import { HealthController } from './health.controller';
 import { IdentityModule } from './modules/identity/identity.module';
-import { LastSeenModule } from './modules/identity/last-seen.module';
+import { LastSeenModule } from './shared/last-seen/last-seen.module';
 import { TenantModule } from './modules/tenant/tenant.module';
 import { ProjectModule } from './modules/project/project.module';
 import { BoqModule } from './modules/boq/boq.module';

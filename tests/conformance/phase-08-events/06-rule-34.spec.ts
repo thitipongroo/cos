@@ -13,13 +13,18 @@
  * and the only one that ever ran. The package README stated the rule correctly the whole time, a few
  * lines from the code breaking it. A prose rule that nothing executes is how that happens.
  *
- * SCOPE, stated honestly: this file checks clause (c) — no DB-polling loop in the package. It does
- * NOT certify the package as mobile-safe. Clause (d) is separately unmet today: `dependencies`
- * carries kafkajs, ioredis and prom-client, each of which reaches for Node built-ins (net/tls/dns/
- * fs), so importing @cos/shared from React Native would fail regardless of this file. Nothing has
- * hit it because apps/mobile does not import the package yet. That is a live gap, deliberately left
- * out of scope here rather than papered over — see the last case, which pins the dependency list so
- * the debt cannot quietly grow while it waits for a decision.
+ * SCOPE. When this file was written on 2026-08-26 it could only check clause (c), and said so: the
+ * package could not have been mobile-safe anyway, since kafkajs, ioredis and prom-client all reach
+ * for Node built-ins. Rule 34 was amended on 2026-08-27 once the reason came clear — apps/mobile and
+ * apps/web never imported @cos/shared, and the client-safe code had long since gone into @cos/types,
+ * @cos/schemas, @cos/ui-logic and @cos/financial. The rule had been guarding the wrong package.
+ *
+ * So this file now checks two different things:
+ *   1. clause (c) against @cos/shared — no DB-polling loop, for the reason that survives the
+ *      amendment: a polling loop belongs with the process that owns its lifecycle.
+ *   2. the amended obligation against the packages that DO ship to a client, plus the edge that
+ *      would undo the whole arrangement — a Node-only package appearing in their dependencies, or
+ *      in apps/mobile's or apps/web's.
  */
 import * as fs from 'fs';
 import * as path from 'path';
@@ -96,29 +101,79 @@ describe('Rule 34(c) — no Node-runtime polling loop inside @cos/shared', () =>
   });
 });
 
-describe('Rule 34(d) — the dependency list is pinned while it is still unmet', () => {
-  const deps = (): string[] =>
+describe('Rule 34 — the client-safe packages stay importable from a mobile bundle', () => {
+  // The set apps/mobile and apps/web actually depend on. If an app grows a dependency on a package
+  // outside this list, the last case in this file is what notices.
+  const CLIENT_SAFE = ['types', 'schemas', 'ui-logic', 'financial'];
+
+  // Everything else under packages/@cos. These may use net/tls/fs freely — they run on a server —
+  // and must never be reachable from a bundle.
+  const NODE_ONLY = [
+    'shared',
+    'database',
+    'logger',
+    'tracing',
+    'config',
+    'rbac',
+    'validation',
+    'test-utils',
+  ];
+
+  const depsOf = (pkgJsonRel: string): string[] =>
     Object.keys(
       (
-        JSON.parse(fs.readFileSync(abs(`${PKG}/package.json`), 'utf8')) as {
+        JSON.parse(fs.readFileSync(abs(pkgJsonRel), 'utf8')) as {
           dependencies?: Record<string, string>;
         }
       ).dependencies ?? {},
-    ).sort();
+    );
 
-  // Rule 34(d): "Before adding any dependency to @cos/shared, verify it works in React Native/Metro
-  // bundler." Three of these do not, and saying so in a comment is the point — the list is frozen so
-  // that a fourth cannot be added without someone reading this and deciding.
-  const KNOWN = [
-    '@cos/logger',
-    '@cos/types',
-    '@kafkajs/confluent-schema-registry', // Node-only (kafkajs)
-    'ioredis', // Node-only — net/tls
-    'kafkajs', // Node-only — net/tls/dns
-    'prom-client', // Node-only — fs, perf hooks
-  ];
+  it('accounts for every @cos package, so a new one cannot arrive unclassified', () => {
+    const onDisk = fs
+      .readdirSync(abs('packages/@cos'), { withFileTypes: true })
+      .filter((e) => e.isDirectory())
+      .map((e) => e.name)
+      .sort();
+    expect(onDisk).toEqual([...CLIENT_SAFE, ...NODE_ONLY].sort());
+  });
 
-  it('has not grown a new dependency without that check', () => {
-    expect(deps()).toEqual(KNOWN);
+  it.each(CLIENT_SAFE)('@cos/%s depends on no Node-only package', (name) => {
+    const forbidden = NODE_ONLY.map((n) => `@cos/${n}`);
+    expect(
+      depsOf(`packages/@cos/${name}/package.json`).filter((d) => forbidden.includes(d)),
+    ).toEqual([]);
+  });
+
+  it.each(CLIENT_SAFE)('@cos/%s pulls in nothing that needs a Node runtime', (name) => {
+    // Third-party deps too, not just sibling packages. The four are deliberately tiny — zod,
+    // decimal.js, or nothing at all — and that is the property worth keeping: every addition here is
+    // shipped to a phone.
+    const KNOWN_MOBILE_SAFE = ['zod', 'decimal.js'];
+    const third = depsOf(`packages/@cos/${name}/package.json`).filter(
+      (d) => !d.startsWith('@cos/'),
+    );
+    expect(third.filter((d) => !KNOWN_MOBILE_SAFE.includes(d))).toEqual([]);
+  });
+
+  it.each(['mobile', 'web'])('apps/%s depends on no Node-only package', (app) => {
+    // The edge that matters most, and the one nothing checked before: @cos/shared carries kafkajs,
+    // ioredis and prom-client, so a single line here is a broken Metro build — the exact failure
+    // Rule 34 was written to prevent, finally asserted where it can actually occur.
+    const forbidden = NODE_ONLY.map((n) => `@cos/${n}`);
+    const pkg = JSON.parse(fs.readFileSync(abs(`apps/${app}/package.json`), 'utf8')) as {
+      dependencies?: Record<string, string>;
+      devDependencies?: Record<string, string>;
+    };
+    const all = [...Object.keys(pkg.dependencies ?? {}), ...Object.keys(pkg.devDependencies ?? {})];
+    expect(all.filter((d) => forbidden.includes(d))).toEqual([]);
+  });
+
+  it('@cos/shared stays where it belongs — Node consumers only', () => {
+    // Stated as an allowlist rather than inferred, so adding a consumer is a decision someone makes
+    // here on purpose.
+    const consumers = ['backend', 'services/file-service'];
+    for (const c of consumers) {
+      expect(depsOf(`${c}/package.json`)).toContain('@cos/shared');
+    }
   });
 });

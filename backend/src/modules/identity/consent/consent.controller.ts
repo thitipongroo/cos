@@ -21,7 +21,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../../shared/guards/jwt-auth.guard';
 import { ConsentService } from './consent.service';
 import { NetworkOriginService } from '../network-origin/network-origin.service';
 import { RecordConsentDto } from '../dto/record-consent.dto';

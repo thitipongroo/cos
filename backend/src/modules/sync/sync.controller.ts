@@ -13,7 +13,7 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { SyncService } from './sync.service';
 import { PushItemDto, ReportExhaustedDto } from './dto/sync.dto';
-import { JwtAuthGuard } from '../identity/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { SyncAuthGuard } from './sync-auth.guard';
 
 @ApiTags('Sync')

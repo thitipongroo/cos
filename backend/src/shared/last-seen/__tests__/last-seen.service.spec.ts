@@ -17,7 +17,7 @@ jest.mock('@cos/logger', () => ({
   }),
 }));
 
-jest.mock('../../../shared/prisma/create-prisma-client', () => ({
+jest.mock('../../prisma/create-prisma-client', () => ({
   createPrismaClient: () => ({
     $executeRaw: mockExecuteRaw,
     $disconnect: mockDisconnect,

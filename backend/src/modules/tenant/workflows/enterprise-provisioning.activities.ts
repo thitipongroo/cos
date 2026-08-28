@@ -5,8 +5,8 @@ import { createLogger } from '@cos/logger';
 import { randomUUID } from 'crypto';
 import { readMasterPassword, ensureAppUserPassword } from './tenant-db-secrets';
 import { encryptDedicatedDbUrl } from '../../../shared/crypto/dedicated-db-url-cipher';
-import { createStandaloneNotifier } from '../../notification/notification.standalone';
-import { PLATFORM_HUMAN_GATE_EVENT_TYPE } from '../../notification/notification.service';
+import { createStandaloneNotifier } from '../../notification/public/notification.standalone';
+import { PLATFORM_HUMAN_GATE_EVENT_TYPE } from '../../notification/public/event-types';
 
 const logger = createLogger('enterprise-provisioning-activities');
 

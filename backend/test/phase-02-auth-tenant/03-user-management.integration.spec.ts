@@ -27,7 +27,7 @@ import {
   type IntegrationInfra,
 } from '../helpers/integration-infra';
 import { AppModule } from '../../src/app.module';
-import { JwtAuthGuard } from '../../src/modules/identity/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../src/shared/guards/jwt-auth.guard';
 import { KeycloakAdminService } from '../../src/modules/identity/keycloak-admin.service';
 
 // Set here rather than left to the config: backend/jest.integration.config.js defaults to 120s for

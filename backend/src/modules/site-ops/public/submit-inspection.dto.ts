@@ -15,7 +15,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IssueSeverity } from './create-issue.dto';
+import { IssueSeverity } from '../dto/create-issue.dto';
 
 export enum InspectionStatus {
   PASSED = 'PASSED',

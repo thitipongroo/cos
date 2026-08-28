@@ -5838,17 +5838,46 @@ ROOT CAUSE PREVENTION RULES (prevent recurring bugs):
     Examples requiring `import type`: PrismaClient in @cos/shared, express types in NestJS services
     using Fastify, any server-only type in packages imported by mobile.
 
-  Rule 34 — @cos/shared must remain framework-agnostic (prevents mobile bundle failures):
-    @cos/shared is imported by ALL platforms: mobile (React Native/Metro), PWA (Service Worker),
-    and Node.js services. Therefore:
+  Rule 34 — the CLIENT-SAFE packages must stay framework-agnostic (prevents mobile bundle failures):
+    AMENDED 2026-08-27. The rule previously opened "@cos/shared is imported by ALL platforms:
+    mobile (React Native/Metro), PWA (Service Worker), and Node.js services." That premise was not
+    true of the repository it governs, and had not been for some time:
+
+      apps/mobile depends on  @cos/financial, @cos/schemas, @cos/types, @cos/ui-logic
+      apps/web    depends on  @cos/schemas, @cos/types, @cos/ui-logic
+      @cos/shared is depended on by  backend, services/file-service   — both Node.js, nothing else
+
+    The split the rule asks for was therefore already achieved, but by a different means than the
+    rule describes: the client-safe code went into OTHER packages instead of @cos/shared being kept
+    clean. Meanwhile @cos/shared took on kafkajs, ioredis and prom-client, each of which reaches for
+    Node built-ins (net/tls/dns/fs) — so it could not be imported from React Native regardless of
+    what any single class in it did. Guarding the wrong package let that pass unnoticed while a real
+    obligation went unwatched.
+
+    So the obligation follows the packages that actually ship to a client:
+
+    CLIENT-SAFE packages — @cos/types, @cos/schemas, @cos/ui-logic, @cos/financial (the set
+    apps/mobile and apps/web import). For these:
     (a) NO runtime import of Node.js-only packages (PrismaClient, native addons, file system).
         Use `import type` when types are needed (Rule 33).
     (b) NO runtime import of server-framework packages (express, fastify, NestJS decorators).
-    (c) Classes/functions that require a Node.js runtime (e.g., OutboxPoller which polls a DB)
-        must be moved to backend/src/ — NOT placed in @cos/shared.
-    (d) Before adding any dependency to @cos/shared, verify it works in React Native/Metro bundler.
-    Verify: check @cos/shared/package.json — every package listed in dependencies must be
-    mobile-safe (pure JS, no native addons, no Node.js built-in-dependent runtime behavior).
+    (c) Classes/functions that require a Node.js runtime (e.g., an OutboxPoller which polls a DB)
+        must live in backend/src/ — NOT in a client-safe package.
+    (d) Before adding any dependency to one of them, verify it works in React Native/Metro.
+    Verify: every package listed in their dependencies must be mobile-safe (pure JS, no native
+    addons, no Node.js built-in-dependent runtime behavior).
+
+    NODE-ONLY packages — @cos/shared, @cos/database, @cos/logger, @cos/tracing, @cos/config,
+    @cos/rbac, @cos/validation, @cos/test-utils. These may use Node built-ins freely. They must NOT
+    appear in the dependencies of a client-safe package or of apps/mobile or apps/web; that edge is
+    the actual failure this rule exists to prevent, and it is the one to check.
+
+    Clause (c) still binds @cos/shared for a second reason that has nothing to do with mobile: a
+    polling loop belongs with the process that owns its lifecycle. An OutboxPoller was defined and
+    exported there until 2026-08-27, duplicating backend/src/shared/events/outbox-poller.service.ts,
+    which is the one registered in EventsModule and the only one that ever ran.
+
+    Enforced by tests/conformance/phase-08-events/06-rule-34.spec.ts.
 
   Rule 35 — Every @cos package with executable logic must have unit tests in CI (prevents untested logic):
     Definition of "executable logic": any exported function, method, or class with a body

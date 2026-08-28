@@ -20,7 +20,7 @@ import { RoomsService } from './rooms.service';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
 import { ListRoomsDto } from './dto/list-rooms.dto';
-import { JwtAuthGuard } from '../../identity/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../../shared/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../shared/guards/roles.guard';
 import { Roles } from '@cos/rbac';
 import { CosRole } from '@cos/types';

@@ -10,7 +10,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
-import { JwtAuthGuard } from '../src/modules/identity/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../src/shared/guards/jwt-auth.guard';
 import { FileServiceClient } from '../src/modules/files/file-service-client.service';
 import { CredentialClientService } from '../src/modules/credentials/credential-client.service';
 import {

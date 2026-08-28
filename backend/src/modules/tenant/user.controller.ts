@@ -20,7 +20,7 @@ import {
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Roles } from '@cos/rbac';
 import { CosRole } from '@cos/types';
-import { JwtAuthGuard } from '../identity/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';

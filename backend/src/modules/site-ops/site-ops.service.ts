@@ -25,13 +25,13 @@ import type {
   MaterialConsumptionRow,
 } from './site-ops.repository';
 import { UUID_PATTERN } from '../../shared/prisma/assert-safe-tenant-id';
-import { resolveReportConflict, resolveIssueConflict } from './conflict-handler';
-import type { ConflictStatus } from './conflict-handler';
+import { resolveReportConflict, resolveIssueConflict } from '../../shared/sync/conflict-handler';
+import type { ConflictStatus } from '../../shared/sync/conflict-handler';
 import type { CreateSiteReportDto } from './dto/create-site-report.dto';
 import type { SyncSiteReportsDto } from './dto/sync-site-reports.dto';
 import type { CreateIssueDto } from './dto/create-issue.dto';
 import type { UpdateIssueDto } from './dto/update-issue.dto';
-import type { SubmitInspectionDto } from './dto/submit-inspection.dto';
+import type { SubmitInspectionDto } from './public/submit-inspection.dto';
 import type { UpdateInspectionDto } from './dto/update-inspection.dto';
 import type { CreateMaterialConsumptionDto } from './dto/create-material-consumption.dto';
 

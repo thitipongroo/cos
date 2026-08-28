@@ -6,7 +6,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
-import { JwtAuthGuard } from '../src/modules/identity/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../src/shared/guards/jwt-auth.guard';
 import {
   startIntegrationInfra,
   stopIntegrationInfra,

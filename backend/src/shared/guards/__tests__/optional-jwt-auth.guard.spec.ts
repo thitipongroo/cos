@@ -18,8 +18,8 @@ jest.mock('@nestjs/passport', () => ({
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 import { OptionalJwtAuthGuard } from '../optional-jwt-auth.guard';
-import { LastSeenService } from '../../last-seen.service';
-import { CLS_TENANT_ID, CLS_USER_ID } from '../../../../shared/context/cls-context';
+import { LastSeenService } from '../../last-seen/last-seen.service';
+import { CLS_TENANT_ID, CLS_USER_ID } from '../../context/cls-context';
 
 const CONTEXT = {} as ExecutionContext;
 

@@ -37,7 +37,7 @@ import { createPrismaClient } from '../src/shared/prisma/create-prisma-client';
 import { ClsServiceManager } from 'nestjs-cls';
 import type { ExecutionContext } from '@nestjs/common';
 import { AppModule } from '../src/app.module';
-import { JwtAuthGuard } from '../src/modules/identity/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../src/shared/guards/jwt-auth.guard';
 import { buildCreateProjectDto } from '@cos/test-utils';
 
 const TENANT_ID = 'cccccccc-1111-4000-8000-000000000001';

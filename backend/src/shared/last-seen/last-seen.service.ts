@@ -6,7 +6,7 @@
 // at login time).
 
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
-import { createPrismaClient } from '../../shared/prisma/create-prisma-client';
+import { createPrismaClient } from '../prisma/create-prisma-client';
 import { createLogger } from '@cos/logger';
 
 const logger = createLogger('last-seen-service');

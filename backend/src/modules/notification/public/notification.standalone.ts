@@ -10,13 +10,13 @@
 // lives in whichever process holds the HTTP connection. The inbox row and the email — the two
 // channels §19.8 asks for — do not depend on it.
 
-import { NotificationService } from './notification.service';
-import { NotificationRepository } from './notification.repository';
-import { NotificationPrismaService } from './notification-prisma.service';
-import { NotificationSseService } from './notification.sse.service';
-import { ExpoPushAdapter } from './adapters/expo-push.adapter';
-import { SendGridAdapter } from './adapters/sendgrid.adapter';
-import { LineMessagingAdapter } from './adapters/line-messaging.adapter';
+import { NotificationService } from '../notification.service';
+import { NotificationRepository } from '../notification.repository';
+import { NotificationPrismaService } from '../notification-prisma.service';
+import { NotificationSseService } from '../notification.sse.service';
+import { ExpoPushAdapter } from '../adapters/expo-push.adapter';
+import { SendGridAdapter } from '../adapters/sendgrid.adapter';
+import { LineMessagingAdapter } from '../adapters/line-messaging.adapter';
 
 export interface StandaloneNotifier {
   service: NotificationService;

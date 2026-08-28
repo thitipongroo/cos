@@ -20,7 +20,7 @@ import { StructuresService } from './structures.service';
 import { CreateStructureDto } from './dto/create-structure.dto';
 import { UpdateStructureDto } from './dto/update-structure.dto';
 import { ListStructuresDto } from './dto/list-structures.dto';
-import { JwtAuthGuard } from '../../identity/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../../shared/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../shared/guards/roles.guard';
 import { Roles } from '@cos/rbac';
 import { CosRole } from '@cos/types';

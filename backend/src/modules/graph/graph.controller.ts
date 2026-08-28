@@ -5,7 +5,7 @@
 // client-supplied value. Source: context/00_master_construction_os.md §Phase 13
 import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../identity/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { clsTenantId } from '../../shared/context/cls-context';
 import { GraphService } from './graph.service';
 

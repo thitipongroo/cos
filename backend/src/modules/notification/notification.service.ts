@@ -83,13 +83,10 @@ export const PLATFORM_TENANT_SENTINEL = 'platform';
  * ONLY; §19.8 says nothing about preferences, so a SYSTEM_ADMIN who switches a channel off still
  * switches it off.
  */
-/**
- * The §19.8 provisioning human gate. It is NOT a Kafka event — "sent directly by
- * EnterpriseProvisioningWorkflow via the Notification Service" — so it has no canonical event type,
- * no .avsc and no EVENT_ROLE_MAP entry. The string is still the templates table's key, which is how
- * its subject/body and its two channels come from data rather than from an INSERT literal.
- */
-export const PLATFORM_HUMAN_GATE_EVENT_TYPE = 'platform.enterprise.awaiting_approval';
+// Declared in ./public/event-types so callers outside this module have a public surface to import
+// it from; re-exported here so the service's own readers still find it where they expect.
+import { PLATFORM_HUMAN_GATE_EVENT_TYPE } from './public/event-types';
+export { PLATFORM_HUMAN_GATE_EVENT_TYPE };
 
 const PLATFORM_LEVEL_EVENT_TYPES = new Set<string>([
   'platform.enterprise.contract_signed.v1',

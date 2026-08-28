@@ -20,7 +20,7 @@ import { createPrismaClient } from '../../../../shared/prisma/create-prisma-clie
 import { appDatabaseUrl } from '../../../../shared/prisma/app-database-url';
 import { assertSafeTenantId } from '../../../../shared/prisma/assert-safe-tenant-id';
 import { FileServiceClient } from '../../../files/file-service-client.service';
-import { createStandaloneNotifier } from '../../../notification/notification.standalone';
+import { createStandaloneNotifier } from '../../../notification/public/notification.standalone';
 import { CLS_TENANT_ID, CLS_USER_ID, CLS_USER_ROLE } from '../../../../shared/context/cls-context';
 import { collect, type ExportCategory, type ExportDb } from '../data-export.collector';
 import { buildEnvelope, toCsvFiles, toJson } from '../data-export.serializer';

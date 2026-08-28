@@ -6,7 +6,7 @@
 
 import { Controller, Get, UseGuards, Req } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../identity/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { TenantService } from './tenant.service';
 import type { TenantRequest } from './tenant.middleware';
 

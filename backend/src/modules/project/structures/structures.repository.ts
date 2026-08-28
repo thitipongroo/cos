@@ -8,7 +8,7 @@ import { clsTenantId } from '../../../shared/context/cls-context';
 import type { CreateStructureDto } from './dto/create-structure.dto';
 import type { UpdateStructureDto } from './dto/update-structure.dto';
 import { decodeCursor, paginate, type CursorListOptions } from '../../../shared/pagination/cursor';
-import { buildingExistsInTenant } from '../shared/parent-existence';
+import { buildingExistsInTenant } from '../public/parent-existence';
 
 export interface StructureRow {
   structure_id: string;

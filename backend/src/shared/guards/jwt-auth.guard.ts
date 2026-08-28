@@ -7,10 +7,10 @@ import {
   CLS_USER_ROLE,
   CLS_TENANT_CODE,
   CLS_DEDICATED_DB_URL,
-} from '../../../shared/context/cls-context';
-import type { AuthenticatedUser } from '../strategies/keycloak-jwt.strategy';
-import { enforceMfaForPrivilegedRoles } from '../../../shared/guards/mfa-enforcement';
-import { LastSeenService } from '../last-seen.service';
+} from '../context/cls-context';
+import type { AuthenticatedUser } from '../context/jwt-payload';
+import { enforceMfaForPrivilegedRoles } from './mfa-enforcement';
+import { LastSeenService } from '../last-seen/last-seen.service';
 
 /**
  * Validates the Keycloak RS256 JWT on every protected endpoint.

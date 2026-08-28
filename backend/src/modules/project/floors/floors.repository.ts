@@ -9,7 +9,7 @@ import { clsTenantId } from '../../../shared/context/cls-context';
 import type { CreateFloorDto } from './dto/create-floor.dto';
 import type { UpdateFloorDto } from './dto/update-floor.dto';
 import { decodeCursor, paginate, type CursorListOptions } from '../../../shared/pagination/cursor';
-import { buildingExistsInTenant } from '../shared/parent-existence';
+import { buildingExistsInTenant } from '../public/parent-existence';
 
 export interface FloorRow {
   floor_id: string;

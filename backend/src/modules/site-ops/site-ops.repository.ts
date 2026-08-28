@@ -8,7 +8,7 @@ import type { Request } from 'express';
 import { TenantPrismaService } from '../tenant/prisma/tenant-prisma.service';
 import { applyCap, capLimit } from '../../shared/pagination/list-cap';
 import { clsTenantId } from '../../shared/context/cls-context';
-import { projectExistsInTenant } from '../project/shared/parent-existence';
+import { projectExistsInTenant } from '../project/public/parent-existence';
 
 // Row types live in ./site-ops.rows; imported here for the method signatures below and re-exported so
 // existing `from './site-ops.repository'` type imports (service, specs) keep resolving.

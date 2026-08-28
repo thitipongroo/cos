@@ -10,7 +10,7 @@ import { clsTenantId } from '../../../shared/context/cls-context';
 import type { CreateBuildingDto } from './dto/create-building.dto';
 import type { UpdateBuildingDto } from './dto/update-building.dto';
 import { decodeCursor, paginate, type CursorListOptions } from '../../../shared/pagination/cursor';
-import { projectExistsInTenant } from '../shared/parent-existence';
+import { projectExistsInTenant } from '../public/parent-existence';
 
 export interface BuildingRow {
   building_id: string;

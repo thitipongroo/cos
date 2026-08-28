@@ -371,6 +371,15 @@ describe('KafkaConsumer — error branches', () => {
     jest.clearAllMocks();
   });
 
+  // A test below installs fake timers as its first statement and restores them as its last. If it
+  // ever fails or times out in between, the fakes stay installed and leak into the NEXT test — which
+  // then waits on a clock nothing advances and fails for a reason that has nothing to do with it.
+  // One failure becomes two, and the second one names the wrong test. Restoring here costs nothing
+  // and removes the ordering dependency entirely.
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   it('sends to DLQ and returns when Avro decode fails', async () => {
     (decodeAvro as jest.Mock).mockRejectedValueOnce(new Error('bad avro'));
     const { DlqPublisher } = jest.requireMock('../dlq') as { DlqPublisher: jest.Mock };
@@ -434,7 +443,11 @@ describe('KafkaConsumer — error branches', () => {
     // 3 attempts total (MAX_RETRIES = 3)
     expect(handler).toHaveBeenCalledTimes(3);
     jest.useRealTimers();
-  });
+    // Explicit timeout, precautionary rather than diagnosed. Under fake timers this test waits for
+    // nothing, so its 20s is wall-clock for the async machinery alone — but jest's 5s default is
+    // measured on a machine that may be running 200 other suites, and this test failing is the one
+    // event that used to take a neighbour down with it. Nothing about the assertions changed.
+  }, 20_000);
 
   // The test above proves the ATTEMPT COUNT. It cannot prove the DELAYS: `runAllTimersAsync()`
   // drains a queue of any duration, so [1, 1, 1] would satisfy it just as well as [1000, 5000, 30000].
@@ -455,7 +468,9 @@ describe('KafkaConsumer — error branches', () => {
     // Record the delay the consumer asks for, then honour it instantly so the test does not
     // actually sleep 6 seconds. Fake timers cannot be used here: useFakeTimers()/useRealTimers()
     // swap the global, which would discard this spy.
-    const realSetTimeout = setTimeout;
+    // requireActual, NOT the ambient `setTimeout`: if fake timers were installed by anything
+    // earlier, the global is a fake and scheduling on it would hang forever.
+    const realSetTimeout = (jest.requireActual('timers') as typeof import('timers')).setTimeout;
     const delays: unknown[] = [];
     const spy = jest.spyOn(global, 'setTimeout').mockImplementation(((
       fn: () => void,

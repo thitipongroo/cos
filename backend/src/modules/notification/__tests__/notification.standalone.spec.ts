@@ -49,7 +49,7 @@ jest.mock('../notification.service', () => ({
   })),
 }));
 
-import { createStandaloneNotifier } from '../notification.standalone';
+import { createStandaloneNotifier } from '../public/notification.standalone';
 import { NotificationService } from '../notification.service';
 import { NotificationRepository } from '../notification.repository';
 import { NotificationPrismaService } from '../notification-prisma.service';

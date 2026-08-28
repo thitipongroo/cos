@@ -18,14 +18,14 @@ jest.mock('@nestjs/passport', () => ({
 import { ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 import { JwtAuthGuard } from '../jwt-auth.guard';
-import { LastSeenService } from '../../last-seen.service';
+import { LastSeenService } from '../../last-seen/last-seen.service';
 import {
   CLS_TENANT_ID,
   CLS_USER_ID,
   CLS_USER_ROLE,
   CLS_TENANT_CODE,
   CLS_DEDICATED_DB_URL,
-} from '../../../../shared/context/cls-context';
+} from '../../context/cls-context';
 
 const CONTEXT = {} as ExecutionContext;
 

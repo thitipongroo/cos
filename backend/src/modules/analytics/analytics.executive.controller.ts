@@ -2,7 +2,7 @@ import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { Roles } from '@cos/rbac';
 import { CosRole } from '@cos/types';
-import { JwtAuthGuard } from '../identity/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
 import { AnalyticsService } from './analytics.service';
 import { AnalyticsProjectScopeService } from './analytics-project-scope.service';

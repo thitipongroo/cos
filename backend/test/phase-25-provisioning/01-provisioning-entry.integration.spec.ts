@@ -23,7 +23,7 @@ import {
   type IntegrationInfra,
 } from '../helpers/integration-infra';
 import { AppModule } from '../../src/app.module';
-import { JwtAuthGuard } from '../../src/modules/identity/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../src/shared/guards/jwt-auth.guard';
 import { TenantService } from '../../src/modules/tenant/tenant.service';
 
 jest.setTimeout(900_000);

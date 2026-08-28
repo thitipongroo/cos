@@ -8,7 +8,7 @@ import { TenantPrismaService } from '../../tenant/prisma/tenant-prisma.service';
 import { clsTenantId } from '../../../shared/context/cls-context';
 import type { CreateRiskDto } from './dto/create-risk.dto';
 import type { UpdateRiskDto } from './dto/update-risk.dto';
-import { projectExistsInTenant } from '../shared/parent-existence';
+import { projectExistsInTenant } from '../public/parent-existence';
 import { applyCap, capLimit } from '../../../shared/pagination/list-cap';
 
 export type RiskCategoryValue =

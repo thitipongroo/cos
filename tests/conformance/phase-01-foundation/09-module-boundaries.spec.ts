@@ -51,6 +51,28 @@ const moduleNames = (): string[] =>
  * Read from the DECORATOR rather than from a hand-kept manifest, so the rule tracks whatever the
  * module actually offers and cannot drift from it.
  */
+/**
+ * A module's public API has TWO halves, and it needs both.
+ *
+ * 1. `@Module({ exports: [...] })` — the DI channel master:551 sanctions. It can only ever hold
+ *    PROVIDERS. A DTO class, an interface, a free function and a `const` are structurally ineligible,
+ *    no matter how deliberately a module means to publish them.
+ * 2. `<module>/public/` — a named folder, which is the half that was missing. Introduced 2026-08-27
+ *    after the surviving breaches turned out to be three different problems, none of them "someone
+ *    reached into internals":
+ *      · safety needed SubmitInspectionDto as a VALUE, because `@Body() dto: X` needs the runtime
+ *        class for class-validator's metadata — a type alias silently disables ValidationPipe.
+ *      · identity and tenant needed createStandaloneNotifier, because a Temporal activity runs in
+ *        the worker process, outside the Nest container, and cannot inject anything.
+ *      · site-ops needed projectExistsInTenant, which project/ had already half-published by
+ *        inventing a folder called `shared/` — the convention, unnamed and unenforced.
+ *    This is the same device Shopify's Packwerk spells `public/` and Spring Modulith spells a named
+ *    interface: the exported surface is declared by LOCATION, so it survives a language that cannot
+ *    express it in the framework's own export list.
+ *
+ * Everything else in a module stays private. `public/` earns its name only while it is small and
+ * deliberate: a module that publishes most of itself has not drawn a boundary.
+ */
 const publicApiOf = (mod: string): Set<string> => {
   const api = new Set<string>();
   const dir = path.join(abs(MODULES_DIR), mod);
@@ -65,6 +87,19 @@ const publicApiOf = (mod: string): Set<string> => {
       }
     }
     for (const m of src.matchAll(/export class (\w+Module)/g)) api.add(m[1]!);
+  }
+
+  const publicDir = path.join(dir, 'public');
+  if (fs.existsSync(publicDir)) {
+    for (const file of fs.readdirSync(publicDir)) {
+      if (!file.endsWith('.ts') || file.endsWith('.spec.ts')) continue;
+      const src = fs.readFileSync(path.join(publicDir, file), 'utf8');
+      for (const m of src.matchAll(
+        /export\s+(?:declare\s+)?(?:async\s+)?(?:abstract\s+)?(?:class|const|function|type|interface|enum)\s+(\w+)/g,
+      )) {
+        api.add(m[1]!);
+      }
+    }
   }
   return api;
 };
@@ -121,27 +156,23 @@ const key = (b: Pick<Breach, 'from' | 'to' | 'symbol'>): string =>
   `${b.from} -> ${b.to}/${b.symbol}`;
 
 /**
- * Edges that predate enforcement (measured 2026-08-26). Every entry is a thing to fix, not a thing
- * that is allowed — the test below fails if one is fixed and left here.
+ * Empty since 2026-08-27, and meant to stay that way.
  *
- * TYPE-ONLY entries are erased at compile time and carry no runtime coupling. They are still listed:
- * a DTO class is another module's input contract, and `sync` importing nine of them is the shape of
- * a module that replays every domain's writes. If those belong anywhere shared it is @cos/types,
- * which is what master:1604 lists as the home for shared contracts.
+ * It held 26 edges when enforcement began the day before. Most were closed by moving code that had
+ * never belonged to a module — request-context shapes, DB-routing utils, Temporal activity helpers —
+ * into shared/. The last seven were not that, and treating them as "reaches into internals" was a
+ * misreading: each was a module publishing something the framework gave it no way to publish. Two
+ * changes closed them.
  *
- * RUNTIME entries are the sharp ones — executable code reached past a module's own API.
+ *   · shared/sync/conflict-handler.ts — the offline-conflict strategies were filed under site-ops
+ *     while serving files/ too, and the file imports nothing at all. It was mis-homed, not breached.
+ *   · <module>/public/ — see publicApiOf above for why a second half was needed.
+ *
+ * Nothing here is grandfathered any more. An edge that needs to exist is declared, in `public/` or
+ * in `exports:`; an edge that should not exist fails. If a future change genuinely needs an entry in
+ * this list, that is a design decision to make deliberately — not a line to append while going past.
  */
-const KNOWN_BREACHES: ReadonlyArray<string> = [
-  // type-only — DTOs and request/payload shapes
-  'files -> site-ops/ConflictStatus',
-  // runtime — executable code past the module API
-  'files -> site-ops/resolveAnnotationConflict',
-  'identity -> notification/createStandaloneNotifier',
-  'safety -> site-ops/SubmitInspectionDto',
-  'site-ops -> project/projectExistsInTenant',
-  'tenant -> notification/PLATFORM_HUMAN_GATE_EVENT_TYPE',
-  'tenant -> notification/createStandaloneNotifier',
-];
+const KNOWN_BREACHES: ReadonlyArray<string> = [];
 
 /**
  * shared/ sits BENEATH the modules, so nothing in it may depend on one.
@@ -157,18 +188,22 @@ const KNOWN_BREACHES: ReadonlyArray<string> = [
  * TenantRequest are request-context shapes, and an interface can never be a NestJS `exports:` entry,
  * so no module could have offered them as public API in the first place.
  *
- * The two that remain are one decision, not two: shared/feature-flags uses OptionalJwtAuthGuard, and
- * that guard cannot simply move here — JwtAuthGuard, which it extends, depends on
- * modules/identity/last-seen.service, so relocating it would move the inversion rather than remove
- * it. Left listed for the product owner.
+ * The last two were closed on 2026-08-27, and the note that stood here — "that guard cannot simply
+ * move, JwtAuthGuard depends on modules/identity/last-seen.service, so relocating it would move the
+ * inversion rather than remove it" — was wrong about the chain. LastSeenService imports only
+ * shared/prisma/create-prisma-client and @cos/logger, so it moved to shared/last-seen/ with nothing
+ * following it; JwtAuthGuard's one other reach into modules/ was `AuthenticatedUser`, taken via
+ * keycloak-jwt.strategy, which merely re-exports it from shared/context/jwt-payload. Both guards now
+ * sit in shared/guards/ beside roles/policy/permissions — where the other three already were, and
+ * where spec §6.9 puts guards that depend on JwtPayload.
+ *
+ * The list is empty and must stay empty. There is no longer a "known" inversion to grandfather: the
+ * next one is a new decision, and it should be made before the import is written, not after.
  */
 describe('shared/ does not depend on any module', () => {
   const SHARED = 'backend/src/shared';
 
-  const KNOWN_INVERSIONS: ReadonlyArray<string> = [
-    'shared/feature-flags/feature-flags.module.ts -> identity/guards/optional-jwt-auth.guard',
-    'shared/feature-flags/flags.controller.ts -> identity/guards/optional-jwt-auth.guard',
-  ];
+  const KNOWN_INVERSIONS: ReadonlyArray<string> = [];
 
   const inversions = ((): string[] => {
     const out: string[] = [];
@@ -206,8 +241,10 @@ describe('shared/ does not depend on any module', () => {
   });
 
   it('the known-inversion list is not growing', () => {
-    // 8 when this was first measured on 2026-08-26; 2 after the request-context shapes moved.
-    expect(KNOWN_INVERSIONS.length).toBeLessThanOrEqual(2);
+    // 8 when first measured on 2026-08-26; 2 after the request-context shapes moved; 0 on
+    // 2026-08-27 once LastSeenService and both JWT guards moved into shared/. Zero is the floor:
+    // this assertion can only ever be relaxed by someone editing this number on purpose.
+    expect(KNOWN_INVERSIONS.length).toBe(0);
   });
 });
 
@@ -243,10 +280,10 @@ describe('module boundaries (master:551, 1608-1609)', () => {
     // 2026-08-26; 17 after `sync` stopped importing nine domain DTOs, then 13 once TenantRequest
     // moved to shared/context, 12 once JwtPayload did too, and 9 after the two DB-routing utils
     // (getDbUrlForTenant, decryptDedicatedDbUrl) moved to shared/prisma and shared/crypto — all on
-    // the same day, then 7 once the Temporal activity helpers moved to shared/workflows.
-    // What is left needs a design decision per edge, not a move.
-    expect(KNOWN_BREACHES.length).toBeLessThanOrEqual(7);
-    expect(breaches.length).toBeLessThanOrEqual(7);
+    // the same day, then 7 once the Temporal activity helpers moved to shared/workflows, and 0 on
+    // 2026-08-27 once `public/` gave a module somewhere to publish a DTO, a factory and a const.
+    expect(KNOWN_BREACHES.length).toBe(0);
+    expect(breaches.length).toBe(0);
   });
 
   it('the sanctioned channel is actually used — most cross-module edges go through exports', () => {

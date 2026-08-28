@@ -49,7 +49,7 @@ import { ConsentService } from './consent/consent.service';
 import { GeoIpService } from './network-origin/geoip.service';
 import { NetworkOriginService } from './network-origin/network-origin.service';
 import { KeycloakJwtStrategy } from './strategies/keycloak-jwt.strategy';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 
 @Module({
   // NotificationModule: NotificationService for step-up challenges (routed through the service per

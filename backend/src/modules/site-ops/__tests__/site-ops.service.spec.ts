@@ -20,7 +20,7 @@ import type {
 import { IssueSeverity, IssueType } from '../dto/create-issue.dto';
 import { ReportShift, BlockerCategory } from '../dto/create-site-report.dto';
 import { IssueStatus } from '../dto/update-issue.dto';
-import { InspectionStatus } from '../dto/submit-inspection.dto';
+import { InspectionStatus } from '../public/submit-inspection.dto';
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 

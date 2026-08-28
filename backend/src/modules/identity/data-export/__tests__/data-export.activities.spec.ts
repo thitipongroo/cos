@@ -39,7 +39,7 @@ jest.mock('../../../files/file-service-client.service', () => ({
 // notifications.notifications, and for a PDPA/GDPR subject response the record that the subject was
 // notified is part of the obligation. A Temporal activity runs outside the Nest container, so the
 // service arrives through createStandaloneNotifier(), the same seam the §19.8 human gate uses.
-jest.mock('../../../notification/notification.standalone', () => ({
+jest.mock('../../../notification/public/notification.standalone', () => ({
   createStandaloneNotifier: () => ({
     service: { notifyUserCritical: sendMock },
     dispose: disposeMock,
