@@ -16,7 +16,18 @@ import type { ServerSyncStatus, LocalSyncStatus } from './ConflictHandler';
 import { isNetworkError, isPermanentFailure } from './httpFailure';
 
 const MAX_RETRIES = 5;
-const BATCH_SIZE = 20;
+/**
+ * §17.6 / master:3743 — "On sync: process up to 20 items from queue".
+ *
+ * Exported so the number can be asserted. It was private and nothing read it, so raising it to 500
+ * would have kept every test green while a reconnect after a long offline shift tried to push the
+ * whole backlog in one pass — which is the UI stall §17.7's batch cap exists to prevent.
+ *
+ * `fetchPending` carries the same 20 as a parameter DEFAULT. The two must agree: the default is what
+ * any other caller gets, and a SyncManager that asked for more than the queue layer would hand back
+ * would silently process fewer items than this constant claims.
+ */
+export const BATCH_SIZE = 20;
 
 // §17.2 retry exhaustion, keyed on THE VALUE THE QUEUE ACTUALLY HOLDS.
 //

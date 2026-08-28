@@ -1,6 +1,8 @@
+import * as fs from 'fs';
+import * as path from 'path';
 import type { SyncQueueItem } from '../../db/sync-queue';
 import type { HttpClient, SyncManagerCallbacks } from '../SyncManager';
-import { SyncManager } from '../SyncManager';
+import { SyncManager, BATCH_SIZE } from '../SyncManager';
 import { ConflictHandler } from '../ConflictHandler';
 
 // ── Mock sync-queue ──────────────────────────────────────────────────────────
@@ -291,6 +293,23 @@ describe('SyncManager', () => {
       expect(onUserNotify).not.toHaveBeenCalled();
     });
 
+    // The four types the 2026-08-23 product-owner ruling added to DISCARD_NOTIFY_TYPES, none of
+    // which had a case. Their failure mode is the one the source comment above the set calls out as
+    // unjustifiable: drop any of them from the set and it stops matching any branch, falls through
+    // to the same path as an unknown type, and is discarded in SILENCE — the user is never told the
+    // record they captured on site is gone. Every other test in this file stays green.
+    it.each(['issue', 'photo_annotation', 'delivery', 'purchase-request'])(
+      '%s → discarded but the user is told (PO 2026-08-23)',
+      async (entityType) => {
+        const onUserNotify = jest.fn();
+        const onExhausted = jest.fn().mockResolvedValue(undefined);
+        await exhausted(entityType, { onUserNotify, onExhausted });
+        expect(onUserNotify).toHaveBeenCalledWith('sync.exhausted.discarded');
+        // Discard, not escalate: these do not reach the tenant-admin review queue.
+        expect(onExhausted).not.toHaveBeenCalled();
+      },
+    );
+
     it('unknown entity type → no callbacks called', async () => {
       const onExhausted = jest.fn().mockResolvedValue(undefined);
       const onUserNotify = jest.fn();
@@ -465,5 +484,29 @@ describe('SyncManager', () => {
         expect.objectContaining({ synced: 1 }),
       );
     });
+  });
+});
+
+describe('SyncManager batch size (master:3743, §17.7)', () => {
+  it('processes at most 20 items per cycle', () => {
+    expect(BATCH_SIZE).toBe(20);
+  });
+
+  it('asks the queue layer for exactly that many', () => {
+    // The constant alone proves nothing: processQueue could pass any number, or none, and take the
+    // queue layer's own default instead. This is the wiring.
+    mockFetchPending.mockReturnValueOnce([]);
+    const http: HttpClient = { post: jest.fn() };
+    void new SyncManager(http, () => 'tok').processQueue();
+    expect(mockFetchPending).toHaveBeenCalledWith(20);
+  });
+
+  it('agrees with the default fetchPending would use on its own', () => {
+    // Two copies of 20 live in the tree — this constant and `fetchPending(limit = 20)`. If they ever
+    // drift, the manager silently processes a different number than its own constant advertises.
+    const source = fs.readFileSync(path.join(__dirname, '..', '..', 'db', 'sync-queue.ts'), 'utf8');
+    const declared = /export function fetchPending\(limit = (\d+)\)/.exec(source);
+    expect(declared).not.toBeNull();
+    expect(Number(declared![1])).toBe(BATCH_SIZE);
   });
 });

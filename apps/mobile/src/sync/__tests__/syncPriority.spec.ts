@@ -18,6 +18,33 @@ describe('§17.6 sync priority order', () => {
     ]);
   });
 
+  // The literal above is a snapshot of what the list IS. This is what §17.6 REQUIRES, and the two
+  // are not the same thing: the spec names eight types, the implementation carries eleven. The four
+  // extras (issue, delivery, purchase-request, photo_annotation) were added by later amendments and
+  // are free to sit anywhere; the eight are not.
+  //
+  // Why both cases are needed: a future change that adds a twelfth type edits the literal, and a
+  // one-line literal edit gives no signal about which neighbours were load-bearing. Someone moving
+  // `material` above `inspection` while rewriting that array would update it to match and see green.
+  // Expressed as a relative order, the spec constraint survives every edit to the list.
+  it('keeps the eight §17.6 types in the order the spec fixes, whatever else is added', () => {
+    const SPEC_17_6 = [
+      'safety', // 1. Safety incidents
+      'attendance', // 2. Workforce attendance
+      'inspection', // 3. Inspection results
+      'task', // 4. Task progress updates
+      'site_report', // 5. Site report drafts
+      'material', // 6. Material consumption logs
+      'equipment', // 7. Equipment usage logs
+      // 8. Photo/media uploads are NOT a queue entity — binaries go last through PhotoUploadQueue
+      //    after the queue drains (see runPushSync). `photo_annotation` is a JSON mutation, a
+      //    different thing, so it is deliberately absent from this list.
+    ];
+    const ranks = SPEC_17_6.map((t) => SYNC_PRIORITY_ORDER.indexOf(t as never));
+    expect(ranks).not.toContain(-1);
+    expect(ranks).toEqual([...ranks].sort((a, b) => a - b));
+  });
+
   describe('syncPriorityRank', () => {
     it('returns the index for a ranked entity type', () => {
       expect(syncPriorityRank('safety')).toBe(0);
