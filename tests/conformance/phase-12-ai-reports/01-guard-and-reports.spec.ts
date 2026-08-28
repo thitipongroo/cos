@@ -186,7 +186,11 @@ describe('Phase 12 · delay risk bands (master:3991)', () => {
 });
 
 describe('Phase 12 · orchestration is a plain sequential pipeline (master:4000-4010, 4028)', () => {
-  it('runs the six steps in order', () => {
+  it('runs steps 2 through 6 in order', () => {
+    // Renamed on 2026-08-29. This case was called "runs the six steps in order" and checked FIVE:
+    // master:4020 makes step 1 "RAG retrieval (via Phase 11 RAG API)", and it was absent from the
+    // list. A title that claims more than its body checks is worse than no test, because the gap it
+    // names is the one everyone then assumes is covered. Step 1 is asserted separately below.
     const steps = ['token budget', 'render prompt', 'hallucination guard', 'persist', 'return'];
     let cursor = -1;
     for (const step of steps) {
@@ -194,6 +198,87 @@ describe('Phase 12 · orchestration is a plain sequential pipeline (master:4000-
       expect(at).toBeGreaterThan(cursor);
       cursor = at;
     }
+  });
+
+  /**
+   * Step 1 — context retrieval (master:4020, amended 2026-08-29).
+   *
+   * pipeline.py delegates it by design: its docstring reads "1. RAG retrieval context passed in by
+   * caller" and `generate_report` takes `context_data`. That shape is fine; what it means is that
+   * the obligation lives in the four endpoints, and until 2026-08-29 three of them did not meet it.
+   *
+   * The ledger that stood here listed SITE_SUMMARY, PROCUREMENT_SUMMARY and EXECUTIVE_SUMMARY as
+   * reaching the LLM with no context at all. All three were wired that day to deterministic
+   * tenant-scoped assemblers (reports/context/), and the ledger is now empty — which is why these
+   * cases are stated as the requirement rather than as an allowance.
+   *
+   * Relational rather than the RAG API, and the amended master:4020 records why: the Phase 11 index
+   * holds only uploaded-file chunks, and these reports ask for counts and sums that a top-k
+   * similarity search cannot answer.
+   */
+  const REPORT_TYPES = ['SITE_SUMMARY', 'PROCUREMENT_SUMMARY', 'EXECUTIVE_SUMMARY', 'DELAY_RISK'];
+
+  /**
+   * The `_run_report(...)` call whose argument list names this report type.
+   *
+   * Written the naive way first — indexOf the quoted type, then lastIndexOf('_run_report(') behind
+   * it — and it passed a mutation it should have caught: since 2026-08-29 each endpoint ALSO names
+   * its report type in the `_assemble(...)` line above the call, so the search landed on that
+   * occurrence and walked back to the previous endpoint's `_run_report`. It was reading the wrong
+   * call and reporting green. Scan the calls themselves instead.
+   */
+  const callSite = (reportType: string): string => {
+    const calls: string[] = [];
+    for (let i = main.indexOf('_run_report('); i !== -1; i = main.indexOf('_run_report(', i + 1)) {
+      calls.push(main.slice(i, main.indexOf(')', i) + 1));
+    }
+    const match = calls.filter((c) => c.includes(`"${reportType}"`));
+    // Exactly one call site per report type — two would mean one of them goes unchecked.
+    expect(match).toHaveLength(1);
+    return match[0]!;
+  };
+
+  it.each(REPORT_TYPES)('%s passes assembled context to the pipeline', (rt) => {
+    // The regression this replaces was invisible for months: an endpoint that simply omits the
+    // argument still compiles, still answers 200, and produces a confident report about nothing.
+    expect(callSite(rt)).toMatch(/context/);
+  });
+
+  it.each(['site', 'procurement', 'executive'])(
+    'the %s assembler reads relational tables through the tenant scope',
+    (name) => {
+      const src = read(`${gateway}/reports/context/${name}.py`);
+      expect(src).toMatch(/SELECT/i);
+      // tenant_scoped sets app.current_tenant_id on the same connection and transaction. Without it
+      // every FORCE-RLS table returns ZERO rows and the report describes a project with no issues,
+      // no late POs and no overdue invoices — a confident, wrong, all-clear.
+      expect(src).toMatch(/tenant_scoped/);
+      // Defence in depth alongside RLS, never instead of it (master §Never).
+      expect(src).toMatch(/tenant_id = \$1/);
+    },
+  );
+
+  it('no report path calls the Phase 11 RAG API', () => {
+    // Absence, and deliberate: `/api/v1/rag/query` is SERVED by this service and consumed by nothing
+    // in it. That is correct for the four reports as specified — all four ask for figures. When a
+    // report needs document context, this case fails and the comment above must be rewritten to
+    // match what is then true.
+    const reportSources = [
+      'reports/pipeline.py',
+      'risk/context.py',
+      'reports/context/site.py',
+      'reports/context/procurement.py',
+      'reports/context/executive.py',
+    ]
+      .map((f) => read(`${gateway}/${f}`))
+      .join('\n');
+    expect(reportSources).not.toMatch(/rag\/query|rag_query/);
+  });
+
+  it('the seven-day site window is a constant, not the caller-supplied date_range', () => {
+    // master:3984 fixes seven days. `date_range` is free text the client sends for the prompt to
+    // echo; if it drove the query, a caller could widen its own report's window silently.
+    expect(read(`${gateway}/reports/context/site.py`)).toMatch(/REPORT_WINDOW_DAYS = 7/);
   });
 
   it('uses no agent framework (master:4001, 4028)', () => {

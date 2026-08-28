@@ -4017,7 +4017,24 @@ Orchestration:
              Layer C orchestration = LAYER-C-001, provisionally resolved to Temporal.io
              (PO 2026-07-10; final commit gated by §22.6 benchmark);
              see docs/specifications/22-ai-architecture.md §22.3)
-  Step 1: RAG retrieval (via Phase 11 RAG API)
+  Step 1: Context retrieval — RELATIONAL for figures, RAG for documents.
+          AMENDED 2026-08-29 (product-owner). This line read "RAG retrieval (via Phase 11 RAG API)",
+          and under that wording three of the four reports shipped with NO context at all: nothing
+          called the RAG API, and nothing would have helped if it had. The Phase 11 index holds one
+          thing — chunks of uploaded files (ai-embedding-worker subscribes to
+          {tenant}.file.document.uploaded.v1 and nothing else). Site reports, RFQs, POs, invoices and
+          budgets are not in it, and vector similarity cannot answer what these reports ask anyway:
+          "how many POs are past their delivery date" is an aggregate, and a top-k similarity search
+          returns the passages that read most like the question, not a count.
+          So retrieval is routed by the SHAPE of the question, which is also what the delay-risk
+          report had already been doing since 2026-08-23 via risk/context.py:
+            · figures, counts, dates, money  -> tenant-scoped SQL, assembled deterministically
+              (services/ai-gateway/reports/context/{site,procurement,executive}.py + risk/context.py)
+            · narrative and documents        -> the Phase 11 RAG API, unchanged and still available
+          This is the stronger hallucination control as well as the correct one: the guard's
+          contradiction check can only catch a figure that disagrees with the context, so a report
+          generated from an empty context had nothing to disagree with and every number in it was
+          unfalsifiable.
   Step 2: Context assembly and token budget check
   Step 3: LLM generation with structured output (JSON mode)
   Step 4: Hallucination guard validation
