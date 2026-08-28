@@ -44,7 +44,7 @@ jest.mock('../../../../shared/events/event-outbox.service', () => ({
   },
 }));
 import { updateRfqStatus, markQuotationsEvaluated } from '../rfq.activities';
-import { disconnectActivityClients } from '../activity-helpers';
+import { disconnectActivityClients } from '../../../../shared/workflows/activity-helpers';
 
 const mockExecuteRaw = jest.fn().mockResolvedValue(1);
 const mockExecuteRawUnsafe = jest.fn().mockResolvedValue(undefined);

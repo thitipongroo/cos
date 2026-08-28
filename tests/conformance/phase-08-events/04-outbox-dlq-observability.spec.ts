@@ -4,23 +4,45 @@
  */
 import { read } from '../helpers';
 
-const outbox = read('packages/@cos/shared/src/kafka/outbox.ts');
+const outboxWriter = read('packages/@cos/shared/src/kafka/outbox.ts');
+// The poller is NOT in @cos/shared — Rule 34(c) forbids it there, and until 2026-08-27 a duplicate
+// lived in the SDK anyway. This file used to read that duplicate for all three poller assertions,
+// so they were describing a class no deployment ever ran while the one in EventsModule went
+// unchecked. See tests/conformance/phase-08-events/06-rule-34.spec.ts.
+const poller = read('backend/src/shared/events/outbox-poller.service.ts');
+const outboxMigration = read(
+  'backend/prisma/migrations/20260531000002_outbox_events/migration.sql',
+);
 const dlq = read('packages/@cos/shared/src/kafka/dlq.ts');
 const consumer = read('packages/@cos/shared/src/kafka/consumer.ts');
 const metrics = read('packages/@cos/shared/src/kafka/metrics.ts');
 
 describe('Phase 8 · outbox pattern (master:3115-3124)', () => {
-  it('the poller runs every 500ms (master:3122)', () => {
-    expect(outbox).toMatch(/\b500\b/);
+  it('the poller runs every 500ms (master:3158)', () => {
+    expect(poller).toMatch(/\b500\b/);
   });
 
-  it('it publishes only unpublished rows and marks them afterwards (master:3122-3123)', () => {
-    expect(outbox).toMatch(/published/);
+  it('it publishes only unpublished rows and marks them afterwards (master:3158-3159)', () => {
+    // Reading the SQL, not the word: master:3159 is "marks published=true after successful Kafka
+    // produce", and a file merely containing the string "published" satisfied nothing.
+    expect(poller).toMatch(/published\s*=\s*(true|TRUE)/);
+    expect(poller).toMatch(/published\s*=\s*(false|FALSE)/);
   });
 
-  it('the table carries the columns master declares (master:3119-3120)', () => {
-    for (const column of ['event_type', 'payload', 'published', 'published_at']) {
-      expect(outbox).toContain(column);
+  it('the writer and the poller address the same table (master:3157-3158)', () => {
+    // Cross-source: two files that must name one table and are never loaded together.
+    expect(outboxWriter).toContain('platform.outbox_events');
+    expect(poller).toContain('platform.outbox_events');
+  });
+
+  it('the table carries the columns master declares (master:3155-3156)', () => {
+    // Against the MIGRATION, which is what actually creates the table. The previous version of this
+    // case read a TypeScript file and passed on any occurrence of the words anywhere in it —
+    // including in a comment.
+    for (const column of ['event_type', 'payload', 'published', 'created_at', 'published_at']) {
+      expect(outboxMigration).toMatch(
+        new RegExp(`^\\s*${column}\\s+(UUID|VARCHAR|JSONB|BOOLEAN|TIMESTAMPTZ)`, 'im'),
+      );
     }
   });
 });
@@ -71,7 +93,10 @@ describe('Phase 8 · Debezium belongs to Phase 17, not here (master:3142-3149)',
     // "Path 2 — Data Replication to Data Lake (FUTURE — Debezium CDC, implement with Phase 17)".
     // master:3145 is explicit that Debezium reads the WAL independently and is NOT the outbox
     // mechanism; a half-built connector here would blur two paths the spec keeps apart on purpose.
-    const sdk = `${outbox}\n${dlq}\n${consumer}\n${metrics}`;
+    // The poller is included since 2026-08-27: it moved to backend/ under Rule 34(c), and an
+    // absence check that stops covering the file where the connector would most plausibly be
+    // added is worse than none, because it still reports green.
+    const sdk = `${outboxWriter}\n${poller}\n${dlq}\n${consumer}\n${metrics}`;
     expect(sdk).not.toMatch(/debezium/i);
   });
 });

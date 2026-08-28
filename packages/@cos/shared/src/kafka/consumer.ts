@@ -21,7 +21,20 @@ const logger = createLogger('kafka-consumer');
 
 const IDEMPOTENCY_TTL_SECONDS = 86400; // 24 hours
 const MAX_RETRIES = 3;
-const RETRY_DELAYS_MS = [1000, 5000, 30000]; // exponential backoff
+/**
+ * master:3164 — "3 attempts with exponential backoff (1s, 5s, 30s)".
+ *
+ * Exported so the values can be asserted rather than trusted. They were neither exported nor tested
+ * until 2026-08-26: shortening them to [1] would have kept every suite green while removing the
+ * backoff that exists to let a downstream service recover before the message is written off to the
+ * DLQ.
+ *
+ * The LENGTH is load-bearing too. The loop waits BETWEEN attempts, so there is one fewer delay than
+ * there are attempts. If the two drift apart, `RETRY_DELAYS_MS[attempt]` is `undefined`,
+ * `setTimeout(fn, undefined)` fires on the next tick, and the retries collapse into an instant
+ * triple-tap — no error, no warning, and a transient failure becomes a DLQ entry.
+ */
+export const RETRY_DELAYS_MS = [1000, 5000, 30000]; // exponential backoff
 
 export type MessageHandler<T = unknown> = (
   event: BaseEventEnvelope<T>,

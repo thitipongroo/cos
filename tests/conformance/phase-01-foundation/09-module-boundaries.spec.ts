@@ -137,13 +137,79 @@ const KNOWN_BREACHES: ReadonlyArray<string> = [
   // runtime — executable code past the module API
   'files -> site-ops/resolveAnnotationConflict',
   'identity -> notification/createStandaloneNotifier',
-  'identity -> procurement/disconnectActivityClients',
-  'identity -> procurement/withTenantTx',
   'safety -> site-ops/SubmitInspectionDto',
   'site-ops -> project/projectExistsInTenant',
   'tenant -> notification/PLATFORM_HUMAN_GATE_EVENT_TYPE',
   'tenant -> notification/createStandaloneNotifier',
 ];
+
+/**
+ * shared/ sits BENEATH the modules, so nothing in it may depend on one.
+ *
+ * Not covered by the module scan above, which only walks backend/src/modules — and that blind spot
+ * hid eight of these until 2026-08-26. The direction matters more than the count: `shared/guards`
+ * is where spec §6.9 puts RolesGuard and PolicyGuard, and a guard that reaches back into a module
+ * makes the module a prerequisite for the layer every module depends on. Nothing fails when that
+ * happens; the import resolves, the app boots, and the cycle only shows up as a mysterious ordering
+ * problem much later.
+ *
+ * Six were fixed by moving what shared/ actually needed into it: JwtPayload, AuthenticatedUser and
+ * TenantRequest are request-context shapes, and an interface can never be a NestJS `exports:` entry,
+ * so no module could have offered them as public API in the first place.
+ *
+ * The two that remain are one decision, not two: shared/feature-flags uses OptionalJwtAuthGuard, and
+ * that guard cannot simply move here — JwtAuthGuard, which it extends, depends on
+ * modules/identity/last-seen.service, so relocating it would move the inversion rather than remove
+ * it. Left listed for the product owner.
+ */
+describe('shared/ does not depend on any module', () => {
+  const SHARED = 'backend/src/shared';
+
+  const KNOWN_INVERSIONS: ReadonlyArray<string> = [
+    'shared/feature-flags/feature-flags.module.ts -> identity/guards/optional-jwt-auth.guard',
+    'shared/feature-flags/flags.controller.ts -> identity/guards/optional-jwt-auth.guard',
+  ];
+
+  const inversions = ((): string[] => {
+    const out: string[] = [];
+    const walk = (dir: string): void => {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          if (entry.name !== '__tests__') walk(full);
+          continue;
+        }
+        if (!entry.name.endsWith('.ts') || entry.name.endsWith('.spec.ts')) continue;
+        const src = fs.readFileSync(full, 'utf8');
+        for (const [, spec] of src.matchAll(
+          /(?:from|jest\.mock\(|require\()\s*['"](\.[^'"]*modules\/[^'"]+)['"]/g,
+        )) {
+          const target = spec!.slice(spec!.indexOf('modules/') + 'modules/'.length);
+          out.push(`${path.relative(abs('backend/src'), full)} -> ${target}`);
+        }
+      }
+    };
+    walk(abs(SHARED));
+    return out;
+  })();
+
+  it('finds shared source to scan', () => {
+    expect(fs.readdirSync(abs(SHARED)).length).toBeGreaterThan(5);
+  });
+
+  it('has no unlisted dependency on a module', () => {
+    expect(inversions.filter((i) => !KNOWN_INVERSIONS.includes(i))).toEqual([]);
+  });
+
+  it('the known-inversion list has no stale entries', () => {
+    expect(KNOWN_INVERSIONS.filter((k) => !inversions.includes(k))).toEqual([]);
+  });
+
+  it('the known-inversion list is not growing', () => {
+    // 8 when this was first measured on 2026-08-26; 2 after the request-context shapes moved.
+    expect(KNOWN_INVERSIONS.length).toBeLessThanOrEqual(2);
+  });
+});
 
 describe('module boundaries (master:551, 1608-1609)', () => {
   const breaches = findBreaches();
@@ -177,9 +243,10 @@ describe('module boundaries (master:551, 1608-1609)', () => {
     // 2026-08-26; 17 after `sync` stopped importing nine domain DTOs, then 13 once TenantRequest
     // moved to shared/context, 12 once JwtPayload did too, and 9 after the two DB-routing utils
     // (getDbUrlForTenant, decryptDedicatedDbUrl) moved to shared/prisma and shared/crypto — all on
-    // the same day. What is left needs a design decision per edge, not a move.
-    expect(KNOWN_BREACHES.length).toBeLessThanOrEqual(9);
-    expect(breaches.length).toBeLessThanOrEqual(9);
+    // the same day, then 7 once the Temporal activity helpers moved to shared/workflows.
+    // What is left needs a design decision per edge, not a move.
+    expect(KNOWN_BREACHES.length).toBeLessThanOrEqual(7);
+    expect(breaches.length).toBeLessThanOrEqual(7);
   });
 
   it('the sanctioned channel is actually used — most cross-module edges go through exports', () => {

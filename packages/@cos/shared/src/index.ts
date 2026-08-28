@@ -8,7 +8,7 @@ export type { BaseEventEnvelope } from '@cos/types';
 export { KafkaProducer } from './kafka/producer';
 export { KafkaConsumer } from './kafka/consumer';
 export type { MessageHandler, ConsumerOptions } from './kafka/consumer';
-export { OutboxPublisher, OutboxPoller } from './kafka/outbox';
+export { OutboxPublisher } from './kafka/outbox';
 export { DlqPublisher } from './kafka/dlq';
 // Per-tenant topic model + provisioning (spec §7.3, §15.6/15.7, §32.4)
 export { KafkaTopicProvisioner, tenantTopicSuffixes } from './kafka/topic-provisioner';

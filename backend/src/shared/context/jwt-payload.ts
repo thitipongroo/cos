@@ -32,3 +32,16 @@ export interface JwtPayload {
   // privileged roles (see shared/guards/mfa-enforcement.ts, spec §5.4.1).
   acr?: string;
 }
+
+/**
+ * What the auth layer actually puts on `req.user`.
+ *
+ * JwtPayload plus the two fields resolved from platform.tenants during authentication. Declared
+ * beside the payload rather than in the Passport strategy that produces it: shared/ code reads
+ * `req.user` — tenant-context.interceptor is the reason this moved on 2026-08-26 — and importing
+ * the shape from modules/identity made the shared layer depend on a module it sits beneath.
+ */
+export interface AuthenticatedUser extends JwtPayload {
+  tenantCode: string;
+  dedicatedDbUrl?: string;
+}

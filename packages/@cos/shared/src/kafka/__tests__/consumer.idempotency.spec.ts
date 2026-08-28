@@ -43,7 +43,7 @@ jest.mock('../schema-registry.client', () => ({
   decodeAvro: jest.fn(),
 }));
 
-import { KafkaConsumer } from '../consumer';
+import { KafkaConsumer, RETRY_DELAYS_MS } from '../consumer';
 import { decodeAvro } from '../schema-registry.client';
 import { tenantTopicPattern, PLATFORM_EVENTS_TOPIC, exactTopicPattern } from '../topic-catalog';
 
@@ -434,6 +434,66 @@ describe('KafkaConsumer — error branches', () => {
     // 3 attempts total (MAX_RETRIES = 3)
     expect(handler).toHaveBeenCalledTimes(3);
     jest.useRealTimers();
+  });
+
+  // The test above proves the ATTEMPT COUNT. It cannot prove the DELAYS: `runAllTimersAsync()`
+  // drains a queue of any duration, so [1, 1, 1] would satisfy it just as well as [1000, 5000, 30000].
+  // master:3164 states the actual values, so assert what setTimeout is really handed.
+  it('backs off 1s then 5s between the three attempts (master:3164)', async () => {
+    const event = {
+      event_id: 'evt-backoff',
+      event_type: 'construction.project.created.v1',
+      tenant_id: 't1',
+      actor_id: 'u1',
+      occurred_at: new Date().toISOString(),
+      correlation_id: 'c1',
+      event_version: '1.0',
+      payload: {},
+    };
+    (decodeAvro as jest.Mock).mockResolvedValue(event);
+
+    // Record the delay the consumer asks for, then honour it instantly so the test does not
+    // actually sleep 6 seconds. Fake timers cannot be used here: useFakeTimers()/useRealTimers()
+    // swap the global, which would discard this spy.
+    const realSetTimeout = setTimeout;
+    const delays: unknown[] = [];
+    const spy = jest.spyOn(global, 'setTimeout').mockImplementation(((
+      fn: () => void,
+      ms?: number,
+    ) => {
+      delays.push(ms);
+      return realSetTimeout(fn, 0);
+    }) as unknown as typeof setTimeout);
+
+    const consumer = new KafkaConsumer();
+    consumer.on(
+      'construction.project.created.v1',
+      jest.fn().mockRejectedValue(new Error('handler always fails')),
+    );
+
+    try {
+      await (consumer as unknown as { handleMessage: HandleMessage }).handleMessage(makeMessage());
+    } finally {
+      spy.mockRestore();
+    }
+
+    // Two waits for three attempts — the consumer sleeps BETWEEN tries, not after the last one.
+    expect(delays).toEqual([1000, 5000]);
+  });
+
+  // RETRY_DELAYS_MS is indexed by `attempt`, which runs to MAX_RETRIES - 1. Nothing in the type
+  // system ties the two together: drop the array to [1000] and `RETRY_DELAYS_MS[1]` is `undefined`,
+  // `setTimeout(fn, undefined)` fires on the next tick, and the backoff silently disappears while
+  // every other assertion in this file still passes.
+  it('carries exactly one delay fewer than the attempts it paces', () => {
+    expect(RETRY_DELAYS_MS).toEqual([1000, 5000, 30000]);
+    // 3 attempts (asserted above via handler call count) => at most 2 delays are ever read.
+    expect(RETRY_DELAYS_MS.length).toBeGreaterThanOrEqual(2);
+    expect(RETRY_DELAYS_MS.every((ms) => Number.isInteger(ms) && ms > 0)).toBe(true);
+    // Exponential, not flat: each wait must exceed the one before it.
+    for (let i = 1; i < RETRY_DELAYS_MS.length; i++) {
+      expect(RETRY_DELAYS_MS[i]!).toBeGreaterThan(RETRY_DELAYS_MS[i - 1]!);
+    }
   });
 
   it('extracts OTel trace context from message headers (Buffer type)', async () => {

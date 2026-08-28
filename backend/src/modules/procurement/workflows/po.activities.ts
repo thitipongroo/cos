@@ -5,7 +5,7 @@
 
 import { createLogger } from '@cos/logger';
 
-import { publishEvent, withTenantTx } from './activity-helpers';
+import { publishEvent, withTenantTx } from '../../../shared/workflows/activity-helpers';
 
 const logger = createLogger('po-activities');
 

@@ -26,7 +26,7 @@ jest.mock('../../../../shared/prisma/app-database-url', () => ({
 jest.mock('@cos/logger', () => ({
   createLogger: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }),
 }));
-jest.mock('../../../procurement/workflows/activity-helpers', () => ({
+jest.mock('../../../../shared/workflows/activity-helpers', () => ({
   withTenantTx: (tenantId: string, fn: (tx: unknown) => unknown) => withTenantTxMock(tenantId, fn),
 }));
 jest.mock('../../../files/file-service-client.service', () => ({

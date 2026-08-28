@@ -197,6 +197,13 @@ describe('OutboxPollerService.poll — delivery', () => {
 });
 
 describe('OutboxPollerService.poll — pacing', () => {
+  // Every other case in this describe compares poll()'s return to the IMPORTED IDLE_INTERVAL_MS,
+  // which is the constant measured against itself: set it to 5000 and they all stay green while the
+  // poller silently drops from 2 Hz to 0.2 Hz. master:3158 states the number, so pin the number.
+  it('idles for the 500ms master:3158 states, not merely "whatever the constant says"', () => {
+    expect(IDLE_INTERVAL_MS).toBe(500);
+  });
+
   it('idles when there was nothing to do', async () => {
     const { svc } = make();
     await expect(svc.poll()).resolves.toBe(IDLE_INTERVAL_MS);

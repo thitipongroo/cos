@@ -1,28 +1,27 @@
-// OutboxPublisher + OutboxPoller — Phase 8
-// Guarantees event delivery with DB transaction atomicity.
-// Pattern: write to outbox_events in same transaction as business entity,
-//          OutboxPoller polls every 500ms and publishes unpublished rows.
+// OutboxPublisher — Phase 8.
+// Guarantees event delivery with DB transaction atomicity: the event row is written in the SAME
+// transaction as the business entity, so it cannot be lost if the process dies before publishing.
 //
-// outbox_events table lives in the platform schema (single table, no per-tenant schema — ADR-008).
+// outbox_events lives in the platform schema (single table, no per-tenant schema — ADR-008).
 // Service code calls OutboxPublisher.write() inside $transaction.
-// OutboxPoller runs as a background process (started in main.ts).
+//
+// The DRAINING half of the pattern is deliberately NOT here. Rule 34(c) (master:5847) names this
+// exact class — "e.g., OutboxPoller which polls a DB" — as the kind that must live in backend/src/
+// rather than in @cos/shared, because a polling loop needs a Node runtime while this package is
+// meant to be importable from React Native and a Service Worker. An OutboxPoller was nevertheless
+// defined and exported from here until 2026-08-27, duplicating
+// backend/src/shared/events/outbox-poller.service.ts — which is the one registered in EventsModule,
+// and the only one that has ever run. The package README had stated the rule correctly the whole
+// time, a few lines from the code breaking it. The duplicate was deleted rather than kept in sync.
+// Add nothing to this file that needs a DB handle or a timer.
 
 // Minimal Prisma-compatible interface — avoids importing @prisma/client at the package level.
 // @cos/shared must remain framework-agnostic (Rule 34): no Node.js-only runtime imports.
-// Callers pass a real PrismaClient instance; this interface covers the methods OutboxPoller uses.
 interface OutboxPrismaClient {
-  $queryRaw<T = unknown>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T>;
   $executeRaw(strings: TemplateStringsArray, ...values: unknown[]): Promise<number>;
 }
 import { randomUUID } from 'crypto';
-import { KafkaProducer } from './producer';
-import { createLogger } from '@cos/logger';
 import type { BaseEventEnvelope } from '@cos/types';
-
-const logger = createLogger('outbox');
-
-const POLL_INTERVAL_MS = 500;
-const BATCH_SIZE = 50;
 
 export interface OutboxRecord {
   id: string;
@@ -52,7 +51,7 @@ export class OutboxPublisher {
     const eventId = event.event_id ?? randomUUID();
     const envelope = { ...event, event_id: eventId };
 
-    // MUST stay schema-qualified. This INSERT was unqualified while OutboxPoller below reads and
+    // MUST stay schema-qualified. This INSERT was unqualified while the poller reads and
     // updates `platform.outbox_events`, so writer and reader did not necessarily address the same
     // table: nothing in the application sets search_path, and `public.outbox_events` was moved to
     // the `projects` schema by 20260605000004_db_refactor_global_schemas. The failure mode is the
@@ -62,84 +61,5 @@ export class OutboxPublisher {
       INSERT INTO platform.outbox_events (id, event_type, payload, published)
       VALUES (${eventId}::uuid, ${envelope.event_type}, ${JSON.stringify(envelope)}::jsonb, false)
     `;
-  }
-}
-
-/**
- * OutboxPoller — background process that polls outbox_events every 500ms
- * and publishes unpublished events to Kafka.
- * Start once per deployable in main.ts bootstrap.
- */
-export class OutboxPoller {
-  private readonly prisma: OutboxPrismaClient;
-  private readonly producer: KafkaProducer;
-  private running = false;
-  private timer: NodeJS.Timeout | null = null;
-
-  constructor(prisma: OutboxPrismaClient, producer: KafkaProducer) {
-    this.prisma = prisma;
-    this.producer = producer;
-  }
-
-  start(): void {
-    this.running = true;
-    this.scheduleNextPoll();
-    logger.info('OutboxPoller started (interval: 500ms)');
-  }
-
-  stop(): void {
-    this.running = false;
-    if (this.timer) {
-      clearTimeout(this.timer);
-      this.timer = null;
-    }
-    logger.info('OutboxPoller stopped');
-  }
-
-  private scheduleNextPoll(): void {
-    this.timer = setTimeout(async () => {
-      await this.poll();
-      if (this.running) this.scheduleNextPoll();
-    }, POLL_INTERVAL_MS);
-  }
-
-  private async poll(): Promise<void> {
-    try {
-      // Fetch unpublished events from platform.outbox_events
-      const rows = await this.prisma.$queryRaw<OutboxRecord[]>`
-        SELECT id, event_type, payload, published, created_at, published_at
-        FROM platform.outbox_events
-        WHERE published = false
-        ORDER BY created_at ASC
-        LIMIT ${BATCH_SIZE}
-      `;
-
-      if (rows.length === 0) return;
-
-      for (const row of rows) {
-        try {
-          const envelope = row.payload as BaseEventEnvelope<unknown>;
-          await this.producer.publish(envelope);
-
-          // Mark as published
-          await this.prisma.$executeRaw`
-            UPDATE platform.outbox_events
-            SET published = true, published_at = now()
-            WHERE id = ${row.id}::uuid
-          `;
-        } catch (err) {
-          logger.error(
-            { err, event_id: row.id, event_type: row.event_type },
-            'OutboxPoller: failed to publish event',
-          );
-          // Leave as unpublished — will retry on next poll
-        }
-      }
-
-      // rows.length is guaranteed > 0 here — the empty case returned early above.
-      logger.debug({ count: rows.length }, 'OutboxPoller: published events');
-    } catch (err) {
-      logger.error({ err }, 'OutboxPoller: poll error');
-    }
   }
 }

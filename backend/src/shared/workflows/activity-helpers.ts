@@ -1,3 +1,12 @@
+// Tenant-scoped database access for code running OUTSIDE the Nest container.
+//
+// withTenantTx is the non-DI twin of TenantPrismaService.run(): a Temporal activity has no
+// injector, so it cannot ask for the request-scoped client every controller uses. Nothing here is
+// procurement-specific — it lived under modules/procurement/workflows only because procurement
+// had Temporal activities first, and identity's data-export worker then reached across for it,
+// past a module API that could never have offered it (a free function is not a NestJS provider).
+// Moved to shared/workflows on 2026-08-26 (master:1608).
+
 // Shared plumbing for Temporal activities — the I/O half of a workflow.
 //
 // Extracted 2026-07-21 (ADR-021). po.activities.ts and rfq.activities.ts each carried their own
@@ -9,10 +18,10 @@
 import { PrismaClient } from '@prisma/client';
 import type { Logger } from '@cos/logger';
 
-import { createPrismaClient } from '../../../shared/prisma/create-prisma-client';
-import { assertSafeTenantId } from '../../../shared/prisma/assert-safe-tenant-id';
-import { getDbUrlForTenant } from '../../../shared/prisma/get-db-url';
-import { EventOutboxService } from '../../../shared/events/event-outbox.service';
+import { createPrismaClient } from '../prisma/create-prisma-client';
+import { assertSafeTenantId } from '../prisma/assert-safe-tenant-id';
+import { getDbUrlForTenant } from '../prisma/get-db-url';
+import { EventOutboxService } from '../events/event-outbox.service';
 
 // Clients pooled per datasource URL. Building a PrismaClient per activity (and disconnecting it in a
 // finally) meant a fresh pg pool + connect/teardown for every workflow step; activities run

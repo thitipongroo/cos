@@ -15,7 +15,7 @@ import { ClsServiceManager } from 'nestjs-cls';
 import type { PrismaClient } from '@prisma/client';
 import { createLogger } from '@cos/logger';
 
-import { withTenantTx } from '../../../procurement/workflows/activity-helpers';
+import { withTenantTx } from '../../../../shared/workflows/activity-helpers';
 import { createPrismaClient } from '../../../../shared/prisma/create-prisma-client';
 import { appDatabaseUrl } from '../../../../shared/prisma/app-database-url';
 import { assertSafeTenantId } from '../../../../shared/prisma/assert-safe-tenant-id';

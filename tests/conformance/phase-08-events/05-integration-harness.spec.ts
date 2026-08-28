@@ -63,9 +63,12 @@ describe("Phase 8 · schema evolution is the registry's job, and it is configure
   const client = read(`${SHARED}/src/kafka/schema-registry.client.ts`);
 
   it('the FORBIDDEN changes (master:3067-3070) are enforced by BACKWARD_TRANSITIVE, which is set', () => {
-    // rename field / remove field / change type / reorder enum — all four are rejected by the
+    // rename field / remove field / change type — the three FIELD rules are rejected by the
     // registry under this mode. Nothing in application code needs to re-check them, and nothing in
     // application code COULD: the check is against every previously registered version.
+    //
+    // The fourth, reorder-enum, is a different animal and is asserted by pinning the symbol order in
+    // 03-topics-and-schema.spec.ts — a registry check cannot fire on a schema edited in place.
     expect(client).toContain('BACKWARD_TRANSITIVE');
     expect(client).toMatch(/compatibility/i);
   });
