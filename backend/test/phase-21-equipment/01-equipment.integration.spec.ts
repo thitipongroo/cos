@@ -145,6 +145,47 @@ describe('Phase 21 · equipment over HTTP', () => {
       expect(rows.map((r) => r.column_name)).toEqual(['recorded_at']);
     });
 
+    it('indexes utilization on (equipment_id, recorded_at DESC), as master:5270 states', async () => {
+      // A hypertable partitions by TIME, which the case above checks. That makes "everything for
+      // this machine, newest first" — the only query the utilization table exists to answer — a scan
+      // of every chunk unless this index exists. The table is append-only telemetry, so the cost of
+      // its absence grows without anything failing: the query keeps returning correct rows, slower
+      // every week, and there is no error to notice.
+      const rows = await infra.prisma.$queryRawUnsafe<Array<{ indexdef: string }>>(
+        `SELECT indexdef FROM pg_indexes
+          WHERE schemaname = 'equipment_telemetry' AND tablename = 'equipment_utilization'`,
+      );
+      const defs = rows.map((r) => r.indexdef).join('\n');
+      // Column ORDER matters: (recorded_at, equipment_id) would still be an index and would not
+      // serve this query. So does DESC — a time-series read is always newest-first.
+      expect(defs).toMatch(/\(equipment_id, recorded_at DESC\)/);
+    });
+
+    it.each([
+      [
+        'equipment_type_enum',
+        ['CRANE', 'EXCAVATOR', 'CONCRETE_MIXER', 'GENERATOR', 'SCAFFOLD', 'VEHICLE', 'OTHER'],
+      ],
+      ['equipment_status_enum', ['AVAILABLE', 'IN_USE', 'MAINTENANCE', 'RETIRED']],
+      ['maintenance_type_enum', ['SCHEDULED', 'UNSCHEDULED', 'REPAIR']],
+      ['maintenance_status_enum', ['PENDING', 'IN_PROGRESS', 'COMPLETED']],
+    ])('%s carries exactly the values master:5229-5253 lists', async (typeName, expected) => {
+      // Added 2026-08-29. The status enum was exercised behaviourally by the assignment tests, but
+      // the other three had nothing at all — and the two maintenance enums are reached only through
+      // POST /maintenance, whose tests assert the row was written, not which values the column will
+      // accept. A missing REPAIR is a maintenance type the API rejects at the database with a 500,
+      // for a request that looks entirely valid.
+      const rows = await infra.prisma.$queryRawUnsafe<Array<{ label: string }>>(
+        `SELECT e.enumlabel AS label FROM pg_enum e
+           JOIN pg_type t ON t.oid = e.enumtypid
+           JOIN pg_namespace n ON n.oid = t.typnamespace
+          WHERE n.nspname = 'equipment' AND t.typname = $1
+          ORDER BY e.enumsortorder`,
+        typeName,
+      );
+      expect(rows.map((r) => r.label).sort()).toEqual([...(expected as string[])].sort());
+    });
+
     it('rejects a duplicate equipment_code within the tenant', async () => {
       const code = nextCode();
       const body = {
