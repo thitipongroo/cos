@@ -192,6 +192,39 @@ describe('Phase 20 · notification delivery', () => {
       );
     });
 
+    it('carries all four status enum values (master:5155)', async () => {
+      // Added 2026-08-29. The channel enum beside this had been asserted since the file was
+      // written; the status enum never was, and it is the one the delivery path actually moves
+      // through — PENDING on write, SENT after the adapter returns, FAILED on a rejection, READ when
+      // the user opens it.
+      //
+      // The realistic loss is READ. Nothing in the delivery path writes it — only the
+      // PATCH /notifications/:id/read endpoint does — so a migration that dropped it would leave
+      // every delivery test passing and break marking a notification as read, which is the one
+      // action every user performs.
+      const rows = await infra.prisma.$queryRawUnsafe<Array<{ label: string }>>(
+        `SELECT e.enumlabel AS label FROM pg_enum e
+           JOIN pg_type t ON t.oid = e.enumtypid
+           JOIN pg_namespace n ON n.oid = t.typnamespace
+          WHERE n.nspname = 'notifications' AND t.typname = 'NotificationStatus'`,
+      );
+      expect(rows.map((r) => r.label).sort()).toEqual(['FAILED', 'PENDING', 'READ', 'SENT'].sort());
+    });
+
+    it('refuses a status outside those four', async () => {
+      // The enum is the constraint. Without this, the case above proves the four labels EXIST while
+      // saying nothing about whether the column is actually typed by them — a VARCHAR with a
+      // matching enum type sitting unused beside it would pass.
+      await expect(
+        infra.prisma.$executeRawUnsafe(
+          `INSERT INTO notifications.notifications
+             (notification_id, tenant_id, recipient_id, channel, event_type, body, status)
+           VALUES (gen_random_uuid(), gen_random_uuid(), gen_random_uuid(),
+                   'IN_APP', 'probe.v1', 'body', 'ARCHIVED')`,
+        ),
+      ).rejects.toThrow();
+    });
+
     it('carries the canonical tenant-isolation policy on every notifications table', async () => {
       // Canonical form per 20260623000002 / 20260822000001: exactly one policy per table, named
       // rls_tenant_isolation, PERMISSIVE (a LONE restrictive policy grants nothing and makes the

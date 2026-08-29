@@ -258,3 +258,62 @@ describe('the OpenAPI document describes the routes that exist (master:5128)', (
     expect(expected.filter(([p, m]) => !doc.paths[p] || !doc.paths[p][m])).toEqual([]);
   });
 });
+
+/**
+ * The six triggers master:5130-5135 names, and who each one reaches.
+ *
+ * EVENT_ROLE_MAP is the whole routing decision: it is what turns "an inspection failed" into "the
+ * site engineer and the project manager are told". Until 2026-08-29 nothing compared it to the spec.
+ * The map was correct — but changing SITE_ENGINEER to TENANT_ADMIN, or dropping PROJECT_MANAGER from
+ * a pair, would have left every test in the estate green while the people who needed to know stopped
+ * being told. There is no failure signal for a notification that was never sent to the right role.
+ */
+describe('Phase 20 · the six triggers reach the roles the spec names (master:5130-5135)', () => {
+  const TRIGGERS: ReadonlyArray<[string, string]> = [
+    ['site.inspection.failed.v1', "['SITE_ENGINEER', 'PROJECT_MANAGER']"],
+    ['site.issue.created.v1', "['SITE_ENGINEER', 'PROJECT_MANAGER']"],
+    // "notify: PROCUREMENT_OFFICER (actor)" — the person who moved the PO, not the role at large.
+    ['procurement.po.status_changed.v1', "'actor'"],
+    ['finance.variance.alert.v1', "['FINANCE', 'TENANT_ADMIN']"],
+    ['site.report.created.v1', "['PROJECT_MANAGER']"],
+    ['procurement.invoice.received.v1', "['FINANCE']"],
+  ];
+
+  const mapping = (eventType: string): string => {
+    const at = svc.indexOf(`'${eventType}':`);
+    expect(`${eventType}: in EVENT_ROLE_MAP`).toBe(
+      at > -1 ? `${eventType}: in EVENT_ROLE_MAP` : `${eventType}: MISSING from EVENT_ROLE_MAP`,
+    );
+    // Up to the end of that entry — the next line break after the comma that closes it.
+    return svc.slice(at, svc.indexOf('\n', at));
+  };
+
+  it.each(TRIGGERS)('%s notifies %s', (eventType, roles) => {
+    expect(mapping(eventType)).toContain(roles);
+  });
+
+  it('routes the PO status change to the actor, never to a role', () => {
+    // The spec says "(actor)". A role list here would tell every procurement officer in the tenant
+    // about a PO they have nothing to do with, which is how a notification channel becomes noise
+    // people mute — and the muting is what makes the next real one invisible.
+    const entry = mapping('procurement.po.status_changed.v1');
+    expect(entry).toContain("'actor'");
+    expect(entry).not.toMatch(/\[/);
+  });
+
+  it('the pairs are pairs — neither role may be dropped alone', () => {
+    // Two roles are named for a reason: the site engineer acts on it, the project manager needs to
+    // know it happened. Losing either half is a change nothing else in the estate would notice.
+    for (const eventType of ['site.inspection.failed.v1', 'site.issue.created.v1']) {
+      const entry = mapping(eventType);
+      expect(`${eventType}: SITE_ENGINEER`).toBe(
+        entry.includes('SITE_ENGINEER') ? `${eventType}: SITE_ENGINEER` : `${eventType}: dropped`,
+      );
+      expect(`${eventType}: PROJECT_MANAGER`).toBe(
+        entry.includes('PROJECT_MANAGER')
+          ? `${eventType}: PROJECT_MANAGER`
+          : `${eventType}: dropped`,
+      );
+    }
+  });
+});
