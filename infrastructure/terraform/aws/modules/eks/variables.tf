@@ -13,3 +13,11 @@ variable "secrets_kms_key_arn" {
   description = "Customer-managed KMS CMK ARN for etcd Kubernetes Secrets envelope encryption (CIS EKS 3.1)"
 }
 variable "tags" { type = map(string) }
+variable "vpc_cidr" {
+  type        = string
+  description = "VPC CIDR — the node egress rules scope AWS-API and DNS traffic to it"
+}
+variable "s3_prefix_list_id" {
+  type        = string
+  description = "AWS-managed prefix list for S3 in this region, for the gateway-endpoint egress rule"
+}

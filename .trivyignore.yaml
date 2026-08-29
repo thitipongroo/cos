@@ -5,12 +5,17 @@
 # on by default, so the IaC in a repository that is mostly IaC had never been scanned by anything —
 # while a job named "Security Scan (Trivy)" ran on every PR and reported green.
 #
-# Turning it on surfaced 28 CRITICAL/HIGH findings. 23 were FIXED rather than listed:
+# Turning it on surfaced 28 CRITICAL/HIGH findings. 27 were FIXED, not listed:
 #   KSV-0118 x10  securityContext added to the ten raw manifests that had none
 #   KSV-0014 x11  readOnlyRootFilesystem: true, plus an emptyDir at /tmp where the process writes
-#   AWS-0104 x2   blanket egress REMOVED from the RDS, ElastiCache, MSK and per-tenant RDS groups —
-#                 a managed endpoint accepts connections and initiates none, so having NO egress
-#                 rule is the correct configuration, not a narrower one
+#   KSV-0056 x2   the cluster-autoscaler ClusterRole lost its write access to Endpoints. Upstream
+#                 still ships it, but v1.29's main.go sets ResourceLock: LeasesResourceLock and
+#                 never uses endpoints for leader election, and this Deployment does not override
+#                 the flag — the permission was vestigial
+#   AWS-0104 x4   blanket egress REMOVED from the RDS, ElastiCache, MSK and per-tenant RDS groups
+#                 (a managed endpoint accepts connections and initiates none, so having NO egress
+#                 rule is the correct configuration), and the EKS node group's remaining egress
+#                 narrowed onto VPC endpoints — see infrastructure/terraform/aws/vpc-endpoints.tf
 #
 # WHY YAML AND NOT .trivyignore. The plain-text format takes bare rule IDs and nothing else, so a
 # single `AWS-0104` line disables that rule EVERYWHERE. That is not theoretical: with the plain file
@@ -22,30 +27,25 @@
 # a line to append while going past. tests/conformance/phase-17-devops/ asserts this list only
 # shrinks.
 misconfigurations:
-  # EKS worker nodes still egress to 0.0.0.0/0, now on three ports rather than every protocol.
-  # Narrowed from `protocol = "-1"` to TCP/443, UDP/53 and TCP/53. Unlike the data-service groups
-  # this one cannot simply lose its egress: nodes genuinely reach out for ECR image pulls, the EKS
-  # and STS APIs, the OpenAI endpoint and OS package mirrors. A compromised pod can no longer open an
-  # arbitrary UDP or ICMP channel outbound; it can still reach any HTTPS host.
+  # ONE rule remains: TCP/443 from the worker nodes to 0.0.0.0/0.
   #
-  # Closing the rest needs VPC endpoints for ECR/STS/S3 and a decision about the genuinely public
-  # destinations — an infrastructure design task with a cost, and its own change. When it is done,
-  # delete the rules from modules/eks/main.tf, not this entry.
+  # Everything reachable through an AWS endpoint goes through one — ECR, STS, EKS and CloudWatch Logs
+  # resolve to interface ENIs in the private subnets, S3 goes through the gateway endpoint scoped by
+  # its managed prefix list, and DNS was pulled back to the VPC CIDR.
+  #
+  # What is left is eleven third-party hosts, every one behind a CDN. A security group filters by
+  # address; the requirement is by name, so no CIDR closes this. Since 2026-08-29 the enforcement
+  # lives one hop further out instead: private-subnet traffic routes through an AWS Network Firewall
+  # endpoint that matches the TLS SNI against an allowlist (infrastructure/terraform/aws/
+  # network-firewall.tf) and drops everything else, before it ever reaches the NAT gateway.
+  #
+  # So this entry is not "an open path to the internet". It is a security-group rule that cannot
+  # express a hostname, sitting in front of a control that can. Removing it would mean an egress
+  # proxy the pods dial explicitly — a different design, with its own availability to run.
   - id: AVD-AWS-0104
     paths:
       - 'infrastructure/terraform/aws/modules/eks/main.tf'
     statement: >-
-      EKS nodes need outbound HTTPS and DNS. Narrowed from all-protocols on 2026-08-29; closing it
-      fully requires VPC endpoints.
-
-  # cluster-autoscaler's ClusterRole grants create/patch and get/update on endpoints. Verified
-  # against the upstream manifest for this component — kubernetes/autoscaler ships both rules
-  # verbatim, alongside the coordination.k8s.io/leases rules this deployment also carries. Trimming
-  # them would make the RBAC of the component that decides how many nodes the cluster runs diverge
-  # from upstream, on a guess about which leader-election path v1.29 takes at runtime.
-  - id: AVD-KSV-0056
-    paths:
-      - 'infrastructure/kubernetes/autoscaler/cluster-autoscaler.yaml'
-    statement: >-
-      Upstream cluster-autoscaler RBAC, unmodified. Closing it means raising it upstream or
-      confirming the leader-election path from the running binary.
+      One egress rule remains: TCP/443 to eleven CDN-fronted third-party hosts. A security group
+      cannot filter by hostname; AWS Network Firewall enforces the domain allowlist behind it, and
+      AWS API traffic moved to VPC endpoints on 2026-08-29.

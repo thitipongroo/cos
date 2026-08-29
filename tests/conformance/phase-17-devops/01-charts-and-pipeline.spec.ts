@@ -533,14 +533,14 @@ describe('Phase 17 · the Trivy misconfiguration baseline only shrinks', () => {
     misconfigurations?: Array<{ id: string; paths?: string[]; statement?: string }>;
   }>('.trivyignore.yaml');
 
-  // Enabling misconfig surfaced 28 CRITICAL/HIGH findings; 23 were FIXED and 5 remain, over two
-  // rules. The count is what makes this a ratchet — a third rule cannot appear without editing this
-  // line, which is the moment someone has to justify it in review.
+  // Enabling misconfig surfaced 28 CRITICAL/HIGH findings. 27 were FIXED; ONE remains. The count is
+  // what makes this a ratchet — a second entry cannot appear without editing this line, which is
+  // the moment someone has to justify it in review.
   //
-  // KSV-0014 and KSV-0118 were here on the morning of 2026-08-29 and are gone by design, not by
-  // suppression: every raw manifest gained a securityContext, and every workload gained
-  // readOnlyRootFilesystem with an emptyDir at /tmp where the process needs to write.
-  const KNOWN_RULES = ['AVD-AWS-0104', 'AVD-KSV-0056'];
+  // Gone by repair, not by suppression: KSV-0118 (securityContext on ten raw manifests), KSV-0014
+  // (readOnlyRootFilesystem plus an emptyDir at /tmp), KSV-0056 (the autoscaler's write access to
+  // Endpoints, vestigial since v1.29 leader-elects on Leases), and four of the five AWS-0104s.
+  const KNOWN_RULES = ['AVD-AWS-0104'];
 
   it('suppresses exactly the rules the baseline recorded', () => {
     expect((parsed.misconfigurations ?? []).map((m) => m.id).sort()).toEqual(
@@ -549,9 +549,8 @@ describe('Phase 17 · the Trivy misconfiguration baseline only shrinks', () => {
   });
 
   it('is not growing', () => {
-    // 5 findings over 2 rules, down from 28 over 4 on the day the scanner was turned on. This number
-    // may go down; a change that raises it is a change that added a weakness and hid it in the same
-    // commit.
+    // 1 finding, down from 28 on the day the scanner was turned on. This number may go down; a
+    // change that raises it is a change that added a weakness and hid it in the same commit.
     expect((parsed.misconfigurations ?? []).length).toBeLessThanOrEqual(KNOWN_RULES.length);
   });
 
@@ -584,5 +583,166 @@ describe('Phase 17 · the Trivy misconfiguration baseline only shrinks', () => {
   it('records that the plain-text format is not sufficient', () => {
     // So the next person does not "simplify" it back to .trivyignore and silently widen every entry.
     expect(ignore).toMatch(/plain-text format takes bare rule IDs/);
+  });
+});
+
+/**
+ * The VPC endpoints that let the node egress close (master:4641-4645; Trivy AWS-0104).
+ *
+ * Worker nodes had `protocol = "-1"` to 0.0.0.0/0 — every protocol, anywhere — because ECR, STS,
+ * EKS and CloudWatch Logs all left the VPC. These endpoints are what made the narrowing possible;
+ * without them the rules in modules/eks/main.tf cannot hold and someone widens them back.
+ */
+describe('Phase 17 · AWS API traffic stays inside the VPC (Trivy AWS-0104)', () => {
+  const endpoints = read('infrastructure/terraform/aws/vpc-endpoints.tf');
+  const eks = read('infrastructure/terraform/aws/modules/eks/main.tf');
+
+  it.each(['ecr.api', 'ecr.dkr', 'sts', 'eks', 'logs'])(
+    'an interface endpoint exists for %s',
+    (svc) => {
+      expect(endpoints).toContain(`"${svc}"`);
+    },
+  );
+
+  it('ecr.api and ecr.dkr are both present', () => {
+    // dkr alone cannot authenticate: a pull gets as far as the registry and fails on the token.
+    // The pair is the requirement, and half of it is the mistake that looks like it works.
+    expect(endpoints).toContain('ecr.api');
+    expect(endpoints).toContain('ecr.dkr');
+  });
+
+  it('private DNS is enabled, or the endpoints are inert', () => {
+    // Without it the endpoint exists and nothing resolves to it: callers keep the public hostname
+    // and keep leaving through the NAT gateway, while the egress rules assume otherwise.
+    expect(endpoints).toMatch(/private_dns_enabled\s*=\s*true/);
+  });
+
+  it('S3 is a gateway endpoint attached to the private route tables', () => {
+    // ECR stores image layers in S3. An ECR endpoint without this one still sends every layer
+    // through the NAT gateway, which is most of the bytes.
+    expect(endpoints).toMatch(/vpc_endpoint_type\s*=\s*"Gateway"/);
+    expect(endpoints).toMatch(/route_table_ids\s*=\s*aws_route_table\.private/);
+  });
+
+  it('the S3 prefix list is looked up, not hard-coded', () => {
+    // AWS adds and removes ranges. A copied CIDR list stops matching silently, and the symptom is
+    // image pulls failing for one region at a time.
+    expect(endpoints).toMatch(/data "aws_prefix_list" "s3"/);
+  });
+
+  it('the endpoint security group accepts 443 from the nodes and nothing else', () => {
+    const sg = endpoints.slice(endpoints.indexOf('resource "aws_security_group" "vpc_endpoints"'));
+    const block = sg.slice(0, sg.indexOf('resource "aws_vpc_endpoint"'));
+    expect(block).toMatch(/security_groups\s*=\s*\[module\.eks\.node_security_group_id\]/);
+    // No egress block: an endpoint ENI answers requests and originates nothing.
+    expect(block).not.toMatch(/egress\s*\{/);
+  });
+
+  it('node DNS egress is scoped to the VPC, not the internet', () => {
+    // AmazonProvidedDNS answers inside the VPC and no DHCP options set overrides it, so a DNS rule
+    // reaching 0.0.0.0/0 was pure surface.
+    const dns = eks.slice(eks.indexOf('DNS over UDP to the VPC resolver'));
+    expect(dns.slice(0, 400)).toMatch(/cidr_blocks\s*=\s*\[var\.vpc_cidr\]/);
+  });
+
+  it('exactly one node egress rule still reaches 0.0.0.0/0', () => {
+    // The public-third-party rule, and only it. A second one appearing is the regression this
+    // whole exercise exists to prevent — and it is the shape a "quick fix" takes.
+    const code = eks.replace(/#[^\n]*/g, ' ');
+    const wide = code.match(/cidr_blocks\s*=\s*\["0\.0\.0\.0\/0"\]/g) ?? [];
+    expect(wide).toHaveLength(1);
+  });
+});
+
+/**
+ * Egress domain filtering (Trivy AWS-0104, the last one).
+ *
+ * The node security group must keep one TCP/443 rule to 0.0.0.0/0: eleven third-party hosts sit
+ * behind CDNs, and a security group filters by address. The control that CAN express a hostname
+ * lives one hop out — a Network Firewall endpoint the private subnets route through.
+ *
+ * These cases exist because the arrangement has two halves that fail differently. If the routing is
+ * wrong the traffic never reaches the firewall and nothing announces it — egress simply keeps
+ * working, unfiltered. If the default action is ALERT rather than DROP the allowlist becomes a log
+ * of violations that are permitted anyway, which reads as enforcement on a dashboard.
+ */
+describe('Phase 17 · egress is filtered by domain, not left open (Trivy AWS-0104)', () => {
+  const fw = read('infrastructure/terraform/aws/network-firewall.tf');
+  const main = read('infrastructure/terraform/aws/main.tf');
+
+  const HOSTS = [
+    'api.openai.com',
+    'api.openweathermap.org',
+    'oauth2.googleapis.com',
+    'www.googleapis.com',
+    'playintegrity.googleapis.com',
+    'www.apple.com',
+    'openexchangerates.org',
+    'api.sendgrid.com',
+    'api.line.me',
+    'api-data.line.me',
+    'exp.host',
+  ];
+
+  it.each(HOSTS)('%s is on the allowlist', (host) => {
+    expect(fw).toContain(`"${host}"`);
+  });
+
+  it('allows both LINE hosts, not just the API one', () => {
+    // @line/bot-sdk uses api-data.line.me for content. Allowing only api.line.me passes every
+    // text message and breaks every image — the kind of partial failure that gets blamed on LINE.
+    expect(fw).toContain('"api.line.me"');
+    expect(fw).toContain('"api-data.line.me"');
+  });
+
+  it('lists nothing beyond what the code actually calls', () => {
+    // An allowlist that grows by habit stops being one. Package mirrors in particular do NOT belong:
+    // nothing installs at runtime, that happens in the image build.
+    const targets = fw.slice(
+      fw.indexOf('egress_allowed_domains'),
+      fw.indexOf(']', fw.indexOf('egress_allowed_domains')),
+    );
+    const listed = [...targets.matchAll(/"([a-z0-9.-]+\.[a-z]{2,})"/g)].map((m) => m[1]!);
+    expect(listed.sort()).toEqual([...HOSTS].sort());
+  });
+
+  it('drops by default rather than alerting', () => {
+    // aws:alert_established without aws:drop_established is an allowlist that permits everything and
+    // writes a log about it.
+    expect(fw).toMatch(
+      /stateful_default_actions\s*=\s*\["aws:drop_established", "aws:alert_established"\]/,
+    );
+  });
+
+  it('matches on TLS SNI, which is what carries the hostname', () => {
+    expect(fw).toMatch(/target_types\s*=\s*\["TLS_SNI"\]/);
+    expect(fw).toMatch(/generated_rules_type\s*=\s*"ALLOWLIST"/);
+  });
+
+  it('routes private subnets through the firewall, not straight to NAT', () => {
+    // The half that fails silently. With a 0.0.0.0/0 -> NAT route still in the private table, egress
+    // works exactly as before and the firewall inspects nothing.
+    expect(fw).toMatch(/resource "aws_route" "private_to_firewall"/);
+    const rt = main.slice(main.indexOf('resource "aws_route_table" "private"'));
+    expect(rt.slice(0, rt.indexOf('resource "aws_route_table_association"'))).not.toMatch(
+      /nat_gateway_id/,
+    );
+  });
+
+  it('gives the internet gateway a return path through the same endpoint', () => {
+    // Network Firewall is stateful. Reply traffic that comes back through a different path is an
+    // unsolicited packet to the engine, and the connection dies mid-flow.
+    expect(fw).toMatch(/resource "aws_route_table" "igw_ingress"/);
+    expect(fw).toMatch(/gateway_id\s*=\s*aws_internet_gateway\.main\.id/);
+  });
+
+  it('has a firewall subnet per AZ', () => {
+    // Same-AZ routing is a requirement of stateful inspection, not a preference.
+    expect(fw).toMatch(/resource "aws_subnet" "firewall"/);
+    expect(fw).toMatch(/count\s*=\s*length\(var\.firewall_subnet_cidrs\)/);
+  });
+
+  it('protects the firewall from being destroyed out from under the allowlist', () => {
+    expect(fw).toMatch(/delete_protection\s*=\s*true/);
   });
 });

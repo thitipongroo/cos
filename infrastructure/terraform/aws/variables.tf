@@ -128,3 +128,11 @@ variable "tags" {
     ManagedBy = "terraform"
   }
 }
+
+variable "firewall_subnet_cidrs" {
+  # One per AZ. Network Firewall requires a dedicated subnet it owns exclusively; nothing else may
+  # be placed in these. /28 is the AWS minimum and is sufficient — the subnet holds one endpoint ENI.
+  description = "Network Firewall subnet CIDR blocks (one per AZ)"
+  type        = list(string)
+  default     = ["10.0.201.0/28", "10.0.202.0/28", "10.0.203.0/28"]
+}

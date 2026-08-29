@@ -63,33 +63,69 @@ resource "aws_security_group" "nodes" {
     self        = true
   }
 
-  # Egress narrowed 2026-08-29 from `protocol = "-1"` on 0.0.0.0/0, which Trivy flags as AWS-0104
-  # and which nothing had run to notice — CI gained a Terraform step and IaC misconfiguration
-  # scanning on the same day.
+  # Egress, narrowed twice on 2026-08-29.
   #
-  # Unlike the RDS / ElastiCache / MSK groups, which lost their egress rule entirely because a
-  # managed endpoint initiates nothing, worker nodes genuinely reach out: ECR for image pulls, the
-  # EKS and STS APIs, the OpenAI endpoint, OS package mirrors, and DNS. What is removed is the
-  # ALL-PROTOCOLS part. A node has no reason to originate anything but TCP/443 and DNS, so a
-  # compromised pod can no longer open an arbitrary UDP or ICMP channel outbound.
+  # It began as `protocol = "-1"` to 0.0.0.0/0 — every protocol, every port, anywhere — which Trivy
+  # flags as AWS-0104 and which nothing had run to notice: CI gained a Terraform step and IaC
+  # misconfiguration scanning that same day. The first pass cut it to TCP/443 and DNS. This is the
+  # second, after the VPC endpoints in ../../vpc-endpoints.tf gave the AWS API traffic somewhere to
+  # go that is not the internet.
   #
-  # Tightening the CIDR further needs VPC endpoints for ECR/STS/S3 and a decision about the public
-  # endpoints (OpenAI, package mirrors) — an infrastructure design task with a cost attached, and
-  # not one to fold into the change that turned the scanner on.
+  # Three rules, each with a different reason to exist:
+
+  # 1. AWS APIs — ECR, STS, EKS, CloudWatch Logs — now resolve to interface-endpoint ENIs inside the
+  #    VPC (private_dns_enabled), so this never leaves the CIDR. S3 goes through the gateway endpoint
+  #    and is covered by the prefix list below.
   egress {
-    description = "HTTPS: ECR image pulls, AWS APIs, OpenAI, package mirrors"
+    description = "HTTPS to VPC interface endpoints (ECR, STS, EKS, Logs)"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = [var.vpc_cidr]
+  }
+
+  # 2. S3 via the gateway endpoint. A gateway endpoint is a ROUTE, not an ENI, so its traffic is
+  #    addressed to S3's public ranges and the VPC CIDR rule above does not cover it. The managed
+  #    prefix list is what makes this precise instead of another 0.0.0.0/0 — and it tracks AWS's
+  #    ranges automatically, which a hand-copied CIDR list would not.
+  egress {
+    description     = "HTTPS to S3 via the gateway endpoint (ECR image layers)"
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
+    prefix_list_ids = [var.s3_prefix_list_id]
+  }
+
+  # 3. The genuinely public half — eleven third-party hosts, enumerated in
+  #    ../../network-firewall.tf. A security group filters by ADDRESS and every one of those hosts
+  #    sits behind a CDN, so there is no CIDR that expresses the requirement; this rule stays open
+  #    on 443 and AWS-0104 stays in .trivyignore.yaml for it.
+  #
+  #    What changed on 2026-08-29 is what sits behind the rule. Private-subnet traffic no longer
+  #    routes straight to the NAT gateway: it goes through a Network Firewall endpoint that matches
+  #    the TLS SNI against an allowlist and drops everything else. The security group is now the
+  #    outer of two gates, not the only one.
+  #
+  #    An earlier version of this comment said the rule was for "OpenAI and package mirrors". The
+  #    mirrors part was wrong — nothing installs packages at runtime, that is the image build — and
+  #    naming one host understated what the rule actually permitted.
+  egress {
+    description = "HTTPS to third parties, filtered by domain at the Network Firewall"
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  # DNS stays inside the VPC. AmazonProvidedDNS answers at the VPC base address + 2 and no DHCP
+  # options set overrides it, so nothing here needs to reach a resolver on the internet — this was
+  # 0.0.0.0/0 until the endpoints landed, for no reason beyond nobody having looked.
   egress {
-    description = "DNS over UDP"
+    description = "DNS over UDP to the VPC resolver"
     from_port   = 53
     to_port     = 53
     protocol    = "udp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [var.vpc_cidr]
   }
 
   egress {
@@ -97,7 +133,7 @@ resource "aws_security_group" "nodes" {
     from_port   = 53
     to_port     = 53
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [var.vpc_cidr]
   }
 
   tags = merge(var.tags, { Name = "${var.cluster_name}-nodes-sg" })
