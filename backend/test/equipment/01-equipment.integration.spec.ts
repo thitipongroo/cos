@@ -24,8 +24,6 @@ import {
 import { AppModule } from '../../src/app.module';
 import { JwtAuthGuard } from '../../src/shared/guards/jwt-auth.guard';
 
-jest.setTimeout(900_000);
-
 const TENANT_ID = 'eeeeeeee-1111-4000-8000-000000000021';
 const USER_ID = 'eeeeeeee-2222-4000-8000-000000000021';
 const PROJECT_ID = 'eeeeeeee-3333-4000-8000-000000000021';

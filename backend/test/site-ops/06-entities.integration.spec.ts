@@ -26,8 +26,6 @@ import {
   type IntegrationInfra,
 } from '../helpers/integration-infra';
 
-jest.setTimeout(900_000);
-
 /** master:2659-2731, transcribed. `true` = the spec writes NOT NULL against that column. */
 const DECLARED: Record<string, Record<string, boolean>> = {
   site_reports: {

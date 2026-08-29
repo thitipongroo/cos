@@ -1,5 +1,13 @@
 // Integration tests: client contract signing — QM-1 "integration tests required for
-// every public API endpoint". Drives the full bilateral flow over HTTP against a real Postgres
+// every public API endpoint".
+//
+// Renamed from 05-contract-signing on 2026-08-29: it sat one line below
+// 04-contract-signing-and-retention with a near-identical name and no way to tell which held what.
+// They are NOT duplicates and were not merged. 04 asserts the SPEC RULES — both parties required
+// before SIGNED (master:2981), the signature bound to the document hash (master:2982), retention
+// arithmetic (master:2931-2935). This file walks the ENDPOINTS, and owns the half 04 never touches:
+// magic-link issuance, single-use enforcement, a tampered token, signing with no JWT at all, the
+// CONTRACT_SIGN_ROLES guard, activate and terminate. Drives the full bilateral flow over HTTP against a real Postgres
 // (Testcontainers) with real RLS: create → attach document → contractor signs → issue client magic-link →
 // external client signs (no JWT) → contract becomes SIGNED → activate → terminate.
 //

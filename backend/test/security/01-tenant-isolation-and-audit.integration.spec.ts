@@ -26,8 +26,6 @@ import {
   type IntegrationInfra,
 } from '../helpers/integration-infra';
 
-jest.setTimeout(900_000);
-
 describe('Phase 16 · isolation proven under app_user', () => {
   let infra: IntegrationInfra;
 

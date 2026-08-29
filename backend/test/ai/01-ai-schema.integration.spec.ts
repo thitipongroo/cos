@@ -22,8 +22,6 @@ import {
   type IntegrationInfra,
 } from '../helpers/integration-infra';
 
-jest.setTimeout(900_000);
-
 /** master:3838-3848 — `true` where the spec writes NOT NULL (or PK). */
 const USAGE_COLUMNS: Record<string, boolean> = {
   log_id: true,

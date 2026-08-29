@@ -349,14 +349,37 @@ describe('Phase 18 · E2E inventory (master:4818-4832)', () => {
     // Each entry is a journey that CANNOT run for a reason outside the test estate, recorded with
     // what has to ship before it can. Anything else here is a journey quietly not being tested.
     expect(blocked).toEqual({
-      // Blocked on a unified approval-queue UI: /admin holds only the SYSTEM_ADMIN panel, and the
-      // 48h → next-approver escalation is a Temporal workflow surfaced through notifications.
-      'approval-escalation.spec.ts': 1,
+      // Three of this file's six tests, marked individually. Two drive /admin/approvals and
+      // /admin/settings, which do not exist. All three wrap their only `expect` in
+      // `if (await …isVisible().catch(() => false))`, so they cannot fail — unskipping them would
+      // add the appearance of coverage rather than coverage. The other three drive
+      // /procurement/orders with unconditional assertions and now run on a deployed environment.
+      'approval-escalation.spec.ts': 3,
       // Blocked on seeded ClickHouse (analytics.project_cost_daily) for the E2E tenant: against an
       // empty store the dashboard correctly renders "No data available" and the assertion is a lie
       // either way.
       'dashboard.spec.ts': 1,
+      // Three of six, same shape as approval-escalation: the only `expect` is inside
+      // `if (await …isVisible().catch(() => false))`. Two would also miss their control if they
+      // could run — "Record delivery" and "Approve" against /confirm|save/ and /approve.*invoice/.
+      // The other three carry unconditional assertions and run on a deployed environment.
+      'procurement.spec.ts': 3,
     });
+  });
+
+  it('the ClickHouse-seed blocker that keeps a journey skipped is still real', () => {
+    // dashboard.spec's cost-summary test is the one skip on the list with a genuine, unconditional
+    // assertion — `expect(hasCostData).toBe(true)`. It is blocked on DATA, not on a missing screen:
+    // against an empty analytics store the executive dashboard correctly renders "No data
+    // available". Nothing in the repo writes analytics.project_cost_daily for the E2E tenant —
+    // scripts/dev/seed-e2e-users.sh creates Keycloak users and never touches ClickHouse, and the
+    // e2e CI job has no seeding step at all. When a seed path appears this fails, and the failure is
+    // the instruction: unskip the test and drop it from the map above.
+    const seeders = collectTs('backend/prisma', (n) => /\.(ts)$/.test(n))
+      .concat(collectTs('scripts', (n) => /\.(ts|sh)$/.test(n)))
+      .filter(([, body]) => /project_cost_daily/.test(body))
+      .map(([file]) => file);
+    expect(seeders).toEqual([]);
   });
 
   it('the approval-queue blocker that keeps a journey skipped is still real', () => {

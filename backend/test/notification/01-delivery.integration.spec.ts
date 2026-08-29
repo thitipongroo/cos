@@ -21,8 +21,6 @@ import {
 import { NotificationRepository } from '../../src/modules/notification/notification.repository';
 import { NotificationPrismaService } from '../../src/modules/notification/notification-prisma.service';
 
-jest.setTimeout(900_000);
-
 describe('Phase 20 · notification delivery', () => {
   let infra: IntegrationInfra;
   let svc: NotificationService;

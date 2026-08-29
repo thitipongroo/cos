@@ -12,7 +12,6 @@ import {
 } from '../helpers/integration-infra';
 
 type PrismaLike = IntegrationInfra['prisma'];
-jest.setTimeout(900_000);
 
 interface ColumnRow {
   column_name: string;

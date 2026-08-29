@@ -26,8 +26,6 @@ import { AppModule } from '../../src/app.module';
 import { JwtAuthGuard } from '../../src/shared/guards/jwt-auth.guard';
 import { TenantService } from '../../src/modules/tenant/tenant.service';
 
-jest.setTimeout(900_000);
-
 const SECRET = 'phase-25-webhook-secret';
 const TENANT_ID = '77777777-1111-4000-8000-000000000025';
 const USER_ID = '77777777-2222-4000-8000-000000000025';

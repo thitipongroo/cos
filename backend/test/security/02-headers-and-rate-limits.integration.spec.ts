@@ -32,8 +32,6 @@ import { AppModule } from '../../src/app.module';
 import { JwtAuthGuard } from '../../src/shared/guards/jwt-auth.guard';
 import { resolveTrustProxy } from '../../src/shared/net/trusted-proxy';
 
-jest.setTimeout(900_000);
-
 const TENANT_ID = 'bbbb1111-1111-4000-8000-000000000160';
 const USER_ID = 'bbbb2222-2222-4000-8000-000000000160';
 

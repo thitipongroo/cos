@@ -20,8 +20,6 @@ import {
   type IntegrationInfra,
 } from '../helpers/integration-infra';
 
-jest.setTimeout(900_000);
-
 /** master:2874-2935. `true` = the spec writes NOT NULL (or PK) against that column. */
 const DECLARED: Record<string, Record<string, boolean>> = {
   project_budgets: {

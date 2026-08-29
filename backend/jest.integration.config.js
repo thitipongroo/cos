@@ -20,6 +20,21 @@ module.exports = {
   // Stub the Kafka/OpenSearch network clients for every integration spec (AppModule boots them).
   setupFilesAfterEnv: ['<rootDir>/test/helpers/integration-mocks.ts'],
   // Container startup + migrations + per-test app.init need generous time (applies to hooks too).
+  //
+  // ONE source. 32 of the 41 specs used to carry their own `jest.setTimeout(900_000)` — every file
+  // added with the phase-* tree on 2026-08-26 — while the 9 older ones ran under this value. The
+  // config number was therefore dead for most of the estate and told a reader nothing true.
+  //
+  // Measured 2026-08-29 over a full green run (41 suites, 658 tests, clean Docker): the slowest
+  // single TEST is 2.3s, and the slowest whole SUITE including beforeAll — container start plus
+  // `prisma migrate deploy` over 97 migrations — is 22.8s (analytics/01-kafka-to-clickhouse-to-api).
+  // 900s was 391x the former and 39x the latter, so it protected nothing and cost 15 minutes of wall
+  // clock every time a container start hung, which is how three suites burned 45 minutes between
+  // them before the environment was cleaned up.
+  //
+  // 120s keeps ~5x headroom over the slowest observed suite. It is UNCHANGED from what was already
+  // written here — nothing was lowered on a guess; the duplicates were removed so this line means
+  // what it says. Raise it here, once, if a CI runner ever proves it too tight.
   testTimeout: 120_000,
   // One worker, recycled before it can hit Node's default ~2 GB heap cap.
   //

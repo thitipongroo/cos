@@ -27,8 +27,6 @@ import {
 import { AppModule } from '../../src/app.module';
 import { JwtAuthGuard } from '../../src/shared/guards/jwt-auth.guard';
 
-jest.setTimeout(900_000);
-
 const TENANT_ID = 'eeeeeeee-1111-4000-8000-000000000001';
 const USER_ID = 'eeeeeeee-2222-4000-8000-000000000001';
 const MISSING_ID = 'eeeeeeee-9999-4000-8000-000000000999';

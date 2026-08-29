@@ -19,8 +19,6 @@ import {
   type IntegrationInfra,
 } from '../helpers/integration-infra';
 
-jest.setTimeout(900_000);
-
 /** master:4013-4023 — `true` where the spec writes NOT NULL (or PK). */
 const COLUMNS: Record<string, boolean> = {
   report_id: true,

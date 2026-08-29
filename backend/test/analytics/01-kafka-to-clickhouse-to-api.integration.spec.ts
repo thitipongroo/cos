@@ -39,8 +39,6 @@ import {
 } from '@cos/test-utils';
 import { AnalyticsService } from '../../src/modules/analytics/analytics.service';
 
-jest.setTimeout(900_000);
-
 const repoRoot = path.resolve(__dirname, '../../..');
 const TENANT_ID = '11111111-1111-4111-8111-111111111111';
 const PROJECT_ID = '22222222-2222-4222-8222-222222222222';

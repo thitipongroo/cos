@@ -23,8 +23,6 @@ import {
   type IntegrationInfra,
 } from '../helpers/integration-infra';
 
-jest.setTimeout(900_000);
-
 /** master:3277-3290 and 3292-3301. `true` = the spec writes NOT NULL (or PK). */
 const DECLARED: Record<string, Record<string, boolean>> = {
   files: {

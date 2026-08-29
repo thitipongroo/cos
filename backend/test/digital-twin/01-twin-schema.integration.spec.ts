@@ -19,8 +19,6 @@ import {
   type IntegrationInfra,
 } from '../helpers/integration-infra';
 
-jest.setTimeout(900_000);
-
 describe('Phase 24 · digital twin schema', () => {
   let infra: IntegrationInfra;
 

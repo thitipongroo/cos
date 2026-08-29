@@ -32,8 +32,6 @@ import { JwtAuthGuard } from '../../src/shared/guards/jwt-auth.guard';
 import { FileServiceClient } from '../../src/modules/files/file-service-client.service';
 import { CredentialClientService } from '../../src/modules/credentials/credential-client.service';
 
-jest.setTimeout(900_000);
-
 const TENANT_ID = 'bbbb1111-1111-4000-8000-000000000073';
 const USER_ID = 'bbbb2222-2222-4000-8000-000000000073';
 const FILE_ID = 'cccc0001-0000-4000-8000-000000000073';
@@ -43,6 +41,12 @@ const roleOf = (req: Record<string, unknown>): string => {
   const headers = (req['headers'] ?? {}) as Record<string, string>;
   return headers['x-test-role'] ?? 'PROJECT_MANAGER';
 };
+
+// The endpoint walk lives next door in 05-sign-link-and-contract-endpoints: magic-link issuance and
+// reuse, a tampered token, the external signature that carries no JWT, the role guard, activate and
+// terminate. This file asserts the spec rules those endpoints have to satisfy. The two overlap on
+// "both parties then SIGNED" on purpose — one reaches it through the HTTP flow, the other states it
+// as the rule.
 
 describe('Phase 7 · contract signing and retention (real database)', () => {
   let infra: IntegrationInfra;

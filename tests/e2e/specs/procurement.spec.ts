@@ -35,6 +35,14 @@ async function loginAs(page: Page, email: string, password: string) {
 // shipped UI while the header still claimed it did not exist, which is how the skip outlived its
 // reason. tests/conformance/testing now guards the remaining skips against the same drift.
 //
+// Three of the six stay skipped, and NOT for the reason the old header gave. Their only `expect`
+// sits inside `if (await …isVisible().catch(() => false))`, which swallows its own failure: the test
+// reports green whether the behaviour happened or not. Two of them would also miss — the delivery
+// form's submit button reads "Record delivery" (proc.recordDelivery), not /confirm|save/, and the
+// invoice action reads "Approve" (finance.approve), not /approve.*invoice/ — and neither mismatch
+// would ever surface, because the guard turns a miss into a silent pass. Running them would add the
+// appearance of coverage. They are marked individually below.
+//
 // Gated on BASE_URL rather than run unconditionally: this drives a real login through Keycloak and
 // needs seeded tenants, which only the staging deployment has. Locally BASE_URL is unset and these
 // skip; in CI the e2e job sets it from secrets.STAGING_URL, which is the environment §30.5 intends
@@ -85,7 +93,9 @@ test.describe('Procurement Flow — PR → RFQ → PO → Delivery → Invoice',
     await expect(page.getByText(rfqNumber)).toBeVisible({ timeout: 15_000 });
   });
 
-  test('procurement officer records a vendor quotation', async ({ page }) => {
+  // BLOCKED: cannot fail. Its single expect is inside a visibility guard that catches its own
+  // failure. Unskip once it asserts the quotation unconditionally.
+  test.skip('procurement officer records a vendor quotation', async ({ page }) => {
     await loginAs(page, PROC_EMAIL, PROC_PASSWORD);
 
     await page.getByRole('link', { name: /procurement|rfq/i }).click();
@@ -134,7 +144,10 @@ test.describe('Procurement Flow — PR → RFQ → PO → Delivery → Invoice',
     }
   });
 
-  test('procurement officer records delivery', async ({ page }) => {
+  // BLOCKED: cannot fail, and would not match if it could — the submit control on
+  // /procurement/deliveries/new is labelled "Record delivery" (proc.recordDelivery), which the
+  // /confirm|save/ selector below does not match. Both need fixing together.
+  test.skip('procurement officer records delivery', async ({ page }) => {
     await loginAs(page, PROC_EMAIL, PROC_PASSWORD);
 
     await page.getByRole('link', { name: /purchase order|delivery|po/i }).click();
@@ -158,7 +171,10 @@ test.describe('Procurement Flow — PR → RFQ → PO → Delivery → Invoice',
     }
   });
 
-  test('finance officer approves vendor invoice', async ({ page }) => {
+  // BLOCKED: cannot fail, and would not match if it could — /finance/invoices renders "Approve"
+  // (finance.approve), which /approve.*invoice|approve.*payment/ does not match. Both need fixing
+  // together.
+  test.skip('finance officer approves vendor invoice', async ({ page }) => {
     await loginAs(page, FINANCE_EMAIL, FINANCE_PASSWORD);
 
     await page.getByRole('link', { name: /invoice|finance|payable/i }).click();
