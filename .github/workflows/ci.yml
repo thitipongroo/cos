@@ -56,6 +56,28 @@ jobs:
       # air-gapped target (ADR-039).
       - name: ruff (Python lint)
         run: ruff check services mlops
+      # Terraform. Nothing checked it before 2026-08-29 — 26 .tf files across three root modules had
+      # never been through `fmt` or `validate` in CI, and a node-pool rewrite landed unvalidated.
+      # `validate` is what catches a bad reference or a wrong type; `fmt -check` keeps the diff clean.
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.9.8'
+          terraform_wrapper: false
+      - name: terraform fmt
+        run: terraform fmt -check -recursive infrastructure/terraform
+      # -backend=false because infrastructure/terraform/cloudflare declares a `backend "s3"`: without
+      # it, init tries to reach a real bucket and CI needs credentials it must not have. Validate
+      # still downloads providers, which is what makes it check types and references rather than
+      # syntax alone. Each root module separately — a module is only validated as part of a root.
+      - name: terraform validate
+        run: |
+          set -e
+          for dir in infrastructure/terraform/aws infrastructure/terraform/cloudflare; do
+            echo "── $dir"
+            terraform -chdir="$dir" init -backend=false -input=false -no-color
+            terraform -chdir="$dir" validate -no-color
+          done
       # Copy-paste detection — the duplication half of the QM-4 quality gate (ADR-011). Threshold
       # and measured baseline live in .jscpd.json; it is a ratchet against regression, not 0%.
       - name: jscpd (duplication)
@@ -804,9 +826,22 @@ jobs:
         with:
           scan-type: 'fs'
           scan-ref: '.'
+          # `misconfig` is NOT in the fs subcommand's default scanner set — the default is
+          # vuln,secret — so until 2026-08-29 the IaC in this repository was never scanned at all,
+          # by this step or any other. Naming all three makes that explicit rather than inherited.
+          scanners: 'vuln,secret,misconfig'
           severity: 'CRITICAL,HIGH'
           exit-code: '1'
           ignore-unfixed: true
+          # Turning misconfig on surfaced 28 pre-existing CRITICAL/HIGH findings; 23 were fixed and
+          # 5 remain, each scoped to the one file it applies to and each carrying its reason.
+          # The YAML form is required for that scoping: plain .trivyignore takes bare rule IDs, so
+          # one entry disables the rule repository-wide. That file may only shrink — see the
+          # conformance test. New findings fail this step immediately.
+          trivyignores: '.trivyignore.yaml'
+          # **/.terraform holds provider binaries that `terraform init` downloads — 764 MB of
+          # third-party code that is not ours to fix and that CI re-downloads every run.
+          skip-dirs: 'node_modules,**/node_modules,**/.venv,**/.terraform,dist,build'
       - name: Run Trivy — container image scan
         uses: aquasecurity/trivy-action@master
         with:

@@ -39,6 +39,11 @@ spec:
         fsGroup: 1001
       containers:
         - name: mlflow
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ['ALL']
           # MLflow 3.x — master §Phase 23 pins the MAJOR ("MLflow 3.x — experiment tracking and model
           # registry", bumped 2.x→3.x by product-owner decision 2026-06-30), and requirements-mlflow.txt
           # pins the client at 3.14.0. The server image was still v2.14.1: a 3.x client against a 2.x

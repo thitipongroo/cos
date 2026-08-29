@@ -63,10 +63,40 @@ resource "aws_security_group" "nodes" {
     self        = true
   }
 
+  # Egress narrowed 2026-08-29 from `protocol = "-1"` on 0.0.0.0/0, which Trivy flags as AWS-0104
+  # and which nothing had run to notice — CI gained a Terraform step and IaC misconfiguration
+  # scanning on the same day.
+  #
+  # Unlike the RDS / ElastiCache / MSK groups, which lost their egress rule entirely because a
+  # managed endpoint initiates nothing, worker nodes genuinely reach out: ECR for image pulls, the
+  # EKS and STS APIs, the OpenAI endpoint, OS package mirrors, and DNS. What is removed is the
+  # ALL-PROTOCOLS part. A node has no reason to originate anything but TCP/443 and DNS, so a
+  # compromised pod can no longer open an arbitrary UDP or ICMP channel outbound.
+  #
+  # Tightening the CIDR further needs VPC endpoints for ECR/STS/S3 and a decision about the public
+  # endpoints (OpenAI, package mirrors) — an infrastructure design task with a cost attached, and
+  # not one to fold into the change that turned the scanner on.
   egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
+    description = "HTTPS: ECR image pulls, AWS APIs, OpenAI, package mirrors"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description = "DNS over UDP"
+    from_port   = 53
+    to_port     = 53
+    protocol    = "udp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description = "DNS over TCP: responses above the 512-byte UDP limit"
+    from_port   = 53
+    to_port     = 53
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
@@ -115,27 +145,87 @@ resource "aws_iam_openid_connect_provider" "main" {
   tags            = var.tags
 }
 
-# ─── Managed Node Group ───────────────────────────────────────────────────────
-resource "aws_eks_node_group" "main" {
+# ─── Managed Node Groups ─────────────────────────────────────────────────────
+# CLOUD: AWS — replace with GCP/on-prem equivalent
+#
+# master:4650-4654 specifies FOUR pools. Three are built here; analytics-pool is deliberately not,
+# and the reason is recorded in master beside the pool list: it exists to carry ClickHouse, and
+# ClickHouse has no Kubernetes deployment in this repository at all — no Helm chart, no manifest,
+# nothing in Terraform. Standing up an r5.xlarge that nothing can schedule onto would be a bill with
+# no workload behind it. Add it in the change that gives ClickHouse a chart.
+#
+# Until 2026-08-29 there was ONE undifferentiated group on t3.large — an instance type that appears
+# in none of the four the spec names — with a single min/max shared by everything. Nothing tested it,
+# which is why a spec written in four parts had been implemented as one for so long.
+#
+# The ai pool is TAINTED. Without it, Kubernetes treats a larger node as ordinary capacity and packs
+# ordinary web pods onto the expensive instances the AI services are meant to have to themselves;
+# the AI charts carry the matching toleration. system and app are untainted: app is where anything
+# unlabelled should land, and making it exclusive would strand every chart that has not opted in.
+locals {
+  node_groups = {
+    system = {
+      instance_types = ["t3.medium"]
+      desired_size   = 2
+      min_size       = 2
+      max_size       = 2
+      taints         = []
+    }
+    app = {
+      instance_types = ["t3.xlarge"]
+      desired_size   = 3
+      min_size       = 3
+      max_size       = 10
+      taints         = []
+    }
+    ai = {
+      instance_types = ["t3.2xlarge"]
+      desired_size   = 1
+      min_size       = 1
+      max_size       = 4
+      taints = [{
+        key    = "workload"
+        value  = "ai"
+        effect = "NO_SCHEDULE"
+      }]
+    }
+  }
+}
+
+resource "aws_eks_node_group" "pools" {
+  for_each = local.node_groups
+
   cluster_name    = aws_eks_cluster.main.name
-  node_group_name = "${var.cluster_name}-workers"
+  node_group_name = "${var.cluster_name}-${each.key}"
   node_role_arn   = aws_iam_role.nodes.arn
   subnet_ids      = var.private_subnet_ids
-  instance_types  = var.node_instance_types
+  instance_types  = each.value.instance_types
 
   scaling_config {
-    desired_size = var.node_desired_size
-    min_size     = var.node_min_size
-    max_size     = var.node_max_size
+    desired_size = each.value.desired_size
+    min_size     = each.value.min_size
+    max_size     = each.value.max_size
   }
 
   update_config {
     max_unavailable = 1
   }
 
+  dynamic "taint" {
+    for_each = each.value.taints
+    content {
+      key    = taint.value.key
+      value  = taint.value.value
+      effect = taint.value.effect
+    }
+  }
+
+  # `workload` is what the charts' nodeAffinity selects on. `role` is kept for anything that still
+  # matches the old single-group label.
   labels = {
-    role = "worker"
-    env  = var.environment
+    role     = "worker"
+    workload = each.key
+    env      = var.environment
   }
 
   tags = var.tags
@@ -157,7 +247,7 @@ resource "aws_eks_addon" "coredns" {
   cluster_name  = aws_eks_cluster.main.name
   addon_name    = "coredns"
   addon_version = "v1.11.1-eksbuild.4"
-  depends_on    = [aws_eks_node_group.main]
+  depends_on    = [aws_eks_node_group.pools]
 }
 
 resource "aws_eks_addon" "kube_proxy" {

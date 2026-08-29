@@ -16,8 +16,12 @@ resource "cloudflare_ruleset" "managed_waf" {
     description = "Cloudflare Managed Rules (OWASP Top 10, known CVEs)"
     expression  = "true"
     action_parameters {
-      id      = "efb7b8c949ac4650a09736fc376e9aee"  # Cloudflare Managed Ruleset
-      version = "latest"
+      # `version` was here until 2026-08-29 and is not an argument the provider accepts — neither on
+      # action_parameters nor on overrides in cloudflare/cloudflare v4. The whole cloudflare root
+      # module failed `terraform validate` on it, which nothing ran: CI had no terraform step at all
+      # until the same day. Cloudflare tracks the managed ruleset at its latest version by default,
+      # so removing the line changes no behaviour — it only stops the configuration being invalid.
+      id = "efb7b8c949ac4650a09736fc376e9aee" # Cloudflare Managed Ruleset
     }
   }
 
@@ -26,7 +30,7 @@ resource "cloudflare_ruleset" "managed_waf" {
     description = "OWASP Core Rule Set — paranoia level 2"
     expression  = "true"
     action_parameters {
-      id = "4814384a9e5d4991b9815dcfc25d2f1f"  # Cloudflare OWASP CRS
+      id = "4814384a9e5d4991b9815dcfc25d2f1f" # Cloudflare OWASP CRS
       overrides {
         action = "block"
         categories {
@@ -54,8 +58,8 @@ resource "cloudflare_ruleset" "rate_limits" {
     description = "Auth endpoints: 10 req/min per IP"
     expression  = "(http.request.uri.path matches \"^/api/v[0-9]+/auth/\")"
     ratelimit {
-      characteristics = ["ip.src"]
-      period          = 60
+      characteristics     = ["ip.src"]
+      period              = 60
       requests_per_period = 10
       mitigation_timeout  = 120
     }
@@ -67,8 +71,8 @@ resource "cloudflare_ruleset" "rate_limits" {
     description = "File upload: 20 req/min per IP"
     expression  = "(http.request.uri.path matches \"^/api/v[0-9]+/files/\")"
     ratelimit {
-      characteristics = ["ip.src"]
-      period          = 60
+      characteristics     = ["ip.src"]
+      period              = 60
       requests_per_period = 20
       mitigation_timeout  = 60
     }
@@ -80,8 +84,8 @@ resource "cloudflare_ruleset" "rate_limits" {
     description = "General API: 100 req/min per IP"
     expression  = "(http.request.uri.path matches \"^/api/v[0-9]+/\")"
     ratelimit {
-      characteristics = ["ip.src"]
-      period          = 60
+      characteristics     = ["ip.src"]
+      period              = 60
       requests_per_period = 100
       mitigation_timeout  = 60
     }
@@ -93,8 +97,8 @@ resource "cloudflare_ruleset" "rate_limits" {
     description = "Health/metrics: 60 req/min per IP"
     expression  = "(http.request.uri.path eq \"/health/live\" or http.request.uri.path eq \"/health/ready\")"
     ratelimit {
-      characteristics = ["ip.src"]
-      period          = 60
+      characteristics     = ["ip.src"]
+      period              = 60
       requests_per_period = 60
       mitigation_timeout  = 30
     }

@@ -21,8 +21,19 @@ spec:
         app.kubernetes.io/component: smoke-test
     spec:
       restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: smoke-test
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ['ALL']
           image: curlimages/curl:8.7.1
           command: ['/bin/sh', '-c']
           args:

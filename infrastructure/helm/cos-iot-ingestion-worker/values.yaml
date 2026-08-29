@@ -63,6 +63,19 @@ serviceAccount:
   create: true
   name: 'cos-iot-ingestion-worker'
 affinity:
+  # master:4650-4654 — schedule onto the pool this workload is sized for. Terraform labels each
+  # managed node group `workload=<pool>` (infrastructure/terraform/aws/modules/eks/modules).
+  #
+  # REQUIRED, not preferred: a "preferred" rule silently falls back to any node the moment the pool
+  # is full or missing, which is the failure this exists to prevent — an AI service quietly running
+  # on a t3.xlarge behaves, just slowly, and nothing reports it.
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: workload
+              operator: In
+              values: ['app']
   podAntiAffinity:
     preferredDuringSchedulingIgnoredDuringExecution:
       - weight: 100

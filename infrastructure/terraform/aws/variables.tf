@@ -57,30 +57,6 @@ variable "availability_zones" {
   default     = ["ap-southeast-7a", "ap-southeast-7b", "ap-southeast-7c"]
 }
 
-variable "node_instance_types" {
-  description = "EC2 instance types for EKS node groups"
-  type        = list(string)
-  default     = ["t3.large"]
-}
-
-variable "node_desired_size" {
-  description = "Desired number of worker nodes"
-  type        = number
-  default     = 3
-}
-
-variable "node_min_size" {
-  description = "Minimum number of worker nodes"
-  type        = number
-  default     = 1
-}
-
-variable "node_max_size" {
-  description = "Maximum number of worker nodes"
-  type        = number
-  default     = 10
-}
-
 variable "eks_public_access_cidrs" {
   description = "CIDRs allowed to reach the public EKS API endpoint (CIS EKS 5.4). Empty (default) disables public access — the API is reachable only privately via VPN/bastion. Never set to 0.0.0.0/0."
   type        = list(string)

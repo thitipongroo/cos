@@ -49,7 +49,21 @@ spec:
           readinessProbe: {{ toYaml .Values.readinessProbe | nindent 12 }}
           securityContext:
             allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: false
+            # true since 2026-08-29. It was false in all four AI charts with no reason recorded,
+            # while the other seven charts were already true — the divergence was inherited, not
+            # decided. Verified by experiment before flipping: a read-only rootfs does NOT break
+            # Python (a __pycache__ write that fails is skipped, not raised), but tempfile does
+            # fail hard — `No usable temporary directory found` — so /tmp has to come back as an
+            # emptyDir below. Without that volume this flag turns every upload and every OCR page
+            # into a 500.
+            readOnlyRootFilesystem: true
             capabilities:
               drop: [ALL]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
       affinity: {{ toYaml .Values.affinity | nindent 8 }}
+      tolerations: {{ toYaml .Values.tolerations | nindent 8 }}

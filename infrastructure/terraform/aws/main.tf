@@ -52,8 +52,8 @@ resource "aws_subnet" "private" {
   cidr_block        = var.private_subnet_cidrs[count.index]
   availability_zone = var.availability_zones[count.index]
   tags = {
-    Name                              = "cos-private-${var.availability_zones[count.index]}"
-    "kubernetes.io/role/internal-elb" = "1"
+    Name                                        = "cos-private-${var.availability_zones[count.index]}"
+    "kubernetes.io/role/internal-elb"           = "1"
     "kubernetes.io/cluster/${var.cluster_name}" = "shared"
   }
 }
@@ -65,8 +65,8 @@ resource "aws_subnet" "public" {
   availability_zone       = var.availability_zones[count.index]
   map_public_ip_on_launch = false
   tags = {
-    Name                     = "cos-public-${var.availability_zones[count.index]}"
-    "kubernetes.io/role/elb" = "1"
+    Name                                        = "cos-public-${var.availability_zones[count.index]}"
+    "kubernetes.io/role/elb"                    = "1"
     "kubernetes.io/cluster/${var.cluster_name}" = "shared"
   }
 }
@@ -124,10 +124,6 @@ module "eks" {
   environment         = var.environment
   vpc_id              = aws_vpc.main.id
   private_subnet_ids  = aws_subnet.private[*].id
-  node_instance_types = var.node_instance_types
-  node_desired_size   = var.node_desired_size
-  node_min_size       = var.node_min_size
-  node_max_size       = var.node_max_size
   public_access_cidrs = var.eks_public_access_cidrs
   secrets_kms_key_arn = aws_kms_key.eks.arn
   tags                = var.tags

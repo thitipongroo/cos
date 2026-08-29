@@ -19,8 +19,19 @@ spec:
         prometheus.io/scrape: 'true'
         prometheus.io/port: '8888'
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: otel-collector
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ['ALL']
           image: otel/opentelemetry-collector-contrib:0.103.0
           args: ['--config=/conf/otel-collector-config.yml']
           # BOTH vars are MANDATORY. Collector 0.103.0 has no default-value substitution syntax

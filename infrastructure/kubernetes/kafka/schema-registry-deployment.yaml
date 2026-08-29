@@ -20,8 +20,19 @@ spec:
         app: schema-registry
     spec:
       terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: schema-registry
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ['ALL']
           image: confluentinc/cp-schema-registry:7.6.0
           ports:
             - containerPort: 8081

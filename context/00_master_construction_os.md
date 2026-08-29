@@ -4652,6 +4652,21 @@ Kubernetes Cluster Specification (production):
     app-pool:       min 3, max 10 nodes, t3.xlarge (application services)
     ai-pool:        min 1, max 4 nodes, t3.2xlarge (AI workers — GPU optional)
     analytics-pool: min 1, max 3 nodes, r5.xlarge (ClickHouse — memory optimized)
+      NOT BUILT, deliberately (2026-08-29, product-owner). The other three pools were created in
+      Terraform that day — until then there was ONE undifferentiated node group on t3.large, an
+      instance type that appears in none of the four above, with a single min/max shared by
+      everything, and nothing tested it.
+      This pool was left out because it has no workload: ClickHouse has no Kubernetes deployment
+      anywhere in the repository — no Helm chart, no manifest, nothing in Terraform (only the
+      docker-compose config under infrastructure/clickhouse/). An r5.xlarge that nothing can be
+      scheduled onto is a bill with no service behind it. Build it in the same change that gives
+      ClickHouse a chart, not before.
+      The three that were built carry `workload=<pool>` node labels; the ai pool is additionally
+      TAINTED workload=ai:NoSchedule, and the four AI charts carry the matching toleration plus a
+      REQUIRED nodeAffinity. Required rather than preferred on purpose: a preferred rule falls back
+      to any node the moment the pool is full, and an AI service running on a t3.xlarge behaves —
+      just slowly — with nothing to report it.
+      Pinned by tests/conformance/phase-17-devops/.
   Auto-scaling: Cluster Autoscaler (scale up: 2 min, scale down: 10 min cooldown)
   Resource requests/limits per NestJS service (default):
     requests: cpu 100m, memory 256Mi

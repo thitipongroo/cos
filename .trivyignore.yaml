@@ -1,0 +1,51 @@
+# Trivy misconfiguration baseline — Terraform, Helm and Kubernetes manifests.
+#
+# WHY THIS FILE EXISTS. Until 2026-08-29 the Trivy step in CI ran `scan-type: fs` without setting
+# `scanners:`, so it used that subcommand's default of vuln,secret. Misconfiguration detection is NOT
+# on by default, so the IaC in a repository that is mostly IaC had never been scanned by anything —
+# while a job named "Security Scan (Trivy)" ran on every PR and reported green.
+#
+# Turning it on surfaced 28 CRITICAL/HIGH findings. 23 were FIXED rather than listed:
+#   KSV-0118 x10  securityContext added to the ten raw manifests that had none
+#   KSV-0014 x11  readOnlyRootFilesystem: true, plus an emptyDir at /tmp where the process writes
+#   AWS-0104 x2   blanket egress REMOVED from the RDS, ElastiCache, MSK and per-tenant RDS groups —
+#                 a managed endpoint accepts connections and initiates none, so having NO egress
+#                 rule is the correct configuration, not a narrower one
+#
+# WHY YAML AND NOT .trivyignore. The plain-text format takes bare rule IDs and nothing else, so a
+# single `AWS-0104` line disables that rule EVERYWHERE. That is not theoretical: with the plain file
+# in place, restoring the blanket egress on the RDS security group as a test produced no failure —
+# the entry meant for the EKS nodes was swallowing it. Path scoping is the difference between
+# carrying a known weakness and switching a check off.
+#
+# DO NOT add an entry here to make a build pass. A new finding is a decision to make in review, not
+# a line to append while going past. tests/conformance/phase-17-devops/ asserts this list only
+# shrinks.
+misconfigurations:
+  # EKS worker nodes still egress to 0.0.0.0/0, now on three ports rather than every protocol.
+  # Narrowed from `protocol = "-1"` to TCP/443, UDP/53 and TCP/53. Unlike the data-service groups
+  # this one cannot simply lose its egress: nodes genuinely reach out for ECR image pulls, the EKS
+  # and STS APIs, the OpenAI endpoint and OS package mirrors. A compromised pod can no longer open an
+  # arbitrary UDP or ICMP channel outbound; it can still reach any HTTPS host.
+  #
+  # Closing the rest needs VPC endpoints for ECR/STS/S3 and a decision about the genuinely public
+  # destinations — an infrastructure design task with a cost, and its own change. When it is done,
+  # delete the rules from modules/eks/main.tf, not this entry.
+  - id: AVD-AWS-0104
+    paths:
+      - 'infrastructure/terraform/aws/modules/eks/main.tf'
+    statement: >-
+      EKS nodes need outbound HTTPS and DNS. Narrowed from all-protocols on 2026-08-29; closing it
+      fully requires VPC endpoints.
+
+  # cluster-autoscaler's ClusterRole grants create/patch and get/update on endpoints. Verified
+  # against the upstream manifest for this component — kubernetes/autoscaler ships both rules
+  # verbatim, alongside the coordination.k8s.io/leases rules this deployment also carries. Trimming
+  # them would make the RBAC of the component that decides how many nodes the cluster runs diverge
+  # from upstream, on a guess about which leader-election path v1.29 takes at runtime.
+  - id: AVD-KSV-0056
+    paths:
+      - 'infrastructure/kubernetes/autoscaler/cluster-autoscaler.yaml'
+    statement: >-
+      Upstream cluster-autoscaler RBAC, unmodified. Closing it means raising it upstream or
+      confirming the leader-election path from the running binary.

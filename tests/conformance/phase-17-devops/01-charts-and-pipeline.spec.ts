@@ -333,3 +333,256 @@ describe('Phase 17 · GitOps and infrastructure (master:4665-4670, 4694-4700)', 
     expect(exists('docs/runbooks/deployment-windows.md')).toBe(true);
   });
 });
+
+/**
+ * Cluster capacity settings the spec fixes but nothing read (master:4649, 4655).
+ *
+ * Both values are correct on disk and were never asserted, which is the same shape as the OTel
+ * sampling overlays: a number in a manifest that no test opens drifts the moment someone tunes it
+ * for a single incident and never puts it back.
+ */
+describe('Phase 17 · cluster capacity settings (master:4649, 4655)', () => {
+  const autoscaler = read('infrastructure/kubernetes/autoscaler/cluster-autoscaler.yaml');
+  const tfVars = read('infrastructure/terraform/aws/variables.tf');
+
+  it('the Cluster Autoscaler waits 10 minutes before scaling down (master:4655)', () => {
+    // Two separate flags, and BOTH are needed. `scale-down-unneeded-time` is how long a node must
+    // look idle; `scale-down-delay-after-add` stops the autoscaler removing a node it has just
+    // added. With only the first, a scale-up during a burst can be undone minutes later and the
+    // cluster oscillates — the behaviour the cooldown exists to prevent.
+    expect(autoscaler).toContain('--scale-down-unneeded-time=10m');
+    expect(autoscaler).toContain('--scale-down-delay-after-add=10m');
+  });
+
+  it('pins Kubernetes at or below 1.34 while CIS compliance is required (master:4649)', () => {
+    // master:4649 — "Pin K8s <= 1.34 while CIS is required (kube-bench cis-1.12 covers 1.32-1.34
+    // only)". Above 1.34 there is no benchmark to run, so a CIS self-assessment stops being
+    // producible — and a version bump is the most ordinary change imaginable.
+    const version = /variable "cluster_version"[\s\S]*?default\s*=\s*"([\d.]+)"/.exec(tfVars)?.[1];
+    expect(version).toBeDefined();
+    const [major, minor] = version!.split('.').map(Number);
+    expect(major).toBe(1);
+    expect(minor).toBeLessThanOrEqual(34);
+  });
+});
+
+/**
+ * Node pools (master:4650-4654).
+ *
+ * The spec names four; three are built and analytics-pool is deliberately not — master carries the
+ * reason beside the pool list. Before 2026-08-29 there was one undifferentiated group on t3.large,
+ * an instance type in none of the four, and no test looked at it. That is the whole reason a spec
+ * written in four parts survived so long implemented as one.
+ */
+describe('Phase 17 · EKS node pools (master:4650-4654)', () => {
+  const eks = read('infrastructure/terraform/aws/modules/eks/main.tf');
+
+  const POOLS: ReadonlyArray<[string, string, number, number]> = [
+    ['system', 't3.medium', 2, 2],
+    ['app', 't3.xlarge', 3, 10],
+    ['ai', 't3.2xlarge', 1, 4],
+  ];
+
+  const poolBlock = (name: string): string => {
+    const at = eks.indexOf(`${name} = {`);
+    expect(at).toBeGreaterThan(-1);
+    return eks.slice(at, eks.indexOf('}', eks.indexOf('taints', at)) + 1);
+  };
+
+  it.each(POOLS)('%s runs %s sized min %i max %i', (name, instance, min, max) => {
+    const block = poolBlock(name as string);
+    expect(block).toContain(instance as string);
+    expect(block).toMatch(new RegExp(`min_size\\s*=\\s*${min}\\b`));
+    expect(block).toMatch(new RegExp(`max_size\\s*=\\s*${max}\\b`));
+  });
+
+  it('the pools are separate node groups, not one shared min/max', () => {
+    // The regression this replaces: a single aws_eks_node_group with node_min_size/node_max_size
+    // variables shared by everything. Those variables no longer exist anywhere.
+    expect(eks).toContain('for_each = local.node_groups');
+    const tf = ['modules/eks/main.tf', 'modules/eks/variables.tf', 'main.tf', 'variables.tf']
+      .map((f) => read(`infrastructure/terraform/aws/${f}`))
+      .join('\n');
+    expect(tf).not.toMatch(/node_min_size|node_max_size|node_instance_types/);
+  });
+
+  it('only the ai pool is tainted', () => {
+    // Tainting app would strand every chart that has not opted in; leaving ai untainted lets
+    // ordinary web pods pack onto the instances the AI services are sized for, which is the cost
+    // problem the pool exists to solve.
+    expect(poolBlock('ai')).toContain('NO_SCHEDULE');
+    expect(poolBlock('app')).toMatch(/taints\s*=\s*\[\]/);
+    expect(poolBlock('system')).toMatch(/taints\s*=\s*\[\]/);
+  });
+
+  it('every pool is labelled so the charts can select it', () => {
+    expect(eks).toMatch(/workload\s*=\s*each\.key/);
+  });
+
+  it('analytics-pool is absent, and master records why', () => {
+    // An ABSENCE with a reason. If ClickHouse ever gets a chart this fails, and the pool has to be
+    // added in that same change rather than remembered later.
+    // Comments are stripped first: the block above explains the deferral and NAMES r5.xlarge, so a
+    // raw search matches the prose that documents the absence and reports it as presence.
+    const code = eks.replace(/#[^\n]*/g, ' ');
+    expect(code).not.toContain('r5.xlarge');
+    expect(code).not.toContain('analytics');
+    expect(exists('infrastructure/helm/cos-clickhouse')).toBe(false);
+  });
+});
+
+describe('Phase 17 · charts are pinned to the pool they are sized for (master:4650-4654)', () => {
+  const AI_CHARTS = [
+    'cos-ai-gateway',
+    'cos-ai-embedding-worker',
+    'cos-ai-ocr-pipeline',
+    'cos-ai-transcription-pipeline',
+  ];
+
+  const values = (chart: string): string => read(`${helmDir}/${chart}/values.yaml`);
+
+  it.each(charts)('%s requires a node pool rather than preferring one', (chart) => {
+    // requiredDuringScheduling, never preferred: a preferred rule falls back to any node the moment
+    // the pool is full, and the pod then runs — slowly, on the wrong hardware, reporting nothing.
+    const v = values(chart);
+    expect(`${chart}:${v}`).toContain('nodeAffinity');
+    expect(`${chart}:${v}`).toContain('requiredDuringSchedulingIgnoredDuringExecution');
+  });
+
+  it.each(charts)('%s selects the pool that matches what it is', (chart) => {
+    const expected = AI_CHARTS.includes(chart) ? 'ai' : 'app';
+    const v = values(chart);
+    const at = v.indexOf('nodeAffinity');
+    expect(`${chart}:${v.slice(at, at + 400)}`).toContain(`values: ['${expected}']`);
+  });
+
+  it.each(AI_CHARTS)('%s tolerates the ai taint', (chart) => {
+    // Without the toleration the taint keeps this pod OFF the very pool its nodeAffinity requires,
+    // and it stays Pending forever — the two halves only work as a pair.
+    const v = values(chart);
+    expect(`${chart}:${v}`).toContain('value: ai');
+    expect(`${chart}:${v}`).toContain('effect: NoSchedule');
+  });
+
+  it.each(charts.filter((c) => !AI_CHARTS.includes(c)))(
+    '%s does NOT tolerate the ai taint',
+    (chart) => {
+      // The control. A blanket toleration everywhere would re-open the packing problem while every
+      // case above still passed.
+      expect(`${chart}:${values(chart)}`).not.toContain('value: ai');
+    },
+  );
+});
+
+/**
+ * CI checks the infrastructure code, not only the application code.
+ *
+ * Two separate gaps, found on 2026-08-29 while auditing Phase 17 and closed together:
+ *
+ *   1. NOTHING ran terraform. 26 .tf files across three root modules had never been through `fmt`
+ *      or `validate` in CI — and the node-pool rewrite in that same audit landed unvalidated,
+ *      which is how the gap made itself obvious.
+ *   2. Trivy ran `scan-type: fs` without naming `scanners:`, so it used the fs default of
+ *      vuln,secret. Misconfiguration detection is off by default in that subcommand, so the IaC in
+ *      a repository that is mostly IaC was never scanned by anything.
+ *
+ * The second is the more instructive: the job was NAMED "Security Scan (Trivy)", it ran on every
+ * PR, and it was green — which reads as coverage. Nothing about the configuration announced which
+ * scanners it had left off.
+ */
+describe('Phase 17 · CI validates the infrastructure code (master:4699-4721)', () => {
+  const ci = read('.github/workflows/ci.yml');
+
+  it('runs terraform fmt across the whole tree', () => {
+    expect(ci).toMatch(/terraform fmt -check -recursive infrastructure\/terraform/);
+  });
+
+  it('validates every root module, not just the AWS one', () => {
+    // A module is only type-checked as part of a root; validating one root leaves the other's
+    // providers and references unchecked.
+    expect(ci).toContain('infrastructure/terraform/aws infrastructure/terraform/cloudflare');
+    expect(ci).toMatch(/terraform -chdir="\$dir" validate/);
+  });
+
+  it('initialises without a backend, so CI needs no cloud credentials', () => {
+    // infrastructure/terraform/cloudflare declares a `backend "s3"`. Without -backend=false, init
+    // reaches for a real bucket and the job needs credentials it must not have.
+    expect(ci).toMatch(/init -backend=false/);
+  });
+
+  it('pins the terraform version rather than floating on latest', () => {
+    // A validate that silently moves to a new major is a gate whose meaning changes without a diff.
+    expect(ci).toMatch(/terraform_version: '\d+\.\d+\.\d+'/);
+  });
+
+  it('Trivy names all three scanners, because misconfig is not a default', () => {
+    // The whole finding. `scan-type: fs` defaults to vuln,secret; leaving `scanners` unset is how
+    // IaC went unscanned while a job called "Security Scan" reported green on every PR.
+    expect(ci).toMatch(/scanners: 'vuln,secret,misconfig'/);
+  });
+
+  it('the misconfig gate blocks rather than reports', () => {
+    const step = ci.slice(ci.indexOf('Run Trivy — filesystem scan'));
+    expect(step.slice(0, step.indexOf('- name: Run Trivy — container'))).toMatch(/exit-code: '1'/);
+  });
+});
+
+describe('Phase 17 · the Trivy misconfiguration baseline only shrinks', () => {
+  const ignore = read('.trivyignore.yaml');
+  const parsed = readYaml<{
+    misconfigurations?: Array<{ id: string; paths?: string[]; statement?: string }>;
+  }>('.trivyignore.yaml');
+
+  // Enabling misconfig surfaced 28 CRITICAL/HIGH findings; 23 were FIXED and 5 remain, over two
+  // rules. The count is what makes this a ratchet — a third rule cannot appear without editing this
+  // line, which is the moment someone has to justify it in review.
+  //
+  // KSV-0014 and KSV-0118 were here on the morning of 2026-08-29 and are gone by design, not by
+  // suppression: every raw manifest gained a securityContext, and every workload gained
+  // readOnlyRootFilesystem with an emptyDir at /tmp where the process needs to write.
+  const KNOWN_RULES = ['AVD-AWS-0104', 'AVD-KSV-0056'];
+
+  it('suppresses exactly the rules the baseline recorded', () => {
+    expect((parsed.misconfigurations ?? []).map((m) => m.id).sort()).toEqual(
+      [...KNOWN_RULES].sort(),
+    );
+  });
+
+  it('is not growing', () => {
+    // 5 findings over 2 rules, down from 28 over 4 on the day the scanner was turned on. This number
+    // may go down; a change that raises it is a change that added a weakness and hid it in the same
+    // commit.
+    expect((parsed.misconfigurations ?? []).length).toBeLessThanOrEqual(KNOWN_RULES.length);
+  });
+
+  it('scopes every suppression to the file it applies to', () => {
+    // The whole reason this is YAML. Plain .trivyignore takes bare IDs, so one entry switches the
+    // rule off everywhere — and it did: with the plain file in place, restoring the blanket egress
+    // on the RDS security group as a test produced no failure, because the entry meant for the EKS
+    // nodes swallowed it. An unscoped entry is a disabled check wearing the costume of a baseline.
+    for (const m of parsed.misconfigurations ?? []) {
+      expect(`${m.id}: paths`).toBe(
+        m.paths && m.paths.length > 0 ? `${m.id}: paths` : `${m.id}: NO paths`,
+      );
+    }
+  });
+
+  it('explains every suppression', () => {
+    // An ignore file without reasons becomes permanent by default: nobody can tell which entries
+    // were a considered trade-off and which were added to make a build go green.
+    for (const m of parsed.misconfigurations ?? []) {
+      expect(`${m.id}: statement`).toBe(
+        m.statement ? `${m.id}: statement` : `${m.id}: MISSING statement`,
+      );
+    }
+  });
+
+  it('says outright that it is not a place to silence a failing build', () => {
+    expect(ignore).toMatch(/DO NOT add an entry here to make a build pass/);
+  });
+
+  it('records that the plain-text format is not sufficient', () => {
+    // So the next person does not "simplify" it back to .trivyignore and silently widen every entry.
+    expect(ignore).toMatch(/plain-text format takes bare rule IDs/);
+  });
+});
