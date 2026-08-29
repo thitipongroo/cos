@@ -7,6 +7,8 @@
  */
 import * as fs from 'fs';
 import * as path from 'path';
+import { parse as parseYaml } from 'yaml';
+
 import { exists, read, readYaml, repoRoot } from '../helpers';
 
 /** Source with comments and string bodies neutralised — a comment naming a construct is not one. */
@@ -260,5 +262,69 @@ describe('Phase 16 · encryption at rest (master:4474-4480)', () => {
     // compromised key cannot decrypt another store.
     expect(kms).toMatch(/cos\/\$\{[^}]+\}\/rds|cos\/.*\/rds/);
     expect(kms).toMatch(/s3/);
+  });
+});
+
+/**
+ * TLS 1.3 minimum on all ingress (master:4539).
+ *
+ * The annotation has been in infrastructure/kubernetes/cert-manager/cert-manager.yml since the file
+ * was written, and nothing read it. That is the whole failure mode for a transport setting: it is
+ * one line of YAML on an object nobody tests, it degrades silently when it is loosened, and the
+ * symptom — a client negotiating TLS 1.2 — is invisible from inside the cluster.
+ *
+ * Asserted as an EXACT value rather than "contains TLSv1.3", because the realistic regression is
+ * `'TLSv1.2 TLSv1.3'` — a change that reads as broadening compatibility, satisfies any containment
+ * check, and drops the floor the spec sets.
+ */
+describe('Phase 16 · TLS 1.3 is the floor on every ingress (master:4539)', () => {
+  const certManager = read('infrastructure/kubernetes/cert-manager/cert-manager.yml');
+
+  const ingresses = (): Array<Record<string, unknown>> => {
+    const docs = certManager
+      .split(/^---$/m)
+      .map((d) => {
+        try {
+          return parseYaml(d) as Record<string, unknown>;
+        } catch {
+          return null;
+        }
+      })
+      .filter((d): d is Record<string, unknown> => d !== null);
+    return docs.filter((d) => d['kind'] === 'Ingress');
+  };
+
+  it('the manifest declares at least one Ingress', () => {
+    // Without this, a rename or a restructure empties the sweep below and it reports green.
+    expect(ingresses().length).toBeGreaterThan(0);
+  });
+
+  it.each(['ssl-protocols', 'ssl-redirect', 'force-ssl-redirect'])(
+    'every Ingress sets %s',
+    (key) => {
+      for (const ing of ingresses()) {
+        const meta = ing['metadata'] as { name?: string; annotations?: Record<string, string> };
+        const ann = meta.annotations ?? {};
+        expect(`${meta.name}:${Object.keys(ann).join(',')}`).toContain(key);
+      }
+    },
+  );
+
+  it('pins TLSv1.3 exactly, so a 1.2 fallback cannot be added as a compatibility fix', () => {
+    for (const ing of ingresses()) {
+      const meta = ing['metadata'] as { name?: string; annotations?: Record<string, string> };
+      const protocols = (meta.annotations ?? {})['nginx.ingress.kubernetes.io/ssl-protocols'];
+      expect(`${meta.name}:${protocols}`).toContain('TLSv1.3');
+      expect(protocols).toBe('TLSv1.3');
+    }
+  });
+
+  it('redirects plaintext rather than serving it', () => {
+    // TLS 1.3 on the HTTPS listener means nothing if the HTTP one still answers.
+    for (const ing of ingresses()) {
+      const ann = (ing['metadata'] as { annotations?: Record<string, string> }).annotations ?? {};
+      expect(ann['nginx.ingress.kubernetes.io/ssl-redirect']).toBe('true');
+      expect(ann['nginx.ingress.kubernetes.io/force-ssl-redirect']).toBe('true');
+    }
   });
 });

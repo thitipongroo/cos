@@ -247,17 +247,40 @@ describe('Phase 2 · platform entities and RLS (real database)', () => {
     });
 
     it('every policy is scoped TO app_user and NULLIF-hardened, with WITH CHECK', async () => {
+      // Widened 2026-08-29 from six schemas to the same fourteen the two cases above sweep.
+      //
+      // The narrower list was the gap: a table in files, notifications, workforce or any of the
+      // other eight could carry a policy NAMED rls_tenant_isolation and PERMISSIVE — which the case
+      // above checks — while its USING clause said `true`, or omitted app_user, or had no WITH
+      // CHECK at all, and every assertion in this file still passed. The name is not the isolation;
+      // the expression is.
+      //
+      // Verified against a migrated database before widening: all 21 tables in the eight schemas
+      // that were not being checked already satisfy the form, because migration
+      // 20260623000002_consolidate_rls_single_permissive rewrites policies across all fourteen. So
+      // this closes a hole in the TEST, not one in the database — which is the only reason it can
+      // be widened in one step rather than as a shrinking allowlist.
       const rows = await prisma.$queryRawUnsafe<
         Array<PolicyRow & { schemaname: string; tablename: string }>
       >(
         `SELECT schemaname, tablename, policyname, permissive, roles::text AS roles, qual, with_check
            FROM pg_policies
-          WHERE schemaname IN ('ai','boq','finance','procurement','projects','site_ops')`,
+          WHERE schemaname IN ('ai','boq','crm','digital_twin','equipment','equipment_telemetry',
+                               'files','finance','notifications','procurement','projects',
+                               'site_ops','workforce','workforce_telemetry')`,
       );
+      // A sweep that silently matched nothing would pass every assertion below.
+      expect(rows.length).toBeGreaterThan(20);
       for (const r of rows) {
-        expect(r.roles).toContain('app_user');
-        expect(r.qual ?? '').toMatch(/NULLIF/);
-        expect(r.with_check ?? '').toMatch(/NULLIF/);
+        const where = `${r.schemaname}.${r.tablename}`;
+        expect(`${where}:${r.roles}`).toContain('app_user');
+        // NULLIF is what makes an UNSET tenant GUC select zero rows instead of raising a cast
+        // error — and a raised error is caught somewhere and turns into a 500, while zero rows is
+        // the safe, silent, correct answer.
+        expect(`${where}:${r.qual ?? ''}`).toMatch(/NULLIF/);
+        // WITH CHECK is the write half. Without it a caller can INSERT a row stamped with another
+        // tenant's id, which no amount of read-side filtering undoes.
+        expect(`${where}:${r.with_check ?? ''}`).toMatch(/NULLIF/);
       }
     });
 
