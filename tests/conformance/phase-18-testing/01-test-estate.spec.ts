@@ -138,6 +138,60 @@ describe('Phase 18 · k6 load scenarios (master:4776-4791)', () => {
     expect(read(`tests/load/${file}`)).toMatch(new RegExp(`target:\\s*${vus}\\b`));
   });
 
+  it('CI runs all four scenarios, not one of them', () => {
+    // Until 2026-08-29 the weekly job ran api-baseline alone. The dashboard SLA, the upload path and
+    // the AI report path had thresholds written down and never executed — while a job named
+    // "Load Tests" went green every Monday. The scenarios that were not run are precisely the ones
+    // whose numbers nobody could have noticed drifting.
+    // Read the RUN loop, not the file. A first version of this searched the whole workflow and
+    // passed when the loop was cut back to one scenario, because the other three names still
+    // appeared in a comment and in the summary loop below it. A test that a comment can satisfy is
+    // not a test.
+    const wf = read('.github/workflows/load-tests.yml');
+    const runStep = wf.slice(
+      wf.indexOf('- name: Run k6 scenarios'),
+      wf.indexOf('- name: Upload k6 results'),
+    );
+    const loop = /for s in ([a-z0-9 -]+); do/.exec(runStep)?.[1]?.split(/\s+/) ?? [];
+    expect(loop.sort()).toEqual(['ai-report', 'api-baseline', 'dashboard-sla', 'file-upload']);
+  });
+
+  it('a breach in one scenario still leaves the others measured', () => {
+    // k6 exits non-zero on a threshold breach. Without the per-scenario capture, the first breach
+    // ends the step and the remaining scenarios produce no data at all — the run tells you one thing
+    // is wrong and nothing about the rest.
+    const wf = read('.github/workflows/load-tests.yml');
+    expect(wf).toMatch(/\|\| failed=1/);
+    expect(wf).toMatch(/exit "\$failed"/);
+  });
+
+  it('there is ONE set of k6 scripts', () => {
+    // There were two: tests/load/, which this suite asserted against and CI never ran, and
+    // scripts/loadtest/, which CI ran one file from and no test ever read. Each set had something
+    // the other lacked and neither was wrong on its own, which is exactly why the split survived —
+    // every check that existed passed. Merged into tests/load/ on 2026-08-29.
+    expect(exists('scripts/loadtest')).toBe(false);
+  });
+
+  it('the mixed-read scenario reads the estate, not the health probes', () => {
+    // /health/live answers from memory in single-digit milliseconds. Including it in a P95 over
+    // "mixed read endpoints" measures how many probes are in the mix as much as how fast the API is,
+    // and it moves the number in the flattering direction.
+    const baseline = read('tests/load/api-baseline.js');
+    const endpoints = baseline.slice(
+      baseline.indexOf('const endpoints = ['),
+      baseline.indexOf('];'),
+    );
+    expect(endpoints).not.toMatch(/\/health\//);
+    expect(endpoints).toMatch(/procurement/);
+  });
+
+  it('the 5 MB upload payload is built once, not per iteration', () => {
+    // Generating it inside the default function measured k6's own string building as upload latency
+    // — 100 MB of allocation per round at 20 VUs, on the P95 the threshold is judged against.
+    expect(read('tests/load/file-upload.js')).toMatch(/export function setup\(\)/);
+  });
+
   it('load tests are scheduled weekly, not run per deploy (master:4663, 4834)', () => {
     // Running a 200-VU test on every deploy would make the pipeline the load, and would gate merges
     // on a signal that is inherently noisy.

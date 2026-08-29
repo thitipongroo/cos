@@ -303,7 +303,7 @@ Source: spec §31.6 (targets corrected to match spec SLO definitions; Web Vitals
 | Mobile app cold start (React Native)         | < 3s on mid-range Android                      | Manual test + Flipper                                                                                                                                                                                                                                                         |
 | Offline sync completion (3G, 5MB data)       | < 30s                                          | Manual test on throttled network                                                                                                                                                                                                                                              |
 | Background job (Temporal workflow)           | SLA defined per workflow type in workflow spec | Temporal dashboard                                                                                                                                                                                                                                                            |
-| k6 sustained load (100 VU × 5 min)           | 0 errors, p95 within budget                    | Weekly scheduled — `scripts/loadtest/api-baseline.js` (staging); Phase 19 one-time gate                                                                                                                                                                                       |
+| k6 sustained load (100 VU × 5 min)           | 0 errors, p95 within budget                    | Weekly scheduled — `tests/load/api-baseline.js` (staging); Phase 19 one-time gate                                                                                                                                                                                       |
 
 The k6 load test runs on a **weekly schedule against staging** — not per-PR (source: spec §30.9). Results are advisory: alert Engineering Lead if p95 latency increases > 20% vs. previous week. Load tests do not block PR merge. Note: Phase 19 automated check #7 runs a one-time load test gate before production go-live.
 
@@ -664,7 +664,7 @@ gh api repos/:owner/:repo/code-scanning/alerts --jq '[.[]|select(.state=="open")
 ./scripts/readiness/check-i18n-completeness.sh
 
 # 7. Load test gate (100 VU × 5 min — must pass before manual checks begin)
-k6 run --vus 100 --duration 300s ./scripts/loadtest/api-baseline.js
+k6 run --vus 100 --duration 300s ./tests/load/api-baseline.js
 
 # 8. Security headers audit
 ./scripts/readiness/check-security-headers.sh --env staging
@@ -1017,7 +1017,7 @@ scripts/readiness/check-i18n-completeness.sh        — Verify all i18n keys are
 scripts/readiness/check-security-headers.sh         — Verify all required HTTP security headers on ingress (HSTS, X-Content-Type-Options, X-Frame-Options, CSP, Referrer-Policy, Permissions-Policy) + TLS 1.3 (Phase 16)
 scripts/readiness/check-schema-registry.sh          — Verify Kafka Schema Registry connectivity, BACKWARD_TRANSITIVE compatibility mode, all critical v1 schemas registered per spec §32.4 event table, local .avsc files valid JSON (Phase 8)
 scripts/readiness/check-service-runtimes.sh         — Architectural fitness function: every runtime declared in a docs table matches the build files in services/<name>/ (go.mod→Go, requirements.txt→Python, package.json→Node). CANONICAL table = spec §32.2; 00_master §DEPLOYABLE UNITS, §33 Service Assignment and README are mirrors. Runs in the CI lint job on every PR
-scripts/loadtest/api-baseline.js                    — k6 load test: 100 VU × 5 min mixed-read baseline gate; P95 read < 300ms, P95 write < 500ms, error rate < 0.1% (QM-6; Phase 18)
+tests/load/api-baseline.js                         — k6 load test: 100 VU × 5 min mixed-read baseline gate; P95 read < 300ms, P95 write < 500ms, error rate < 0.1% (QM-6; Phase 18)
 
 # Compliance & Governance
 docs/compliance/data-flow-map.md                    — PDPA/GDPR data flow documentation (Phase 16)

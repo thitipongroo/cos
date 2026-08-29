@@ -113,7 +113,7 @@ for script in scripts/readiness/*.sh; do
 done
 
 # Staging load test baseline
-k6 run scripts/loadtest/api-baseline.js \
+k6 run tests/load/api-baseline.js \
   -e BASE_URL=https://api-staging.construction-os.io \
   -e TENANT_ID=staging-tenant
 ```

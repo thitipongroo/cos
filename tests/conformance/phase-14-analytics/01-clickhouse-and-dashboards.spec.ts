@@ -224,7 +224,7 @@ describe('Phase 14 · the topic documentation matches the code', () => {
  * the day it matters, which is the day it is too late.
  */
 describe('Phase 14 · the two dashboard latency budgets are enforced separately (master:4288-4289)', () => {
-  const loadtest = read('scripts/loadtest/analytics-sla.js');
+  const loadtest = read('tests/load/dashboard-sla.js');
   const alerts = read('infrastructure/monitoring/prometheus/rules/cos-alerts.yml');
 
   it('the load test holds the PM endpoint to 2s, not 3s', () => {

@@ -17,22 +17,37 @@ jobs:
         run: |
           curl -L https://github.com/grafana/k6/releases/download/v0.50.0/k6-v0.50.0-linux-amd64.tar.gz | tar xvz --strip-components 1
           sudo mv k6 /usr/local/bin/
-      - name: Run API baseline load test
+      # All FOUR scenarios master:4849-4864 defines, not one. Until 2026-08-29 this ran
+      # api-baseline alone, so the dashboard SLA, the upload path and the AI report path had
+      # thresholds written down and never executed — while a weekly job called "Load Tests" went
+      # green. `fail-fast: false` so one breaching scenario still leaves the other three measured.
+      - name: Run k6 scenarios
         env:
           BASE_URL: ${{ secrets.STAGING_URL }}
           API_TOKEN: ${{ secrets.STAGING_API_TOKEN }}
           TENANT_ID: ${{ secrets.STAGING_TENANT_ID }}
-        run: k6 run scripts/loadtest/api-baseline.js --out json=k6-results.json
+        run: |
+          set -o pipefail
+          failed=0
+          for s in dashboard-sla file-upload api-baseline ai-report; do
+            echo "── $s"
+            # k6 exits non-zero when a threshold is breached. Recorded per scenario and re-raised at
+            # the end, so a breach in the first does not hide the results of the rest.
+            k6 run "tests/load/$s.js" --out "json=k6-$s.json" || failed=1
+          done
+          exit "$failed"
       - name: Upload k6 results
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: k6-results-${{ github.run_id }}
-          path: k6-results.json
+          path: k6-*.json
       # Spec §30.9: alert Engineering Lead if p95 latency increases > 20% vs. previous week
       - name: Check p95 regression (advisory)
         if: always()
         run: |
-          P95=$(jq '[.[] | select(.metric=="http_req_duration" and .type=="Point") | .data.value] | sort | .[(length*0.95|floor)]' k6-results.json 2>/dev/null || echo "0")
-          echo "p95 latency: ${P95}ms"
-          echo "p95=${P95}" >> "$GITHUB_STEP_SUMMARY"
+          for s in dashboard-sla file-upload api-baseline ai-report; do
+            P95=$(jq '[.[] | select(.metric=="http_req_duration" and .type=="Point") | .data.value] | sort | .[(length*0.95|floor)]' "k6-$s.json" 2>/dev/null || echo "0")
+            echo "$s p95: ${P95}ms"
+            echo "$s p95=${P95}" >> "$GITHUB_STEP_SUMMARY"
+          done
