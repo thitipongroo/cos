@@ -18,7 +18,12 @@
  */
 import { TestWorkflowEnvironment } from '@temporalio/testing';
 import { Worker } from '@temporalio/worker';
-import { poWorkflow, submitPoSignal, approvePoSignal } from '../workflows/po.workflow';
+import {
+  poWorkflow,
+  poStatusQuery,
+  submitPoSignal,
+  approvePoSignal,
+} from '../workflows/po.workflow';
 import type { PoWorkflowParams } from '../workflows/po.workflow';
 
 const mockUpdatePoStatus = jest.fn().mockResolvedValue(undefined);
@@ -107,6 +112,23 @@ describe('Phase 5 · PO approval threshold boundaries (master:1513-1518)', () =>
         ['exec-uuid-001', 'EXECUTIVE'],
       ] as const) {
         await handle.signal(approvePoSignal, { approver_id: approver, tier });
+        await testEnv!.sleep('100ms');
+      }
+
+      // Wait for the chain to be OVER before reading the notifications it made.
+      //
+      // The sleeps above advance WORKFLOW time; they say nothing about whether the worker has
+      // finished processing the resulting tasks. On a loaded runner the loop can end with a tier
+      // still in flight — which is what CI hit on 2026-08-29: 50000.0001 THB read back as ['PM']
+      // with FINANCE not yet notified, on a commit that had passed the run before.
+      //
+      // `handle.result()` is NOT the barrier: this workflow does not end at approval, it continues
+      // to delivery, invoice and payment, so waiting for the result times out — verified, all six
+      // cases failed with "Workflow execution timed out". The chain is done when the PO LEAVES
+      // PENDING_APPROVAL: the tier loop exits, status becomes APPROVED and auto-transitions to SENT,
+      // and every notifyApprover call it will ever make has already been made.
+      for (let i = 0; i < 100; i += 1) {
+        if ((await handle.query(poStatusQuery)) !== 'PENDING_APPROVAL') break;
         await testEnv!.sleep('100ms');
       }
     });
