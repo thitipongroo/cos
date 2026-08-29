@@ -185,13 +185,42 @@ describe('Phase 19 · runbooks and records (master:5009-5021)', () => {
     expect(exists('docs/slo/monthly-reviews/.gitkeep')).toBe(true);
   });
 
+  const adoptionDashboard = (): { panels?: Array<{ title?: string }> } =>
+    JSON.parse(read('infrastructure/monitoring/grafana/dashboards/adoption-gates.json')) as {
+      panels?: Array<{ title?: string }>;
+    };
+
   it('the adoption gates have a dashboard (master:5019)', () => {
-    // SECTION B's eight gates are measured from live usage, not from code — so what is checkable
-    // here is that something tracks them.
     expect(exists('infrastructure/monitoring/grafana/dashboards/adoption-gates.json')).toBe(true);
-    expect(() =>
-      JSON.parse(read('infrastructure/monitoring/grafana/dashboards/adoption-gates.json')),
-    ).not.toThrow();
+    expect(() => adoptionDashboard()).not.toThrow();
+  });
+
+  it('the dashboard carries a panel for every one of the eight gates', () => {
+    // Widened 2026-08-29. The case above asserted the file exists and parses, which seven of the
+    // eight panels could be deleted without disturbing — and a gate with no panel is a gate nobody
+    // can fail, on a checklist whose whole purpose is deciding whether the platform is adopted.
+    //
+    // master:5067-5076 states the eight. They are measured from live usage rather than from code,
+    // so what is checkable here is that each one is actually tracked somewhere.
+    const titles = (adoptionDashboard().panels ?? []).map((p) => p.title ?? '').join('\n');
+    for (let gate = 1; gate <= 8; gate++) {
+      expect(`Gate ${gate}: present`).toBe(
+        new RegExp(`Gate ${gate}\\b`).test(titles)
+          ? `Gate ${gate}: present`
+          : `Gate ${gate}: MISSING`,
+      );
+    }
+  });
+
+  it('names what each gate measures, not just its number', () => {
+    // "Gate 4" on its own tells an on-call engineer nothing. The subject is what makes the panel
+    // readable at the moment someone is deciding whether the platform is production-adopted.
+    const titles = (adoptionDashboard().panels ?? []).map((p) => p.title ?? '').join('\n');
+    for (const subject of ['DAU', 'Workflows', 'Financial', 'Mobile', 'Incidents', 'Outages']) {
+      expect(`${subject}: named`).toBe(
+        titles.includes(subject) ? `${subject}: named` : `${subject}: MISSING`,
+      );
+    }
   });
 });
 
