@@ -1,5 +1,5 @@
 /**
- * Phase 23 — MLOps Pipeline (master:5351-5542).
+ * Phase 23 — MLOps Pipeline (master:5424-5626).
  *
  * Almost everything this phase generates is a STUB by instruction — the models are gated on data
  * thresholds nobody has reached. That makes the checkable content unusual: not behaviour, but the
@@ -7,7 +7,7 @@
  * for two of them — what the code is forbidden from doing once it stops being a stub.
  *
  * The prohibitions are the reason this file leans negative. §22.3 bars AI from executing a state
- * transition that needs a human, and master:5482 and 5534 repeat it for the autonomous executor and
+ * transition that needs a human, and master:5566 and 5618 repeat it for the autonomous executor and
  * the device-trust score. A stub that quietly grows a revoke() call is the failure mode, and it will
  * not announce itself.
  */
@@ -33,7 +33,7 @@ const mlopsFiles = ((): string[] => {
 
 // ── 1. Airflow DAGs ─────────────────────────────────────────────────────────
 
-describe('Phase 23 · Airflow DAGs (master:5404-5409, 5413)', () => {
+describe('Phase 23 · Airflow DAGs (master:5477-5482, 5486)', () => {
   // master names five. dag_train_device_trust_model.py is a sixth, added with ADR-081's model.
   const named = [
     'dag_export_training_data',
@@ -48,14 +48,14 @@ describe('Phase 23 · Airflow DAGs (master:5404-5409, 5413)', () => {
   });
 
   it('marks each one as a stub with work still to do', () => {
-    // master:5413 asks for stubs "with clear TODO markers". A stub that reads as finished is worse
+    // master:5486 asks for stubs "with clear TODO markers". A stub that reads as finished is worse
     // than no stub: the next person wires a pipeline to a function that returns nothing.
     const missing = named.filter((dag) => !/TODO/.test(read(`${DAGS}/${dag}.py`)));
     expect(missing).toEqual([]);
   });
 
   it('writes the data lake per tenant, not into one shared bucket', () => {
-    // master:5417 — cos-datalake-{tenant_id}. A single bucket would put one tenant's site reports in
+    // master:5490 — cos-datalake-{tenant_id}. A single bucket would put one tenant's site reports in
     // reach of another's training job, which is the one isolation boundary this platform cannot bend.
     expect(read(`${DAGS}/dag_export_training_data.py`)).toContain('cos-datalake-{tenant_id}');
   });
@@ -63,14 +63,14 @@ describe('Phase 23 · Airflow DAGs (master:5404-5409, 5413)', () => {
 
 // ── 2, 11. MLflow and Airflow versions ──────────────────────────────────────
 
-describe('Phase 23 · stack versions (master:5359-5360)', () => {
+describe('Phase 23 · stack versions (master:5432-5433)', () => {
   it('deploys MLflow as both a compose service and a Kubernetes workload', () => {
     expect(exists('mlops/mlflow/docker-compose.yaml')).toBe(true);
     expect(exists('infrastructure/kubernetes/mlflow/deployment.yaml')).toBe(true);
   });
 
   it('runs MLflow 3.x on BOTH the client and the server', () => {
-    // master:5359 bumped 2.x→3.x by product-owner decision. The client pin and the server image are
+    // master:5432 bumped 2.x→3.x by product-owner decision. The client pin and the server image are
     // asserted together because they drifted apart: the pin said 3.14.0 while both deployments still
     // ran the v2.14.1 image — a 3.x client talking to a 2.x model registry.
     expect(read('mlops/requirements-mlflow.txt')).toMatch(/^mlflow==3\./m);
@@ -89,7 +89,7 @@ describe('Phase 23 · stack versions (master:5359-5360)', () => {
 
 // ── 3-5. Feast ──────────────────────────────────────────────────────────────
 
-describe('Phase 23 · feature store (master:5390-5402)', () => {
+describe('Phase 23 · feature store (master:5463-5475)', () => {
   const store = (): Record<string, { type?: string; db_schema?: string }> =>
     readYaml('mlops/feast/feature_store.yaml');
 
@@ -98,7 +98,7 @@ describe('Phase 23 · feature store (master:5390-5402)', () => {
   });
 
   it('keeps the offline store on PostgreSQL, NOT ClickHouse', () => {
-    // The decision is spelled out at master:5396-5402 with its reasoning: both are Feast contrib
+    // The decision is spelled out at master:5469-5475 with its reasoning: both are Feast contrib
     // stores, and ClickHouse's own guidance is that a Feast "literal store" underutilises it. The
     // negative half matters — "offline store" and "analytics warehouse" are easy to conflate.
     expect(store()['offline_store']?.type).toBe('postgres');
@@ -130,7 +130,7 @@ describe('Phase 23 · feature store (master:5390-5402)', () => {
 
 // ── 6-10. The remaining Generate items ──────────────────────────────────────
 
-describe('Phase 23 · pipeline plumbing (master:5416-5420)', () => {
+describe('Phase 23 · pipeline plumbing (master:5489-5493)', () => {
   it('has a Kubeflow pipeline definition', () => {
     const files = fs.readdirSync(abs('mlops/kubeflow'));
     expect(files.filter((f) => /\.ya?ml$/.test(f)).length).toBeGreaterThan(0);
@@ -153,7 +153,7 @@ describe('Phase 23 · pipeline plumbing (master:5416-5420)', () => {
 
 // ── 12. Evidently, not W&B ──────────────────────────────────────────────────
 
-describe('Phase 23 · evaluation provider (master:5363-5364; ADR-038)', () => {
+describe('Phase 23 · evaluation provider (master:5436-5437; ADR-038)', () => {
   it('NEGATIVE — no Weights & Biases anywhere in the MLOps tree', () => {
     // ADR-038 replaced W&B with Evidently precisely because the stack must stay in-cluster with no
     // external SaaS and no API key. A stray `import wandb` would send experiment metadata off-site.
@@ -170,7 +170,7 @@ describe('Phase 23 · evaluation provider (master:5363-5364; ADR-038)', () => {
 
 // ── 13. Model stubs ─────────────────────────────────────────────────────────
 
-describe('Phase 23 · model stubs (master:5491-5535)', () => {
+describe('Phase 23 · model stubs (master:5550-5619)', () => {
   const models: Array<[string, RegExp]> = [
     ['delay_forecast_model', /90\+? days/i],
     ['safety_vision_model', /10,?000\+? labeled/i],
@@ -193,9 +193,9 @@ describe('Phase 23 · model stubs (master:5491-5535)', () => {
 
 // ── 14. DeviceTrustModel governance ─────────────────────────────────────────
 
-describe('Phase 23 · device trust is advisory only (master:5528-5535; ADR-081)', () => {
+describe('Phase 23 · device trust is advisory only (master:5607-5619; ADR-081)', () => {
   it('serves a rule-based baseline on day one', () => {
-    // master:5528 — the baseline IS the thing the model must beat, and it serves behind the same
+    // master:5612 — the baseline IS the thing the model must beat, and it serves behind the same
     // interface until it does. Without it the surface would be dark, or worse, described as AI.
     expect(exists('mlops/models/device_trust_baseline.py')).toBe(true);
   });
@@ -221,17 +221,47 @@ describe('Phase 23 · device trust is advisory only (master:5528-5535; ADR-081)'
       expect(code).not.toMatch(/\b(revoke|block)_?\w*\s*\(/);
     }
   });
+
+  it('spells the scorer field the same way in all three implementations', () => {
+    // master:5615 fixes the shape as `scoredBy: 'RULES'|'MODEL'`. Three independent implementations
+    // put that value on the wire — the backend scorer, the Python training-time baseline that must
+    // reproduce it byte for byte (device-trust-golden.json is their shared contract), and the mobile
+    // client that reads it. Each layer pins the string 'RULES' in its OWN tests; nothing compares
+    // the layers, so renaming the field or the value in one of them alone stays green everywhere
+    // and only shows up as a badge that has silently stopped saying "rule-based" on a real handset.
+    //
+    // 'RULE_BASED' is a different thing and deliberately not asserted here: it is the mobile BADGE
+    // (scorerBadge returns 'AI_VERIFIED' | 'RULE_BASED'), one layer above the wire value.
+    const backend = read('backend/src/modules/identity/device-trust/trust-score/trust-score.ts');
+    const mobile = read('apps/mobile/src/api/devices.ts');
+    const baseline = read('mlops/models/device_trust_baseline.py');
+
+    // The union, both members, in both TypeScript declarations.
+    for (const src of [backend, mobile]) {
+      expect(src).toMatch(/'RULES'\s*\|\s*'MODEL'/);
+    }
+    expect(backend).toMatch(/\bscoredBy\b/);
+    expect(mobile).toMatch(/\bscoredBy\b/);
+    expect(baseline).toMatch(/"scoredBy":\s*"RULES"/);
+
+    // CONTROL: the spec's own wording is NOT what any of them ship. Asserted so that a future edit
+    // that "fixes" one layer to match the phase-command prose fails here instead of silently
+    // splitting the three apart.
+    for (const src of [backend, mobile, baseline]) {
+      expect(src).not.toMatch(/'RULE_BASED'|"RULE_BASED"/);
+    }
+  });
 });
 
 // ── 15. Autonomous executor stays inert ─────────────────────────────────────
 
-describe('Phase 23 · autonomous executor is a stub (master:5478-5483)', () => {
+describe('Phase 23 · autonomous executor is a stub (master:5562-5567)', () => {
   it('exists as an interface stub', () => {
     expect(exists('mlops/interfaces/autonomous_workflow_executor.py')).toBe(true);
   });
 
   it('records the three things it must never trigger', () => {
-    // master:5482-5483 — never financial transactions, human-approval workflows, or data deletions.
+    // master:5566-5567 — never financial transactions, human-approval workflows, or data deletions.
     // "Phase 23+ — do NOT activate in Phase 23 itself" is a status, and statuses get forgotten; the
     // prohibition is what has to survive.
     const src = read('mlops/interfaces/autonomous_workflow_executor.py');
@@ -243,7 +273,7 @@ describe('Phase 23 · autonomous executor is a stub (master:5478-5483)', () => {
 
 // ── 16. Unit tests ──────────────────────────────────────────────────────────
 
-describe('Phase 23 · unit tests (master:5421)', () => {
+describe('Phase 23 · unit tests (master:5494)', () => {
   it('covers DAG task functions with mocked data sources', () => {
     expect(exists('mlops/tests/test_dag_tasks.py')).toBe(true);
     expect(read('mlops/tests/test_dag_tasks.py')).toMatch(/mock|patch/i);
@@ -252,7 +282,7 @@ describe('Phase 23 · unit tests (master:5421)', () => {
 
 // ── The two producers this phase was told to finish ─────────────────────────
 
-describe('Phase 23 · the deferred producers (master:5432, 5473)', () => {
+describe('Phase 23 · the deferred producers (master:5496, 5519)', () => {
   it('publishes construction.delay.detected.v1', () => {
     // Deferred here on 2026-08-23 because DelayForecastModel is the AI_FORECAST source the payload
     // names; built 2026-08-25 by product-owner decision. It emits nothing while the model is a stub —
@@ -272,7 +302,7 @@ describe('Phase 23 · the deferred producers (master:5432, 5473)', () => {
   });
 
   it('publishes safety.violation.detected.v1, wired end to end', () => {
-    // The five halves master:5473 requires. Any one missing puts the event back in the state §19.6
+    // The five halves master:5529 requires. Any one missing puts the event back in the state §19.6
     // was found in: a rule about a notification that is never created.
     expect(exists('packages/@cos/shared/src/avro/safety.violation.detected.v1.avsc')).toBe(true);
     expect(exists('packages/@cos/shared/src/events/safety.violation.detected.v1.ts')).toBe(true);

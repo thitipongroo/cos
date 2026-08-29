@@ -5612,7 +5612,7 @@ Stubs in Phase 23 (generate stub — algorithms RESOLVED in spec §22-ai-archite
     Day one:  a deterministic rule-based scorer serves behind the same interface and IS the baseline
               the model must beat. While it serves, the surface must NOT be described as AI-derived.
     Interface: { score(deviceId: string, userId: string): TrustScore }
-    TrustScore: { score: int 0..100, scorer: 'RULE_BASED'|'MODEL', signals: SignalState[] }
+    TrustScore: { score: int 0..100, scoredBy: 'RULES'|'MODEL', signals: SignalState[] }  (the mobile BADGE renders 'RULE_BASED'|'AI_VERIFIED'; the wire value is scoredBy)
     Algorithm: RESOLVED — XGBoost binary classifier, calibrated; source: spec §22-ai-architecture §22.6
     Framework: scikit-learn + XGBoost
     Governance: ADVISORY ONLY — never revokes a device, never blocks a login (§22.3 autonomous-mode
