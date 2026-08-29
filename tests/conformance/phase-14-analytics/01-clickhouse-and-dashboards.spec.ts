@@ -267,16 +267,52 @@ describe('Phase 14 · the two dashboard latency budgets are enforced separately 
     );
   });
 
-  it('records that pipeline freshness is stated but not measured (master:4290-4291)', () => {
-    // master fixes 15-minute freshness and a 30-second real-time lag. Nothing emits a metric for
-    // either: services/analytics-worker registers no Prometheus collector at all, so an alert on
-    // ingestion lag would reference a series that never exists — a rule that cannot fire, which
-    // reads as health. Asserted as an ABSENCE so the gap is visible rather than assumed covered;
-    // when the worker starts emitting lag, this case fails and must be replaced by a real threshold.
-    const workerSrc = ['internal/metrics/consumer.go', 'cmd/analytics-worker/main.go']
-      .map((f) => read(`services/analytics-worker/${f}`))
-      .join('\n');
-    expect(workerSrc).not.toMatch(/promauto|prometheus\.New/);
-    expect(alerts).not.toContain('AnalyticsFreshness');
+  it('measures pipeline freshness rather than only stating it (master:4290-4291)', () => {
+    // Replaced on 2026-08-29. The case that stood here recorded the ABSENCE of a measurement and
+    // justified it with a claim that was wrong: that analytics-worker "registers no Prometheus
+    // collector at all, so an alert would reference a series that never exists". The worker has
+    // served /metrics on :9464 since cosotel.Start was added, and prometheus.yml has scraped it all
+    // along — what was missing was the series, not the endpoint. The plumbing being present is what
+    // made this a small change rather than the infrastructure project the old comment implied.
+    const lag = read('services/analytics-worker/internal/metrics/lag.go');
+    expect(lag).toContain('analytics_ingestion_lag_seconds');
+    // Measured where every event passes, before the per-type dispatch, so a handler added later
+    // cannot forget it.
+    expect(read('services/analytics-worker/internal/metrics/consumer.go')).toMatch(
+      /observeLag\(envelope\.EventType[\s\S]{0,80}switch envelope\.EventType/,
+    );
+  });
+
+  it('alerts on both freshness budgets separately (master:4290-4291)', () => {
+    // 15 minutes and 30 seconds are different budgets on the same measurement — the same shape as
+    // the two dashboard SLAs above. One rule cannot serve both: at 900s it stays quiet through
+    // every real-time breach, and at 30s it pages on ordinary freshness.
+    expect(alerts).toContain('alert: AnalyticsDataStale');
+    expect(alerts).toContain('alert: AnalyticsRealtimeLagBreach');
+    const stale = alerts.slice(alerts.indexOf('alert: AnalyticsDataStale'));
+    expect(stale.slice(0, stale.indexOf('labels:'))).toMatch(/>\s*900\b/);
+    const realtime = alerts.slice(alerts.indexOf('alert: AnalyticsRealtimeLagBreach'));
+    expect(realtime.slice(0, realtime.indexOf('labels:'))).toMatch(/>\s*30\b/);
+  });
+
+  it('both alerts read the histogram the worker actually emits', () => {
+    // An alert naming a series nothing produces never fires, and a configured-but-silent alert is
+    // worse than none — the dashboard shows it green. This is the join between the two files.
+    for (const rule of ['AnalyticsDataStale', 'AnalyticsRealtimeLagBreach']) {
+      const block = alerts.slice(alerts.indexOf(`alert: ${rule}`));
+      expect(block.slice(0, block.indexOf('labels:'))).toContain(
+        'analytics_ingestion_lag_seconds_bucket',
+      );
+    }
+  });
+
+  it('the histogram has a bucket boundary at each budget', () => {
+    // histogram_quantile interpolates between boundaries. Without an exact bucket at 30 and 900,
+    // both thresholds above would be compared against a number Prometheus invented.
+    const lag = read('services/analytics-worker/internal/metrics/lag.go');
+    const buckets = /Buckets:\s*\[\]float64\{([^}]*)\}/.exec(lag)?.[1] ?? '';
+    const values = buckets.split(',').map((v) => Number(v.trim()));
+    expect(values).toContain(30);
+    expect(values).toContain(900);
   });
 });

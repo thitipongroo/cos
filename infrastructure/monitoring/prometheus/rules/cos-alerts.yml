@@ -105,6 +105,52 @@ groups:
           description: 'PM dashboard P95 is {{ $value }}s against the 2s budget master:4289 sets. The executive budget is 3s and is a different rule.'
           runbook: 'https://docs.construction-os.internal/runbooks/analytics-sla'
 
+      # ── AnalyticsDataStale ────────────────────────────────────────────────────
+      # master:4290 — "Data freshness: 15 minutes (acceptable lag from transaction to dashboard)".
+      # Stated in the Phase 14 command and measured by nothing until 2026-08-29: a dashboard reading
+      # hours-old numbers is indistinguishable from one reading quiet ones, because the API answers
+      # 200 either way. The metric is analytics_ingestion_lag_seconds, emitted by analytics-worker
+      # at the aggregate write (services/analytics-worker/internal/metrics/lag.go).
+      #
+      # P95 rather than max: one slow event during a rebalance is not a stale dashboard, and a max
+      # would page on it every time. `for: 5m` is the same reasoning again — the budget is about a
+      # sustained condition.
+      - alert: AnalyticsDataStale
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le) (rate(analytics_ingestion_lag_seconds_bucket[5m]))
+          ) > 900
+        for: 5m
+        labels:
+          severity: warning
+          team: analytics
+        annotations:
+          summary: 'Analytics data is stale: P95 ingestion lag > 15m'
+          description: 'P95 lag from occurred_at to the analytics aggregate write is {{ $value }}s against the 15-minute freshness budget master:4290 sets. Dashboards are answering from old aggregates.'
+          runbook: 'https://docs.construction-os.internal/runbooks/analytics-ingestion-lag'
+
+      # ── AnalyticsRealtimeLagBreach ────────────────────────────────────────────
+      # master:4291 — "Real-time metrics: < 30 seconds lag (for critical alerts only)". A tighter
+      # budget on the same measurement, and a separate rule for the same reason the two dashboard
+      # SLAs are separate rules: collapsing them would either page on ordinary freshness or stay
+      # quiet through a real-time breach.
+      #
+      # Warning, not critical: this degrades how quickly a critical alert can be RAISED; it is not
+      # itself the safety event. Escalating it would page on-call for a pipeline delay.
+      - alert: AnalyticsRealtimeLagBreach
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le) (rate(analytics_ingestion_lag_seconds_bucket[5m]))
+          ) > 30
+        for: 5m
+        labels:
+          severity: warning
+          team: analytics
+        annotations:
+          summary: 'Analytics real-time lag breach: P95 > 30s'
+          description: 'P95 ingestion lag is {{ $value }}s against the 30-second real-time budget master:4291 sets for critical-alert metrics.'
+          runbook: 'https://docs.construction-os.internal/runbooks/analytics-ingestion-lag'
+
       # ── AIHighTokenUsage ──────────────────────────────────────────────────────
       # Alert FINANCE and TENANT_ADMIN when token usage exceeds 80% of monthly quota.
       # Quota is tracked externally; this rule fires on the rolling 30d counter > threshold.

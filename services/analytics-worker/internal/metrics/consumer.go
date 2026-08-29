@@ -125,6 +125,11 @@ func eventDate(rfc3339 string) (string, error) {
 // is retried rather than dropped — the aggregate would otherwise be permanently short by that event
 // with nothing to indicate it.
 func (w *Writer) Handle(ctx context.Context, envelope *coskafka.EventEnvelope) error {
+	// One place, before the dispatch, so every event type is measured and a new case added below
+	// cannot forget to. master:4290-4291's freshness budgets are about the pipeline, not about any
+	// one handler. See lag.go for exactly which segment of the journey this covers.
+	observeLag(envelope.EventType, envelope.OccurredAt, time.Now().UTC())
+
 	switch envelope.EventType {
 	case "construction.project.created.v1":
 		return w.projectCreated(ctx, envelope)

@@ -4289,6 +4289,19 @@ Performance SLA (authoritative — all dashboard queries must meet these):
   PM Dashboard:          P95 < 2 seconds
   Data freshness:        15 minutes (acceptable lag from transaction to dashboard)
   Real-time metrics:     < 30 seconds lag (for critical alerts only)
+    MEASURED since 2026-08-29 by `analytics_ingestion_lag_seconds` (histogram, label: event_type),
+    observed in services/analytics-worker/internal/metrics/lag.go at the aggregate write — the one
+    point every event passes, before the per-type dispatch. Alerts AnalyticsDataStale (>900s) and
+    AnalyticsRealtimeLagBreach (>30s) read it; the histogram carries exact bucket boundaries at both
+    budgets because histogram_quantile interpolates between them.
+    Both numbers were stated here and measured by NOTHING until that date, which is invisible from
+    outside: a dashboard answering from hours-old aggregates returns 200 and looks like a quiet site.
+    Scope: the metric spans occurred_at → the aggregate write, so it covers produce, broker
+    retention, consumer scheduling and backlog. It excludes ClickHouse's post-insert merge, which
+    would need an `ingested_at DateTime` column on the three aggregate tables (they carry
+    `event_date Date` — day granularity cannot express a 30-second budget). The figure therefore
+    reads slightly LOW: a floor on real lag, never a ceiling, which is the safe direction for an
+    alert.
 
 ClickHouse Strategy:
   Version: ClickHouse 26.x

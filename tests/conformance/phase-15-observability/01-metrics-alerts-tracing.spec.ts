@@ -123,7 +123,7 @@ describe('Phase 15 · alerting rules (master:4380-4393)', () => {
     expect(blockFor(name as string)).toMatch(new RegExp(`for:\\s*${dur}`));
   });
 
-  it('pages on the four the spec marks critical, and only warns on the two it does not', () => {
+  it('pages on the five the spec marks critical, and only warns on the two it does not', () => {
     for (const critical of [
       'ServiceDown',
       'DBConnectionExhausted',
@@ -187,6 +187,64 @@ describe('Phase 15 · sampling happens only at the Collector (master:4400-4407; 
 // Trace propagation moved to backend/test/phase-15-observability/01-http-metrics-and-tracing
 // .integration (2026-08-25): it asserts the same two header names AND that a traceparent survives a
 // real request, which the source scan alone could not.
+
+/**
+ * The per-environment sampling baselines (master:4451, spec §31.5).
+ *
+ * The MECHANISM was already pinned above — the `${env:VAR}` form the Collector accepts, and the
+ * absence of any SDK sampler. The VALUES were not, and they are the half that costs money: the
+ * overlays carry development=100, staging=10, production=1, and nothing read them.
+ *
+ * Each number fails differently, which is why all three are asserted rather than just production:
+ *   production 1 -> 100   every span kept; a trace-volume and bill blow-up with no error to show
+ *   staging   10 -> 1     a staging soak stops seeing the traces it exists to produce
+ *   development 100 -> 1  a developer debugging locally loses 99 of every 100 traces and concludes
+ *                         the instrumentation is broken
+ *
+ * Read from the kustomize overlays because that is what `kubectl apply -k` actually ships; the
+ * base Deployment only declares the variable.
+ */
+describe('Phase 15 · the sampling baseline per environment (master:4451)', () => {
+  const OVERLAYS: ReadonlyArray<[string, string]> = [
+    ['development', '100'],
+    ['staging', '10'],
+    ['production', '1'],
+  ];
+
+  const overlay = (env: string): string =>
+    read(`${mon}/otel-collector-overlays/${env}/kustomization.yaml`);
+
+  it.each(OVERLAYS)('the %s overlay samples at %s percent', (env, percent) => {
+    const src = overlay(env);
+    const at = src.indexOf('name: OTEL_SAMPLING_PERCENTAGE');
+    expect(at).toBeGreaterThan(-1);
+    // The value on the line that follows the name — a file-wide search would match the number
+    // anywhere, including a replica count.
+    expect(src.slice(at, at + 200)).toMatch(new RegExp(`value:\\s*'?${percent}'?\\s`));
+  });
+
+  it('the three environments do not all carry the same number', () => {
+    // CONTROL. If the reader above matched something other than this variable, all three cases
+    // could pass against one value and the suite would report a graded rollout that does not exist.
+    const values = OVERLAYS.map(([env]) => {
+      const src = overlay(env);
+      const at = src.indexOf('name: OTEL_SAMPLING_PERCENTAGE');
+      return /value:\s*'?(\d+)'?/.exec(src.slice(at, at + 200))?.[1];
+    });
+    expect(new Set(values).size).toBe(3);
+  });
+
+  it('is a PERCENT, never the old ratio', () => {
+    // master:4450 and ADR-075: renamed from OTEL_SAMPLING_RATIO because copying the old 0.01 into
+    // the new variable under-samples by 100x — and nothing about the pipeline looks broken when it
+    // does. A decimal point in any overlay is that mistake.
+    for (const [env] of OVERLAYS) {
+      const src = overlay(env);
+      const at = src.indexOf('name: OTEL_SAMPLING_PERCENTAGE');
+      expect(src.slice(at, at + 200)).not.toMatch(/value:\s*'?0?\.\d/);
+    }
+  });
+});
 
 describe('Phase 15 · dashboards (master:4409-4421)', () => {
   const dashboards = fs
