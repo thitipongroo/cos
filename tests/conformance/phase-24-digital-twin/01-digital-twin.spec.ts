@@ -261,6 +261,60 @@ describe('Phase 24 · carbon analytics module (master:5702-5704)', () => {
 
 // ── 16. Storage placement ───────────────────────────────────────────────────
 
+// ── The tiering the spec asks for and never defines ────────────────────────
+
+describe('Phase 24 · synchronisation is untiered, and the spec cannot say otherwise (master:5661)', () => {
+  it('NEGATIVE — nothing implements the 15-minute batch tier, because "critical asset" has no definition', () => {
+    // master:5661: "Frequency: real-time for critical assets, batch 15min for others". The whole
+    // system is real-time: every telemetry record is written through the Kafka consumer as it
+    // arrives, and there is no second, slower path.
+    //
+    // It is NOT stubbed, and that is the decision rather than an oversight. `critical asset` occurs
+    // exactly once in the entire specification — in master:5661 itself — with no definition of what
+    // makes an asset critical, which is the UNSPECIFIED case: information absent from ALL spec files
+    // and context files. Picking a tier axis here (EntityType? equipment_type? a flag?) would be
+    // inventing the requirement, and every entity would then be sorted by a rule the product owner
+    // never wrote. Product-owner decision 2026-08-29: record it, do not implement it.
+    //
+    // §33 also has an unsatisfied gate ahead of this: "IoT message throughput budget — device count
+    // × sensor sampling rate", listed among the outputs that must exist BEFORE Phase 24 begins. Until
+    // that number exists there is no evidence that real-time for everything is too expensive, which
+    // is the only reason to want the batch tier at all.
+    //
+    // Written as an absence so it fails the day someone builds the tier — at which point this test
+    // is deleted and replaced by one asserting the schedule.
+    const twinSources = ['sync_service.py', 'kafka_handler.py', 'divergence.py', 'router.py'].map(
+      (f) => read(`${TWIN}/${f}`),
+    );
+    for (const src of twinSources) {
+      const code = src
+        .split('\n')
+        .filter((l) => !l.trimStart().startsWith('#'))
+        .join('\n');
+      // No scheduler, no batch window, no 15-minute interval anywhere on the twin write path.
+      expect(code).not.toMatch(/\b(900|15\s*\*\s*60)\b/);
+      expect(code).not.toMatch(/critical[_\s]?asset/i);
+    }
+  });
+
+  it('CONTROL — the definition really is absent from the specification, not merely from the code', () => {
+    // If "critical asset" were defined somewhere, the absence above would be a gap to close rather
+    // than a question to escalate. This is what makes it UNSPECIFIED, and it is asserted so that the
+    // day someone writes the definition, this fails and the escalation is answered.
+    const specs: Array<[string, string]> = [];
+    const walk = (dir: string): void => {
+      for (const entry of fs.readdirSync(abs(dir), { withFileTypes: true })) {
+        const rel = `${dir}/${entry.name}`;
+        if (entry.isDirectory()) walk(rel);
+        else if (/\.md$/.test(entry.name)) specs.push([rel, fs.readFileSync(abs(rel), 'utf8')]);
+      }
+    };
+    for (const root of ['docs/specifications', 'context']) walk(root);
+    const mentions = specs.filter(([, body]) => /critical\s+asset/i.test(body)).map(([f]) => f);
+    expect(mentions).toEqual(['context/00_master_construction_os.md']);
+  });
+});
+
 // ── The two twin events nobody listens to ───────────────────────────────────
 //
 // This is the same shape of gap master:5496-5506 records for construction.delay.detected.v1 — a

@@ -1,12 +1,12 @@
 /**
- * Phase 25 — the two provisioning entry points, over real HTTP (master:5662-5665, 5693-5698, 5708).
+ * Phase 25 — the two provisioning entry points, over real HTTP (master:5726-5729, 5757-5762, 5772).
  *
  * The workflow itself needs Temporal and AWS, neither of which belongs in this harness. What DOES
  * belong is everything in front of it: a webhook that must reject an unsigned request, a route that
  * must reject a caller without the role, and the platform-isolation rule that decides whether the
  * system can still find a tenant after that tenant has been moved to its own database.
  *
- * The signature cases are separated by MEANING, not merged into "rejects bad requests": master:5698
+ * The signature cases are separated by MEANING, not merged into "rejects bad requests": master:5762
  * answers 500 when the server is misconfigured and 401 when the caller is not trusted, and an
  * operator reading one while the other is true looks in the wrong place.
  */
@@ -128,7 +128,7 @@ describe('Phase 25 · provisioning entry points', () => {
 
   // ── 15. Webhook signature over HTTP ───────────────────────────────────────
 
-  describe('webhook signature (master:5693-5698)', () => {
+  describe('webhook signature (master:5757-5762)', () => {
     const body = (): string => JSON.stringify({ tenant_id: TENANT_ID });
 
     it('accepts a correctly signed request', async () => {
@@ -207,7 +207,7 @@ describe('Phase 25 · provisioning entry points', () => {
 
   // ── 16. The admin path ────────────────────────────────────────────────────
 
-  describe('mark-contracted (master:5663)', () => {
+  describe('mark-contracted (master:5727)', () => {
     it('refuses a caller who is not SYSTEM_ADMIN', async () => {
       // TENANT_ADMIN is the highest role INSIDE a tenant and still must not provision infrastructure.
       await api()
@@ -229,7 +229,7 @@ describe('Phase 25 · provisioning entry points', () => {
 
   // ── 17. Platform tables never move ────────────────────────────────────────
 
-  describe('platform tables stay on the shared DB (master:5708)', () => {
+  describe('platform tables stay on the shared DB (master:5772)', () => {
     it('still resolves a tenant whose dedicated_db_url points nowhere', async () => {
       // The rule stated as behaviour. If the platform schema followed a tenant onto its dedicated
       // instance, the lookup that FINDS the dedicated URL would itself have to run there — so

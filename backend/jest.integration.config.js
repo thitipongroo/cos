@@ -21,6 +21,21 @@ module.exports = {
   setupFilesAfterEnv: ['<rootDir>/test/helpers/integration-mocks.ts'],
   // Container startup + migrations + per-test app.init need generous time (applies to hooks too).
   testTimeout: 120_000,
+  // One worker, recycled before it can hit Node's default ~2 GB heap cap.
+  //
+  // The sanctioned entry point is `pnpm run test:integration`, which passes
+  // `--max-old-space-size=8192 --runInBand`. A direct `npx jest -c backend/jest.integration.config.js`
+  // gets neither, and the whole estate in one worker reaches the default cap partway through:
+  // "Jest worker ran out of memory and crashed / FATAL ERROR: Reached heap limit" at 2027 MB, on
+  // whichever suite happened to be running. That is what the intermittent whole-suite failures were
+  // — the suite was never the cause, only the victim, which is why none of them ever reproduced when
+  // run on their own.
+  //
+  // workerIdleMemoryLimit restarts the worker between files once it crosses the limit, so the direct
+  // invocation now survives too. It applies only to WORKERS, so it is inert under --runInBand — the
+  // npm script's 8 GB heap is what covers that path, and the two do not conflict.
+  maxWorkers: 1,
+  workerIdleMemoryLimit: '1200MB',
   // No forceExit: every long-lived handle AppModule opens (Redis for throttler/OTP/MFA, the MFA
   // PrismaClient) is closed via onModuleDestroy on app.close(), and Testcontainers are stopped in
   // afterAll — so Jest exits on its own. If this ever hangs again, run with --detectOpenHandles to

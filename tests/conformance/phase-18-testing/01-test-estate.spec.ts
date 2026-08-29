@@ -226,6 +226,49 @@ describe('Phase 18 · E2E inventory (master:4818-4832)', () => {
     expect(detox).toContain('sync-conflict.spec.ts');
   });
 
+  it('no journey is present as a file and absent as a run', () => {
+    // The it.each above only asks whether a FILE exists. A spec whose every test is
+    // `test.describe.skip` satisfies it while running nothing, which is how procurement sat skipped
+    // long after the UI its note blamed had shipped: the note said "no useCreatePurchaseRequest/
+    // approve mutations exist" while the page using that very hook was already in the tree.
+    //
+    // So: enumerate the UNCONDITIONAL skips — `test.skip('title', …)` and `test.describe.skip(…)`,
+    // as opposed to `test.skip(condition, reason)`, which is a real environment gate — and pin the
+    // list. A new one fails here and has to be justified; a removed one fails here and has to be
+    // taken off the list. Comments are stripped first: a note quoting `test.describe.skip` is not
+    // one.
+    const dir = path.join(repoRoot, 'tests/e2e/specs');
+    const blocked: Record<string, number> = {};
+    for (const file of fs.readdirSync(dir)) {
+      const body = codeOnly(fs.readFileSync(path.join(dir, file), 'utf8'));
+      const count =
+        (body.match(/test\.describe\.skip\s*\(/g) ?? []).length +
+        // `test.skip(` immediately followed by a string literal = a skipped TEST, not a gate.
+        (body.match(/\btest\.skip\s*\(\s*[`'"]/g) ?? []).length;
+      if (count > 0) blocked[file] = count;
+    }
+
+    // Each entry is a journey that CANNOT run for a reason outside the test estate, recorded with
+    // what has to ship before it can. Anything else here is a journey quietly not being tested.
+    expect(blocked).toEqual({
+      // Blocked on a unified approval-queue UI: /admin holds only the SYSTEM_ADMIN panel, and the
+      // 48h → next-approver escalation is a Temporal workflow surfaced through notifications.
+      'approval-escalation.spec.ts': 1,
+      // Blocked on seeded ClickHouse (analytics.project_cost_daily) for the E2E tenant: against an
+      // empty store the dashboard correctly renders "No data available" and the assertion is a lie
+      // either way.
+      'dashboard.spec.ts': 1,
+    });
+  });
+
+  it('the approval-queue blocker that keeps a journey skipped is still real', () => {
+    // The paired half of the list above: a recorded blocker has to be re-checkable, or the list
+    // becomes the next stale note. When someone builds /admin/approvals this fails, and the failure
+    // is the instruction — unskip approval-escalation.spec.ts and drop it from the map.
+    const adminRoutes = fs.readdirSync(path.join(repoRoot, 'apps/web/src/app/admin'));
+    expect(adminRoutes).not.toContain('approvals');
+  });
+
   it('the retired offline check-in scenario is gone (master:4832)', () => {
     // Retired 2026-08-21: self check-in was removed from the mobile product on 2026-08-09, so the
     // scenario had no control to drive. A spec left behind would fail for a reason that looks like a
