@@ -33,7 +33,7 @@ async function loginAs(page: Page, email: string, password: string) {
 //
 // The bodies below already describe those pages field by field — they were written against the
 // shipped UI while the header still claimed it did not exist, which is how the skip outlived its
-// reason. tests/conformance/phase-18-testing now guards the remaining skips against the same drift.
+// reason. tests/conformance/testing now guards the remaining skips against the same drift.
 //
 // Gated on BASE_URL rather than run unconditionally: this drives a real login through Keycloak and
 // needs seeded tenants, which only the staging deployment has. Locally BASE_URL is unset and these

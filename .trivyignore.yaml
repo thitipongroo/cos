@@ -24,7 +24,7 @@
 # carrying a known weakness and switching a check off.
 #
 # DO NOT add an entry here to make a build pass. A new finding is a decision to make in review, not
-# a line to append while going past. tests/conformance/phase-17-devops/ asserts this list only
+# a line to append while going past. tests/conformance/devops/ asserts this list only
 # shrinks.
 misconfigurations:
   # ONE rule remains: TCP/443 from the worker nodes to 0.0.0.0/0.

@@ -67,5 +67,5 @@ await outbox.publish(tenantId, 'construction.project.created.v1', payload); // w
 - `OutboxPoller` (DB polling loop) lives in `backend/src/` NOT here — Node.js-only, would break mobile bundle (Rule 34).
   This line was correct while the code beside it was not: an `OutboxPoller` was defined and exported
   from `src/kafka/outbox.ts` until 2026-08-27, duplicating `backend/src/shared/events/outbox-poller.service.ts`.
-  Enforced now by `tests/conformance/phase-08-events/06-rule-34.spec.ts` rather than by this note.
+  Enforced now by `tests/conformance/events/06-rule-34.spec.ts` rather than by this note.
 - Integration tests: `test/kafka/kafka.integration.spec.ts` using `@testcontainers/kafka`

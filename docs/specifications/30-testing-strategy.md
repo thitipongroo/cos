@@ -70,6 +70,50 @@ Target coverage by layer:
 
 ---
 
+## 30.2a Where a test file lives
+
+The rule is the RUNNER, not the phase, the sprint, or the feature. Three jest configs share one
+filename pattern (`*.spec.ts`) and separate their work two different ways — by path
+(`jest.config.js` ignores `<rootDir>/test/`) and by name (it also ignores `\.workflow\.spec\.ts$`).
+Because the name is what mostly decides, a file can sit in the wrong tree and still be run by the
+right config: nothing fails, and nothing says anything. Write it down here, enforce it in
+`tests/conformance/testing/01-test-estate.spec.ts`.
+
+| Lives in                                | Holds                                                       | Run by                        |
+| --------------------------------------- | ----------------------------------------------------------- | ----------------------------- |
+| `backend/src/**/__tests__/*.spec.ts`     | unit — doubles only, no Docker, 15s timeout, 100% line+branch | `backend/jest.config.js`      |
+| `backend/src/**/*.workflow.spec.ts`      | Temporal workflows — needs a TestWorkflowEnvironment, not a container, so it stays beside its module | `backend/jest.workflows.config.js` |
+| `backend/test/<module>/*.integration.spec.ts` | integration — boots the real `AppModule` against Testcontainers | `backend/jest.integration.config.js` |
+| `backend/test/helpers/`                  | the integration harness (see §30.4) — not specs, no runner picks them up | —                         |
+| `tests/conformance/<module>/`            | architecture fitness functions — read source as text, import no app code | `jest.conformance.config.js` |
+| `tests/contract/`                        | Pact consumer-driven contracts                              | `jest.contract.config.js`     |
+| `tests/e2e/specs/`                       | Playwright, against a deployed environment                  | `playwright.config.ts`        |
+| `tests/load/`                            | k6 scenarios                                                | k6                            |
+
+Folders inside `backend/test/` and `tests/conformance/` are named for the MODULE (`finance`,
+`procurement`, `workforce`). They were once named for the delivery phase (`phase-07-finance`), which
+is a second axis laid over the runner axis, and it drifted exactly where the two disagreed — a
+Temporal spec filed by phase into the container tree, and a unit test named `.integration.spec.ts`.
+Renamed 2026-08-29; organising tests by delivery order rather than by module is a well-known
+maintenance trap, because six months later a regression run has to be reassembled out of the phases.
+
+`backend/test/` keeps the name the NestJS CLI generates and the framework's own docs prescribe
+("keep your e2e test files inside the `test` directory"). Kubernetes, Kibana and Prisma add a
+type-named layer (`test/integration/<component>/`) instead; both shapes are in wide use, and the
+NestJS one was chosen deliberately (product-owner decision 2026-08-29) because this repo is a NestJS
+application, not a framework or a platform with several kinds of backend test. Add the layer only if
+a second kind of `backend/test/` suite ever appears.
+
+Two divergences worth knowing rather than fixing silently:
+
+- The suffix here is `.integration.spec.ts`, where NestJS writes `.e2e-spec.ts`. Ours names what the
+  file is (it boots the app against a real database, it does not drive a browser across systems).
+- `tests/` at the repo root is NOT a pnpm workspace member, so `turbo run type-check` never reaches
+  it; `pnpm type-check:tests` covers it separately. That is why anything importing app code has to
+  live under `backend/`, which resolves `@cos/*` through the backend jest config.
+
+---
+
 ## 30.3 Unit Testing
 
 ### Scope

@@ -3856,7 +3856,7 @@ AI Services (FastAPI — all in ai/ directory):
        would add a pipeline nobody can observe. There is a further reason to wait: master:3434-3438
        removed the free-text summary from the mobile daily report (`summary` is nullable and is sent
        null), so today the only site-report prose to embed at all is what a web user types.
-       Pinned by tests/conformance/phase-11-ai/02-rag-prompts-ocr.spec.ts so the gap stays visible.
+       Pinned by tests/conformance/ai/02-rag-prompts-ocr.spec.ts so the gap stays visible.
    API: POST /api/v1/embeddings/generate  { text, entity_type, entity_id, tenant_id }
 
 3. OCR Pipeline (ai-ocr-pipeline):
@@ -4666,7 +4666,7 @@ Kubernetes Cluster Specification (production):
       REQUIRED nodeAffinity. Required rather than preferred on purpose: a preferred rule falls back
       to any node the moment the pool is full, and an AI service running on a t3.xlarge behaves —
       just slowly — with nothing to report it.
-      Pinned by tests/conformance/phase-17-devops/.
+      Pinned by tests/conformance/devops/.
   Auto-scaling: Cluster Autoscaler (scale up: 2 min, scale down: 10 min cooldown)
   Resource requests/limits per NestJS service (default):
     requests: cpu 100m, memory 256Mi
@@ -5941,7 +5941,7 @@ ROOT CAUSE PREVENTION RULES (prevent recurring bugs):
     exported there until 2026-08-27, duplicating backend/src/shared/events/outbox-poller.service.ts,
     which is the one registered in EventsModule and the only one that ever ran.
 
-    Enforced by tests/conformance/phase-08-events/06-rule-34.spec.ts.
+    Enforced by tests/conformance/events/06-rule-34.spec.ts.
 
   Rule 35 — Every @cos package with executable logic must have unit tests in CI (prevents untested logic):
     Definition of "executable logic": any exported function, method, or class with a body
