@@ -46,7 +46,7 @@ describe('the check-in event matches the schema that has to encode it (§32.4 ro
 
   it('emits every field the schema requires', () => {
     // checkin_id, checkin_at and method are required WITH NO DEFAULT. The service used to emit the
-    // master:5338 shorthand — { worker_id, project_id, checked_in_at } — which cannot be encoded
+    // master:5411 shorthand — { worker_id, project_id, checked_in_at } — which cannot be encoded
     // against that schema at all, so every check-in failed at the outbox poller instead of reaching
     // Kafka. The cost landed somewhere else entirely: analytics-worker builds
     // site_activity_daily.manpower_total from this event, so the PM dashboard read zero and looked
@@ -64,7 +64,7 @@ describe('the check-in event matches the schema that has to encode it (§32.4 ro
   });
 
   it('the schema itself carries §32.4 row 9, not the phase-command shorthand', () => {
-    // master:5338 abbreviates it to three fields; §32.4 is the canonical table and names six,
+    // master:5411 abbreviates it to three fields; §32.4 is the canonical table and names six,
     // including the capture method and the location. Same relationship as site.report.created.v1,
     // where master was corrected to defer to §32.4.
     expect(catalog).toContain(`'workforce.checkin.created.v1'`);
@@ -89,8 +89,47 @@ describe('the check-in event matches the schema that has to encode it (§32.4 ro
 
 // ── Cross-source: the contract document versus the controller ──────────────
 
-describe('the OpenAPI document describes the routes that exist (master:5333)', () => {
-  it('documents every route the controller exposes', () => {
+describe('the OpenAPI document describes the routes that exist (master:5389-5399)', () => {
+  // Both sides normalised to a placeholder: the controller writes `:id` where the document writes
+  // `{workerId}`, and the parameter NAME is not the thing under test — the set of routes is.
+  const shape = (p: string): string => p.replace(/[:{][^/}]*\}?/g, '{}').replace(/\/$/, '');
+
+  const controllerRoutes = ((): string[] => {
+    // Comments stripped first: line 75 of the controller carries the text "@Get(':id')" inside a
+    // NOTE about route order, and a raw scan counts it as a thirteenth route.
+    const code = controller.replace(/\/\/[^\n]*/g, ' ');
+    const out: string[] = [];
+    for (const block of code.split(/@Controller\(/).slice(1)) {
+      const prefix = /^\s*'([^']*)'/.exec(block)?.[1] ?? '';
+      for (const m of block.matchAll(/@(Get|Post|Patch|Put|Delete)\(\s*(?:'([^']*)')?\s*\)/g)) {
+        out.push(`${m[1].toLowerCase()} ${shape(`/${prefix}/${m[2] ?? ''}`.replace(/\/+/g, '/'))}`);
+      }
+    }
+    return out.sort();
+  })();
+
+  it('exposes routes the document has never heard of, and documents none that do not exist', () => {
+    // The assertion below this one reads the document alone: it cannot see a route added to the
+    // controller and left undocumented, which is the drift that actually happens. This one compares
+    // the two sets in both directions, so either side moving on its own fails.
+    const doc = readYaml<{ paths: Record<string, Record<string, unknown>> }>(
+      'docs/api/workforce.openapi.yaml',
+    );
+    // `parameters` is a path-level sibling of the operations, not an operation.
+    const METHODS = ['get', 'post', 'patch', 'put', 'delete'];
+    const documented = Object.entries(doc.paths)
+      .flatMap(([p, ops]) =>
+        Object.keys(ops)
+          .filter((m) => METHODS.includes(m))
+          .map((m) => `${m} ${shape(p)}`),
+      )
+      .sort();
+    // CONTROL: a derivation that silently matched nothing would make both sides trivially equal.
+    expect(controllerRoutes.length).toBeGreaterThan(9);
+    expect(documented).toEqual(controllerRoutes);
+  });
+
+  it('documents every route the phase command names', () => {
     const doc = readYaml<{ openapi: string; paths: Record<string, Record<string, unknown>> }>(
       'docs/api/workforce.openapi.yaml',
     );
@@ -125,7 +164,7 @@ describe('every guarded route actually runs the guard', () => {
     expect(guards.filter((g) => !g.includes('RolesGuard'))).toEqual([]);
   });
 
-  it('keeps the wider write roles out of the approval set (master:5325)', () => {
+  it('keeps the wider write roles out of the approval set (master:5398)', () => {
     // Approval is where hours become payable, so it is deliberately NOT the set that can record
     // them. The integration suite proves a PM is refused; this proves the constant they are refused
     // BY has not quietly grown the role back.
@@ -139,7 +178,7 @@ describe('every guarded route actually runs the guard', () => {
 
 // ── Absence: biometric check-in stays deferred ─────────────────────────────
 
-describe('biometric check-in stays deferred (master:5332)', () => {
+describe('biometric check-in stays deferred (master:5405)', () => {
   it('has no verifyCheckIn implementation anywhere', () => {
     const implementers = sourceFiles.filter((f) =>
       /verifyCheckIn\s*\(/.test(fs.readFileSync(f, 'utf8')),
@@ -151,11 +190,11 @@ describe('biometric check-in stays deferred (master:5332)', () => {
     // §13.5 leaves the vendor unselected on purpose — "Vendor SDK is injected via DI at deployment
     // time. No vendor is selected at the platform level." A dependency here would be that decision
     // made by accident, and the three specs that describe the method vocabulary do not even agree
-    // with each other yet (master:5314 vs §13.5 vs §32.4).
+    // with each other yet (master:5384 vs §13.5 vs §32.4).
     //
     // Scoped to the SERVER module, not the repo. apps/mobile has a `biometric` store and lib for a
     // DIFFERENT feature — unlocking the app on the handset via expo-local-authentication. Worker
-    // verification at a site turnstile is what master:5332 defers. A repo-wide substring scan flags
+    // verification at a site turnstile is what master:5405 defers. A repo-wide substring scan flags
     // the app lock and reads as a violation.
     const workforceDir = abs('backend/src/modules/workforce');
     const offenders = sourceFiles

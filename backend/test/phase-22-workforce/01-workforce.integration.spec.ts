@@ -1,9 +1,9 @@
 /**
- * Phase 22 — Workforce Service against a real database (master:5288-5340).
+ * Phase 22 — Workforce Service against a real database (master:5329-5420).
  *
  * Four things here can only be settled by running: that BOTH hypertables were created and on the
  * partition columns the spec names, that the timesheet table really chunks by month, that the
- * check-in/out cycle computes hours end to end (master:5335), and that the approval gate the spec
+ * check-in/out cycle computes hours end to end (master:5395-5396), and that the approval gate the spec
  * writes inline actually refuses a Project Manager.
  *
  * The event assertions read the OUTBOX rather than Kafka. That is not a shortcut: the outbox row is
@@ -114,7 +114,7 @@ describe('Phase 22 · workforce over HTTP', () => {
 
   // ── 13. Schema on a real database ─────────────────────────────────────────
 
-  describe('entities and hypertables (master:5264-5309)', () => {
+  describe('entities and hypertables (master:5337-5382)', () => {
     it('creates both workforce tables', async () => {
       const rows = await infra.prisma.$queryRawUnsafe<Array<{ table_name: string }>>(
         `SELECT table_name FROM information_schema.tables WHERE table_schema = 'workforce'`,
@@ -146,7 +146,7 @@ describe('Phase 22 · workforce over HTTP', () => {
     });
 
     it('chunks timesheets at month scale, not at the seven-day default', async () => {
-      // master:5303 says "partition key (by month)". Timescale's default is 7 days, which still
+      // master:5376 says "partition key (by month)". Timescale's default is 7 days, which still
       // works and would quietly shard every monthly period into four chunks.
       //
       // The migration writes INTERVAL '1 month' and Timescale reports it back as "30 days" — it
@@ -160,6 +160,68 @@ describe('Phase 22 · workforce over HTTP', () => {
       expect(rows[0].time_interval).toMatch(/^\d+ days?$|mon/);
       if (!Number.isNaN(days)) expect(days).toBeGreaterThanOrEqual(28);
     });
+
+    it('carries BOTH attendance indexes the spec names, on the right columns in the right order', async () => {
+      // master:5371-5372 names two indexes on attendance_logs, and names their columns in order:
+      // (worker_id, recorded_at DESC) and (project_id, recorded_at DESC). A hypertable inherits the
+      // parent definition into every chunk, so a missing index here is a missing index everywhere —
+      // and nothing else in the estate reads these. Asserted on the COLUMN TUPLE rather than the
+      // index name, because the name is ours and the columns are the spec's.
+      const rows = await infra.prisma.$queryRawUnsafe<Array<{ indexdef: string }>>(
+        `SELECT indexdef FROM pg_indexes
+          WHERE schemaname = 'workforce_telemetry' AND tablename = 'attendance_logs'`,
+      );
+      const tuples = rows.map((r) =>
+        (/\(([^)]*)\)\s*$/.exec(r.indexdef)?.[1] ?? '')
+          .split(',')
+          .map((c) => c.trim())
+          .join(', '),
+      );
+      expect(tuples).toContain('worker_id, recorded_at DESC');
+      expect(tuples).toContain('project_id, recorded_at DESC');
+    });
+
+    it('declares both enums with exactly the symbols the spec lists', async () => {
+      // master:5344 and master:5382 each fix three symbols. PostgreSQL enum labels are ordered, and
+      // that order is what `<` and ORDER BY use, so the assertion is on the ordered array: a symbol
+      // added, dropped, renamed or reordered all fail here. Only PERMANENT and the two timesheet
+      // statuses the service writes are otherwise exercised anywhere.
+      const rows = await infra.prisma.$queryRawUnsafe<Array<{ typname: string; label: string }>>(
+        `SELECT t.typname, e.enumlabel AS label
+           FROM pg_type t
+           JOIN pg_enum e ON e.enumtypid = t.oid
+          WHERE t.typname IN ('employment_type_enum', 'timesheet_status_enum')
+          ORDER BY t.typname, e.enumsortorder`,
+      );
+      const labels = (name: string): string[] =>
+        rows.filter((r) => r.typname === name).map((r) => r.label);
+      expect(labels('employment_type_enum')).toEqual(['PERMANENT', 'CONTRACT', 'SUBCONTRACT']);
+      expect(labels('timesheet_status_enum')).toEqual(['DRAFT', 'SUBMITTED', 'APPROVED']);
+    });
+
+    it.each(['PERMANENT', 'CONTRACT', 'SUBCONTRACT'])(
+      'accepts employment_type %s through the API and stores it',
+      async (employmentType) => {
+        // The suite proved PERMANENT accepted and FREELANCE refused, which a one-value allowlist
+        // would also pass. CONTRACT and SUBCONTRACT are the two the spec names and nothing tried.
+        const code = `E-${(seq += 1).toString().padStart(3, '0')}`;
+        const res = expectStatus(
+          await api().post('/api/v1/workers').send({
+            employee_code: code,
+            full_name: 'Somchai',
+            trade_type: 'Welder',
+            employment_type: employmentType,
+          }),
+          201,
+        );
+        const id = (res.body as { worker_id: string }).worker_id;
+        const rows = await infra.prisma.$queryRawUnsafe<Array<{ employment_type: string }>>(
+          `SELECT employment_type::text FROM workforce.workers WHERE worker_id = $1::uuid`,
+          id,
+        );
+        expect(rows.map((r) => r.employment_type)).toEqual([employmentType]);
+      },
+    );
   });
 
   // ── 14. RLS ───────────────────────────────────────────────────────────────
@@ -199,7 +261,7 @@ describe('Phase 22 · workforce over HTTP', () => {
 
   // ── 15. Check-in / check-out cycle ────────────────────────────────────────
 
-  describe('check-in / check-out cycle (master:5335)', () => {
+  describe('check-in / check-out cycle (master:5395-5396)', () => {
     it('records a check-in and emits a payload the event schema can encode', async () => {
       const workerId = await createWorker();
 
@@ -260,7 +322,7 @@ describe('Phase 22 · workforce over HTTP', () => {
 
   // ── 16. Timesheet approval ────────────────────────────────────────────────
 
-  describe('timesheet approval (master:5325)', () => {
+  describe('timesheet approval (master:5398)', () => {
     const submit = async (workerId: string): Promise<string> => {
       const res = expectStatus(
         await api().post('/api/v1/timesheets').send({
@@ -276,7 +338,7 @@ describe('Phase 22 · workforce over HTTP', () => {
     };
 
     it('refuses approval from a Project Manager', async () => {
-      // master:5325 names SITE_ENGINEER on this route specifically — a tighter authority than the
+      // master:5398 names SITE_ENGINEER on this route specifically — a tighter authority than the
       // roles that may RECORD hours, because approval is where hours become payable.
       const id = await submit(await createWorker());
       await api()
@@ -305,6 +367,30 @@ describe('Phase 22 · workforce over HTTP', () => {
         'total_hours',
         'worker_id',
       ]);
+    });
+
+    it('moves the row SUBMITTED then APPROVED, and never leaves it behind', async () => {
+      // The two tests above assert HTTP status and the event payload. Neither reads the timesheet
+      // row, so an approve that emitted the event and forgot the UPDATE would pass both. These are
+      // two of the three symbols master:5382 fixes; the third, DRAFT, is the column default.
+      const id = await submit(await createWorker());
+      const statusOf = async (): Promise<string> =>
+        (
+          await infra.prisma.$queryRawUnsafe<Array<{ status: string }>>(
+            `SELECT status::text FROM workforce_telemetry.timesheets WHERE timesheet_id = $1::uuid`,
+            id,
+          )
+        )[0].status;
+
+      expect(await statusOf()).toBe('SUBMITTED');
+      expectStatus(
+        await api()
+          .patch(`/api/v1/timesheets/${id}/approve`)
+          .set('x-test-role', 'SITE_ENGINEER')
+          .send({}),
+        200,
+      );
+      expect(await statusOf()).toBe('APPROVED');
     });
   });
 
