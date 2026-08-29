@@ -6,7 +6,7 @@ All external I/O (PostgreSQL, Redis) mocked at the boundary.
 import json
 import pytest
 from unittest.mock import AsyncMock
-from uuid import uuid4, UUID
+from uuid import uuid4
 
 from digital_twin.models import StateSource
 from digital_twin.sync_service import handle_iot_telemetry_event

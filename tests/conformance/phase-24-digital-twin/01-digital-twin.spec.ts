@@ -1,5 +1,5 @@
 /**
- * Phase 24 — Digital Twin (master:5566-5653).
+ * Phase 24 — Digital Twin (master:5630-5717).
  *
  * The spec opens by saying what this is NOT: "a digital twin in construction context is NOT a 3D
  * visualization tool — it is a real-time data synchronization layer". Everything that matters here
@@ -30,7 +30,7 @@ const divergence = read(`${TWIN}/divergence.py`);
 // the migration calls it), and the mandatory confidence from an INSERT that is REFUSED. All three
 // are strictly stronger, so the scans went (2026-08-25).
 
-describe('Phase 24 · twin_states (master:5629, 5647)', () => {
+describe('Phase 24 · twin_states (master:5693, 5711)', () => {
   it('computes a confidence for every state it writes', () => {
     expect(syncService).toMatch(/def compute_confidence/);
   });
@@ -38,7 +38,7 @@ describe('Phase 24 · twin_states (master:5629, 5647)', () => {
 
 // ── 6. The subscription that was broken ─────────────────────────────────────
 
-describe('Phase 24 · telemetry subscription (master:5633)', () => {
+describe('Phase 24 · telemetry subscription (master:5697)', () => {
   const pattern = ((): RegExp => {
     const line = /_TELEMETRY_TOPIC_PATTERN = r"([^"]+)"/.exec(kafkaHandler);
     expect(line).not.toBeNull();
@@ -75,7 +75,7 @@ describe('Phase 24 · telemetry subscription (master:5633)', () => {
 
 // ── 7. Producers ────────────────────────────────────────────────────────────
 
-describe('Phase 24 · twin events (master:5634)', () => {
+describe('Phase 24 · twin events (master:5698)', () => {
   it.each(['twin.state.updated.v1', 'twin.divergence.detected.v1'])(
     'publishes %s and has a schema for it',
     (event) => {
@@ -94,14 +94,14 @@ describe('Phase 24 · twin events (master:5634)', () => {
 
 // ── 3, 4. Sync and divergence ───────────────────────────────────────────────
 
-describe('Phase 24 · synchronisation and divergence (master:5630-5631)', () => {
+describe('Phase 24 · synchronisation and divergence (master:5694-5695)', () => {
   it('has a state synchronisation service', () => {
     expect(exists(`${TWIN}/sync_service.py`)).toBe(true);
     expect(syncService).toMatch(/async def handle_iot_telemetry_event/);
   });
 
   it('has a divergence engine with per-entity-type thresholds', () => {
-    // master:5601 — "Alert when divergence > configured threshold per entity type". One global
+    // master:5665 — "Alert when divergence > configured threshold per entity type". One global
     // number would treat a structure and a fuel gauge the same.
     expect(divergence).toMatch(/DEFAULT_THRESHOLDS/);
     for (const entityType of ['STRUCTURE', 'EQUIPMENT']) {
@@ -111,7 +111,7 @@ describe('Phase 24 · synchronisation and divergence (master:5630-5631)', () => 
   });
 
   it('reports an unknown plan as UNASSESSED rather than as a divergence', () => {
-    // BIM Integration is a Phase 24 PREREQUISITE (master:5575) and is not built, so planned_state is
+    // BIM Integration is a Phase 24 PREREQUISITE (master:5639) and is not built, so planned_state is
     // empty for every entity. Comparing a real reading against {} scored everything at gap 1.0 /
     // HIGH — the report flagged the whole site on every run, which is an alert people learn to
     // dismiss, and it asserted divergence from a plan nobody had. Product-owner decision 2026-08-25.
@@ -123,9 +123,9 @@ describe('Phase 24 · synchronisation and divergence (master:5630-5631)', () => 
 
 // ── 5, 8, 14. Query API ─────────────────────────────────────────────────────
 
-describe('Phase 24 · query API (master:5607-5610, 5632, 5635)', () => {
+describe('Phase 24 · query API (master:5671-5674, 5696, 5699)', () => {
   it('is FastAPI on the ai-gateway service', () => {
-    // master:5632 — "Twin query API (FastAPI — ai-gateway service, Python for ML integration)".
+    // master:5696 — "Twin query API (FastAPI — ai-gateway service, Python for ML integration)".
     expect(router).toMatch(/from fastapi import|APIRouter/);
   });
 
@@ -135,7 +135,7 @@ describe('Phase 24 · query API (master:5607-5610, 5632, 5635)', () => {
   });
 
   it('exposes subscribeToStateChanges, the third method the spec names', () => {
-    // master:5610 lists three query methods and this one had no implementation at all. Product-owner
+    // master:5674 lists three query methods and this one had no implementation at all. Product-owner
     // decision 2026-08-25: SSE, because the signature is an AsyncIterable — one-way — and a one-way
     // stream rides the existing L7 path with no upgrade handshake or sticky sessions. Nothing in
     // this platform speaks WebSocket, and §19.2 forbids it for notifications.
@@ -190,7 +190,7 @@ describe('Phase 24 · twin.state.updated carries the right project', () => {
 
 // ── 13. Read-optimised ──────────────────────────────────────────────────────
 
-describe('Phase 24 · the twin is read-optimised (master:5644-5645)', () => {
+describe('Phase 24 · the twin is read-optimised (master:5708-5709)', () => {
   it('NEGATIVE — no HTTP route writes twin STATE', () => {
     // "All writes come from source systems (IoT, inspection, schedule) via Kafka." The one POST
     // registers an ENTITY — device provisioning / BIM element import, i.e. configuration — which is
@@ -210,7 +210,7 @@ describe('Phase 24 · the twin is read-optimised (master:5644-5645)', () => {
 
 // ── 15. Cache ───────────────────────────────────────────────────────────────
 
-describe('Phase 24 · cache (master:5625)', () => {
+describe('Phase 24 · cache (master:5689)', () => {
   it('caches current state in Redis for five minutes', () => {
     expect(syncService).toMatch(/_REDIS_TTL_SECS = 300/);
   });
@@ -218,14 +218,14 @@ describe('Phase 24 · cache (master:5625)', () => {
 
 // ── 9, 10. Tests the phase itself must have ─────────────────────────────────
 
-describe('Phase 24 · its own tests (master:5636-5637)', () => {
+describe('Phase 24 · its own tests (master:5700-5701)', () => {
   it('covers divergence calculation and state merge', () => {
     expect(exists(`${TWIN}/tests/test_divergence.py`)).toBe(true);
     expect(exists(`${TWIN}/tests/test_sync_service_integration.py`)).toBe(true);
   });
 
   it('runs the IoT event through the sync service before asserting divergence', () => {
-    // master:5637 asks for "end-to-end IoT event → twin state → divergence alert". The class that
+    // master:5701 asks for "end-to-end IoT event → twin state → divergence alert". The class that
     // claimed it called only generate_divergence_report and asserted `divergences` was a list —
     // true whatever the engine did, and reached by no IoT event at all.
     const e2e = read(`${TWIN}/tests/test_twin_integration.py`);
@@ -237,7 +237,7 @@ describe('Phase 24 · its own tests (master:5636-5637)', () => {
 
 // ── 11. Carbon analytics ────────────────────────────────────────────────────
 
-describe('Phase 24 · carbon analytics module (master:5638-5640)', () => {
+describe('Phase 24 · carbon analytics module (master:5702-5704)', () => {
   const carbon = read('services/analytics-worker/internal/carbon/consumer.go');
 
   it('consumes carbon.record.created.v1 from the tenant-scoped topic', () => {
@@ -261,7 +261,68 @@ describe('Phase 24 · carbon analytics module (master:5638-5640)', () => {
 
 // ── 16. Storage placement ───────────────────────────────────────────────────
 
-describe('Phase 24 · storage placement (master:5620-5622; ADR-032)', () => {
+// ── The two twin events nobody listens to ───────────────────────────────────
+//
+// This is the same shape of gap master:5496-5506 records for construction.delay.detected.v1 — a
+// schema, a topic-catalogue entry and documented consumers, with nothing on one end — except
+// mirrored: here the PRODUCER is finished and the consumers are the missing half. Product-owner
+// decision 2026-08-29: record the gap and guard it rather than build the consumers now.
+
+describe('Phase 24 · twin events are produced into an empty room (master:5660, 5688)', () => {
+  // Every Go and TypeScript source that could plausibly hold a consumer. Read from disk rather than
+  // listed by hand so a new worker directory cannot quietly become a blind spot.
+  const consumerSources = ((): string[] => {
+    const out: string[] = [];
+    const walk = (dir: string): void => {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        if (entry.name === 'node_modules' || entry.name === 'dist' || entry.name === '.venv')
+          continue;
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) walk(full);
+        else if (/\.(ts|go)$/.test(entry.name) && !/\.(spec|test)\.ts$|_test\.go$/.test(entry.name))
+          out.push(full);
+      }
+    };
+    for (const root of ['services/kg-ingestion-worker', 'services/analytics-worker', 'backend/src'])
+      walk(abs(root));
+    return out;
+  })();
+
+  const subscribers = (event: string): string[] =>
+    consumerSources.filter((f) => fs.readFileSync(f, 'utf8').includes(event));
+
+  it('has a finished producer for both, so only the listening half is missing', () => {
+    // CONTROL for the two assertions below: they are absences, and an absence proves nothing unless
+    // the thing is real. Both events have a schema, a catalogue entry and a producer that sends.
+    for (const event of ['twin.state.updated.v1', 'twin.divergence.detected.v1']) {
+      expect(exists(`packages/@cos/shared/src/avro/${event}.avsc`)).toBe(true);
+      expect(read('packages/@cos/shared/src/kafka/topic-catalog.ts')).toContain(event);
+      expect(kafkaHandler).toContain(event);
+    }
+    expect(consumerSources.length).toBeGreaterThan(100);
+  });
+
+  it('NEGATIVE — master:5660 ends the chain at a Knowledge Graph node update that no worker performs', () => {
+    // "IoT telemetry → TwinState update → Knowledge Graph node update". The first two arrows exist.
+    // The third does not: kg-ingestion-worker has never heard of the twin, so the graph carries no
+    // twin state and §Phase 13's graph queries cannot see the physical site at all.
+    //
+    // Written as an absence ON PURPOSE. When someone builds the mapper this test FAILS, and the
+    // failure is the instruction: delete it, and assert the wiring in its place.
+    expect(subscribers('twin.state.updated.v1')).toEqual([]);
+  });
+
+  it('NEGATIVE — master:5688 names Analytics as a consumer and analytics-worker does not subscribe', () => {
+    // The topic line reads "twin.state.updated (consumers: AI Gateway, Analytics)". AI Gateway is
+    // the PRODUCER; its SSE fan-out is in-process (state_stream.py) and never reads the topic back.
+    // So neither named consumer exists, and twin.divergence.detected has no listener either — a
+    // divergence alert is published and lands nowhere.
+    expect(subscribers('twin.divergence.detected.v1')).toEqual([]);
+    expect(read(`${TWIN}/state_stream.py`)).not.toContain('twin.state.updated.v1');
+  });
+});
+
+describe('Phase 24 · storage placement (master:5684-5686; ADR-032)', () => {
   it('keeps twin states on the primary PostgreSQL instance', () => {
     // "co-located on primary PostgreSQL instance through Stages 1–3, split to dedicated instance
     // only on volume trigger; same instance as Phase 21/22". The migration living in the backend's

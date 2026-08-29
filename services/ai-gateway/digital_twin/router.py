@@ -86,12 +86,32 @@ async def get_twin_state(
         sum(e.confidence for e in entities) / len(entities) if entities else 0.0
     )
 
+    # master:5677 puts divergenceScore on the snapshot. It used to be hardcoded 0.0 with a comment
+    # saying the divergence report call would populate it — but DivergenceReport has no such field,
+    # so nothing ever did, and a reader could not tell "no divergence" from "never computed".
+    #
+    # Defined as the MEAN gap over the divergences the engine reports, 0.0 when there are none.
+    # Mean rather than sum so the number does not grow simply because a project has more entities:
+    # a site with one badly diverged column and a site with forty of them should not be ordered by
+    # size. `gap` is already normalised per entity type by the engine's thresholds.
+    #
+    # Cost, stated plainly: this runs the divergence engine on every snapshot read. The engine issues
+    # one entity query plus one latest-state lookup per entity, inside the same tenant-scoped
+    # transaction. The snapshot endpoint is NOT Redis-cached (the five-minute cache at master:5689 is
+    # the per-entity current state written by the sync service), so the cost is paid per request.
+    report = await generate_divergence_report(str(project_id), tenant_id, db_pool=db)
+    divergence_score = (
+        sum(d.gap for d in report.divergences) / len(report.divergences)
+        if report.divergences
+        else 0.0
+    )
+
     return TwinSnapshot(
         project_id=project_id,
         as_of=timestamp or datetime.now(timezone.utc),
         entities=entities,
         overall_confidence=overall_confidence,
-        divergence_score=0.0,  # populated by divergence report call
+        divergence_score=divergence_score,
     )
 
 

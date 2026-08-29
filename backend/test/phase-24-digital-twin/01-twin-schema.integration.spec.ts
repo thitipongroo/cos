@@ -1,5 +1,5 @@
 /**
- * Phase 24 — the Digital Twin schema against a real database (master:5620-5629, 5647).
+ * Phase 24 — the Digital Twin schema against a real database (master:5684-5693, 5711).
  *
  * The twin service itself is Python and is covered by its own suite; what lives here is the schema
  * it depends on, and three claims about that schema that only a running PostgreSQL can settle:
@@ -7,7 +7,7 @@
  * partitioned on recorded_at, and that RLS filters another tenant's rows under app_user rather than
  * merely being declared.
  *
- * The storage question is settled here too. master:5620-5622 co-locates twin states on the PRIMARY
+ * The storage question is settled here too. master:5684-5686 co-locates twin states on the PRIMARY
  * PostgreSQL instance through Stages 1–3 (ADR-032, same instance as Phase 21/22). This suite runs
  * the backend's own migrations against one container, so the twin tables appearing in it IS that
  * co-location — a separate instance would need its own migration root and its own connection.
@@ -37,7 +37,7 @@ describe('Phase 24 · digital twin schema', () => {
 
   // ── Entities and enums ────────────────────────────────────────────────────
 
-  describe('entities (master:5586-5592)', () => {
+  describe('entities (master:5651-5656)', () => {
     it('creates both twin tables on the primary instance', async () => {
       const rows = await infra.prisma.$queryRawUnsafe<Array<{ table_name: string }>>(
         `SELECT table_name FROM information_schema.tables WHERE table_schema = 'digital_twin'
@@ -72,7 +72,7 @@ describe('Phase 24 · digital twin schema', () => {
 
   // ── Hypertable ────────────────────────────────────────────────────────────
 
-  describe('twin_states hypertable (master:5629)', () => {
+  describe('twin_states hypertable (master:5693)', () => {
     it('was actually registered as a hypertable', async () => {
       // The migration CALLS create_hypertable; only a live TimescaleDB says whether it worked. On a
       // plain postgres image the function does not exist and the whole deploy fails — the failure
@@ -95,7 +95,7 @@ describe('Phase 24 · digital twin schema', () => {
 
   // ── The confidence rule ───────────────────────────────────────────────────
 
-  describe('confidence is mandatory (master:5647)', () => {
+  describe('confidence is mandatory (master:5711)', () => {
     it('rejects a state row with no confidence', async () => {
       // "Confidence score mandatory on every inferred state." Asserted as a REFUSAL by the database
       // rather than as a NOT NULL in the migration text: an AI_INFERRED row that claims no

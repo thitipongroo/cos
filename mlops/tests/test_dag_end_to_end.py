@@ -177,6 +177,13 @@ class TestDagRunWithTestData:
         assert len(written) == len(dag.tasks)
         assert all(p.exists() for p in written)
 
+        # The walk's order was captured and then dropped on the floor — ruff's F841 is what found it.
+        # Same assertion the loading test above makes, for the same reason: the helper returns the
+        # order precisely so the declared edges can be checked against the order they produced.
+        for task in dag.tasks:
+            for upstream in task.upstream_list:
+                assert order.index(upstream.task_id) < order.index(task.task_id)
+
         # The structural claim, stated as structure: verify_export hangs off all four exports. Kept
         # separate from the ordering above so neither can pass on the other's behalf.
         verify = dag.get_task("verify_export")
