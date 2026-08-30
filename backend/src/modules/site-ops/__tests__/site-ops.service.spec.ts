@@ -20,7 +20,7 @@ import type {
 import { IssueSeverity, IssueType } from '../dto/create-issue.dto';
 import { ReportShift, BlockerCategory } from '../dto/create-site-report.dto';
 import { IssueStatus } from '../dto/update-issue.dto';
-import { InspectionStatus } from '../dto/submit-inspection.dto';
+import { InspectionStatus } from '../public/submit-inspection.dto';
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
@@ -45,6 +45,7 @@ jest.mock('@cos/logger', () => ({
 }));
 
 const mockRepo = {
+  projectExists: jest.fn(),
   createSiteReport: jest.fn(),
   findReportById: jest.fn(),
   findReportsByIds: jest.fn().mockResolvedValue(new Map()),
@@ -158,6 +159,10 @@ let service: SiteOpsService;
 
 beforeEach(async () => {
   jest.clearAllMocks();
+  // Default: the project the DTO names exists. Every site-ops write that carries a project_id checks
+  // this first (site_reports / issues / inspections all FK to projects.projects), so the tests that
+  // are about something ELSE need it to pass; the not-found tests override it.
+  mockRepo.projectExists.mockResolvedValue(true);
   // Default: the sync write lands. Tests that exercise the "row vanished mid-sync" path override it.
   mockRepo.updateSiteReport.mockResolvedValue(makeReport());
   const module: TestingModule = await Test.createTestingModule({
@@ -722,7 +727,7 @@ describe('updateIssue', () => {
     );
   });
 
-  it('server status always wins in field-level merge', async () => {
+  it('server status wins in a field-level merge once the server has moved', async () => {
     const serverIssue = makeIssue({ status: 'IN_PROGRESS' });
     mockRepo.findIssueById.mockResolvedValue(serverIssue);
     mockRepo.updateIssue.mockResolvedValue({ ...serverIssue, description: 'updated' });
@@ -731,6 +736,10 @@ describe('updateIssue', () => {
       status: IssueStatus.RESOLVED, // client wants RESOLVED
       description: 'updated',
       client_submitted_at: '2026-06-04T09:00:00Z',
+      // The client is replaying an edit made against a state older than the server row — master:2591's
+      // "while client had offline edit". Without this the call is an ordinary update and the client's
+      // status simply applies.
+      last_known_modified_at: '2026-06-04T07:00:00Z',
     });
 
     // updateIssue called with status = server status (IN_PROGRESS) not client (RESOLVED)
@@ -750,6 +759,7 @@ describe('updateIssue', () => {
       status: IssueStatus.OPEN, // client thought it was still OPEN
       description: 'my update',
       client_submitted_at: '2026-06-04T09:00:00Z',
+      last_known_modified_at: '2026-06-04T07:00:00Z',
     });
 
     expect(mockRepo.createConflictRecord).toHaveBeenCalledTimes(1);
@@ -1106,10 +1116,11 @@ describe('listConflictRecords', () => {
 });
 
 describe('updateIssue — status_changed event emission', () => {
-  it('does NOT emit status_changed when server status wins (fromStatus === toStatus)', async () => {
-    // Server status is always authoritative in FIELD_LEVEL_MERGE.
-    // Client sends status='IN_PROGRESS' but server has 'OPEN' → resolved = 'OPEN' = fromStatus.
-    // Therefore fromStatus === toStatus → no status_changed event.
+  it('does NOT emit status_changed when the status did not move', async () => {
+    // The client sends the status the server already holds, so resolved === fromStatus and there is
+    // nothing to announce. (This used to be true of EVERY update, because the resolver wrote the
+    // server's status back unconditionally — which is why the event's branch was marked
+    // `istanbul ignore next` rather than tested.)
     const serverIssue = makeIssue({ status: 'OPEN' });
     mockRepo.findIssueById.mockResolvedValue(serverIssue);
     mockRepo.updateIssue.mockResolvedValue({ ...serverIssue, status: 'OPEN' });
@@ -1129,6 +1140,31 @@ describe('outbox write failure', () => {
     await expect(
       service.createSiteReport({ project_id: 'project-1', report_date: '2026-06-04' }),
     ).rejects.toThrow('outbox insert failed');
+  });
+});
+
+describe('updateIssue — an ordinary status change', () => {
+  it('applies the client status and announces it (master:2810)', async () => {
+    const serverIssue = makeIssue({ status: 'OPEN' });
+    mockRepo.findIssueById.mockResolvedValue(serverIssue);
+    mockRepo.updateIssue.mockResolvedValue({ ...serverIssue, status: 'IN_PROGRESS' });
+
+    await service.updateIssue('issue-1', { status: IssueStatus.IN_PROGRESS });
+
+    expect(mockRepo.updateIssue).toHaveBeenCalledWith(
+      'issue-1',
+      expect.objectContaining({ status: 'IN_PROGRESS' }),
+    );
+    // No conflict: the caller is editing the state it is looking at.
+    expect(mockRepo.createConflictRecord).not.toHaveBeenCalled();
+
+    const instance = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
+    expect(instance.publish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event_type: 'site.issue.status_changed.v1',
+        payload: expect.objectContaining({ from_status: 'OPEN', to_status: 'IN_PROGRESS' }),
+      }),
+    );
   });
 });
 
@@ -1174,6 +1210,32 @@ describe('OpenSearch indexing error handling', () => {
     mockRepo.listSiteReports.mockResolvedValue({ rows: [makeReport()], total: 1 });
     const result = await service.listSiteReports({ page: 1, limit: 10, q: 'crack', minimal: true });
     expect(result.items[0]).not.toHaveProperty('summary');
+  });
+
+  it('honours minimal=true on the DB fallback when OpenSearch is down', async () => {
+    // `minimal` is the CALLER's contract (master:2797), not a property of the search backend. A
+    // client asks for the reduced payload because of the link it is on — handing it the full one
+    // because a server-side dependency was unavailable is the opposite of what it asked for, at the
+    // moment it can least afford it.
+    const { Client } = jest.requireMock('@opensearch-project/opensearch') as { Client: jest.Mock };
+    Client.mock.results[0]?.value.search.mockRejectedValueOnce(new Error('opensearch unreachable'));
+    mockRepo.listSiteReports.mockResolvedValue({ rows: [makeReport()], total: 1 });
+
+    const result = await service.listSiteReports({ page: 1, limit: 10, q: 'crack', minimal: true });
+
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0]).not.toHaveProperty('summary');
+  });
+
+  it('returns the full payload on the DB fallback when minimal was not asked for', async () => {
+    // CONTROL: the reduction above must come from `minimal`, not from the fallback path itself.
+    const { Client } = jest.requireMock('@opensearch-project/opensearch') as { Client: jest.Mock };
+    Client.mock.results[0]?.value.search.mockRejectedValueOnce(new Error('opensearch unreachable'));
+    mockRepo.listSiteReports.mockResolvedValue({ rows: [makeReport()], total: 1 });
+
+    const result = await service.listSiteReports({ page: 1, limit: 10, q: 'crack' });
+
+    expect(result.items[0]).toHaveProperty('summary');
   });
 
   it('listIssues with project_id filter in OpenSearch query (covers if project_id branch)', async () => {
@@ -1478,5 +1540,89 @@ describe('inspection results & approval', () => {
   it('listChecklists delegates to repo', async () => {
     mockRepo.listChecklists.mockResolvedValue([{ checklist_id: 'chk-1' }]);
     expect(await service.listChecklists('proj-1')).toHaveLength(1);
+  });
+});
+
+// ── the parent-project guard ──────────────────────────────────────────────
+//
+// site_reports, issues and inspections all carry a FOREIGN KEY to projects.projects
+// (20260822000002_site_ops_foreign_keys). An unknown project_id used to reach PostgreSQL and come
+// back as SQLSTATE 23503, which nothing maps — so the client received a bare 500 for a request
+// error, while buildings.service already answered a structured 404 for exactly the same mistake.
+//
+// Each of the three entry points is checked separately rather than through the private helper: they
+// are three routes a client can call, and a guard added to one of them is the shape this defect had.
+
+describe('rejects a write whose project does not exist', () => {
+  const reportDto = { project_id: 'ghost-project', report_date: '2026-06-04' };
+  const issueDto = { project_id: 'ghost-project', title: 'Crack', severity: 'HIGH' };
+  const inspectionDto = {
+    project_id: 'ghost-project',
+    checklist_id: 'chk-1',
+    status: 'PASSED',
+    inspected_at: '2026-06-04T09:00:00Z',
+  };
+
+  beforeEach(() => {
+    mockRepo.projectExists.mockResolvedValue(false);
+  });
+
+  it('answers 404 for a site report, not 500', async () => {
+    await expect(service.createSiteReport(reportDto as never)).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+    expect(mockRepo.createSiteReport).not.toHaveBeenCalled();
+  });
+
+  it('answers 404 for an issue', async () => {
+    await expect(service.createIssue(issueDto as never)).rejects.toBeInstanceOf(NotFoundException);
+    expect(mockRepo.createIssue).not.toHaveBeenCalled();
+  });
+
+  it('answers 404 for an inspection', async () => {
+    await expect(service.submitInspection(inspectionDto as never)).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+    expect(mockRepo.createInspection).not.toHaveBeenCalled();
+  });
+
+  it('checks the project BEFORE the checklist on an inspection', async () => {
+    // Order matters for the message the caller reads: a request naming neither a real project nor a
+    // real checklist should name the project, which is the outer of the two.
+    mockRepo.findChecklistById.mockResolvedValue(null);
+
+    await expect(service.submitInspection(inspectionDto as never)).rejects.toThrow();
+
+    expect(mockRepo.findChecklistById).not.toHaveBeenCalled();
+  });
+
+  it('carries a COS-* code and a trace id, not a bare message', async () => {
+    // QM-10: an error the client can act on. A 404 with no code is indistinguishable from a routing
+    // miss, and the trace id is what ties the answer to the server log.
+    await expect(service.createSiteReport(reportDto as never)).rejects.toMatchObject({
+      response: {
+        error: expect.objectContaining({
+          code: 'COS-SITE-004',
+          messageKey: 'siteops.error.projectNotFound',
+          traceId: expect.any(String),
+        }),
+      },
+    });
+  });
+
+  it('reads as not-found for a project in ANOTHER tenant, never as a permission error', async () => {
+    // projectExists is tenant-scoped, so a foreign project resolves false. Answering 403 here would
+    // confirm the id exists somewhere, which is a probe.
+    await expect(service.createSiteReport(reportDto as never)).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+  });
+
+  it('lets the write through once the project exists — the control', async () => {
+    mockRepo.projectExists.mockResolvedValue(true);
+    mockRepo.createSiteReport.mockResolvedValue(makeReport());
+
+    await expect(service.createSiteReport(reportDto as never)).resolves.toBeDefined();
+    expect(mockRepo.createSiteReport).toHaveBeenCalled();
   });
 });

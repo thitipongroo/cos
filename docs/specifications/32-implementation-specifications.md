@@ -457,12 +457,13 @@ compatibility) before first producer deployment.
 | 13  | `procurement.vendor_invoice.approved.v1` | `invoice_id`, `po_id`, `project_id`, `vendor_id`, `amount` {amount, currency_code}, `approved_by`, `approved_at`, `payment_due`                                                                                                                                                                                                                                                               |
 | 14  | `finance.cashflow_risk.detected.v1`      | `project_id`, `risk_level` (enum: LOW/MEDIUM/HIGH/CRITICAL), `projected_shortfall` {amount, currency_code}, `projected_at`, `detected_by` (enum: AI_FORECAST/RULE_ENGINE)                                                                                                                                                                                                                     |
 | 15  | `ai.risk_prediction.generated.v1`        | `prediction_id`, `project_id`, `model_type` (enum: DELAY_FORECAST/COST_OVERRUN/SAFETY_VISION/RISK_CLASSIFIER), `prediction` (model-specific object), `confidence`: DECIMAL(5,4), `generated_at`, `model_version`                                                                                                                                                                              |
-| 16  | `finance.budget.variance_detected.v1`    | `project_id`, `variance_percentage`: DECIMAL(5,2), `threshold_exceeded`: DECIMAL(5,2) (the configured threshold that was crossed; default 10%), `budget_amount` {amount, currency_code}, `actual_amount` {amount, currency_code}, `detected_at`                                                                                                                                               |
+| 16  | `finance.variance.alert.v1`              | `project_id`, `budget_id`, `variance_percentage` (DECIMAL string), `threshold_exceeded` (DECIMAL string — the configured threshold that was crossed; default 10%), `actual_amount`, `committed_amount`, `allocated_amount` (all DECIMAL strings), `currency_code` (ISO 4217). Corrected 2026-08-22 — see the note under the migration table below                                                                                                                                               |
 | 17  | `file.document.uploaded.v1`              | `file_id`, `tenant_id`, `entity_type` (nullable — e.g. "site_report", "purchase_order"), `entity_id` (nullable UUID), `mime_type`                                                                                                                                                                                                                                                             |
 | 18  | `file.document.quarantined.v1`           | `file_id`, `tenant_id`, `threat_type` (nullable string — ClamAV threat name, null if unknown)                                                                                                                                                                                                                                                                                                 |
 | 19  | `construction.boq.created.v1`            | `project_id` (UUID), `version_id` (UUID), `version_number` (integer) — emitted once when the first BOQ version (version_number = 1) is created for a project                                                                                                                                                                                                                                  |
 | 20  | `construction.boq.updated.v1`            | `version_id` (UUID), `project_id` (UUID), `changed_items_count` (integer), `new_total_estimated_amount` (DECIMAL string — never float), `new_total_estimated_currency` (ISO 4217)                                                                                                                                                                                                             |
 | 21  | `procurement.po.approval_requested.v1`   | `po_id`, `project_id`, `approver_id`, `tier` (enum: PM/FINANCE/EXECUTIVE/TENANT-ADMIN), `po_number`, `total_amount` (DECIMAL string — never float), `currency_code` (ISO 4217) — emitted by the PO approval workflow (notifyApprover activity) when a PO enters an approval tier or is escalated on the 48h timeout; consumed by the Notification Service to alert the specific `approver_id` |
+| 22  | `safety.violation.detected.v1`           | `violation_id`, `project_id`, `file_id` (the analysed site photo), `violations[]` (string), `confidence` (DECIMAL string — never a float, matching row 15), `severity` (enum: LOW/MEDIUM/HIGH/CRITICAL). Added 2026-08-25 (Phase 23). This is the `SafetyViolationDetected` of `16-enterprise-event-flow` §Safety and of §19.6's "cannot be disabled" pair — it had no canonical name until the phase that builds `SafetyVisionModel`, the only detector of a violation in this specification. `violations`/`confidence`/`severity` are that model's `SafetyAnalysisResult`; `violation_id` and `project_id` follow the sibling `safety.incident.created.v1`; `file_id` is how every other event references an image. Producer: `services/ai-gateway/reports/safety_violation_event.py` — emits nothing while the model is a stub. |
 
 ### Schema Registry Rules
 
@@ -522,9 +523,29 @@ Each legacy file below requires a canonical spec entry in §32.4 before migratio
 | `cost.entry.created.avsc`              | `finance.cost_entry.created.v1`                  | Domain + entity added                                                                           |
 | `finance.budget.created.avsc`          | `finance.budget.created.v1`                      | Version suffix only                                                                             |
 | `finance.payment.processed.avsc`       | `finance.payment.processed.v1`                   | Version suffix only                                                                             |
-| `finance.variance.alert.avsc`          | `finance.budget.variance_detected.v1`            | Name clarified                                                                                  |
+| `finance.variance.alert.v1.avsc`       | `finance.variance.alert.v1`                      | MIGRATED — kept its name; see the note below                                                    |
 | `ai.queue.request.avsc`                | `ai.inference.queued.v1`                         | Name clarified                                                                                  |
 | `ai.result.ready.avsc`                 | `ai.inference.completed.v1`                      | Name clarified                                                                                  |
+
+> **`finance.variance.alert.v1` — corrected 2026-08-22.** This row used to require a rename to
+> `finance.budget.variance_detected.v1` ("Name clarified"), and row 16 of the payload table above
+> was written against that name with a `budget_amount` / `detected_at` shape. Neither was ever
+> adopted, and by the time it was checked the platform had converged on the original name across
+> every layer that carries it: `finance.variance.alert.v1.avsc`, the topic catalogue key, the typed
+> contract exported from `@cos/shared`, the emitter in FinanceService, the NotificationConsumer
+> subscription, the escalation rule, and three screens in the mobile app — eleven production files,
+> plus master:2989 and `20-ux-flow` §Alerts, which both call it by this name.
+>
+> The other renames in this table WERE applied wherever the event exists (`equipment.unit.assigned.v1`,
+> `workforce.checkout.created.v1` — schema file, catalogue and emitter all agree), so this is the one
+> that was left behind rather than a table nobody acted on. It is recorded as migrated-in-place
+> because renaming it now would be a breaking change across three surfaces, including a live
+> notification and escalation path, in exchange for nothing but the name.
+>
+> Row 16 above now states the payload the schema actually enforces. `detected_at` is not among the
+> payload fields because the envelope's `occurred_at` already carries it, and `budget_amount` was
+> split into `allocated_amount` + `currency_code`, alongside `committed_amount` and `budget_id`,
+> which the alert needs in order to be actionable without a follow-up read.
 
 ---
 
@@ -1073,11 +1094,25 @@ These constraints are enforced by the CI `build` gate (`turbo run build`), not b
   The client registers it via `<SerwistProvider swUrl="/serwist/sw.js">` in `app/layout.tsx`, and `next.config.mjs`
   wraps the config with `withSerwist`. Unlike next-pwa (`dest: 'public'`), **no `sw.js` / `workbox-*.js` artifacts land
   in `apps/web/public/`** — the SW is part of the `.next` build output, so there is nothing to git-ignore under `public/`.
-- **`createSerwistRoute` MUST pass `useNativeEsbuild: false`.** The option defaults to
-  `process.platform === 'win32'`, so on a Windows dev machine Serwist imports the **native** `esbuild` package —
-  which is not a dependency here (only `esbuild-wasm` is, per the line above). Left at the default, `next build`
-  fails on Windows with `Cannot find package 'esbuild'` / `ERR_MODULE_NOT_FOUND` while passing on Linux CI, so the
-  gate cannot catch it. Pinning the option keeps one bundler on every platform and matches the declared dependency.
+- **`createSerwistRoute` keeps `useNativeEsbuild` at its `process.platform === 'win32'` default** — corrected
+  2026-08-23; this rule previously read "MUST pass `useNativeEsbuild: false`".
+
+  The original reasoning held at the time: the option defaults to `process.platform === 'win32'`, `esbuild` was not
+  a dependency, and `next build` therefore failed on a Windows dev machine with `Cannot find package 'esbuild'`
+  while Linux CI stayed green. Forcing the option to `false` made both platforms use the one declared bundler.
+
+  It stopped holding once that fix was tried. `esbuild-wasm` validates the working directory it is handed and
+  rejects a Windows absolute path (`C:\...`), so pinning the option to `false` moves the failure rather than
+  removing it, and the working directory cannot be overridden from the route: `absWorkingDir` is absent from
+  `@serwist/turbopack`'s 55-entry `SUPPORTED_ESBUILD_OPTIONS` allowlist, whose zod schema drops any key outside
+  the list, and the `cwd` option feeds `outdir` instead. Using the native binary on Windows sidesteps the path
+  validation entirely, which is why upstream defaults to it there.
+
+  What the premise above got wrong is now fixed at the source: `esbuild` IS a declared devDependency of
+  `apps/web`, **pinned to the same version as `esbuild-wasm`** so the two can never disagree on the service
+  protocol, and `allowBuilds.esbuild: true` in `pnpm-workspace.yaml` lets its postinstall link the platform
+  binary. Keep those two versions equal whenever either is bumped. See commit `332e75a7` and the comment in
+  `apps/web/src/app/serwist/[path]/route.ts`, which records the investigation.
 
 #### Mobile Spacing
 

@@ -4,14 +4,16 @@
 
 tiers:
   POWERFUL:
-    model: '${OPENAI_POWERFUL_MODEL}' # default: gpt-4o
+    # The default is written INTO the reference, not left in a comment: neither variable is set
+    # anywhere in this repo, so a bare ${VAR} would resolve to an empty model name.
+    model: '${OPENAI_POWERFUL_MODEL:-gpt-4o}'
     model_hints:
       - report-generation
       - risk-analysis
       - document-extraction
 
   FAST:
-    model: '${OPENAI_FAST_MODEL}' # default: gpt-4o-mini
+    model: '${OPENAI_FAST_MODEL:-gpt-4o-mini}'
     model_hints:
       - summarization
       - classification

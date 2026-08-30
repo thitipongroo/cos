@@ -7,8 +7,8 @@
 
 import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nestjs/common';
 import { Observable } from 'rxjs';
-import type { AuthenticatedUser } from '../../modules/identity/strategies/keycloak-jwt.strategy';
-import type { TenantRequest } from '../../modules/tenant/tenant.middleware';
+import type { AuthenticatedUser } from '../context/jwt-payload';
+import type { TenantRequest } from '../context/tenant-request';
 
 @Injectable()
 export class TenantContextInterceptor implements NestInterceptor {

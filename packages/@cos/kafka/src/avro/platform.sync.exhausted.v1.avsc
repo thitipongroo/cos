@@ -1,0 +1,29 @@
+{
+  "type": "record",
+  "name": "SyncExhaustedEvent",
+  "namespace": "com.constructionos.events.platform",
+  "doc": "platform.sync.exhausted.v1 — a device gave up delivering a queued offline mutation (spec §17.2)",
+  "fields": [
+    { "name": "event_id",       "type": "string" },
+    { "name": "event_type",     "type": "string" },
+    { "name": "event_version",  "type": "string" },
+    { "name": "tenant_id",      "type": "string" },
+    { "name": "actor_id",       "type": "string" },
+    { "name": "occurred_at",    "type": "string" },
+    { "name": "correlation_id", "type": "string" },
+    { "name": "trace_id",       "type": ["null", "string"], "default": null },
+    { "name": "span_id",        "type": ["null", "string"], "default": null },
+    { "name": "payload", "type": {
+      "type": "record", "name": "SyncExhaustedPayload",
+      "fields": [
+        { "name": "item_id",     "type": "string" },
+        { "name": "entity_type", "type": "string" },
+        { "name": "entity_id",   "type": "string" },
+        { "name": "operation",   "type": "string" },
+        { "name": "client_id",   "type": "string" },
+        { "name": "retry_count", "type": "int" },
+        { "name": "reported_by", "type": ["null", "string"], "default": null }
+      ]
+    }}
+  ]
+}

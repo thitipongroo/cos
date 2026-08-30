@@ -21,7 +21,7 @@ import {
 import type { Request } from 'express';
 import { Observable } from 'rxjs';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../identity/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { NotificationService } from './notification.service';
 import { NotificationSseService, type SseMessageEvent } from './notification.sse.service';
 import { UpdatePreferencesDto, RegisterDeviceTokenDto } from './dto/update-preferences.dto';

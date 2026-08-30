@@ -16,7 +16,7 @@ import type { BaseEventEnvelope } from '@cos/types';
 
 // Kafka SDK (Node.js only — do NOT import in mobile/PWA)
 import { KafkaProducer, KafkaConsumer } from '@cos/shared';
-import { OutboxPublisher, OutboxPoller } from '@cos/shared';
+import { OutboxPublisher } from '@cos/shared';
 import { DlqPublisher } from '@cos/shared';
 import { initKafkaMetrics } from '@cos/shared';
 ```
@@ -64,5 +64,8 @@ await outbox.publish(tenantId, 'construction.project.created.v1', payload); // w
 
 - Schema compatibility: `BACKWARD_TRANSITIVE` — new schema must be readable by ALL previous versions
 - Avro schemas live in `src/avro/` — registered in Schema Registry before first producer deployment
-- `OutboxPoller` (DB polling loop) lives in `backend/src/` NOT here — Node.js-only, would break mobile bundle (Rule 34)
+- `OutboxPoller` (DB polling loop) lives in `backend/src/` NOT here — Node.js-only, would break mobile bundle (Rule 34).
+  This line was correct while the code beside it was not: an `OutboxPoller` was defined and exported
+  from `src/kafka/outbox.ts` until 2026-08-27, duplicating `backend/src/shared/events/outbox-poller.service.ts`.
+  Enforced now by `tests/conformance/events/06-rule-34.spec.ts` rather than by this note.
 - Integration tests: `test/kafka/kafka.integration.spec.ts` using `@testcontainers/kafka`

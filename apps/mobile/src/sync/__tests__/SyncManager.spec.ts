@@ -1,6 +1,8 @@
+import * as fs from 'fs';
+import * as path from 'path';
 import type { SyncQueueItem } from '../../db/sync-queue';
 import type { HttpClient, SyncManagerCallbacks } from '../SyncManager';
-import { SyncManager } from '../SyncManager';
+import { SyncManager, BATCH_SIZE } from '../SyncManager';
 import { ConflictHandler } from '../ConflictHandler';
 
 // ── Mock sync-queue ──────────────────────────────────────────────────────────
@@ -222,15 +224,13 @@ describe('SyncManager', () => {
     });
 
     it('retry_count + 1 >= MAX_RETRIES: triggers exhaustion, increments exhausted count', async () => {
-      mockFetchPending.mockReturnValueOnce([
-        makeItem({ entity_type: 'safety_incidents', retry_count: 4 }),
-      ]);
+      mockFetchPending.mockReturnValueOnce([makeItem({ entity_type: 'safety', retry_count: 4 })]);
       const http: HttpClient = { post: jest.fn().mockRejectedValue(new Error('timeout')) };
       const onExhausted = jest.fn().mockResolvedValue(undefined);
       const manager = makeManager(http, 'tok', { onExhausted });
       const result = await manager.processQueue();
       expect(result).toEqual({ synced: 0, failed: 0, exhausted: 1, interrupted: false });
-      expect(onExhausted).toHaveBeenCalledWith('safety_incidents', 'entity-1', 'CREATE');
+      expect(onExhausted).toHaveBeenCalledWith('safety', 'entity-1', 'CREATE');
     });
   });
 
@@ -241,57 +241,74 @@ describe('SyncManager', () => {
       return new SyncManager(http, () => 'tok', callbacks).processQueue();
     };
 
-    it('safety_incidents → calls onExhausted', async () => {
+    it('safety → calls onExhausted', async () => {
       const onExhausted = jest.fn().mockResolvedValue(undefined);
-      await exhausted('safety_incidents', { onExhausted });
-      expect(onExhausted).toHaveBeenCalledWith('safety_incidents', 'entity-1', 'CREATE');
+      await exhausted('safety', { onExhausted });
+      expect(onExhausted).toHaveBeenCalledWith('safety', 'entity-1', 'CREATE');
     });
 
-    it('workforce_attendance → calls onExhausted', async () => {
+    it('attendance → calls onExhausted', async () => {
       const onExhausted = jest.fn().mockResolvedValue(undefined);
-      await exhausted('workforce_attendance', { onExhausted });
+      await exhausted('attendance', { onExhausted });
       expect(onExhausted).toHaveBeenCalled();
     });
 
-    it('inspection_results → calls onExhausted', async () => {
+    it('inspection → calls onExhausted', async () => {
       const onExhausted = jest.fn().mockResolvedValue(undefined);
-      await exhausted('inspection_results', { onExhausted });
+      await exhausted('inspection', { onExhausted });
       expect(onExhausted).toHaveBeenCalled();
     });
 
-    it('material_consumption → calls onExhausted', async () => {
+    it('material → calls onExhausted', async () => {
       const onExhausted = jest.fn().mockResolvedValue(undefined);
-      await exhausted('material_consumption', { onExhausted });
+      await exhausted('material', { onExhausted });
       expect(onExhausted).toHaveBeenCalled();
     });
 
     it('exhausted_notify without onExhausted callback: no error', async () => {
-      await expect(exhausted('safety_incidents', {})).resolves.toMatchObject({ exhausted: 1 });
+      await expect(exhausted('safety', {})).resolves.toMatchObject({ exhausted: 1 });
     });
 
-    it('task_progress_updates → calls onUserNotify with message', async () => {
+    it('task → calls onUserNotify with message', async () => {
       const onUserNotify = jest.fn();
-      await exhausted('task_progress_updates', { onUserNotify });
+      await exhausted('task', { onUserNotify });
       expect(onUserNotify).toHaveBeenCalledWith('sync.exhausted.discarded');
     });
 
-    it('site_report_drafts → calls onUserNotify', async () => {
+    it('site_report → calls onUserNotify', async () => {
       const onUserNotify = jest.fn();
-      await exhausted('site_report_drafts', { onUserNotify });
+      await exhausted('site_report', { onUserNotify });
       expect(onUserNotify).toHaveBeenCalled();
     });
 
     it('discard_notify without onUserNotify callback: no error', async () => {
-      await expect(exhausted('task_progress_updates', {})).resolves.toMatchObject({ exhausted: 1 });
+      await expect(exhausted('task', {})).resolves.toMatchObject({ exhausted: 1 });
     });
 
-    it('equipment_usage_logs → silent discard, no callbacks called', async () => {
+    it('equipment → silent discard, no callbacks called', async () => {
       const onExhausted = jest.fn().mockResolvedValue(undefined);
       const onUserNotify = jest.fn();
-      await exhausted('equipment_usage_logs', { onExhausted, onUserNotify });
+      await exhausted('equipment', { onExhausted, onUserNotify });
       expect(onExhausted).not.toHaveBeenCalled();
       expect(onUserNotify).not.toHaveBeenCalled();
     });
+
+    // The four types the 2026-08-23 product-owner ruling added to DISCARD_NOTIFY_TYPES, none of
+    // which had a case. Their failure mode is the one the source comment above the set calls out as
+    // unjustifiable: drop any of them from the set and it stops matching any branch, falls through
+    // to the same path as an unknown type, and is discarded in SILENCE — the user is never told the
+    // record they captured on site is gone. Every other test in this file stays green.
+    it.each(['issue', 'photo_annotation', 'delivery', 'purchase-request'])(
+      '%s → discarded but the user is told (PO 2026-08-23)',
+      async (entityType) => {
+        const onUserNotify = jest.fn();
+        const onExhausted = jest.fn().mockResolvedValue(undefined);
+        await exhausted(entityType, { onUserNotify, onExhausted });
+        expect(onUserNotify).toHaveBeenCalledWith('sync.exhausted.discarded');
+        // Discard, not escalate: these do not reach the tenant-admin review queue.
+        expect(onExhausted).not.toHaveBeenCalled();
+      },
+    );
 
     it('unknown entity type → no callbacks called', async () => {
       const onExhausted = jest.fn().mockResolvedValue(undefined);
@@ -363,7 +380,7 @@ describe('SyncManager', () => {
       // /sync/push answers 400 for an entity_type it has no case for. Five identical rejections
       // spread over five cycles reach the same discard, hours later.
       mockFetchPending.mockReturnValueOnce([
-        makeItem({ id: 7, entity_type: 'safety_incidents', retry_count: 0 }),
+        makeItem({ id: 7, entity_type: 'safety', retry_count: 0 }),
       ]);
       const onExhausted = jest.fn().mockResolvedValue(undefined);
       const http: HttpClient = { post: jest.fn().mockRejectedValue(httpError(400)) };
@@ -372,7 +389,7 @@ describe('SyncManager', () => {
 
       expect(mockMarkPermanentlyFailed).toHaveBeenCalledWith(7, expect.any(String), 5);
       expect(mockMarkFailed).not.toHaveBeenCalled();
-      expect(onExhausted).toHaveBeenCalledWith('safety_incidents', 'entity-1', 'CREATE');
+      expect(onExhausted).toHaveBeenCalledWith('safety', 'entity-1', 'CREATE');
       expect(result).toEqual({ synced: 0, failed: 0, exhausted: 1, interrupted: false });
     });
 
@@ -467,5 +484,29 @@ describe('SyncManager', () => {
         expect.objectContaining({ synced: 1 }),
       );
     });
+  });
+});
+
+describe('SyncManager batch size (master:3743, §17.7)', () => {
+  it('processes at most 20 items per cycle', () => {
+    expect(BATCH_SIZE).toBe(20);
+  });
+
+  it('asks the queue layer for exactly that many', () => {
+    // The constant alone proves nothing: processQueue could pass any number, or none, and take the
+    // queue layer's own default instead. This is the wiring.
+    mockFetchPending.mockReturnValueOnce([]);
+    const http: HttpClient = { post: jest.fn() };
+    void new SyncManager(http, () => 'tok').processQueue();
+    expect(mockFetchPending).toHaveBeenCalledWith(20);
+  });
+
+  it('agrees with the default fetchPending would use on its own', () => {
+    // Two copies of 20 live in the tree — this constant and `fetchPending(limit = 20)`. If they ever
+    // drift, the manager silently processes a different number than its own constant advertises.
+    const source = fs.readFileSync(path.join(__dirname, '..', '..', 'db', 'sync-queue.ts'), 'utf8');
+    const declared = /export function fetchPending\(limit = (\d+)\)/.exec(source);
+    expect(declared).not.toBeNull();
+    expect(Number(declared![1])).toBe(BATCH_SIZE);
   });
 });

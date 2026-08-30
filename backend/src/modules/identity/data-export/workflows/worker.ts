@@ -11,7 +11,7 @@ import { createLogger } from '@cos/logger';
 
 import * as exportActivities from './data-export.activities';
 import { disconnectExportClients } from './data-export.activities';
-import { disconnectActivityClients } from '../../../procurement/workflows/activity-helpers';
+import { disconnectActivityClients } from '../../../../shared/workflows/activity-helpers';
 
 const logger = createLogger('data-export-worker');
 

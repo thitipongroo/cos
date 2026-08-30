@@ -173,27 +173,6 @@ export const ALL_TABS: TabConfig[] = [
     icon: 'fact-check',
     roles: [CosRole.SAFETY_OFFICER],
   },
-  // Work permits — §20.7.7 `/safety/permits`, and §6.4's "Permits" row gives this role RW. The
-  // approval chain in master §9 ends here: SITE_WORKER/SITE_ENGINEER initiates → SAFETY_OFFICER
-  // approves → PM final, and until now the role had no mobile surface for the step it owns.
-  // NO MOCKUP DRAWS THIS SCREEN. It is built in the house style of the role's other three (PO
-  // decision 2026-08-13, which chose this bar knowing the drawing would follow later).
-  {
-    name: 'permits',
-    titleKey: 'nav.tabs.permits',
-    icon: 'assignment-turned-in',
-    roles: [CosRole.SAFETY_OFFICER],
-  },
-  // SAFETY_OFFICER LEFT THIS ROW on 2026-08-13. `reports` was never in §20.7.7's inventory for the
-  // role — it was matched only because this table listed it — and Permits took the slot. The screen
-  // is not lost: §6.4 grants the role R on "Site reports", so drawerLinks.ts derives /reports into
-  // its drawer the moment it stops being a tab, exactly as /inspections does for SITE_ENGINEER.
-  {
-    name: 'reports',
-    titleKey: 'nav.tabs.reports',
-    icon: 'description',
-    roles: [CosRole.SITE_ENGINEER, CosRole.EXECUTIVE],
-  },
   // `projects` is VIEWER's only. It stopped being a PROJECT_MANAGER tab on 2026-08-10: the corrected
   // mockup set gives that role Home | Procurement | Finance | More and no Projects tab, and the
   // manager's project list is on Home (mockup 06_project_manager/01_home draws "YOUR PROJECTS").
@@ -249,6 +228,33 @@ export const ALL_TABS: TabConfig[] = [
     titleKey: 'nav.tabs.alerts',
     icon: 'notification-important',
     roles: [CosRole.EXECUTIVE],
+  },
+  // EXECUTIVE's bar is Home | Portfolio | Alerts | Reports, so `reports` sits after `alerts` here.
+  // It used to sit six rows earlier, which made the role's bar read Home | Reports | Portfolio |
+  // Alerts — the right four screens in the wrong order, disagreeing with master:3462, the only place
+  // that states an order for this role, with nothing recorded to justify the difference. Moving it is
+  // safe for SITE_ENGINEER, the only other role that matches `reports`: nothing between the two
+  // positions belongs to that role, so its bar stays Home | Issues | Tasks | Reports.
+  // Work permits — §20.7.7 `/safety/permits`, and §6.4's "Permits" row gives this role RW. The
+  // approval chain in master §9 ends here: SITE_WORKER/SITE_ENGINEER initiates → SAFETY_OFFICER
+  // approves → PM final, and until now the role had no mobile surface for the step it owns.
+  // NO MOCKUP DRAWS THIS SCREEN. It is built in the house style of the role's other three (PO
+  // decision 2026-08-13, which chose this bar knowing the drawing would follow later).
+  {
+    name: 'permits',
+    titleKey: 'nav.tabs.permits',
+    icon: 'assignment-turned-in',
+    roles: [CosRole.SAFETY_OFFICER],
+  },
+  // SAFETY_OFFICER LEFT THIS ROW on 2026-08-13. `reports` was never in §20.7.7's inventory for the
+  // role — it was matched only because this table listed it — and Permits took the slot. The screen
+  // is not lost: §6.4 grants the role R on "Site reports", so drawerLinks.ts derives /reports into
+  // its drawer the moment it stops being a tab, exactly as /inspections does for SITE_ENGINEER.
+  {
+    name: 'reports',
+    titleKey: 'nav.tabs.reports',
+    icon: 'description',
+    roles: [CosRole.SITE_ENGINEER, CosRole.EXECUTIVE],
   },
   { name: 'payments', titleKey: 'nav.tabs.payments', icon: 'payments', roles: [CosRole.FINANCE] },
   {

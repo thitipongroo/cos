@@ -147,7 +147,14 @@ Users can configure per-channel preferences per notification type :
 - Digest frequency: daily or weekly
 
 Preferences are stored per user in PostgreSQL.
-Critical safety notifications (SafetyIncidentReported, SafetyViolationDetected) cannot be disabled.
+Critical safety notifications cannot be disabled — SafetyIncidentReported
+(`safety.incident.created.v1`) and SafetyViolationDetected (`safety.violation.detected.v1`).
+
+Canonical names added 2026-08-25. The second event did not exist until Phase 23: the rule named
+it, nothing implemented it, and the omission was silent because a notification that is never
+created cannot be observed to be undisableable. Both are now members of `CRITICAL_EVENT_TYPES`
+in `notification.service.ts`, and "cannot be disabled" is enforced on BOTH halves of the
+sentence — a disabled channel preference and a quiet window are each overridden (§32.4 row 22).
 
 ---
 

@@ -17,7 +17,7 @@ import { MarkContractedDto } from './dto/mark-contracted.dto';
 import { Roles } from '@cos/rbac';
 import { CosRole } from '@cos/types';
 import { RolesGuard } from '../../shared/guards/roles.guard';
-import { JwtAuthGuard } from '../identity/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { TenantRequest } from './tenant.middleware';
 
 @ApiTags('tenants')

@@ -914,4 +914,43 @@ describe('SiteOpsRepository', () => {
       ).resolves.toBeNull();
     });
   });
+
+  // ── projectExists ────────────────────────────────────────────────────────
+  //
+  // The check that keeps an unknown project_id away from the FOREIGN KEY. It delegates to the same
+  // helper the spatial repositories use, so the SQL itself is tested there; what matters here is
+  // that the delegation carries the CALLER'S TENANT — a check that ignored it would let a write
+  // reference another tenant's project and pass.
+
+  describe('projectExists', () => {
+    it('reports true when the row is there', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([{ exists: true }]);
+
+      await expect(repo.projectExists('proj-uuid-001')).resolves.toBe(true);
+    });
+
+    it('reports false when it is not', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([{ exists: false }]);
+
+      await expect(repo.projectExists('ghost')).resolves.toBe(false);
+    });
+
+    it('scopes the lookup to the caller tenant', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([{ exists: true }]);
+
+      await repo.projectExists('proj-uuid-001');
+
+      const params = mockPrisma.$queryRaw.mock.calls[0].slice(1);
+      expect(params).toContain('proj-uuid-001');
+      expect(params).toContain('tenant-uuid-001');
+    });
+
+    it('reports false rather than throwing when the query returns nothing', async () => {
+      // EXISTS always yields a row in practice; a defensive false is still the right answer if it
+      // ever does not, because throwing here would turn a create into a 500 again.
+      mockPrisma.$queryRaw.mockResolvedValue([]);
+
+      await expect(repo.projectExists('proj-uuid-001')).resolves.toBe(false);
+    });
+  });
 });

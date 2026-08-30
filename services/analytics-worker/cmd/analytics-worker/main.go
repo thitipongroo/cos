@@ -18,6 +18,7 @@ import (
 	_ "github.com/ClickHouse/clickhouse-go/v2"
 
 	"github.com/construction-os/analytics-worker/internal/carbon"
+	"github.com/construction-os/analytics-worker/internal/metrics"
 	cosOtel "github.com/construction-os/coslib/cosotel"
 )
 
@@ -74,8 +75,33 @@ func startCarbon(ctx context.Context, db *sql.DB) carbon.Config {
 	return cfg
 }
 
-// startCarbonIfAvailable opens the OLAP store and, if that succeeds, starts the carbon consumer.
-// It returns the cleanup the caller defers.
+// startMetrics launches the Phase 14 dashboard-aggregate consumer in the background.
+//
+// Mirrors startCarbon, and takes the config carbon already resolved rather than re-reading the
+// environment: the two consumers share one set of connection points, and reading them twice is how
+// they would come to disagree. This ingestion used to be ClickHouse Kafka engine tables, which
+// subscribed to bare event names and therefore to topics that never exist — see the header of
+// internal/metrics/consumer.go.
+//
+// Non-fatal, like carbon: this process also serves the liveness endpoint, and a metrics outage must
+// not take that down.
+func startMetrics(ctx context.Context, cfg carbon.Config, db *sql.DB) {
+	metricsCfg := metrics.Config{
+		Brokers:     cfg.Brokers,
+		RegistryURL: cfg.RegistryURL,
+		RedisURL:    cfg.RedisURL,
+	}
+	go func() {
+		if err := metrics.Start(ctx, metricsCfg, db); err != nil {
+			log.Printf("metrics consumer stopped: %v", err)
+		}
+	}()
+	log.Printf("metrics consumer started (group=%s)", metrics.ConsumerGroup)
+}
+
+// startCarbonIfAvailable opens the OLAP store and, if that succeeds, starts both consumers that
+// write to it — carbon (Phase 24) and the dashboard aggregates (Phase 14). It returns the cleanup
+// the caller defers.
 //
 // The opener is a parameter rather than a direct call so the success path is reachable in a test:
 // through openClickHouse it needs a live ClickHouse, which is why this branch — the one that
@@ -89,7 +115,8 @@ func startCarbonIfAvailable(ctx context.Context, open func() (*sql.DB, error)) f
 		log.Printf("clickhouse init warning (carbon analytics disabled): %v", err)
 		return func() {}
 	}
-	startCarbon(ctx, db)
+	cfg := startCarbon(ctx, db)
+	startMetrics(ctx, cfg, db)
 	return func() { _ = db.Close() }
 }
 

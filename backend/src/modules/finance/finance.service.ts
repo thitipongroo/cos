@@ -199,7 +199,10 @@ export class FinanceService {
       currency_code: event.total_amount.currency_code,
       transaction_date: new Date().toISOString().slice(0, 10),
       description: `PO committed: ${event.po_id}`,
-      recorded_by: null,
+      // master:2910 — "actor_id from event, or user for manual entry". The consumer now puts the
+      // event's actor into the request context, so this is the person whose approval created the
+      // commitment rather than an anonymous row.
+      recorded_by: this.userId || null,
     });
     await this.recalculateAndCheckVariance(event.project_id);
     logger.info({ po_id: event.po_id, project_id: event.project_id }, 'cost_transaction.committed');
@@ -221,7 +224,10 @@ export class FinanceService {
       currency_code: event.amount.currency_code,
       transaction_date: new Date().toISOString().slice(0, 10),
       description: `Invoice actual: ${event.invoice_id}`,
-      recorded_by: null,
+      // master:2910 — "actor_id from event, or user for manual entry". The consumer now puts the
+      // event's actor into the request context, so this is the person whose approval created the
+      // commitment rather than an anonymous row.
+      recorded_by: this.userId || null,
     });
     await this.recalculateAndCheckVariance(event.project_id);
     logger.info(

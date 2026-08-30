@@ -420,9 +420,14 @@ export class BoqRepository {
         SET
           description     = COALESCE(${params.description ?? null}, description),
           unit            = COALESCE(${params.unit ?? null}, unit),
-          quantity        = COALESCE(${params.quantity ? `${params.quantity}::decimal` : null}::decimal, quantity),
-          unit_cost       = COALESCE(${params.unit_cost ? `${params.unit_cost}::decimal` : null}::decimal, unit_cost),
-          estimated_total = COALESCE(${params.estimated_total ? `${params.estimated_total}::decimal` : null}::decimal, estimated_total),
+          -- The cast belongs to the SQL, never to the VALUE. This previously wrapped each parameter
+          -- in a nested template literal that appended the cast to the STRING, so Postgres received
+          -- "20.0000::decimal" as the value and every PATCH died with 22P02
+          -- "invalid input syntax for type numeric". insertItem above has always had this right;
+          -- only this statement drifted.
+          quantity        = COALESCE(${params.quantity ?? null}::decimal, quantity),
+          unit_cost       = COALESCE(${params.unit_cost ?? null}::decimal, unit_cost),
+          estimated_total = COALESCE(${params.estimated_total ?? null}::decimal, estimated_total),
           sort_order      = COALESCE(${params.sort_order ?? null}, sort_order),
           updated_at      = now()
         WHERE item_id   = ${params.item_id}::uuid

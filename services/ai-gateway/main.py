@@ -22,6 +22,11 @@ from otel import configure_telemetry
 from providers.llm_provider import Message, build_llm_provider
 from rag.retrieval import HybridRetriever
 from reports.pipeline import generate_report
+from reports.context import (
+    assemble_executive_context,
+    assemble_procurement_context,
+    assemble_site_context,
+)
 from reports.risk_event import emit_risk_prediction
 from intent.classify import classify_intent
 from providers.weather_provider import build_weather_provider
@@ -401,6 +406,25 @@ class ReportResponse(BaseModel):
     low_confidence: bool
 
 
+async def _assemble(assembler, report_type: str, project_id: str, tenant_id: str) -> str:
+    """Best-effort context assembly, shared by the three non-delay reports.
+
+    Same posture as delay-risk: with no DB pool wired, or on any failure, the report is still
+    generated from an empty context rather than 5xx-ing. The difference from before 2026-08-29 is
+    that an empty context is now the DEGRADED path and is logged as such, instead of being the only
+    path there was.
+    """
+    if _db_pool is None:
+        return ""
+    try:
+        return await assembler(_db_pool, tenant_id, project_id)
+    except Exception as exc:  # noqa: BLE001 - context is best-effort; fall back to empty
+        logging.getLogger("cos.ai.reports").warning(
+            "%s context assembly failed for %s: %s", report_type, project_id, exc
+        )
+        return ""
+
+
 async def _run_report(report_type: str, project_id: str, tenant_id: str,
                       generated_by: str, extra_vars: dict, context_data: str = "") -> ReportResponse:
     # QM-15 retrofit kill-switch (ADR-049) — single gate for all four report endpoints
@@ -412,7 +436,7 @@ async def _run_report(report_type: str, project_id: str, tenant_id: str,
     try:
         result = await generate_report(
             report_type=report_type,
-            context_data=context_data,  # delay-risk assembles real context (F4b B); others empty for now
+            context_data=context_data,  # every report type assembles real context since 2026-08-29
             template_extra_vars=extra_vars,
             provider=_provider,
             db_pool=_db_pool,
@@ -438,9 +462,10 @@ async def _run_report(report_type: str, project_id: str, tenant_id: str,
 # never from the request body — otherwise a caller could generate/read another tenant's reports.
 @app.post("/api/v1/ai/reports/site-summary", response_model=ReportResponse)
 async def site_summary(req: SiteSummaryRequest, tenant_id: str = Depends(get_verified_tenant)):
+    context = await _assemble(assemble_site_context, "SITE_SUMMARY", req.project_id, tenant_id)
     return await _run_report(
         "SITE_SUMMARY", req.project_id, tenant_id, req.generated_by,
-        {"date_range": req.date_range},
+        {"date_range": req.date_range}, context,
     )
 
 
@@ -448,8 +473,11 @@ async def site_summary(req: SiteSummaryRequest, tenant_id: str = Depends(get_ver
 async def procurement_summary(
     req: ProcurementSummaryRequest, tenant_id: str = Depends(get_verified_tenant)
 ):
+    context = await _assemble(
+        assemble_procurement_context, "PROCUREMENT_SUMMARY", req.project_id, tenant_id
+    )
     return await _run_report(
-        "PROCUREMENT_SUMMARY", req.project_id, tenant_id, req.generated_by, {},
+        "PROCUREMENT_SUMMARY", req.project_id, tenant_id, req.generated_by, {}, context,
     )
 
 
@@ -457,8 +485,11 @@ async def procurement_summary(
 async def executive_summary(
     req: ExecutiveSummaryRequest, tenant_id: str = Depends(get_verified_tenant)
 ):
+    context = await _assemble(
+        assemble_executive_context, "EXECUTIVE_SUMMARY", req.project_id, tenant_id
+    )
     return await _run_report(
-        "EXECUTIVE_SUMMARY", req.project_id, tenant_id, req.generated_by, {},
+        "EXECUTIVE_SUMMARY", req.project_id, tenant_id, req.generated_by, {}, context,
     )
 
 

@@ -7,7 +7,7 @@ import { OutboxPublisher } from '@cos/kafka';
 import { createLogger } from '@cos/logger';
 import { buildOutboxEvent } from '../../../shared/outbox/outbox.types';
 
-import { withTenantTx } from './activity-helpers';
+import { withTenantTx } from '../../../shared/workflows/activity-helpers';
 
 /** Envelope for an activity-emitted event: activities act as the system, not as a user. */
 function activityEvent<T>(

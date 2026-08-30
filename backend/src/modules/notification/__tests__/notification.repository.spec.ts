@@ -444,6 +444,47 @@ describe('findUsersByRole', () => {
   });
 });
 
+// ── findSystemAdmins (§19.8 platform-level routing) ────────────────────────
+
+describe('findSystemAdmins', () => {
+  it('reads the platform schema on the shared connection, not a tenant one', async () => {
+    // Deliberately cross-tenant: there is no single tenant whose RLS context could see every
+    // SYSTEM_ADMIN, so a tenant-scoped db.run would return nobody and the human gate would go
+    // unnoticed.
+    mockPlatformQueryRaw.mockResolvedValueOnce([]);
+
+    await repo.findSystemAdmins();
+
+    expect(mockPrismaTransaction).toHaveBeenCalled();
+    expect(mockRun).not.toHaveBeenCalled();
+  });
+
+  it('returns each admin with the tenant they belong to', async () => {
+    // The tenant comes back PER ROW because the notification is stored under the RECIPIENT's tenant
+    // — the event's own tenant_id is the 'platform' sentinel and is not a UUID.
+    mockPlatformQueryRaw.mockResolvedValueOnce([
+      { user_id: 'a1', email: 'a1@ops.example', tenant_id: 'tenant-aaa' },
+      { user_id: 'a2', email: 'a2@ops.example', tenant_id: 'tenant-bbb' },
+    ]);
+
+    const result = await repo.findSystemAdmins();
+
+    expect(result).toHaveLength(2);
+    expect(result[0]).toEqual({
+      user_id: 'a1',
+      email: 'a1@ops.example',
+      tenant_id: 'tenant-aaa',
+    });
+    expect(result[1].tenant_id).toBe('tenant-bbb');
+  });
+
+  it('returns nothing when the installation has no active system admins', async () => {
+    mockPlatformQueryRaw.mockResolvedValueOnce([]);
+
+    await expect(repo.findSystemAdmins()).resolves.toEqual([]);
+  });
+});
+
 describe('NotificationRepository onModuleDestroy', () => {
   it('disconnects the platform Prisma client on shutdown', async () => {
     await repo.onModuleDestroy();

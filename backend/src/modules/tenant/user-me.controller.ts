@@ -11,7 +11,7 @@
 
 import { Controller, Get, Patch, Body, UseGuards, Req } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../identity/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { UserService } from './user.service';
 import { UpdateMyPhotoDto } from './dto/update-my-photo.dto';
 import type { TenantRequest } from './tenant.middleware';

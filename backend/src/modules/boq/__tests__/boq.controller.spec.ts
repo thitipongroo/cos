@@ -4,7 +4,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { BoqController } from '../boq.controller';
 import { BoqService } from '../boq.service';
-import { LastSeenService } from '../../identity/last-seen.service';
+import { LastSeenService } from '../../../shared/last-seen/last-seen.service';
 
 const mockVersion = {
   version_id: 'v-001',

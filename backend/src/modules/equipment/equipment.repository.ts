@@ -56,7 +56,7 @@ export class EquipmentRepository {
     equipment_name: string;
     equipment_type: string;
     purchase_date: string | null;
-    purchase_cost: number | null;
+    purchase_cost: string | null;
     currency_code: string | null;
   }): Promise<EquipmentRow> {
     const rows = await this.db.run(
@@ -81,9 +81,13 @@ export class EquipmentRepository {
   async findAll(filters: { status?: string; type?: string } = {}): Promise<EquipmentRow[]> {
     const rows = await this.db.run(
       (tx) => tx.$queryRaw<EquipmentRow[]>`
+      -- ::text on BOTH sides of each optional filter. Without a cast, an unfiltered list binds an
+      -- untyped NULL and PostgreSQL cannot infer the type of "$1 IS NULL" — it answers 42P18
+      -- "could not determine data type of parameter $1", so GET /equipment with no query string
+      -- failed every time. The unit tests mock Prisma, so this SQL had never reached a server.
       SELECT * FROM equipment.equipment
-      WHERE (${filters.status ?? null} IS NULL OR status = ${filters.status}::equipment.equipment_status_enum)
-        AND (${filters.type ?? null} IS NULL OR equipment_type = ${filters.type}::equipment.equipment_type_enum)
+      WHERE (${filters.status ?? null}::text IS NULL OR status::text = ${filters.status ?? null}::text)
+        AND (${filters.type ?? null}::text IS NULL OR equipment_type::text = ${filters.type ?? null}::text)
       ORDER BY created_at DESC
       LIMIT ${capLimit()}
     `,
@@ -165,7 +169,7 @@ export class EquipmentRepository {
       tenant_id: string;
       maintenance_type: string;
       scheduled_at: string;
-      cost: number | null;
+      cost: string | null;
       currency_code: string | null;
       performed_by: string | null;
       notes: string | null;
@@ -215,6 +219,7 @@ export class EquipmentRepository {
         ${params.fuel_consumed}::decimal(8,2),
         ${params.operator_id}::uuid
       )
+      ON CONFLICT (tenant_id, equipment_id, recorded_at) DO NOTHING
     `,
     );
   }

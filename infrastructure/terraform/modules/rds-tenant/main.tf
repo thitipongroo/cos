@@ -26,12 +26,18 @@ resource "aws_security_group" "rds" {
     description     = "PostgreSQL from EKS nodes only"
   }
 
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  # No egress rule at all — deliberate, 2026-08-29.
+  #
+  # This was `0.0.0.0/0` on every protocol, which Trivy flags as AWS-0104 and which nothing had ever
+  # run to notice: CI gained a Terraform step and IaC misconfiguration scanning on the same day.
+  #
+  # A managed PostgreSQL endpoint is a destination, not a client. It accepts connections from the EKS
+  # nodes on the ingress rule above and initiates none of its own — no image pulls, no API calls, no
+  # package installs. An AWS security group denies all egress when no egress block is present, so
+  # removing the rule IS the restriction; there is nothing to replace it with.
+  #
+  # If a future feature needs this service to reach out — cross-region replication, an external
+  # audit sink — add a rule for that destination and port. Do not restore the blanket allow.
 
   tags = {
     Name       = "${local.name_prefix}-sg"
@@ -58,7 +64,7 @@ resource "aws_db_subnet_group" "rds" {
 resource "aws_db_instance" "tenant" {
   identifier = local.name_prefix
 
-  engine         = "postgres"
+  engine = "postgres"
   # Must match the shared RDS major version (aws/modules/rds engine_version); spec §34. Raised with it
   # from 16.2 to 18 on 2026-08-07 — see the verification preconditions in that module before applying.
   engine_version = "18"

@@ -8,7 +8,7 @@ import { clsTenantId } from '../../../shared/context/cls-context';
 import type { CreateRoomDto } from './dto/create-room.dto';
 import type { UpdateRoomDto } from './dto/update-room.dto';
 import { decodeCursor, paginate, type CursorListOptions } from '../../../shared/pagination/cursor';
-import { floorExistsInTenant } from '../shared/parent-existence';
+import { floorExistsInTenant } from '../public/parent-existence';
 
 export interface RoomRow {
   room_id: string;

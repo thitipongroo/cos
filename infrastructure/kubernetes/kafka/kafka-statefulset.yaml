@@ -63,6 +63,11 @@ spec:
         fsGroup: 1000
       containers:
         - name: kafka
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ['ALL']
           image: confluentinc/cp-kafka:7.6.0
           # Derive KAFKA_NODE_ID from pod ordinal: kafka-0 → 1, kafka-1 → 2, kafka-2 → 3
           command:

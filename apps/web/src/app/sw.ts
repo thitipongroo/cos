@@ -7,6 +7,8 @@
 // Replaces next-pwa (webpack-only, unmaintained) with a Turbopack-compatible, maintained PWA (ADR-047).
 import { defaultCache } from '@serwist/turbopack/worker';
 import { Serwist, type PrecacheEntry, type SerwistGlobalConfig } from 'serwist';
+import { SYNC_TAG } from '../lib/pwa/sync-tag';
+import { drainQueue } from '../lib/pwa/replay-queue';
 
 declare global {
   interface WorkerGlobalScope extends SerwistGlobalConfig {
@@ -28,3 +30,22 @@ const serwist = new Serwist({
 });
 
 serwist.addEventListeners();
+
+// ── Background Sync: replay the offline mutation queue (master:3543, 3620) ──────────────────────
+//
+// THIS LISTENER IS THE HALF THAT WAS MISSING. `sync-service.ts` has always called
+// `registration.sync.register('cos-sync')` and its own header said "SW replays mutations on
+// reconnect" — but nothing here listened, so on every browser that HAS Background Sync (Chrome and
+// Edge, i.e. the tablets this client targets) the event fired into nothing and the queue was never
+// drained. The fallback path that did work ran only where the API is ABSENT, so offline writes
+// survived exactly on the browsers without the feature they were built on.
+//
+// The tag is imported rather than retyped: a literal that drifts from the registration is the same
+// silent failure again, and nothing would fail to compile.
+self.addEventListener('sync', (event) => {
+  const syncEvent = event as ExtendableEvent & { tag?: string };
+  if (syncEvent.tag !== SYNC_TAG) return;
+  // waitUntil keeps the worker alive until the drain settles; without it the browser may kill it
+  // mid-flight and the retry counters would record attempts that never reached the server.
+  syncEvent.waitUntil(drainQueue());
+});

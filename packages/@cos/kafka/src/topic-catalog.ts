@@ -56,7 +56,13 @@ export const EVENT_AVSC_MAP: Record<string, string> = {
   'site.conflict.flagged.v1': 'site.conflict.flagged.v1.avsc',
   // Safety (Phase 6) — consumed by Notification Service for §19.3 escalation
   'safety.incident.created.v1': 'safety.incident.created.v1.avsc',
+  // Minted Phase 23 (PO decision 2026-08-25) — the second event §19.6 names as impossible to
+  // disable. Its producer is the SafetyVisionModel serving path in the AI gateway.
+  'safety.violation.detected.v1': 'safety.violation.detected.v1.avsc',
   // Finance
+  // Offline sync engine (§17.2): a device gave up delivering a queued mutation. A platform.*
+  // event, so it rides the shared platform.events topic rather than a per-tenant one.
+  'platform.sync.exhausted.v1': 'platform.sync.exhausted.v1.avsc',
   'finance.budget.created.v1': 'finance.budget.created.v1.avsc',
   'finance.budget.exceeded.v1': 'finance.budget.exceeded.v1.avsc',
   'finance.payment.processed.v1': 'finance.payment.processed.v1.avsc',
@@ -133,6 +139,59 @@ export function subjectForEvent(eventType: string): string {
  * pattern under a single `{service}.shared` group and validate the tenant_id header.
  * tenant_id is a UUID (no dots), so `[^.]+` matches exactly the tenant prefix segment.
  */
+/**
+ * A pattern matching exactly one topic name.
+ *
+ * Used for the shared platform topic. Subscribing to it by LITERAL name throws when the topic does
+ * not exist yet — the same hazard tenantTopicPattern below exists to avoid — and nothing creates
+ * `platform.events` ahead of the first publish (master:3093-3100 gives that job to the producer).
+ * A RegExp subscription simply matches nothing until the topic appears, and KafkaJS picks it up
+ * once it does.
+ */
+/**
+ * Entity state topics — the topics master:3104 says are log-compacted.
+ *
+ * WHAT MAKES A TOPIC ONE. Its events describe the current state of a single durable entity, named
+ * by a stable id in the payload, such that keeping ONLY the latest message per entity still leaves a
+ * correct picture. That is exactly the trade log compaction makes, so it is the only shape of topic
+ * that can survive it.
+ *
+ * Records of occurrences are the opposite and must never appear here: a delivery received, a safety
+ * incident, a daily report, a check-in. Each is a separate fact, and compaction would delete all but
+ * the most recent one for the key.
+ *
+ * THE VALUE IS THE PAYLOAD FIELD HOLDING THE ENTITY ID, and it is what the producer keys the message
+ * by. The two halves cannot be separated: every other topic is keyed by `tenant_id`, and compacting
+ * a tenant-keyed topic would reduce it to ONE SURVIVING EVENT PER TENANT — the whole history gone.
+ * Keeping the key and the cleanup policy in this single map is what makes that impossible to do by
+ * halves.
+ *
+ * THE LIST IS DELIBERATELY SHORT. master:3104 names the project family ("project.project.*", mapped
+ * to the canonical `construction.project.*` by master:725) and then says "etc.", which names
+ * nothing. Adding a topic here is a decision about data retention, so it is made explicitly, one
+ * entry at a time, rather than inferred from a naming pattern.
+ *
+ * `construction.project.risk_raised.v1` and `.risk_status_changed.v1` are NOT here on purpose: they
+ * carry `project_id` but they are events about a RISK, and keying them by project would collapse
+ * every risk on a project into whichever was raised last.
+ */
+export const ENTITY_STATE_TOPICS: Readonly<Record<string, string>> = Object.freeze({
+  'construction.project.created.v1': 'project_id',
+  'construction.project.updated.v1': 'project_id',
+  'construction.project.status_changed.v1': 'project_id',
+  'construction.project.archived.v1': 'project_id',
+});
+
+/** The payload field to key by, or undefined for an ordinary (tenant-keyed, non-compacted) topic. */
+export function entityStateKeyField(eventType: string): string | undefined {
+  return ENTITY_STATE_TOPICS[eventType];
+}
+
+export function exactTopicPattern(topic: string): RegExp {
+  // Same escaping as below, for the same reason.
+  return new RegExp(`^${topic.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`);
+}
+
 export function tenantTopicPattern(eventType: string): RegExp {
   // Escape every regex metacharacter, not just the dot. The previous version replaced `.` alone, so
   // any other metacharacter in eventType survived into `new RegExp` and changed what the

@@ -15,12 +15,27 @@ async function loginAs(page: Page, email: string, password: string) {
   await loginViaKeycloak(page, { email, password });
 }
 
-// SKIPPED: there is no unified approval-queue / approval-history UI on the web client, and the
-// /admin/approvals + /admin/settings routes the original test drove do not exist (only /admin, the
-// SYSTEM_ADMIN panel). Approvals are embedded per-domain (finance/invoices, safety/permits) and the
-// 48h→next-approver escalation (§Phase 18 item 10) is a backend Temporal workflow surfaced via
-// notifications — not a dedicated web screen. Unskip once an approval-queue UI ships.
-test.describe.skip('Approval Escalation', () => {
+// PARTIALLY UNSKIPPED 2026-08-29. The whole describe was skipped for a blocker that applies to only
+// two of its six tests: `/admin/approvals` and `/admin/settings` do not exist (apps/web/src/app/admin
+// holds one page.tsx, the SYSTEM_ADMIN panel), and there is no unified approval-queue screen —
+// approvals are embedded per-domain and the 48h → next-approver escalation (§Phase 18 item 10) is a
+// Temporal workflow surfaced through notifications.
+//
+// The other three drive /procurement/orders, which has shipped with useApprovePo / useRejectPo, and
+// they carry 2, 2 and 3 unconditional assertions. They were being skipped for someone else's blocker.
+//
+// The three that stay skipped are marked individually below, and TWO DIFFERENT reasons are recorded
+// rather than merged: a missing route is an environment blocker, while an `expect` wrapped in
+// `if (await …isVisible().catch(() => false))` is a test that cannot fail — it reports green whether
+// the behaviour exists or not, so unskipping it would add coverage that is not there.
+//
+// Gated on BASE_URL for the same reason as procurement.spec.ts: these log in through Keycloak and
+// need seeded tenants, which only the staging deployment has.
+const ON_DEPLOYED_ENV = Boolean(process.env['BASE_URL']);
+
+test.describe('Approval Escalation', () => {
+  test.skip(!ON_DEPLOYED_ENV, 'needs a deployed environment with seeded tenants (BASE_URL unset)');
+
   test('approval items are visible in approver queue', async ({ page }) => {
     await loginAs(page, PM_EMAIL, PM_PASSWORD);
 
@@ -57,7 +72,9 @@ test.describe.skip('Approval Escalation', () => {
     }
   });
 
-  test('admin can manually trigger escalation for overdue approvals', async ({ page }) => {
+  // BLOCKED: drives /admin/approvals, which does not exist. Its single expect is also nested two
+  // `if (…isVisible().catch(() => false))` deep, so it could not fail even if the route were there.
+  test.skip('admin can manually trigger escalation for overdue approvals', async ({ page }) => {
     await loginAs(page, ADMIN_EMAIL, ADMIN_PASSWORD);
 
     await page.goto('/admin/approvals');
@@ -80,7 +97,13 @@ test.describe.skip('Approval Escalation', () => {
     }
   });
 
-  test('escalated notification appears for next approver', async ({ page: _page, browser }) => {
+  // BLOCKED: not by a route — by itself. The only expect sits inside two nested visibility guards
+  // that swallow their own failure, so this test passes whether or not the notification is ever
+  // delivered. Unskip once it asserts the escalation notification unconditionally.
+  test.skip('escalated notification appears for next approver', async ({
+    page: _page,
+    browser,
+  }) => {
     const nextApproverContext = await browser.newContext();
     const nextApproverPage = await nextApproverContext.newPage();
 
@@ -104,7 +127,9 @@ test.describe.skip('Approval Escalation', () => {
     await nextApproverContext.close();
   });
 
-  test('escalation timeout configuration is readable in system settings', async ({ page }) => {
+  // BLOCKED on both counts: /admin/settings does not exist, and the single expect is inside a
+  // visibility guard that catches its own failure.
+  test.skip('escalation timeout configuration is readable in system settings', async ({ page }) => {
     await loginAs(page, ADMIN_EMAIL, ADMIN_PASSWORD);
 
     await page.goto('/admin/settings');

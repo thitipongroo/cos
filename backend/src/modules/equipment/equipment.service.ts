@@ -8,7 +8,9 @@ import {
   Injectable,
   Scope,
   Inject,
+  ConflictException,
   NotFoundException,
+  UnauthorizedException,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
@@ -25,6 +27,37 @@ import type { LogMaintenanceDto } from './dto/log-maintenance.dto';
 import type { RecordUtilizationDto } from './dto/record-utilization.dto';
 
 const logger = createLogger('equipment-service');
+
+/**
+ * PostgreSQL unique_violation (SQLSTATE 23505).
+ *
+ * Checked in two places because Prisma does not surface a raw query's SQLSTATE at the top level: a
+ * failing $queryRaw arrives as PrismaClientKnownRequestError with `code: 'P2010'` and the real
+ * driver code tucked into `meta.code`. master-data.service checks only the top level because it is
+ * not on the Prisma raw path; matching both keeps this correct either way.
+ */
+function isUniqueViolation(err: unknown): boolean {
+  if (typeof err !== 'object' || err === null) return false;
+  const e = err as {
+    code?: unknown;
+    meta?: {
+      code?: unknown;
+      driverAdapterError?: { cause?: { originalCode?: unknown; kind?: unknown } };
+    };
+  };
+  // Three shapes, because the SQLSTATE sits in a different place depending on how the query ran.
+  // Prisma 7 on a driver adapter reports a failed $queryRaw as P2010 and buries the driver's code
+  // at meta.driverAdapterError.cause.originalCode — VERIFIED against the live error, not guessed:
+  //   {"code":"P2010","meta":{"driverAdapterError":{"cause":{"originalCode":"23505",
+  //    "kind":"UniqueConstraintViolation", ...}}}}
+  const cause = e.meta?.driverAdapterError?.cause;
+  return (
+    e.code === '23505' ||
+    e.meta?.code === '23505' ||
+    cause?.originalCode === '23505' ||
+    cause?.kind === 'UniqueConstraintViolation'
+  );
+}
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
   AVAILABLE: ['IN_USE', 'MAINTENANCE', 'RETIRED'],
@@ -51,10 +84,38 @@ export class EquipmentService {
   }
 
   private get userId(): string {
-    return (this.req as Request & { userId?: string }).userId ?? clsUserId();
+    // req.userId — the PLATFORM user UUID, published by TenantMiddleware from jwtPayload.user_id.
+    //
+    // NOT req.user?.sub. Two things were wrong with that: `sub` is the KEYCLOAK id
+    // (platform.users.keycloak_user_id, per jwt.payload.ts), so it identifies the wrong row even
+    // when present; and under the Fastify adapter Passport's req.user does not reliably reach a
+    // Scope.REQUEST provider at all — JwtAuthGuard says exactly that in its own header, which is
+    // why it publishes the context to CLS instead. The getter therefore fell through to the
+    // literal 'system', and assigned_by is a NOT NULL UUID: every assignment and every maintenance
+    // log died with 22P02 invalid input syntax for type uuid.
+    // The CLS fallback is not belt-and-braces: workforce.controller's /me route documents that
+    // under Fastify req.userId "may be absent", and JwtAuthGuard publishes the same value to CLS.
+    // Without it this would 401 on exactly the paths the interceptor misses.
+    const userId = (this.req as Request & { userId?: string }).userId ?? clsUserId();
+    if (!userId) throw new UnauthorizedException('No authenticated user on request');
+    return userId;
   }
 
   async createEquipment(dto: CreateEquipmentDto): Promise<EquipmentRow> {
+    // The (tenant_id, equipment_code) unique constraint is a business rule, not an internal fault:
+    // reusing a code is something an operator does, and a 500 tells them the system broke rather
+    // than that the code is taken. Mirrors master-data.service's isUniqueViolation handling.
+    try {
+      return await this.createEquipmentRow(dto);
+    } catch (err: unknown) {
+      if (isUniqueViolation(err)) {
+        throw new ConflictException(`Equipment code ${dto.equipment_code} already exists`);
+      }
+      throw err;
+    }
+  }
+
+  private async createEquipmentRow(dto: CreateEquipmentDto): Promise<EquipmentRow> {
     const equipment = await this.repo.createEquipment({
       equipment_id: randomUUID(),
       tenant_id: this.tenantId,

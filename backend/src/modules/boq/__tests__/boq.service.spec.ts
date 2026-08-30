@@ -331,6 +331,115 @@ describe('BoqService', () => {
     });
   });
 
+  // ── Category hierarchy and the version total ─────────────────────────────
+  //
+  // master:2291-2292 states two DIFFERENT sums:
+  //   category.subtotal      = SUM(item.estimated_total) for all items in THAT category
+  //   version.total_estimated = SUM(category.subtotal) for all ROOT categories
+  //
+  // Categories are hierarchical (parent_category_id is a nullable self-reference), so the word
+  // "root" is the whole rule: summing every category instead would count a child's items twice —
+  // once in the child's own subtotal and again if a parent rolled them up. Nothing in the estate
+  // exercised a parent/child pair at all, so the filter that implements it was free to disappear.
+
+  describe('version total sums ROOT categories only (master:2292)', () => {
+    const rootCat: BoqCategoryRow = { ...category, category_id: 'cat-root' };
+    const childCat: BoqCategoryRow = {
+      ...category,
+      category_id: 'cat-child',
+      parent_category_id: 'cat-root',
+    };
+
+    const itemIn = (categoryId: string, id: string, total: string): BoqItemRow => ({
+      ...item,
+      item_id: id,
+      category_id: categoryId,
+      estimated_total: total,
+    });
+
+    beforeEach(() => {
+      mockRepo.findVersionById.mockResolvedValue({ ...draftVersion });
+      mockRepo.addItem.mockResolvedValue({ ...item });
+      mockRepo.findCategoriesByVersion.mockResolvedValue([rootCat, childCat]);
+      mockRepo.findItemsByVersion.mockResolvedValue([
+        itemIn('cat-root', 'i-root', '100.0000'),
+        itemIn('cat-child', 'i-child', '25.0000'),
+      ]);
+    });
+
+    it('excludes a child category from the version total', async () => {
+      await service.addItem('version-uuid-001', {
+        category_id: 'cat-root',
+        description: 'x',
+        unit: 'm3',
+        quantity: '1.0000',
+        unit_cost: '100.0000',
+        currency_code: 'THB',
+      });
+
+      // 100 from the root category alone — NOT 125.
+      expect(mockRepo.updateVersionTotal).toHaveBeenCalledWith(
+        'version-uuid-001',
+        '100.0000',
+        // The third argument is the construction.boq.updated.v1 envelope: the event rides
+        // this UPDATE's transaction (§35.13 ESC-13).
+        expect.objectContaining({ event_type: 'construction.boq.updated.v1' }),
+      );
+    });
+
+    it('still writes the child its own subtotal', async () => {
+      // The child is excluded from the VERSION total, not from bookkeeping: its subtotal is stored
+      // so the hierarchy renders, which is why the two rules are separate sentences in the spec.
+      await service.addItem('version-uuid-001', {
+        category_id: 'cat-root',
+        description: 'x',
+        unit: 'm3',
+        quantity: '1.0000',
+        unit_cost: '100.0000',
+        currency_code: 'THB',
+      });
+
+      const written = mockRepo.updateCategorySubtotals.mock.calls[0][0] as Array<{
+        category_id: string;
+        subtotal: string;
+      }>;
+      expect(written).toEqual(
+        expect.arrayContaining([
+          { category_id: 'cat-root', subtotal: '100.0000' },
+          { category_id: 'cat-child', subtotal: '25.0000' },
+        ]),
+      );
+    });
+
+    it('sums every root category when there is more than one', async () => {
+      // The control: "root only" must not collapse to "the first one".
+      const secondRoot: BoqCategoryRow = { ...category, category_id: 'cat-root-2' };
+      mockRepo.findCategoriesByVersion.mockResolvedValue([rootCat, childCat, secondRoot]);
+      mockRepo.findItemsByVersion.mockResolvedValue([
+        itemIn('cat-root', 'i-root', '100.0000'),
+        itemIn('cat-child', 'i-child', '25.0000'),
+        itemIn('cat-root-2', 'i-root-2', '7.5000'),
+      ]);
+
+      await service.addItem('version-uuid-001', {
+        category_id: 'cat-root',
+        description: 'x',
+        unit: 'm3',
+        quantity: '1.0000',
+        unit_cost: '100.0000',
+        currency_code: 'THB',
+      });
+
+      expect(mockRepo.updateVersionTotal).toHaveBeenCalledWith(
+        'version-uuid-001',
+        '107.5000',
+        // The third argument is the construction.boq.updated.v1 envelope: the event rides
+        // this UPDATE's transaction (§35.13 ESC-13).
+        expect.objectContaining({ event_type: 'construction.boq.updated.v1' }),
+      );
+    });
+  });
+
   // ── Immutability ─────────────────────────────────────────────────────────
   describe('Immutability — APPROVED/SUPERSEDED versions cannot be modified', () => {
     it('addItem throws ForbiddenException on APPROVED version', async () => {
@@ -366,6 +475,60 @@ describe('BoqService', () => {
       await expect(service.approveVersion('project-uuid-001', 'version-uuid-000')).rejects.toThrow(
         UnprocessableEntityException,
       );
+    });
+
+    // The block above is titled APPROVED/SUPERSEDED and every case in it used an APPROVED version.
+    // master:2301 names both, and SUPERSEDED is the one that matters more: it is the historical
+    // record a later version was costed against. Narrowing the guard to
+    // `if (version.status === 'APPROVED')` left every case here green while superseded versions
+    // became writable — rewriting a cost history nobody would think to check.
+    const supersededVersion: BoqVersionRow = {
+      ...approvedVersion,
+      status: 'SUPERSEDED',
+    };
+
+    it('addItem throws ForbiddenException on a SUPERSEDED version (master:2301)', async () => {
+      mockRepo.findVersionById.mockResolvedValue({ ...supersededVersion });
+      await expect(
+        service.addItem('version-uuid-000', {
+          category_id: 'cat-uuid-001',
+          description: 'Test',
+          unit: 'm3',
+          quantity: '1.0000',
+          unit_cost: '100.0000',
+          currency_code: 'THB',
+        }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('updateItem throws ForbiddenException on a SUPERSEDED version', async () => {
+      mockRepo.findItemById.mockResolvedValue({ ...item, version_id: 'version-uuid-000' });
+      mockRepo.findVersionById.mockResolvedValue({ ...supersededVersion });
+      await expect(service.updateItem('item-uuid-001', { description: 'Changed' })).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('deleteItem throws ForbiddenException on a SUPERSEDED version', async () => {
+      mockRepo.findItemById.mockResolvedValue({ ...item, version_id: 'version-uuid-000' });
+      mockRepo.findVersionById.mockResolvedValue({ ...supersededVersion });
+      await expect(service.deleteItem('item-uuid-001')).rejects.toThrow(ForbiddenException);
+    });
+
+    it('names the status in the refusal, so DRAFT-only is not read as "not found"', async () => {
+      // The two failures a caller can hit here are "this version is closed" and "no such version",
+      // and they lead somewhere different. The message carries the status for that reason.
+      mockRepo.findVersionById.mockResolvedValue({ ...supersededVersion });
+      await expect(
+        service.addItem('version-uuid-000', {
+          category_id: 'cat-uuid-001',
+          description: 'Test',
+          unit: 'm3',
+          quantity: '1.0000',
+          unit_cost: '100.0000',
+          currency_code: 'THB',
+        }),
+      ).rejects.toThrow(/SUPERSEDED/);
     });
   });
 

@@ -119,7 +119,12 @@ func TestMapDelayDetected_DelayIDIsEventID(t *testing.T) {
 
 // ── procurement.po.created.v1 ─────────────────────────────────────────────────
 
-func TestMapPOCreated_ContractIDIsPoID(t *testing.T) {
+func TestMapPOCreated_MaterialisesTheVendorOnly(t *testing.T) {
+	// Changed 2026-08-29. This case used to assert that po.created produced a :Contract, which is
+	// what the mapper did and what master:4156 does NOT say: a Contract is an APPROVED PO, and a PO
+	// at creation is a DRAFT (the event carries no status at all — see the .avsc). The old test
+	// checked that contract_id equalled po_id, which was true, and never asked whether a Contract
+	// should exist yet, which was the actual rule.
 	env := envelope("procurement.po.created.v1", "ev-3", "t-abc", map[string]any{
 		"po_id":      "po-555",
 		"project_id": "proj-001",
@@ -128,11 +133,59 @@ func TestMapPOCreated_ContractIDIsPoID(t *testing.T) {
 
 	ops, err := mapper.MapEvent(env)
 	require.NoError(t, err)
-	require.Len(t, ops, 2)
-	// first op: Vendor; second op: Contract with contract_id = po_id
-	contractOp := ops[1]
-	assert.Contains(t, contractOp.Cypher, ":Contract")
-	assert.Equal(t, "po-555", contractOp.Params["contract_id"])
+	require.Len(t, ops, 1)
+	assert.Contains(t, ops[0].Cypher, ":Vendor")
+	assert.Equal(t, "vendor-77", ops[0].Params["vendor_id"])
+	for _, op := range ops {
+		assert.NotContains(t, op.Cypher, ":Contract",
+			"a drafted PO must not appear in the graph as a contractual agreement")
+	}
+}
+
+// ── procurement.po.status_changed.v1 ─────────────────────────────────────────
+
+func TestMapPOStatusChanged_ApprovedCreatesContractKeyedOnPoID(t *testing.T) {
+	env := envelope("procurement.po.status_changed.v1", "ev-3b", "t-abc", map[string]any{
+		"po_id":       "po-555",
+		"from_status": "PENDING_APPROVAL",
+		"to_status":   "APPROVED",
+	})
+
+	ops, err := mapper.MapEvent(env)
+	require.NoError(t, err)
+	require.Len(t, ops, 1)
+	assert.Contains(t, ops[0].Cypher, ":Contract")
+	assert.Equal(t, "po-555", ops[0].Params["contract_id"])
+	assert.Equal(t, "t-abc", ops[0].Params["tenant_id"])
+}
+
+func TestMapPOStatusChanged_NonApprovedTransitionsWriteNothing(t *testing.T) {
+	// Every other status in the PoStatus enum. DISPUTED is the one worth naming: a PO can reach it
+	// AFTER approval, and treating it as a contract-creating transition would mint a second, or
+	// treating approval as reversible would delete one. Neither happens — the agreement was made.
+	for _, to := range []string{
+		"DRAFT", "PENDING_APPROVAL", "SENT", "ACKNOWLEDGED",
+		"PARTIALLY_DELIVERED", "FULLY_DELIVERED", "INVOICED", "PAID", "DISPUTED",
+	} {
+		env := envelope("procurement.po.status_changed.v1", "ev-x", "t-abc", map[string]any{
+			"po_id":       "po-555",
+			"from_status": "APPROVED",
+			"to_status":   to,
+		})
+		ops, err := mapper.MapEvent(env)
+		require.NoError(t, err, to)
+		assert.Nil(t, ops, "to_status=%s must not write a contract", to)
+	}
+}
+
+func TestMapPOStatusChanged_MalformedPayloadReturnsError(t *testing.T) {
+	env := &model.EventEnvelope{
+		EventType: "procurement.po.status_changed.v1",
+		TenantID:  "t-abc",
+		Payload:   []byte(`{"po_id": 12345}`),
+	}
+	_, err := mapper.MapEvent(env)
+	require.Error(t, err)
 }
 
 // ── procurement.delivery.received.v1 ─────────────────────────────────────────

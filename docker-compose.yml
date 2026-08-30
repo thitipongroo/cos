@@ -142,9 +142,19 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_LOG_RETENTION_HOURS: 2160
+      # 168h = the 7 days master:3103 states. It carries no dev/prod split, unlike the broker
+      # count and replication factor two lines above it, so the one value applies here too.
+      # The previous 2160 (90 days) arrived with the file's first commit and was never
+      # justified; nothing replays from the beginning (every consumer sets fromBeginning:
+      # false), so the only thing the extra 83 days bought was disk.
+      KAFKA_LOG_RETENTION_HOURS: 168
       KAFKA_LOG_RETENTION_BYTES: -1
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      # false on EVERY real broker (master:3093-3095): topics are created explicitly, by
+      # KafkaProducer.ensureTopic on first publish and by the DLQ publisher on first failure.
+      # Left on, a wrong tenant prefix or a stale .vN silently produced into a brand-new topic
+      # nothing consumes — a bug that looks like "the consumer never fired" and reproduces
+      # nowhere, because production has always had this false and rejects the publish outright.
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'false'
       KAFKA_LOG_DIRS: /var/lib/kafka/data
       CLUSTER_ID: h-CJFTy_TE2EQva8gyOGJA
     ports:
@@ -664,10 +674,18 @@ services:
       KAFKA_BROKERS: kafka:9092
       REDIS_URL: redis://:${REDIS_PASSWORD:-cos_redis_password}@redis:6379
       OTEL_SERVICE_NAME: ai-gateway
-      # Delay-risk context assembly (F4b B, ADR-072/§22.4). Connects as the RLS-exempt owner role
-      # (cos) — tenant isolation is by explicit WHERE tenant_id, matching reports/persistence.py.
+      # Delay-risk context assembly (F4b B). Routed through PgBouncer like every other app
+      # service — QM-18: "never directly to PostgreSQL port 5432". This was the last service
+      # still pointing at postgres:5432 (found by tests/spec-derived/phase-01-foundation).
+      # Connects as the NON-SUPERUSER app_user, so PostgreSQL RLS actually applies (ADR-031).
+      # It used to connect as the owner role `cos`, which is a superuser and therefore bypasses
+      # RLS outright; the app-layer `WHERE tenant_id` filter was carrying isolation on its own,
+      # which master §Never forbids ("secondary defence-in-depth, not a replacement for RLS").
+      # Every ai-gateway query now runs through db/tenant_scope.py, which sets
+      # app.current_tenant_id inside the statement's own transaction — required because the
+      # policy is `TO app_user ... USING (tenant_id = NULLIF(current_setting(...), '')::uuid)`.
       # Unset → _wire_db leaves the pool None and delay-risk falls back to an empty context.
-      DATABASE_URL: postgresql://cos:${POSTGRES_PASSWORD:-cos_dev_password}@postgres:5432/construction_os
+      DATABASE_URL: postgresql://app_user:app_user_dev_password@pgbouncer:5432/${POSTGRES_DB:-construction_os}
       # OpenWeather key for the delay-risk weather input (degrades to no weather when unset).
       WEATHER_API_KEY: ${WEATHER_API_KEY:-}
       # Internal transcription pipeline the gateway delegates /api/v1/ai/transcribe to.
@@ -682,6 +700,7 @@ services:
     depends_on:
       kafka: { condition: service_healthy }
       redis: { condition: service_healthy }
+      pgbouncer: { condition: service_started }
     healthcheck:
       test:
         [

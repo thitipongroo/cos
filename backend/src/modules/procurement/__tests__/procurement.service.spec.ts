@@ -365,6 +365,44 @@ describe('Quotation comparison', () => {
     expect(mockRepo.markQuotationSelected).toHaveBeenCalledWith('quot-uuid-001', 'rfq-uuid-001');
   });
 
+  it('compareQuotations — orders by VALUE, not by the string the amount is stored as', async () => {
+    // total_amount is DECIMAL(19,4) and arrives as a STRING. The existing fixtures are
+    // '120000.0000' and '150000.0000' — the same number of digits before the point — so a lexical
+    // sort produces the same order as a numeric one and the decimal comparison is never exercised.
+    //
+    // These two are not. Lexically '10000.0000' < '9000.0000' because '1' < '9', so a string sort
+    // puts the DEARER quotation first and auto-selects it. That is a money decision made silently:
+    // the RFQ awards to the wrong vendor and nothing in the response looks wrong.
+    const cheap = { ...quotationFixtures[0]!, quotation_id: 'q-cheap', total_amount: '9000.0000' };
+    const dear = { ...quotationFixtures[1]!, quotation_id: 'q-dear', total_amount: '10000.0000' };
+    mockRepo.findRfqById.mockResolvedValue(rfqClosedFixture);
+    mockRepo.findQuotationsByRfq.mockResolvedValue([dear, cheap]);
+    mockRepo.markQuotationSelected.mockResolvedValue(undefined);
+
+    const result = await service.compareQuotations('rfq-uuid-001');
+
+    expect(result.map((q) => q.quotation_id)).toEqual(['q-cheap', 'q-dear']);
+    expect(result[0]!.is_selected).toBe(true);
+    expect(result[1]!.is_selected).toBe(false);
+    expect(mockRepo.markQuotationSelected).toHaveBeenCalledWith('q-cheap', 'rfq-uuid-001');
+  });
+
+  it('compareQuotations — separates amounts that differ only past the decimal point', async () => {
+    // The other half of the same rule: '1000.0500' and '1000.0000' sort identically as strings up
+    // to the fifth character, and a comparison that truncated to whole units would tie them and
+    // select whichever happened to be first.
+    const cheap = { ...quotationFixtures[0]!, quotation_id: 'q-a', total_amount: '1000.0000' };
+    const dear = { ...quotationFixtures[1]!, quotation_id: 'q-b', total_amount: '1000.0500' };
+    mockRepo.findRfqById.mockResolvedValue(rfqClosedFixture);
+    mockRepo.findQuotationsByRfq.mockResolvedValue([dear, cheap]);
+    mockRepo.markQuotationSelected.mockResolvedValue(undefined);
+
+    const result = await service.compareQuotations('rfq-uuid-001');
+
+    expect(result.map((q) => q.quotation_id)).toEqual(['q-a', 'q-b']);
+    expect(mockRepo.markQuotationSelected).toHaveBeenCalledWith('q-a', 'rfq-uuid-001');
+  });
+
   it('awardRfq — throws if RFQ not EVALUATED', async () => {
     mockRepo.findRfqById.mockResolvedValue(rfqClosedFixture);
     await expect(service.awardRfq('rfq-uuid-001', 'quot-uuid-001')).rejects.toBeInstanceOf(

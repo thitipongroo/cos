@@ -3,6 +3,7 @@ import {
   scheduleBackgroundSync,
   unscheduleBackgroundSync,
   SYNC_TASK_NAME,
+  MIN_BATTERY_LEVEL,
 } from '../BackgroundSyncTask';
 import * as BackgroundFetch from 'expo-background-fetch';
 import * as TaskManager from 'expo-task-manager';
@@ -42,6 +43,30 @@ describe('BackgroundSyncTask', () => {
       const result = await _runTask(SYNC_TASK_NAME);
       expect(syncFn).not.toHaveBeenCalled();
       expect(result).toBe(BackgroundFetch.BackgroundFetchResult.NoData);
+    });
+
+    // The two cases above and below bracket the threshold at 0.1 and 1.0, which leaves any value in
+    // between satisfying both. master:3745 names 15%, so test the boundary itself: one reading just
+    // under it must skip, and the reading AT it must proceed — "< 15%", not "<= 15%".
+    it('skips at 14% and syncs at exactly 15% (master:3745)', async () => {
+      const justUnder = jest.fn().mockResolvedValue(undefined);
+      (Battery.getBatteryLevelAsync as jest.Mock).mockResolvedValue(0.14);
+      registerBackgroundSyncTask(justUnder);
+      expect(await _runTask(SYNC_TASK_NAME)).toBe(BackgroundFetch.BackgroundFetchResult.NoData);
+      expect(justUnder).not.toHaveBeenCalled();
+
+      const atThreshold = jest.fn().mockResolvedValue(undefined);
+      // The LITERAL 0.15, not MIN_BATTERY_LEVEL. Feeding the constant back in would compare it to
+      // itself: at any threshold the reading equals it, `level < threshold` is false, and the case
+      // passes no matter what the number is.
+      (Battery.getBatteryLevelAsync as jest.Mock).mockResolvedValue(0.15);
+      registerBackgroundSyncTask(atThreshold);
+      expect(await _runTask(SYNC_TASK_NAME)).toBe(BackgroundFetch.BackgroundFetchResult.NewData);
+      expect(atThreshold).toHaveBeenCalled();
+    });
+
+    it('the threshold is 15%, not merely "some low number"', () => {
+      expect(MIN_BATTERY_LEVEL).toBe(0.15);
     });
 
     it('task callback proceeds when battery level is -1 (unknown/plugged in)', async () => {

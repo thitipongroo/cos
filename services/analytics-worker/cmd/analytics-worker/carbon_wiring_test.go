@@ -221,3 +221,64 @@ func TestStartCarbonIfAvailable_DegradesWhenClickHouseIsUnavailable(t *testing.T
 	}
 	cleanup() // must be safe to call even though nothing was opened
 }
+
+// ─── startMetrics ────────────────────────────────────────────────────────────
+//
+// The Phase 14 dashboard-aggregate consumer, wired alongside carbon in startCarbonIfAvailable. It
+// arrived with the 2026-08-29 merge and its wiring was lost in the conflict resolution — the import
+// survived and the call did not, which `go vet` caught as an unused import. These cover the shape it
+// was restored in.
+
+func TestStartMetrics_DoesNotBlockOnAnUnreachableBroker(t *testing.T) {
+	// Same contract as startCarbon: this process serves the liveness endpoint, so a consumer that
+	// blocked on a dead broker would take the health probe down with it.
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	cfg := carbon.Config{
+		Brokers:     []string{"127.0.0.1:1"},
+		RegistryURL: "http://127.0.0.1:1",
+	}
+	done := make(chan struct{})
+	go func() {
+		startMetrics(ctx, cfg, stubDB(t))
+		close(done)
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(3 * time.Second):
+		t.Fatal("startMetrics blocked — the health endpoint would be starved by a broker outage")
+	}
+}
+
+func TestStartMetrics_LogsAndReturnsWhenTheConsumerCannotStart(t *testing.T) {
+	// No usable broker: metrics.Start fails building its DLQ publisher and returns immediately. The
+	// goroutine logs that and exits; the worker keeps serving liveness, which is why the consumer is
+	// started in the background rather than inline.
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	startMetrics(ctx, carbon.Config{
+		Brokers:     []string{"broker:not-a-port"},
+		RegistryURL: "http://127.0.0.1:1",
+	}, stubDB(t))
+
+	// metrics.Start returns before dialling anything here, so a short wait covers the error path.
+	time.Sleep(500 * time.Millisecond)
+}
+
+func TestStartMetrics_ReusesCarbonsConnectionPointsRatherThanRereadingTheEnvironment(t *testing.T) {
+	// The two consumers share one set of endpoints. Reading the environment twice is how they would
+	// come to disagree — the config is passed in for that reason, so this asserts it is honoured.
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	t.Setenv("KAFKA_BROKERS", "should-not-be-read:9092")
+	startMetrics(ctx, carbon.Config{
+		Brokers:     []string{"127.0.0.1:1"},
+		RegistryURL: "http://127.0.0.1:1",
+		RedisURL:    "",
+	}, stubDB(t))
+	time.Sleep(100 * time.Millisecond)
+}

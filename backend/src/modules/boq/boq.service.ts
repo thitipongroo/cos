@@ -414,11 +414,19 @@ export class BoqService {
     const allItems = await this.repo.findItemsByVersion(version_id);
     const categories = await this.repo.findCategoriesByVersion(version_id);
 
-    for (const cat of categories) {
-      const items = allItems.filter((i) => i.category_id === cat.category_id);
-      const subtotal = sumDecimals(items.map((i) => new Decimal(i.estimated_total)));
-      await this.repo.updateCategorySubtotal(cat.category_id, subtotal.toFixed(4));
-    }
+    // One statement, like recalculateVersionTotal above. This was the same per-category loop, so a
+    // re-cost issued one transaction per category and a mid-loop failure left the version half
+    // recalculated — with the version total, and therefore the outbox event, never written at all.
+    await this.repo.updateCategorySubtotals(
+      categories.map((cat) => ({
+        category_id: cat.category_id,
+        subtotal: sumDecimals(
+          allItems
+            .filter((i) => i.category_id === cat.category_id)
+            .map((i) => new Decimal(i.estimated_total)),
+        ).toFixed(4),
+      })),
+    );
 
     const rootCategories = categories.filter((c) => !c.parent_category_id);
     const versionTotal = sumDecimals(

@@ -19,7 +19,7 @@ jest.mock('@cos/kafka', () => ({
   })),
 }));
 
-import { NotificationConsumer } from '../notification.consumer';
+import { NotificationConsumer, SUBSCRIBED_EVENT_TYPES } from '../notification.consumer';
 
 // ── Mock NotificationService ────────────────────────────────────────────────
 
@@ -36,6 +36,7 @@ const EXPECTED_EVENT_TYPES = [
   'procurement.po.status_changed.v1',
   'procurement.po.approval_requested.v1',
   'finance.variance.alert.v1',
+  'platform.sync.exhausted.v1',
   'site.report.created.v1',
   'procurement.invoice.received.v1',
   'file.document.quarantined.v1',
@@ -51,16 +52,19 @@ beforeEach(() => {
 // ── onModuleInit ────────────────────────────────────────────────────────────
 
 describe('onModuleInit', () => {
-  it('registers a handler for each of the 9 subscribed topics', async () => {
+  it('registers a handler for every subscribed topic', async () => {
     await consumer.onModuleInit();
-    expect(mockOn).toHaveBeenCalledTimes(12);
+    // Against the consumer's OWN list, not a literal and not EXPECTED_EVENT_TYPES — that one is a
+    // deliberate subset used with arrayContaining below. A hand-counted total made adding a topic
+    // break two tests that are not about the count.
+    expect(mockOn).toHaveBeenCalledTimes(SUBSCRIBED_EVENT_TYPES.length);
     const registeredEventTypes = mockOn.mock.calls.map((c: unknown[]) => c[0]);
     for (const eventType of EXPECTED_EVENT_TYPES) {
       expect(registeredEventTypes).toContain(eventType);
     }
   });
 
-  it('connects with the shared group ID and all 12 event types', async () => {
+  it('connects with the shared group ID and every event type', async () => {
     await consumer.onModuleInit();
     expect(mockConnect).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -69,7 +73,7 @@ describe('onModuleInit', () => {
       }),
     );
     const callArgs = mockConnect.mock.calls[0][0] as { eventTypes: string[] };
-    expect(callArgs.eventTypes).toHaveLength(12);
+    expect(callArgs.eventTypes).toHaveLength(SUBSCRIBED_EVENT_TYPES.length);
   });
 
   it('connects with fromBeginning = false', async () => {

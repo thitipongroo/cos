@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # [AUTO] Phase 19 — Production Readiness Automated Verification
-# Runs all 30 [AUTO] checks from the Phase 19 Verification Protocol.
+# Runs all 31 [AUTO] checks from the Phase 19 Verification Protocol (AUTO-01..AUTO-31 — one per
+# [AUTO] line in master §Phase 19 Section A; the count read 30 until 2026-08-24).
 # Usage: ./scripts/readiness/verify-production-readiness.sh [--env staging|production]
-# Exit: 0 = all checks pass, 1 = one or more checks failed
+#        MAX_SKIP_PCT=25   how much of the run may be skipped before it is called unverified
+# Exit: 0 = verified ready, 1 = a check failed OR too much of the run could not be checked
 
 set -euo pipefail
 
@@ -20,6 +22,14 @@ while [[ $# -gt 0 ]]; do
     *) shift ;;
   esac
 done
+
+# EXPORTED, not just assigned. The check-*.sh scripts run as separate processes, so a plain shell
+# variable never reaches them. ENV in particular arrives from `--env` on the command line and can
+# therefore never be inherited — check-data.sh would have fallen back to "staging" on every run and
+# kept applying the 7-day backup floor to production, which is the bug this pair was fixing.
+# AWS_REGION survived only by coincidence: parent and child happen to default to the same value.
+export ENV
+export AWS_REGION
 
 NS="${NAMESPACE:-cos}"
 MONITORING_NS="${MONITORING_NS:-monitoring}"
@@ -388,12 +398,42 @@ echo "  SKIPPED: $SKIP  (tool/config not available)"
 echo "═══════════════════════════════════════════════════"
 echo ""
 
+# A SKIPPED CHECK IS NOT A PASSED CHECK — corrected 2026-08-24.
+#
+# This exited 0 and printed "All checks passed (or skipped due to missing tools)" no matter how many
+# were skipped. On a machine without kubectl, aws or curl — a CI runner, a laptop — every single
+# check skips and the script still reported the platform ready. The exit code is the part a machine
+# reads, and it was saying "verified" about a run that verified nothing.
+TOTAL=$((PASS + FAIL + SKIP))
+MAX_SKIP_PCT="${MAX_SKIP_PCT:-25}"
+skip_pct=0
+if [[ "$TOTAL" -gt 0 ]]; then
+  skip_pct=$((SKIP * 100 / TOTAL))
+fi
+
 if [[ "$FAIL" -gt 0 ]]; then
   echo "  ❌ $FAIL check(s) FAILED — fix before proceeding to manual checks."
   echo ""
   exit 1
-else
-  echo "  ✅ All checks passed (or skipped due to missing tools)."
-  echo "  Proceed to: REVIEWER=\"<name>\" ./scripts/readiness/run-all-checks.sh"
-  echo ""
 fi
+
+# Production is certified on evidence, not on the absence of contrary evidence: one unverified
+# check is one claim nobody made.
+if [[ "$ENV" == "production" && "$SKIP" -gt 0 ]]; then
+  echo "  ❌ $SKIP check(s) could not be run, and this is --env production."
+  echo "     Production readiness cannot be certified from checks that never executed."
+  echo "     Run from a host with kubectl, aws and curl reaching the production cluster."
+  echo ""
+  exit 1
+fi
+
+if [[ "$skip_pct" -gt "$MAX_SKIP_PCT" ]]; then
+  echo "  ❌ ${skip_pct}% of checks were skipped (limit ${MAX_SKIP_PCT}%) — this run verified too little"
+  echo "     to mean anything. Install the missing tooling, or raise MAX_SKIP_PCT deliberately."
+  echo ""
+  exit 1
+fi
+
+echo "  ✅ $PASS check(s) passed, $SKIP skipped (${skip_pct}%, within the ${MAX_SKIP_PCT}% limit)."
+echo "  Proceed to: REVIEWER=\"<name>\" ./scripts/readiness/run-all-checks.sh"
+echo ""

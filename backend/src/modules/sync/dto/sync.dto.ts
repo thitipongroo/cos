@@ -1,4 +1,4 @@
-import { IsString, IsObject, IsOptional, IsIn } from 'class-validator';
+import { IsString, IsObject, IsOptional, IsIn, IsInt, Min } from 'class-validator';
 
 export class PushItemDto {
   @IsString()
@@ -49,4 +49,35 @@ export interface DeltaResponse {
   full_resync_required: boolean;
   /** Retention window in days, sent only alongside `full_resync_required` so clients can log why. */
   retention_days?: number;
+}
+
+/**
+ * A queued mutation a device has stopped retrying (spec §17.2).
+ *
+ * Reported by the device after five failed attempts. The record still exists on the phone — §17.2
+ * requires it kept "until synced or admin-resolved" — so this is a report of a delivery failure,
+ * not a substitute for the record.
+ */
+export class ReportExhaustedDto {
+  @IsString()
+  entity_type!: string;
+
+  @IsString()
+  entity_id!: string;
+
+  @IsIn(['CREATE', 'UPDATE'])
+  operation!: 'CREATE' | 'UPDATE';
+
+  /** Device-generated id the mutation carried; unique per tenant, so a re-report is idempotent. */
+  @IsString()
+  client_id!: string;
+
+  @IsOptional()
+  @IsObject()
+  payload?: Record<string, unknown>;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  retry_count?: number;
 }

@@ -217,6 +217,15 @@ describe('the shape the screen renders', () => {
     expect(signals.reduce((sum, s) => sum + s.maxPoints, 0)).toBe(maxScore);
   });
 
+  it('scores out of the 100 the spec fixes, not out of whatever the rules file says', () => {
+    // master:5615 fixes `score: int 0..100`. The assertion above reads maxScore from the same
+    // rules JSON it sums the signals out of, so halving every signal AND maxScore together keeps it
+    // green while the rendered score quietly stops being a percentage — and the mobile bands
+    // (trustTone: STRONG at >= 80, FAIR at >= 50) are absolute numbers that would then mean
+    // something else. 100 is the one number here that comes from the spec rather than from us.
+    expect(scoreDevice(CLEAN).maxScore).toBe(100);
+  });
+
   it('never calls itself AI', () => {
     // ADR-081 Naming: the surface may describe the score as AI-derived only once a model has been
     // promoted. Claiming it over an if-chain is the same class of dishonesty as the static 98%.

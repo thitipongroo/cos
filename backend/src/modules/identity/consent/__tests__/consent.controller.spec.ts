@@ -7,7 +7,7 @@
 import { ConsentController } from '../consent.controller';
 import type { ConsentService } from '../consent.service';
 import type { NetworkOriginService } from '../../network-origin/network-origin.service';
-import type { TenantRequest } from '../../../tenant/tenant.middleware';
+import type { TenantRequest } from '../../../../shared/context/tenant-request';
 
 const TENANT = '11111111-1111-4111-8111-111111111111';
 const USER = '22222222-2222-4222-8222-222222222222';

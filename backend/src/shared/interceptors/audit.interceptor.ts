@@ -15,7 +15,7 @@ import { createPrismaClient } from '../prisma/create-prisma-client';
 import { appDatabaseUrl } from '../prisma/app-database-url';
 import { assertSafeTenantId } from '../prisma/assert-safe-tenant-id';
 import { createLogger } from '@cos/logger';
-import { JwtPayload } from '../../modules/identity/jwt.payload';
+import { JwtPayload } from '../context/jwt-payload';
 
 const logger = createLogger('audit-interceptor');
 const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);

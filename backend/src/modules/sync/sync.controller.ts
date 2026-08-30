@@ -12,8 +12,8 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { SyncService } from './sync.service';
-import { PushItemDto } from './dto/sync.dto';
-import { JwtAuthGuard } from '../identity/guards/jwt-auth.guard';
+import { PushItemDto, ReportExhaustedDto } from './dto/sync.dto';
+import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { SyncAuthGuard } from './sync-auth.guard';
 
 @ApiTags('Sync')
@@ -41,6 +41,15 @@ export class SyncController {
   @ApiOperation({ summary: 'Push a queued offline mutation; applies the §17.5 conflict strategy' })
   push(@Body() dto: PushItemDto) {
     return this.service.push(dto);
+  }
+
+  @Post('exhausted')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Report a queued mutation the device has stopped retrying (§17.2 retry exhaustion)',
+  })
+  reportExhausted(@Body() dto: ReportExhaustedDto) {
+    return this.service.reportExhausted(dto);
   }
 
   @Post('resolve')

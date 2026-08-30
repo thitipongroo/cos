@@ -70,6 +70,50 @@ Target coverage by layer:
 
 ---
 
+## 30.2a Where a test file lives
+
+The rule is the RUNNER, not the phase, the sprint, or the feature. Three jest configs share one
+filename pattern (`*.spec.ts`) and separate their work two different ways — by path
+(`jest.config.js` ignores `<rootDir>/test/`) and by name (it also ignores `\.workflow\.spec\.ts$`).
+Because the name is what mostly decides, a file can sit in the wrong tree and still be run by the
+right config: nothing fails, and nothing says anything. Write it down here, enforce it in
+`tests/conformance/testing/01-test-estate.spec.ts`.
+
+| Lives in                                | Holds                                                       | Run by                        |
+| --------------------------------------- | ----------------------------------------------------------- | ----------------------------- |
+| `backend/src/**/__tests__/*.spec.ts`     | unit — doubles only, no Docker, 15s timeout, 100% line+branch | `backend/jest.config.js`      |
+| `backend/src/**/*.workflow.spec.ts`      | Temporal workflows — needs a TestWorkflowEnvironment, not a container, so it stays beside its module | `backend/jest.workflows.config.js` |
+| `backend/test/<module>/*.integration.spec.ts` | integration — boots the real `AppModule` against Testcontainers | `backend/jest.integration.config.js` |
+| `backend/test/helpers/`                  | the integration harness (see §30.4) — not specs, no runner picks them up | —                         |
+| `tests/conformance/<module>/`            | architecture fitness functions — read source as text, import no app code | `jest.conformance.config.js` |
+| `tests/contract/`                        | Pact consumer-driven contracts                              | `jest.contract.config.js`     |
+| `tests/e2e/specs/`                       | Playwright, against a deployed environment                  | `playwright.config.ts`        |
+| `tests/load/`                            | k6 scenarios                                                | k6                            |
+
+Folders inside `backend/test/` and `tests/conformance/` are named for the MODULE (`finance`,
+`procurement`, `workforce`). They were once named for the delivery phase (`phase-07-finance`), which
+is a second axis laid over the runner axis, and it drifted exactly where the two disagreed — a
+Temporal spec filed by phase into the container tree, and a unit test named `.integration.spec.ts`.
+Renamed 2026-08-29; organising tests by delivery order rather than by module is a well-known
+maintenance trap, because six months later a regression run has to be reassembled out of the phases.
+
+`backend/test/` keeps the name the NestJS CLI generates and the framework's own docs prescribe
+("keep your e2e test files inside the `test` directory"). Kubernetes, Kibana and Prisma add a
+type-named layer (`test/integration/<component>/`) instead; both shapes are in wide use, and the
+NestJS one was chosen deliberately (product-owner decision 2026-08-29) because this repo is a NestJS
+application, not a framework or a platform with several kinds of backend test. Add the layer only if
+a second kind of `backend/test/` suite ever appears.
+
+Two divergences worth knowing rather than fixing silently:
+
+- The suffix here is `.integration.spec.ts`, where NestJS writes `.e2e-spec.ts`. Ours names what the
+  file is (it boots the app against a real database, it does not drive a browser across systems).
+- `tests/` at the repo root is NOT a pnpm workspace member, so `turbo run type-check` never reaches
+  it; `pnpm type-check:tests` covers it separately. That is why anything importing app code has to
+  live under `backend/`, which resolves `@cos/*` through the backend jest config.
+
+---
+
 ## 30.3 Unit Testing
 
 ### Scope
@@ -308,14 +352,22 @@ using **Pact.io** (consumer-driven contract testing).
 
 ### Script inventory — two suites, two purposes
 
-**Clarified 2026-08-22 (product owner).** Two k6 script sets exist and they are **not** duplicates.
-The table above is the scenario catalogue; the table below is what is executable today
-(see docs/architecture/test-design/escalation-register.md §35.13 ESC-06).
+**Clarified 2026-08-22 (product owner); reconciled 2026-08-29.** Two k6 script sets used to exist —
+`tests/load/`, which the conformance suite asserted against and CI never ran, and `scripts/loadtest/`,
+which CI ran one file from and no test ever read. They were merged into `tests/load/`, and
+`scripts/loadtest/` is gone. The table above is the scenario catalogue; the table below is what is
+executable today (see docs/architecture/test-design/escalation-register.md §35.13 ESC-06).
 
-| Suite               | Purpose                                                                 | Scripts                                                            |
-| ------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `tests/load/`       | Phase 18 acceptance suite — the four scenarios in `00_master` Phase 18  | `dashboard-sla.js`, `file-upload.js`, `api-baseline.js`, `ai-report.js` |
-| `scripts/loadtest/` | QM-6 weekly staging run **and** the Phase 19 one-time readiness gate    | `api-baseline.js` (QM-6 100 VU × 5 min gate), `analytics-sla.js`, `file-upload.js`, `mixed-api.js` |
+| Suite         | Purpose                                                               | Scripts                                                                                     |
+| ------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `tests/load/` | Phase 18 acceptance suite — the four scenarios in `00_master` Phase 18 | `dashboard-sla.js`, `file-upload.js`, `api-baseline.js`, `ai-report.js`                     |
+| `tests/load/` | QM-6 weekly staging run **and** the Phase 19 one-time readiness gate   | `qm6-baseline.js` — 100 VU × 5 min mixed read/write, `{op:read} p(95)<300`, `{op:write} p(95)<500` |
+
+**`api-baseline.js` and `qm6-baseline.js` are not the same test.** The first is Phase 18 Scenario 3 —
+200 VU over ten minutes, reads only, `p(95)<1000`. The second is the QM-6 gate against the §31.6
+SLOs. They carried the same filename in two different directories until the merge above, which is how
+the QM-6 one came to be deleted as a duplicate; it was restored under a name that cannot repeat that
+(§35.13 ESC-12). The weekly workflow runs all five.
 
 Scenarios in the §30.9 table with **no script yet** — to be written before the Phase 19 gate is
 claimed complete:
@@ -347,7 +399,7 @@ The k6 tests above cover the backend; the web app's user-perceived performance i
   3,200 ms is the highest median observed across those five runs (2,913 ms) plus ~10 % headroom. It is a
   **regression gate, not a performance target**: it catches a change that makes `/login` ~10 % slower, and it does not
   say the page is fast enough.
-- **`aggregationMethod: median`,** not lhci's `optimistic` default. Optimistic compares the _best_ of the three runs,
+- **`aggregationMethod: median`,** not lhci's `optimistic` default. Optimistic compares the **best** of the three runs,
   which is how a 1,190 ms TBT — nearly 6× its budget — passed unnoticed on 2026-08-03. Median is what the numbers above
   are calibrated against.
 - **The server is started and warmed before collection** (`pnpm run lighthouse`, not `lhci autorun`). Letting lhci
@@ -393,7 +445,7 @@ The k6 tests above cover the backend; the web app's user-perceived performance i
   where CodeQL cannot run.
 - **jscpd** — duplication, run in the CI lint job against the ratchet in `.jscpd.json`.
 - **npm audit / pip-audit / govulncheck / Trivy** — dependency and container scanning (SCA). Note
-  these scan _dependencies_, not first-party code; CodeQL and Semgrep are what read code we wrote.
+  these scan **dependencies**, not first-party code; CodeQL and Semgrep are what read code we wrote.
 
 > Replaced SonarQube (ADR-011). SonarQube **Community** Build has no branch or pull-request
 > analysis, so the "before merge, on new code" gate this section requires is not achievable on it,

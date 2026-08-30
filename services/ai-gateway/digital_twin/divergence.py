@@ -13,10 +13,13 @@ from uuid import UUID
 
 import asyncpg
 
+from db import tenant_scoped
+
 from .models import (
     Divergence,
     DivergenceReport,
     SeverityLevel,
+    UnassessedEntity,
 )
 
 # Configurable divergence thresholds per entity type
@@ -95,44 +98,67 @@ async def generate_divergence_report(
     Scheduled job entry point — compare latest actual twin state vs planned state.
     Planned state sourced from BIM/schedule data (digital_ref attributes).
     """
-    entities = await db_pool.fetch(
-        """
-        SELECT entity_id, entity_type, digital_ref, confidence
-        FROM digital_twin.twin_entities
-        WHERE project_id = $1::uuid
-          AND tenant_id = $2::uuid
-        """,
-        project_id,
-        tenant_id,
-    )
+    # RLS (app_user): the entity list and every per-entity state lookup share one
+    # tenant-scoped transaction — see db/tenant_scope.py.
+    async with tenant_scoped(db_pool, tenant_id) as conn:
+        entities = await conn.fetch(
+            """
+            SELECT entity_id, entity_type, digital_ref, confidence
+            FROM digital_twin.twin_entities
+            WHERE project_id = $1::uuid
+              AND tenant_id = $2::uuid
+            """,
+            project_id,
+            tenant_id,
+        )
+        state_rows: dict[str, Any] = {}
+        for entity_row in entities:
+            state_rows[str(entity_row["entity_id"])] = await conn.fetchrow(
+                """
+                SELECT attributes
+                FROM digital_twin.twin_states
+                WHERE entity_id = $1::uuid
+                  AND tenant_id = $2::uuid
+                ORDER BY recorded_at DESC
+                LIMIT 1
+                """,
+                str(entity_row["entity_id"]),
+                tenant_id,
+            )
 
     divergences: list[Divergence] = []
+    unassessed: list[UnassessedEntity] = []
 
     for entity_row in entities:
         entity_id = str(entity_row["entity_id"])
         entity_type = entity_row["entity_type"]
 
-        latest_state_row = await db_pool.fetchrow(
-            """
-            SELECT attributes
-            FROM digital_twin.twin_states
-            WHERE entity_id = $1::uuid
-              AND tenant_id = $2::uuid
-            ORDER BY recorded_at DESC
-            LIMIT 1
-            """,
-            entity_id,
-            tenant_id,
-        )
+        latest_state_row = state_rows.get(entity_id)
         if not latest_state_row:
             continue
 
         import json
         actual_state: dict[str, Any] = json.loads(latest_state_row["attributes"])
 
-        # Planned state from BIM/schedule — empty dict if BIM not yet integrated
-        # BIM Integration (IFC.js parser per spec §13.4) is a prerequisite for Phase 24
+        # Planned state from BIM/schedule — empty dict while BIM is not integrated.
+        # BIM Integration (IFC.js parser per spec §13.4) is a PREREQUISITE for Phase 24 and is not
+        # built, so this is empty for every entity today.
         planned_state: dict[str, Any] = {}
+
+        # No plan means no comparison. Comparing against {} scored every attribute-bearing entity at
+        # gap 1.0 / HIGH, so the report flagged the whole site on every run — an alert that always
+        # fires is one operators learn to dismiss, and it asserted a divergence from a plan nobody
+        # had. These entities are reported as UNASSESSED instead (product-owner decision
+        # 2026-08-25); "we do not know the plan" is a different claim from "the site has diverged".
+        if not planned_state:
+            unassessed.append(
+                UnassessedEntity(
+                    entity_id=UUID(entity_id),
+                    entity_type=entity_type,
+                    actual_state=actual_state,
+                )
+            )
+            continue
 
         gap, severity = compute_divergence(
             planned_state,
@@ -154,5 +180,8 @@ async def generate_divergence_report(
         project_id=UUID(project_id),
         generated_at=datetime.now(timezone.utc),
         divergences=divergences,
+        unassessed=unassessed,
+        # Risk is computed from real divergences only. An unassessed entity contributes nothing:
+        # an unknown plan is not evidence of risk in either direction.
         risk_level=_risk_level_from_divergences(divergences),
     )

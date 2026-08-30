@@ -21,7 +21,7 @@ import {
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../../shared/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../shared/guards/roles.guard';
 import { Roles } from '@cos/rbac';
 import { CosRole } from '@cos/types';
@@ -30,7 +30,7 @@ import { CreateSubjectRequestDto } from './dto/create-subject-request.dto';
 import { CloseSubjectRequestDto } from './dto/close-subject-request.dto';
 import { EraseSubjectRequestDto } from './dto/erase-subject-request.dto';
 import { SubjectVerifyTokenGuard } from './subject-verify-token.guard';
-import type { TenantRequest } from '../../tenant/tenant.middleware';
+import type { TenantRequest } from '../../../shared/context/tenant-request';
 
 @ApiTags('subject-requests')
 @ApiBearerAuth()

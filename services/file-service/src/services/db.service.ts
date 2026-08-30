@@ -4,7 +4,7 @@
 
 import { Pool } from 'pg';
 import type { FileServiceConfig } from '../config';
-import type { StoredFileRow, FileStatus, RetentionPolicyRow } from '../types';
+import type { StoredFileRow, FileStatus, RetentionPolicyRow, FileMetadataRow } from '../types';
 import { categoryFor } from '../util/category';
 
 export class DbService {
@@ -86,6 +86,21 @@ export class DbService {
       [fileId, tenantId],
     );
     return rows[0] ?? null;
+  }
+
+  /**
+   * The metadata rows of one file — entity reference and key-value pairs.
+   *
+   * Read at index time: spec §Phase 9 lists entity_type, entity_id and the metadata pairs among the
+   * indexed fields, and they live here rather than on files.files, so the document cannot carry them
+   * unless they are fetched alongside it.
+   */
+  async findMetadataByFileId(fileId: string, tenantId: string): Promise<FileMetadataRow[]> {
+    const { rows } = await this.pool.query<FileMetadataRow>(
+      `SELECT * FROM files.file_metadata WHERE file_id = $1 AND tenant_id = $2`,
+      [fileId, tenantId],
+    );
+    return rows;
   }
 
   async softDeleteFile(fileId: string, tenantId: string): Promise<boolean> {

@@ -163,6 +163,28 @@ it('budget ≥100% with acknowledge_budget_overrun → completes with warning (g
   expect(r.warnings).toEqual(['budget_overrun']);
 });
 
+it('budget below 85% → no warning at all', async () => {
+  // The quiet case, and the one that was never asserted: with both thresholds untriggered the
+  // response must carry an EMPTY warnings array, not merely a different one.
+  mockRepo.findTaskById.mockResolvedValue(taskRow);
+  clearGates();
+  mockRepo.getTaskBudgetRatio.mockResolvedValue({ allocated: '100', actual: '50' });
+  mockRepo.updateTask.mockResolvedValue({ ...taskRow, status: 'COMPLETED' });
+  const r = await service.updateTask('task-1', { status: 'COMPLETED' } as never);
+  expect(r.warnings).toEqual([]);
+});
+
+it('budget at exactly 85% of an amount binary floats get wrong → ORANGE (master:991)', async () => {
+  // 4.59 / 5.40 is exactly 85%. The previous implementation divided these as doubles, landed just
+  // below 0.85, and stayed silent. Comparing 4.59 x 100 against 5.40 x 85 is exact.
+  mockRepo.findTaskById.mockResolvedValue(taskRow);
+  clearGates();
+  mockRepo.getTaskBudgetRatio.mockResolvedValue({ allocated: '5.40', actual: '4.59' });
+  mockRepo.updateTask.mockResolvedValue({ ...taskRow, status: 'COMPLETED' });
+  const r = await service.updateTask('task-1', { status: 'COMPLETED' } as never);
+  expect(r.warnings).toEqual(['budget_warning']);
+});
+
 it('budget with zero allocated → no warning (allocated>0 false branch)', async () => {
   mockRepo.findTaskById.mockResolvedValue(taskRow);
   clearGates();

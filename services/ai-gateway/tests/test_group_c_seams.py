@@ -348,6 +348,33 @@ class TestRagConfigFallback:
             "max_context_tokens": _DEFAULT_MAX_CONTEXT_TOKENS,
         }
 
+    def test_the_fallback_values_are_the_ones_master_states(self):
+        # The case above compares load_rag_config()'s output to the very constants it returns, so it
+        # proves the SHAPE — both keys present, no crash — and nothing about the numbers. Set
+        # _DEFAULT_TOP_K to 50 and it still passes.
+        #
+        # The numbers are not incidental. master:3822 fixes "top-k=5 chunks, max context 4000
+        # tokens", and this fallback is what a deployment shipped without ai/chains/rag.yaml actually
+        # retrieves with — the one path where the YAML that carries those values is absent. A default
+        # of 50 there would assemble ten times the context the prompt budget was sized for, on
+        # exactly the deployments least likely to be watched.
+        from rag.retrieval import _DEFAULT_MAX_CONTEXT_TOKENS, _DEFAULT_TOP_K
+
+        assert _DEFAULT_TOP_K == 5
+        assert _DEFAULT_MAX_CONTEXT_TOKENS == 4000
+
+    def test_the_fallback_agrees_with_the_shipped_chain_config(self):
+        # Two sources for one pair of numbers: these constants and ai/chains/rag.yaml. They must
+        # agree, or removing the YAML silently changes retrieval behaviour instead of preserving it.
+        import yaml as _yaml
+
+        import providers.langchain_config as lc
+        from rag.retrieval import _DEFAULT_MAX_CONTEXT_TOKENS, _DEFAULT_TOP_K
+
+        shipped = _yaml.safe_load((lc.CHAINS_DIR / "rag.yaml").read_text())["retrieval"]
+        assert shipped["final_top_k"] == _DEFAULT_TOP_K
+        assert shipped["max_context_tokens"] == _DEFAULT_MAX_CONTEXT_TOKENS
+
 
 class TestRagWiring:
     @pytest.mark.asyncio

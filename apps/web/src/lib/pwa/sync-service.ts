@@ -1,12 +1,19 @@
-// PWA sync service — Background Sync API + IndexedDB queue (spec §Phase 10 Web App Stack)
-// Registers a sync tag with the Service Worker; SW replays mutations on reconnect.
-// Falls back to immediate sync when Background Sync API is unavailable.
+// PWA sync service — Background Sync API + IndexedDB queue (spec §Phase 10 Web App Stack).
+//
+// Enqueues a mutation and asks the Service Worker to replay it. The worker owns the draining (see
+// app/sw.ts), which is what lets a queued write reach the server after the tab is closed; this file
+// keeps the immediate-flush path for browsers that lack Background Sync, running the SAME drain so
+// the two cannot disagree.
+//
+// Neither path handles a credential: replay goes through the app's same-origin /api/sync/replay
+// route, which reads the httpOnly session server-side. See that route's header for why.
 
 import { getOfflineDb } from '../idb/schema';
 import type { OfflineSyncQueueItem } from '../idb/schema';
+import { SYNC_TAG } from './sync-tag';
+import { drainQueue, MAX_RETRIES } from './replay-queue';
 
-const SYNC_TAG = 'cos-sync';
-const MAX_RETRIES = 5;
+export { SYNC_TAG, MAX_RETRIES };
 
 // ── Enqueue a mutation for background sync ────────────────────────────────────
 
@@ -48,41 +55,16 @@ async function requestBackgroundSync(): Promise<void> {
   }
 }
 
-// ── Flush pending items (called by SW on sync event, or as fallback) ──────────
+// ── Flush pending items (fallback where Background Sync is unavailable) ──────
 
-export async function flushQueue(token?: string): Promise<void> {
-  const db = await getOfflineDb();
-  const pending = await db.getAllFromIndex('sync_queue', 'by_status', 'PENDING');
-
-  for (const item of pending) {
-    if (!item.id) continue;
-    await db.put('sync_queue', { ...item, status: 'SYNCING' });
-
-    try {
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-
-      const response = await fetch('/api/v1/sync/push', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          entity_type: item.entity_type,
-          entity_id: item.entity_id,
-          operation: item.operation,
-          payload: JSON.parse(item.payload),
-          client_submitted_at: item.client_submitted_at,
-        }),
-      });
-
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-      await db.put('sync_queue', { ...item, status: 'SYNCED' });
-    } catch {
-      const retries = item.retry_count + 1;
-      const newStatus = retries >= MAX_RETRIES ? 'FAILED' : 'PENDING';
-      await db.put('sync_queue', { ...item, status: newStatus, retry_count: retries });
-    }
-  }
+/**
+ * Drain the queue from the page.
+ *
+ * Used when the browser has no Background Sync API, and available to the app for an explicit
+ * "sync now". The Service Worker path is preferred because it survives the tab closing.
+ */
+export async function flushQueue(): Promise<void> {
+  await drainQueue();
 }
 
 // ── Query helpers ─────────────────────────────────────────────────────────────

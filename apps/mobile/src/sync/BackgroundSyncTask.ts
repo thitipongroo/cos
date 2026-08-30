@@ -10,7 +10,14 @@ import * as Battery from 'expo-battery';
 export const SYNC_TASK_NAME = 'COS_BACKGROUND_SYNC';
 
 const MIN_INTERVAL_SECONDS = 15 * 60; // 15 minutes — OS-imposed minimum
-const MIN_BATTERY_LEVEL = 0.15;
+/**
+ * master:3745 — "Background sync respects battery saver mode (skip if battery < 15%)".
+ *
+ * Exported so the THRESHOLD can be asserted, not merely bracketed. The cases that existed used 0.1
+ * (skip) and 1.0 (proceed); raising this to 0.5 satisfies both, and a device at 40% would stop
+ * syncing in the background with nothing to say why.
+ */
+export const MIN_BATTERY_LEVEL = 0.15;
 
 export function registerBackgroundSyncTask(syncFn: () => Promise<void>): void {
   TaskManager.defineTask(SYNC_TASK_NAME, async () => {

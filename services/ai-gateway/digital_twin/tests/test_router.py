@@ -22,7 +22,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import pytest
 from digital_twin import router as router_module
-from digital_twin.models import EntityType
+from digital_twin.models import Divergence, DivergenceReport, EntityType, SeverityLevel
 from digital_twin.router import (
     RegisterEntityRequest,
     _get_db,
@@ -68,6 +68,30 @@ class _FakePool:
     async def fetchrow(self, query, *params):
         self.fetchrow_calls.append((query, params))
         return self._row
+
+    # get_twin_state computes divergence_score by running the real divergence engine, which takes a
+    # tenant-scoped CONNECTION out of the pool rather than querying the pool directly. Serving the
+    # same fake rows through acquire() keeps the engine real in these tests instead of stubbing it —
+    # the score they assert is one the engine actually produced.
+    async def execute(self, query, *params):  # SET_TENANT_GUC
+        return "SELECT 1"
+
+    def acquire(self):
+        return _FakeAcquire(self)
+
+    def transaction(self):
+        return _FakeAcquire(self)
+
+
+class _FakeAcquire:
+    def __init__(self, pool):
+        self._pool = pool
+
+    async def __aenter__(self):
+        return self._pool
+
+    async def __aexit__(self, *exc):
+        return False
 
 
 class TestDependencies:
@@ -134,7 +158,53 @@ class TestGetTwinState:
         assert snapshot.project_id == PROJECT_ID
         assert len(snapshot.entities) == 2
         assert snapshot.overall_confidence == pytest.approx(0.9)
+        # No twin STATE rows behind this fake, so the engine finds nothing to compare and reports
+        # no divergences — the one case in which 0.0 is the computed answer rather than a placeholder.
         assert snapshot.divergence_score == 0.0
+
+    @pytest.mark.asyncio
+    async def test_divergence_score_is_the_mean_gap_the_engine_reported(self, monkeypatch):
+        # master:5677 puts divergenceScore on the snapshot. It was hardcoded 0.0 with a comment
+        # saying the divergence report would fill it in; DivergenceReport has no such field, so
+        # nothing ever did and 0.0 meant two different things at once.
+        #
+        # The engine is substituted HERE and only here, because the number it would really return
+        # today is 0.0 for a reason that has nothing to do with this endpoint: planned_state comes
+        # from BIM, BIM is an unbuilt Phase 24 prerequisite (master:5639), so every entity is
+        # reported UNASSESSED and the divergences list is empty by construction. Asserting the mean
+        # against a fixed report is the only way to test the arithmetic this endpoint owns.
+        report = DivergenceReport(
+            project_id=PROJECT_ID,
+            generated_at=datetime.now(timezone.utc),
+            divergences=[
+                Divergence(
+                    entity_id=UUID("11111111-1111-1111-1111-111111111111"),
+                    planned_state={"height_m": 10.0},
+                    actual_state={"height_m": 8.0},
+                    gap=0.2,
+                    severity=SeverityLevel.LOW,
+                ),
+                Divergence(
+                    entity_id=UUID("11111111-1111-1111-1111-111111111112"),
+                    planned_state={"height_m": 10.0},
+                    actual_state={"height_m": 4.0},
+                    gap=0.6,
+                    severity=SeverityLevel.HIGH,
+                ),
+            ],
+            risk_level="HIGH",
+        )
+
+        async def _fake_report(*_args, **_kwargs):
+            return report
+
+        monkeypatch.setattr(router_module, "generate_divergence_report", _fake_report)
+        snapshot = await get_twin_state(
+            PROJECT_ID, None, None, TENANT_ID, db=_FakePool(rows=[_entity_row()]), redis_client=object()
+        )
+
+        # Mean, not sum: a forty-entity site must not outrank a two-entity one on size alone.
+        assert snapshot.divergence_score == pytest.approx(0.4)
 
     @pytest.mark.asyncio
     async def test_query_is_scoped_by_project_and_tenant(self):

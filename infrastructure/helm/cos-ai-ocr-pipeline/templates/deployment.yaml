@@ -5,6 +5,19 @@ metadata:
   labels: {{ include "cos-ai-ocr-pipeline.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  # Rolling deployment with NO capacity loss — master §Phase 17 Deployment Strategy:
+  # "Max surge: 1 pod / Max unavailable: 0 pods (zero-downtime rolling)".
+  #
+  # Added 2026-08-24. Without a strategy block Kubernetes applies its own defaults, maxSurge 25% and
+  # maxUnavailable 25%, so every rollout could take a quarter of the pods down at once. Nothing
+  # reports that: the deploy succeeds, capacity just dips and some requests are refused while it
+  # does. The PodDisruptionBudget does not cover it either — a PDB constrains voluntary DRAINS, not
+  # a Deployment's own rollout.
+  strategy:
+    type: {{ .Values.strategy.type }}
+    rollingUpdate:
+      maxSurge: {{ .Values.strategy.maxSurge }}
+      maxUnavailable: {{ .Values.strategy.maxUnavailable }}
   selector:
     matchLabels: {{ include "cos-ai-ocr-pipeline.selectorLabels" . | nindent 6 }}
   template:
@@ -38,13 +51,27 @@ spec:
           readinessProbe: {{ toYaml .Values.readinessProbe | nindent 12 }}
           securityContext:
             allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: false
+            # true since 2026-08-29. It was false in all four AI charts with no reason recorded,
+            # while the other seven charts were already true — the divergence was inherited, not
+            # decided. Verified by experiment before flipping: a read-only rootfs does NOT break
+            # Python (a __pycache__ write that fails is skipped, not raised), but tempfile does
+            # fail hard — `No usable temporary directory found` — so /tmp has to come back as an
+            # emptyDir below. Without that volume this flag turns every upload and every OCR page
+            # into a 500.
+            readOnlyRootFilesystem: true
             capabilities:
               drop: [ALL]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           volumeMounts:
             - name: tmp
               mountPath: /tmp
       volumes:
         - name: tmp
           emptyDir: {}
+      volumes:
+        - name: tmp
+          emptyDir: {}
       affinity: {{ toYaml .Values.affinity | nindent 8 }}
+      tolerations: {{ toYaml .Values.tolerations | nindent 8 }}

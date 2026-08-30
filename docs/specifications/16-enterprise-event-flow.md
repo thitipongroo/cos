@@ -112,9 +112,10 @@ AI :
 
 Safety :
 
-- SafetyIncidentReported
+- SafetyIncidentReported — `safety.incident.created.v1`
 - SafetyChecklistCompleted
-- SafetyViolationDetected
+- SafetyViolationDetected — `safety.violation.detected.v1`
+  (canonical name minted 2026-08-25, Phase 23; payload in §32.4 row 22)
 
 Asset :
 

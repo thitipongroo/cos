@@ -39,8 +39,8 @@ import {
 import { RefreshTokenDto, MfaTokenDto } from './dto/token.dto';
 import { RequestStepUpDto, VerifyStepUpDto } from './dto/step-up.dto';
 import { StepUpService } from './step-up/step-up.service';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import type { JwtPayload } from './jwt.payload';
+import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
+import type { JwtPayload } from '../../shared/context/jwt-payload';
 
 // Auth endpoints: 10 req/min per IP — brute force protection (spec §5.5, QM-7)
 @Throttle({ default: { limit: 10, ttl: 60000 } })

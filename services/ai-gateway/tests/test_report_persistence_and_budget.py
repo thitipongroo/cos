@@ -12,18 +12,20 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from tests.fake_pool import TenantScopedPoolMixin  # noqa: E402
+
 import pytest
 from reports.persistence import fetch_report_history, persist_report
 from reports.token_budget import MAX_INPUT_TOKENS, MAX_OUTPUT_TOKENS, TokenBudget
 
 
-class _FakePool:
+class _FakePool(TenantScopedPoolMixin):
     def __init__(self, rows=None):
         self.execute_calls: list = []
         self.fetch_calls: list = []
         self._rows = rows if rows is not None else []
 
-    async def execute(self, query, *params):
+    async def _on_execute(self, query, *params):
         self.execute_calls.append((query, params))
 
     async def fetch(self, query, *params):

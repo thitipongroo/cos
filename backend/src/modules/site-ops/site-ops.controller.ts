@@ -22,7 +22,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../identity/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
 import { PolicyGuard } from '../../shared/guards/policy.guard';
 import { Roles } from '@cos/rbac';
@@ -33,7 +33,7 @@ import { SyncSiteReportsDto } from './dto/sync-site-reports.dto';
 import { CreateIssueDto } from './dto/create-issue.dto';
 import { UpdateIssueDto } from './dto/update-issue.dto';
 import { ChangeIssueStatusDto } from './dto/change-issue-status.dto';
-import { SubmitInspectionDto } from './dto/submit-inspection.dto';
+import { SubmitInspectionDto } from './public/submit-inspection.dto';
 import { UpdateInspectionDto } from './dto/update-inspection.dto';
 import { ResolveConflictDto } from './dto/resolve-conflict.dto';
 import { CreateMaterialConsumptionDto } from './dto/create-material-consumption.dto';

@@ -303,7 +303,7 @@ Source: spec §31.6 (targets corrected to match spec SLO definitions; Web Vitals
 | Mobile app cold start (React Native)         | < 3s on mid-range Android                      | Manual test + Flipper                                                                                                                                                                                                                                                         |
 | Offline sync completion (3G, 5MB data)       | < 30s                                          | Manual test on throttled network                                                                                                                                                                                                                                              |
 | Background job (Temporal workflow)           | SLA defined per workflow type in workflow spec | Temporal dashboard                                                                                                                                                                                                                                                            |
-| k6 sustained load (100 VU × 5 min)           | 0 errors, p95 within budget                    | Weekly scheduled — `scripts/loadtest/api-baseline.js` (staging); Phase 19 one-time gate                                                                                                                                                                                       |
+| k6 sustained load (100 VU × 5 min)           | 0 errors, p95 within budget                    | Weekly scheduled — `tests/load/qm6-baseline.js` (staging); Phase 19 one-time gate. `tests/load/api-baseline.js` is the separate Phase 18 scenario — 200 VU over 10 min, reads only, p95 < 1 s                                                                                                                                                                                       |
 
 The k6 load test runs on a **weekly schedule against staging** — not per-PR (source: spec §30.9). Results are advisory: alert Engineering Lead if p95 latency increases > 20% vs. previous week. Load tests do not block PR merge. Note: Phase 19 automated check #7 runs a one-time load test gate before production go-live.
 
@@ -393,7 +393,7 @@ Every new service, module, or background job must include:
   - **Financial entities** (POs, vendor invoices / AR / AP, payments, budget-line mutations): **online-required — NOT offline-writable** (spec §17.4; dual-write risk); BOQ line items are read-only cache (§17.4). Neither is offline-mutated, so neither reaches sync conflict resolution — the sync push endpoint (`/sync/push`, `/sync/resolve`) has no financial `entity_type` case and rejects any such write (`BadRequestException`); financial data is never auto-merged, auto-overwritten, or silently discarded. (§17.5's conflict table has no financial row for this reason.)
   - Sync wire protocol (server-side endpoint): `POST /api/v1/sync/resolve` accepts `{ entity_type, entity_id, client_version, payload, client_submitted_at }`; returns `{ resolved_payload, conflict_status, server_version }` where `conflict_status ∈ { ACCEPTED | CONFLICT_FLAGGED | CONFLICT_REJECTED }`
   - `ConflictHandler` class (generated in Phase 10) must implement all three strategies; unit-tested per QM-1 (Phase 18 mandatory coverage list)
-  - **Offline write scope (spec §17.4)** — agents must NOT allow offline writes outside this list: offline read/write = tasks, site reports, inspections, workforce attendance, material consumption, safety checklists + incidents, equipment usage; **online-required (read-cache only)** = POs, vendor invoices / AR / receipts / payments, budget-line mutations, vendor master, permissions/roles; read-only stale-while-revalidate cache = project master, BOQ lines, room/floor reference, drawings, vendor directory
+  - **Offline write scope (spec §17.4)** — agents must NOT allow offline writes outside this list: offline read/write = tasks, site reports, inspections, workforce attendance, material consumption, safety checklists + incidents, equipment usage, deliveries received against a PO (amended 2026-08-19), purchase requests (amended 2026-08-19); **online-required (read-cache only)** = POs, vendor invoices / AR / receipts / payments, budget-line mutations, vendor master, permissions/roles, tenant settings/configuration, sync conflict resolution (§17.5); read-only stale-while-revalidate cache = project master, BOQ lines, room/floor reference, drawings, vendor directory. The pushable-type list is declared once as `SYNC_PUSHABLE_ENTITY_TYPES` in `@cos/types` and imported by both the API and the mobile client
   - **Sync priority order on reconnect (spec §17.6)** — flush in this exact order: 1 safety incidents → 2 attendance → 3 inspections → 4 task progress → 5 site reports → 6 material → 7 equipment usage → 8 photo/media (deferred last)
   - **Data size limits (spec §17.7)** — enforce: local DB ≤ 500 MB · drawing cache ≤ 200 MB (LRU eviction) · photo queue ≤ 100 (warn user at 80) · sync batch ≤ 500 records/cycle; server-side `platform.sync_tombstones` backs `GET /sync/delta` `deleted[]` (schema in 00_master §Phase 10, spec §11.1)
 
@@ -664,7 +664,10 @@ gh api repos/:owner/:repo/code-scanning/alerts --jq '[.[]|select(.state=="open")
 ./scripts/readiness/check-i18n-completeness.sh
 
 # 7. Load test gate (100 VU × 5 min — must pass before manual checks begin)
-k6 run --vus 100 --duration 300s ./scripts/loadtest/api-baseline.js
+#    qm6-baseline.js, NOT api-baseline.js: the latter is the Phase 18 scenario (200 VU over 10 min,
+#    reads only, p95 < 1 s) and asserts none of the QM-6 budgets. The two sat in different directories
+#    under the same name until 2026-08-29 and were confused for each other once (§35.13 ESC-12).
+k6 run --vus 100 --duration 300s ./tests/load/qm6-baseline.js
 
 # 8. Security headers audit
 ./scripts/readiness/check-security-headers.sh --env staging
@@ -810,8 +813,12 @@ If any check fails → list what needs to be fixed before re-running. Do not adv
 - Rule 31 — "Generate: complete directory structure with placeholder README per service" means EVERY directory in the spec, including all `services/` and `packages/@cos/*`. "Tooling: X" means fully initialized (e.g., Husky = `.husky/pre-commit` exists, not just declared in `package.json`). tsconfig exceptions must be documented inline. (prevents incomplete scope)
 - Rule 32 — `jest.config.js` is the single source of truth per package. Never add a `"jest"` key to `package.json` when `jest.config.js` exists in the same package. (prevents duplicate/conflicting jest config)
 - Rule 33 — Use `import type { X } from 'pkg'` when X is only used for TypeScript type annotations (not runtime). Prevents Metro/webpack from bundling Node.js-only packages into mobile/browser builds. (prevents mobile bundle failures)
-- Rule 34 — `@cos/shared` is imported by ALL platforms (mobile, Web/PWA, Node.js). Never add a runtime import of any Node.js-only package (PrismaClient, native addons, server frameworks). Use `import type` for type-only references. (prevents mobile bundle failures)
-  **Enforced structurally since 2026-08-22 (ADR-055):** `@cos/shared` now contains event payload **types only** — every import in it is `import type` and its only dependency is `@cos/types`. All Node-only Kafka code (KafkaProducer/Consumer, OutboxPublisher + OutboxPoller, DlqPublisher, topic provisioner, Prometheus metrics, Schema Registry client) and the Avro `.avsc` schemas live in **`@cos/kafka`**, which is never aliased into `apps/mobile`. Rule 34(c)'s "move OutboxPoller to backend/src" is superseded by the package split, which also removes `kafkajs`/`ioredis`/`prom-client` from `@cos/shared`.
+- Rule 34 — the CLIENT-SAFE packages (`@cos/types`, `@cos/schemas`, `@cos/ui-logic`, `@cos/financial` — what apps/mobile and apps/web actually import) must never gain a runtime import of a Node.js-only package (PrismaClient, native addons, server frameworks); use `import type` for type-only references. The NODE-ONLY packages (`@cos/shared`, `@cos/database`, `@cos/logger`, `@cos/tracing`, `@cos/config`, `@cos/rbac`, `@cos/validation`, `@cos/test-utils`) may use Node built-ins, but must never appear in a client-safe package's dependencies. Amended 2026-08-27: the rule used to say `@cos/shared` was imported by all platforms — it is not, and never was in this repo (backend and file-service only). Enforced by `tests/conformance/events/06-rule-34.spec.ts`. (prevents mobile bundle failures)
+  **And structurally since 2026-08-22 (ADR-055):** the Kafka SDK no longer lives in `@cos/shared`
+  at all. `@cos/shared` is event payload **types only** — every import in it is `import type` and
+  its sole dependency is `@cos/types`. KafkaProducer/Consumer, OutboxPublisher + OutboxPoller,
+  DlqPublisher, the topic provisioner, the Prometheus metrics and the Schema Registry client, plus
+  the Avro `.avsc` schemas, are in **`@cos/kafka`** — node-only, never aliased into apps/mobile.
 - Rule 35 — Every `@cos/*` package with executable logic (functions/methods with a body) must have: `jest.config.js`, `test:cov` script, `jest`+`ts-jest` in devDeps, unit tests, and CI coverage. Packages with only types/interfaces are exempt. (prevents untested logic in shared packages)
 - Rule 36 — **Exhaustive verification before claiming completion** — Before reporting any Phase, task, or bug-fix set as "complete" or "all done":
   (a) Read the relevant spec section (Generate / Constraints / Exit Criteria) **line by line**
@@ -1012,14 +1019,15 @@ docs/architecture/test-design/README.md                — Test Design: per-phas
 docs/specifications/31-monitoring-observability.md §31.6 — SLO/error-budget + Frontend Web Vitals (LCP/INP/CLS); §31.9 incident/SEV/postmortem; §31.11 chaos/game-day; §31.12 DORA
 
 # Readiness & Verification
-scripts/readiness/verify-production-readiness.sh    — Auto-verify 30 [AUTO] checks (Phase 19)
+scripts/readiness/verify-production-readiness.sh    — Auto-verify 31 [AUTO] checks (Phase 19)
 scripts/readiness/run-all-checks.sh                 — Interactive verify 14 [MANUAL] checks (Phase 19)
 scripts/readiness/check-openapi-freshness.sh        — Verify OpenAPI spec exists, is valid YAML/JSON, version present, live sync if INGRESS_HOST set (Phase 18)
 scripts/readiness/check-i18n-completeness.sh        — Verify all i18n keys are translated (Phase 18)
 scripts/readiness/check-security-headers.sh         — Verify all required HTTP security headers on ingress (HSTS, X-Content-Type-Options, X-Frame-Options, CSP, Referrer-Policy, Permissions-Policy) + TLS 1.3 (Phase 16)
 scripts/readiness/check-schema-registry.sh          — Verify Kafka Schema Registry connectivity, BACKWARD_TRANSITIVE compatibility mode, all critical v1 schemas registered per spec §32.4 event table, local .avsc files valid JSON (Phase 8)
 scripts/readiness/check-service-runtimes.sh         — Architectural fitness function: every runtime declared in a docs table matches the build files in services/<name>/ (go.mod→Go, requirements.txt→Python, package.json→Node). CANONICAL table = spec §32.2; 00_master §DEPLOYABLE UNITS, §33 Service Assignment and README are mirrors. Runs in the CI lint job on every PR
-scripts/loadtest/api-baseline.js                    — k6 load test: 100 VU × 5 min mixed-read baseline gate; P95 read < 300ms, P95 write < 500ms, error rate < 0.1% (QM-6; Phase 18)
+tests/load/api-baseline.js                         — k6 load test: Phase 18 Scenario 3, API gateway throughput; 200 VU ramp over 10 min over six read endpoints; P95 < 1s, error rate < 0.1%
+tests/load/qm6-baseline.js                          — k6 load test: the QM-6 gate; 100 VU × 5 min mixed read/write; P95 read < 300ms, P95 write < 500ms, error rate < 0.1% (QM-6 §31.6; Phase 19 check #7)
 
 # Compliance & Governance
 docs/compliance/data-flow-map.md                    — PDPA/GDPR data flow documentation (Phase 16)

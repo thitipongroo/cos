@@ -19,7 +19,10 @@ import { createLogger } from '@cos/logger';
 import { Connection, Client } from '@temporalio/client';
 import { CreateTenantDto } from './dto/create-tenant.dto';
 import { FeatureFlagService } from '../../shared/feature-flags/feature-flag.service';
-import { encryptDedicatedDbUrl, ENCRYPTED_DB_URL_FLAG } from './utils/dedicated-db-url-cipher';
+import {
+  encryptDedicatedDbUrl,
+  ENCRYPTED_DB_URL_FLAG,
+} from '../../shared/crypto/dedicated-db-url-cipher';
 
 const logger = createLogger('tenant-service');
 
@@ -261,9 +264,11 @@ export class TenantService implements OnModuleDestroy {
         plan_type: string;
         is_active: boolean;
         dedicated_db_url: string | null;
+        tenant_name: string;
+        tenant_code: string;
       }>
     >`
-      SELECT plan_type, is_active, dedicated_db_url
+      SELECT plan_type, is_active, dedicated_db_url, tenant_name, tenant_code
       FROM platform.tenants
       WHERE tenant_id = ${tenantId}::uuid
       LIMIT 1
@@ -299,6 +304,10 @@ export class TenantService implements OnModuleDestroy {
     // lives in Temporal — so there is no row to be atomic *with*. The outbox is used here purely as
     // the durable at-least-once relay: the previous direct publish silently LOST the event whenever
     // Kafka was unavailable. `platform.*` events route to the shared platform.events topic (§15.7).
+    //
+    // tenant_name / tenant_code travel on the payload because §19.8 pins the notification body to
+    // "Automated DB provisioning workflow started for {tenant_name} ({tenant_code})" — the Notification
+    // Service renders templates from the event payload alone and has no tenant lookup of its own.
     await this.prisma.$transaction(async (tx) => {
       await OutboxPublisher.write(
         tx,
@@ -309,6 +318,8 @@ export class TenantService implements OnModuleDestroy {
           correlationId: randomUUID(),
           payload: {
             tenant_id: tenantId,
+            tenant_name: tenant.tenant_name,
+            tenant_code: tenant.tenant_code,
             contract_reference: contractReference ?? null,
           },
         }),

@@ -9,7 +9,7 @@ import { TenantPrismaService } from '../../tenant/prisma/tenant-prisma.service';
 import { clsTenantId } from '../../../shared/context/cls-context';
 import type { CreatePhaseDto } from './dto/create-phase.dto';
 import type { UpdatePhaseDto } from './dto/update-phase.dto';
-import { projectExistsInTenant } from '../shared/parent-existence';
+import { projectExistsInTenant } from '../public/parent-existence';
 import { applyCap, capLimit } from '../../../shared/pagination/list-cap';
 
 export type PhaseStatusValue = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';

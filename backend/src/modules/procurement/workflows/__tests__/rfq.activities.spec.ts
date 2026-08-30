@@ -1,7 +1,7 @@
 ﻿// Unit tests — RFQ Workflow Activities (Phase 5)
 // getDbUrlForTenant, PrismaClient, and KafkaProducer are all mocked.
 
-jest.mock('../../../tenant/utils/get-db-url', () => ({
+jest.mock('../../../../shared/prisma/get-db-url', () => ({
   getDbUrlForTenant: jest.fn().mockResolvedValue('postgresql://tenant-db/testdb'),
 }));
 
@@ -40,7 +40,7 @@ jest.mock('../../../../shared/events/event-outbox.service', () => ({
   },
 }));
 import { updateRfqStatus, markQuotationsEvaluated } from '../rfq.activities';
-import { disconnectActivityClients } from '../activity-helpers';
+import { disconnectActivityClients } from '../../../../shared/workflows/activity-helpers';
 
 const mockExecuteRaw = jest.fn().mockResolvedValue(1);
 const mockExecuteRawUnsafe = jest.fn().mockResolvedValue(undefined);

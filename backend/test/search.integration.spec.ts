@@ -97,7 +97,7 @@ describe('Full-text search (Testcontainers — OpenSearch)', () => {
       }) as unknown as ProjectRow;
 
     let service: ProjectService;
-    let repo: jest.Mocked<Pick<ProjectRepository, 'findById' | 'list'>>;
+    let repo: jest.Mocked<Pick<ProjectRepository, 'findById' | 'findByIds' | 'list'>>;
 
     beforeAll(async () => {
       rows['p1'] = makeProject(PROJECT_ID, 'PROJ-BKK-001', 'Bangkok Riverside Tower');
@@ -116,13 +116,26 @@ describe('Full-text search (Testcontainers — OpenSearch)', () => {
         tenant_id: TENANT_B,
       };
 
+      // Every project the DB would hold, tenant B's included. searchProjects fetches the full rows
+      // for the ids OpenSearch returned, so leaving tenant B out here would make the isolation case
+      // below pass at the DB step even if the tenant_id filter on the QUERY were broken — which is
+      // the thing it exists to catch.
+      const all: ProjectRow[] = [rows['p1']!, rows['p2']!, otherTenant as ProjectRow];
+      const byId = new Map(all.map((r) => [r.project_id, r]));
+
       repo = {
-        findById: jest.fn(
-          async (id: string) =>
-            rows[Object.keys(rows).find((k) => rows[k]!.project_id === id) ?? ''] ?? null,
+        findById: jest.fn(async (id: string) => byId.get(id) ?? null),
+        // findByIds, not a findById loop. searchProjects fetches its hits in ONE query and has since
+        // before this merge; the double still carried only the old method, so every call threw
+        // inside searchProjects' try, was swallowed by its catch, and fell through to the DB list —
+        // which this double returns empty. Four cases here read that as "search found nothing".
+        // Same failure shape as §35.13 ESC-43: a double that stopped matching the code it stands in
+        // for, reporting a passing search path as an empty one.
+        findByIds: jest.fn(async (ids: string[]) =>
+          ids.map((id) => byId.get(id)).filter((r): r is ProjectRow => r !== undefined),
         ),
         list: jest.fn(async () => ({ items: [], nextCursor: null })),
-      } as unknown as jest.Mocked<Pick<ProjectRepository, 'findById' | 'list'>>;
+      } as unknown as jest.Mocked<Pick<ProjectRepository, 'findById' | 'findByIds' | 'list'>>;
 
       service = new ProjectService(
         repo as unknown as ProjectRepository,

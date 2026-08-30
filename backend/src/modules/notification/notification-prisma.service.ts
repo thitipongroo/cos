@@ -15,7 +15,7 @@ import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { createPrismaClient } from '../../shared/prisma/create-prisma-client';
 import { assertSafeTenantId } from '../../shared/prisma/assert-safe-tenant-id';
-import { getDbUrlForTenant } from '../tenant/utils/get-db-url';
+import { getDbUrlForTenant } from '../../shared/prisma/get-db-url';
 
 @Injectable()
 export class NotificationPrismaService implements OnModuleDestroy {

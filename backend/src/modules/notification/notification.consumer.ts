@@ -12,7 +12,8 @@ const logger = createLogger('notification-consumer');
 
 // Canonical event types (CloudEvents `type`) this service consumes. Subscribed per-tenant
 // via RegExp under the `notification.shared` group; tenant_id header validated by KafkaConsumer.
-const SUBSCRIBED_EVENT_TYPES = [
+/** Exported so tests assert against the real subscription list rather than a hand-counted total. */
+export const SUBSCRIBED_EVENT_TYPES = [
   'site.inspection.failed.v1',
   'site.issue.created.v1',
   'site.issue.escalated.v1',
@@ -20,12 +21,19 @@ const SUBSCRIBED_EVENT_TYPES = [
   'procurement.po.status_changed.v1',
   'procurement.po.approval_requested.v1',
   'finance.variance.alert.v1',
+  'platform.sync.exhausted.v1',
   'site.report.created.v1',
   'procurement.invoice.received.v1',
   'file.document.quarantined.v1',
   // §19.3/§19.4 — consumed so they are notified AND armed for escalation (safety 30m, AI-risk 24h)
   'safety.incident.created.v1',
+  'safety.violation.detected.v1',
   'ai.risk_prediction.generated.v1',
+  // §19.8 — platform-level events on the shared platform.events topic, routed to every active
+  // SYSTEM_ADMIN. They were present in EVENT_ROLE_MAP but absent here, so the routing entry decided
+  // an audience for a message the consumer never asked for.
+  'platform.enterprise.contract_signed.v1',
+  'platform.enterprise.db_provisioned.v1',
 ];
 
 @Injectable()

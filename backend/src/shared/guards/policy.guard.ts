@@ -9,7 +9,7 @@
 
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { createLogger } from '@cos/logger';
-import { JwtPayload } from '../../modules/identity/jwt.payload';
+import { JwtPayload } from '../context/jwt-payload';
 
 const logger = createLogger('policy-guard');
 

@@ -50,11 +50,28 @@ type DelayDetectedPayload struct {
 }
 
 // POCreatedPayload — procurement.po.created.v1 (event #3)
-// contract_id = po_id per spec §Phase 13 Node Labels (:Contract).
+//
+// This event carries NO status, because at creation a purchase order is a DRAFT
+// (purchase_orders.status DEFAULT 'DRAFT'). It therefore materialises the vendor only. The
+// :Contract node comes from the APPROVED transition instead — see POStatusChangedPayload.
 type POCreatedPayload struct {
 	POID      string `json:"po_id"`
 	ProjectID string `json:"project_id"`
 	VendorID  string `json:"vendor_id"`
+}
+
+// POStatusChangedPayload — procurement.po.status_changed.v1
+//
+// The source of the :Contract node. master:4156 defines it as "po_id of APPROVED Purchase Orders
+// (APPROVED PO = contractual agreement)", and until 2026-08-29 the mapper created one on
+// po.created — i.e. for every PO ever drafted, including ones later rejected or abandoned in DRAFT.
+// A node whose whole meaning is "there is a binding agreement with this vendor" was being written
+// for documents that bound nobody. Nothing surfaced it because no query reads :Contract yet, which
+// is exactly why it could sit wrong for so long.
+type POStatusChangedPayload struct {
+	POID       string `json:"po_id"`
+	FromStatus string `json:"from_status"`
+	ToStatus   string `json:"to_status"`
 }
 
 // DeliveryReceivedPayload — procurement.delivery.received.v1 (event #11)

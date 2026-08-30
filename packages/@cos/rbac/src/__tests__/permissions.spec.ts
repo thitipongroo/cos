@@ -204,3 +204,51 @@ describe('@RequirePermissions decorator', () => {
     expect(meta).toEqual(['project:read', 'boq:write']);
   });
 });
+
+// ── shape invariants across the whole matrix ────────────────────────────────
+//
+// Absorbed from tests/spec-derived/phase-02-auth-tenant/02-rbac-package.spec.ts when that file was
+// deleted (2026-08-25). It imported and executed this package, so it was a unit test living outside
+// the package; everything else it asserted was already covered above. These four were not, and each
+// is a statement about what is ABSENT — the shape no single role's test can see.
+
+describe('the permission matrix as a whole', () => {
+  const entries = Object.entries(ROLE_PERMISSIONS);
+
+  it('does NOT define VENDOR_PORTAL as a role (master:1808-1812)', () => {
+    // A vendor is an EXTERNAL principal authenticated by a magic link, not a tenant user. Minting a
+    // CosRole for it would put it inside the tenant role hierarchy, where @Roles could grant it
+    // anything an internal role has.
+    expect(Object.keys(CosRole)).not.toContain('VENDOR_PORTAL');
+  });
+
+  it('spells every permission as resource:action (master:1813)', () => {
+    // "Permission granularity: resource:action (e.g. project:read, boq:write)". `*` is legal on
+    // either side. A permission that does not parse is never granted by any check and never fails
+    // loudly either — it simply denies, and the role quietly loses access it was meant to have.
+    const RESOURCE_ACTION = /^(\*|[a-z0-9_-]+):(\*|[a-z0-9_-]+)$/;
+    const bad: string[] = [];
+    for (const [role, perms] of entries) {
+      for (const p of perms) {
+        if (!RESOURCE_ACTION.test(p)) bad.push(`${role} -> ${p}`);
+      }
+    }
+    expect(bad).toEqual([]);
+  });
+
+  it('never spells the unrestricted grant as a bare *', () => {
+    // `*:*` is the platform-admin grant. A bare `*` fails the resource:action parse above, so a
+    // check comparing against it would silently deny SYSTEM_ADMIN everything.
+    const all = new Set(entries.flatMap(([, perms]) => perms));
+    expect(all.has('*')).toBe(false);
+  });
+
+  it('maps every role CosRole declares', () => {
+    // A role with no entry resolves to undefined, and a permission check against undefined denies
+    // without error — the role exists, logs in, and can do nothing.
+    const mapped = Object.keys(ROLE_PERMISSIONS);
+    for (const role of Object.values(CosRole)) {
+      expect(mapped).toContain(role);
+    }
+  });
+});

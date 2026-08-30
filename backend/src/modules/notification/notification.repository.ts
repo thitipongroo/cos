@@ -511,6 +511,28 @@ export class NotificationRepository implements OnModuleDestroy {
 
   // ── user resolution (platform schema — always shared DB) ───────────────────
 
+  /**
+   * Every active SYSTEM_ADMIN on the installation, with the tenant each belongs to.
+   *
+   * Deliberately cross-tenant and therefore on platformPrisma, like the escalation and digest
+   * sweeps: §19.8 routes platform-level events to "all active SYSTEM_ADMIN users", and there is no
+   * single tenant whose RLS context could see them. The tenant_id comes back per row because the
+   * notification is stored under the RECIPIENT's tenant — the event's own tenant_id is the
+   * 'platform' sentinel and is not a UUID.
+   */
+  async findSystemAdmins(): Promise<Array<{ user_id: string; email: string; tenant_id: string }>> {
+    return this.platformPrisma.$transaction(
+      (tx) =>
+        tx.$queryRaw<Array<{ user_id: string; email: string; tenant_id: string }>>`
+        SELECT u.user_id, u.email, m.tenant_id
+        FROM platform.tenant_memberships m
+        JOIN platform.users u ON u.user_id = m.user_id
+        WHERE m.role::text = 'SYSTEM_ADMIN'
+          AND u.is_active  = true
+      `,
+    );
+  }
+
   async findUsersByRole(
     tenantId: string,
     roles: string[],

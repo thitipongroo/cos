@@ -7,8 +7,9 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { passportJwtSecret } from 'jwks-rsa';
 import { createPrismaClient } from '../../../shared/prisma/create-prisma-client';
-import { JwtPayload } from '../jwt.payload';
-import { decryptDedicatedDbUrl } from '../../tenant/utils/dedicated-db-url-cipher';
+import { JwtPayload } from '../../../shared/context/jwt-payload';
+import type { AuthenticatedUser } from '../../../shared/context/jwt-payload';
+import { decryptDedicatedDbUrl } from '../../../shared/crypto/dedicated-db-url-cipher';
 import { FeatureFlagService } from '../../../shared/feature-flags/feature-flag.service';
 import { createLogger } from '@cos/logger';
 
@@ -20,10 +21,9 @@ export const AUTHORITATIVE_ROLE_CHECK_FLAG = 's1.identity.authoritative-role-che
 // The object attached to req.user after successful auth: the JWT claims plus the
 // tenant context resolved from the DB. TenantContextInterceptor copies these onto
 // req.tenantId/tenantCode/... for the request-scoped contract the app reads.
-export interface AuthenticatedUser extends JwtPayload {
-  tenantCode: string;
-  dedicatedDbUrl?: string;
-}
+// Moved to shared/context on 2026-08-26 — shared/interceptors reads req.user and cannot import a
+// shape from a module it sits beneath. Re-exported so callers inside this module are unchanged.
+export type { AuthenticatedUser };
 
 @Injectable()
 export class KeycloakJwtStrategy

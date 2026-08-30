@@ -28,6 +28,8 @@ func MapEvent(env *model.EventEnvelope) ([]Operation, error) {
 		return mapDelayDetected(env)
 	case "procurement.po.created.v1":
 		return mapPOCreated(env)
+	case "procurement.po.status_changed.v1":
+		return mapPOStatusChanged(env)
 	case "procurement.delivery.received.v1":
 		return mapDeliveryReceived(env)
 	case "procurement.vendor_invoice.approved.v1":
@@ -134,12 +136,33 @@ func mapPOCreated(env *model.EventEnvelope) ([]Operation, error) {
 	if err := json.Unmarshal(env.Payload, &p); err != nil {
 		return nil, fmt.Errorf("po.created: %w", err)
 	}
-	// contract_id = po_id per spec §Phase 13 Node Labels (:Contract)
+	// The vendor only. A PO at creation is a DRAFT and is not yet a contract — see
+	// mapPOStatusChanged for where :Contract comes from, and why it moved there on 2026-08-29.
 	return []Operation{
 		{
 			Cypher: `MERGE (n:Vendor {vendor_id: $vendor_id, tenant_id: $tenant_id})`,
 			Params: map[string]any{"vendor_id": p.VendorID, "tenant_id": env.TenantID},
 		},
+	}, nil
+}
+
+// mapPOStatusChanged materialises :Contract on the APPROVED transition, and only then.
+//
+// master:4156 — "(:Contract) contract_id: String — maps to po_id of APPROVED Purchase Orders
+// (APPROVED PO = contractual agreement; no separate Contract module needed)".
+//
+// Every other transition is ignored rather than mapped to something: DRAFT→PENDING_APPROVAL is not
+// an agreement, and APPROVED→DISPUTED does not un-sign one. MERGE keeps the write idempotent, so a
+// replay — or a PO that reaches APPROVED more than once across its life — yields one node.
+func mapPOStatusChanged(env *model.EventEnvelope) ([]Operation, error) {
+	var p model.POStatusChangedPayload
+	if err := json.Unmarshal(env.Payload, &p); err != nil {
+		return nil, fmt.Errorf("po.status_changed: %w", err)
+	}
+	if p.ToStatus != "APPROVED" {
+		return nil, nil
+	}
+	return []Operation{
 		{
 			Cypher: `MERGE (n:Contract {contract_id: $contract_id, tenant_id: $tenant_id})`,
 			Params: map[string]any{"contract_id": p.POID, "tenant_id": env.TenantID},

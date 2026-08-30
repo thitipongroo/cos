@@ -15,12 +15,12 @@ import { ClsServiceManager } from 'nestjs-cls';
 import type { PrismaClient } from '@prisma/client';
 import { createLogger } from '@cos/logger';
 
-import { withTenantTx } from '../../../procurement/workflows/activity-helpers';
+import { withTenantTx } from '../../../../shared/workflows/activity-helpers';
 import { createPrismaClient } from '../../../../shared/prisma/create-prisma-client';
 import { appDatabaseUrl } from '../../../../shared/prisma/app-database-url';
 import { assertSafeTenantId } from '../../../../shared/prisma/assert-safe-tenant-id';
 import { FileServiceClient } from '../../../files/file-service-client.service';
-import { SendGridAdapter } from '../../../notification/adapters/sendgrid.adapter';
+import { createStandaloneNotifier } from '../../../notification/public/notification.standalone';
 import { CLS_TENANT_ID, CLS_USER_ID, CLS_USER_ROLE } from '../../../../shared/context/cls-context';
 import { collect, type ExportCategory, type ExportDb } from '../data-export.collector';
 import { buildEnvelope, toCsvFiles, toJson } from '../data-export.serializer';
@@ -219,9 +219,15 @@ export async function markFailedActivity(
  * so a forwarded or breached mailbox yields a login prompt rather than every coordinate the person
  * was recorded at. This is the whole reason `expires_at` is the REQUEST's validity and not a link TTL.
  *
- * Sent through SendGridAdapter directly rather than NotificationService: the latter's quiet hours and
- * per-user channel preferences (§19.6) could suppress the one message that answers a statutory
- * request, and email is the only channel every account is reachable on (phone_number is nullable).
+ * Sent through NotificationService.notifyUserCritical, which is exempt from the §19.6 quiet hours
+ * and per-user channel preferences that could otherwise suppress the one message answering a
+ * statutory request. It used to construct SendGridAdapter directly for that reason — correct about
+ * the exemption, wrong about the route: a mail sent outside the service leaves NO row in
+ * notifications.notifications, and for a PDPA/GDPR subject response the record that the subject was
+ * notified is part of the obligation.
+ *
+ * A Temporal activity runs outside the Nest container, so the service is built by hand through
+ * createStandaloneNotifier() — the same seam the §19.8 provisioning human gate uses.
  */
 export async function notifySubjectActivity(
   params: ExportJobParams & { ready: boolean },
@@ -243,17 +249,25 @@ export async function notifySubjectActivity(
   const appUrl = process.env['APP_BASE_URL'] ?? 'https://app.construction-os.com';
   const link = `${appUrl}/privacy/data-export/${params.export_id}`;
 
-  await new SendGridAdapter().send({
-    to: email,
-    subject: params.ready
-      ? 'Your Construction OS data export is ready'
-      : 'Your Construction OS data export could not be completed',
-    body: params.ready
-      ? `Your data export is ready. Sign in and open ${link} to download it.\n\n` +
-        'The link opens a page in the app; the download itself is generated when you click it and ' +
-        'is valid for a short time. The export stays available for 7 days.'
-      : `We could not complete your data export. Sign in and open ${link} to see why, and to ` +
-        'request it again.',
-  });
+  const notifier = createStandaloneNotifier();
+  try {
+    await notifier.service.notifyUserCritical({
+      tenant_id: params.tenant_id,
+      user_id: params.user_id,
+      email,
+      event_type: 'identity.data_export.subject_notified.v1',
+      subject: params.ready
+        ? 'Your Construction OS data export is ready'
+        : 'Your Construction OS data export could not be completed',
+      body: params.ready
+        ? `Your data export is ready. Sign in and open ${link} to download it.\n\n` +
+          'The link opens a page in the app; the download itself is generated when you click it and ' +
+          'is valid for a short time. The export stays available for 7 days.'
+        : `We could not complete your data export. Sign in and open ${link} to see why, and to ` +
+          'request it again.',
+    });
+  } finally {
+    await notifier.dispose();
+  }
   logger.info({ exportId: params.export_id, ready: params.ready }, 'data export subject notified');
 }

@@ -3,7 +3,7 @@
 // as APP_GUARD in app.module.ts and only gates routes carrying @FeatureFlag metadata.
 
 import { Global, Module } from '@nestjs/common';
-import { OptionalJwtAuthGuard } from '../../modules/identity/guards/optional-jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../guards/optional-jwt-auth.guard';
 import { FeatureFlagService } from './feature-flag.service';
 import { FlagsController } from './flags.controller';
 

@@ -16,6 +16,7 @@
 // NOTE: syncSiteReports returns conflict_status without server_payload, so site_report responses
 // omit server_payload (the server row is preserved in the site-ops conflict-record).
 
+import { randomUUID } from 'node:crypto';
 import { Injectable, Scope, BadRequestException } from '@nestjs/common';
 import { TenantPrismaService } from '../tenant/prisma/tenant-prisma.service';
 import { SiteOpsService } from '../site-ops/site-ops.service';
@@ -23,15 +24,15 @@ import { SafetyService } from '../safety/safety.service';
 import { WorkforceService } from '../workforce/workforce.service';
 import { AnnotationService } from '../files/annotation.service';
 import { ProcurementService } from '../procurement/procurement.service';
-import type { CreateIssueDto } from '../site-ops/dto/create-issue.dto';
-import type { CreateMaterialConsumptionDto } from '../site-ops/dto/create-material-consumption.dto';
-import type { SubmitInspectionDto } from '../site-ops/dto/submit-inspection.dto';
-import type { SyncSiteReportsDto } from '../site-ops/dto/sync-site-reports.dto';
-import type { RecordAttendanceDto } from '../workforce/dto/attendance.dto';
-import type { RecordDeliveryDto } from '../procurement/dto/record-delivery.dto';
-import type { CreatePurchaseRequestDto } from '../procurement/dto/create-purchase-request.dto';
-import type { CreateIncidentDto } from '../safety/dto/safety.dto';
-import { PushItemDto, PushResponse, DeltaResponse, ServerSyncStatus } from './dto/sync.dto';
+import { EventOutboxService } from '../../shared/events/event-outbox.service';
+import { EquipmentService } from '../equipment/equipment.service';
+import {
+  PushItemDto,
+  ReportExhaustedDto,
+  PushResponse,
+  DeltaResponse,
+  ServerSyncStatus,
+} from './dto/sync.dto';
 import { tombstoneRetentionCutoff, tombstoneRetentionDays } from './tombstone-retention';
 import { clsSyncAllowedEntityTypes } from '../../shared/context/cls-context';
 
@@ -61,7 +62,28 @@ const ENTITY_REGISTRY: Record<string, EntityRegistryEntry> = {
   attendance: { table: 'workforce_telemetry.attendance_logs', deltaColumn: 'recorded_at' },
   safety: { table: 'site_ops.incidents', deltaColumn: 'created_at' },
   material: { table: 'site_ops.material_consumptions', deltaColumn: 'created_at' },
+  // Equipment usage logs (§17.4 offline READ/write, master:3578). Shaped like attendance: a
+  // telemetry hypertable whose delta column is the partition key it is already ordered by.
+  equipment: {
+    table: 'equipment_telemetry.equipment_utilization',
+    deltaColumn: 'recorded_at',
+  },
 };
+
+/**
+ * The declared type of one argument of a domain-service method.
+ *
+ * `push()` hands `dto.payload` — an opaque `Record<string, unknown>` off the wire — to whichever
+ * domain service owns the entity type. Each cast used to import that module's DTO class directly,
+ * which reached past the module's public API (master:1608) for nine DTOs across six modules. The
+ * services themselves are legitimate dependencies: they are exported providers, injected through
+ * DI, which is the channel master:551 sanctions.
+ *
+ * Deriving the type from the method signature keeps the cast honest without the extra import — and
+ * it is strictly better than importing the DTO, because it tracks the method. If `createIssue` ever
+ * takes something other than CreateIssueDto, this follows it; the import would not have.
+ */
+type ArgOf<M, N extends number> = M extends (...args: infer A) => unknown ? A[N] : never;
 
 @Injectable({ scope: Scope.REQUEST })
 export class SyncService {
@@ -72,6 +94,9 @@ export class SyncService {
     private readonly workforce: WorkforceService,
     private readonly annotations: AnnotationService,
     private readonly procurement: ProcurementService,
+    private readonly equipment: EquipmentService,
+    // EventsModule is @Global, so no import is needed in SyncModule to inject this.
+    private readonly outbox: EventOutboxService,
   ) {}
 
   /**
@@ -160,8 +185,16 @@ export class SyncService {
         ? []
         : await this.db.run((tx) =>
             tx.$queryRawUnsafe<{ entity_id: string; deleted_at: unknown }[]>(
+              // The tenant predicate is defense-in-depth, exactly as on the write path below and in
+              // pushTask above: RLS is FORCEd on platform.sync_tombstones and db.run connects as
+              // app_user, so another tenant's rows already match nothing. This read was the one
+              // query in the module carrying neither the predicate nor a note saying why — and a
+              // read that reads differently from its neighbours is the one a future reader trusts
+              // least. NULLIF mirrors the policy: an unset GUC becomes NULL, matching no row rather
+              // than every row.
               `SELECT entity_id, deleted_at FROM platform.sync_tombstones
-               WHERE entity_type = ANY($1::text[]) AND deleted_at > $2::timestamptz
+               WHERE tenant_id = NULLIF(current_setting('app.current_tenant_id', TRUE), '')::uuid
+                 AND entity_type = ANY($1::text[]) AND deleted_at > $2::timestamptz
                ORDER BY deleted_at ASC
                LIMIT $3`,
               types,
@@ -198,13 +231,15 @@ export class SyncService {
         const items = [{ ...dto.payload, client_id: dto.entity_id }];
         const results = await this.siteOps.syncSiteReports({
           items,
-        } as unknown as SyncSiteReportsDto);
+        } as unknown as ArgOf<SiteOpsService['syncSiteReports'], 0>);
         const status = (results[0]?.conflict_status ?? 'ACCEPTED') as ServerSyncStatus;
         return { status };
       }
 
       case 'issue': {
-        const row = await this.siteOps.createIssue(dto.payload as unknown as CreateIssueDto);
+        const row = await this.siteOps.createIssue(
+          dto.payload as unknown as ArgOf<SiteOpsService['createIssue'], 0>,
+        );
         return { status: 'ACCEPTED', server_payload: row };
       }
 
@@ -212,13 +247,15 @@ export class SyncService {
         const workerId = (dto.payload['worker_id'] as string) ?? dto.entity_id;
         const row = await this.workforce.recordAttendance(
           workerId,
-          dto.payload as unknown as RecordAttendanceDto,
+          dto.payload as unknown as ArgOf<WorkforceService['recordAttendance'], 1>,
         );
         return { status: 'ACCEPTED', server_payload: row };
       }
 
       case 'safety': {
-        const row = await this.safety.createIncident(dto.payload as unknown as CreateIncidentDto);
+        const row = await this.safety.createIncident(
+          dto.payload as unknown as ArgOf<SafetyService['createIncident'], 0>,
+        );
         return { status: 'ACCEPTED', server_payload: row };
       }
 
@@ -226,7 +263,7 @@ export class SyncService {
         const reportId = dto.payload['report_id'] as string;
         const row = await this.siteOps.createMaterialConsumption(
           reportId,
-          dto.payload as unknown as CreateMaterialConsumptionDto,
+          dto.payload as unknown as ArgOf<SiteOpsService['createMaterialConsumption'], 1>,
         );
         return { status: 'ACCEPTED', server_payload: row };
       }
@@ -235,7 +272,7 @@ export class SyncService {
         // Offline inspection submission (§17.4 offline read/write; QM-1 mobile E2E #2). The payload
         // carries the full SubmitInspectionDto (project_id, checklist_id, status, inspected_at).
         const row = await this.siteOps.submitInspection(
-          dto.payload as unknown as SubmitInspectionDto,
+          dto.payload as unknown as ArgOf<SiteOpsService['submitInspection'], 0>,
         );
         return { status: 'ACCEPTED', server_payload: row };
       }
@@ -246,7 +283,7 @@ export class SyncService {
         // other pushable type: delivery_items are the quantities `sumDeliveredQuantity` adds up, so a
         // double-applied replay can mark a PO fulfilled on goods that arrived once.
         const result = await this.procurement.recordDelivery({
-          ...(dto.payload as unknown as RecordDeliveryDto),
+          ...(dto.payload as unknown as ArgOf<ProcurementService['recordDelivery'], 0>),
           client_id: dto.entity_id,
         });
         return { status: 'ACCEPTED', server_payload: result.delivery };
@@ -258,10 +295,22 @@ export class SyncService {
         // resolves to the request already filed rather than raising a second one and consuming
         // another PR number.
         const row = await this.procurement.createPurchaseRequest({
-          ...(dto.payload as unknown as CreatePurchaseRequestDto),
+          ...(dto.payload as unknown as ArgOf<ProcurementService['createPurchaseRequest'], 0>),
           client_id: dto.entity_id,
         });
         return { status: 'ACCEPTED', server_payload: row };
+      }
+
+      case 'equipment': {
+        // Equipment usage captured on site (§17.4; sync priority 7 per master:3582 / §17.6).
+        // entity_id is the equipment_id — a utilization row has no id of its own, its identity is
+        // the equipment plus the instant. The repository INSERT is ON CONFLICT DO NOTHING against
+        // that natural key, so the retries §17.2 guarantees cannot inflate summed hours or fuel.
+        await this.equipment.recordUtilization(
+          dto.entity_id,
+          dto.payload as unknown as ArgOf<EquipmentService['recordUtilization'], 1>,
+        );
+        return { status: 'ACCEPTED', server_payload: dto.payload };
       }
 
       case 'photo_annotation': {
@@ -307,6 +356,66 @@ export class SyncService {
       ),
     );
     return { status: 'ACCEPTED', server_payload: rows[0] ?? null };
+  }
+
+  /**
+   * A device has stopped retrying a queued mutation (spec §17.2).
+   *
+   * Two things have to happen and neither is optional: the captured work lands on the tenant-admin
+   * review queue, and an event goes out so the people §17.2 names are told. Before this existed the
+   * device simply gave up after five attempts and nobody learned that an incident recorded on site
+   * had never arrived.
+   *
+   * Idempotent on (tenant_id, client_id): a device that reports the same lost record on two cycles
+   * must not fill the queue with duplicates of one failure. `ON CONFLICT DO NOTHING` returns no row
+   * on the repeat, and no second event is emitted.
+   *
+   * The tenant comes from the GUC inside the INSERT and is RETURNED, rather than read separately in
+   * TypeScript — one source of truth for which tenant this row belongs to, and the one RLS already
+   * enforces the row against.
+   */
+  async reportExhausted(dto: ReportExhaustedDto): Promise<{ item_id: string | null }> {
+    const rows = await this.db.run((tx) =>
+      tx.$queryRawUnsafe<Array<{ item_id: string; tenant_id: string }>>(
+        `INSERT INTO platform.sync_exhausted_items
+           (tenant_id, entity_type, entity_id, operation, client_id, payload, retry_count, reported_by)
+         VALUES (NULLIF(current_setting('app.current_tenant_id', TRUE), '')::uuid,
+                 $1, $2::uuid, $3, $4, $5::jsonb, $6,
+                 NULLIF(current_setting('app.current_user_id', TRUE), '')::uuid)
+         ON CONFLICT (tenant_id, client_id) DO NOTHING
+         RETURNING item_id, tenant_id`,
+        dto.entity_type,
+        dto.entity_id,
+        dto.operation,
+        dto.client_id,
+        JSON.stringify(dto.payload ?? {}),
+        dto.retry_count ?? 0,
+      ),
+    );
+
+    const row = rows[0];
+    // Already reported. Answer the device the same way either time so it can stop resending.
+    if (!row) return { item_id: null };
+
+    await this.outbox.publish({
+      event_type: 'platform.sync.exhausted.v1',
+      event_version: '1.0',
+      tenant_id: row.tenant_id,
+      actor_id: dto.entity_id,
+      occurred_at: new Date().toISOString(),
+      correlation_id: randomUUID(),
+      payload: {
+        item_id: row.item_id,
+        entity_type: dto.entity_type,
+        entity_id: dto.entity_id,
+        operation: dto.operation,
+        client_id: dto.client_id,
+        retry_count: dto.retry_count ?? 0,
+        reported_by: null,
+      },
+    });
+
+    return { item_id: row.item_id };
   }
 
   /** Record a deletion so /sync/delta can report it (mixed i+iii). Wire from entity delete paths. */

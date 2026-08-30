@@ -13,7 +13,7 @@ export { KafkaConsumer } from './consumer';
 export type { MessageHandler, ConsumerOptions } from './consumer';
 
 // Outbox pattern (transactional event publication)
-export { OutboxPublisher, OutboxPoller } from './outbox';
+export { OutboxPublisher } from './outbox';
 
 // Dead letter queue
 export { DlqPublisher } from './dlq';

@@ -5,13 +5,14 @@
 // checking that both writes went through the same handle — a real rollback is never exercised.
 // This spec runs both writes against a real PostgreSQL and aborts the transaction for real.
 //
-// It also covers the relay half end-to-end (OutboxPoller reads the committed row, publishes it,
-// marks it published) and asserts the ESC-17 orphan table is gone after migrations.
+// It also covers the relay half end-to-end (OutboxPollerService claims the committed row, publishes
+// it, marks it published) and asserts the ESC-17 orphan table is gone after migrations.
 //
 // Source: docs/specifications/30-testing-strategy.md §30.4; docs/architecture/test-design/README.md TC-P08-UNIT-010,
 // §35.13 ESC-13 / ESC-17 / ESC-22.
 
-import { OutboxPublisher, OutboxPoller } from '@cos/kafka';
+import { OutboxPublisher } from '@cos/kafka';
+import { OutboxPollerService } from '../src/shared/events/outbox-poller.service';
 import type { PrismaClient } from '@prisma/client';
 import { buildOutboxEvent } from '../src/shared/outbox/outbox.types';
 import { startIntegrationInfra, stopIntegrationInfra } from './helpers/integration-infra';
@@ -120,10 +121,15 @@ describe('Outbox Pattern Integration (Testcontainers — PostgreSQL)', () => {
 
   // ── relay half ────────────────────────────────────────────────────────────
 
-  it('OutboxPoller publishes a committed row and marks it published', async () => {
+  it('OutboxPollerService publishes a committed row and marks it published', async () => {
+    // The package-level OutboxPoller this used to drive was deleted on 2026-08-27: it duplicated
+    // this service, which is the one EventsModule registers and the only one that has ever run in
+    // production. Rule 34(c) names a DB-polling loop as exactly what must not live in a
+    // client-importable package.
     const code = 'outbox_relay';
     const published: Array<{ event_type: string }> = [];
     const producer = {
+      connect: jest.fn().mockResolvedValue(undefined),
       publish: jest.fn(async (envelope: { event_type: string }) => {
         published.push(envelope);
       }),
@@ -134,21 +140,23 @@ describe('Outbox Pattern Integration (Testcontainers — PostgreSQL)', () => {
       await OutboxPublisher.write(tx as PrismaClient, event(code));
     });
 
-    const poller = new OutboxPoller(prisma, producer as never);
-    poller.start();
-    try {
-      // The poller ticks every 500ms; wait for this row to be marked published.
-      await waitFor(async () => {
-        const [row] = await prisma.$queryRaw<Array<{ published: boolean }>>`
-          SELECT published FROM platform.outbox_events
-          WHERE payload -> 'payload' ->> 'tenant_code' = ${code}
-        `;
-        return row?.published === true;
-      });
-    } finally {
-      poller.stop();
-    }
+    const poller = new OutboxPollerService();
+    // The service builds its own PrismaClient in a field initializer. Close that one (Rule 39 /
+    // ADR-034 — nothing else will) and point it at the container this spec already migrated.
+    const own = (poller as unknown as { prisma: PrismaClient }).prisma;
+    await own.$disconnect();
+    (poller as unknown as { prisma: PrismaClient }).prisma = prisma;
+    (poller as unknown as { producer: typeof producer }).producer = producer;
 
+    // poll() once rather than starting the timer: the claim + publish + mark sequence is what is
+    // under test, and driving it directly removes the only source of flake in this case.
+    await poller.poll();
+
+    const [row] = await prisma.$queryRaw<Array<{ published: boolean }>>`
+      SELECT published FROM platform.outbox_events
+      WHERE payload -> 'payload' ->> 'tenant_code' = ${code}
+    `;
+    expect(row?.published).toBe(true);
     expect(published.map((e) => e.event_type)).toContain('identity.tenant.created.v1');
   }, 30_000);
 
@@ -170,13 +178,3 @@ describe('Outbox Pattern Integration (Testcontainers — PostgreSQL)', () => {
     expect(rows.map((r) => r.table_schema)).toEqual(['platform']);
   });
 });
-
-/** Polls `check` until it returns true or the deadline passes. */
-async function waitFor(check: () => Promise<boolean>, timeoutMs = 15_000): Promise<void> {
-  const deadline = Date.now() + timeoutMs;
-  for (;;) {
-    if (await check()) return;
-    if (Date.now() > deadline) throw new Error('waitFor: condition not met before timeout');
-    await new Promise((r) => setTimeout(r, 100));
-  }
-}

@@ -68,6 +68,27 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  # Declared BEFORE /workers/{workerId} for the same reason the controller declares it first: 'me'
+  # must not be read as a worker id. The route existed in workforce.controller.ts but was absent
+  # here, so a client generated from this document could not see the endpoint mobile self-check-in
+  # depends on.
+  /workers/me:
+    get:
+      tags: [Workers]
+      operationId: getMyWorker
+      summary: Resolve the worker linked to the current user (self check-in)
+      responses:
+        '200':
+          description: Worker detail for the authenticated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Worker'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /workers/{workerId}:
     parameters:
       - $ref: '#/components/parameters/workerId'

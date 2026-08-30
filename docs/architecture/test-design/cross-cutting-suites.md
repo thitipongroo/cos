@@ -90,11 +90,11 @@ Backend load profiles per §30.9:
 
 > **Divergence recorded — see §35.13 ESC-06.** `00_master` Phase 18 defines a _different_ set of
 > four k6 scenarios (dashboard SLA, concurrent file uploads, API gateway throughput, AI report
-> generation) from the five above. Two k6 script sets exist on disk: `tests/load/`
-> (`dashboard-sla.js`, `file-upload.js`, `api-baseline.js`, `ai-report.js` — the Phase 18 set) and
-> `scripts/loadtest/` (`analytics-sla.js`, `file-upload.js`, `mixed-api.js`, `api-baseline.js` —
-> the QM-6 / Phase 19 readiness set). This document does **not** merge the two lists; the
-> reconciliation is a product-owner decision.
+> generation) from the five above. Two k6 script sets used to exist on disk; on 2026-08-29 they were
+> merged into `tests/load/` (`dashboard-sla.js`, `file-upload.js`, `api-baseline.js`,
+> `ai-report.js`) and `scripts/loadtest/` was deleted. The SCENARIO lists above and in `00_master`
+> are still not reconciled — that remains a product-owner decision. The merge also deleted the QM-6
+> gate script, which was restored as `tests/load/qm6-baseline.js` (§35.13 ESC-12).
 
 Schedule: weekly on staging, not per-PR. A p95 increase > 20% vs the previous week alerts the
 Engineering Lead. Load tests are advisory and do not block merge.

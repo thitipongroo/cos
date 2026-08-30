@@ -16,7 +16,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@ne
 import { PhasesService } from './phases.service';
 import { CreatePhaseDto } from './dto/create-phase.dto';
 import { UpdatePhaseDto } from './dto/update-phase.dto';
-import { JwtAuthGuard } from '../../identity/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../../shared/guards/jwt-auth.guard';
 import { Roles } from '@cos/rbac';
 import { CosRole } from '@cos/types';
 

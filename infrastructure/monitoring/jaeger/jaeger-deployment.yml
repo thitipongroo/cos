@@ -24,8 +24,19 @@ spec:
         prometheus.io/scrape: 'true'
         prometheus.io/port: '14269'
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: jaeger
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ['ALL']
           image: jaegertracing/all-in-one:1.58
           ports:
             - containerPort: 16686 # Query UI

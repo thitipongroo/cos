@@ -27,6 +27,9 @@ const makeRepo = () => ({
   getManpowerSummary: jest.fn(),
 });
 
+// req.userId — the PLATFORM user UUID. The mock used to supply `user: { sub }`, which is the
+// KEYCLOAK id and, under the Fastify adapter, does not reliably reach a Scope.REQUEST provider at
+// all — so the service read undefined and attributed every event to the literal 'system'.
 const makeReq = (userId = 'user-1', tenantId = 'tenant-1'): MockRequest => ({
   tenantId,
   userId,
@@ -95,19 +98,31 @@ describe('WorkforceService', () => {
         check_in_at: '2026-06-08T08:00:00Z',
       });
 
-      expect(repo.recordAttendance).toHaveBeenCalledWith(
-        expect.objectContaining({ worker_id: 'w1' }),
-        expect.objectContaining({
-          event_type: 'workforce.checkin.created.v1',
-          tenant_id: 'tenant-1',
-          actor_id: 'user-1',
-          payload: {
-            worker_id: 'w1',
-            project_id: 'proj-1',
-            checked_in_at: '2026-06-08T08:00:00Z',
-          },
-        }),
-      );
+      // The payload is §32.4 row 9, NOT the master:5338 shorthand ({ worker_id, project_id,
+      // checked_in_at }): workforce.checkin.created.v1.avsc requires checkin_id, checkin_at and
+      // method with no default, so the shorthand could not encode and every check-in died at the
+      // outbox poller.
+      const [params, event] = repo.recordAttendance.mock.calls[0] as [
+        { worker_id: string; log_id: string },
+        {
+          event_type: string;
+          tenant_id: string;
+          actor_id: string;
+          payload: Record<string, unknown>;
+        },
+      ];
+      expect(params.worker_id).toBe('w1');
+      expect(event.event_type).toBe('workforce.checkin.created.v1');
+      expect(event.tenant_id).toBe('tenant-1');
+      expect(event.actor_id).toBe('user-1');
+      expect(event.payload).toEqual({
+        checkin_id: params.log_id,
+        worker_id: 'w1',
+        project_id: 'proj-1',
+        checkin_at: '2026-06-08T08:00:00Z',
+        method: 'MANUAL',
+        location: null,
+      });
     });
 
     it('throws if worker not found', async () => {
@@ -115,6 +130,114 @@ describe('WorkforceService', () => {
       await expect(
         service.recordAttendance('unknown', { project_id: 'proj-1' }),
       ).rejects.toBeInstanceOf(NotFoundException);
+    });
+  });
+
+  // ── check-in event payload (§32.4 row 9) ─────────────────────────────────
+  //
+  // checkin_id, checkin_at and method are REQUIRED with no default in
+  // workforce.checkin.created.v1.avsc. The master:5338 shorthand omitted all three, so the event
+  // could not Avro-encode and every check-in died at the outbox poller — silently, because nothing
+  // downstream complained. analytics-worker builds site_activity_daily.manpower_total from this
+  // event, so the PM dashboard's manpower read zero.
+
+  describe('check-in event payload', () => {
+    // The envelope now rides the INSERT, so it is the SECOND argument to repo.recordAttendance
+    // rather than a publish on an injected outbox service (§35.13 ESC-13).
+    const eventOf = (): { event_type: string; payload: Record<string, unknown> } => {
+      const [, event] = repo.recordAttendance.mock.calls[0] as [
+        Record<string, unknown>,
+        { event_type: string; payload: Record<string, unknown> },
+      ];
+      return event;
+    };
+    const paramsOf = (): Record<string, unknown> =>
+      (repo.recordAttendance.mock.calls[0] as [Record<string, unknown>])[0];
+
+    beforeEach(() => {
+      repo = makeRepo();
+      service = new WorkforceService(
+        req as unknown as ConstructorParameters<typeof WorkforceService>[0],
+        repo as unknown as WorkforceRepository,
+      );
+      repo.findWorkerById.mockResolvedValue({ worker_id: 'w1' });
+      repo.recordAttendance.mockResolvedValue({ log_id: 'log-1' });
+    });
+
+    it('carries the three fields the Avro schema requires with no default', async () => {
+      await service.recordAttendance('w1', {
+        project_id: 'proj-1',
+        check_in_at: '2026-06-08T08:00:00Z',
+        method: 'BIOMETRIC',
+        latitude: 13.75,
+        longitude: 100.5,
+      } as never);
+
+      // checkin_id is the attendance row's own id. The event is built before the INSERT returns, so
+      // the service generates it once and uses it for both — asserting they match is what proves the
+      // event points at the row it was written with.
+      expect(eventOf().payload).toEqual(
+        expect.objectContaining({
+          checkin_id: paramsOf().log_id,
+          checkin_at: '2026-06-08T08:00:00Z',
+          method: 'BIOMETRIC',
+        }),
+      );
+      expect(paramsOf().log_id).toEqual(expect.any(String));
+    });
+
+    it('defaults the method to MANUAL when the client sends none', async () => {
+      // `method` has no Avro default, so omitting it is not an option — the service supplies one.
+      await service.recordAttendance('w1', {
+        project_id: 'proj-1',
+        check_in_at: '2026-06-08T08:00:00Z',
+      });
+
+      expect(eventOf().payload).toEqual(expect.objectContaining({ method: 'MANUAL' }));
+    });
+
+    it('sends the location only when BOTH coordinates are present', async () => {
+      await service.recordAttendance('w1', {
+        project_id: 'proj-1',
+        check_in_at: '2026-06-08T08:00:00Z',
+        latitude: 13.75,
+        longitude: 100.5,
+      } as never);
+
+      expect(eventOf().payload).toEqual(
+        expect.objectContaining({ location: { lat: 13.75, lng: 100.5 } }),
+      );
+    });
+
+    it.each([
+      ['only a latitude', { latitude: 13.75 }],
+      ['only a longitude', { longitude: 100.5 }],
+      ['neither coordinate', {}],
+    ])('sends a null location for %s', async (_label, coords) => {
+      // Half a coordinate pair is not a location. Emitting { lat, lng: undefined } would either fail
+      // the encode or place the check-in on the equator.
+      await service.recordAttendance('w1', {
+        project_id: 'proj-1',
+        check_in_at: '2026-06-08T08:00:00Z',
+        ...coords,
+      } as never);
+
+      expect(eventOf().payload).toEqual(expect.objectContaining({ location: null }));
+    });
+
+    it('does not put the check-in shape on a check-OUT event', async () => {
+      // check-out is a different schema: hours_worked, no checkin_id. Sending the check-in payload
+      // under the check-out type would fail the encode the same way.
+      await service.recordAttendance('w1', {
+        project_id: 'proj-1',
+        check_in_at: '2026-06-08T08:00:00Z',
+        check_out_at: '2026-06-08T17:00:00Z',
+      });
+
+      const event = eventOf();
+      expect(event.event_type).toBe('workforce.checkout.created.v1');
+      expect(event.payload).not.toHaveProperty('checkin_id');
+      expect(event.payload).toHaveProperty('hours_worked');
     });
   });
 
@@ -302,11 +425,14 @@ describe('WorkforceService', () => {
     });
   });
 
-  // ADR-031 / 35.13 ESC-16: the service previously read `req.user?.sub`, which nothing sets, so it
+  // ADR-031 / §35.13 ESC-16: the service previously read `req.user?.sub`, which nothing sets, so it
   // always produced the literal 'system'. It now reads `req.userId` with a CLS fallback.
-  // ADR-031 continued: the same fallback, asserted through the actor_id that reaches the outbox.
-  describe('userId fallback to system', () => {
-    it('uses "system" as actor_id when req.user is undefined', async () => {
+  describe('actor attribution when the request carries no user id', () => {
+    it('records the CLS user rather than the literal "system"', async () => {
+      // This used to assert actor_id: 'system'. Every workforce event was then attributed to nobody
+      // — an audit trail that answers "who checked this worker in?" with a placeholder. It did not
+      // crash, unlike the equipment module's version of the same getter, because actor_id lands in
+      // the outbox payload JSON rather than in a UUID column. That is exactly why it survived.
       const noUserReq = { tenantId: 'tenant-1' };
       repo = makeRepo();
       service = new WorkforceService(
@@ -321,6 +447,8 @@ describe('WorkforceService', () => {
         check_in_at: '2026-06-08T08:00:00Z',
       });
 
+      // No CLS context in a bare unit test, so clsUserId() returns '' — the point is that the
+      // fabricated 'system' identity is gone, not that a specific id appears here.
       expect(repo.recordAttendance).toHaveBeenCalledWith(
         expect.anything(),
         expect.objectContaining({ actor_id: '' }),

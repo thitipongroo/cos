@@ -129,6 +129,24 @@ class TestDagSchedules:
         dag = dagbag.dags["dag-model-evaluation"]
         assert dag.schedule is None
 
+    # master:5479-5480 says "weekly retraining" for both training DAGs. The two daily DAGs and the
+    # unscheduled one above were pinned; these were not, so dropping the `* * 0` and retraining every
+    # night — seven times the compute, on a model the spec wants refreshed weekly — passed silently.
+    #
+    # Asserted on the parsed cron rather than the literal string, so a rewrite to an equivalent
+    # expression still passes and only a change of CADENCE fails.
+    @pytest.mark.parametrize(
+        "dag_id",
+        ["dag-train-delay-model", "dag-train-risk-classifier", "dag-train-device-trust-model"],
+    )
+    def test_training_dags_retrain_weekly(self, dagbag, dag_id):
+        schedule = dagbag.dags[dag_id].schedule
+        minute, hour, dom, month, dow = str(schedule).split()
+        # A single named day-of-week with every day-of-month and month open is exactly "once a week".
+        assert (dom, month) == ("*", "*"), f"{dag_id} is not a plain weekly cron: {schedule}"
+        assert dow.isdigit(), f"{dag_id} does not fire on one fixed weekday: {schedule}"
+        assert minute.isdigit() and hour.isdigit(), f"{dag_id} fires more than once a day: {schedule}"
+
 
 # ─── Task callable tests with mocked data ────────────────────────────────────
 

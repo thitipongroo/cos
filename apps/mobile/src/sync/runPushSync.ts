@@ -18,7 +18,7 @@ import { enqueue } from '../db/sync-queue';
 import { photoRepo, findLocalPhotoByServerFileId } from '../db/photoRepo';
 import { getAnnotation, markAnnotationSynced } from '../db/annotationRepo';
 import { setSyncStatusByKey } from '../db/database';
-import { apiClient } from '../api/client';
+import { apiClient, post } from '../api/client';
 import { useAuthStore } from '../store/authStore';
 import { useOfflineStore } from '../store/offlineStore';
 import { useSyncStore } from '../store/syncStore';
@@ -72,6 +72,32 @@ export async function runPushSync(): Promise<void> {
     // Thai-language tenant.
     onUserNotify: (messageKey) => {
       useSyncStore.getState().setError(messageKey);
+    },
+    // §17.2 escalation. This callback had no implementation at all, so even the types the policy
+    // recognised reached an `if (this.callbacks.onExhausted)` that was always false — a safety
+    // incident abandoned after five attempts told nobody, on the device or the server.
+    //
+    // The report goes to the server, which files it on the tenant-admin review queue and emits
+    // platform.sync.exhausted.v1 for the alert routing. It is idempotent on the client id, so a
+    // later cycle re-reporting the same lost record adds nothing. The row STAYS on the device: §17.2
+    // says records are "never deleted from device until synced or admin-resolved", and a report is
+    // not a delivery.
+    //
+    // A failure here is swallowed deliberately. The device is offline or the server is unreachable —
+    // which is why the item exhausted in the first place — and throwing would abort the rest of the
+    // queue drain over a notification.
+    onExhausted: async (entityType, entityId, operation) => {
+      try {
+        await post('/sync/exhausted', {
+          entity_type: entityType,
+          entity_id: entityId,
+          operation,
+          client_id: entityId,
+          retry_count: 5,
+        });
+      } catch {
+        // Reported on the next cycle; the queue row is preserved either way.
+      }
     },
   });
 

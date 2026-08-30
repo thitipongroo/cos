@@ -4,7 +4,9 @@ import { KafkaTopicProvisioner } from '@cos/kafka';
 import { createLogger } from '@cos/logger';
 import { randomUUID } from 'crypto';
 import { readMasterPassword, ensureAppUserPassword } from './tenant-db-secrets';
-import { encryptDedicatedDbUrl } from '../utils/dedicated-db-url-cipher';
+import { encryptDedicatedDbUrl } from '../../../shared/crypto/dedicated-db-url-cipher';
+import { createStandaloneNotifier } from '../../notification/public/notification.standalone';
+import { PLATFORM_HUMAN_GATE_EVENT_TYPE } from '../../notification/public/event-types';
 
 const logger = createLogger('enterprise-provisioning-activities');
 
@@ -211,36 +213,31 @@ export async function compensateCreateRdsActivity(params: RdsActivityParams): Pr
 
 export async function notifyAwaitingApprovalActivity(params: RdsActivityParams): Promise<void> {
   const prisma = createPrismaClient(DATABASE_URL);
+  let tenantName: string;
   try {
     const [tenant] = await prisma.$queryRaw<Array<{ tenant_name: string; tenant_code: string }>>`
       SELECT tenant_name, tenant_code FROM platform.tenants
       WHERE tenant_id = ${params.tenantId}::uuid LIMIT 1
     `;
-    const tenantName = tenant?.tenant_name ?? params.tenantId;
-    const admins = await prisma.$queryRaw<Array<{ user_id: string }>>`
-      SELECT u.user_id FROM platform.users u
-      JOIN platform.tenant_memberships tm ON tm.user_id = u.user_id
-      WHERE tm.role = 'SYSTEM_ADMIN' AND u.is_active = true
-    `;
-    for (const admin of admins) {
-      await prisma.$executeRaw`
-        INSERT INTO notifications.notifications (tenant_id, recipient_user_id, event_type, channel, title, body)
-        VALUES (
-          NULL,
-          ${admin.user_id}::uuid,
-          'platform.enterprise.awaiting_approval',
-          'in_app',
-          'Data migration approval required',
-          ${`Dedicated DB provisioned for ${tenantName}. Approve or abort data migration.`}
-        )
-      `;
-    }
-    logger.info(
-      { tenantId: params.tenantId, adminCount: admins.length },
-      'notify.awaiting_approval.sent',
-    );
+    tenantName = tenant?.tenant_name ?? params.tenantId;
   } finally {
     await prisma.$disconnect();
+  }
+
+  // Routed through the Notification Service, as §19.8 says this gate is ("sent directly by
+  // EnterpriseProvisioningWorkflow via the Notification Service — it is NOT a Kafka event").
+  // The previous version wrote raw SQL instead, and had drifted from the schema in four ways at once
+  // — recipient_user_id / title / lowercase 'in_app' / tenant_id NULL — so it threw on every run.
+  // Going through the service also delivers the EMAIL channel §19.8 asks for, which raw SQL never
+  // did: the channel set and the wording both come from the templates table now.
+  const notifier = createStandaloneNotifier();
+  try {
+    await notifier.service.notifySystemAdmins(PLATFORM_HUMAN_GATE_EVENT_TYPE, {
+      tenant_name: tenantName,
+    });
+    logger.info({ tenantId: params.tenantId }, 'notify.awaiting_approval.sent');
+  } finally {
+    await notifier.dispose();
   }
 }
 
@@ -371,6 +368,7 @@ export async function emitProvisionedEventActivity(params: RdsWithEndpointParams
   // used to throw, which made Temporal retry the ACTIVITY, not just the publish. Retrying an emit is
   // harmless; what made it worth changing is that until the retries were exhausted the workflow could
   // not complete, over an event that nothing is waiting on synchronously.
+  const identity = await getPlatformTenantIdentity(params.tenantId);
   const outbox = new EventOutboxService();
   try {
     await outbox.publish({
@@ -380,7 +378,12 @@ export async function emitProvisionedEventActivity(params: RdsWithEndpointParams
       actor_id: 'system',
       occurred_at: new Date().toISOString(),
       correlation_id: randomUUID(),
-      payload: { tenant_id: params.tenantId, rds_endpoint: params.rdsEndpoint },
+      payload: {
+        tenant_id: params.tenantId,
+        tenant_name: identity.tenant_name,
+        tenant_code: identity.tenant_code,
+        rds_endpoint: params.rdsEndpoint,
+      },
     });
     logger.info({ tenantId: params.tenantId }, 'platform.enterprise.db_provisioned.v1.emitted');
   } finally {
@@ -391,13 +394,24 @@ export async function emitProvisionedEventActivity(params: RdsWithEndpointParams
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 async function getPlatformTenantCode(tenantId: string): Promise<string> {
+  return (await getPlatformTenantIdentity(tenantId)).tenant_code;
+}
+
+/**
+ * Tenant display identity for event payloads. §19.8 pins the SYSTEM_ADMIN notification body to
+ * "Dedicated DB for {tenant_name} is live" — the Notification Service renders templates from the
+ * event payload alone, so the name and code have to be resolved here, at emit time.
+ */
+async function getPlatformTenantIdentity(
+  tenantId: string,
+): Promise<{ tenant_code: string; tenant_name: string }> {
   const prisma = createPrismaClient(DATABASE_URL);
   try {
-    const [row] = await prisma.$queryRaw<Array<{ tenant_code: string }>>`
-      SELECT tenant_code FROM platform.tenants WHERE tenant_id = ${tenantId}::uuid LIMIT 1
+    const [row] = await prisma.$queryRaw<Array<{ tenant_code: string; tenant_name: string }>>`
+      SELECT tenant_code, tenant_name FROM platform.tenants WHERE tenant_id = ${tenantId}::uuid LIMIT 1
     `;
     if (!row) throw new Error(`Tenant ${tenantId} not found`);
-    return row.tenant_code;
+    return row;
   } finally {
     await prisma.$disconnect();
   }

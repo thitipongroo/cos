@@ -27,14 +27,14 @@ import type {
   MaterialConsumptionRow,
 } from './site-ops.repository';
 import { UUID_PATTERN } from '../../shared/prisma/assert-safe-tenant-id';
-import { resolveReportConflict, resolveIssueConflict } from './conflict-handler';
-import type { ConflictStatus } from './conflict-handler';
+import { resolveReportConflict, resolveIssueConflict } from '../../shared/sync/conflict-handler';
+import type { ConflictStatus } from '../../shared/sync/conflict-handler';
 import type { CreateSiteReportDto } from './dto/create-site-report.dto';
 import type { SyncSiteReportsDto } from './dto/sync-site-reports.dto';
 import type { CreateIssueDto } from './dto/create-issue.dto';
 import type { UpdateIssueDto } from './dto/update-issue.dto';
 import type { ChangeIssueStatusDto } from './dto/change-issue-status.dto';
-import type { SubmitInspectionDto } from './dto/submit-inspection.dto';
+import type { SubmitInspectionDto } from './public/submit-inspection.dto';
 import type { UpdateInspectionDto } from './dto/update-inspection.dto';
 import type { CreateMaterialConsumptionDto } from './dto/create-material-consumption.dto';
 
@@ -78,7 +78,33 @@ export class SiteOpsService {
 
   // ── Site Reports ──────────────────────────────────────────────────────────
 
+  /**
+   * Refuse a write whose project does not exist in this tenant, before it reaches the FOREIGN KEY.
+   *
+   * site_reports, issues and inspections all reference projects.projects. Letting an unknown
+   * project_id through produced SQLSTATE 23503, which nothing maps, so the client received a bare
+   * 500 for a request error. buildings.service already answers 404 with a COS-* code for the same
+   * mistake (COS-BLDG-002); this is that rule, applied where the other half of the codebase needed it.
+   *
+   * Tenant-scoped on purpose: a project in ANOTHER tenant must read as "not found", not as a
+   * permission error, so the check cannot be used to probe for foreign project ids.
+   */
+  private async assertProjectExists(projectId: string): Promise<void> {
+    if (!(await this.repo.projectExists(projectId))) {
+      throw new NotFoundException({
+        error: {
+          code: 'COS-SITE-004',
+          message: 'Project not found',
+          messageKey: 'siteops.error.projectNotFound',
+          traceId: this.correlationId,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+  }
+
   async createSiteReport(dto: CreateSiteReportDto) {
+    await this.assertProjectExists(dto.project_id);
     const reportId = randomUUID();
     const report = await this.repo.createSiteReport(
       {
@@ -312,6 +338,7 @@ export class SiteOpsService {
    * the insert at all; the ON CONFLICT in the repository still covers two replays racing each other.
    */
   async createIssue(dto: CreateIssueDto) {
+    await this.assertProjectExists(dto.project_id);
     // Use the client-provided id when present (offline create → photo linkage, G-M11); else generate.
     const issueId = dto.client_id ?? randomUUID();
 
@@ -487,14 +514,23 @@ export class SiteOpsService {
 
     const resolved = resolution.resolved_payload;
 
-    // No status event is emitted here: FIELD_LEVEL_MERGE makes the server's status authoritative,
-    // so `resolved.status` is always `existing.status` and nothing transitions. A real transition
-    // goes through changeIssueStatus() below (§35.13 ESC-21).
+    // A status event IS emitted below when the status actually moves. FIELD_LEVEL_MERGE makes the
+    // server authoritative only in a genuine conflict; with none, the resolver applies the client's
+    // status (`clientStatus ?? serverRow.status`), so `resolved.status` can differ from
+    // `existing.status`. changeIssueStatus() below remains the explicit route (§35.13 ESC-21).
     const updated = await this.repo.updateIssue(issueId, {
       description: resolved['description'] as string | null,
-      severity: resolved['severity'] as string,
+      // severity is NOT one of the fields master:2583-2589 merges, so nothing makes the server
+      // authoritative over it. Taking it off `resolved` — which is built from the server row —
+      // fed the stored value straight back, and the repository's COALESCE turned every severity
+      // change into a no-op. It comes from the client, like any ordinary update field.
+      severity: dto.severity,
       status: resolved['status'] as string,
-      assigned_to: dto.assigned_to ?? null,
+      // Passed through UNTOUCHED. The repository distinguishes "not mentioned" (keep) from an
+      // explicit value via `patch.assigned_to !== undefined`, and `?? null` here made that test
+      // permanently true — so any edit that did not name an assignee silently un-assigned the
+      // issue, with nobody told the work now had no owner.
+      assigned_to: dto.assigned_to,
       resolution_note: resolved['resolution_note'] as string | null,
       client_submitted_at: dto.client_submitted_at ?? null,
     });
@@ -519,6 +555,25 @@ export class SiteOpsService {
       );
     }
 
+    // Both branches are reachable now that a client may actually move an issue's status. They were
+    // marked `istanbul ignore next` while resolveIssueConflict wrote the server's own status back on
+    // every request, which made `fromStatus !== toStatus` permanently false — the ignore silenced the
+    // coverage gate that would otherwise have reported this event as dead code.
+    const fromStatus = existing.status;
+    // resolveIssueConflict always sets `status` on the payload it returns — either the server's or
+    // the client's — so there is no absent case left to fall back from.
+    const toStatus = resolved['status'] as IssueRow['status'];
+    if (fromStatus !== toStatus) {
+      // The update above has already committed, so this cannot ride its transaction: emitEvent is
+      // the durable publisher (EventOutboxService), not a direct Kafka write.
+      await this.emitEvent('site.issue.status_changed.v1', {
+        issue_id: issueId,
+        project_id: existing.project_id,
+        from_status: fromStatus,
+        to_status: toStatus,
+      });
+    }
+
     return updated;
   }
 
@@ -541,6 +596,7 @@ export class SiteOpsService {
   // ── Inspections ───────────────────────────────────────────────────────────
 
   async submitInspection(dto: SubmitInspectionDto) {
+    await this.assertProjectExists(dto.project_id);
     const checklist = await this.repo.findChecklistById(dto.checklist_id);
     if (!checklist) {
       throw new NotFoundException({
@@ -943,7 +999,11 @@ export class SiteOpsService {
     } catch (err) {
       logger.warn({ q, err }, 'opensearch.search.failed — falling back to DB list');
       const { rows } = await this.repo.listSiteReports({ ...params, page: 1, limit: 50 });
-      return rows;
+      // `minimal` is the CALLER's contract (master:2797), not a property of the search backend. A
+      // client asks for the reduced payload because of the link it is on; handing it the full one
+      // because a server-side dependency was unavailable is the opposite of what it asked for, at
+      // the moment it can least afford it. The two branches above already apply it.
+      return params.minimal ? (rows.map(this.toMinimalReport) as unknown as SiteReportRow[]) : rows;
     }
   }
 

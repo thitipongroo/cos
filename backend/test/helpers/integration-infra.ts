@@ -25,11 +25,38 @@ export interface IntegrationInfra {
   prisma: PrismaClient;
 }
 
+/**
+ * How long a container may take to become ready.
+ *
+ * testcontainers 10.28.0 defaults to 60_000. That default is written for a suite starting one or two
+ * containers on an idle daemon; `test:integration` runs 41 suites SERIALLY and each starts its own
+ * Postgres + Redis, so the fortieth start competes with whatever the previous suites have not
+ * finished reclaiming. 60s was never chosen for this workload — it is simply the library default.
+ *
+ * NOT a proven fix for the 2026-08-26 failure, where phase-22-workforce failed all 19 of its cases
+ * after 366s in a full run and then passed alone and on the next two full runs. That failure was not
+ * reproduced and its message was not captured, so its cause is unknown. What this does is stop a
+ * slow start from being read as a broken suite.
+ */
+const CONTAINER_STARTUP_TIMEOUT_MS = 180_000;
+
+/**
+ * How long `prisma migrate deploy` may run before the harness gives up on it.
+ *
+ * It had NO timeout: execSync blocks until the child exits, so an unreachable or wedged database
+ * meant the suite sat there indefinitely and then reported nineteen unrelated-looking failures. A
+ * bound turns that into one legible error at a known point instead of six minutes of silence.
+ * Generous on purpose — the deploy applies ~100 migrations and is slow, just not unbounded.
+ */
+const MIGRATE_TIMEOUT_MS = 300_000;
+
 /** Start PostgreSQL (TimescaleDB) + Redis, set env vars, and run all migrations. */
 export async function startIntegrationInfra(): Promise<IntegrationInfra> {
   const [pgContainer, redisContainer] = await Promise.all([
-    new PostgreSqlContainer('timescale/timescaledb:latest-pg16').start(),
-    new RedisContainer('redis:7-alpine').start(),
+    new PostgreSqlContainer('timescale/timescaledb:latest-pg16')
+      .withStartupTimeout(CONTAINER_STARTUP_TIMEOUT_MS)
+      .start(),
+    new RedisContainer('redis:7-alpine').withStartupTimeout(CONTAINER_STARTUP_TIMEOUT_MS).start(),
   ]);
 
   const pgUrl = pgContainer.getConnectionUri();
@@ -45,11 +72,25 @@ export async function startIntegrationInfra(): Promise<IntegrationInfra> {
   // Prisma 7 reads the migration datasource URL from prisma.config.ts. It auto-discovers that file
   // in the cwd, but we run from os.tmpdir() (to dodge .env precedence), so point at it with --config.
   const configPath = nodePath.resolve(__dirname, '../../prisma.config.ts');
-  execSync(`"${prismaBin}" migrate deploy --schema "${schemaPath}" --config "${configPath}"`, {
-    cwd: os.tmpdir(), // no .env here → Prisma uses the env vars we set above
-    env: { ...process.env, DATABASE_URL: pgUrl, DIRECT_DATABASE_URL: pgUrl },
-    stdio: 'inherit',
-  });
+  try {
+    execSync(`"${prismaBin}" migrate deploy --schema "${schemaPath}" --config "${configPath}"`, {
+      cwd: os.tmpdir(), // no .env here → Prisma uses the env vars we set above
+      env: { ...process.env, DATABASE_URL: pgUrl, DIRECT_DATABASE_URL: pgUrl },
+      stdio: 'inherit',
+      timeout: MIGRATE_TIMEOUT_MS,
+    });
+  } catch (err) {
+    // Say WHICH database and WHY, at the point of failure. Without this the caller's beforeAll
+    // throws something about a child process and jest attributes it to every test in the file — the
+    // shape that made the 2026-08-26 failure unreadable.
+    const killed = (err as { signal?: string }).signal;
+    throw new Error(
+      killed
+        ? `prisma migrate deploy was killed (${killed}) after ${MIGRATE_TIMEOUT_MS}ms against ${pgUrl}` +
+            ' — the container started but the database did not accept the migrations in time'
+        : `prisma migrate deploy failed against ${pgUrl}: ${(err as Error).message}`,
+    );
+  }
 
   const prisma = createPrismaClient(pgUrl);
   return { pgContainer, redisContainer, pgUrl, redisUrl, prisma };

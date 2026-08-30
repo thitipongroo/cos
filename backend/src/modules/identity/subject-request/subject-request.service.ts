@@ -248,6 +248,15 @@ export class SubjectRequestService {
     const issued = await this.verification.issue(request.tenant_id, requestId);
     await this.repo.recordChallenge({ requestId, tokenHash: issued.tokenHash, sentTo: onFile });
 
+    // The ONE place in this repo that sends mail without going through NotificationService, and the
+    // reason is structural rather than a preference: the recipient here is a crm.contacts row
+    // matched on the email in the request, NOT a platform user. notifications.recipient_id is a
+    // NOT NULL UUID naming a platform user, so there is no row this notification could be written
+    // against. A data-subject request may come from a customer contact who has never had a login.
+    //
+    // step-up and the data-export activity used to sit beside this and were moved onto
+    // NotificationService.notifyUserCritical on 2026-08-26; this one stayed, and the conformance
+    // test in phase-20 names it explicitly rather than allowing the whole module.
     await this.email.send({
       to: onFile,
       subject: 'Confirm your data request',

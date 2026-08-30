@@ -1,4 +1,9 @@
-import { ExecutionContext, CallHandler } from '@nestjs/common';
+import {
+  ExecutionContext,
+  CallHandler,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { Observable, of, throwError } from 'rxjs';
 
 // Mock @cos/tracing before importing the interceptor
@@ -61,7 +66,72 @@ describe('HttpMetricsInterceptor', () => {
       });
   });
 
-  it('records status 500 on handler error', (done) => {
+  it('records the status an HttpException carries, not a blanket 500', (done) => {
+    // Corrected 2026-08-23. The error branch used to record 500 for EVERY failure, so a 400 from
+    // validation and a 403 from a guard both landed in the 5xx series. APIHighErrorRate is
+    // `http_requests_total{status=~"5.."} / total > 1%` at severity critical (master:4382): a burst
+    // of client errors paged on-call for a server fault that never happened, and a genuine 5xx was
+    // indistinguishable from them.
+    interceptor
+      .intercept(
+        makeCtx('POST', '/api/v1/projects', 201),
+        makeHandler(throwError(() => new BadRequestException('invalid payload'))),
+      )
+      .subscribe({
+        error: () => {
+          const [, attrs] = mockRecord.mock.calls[0];
+          expect(attrs.status).toBe('400');
+          done();
+        },
+      });
+  });
+
+  it('records 403 for a guard rejection', (done) => {
+    interceptor
+      .intercept(
+        makeCtx('GET', '/api/v1/projects', 200),
+        makeHandler(throwError(() => new ForbiddenException())),
+      )
+      .subscribe({
+        error: () => {
+          expect(mockRecord.mock.calls[0][1].status).toBe('403');
+          done();
+        },
+      });
+  });
+
+  it('trusts a plain error object that carries a real status code', (done) => {
+    // Some libraries throw a plain object rather than an HttpException.
+    interceptor
+      .intercept(
+        makeCtx('GET', '/api/v1/projects', 200),
+        makeHandler(throwError(() => ({ status: 409, message: 'conflict' }))),
+      )
+      .subscribe({
+        error: () => {
+          expect(mockRecord.mock.calls[0][1].status).toBe('409');
+          done();
+        },
+      });
+  });
+
+  it('ignores a status that is not a valid HTTP code', (done) => {
+    // A library using `status` for something else — an internal enum, a boolean — must not be able
+    // to write nonsense into the label the error-rate alert groups on.
+    interceptor
+      .intercept(
+        makeCtx('GET', '/api/v1/projects', 200),
+        makeHandler(throwError(() => ({ status: 9999 }))),
+      )
+      .subscribe({
+        error: () => {
+          expect(mockRecord.mock.calls[0][1].status).toBe('500');
+          done();
+        },
+      });
+  });
+
+  it('records status 500 for an error with no status at all', (done) => {
     interceptor
       .intercept(
         makeCtx('POST', '/api/v1/projects', 201),

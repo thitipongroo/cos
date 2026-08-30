@@ -18,8 +18,20 @@ kind: ClusterRole
 metadata:
   name: cluster-autoscaler
 rules:
+  # `endpoints` was dropped from this rule on 2026-08-29, leaving events alone.
+  #
+  # Upstream still ships it, but upstream ships it for every version of the component at once. This
+  # deployment runs v1.29.0, whose main.go sets `ResourceLock: resourcelock.LeasesResourceLock` and
+  # never touches endpoints for leader election — and the Deployment below does not override
+  # --leader-elect-resource-lock, so it takes that default. The coordination.k8s.io/leases rules
+  # further down are what the lock actually uses.
+  #
+  # Keeping it was write access to every Endpoints object in the cluster, which is a service-traffic
+  # redirection primitive (Trivy KSV-0056), granted to a component that does not read it.
+  # If a future version reverts to endpoint-based locking, the pod fails leader election loudly at
+  # startup rather than silently — restore the permission then, with the version that needs it named.
   - apiGroups: ['']
-    resources: [events, endpoints]
+    resources: [events]
     verbs: [create, patch]
   - apiGroups: ['']
     resources: [pods/eviction]
@@ -27,10 +39,6 @@ rules:
   - apiGroups: ['']
     resources: [pods/status]
     verbs: [update]
-  - apiGroups: ['']
-    resources: [endpoints]
-    resourceNames: [cluster-autoscaler]
-    verbs: [get, update]
   - apiGroups: ['']
     resources: [nodes]
     verbs: [watch, list, get, update]
