@@ -184,9 +184,9 @@ expiry that applies to every record of its age.
 
 ### Log Retention
 
-| Log type         | Hot storage | Cold archive | Compliance archive        |
-| ---------------- | ----------- | ------------ | ------------------------- |
-| Application logs | 30 days     | 1 year       | —                         |
+| Log type         | Hot storage | Cold archive | Compliance archive          |
+| ---------------- | ----------- | ------------ | --------------------------- |
+| Application logs | 30 days     | 1 year       | —                           |
 | Audit logs       | 30 days     | 1 year       | 7 years (WORM), then delete |
 
 Authoritative retention schedule: `docs/compliance/log-retention-policy.md`

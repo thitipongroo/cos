@@ -79,16 +79,16 @@ Because the name is what mostly decides, a file can sit in the wrong tree and st
 right config: nothing fails, and nothing says anything. Write it down here, enforce it in
 `tests/conformance/testing/01-test-estate.spec.ts`.
 
-| Lives in                                | Holds                                                       | Run by                        |
-| --------------------------------------- | ----------------------------------------------------------- | ----------------------------- |
-| `backend/src/**/__tests__/*.spec.ts`     | unit — doubles only, no Docker, 15s timeout, 100% line+branch | `backend/jest.config.js`      |
-| `backend/src/**/*.workflow.spec.ts`      | Temporal workflows — needs a TestWorkflowEnvironment, not a container, so it stays beside its module | `backend/jest.workflows.config.js` |
-| `backend/test/<module>/*.integration.spec.ts` | integration — boots the real `AppModule` against Testcontainers | `backend/jest.integration.config.js` |
-| `backend/test/helpers/`                  | the integration harness (see §30.4) — not specs, no runner picks them up | —                         |
-| `tests/conformance/<module>/`            | architecture fitness functions — read source as text, import no app code | `jest.conformance.config.js` |
-| `tests/contract/`                        | Pact consumer-driven contracts                              | `jest.contract.config.js`     |
-| `tests/e2e/specs/`                       | Playwright, against a deployed environment                  | `playwright.config.ts`        |
-| `tests/load/`                            | k6 scenarios                                                | k6                            |
+| Lives in                                      | Holds                                                                                                | Run by                               |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| `backend/src/**/__tests__/*.spec.ts`          | unit — doubles only, no Docker, 15s timeout, 100% line+branch                                        | `backend/jest.config.js`             |
+| `backend/src/**/*.workflow.spec.ts`           | Temporal workflows — needs a TestWorkflowEnvironment, not a container, so it stays beside its module | `backend/jest.workflows.config.js`   |
+| `backend/test/<module>/*.integration.spec.ts` | integration — boots the real `AppModule` against Testcontainers                                      | `backend/jest.integration.config.js` |
+| `backend/test/helpers/`                       | the integration harness (see §30.4) — not specs, no runner picks them up                             | —                                    |
+| `tests/conformance/<module>/`                 | architecture fitness functions — read source as text, import no app code                             | `jest.conformance.config.js`         |
+| `tests/contract/`                             | Pact consumer-driven contracts                                                                       | `jest.contract.config.js`            |
+| `tests/e2e/specs/`                            | Playwright, against a deployed environment                                                           | `playwright.config.ts`               |
+| `tests/load/`                                 | k6 scenarios                                                                                         | k6                                   |
 
 Folders inside `backend/test/` and `tests/conformance/` are named for the MODULE (`finance`,
 `procurement`, `workforce`). They were once named for the delivery phase (`phase-07-finance`), which
