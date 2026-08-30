@@ -264,6 +264,42 @@ describe('createSiteReport', () => {
     );
   });
 
+  // The per-trade breakdown is optional, and the branch that writes it had no unit test — the
+  // repository method was covered, the service's decision to CALL it was not, so QM-1's 100% branch
+  // gate caught it. It is not a formality: the logs are keyed off the row's OWN report_id, because
+  // createSiteReport UPSERTs on (project_id, report_date, submitted_by) and a resubmit returns the
+  // existing row while the freshly generated UUID is discarded. Keying off the generated id would
+  // orphan every line on the second submit of the same day.
+  it('writes the per-trade breakdown against the report row, not the generated id', async () => {
+    const report = makeReport();
+    mockRepo.createSiteReport.mockResolvedValue(report);
+
+    await service.createSiteReport({
+      project_id: 'project-1',
+      report_date: '2026-06-04',
+      manpower_lines: [
+        { trade_type: 'CARPENTER', worker_count: 4, hours_worked: 6 },
+        // hours_worked omitted — the column is NOT NULL, so a standard shift stands in.
+        { trade_type: 'STEELWORKER', worker_count: 2 },
+      ],
+    } as never);
+
+    expect(mockRepo.replaceManpowerLogs).toHaveBeenCalledWith(report.report_id, [
+      { trade_type: 'CARPENTER', worker_count: 4, hours_worked: 6 },
+      { trade_type: 'STEELWORKER', worker_count: 2, hours_worked: 8 },
+    ]);
+  });
+
+  it('writes no breakdown when the caller sends none', async () => {
+    // The other side of the branch: absent lines must not produce an empty DELETE-then-insert, which
+    // would clear a breakdown a previous submit had recorded for the same day.
+    mockRepo.createSiteReport.mockResolvedValue(makeReport());
+
+    await service.createSiteReport({ project_id: 'project-1', report_date: '2026-06-04' });
+
+    expect(mockRepo.replaceManpowerLogs).not.toHaveBeenCalled();
+  });
+
   it('writes site.report.created.v1 to the outbox with the report INSERT', async () => {
     mockRepo.createSiteReport.mockResolvedValue(makeReport());
     await service.createSiteReport({ project_id: 'project-1', report_date: '2026-06-04' });

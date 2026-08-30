@@ -6,7 +6,6 @@ silently truncated by the model otherwise — so trim_context's sentence-boundar
 both sides of its 80% threshold.
 """
 
-import os
 from pathlib import Path
 
 import pytest

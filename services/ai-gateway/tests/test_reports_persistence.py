@@ -12,15 +12,28 @@ import uuid
 import pytest
 
 from reports.persistence import fetch_report_history, persist_report
+from tests.fake_pool import TenantScopedPoolMixin
 
 
-class _FakePool:
+class _FakePool(TenantScopedPoolMixin):
+    """Records the statements persistence.py issues.
+
+    The mixin is what makes the fake usable at all: neither function talks to the pool any more.
+    Both go through `db.tenant_scope.tenant_scoped()`, which does `pool.acquire()`,
+    `conn.transaction()` and a `set_config` before the real statement — because app_user has no RLS
+    bypass and the policy reads `app.current_tenant_id` off the transaction. A fake with a flat
+    `execute` raised AttributeError on `acquire`.
+
+    `_on_execute`, not `execute`: the mixin swallows the GUC statement into `.tenant_guc`, so the
+    indices the assertions below use still point at the real queries.
+    """
+
     def __init__(self, rows=None):
         self.executed: list[tuple] = []
         self.fetched: list[tuple] = []
         self._rows = rows or []
 
-    async def execute(self, query, *args):
+    async def _on_execute(self, query, *args):
         self.executed.append((query, args))
 
     async def fetch(self, query, *args):

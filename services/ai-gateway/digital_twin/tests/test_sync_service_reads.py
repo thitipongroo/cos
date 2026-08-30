@@ -14,6 +14,7 @@ import pytest
 from digital_twin.models import SeverityLevel, StateSource
 from digital_twin.divergence import _risk_level_from_divergences
 from digital_twin.sync_service import compute_confidence, get_current_state
+from tests.fake_pool import TenantScopedPoolMixin
 
 ENTITY_ID = "33333333-3333-4333-8333-333333333333"
 TENANT_ID = "11111111-1111-4111-8111-111111111111"
@@ -33,7 +34,14 @@ class _FakeRedis:
         self.setex_calls.append((key, ttl, value))
 
 
-class _FakePool:
+class _FakePool(TenantScopedPoolMixin):
+    """Records the read get_current_state issues.
+
+    The mixin supplies acquire()/transaction() and absorbs the set_config: the read goes through
+    `db.tenant_scope.tenant_scoped()` because app_user has no RLS bypass, so a fake carrying only
+    fetchrow is never reached. `.calls` therefore still holds the real query alone.
+    """
+
     def __init__(self, row=None):
         self._row = row
         self.calls: list[tuple] = []

@@ -15,6 +15,7 @@ from providers.llm_provider import LLMResponse
 from reports import pipeline as pipeline_module
 from reports.guard import GuardResult
 from reports.pipeline import ReportResult, generate_report
+from tests.fake_pool import TenantScopedPoolMixin
 
 
 @dataclass
@@ -37,11 +38,19 @@ class _FakeProvider:
         )
 
 
-class _FakePool:
+class _FakePool(TenantScopedPoolMixin):
+    """Records the statements the pipeline's writes issue.
+
+    The mixin supplies acquire()/transaction(): persistence and usage metering both run through
+    `db.tenant_scope.tenant_scoped()` now, so a flat `execute` is never reached. `_on_execute`
+    rather than `execute` keeps the `set_config` statement out of `.executed`, which is what lets
+    `_report_insert` below still find the INSERT by its SQL.
+    """
+
     def __init__(self):
         self.executed: list[tuple] = []
 
-    async def execute(self, query, *args):
+    async def _on_execute(self, query, *args):
         self.executed.append((query, args))
 
 

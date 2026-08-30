@@ -8,7 +8,6 @@ Four narrow cases the rest of the suite could not reach, each a real contract:
   * the RAG config falling back to defaults when ai/chains/rag.yaml is absent.
 """
 
-from datetime import datetime, timezone
 from uuid import uuid4
 
 import pytest
@@ -20,6 +19,7 @@ from main import app
 from providers.llm_provider import LLMResponse
 from rag import retrieval as retrieval_module
 from reports.pipeline import ReportResult
+from tests.fake_pool import TenantScopedPoolMixin
 
 client = TestClient(app)
 
@@ -129,7 +129,9 @@ class TestDivergenceSkipsEntitiesWithNoState:
         unknown, not diverged."""
         entity_id = uuid4()
 
-        class _Pool:
+        # The mixin supplies acquire()/transaction(): divergence reads through
+        # db.tenant_scope.tenant_scoped(), so a fake with only fetch/fetchrow is never reached.
+        class _Pool(TenantScopedPoolMixin):
             def __init__(self):
                 self.fetchrow_calls = 0
 

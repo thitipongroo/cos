@@ -139,7 +139,6 @@ func TestExtractKafkaContext_EmptyHeadersYieldNoSpanContext(t *testing.T) {
 	}
 }
 
-
 func TestGetenv(t *testing.T) {
 	t.Setenv("COS_OTEL_TEST_KEY", "set-value")
 	if got := getenv("COS_OTEL_TEST_KEY", "fallback"); got != "set-value" {

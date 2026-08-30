@@ -11,6 +11,7 @@ from fastapi.testclient import TestClient
 
 import main as main_module
 from main import _billed_minutes, _usage_record, app
+from tests.fake_pool import TenantScopedPoolMixin
 
 client = TestClient(app)
 
@@ -179,7 +180,10 @@ class TestReportHistory:
     def test_returns_the_history_when_a_pool_is_configured(self, monkeypatch):
         rows = [{"report_id": "r1", "report_type": "SITE_SUMMARY"}]
 
-        class _Pool:
+        # TenantScopedPoolMixin, because fetch_report_history reads through
+        # db.tenant_scope.tenant_scoped(): the pool must hand out a connection and a transaction, and
+        # accept the set_config that RLS needs, before fetch is ever called.
+        class _Pool(TenantScopedPoolMixin):
             async def fetch(self, _q, *_a):
                 return rows
 
