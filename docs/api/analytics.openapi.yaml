@@ -52,8 +52,14 @@ components:
           description: Budget utilization percentage (actual / budget × 100)
           example: 75.0
         atRisk:
-          type: boolean
-          description: True when utilization variance exceeds riskThresholdPct
+          # 0/1, not a JSON boolean. ClickHouse returns this comparison as UInt8 and §35.13 ESC-34
+          # settled on keeping it — the declared types and the render guards were changed to match
+          # rather than the value coerced. This line still said `boolean` after that decision, which
+          # is the last place the old contract survived: a client generated from it would compare
+          # against `true` and read every at-risk project as safe.
+          type: integer
+          enum: [0, 1]
+          description: 1 when utilization variance exceeds riskThresholdPct, 0 otherwise
         overdueInvoiceCount:
           type: integer
           description: Number of unpaid invoices past due date

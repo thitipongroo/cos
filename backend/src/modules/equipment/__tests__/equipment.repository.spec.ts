@@ -5,6 +5,8 @@ import { EquipmentRepository } from '../equipment.repository';
 
 const mockPrisma = {
   $queryRaw: jest.fn(),
+  // OutboxPublisher.write() issues the outbox INSERT through the same tx handle (§35.13 ESC-13)
+  $executeRaw: jest.fn().mockResolvedValue(1),
 };
 
 const mockDb = {
@@ -143,6 +145,68 @@ describe('EquipmentRepository', () => {
       mockPrisma.$queryRaw.mockResolvedValue(rows);
       const result = await repo.findEquipmentByProject('proj-1');
       expect(result).toBe(rows);
+    });
+  });
+
+  // Phase 8 Outbox Pattern (§35.13 ESC-13): the outbox row must be written through the SAME tx
+  // handle as the business write, so it can never survive a rollback of that write.
+  describe('outbox writes', () => {
+    const envelope = {
+      event_type: 'equipment.unit.assigned.v1',
+      event_version: '1.0',
+      tenant_id: 'tenant-1',
+      actor_id: 'user-1',
+      occurred_at: '2026-08-22T00:00:00.000Z',
+      correlation_id: 'corr-1',
+      payload: { equipment_id: 'eq-1' },
+    };
+
+    it('updateStatus writes the outbox row in the same transaction', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([{ equipment_id: 'eq-1', status: 'IN_USE' }]);
+      await repo.updateStatus('eq-1', 'IN_USE', envelope as never);
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+      expect(mockDb.run).toHaveBeenCalledTimes(1);
+    });
+
+    it('updateStatus writes no outbox row when no event is supplied', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([{ equipment_id: 'eq-1', status: 'IN_USE' }]);
+      await repo.updateStatus('eq-1', 'IN_USE');
+      expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
+    });
+
+    it('createMaintenance writes the outbox row in the same transaction', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([{ maintenance_id: 'maint-1' }]);
+      await repo.createMaintenance(
+        {
+          maintenance_id: 'maint-1',
+          equipment_id: 'eq-1',
+          tenant_id: 'tenant-1',
+          maintenance_type: 'SCHEDULED',
+          scheduled_at: '2026-07-01T00:00:00Z',
+          cost: null,
+          currency_code: null,
+          performed_by: null,
+          notes: null,
+        },
+        { ...envelope, event_type: 'equipment.unit.maintenance_scheduled.v1' } as never,
+      );
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+    });
+
+    it('createMaintenance writes no outbox row when no event is supplied', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([{ maintenance_id: 'maint-1' }]);
+      await repo.createMaintenance({
+        maintenance_id: 'maint-1',
+        equipment_id: 'eq-1',
+        tenant_id: 'tenant-1',
+        maintenance_type: 'SCHEDULED',
+        scheduled_at: '2026-07-01T00:00:00Z',
+        cost: null,
+        currency_code: null,
+        performed_by: null,
+        notes: null,
+      });
+      expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
     });
   });
 });

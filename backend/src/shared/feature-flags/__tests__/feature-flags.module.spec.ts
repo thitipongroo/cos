@@ -18,8 +18,8 @@ import { ClsService } from 'nestjs-cls';
 import { FeatureFlagsModule } from '../feature-flags.module';
 import { FeatureFlagService } from '../feature-flag.service';
 import { FlagsController } from '../flags.controller';
-import { LastSeenService } from '../../../modules/identity/last-seen.service';
-import { OptionalJwtAuthGuard } from '../../../modules/identity/guards/optional-jwt-auth.guard';
+import { LastSeenService } from '../../last-seen/last-seen.service';
+import { OptionalJwtAuthGuard } from '../../guards/optional-jwt-auth.guard';
 
 jest.mock('@cos/logger', () => ({
   createLogger: () => ({ warn: jest.fn(), error: jest.fn() }),

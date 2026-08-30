@@ -112,9 +112,15 @@ AI :
 
 Safety :
 
-- SafetyIncidentReported
+- SafetyIncidentReported — `safety.incident.created.v1`
 - SafetyChecklistCompleted
-- SafetyViolationDetected — canonical `safety.violation.detected.v1` (§32.4 #23), built 2026-08-22
+- SafetyViolationDetected — `safety.violation.detected.v1`
+  (canonical name minted 2026-08-25, Phase 23; payload in §32.4 row 24). A model finding a violation
+  in a site photo — SafetyVisionModel, §22.6.
+- SafetyComplianceFailed — `safety.compliance.failed.v1` (§32.4 row 23), built 2026-08-22. The
+  platform's own rules finding a safety requirement unmet: an expired permit, a failed required
+  checklist item. Named `safety.violation.detected.v1` until the merge of 2026-08-31 found that name
+  already assigned above; §19.6's "cannot be disabled" covers both.
 
 Asset :
 

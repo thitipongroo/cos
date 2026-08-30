@@ -5,7 +5,7 @@
 // leaves the stored annotation untouched and returns the server version for the client to reconcile.
 
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { resolveAnnotationConflict, type ConflictStatus } from '../site-ops/conflict-handler';
+import { resolveAnnotationConflict, type ConflictStatus } from '../../shared/sync/conflict-handler';
 import { AnnotationRepository, type AnnotationRow } from './annotation.repository';
 import type { AnnotationResponse } from './dto/annotation.dto';
 

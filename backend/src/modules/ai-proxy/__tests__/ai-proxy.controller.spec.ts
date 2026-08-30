@@ -14,7 +14,7 @@ import { Test } from '@nestjs/testing';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import { CanActivate } from '@nestjs/common';
 import { AiProxyController } from '../ai-proxy.controller';
-import { JwtAuthGuard } from '../../identity/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../../shared/guards/jwt-auth.guard';
 
 const allow: CanActivate = { canActivate: () => true };
 

@@ -17,11 +17,11 @@ wrong, with nothing in the system disagreeing with anything else.
 compares the ledger against `procurement.purchase_orders` and `procurement.invoices`. Every unit of
 `finance_ledger_drift` is money a budget is wrong about.
 
-| `kind`      | Meaning                                             | Effect on the budget          |
-| ----------- | --------------------------------------------------- | ----------------------------- |
-| `missing`   | PO/invoice exists, no cost transaction              | **Under**-committed           |
-| `duplicate` | More than one transaction for the same source       | **Over**-committed            |
-| `orphan`    | Transaction whose PO/invoice no longer exists       | Over-committed against nothing |
+| `kind`      | Meaning                                       | Effect on the budget           |
+| ----------- | --------------------------------------------- | ------------------------------ |
+| `missing`   | PO/invoice exists, no cost transaction        | **Under**-committed            |
+| `duplicate` | More than one transaction for the same source | **Over**-committed             |
+| `orphan`    | Transaction whose PO/invoice no longer exists | Over-committed against nothing |
 
 > **Absent is not zero.** The gauge reports nothing at all until the first sweep completes. If you
 > see no series, the question is whether the job is running — grep for `finance.ledger.reconciled`

@@ -25,12 +25,12 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../../shared/guards/jwt-auth.guard';
 import { FeatureFlag } from '../../../shared/feature-flags/feature-flag.decorator';
 import { DataExportService } from './data-export.service';
 import { RequestDataExportDto } from '../dto/request-data-export.dto';
 import type { ExportCategory } from './data-export.collector';
-import type { TenantRequest } from '../../tenant/tenant.middleware';
+import type { TenantRequest } from '../../../shared/context/tenant-request';
 
 /**
  * QM-15 / ADR-049 kill switch.

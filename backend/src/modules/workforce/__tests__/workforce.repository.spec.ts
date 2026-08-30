@@ -5,6 +5,8 @@ import { WorkforceRepository } from '../workforce.repository';
 
 const mockPrisma = {
   $queryRaw: jest.fn(),
+  // OutboxPublisher.write() issues the outbox INSERT through the same tx handle (§35.13 ESC-13)
+  $executeRaw: jest.fn().mockResolvedValue(1),
 };
 
 const mockDb = {
@@ -186,6 +188,71 @@ describe('WorkforceRepository', () => {
       mockPrisma.$queryRaw.mockResolvedValue(rows);
       const result = await repo.getManpowerSummary('proj-1');
       expect(result).toBe(rows);
+    });
+  });
+
+  // Phase 8 Outbox Pattern (§35.13 ESC-13): the outbox row must be written through the SAME tx
+  // handle as the business write, so it can never survive a rollback of that write.
+  describe('outbox writes', () => {
+    const envelope = {
+      event_type: 'workforce.checkin.created.v1',
+      event_version: '1.0',
+      tenant_id: 'tenant-1',
+      actor_id: 'user-1',
+      occurred_at: '2026-08-22T00:00:00.000Z',
+      correlation_id: 'corr-1',
+      payload: { worker_id: 'w1' },
+    };
+
+    const attendanceParams = {
+      log_id: 'log-1',
+      recorded_at: '2026-06-08T08:00:00Z',
+      worker_id: 'w1',
+      project_id: 'proj-1',
+      tenant_id: 'tenant-1',
+      check_in_at: '2026-06-08T08:00:00Z',
+      check_out_at: null,
+      hours_worked: null,
+    };
+
+    it('recordAttendance writes the outbox row in the same transaction', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([{ log_id: 'log-1' }]);
+      await repo.recordAttendance(attendanceParams, envelope as never);
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+      expect(mockDb.run).toHaveBeenCalledTimes(1);
+    });
+
+    it('recordAttendance writes no outbox row when no event is supplied', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([{ log_id: 'log-1' }]);
+      await repo.recordAttendance(attendanceParams);
+      expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
+    });
+
+    it('approveTimesheet builds the event from the UPDATEd row', async () => {
+      const row = { timesheet_id: 'ts-1', worker_id: 'w1', status: 'APPROVED' };
+      mockPrisma.$queryRaw.mockResolvedValue([row]);
+      const builder = jest.fn(() => envelope);
+
+      await repo.approveTimesheet('ts-1', builder as never);
+
+      expect(builder).toHaveBeenCalledWith(row);
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+    });
+
+    it('approveTimesheet writes nothing when the UPDATE matched no row', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([]);
+      const builder = jest.fn();
+
+      await repo.approveTimesheet('missing', builder as never);
+
+      expect(builder).not.toHaveBeenCalled();
+      expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
+    });
+
+    it('approveTimesheet writes no outbox row when no builder is supplied', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([{ timesheet_id: 'ts-1' }]);
+      await repo.approveTimesheet('ts-1');
+      expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
     });
   });
 });

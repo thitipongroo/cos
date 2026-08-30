@@ -32,7 +32,7 @@
 import { All, Controller, HttpException, HttpStatus, Req, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { createLogger } from '@cos/logger';
-import { JwtAuthGuard } from '../identity/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 
 const logger = createLogger('ai-proxy');
 

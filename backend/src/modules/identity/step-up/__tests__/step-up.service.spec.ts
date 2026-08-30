@@ -38,19 +38,30 @@ jest.mock('@cos/logger', () => ({
 import { BadRequestException, HttpException } from '@nestjs/common';
 import { StepUpService, maskDestination, STEP_UP_ACTIONS } from '../step-up.service';
 import type { SmsSender } from '../../otp/sms-sender';
-import type { SendGridAdapter } from '../../../notification/adapters/sendgrid.adapter';
+import type { NotificationService } from '../../../notification/notification.service';
 
 const USER = 'user-1';
-const PHONE_USER = { phoneNumber: '+66811234567', email: 'field@cos.app', isActive: true };
-const EMAIL_USER = { phoneNumber: null, email: 'office@cos.app', isActive: true };
+const TENANT = 'tenant-1';
+const PHONE_USER = {
+  tenantId: TENANT,
+  phoneNumber: '+66811234567',
+  email: 'field@cos.app',
+  isActive: true,
+};
+const EMAIL_USER = {
+  tenantId: TENANT,
+  phoneNumber: null,
+  email: 'office@cos.app',
+  isActive: true,
+};
 
 let sms: jest.Mocked<SmsSender>;
-let email: jest.Mocked<Pick<SendGridAdapter, 'send'>>;
+let notifications: jest.Mocked<Pick<NotificationService, 'notifyUserCritical'>>;
 
 function make(): StepUpService {
   sms = { sendSms: jest.fn().mockResolvedValue(undefined) };
-  email = { send: jest.fn().mockResolvedValue(undefined) };
-  return new StepUpService(sms, email as unknown as SendGridAdapter);
+  notifications = { notifyUserCritical: jest.fn().mockResolvedValue(undefined) };
+  return new StepUpService(sms, notifications as unknown as NotificationService);
 }
 
 /** Read the code the service stored, the way a real SMS recipient would learn it. */
@@ -82,7 +93,7 @@ describe('request', () => {
     const res = await svc.request(USER, 'data-export');
 
     expect(sms.sendSms).toHaveBeenCalledTimes(1);
-    expect(email.send).not.toHaveBeenCalled();
+    expect(notifications.notifyUserCritical).not.toHaveBeenCalled();
     expect(res).toEqual({
       channel: 'SMS',
       destinationHint: '••••4567',
@@ -97,8 +108,17 @@ describe('request', () => {
     const svc = make();
     const res = await svc.request(USER, 'data-export');
 
-    expect(email.send).toHaveBeenCalledWith(
-      expect.objectContaining({ to: 'office@cos.app', subject: expect.any(String) }),
+    // Through the Notification Service, not its SendGrid adapter (master:5041). The event type is
+    // carried so the row is identifiable in the notifications table — a step-up challenge that left
+    // no trace is exactly what a security review needs and could not find before.
+    expect(notifications.notifyUserCritical).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenant_id: TENANT,
+        user_id: USER,
+        email: 'office@cos.app',
+        event_type: 'identity.step_up.challenge.v1',
+        subject: expect.any(String),
+      }),
     );
     expect(sms.sendSms).not.toHaveBeenCalled();
     expect(res.channel).toBe('EMAIL');

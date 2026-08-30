@@ -1,0 +1,40 @@
+{
+  "type": "record",
+  "name": "SafetyViolationDetectedEvent",
+  "namespace": "com.constructionos.events.safety",
+  "doc": "safety.violation.detected.v1 — the SafetyViolationDetected of 16-enterprise-event-flow §Safety and 19-notification-architecture §19.6. Minted in Phase 23 (product-owner decision 2026-08-25) alongside SafetyVisionModel, which is the only thing in the specs that detects a violation. §32.4 has no row for it, so each payload field below names its source: violations/confidence/severity are SafetyAnalysisResult (master §Phase 23 SafetyVisionModel); violation_id/project_id/severity follow the sibling safety.incident.created.v1; file_id is how every other event references an image (file.document.uploaded.v1).",
+  "fields": [
+    { "name": "event_id", "type": "string" },
+    { "name": "event_type", "type": "string" },
+    { "name": "event_version", "type": "string" },
+    { "name": "tenant_id", "type": "string" },
+    { "name": "actor_id", "type": "string", "doc": "'ai-gateway' — the model is the only detector" },
+    { "name": "occurred_at", "type": "string" },
+    { "name": "correlation_id", "type": "string" },
+    { "name": "trace_id", "type": ["null", "string"], "default": null },
+    { "name": "span_id", "type": ["null", "string"], "default": null },
+    {
+      "name": "payload",
+      "type": {
+        "type": "record",
+        "name": "SafetyViolationDetectedPayload",
+        "fields": [
+          { "name": "violation_id", "type": "string", "doc": "UUID minted per detection, as incident_id is on safety.incident.created.v1" },
+          { "name": "project_id", "type": "string" },
+          { "name": "file_id", "type": "string", "doc": "The analysed site photo — SafetyVisionModel.analyze takes an image" },
+          { "name": "violations", "type": { "type": "array", "items": "string" }, "doc": "SafetyAnalysisResult.violations" },
+          { "name": "confidence", "type": "string", "doc": "SafetyAnalysisResult.confidence as a DECIMAL string, matching ai.risk_prediction.generated.v1 — never a float" },
+          {
+            "name": "severity",
+            "type": {
+              "type": "enum",
+              "name": "ViolationSeverity",
+              "symbols": ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+            },
+            "doc": "SafetyAnalysisResult.severity, banded on the same symbols as IncidentSeverity"
+          }
+        ]
+      }
+    }
+  ]
+}

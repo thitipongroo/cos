@@ -8,7 +8,7 @@ const mockOn = jest.fn();
 const mockConnect = jest.fn().mockResolvedValue(undefined);
 const mockDisconnect = jest.fn().mockResolvedValue(undefined);
 
-jest.mock('@cos/shared', () => ({
+jest.mock('@cos/kafka', () => ({
   KafkaConsumer: jest.fn().mockImplementation(() => ({
     on: mockOn,
     connect: mockConnect,

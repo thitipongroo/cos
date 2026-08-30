@@ -31,6 +31,7 @@ rebuilds it from another store.
   > **It still needs ops before it runs:** the bucket name, an IRSA role on its ServiceAccount, and a
   > place in an ArgoCD Application path. Until those are done, **assume there is no backup** and do
   > not rely on the recovery steps below.
+
 - Backup stored in S3 bucket `cos-keycloak-backups/{environment}/`, **90-day retention** (+ 30 days
   for noncurrent versions) — `aws_s3_bucket.keycloak_backups` in
   `infrastructure/terraform/aws/modules/s3/main.tf`. **90 days is the recovery window**: an export
@@ -41,6 +42,7 @@ rebuilds it from another store.
   > time. This page says `cos-keycloak-backups` and `keycloak-realm-backup.md` said `cos-backups`;
   > neither is provably right. The CronJob reads it from the `keycloak-backup-config` ConfigMap —
   > set it there and make this page match, or a restore will look in the wrong bucket.
+
 - Protocol mapper configuration is critical — missing mappers block all authentication
   (see `05-security-compliance` §5.4.2 and `07-multi-tenant-architecture` §7.6 step 3)
 

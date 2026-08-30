@@ -5,6 +5,11 @@
 **Deciders:** Product owner
 **Tags:** security, infra
 
+> **Path note (added 2026-08-25).** The `@cos/shared/src/kafka/…` paths below were correct when
+> this was written. [ADR-055](055-split-cos-kafka-from-cos-shared.md) (2026-08-22) moved that SDK
+> into its own package, so those files now live at `packages/@cos/kafka/src/…`. The text is left
+> as written — an ADR records what was decided and observed at its date.
+
 ---
 
 ## Context

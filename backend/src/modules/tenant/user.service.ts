@@ -13,6 +13,9 @@ import {
   OnModuleDestroy,
 } from '@nestjs/common';
 import { createPrismaClient } from '../../shared/prisma/create-prisma-client';
+import { randomUUID } from 'crypto';
+import { OutboxPublisher } from '@cos/kafka';
+import { buildOutboxEvent } from '../../shared/outbox/outbox.types';
 import { EventOutboxService } from '../../shared/events/event-outbox.service';
 import { createLogger } from '@cos/logger';
 import { CosRole } from '@cos/types';
@@ -306,6 +309,25 @@ export class UserService implements OnModuleDestroy {
           VALUES (${tenantId}::uuid, ${created!.user_id}::uuid, ${dto.role}::platform."CosRoleEnum")
         `;
 
+        // Outbox (§35.13 ESC-13) — the event joins the user + membership INSERT transaction, so a
+        // rolled-back user creation (including the Keycloak rollback path below) emits nothing.
+        await OutboxPublisher.write(
+          tx,
+          buildOutboxEvent({
+            eventType: 'identity.user.created.v1',
+            tenantId,
+            actorId,
+            correlationId: randomUUID(),
+            payload: {
+              tenant_id: tenantId,
+              user_id: created!.user_id,
+              // @pdpa: email transmitted in event for downstream provisioning only
+              email: emailValue,
+              role: dto.role,
+            },
+          }),
+        );
+
         return created!;
       });
     } catch (err) {
@@ -329,14 +351,7 @@ export class UserService implements OnModuleDestroy {
     }
 
     logger.info({ userId: user.user_id, tenantId, actorId, role: dto.role }, 'user.created');
-
-    await this.publishEvent('identity.user.created.v1', {
-      tenant_id: tenantId,
-      user_id: user.user_id,
-      // @pdpa: email transmitted in event for downstream provisioning only
-      email: emailValue,
-      role: dto.role,
-    });
+    // identity.user.created.v1 was written to the outbox inside the transaction above.
 
     return { ...user, role: dto.role };
   }
@@ -391,11 +406,33 @@ export class UserService implements OnModuleDestroy {
     }
 
     const oldRole = membership.role;
-    await this.prisma.$queryRaw`
-      UPDATE platform.tenant_memberships
-      SET role = ${dto.role}::platform."CosRoleEnum"
-      WHERE user_id = ${userId}::uuid AND tenant_id = ${tenantId}::uuid
-    `;
+
+    // Outbox (§35.13 ESC-13) — role change and its event in one transaction. A permission change
+    // that downstream consumers never hear about is a security-relevant divergence, so this one
+    // must not be fire-and-forget.
+    await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`
+        UPDATE platform.tenant_memberships
+        SET role = ${dto.role}::platform."CosRoleEnum"
+        WHERE user_id = ${userId}::uuid AND tenant_id = ${tenantId}::uuid
+      `;
+
+      await OutboxPublisher.write(
+        tx,
+        buildOutboxEvent({
+          eventType: 'identity.user.role_changed.v1',
+          tenantId,
+          actorId,
+          correlationId: randomUUID(),
+          payload: {
+            tenant_id: tenantId,
+            user_id: userId,
+            old_role: oldRole,
+            new_role: dto.role,
+          },
+        }),
+      );
+    });
 
     // Keep the identity store in step with the membership table. Without this the `role` claim in every
     // token Keycloak mints afterwards still carries the OLD role (security review F2).
@@ -406,13 +443,6 @@ export class UserService implements OnModuleDestroy {
     );
 
     logger.info({ userId, tenantId, actorId, oldRole, newRole: dto.role }, 'user.role_changed');
-
-    await this.publishEvent('identity.user.role_changed.v1', {
-      tenant_id: tenantId,
-      user_id: userId,
-      old_role: oldRole,
-      new_role: dto.role,
-    });
   }
 
   /** A user's primary role (tenant_memberships) + additional roles (multi-role, union model). */
@@ -661,8 +691,6 @@ export class UserService implements OnModuleDestroy {
 
     logger.info({ userId, tenantId, actorId }, 'user.deactivated');
   }
-
-  /** Queue a platform-scope event. Durable and off the request path — see EventOutboxService. */
   private async publishEvent<T>(eventType: string, payload: T): Promise<void> {
     await this.outbox.publish<T>({
       event_type: eventType,

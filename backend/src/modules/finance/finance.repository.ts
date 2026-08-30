@@ -5,7 +5,9 @@
 import { Injectable, Scope, Inject } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
+import { OutboxPublisher } from '@cos/kafka';
 import { TenantPrismaService } from '../tenant/prisma/tenant-prisma.service';
+import type { OutboxEventInput } from '../../shared/outbox/outbox.types';
 import { applyCap, capLimit } from '../../shared/pagination/list-cap';
 import { clsTenantId } from '../../shared/context/cls-context';
 
@@ -50,15 +52,17 @@ export class FinanceRepository {
 
   // ── project_budgets ───────────────────────────────────────────────────────
 
-  async upsertBudget(params: {
-    project_id: string;
-    total_budget_amount: string;
-    total_budget_currency: string;
-    variance_alert_threshold: string;
-  }): Promise<ProjectBudgetRow> {
-    const rows = await this.db.run(
-      (tx) =>
-        tx.$queryRaw<ProjectBudgetRow[]>`
+  async upsertBudget(
+    params: {
+      project_id: string;
+      total_budget_amount: string;
+      total_budget_currency: string;
+      variance_alert_threshold: string;
+    },
+    buildOutboxEvent?: (row: ProjectBudgetRow) => OutboxEventInput,
+  ): Promise<ProjectBudgetRow> {
+    const rows = await this.db.run(async (tx) => {
+      const upserted = await tx.$queryRaw<ProjectBudgetRow[]>`
         INSERT INTO finance.project_budgets
           (project_id, tenant_id, total_budget_amount, total_budget_currency, variance_alert_threshold)
         VALUES
@@ -71,8 +75,13 @@ export class FinanceRepository {
           variance_alert_threshold = EXCLUDED.variance_alert_threshold,
           updated_at             = now()
         RETURNING *
-      `,
-    );
+      `;
+      // §35.13 ESC-13 — builder over the upserted row: budget_id is server-generated on first insert.
+      if (buildOutboxEvent && upserted[0]) {
+        await OutboxPublisher.write(tx, buildOutboxEvent(upserted[0]));
+      }
+      return upserted;
+    });
     return rows[0]!;
   }
 
@@ -88,15 +97,17 @@ export class FinanceRepository {
     return rows[0] ?? null;
   }
 
-  async updateBudgetAggregates(params: {
-    budget_id: string;
-    committed_amount: string;
-    actual_amount: string;
-    allocated_amount: string;
-  }): Promise<void> {
-    await this.db.run(
-      (tx) =>
-        tx.$executeRaw`
+  async updateBudgetAggregates(
+    params: {
+      budget_id: string;
+      committed_amount: string;
+      actual_amount: string;
+      allocated_amount: string;
+    },
+    outboxEvent?: OutboxEventInput,
+  ): Promise<void> {
+    await this.db.run(async (tx) => {
+      await tx.$executeRaw`
         UPDATE finance.project_budgets SET
           committed_amount = ${params.committed_amount}::decimal,
           actual_amount    = ${params.actual_amount}::decimal,
@@ -104,8 +115,11 @@ export class FinanceRepository {
           updated_at       = now()
         WHERE budget_id  = ${params.budget_id}::uuid
           AND tenant_id  = ${this.tenantId}::uuid
-      `,
-    );
+      `;
+      // §35.13 ESC-13 — the variance alert is only emitted when the aggregates that triggered
+      // it are actually persisted.
+      if (outboxEvent) await OutboxPublisher.write(tx, outboxEvent);
+    });
   }
 
   // ── budget_lines ──────────────────────────────────────────────────────────
@@ -238,18 +252,20 @@ export class FinanceRepository {
 
   // ── payments ──────────────────────────────────────────────────────────────
 
-  async createPayment(params: {
-    invoice_id: string;
-    project_id: string;
-    amount: string;
-    currency_code: string;
-    payment_date: string;
-    payment_reference?: string | null;
-    recorded_by: string;
-  }): Promise<PaymentRow> {
-    const rows = await this.db.run(
-      (tx) =>
-        tx.$queryRaw<PaymentRow[]>`
+  async createPayment(
+    params: {
+      invoice_id: string;
+      project_id: string;
+      amount: string;
+      currency_code: string;
+      payment_date: string;
+      payment_reference?: string | null;
+      recorded_by: string;
+    },
+    buildOutboxEvent?: (row: PaymentRow) => OutboxEventInput,
+  ): Promise<PaymentRow> {
+    const rows = await this.db.run(async (tx) => {
+      const inserted = await tx.$queryRaw<PaymentRow[]>`
         INSERT INTO finance.payments
           (invoice_id, project_id, tenant_id, amount, currency_code,
            payment_date, payment_reference, recorded_by)
@@ -260,8 +276,13 @@ export class FinanceRepository {
            ${params.payment_reference ?? null},
            ${params.recorded_by}::uuid)
         RETURNING *
-      `,
-    );
+      `;
+      // §35.13 ESC-13 — builder over the inserted row: payment_id is server-generated.
+      if (buildOutboxEvent && inserted[0]) {
+        await OutboxPublisher.write(tx, buildOutboxEvent(inserted[0]));
+      }
+      return inserted;
+    });
     return rows[0]!;
   }
 
@@ -772,22 +793,30 @@ export class FinanceRepository {
   }
 
   /** DRAFT → ISSUED (approval, §15) or ISSUED → PAID (AR receipt recorded). */
-  async updateBillingStatus(params: {
-    billing_id: string;
-    status: 'ISSUED' | 'PAID';
-    approved_by?: string | null;
-  }): Promise<BillingRow> {
-    const rows = await this.db.run(
-      (tx) =>
-        tx.$queryRaw<BillingRow[]>`
+  async updateBillingStatus(
+    params: {
+      billing_id: string;
+      status: 'ISSUED' | 'PAID';
+      approved_by?: string | null;
+    },
+    buildOutboxEvent?: (row: BillingRow) => OutboxEventInput,
+  ): Promise<BillingRow> {
+    const rows = await this.db.run(async (tx) => {
+      const updated = await tx.$queryRaw<BillingRow[]>`
         UPDATE finance.billings SET
           status = ${params.status}::finance."BillingStatus",
           approved_by = COALESCE(${params.approved_by ?? null}::uuid, approved_by),
           issued_at = CASE WHEN ${params.status} = 'ISSUED' THEN now() ELSE issued_at END
         WHERE billing_id = ${params.billing_id}::uuid AND tenant_id = ${this.tenantId}::uuid
         RETURNING *
-      `,
-    );
+      `;
+      // §35.13 ESC-13 — approveBilling derives its payload from the UPDATEd row; recordArReceipt
+      // passes a constant builder because its ids are already known.
+      if (buildOutboxEvent && updated[0]) {
+        await OutboxPublisher.write(tx, buildOutboxEvent(updated[0]));
+      }
+      return updated;
+    });
     return rows[0]!;
   }
 

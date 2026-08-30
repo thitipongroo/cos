@@ -23,6 +23,11 @@ coverage
 coverage.xml
 htmlcov/
 
+# `go test -coverprofile` drops coverage.out in each Go module — the go-tests job writes one per
+# matrix entry now that the QM-1 Go floor is gated (§35.13 ESC-23). Per-run artifact; the numbers
+# live in the CI log.
+coverage.out
+
 # Expo local state/cache (apps/mobile) — regenerated per machine, must not be committed (expo-doctor)
 .expo/
 

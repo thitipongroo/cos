@@ -429,7 +429,9 @@ Hard blocks — system rejects completion :
 4. Permit — no linked permit with status IN (expired, revoked)
 5. Safety — no linked safety incident with status = open and severity IN (high, critical)
 6. Delay — task.status != blocked (delay event auto-sets status = blocked on detection)
-7. Material — linked BOQ item's PO has at least one delivery with status != pending
+7. Material — linked BOQ item's PO has at least one delivery record (corrected 2026-08-22:
+   `deliveries` has no status column and none was ever declared; a row means goods were received,
+   since delivered_at and received_by are both NOT NULL)
 
 Warn only — UI warning shown; completion still allowed :
 

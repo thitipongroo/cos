@@ -28,6 +28,8 @@
     "skipLibCheck": true,
     "preserveWatchOutput": true,
     "paths": {
+      "@cos/kafka": ["./packages/@cos/kafka/src/index.ts"],
+      "@cos/kafka/*": ["./packages/@cos/kafka/src/*"],
       "@cos/shared": ["./packages/@cos/shared/src/index.ts"],
       "@cos/shared/*": ["./packages/@cos/shared/src/*"],
       "@cos/rbac": ["./packages/@cos/rbac/src/index.ts"],

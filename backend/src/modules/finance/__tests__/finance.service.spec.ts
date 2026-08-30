@@ -1,13 +1,9 @@
 // Unit tests — Finance Service (Phase 7)
 // Focus: budget aggregation accuracy, variance calculation, Kafka consumer handlers.
 
-jest.mock('@cos/shared', () => ({
-  KafkaProducer: jest.fn().mockImplementation(() => ({
-    connect: jest.fn().mockResolvedValue(undefined),
-    publish: jest.fn().mockResolvedValue(undefined),
-    disconnect: jest.fn().mockResolvedValue(undefined),
-  })),
-}));
+// §35.13 ESC-13: the service no longer holds a KafkaProducer — it hands the repository an outbox
+// envelope (or a builder over the written row) that rides the business transaction. These tests
+// therefore assert on what reached the repository, resolving builders exactly as the repo does.
 
 jest.mock('@cos/logger', () => ({
   createLogger: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }),
@@ -79,6 +75,19 @@ const mockRepo = {
   findPendingPaymentsDue: jest.fn(),
 };
 
+/**
+ * Resolves the outbox argument a repository mock received. Where the service passes a builder,
+ * this invokes it with `row` exactly as the real repository does — so the builder body is
+ * genuinely exercised (QM-1: an uncalled callback is uncovered code).
+ */
+const outboxArg = (
+  fn: jest.Mock,
+  argIndex: number,
+  row?: unknown,
+): { event_type?: string; payload?: Record<string, unknown> } | undefined => {
+  const arg = fn.mock.calls[0]?.[argIndex];
+  return typeof arg === 'function' ? arg(row) : arg;
+};
 const mockFileClient = { getFileMetadata: jest.fn(), upload: jest.fn() };
 const mockCredentialClient = { issue: jest.fn(), verify: jest.fn() };
 const mockSignLink = { issue: jest.fn(), verify: jest.fn(), hashToken: jest.fn() };
@@ -201,6 +210,7 @@ describe('createOrUpdateBudget', () => {
     expect(result.budget_id).toBe('budget-uuid-001');
     expect(mockRepo.upsertBudget).toHaveBeenCalledWith(
       expect.objectContaining({ total_budget_currency: 'THB' }),
+      expect.any(Function),
     );
   });
 
@@ -213,6 +223,24 @@ describe('createOrUpdateBudget', () => {
     });
     expect(mockRepo.upsertBudget).toHaveBeenCalledWith(
       expect.objectContaining({ variance_alert_threshold: '15.00' }),
+      expect.any(Function),
+    );
+  });
+
+  it('defaults the variance threshold to 10% when none is given (master:3016)', async () => {
+    // "DECIDED: default threshold = 10%". Only the OVERRIDE branch was covered, so the default was
+    // free to be any number at all — and the number decides when finance.variance.alert.v1 fires,
+    // which is the event that pages FINANCE and TENANT_ADMIN.
+    mockRepo.upsertBudget.mockResolvedValue(budgetRow);
+    await service.createOrUpdateBudget('proj-uuid-001', {
+      total_budget_amount: '1000000.0000',
+      total_budget_currency: 'THB',
+    });
+    expect(mockRepo.upsertBudget).toHaveBeenCalledWith(
+      expect.objectContaining({ variance_alert_threshold: '10.00' }),
+      // The builder that turns the UPSERTed row into the finance.budget.created.v1 envelope, written
+      // in the same transaction (§35.13 ESC-13).
+      expect.any(Function),
     );
   });
 
@@ -224,6 +252,7 @@ describe('createOrUpdateBudget', () => {
     });
     expect(mockRepo.upsertBudget).toHaveBeenCalledWith(
       expect.objectContaining({ total_budget_amount: '1.1234' }),
+      expect.any(Function),
     );
   });
 });
@@ -260,6 +289,40 @@ describe('getBudgetSummary', () => {
     const result = await service.getBudgetSummary('proj-uuid-001');
     // (0+110-100)/100*100 = 10%
     expect(result.variance_percentage).toBe('10.0000');
+  });
+
+  it('counts ACTUAL as well as committed (master:2989)', async () => {
+    // The case above uses actual = 0, so it proves `committed` is in the formula and says nothing
+    // about `actual` — dropping `actual.plus(...)` leaves it green. Both non-zero and different, so
+    // neither term can be removed without moving the answer:
+    //   (30 + 90 - 100) / 100 * 100 = 20%
+    // Missing `actual`  → -10%.  Missing `committed` → -70%.  Either is unmistakable.
+    const budget = {
+      ...budgetRow,
+      allocated_amount: '100.0000',
+      committed_amount: '90.0000',
+      actual_amount: '30.0000',
+    };
+    mockRepo.findBudgetByProject.mockResolvedValue(budget);
+    mockRepo.findLinesByBudget.mockResolvedValue([]);
+    const result = await service.getBudgetSummary('proj-uuid-001');
+    expect(result.variance_percentage).toBe('20.0000');
+  });
+
+  it('reports a NEGATIVE variance while a project is under budget', async () => {
+    // The sign carries the meaning: a project 40% underspent must not read as 40% over. The variance
+    // alert compares this figure against a threshold, so a lost sign fires an overrun alert on a
+    // project that is doing fine.
+    const budget = {
+      ...budgetRow,
+      allocated_amount: '100.0000',
+      committed_amount: '40.0000',
+      actual_amount: '20.0000',
+    };
+    mockRepo.findBudgetByProject.mockResolvedValue(budget);
+    mockRepo.findLinesByBudget.mockResolvedValue([]);
+    const result = await service.getBudgetSummary('proj-uuid-001');
+    expect(result.variance_percentage).toBe('-40.0000');
   });
 
   it('throws NotFoundException when budget not found', async () => {
@@ -456,8 +519,8 @@ describe('variance alert', () => {
       total_amount: { amount: '80.0000', currency_code: 'THB' },
     });
 
-    const instance = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
-    expect(instance.publish).toHaveBeenCalledWith(
+    // The alert rides the aggregates UPDATE, so it can only be emitted if that UPDATE committed.
+    expect(outboxArg(mockRepo.updateBudgetAggregates, 1)).toEqual(
       expect.objectContaining({ event_type: expect.stringContaining('variance.alert') }),
     );
   });
@@ -483,10 +546,8 @@ describe('variance alert', () => {
       total_amount: { amount: '80.0000', currency_code: 'THB' },
     });
 
-    const instance = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
-    expect(instance.publish).not.toHaveBeenCalledWith(
-      expect.objectContaining({ event_type: expect.stringContaining('variance.alert') }),
-    );
+    // No alert envelope is handed to the UPDATE at all — nothing to relay.
+    expect(outboxArg(mockRepo.updateBudgetAggregates, 1)).toBeUndefined();
   });
 
   it('recalculate skips when no budget found', async () => {
@@ -518,9 +579,12 @@ describe('recordPayment', () => {
     });
     expect(result.payment_id).toBe('pay-uuid-001');
 
-    const instance = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
-    expect(instance.publish).toHaveBeenCalledWith(
-      expect.objectContaining({ event_type: expect.stringContaining('payment.processed') }),
+    // Builder resolved against the INSERTed row — payment_id is server-generated.
+    expect(outboxArg(mockRepo.createPayment, 1, paymentRow)).toEqual(
+      expect.objectContaining({
+        event_type: 'finance.payment.processed.v1',
+        payload: expect.objectContaining({ payment_id: 'pay-uuid-001' }),
+      }),
     );
   });
 });
@@ -567,7 +631,36 @@ describe('getVarianceReport', () => {
   });
 });
 
-// ── emitEvent error handling ───────────────────────────────────────────────
+// ── outbox write failure ───────────────────────────────────────────────────
+
+// §35.13 ESC-13: `emitEvent` used to log `kafka.publish.failed` and return normally, so a broker
+// outage silently dropped a financial event while the budget row was already committed. The
+// outbox write shares the transaction — its failure must roll the budget back, not be swallowed.
+describe('outbox write failure', () => {
+  it('propagates the failure instead of silently dropping the event', async () => {
+    mockRepo.upsertBudget.mockRejectedValueOnce(new Error('outbox insert failed'));
+    await expect(
+      service.createOrUpdateBudget('proj-uuid-001', {
+        total_budget_amount: '1000000.0000',
+        total_budget_currency: 'THB',
+      }),
+    ).rejects.toThrow('outbox insert failed');
+  });
+
+  it('builds the budget event from the upserted row, not the DTO', async () => {
+    mockRepo.upsertBudget.mockResolvedValue(budgetRow);
+    await service.createOrUpdateBudget('proj-uuid-001', {
+      total_budget_amount: '1000000.0000',
+      total_budget_currency: 'THB',
+    });
+    expect(outboxArg(mockRepo.upsertBudget, 1, budgetRow)).toEqual(
+      expect.objectContaining({
+        event_type: 'finance.budget.created.v1',
+        payload: expect.objectContaining({ budget_id: 'budget-uuid-001' }),
+      }),
+    );
+  });
+});
 
 // (Named for the two Kafka catch-branch tests it used to open with; those moved to
 // shared/events/__tests__/event-outbox.service.spec.ts when the services stopped publishing inline.)
@@ -1161,6 +1254,15 @@ describe('AR billing — customers, contracts, invoices and payments', () => {
       expect(r.status).toBe('ISSUED');
       expect(mockRepo.updateBillingStatus).toHaveBeenCalledWith(
         expect.objectContaining({ status: 'ISSUED', approved_by: 'user-uuid-001' }),
+        expect.any(Function),
+      );
+      expect(
+        outboxArg(mockRepo.updateBillingStatus, 1, { ...draftBilling, status: 'ISSUED' }),
+      ).toEqual(
+        expect.objectContaining({
+          event_type: 'finance.billing.approved.v1',
+          payload: expect.objectContaining({ billing_id: 'bill-1', tier: 'EXECUTIVE' }),
+        }),
       );
     });
 
@@ -1213,10 +1315,17 @@ describe('AR billing — customers, contracts, invoices and payments', () => {
         received_date: '2026-07-14',
       });
       expect(r.ar_receipt_id).toBe('rcpt-1');
-      expect(mockRepo.updateBillingStatus).toHaveBeenCalledWith({
-        billing_id: 'bill-1',
-        status: 'PAID',
-      });
+      expect(mockRepo.updateBillingStatus).toHaveBeenCalledWith(
+        { billing_id: 'bill-1', status: 'PAID' },
+        expect.any(Function),
+      );
+      // The receipt event is anchored to the PAID transition, not to the receipt INSERT.
+      expect(outboxArg(mockRepo.updateBillingStatus, 1)).toEqual(
+        expect.objectContaining({
+          event_type: 'finance.ar_receipt.recorded.v1',
+          payload: expect.objectContaining({ ar_receipt_id: 'rcpt-1', billing_id: 'bill-1' }),
+        }),
+      );
     });
 
     it('recordArReceipt throws when billing not ISSUED', async () => {

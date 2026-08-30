@@ -22,14 +22,14 @@ function row(over: Partial<Record<string, unknown>> = {}) {
     totalActual: '350000.0000',
     totalBudget: '1000000.0000',
     utilizationPct: 35,
-    atRisk: false,
+    atRisk: 0,
     overdueInvoiceCount: 0,
     ...over,
   };
 }
 
 const OVERRUN = row({ projectId: 'proj-crit-1111', utilizationPct: 118 });
-const FLAGGED = row({ projectId: 'proj-high-2222', atRisk: true });
+const FLAGGED = row({ projectId: 'proj-high-2222', atRisk: 1 });
 const OVERDUE = row({ projectId: 'proj-med-3333', overdueInvoiceCount: 2 });
 const CALM = row({ projectId: 'proj-low-4444' });
 

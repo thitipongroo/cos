@@ -11,7 +11,7 @@ import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { Roles } from '@cos/rbac';
 import { CosRole } from '@cos/types';
-import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../../shared/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../shared/guards/roles.guard';
 import { FeatureFlag } from '../../../shared/feature-flags/feature-flag.decorator';
 import { PrivacyInquiryService } from './privacy-inquiry.service';

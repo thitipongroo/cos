@@ -6,6 +6,7 @@ jest.mock('@cos/logger', () => ({
 }));
 
 import { ProcurementController } from '../procurement.controller';
+import { PoApprovalTier } from '../dto/po-approval.dto';
 
 const mockSvc = {
   createVendor: jest.fn(),
@@ -173,7 +174,7 @@ describe('ProcurementController', () => {
   });
 
   it('approvePo delegates to svc.approvePo', () => {
-    ctrl.approvePo('po-001', { tier: 'PM' });
+    ctrl.approvePo('po-001', { tier: PoApprovalTier.PM });
     expect(mockSvc.approvePo).toHaveBeenCalledWith('po-001', 'PM');
   });
 

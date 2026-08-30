@@ -15,6 +15,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from tests.fake_pool import TenantScopedPoolMixin  # noqa: E402
+
 import main as main_module
 import pytest
 from fastapi import HTTPException
@@ -327,7 +329,7 @@ class TestReportHistory:
     async def test_returns_history_scoped_to_the_project(self, monkeypatch):
         captured = {}
 
-        class _Pool:
+        class _Pool(TenantScopedPoolMixin):
             async def fetch(self, query, *params):
                 captured["params"] = params
                 return [{"report_id": "r-1"}]
@@ -406,11 +408,11 @@ class TestCompletionsProviderCall:
             async def complete(self, messages, model_hint):
                 return _FullResp()
 
-        class _Pool:
+        class _Pool(TenantScopedPoolMixin):
             def __init__(self):
                 self.executed = []
 
-            async def execute(self, *args):
+            async def _on_execute(self, *args):
                 self.executed.append(args)
 
         pool = _Pool()

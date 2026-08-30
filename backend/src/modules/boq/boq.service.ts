@@ -1,7 +1,8 @@
 // BOQ Service — Phase 4
 // Business logic: versioning, calculation, approval.
 // Financial precision: decimal.js ROUND_HALF_UP throughout (spec §FINANCIAL PRECISION SPEC).
-// Emits typed Kafka events via @cos/shared KafkaProducer (QM-8).
+// Emits typed Kafka events through the Phase 8 OUTBOX (QM-8): every event is written to
+// platform.outbox_events inside the same transaction as its business write (§35.13 ESC-13).
 
 import {
   Injectable,
@@ -17,6 +18,8 @@ import type { Request } from 'express';
 import { randomUUID } from 'crypto';
 import { Decimal, calculateLineTotal, sumDecimals } from '@cos/financial';
 import { toBoqCsv } from './boq-csv.util';
+import { buildOutboxEvent } from '../../shared/outbox/outbox.types';
+import type { OutboxEventInput } from '../../shared/outbox/outbox.types';
 import { EventOutboxService } from '../../shared/events/event-outbox.service';
 import { createLogger } from '@cos/logger';
 import { BoqRepository } from './boq.repository';
@@ -53,16 +56,58 @@ export class BoqService {
   // ── Version Operations ────────────────────────────────────────────────────
 
   async createVersion(project_id: string, dto: CreateBoqVersionDto): Promise<BoqVersionRow> {
-    // The DRAFT check and the version_number allocation must happen together, under one lock: run as
-    // separate queries they were a check-then-act race in which two concurrent creates could both
+    // The DRAFT check and the version_number allocation must happen together, under one lock: run
+    // as separate queries they were a check-then-act race in which two concurrent creates could both
     // see "no DRAFT" and both claim the same version number. claimNextVersion() does both inside a
     // single per-project transaction and returns null when a DRAFT already exists.
-    const claimed = await this.repo.claimNextVersion({
-      project_id,
-      version_name: dto.version_name ?? null,
-      currency_code: dto.currency_code,
-      created_by: this.userId,
-    });
+    //
+    // The outbox builder goes in with it (§35.13 ESC-13): the events are written from the INSERTed
+    // row, inside that same transaction, so version_id is the real generated id and a rollback
+    // emits nothing. A first version emits two events, hence an array.
+    const claimed = await this.repo.claimNextVersion(
+      {
+        project_id,
+        version_name: dto.version_name ?? null,
+        currency_code: dto.currency_code,
+        created_by: this.userId,
+      },
+      (row) => {
+        const events: OutboxEventInput[] = [
+          buildOutboxEvent({
+            eventType: 'construction.boq.version_created.v1',
+            tenantId: this.tenantId,
+            actorId: this.userId,
+            correlationId: this.correlationId,
+            payload: {
+              boq_version_id: row.version_id,
+              project_id,
+              version_number: row.version_number,
+              total_estimated: {
+                amount: row.total_estimated_amount,
+                currency_code: row.total_estimated_currency,
+              },
+              created_by: this.userId,
+            },
+          }),
+        ];
+        if (row.version_number === 1) {
+          events.push(
+            buildOutboxEvent({
+              eventType: 'construction.boq.created.v1',
+              tenantId: this.tenantId,
+              actorId: this.userId,
+              correlationId: this.correlationId,
+              payload: {
+                project_id,
+                version_id: row.version_id,
+                version_number: row.version_number,
+              },
+            }),
+          );
+        }
+        return events;
+      },
+    );
     if (!claimed) {
       const existingDraft = await this.repo.findDraftVersion(project_id);
       throw new ConflictException(
@@ -91,25 +136,6 @@ export class BoqService {
       },
       'boq.version.created',
     );
-
-    await this.publishEvent('construction.boq.version_created.v1', {
-      boq_version_id: version.version_id,
-      project_id,
-      version_number: version.version_number,
-      total_estimated: {
-        amount: version.total_estimated_amount,
-        currency_code: version.total_estimated_currency,
-      },
-      created_by: this.userId,
-    });
-
-    if (newVersionNumber === 1) {
-      await this.publishEvent('construction.boq.created.v1', {
-        project_id,
-        version_id: version.version_id,
-        version_number: version.version_number,
-      });
-    }
 
     return version;
   }
@@ -145,11 +171,28 @@ export class BoqService {
     // Recalculate final total before approving
     const finalTotal = await this.recalculateVersionTotal(version_id);
 
-    await this.repo.approveVersion({
-      version_id,
-      approved_by: this.userId,
-      new_total: finalTotal,
-    });
+    // Outbox (§35.13 ESC-13) — the event joins the supersede+approve transaction.
+    await this.repo.approveVersion(
+      {
+        version_id,
+        approved_by: this.userId,
+        new_total: finalTotal,
+      },
+      buildOutboxEvent({
+        eventType: 'construction.boq.version_approved.v1',
+        tenantId: this.tenantId,
+        actorId: this.userId,
+        correlationId: this.correlationId,
+        payload: {
+          version_id,
+          project_id,
+          version_number: version.version_number,
+          total_estimated_amount: finalTotal,
+          total_estimated_currency: version.total_estimated_currency,
+          approved_by: this.userId,
+        },
+      }),
+    );
 
     const approved = await this.repo.findVersionById(version_id);
 
@@ -165,18 +208,14 @@ export class BoqService {
       'boq.version.approved',
     );
 
-    await this.publishEvent('construction.boq.version_approved.v1', {
-      version_id,
-      project_id,
-      version_number: version.version_number,
-      total_estimated_amount: finalTotal,
-      total_estimated_currency: version.total_estimated_currency,
-      approved_by: this.userId,
-    });
-
-    // Publish the full itemized line set of the approved version so downstream services can materialize
-    // it (finance contract-document generation, ADR-058 CT-2c-2). Snapshot on approval — a contract is
-    // generated against an approved BOQ, so per-version snapshots are the natural grain.
+    // construction.boq.version_approved.v1 is NOT published here: approveVersion() above already
+    // wrote it into the supersede+approve transaction, so publishing again would emit the event
+    // twice — once durably, once transactionally.
+    //
+    // items_published is different. It needs the line set, which is read after the approval commits,
+    // so it cannot join that transaction; it goes through the durable outbox instead. Downstream
+    // materialisation (finance contract-document generation, ADR-058 CT-2c-2) snapshots per version,
+    // which is the natural grain because a contract is generated against an approved BOQ.
     const items = await this.repo.findItemsByVersion(version_id);
     await this.publishEvent('construction.boq.items_published.v1', {
       version_id,
@@ -232,8 +271,7 @@ export class BoqService {
       sort_order: dto.sort_order ?? 0,
     });
 
-    const newTotal = await this.recalculateFromCategory(dto.category_id, version_id);
-    await this.publishItemsUpdated(version_id, version_id, 1, newTotal);
+    await this.recalculateFromCategory(dto.category_id, version_id, 1);
     return item;
   }
 
@@ -258,8 +296,7 @@ export class BoqService {
       sort_order: dto.sort_order,
     });
 
-    const newTotal = await this.recalculateFromCategory(existing.category_id, existing.version_id);
-    await this.publishItemsUpdated(existing.version_id, existing.version_id, 1, newTotal);
+    await this.recalculateFromCategory(existing.category_id, existing.version_id, 1);
     return updated;
   }
 
@@ -269,8 +306,7 @@ export class BoqService {
     await this.assertDraftVersion(existing.version_id);
 
     await this.repo.deleteItem(item_id);
-    const newTotal = await this.recalculateFromCategory(existing.category_id, existing.version_id);
-    await this.publishItemsUpdated(existing.version_id, existing.version_id, 1, newTotal);
+    await this.recalculateFromCategory(existing.category_id, existing.version_id, 1);
   }
 
   // ── Export ────────────────────────────────────────────────────────────────
@@ -318,12 +354,16 @@ export class BoqService {
    * Recalculate category subtotal and version total from a changed category.
    * Returns the new version total as a decimal string.
    */
-  private async recalculateFromCategory(category_id: string, version_id: string): Promise<string> {
+  private async recalculateFromCategory(
+    category_id: string,
+    version_id: string,
+    changed_count: number,
+  ): Promise<string> {
     const allItems = await this.repo.findItemsByVersion(version_id);
     const categoryItems = allItems.filter((i) => i.category_id === category_id);
     const categorySubtotal = sumDecimals(categoryItems.map((i) => new Decimal(i.estimated_total)));
     await this.repo.updateCategorySubtotal(category_id, categorySubtotal.toFixed(4));
-    return this.recalculateVersionTotal(version_id);
+    return this.recalculateAndRecordUpdate(version_id, changed_count);
   }
 
   /**
@@ -372,20 +412,70 @@ export class BoqService {
     return totalStr;
   }
 
-  private async publishItemsUpdated(
+  /**
+   * Recalculate and, in the SAME transaction as the closing version-total UPDATE, write the
+   * `construction.boq.updated.v1` outbox row (§35.13 ESC-13). Used by the item add/update/delete
+   * paths, which previously recalculated and then fire-and-forget published.
+   */
+  private async recalculateAndRecordUpdate(
     version_id: string,
-    project_id: string,
     changed_count: number,
-    new_total: string,
-  ): Promise<void> {
+  ): Promise<string> {
+    const allItems = await this.repo.findItemsByVersion(version_id);
+    const categories = await this.repo.findCategoriesByVersion(version_id);
+
+    // One statement, like recalculateVersionTotal above. This was the same per-category loop, so a
+    // re-cost issued one transaction per category and a mid-loop failure left the version half
+    // recalculated — with the version total, and therefore the outbox event, never written at all.
+    const subtotals = categories.map((cat) => ({
+      category_id: cat.category_id,
+      subtotal: sumDecimals(
+        allItems
+          .filter((i) => i.category_id === cat.category_id)
+          .map((i) => new Decimal(i.estimated_total)),
+      ),
+    }));
+
+    await this.repo.updateCategorySubtotals(
+      subtotals.map((sub) => ({
+        category_id: sub.category_id,
+        subtotal: sub.subtotal.toFixed(4),
+      })),
+    );
+
+    // EVERY category, not just the root ones — the same OQ-23 correction recalculateVersionTotal
+    // carries, and for the same reason: an item in a sub-category was worth nothing to the version
+    // total. This path is the one a re-cost takes, so the bug survived here after being fixed there,
+    // which is worse than either — the same BOQ reported two different totals depending on which
+    // edit triggered the recalculation. boq_items.category_id is a single FK, so summing all
+    // categories cannot double-count.
+    const versionTotal = sumDecimals(subtotals.map((sub) => sub.subtotal));
+
+    const totalStr = versionTotal.toFixed(4);
     const version = await this.repo.findVersionById(version_id);
-    await this.publishEvent('construction.boq.updated.v1', {
+
+    await this.repo.updateVersionTotal(
       version_id,
-      project_id,
-      changed_items_count: changed_count,
-      new_total_estimated_amount: new_total,
-      new_total_estimated_currency: version?.total_estimated_currency ?? 'THB',
-    });
+      totalStr,
+      buildOutboxEvent({
+        eventType: 'construction.boq.updated.v1',
+        tenantId: this.tenantId,
+        actorId: this.userId,
+        correlationId: this.correlationId,
+        payload: {
+          version_id,
+          // project_id comes from the version row. Corrected 2026-08-23 (§35.13 ESC-18): all three
+          // call sites previously passed `version_id` into this slot, so every emitted
+          // construction.boq.updated.v1 carried a version id where the contract requires a project id.
+          project_id: version?.project_id ?? '',
+          changed_items_count: changed_count,
+          new_total_estimated_amount: totalStr,
+          new_total_estimated_currency: version?.total_estimated_currency ?? 'THB',
+        },
+      }),
+    );
+
+    return totalStr;
   }
 
   /** Queue a domain event. Durable and off the request path — see EventOutboxService. */

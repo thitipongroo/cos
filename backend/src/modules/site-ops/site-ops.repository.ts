@@ -5,9 +5,12 @@
 import { Injectable, Scope, Inject } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
+import { OutboxPublisher } from '@cos/kafka';
 import { TenantPrismaService } from '../tenant/prisma/tenant-prisma.service';
+import type { OutboxEventInput } from '../../shared/outbox/outbox.types';
 import { applyCap, capLimit } from '../../shared/pagination/list-cap';
 import { clsTenantId } from '../../shared/context/cls-context';
+import { projectExistsInTenant } from '../project/public/parent-existence';
 
 // Row types live in ./site-ops.rows; imported here for the method signatures below and re-exported so
 // existing `from './site-ops.repository'` type imports (service, specs) keep resolving.
@@ -41,26 +44,41 @@ export class SiteOpsRepository {
     return this.request.tenantId ?? clsTenantId();
   }
 
+  /**
+   * True when the project exists in the caller's tenant.
+   *
+   * Delegates to the same helper the spatial repositories use, so the existence SQL lives in one
+   * place. Needed because site_reports, issues and inspections all carry a FOREIGN KEY to
+   * projects.projects (20260822000002_site_ops_foreign_keys): without this check a client-supplied
+   * project_id that does not exist reached PostgreSQL and came back as SQLSTATE 23503, which no
+   * filter maps — so the caller got a bare 500 for what is a request error.
+   */
+  async projectExists(projectId: string): Promise<boolean> {
+    return projectExistsInTenant(this.db, projectId, this.tenantId);
+  }
+
   // ── Site Reports ───────────────────────────────────────────────────────
 
-  async createSiteReport(params: {
-    report_id: string;
-    project_id: string;
-    submitted_by: string;
-    report_date: string;
-    summary: string | null;
-    blockers?: string | null;
-    blocker_category?: string | null;
-    weather: string | null;
-    manpower_count: number | null;
-    shift?: string | null;
-    client_submitted_at: string | null;
-    latitude?: number | null;
-    longitude?: number | null;
-  }): Promise<SiteReportRow> {
-    const rows = await this.db.run(
-      (tx) =>
-        tx.$queryRaw<SiteReportRow[]>`
+  async createSiteReport(
+    params: {
+      report_id: string;
+      project_id: string;
+      submitted_by: string;
+      report_date: string;
+      summary: string | null;
+      blockers?: string | null;
+      blocker_category?: string | null;
+      weather: string | null;
+      manpower_count: number | null;
+      shift?: string | null;
+      client_submitted_at: string | null;
+      latitude?: number | null;
+      longitude?: number | null;
+    },
+    outboxEvent?: OutboxEventInput,
+  ): Promise<SiteReportRow> {
+    const rows = await this.db.run(async (tx) => {
+      const written = await tx.$queryRaw<SiteReportRow[]>`
         INSERT INTO site_ops.site_reports
           (report_id, project_id, tenant_id, report_date, submitted_by,
            summary, blockers, blocker_category, weather, manpower_count, shift,
@@ -86,8 +104,10 @@ export class SiteOpsRepository {
             longitude           = EXCLUDED.longitude,
             modified_at         = now()
         RETURNING *
-      `,
-    );
+      `;
+      if (outboxEvent) await OutboxPublisher.write(tx, outboxEvent);
+      return written;
+    });
     return rows[0]!;
   }
 
@@ -298,34 +318,36 @@ export class SiteOpsRepository {
    * ON CONFLICT DO NOTHING is the same shape `createIncident`, `createDelivery` and
    * `createPurchaseRequest` use; the caller reads the existing row back and skips the side effects.
    */
-  async createIssue(params: {
-    issue_id: string;
-    issue_number: string;
-    project_id: string;
-    report_id: string | null;
-    title: string;
-    description: string | null;
-    severity: string;
-    /**
-     * DEFECT | REWORK | PUNCH | GENERAL. `null` lets the column's own DEFAULT 'GENERAL' apply, which
-     * is what every caller got before the field was exposed — COALESCE below, not a TS default, so
-     * the default lives in exactly one place (the schema).
-     */
-    issue_type?: string | null;
-    assigned_to: string | null;
-    /**
-     * Who raised it. Passed in like `submitted_by` on a site report rather than read here, because
-     * the repository holds tenant context but not the actor. Without it an issue the subject raised
-     * but was never assigned is unattributable in their PDPA export (20260804000004).
-     */
-    created_by: string;
-    client_submitted_at: string | null;
-    latitude?: number | null;
-    longitude?: number | null;
-  }): Promise<IssueRow | null> {
-    const rows = await this.db.run(
-      (tx) =>
-        tx.$queryRaw<IssueRow[]>`
+  async createIssue(
+    params: {
+      issue_id: string;
+      issue_number: string;
+      project_id: string;
+      report_id: string | null;
+      title: string;
+      description: string | null;
+      severity: string;
+      /**
+       * DEFECT | REWORK | PUNCH | GENERAL. `null` lets the column's own DEFAULT 'GENERAL' apply, which
+       * is what every caller got before the field was exposed — COALESCE below, not a TS default, so
+       * the default lives in exactly one place (the schema).
+       */
+      issue_type?: string | null;
+      assigned_to: string | null;
+      /**
+       * Who raised it. Passed in like `submitted_by` on a site report rather than read here, because
+       * the repository holds tenant context but not the actor. Without it an issue the subject raised
+       * but was never assigned is unattributable in their PDPA export (20260804000004).
+       */
+      created_by: string;
+      client_submitted_at: string | null;
+      latitude?: number | null;
+      longitude?: number | null;
+    },
+    outboxEvent?: OutboxEventInput,
+  ): Promise<IssueRow | null> {
+    const rows = await this.db.run(async (tx) => {
+      const written = await tx.$queryRaw<IssueRow[]>`
         INSERT INTO site_ops.issues
           (issue_id, issue_number, project_id, tenant_id, report_id, title, description,
            severity, issue_type, assigned_to, created_by, client_submitted_at, latitude, longitude)
@@ -340,10 +362,12 @@ export class SiteOpsRepository {
            ${params.latitude ?? null}::numeric, ${params.longitude ?? null}::numeric)
         ON CONFLICT (issue_id) DO NOTHING
         RETURNING *
-      `,
-    );
-    // `?? null`, not `rows[0]!` — DO NOTHING returns no row, and the non-null assertion would hand
-    // the caller `undefined` typed as an IssueRow.
+      `;
+      if (outboxEvent) await OutboxPublisher.write(tx, outboxEvent);
+      return written;
+    });
+    // `?? null`, not `rows[0]!` — ON CONFLICT DO NOTHING returns no row on a replayed create, and
+    // the non-null assertion would hand the caller `undefined` typed as an IssueRow.
     return rows[0] ?? null;
   }
 
@@ -428,29 +452,67 @@ export class SiteOpsRepository {
     return rows[0] ?? null;
   }
 
+  /**
+   * Direct status transition (§35.13 ESC-21) — the write behind
+   * `PATCH /api/v1/site/issues/:issueId/status`.
+   *
+   * Separate from `updateIssue`, which applies FIELD_LEVEL_MERGE and therefore always writes the
+   * server's existing status back. Before this method existed, `issues.status` could not be
+   * changed through any endpoint: every issue stayed OPEN for its whole life, and
+   * `site.issue.status_changed.v1` was unreachable.
+   *
+   * @param buildOutboxEvent Builder over the UPDATEd row — skipped when the UPDATE matched
+   *   nothing, so a missing issue emits no event.
+   */
+  async updateIssueStatus(
+    issueId: string,
+    status: string,
+    resolutionNote: string | null,
+    buildOutboxEvent?: (row: IssueRow) => OutboxEventInput,
+  ): Promise<IssueRow | null> {
+    const rows = await this.db.run(async (tx) => {
+      const written = await tx.$queryRaw<IssueRow[]>`
+        UPDATE site_ops.issues SET
+          status          = ${status},
+          resolution_note = COALESCE(${resolutionNote}, resolution_note),
+          modified_at     = now()
+        WHERE issue_id  = ${issueId}::uuid
+          AND tenant_id = ${this.tenantId}::uuid
+        RETURNING *
+      `;
+      if (buildOutboxEvent && written[0]) {
+        await OutboxPublisher.write(tx, buildOutboxEvent(written[0]));
+      }
+      return written;
+    });
+    return rows[0] ?? null;
+  }
+
   // ── Inspections ────────────────────────────────────────────────────────
 
-  async createInspection(params: {
-    inspection_id: string;
-    project_id: string;
-    checklist_id: string;
-    status: string;
-    inspected_by: string;
-    inspected_at: string;
-    notes: string | null;
-    issue_severity?: string | null;
-    /**
-     * Drawn attestation mark — AnnotationStroke[] (migration 20260808000002). Serialised here rather
-     * than in the service so the JSONB cast lives beside the query that needs it; `null` for an
-     * unsigned inspection, which is every row created before the pad existed.
-     */
-    signature?: unknown[] | null;
-    latitude?: number | null;
-    longitude?: number | null;
-  }): Promise<InspectionRow> {
-    const rows = await this.db.run(
-      (tx) =>
-        tx.$queryRaw<InspectionRow[]>`
+  async createInspection(
+    params: {
+      inspection_id: string;
+      project_id: string;
+      checklist_id: string;
+      status: string;
+      inspected_by: string;
+      inspected_at: string;
+      notes: string | null;
+      issue_severity?: string | null;
+      /**
+       * Drawn attestation mark — AnnotationStroke[] (migration 20260808000002). Serialised here rather
+       * than in the service so the JSONB cast lives beside the query that needs it; `null` for an
+       * unsigned inspection, which is every row created before the pad existed.
+       */
+      signature?: unknown[] | null;
+      latitude?: number | null;
+      longitude?: number | null;
+    },
+    outboxEvent?: OutboxEventInput,
+  ): Promise<InspectionRow> {
+    const rows = await this.db.run(async (tx) => {
+      const written = await tx.$queryRaw<InspectionRow[]>`
         INSERT INTO site_ops.inspections
           (inspection_id, project_id, tenant_id, checklist_id, status,
            inspected_by, inspected_at, notes, issue_severity, signature, latitude, longitude)
@@ -463,8 +525,10 @@ export class SiteOpsRepository {
            ${params.signature ? JSON.stringify(params.signature) : null}::jsonb,
            ${params.latitude ?? null}::numeric, ${params.longitude ?? null}::numeric)
         RETURNING *
-      `,
-    );
+      `;
+      if (outboxEvent) await OutboxPublisher.write(tx, outboxEvent);
+      return written;
+    });
     return rows[0]!;
   }
 
@@ -513,21 +577,28 @@ export class SiteOpsRepository {
     return rows[0] ?? null;
   }
 
-  async updateInspectionStatus(params: {
-    inspection_id: string;
-    status: string;
-    notes?: string | null;
-  }): Promise<InspectionRow> {
-    const rows = await this.db.run(
-      (tx) =>
-        tx.$queryRaw<InspectionRow[]>`
+  async updateInspectionStatus(
+    params: {
+      inspection_id: string;
+      status: string;
+      notes?: string | null;
+    },
+    buildOutboxEvent?: (row: InspectionRow) => OutboxEventInput,
+  ): Promise<InspectionRow> {
+    const rows = await this.db.run(async (tx) => {
+      const written = await tx.$queryRaw<InspectionRow[]>`
         UPDATE site_ops.inspections SET
           status = ${params.status},
           notes = COALESCE(${params.notes ?? null}, notes)
         WHERE inspection_id = ${params.inspection_id}::uuid AND tenant_id = ${this.tenantId}::uuid
         RETURNING *
-      `,
-    );
+      `;
+      // Builder over the UPDATEd row — project_id and checklist_id are only known from the row.
+      if (buildOutboxEvent && written[0]) {
+        await OutboxPublisher.write(tx, buildOutboxEvent(written[0]));
+      }
+      return written;
+    });
     return rows[0]!;
   }
 
@@ -559,19 +630,21 @@ export class SiteOpsRepository {
 
   // ── Conflict Records ───────────────────────────────────────────────────
 
-  async createConflictRecord(params: {
-    conflict_id: string;
-    entity_type: string;
-    entity_id: string;
-    client_payload: Record<string, unknown>;
-    server_payload: Record<string, unknown>;
-    conflict_type: 'FIELD_CONFLICT' | 'STATUS_CONFLICT' | 'REJECTED';
-  }): Promise<ConflictRecordRow> {
+  async createConflictRecord(
+    params: {
+      conflict_id: string;
+      entity_type: string;
+      entity_id: string;
+      client_payload: Record<string, unknown>;
+      server_payload: Record<string, unknown>;
+      conflict_type: 'FIELD_CONFLICT' | 'STATUS_CONFLICT' | 'REJECTED';
+    },
+    outboxEvent?: OutboxEventInput,
+  ): Promise<ConflictRecordRow> {
     const clientJson = JSON.stringify(params.client_payload);
     const serverJson = JSON.stringify(params.server_payload);
-    const rows = await this.db.run(
-      (tx) =>
-        tx.$queryRaw<ConflictRecordRow[]>`
+    const rows = await this.db.run(async (tx) => {
+      const written = await tx.$queryRaw<ConflictRecordRow[]>`
         INSERT INTO site_ops.conflict_records
           (conflict_id, tenant_id, entity_type, entity_id,
            client_payload, server_payload, conflict_type)
@@ -581,8 +654,10 @@ export class SiteOpsRepository {
            ${clientJson}::jsonb, ${serverJson}::jsonb,
            ${params.conflict_type})
         RETURNING *
-      `,
-    );
+      `;
+      if (outboxEvent) await OutboxPublisher.write(tx, outboxEvent);
+      return written;
+    });
     return rows[0]!;
   }
 
@@ -621,21 +696,23 @@ export class SiteOpsRepository {
 
   // ── Material Consumptions ──────────────────────────────────────────────
 
-  async insertMaterialConsumption(params: {
-    consumption_id: string;
-    project_id: string;
-    report_id: string;
-    material_name: string;
-    material_id: string;
-    task_id: string | null;
-    quantity: string;
-    unit: string;
-    consumed_by: string;
-    consumed_at: string;
-  }): Promise<MaterialConsumptionRow> {
-    const rows = await this.db.run(
-      (tx) =>
-        tx.$queryRaw<MaterialConsumptionRow[]>`
+  async insertMaterialConsumption(
+    params: {
+      consumption_id: string;
+      project_id: string;
+      report_id: string;
+      material_name: string;
+      material_id: string;
+      task_id: string | null;
+      quantity: string;
+      unit: string;
+      consumed_by: string;
+      consumed_at: string;
+    },
+    outboxEvent?: OutboxEventInput,
+  ): Promise<MaterialConsumptionRow> {
+    const rows = await this.db.run(async (tx) => {
+      const written = await tx.$queryRaw<MaterialConsumptionRow[]>`
         INSERT INTO site_ops.material_consumptions
           (consumption_id, project_id, tenant_id, report_id,
            material_name, material_id, task_id,
@@ -648,9 +725,23 @@ export class SiteOpsRepository {
            ${params.quantity}::decimal, ${params.unit},
            ${params.consumed_by}::uuid, ${params.consumed_at}::timestamptz)
         RETURNING *
-      `,
-    );
+      `;
+      if (outboxEvent) await OutboxPublisher.write(tx, outboxEvent);
+      return written;
+    });
     return rows[0]!;
+  }
+
+  /**
+   * Writes an outbox event with no accompanying business write (§35.13 ESC-13).
+   * Used by escalateIssue, which changes no issue field — there is no row to be atomic *with*,
+   * so the outbox serves purely as the durable at-least-once relay the previous direct publish
+   * was not: a broker outage silently dropped the escalation.
+   */
+  async writeOutboxEvent(event: OutboxEventInput): Promise<void> {
+    await this.db.run(async (tx) => {
+      await OutboxPublisher.write(tx, event);
+    });
   }
 
   // ── Carbon analytics (Phase 24 — spec §33.4) ───────────────────────────

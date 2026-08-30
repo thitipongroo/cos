@@ -4,14 +4,18 @@ packages:
   # CocoaPods assume a flat (hoisted) node_modules, which pnpm's isolated linker breaks (Metro cannot
   # resolve transitive expo-*/@react-native/* packages). Excluding it here makes apps/mobile its OWN
   # workspace root, so hoisting is configured in `apps/mobile/pnpm-workspace.yaml`
-  # (`nodeLinker: hoisted`) and the install is simply `cd apps/mobile && pnpm install`.
+  # (`nodeLinker: hoisted`, plus `patchedDependencies`) and the install is simply
+  # `cd apps/mobile && pnpm install`.
   #
-  # This comment used to say the linker lived in `apps/mobile/.npmrc` and that the install needed
-  # `--ignore-workspace`. Both were wrong, and `apps/mobile/.npmrc` says so itself: pnpm 10/11 reads
-  # `nodeLinker` from pnpm-workspace.yaml, not .npmrc, and a directory with its own workspace file
-  # needs no flag to be treated as a root. Corrected 2026-08-22 (TDD OQ-5).
+  # Do NOT pass `--ignore-workspace`. It hides those settings, and pnpm then fails with
+  # ERR_PNPM_LOCKFILE_CONFIG_MISMATCH against the patchedDependencies recorded in that lockfile.
+  # This comment used to require that flag and to say the linker lived in `apps/mobile/.npmrc`.
+  # Both were wrong, and `apps/mobile/.npmrc` says so itself: pnpm 10/11 reads `nodeLinker` from
+  # pnpm-workspace.yaml, and a directory with its own workspace file needs no flag to be treated as
+  # a root. Corrected 2026-08-22 (TDD OQ-5); the lockfile consequence added from origin/develop.
   #
-  # It consumes @cos/types as a file: dependency. Nothing in turbo/CI references @cos/mobile.
+  # It consumes @cos/types as a file: dependency. Turbo does not reference apps/mobile; CI runs it
+  # in the dedicated `mobile-tests` job (.github/workflows/ci.yml).
   - '!apps/mobile'
   - 'backend'
   - 'packages/@cos/*'

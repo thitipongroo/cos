@@ -22,7 +22,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../identity/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
 import { PolicyGuard } from '../../shared/guards/policy.guard';
 import { Roles } from '@cos/rbac';
@@ -32,7 +32,8 @@ import { CreateSiteReportDto } from './dto/create-site-report.dto';
 import { SyncSiteReportsDto } from './dto/sync-site-reports.dto';
 import { CreateIssueDto } from './dto/create-issue.dto';
 import { UpdateIssueDto } from './dto/update-issue.dto';
-import { SubmitInspectionDto } from './dto/submit-inspection.dto';
+import { ChangeIssueStatusDto } from './dto/change-issue-status.dto';
+import { SubmitInspectionDto } from './public/submit-inspection.dto';
 import { UpdateInspectionDto } from './dto/update-inspection.dto';
 import { ResolveConflictDto } from './dto/resolve-conflict.dto';
 import { CreateMaterialConsumptionDto } from './dto/create-material-consumption.dto';
@@ -175,6 +176,27 @@ export class SiteOpsController {
   @ApiParam({ name: 'issueId', type: 'string', format: 'uuid' })
   updateIssue(@Param('issueId', ParseUUIDPipe) issueId: string, @Body() dto: UpdateIssueDto) {
     return this.svc.updateIssue(issueId, dto);
+  }
+
+  // PATCH /api/v1/site/issues/:issueId/status (§35.13 ESC-21) — the direct status transition.
+  // Kept separate from PATCH /site/issues/:issueId, which is the offline-sync path and applies
+  // FIELD_LEVEL_MERGE (server status wins), mirroring how inspections already split submit from
+  // status update. Same roles as the update endpoint — the spec defines no narrower set.
+  @Patch('site/issues/:issueId/status')
+  @Roles(
+    CosRole.SITE_WORKER,
+    CosRole.SITE_ENGINEER,
+    CosRole.PROJECT_MANAGER,
+    CosRole.SAFETY_OFFICER,
+    CosRole.TENANT_ADMIN,
+  )
+  @ApiOperation({ summary: 'Change issue status — emits site.issue.status_changed.v1' })
+  @ApiParam({ name: 'issueId', type: 'string', format: 'uuid' })
+  changeIssueStatus(
+    @Param('issueId', ParseUUIDPipe) issueId: string,
+    @Body() dto: ChangeIssueStatusDto,
+  ) {
+    return this.svc.changeIssueStatus(issueId, dto);
   }
 
   // POST /api/v1/site/issues/:issueId/escalate (G-M12) — raise the issue to the PM (notify only)

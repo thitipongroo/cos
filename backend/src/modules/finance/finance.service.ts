@@ -19,6 +19,7 @@ import { randomUUID } from 'crypto';
 import { Decimal, sumDecimals } from '@cos/financial';
 import { EventOutboxService } from '../../shared/events/event-outbox.service';
 import { createLogger } from '@cos/logger';
+import { buildOutboxEvent } from '../../shared/outbox/outbox.types';
 import { FinanceRepository } from './finance.repository';
 import { FileServiceClient } from '../files/file-service-client.service';
 import { CredentialClientService } from '../credentials/credential-client.service';
@@ -156,19 +157,21 @@ export class FinanceService {
       ? new Decimal(dto.variance_alert_threshold).toFixed(2)
       : DEFAULT_VARIANCE_THRESHOLD.toFixed(2);
 
-    const budget = await this.repo.upsertBudget({
-      project_id,
-      total_budget_amount: new Decimal(dto.total_budget_amount).toFixed(4),
-      total_budget_currency: dto.total_budget_currency,
-      variance_alert_threshold: threshold,
-    });
-
-    await this.emitEvent('finance.budget.created.v1', {
-      project_id,
-      budget_id: budget.budget_id,
-      total_budget_amount: budget.total_budget_amount,
-      total_budget_currency: budget.total_budget_currency,
-    });
+    const budget = await this.repo.upsertBudget(
+      {
+        project_id,
+        total_budget_amount: new Decimal(dto.total_budget_amount).toFixed(4),
+        total_budget_currency: dto.total_budget_currency,
+        variance_alert_threshold: threshold,
+      },
+      (row) =>
+        this.outboxEvent('finance.budget.created.v1', {
+          project_id,
+          budget_id: row.budget_id,
+          total_budget_amount: row.total_budget_amount,
+          total_budget_currency: row.total_budget_currency,
+        }),
+    );
 
     logger.info(
       { project_id, budget_id: budget.budget_id, tenant_id: this.tenantId },
@@ -261,7 +264,10 @@ export class FinanceService {
       currency_code: event.total_amount.currency_code,
       transaction_date: new Date().toISOString().slice(0, 10),
       description: `PO committed: ${event.po_id}`,
-      recorded_by: null,
+      // master:2910 — "actor_id from event, or user for manual entry". The consumer now puts the
+      // event's actor into the request context, so this is the person whose approval created the
+      // commitment rather than an anonymous row.
+      recorded_by: this.userId || null,
       budget_line_id: budgetLineId,
     });
     await this.recalculateAndCheckVariance(event.project_id);
@@ -336,7 +342,10 @@ export class FinanceService {
       currency_code: event.amount.currency_code,
       transaction_date: new Date().toISOString().slice(0, 10),
       description: `Invoice actual: ${event.invoice_id}`,
-      recorded_by: null,
+      // master:2910 — "actor_id from event, or user for manual entry". The consumer now puts the
+      // event's actor into the request context, so this is the person whose approval created the
+      // commitment rather than an anonymous row.
+      recorded_by: this.userId || null,
     });
     await this.recalculateAndCheckVariance(event.project_id);
     logger.info(
@@ -367,24 +376,26 @@ export class FinanceService {
 
   async recordPayment(dto: RecordPaymentDto): Promise<PaymentRow> {
     const project_id = dto.project_id;
-    const payment = await this.repo.createPayment({
-      invoice_id: dto.invoice_id,
-      project_id,
-      amount: new Decimal(dto.amount).toFixed(4),
-      currency_code: dto.currency_code,
-      payment_date: dto.payment_date,
-      payment_reference: dto.payment_reference ?? null,
-      recorded_by: this.userId,
-    });
-
-    await this.emitEvent('finance.payment.processed.v1', {
-      project_id,
-      payment_id: payment.payment_id,
-      invoice_id: dto.invoice_id,
-      amount: payment.amount,
-      currency_code: payment.currency_code,
-      payment_date: dto.payment_date,
-    });
+    const payment = await this.repo.createPayment(
+      {
+        invoice_id: dto.invoice_id,
+        project_id,
+        amount: new Decimal(dto.amount).toFixed(4),
+        currency_code: dto.currency_code,
+        payment_date: dto.payment_date,
+        payment_reference: dto.payment_reference ?? null,
+        recorded_by: this.userId,
+      },
+      (row) =>
+        this.outboxEvent('finance.payment.processed.v1', {
+          project_id,
+          payment_id: row.payment_id,
+          invoice_id: dto.invoice_id,
+          amount: row.amount,
+          currency_code: row.currency_code,
+          payment_date: dto.payment_date,
+        }),
+    );
 
     logger.info(
       { payment_id: payment.payment_id, project_id, tenant_id: this.tenantId },
@@ -472,18 +483,16 @@ export class FinanceService {
     const actual = new Decimal(actual_total);
     const allocated = new Decimal(budget.allocated_amount);
 
-    await this.repo.updateBudgetAggregates({
-      budget_id: budget.budget_id,
-      committed_amount: committed.toFixed(4),
-      actual_amount: actual.toFixed(4),
-      allocated_amount: budget.allocated_amount,
-    });
-
+    // The alert is decided BEFORE the write so it can ride that write's transaction
+    // (§35.13 ESC-13) — every input is already known from the sums above.
+    let alert: ReturnType<typeof this.outboxEvent> | undefined;
+    let variancePctForLog: string | undefined;
     if (!allocated.isZero()) {
       const variance_pct = actual.plus(committed).minus(allocated).dividedBy(allocated).times(100);
       const threshold = new Decimal(budget.variance_alert_threshold);
       if (variance_pct.greaterThan(threshold)) {
-        await this.emitEvent('finance.variance.alert.v1', {
+        variancePctForLog = variance_pct.toFixed(4);
+        alert = this.outboxEvent('finance.variance.alert.v1', {
           project_id,
           budget_id: budget.budget_id,
           variance_percentage: variance_pct.toFixed(4),
@@ -493,11 +502,21 @@ export class FinanceService {
           allocated_amount: allocated.toFixed(4),
           currency_code: budget.total_budget_currency,
         });
-        logger.warn(
-          { project_id, variance_pct: variance_pct.toFixed(4) },
-          'finance.variance.alert',
-        );
       }
+    }
+
+    await this.repo.updateBudgetAggregates(
+      {
+        budget_id: budget.budget_id,
+        committed_amount: committed.toFixed(4),
+        actual_amount: actual.toFixed(4),
+        allocated_amount: budget.allocated_amount,
+      },
+      alert,
+    );
+
+    if (variancePctForLog) {
+      logger.warn({ project_id, variance_pct: variancePctForLog }, 'finance.variance.alert');
     }
   }
 
@@ -826,19 +845,22 @@ export class FinanceService {
         'Billing amount exceeds PM approval limit; Executive approval required',
       );
     }
-    const updated = await this.repo.updateBillingStatus({
-      billing_id,
-      status: 'ISSUED',
-      approved_by: this.userId,
-    });
-    await this.emitEvent('finance.billing.approved.v1', {
-      billing_id,
-      project_id: updated.project_id,
-      contract_id: updated.contract_id,
-      amount: updated.amount,
-      approved_by: this.userId,
-      tier,
-    });
+    const updated = await this.repo.updateBillingStatus(
+      {
+        billing_id,
+        status: 'ISSUED',
+        approved_by: this.userId,
+      },
+      (row) =>
+        this.outboxEvent('finance.billing.approved.v1', {
+          billing_id,
+          project_id: row.project_id,
+          contract_id: row.contract_id,
+          amount: row.amount,
+          approved_by: this.userId,
+          tier,
+        }),
+    );
     logger.info({ billing_id, tier, tenant_id: this.tenantId }, 'billing.approved');
     return updated;
   }
@@ -863,13 +885,17 @@ export class FinanceService {
       payment_reference: dto.payment_reference ?? null,
       received_by: this.userId,
     });
-    await this.repo.updateBillingStatus({ billing_id: dto.billing_id, status: 'PAID' });
-    await this.emitEvent('finance.ar_receipt.recorded.v1', {
-      ar_receipt_id: receipt.ar_receipt_id,
-      billing_id: dto.billing_id,
-      project_id: dto.project_id,
-      amount_received: receipt.amount_received,
-    });
+    // Anchored to the PAID transition — the last write of the receipt — so the event cannot
+    // report a settled billing that was never settled (§35.13 ESC-13). The receipt's ids are
+    // already known here, so the builder ignores the UPDATEd row.
+    await this.repo.updateBillingStatus({ billing_id: dto.billing_id, status: 'PAID' }, () =>
+      this.outboxEvent('finance.ar_receipt.recorded.v1', {
+        ar_receipt_id: receipt.ar_receipt_id,
+        billing_id: dto.billing_id,
+        project_id: dto.project_id,
+        amount_received: receipt.amount_received,
+      }),
+    );
     logger.info(
       {
         ar_receipt_id: receipt.ar_receipt_id,
@@ -894,7 +920,27 @@ export class FinanceService {
     return buildForecast(inflows, outflows);
   }
 
-  /** Queue a domain event. Durable and off the request path — see EventOutboxService. */
+  /**
+   * Builds the outbox envelope handed to the repository write that anchors it (§35.13 ESC-13).
+   * Used wherever the event belongs to a row this service is writing: the envelope goes into the
+   * repository's transaction, so a rollback emits nothing.
+   */
+  private outboxEvent<T>(eventType: string, payload: T) {
+    return buildOutboxEvent({
+      eventType,
+      tenantId: this.tenantId,
+      actorId: this.userId,
+      correlationId: this.correlationId,
+      payload,
+    });
+  }
+
+  /**
+   * Queue a domain event with no row of its own to anchor to — contract signature/attachment
+   * events, where the write has already committed through another path. Durable and off the
+   * request path (EventOutboxService), but not transactional: prefer outboxEvent() above whenever
+   * the event accompanies a write this service controls.
+   */
   private async emitEvent<T>(eventType: string, payload: T): Promise<void> {
     await this.outbox.publish({
       event_type: eventType,

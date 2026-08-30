@@ -1,16 +1,12 @@
 ﻿// Unit tests — RFQ Workflow Activities (Phase 5)
 // getDbUrlForTenant, PrismaClient, and KafkaProducer are all mocked.
 
-jest.mock('../../../tenant/utils/get-db-url', () => ({
+jest.mock('../../../../shared/prisma/get-db-url', () => ({
   getDbUrlForTenant: jest.fn().mockResolvedValue('postgresql://tenant-db/testdb'),
 }));
 
 jest.mock('@prisma/client', () => ({
   PrismaClient: jest.fn(),
-}));
-
-jest.mock('@cos/shared', () => ({
-  KafkaProducer: jest.fn(),
 }));
 
 jest.mock('@cos/logger', () => {
@@ -44,7 +40,7 @@ jest.mock('../../../../shared/events/event-outbox.service', () => ({
   },
 }));
 import { updateRfqStatus, markQuotationsEvaluated } from '../rfq.activities';
-import { disconnectActivityClients } from '../activity-helpers';
+import { disconnectActivityClients } from '../../../../shared/workflows/activity-helpers';
 
 const mockExecuteRaw = jest.fn().mockResolvedValue(1);
 const mockExecuteRawUnsafe = jest.fn().mockResolvedValue(undefined);
@@ -58,6 +54,28 @@ const baseParams = {
   tenant_id: '00000000-0000-4000-8000-000000000001',
   correlation_id: 'corr-uuid-001',
 };
+
+/**
+ * The outbox INSERT issued inside the activity's transaction, parsed back into the envelope. The
+ * activities that own a business write no longer call EventOutboxService.publish() — the event goes
+ * in through OutboxPublisher.write(tx, …) so it commits or rolls back with the row.
+ */
+const OUTBOX_SQL = 'INSERT INTO platform.outbox_events';
+function outboxEnvelope(): Record<string, unknown> | undefined {
+  const call = mockExecuteRaw.mock.calls.find(([t]: [TemplateStringsArray]) =>
+    t.join('').includes(OUTBOX_SQL),
+  );
+  if (!call) return undefined;
+  const json = call.find((v: unknown) => typeof v === 'string' && v.startsWith('{'));
+  return json ? (JSON.parse(json as string) as Record<string, unknown>) : undefined;
+}
+
+/** The business statement — the `$executeRaw` call that is not the outbox INSERT. */
+function businessUpdateCall(): [TemplateStringsArray, ...unknown[]] | undefined {
+  return mockExecuteRaw.mock.calls.find(
+    ([t]: [TemplateStringsArray]) => !t.join('').includes(OUTBOX_SQL),
+  ) as [TemplateStringsArray, ...unknown[]] | undefined;
+}
 
 beforeEach(() => {
   jest.resetAllMocks();
@@ -81,8 +99,9 @@ describe('updateRfqStatus', () => {
     await updateRfqStatus(baseParams, 'DRAFT', 'PUBLISHED');
     expect(mockTransaction).toHaveBeenCalledTimes(1);
     expect(mockExecuteRawUnsafe).toHaveBeenCalledTimes(1);
-    expect(mockExecuteRaw).toHaveBeenCalledTimes(1);
-    expect(mockKafkaPublish).toHaveBeenCalledTimes(1);
+    // one business UPDATE + one outbox INSERT, both through the same tx handle
+    expect(mockExecuteRaw).toHaveBeenCalledTimes(2);
+    expect(mockKafkaPublish).not.toHaveBeenCalled();
     // Pooling (ADR-021): the client is reused across activities and closed only by
     // disconnectActivityClients() on worker shutdown. Disconnecting per activity is what made every
     // workflow step pay for a fresh pg pool.
@@ -98,7 +117,7 @@ describe('updateRfqStatus', () => {
 
   it('runs the exact UPDATE statement with status/rfq/tenant bindings', async () => {
     await updateRfqStatus(baseParams, 'DRAFT', 'PUBLISHED');
-    const [template, ...values] = mockExecuteRaw.mock.calls[0]!;
+    const [template, ...values] = businessUpdateCall()!;
     const sql = template.join('¶');
     expect(sql).toContain('UPDATE procurement.rfqs SET status =');
     expect(sql).toContain('WHERE rfq_id =');
@@ -108,7 +127,8 @@ describe('updateRfqStatus', () => {
 
   it('publishes the exact status_changed envelope and logs the transition', async () => {
     await updateRfqStatus(baseParams, 'DRAFT', 'PUBLISHED');
-    expect(mockKafkaPublish).toHaveBeenCalledWith({
+    expect(outboxEnvelope()).toEqual({
+      event_id: expect.any(String),
       event_type: 'procurement.rfq.status_changed.v1',
       event_version: '1.0',
       tenant_id: '00000000-0000-4000-8000-000000000001',
@@ -177,8 +197,9 @@ describe('markQuotationsEvaluated', () => {
   it('executes DB update and publishes event', async () => {
     await markQuotationsEvaluated(baseParams);
     expect(mockTransaction).toHaveBeenCalledTimes(1);
-    expect(mockExecuteRaw).toHaveBeenCalledTimes(1);
-    expect(mockKafkaPublish).toHaveBeenCalledTimes(1);
+    // one business UPDATE + one outbox INSERT, both through the same tx handle
+    expect(mockExecuteRaw).toHaveBeenCalledTimes(2);
+    expect(mockKafkaPublish).not.toHaveBeenCalled();
     // Pooling (ADR-021): the client is reused across activities and closed only by
     // disconnectActivityClients() on worker shutdown. Disconnecting per activity is what made every
     // workflow step pay for a fresh pg pool.
@@ -187,13 +208,14 @@ describe('markQuotationsEvaluated', () => {
 
   it('runs the exact EVALUATED UPDATE and publishes the exact CLOSED→EVALUATED envelope', async () => {
     await markQuotationsEvaluated(baseParams);
-    const [template, ...values] = mockExecuteRaw.mock.calls[0]!;
+    const [template, ...values] = businessUpdateCall()!;
     const sql = template.join('¶');
     expect(sql).toContain("UPDATE procurement.rfqs SET status = 'EVALUATED'");
     expect(sql).toContain('WHERE rfq_id =');
     expect(sql).toContain('AND tenant_id =');
     expect(values).toEqual(['rfq-uuid-001', '00000000-0000-4000-8000-000000000001']);
-    expect(mockKafkaPublish).toHaveBeenCalledWith({
+    expect(outboxEnvelope()).toEqual({
+      event_id: expect.any(String),
       event_type: 'procurement.rfq.status_changed.v1',
       event_version: '1.0',
       tenant_id: '00000000-0000-4000-8000-000000000001',

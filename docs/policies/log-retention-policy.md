@@ -39,6 +39,16 @@ FastAPI ai-ocr-pipeline, Go analytics-worker, Go kg-ingestion-worker, Next.js we
 | Compliance archive | S3 Glacier Deep Archive | **7 years** from ingestion | S3 lifecycle rule: transition on day 366 |
 | Delete             | —                       | After 7 years              | S3 lifecycle rule: expire on day 2557    |
 
+**The compliance archive is WORM** (S3 Object Lock in compliance mode): while a record is retained
+nothing — no operator, no automation, no root credential — may alter or remove it. That is what
+`31 §31.4` and `05 §5.2` mean by "immutable append-only store", and what `09 §9` means by "WORM for
+immutable compliance records". Stated here explicitly as of 2026-08-23, because this file is the
+authoritative schedule and an S3 lifecycle rule configured from it without Object Lock would satisfy
+the retention period while losing the immutability the controls depend on.
+
+Immutability is not the same as permanence: the day-2557 expiry above is the ONE way a record
+leaves, and it applies by age alone.
+
 Scope: `audit_logs` table events shipped to Loki; authentication events; authorization failures;
 data export events; admin actions; all PDPA-relevant data subject events.
 

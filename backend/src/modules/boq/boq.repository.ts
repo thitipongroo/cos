@@ -6,7 +6,9 @@
 import { Injectable, Scope, Inject } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
+import { OutboxPublisher } from '@cos/kafka';
 import { TenantPrismaService } from '../tenant/prisma/tenant-prisma.service';
+import type { OutboxEventInput } from '../../shared/outbox/outbox.types';
 import { clsTenantId } from '../../shared/context/cls-context';
 
 export interface BoqVersionRow {
@@ -88,12 +90,15 @@ export class BoqRepository {
    *
    * Returns null when the project already has a DRAFT — the caller turns that into a 409.
    */
-  async claimNextVersion(params: {
-    project_id: string;
-    version_name: string | null;
-    currency_code: string;
-    created_by: string;
-  }): Promise<{ version: BoqVersionRow; version_number: number } | null> {
+  async claimNextVersion(
+    params: {
+      project_id: string;
+      version_name: string | null;
+      currency_code: string;
+      created_by: string;
+    },
+    buildOutboxEvents?: (row: BoqVersionRow) => OutboxEventInput[],
+  ): Promise<{ version: BoqVersionRow; version_number: number } | null> {
     return this.db.run(async (prisma) => {
       // hashtextextended (PostgreSQL 11+) gives a stable bigint key for the advisory lock; the key
       // includes the tenant so two tenants never contend on the same lock slot. The ::text casts
@@ -130,19 +135,29 @@ export class BoqRepository {
         RETURNING *
       `;
       const version = rows[0]!;
+      // Inside the same transaction as the INSERT and the advisory lock, so a rollback emits
+      // nothing and the payload carries the real generated version_id (§35.13 ESC-13).
+      if (buildOutboxEvents) {
+        for (const event of buildOutboxEvents(version)) {
+          await OutboxPublisher.write(prisma, event);
+        }
+      }
       return { version, version_number: version.version_number };
     });
   }
 
-  async createVersion(params: {
-    project_id: string;
-    version_number: number;
-    version_name: string | null;
-    currency_code: string;
-    created_by: string;
-  }): Promise<BoqVersionRow> {
+  async createVersion(
+    params: {
+      project_id: string;
+      version_number: number;
+      version_name: string | null;
+      currency_code: string;
+      created_by: string;
+    },
+    buildOutboxEvents?: (row: BoqVersionRow) => OutboxEventInput[],
+  ): Promise<BoqVersionRow> {
     const rows = await this.db.run(async (prisma) => {
-      return prisma.$queryRaw<BoqVersionRow[]>`
+      const inserted = await prisma.$queryRaw<BoqVersionRow[]>`
         INSERT INTO boq.boq_versions (
           project_id, tenant_id, version_number, version_name,
           total_estimated_currency, created_by
@@ -154,6 +169,14 @@ export class BoqRepository {
         )
         RETURNING *
       `;
+      // Phase 8 Outbox Pattern (§35.13 ESC-13) — builder over the INSERTed row so the payload
+      // carries the real generated version_id. A first version emits TWO events, hence an array.
+      if (buildOutboxEvents && inserted[0]) {
+        for (const evt of buildOutboxEvents(inserted[0])) {
+          await OutboxPublisher.write(prisma, evt);
+        }
+      }
+      return inserted;
     });
     return rows[0]!;
   }
@@ -218,11 +241,14 @@ export class BoqRepository {
     return rows[0]?.max ?? 0;
   }
 
-  async approveVersion(params: {
-    version_id: string;
-    approved_by: string;
-    new_total: string;
-  }): Promise<void> {
+  async approveVersion(
+    params: {
+      version_id: string;
+      approved_by: string;
+      new_total: string;
+    },
+    outboxEvent?: OutboxEventInput,
+  ): Promise<void> {
     await this.db.run(async (prisma) => {
       // Supersede previous APPROVED version
       await prisma.$executeRaw`
@@ -245,10 +271,17 @@ export class BoqRepository {
         WHERE version_id = ${params.version_id}::uuid
           AND tenant_id  = ${this.tenantId}::uuid
       `;
+      // Outbox write joins the same transaction as both UPDATEs (§35.13 ESC-13). A pre-built
+      // envelope is fine here: approveVersion returns void and the ids are all known up front.
+      if (outboxEvent) await OutboxPublisher.write(prisma, outboxEvent);
     });
   }
 
-  async updateVersionTotal(version_id: string, total: string): Promise<void> {
+  async updateVersionTotal(
+    version_id: string,
+    total: string,
+    outboxEvent?: OutboxEventInput,
+  ): Promise<void> {
     await this.db.run(async (prisma) => {
       await prisma.$executeRaw`
         UPDATE boq.boq_versions
@@ -256,6 +289,9 @@ export class BoqRepository {
         WHERE version_id = ${version_id}::uuid
           AND tenant_id  = ${this.tenantId}::uuid
       `;
+      // This UPDATE closes an item add/update/delete recalculation, so it is the transaction the
+      // construction.boq.updated.v1 event belongs to (§35.13 ESC-13).
+      if (outboxEvent) await OutboxPublisher.write(prisma, outboxEvent);
     });
   }
 
@@ -384,9 +420,14 @@ export class BoqRepository {
         SET
           description     = COALESCE(${params.description ?? null}, description),
           unit            = COALESCE(${params.unit ?? null}, unit),
-          quantity        = COALESCE(${params.quantity ? `${params.quantity}::decimal` : null}::decimal, quantity),
-          unit_cost       = COALESCE(${params.unit_cost ? `${params.unit_cost}::decimal` : null}::decimal, unit_cost),
-          estimated_total = COALESCE(${params.estimated_total ? `${params.estimated_total}::decimal` : null}::decimal, estimated_total),
+          -- The cast belongs to the SQL, never to the VALUE. This previously wrapped each parameter
+          -- in a nested template literal that appended the cast to the STRING, so Postgres received
+          -- "20.0000::decimal" as the value and every PATCH died with 22P02
+          -- "invalid input syntax for type numeric". insertItem above has always had this right;
+          -- only this statement drifted.
+          quantity        = COALESCE(${params.quantity ?? null}::decimal, quantity),
+          unit_cost       = COALESCE(${params.unit_cost ?? null}::decimal, unit_cost),
+          estimated_total = COALESCE(${params.estimated_total ?? null}::decimal, estimated_total),
           sort_order      = COALESCE(${params.sort_order ?? null}, sort_order),
           updated_at      = now()
         WHERE item_id   = ${params.item_id}::uuid

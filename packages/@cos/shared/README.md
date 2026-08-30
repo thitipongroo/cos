@@ -4,9 +4,12 @@ Typed Kafka event interfaces, Avro schemas, and the Kafka SDK used by all servic
 
 ## Purpose
 
-Single source of truth for all cross-service event contracts (Phase 1 types; Phase 8 adds Avro schemas + Kafka SDK). Every service that produces or consumes Kafka events must use this package — never import `kafkajs` directly.
+Single source of truth for all cross-service event contracts (Phase 1 types; Phase 8 adds Avro schemas + Kafka
+SDK). Every service that produces or consumes Kafka events must use this package — never import `kafkajs`
+directly.
 
-**Framework-agnostic:** imported by mobile (React Native/Metro), PWA (Service Worker), and Node.js services. No server-only runtime imports. See Rule 34.
+**Framework-agnostic:** imported by mobile (React Native/Metro), PWA (Service Worker), and Node.js services.
+No server-only runtime imports. See Rule 34.
 
 ## Public API
 
@@ -16,7 +19,7 @@ import type { BaseEventEnvelope } from '@cos/types';
 
 // Kafka SDK (Node.js only — do NOT import in mobile/PWA)
 import { KafkaProducer, KafkaConsumer } from '@cos/shared';
-import { OutboxPublisher, OutboxPoller } from '@cos/shared';
+import { OutboxPublisher } from '@cos/shared';
 import { DlqPublisher } from '@cos/shared';
 import { initKafkaMetrics } from '@cos/shared';
 ```
@@ -64,5 +67,8 @@ await outbox.publish(tenantId, 'construction.project.created.v1', payload); // w
 
 - Schema compatibility: `BACKWARD_TRANSITIVE` — new schema must be readable by ALL previous versions
 - Avro schemas live in `src/avro/` — registered in Schema Registry before first producer deployment
-- `OutboxPoller` (DB polling loop) lives in `backend/src/` NOT here — Node.js-only, would break mobile bundle (Rule 34)
+- `OutboxPoller` (DB polling loop) lives in `backend/src/` NOT here — Node.js-only, would break mobile bundle (Rule 34).
+  This line was correct while the code beside it was not: an `OutboxPoller` was defined and exported
+  from `src/kafka/outbox.ts` until 2026-08-27, duplicating `backend/src/shared/events/outbox-poller.service.ts`.
+  Enforced now by `tests/conformance/events/06-rule-34.spec.ts` rather than by this note.
 - Integration tests: `test/kafka/kafka.integration.spec.ts` using `@testcontainers/kafka`

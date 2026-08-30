@@ -13,37 +13,95 @@ import { LineMessagingAdapter } from './adapters/line-messaging.adapter';
 
 const logger = createLogger('notification-service');
 
+/**
+ * Run a fan-out where one failure must not stop the rest — and LOG every failure.
+ *
+ * Five call sites in this service used `Promise.allSettled` directly. The isolation is deliberate:
+ * a Safety Officer must still be paged when a Project Manager's row fails to write. What was NOT
+ * deliberate is that `allSettled` absorbs every rejection and returns, so a delivery that failed
+ * left no error, no warning and no trace anywhere — the notification simply never existed, and the
+ * only symptom was a person who was not told something.
+ *
+ * That cost real time on 2026-08-26: an end-to-end test wrote nothing, and locating the reason meant
+ * instrumenting four layers by hand because the failure had already been swallowed. In production
+ * nobody would have been instrumenting.
+ *
+ * Behaviour is unchanged — every task still runs, and this never throws. Only the silence is gone.
+ */
+async function settleAll(
+  operation: string,
+  context: Record<string, unknown>,
+  tasks: ReadonlyArray<Promise<unknown>>,
+): Promise<void> {
+  const results = await Promise.allSettled(tasks);
+  const failures = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
+  if (failures.length === 0) return;
+  logger.error(
+    { ...context, operation, failed: failures.length, of: results.length },
+    'Fan-out had failures — the remaining recipients were still served',
+  );
+  // Each reason separately: one bad address and one broken template are different problems, and a
+  // count alone sends whoever reads this looking in one place for both.
+  for (const f of failures) {
+    logger.error({ ...context, operation, err: f.reason }, 'Fan-out task failed');
+  }
+}
+
 const CHANNELS = ['IN_APP', 'EMAIL', 'LINE'] as const;
 type Channel = (typeof CHANNELS)[number];
 
-// Critical safety notifications can be neither DISABLED nor QUIETED — §19.6: "Critical safety
-// notifications (SafetyIncidentReported, SafetyViolationDetected) cannot be disabled."
-//
-// The exemption used to be applied to quiet hours only. The delivery path's preference filter was an
-// unconditional `if (disabledChannels.has(channel)) continue`, and `updatePreferences` accepts any
-// event_type with `is_enabled: false` — so a user could switch safety incidents off on every channel
-// through a supported API call and stop receiving them entirely, which is exactly what §19.6 says
-// must not be possible. Both rules now read this same set (TDD OQ-34, fixed 2026-08-22).
-//
-// §19.6 names exactly two, and both now exist:
-//   SafetyIncidentReported  → safety.incident.created.v1
-//   SafetyViolationDetected → safety.violation.detected.v1  (built 2026-08-22, TDD OQ-35; §32.4 #23)
-// The second had no producer, no consumer and no §32.4 entry until then — it was named in §19.6 and
-// §16 and nowhere else, so this set had an unknown size. Nothing else belongs here: §19.6 lists two.
-const CRITICAL_EVENT_TYPES = new Set<string>([
+// Critical safety notifications are NEVER disabled and NEVER quieted (§19.6 — "cannot be disabled
+// or quieted — always delivered"). Both halves of that rule are enforced: notifyUser ignores a
+// recipient's disabled preference rows for these events, and dispatch never suppresses their push
+// inside the quiet window. Only the safety-incident event qualifies; every other event honours the
+// recipient's preferences and quiet hours.
+// §19.6 names TWO events here: SafetyIncidentReported and SafetyViolationDetected. Only the first has
+// a canonical name — 'safety.incident.created.v1' (§32.4 / topic-catalog / .avsc). SafetyViolationDetected
+// appears only as a business-event display name in 16-enterprise-event-flow §Safety and in the §19.6
+// sentence itself: no canonical event type, no schema, no producer, no consumer. It is therefore
+// deliberately NOT invented here: PO decision 2026-08-25 defers the producer to Phase 23, where
+// SafetyVisionModel is built (see that phase's Generate list for the five halves it ships with).
+// The guard in notification.service.spec.ts fails the build if a safety incident/violation event
+// ever enters the catalogue without being added to this set.
+export const CRITICAL_EVENT_TYPES = new Set<string>([
   'safety.incident.created.v1',
   'safety.violation.detected.v1',
+  // The platform's own rules finding a safety requirement unmet — an expired permit, a failed
+  // checklist item. §19.6 names two un-disableable notifications and this is the second in
+  // substance: it was minted as safety.violation.detected.v1 on this branch (TDD OQ-35) and renamed
+  // when the merge found that name already assigned to SafetyVisionModel.
+  'safety.compliance.failed.v1',
 ]);
 
 /**
- * True when this event type may not be switched off, per §19.6.
- *
- * Deliberately a function rather than a bare Set lookup at each call site: there are now two rules
- * that must agree (disable and quiet), and the last time they diverged one of them silently stopped
- * protecting anything.
+ * Envelope tenant_id used by platform-level producers (§19.8). It is a sentinel, not a UUID, so it
+ * can never be handed to a tenant-scoped query — findUsersByRole casts ::uuid and NotificationPrisma
+ * rejects anything that is not a UUID. The event NAME is not the discriminator: platform.sync.
+ * exhausted.v1 is also `platform.`-prefixed but carries a real tenant UUID, because it is a
+ * tenant-scoped alert that merely travels on the shared topic.
  */
-export function isCriticalSafetyEvent(eventType: string): boolean {
-  return CRITICAL_EVENT_TYPES.has(eventType);
+export const PLATFORM_TENANT_SENTINEL = 'platform';
+
+/**
+ * §19.8: platform-level notifications are "NOT subject to quiet-hours suppression — they represent
+ * operational platform state that SYSTEM_ADMIN must act on". Note this exemption covers quiet hours
+ * ONLY; §19.8 says nothing about preferences, so a SYSTEM_ADMIN who switches a channel off still
+ * switches it off.
+ */
+// Declared in ./public/event-types so callers outside this module have a public surface to import
+// it from; re-exported here so the service's own readers still find it where they expect.
+import { PLATFORM_HUMAN_GATE_EVENT_TYPE } from './public/event-types';
+export { PLATFORM_HUMAN_GATE_EVENT_TYPE };
+
+const PLATFORM_LEVEL_EVENT_TYPES = new Set<string>([
+  'platform.enterprise.contract_signed.v1',
+  'platform.enterprise.db_provisioned.v1',
+  PLATFORM_HUMAN_GATE_EVENT_TYPE,
+]);
+
+/** Events that must reach the user regardless of the hour (§19.6 safety, §19.8 platform). */
+function isQuietHoursExempt(eventType: string): boolean {
+  return CRITICAL_EVENT_TYPES.has(eventType) || PLATFORM_LEVEL_EVENT_TYPES.has(eventType);
 }
 
 /** Minutes-since-midnight for a 'HH:MM[:SS]' string. */
@@ -75,22 +133,31 @@ export function isWithinQuietHours(now: Date, tz: string, start: string, end: st
     : nowMin >= startMin || nowMin < endMin; // overnight wrap
 }
 
-// Maps event_type → recipients. Four routing modes:
+// Maps event_type → recipients. Three routing modes:
 //   - string[]                 → notify all users holding any of these roles (findUsersByRole)
 //   - 'actor'                  → notify the actor_id from the event envelope
 //   - { payloadUserId: field } → notify the specific user id carried in payload[field]
-//   - { payloadRoles: {...} }  → roles chosen by a payload field's value (see below)
-// Event-type keys MUST match the canonical types emitted by producers (see @cos/shared
+// Event-type keys MUST match the canonical types emitted by producers (see @cos/kafka
 // EVENT_AVSC_MAP) and subscribed in notification.consumer — 'po'/'invoice', NOT
 // 'purchase_order'/'vendor_invoice' (regression: mismatched keys silently drop notifications).
 // For platform.* events, tenant_id='platform' and routing resolves all SYSTEM_ADMIN users globally.
-type RoleRouting =
-  | string[]
-  | 'actor'
-  | { payloadUserId: string }
-  | { payloadRoles: { field: string; map: Record<string, string[]> } };
+/**
+ * A routing rule that reads the payload to decide WHICH roles to tell.
+ *
+ * Needed for platform.sync.exhausted.v1, where §17.2 gives a different audience per entity type: a
+ * lost safety incident alerts the PM and the Safety Officer, a lost attendance or inspection alerts
+ * the PM, and a lost material log alerts nobody — it goes to the review queue and no further. One
+ * static role list per event type cannot express that without over-notifying three of the four.
+ */
+type PayloadRoleSelector = { rolesFromPayload: (payload: Record<string, unknown>) => string[] };
 
-const EVENT_ROLE_MAP: Record<string, RoleRouting> = {
+// Exported so the integration suite can assert the routing table against the database rather than
+// against a copy of itself: every event routed here needs a notification template, or notifyUser
+// silently drops it at `if (!template) continue`.
+export const EVENT_ROLE_MAP: Record<
+  string,
+  string[] | 'actor' | { payloadUserId: string } | PayloadRoleSelector
+> = {
   'site.inspection.failed.v1': ['SITE_ENGINEER', 'PROJECT_MANAGER'],
   'site.issue.created.v1': ['SITE_ENGINEER', 'PROJECT_MANAGER'],
   'site.issue.escalated.v1': ['PROJECT_MANAGER'], // G-M12 — escalate raises the issue to the PM
@@ -98,13 +165,34 @@ const EVENT_ROLE_MAP: Record<string, RoleRouting> = {
   'procurement.po.status_changed.v1': 'actor',
   'procurement.po.approval_requested.v1': { payloadUserId: 'approver_id' },
   'finance.variance.alert.v1': ['FINANCE', 'TENANT_ADMIN'],
+  // §17.2 retry exhaustion. The review queue itself is TENANT_ADMIN's (master §Phase 10 "Tenant
+  // admin review queue"), so they are told for every type; the operational alert is per entity.
+  'platform.sync.exhausted.v1': {
+    rolesFromPayload: (payload): string[] => {
+      const entityType = String(payload['entity_type'] ?? '');
+      const base = ['TENANT_ADMIN'];
+      if (entityType === 'safety') return [...base, 'PROJECT_MANAGER', 'SAFETY_OFFICER'];
+      if (entityType === 'attendance' || entityType === 'inspection') {
+        return [...base, 'PROJECT_MANAGER'];
+      }
+      // material_consumption: review queue only — §17.2 asks for no alert.
+      return base;
+    },
+  },
   'site.report.created.v1': ['PROJECT_MANAGER'],
   'procurement.invoice.received.v1': ['FINANCE'],
   // §19.4 routing — safety incident (Exec/PM/Site Engineer/Safety Officer) + AI risk (Exec/PM)
   'safety.incident.created.v1': ['EXECUTIVE', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SAFETY_OFFICER'],
-  // §20.2 puts "Violation alerts" under the Safety Officer's needs, and §19.6 makes this
-  // un-disableable alongside the incident event — so it carries the same audience as an incident.
+  // Same audience as an incident: a detected violation is the thing that precedes one.
   'safety.violation.detected.v1': [
+    'EXECUTIVE',
+    'PROJECT_MANAGER',
+    'SITE_ENGINEER',
+    'SAFETY_OFFICER',
+  ],
+  // §20.2 puts "Violation alerts" under the Safety Officer's needs, and an expired permit reaches
+  // the same people an incident would — the difference is that nothing has happened yet.
+  'safety.compliance.failed.v1': [
     'EXECUTIVE',
     'PROJECT_MANAGER',
     'SITE_ENGINEER',
@@ -116,24 +204,6 @@ const EVENT_ROLE_MAP: Record<string, RoleRouting> = {
   'platform.enterprise.db_provisioned.v1': ['SYSTEM_ADMIN'],
   // Phase 9 — file quarantine alert routed to SYSTEM_ADMIN for the affected tenant
   'file.document.quarantined.v1': ['SYSTEM_ADMIN'],
-  // §17.2 — offline sync exhaustion. The alert target depends on WHICH entity failed, which no
-  // event-level role list can express, hence the payload-driven mode. Transcribed from §17.2's
-  // "Max Retry Exhaustion Behavior" table and deliberately not widened:
-  //   safety incidents → PM AND Safety Officer · attendance → PM · inspections → PM
-  //   material consumption → NOBODY (§17.2 puts it in the review queue with no push alert)
-  // An empty list resolves zero recipients and delivers nothing, which is different from an absent
-  // key: an absent key logs "No routing config" and is a mistake.
-  'platform.sync.exhausted.v1': {
-    payloadRoles: {
-      field: 'entity_type',
-      map: {
-        safety_incidents: ['PROJECT_MANAGER', 'SAFETY_OFFICER'],
-        workforce_attendance: ['PROJECT_MANAGER'],
-        inspection_results: ['PROJECT_MANAGER'],
-        material_consumption: [],
-      },
-    },
-  },
 };
 
 @Injectable()
@@ -160,23 +230,19 @@ export class NotificationService {
       return;
     }
 
-    let recipients: Array<{ user_id: string; email: string }>;
-    if (routing === 'actor') {
+    // Recipients may live in a different tenant from the event: a platform-level event is addressed
+    // to every SYSTEM_ADMIN on the installation, and each of them belongs to a tenant of their own.
+    // The row is stored under the RECIPIENT's tenant so it lands in an inbox the existing
+    // tenant-scoped query and RLS policy can already reach.
+    let recipients: Array<{ user_id: string; email: string; tenant_id?: string }>;
+    if (event.tenant_id === PLATFORM_TENANT_SENTINEL) {
+      recipients = await this.repo.findSystemAdmins();
+    } else if (routing === 'actor') {
       recipients = [{ user_id: event.actor_id, email: '' }];
     } else if (Array.isArray(routing)) {
       recipients = await this.repo.findUsersByRole(event.tenant_id, routing);
-    } else if ('payloadRoles' in routing) {
-      const key = String(event.payload[routing.payloadRoles.field] ?? '');
-      const roles = routing.payloadRoles.map[key];
-      if (roles === undefined) {
-        // A value the table does not cover. Log rather than guess a role set — notifying the wrong
-        // people about a failed safety record is worse than the absence this makes visible.
-        logger.warn(
-          { event_type: event.event_type, field: routing.payloadRoles.field, value: key },
-          'No payload-role mapping for value',
-        );
-        return;
-      }
+    } else if ('rolesFromPayload' in routing) {
+      const roles = routing.rolesFromPayload(event.payload);
       recipients = roles.length ? await this.repo.findUsersByRole(event.tenant_id, roles) : [];
     } else {
       // Payload-targeted: notify the specific user named in the payload (e.g. approver_id).
@@ -185,14 +251,41 @@ export class NotificationService {
         typeof targetId === 'string' && targetId ? [{ user_id: targetId, email: '' }] : [];
     }
 
-    await Promise.allSettled(
+    await settleAll(
+      'handleEvent',
+      { event_type: event.event_type, tenant_id: event.tenant_id },
       recipients.map((r) =>
         this.notifyUser({
-          tenant_id: event.tenant_id,
+          tenant_id: r.tenant_id ?? event.tenant_id,
           user_id: r.user_id,
           email: r.email,
           event_type: event.event_type,
           payload: event.payload,
+        }),
+      ),
+    );
+  }
+
+  /**
+   * Deliver a platform-level notification that did not arrive over Kafka (§19.8 human gate).
+   *
+   * Recipients are every active SYSTEM_ADMIN, exactly as the platform branch of handleEvent resolves
+   * them, and the row is stored under each admin's own tenant. Kept off EVENT_ROLE_MAP on purpose:
+   * an entry there would claim a Kafka audience for a message no consumer subscribes to, which is
+   * the shape that left both enterprise events unreachable in the first place.
+   */
+  async notifySystemAdmins(eventType: string, payload: Record<string, unknown>): Promise<void> {
+    const recipients = await this.repo.findSystemAdmins();
+    await settleAll(
+      'notifySystemAdmins',
+      { event_type: eventType },
+      recipients.map((r) =>
+        this.notifyUser({
+          tenant_id: r.tenant_id,
+          user_id: r.user_id,
+          email: r.email,
+          event_type: eventType,
+          payload,
         }),
       ),
     );
@@ -216,8 +309,11 @@ export class NotificationService {
       this.repo.findTemplatesByChannel(params.tenant_id, params.event_type, CHANNELS),
     ]);
 
-    // §19.6: a critical safety notification is delivered whatever the user's preferences say.
-    const critical = isCriticalSafetyEvent(params.event_type);
+    // §19.6: a critical safety event is delivered on every channel regardless of what the recipient
+    // has switched off. Without this, a user who mutes one channel to cut noise silently stops
+    // receiving incident alerts — and the §19.7 escalation chain never fires either, because it is
+    // driven by an acknowledgement that can only come from a notification the user never got.
+    const critical = CRITICAL_EVENT_TYPES.has(params.event_type);
 
     for (const channel of CHANNELS) {
       // Absent preference row = enabled, matching isChannelEnabled's `?? true` default.
@@ -258,11 +354,13 @@ export class NotificationService {
         // is subject to quiet hours (§19.6). Critical safety pushes are never suppressed.
         this.sse.push(userId, notif);
         const suppressPush =
-          !isCriticalSafetyEvent(notif.event_type) &&
+          !isQuietHoursExempt(notif.event_type) &&
           (await this.isInQuietHours(notif.tenant_id, userId));
         if (!suppressPush) {
           const tokens = await this.repo.findDeviceTokens(notif.tenant_id, userId);
-          await Promise.allSettled(
+          await settleAll(
+            'pushToDevices',
+            { notification_id: notif.notification_id, tenant_id: notif.tenant_id },
             tokens.map((t) =>
               this.push.send({
                 pushToken: t.push_token,
@@ -313,12 +411,80 @@ export class NotificationService {
   }
 
   /**
+   * Deliver a CRITICAL message to ONE named user, exempt from preferences and quiet hours.
+   *
+   * master:5041 says no service sends notifications directly — everything routes through here. Three
+   * places in the identity module did anyway (step-up codes, data-subject request verification, the
+   * data-export link), and they were right to: this service had no door for them. Every public entry
+   * resolved its recipients from a ROLE or from an event envelope, and none of them can address one
+   * person. A verification code has exactly one recipient and no role.
+   *
+   * They also could not use the normal path even if it existed: §19.6 preferences and quiet hours
+   * would let a user silence the one message that answers a statutory request, or the code that
+   * completes their own login. That is what `critical` means here — the same exemption
+   * CRITICAL_EVENT_TYPES already grants a safety incident, applied to one addressed recipient.
+   *
+   * Routing through the service rather than around it is what the industry does with these: Knock
+   * models a password reset as a workflow with "override recipient preferences" and Courier as a
+   * category that bypasses preference checks — in both, the message still goes through the
+   * notification system. What that buys, and what a direct SendGrid call loses, is the row in
+   * notifications.notifications. For a PDPA/GDPR data-subject response the record that the subject
+   * WAS notified is part of the obligation; a mail sent outside the service leaves none.
+   *
+   * Composed inline like {@link escalate} — no template lookup, because these bodies carry one-time
+   * tokens and links that no template table should ever hold.
+   */
+  async notifyUserCritical(params: {
+    tenant_id: string;
+    user_id: string;
+    email: string;
+    event_type: string;
+    subject: string;
+    body: string;
+  }): Promise<void> {
+    const notif = await this.repo.createNotification({
+      tenant_id: params.tenant_id,
+      recipient_id: params.user_id,
+      channel: 'IN_APP',
+      event_type: params.event_type,
+      subject: params.subject,
+      body: params.body,
+    });
+    this.sse.push(params.user_id, notif);
+    await this.repo.markSent(params.tenant_id, notif.notification_id);
+
+    // The email is the channel that matters for these — phone_number is nullable, so email is the
+    // only one every account is reachable on. It is sent WITHOUT consulting findDisabledChannels or
+    // the quiet window, which is the whole point of the method.
+    if (params.email) {
+      await this.email
+        .send({ to: params.email, subject: params.subject, body: params.body })
+        .catch((err: unknown) => {
+          // The in-app row is already written and marked sent, so a bounce must not undo it — but a
+          // verification code nobody received is a person who cannot finish what they started, and
+          // that has to be findable.
+          logger.error(
+            {
+              err,
+              tenant_id: params.tenant_id,
+              recipient_id: params.user_id,
+              event_type: params.event_type,
+            },
+            'Critical user notification email failed — the in-app row was still written',
+          );
+        });
+    }
+  }
+
+  /**
    * Deliver an escalation notice (§19.3) to every user holding `roles`. Composed inline (no template
    * lookup) as an IN_APP + email alert; the caller marks the source notification escalated afterwards.
    */
   async escalate(tenantId: string, roles: string[], subject: string, body: string): Promise<void> {
     const recipients = await this.repo.findUsersByRole(tenantId, roles);
-    await Promise.allSettled(
+    await settleAll(
+      'escalate',
+      { tenant_id: tenantId, roles },
       recipients.map(async (r) => {
         const notif = await this.repo.createNotification({
           tenant_id: tenantId,
@@ -331,7 +497,15 @@ export class NotificationService {
         this.sse.push(r.user_id, notif);
         await this.repo.markSent(tenantId, notif.notification_id);
         if (r.email) {
-          await this.email.send({ to: r.email, subject, body }).catch(() => undefined);
+          // The IN_APP row is already written and marked sent, so a bounce here must not undo the
+          // escalation — but it is still a Project Manager who did not get the mail, so it is logged
+          // rather than discarded.
+          await this.email.send({ to: r.email, subject, body }).catch((err: unknown) => {
+            logger.error(
+              { err, tenant_id: tenantId, recipient_id: r.user_id },
+              'Escalation email failed — the in-app notification was still delivered',
+            );
+          });
         }
       }),
     );
@@ -345,10 +519,21 @@ export class NotificationService {
     body: string,
   ): Promise<void> {
     const recipients = await this.repo.findUsersByRole(tenantId, roles);
-    await Promise.allSettled(
+    await settleAll(
+      'deliverDigest',
+      { tenant_id: tenantId, roles },
       recipients
         .filter((r) => r.email)
-        .map((r) => this.email.send({ to: r.email, subject, body }).catch(() => undefined)),
+        // The per-recipient catch is what keeps one hard bounce from rejecting the whole scheduled
+        // batch (18:00 daily / Mon 08:00). It used to discard the reason with it.
+        .map((r) =>
+          this.email.send({ to: r.email, subject, body }).catch((err: unknown) => {
+            logger.error(
+              { err, tenant_id: tenantId, recipient_id: r.user_id },
+              'Digest email failed for one recipient',
+            );
+          }),
+        ),
     );
   }
 

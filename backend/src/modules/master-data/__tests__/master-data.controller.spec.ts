@@ -4,7 +4,7 @@
 import { Test } from '@nestjs/testing';
 import { MasterDataController } from '../master-data.controller';
 import { MasterDataService } from '../master-data.service';
-import { LastSeenService } from '../../identity/last-seen.service';
+import { LastSeenService } from '../../../shared/last-seen/last-seen.service';
 import type {
   MaterialRow,
   WorkCategoryRow,

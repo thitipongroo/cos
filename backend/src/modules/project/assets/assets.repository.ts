@@ -8,7 +8,7 @@ import { clsTenantId } from '../../../shared/context/cls-context';
 import type { CreateAssetDto } from './dto/create-asset.dto';
 import type { UpdateAssetDto } from './dto/update-asset.dto';
 import { decodeCursor, paginate, type CursorListOptions } from '../../../shared/pagination/cursor';
-import { projectExistsInTenant } from '../shared/parent-existence';
+import { projectExistsInTenant } from '../public/parent-existence';
 
 export interface AssetRow {
   asset_id: string;

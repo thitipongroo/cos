@@ -13,7 +13,10 @@ const logger = createLogger('file-service.scan-runner');
 
 export interface ScanServices {
   antivirus: Pick<AntivirusService, 'scan'>;
-  db: Pick<DbService, 'updateFileStatus' | 'findFileById' | 'markFileQuarantined'>;
+  db: Pick<
+    DbService,
+    'updateFileStatus' | 'findFileById' | 'markFileQuarantined' | 'findMetadataByFileId'
+  >;
   minio: Pick<MinioService, 'moveToQuarantine'>;
   opensearch: Pick<OpenSearchService, 'indexFile'>;
   kafka: Pick<KafkaService, 'publishFileQuarantined'>;
@@ -33,7 +36,10 @@ export async function runAntivirusScan(
       await services.db.updateFileStatus(fileId, 'CLEAN');
       const file = await services.db.findFileById(fileId, tenantId);
       if (file) {
-        await services.opensearch.indexFile(file);
+        // The metadata rows come with it: entity_type, entity_id and the key-value pairs are all
+        // indexed fields (spec §Phase 9), and they live in files.file_metadata, not on the file row.
+        const metadata = await services.db.findMetadataByFileId(fileId, tenantId);
+        await services.opensearch.indexFile(file, metadata);
       }
       logger.info({ file_id: fileId, traceId }, 'file.scan.clean');
     } else {

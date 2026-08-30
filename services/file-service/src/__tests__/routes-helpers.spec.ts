@@ -19,11 +19,24 @@ const FILE_ROW = {
   quarantined_at: null,
 };
 
+const META_ROWS = [
+  {
+    metadata_id: 'mid-1',
+    file_id: 'fid-1',
+    tenant_id: 'tid-1',
+    entity_type: 'site_report',
+    entity_id: 'eid-1',
+    metadata_key: 'entity_ref',
+    metadata_value: 'eid-1',
+  },
+];
+
 function makeApp(overrides?: {
   scan?: jest.Mock;
   updateFileStatus?: jest.Mock;
   markFileQuarantined?: jest.Mock;
   findFileById?: jest.Mock;
+  findMetadataByFileId?: jest.Mock;
   indexFile?: jest.Mock;
   publishFileQuarantined?: jest.Mock;
   moveToQuarantine?: jest.Mock;
@@ -34,6 +47,10 @@ function makeApp(overrides?: {
       updateFileStatus: overrides?.updateFileStatus ?? jest.fn().mockResolvedValue(undefined),
       markFileQuarantined: overrides?.markFileQuarantined ?? jest.fn().mockResolvedValue(undefined),
       findFileById: overrides?.findFileById ?? jest.fn().mockResolvedValue(FILE_ROW),
+      // Indexing reads the file's metadata rows too — entity_type, entity_id and the key-value
+      // pairs are indexed fields (spec §Phase 9) and live in files.file_metadata.
+      findMetadataByFileId:
+        overrides?.findMetadataByFileId ?? jest.fn().mockResolvedValue(META_ROWS),
     },
     minio: {
       moveToQuarantine: overrides?.moveToQuarantine ?? jest.fn().mockResolvedValue(undefined),
@@ -52,7 +69,9 @@ describe('runAntivirusScan', () => {
     const app = makeApp({ indexFile });
     await runAntivirusScan(app, 'fid-1', 'key', 'tid-1', 'uid-1', 'trace-1');
     expect(app.db.updateFileStatus as jest.Mock).toHaveBeenCalledWith('fid-1', 'CLEAN');
-    expect(indexFile).toHaveBeenCalledWith(FILE_ROW);
+    // Indexed WITH its metadata: without the second argument the document carries no entity_type,
+    // no entity_id and no key-value pairs, and a search over metadata values can never match.
+    expect(indexFile).toHaveBeenCalledWith(FILE_ROW, META_ROWS);
   });
 
   it('skips OpenSearch indexing when findFileById returns null after CLEAN', async () => {

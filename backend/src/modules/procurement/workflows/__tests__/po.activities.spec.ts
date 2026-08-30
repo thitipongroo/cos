@@ -1,16 +1,12 @@
 ﻿// Unit tests — PO Workflow Activities (Phase 5)
 // getDbUrlForTenant, PrismaClient, and KafkaProducer are all mocked.
 
-jest.mock('../../../tenant/utils/get-db-url', () => ({
+jest.mock('../../../../shared/prisma/get-db-url', () => ({
   getDbUrlForTenant: jest.fn().mockResolvedValue('postgresql://tenant-db/testdb'),
 }));
 
 jest.mock('@prisma/client', () => ({
   PrismaClient: jest.fn(),
-}));
-
-jest.mock('@cos/shared', () => ({
-  KafkaProducer: jest.fn(),
 }));
 
 jest.mock('@cos/logger', () => {
@@ -60,6 +56,28 @@ const baseParams = {
   correlation_id: 'corr-uuid-001',
 };
 
+/**
+ * The outbox INSERT issued inside the activity's transaction, parsed back into the envelope. The
+ * activities that own a business write no longer call EventOutboxService.publish() — the event goes
+ * in through OutboxPublisher.write(tx, …) so it commits or rolls back with the row.
+ */
+const OUTBOX_SQL = 'INSERT INTO platform.outbox_events';
+function outboxEnvelope(): Record<string, unknown> | undefined {
+  const call = mockExecuteRaw.mock.calls.find(([t]: [TemplateStringsArray]) =>
+    t.join('').includes(OUTBOX_SQL),
+  );
+  if (!call) return undefined;
+  const json = call.find((v: unknown) => typeof v === 'string' && v.startsWith('{'));
+  return json ? (JSON.parse(json as string) as Record<string, unknown>) : undefined;
+}
+
+/** The business statement — the `$executeRaw` call that is not the outbox INSERT. */
+function businessUpdateCall(): [TemplateStringsArray, ...unknown[]] | undefined {
+  return mockExecuteRaw.mock.calls.find(
+    ([t]: [TemplateStringsArray]) => !t.join('').includes(OUTBOX_SQL),
+  ) as [TemplateStringsArray, ...unknown[]] | undefined;
+}
+
 beforeEach(() => {
   jest.resetAllMocks();
 
@@ -87,8 +105,9 @@ describe('updatePoStatus', () => {
     await updatePoStatus(baseParams, 'DRAFT', 'PENDING_APPROVAL');
     expect(mockTransaction).toHaveBeenCalledTimes(1);
     expect(mockExecuteRawUnsafe).toHaveBeenCalledTimes(1);
-    expect(mockExecuteRaw).toHaveBeenCalledTimes(1);
-    expect(mockKafkaPublish).toHaveBeenCalledTimes(1);
+    // one business UPDATE + one outbox INSERT, both through the same tx handle
+    expect(mockExecuteRaw).toHaveBeenCalledTimes(2);
+    expect(mockKafkaPublish).not.toHaveBeenCalled();
     // Pooling (ADR-021): the client is reused across activities and closed only by
     // disconnectActivityClients() on worker shutdown. Disconnecting per activity is what made every
     // workflow step pay for a fresh pg pool.
@@ -104,7 +123,7 @@ describe('updatePoStatus', () => {
 
   it('runs the exact UPDATE statement with status/po/tenant bindings', async () => {
     await updatePoStatus(baseParams, 'DRAFT', 'PENDING_APPROVAL');
-    const [template, ...values] = mockExecuteRaw.mock.calls[0]!;
+    const [template, ...values] = businessUpdateCall()!;
     const sql = template.join('¶');
     expect(sql).toContain('UPDATE procurement.purchase_orders SET status =');
     expect(sql).toContain('WHERE po_id =');
@@ -116,9 +135,10 @@ describe('updatePoStatus', () => {
     ]);
   });
 
-  it('publishes the exact status_changed event envelope and logs the transition', async () => {
+  it('writes the exact status_changed envelope to the outbox and logs the transition', async () => {
     await updatePoStatus(baseParams, 'DRAFT', 'PENDING_APPROVAL');
-    expect(mockKafkaPublish).toHaveBeenCalledWith({
+    expect(outboxEnvelope()).toEqual({
+      event_id: expect.any(String),
       event_type: 'procurement.po.status_changed.v1',
       event_version: '1.0',
       tenant_id: '00000000-0000-4000-8000-000000000001',

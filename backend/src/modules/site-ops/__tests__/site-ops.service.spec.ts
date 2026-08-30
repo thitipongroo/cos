@@ -20,17 +20,13 @@ import type {
 import { IssueSeverity, IssueType } from '../dto/create-issue.dto';
 import { ReportShift, BlockerCategory } from '../dto/create-site-report.dto';
 import { IssueStatus } from '../dto/update-issue.dto';
-import { InspectionStatus } from '../dto/submit-inspection.dto';
+import { InspectionStatus } from '../public/submit-inspection.dto';
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
-jest.mock('@cos/shared', () => ({
-  KafkaProducer: jest.fn().mockImplementation(() => ({
-    connect: jest.fn().mockResolvedValue(undefined),
-    publish: jest.fn().mockResolvedValue(undefined),
-    disconnect: jest.fn().mockResolvedValue(undefined),
-  })),
-}));
+// §35.13 ESC-13: the service no longer holds a KafkaProducer — it hands the repository an outbox
+// envelope (or a builder over the written row) that rides the business transaction. These tests
+// therefore assert on what reached the repository, resolving builders exactly as the repo does.
 
 jest.mock('@opensearch-project/opensearch', () => ({
   Client: jest.fn().mockImplementation(() => ({
@@ -49,6 +45,7 @@ jest.mock('@cos/logger', () => ({
 }));
 
 const mockRepo = {
+  projectExists: jest.fn(),
   createSiteReport: jest.fn(),
   findReportById: jest.fn(),
   findReportsByIds: jest.fn().mockResolvedValue(new Map()),
@@ -64,6 +61,7 @@ const mockRepo = {
   findIssueById: jest.fn(),
   listIssues: jest.fn(),
   updateIssue: jest.fn(),
+  updateIssueStatus: jest.fn(),
   createInspection: jest.fn(),
   findChecklistById: jest.fn(),
   findInspections: jest.fn(),
@@ -77,6 +75,21 @@ const mockRepo = {
   findMaterialIdByName: jest.fn(),
   findCarbonFactor: jest.fn(),
   insertCarbonRecord: jest.fn(),
+  writeOutboxEvent: jest.fn(),
+};
+
+/**
+ * Resolves the outbox argument a repository mock received. Where the service passes a builder,
+ * this invokes it with `row` exactly as the real repository does — so the builder body is
+ * genuinely exercised (QM-1: an uncalled callback is uncovered code).
+ */
+const outboxArg = (
+  fn: jest.Mock,
+  argIndex: number,
+  row?: unknown,
+): { event_type?: string; payload?: Record<string, unknown> } | undefined => {
+  const arg = fn.mock.calls[0]?.[argIndex];
+  return typeof arg === 'function' ? arg(row) : arg;
 };
 
 const MOCK_REQUEST = {
@@ -146,6 +159,10 @@ let service: SiteOpsService;
 
 beforeEach(async () => {
   jest.clearAllMocks();
+  // Default: the project the DTO names exists. Every site-ops write that carries a project_id checks
+  // this first (site_reports / issues / inspections all FK to projects.projects), so the tests that
+  // are about something ELSE need it to pass; the not-found tests override it.
+  mockRepo.projectExists.mockResolvedValue(true);
   // Default: the sync write lands. Tests that exercise the "row vanished mid-sync" path override it.
   mockRepo.updateSiteReport.mockResolvedValue(makeReport());
   const module: TestingModule = await Test.createTestingModule({
@@ -222,6 +239,7 @@ describe('createSiteReport', () => {
     expect(mockRepo.createSiteReport).toHaveBeenCalledTimes(1);
     expect(mockRepo.createSiteReport).toHaveBeenCalledWith(
       expect.objectContaining({ blockers: 'crane down; concrete delivery late' }),
+      expect.anything(),
     );
     expect(result.report_id).toBe('report-1');
   });
@@ -242,78 +260,55 @@ describe('createSiteReport', () => {
 
     expect(mockRepo.createSiteReport).toHaveBeenCalledWith(
       expect.objectContaining({ shift: 'NIGHT', blocker_category: 'WEATHER' }),
+      expect.anything(),
     );
   });
 
-  it('sends null for shift and blocker_category when the caller omits them', async () => {
-    mockRepo.createSiteReport.mockResolvedValue(makeReport());
-
-    await service.createSiteReport({ project_id: 'project-1', report_date: '2026-06-04' });
-
-    expect(mockRepo.createSiteReport).toHaveBeenCalledWith(
-      expect.objectContaining({ shift: null, blocker_category: null }),
-    );
-  });
-
-  // manpower_lines → site_ops.manpower_logs (master §Phase 6).
-  it('writes the per-trade breakdown, defaulting hours to a full shift', async () => {
-    mockRepo.createSiteReport.mockResolvedValue(makeReport());
+  // The per-trade breakdown is optional, and the branch that writes it had no unit test — the
+  // repository method was covered, the service's decision to CALL it was not, so QM-1's 100% branch
+  // gate caught it. It is not a formality: the logs are keyed off the row's OWN report_id, because
+  // createSiteReport UPSERTs on (project_id, report_date, submitted_by) and a resubmit returns the
+  // existing row while the freshly generated UUID is discarded. Keying off the generated id would
+  // orphan every line on the second submit of the same day.
+  it('writes the per-trade breakdown against the report row, not the generated id', async () => {
+    const report = makeReport();
+    mockRepo.createSiteReport.mockResolvedValue(report);
 
     await service.createSiteReport({
       project_id: 'project-1',
       report_date: '2026-06-04',
       manpower_lines: [
-        { trade_type: 'ELECTRICAL', worker_count: 8 },
-        { trade_type: 'STRUCTURAL', worker_count: 16, hours_worked: 10 },
+        { trade_type: 'CARPENTER', worker_count: 4, hours_worked: 6 },
+        // hours_worked omitted — the column is NOT NULL, so a standard shift stands in.
+        { trade_type: 'STEELWORKER', worker_count: 2 },
       ],
-    });
+    } as never);
 
-    expect(mockRepo.replaceManpowerLogs).toHaveBeenCalledWith('report-1', [
-      { trade_type: 'ELECTRICAL', worker_count: 8, hours_worked: 8 },
-      { trade_type: 'STRUCTURAL', worker_count: 16, hours_worked: 10 },
+    expect(mockRepo.replaceManpowerLogs).toHaveBeenCalledWith(report.report_id, [
+      { trade_type: 'CARPENTER', worker_count: 4, hours_worked: 6 },
+      { trade_type: 'STEELWORKER', worker_count: 2, hours_worked: 8 },
     ]);
   });
 
-  // Regression guard: createSiteReport UPSERTS on (project_id, report_date, submitted_by), so
-  // resubmitting a day returns the EXISTING row and the freshly generated UUID is thrown away.
-  // Keying the logs off the generated id instead of the returned row would orphan every line.
-  it('keys the breakdown off the RETURNED report id, not the generated one', async () => {
-    mockRepo.createSiteReport.mockResolvedValue(makeReport({ report_id: 'pre-existing-report' }));
-
-    await service.createSiteReport({
-      project_id: 'project-1',
-      report_date: '2026-06-04',
-      manpower_lines: [{ trade_type: 'ELECTRICAL', worker_count: 8 }],
-    });
-
-    expect(mockRepo.replaceManpowerLogs).toHaveBeenCalledWith(
-      'pre-existing-report',
-      expect.any(Array),
-    );
-  });
-
-  it('clears the breakdown when an empty array is sent, and leaves it alone when omitted', async () => {
+  it('writes no breakdown when the caller sends none', async () => {
+    // The other side of the branch: absent lines must not produce an empty DELETE-then-insert, which
+    // would clear a breakdown a previous submit had recorded for the same day.
     mockRepo.createSiteReport.mockResolvedValue(makeReport());
 
     await service.createSiteReport({ project_id: 'project-1', report_date: '2026-06-04' });
+
     expect(mockRepo.replaceManpowerLogs).not.toHaveBeenCalled();
-
-    await service.createSiteReport({
-      project_id: 'project-1',
-      report_date: '2026-06-04',
-      manpower_lines: [],
-    });
-    expect(mockRepo.replaceManpowerLogs).toHaveBeenCalledWith('report-1', []);
   });
 
-  it('emits site.report.created.v1 Kafka event', async () => {
+  it('writes site.report.created.v1 to the outbox with the report INSERT', async () => {
     mockRepo.createSiteReport.mockResolvedValue(makeReport());
     await service.createSiteReport({ project_id: 'project-1', report_date: '2026-06-04' });
-    // KafkaProducer.publish is called once (event emission)
-    const instance = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
-    expect(instance.publish).toHaveBeenCalledWith(
+    // Same repository call as the INSERT ⇒ the event cannot survive a rollback.
+    expect(outboxArg(mockRepo.createSiteReport, 1)).toEqual(
       expect.objectContaining({
-        event_type: expect.stringContaining('site.report.created.v1'),
+        event_type: 'site.report.created.v1',
+        tenant_id: 'tenant-uuid-1',
+        actor_id: 'user-uuid-1',
       }),
     );
   });
@@ -479,9 +474,8 @@ describe('syncSiteReports', () => {
 
     expect(results[0]?.conflict_status).toBe('CONFLICT_FLAGGED');
     expect(mockRepo.createConflictRecord).toHaveBeenCalledTimes(1);
-    // Emits site.conflict.flagged.v1 for notification routing (ConflictRecord persistence AND notification)
-    const producer = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
-    expect(producer.publish).toHaveBeenCalledWith(
+    // The notification event rides the conflict record's own INSERT.
+    expect(outboxArg(mockRepo.createConflictRecord, 1)).toEqual(
       expect.objectContaining({
         event_type: 'site.conflict.flagged.v1',
         payload: expect.objectContaining({
@@ -693,9 +687,8 @@ describe('createIssue', () => {
       severity: IssueSeverity.HIGH,
     });
     expect(result.issue_id).toBe('issue-1');
-    const instance = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
-    expect(instance.publish).toHaveBeenCalledWith(
-      expect.objectContaining({ event_type: expect.stringContaining('site.issue.created.v1') }),
+    expect(outboxArg(mockRepo.createIssue, 1)).toEqual(
+      expect.objectContaining({ event_type: 'site.issue.created.v1' }),
     );
   });
 
@@ -710,6 +703,7 @@ describe('createIssue', () => {
     });
     expect(mockRepo.createIssue).toHaveBeenCalledWith(
       expect.objectContaining({ issue_type: 'REWORK' }),
+      expect.anything(),
     );
   });
 
@@ -724,6 +718,7 @@ describe('createIssue', () => {
     });
     expect(mockRepo.createIssue).toHaveBeenCalledWith(
       expect.objectContaining({ issue_type: null }),
+      expect.anything(),
     );
   });
 
@@ -737,6 +732,7 @@ describe('createIssue', () => {
     });
     expect(mockRepo.createIssue).toHaveBeenCalledWith(
       expect.objectContaining({ issue_id: '11111111-1111-1111-1111-111111111111' }),
+      expect.anything(),
     );
   });
 
@@ -752,6 +748,7 @@ describe('createIssue', () => {
     });
     expect(mockRepo.createIssue).toHaveBeenCalledWith(
       expect.objectContaining({ created_by: 'user-uuid-1' }),
+      expect.anything(),
     );
   });
 });
@@ -766,7 +763,7 @@ describe('updateIssue', () => {
     );
   });
 
-  it('server status always wins in field-level merge', async () => {
+  it('server status wins in a field-level merge once the server has moved', async () => {
     const serverIssue = makeIssue({ status: 'IN_PROGRESS' });
     mockRepo.findIssueById.mockResolvedValue(serverIssue);
     mockRepo.updateIssue.mockResolvedValue({ ...serverIssue, description: 'updated' });
@@ -775,6 +772,10 @@ describe('updateIssue', () => {
       status: IssueStatus.RESOLVED, // client wants RESOLVED
       description: 'updated',
       client_submitted_at: '2026-06-04T09:00:00Z',
+      // The client is replaying an edit made against a state older than the server row — master:2591's
+      // "while client had offline edit". Without this the call is an ordinary update and the client's
+      // status simply applies.
+      last_known_modified_at: '2026-06-04T07:00:00Z',
     });
 
     // updateIssue called with status = server status (IN_PROGRESS) not client (RESOLVED)
@@ -794,12 +795,11 @@ describe('updateIssue', () => {
       status: IssueStatus.OPEN, // client thought it was still OPEN
       description: 'my update',
       client_submitted_at: '2026-06-04T09:00:00Z',
+      last_known_modified_at: '2026-06-04T07:00:00Z',
     });
 
     expect(mockRepo.createConflictRecord).toHaveBeenCalledTimes(1);
-    // Emits site.conflict.flagged.v1 for notification routing
-    const producer = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
-    expect(producer.publish).toHaveBeenCalledWith(
+    expect(outboxArg(mockRepo.createConflictRecord, 1)).toEqual(
       expect.objectContaining({
         event_type: 'site.conflict.flagged.v1',
         payload: expect.objectContaining({
@@ -817,10 +817,86 @@ describe('updateIssue', () => {
     mockRepo.updateIssue.mockResolvedValue({ ...serverIssue, status: 'OPEN' });
 
     await service.updateIssue('issue-1', { status: IssueStatus.OPEN });
-    // No status change event since from=OPEN and to=OPEN
-    const instance = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
-    expect(instance.publish).not.toHaveBeenCalledWith(
-      expect.objectContaining({ event_type: expect.stringContaining('status_changed') }),
+    // updateIssue never carries a status event — FIELD_LEVEL_MERGE makes the server status win,
+    // so nothing can transition here (§35.13 ESC-21). Transitions go through changeIssueStatus.
+    expect(mockRepo.updateIssue).toHaveBeenCalledWith('issue-1', expect.any(Object));
+  });
+});
+
+// ── changeIssueStatus (§35.13 ESC-21) ──────────────────────────────────────
+
+// Before this endpoint existed, PATCH /site/issues/:id was the only writer of issues.status and it
+// applies FIELD_LEVEL_MERGE — the server's status always wins — so an issue could never leave OPEN
+// and site.issue.status_changed.v1 was unreachable.
+describe('changeIssueStatus', () => {
+  it('throws NotFoundException when the issue does not exist', async () => {
+    mockRepo.findIssueById.mockResolvedValue(null);
+    await expect(
+      service.changeIssueStatus('missing', { status: IssueStatus.RESOLVED }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(mockRepo.updateIssueStatus).not.toHaveBeenCalled();
+  });
+
+  it('persists the transition and builds the event from the UPDATEd row', async () => {
+    const existing = makeIssue({ status: 'OPEN' });
+    const updatedRow = makeIssue({ status: 'RESOLVED', resolution_note: 'fixed on site' });
+    mockRepo.findIssueById.mockResolvedValue(existing);
+    mockRepo.updateIssueStatus.mockResolvedValue(updatedRow);
+
+    const result = await service.changeIssueStatus('issue-1', {
+      status: IssueStatus.RESOLVED,
+      resolution_note: 'fixed on site',
+    });
+
+    expect(result.status).toBe('RESOLVED');
+    expect(mockRepo.updateIssueStatus).toHaveBeenCalledWith(
+      'issue-1',
+      'RESOLVED',
+      'fixed on site',
+      expect.any(Function),
+    );
+    expect(outboxArg(mockRepo.updateIssueStatus, 3, updatedRow)).toEqual(
+      expect.objectContaining({
+        event_type: 'site.issue.status_changed.v1',
+        payload: {
+          issue_id: 'issue-1',
+          project_id: 'project-1',
+          from_status: 'OPEN',
+          to_status: 'RESOLVED',
+        },
+      }),
+    );
+  });
+
+  it('passes a null resolution_note when none is supplied', async () => {
+    mockRepo.findIssueById.mockResolvedValue(makeIssue({ status: 'OPEN' }));
+    mockRepo.updateIssueStatus.mockResolvedValue(makeIssue({ status: 'IN_PROGRESS' }));
+
+    await service.changeIssueStatus('issue-1', { status: IssueStatus.IN_PROGRESS });
+
+    expect(mockRepo.updateIssueStatus).toHaveBeenCalledWith(
+      'issue-1',
+      'IN_PROGRESS',
+      null,
+      expect.any(Function),
+    );
+  });
+
+  it('emits nothing when the status is unchanged — a no-op is not a transition', async () => {
+    mockRepo.findIssueById.mockResolvedValue(makeIssue({ status: 'OPEN' }));
+    mockRepo.updateIssueStatus.mockResolvedValue(makeIssue({ status: 'OPEN' }));
+
+    await service.changeIssueStatus('issue-1', {
+      status: IssueStatus.OPEN,
+      resolution_note: 'note only',
+    });
+
+    // still persists the note, but hands the write no envelope
+    expect(mockRepo.updateIssueStatus).toHaveBeenCalledWith(
+      'issue-1',
+      'OPEN',
+      'note only',
+      undefined,
     );
   });
 });
@@ -838,8 +914,8 @@ describe('escalateIssue', () => {
     const res = await service.escalateIssue('i-esc');
     expect(res).toEqual({ issue_id: 'i-esc', status: 'ESCALATED' });
 
-    const instance = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
-    expect(instance.publish).toHaveBeenCalledWith(
+    // No business write to be atomic with — the outbox is the durable relay (§35.13 ESC-13).
+    expect(outboxArg(mockRepo.writeOutboxEvent, 0)).toEqual(
       expect.objectContaining({ event_type: 'site.issue.escalated.v1' }),
     );
   });
@@ -872,7 +948,10 @@ describe('submitInspection', () => {
       signature,
     });
 
-    expect(mockRepo.createInspection).toHaveBeenCalledWith(expect.objectContaining({ signature }));
+    expect(mockRepo.createInspection).toHaveBeenCalledWith(
+      expect.objectContaining({ signature }),
+      expect.anything(),
+    );
   });
 
   it('records NULL when the checklist is confirmed without signing', async () => {
@@ -897,6 +976,7 @@ describe('submitInspection', () => {
 
     expect(mockRepo.createInspection).toHaveBeenCalledWith(
       expect.objectContaining({ signature: null }),
+      expect.anything(),
     );
   });
 
@@ -932,9 +1012,8 @@ describe('submitInspection', () => {
       inspected_at: '2026-06-04T08:00:00Z',
     });
 
-    const instance = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
-    expect(instance.publish).toHaveBeenCalledWith(
-      expect.objectContaining({ event_type: expect.stringContaining('inspection.passed') }),
+    expect(outboxArg(mockRepo.createInspection, 1)).toEqual(
+      expect.objectContaining({ event_type: 'site.inspection.passed.v1' }),
     );
   });
 
@@ -962,15 +1041,15 @@ describe('submitInspection', () => {
     // spec 11 §517 — issue_severity is persisted on a FAILED inspection.
     expect(mockRepo.createInspection).toHaveBeenCalledWith(
       expect.objectContaining({ issue_severity: 'HIGH' }),
+      expect.anything(),
     );
 
-    const instance = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
-    expect(instance.publish).toHaveBeenCalledWith(
-      expect.objectContaining({ event_type: expect.stringContaining('inspection.failed') }),
+    expect(outboxArg(mockRepo.createInspection, 1)).toEqual(
+      expect.objectContaining({ event_type: 'site.inspection.failed.v1' }),
     );
   });
 
-  it('a FAILED checklist ALSO raises safety.violation.detected.v1 (§19.6 / OQ-35)', async () => {
+  it('a FAILED checklist ALSO raises safety.compliance.failed.v1 (§19.6 / OQ-35)', async () => {
     // `19-notification-architecture` §19.6 names SafetyViolationDetected as one of two notifications
     // a user may not disable — and until 2026-08-22 nothing produced it, so that set had an unknown
     // size. A failed required item on a `site_ops.safety_checklists` row is one of its two sources.
@@ -994,14 +1073,18 @@ describe('submitInspection', () => {
       issue_severity: IssueSeverity.HIGH,
     });
 
+    // The event is built before the INSERT, so it carries the id the row is ABOUT to get — read it
+    // back from the createInspection call rather than from the mock's return value.
+    const createdId = (mockRepo.createInspection.mock.calls[0][0] as { inspection_id: string })
+      .inspection_id;
     const instance = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
     expect(instance.publish).toHaveBeenCalledWith(
       expect.objectContaining({
-        event_type: 'safety.violation.detected.v1',
+        event_type: 'safety.compliance.failed.v1',
         payload: expect.objectContaining({
-          violation_type: 'CHECKLIST_ITEM_FAILED',
+          failure_type: 'CHECKLIST_ITEM_FAILED',
           project_id: 'project-1',
-          inspection_id: 'insp-9',
+          inspection_id: createdId,
           checklist_id: 'checklist-1',
           detected_by: 'CHECKLIST_SUBMISSION',
         }),
@@ -1037,8 +1120,13 @@ describe('submitInspection', () => {
     const emitted = instance.publish.mock.calls.map(
       (c) => (c[0] as { event_type: string }).event_type,
     );
-    expect(emitted).toContain('site.inspection.failed.v1');
-    expect(emitted).toContain('safety.violation.detected.v1');
+    // Different transports, deliberately: inspection.failed has a row to anchor to and rides the
+    // INSERT (§35.13 ESC-13), while the compliance event is the second event of the same request and
+    // createInspection carries one. Both are durable; both must fire.
+    expect(outboxArg(mockRepo.createInspection, 1)).toEqual(
+      expect.objectContaining({ event_type: 'site.inspection.failed.v1' }),
+    );
+    expect(emitted).toContain('safety.compliance.failed.v1');
   });
 
   it('a PASSED checklist raises no violation', async () => {
@@ -1065,7 +1153,7 @@ describe('submitInspection', () => {
     const emitted = instance.publish.mock.calls.map(
       (c) => (c[0] as { event_type: string }).event_type,
     );
-    expect(emitted).not.toContain('safety.violation.detected.v1');
+    expect(emitted).not.toContain('safety.compliance.failed.v1');
   });
 
   it('emits neither passed nor failed event when status is REQUIRES_REINSPECTION', async () => {
@@ -1091,13 +1179,8 @@ describe('submitInspection', () => {
     });
 
     expect(mockRepo.createInspection).toHaveBeenCalled();
-    const instance = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
-    expect(instance.publish).not.toHaveBeenCalledWith(
-      expect.objectContaining({ event_type: expect.stringContaining('inspection.passed') }),
-    );
-    expect(instance.publish).not.toHaveBeenCalledWith(
-      expect.objectContaining({ event_type: expect.stringContaining('inspection.failed') }),
-    );
+    // Neither outcome matches ⇒ no envelope reaches the INSERT.
+    expect(outboxArg(mockRepo.createInspection, 1)).toBeUndefined();
   });
 });
 
@@ -1176,18 +1259,54 @@ describe('listConflictRecords', () => {
 });
 
 describe('updateIssue — status_changed event emission', () => {
-  it('does NOT emit status_changed when server status wins (fromStatus === toStatus)', async () => {
-    // Server status is always authoritative in FIELD_LEVEL_MERGE.
-    // Client sends status='IN_PROGRESS' but server has 'OPEN' → resolved = 'OPEN' = fromStatus.
-    // Therefore fromStatus === toStatus → no status_changed event.
+  it('does NOT emit status_changed when the status did not move', async () => {
+    // The client sends the status the server already holds, so resolved === fromStatus and there is
+    // nothing to announce. (This used to be true of EVERY update, because the resolver wrote the
+    // server's status back unconditionally — which is why the event's branch was marked
+    // `istanbul ignore next` rather than tested.)
     const serverIssue = makeIssue({ status: 'OPEN' });
     mockRepo.findIssueById.mockResolvedValue(serverIssue);
     mockRepo.updateIssue.mockResolvedValue({ ...serverIssue, status: 'OPEN' });
 
     await service.updateIssue('issue-1', { status: IssueStatus.OPEN, description: 'update' });
+    expect(mockRepo.updateIssue).toHaveBeenCalledWith('issue-1', expect.any(Object));
+  });
+});
+
+// §35.13 ESC-13: `emitEvent` used to log `kafka.publish.failed` and return normally, so every
+// site event was silently dropped during a broker outage while the row was already committed —
+// invisible to offline-sync clients. The outbox write shares the transaction, so its failure must
+// propagate and roll the business write back.
+describe('outbox write failure', () => {
+  it('propagates the failure instead of silently dropping the event', async () => {
+    mockRepo.createSiteReport.mockRejectedValueOnce(new Error('outbox insert failed'));
+    await expect(
+      service.createSiteReport({ project_id: 'project-1', report_date: '2026-06-04' }),
+    ).rejects.toThrow('outbox insert failed');
+  });
+});
+
+describe('updateIssue — an ordinary status change', () => {
+  it('applies the client status and announces it (master:2810)', async () => {
+    const serverIssue = makeIssue({ status: 'OPEN' });
+    mockRepo.findIssueById.mockResolvedValue(serverIssue);
+    mockRepo.updateIssue.mockResolvedValue({ ...serverIssue, status: 'IN_PROGRESS' });
+
+    await service.updateIssue('issue-1', { status: IssueStatus.IN_PROGRESS });
+
+    expect(mockRepo.updateIssue).toHaveBeenCalledWith(
+      'issue-1',
+      expect.objectContaining({ status: 'IN_PROGRESS' }),
+    );
+    // No conflict: the caller is editing the state it is looking at.
+    expect(mockRepo.createConflictRecord).not.toHaveBeenCalled();
+
     const instance = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
-    expect(instance.publish).not.toHaveBeenCalledWith(
-      expect.objectContaining({ event_type: expect.stringContaining('status_changed') }),
+    expect(instance.publish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event_type: 'site.issue.status_changed.v1',
+        payload: expect.objectContaining({ from_status: 'OPEN', to_status: 'IN_PROGRESS' }),
+      }),
     );
   });
 });
@@ -1234,6 +1353,32 @@ describe('OpenSearch indexing error handling', () => {
     mockRepo.listSiteReports.mockResolvedValue({ rows: [makeReport()], total: 1 });
     const result = await service.listSiteReports({ page: 1, limit: 10, q: 'crack', minimal: true });
     expect(result.items[0]).not.toHaveProperty('summary');
+  });
+
+  it('honours minimal=true on the DB fallback when OpenSearch is down', async () => {
+    // `minimal` is the CALLER's contract (master:2797), not a property of the search backend. A
+    // client asks for the reduced payload because of the link it is on — handing it the full one
+    // because a server-side dependency was unavailable is the opposite of what it asked for, at the
+    // moment it can least afford it.
+    const { Client } = jest.requireMock('@opensearch-project/opensearch') as { Client: jest.Mock };
+    Client.mock.results[0]?.value.search.mockRejectedValueOnce(new Error('opensearch unreachable'));
+    mockRepo.listSiteReports.mockResolvedValue({ rows: [makeReport()], total: 1 });
+
+    const result = await service.listSiteReports({ page: 1, limit: 10, q: 'crack', minimal: true });
+
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0]).not.toHaveProperty('summary');
+  });
+
+  it('returns the full payload on the DB fallback when minimal was not asked for', async () => {
+    // CONTROL: the reduction above must come from `minimal`, not from the fallback path itself.
+    const { Client } = jest.requireMock('@opensearch-project/opensearch') as { Client: jest.Mock };
+    Client.mock.results[0]?.value.search.mockRejectedValueOnce(new Error('opensearch unreachable'));
+    mockRepo.listSiteReports.mockResolvedValue({ rows: [makeReport()], total: 1 });
+
+    const result = await service.listSiteReports({ page: 1, limit: 10, q: 'crack' });
+
+    expect(result.items[0]).toHaveProperty('summary');
   });
 
   it('listIssues with project_id filter in OpenSearch query (covers if project_id branch)', async () => {
@@ -1418,6 +1563,7 @@ describe('createMaterialConsumption', () => {
       // The consumption carries the resolved master id, not a fresh random one.
       expect(mockRepo.insertMaterialConsumption).toHaveBeenCalledWith(
         expect.objectContaining({ material_id: 'mat-master-001' }),
+        expect.anything(),
       );
       const call = carbonPublish();
       expect(call).toBeDefined();
@@ -1488,6 +1634,13 @@ describe('inspection results & approval', () => {
     mockRepo.updateInspectionStatus.mockResolvedValue({ ...pending, status: 'PASSED' });
     const r = await service.updateInspectionStatus('insp-1', { status: 'PASSED' } as never);
     expect(r.status).toBe('PASSED');
+    // Builder resolved against the UPDATEd row — project_id comes from the row, not the DTO.
+    expect(outboxArg(mockRepo.updateInspectionStatus, 1, { ...pending, status: 'PASSED' })).toEqual(
+      expect.objectContaining({
+        event_type: 'site.inspection.passed.v1',
+        payload: expect.objectContaining({ inspection_id: 'insp-1', project_id: 'proj-uuid-1' }),
+      }),
+    );
   });
 
   it('updateInspectionStatus → FAILED emits failed event', async () => {
@@ -1496,6 +1649,12 @@ describe('inspection results & approval', () => {
     await expect(
       service.updateInspectionStatus('insp-1', { status: 'FAILED' } as never),
     ).resolves.toBeDefined();
+    expect(outboxArg(mockRepo.updateInspectionStatus, 1, { ...pending, status: 'FAILED' })).toEqual(
+      expect.objectContaining({
+        event_type: 'site.inspection.failed.v1',
+        payload: expect.objectContaining({ checklist_id: 'chk-1' }),
+      }),
+    );
   });
 
   it('updateInspectionStatus → REQUIRES_REINSPECTION (no event branch)', async () => {
@@ -1510,6 +1669,8 @@ describe('inspection results & approval', () => {
         notes: 'redo',
       } as never),
     ).resolves.toBeDefined();
+    // Neither PASSED nor FAILED ⇒ no builder is handed to the UPDATE.
+    expect(outboxArg(mockRepo.updateInspectionStatus, 1)).toBeUndefined();
   });
 
   it('updateInspectionStatus throws when already PASSED (terminal)', async () => {
@@ -1522,5 +1683,89 @@ describe('inspection results & approval', () => {
   it('listChecklists delegates to repo', async () => {
     mockRepo.listChecklists.mockResolvedValue([{ checklist_id: 'chk-1' }]);
     expect(await service.listChecklists('proj-1')).toHaveLength(1);
+  });
+});
+
+// ── the parent-project guard ──────────────────────────────────────────────
+//
+// site_reports, issues and inspections all carry a FOREIGN KEY to projects.projects
+// (20260822000002_site_ops_foreign_keys). An unknown project_id used to reach PostgreSQL and come
+// back as SQLSTATE 23503, which nothing maps — so the client received a bare 500 for a request
+// error, while buildings.service already answered a structured 404 for exactly the same mistake.
+//
+// Each of the three entry points is checked separately rather than through the private helper: they
+// are three routes a client can call, and a guard added to one of them is the shape this defect had.
+
+describe('rejects a write whose project does not exist', () => {
+  const reportDto = { project_id: 'ghost-project', report_date: '2026-06-04' };
+  const issueDto = { project_id: 'ghost-project', title: 'Crack', severity: 'HIGH' };
+  const inspectionDto = {
+    project_id: 'ghost-project',
+    checklist_id: 'chk-1',
+    status: 'PASSED',
+    inspected_at: '2026-06-04T09:00:00Z',
+  };
+
+  beforeEach(() => {
+    mockRepo.projectExists.mockResolvedValue(false);
+  });
+
+  it('answers 404 for a site report, not 500', async () => {
+    await expect(service.createSiteReport(reportDto as never)).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+    expect(mockRepo.createSiteReport).not.toHaveBeenCalled();
+  });
+
+  it('answers 404 for an issue', async () => {
+    await expect(service.createIssue(issueDto as never)).rejects.toBeInstanceOf(NotFoundException);
+    expect(mockRepo.createIssue).not.toHaveBeenCalled();
+  });
+
+  it('answers 404 for an inspection', async () => {
+    await expect(service.submitInspection(inspectionDto as never)).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+    expect(mockRepo.createInspection).not.toHaveBeenCalled();
+  });
+
+  it('checks the project BEFORE the checklist on an inspection', async () => {
+    // Order matters for the message the caller reads: a request naming neither a real project nor a
+    // real checklist should name the project, which is the outer of the two.
+    mockRepo.findChecklistById.mockResolvedValue(null);
+
+    await expect(service.submitInspection(inspectionDto as never)).rejects.toThrow();
+
+    expect(mockRepo.findChecklistById).not.toHaveBeenCalled();
+  });
+
+  it('carries a COS-* code and a trace id, not a bare message', async () => {
+    // QM-10: an error the client can act on. A 404 with no code is indistinguishable from a routing
+    // miss, and the trace id is what ties the answer to the server log.
+    await expect(service.createSiteReport(reportDto as never)).rejects.toMatchObject({
+      response: {
+        error: expect.objectContaining({
+          code: 'COS-SITE-004',
+          messageKey: 'siteops.error.projectNotFound',
+          traceId: expect.any(String),
+        }),
+      },
+    });
+  });
+
+  it('reads as not-found for a project in ANOTHER tenant, never as a permission error', async () => {
+    // projectExists is tenant-scoped, so a foreign project resolves false. Answering 403 here would
+    // confirm the id exists somewhere, which is a probe.
+    await expect(service.createSiteReport(reportDto as never)).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+  });
+
+  it('lets the write through once the project exists — the control', async () => {
+    mockRepo.projectExists.mockResolvedValue(true);
+    mockRepo.createSiteReport.mockResolvedValue(makeReport());
+
+    await expect(service.createSiteReport(reportDto as never)).resolves.toBeDefined();
+    expect(mockRepo.createSiteReport).toHaveBeenCalled();
   });
 });

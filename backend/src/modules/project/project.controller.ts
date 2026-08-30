@@ -25,13 +25,14 @@ import { UpdateProjectDto } from './dto/update-project.dto';
 import { TransitionProjectDto } from './dto/transition-project.dto';
 import { AddMemberDto } from './dto/add-member.dto';
 import { ListProjectsDto } from './dto/list-projects.dto';
-import { JwtAuthGuard } from '../identity/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
+import { RolesGuard } from '../../shared/guards/roles.guard';
 import { Roles } from '@cos/rbac';
 import { CosRole } from '@cos/types';
 
 @ApiTags('Projects')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('projects')
 export class ProjectController {
   constructor(private readonly projectService: ProjectService) {}

@@ -199,6 +199,37 @@ describe('DbService', () => {
     });
   });
 
+  describe('findMetadataByFileId', () => {
+    // The whole method was uncovered (db.service.ts:99-103) and the coverage gate caught it in CI,
+    // not here. It is read at INDEX time: §Phase 9 lists entity_type, entity_id and the metadata
+    // pairs among the indexed fields, and they live in files.file_metadata rather than on
+    // files.files — so a document indexed without this call carries none of them.
+    it('returns the metadata rows for the file', async () => {
+      const rows = [
+        { file_id: 'fid-1', tenant_id: 'tid-1', meta_key: 'entity_type', meta_value: 'PROJECT' },
+        { file_id: 'fid-1', tenant_id: 'tid-1', meta_key: 'entity_id', meta_value: 'proj-1' },
+      ];
+      mockQuery.mockResolvedValue({ rows });
+      expect(await db.findMetadataByFileId('fid-1', 'tid-1')).toEqual(rows);
+    });
+
+    it('scopes the read by BOTH file and tenant', async () => {
+      // A metadata read filtered on file_id alone would hand one tenant another tenant's entity
+      // reference, which is the R-02 cross-tenant leak in the one place the file row does not guard.
+      mockQuery.mockResolvedValue({ rows: [] });
+      await db.findMetadataByFileId('fid-1', 'tid-1');
+      const [sql, params] = mockQuery.mock.calls[mockQuery.mock.calls.length - 1];
+      expect(sql).toMatch(/file_id = \$1/);
+      expect(sql).toMatch(/tenant_id = \$2/);
+      expect(params).toEqual(['fid-1', 'tid-1']);
+    });
+
+    it('returns an empty array when the file carries no metadata', async () => {
+      mockQuery.mockResolvedValue({ rows: [] });
+      expect(await db.findMetadataByFileId('fid-1', 'tid-1')).toEqual([]);
+    });
+  });
+
   describe('softDeleteFile', () => {
     it('returns true when row updated', async () => {
       mockQuery.mockResolvedValue({ rowCount: 1 });

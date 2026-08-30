@@ -9,7 +9,9 @@ jest.mock('@prisma/client', () => ({
   })),
 }));
 
-jest.mock('@cos/shared', () => ({
+jest.mock('@cos/kafka', () => ({
+  // §35.13 ESC-13: events are written to the outbox inside the business transaction.
+  OutboxPublisher: { write: jest.fn().mockResolvedValue(undefined) },
   KafkaProducer: jest.fn().mockImplementation(() => ({
     connect: jest.fn().mockResolvedValue(undefined),
     publish: jest.fn().mockResolvedValue(undefined),
@@ -30,9 +32,8 @@ jest.mock('@temporalio/client', () => ({
 }));
 
 import { TenantService, defaultTimezoneForRegion } from '../tenant.service';
-import { makeOutboxDouble } from '../../../shared/events/__tests__/outbox-double';
 import { PrismaClient } from '@prisma/client';
-import { KafkaTopicProvisioner } from '@cos/shared';
+import { KafkaTopicProvisioner } from '@cos/kafka';
 import { Connection, Client } from '@temporalio/client';
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 
@@ -53,8 +54,14 @@ describe('TenantService', () => {
     // FeatureFlagService gates encrypt-on-write for dedicated_db_url (security review F5b). Default
     // the flag OFF so these existing assertions keep comparing against the plaintext URL; the cipher
     // has its own dedicated spec.
-    service = new TenantService({ isEnabled: () => false } as never, makeOutboxDouble().service);
+    service = new TenantService({ isEnabled: () => false } as never);
     prismaMock = (service as unknown as { prisma: jest.Mocked<PrismaClient> }).prisma;
+    // §35.13 ESC-13: deactivateTenant / assignDedicatedDb now wrap their UPDATE and the outbox
+    // write in one $transaction, so the default mock must actually run the callback. Individual
+    // tests still override this where they need bespoke transaction behaviour.
+    (prismaMock.$transaction as jest.Mock).mockImplementation(
+      async (fn: (tx: unknown) => unknown) => fn(prismaMock),
+    );
   });
 
   describe('createTenant', () => {
@@ -82,7 +89,7 @@ describe('TenantService', () => {
     // .planType, but `$queryRaw` returns RAW column names — Prisma's @map is not applied — so all
     // four were undefined. identity.tenant.created.v1's Avro schema declares them non-null strings,
     // so every encode failed and publishEvent's catch swallowed it: the event was never delivered.
-    it('publishes identity.tenant.created.v1 with a fully populated payload', async () => {
+    it('writes identity.tenant.created.v1 with a fully populated payload', async () => {
       (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([]);
       (prismaMock.$transaction as jest.Mock).mockImplementation(
         async (fn: (tx: unknown) => Promise<unknown>) => {
@@ -94,26 +101,31 @@ describe('TenantService', () => {
           return fn(tx);
         },
       );
-      const outboxMock = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
-      outboxMock.publish.mockClear();
+      const { OutboxPublisher } = jest.requireMock('@cos/kafka') as {
+        OutboxPublisher: { write: jest.Mock };
+      };
+      OutboxPublisher.write.mockClear();
 
       await service.createTenant(
         { tenantCode: 'acme_corp', tenantName: 'ACME Construction', planType: 'STARTER' as never },
         'admin-1',
       );
 
-      const created = outboxMock.publish.mock.calls.find(
-        (c) => c[0]?.event_type === 'identity.tenant.created.v1',
+      const created = OutboxPublisher.write.mock.calls.find(
+        (c) => (c[1] as { event_type?: string })?.event_type === 'identity.tenant.created.v1',
       );
       expect(created).toBeDefined();
-      expect(created![0].payload).toEqual({
+      const payload = (created![1] as { payload: Record<string, unknown> }).payload;
+      expect(payload).toEqual({
         tenant_id: 'tenant-1',
         tenant_code: 'acme_corp',
         tenant_name: 'ACME Construction',
         plan_type: 'STARTER',
       });
-      // Every Avro-required field must be present — undefined is what the bug produced.
-      for (const v of Object.values(created![0].payload as Record<string, unknown>)) {
+      // ESC-20: `$queryRaw` returns raw snake_case columns — Prisma's @map is not applied — so the
+      // camelCase reads this envelope used to make were all undefined and every Avro encode failed.
+      // Each required field is asserted present, which is exactly what that bug removed.
+      for (const v of Object.values(payload)) {
         expect(v).toBeDefined();
       }
     });
@@ -426,6 +438,39 @@ describe('TenantService', () => {
     });
   });
 
+  // §35.13 ESC-13: TenantService holds no KafkaProducer — every event is written to the outbox
+  // inside the business transaction, so there is no publish-failure catch branch to cover.
+  describe('outbox writes', () => {
+    it('writes identity.tenant.created.v1 inside the create transaction', async () => {
+      (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([]);
+      const txQueryRaw = jest.fn().mockResolvedValue([mockTenant]);
+      const txExecuteRaw = jest.fn().mockResolvedValue(2);
+      (prismaMock.$transaction as jest.Mock).mockImplementation(
+        async (fn: (tx: unknown) => Promise<unknown>) =>
+          fn({ $queryRaw: txQueryRaw, $executeRaw: txExecuteRaw }),
+      );
+      const { OutboxPublisher } = jest.requireMock('@cos/kafka') as {
+        OutboxPublisher: { write: jest.Mock };
+      };
+      OutboxPublisher.write.mockClear();
+
+      await service.createTenant(
+        { tenantCode: 'acme_corp', tenantName: 'ACME Construction', planType: 'STARTER' as never },
+        'admin-1',
+      );
+
+      expect(OutboxPublisher.write).toHaveBeenCalledWith(
+        expect.objectContaining({ $queryRaw: txQueryRaw }),
+        expect.objectContaining({
+          event_type: 'identity.tenant.created.v1',
+          // ESC-19: the real tenant id, not the literal 'platform' the old envelope used.
+          tenant_id: mockTenant.tenant_id,
+          actor_id: 'admin-1',
+        }),
+      );
+    });
+  });
+
   describe('assignDedicatedDb', () => {
     it('throws BadRequestException for URL without postgresql:// or postgres:// prefix', async () => {
       await expect(
@@ -572,7 +617,7 @@ describe('TenantService', () => {
 
 describe('TenantService onModuleDestroy', () => {
   it('disconnects Prisma on shutdown', async () => {
-    const svc = new TenantService({ isEnabled: () => false } as never, makeOutboxDouble().service);
+    const svc = new TenantService({ isEnabled: () => false } as never);
     await svc.onModuleDestroy();
     expect(
       (svc as unknown as { prisma: { $disconnect: jest.Mock } }).prisma.$disconnect,

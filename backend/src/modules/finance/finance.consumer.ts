@@ -5,10 +5,11 @@
 
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { ModuleRef, ContextIdFactory } from '@nestjs/core';
-import { KafkaConsumer } from '@cos/shared';
+import { ClsServiceManager } from 'nestjs-cls';
+import { KafkaConsumer } from '@cos/kafka';
 import { createLogger } from '@cos/logger';
 import type { BaseEventEnvelope } from '@cos/types';
-import { runInTenantContext } from '../../shared/context/run-in-tenant-context';
+import { CLS_TENANT_ID, CLS_USER_ID } from '../../shared/context/cls-context';
 import { FinanceService } from './finance.service';
 import type { BoqSnapshotItem } from './finance.repository';
 
@@ -34,28 +35,22 @@ export class FinanceConsumer implements OnModuleInit, OnModuleDestroy {
       'procurement.po.created.v1',
       async (event: BaseEventEnvelope<Record<string, unknown>>) => {
         logger.info({ event_type: event.event_type, tenant_id: event.tenant_id }, 'event received');
-        // CLS, not just the request object: TenantPrismaService reads the tenant from CLS
-        // alone, so without this every repository call inside throws (OQ-45).
-        await runInTenantContext(
-          { tenantId: event.tenant_id, userId: event.actor_id },
-          async () => {
-            const svc = await this.resolveSvc(event.tenant_id);
-            await svc.handlePoCreated({
-              po_id: event.payload['po_id'] as string,
-              project_id: event.payload['project_id'] as string,
-              tenant_id: event.tenant_id,
-              total_amount: event.payload['total_amount'] as {
-                amount: string;
-                currency_code: string;
-              },
-              // Carried since 2026-08-23 so the cost transaction can be attributed to a budget line
-              // (TDD OQ-50). Optional in the schema, so an event minted before that decodes as
-              // undefined and the transaction is simply left unattributed, as it was before.
-              line_items: event.payload['line_items'] as
-                Array<{ boq_item_id?: string | null }> | undefined,
-            });
-          },
-        );
+        await this.withTenantContext(event, async (svc) => {
+          await svc.handlePoCreated({
+            po_id: event.payload['po_id'] as string,
+            project_id: event.payload['project_id'] as string,
+            tenant_id: event.tenant_id,
+            total_amount: event.payload['total_amount'] as {
+              amount: string;
+              currency_code: string;
+            },
+            // Carried since 2026-08-23 so the cost transaction can be attributed to a budget line
+            // (TDD OQ-50). Optional in the schema, so an event minted before that decodes as
+            // undefined and the transaction is left unattributed, exactly as it was before.
+            line_items: event.payload['line_items'] as
+              Array<{ boq_item_id?: string | null }> | undefined,
+          });
+        });
       },
     );
 
@@ -63,21 +58,15 @@ export class FinanceConsumer implements OnModuleInit, OnModuleDestroy {
       'procurement.invoice.received.v1',
       async (event: BaseEventEnvelope<Record<string, unknown>>) => {
         logger.info({ event_type: event.event_type, tenant_id: event.tenant_id }, 'event received');
-        // CLS, not just the request object: TenantPrismaService reads the tenant from CLS
-        // alone, so without this every repository call inside throws (OQ-45).
-        await runInTenantContext(
-          { tenantId: event.tenant_id, userId: event.actor_id },
-          async () => {
-            const svc = await this.resolveSvc(event.tenant_id);
-            await svc.handleInvoiceReceived({
-              po_id: event.payload['po_id'] as string,
-              invoice_id: event.payload['invoice_id'] as string,
-              project_id: event.payload['project_id'] as string,
-              tenant_id: event.tenant_id,
-              amount: event.payload['amount'] as { amount: string; currency_code: string },
-            });
-          },
-        );
+        await this.withTenantContext(event, async (svc) => {
+          await svc.handleInvoiceReceived({
+            po_id: event.payload['po_id'] as string,
+            invoice_id: event.payload['invoice_id'] as string,
+            project_id: event.payload['project_id'] as string,
+            tenant_id: event.tenant_id,
+            amount: event.payload['amount'] as { amount: string; currency_code: string },
+          });
+        });
       },
     );
 
@@ -85,21 +74,15 @@ export class FinanceConsumer implements OnModuleInit, OnModuleDestroy {
       'procurement.po.status_changed.v1',
       async (event: BaseEventEnvelope<Record<string, unknown>>) => {
         logger.info({ event_type: event.event_type, tenant_id: event.tenant_id }, 'event received');
-        // CLS, not just the request object: TenantPrismaService reads the tenant from CLS
-        // alone, so without this every repository call inside throws (OQ-45).
-        await runInTenantContext(
-          { tenantId: event.tenant_id, userId: event.actor_id },
-          async () => {
-            const svc = await this.resolveSvc(event.tenant_id);
-            await svc.handlePoStatusChanged({
-              po_id: event.payload['po_id'] as string,
-              project_id: event.payload['project_id'] as string,
-              tenant_id: event.tenant_id,
-              from_status: event.payload['from_status'] as string,
-              to_status: event.payload['to_status'] as string,
-            });
-          },
-        );
+        await this.withTenantContext(event, async (svc) => {
+          await svc.handlePoStatusChanged({
+            po_id: event.payload['po_id'] as string,
+            project_id: event.payload['project_id'] as string,
+            tenant_id: event.tenant_id,
+            from_status: event.payload['from_status'] as string,
+            to_status: event.payload['to_status'] as string,
+          });
+        });
       },
     );
 
@@ -107,20 +90,14 @@ export class FinanceConsumer implements OnModuleInit, OnModuleDestroy {
       'construction.boq.items_published.v1',
       async (event: BaseEventEnvelope<Record<string, unknown>>) => {
         logger.info({ event_type: event.event_type, tenant_id: event.tenant_id }, 'event received');
-        // CLS, not just the request object: TenantPrismaService reads the tenant from CLS
-        // alone, so without this every repository call inside throws (OQ-45).
-        await runInTenantContext(
-          { tenantId: event.tenant_id, userId: event.actor_id },
-          async () => {
-            const svc = await this.resolveSvc(event.tenant_id);
-            await svc.handleBoqItemsPublished({
-              version_id: event.payload['version_id'] as string,
-              project_id: event.payload['project_id'] as string,
-              tenant_id: event.tenant_id,
-              items: event.payload['items'] as BoqSnapshotItem[],
-            });
-          },
-        );
+        await this.withTenantContext(event, async (svc) => {
+          await svc.handleBoqItemsPublished({
+            version_id: event.payload['version_id'] as string,
+            project_id: event.payload['project_id'] as string,
+            tenant_id: event.tenant_id,
+            items: event.payload['items'] as BoqSnapshotItem[],
+          });
+        });
       },
     );
 
@@ -139,11 +116,41 @@ export class FinanceConsumer implements OnModuleInit, OnModuleDestroy {
       .catch((err: unknown) => logger.error({ err }, 'FinanceConsumer disconnect error'));
   }
 
-  /** Resolve a per-event FinanceService instance with the event's tenant context. */
-  private async resolveSvc(tenantId: string): Promise<FinanceService> {
-    const contextId = ContextIdFactory.create();
-    // Synthetic request: supplies tenantId for TenantPrismaService / FinanceRepository / FinanceService.
-    this.moduleRef.registerRequestByContextId({ tenantId } as never, contextId);
-    return this.moduleRef.resolve(FinanceService, contextId, { strict: false });
+  /**
+   * Run one event's handler inside the tenant context it belongs to.
+   *
+   * THE SYNTHETIC REQUEST IS NOT ENOUGH ON ITS OWN. It gives the REQUEST-scoped FinanceService its
+   * `tenantId`/`userId`, but the row-level tenant scoping lives a layer below, in
+   * TenantPrismaService — a SINGLETON that reads CLS (see the note at the top of that file: it
+   * deliberately replaced a `Scope.REQUEST` + `@Inject(REQUEST)` design). ClsModule is mounted as
+   * HTTP middleware, so a Kafka callback runs with no CLS store at all and every query raised
+   * `UnauthorizedException: Tenant context missing from request` — meaning the budget aggregation
+   * master:2938-2940 describes could not complete a single event. The consumer's own unit spec mocks
+   * Kafka and the service, so it never reached a database to find out.
+   *
+   * `cls.run` + `cls.set` is the pattern the other non-HTTP entry point already uses (see
+   * data-export.activities.ts, a Temporal activity). Like that one, this does not set
+   * CLS_DEDICATED_DB_URL: only the HTTP path knows it, from the JWT. Enterprise tenants on a
+   * dedicated database therefore still resolve to the shared client here — a pre-existing gap in
+   * every non-HTTP path, not one this handler introduces, and not one to settle silently.
+   */
+  private async withTenantContext(
+    event: BaseEventEnvelope<Record<string, unknown>>,
+    handle: (svc: FinanceService) => Promise<void>,
+  ): Promise<void> {
+    const cls = ClsServiceManager.getClsService();
+    await cls.run(async () => {
+      cls.set(CLS_TENANT_ID, event.tenant_id);
+      cls.set(CLS_USER_ID, event.actor_id);
+      const contextId = ContextIdFactory.create();
+      // The REQUEST-scoped service reads its own tenantId/userId off this synthetic request.
+      // actor_id is what master:2910 wants recorded as `recorded_by` on the cost transaction.
+      this.moduleRef.registerRequestByContextId(
+        { tenantId: event.tenant_id, userId: event.actor_id } as never,
+        contextId,
+      );
+      const svc = await this.moduleRef.resolve(FinanceService, contextId, { strict: false });
+      await handle(svc);
+    });
   }
 }

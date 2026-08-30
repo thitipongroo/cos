@@ -23,19 +23,25 @@ resource "aws_security_group" "msk" {
   }
 
   ingress {
-    description     = "ZooKeeper from brokers (inter-broker)"
-    from_port       = 2181
-    to_port         = 2181
-    protocol        = "tcp"
-    self            = true
+    description = "ZooKeeper from brokers (inter-broker)"
+    from_port   = 2181
+    to_port     = 2181
+    protocol    = "tcp"
+    self        = true
   }
 
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  # No egress rule at all — deliberate, 2026-08-29.
+  #
+  # This was `0.0.0.0/0` on every protocol, which Trivy flags as AWS-0104 and which nothing had ever
+  # run to notice: CI gained a Terraform step and IaC misconfiguration scanning on the same day.
+  #
+  # A managed Kafka endpoint is a destination, not a client. It accepts connections from the EKS
+  # nodes on the ingress rule above and initiates none of its own — no image pulls, no API calls, no
+  # package installs. An AWS security group denies all egress when no egress block is present, so
+  # removing the rule IS the restriction; there is nothing to replace it with.
+  #
+  # If a future feature needs this service to reach out — cross-region replication, an external
+  # audit sink — add a rule for that destination and port. Do not restore the blanket allow.
 
   tags = merge(var.tags, { Name = "cos-msk-sg-${var.environment}" })
 }
@@ -62,8 +68,8 @@ resource "aws_msk_cluster" "main" {
   number_of_broker_nodes = var.num_brokers
 
   broker_node_group_info {
-    instance_type   = var.instance_type
-    client_subnets  = var.subnet_ids
+    instance_type  = var.instance_type
+    client_subnets = var.subnet_ids
     storage_info {
       ebs_storage_info {
         volume_size = 100
@@ -99,7 +105,7 @@ resource "aws_msk_cluster" "main" {
 
   open_monitoring {
     prometheus {
-      jmx_exporter  { enabled_in_broker = true }
+      jmx_exporter { enabled_in_broker = true }
       node_exporter { enabled_in_broker = true }
     }
   }

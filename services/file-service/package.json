@@ -10,9 +10,11 @@
     "test": "jest",
     "test:unit": "jest --testPathPatterns='src/'",
     "test:cov": "jest --coverage",
-    "clean": "node ../../scripts/rimraf-dist.mjs"
+    "clean": "node ../../scripts/rimraf-dist.mjs",
+    "test:integration": "jest --config jest.integration.config.js --runInBand"
   },
   "dependencies": {
+    "@cos/kafka": "workspace:*",
     "@cos/logger": "workspace:*",
     "@cos/shared": "workspace:*",
     "@cos/tracing": "workspace:*",
@@ -50,6 +52,7 @@
     "@types/yazl": "^2.4.6",
     "form-data": "^4.0.0",
     "jest": "^30.4.2",
+    "testcontainers": "^10.9.0",
     "ts-jest": "^29.1.4",
     "ts-node": "^10.9.0",
     "typescript": "^6.0.3",

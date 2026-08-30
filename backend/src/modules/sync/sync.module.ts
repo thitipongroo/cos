@@ -10,6 +10,7 @@ import { SafetyModule } from '../safety/safety.module';
 import { WorkforceModule } from '../workforce/workforce.module';
 import { FilesModule } from '../files/files.module';
 import { ProcurementModule } from '../procurement/procurement.module';
+import { EquipmentModule } from '../equipment/equipment.module';
 
 @Module({
   // Push handlers delegate to these modules' (exported) services; TenantModule provides the
@@ -23,6 +24,8 @@ import { ProcurementModule } from '../procurement/procurement.module';
     FilesModule,
     // Delivery + purchase-request push handlers (§17.4 amendment 2026-08-19).
     ProcurementModule,
+    // Equipment usage push + pull (§17.4; added Phase 21).
+    EquipmentModule,
   ],
   controllers: [SyncController, SyncExhaustionController],
   // RolesGuard is listed explicitly because SyncAuthGuard INJECTS it (to reuse the primary +

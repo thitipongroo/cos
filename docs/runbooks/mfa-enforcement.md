@@ -181,6 +181,7 @@ not pick up the committed file. For those:
 
    Exit 0 means the running realm has Layer 1; exit 1 lists what is missing. Run it BEFORE Step 3 —
    enabling `MFA_ENFORCE` against a realm that does not emit `acr` locks out every privileged user.
+
 3. Only then Step 3.
 
 ---

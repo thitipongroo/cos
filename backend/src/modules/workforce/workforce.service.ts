@@ -1,14 +1,16 @@
 // Workforce Service — Phase 22
 // Business logic: worker management, project allocation, attendance, timesheets.
-// Emits typed Kafka events via @cos/shared KafkaProducer.
+// Emits typed events through the Phase 8 OUTBOX (§35.13 ESC-13) — written inside the
+// business transaction by the repository, relayed to Kafka by OutboxPollerService.
 
 import { Injectable, Scope, Inject, NotFoundException } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
 import { randomUUID } from 'crypto';
 import { Decimal } from '@cos/financial';
-import { EventOutboxService } from '../../shared/events/event-outbox.service';
 import { createLogger } from '@cos/logger';
+import { buildOutboxEvent } from '../../shared/outbox/outbox.types';
+import { clsTenantId, clsUserId } from '../../shared/context/cls-context';
 import { WorkforceRepository } from './workforce.repository';
 import type {
   WorkerRow,
@@ -29,15 +31,30 @@ export class WorkforceService {
   constructor(
     @Inject(REQUEST) private readonly req: Request,
     private readonly repo: WorkforceRepository,
-    private readonly outbox: EventOutboxService,
   ) {}
 
+  // ADR-031 context sources. Corrected 2026-08-22 (docs/architecture/test-design/escalation-register.md §35.13 ESC-16): both getters
+  // previously read the Passport projection (`req.user?.sub`), which nothing in this codebase ever
+  // sets — JwtAuthGuard publishes `userId` (from `user_id`) into CLS, and TenantContextInterceptor
+  // projects `req.userId`/`req.tenantId`. `user?.sub` therefore always fell through to the literal
+  // 'system'. Read in a getter (not the constructor) so CLS is active at call time.
   private get tenantId(): string {
-    return (this.req as Request & { tenantId: string }).tenantId;
+    return (this.req as Request & { tenantId?: string }).tenantId ?? clsTenantId();
   }
 
   private get userId(): string {
-    return (this.req as Request & { user?: { sub: string } }).user?.sub ?? 'system';
+    // req.userId — the PLATFORM user UUID (TenantContextInterceptor / TenantMiddleware) — with a CLS
+    // fallback, the pattern workforce.controller's /me route already documents: under the Fastify
+    // adapter req.userId may be absent, and JwtAuthGuard publishes the same value to CLS.
+    //
+    // This used to read req.user?.sub. Two things were wrong: `sub` is the KEYCLOAK id
+    // (platform.users.keycloak_user_id per jwt.payload.ts), not the platform user_id; and Passport's
+    // req.user does not reliably reach a Scope.REQUEST provider under Fastify — JwtAuthGuard says so
+    // in its own header. So it fell through to the literal 'system' and every workforce event was
+    // attributed to nobody. Nothing crashed, which is why it went unnoticed: actor_id lands in the
+    // outbox payload JSON, not in a UUID column.
+    const req = this.req as Request & { userId?: string };
+    return req.userId ?? clsUserId();
   }
 
   async createWorker(dto: CreateWorkerDto): Promise<WorkerRow> {
@@ -112,45 +129,36 @@ export class WorkforceService {
             .toNumber()
         : null);
 
-    const log = await this.repo.recordAttendance({
-      log_id: randomUUID(),
-      recorded_at: new Date().toISOString(),
-      worker_id: workerId,
-      project_id: dto.project_id,
-      tenant_id: this.tenantId,
-      check_in_at: dto.check_in_at ?? null,
-      check_out_at: dto.check_out_at ?? null,
-      hours_worked: hoursWorked,
-      latitude: dto.latitude ?? null,
-      longitude: dto.longitude ?? null,
-      method: dto.method ?? null,
-    });
+    // Generated up front: the event rides the INSERT, so the payload needs the row's id before the
+    // row exists. It is the same value that goes into log_id below.
+    const logId = randomUUID();
 
     const eventType =
       dto.check_in_at && !dto.check_out_at
         ? 'workforce.checkin.created.v1'
         : 'workforce.checkout.created.v1';
 
-    // The check-in payload was `{ worker_id, project_id, checked_in_at }` until 2026-08-23 — three
-    // fields, one of them misnamed, against a schema declaring six (TDD OQ-36). It could not be Avro
-    // encoded at all: `invalid "string": undefined`. Since ADR-094 that failure lands in the outbox
-    // poller, which retries ten times and retires the row, so **not one check-in event had ever
-    // reached Kafka** — invisible except to someone querying platform.outbox_events for
-    // `attempts >= 10`. Anything downstream of it (notifications, the ClickHouse manpower_total
-    // metric) was reading an empty topic.
+    // The check-in payload is §32.4 row 9, not the master:5338 shorthand. Until 2026-08-23 the
+    // service emitted `{ worker_id, project_id, checked_in_at }` — three fields, one of them
+    // misnamed, against a schema declaring six (TDD OQ-36). It could not be Avro-encoded at all:
+    // `invalid "string": undefined`. Since ADR-094 that failure lands in the outbox poller, which
+    // retries ten times and retires the row, so **not one check-in event had ever reached Kafka**,
+    // invisible except to someone querying platform.outbox_events for `attempts >= 10`. The cost
+    // was downstream: analytics-worker builds site_activity_daily's manpower_total from this event,
+    // so the PM dashboard's manpower read zero the whole time.
     //
     // `checkin_id` is the attendance log's own id, and `location` is the lat/lng the DTO already
     // captured and the row already stores — both were available all along.
     //
-    // `method` is what the CLIENT asserts about how the check-in was captured, added 2026-08-24 —
-    // the capture path deferred on 2026-08-23 when the payload was completed. It is still nullable
-    // and still means "not recorded" when absent, which a consumer must be able to tell apart from
-    // MANUAL ("a person typed this in"). It is NOT derived from the presence of coordinates: that
-    // would produce a GPS value indistinguishable from one the client actually asserted.
+    // `method` is what the CLIENT asserts about how the check-in was captured (capture path added
+    // 2026-08-24). It is nullable and absent means NOT RECORDED, which a consumer must be able to
+    // tell apart from `MANUAL` — "a person typed this in" is an assertion, absence is not. It is
+    // NOT defaulted to MANUAL and NOT derived from the presence of coordinates: either would put a
+    // value on the wire that no client ever claimed.
     const eventPayload =
       eventType === 'workforce.checkin.created.v1'
         ? {
-            checkin_id: log.log_id,
+            checkin_id: logId,
             worker_id: workerId,
             project_id: dto.project_id,
             checkin_at: dto.check_in_at,
@@ -162,8 +170,24 @@ export class WorkforceService {
           }
         : { worker_id: workerId, project_id: dto.project_id, hours_worked: hoursWorked };
 
-    await this.emitEvent(eventType, eventPayload);
-    return log;
+    // The event rides the attendance INSERT, so a rolled-back check-in emits nothing.
+    return this.repo.recordAttendance(
+      {
+        log_id: logId,
+        recorded_at: new Date().toISOString(),
+        worker_id: workerId,
+        project_id: dto.project_id,
+        tenant_id: this.tenantId,
+        check_in_at: dto.check_in_at ?? null,
+        check_out_at: dto.check_out_at ?? null,
+        hours_worked: hoursWorked,
+        latitude: dto.latitude ?? null,
+        longitude: dto.longitude ?? null,
+        // Stored as well as published: a later read should not have to replay Kafka to learn it.
+        method: dto.method ?? null,
+      },
+      this.outboxEvent(eventType, eventPayload),
+    );
   }
 
   async getAttendanceHistory(workerId: string, from: string, to: string): Promise<AttendanceRow[]> {
@@ -185,19 +209,20 @@ export class WorkforceService {
   }
 
   async approveTimesheet(timesheetId: string): Promise<TimesheetRow> {
-    const ts = await this.repo.approveTimesheet(timesheetId);
+    // Builder over the UPDATEd row: the approved hours are only known from the row, and the
+    // repository skips the builder when the UPDATE matched nothing (§35.13 ESC-13).
+    const ts = await this.repo.approveTimesheet(timesheetId, (row) =>
+      this.outboxEvent('workforce.timesheet.approved.v1', {
+        worker_id: row.worker_id,
+        project_id: row.project_id,
+        period_date: row.period_date,
+        total_hours: new Decimal(row.regular_hours)
+          .add(new Decimal(row.overtime_hours))
+          .toDecimalPlaces(2)
+          .toNumber(),
+      }),
+    );
     if (!ts) throw new NotFoundException(`Timesheet ${timesheetId} not found`);
-
-    const totalHours = new Decimal(ts.regular_hours)
-      .add(new Decimal(ts.overtime_hours))
-      .toDecimalPlaces(2);
-
-    await this.emitEvent('workforce.timesheet.approved.v1', {
-      worker_id: ts.worker_id,
-      project_id: ts.project_id,
-      period_date: ts.period_date,
-      total_hours: totalHours.toNumber(),
-    });
 
     return ts;
   }
@@ -206,15 +231,17 @@ export class WorkforceService {
     return this.repo.getManpowerSummary(projectId);
   }
 
-  /** Queue a domain event. Durable and off the request path — see EventOutboxService. */
-  private async emitEvent(eventType: string, payload: Record<string, unknown>): Promise<void> {
-    await this.outbox.publish({
-      event_type: eventType,
-      event_version: '1.0',
-      tenant_id: this.tenantId,
-      actor_id: this.userId,
-      correlation_id: randomUUID(),
-      occurred_at: new Date().toISOString(),
+  /**
+   * Builds the outbox envelope handed to the repository write that anchors it (§35.13 ESC-13).
+   * Replaces the previous `emitEvent`, which published directly to Kafka and swallowed the
+   * failure — losing the event whenever the broker was unreachable.
+   */
+  private outboxEvent(eventType: string, payload: Record<string, unknown>) {
+    return buildOutboxEvent({
+      eventType,
+      tenantId: this.tenantId,
+      actorId: this.userId,
+      correlationId: randomUUID(),
       payload,
     });
   }

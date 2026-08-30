@@ -143,7 +143,7 @@ func unwrapUnions(v any) any {
 // field name. Only the primitive names are treated as union markers: named types (records, enums,
 // fixed) are fully-qualified in Avro JSON output, so a bare field name can never collide with them,
 // while a record that genuinely has one field called e.g. "string" would be misread — accepted,
-// because no schema in packages/@cos/shared/src/avro uses a primitive type name as a field name.
+// because no schema in packages/@cos/kafka/src/avro uses a primitive type name as a field name.
 func isAvroTypeName(key string) bool {
 	switch key {
 	case "null", "boolean", "int", "long", "float", "double", "bytes", "string":

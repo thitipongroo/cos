@@ -1,20 +1,24 @@
 // Equipment Service — Phase 21
 // Business logic: equipment CRUD, assignment lifecycle, maintenance logging, utilization recording.
 // Status transitions: AVAILABLE → IN_USE → AVAILABLE | AVAILABLE → MAINTENANCE → AVAILABLE
-// Emits typed Kafka events via @cos/shared KafkaProducer (QM-8).
+// Emits typed events through the Phase 8 OUTBOX (§35.13 ESC-13) — written inside the
+// business transaction by the repository, relayed to Kafka by OutboxPollerService.
 
 import {
   Injectable,
   Scope,
   Inject,
+  ConflictException,
   NotFoundException,
+  UnauthorizedException,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
 import { randomUUID } from 'crypto';
-import { EventOutboxService } from '../../shared/events/event-outbox.service';
 import { createLogger } from '@cos/logger';
+import { buildOutboxEvent } from '../../shared/outbox/outbox.types';
+import { clsTenantId, clsUserId } from '../../shared/context/cls-context';
 import { EquipmentRepository } from './equipment.repository';
 import type { EquipmentRow, AssignmentRow, MaintenanceRow } from './equipment.repository';
 import type { CreateEquipmentDto } from './dto/create-equipment.dto';
@@ -23,6 +27,37 @@ import type { LogMaintenanceDto } from './dto/log-maintenance.dto';
 import type { RecordUtilizationDto } from './dto/record-utilization.dto';
 
 const logger = createLogger('equipment-service');
+
+/**
+ * PostgreSQL unique_violation (SQLSTATE 23505).
+ *
+ * Checked in two places because Prisma does not surface a raw query's SQLSTATE at the top level: a
+ * failing $queryRaw arrives as PrismaClientKnownRequestError with `code: 'P2010'` and the real
+ * driver code tucked into `meta.code`. master-data.service checks only the top level because it is
+ * not on the Prisma raw path; matching both keeps this correct either way.
+ */
+function isUniqueViolation(err: unknown): boolean {
+  if (typeof err !== 'object' || err === null) return false;
+  const e = err as {
+    code?: unknown;
+    meta?: {
+      code?: unknown;
+      driverAdapterError?: { cause?: { originalCode?: unknown; kind?: unknown } };
+    };
+  };
+  // Three shapes, because the SQLSTATE sits in a different place depending on how the query ran.
+  // Prisma 7 on a driver adapter reports a failed $queryRaw as P2010 and buries the driver's code
+  // at meta.driverAdapterError.cause.originalCode — VERIFIED against the live error, not guessed:
+  //   {"code":"P2010","meta":{"driverAdapterError":{"cause":{"originalCode":"23505",
+  //    "kind":"UniqueConstraintViolation", ...}}}}
+  const cause = e.meta?.driverAdapterError?.cause;
+  return (
+    e.code === '23505' ||
+    e.meta?.code === '23505' ||
+    cause?.originalCode === '23505' ||
+    cause?.kind === 'UniqueConstraintViolation'
+  );
+}
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
   AVAILABLE: ['IN_USE', 'MAINTENANCE', 'RETIRED'],
@@ -36,18 +71,51 @@ export class EquipmentService {
   constructor(
     @Inject(REQUEST) private readonly req: Request,
     private readonly repo: EquipmentRepository,
-    private readonly outbox: EventOutboxService,
   ) {}
 
+  // ADR-031 context sources. Corrected 2026-08-22 (docs/architecture/test-design/escalation-register.md §35.13 ESC-16): both getters
+  // previously read the Passport projection (`req.user?.sub`), which nothing in this codebase ever
+  // sets — JwtAuthGuard publishes `userId` (from `user_id`) into CLS, and TenantContextInterceptor
+  // projects `req.userId`/`req.tenantId`. `user?.sub` therefore always fell through to the literal
+  // 'system', which is not a UUID and fails `assigned_by UUID NOT NULL` with Postgres 22P02.
+  // Read in a getter (not the constructor) so CLS is active at call time.
   private get tenantId(): string {
-    return (this.req as Request & { tenantId: string }).tenantId;
+    return (this.req as Request & { tenantId?: string }).tenantId ?? clsTenantId();
   }
 
   private get userId(): string {
-    return (this.req as Request & { user?: { sub: string } }).user?.sub ?? 'system';
+    // req.userId — the PLATFORM user UUID, published by TenantMiddleware from jwtPayload.user_id.
+    //
+    // NOT req.user?.sub. Two things were wrong with that: `sub` is the KEYCLOAK id
+    // (platform.users.keycloak_user_id, per jwt.payload.ts), so it identifies the wrong row even
+    // when present; and under the Fastify adapter Passport's req.user does not reliably reach a
+    // Scope.REQUEST provider at all — JwtAuthGuard says exactly that in its own header, which is
+    // why it publishes the context to CLS instead. The getter therefore fell through to the
+    // literal 'system', and assigned_by is a NOT NULL UUID: every assignment and every maintenance
+    // log died with 22P02 invalid input syntax for type uuid.
+    // The CLS fallback is not belt-and-braces: workforce.controller's /me route documents that
+    // under Fastify req.userId "may be absent", and JwtAuthGuard publishes the same value to CLS.
+    // Without it this would 401 on exactly the paths the interceptor misses.
+    const userId = (this.req as Request & { userId?: string }).userId ?? clsUserId();
+    if (!userId) throw new UnauthorizedException('No authenticated user on request');
+    return userId;
   }
 
   async createEquipment(dto: CreateEquipmentDto): Promise<EquipmentRow> {
+    // The (tenant_id, equipment_code) unique constraint is a business rule, not an internal fault:
+    // reusing a code is something an operator does, and a 500 tells them the system broke rather
+    // than that the code is taken. Mirrors master-data.service's isUniqueViolation handling.
+    try {
+      return await this.createEquipmentRow(dto);
+    } catch (err: unknown) {
+      if (isUniqueViolation(err)) {
+        throw new ConflictException(`Equipment code ${dto.equipment_code} already exists`);
+      }
+      throw err;
+    }
+  }
+
+  private async createEquipmentRow(dto: CreateEquipmentDto): Promise<EquipmentRow> {
     const equipment = await this.repo.createEquipment({
       equipment_id: randomUUID(),
       tenant_id: this.tenantId,
@@ -98,13 +166,17 @@ export class EquipmentService {
       notes: dto.notes ?? null,
     });
 
-    await this.repo.updateStatus(equipmentId, 'IN_USE');
-
-    await this.emitEvent('equipment.unit.assigned.v1', {
-      equipment_id: equipmentId,
-      project_id: dto.project_id,
-      assigned_by: this.userId,
-    });
+    // The event rides the IN_USE status UPDATE — the last write of the assignment, so an
+    // equipment unit is never reported as assigned unless it actually reached IN_USE.
+    await this.repo.updateStatus(
+      equipmentId,
+      'IN_USE',
+      this.outboxEvent('equipment.unit.assigned.v1', {
+        equipment_id: equipmentId,
+        project_id: dto.project_id,
+        assigned_by: this.userId,
+      }),
+    );
 
     return assignment;
   }
@@ -115,12 +187,14 @@ export class EquipmentService {
     _dto: ReturnEquipmentDto,
   ): Promise<AssignmentRow> {
     const assignment = await this.repo.returnAssignment(assignmentId);
-    await this.repo.updateStatus(equipmentId, 'AVAILABLE');
-
-    await this.emitEvent('equipment.unit.returned.v1', {
-      equipment_id: equipmentId,
-      project_id: assignment.project_id,
-    });
+    await this.repo.updateStatus(
+      equipmentId,
+      'AVAILABLE',
+      this.outboxEvent('equipment.unit.returned.v1', {
+        equipment_id: equipmentId,
+        project_id: assignment.project_id,
+      }),
+    );
 
     return assignment;
   }
@@ -128,22 +202,23 @@ export class EquipmentService {
   async logMaintenance(equipmentId: string, dto: LogMaintenanceDto): Promise<MaintenanceRow> {
     await this.getEquipment(equipmentId);
 
-    const maintenance = await this.repo.createMaintenance({
-      maintenance_id: randomUUID(),
-      equipment_id: equipmentId,
-      tenant_id: this.tenantId,
-      maintenance_type: dto.maintenance_type,
-      scheduled_at: dto.scheduled_at,
-      cost: dto.cost ?? null,
-      currency_code: dto.currency_code ?? null,
-      performed_by: dto.performed_by ?? null,
-      notes: dto.notes ?? null,
-    });
-
-    await this.emitEvent('equipment.unit.maintenance_scheduled.v1', {
-      equipment_id: equipmentId,
-      scheduled_at: dto.scheduled_at,
-    });
+    const maintenance = await this.repo.createMaintenance(
+      {
+        maintenance_id: randomUUID(),
+        equipment_id: equipmentId,
+        tenant_id: this.tenantId,
+        maintenance_type: dto.maintenance_type,
+        scheduled_at: dto.scheduled_at,
+        cost: dto.cost ?? null,
+        currency_code: dto.currency_code ?? null,
+        performed_by: dto.performed_by ?? null,
+        notes: dto.notes ?? null,
+      },
+      this.outboxEvent('equipment.unit.maintenance_scheduled.v1', {
+        equipment_id: equipmentId,
+        scheduled_at: dto.scheduled_at,
+      }),
+    );
 
     return maintenance;
   }
@@ -166,17 +241,16 @@ export class EquipmentService {
   }
 
   /**
-   * Queue a domain event. The old comment here said "will retry via outbox" — nothing did, because
-   * no outbox was wired. This writes to the one that now exists (EventOutboxService).
+   * Builds the outbox envelope handed to the repository write that anchors it (§35.13 ESC-13).
+   * Replaces the previous `emitEvent`, which published directly to Kafka and swallowed failures
+   * with the comment "will retry via outbox" — there was no outbox, so the event was simply lost.
    */
-  private async emitEvent(eventType: string, payload: Record<string, unknown>): Promise<void> {
-    await this.outbox.publish({
-      event_type: eventType,
-      event_version: '1.0',
-      tenant_id: this.tenantId,
-      actor_id: this.userId,
-      correlation_id: randomUUID(),
-      occurred_at: new Date().toISOString(),
+  private outboxEvent(eventType: string, payload: Record<string, unknown>) {
+    return buildOutboxEvent({
+      eventType,
+      tenantId: this.tenantId,
+      actorId: this.userId,
+      correlationId: randomUUID(),
       payload,
     });
   }

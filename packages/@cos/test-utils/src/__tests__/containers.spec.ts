@@ -55,8 +55,11 @@ const mockGenericBuilder = {
   withNetworkAliases: jest.fn().mockReturnThis(),
   withExposedPorts: jest.fn().mockReturnThis(),
   withEnvironment: jest.fn().mockReturnThis(),
+  withWaitStrategy: jest.fn().mockReturnThis(),
+  withStartupTimeout: jest.fn().mockReturnThis(),
   start: jest.fn().mockResolvedValue(mockStartedSchemaRegistry),
 };
+const mockWait = { forHttp: jest.fn(() => ({ withStartupTimeout: jest.fn().mockReturnThis() })) };
 const mockStartedNetwork = { stop: jest.fn().mockResolvedValue(undefined) };
 const mockNetworkBuilder = { start: jest.fn().mockResolvedValue(mockStartedNetwork) };
 
@@ -99,6 +102,7 @@ jest.mock('@testcontainers/clickhouse', () => ({
 jest.mock('testcontainers', () => ({
   GenericContainer: jest.fn(() => mockGenericBuilder),
   Network: jest.fn(() => mockNetworkBuilder),
+  Wait: mockWait,
 }));
 
 import {
@@ -175,6 +179,25 @@ describe('startContainers', () => {
   it('starts clickhouse when clickhouse is true', async () => {
     const result = await startContainers({ clickhouse: true });
     expect(result.clickhouse).toBe(mockStartedClickhouse);
+  });
+
+  it('points Schema Registry at the in-network broker listener, not the host one', async () => {
+    // Regression guard. This helper shipped with 'kafka:9093' — the listener cp-kafka advertises to
+    // the HOST as localhost:<mappedPort>. Schema Registry bootstrapped there, was told to reach
+    // localhost:<mappedPort> from inside its own container, and died on the kafkastore init
+    // timeout. Nothing caught it because these tests mock testcontainers, so the value had never
+    // reached a real broker until a Phase 14 integration spec used this path.
+    await startContainers({ schemaRegistry: true });
+    expect(mockGenericBuilder.withEnvironment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'PLAINTEXT://kafka:9092',
+      }),
+    );
+  });
+
+  it('waits for the Schema Registry REST API rather than the open port', async () => {
+    await startContainers({ schemaRegistry: true });
+    expect(mockWait.forHttp).toHaveBeenCalledWith('/subjects', 8081);
   });
 
   it('starts kafka + schema registry on a shared network when schemaRegistry is true', async () => {

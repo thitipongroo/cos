@@ -18,6 +18,7 @@ import (
 	_ "github.com/ClickHouse/clickhouse-go/v2"
 
 	"github.com/construction-os/analytics-worker/internal/carbon"
+	"github.com/construction-os/analytics-worker/internal/metrics"
 	cosOtel "github.com/construction-os/coslib/cosotel"
 )
 
@@ -49,6 +50,76 @@ func healthHandler() http.Handler {
 	return mux
 }
 
+// carbonConfigFromEnv reads the carbon consumer's endpoints, with the compose defaults.
+func carbonConfigFromEnv() carbon.Config {
+	return carbon.Config{
+		Brokers:     strings.Split(getEnv("KAFKA_BROKERS", "localhost:9092"), ","),
+		RegistryURL: getEnv("SCHEMA_REGISTRY_URL", "http://localhost:8081"),
+		RedisURL:    getEnv("REDIS_URL", ""),
+	}
+}
+
+// startCarbon launches the carbon consumer in the background and reports the config it used.
+//
+// Split out of main so it can be driven with a test double for the ClickHouse handle: reaching this
+// branch through main would need a live ClickHouse, which is why it was the one part of the
+// worker's wiring no test covered.
+func startCarbon(ctx context.Context, db *sql.DB) carbon.Config {
+	cfg := carbonConfigFromEnv()
+	go func() {
+		if err := carbon.Start(ctx, cfg, db); err != nil {
+			log.Printf("carbon consumer stopped: %v", err)
+		}
+	}()
+	log.Printf("carbon consumer started (brokers=%v registry=%s)", cfg.Brokers, cfg.RegistryURL)
+	return cfg
+}
+
+// startMetrics launches the Phase 14 dashboard-aggregate consumer in the background.
+//
+// Mirrors startCarbon, and takes the config carbon already resolved rather than re-reading the
+// environment: the two consumers share one set of connection points, and reading them twice is how
+// they would come to disagree. This ingestion used to be ClickHouse Kafka engine tables, which
+// subscribed to bare event names and therefore to topics that never exist — see the header of
+// internal/metrics/consumer.go.
+//
+// Non-fatal, like carbon: this process also serves the liveness endpoint, and a metrics outage must
+// not take that down.
+func startMetrics(ctx context.Context, cfg carbon.Config, db *sql.DB) {
+	metricsCfg := metrics.Config{
+		Brokers:     cfg.Brokers,
+		RegistryURL: cfg.RegistryURL,
+		RedisURL:    cfg.RedisURL,
+	}
+	go func() {
+		if err := metrics.Start(ctx, metricsCfg, db); err != nil {
+			log.Printf("metrics consumer stopped: %v", err)
+		}
+	}()
+	log.Printf("metrics consumer started (group=%s)", metrics.ConsumerGroup)
+}
+
+// startCarbonIfAvailable opens the OLAP store and, if that succeeds, starts both consumers that
+// write to it — carbon (Phase 24) and the dashboard aggregates (Phase 14). It returns the cleanup
+// the caller defers.
+//
+// The opener is a parameter rather than a direct call so the success path is reachable in a test:
+// through openClickHouse it needs a live ClickHouse, which is why this branch — the one that
+// actually starts carbon ingestion — was the last part of the worker no test covered.
+//
+// Non-fatal by design: this process also serves the liveness endpoint, and a ClickHouse outage must
+// not take that down with it.
+func startCarbonIfAvailable(ctx context.Context, open func() (*sql.DB, error)) func() {
+	db, err := open()
+	if err != nil {
+		log.Printf("clickhouse init warning (carbon analytics disabled): %v", err)
+		return func() {}
+	}
+	cfg := startCarbon(ctx, db)
+	startMetrics(ctx, cfg, db)
+	return func() { _ = db.Close() }
+}
+
 // openClickHouse dials the OLAP store the carbon consumer writes to.
 //
 // database/sql opens lazily, so Ping is required to surface a bad DSN or an unreachable server here
@@ -76,31 +147,8 @@ func main() {
 	// Phase 24 carbon analytics (spec §33.3 — carbon aggregations run in this worker, Go →
 	// ClickHouse). Both the ClickHouse connection and the consumer are non-fatal on failure: this
 	// process also serves the health endpoint, and a carbon outage must not take that down.
-	if db, err := openClickHouse(); err != nil {
-		log.Printf("clickhouse init warning (carbon analytics disabled): %v", err)
-	} else {
-		defer func() { _ = db.Close() }()
-		cfg := carbon.Config{
-			Brokers:     strings.Split(getEnv("KAFKA_BROKERS", "localhost:9092"), ","),
-			RegistryURL: getEnv("SCHEMA_REGISTRY_URL", "http://localhost:8081"),
-			RedisURL:    getEnv("REDIS_URL", ""),
-		}
-		go func() {
-			if err := carbon.Start(ctx, cfg, db); err != nil {
-				log.Printf("carbon consumer stopped: %v", err)
-			}
-		}()
-		log.Printf("carbon consumer started (brokers=%v registry=%s)", cfg.Brokers, cfg.RegistryURL)
-	}
+	defer startCarbonIfAvailable(ctx, openClickHouse)()
 
-	// healthHandler() and defaultHTTPPort, not a second inline copy and a second default. Until
-	// 2026-08-23 this block registered its own handler on http.DefaultServeMux and fell back to
-	// "8091" — while the constant above, the Dockerfile EXPOSE, the compose healthcheck and the Helm
-	// chart all said 8090, and main_test.go asserted 8090 against getEnv/healthHandler that main()
-	// never called. So the tests passed on a contract main() did not honour: a deployment that left
-	// PORT unset would listen on 8091 while its probe hit 8090, which is precisely the CrashLoop the
-	// constant's own comment describes as already fixed (TDD OQ-47, found while working in this file).
-	mux := healthHandler()
 	port := getEnv("PORT", defaultHTTPPort)
 
 	// Explicit server, not http.ListenAndServe: the package-level helper has no timeouts at all,
@@ -116,8 +164,11 @@ func main() {
 	// pattern is the package-level helper — so that finding is now invisible to Semgrep without
 	// having been addressed.
 	srv := &http.Server{
-		Addr:              ":" + port,
-		Handler:           mux,
+		Addr: ":" + port,
+		// healthHandler() rather than http.DefaultServeMux: the mux this serves is the one the unit
+		// tests exercise, so the liveness contract cannot drift from what is asserted. main used to
+		// register its own copy of the route inline, leaving the tested handler unused.
+		Handler:           healthHandler(),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 	go func() {

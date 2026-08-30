@@ -52,8 +52,8 @@ resource "aws_subnet" "private" {
   cidr_block        = var.private_subnet_cidrs[count.index]
   availability_zone = var.availability_zones[count.index]
   tags = {
-    Name                              = "cos-private-${var.availability_zones[count.index]}"
-    "kubernetes.io/role/internal-elb" = "1"
+    Name                                        = "cos-private-${var.availability_zones[count.index]}"
+    "kubernetes.io/role/internal-elb"           = "1"
     "kubernetes.io/cluster/${var.cluster_name}" = "shared"
   }
 }
@@ -65,8 +65,8 @@ resource "aws_subnet" "public" {
   availability_zone       = var.availability_zones[count.index]
   map_public_ip_on_launch = false
   tags = {
-    Name                     = "cos-public-${var.availability_zones[count.index]}"
-    "kubernetes.io/role/elb" = "1"
+    Name                                        = "cos-public-${var.availability_zones[count.index]}"
+    "kubernetes.io/role/elb"                    = "1"
     "kubernetes.io/cluster/${var.cluster_name}" = "shared"
   }
 }
@@ -85,14 +85,15 @@ resource "aws_nat_gateway" "main" {
   depends_on    = [aws_internet_gateway.main]
 }
 
+# No inline 0.0.0.0/0 route. Internet-bound traffic goes to the Network Firewall endpoint first —
+# see aws_route.private_to_firewall in network-firewall.tf — and reaches the NAT gateway only after
+# it has been inspected against the domain allowlist. Declaring the route here as well would be a
+# duplicate destination and Terraform would refuse the plan; putting it here INSTEAD would bypass
+# the firewall entirely while still looking like working egress.
 resource "aws_route_table" "private" {
   count  = length(var.private_subnet_cidrs)
   vpc_id = aws_vpc.main.id
-  route {
-    cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.main[count.index].id
-  }
-  tags = { Name = "cos-rt-private-${count.index}" }
+  tags   = { Name = "cos-rt-private-${count.index}" }
 }
 
 resource "aws_route_table_association" "private" {
@@ -124,10 +125,8 @@ module "eks" {
   environment         = var.environment
   vpc_id              = aws_vpc.main.id
   private_subnet_ids  = aws_subnet.private[*].id
-  node_instance_types = var.node_instance_types
-  node_desired_size   = var.node_desired_size
-  node_min_size       = var.node_min_size
-  node_max_size       = var.node_max_size
+  vpc_cidr            = var.vpc_cidr
+  s3_prefix_list_id   = data.aws_prefix_list.s3.id
   public_access_cidrs = var.eks_public_access_cidrs
   secrets_kms_key_arn = aws_kms_key.eks.arn
   tags                = var.tags

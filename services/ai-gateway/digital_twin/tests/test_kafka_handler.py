@@ -97,6 +97,9 @@ def fake_kafka(monkeypatch):
 def _twin_state() -> TwinState:
     return TwinState(
         entity_id="11111111-1111-1111-1111-111111111111",
+        # Deliberately DIFFERENT from entity_id: the emitter used to put the entity id in the
+        # project_id field, and a fixture where the two match would hide that.
+        project_id="33333333-3333-3333-3333-333333333333",
         tenant_id="22222222-2222-2222-2222-222222222222",
         recorded_at=datetime.now(timezone.utc),
         source=StateSource.IOT,
@@ -127,14 +130,32 @@ def handled(monkeypatch):
 
 class TestConsumerConfiguration:
     @pytest.mark.asyncio
-    async def test_subscribes_to_the_equipment_telemetry_pattern(self, fake_kafka, handled):
+    async def test_subscribes_to_a_pattern_that_matches_a_REAL_telemetry_topic(
+        self, fake_kafka, handled
+    ):
+        """The pattern is matched against a topic the IoT worker actually publishes.
+
+        This used to assert `subscribed == {"pattern": kafka_handler._TELEMETRY_TOPIC_PATTERN}` —
+        the constant compared to itself, which passes for every possible value of the constant. It
+        did: the pattern was anchored on a bare "equipment.telemetry." prefix with no tenant segment,
+        while
+        services/iot-ingestion-worker publishes to `{tenant_id}.equipment.telemetry.location.v1`.
+        The twin received nothing, and the test that was supposed to cover the subscription said so
+        every time.
+        """
+        import re
+
         consumer_cls, _ = fake_kafka
 
         await kafka_handler.start_telemetry_consumer(db_pool=object(), redis_client=object())
+        pattern = consumer_cls.instances[0].subscribed["pattern"]
 
-        assert consumer_cls.instances[0].subscribed == {
-            "pattern": kafka_handler._TELEMETRY_TOPIC_PATTERN
-        }
+        # Exactly the string transform.KafkaTopicFor() builds, tenant prefix and all.
+        assert re.match(pattern, "tenant-a.equipment.telemetry.location.v1")
+        # And it stays narrow: a later version carries a different payload shape.
+        assert not re.match(pattern, "tenant-a.equipment.telemetry.location.v2")
+        # A bare, tenant-less name is not a topic this platform ever creates (§7.3).
+        assert not re.match(pattern, "equipment.telemetry.location.v1")
 
     @pytest.mark.asyncio
     async def test_reads_from_latest_not_earliest(self, fake_kafka, handled):
@@ -210,6 +231,11 @@ class TestTelemetryProcessing:
         assert envelope["event_type"] == "twin.state.updated.v1"
         payload = envelope["payload"]
         assert payload["entity_id"] == "11111111-1111-1111-1111-111111111111"
+        # The ENTITY's project, not the entity id repeated. This field carried
+        # str(twin_state.entity_id), so twin.state.updated.v1 named a project that does not exist and
+        # every consumer filtering by project matched nothing — including the SSE stream.
+        assert payload["project_id"] == "33333333-3333-3333-3333-333333333333"
+        assert payload["project_id"] != payload["entity_id"]
         assert payload["tenant_id"] == "22222222-2222-2222-2222-222222222222"
         assert payload["confidence"] == 0.95
         # Notification event, not a data carrier — attribute detail stays in twin_states (§Phase 24).

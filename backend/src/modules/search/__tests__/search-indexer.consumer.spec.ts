@@ -1,7 +1,7 @@
 // SearchIndexerConsumer — TDD OQ-22 (indexing moved onto the outbox) and OQ-45 (a Kafka handler
 // must enter CLS itself, or every tenant-scoped read inside it throws).
 
-jest.mock('@cos/shared', () => ({
+jest.mock('@cos/kafka', () => ({
   KafkaConsumer: jest.fn().mockImplementation(() => ({
     on: jest.fn(),
     connect: jest.fn().mockResolvedValue(undefined),

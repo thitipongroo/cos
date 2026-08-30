@@ -31,7 +31,13 @@ jobs:
     name: Semgrep — COS project rules
     runs-on: ubuntu-latest
     container:
-      image: semgrep/semgrep
+      # PINNED. This was `semgrep/semgrep` untagged, so every run pulled latest — and a release
+      # somewhere before 1.175.0 stopped parsing two patterns that had not changed since 2026-07-23
+      # (`from openai import ...` and `import ... from '@nozbe/watermelondb'`). A rule parse error
+      # aborts the WHOLE scan, so this gate was failing on every push while nine rules enforced
+      # nothing, and the two real violations underneath went unreported. Same policy as the other
+      # tools in ci.yml, which pin ruff / yamllint / sqlfluff exactly. Bump deliberately.
+      image: semgrep/semgrep:1.175.0
     steps:
       - uses: actions/checkout@v4
       # No --config from the registry here: these are the repo's own rules, so the run is

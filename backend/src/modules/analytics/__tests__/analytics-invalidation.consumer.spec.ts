@@ -1,6 +1,6 @@
 // AnalyticsInvalidationConsumer — TDD OQ-42.
 
-jest.mock('@cos/shared', () => ({
+jest.mock('@cos/kafka', () => ({
   KafkaConsumer: jest.fn().mockImplementation(() => ({
     on: jest.fn(),
     connect: jest.fn().mockResolvedValue(undefined),
@@ -70,22 +70,17 @@ describe('AnalyticsInvalidationConsumer', () => {
   // consumer, that dashboard goes stale for the whole TTL with nothing to say so. This test is what
   // says so.
   it('covers exactly the events feeding the analytics warehouse', () => {
-    const ddl = readFileSync(
-      join(__dirname, '../../../../../infrastructure/clickhouse/initdb.d/02-kafka-tables.sql'),
+    // Read from the Go worker's dispatch, not from 02-kafka-tables.sql: the Kafka engine tables that
+    // file used to hold were deleted when ingestion moved to services/analytics-worker (2026-08-23),
+    // so the DDL this test used to parse now contains only the note explaining their absence.
+    const dispatch = readFileSync(
+      join(__dirname, '../../../../../services/analytics-worker/internal/metrics/consumer.go'),
       'utf8',
     );
+    const body = dispatch.slice(dispatch.indexOf('switch envelope.EventType {'));
+    const events = [...body.matchAll(/^	case "([a-z0-9_.]+)":$/gm)].map((m) => m[1]!);
 
-    // Since OQ-47 the DDL subscribes by PATTERN — `^[^.]+\.{event_type}$`, where the leading group
-    // is the per-tenant prefix (§7.3). Unwrap it back to the canonical event type. Before OQ-47 these
-    // were bare literal names that matched no real topic, which is why the warehouse was empty.
-    const events = [...ddl.matchAll(/kafka_topic_list\s*=\s*'([^']+)'/g)]
-      .map((m) => /^\^\[\^\.\]\+\\\.(.+)\$$/.exec(m[1]))
-      .map((m) => {
-        expect(m).not.toBeNull();
-        return m![1].replaceAll('\\.', '.');
-      });
     expect(events.length).toBeGreaterThan(0);
-
     expect([...INVALIDATING_EVENT_TYPES].sort()).toEqual([...events].sort());
   });
 });

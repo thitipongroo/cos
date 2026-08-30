@@ -57,7 +57,17 @@ lockfile_for() {
   echo 'pnpm-lock.yaml' # nothing found — hold it to the root lockfile
 }
 
-is_staged() { echo "$STAGED" | grep -qxF "$1"; }
+# A here-string, NOT `echo "$STAGED" | grep -q`.
+#
+# `grep -q` exits the moment it matches, which closes the pipe under an `echo` that has not
+# finished writing — echo dies of SIGPIPE (141), and `set -o pipefail` above makes that the
+# pipeline's status. The function then reports "not staged" for a file that IS staged.
+#
+# It only shows up on a big commit: the staged list has to exceed the 64 KB pipe buffer for
+# echo to still be writing when grep leaves. A 2,220-file merge hit it and every single
+# package.json was reported as missing its lockfile, with both lockfiles correctly staged.
+# A here-string is a file, not a pipeline, so there is nothing to signal.
+is_staged() { grep -qxF "$1" <<<"$STAGED"; }
 
 # ── package.json: compare the dependency-bearing fields, not the whole file ──────────────────────
 while IFS= read -r f; do

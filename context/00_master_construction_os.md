@@ -1,8 +1,8 @@
 ---
 title: Construction OS — Master Specification
 role: master
-version: 1.17.0
-last_updated: 2026-05-31
+version: 1.17.1
+last_updated: 2026-08-22
 previous: null
 next: 01_build_priority_execution.md
 authority: master — all stage files defer to this document
@@ -1634,7 +1634,13 @@ services/                 — Separately deployed services (non-monolith)
   kg-ingestion-worker/    — Go Knowledge Graph Ingestion (@cos/kg-worker)
 
 packages/                 — Shared packages (ONLY code used by 2+ apps/services)
-  @cos/shared             — Typed Kafka event interfaces (Phase 1); Avro schemas added in Phase 8 alongside KafkaProducer/Consumer/OutboxPublisher
+  @cos/shared             — Typed Kafka event interfaces ONLY (TypeScript types; mobile-safe, Rule 34).
+                            Corrected 2026-08-22 (ADR-055): the Kafka SDK and the Avro schemas moved
+                            to @cos/kafka — a package imported by React Native cannot hold kafkajs.
+  @cos/kafka/             — Node-only Kafka SDK (Phase 8): KafkaProducer, KafkaConsumer,
+                            OutboxPublisher + OutboxPoller, DlqPublisher, KafkaTopicProvisioner,
+                            topic catalog, Prometheus metrics, Schema Registry client, Avro .avsc
+                            schemas. Server-side only — NEVER aliased into apps/mobile (ADR-055)
   @cos/database/          — Prisma pagination utilities, ID generation, retry helpers
   @cos/rbac/              — RBAC + ABAC role definitions, guard decorators and metadata keys (NOT concrete CanActivate guards — those live in backend/src/shared/guards/; see spec §06 §6.9)
   @cos/validation/        — Shared DTO validators (class-validator decorators)
@@ -1765,7 +1771,10 @@ Generate:
     moduleNameMapper: map all @cos/* workspace paths to source (not dist)
     packages requiring jest.config (Rule 35 — all packages with executable logic):
       backend/
-      packages/@cos/shared/         — kafka SDK, event types
+      packages/@cos/shared/         — event payload types only (type-only; Rule 35 EXEMPT since
+                                      ADR-055 — no executable logic, no jest config)
+      packages/@cos/kafka/          — kafka SDK (producer, consumer, outbox, dlq, metrics,
+                                      schema registry, topic catalog) — added by ADR-055
       packages/@cos/database/        — retry, pagination, id
       packages/@cos/financial/       — calculateLineTotal, convertCurrency (QM-1: mutation testing required)
       packages/@cos/rbac/            — ROLE_PERMISSIONS, decorators
@@ -2394,7 +2403,15 @@ Entities (PostgreSQL — schema: boq):
 Calculation Rules:
   estimated_total = ROUND(quantity × unit_cost, 4)    — HALF_UP
   category.subtotal = SUM(item.estimated_total) for all items in category
-  version.total_estimated = SUM(category.subtotal) for all root categories
+  version.total_estimated = SUM(category.subtotal) for ALL categories, at every depth
+      Corrected 2026-08-22 (TDD OQ-23, closed by product-owner decision). This line read
+      "for all root categories" — and categories are hierarchical, so every item in a
+      sub-category was worth nothing to the BOQ's total. That total is what
+      construction.boq.version_approved.v1 publishes and what Finance generates contracts
+      against. Summing all categories cannot double-count: boq_items.category_id is a single
+      FK, so an item appears in exactly one subtotal, and a category's subtotal stays its own
+      items — never a roll-up of its children. See
+      docs/architecture/technical-design/phase-04-boq-service.md OQ-23.
   Recalculation: triggered on any item create/update/delete (synchronous)
   Rounding mode: HALF_UP throughout — use decimal.js ROUND_HALF_UP constant
 
@@ -2808,9 +2825,30 @@ Task Completion Gates (server-side validation — not enforced offline):
     5. Safety       — no linked safety incident (task_id = task.task_id) with
                       status = 'OPEN' and severity IN ('HIGH','CRITICAL')
     6. Delay        — task.status != 'BLOCKED'
-                      (construction.delay.detected.v1 event auto-sets task.status = BLOCKED)
-    7. Material     — linked BOQ item's purchase order has at least one delivery record
-                      with status != 'PENDING' (partial or complete delivery required)
+                      The gate itself is live: tasks.service.ts reads the status, and BLOCKED is a
+                      valid value a PM can set by hand via PATCH /tasks/:id.
+                      The AUTOMATIC path IS built as of 2026-08-25 (Phase 23, product-owner
+                      decision): services/ai-gateway/reports/delay_event.py publishes
+                      construction.delay.detected.v1 and TasksDelayConsumer sets the status.
+                      Between 2026-08-23 and then this line claimed a path that did not exist —
+                      nothing consumed the event and nothing published it either.
+                      SCOPE OF THE AUTOMATIC TRANSITION: only a task in NOT_STARTED or IN_PROGRESS
+                      is moved to BLOCKED. A COMPLETED or CANCELLED task is left alone. The event
+                      carries no ordering guarantee against a completion, so applying it literally
+                      would let a late or replayed forecast un-finish work that is already done —
+                      and the gate exists to stop a delayed task being completed, not to reopen one
+                      that was. A project-level forecast (task_id null) blocks nothing; it still
+                      reaches the Knowledge Graph.
+                      The producer emits only while DelayForecastModel returns a prediction, and
+                      that model is a stub until it has 90+ days of production data.
+    7. Material     — linked BOQ item's purchase order has at least one delivery record.
+                      Corrected 2026-08-22: this line used to read "with status != 'PENDING'",
+                      but `deliveries` has no status column and the entity definition above
+                      (§Phase 5 procurement entities) never declared one. A deliveries row carries
+                      delivered_at and received_by, both NOT NULL, so filing one IS recording
+                      receipt — there is no pending state for it to be in. If partial-vs-complete
+                      receipt ever has to be distinguished, that is a delivery-status feature to
+                      spec, not a condition this gate can already evaluate.
 
   Warn only — HTTP 200 returned; response includes warnings[] array:
     8. Budget 85%–99%  — BOQ item actual_cost >= 85% of budget → warning level: ORANGE
@@ -3126,7 +3164,18 @@ Generate:
 - PostgreSQL migration files for all entities
 - NestJS module with Kafka consumer handlers for procurement events
 - Budget aggregation service (recalculates on each transaction)
-- Variance calculation: (actual + committed) vs allocated per budget_line
+- Variance calculation: (actual + committed) vs allocated, per PROJECT.
+  Corrected 2026-08-22: this line used to read "per budget_line". Finance cannot attribute a cost to
+  a budget line with anything the specs give it — the Event Contract (spec `32 §Event payloads`,
+  rows 3 and 4) defines `procurement.po.created.v1` and `procurement.invoice.received.v1` with no
+  `boq_item_id` and no budget-line reference, and the Constraints below forbid Finance from querying
+  Procurement's tables directly. `cost_transactions.budget_line_id` above stays as declared, a
+  nullable column for manual assignment; no spec file defines an endpoint that performs that
+  assignment, so nothing populates it today and a per-line figure would read 0.0000 for every line
+  in every project.
+  To make per-line variance real, the Event Contract has to carry the attribution first — that is a
+  change to spec 32 and to Procurement's emitter (a new event version), not something the Finance
+  service can derive on its own.
 - Decimal.js used for all calculations
 - DTOs with validation
 - OpenAPI 3.1 spec
@@ -3263,7 +3312,28 @@ Kafka Configuration:
   Consumer subscription: shared group {service}.shared subscribes per-tenant topics via RegExp
                 (^[^.]+\.{event_type}$) + validates tenant_id header before processing (§7.3)
   Default retention: 7 days
-  Log compaction: enabled for entity state topics (project.project.*, etc.)
+  Log compaction: enabled for entity state topics — defined 2026-08-23.
+                An ENTITY STATE TOPIC is one whose events describe the current state of a single
+                durable entity, named by a stable id in the payload, such that keeping only the
+                LATEST message per entity still leaves a correct picture. That is exactly the trade
+                compaction makes, so it is the only shape of topic that can survive it. Records of
+                occurrences — a delivery received, a safety incident, a daily report, a check-in —
+                are the opposite and must never be compacted: each is a separate fact with no newer
+                version to replace it.
+                Such a topic is KEYED BY THAT ENTITY ID, not by tenant_id as every other topic is.
+                The two settings are inseparable and are declared together in ENTITY_STATE_TOPICS
+                (packages/@cos/kafka/src/topic-catalog.ts), because compacting a
+                tenant-keyed topic would leave ONE surviving event per tenant and delete the rest.
+                A publish whose payload lacks the id is refused rather than sent unkeyed: an unkeyed
+                message is spread round-robin, so compaction could never pair an entity's old and
+                new versions, and the topic would grow forever while reporting itself compacted.
+                The list is explicit and short. This line previously read "project.project.*, etc.";
+                the project family is the canonical construction.project.* (see the numbered event
+                mapping above, project.created -> [construction.project.created.v1]) and "etc."
+                named nothing. Adding a topic is a data-retention decision, made one entry at a
+                time. construction.project.risk_raised.v1 and .risk_status_changed.v1 are
+                deliberately excluded: they carry project_id but are events about a RISK, and keying
+                them by project would collapse every risk on a project into the last one raised.
   Max message size: 1MB (large payloads → store in S3, reference in event)
 
 Shared Event SDK (@construction-os/shared package):
@@ -3303,7 +3373,12 @@ Dead Letter Queue (DLQ):
   After max retries: publish to DLQ topic + alert via observability
 
 Monitoring:
-  - Consumer lag: Prometheus consumer_group_lag metric
+  - Consumer lag: Prometheus kafka_consumer_lag gauge
+    (corrected 2026-08-23: this line named `consumer_group_lag`, which is not a metric — it
+     reads as the `consumer_group` LABEL on kafka_messages_consumed_total conflated with the
+     lag gauge. The Phase 15 metric catalogue at §Phase 15 Metrics has always listed
+     `kafka_consumer_lag (gauge)`, and that is the name @cos/tracing, @cos/shared/kafka/metrics,
+     both Grafana dashboards and the Prometheus alert rule all use.)
   - Producer errors: Prometheus kafka_producer_error_total counter
   - DLQ depth: alert when DLQ topic message count > 0
 
@@ -3341,9 +3416,10 @@ Generate:
 - Prometheus metrics for producer, consumer, DLQ
 - Confluent Schema Registry client integration
 - Unit tests: producer, consumer, outbox pattern, idempotency
-- Integration tests: packages/@cos/shared/test/kafka/kafka.integration.spec.ts
-    - Add to @cos/shared devDependencies: testcontainers ^10.9.0, @testcontainers/kafka ^10.9.0 (Rule 26)
-    - Add script to @cos/shared package.json: "test:integration": "jest --testPathPattern='test/'" (Rule 27)
+- Integration tests: packages/@cos/kafka/test/kafka/kafka.integration.spec.ts (moved from
+    @cos/shared by ADR-055)
+    - Add to @cos/kafka devDependencies: testcontainers ^10.9.0, @testcontainers/kafka ^10.9.0 (Rule 26)
+    - Add script to @cos/kafka package.json: "test:integration": "jest --testPathPatterns='test/'" (Rule 27)
       Note: turbo.json test:integration task already exists — no change needed
     - Use @testcontainers/kafka KafkaContainer for a real single-broker Kafka instance
     - Mock Schema Registry (Avro encoding covered in src/kafka/__tests__/schema-registry.client.spec.ts)
@@ -3467,13 +3543,17 @@ Generate:
 - Fastify application with multipart plugin (@fastify/multipart)
 - MinIO client integration (minio npm package)
 - File validation middleware (size, MIME type, extension check)
-- Antivirus hook (ClamAV integration) — BUILT. `clamscan` is a dependency, `services/antivirus.service.ts`
-  and `services/scan-runner.ts` implement the scan, and quarantine has its own bucket, event and
-  SYSTEM_ADMIN recovery route. This line used to read "deferred to Phase 9 spec; do not implement
-  until spec defines it", which contradicted the File Constraints block a few lines above in this
-  same command — that block already specifies the quarantine bucket, the 30-day retention, the
-  `file.document.quarantined.v1` event and the recovery path. The deferral predated it. Corrected
-  2026-08-22 so a future reader does not mistake working antivirus for scope creep (TDD OQ-33).
+- Antivirus hook (ClamAV integration) — IN SCOPE and BUILT. `clamscan` is a dependency of
+  `services/file-service`, `src/services/antivirus.service.ts` and `src/services/scan-runner.ts`
+  implement the scan, and quarantine has its own bucket, event and SYSTEM_ADMIN recovery route:
+  scan every upload before marking CLEAN, QUARANTINE on threat detected, move infected objects to
+  `cos-quarantine/{tenant_id}/` (30-day retention), emit `file.document.quarantined.v1`, notify
+  SYSTEM_ADMIN, SYSTEM_ADMIN-only recovery. This line used to read "deferred to Phase 9 spec; do not
+  implement until spec defines it", which contradicted the File Constraints block a few lines above
+  in this same command — that block already specifies every one of those behaviours. The deferral
+  predated it. Corrected 2026-08-22 so a future reader does not mistake working antivirus for scope
+  creep (TDD OQ-33). Test design:
+  `docs/architecture/test-design/phase-09-file-and-document-system.md` §35.10.9 / §35.13 ESC-07.
 - Signed URL generation service
 - OpenSearch indexing on upload complete
 - PostgreSQL migration files
@@ -3608,7 +3688,15 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
                   gives the role RW on "Purchase requests", and a shortage is noticed on site.
 
     PROJECT_MANAGER:
-      Bottom nav: Home | Projects | Procurement | Dashboard | Profile
+      Bottom nav: Home | Procurement | Finance | More  (corrected 2026-08-23; this line read
+                  "Home | Projects | Procurement | Dashboard | Profile")
+                  The corrected mockup set of 2026-08-10 settles it — mockup/mobile/06_project_manager
+                  carries exactly 01_home, 02_procurement, 03_finance, 04_more_option, and the bar
+                  follows those four. `dashboard` is a tab for NO role now: its content IS the Home
+                  screen for this role (01_home draws the dashboard as the first tab), so a second tab
+                  would show the same page twice; it stays mountable and pushable. `projects` moved
+                  into More. Profile had already left every role's bar on 2026-08-09, when the
+                  navigation drawer became the profile — see the SITE_ENGINEER note above.
       Workflows:  project status, procurement status, budget variance (read),
                   site report summary, issue triage
 
@@ -3715,9 +3803,10 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
       deleted_at TIMESTAMPTZ DEFAULT now(); INDEX (tenant_id, entity_type, deleted_at). Per-entity
       delete→tombstone wiring is deferred (contract complete; `deleted[]` stays empty until each entity records here).
     - Entity offline scope (enforce per spec `17 §17.4` — do NOT allow offline writes outside this list):
-        * Offline read/write: tasks, site reports, inspections, workforce attendance, material consumption, safety checklists + incidents, equipment usage
-        * Online-required (read-cache only, no offline write): POs, vendor invoices / AR / receipts / payments, budget-line mutations, vendor master, permissions/roles
+        * Offline read/write: tasks, site reports, inspections, workforce attendance, material consumption, safety checklists + incidents, equipment usage, deliveries received against a PO (amended 2026-08-19), purchase requests (amended 2026-08-19)
+        * Online-required (read-cache only, no offline write): POs, vendor invoices / AR / receipts / payments, budget-line mutations, vendor master, permissions/roles, tenant settings/configuration, sync conflict resolution (§17.5)
         * Read-only SWR cache: project master, BOQ lines, room/floor reference, drawings (size-limited), vendor directory
+        * Pushable types are declared once as `SYNC_PUSHABLE_ENTITY_TYPES` in `@cos/types`, imported by both the API and the mobile client; a backend contract test asserts `SyncService.push()` handles exactly those
     - Sync priority order on reconnect (spec `17 §17.6`): 1 safety incidents → 2 attendance → 3 inspections → 4 task progress → 5 site reports → 6 material → 7 equipment usage → 8 photo/media (deferred last)
     - Data size limits (spec `17 §17.7`): local DB ≤ 500 MB · drawing cache ≤ 200 MB (LRU eviction) · photo queue ≤ 100 (warn user at 80) · sync batch ≤ 500 records/cycle
     - BackgroundSyncTask (expo-task-manager registration)
@@ -3766,12 +3855,13 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
 
   Generate (Web App — apps/web/):
     - Serwist configuration (@serwist/turbopack: withSerwist + createSerwistRoute) with runtime caching strategies
-      createSerwistRoute keeps `useNativeEsbuild` at its platform default (`platform === 'win32'`).
-      This line used to say it MUST be `false`, because native `esbuild` was "not a dependency; only
-      esbuild-wasm is" — that is no longer true: apps/web pins both at the same version and
-      pnpm-workspace.yaml allows esbuild's postinstall. The wasm build rejects a Windows working
-      directory, so pinning `false` broke the very build it was meant to protect. Corrected
-      2026-08-22 (TDD OQ-39). Authoritative: spec §32.7 → Web Implementation build constraints.
+      createSerwistRoute LEAVES `useNativeEsbuild` at its `platform === 'win32'` default — corrected
+      2026-08-23 (TDD OQ-39); this line used to read "MUST pass `useNativeEsbuild: false`" on the premise that `esbuild`
+      was not a dependency. It is one now: a devDependency of apps/web pinned to the same version as
+      `esbuild-wasm`, with `allowBuilds.esbuild: true` in pnpm-workspace.yaml. Forcing the option to false
+      does not work anyway — `esbuild-wasm` rejects a Windows absolute working directory and that directory
+      cannot be overridden through @serwist/turbopack's option allowlist. Authoritative: spec §32.7 → Web
+      Implementation build constraints, which carries the full account.
     - IndexedDB schema using idb library (typed, versioned)
     - PWA sync service using Background Sync API + IndexedDB queue
     - Service worker registration via SerwistProvider in the Next.js App Router root layout (app/layout.tsx)
@@ -3976,7 +4066,26 @@ AI Services (FastAPI — all in ai/ directory):
      - Embed text documents via EmbeddingProvider interface
      - Store in pgvector: vector column dimensions set per provider config
      - Store in OpenSearch: index to {tenant_id}-embeddings index (k-NN)
-     - Batch processing: Kafka consumer on file.uploaded and report.submitted events
+     - Batch processing: Kafka consumer on file.document.uploaded.v1 and site.report.created.v1
+       AMENDED 2026-08-29. This line read "file.uploaded and report.submitted events". Both names
+       were wrong in a way that mattered:
+         · `site.report.submitted.v1` exists and is NOT the one to consume — its payload is
+           report_id / project_id / report_date / submitted_by, with no text in it at all. The event
+           that carries the report's prose is `site.report.created.v1` (payload adds `summary`), and
+           the worker's own README had named that one correctly the whole time. Spec §32:510 records
+           that both events exist deliberately and are distinct, so this was a choice between two
+           real events, and the wrong one was named.
+         · `file.uploaded` is not an event type either; the catalogue name is
+           `file.document.uploaded.v1`, which is what consumer.py actually subscribes to.
+       WHAT IS NOT WIRED, and why it stays that way for now: only the file consumer exists. The
+       report consumer is deliberately not built here, because the whole embedding path is a stub —
+       `main.py` wires `StubEmbeddingProvider`, `ingestion.py` states "no OPENAI_API_KEY here, so
+       real vectors have never been produced", and docs/architecture/service-interaction.md records
+       the AI/RAG layer as stubbed by design pending §22. A second consumer feeding a stub embedder
+       would add a pipeline nobody can observe. There is a further reason to wait: master:3434-3438
+       removed the free-text summary from the mobile daily report (`summary` is nullable and is sent
+       null), so today the only site-report prose to embed at all is what a web user types.
+       Pinned by tests/conformance/ai/02-rag-prompts-ocr.spec.ts so the gap stays visible.
    API: POST /api/v1/embeddings/generate  { text, entity_type, entity_id, tenant_id }
 
 3. OCR Pipeline (ai-ocr-pipeline):
@@ -4162,7 +4271,24 @@ Orchestration:
              Layer C orchestration = LAYER-C-001, provisionally resolved to Temporal.io
              (PO 2026-07-10; final commit gated by §22.6 benchmark);
              see docs/specifications/22-ai-architecture.md §22.3)
-  Step 1: RAG retrieval (via Phase 11 RAG API)
+  Step 1: Context retrieval — RELATIONAL for figures, RAG for documents.
+          AMENDED 2026-08-29 (product-owner). This line read "RAG retrieval (via Phase 11 RAG API)",
+          and under that wording three of the four reports shipped with NO context at all: nothing
+          called the RAG API, and nothing would have helped if it had. The Phase 11 index holds one
+          thing — chunks of uploaded files (ai-embedding-worker subscribes to
+          {tenant}.file.document.uploaded.v1 and nothing else). Site reports, RFQs, POs, invoices and
+          budgets are not in it, and vector similarity cannot answer what these reports ask anyway:
+          "how many POs are past their delivery date" is an aggregate, and a top-k similarity search
+          returns the passages that read most like the question, not a count.
+          So retrieval is routed by the SHAPE of the question, which is also what the delay-risk
+          report had already been doing since 2026-08-23 via risk/context.py:
+            · figures, counts, dates, money  -> tenant-scoped SQL, assembled deterministically
+              (services/ai-gateway/reports/context/{site,procurement,executive}.py + risk/context.py)
+            · narrative and documents        -> the Phase 11 RAG API, unchanged and still available
+          This is the stronger hallucination control as well as the correct one: the guard's
+          contradiction check can only catch a figure that disagrees with the context, so a report
+          generated from an empty context had nothing to disagree with and every number in it was
+          unfalsifiable.
   Step 2: Context assembly and token budget check
   Step 3: LLM generation with structured output (JSON mode)
   Step 4: Hallucination guard validation
@@ -4185,7 +4311,12 @@ Orchestration:
 
 Generate:
 
-- Orchestration chain (plain Python sequential pipeline — no LangGraph in Phase 12) for each report type
+- Plain Python sequential orchestration pipeline for each report type (the 6 steps in the
+  Orchestration section above). Corrected 2026-08-22: this line previously said "LangGraph
+  orchestration chain", contradicting BOTH the Orchestration section in this same phase block
+  ("plain Python sequential pipeline — no Agent Orchestrator; LangGraph deferred to LAYER-C-001")
+  AND the context.md Never rule "Implement LangGraph in Phase 11–12". Authoritative: spec
+  §22-ai-architecture §22.3. See docs/architecture/test-design/README.md §35.13 ESC-09.
 - HallucinationGuard class with all 5 checks above
 - Structured output Pydantic models for each report type
 - Prompt templates (ai/prompts/): one per report type
@@ -4393,11 +4524,28 @@ Constraints:
 ```text
 Build Analytics Service and dashboards.
 
-Performance SLA (authoritative — all dashboard queries must meet these):
-  Executive Dashboard:   P95 < 3 seconds
-  PM Dashboard:          P95 < 2 seconds
+Performance SLA (source of truth: docs/specifications/31-monitoring-observability.md §31.6 + QM-6):
+  Executive Dashboard:   P95 < 1 second
+  PM Dashboard:          P95 < 1 second
+  — Corrected 2026-08-22: the former "Executive 3s / PM 2s" split conflicted with the §31.6 SLO
+    (dashboard/analytics p95 < 1s) and with §30.9 (p95 < 1s, ClickHouse query < 200ms).
+    §31.6 wins per the authority hierarchy (specs beat context files). See
+    docs/architecture/test-design/README.md §35.13 ESC-10.
   Data freshness:        15 minutes (acceptable lag from transaction to dashboard)
   Real-time metrics:     < 30 seconds lag (for critical alerts only)
+    MEASURED since 2026-08-29 by `analytics_ingestion_lag_seconds` (histogram, label: event_type),
+    observed in services/analytics-worker/internal/metrics/lag.go at the aggregate write — the one
+    point every event passes, before the per-type dispatch. Alerts AnalyticsDataStale (>900s) and
+    AnalyticsRealtimeLagBreach (>30s) read it; the histogram carries exact bucket boundaries at both
+    budgets because histogram_quantile interpolates between them.
+    Both numbers were stated here and measured by NOTHING until that date, which is invisible from
+    outside: a dashboard answering from hours-old aggregates returns 200 and looks like a quiet site.
+    Scope: the metric spans occurred_at → the aggregate write, so it covers produce, broker
+    retention, consumer scheduling and backlog. It excludes ClickHouse's post-insert merge, which
+    would need an `ingested_at DateTime` column on the three aggregate tables (they carry
+    `event_date Date` — day granularity cannot express a 30-second budget). The figure therefore
+    reads slightly LOW: a floor on real lag, never a ceiling, which is the safe direction for an
+    alert.
 
 ClickHouse Strategy:
   Version: ClickHouse 26.x
@@ -4482,7 +4630,7 @@ Generate:
 - Frontend Next.js dashboard components (use Recharts)
 - Unit tests: cache logic, aggregation query building
 - Integration tests: Kafka → ClickHouse → API flow
-- Load tests: verify P95 < 3s SLA under 100 concurrent dashboard loads
+- Load tests: verify P95 < 1s SLA under 100 concurrent dashboard loads (§31.6)
 - OpenAPI 3.1 spec: docs/api/analytics.openapi.yaml (per spec §14.3 canonical table — Analytics, MVP Phase 14)
 
 
@@ -4748,6 +4896,21 @@ Kubernetes Cluster Specification (production):
     app-pool:       min 3, max 10 nodes, t3.xlarge (application services)
     ai-pool:        min 1, max 4 nodes, t3.2xlarge (AI workers — GPU optional)
     analytics-pool: min 1, max 3 nodes, r5.xlarge (ClickHouse — memory optimized)
+      NOT BUILT, deliberately (2026-08-29, product-owner). The other three pools were created in
+      Terraform that day — until then there was ONE undifferentiated node group on t3.large, an
+      instance type that appears in none of the four above, with a single min/max shared by
+      everything, and nothing tested it.
+      This pool was left out because it has no workload: ClickHouse has no Kubernetes deployment
+      anywhere in the repository — no Helm chart, no manifest, nothing in Terraform (only the
+      docker-compose config under infrastructure/clickhouse/). An r5.xlarge that nothing can be
+      scheduled onto is a bill with no service behind it. Build it in the same change that gives
+      ClickHouse a chart, not before.
+      The three that were built carry `workload=<pool>` node labels; the ai pool is additionally
+      TAINTED workload=ai:NoSchedule, and the four AI charts carry the matching toleration plus a
+      REQUIRED nodeAffinity. Required rather than preferred on purpose: a preferred rule falls back
+      to any node the moment the pool is full, and an AI service running on a t3.xlarge behaves —
+      just slowly — with nothing to report it.
+      Pinned by tests/conformance/devops/.
   Auto-scaling: Cluster Autoscaler (scale up: 2 min, scale down: 10 min cooldown)
   Resource requests/limits per NestJS service (default):
     requests: cpu 100m, memory 256Mi
@@ -4930,7 +5093,7 @@ Required Unit Test Coverage:
 k6 Load Test Scenarios:
   Scenario 1: Dashboard SLA validation
     Target: GET /api/v1/analytics/executive — 100 VUs, 5 min
-    Pass criteria: P95 < 3s, error rate < 0.1%
+    Pass criteria: P95 < 1s, error rate < 0.1% (§31.6 dashboard SLO)
 
   Scenario 2: Concurrent file uploads
     Target: POST /api/v1/files/upload — 20 VUs, 5 MB file, 5 min
@@ -4973,7 +5136,7 @@ Generate:
     1. login — user authentication via SMS OTP and email/password flows; JWT issued; protected route accessible
     2. project create — PM creates project; status transitions DRAFT → ACTIVE
     3. report submit — Site Engineer submits daily site report; Kafka event emitted; PM notified
-    4. dashboard view — Executive loads analytics dashboard; ClickHouse queries complete within P95 < 3s SLA
+    4. dashboard view — Executive loads analytics dashboard; ClickHouse queries complete within P95 < 1s SLA
     5. Procurement flow — Create PR → generate RFQ → receive quotation → approve PO → record delivery → approve vendor invoice
     6. Daily site report — Site Engineer submits report with manpower count and blockers
     7. Budget exceeded alert — Cost transaction pushes project over budget → Executive receives push notification
@@ -5028,7 +5191,8 @@ SECTION A — PRE-LAUNCH CHECKLIST (Build quality gates)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Legend:
-  [AUTO] = verified automatically via CI/CD script — see scripts/verify-production-readiness.sh
+  [AUTO] = verified automatically via CI/CD script — see scripts/readiness/verify-production-readiness.sh
+           (path corrected 2026-08-24; the script lives in scripts/readiness/ with the check-*.sh it calls)
   [MANUAL] = requires human verification — cannot be automated
 
 Architecture:
@@ -5349,7 +5513,8 @@ TimescaleDB Tables (schema: equipment_telemetry):
     operator_id     UUID
     INDEX: (equipment_id, recorded_at DESC)
 
-  IoT telemetry: MQTT 5.0; broker = EMQX self-hosted on EKS (RESOLVED — AWS IoT Core deferred, Azure IoT Hub excluded; see Phase 21 stub note below + spec §13.5, §33.8); topic: cos/v1/devices/{device_id}/telemetry
+  IoT telemetry: MQTT 5.0; broker = EMQX self-hosted on EKS (RESOLVED — AWS IoT Core deferred, Azure IoT Hub excluded; see Phase 21 stub note below + spec §13.5, §33.8); topic: cos/v1/tenants/{tenant_id}/devices/{device_id}/telemetry (corrected 2026-08-25 — the
+    tenant is a topic segment the broker authenticates per device, never a payload field; spec §33.5)
     Trigger: equipment has IoT sensor attached
     Interface: { streamTelemetry(equipmentId: string): AsyncIterable<TelemetryEvent> }
 
@@ -5546,6 +5711,11 @@ Model Types (from source §19.3):
   Graph ML (GraphMLModel):              XGBoost on Neo4j graph-derived features (PageRank, centrality); requires 6+ months data (see spec §22.6)
   Classification (RiskClassifier):        XGBoost multi-class (LOW/MEDIUM/HIGH/CRITICAL); features: budget variance, schedule delay, procurement, safety incidents; requires 50+ projects (see spec §22.6)
   Device trust (DeviceTrustModel):        XGBoost binary classifier, calibrated probability rendered 0–100; features: attestation verdict, enrolment age, last_seen_at recency, revocation history, ingress ASN stability; NO count threshold — promoted only by beating the rule-based baseline on a held-out set (PR-AUC), because the positive class is rare by design (see spec §22.6; ADR-081)
+  Anomaly detection (CostAnomalyModel):   flags unusual cost entries and procurement patterns.
+    Added 2026-08-22 — it had an evaluation threshold in spec §30.11 (Precision ≥ 0.85, secondary
+    Recall) but was missing from this phase and from §22.6. Algorithm, input features and minimum
+    training data are UNSPECIFIED — do NOT infer them; owner AI/Platform Lead, decided when Layer B
+    enters an active development sprint. See docs/architecture/test-design/README.md §35.13 ESC-03.
 
 Feature Store (Feast):
   Feature views:
@@ -5580,6 +5750,59 @@ Generate:
 - AI provider decisions documented in docs/specifications/22-ai-architecture.md §22.6
 - Unit tests: DAG task functions (with mocked data sources)
 - Integration tests: end-to-end Airflow DAG run with test data
+- PRODUCER for `construction.delay.detected.v1` — DONE 2026-08-25. Producer:
+  services/ai-gateway/reports/delay_event.py (beside risk_event.py, which already had the Kafka
+  producer). Second consumer: backend TasksDelayConsumer, which sets task.status = BLOCKED within the
+  scope recorded at §Phase 6 completion gate 6. The Knowledge Graph consumer was already built. The
+  producer emits only once DelayForecastModel returns a prediction, and that model is still a stub.
+  The account of why it was deferred, kept because it is the reason the shape existed at all:
+  added 2026-08-23 after an audit found the event has
+  a schema, a topic, a catalogue entry and TWO documented consumers, but nothing anywhere in the
+  repository publishes it. `DelayForecastModel` below is the AI_FORECAST source the payload's
+  `detected_by` names, which is why the producer belongs to this phase rather than to Phase 12
+  (whose delay-risk report emits `ai.risk_prediction.generated.v1`, a different event).
+  Payload and severity bands: spec `32 §Event payloads` row 8 — LOW=1-2 days, MEDIUM=3-6, HIGH=7-13,
+  CRITICAL=14+, identical to the Phase 12 delay-risk bands.
+  Ship it together with BOTH consumers, or the event is unobservable and the gap simply moves:
+    1. Knowledge Graph — already built and waiting (`kg-ingestion-worker` maps it to `(:Delay)` and
+       `[:IMPACTS]`; §Phase 13). Until the producer exists, graph queries 7 and 8 return nothing.
+    2. Task auto-block — `task.status = BLOCKED` on receipt, which §Phase 6 completion gate 6 states
+       as fact ("event auto-sets task.status = BLOCKED") and which NO code performs today. The gate
+       itself works: `tasks.service.ts` reads the status, and a PM can set BLOCKED by hand via
+       PATCH /tasks/:id. What is missing is only the automatic path.
+  Product-owner decision 2026-08-23: deferred here rather than stubbed earlier, because a producer
+  built before the forecasting model would have to be rewritten once the model exists.
+
+- PRODUCER for the safety-violation event — added 2026-08-25 after Phase 20 found the §19.6 rule
+  "Critical safety notifications (SafetyIncidentReported, SafetyViolationDetected) cannot be
+  disabled" enforceable for only ONE of the two events it names. `SafetyIncidentReported` maps to
+  `safety.incident.created.v1`; `SafetyViolationDetected` has no canonical event type, no `.avsc`,
+  no topic-catalogue entry, no producer and no consumer — it appears in exactly two places in the
+  whole specification: the §19.6 sentence above and the Safety group of
+  `16-enterprise-event-flow §Enterprise event catalogue`.
+  It belongs to this phase because `SafetyVisionModel` below is what detects a violation — its
+  `SafetyAnalysisResult { violations, confidence, severity }` is the only source of one anywhere in
+  the specs — and that model is gated on "10,000+ labeled site photos accumulated in production".
+  Ship the event together with all five of its halves, or the gap simply moves:
+    1. canonical event type + `.avsc` + `EVENT_AVSC_MAP` entry (naming per §7.3 / §32.4)
+    2. the producer, in whichever service hosts SafetyVisionModel inference
+    3. membership of `CRITICAL_EVENT_TYPES` in `notification.service.ts` — without it the event is
+       one a user can switch off, which is the exact thing §19.6 forbids
+    4. `EVENT_ROLE_MAP` routing AND `SUBSCRIBED_EVENT_TYPES` subscription (a routing entry alone
+       decides an audience for a message no consumer asks for)
+    5. a system-default notification template — `notifyUser` drops any channel with no template row
+  DONE 2026-08-25 (product-owner decision to build rather than defer again). All five halves shipped:
+  `safety.violation.detected.v1` + .avsc + catalogue entry (payload in spec §32.4 row 22); producer at
+  services/ai-gateway/reports/safety_violation_event.py; membership of CRITICAL_EVENT_TYPES;
+  EVENT_ROLE_MAP routing AND the consumer subscription; and the system-default template in migration
+  20260825000003. The producer emits only once SafetyVisionModel returns an analysis, and that model
+  is still a stub until it has 10,000+ labeled photos.
+  The guard that protected the gap — the `§19.6 critical event set` block in
+  `notification.service.spec.ts` — fired exactly as designed when the event was minted, and now
+  asserts the wiring instead of the absence.
+  Product-owner decision 2026-08-25: deferred to this phase rather than named speculatively now,
+  because an event type minted before the model exists would fix a name and a payload that the
+  model's actual output may not match.
 
 Stubs in Phase 23 (generate stub — algorithms RESOLVED in spec §22-ai-architecture §22.6, implement when data thresholds met):
 
@@ -5646,7 +5869,7 @@ Stubs in Phase 23 (generate stub — algorithms RESOLVED in spec §22-ai-archite
     Day one:  a deterministic rule-based scorer serves behind the same interface and IS the baseline
               the model must beat. While it serves, the surface must NOT be described as AI-derived.
     Interface: { score(deviceId: string, userId: string): TrustScore }
-    TrustScore: { score: int 0..100, scorer: 'RULE_BASED'|'MODEL', signals: SignalState[] }
+    TrustScore: { score: int 0..100, scoredBy: 'RULES'|'MODEL', signals: SignalState[] }  (the mobile BADGE renders 'RULE_BASED'|'AI_VERIFIED'; the wire value is scoredBy)
     Algorithm: RESOLVED — XGBoost binary classifier, calibrated; source: spec §22-ai-architecture §22.6
     Framework: scikit-learn + XGBoost
     Governance: ADVISORY ONLY — never revokes a device, never blocks a login (§22.3 autonomous-mode
@@ -5936,17 +6159,52 @@ ROOT CAUSE PREVENTION RULES (prevent recurring bugs):
     Examples requiring `import type`: PrismaClient in @cos/shared, express types in NestJS services
     using Fastify, any server-only type in packages imported by mobile.
 
-  Rule 34 — @cos/shared must remain framework-agnostic (prevents mobile bundle failures):
-    @cos/shared is imported by ALL platforms: mobile (React Native/Metro), PWA (Service Worker),
-    and Node.js services. Therefore:
+  Rule 34 — the CLIENT-SAFE packages must stay framework-agnostic (prevents mobile bundle failures):
+    AMENDED 2026-08-27. The rule previously opened "@cos/shared is imported by ALL platforms:
+    mobile (React Native/Metro), PWA (Service Worker), and Node.js services." That premise was not
+    true of the repository it governs, and had not been for some time:
+
+      apps/mobile depends on  @cos/financial, @cos/schemas, @cos/types, @cos/ui-logic
+      apps/web    depends on  @cos/schemas, @cos/types, @cos/ui-logic
+      @cos/shared is depended on by  backend, services/file-service   — both Node.js, nothing else
+
+    The split the rule asks for was therefore already achieved, but by a different means than the
+    rule describes: the client-safe code went into OTHER packages instead of @cos/shared being kept
+    clean. Meanwhile @cos/shared took on kafkajs, ioredis and prom-client, each of which reaches for
+    Node built-ins (net/tls/dns/fs) — so it could not be imported from React Native regardless of
+    what any single class in it did. Guarding the wrong package let that pass unnoticed while a real
+    obligation went unwatched.
+
+    So the obligation follows the packages that actually ship to a client:
+
+    CLIENT-SAFE packages — @cos/types, @cos/schemas, @cos/ui-logic, @cos/financial (the set
+    apps/mobile and apps/web import). For these:
+    ALSO ENFORCED STRUCTURALLY since 2026-08-22 (ADR-055): the Kafka SDK is no longer in
+    @cos/shared. That package now holds event payload TYPES ONLY (every import is `import type`;
+    sole dependency @cos/types), and all Node-only Kafka code plus the Avro schemas live in
+    @cos/kafka, which is never aliased into apps/mobile. Clause (c) below ("move OutboxPoller to
+    backend/src") is SUPERSEDED by that split: moving only the outbox would have left kafkajs,
+    ioredis and prom-client as runtime deps of @cos/shared, so it still would not have been safe.
     (a) NO runtime import of Node.js-only packages (PrismaClient, native addons, file system).
         Use `import type` when types are needed (Rule 33).
     (b) NO runtime import of server-framework packages (express, fastify, NestJS decorators).
-    (c) Classes/functions that require a Node.js runtime (e.g., OutboxPoller which polls a DB)
-        must be moved to backend/src/ — NOT placed in @cos/shared.
-    (d) Before adding any dependency to @cos/shared, verify it works in React Native/Metro bundler.
-    Verify: check @cos/shared/package.json — every package listed in dependencies must be
-    mobile-safe (pure JS, no native addons, no Node.js built-in-dependent runtime behavior).
+    (c) Classes/functions that require a Node.js runtime (e.g., an OutboxPoller which polls a DB)
+        must live in backend/src/ — NOT in a client-safe package.
+    (d) Before adding any dependency to one of them, verify it works in React Native/Metro.
+    Verify: every package listed in their dependencies must be mobile-safe (pure JS, no native
+    addons, no Node.js built-in-dependent runtime behavior).
+
+    NODE-ONLY packages — @cos/shared, @cos/database, @cos/logger, @cos/tracing, @cos/config,
+    @cos/rbac, @cos/validation, @cos/test-utils. These may use Node built-ins freely. They must NOT
+    appear in the dependencies of a client-safe package or of apps/mobile or apps/web; that edge is
+    the actual failure this rule exists to prevent, and it is the one to check.
+
+    Clause (c) still binds @cos/shared for a second reason that has nothing to do with mobile: a
+    polling loop belongs with the process that owns its lifecycle. An OutboxPoller was defined and
+    exported there until 2026-08-27, duplicating backend/src/shared/events/outbox-poller.service.ts,
+    which is the one registered in EventsModule and the only one that ever ran.
+
+    Enforced by tests/conformance/events/06-rule-34.spec.ts.
 
   Rule 35 — Every @cos package with executable logic must have unit tests in CI (prevents untested logic):
     Definition of "executable logic": any exported function, method, or class with a body

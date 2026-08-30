@@ -1,31 +1,36 @@
-"""Unit tests for the embedding worker's FastAPI surface.
+"""Unit tests for the embedding worker FastAPI surface — Phase 11.
 
-Endpoint coroutines are awaited directly rather than driven through `fastapi.testclient`: TestClient
-needs `httpx2` (its absence raises a StarletteDeprecationWarning, which `filterwarnings = error`
-turns into a collection error) and its portal leaks sockets that resurface as unraisable
-ResourceWarnings at teardown. The `HTTPException` each handler raises is the same contract FastAPI
-serialises, so the status mapping is still asserted.
+§35.13 ESC-24: main.py had no test, so all 25 of its statements counted against the QM-1
+--cov-fail-under=99 gate.
+
+The service ships with StubEmbeddingProvider wired in, which raises NotImplementedError — so the
+503 path is what production actually returns today, and the 200 path only exists once a real
+provider is configured. Both are covered here, the latter by swapping the module-level provider.
 """
+
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import main as main_module
 import pytest
-from fastapi import HTTPException
-from main import EmbeddingRequest, generate_embedding, liveness
-from providers.embedding_provider import EMBEDDING_DIMENSIONS, StubEmbeddingProvider
+from fastapi.testclient import TestClient
+
+import main as main_module
+from main import app
+from providers.embedding_provider import EmbeddingProvider
+
+client = TestClient(app)
 
 
-class _RecordingProvider:
-    """Succeeds, and remembers what it was asked to embed."""
+class _WorkingProvider(EmbeddingProvider):
+    """A provider that behaves like a configured one, for the success path."""
 
-    def __init__(self, dimensions: int = EMBEDDING_DIMENSIONS):
-        self.calls: list = []
+    def __init__(self, dimensions: int = 1536):
         self._dimensions = dimensions
+        self.calls: list[list[str]] = []
 
-    async def embed(self, texts):
+    async def embed(self, texts: list[str]) -> list[list[float]]:
         self.calls.append(texts)
         return [[0.0] * self._dimensions for _ in texts]
 
@@ -34,77 +39,54 @@ class _RecordingProvider:
         return self._dimensions
 
 
-def _request(**overrides) -> EmbeddingRequest:
-    payload = {
-        "text": "รายงานหน้างานประจำวัน",
+def _payload(**overrides) -> dict:
+    body = {
+        "text": "Concrete pour on level 3 completed",
         "entity_type": "site_report",
-        "entity_id": "22222222-2222-2222-2222-222222222222",
-        "tenant_id": "11111111-1111-1111-1111-111111111111",
+        "entity_id": "sr-1",
+        "tenant_id": "t1",
     }
-    payload.update(overrides)
-    return EmbeddingRequest(**payload)
+    body.update(overrides)
+    return body
 
 
 class TestLiveness:
-    @pytest.mark.asyncio
-    async def test_reports_ok_with_default_service_name(self, monkeypatch):
+    def test_reports_the_default_service_name(self, monkeypatch):
         monkeypatch.delenv("OTEL_SERVICE_NAME", raising=False)
-        assert await liveness() == {"status": "ok", "service": "ai-embedding-worker"}
+        resp = client.get("/health/live")
+        assert resp.status_code == 200
+        assert resp.json() == {"status": "ok", "service": "ai-embedding-worker"}
 
-    @pytest.mark.asyncio
-    async def test_service_name_comes_from_otel_env(self, monkeypatch):
-        monkeypatch.setenv("OTEL_SERVICE_NAME", "embed-canary")
-        assert (await liveness())["service"] == "embed-canary"
+    def test_reports_the_configured_service_name(self, monkeypatch):
+        monkeypatch.setenv("OTEL_SERVICE_NAME", "embedding-canary")
+        assert client.get("/health/live").json()["service"] == "embedding-canary"
 
 
 class TestGenerateEmbedding:
-    @pytest.mark.asyncio
-    async def test_returns_stored_with_the_provider_dimensions(self, monkeypatch):
-        provider = _RecordingProvider()
+    def test_503_while_the_stub_provider_is_wired(self):
+        """The shipped default: no real provider, so the endpoint must refuse, not fake a result."""
+        resp = client.post("/api/v1/embeddings/generate", json=_payload())
+        assert resp.status_code == 503
+        assert "not configured" in resp.json()["detail"]
+
+    def test_200_and_reports_dimensions_once_a_provider_is_configured(self, monkeypatch):
+        provider = _WorkingProvider(dimensions=1536)
         monkeypatch.setattr(main_module, "_provider", provider)
 
-        resp = await generate_embedding(_request())
+        resp = client.post("/api/v1/embeddings/generate", json=_payload(entity_id="sr-9"))
 
-        assert resp.entity_id == "22222222-2222-2222-2222-222222222222"
-        assert resp.dimensions == EMBEDDING_DIMENSIONS
-        assert resp.status == "stored"
+        assert resp.status_code == 200
+        assert resp.json() == {"entity_id": "sr-9", "dimensions": 1536, "status": "stored"}
+        # the request text is what gets embedded — one call, one text
+        assert provider.calls == [["Concrete pour on level 3 completed"]]
 
-    @pytest.mark.asyncio
-    async def test_embeds_the_request_text_as_a_single_item_batch(self, monkeypatch):
-        provider = _RecordingProvider()
-        monkeypatch.setattr(main_module, "_provider", provider)
+    def test_reports_whatever_dimension_count_the_provider_declares(self, monkeypatch):
+        monkeypatch.setattr(main_module, "_provider", _WorkingProvider(dimensions=3072))
+        resp = client.post("/api/v1/embeddings/generate", json=_payload())
+        assert resp.json()["dimensions"] == 3072
 
-        await generate_embedding(_request(text="ปูนซีเมนต์ 50 ถุง"))
-
-        assert provider.calls == [["ปูนซีเมนต์ 50 ถุง"]]
-
-    @pytest.mark.asyncio
-    async def test_dimensions_come_from_the_provider_not_a_constant(self, monkeypatch):
-        # Swapping the embedding model must change the reported width, or callers sizing a
-        # VECTOR(n) column would be told the wrong number.
-        monkeypatch.setattr(main_module, "_provider", _RecordingProvider(dimensions=768))
-
-        assert (await generate_embedding(_request())).dimensions == 768
-
-    @pytest.mark.asyncio
-    async def test_503_when_no_embedding_provider_is_configured(self, monkeypatch):
-        # Default deployment posture: the stub is wired until an API key exists → advertise
-        # unavailable rather than 500.
-        monkeypatch.setattr(main_module, "_provider", StubEmbeddingProvider())
-
-        with pytest.raises(HTTPException) as exc:
-            await generate_embedding(_request())
-
-        assert exc.value.status_code == 503
-        assert "not configured" in exc.value.detail
-
-
-class TestModuleWiring:
-    def test_defaults_to_the_stub_provider(self):
-        # main.py binds the provider at import; the default must be the safe 503 path.
-        assert isinstance(main_module._provider, StubEmbeddingProvider)
-
-    def test_endpoints_are_registered_at_the_spec_paths(self):
-        routes = {getattr(r, "path", None) for r in main_module.app.routes}
-        assert "/api/v1/embeddings/generate" in routes
-        assert "/health/live" in routes
+    @pytest.mark.parametrize("missing", ["text", "entity_type", "entity_id", "tenant_id"])
+    def test_rejects_a_body_missing_any_required_field(self, missing):
+        body = _payload()
+        del body[missing]
+        assert client.post("/api/v1/embeddings/generate", json=body).status_code == 422

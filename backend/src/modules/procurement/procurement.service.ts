@@ -2,7 +2,8 @@
 // Business logic: vendor management, PR, RFQ lifecycle, quotation comparison,
 //                 PO approval chain, delivery recording, invoice receipt.
 // Financial precision: decimal.js ROUND_HALF_UP throughout (spec §FINANCIAL PRECISION SPEC).
-// Emits typed Kafka events via @cos/shared KafkaProducer (QM-8).
+// Emits typed Kafka events through the Phase 8 OUTBOX (QM-8): every event is written to
+// platform.outbox_events in the same transaction as its business write (§35.13 ESC-13).
 // Temporal workflows started via @temporalio/client — NestJS does NOT inject workflow state.
 
 import {
@@ -19,7 +20,7 @@ import type { Request } from 'express';
 import { randomUUID } from 'crypto';
 import { Connection, Client } from '@temporalio/client';
 import { Decimal, calculateLineTotal, sumDecimals } from '@cos/financial';
-import { EventOutboxService } from '../../shared/events/event-outbox.service';
+import { buildOutboxEvent } from '../../shared/outbox/outbox.types';
 import { createLogger } from '@cos/logger';
 import { ProcurementRepository } from './procurement.repository';
 import { VendorScoring } from './vendor-scoring';
@@ -86,7 +87,6 @@ export class ProcurementService {
       tenantId?: string;
       user?: { user_id?: string; role?: string };
     },
-    private readonly outbox: EventOutboxService,
   ) {
     this.correlationId = randomUUID();
   }
@@ -233,16 +233,26 @@ export class ProcurementService {
       args: [workflowParams],
     });
 
-    await this.repo.setRfqWorkflowId(rfq.rfq_id, workflowId);
-
-    await this.publishEvent('procurement.rfq.created.v1', {
-      rfq_id: rfq.rfq_id,
-      pr_id: rfq.pr_id ?? null,
-      project_id: rfq.project_id,
-      rfq_number: rfq.rfq_number,
-      deadline: rfq.deadline.toISOString(),
-      created_by: this.userId,
-    });
+    // Outbox (§35.13 ESC-13): the event is written in the same transaction as this UPDATE, which
+    // is the last DB write of RFQ creation — ordering versus the workflow start is unchanged.
+    await this.repo.setRfqWorkflowId(
+      rfq.rfq_id,
+      workflowId,
+      buildOutboxEvent({
+        eventType: 'procurement.rfq.created.v1',
+        tenantId: this.tenantId,
+        actorId: this.userId,
+        correlationId: this.correlationId,
+        payload: {
+          rfq_id: rfq.rfq_id,
+          pr_id: rfq.pr_id ?? null,
+          project_id: rfq.project_id,
+          rfq_number: rfq.rfq_number,
+          deadline: rfq.deadline.toISOString(),
+          created_by: this.userId,
+        },
+      }),
+    );
 
     logger.info(
       { rfq_id: rfq.rfq_id, workflow_id: workflowId, tenant_id: this.tenantId },
@@ -436,25 +446,34 @@ export class ProcurementService {
       args: [workflowParams],
     });
 
-    await this.repo.setPoWorkflowId(po.po_id, workflowId);
-
-    await this.publishEvent('procurement.po.created.v1', {
-      po_id: po.po_id,
-      project_id: po.project_id,
-      vendor_id: po.vendor_id,
-      po_number: po.po_number,
-      total_amount: { amount: po.total_amount, currency_code: po.currency_code },
-      delivery_date: dto.delivery_date,
-      line_items: createdLines.map((li) => ({
-        item_id: li.line_id,
-        quantity: li.quantity,
-        unit: li.unit,
-        unit_price: li.unit_price,
-        // Carried so Finance can attribute the cost to a budget line without reading Procurement
-        // (TDD OQ-50). Null when the line was not ordered against a BOQ item.
-        boq_item_id: li.boq_item_id,
-      })),
-    });
+    // Outbox (§35.13 ESC-13) — same transaction as the last DB write of PO creation.
+    await this.repo.setPoWorkflowId(
+      po.po_id,
+      workflowId,
+      buildOutboxEvent({
+        eventType: 'procurement.po.created.v1',
+        tenantId: this.tenantId,
+        actorId: this.userId,
+        correlationId: this.correlationId,
+        payload: {
+          po_id: po.po_id,
+          project_id: po.project_id,
+          vendor_id: po.vendor_id,
+          po_number: po.po_number,
+          total_amount: { amount: po.total_amount, currency_code: po.currency_code },
+          delivery_date: dto.delivery_date,
+          line_items: createdLines.map((li) => ({
+            item_id: li.line_id,
+            quantity: li.quantity,
+            unit: li.unit,
+            unit_price: li.unit_price,
+            // Carried so Finance can attribute the cost to a budget line without reading
+            // Procurement (TDD OQ-50). Null when the line was not ordered against a BOQ item.
+            boq_item_id: li.boq_item_id,
+          })),
+        },
+      }),
+    );
 
     logger.info(
       { po_id: po.po_id, workflow_id: workflowId, tenant_id: this.tenantId },
@@ -557,23 +576,51 @@ export class ProcurementService {
       );
     }
 
-    const created = await this.repo.createDelivery({
-      delivery_id: dto.client_id,
-      po_id,
-      delivery_note: dto.delivery_note,
-      delivered_at: dto.delivered_at,
-      received_by: this.userId,
-      notes: dto.notes,
-      items: dto.items.map((i) => ({
-        line_id: i.line_id,
-        quantity_received: i.quantity_received,
-      })),
-    });
+    // Outbox (§35.13 ESC-13): the delivery rows, the derived `is_partial` flag and the event are
+    // now all produced inside ONE transaction. `is_partial` depends on the rows just inserted, so
+    // it is computed in the repository rather than re-queried afterwards.
+    //
+    // `delivery_id` carries dto.client_id so an offline replay lands on ON CONFLICT DO NOTHING
+    // instead of double-counting goods received.
+    const created = await this.repo.createDelivery(
+      {
+        delivery_id: dto.client_id,
+        po_id,
+        delivery_note: dto.delivery_note,
+        delivered_at: dto.delivered_at,
+        received_by: this.userId,
+        notes: dto.notes,
+        items: dto.items.map((i) => ({
+          line_id: i.line_id,
+          quantity_received: i.quantity_received,
+        })),
+      },
+      (ctx) =>
+        buildOutboxEvent({
+          eventType: 'procurement.delivery.received.v1',
+          tenantId: this.tenantId,
+          actorId: this.userId,
+          correlationId: this.correlationId,
+          payload: {
+            delivery_id: ctx.delivery.delivery_id,
+            po_id,
+            project_id: po.project_id,
+            vendor_id: po.vendor_id,
+            received_by: this.userId,
+            received_at: dto.delivered_at,
+            items_received: ctx.items.map((i) => ({
+              item_id: i.line_id,
+              quantity_received: i.quantity_received,
+            })),
+            partial: ctx.is_partial,
+          },
+        }),
+    );
 
     // ALREADY RECORDED — a replay of a delivery queued at the gate. Return the existing row and run
     // none of what follows: the quantities are already counted, the Temporal workflow was already
-    // signalled, and `procurement.delivery.received.v1` was already published. Re-running any of the
-    // three is how a partially-delivered PO gets closed on goods that arrived once.
+    // signalled, and `procurement.delivery.received.v1` was already written to the outbox. Re-running
+    // any of the three is how a partially-delivered PO gets closed on goods that arrived once.
     if (!created) {
       const existing = dto.client_id ? await this.repo.findDeliveryById(dto.client_id) : null;
       if (existing) {
@@ -596,37 +643,13 @@ export class ProcurementService {
       });
     }
 
-    const { delivery, items } = created;
-
-    // Determine partial vs. complete delivery
-    const lineItems = await this.repo.findLineItemsByPo(po_id);
-    const allFulfilled = await Promise.all(
-      lineItems.map(async (li) => {
-        const delivered = new Decimal(await this.repo.sumDeliveredQuantity(li.line_id));
-        return delivered.greaterThanOrEqualTo(new Decimal(li.quantity));
-      }),
-    );
-    const is_partial = !allFulfilled.every(Boolean);
+    const { delivery, is_partial } = created;
 
     // Signal Temporal workflow
     const handle = await this.getPoWorkflowHandle(po);
     await handle.signal(recordDeliverySignal, {
       delivery_id: delivery.delivery_id,
       is_partial,
-    });
-
-    await this.publishEvent('procurement.delivery.received.v1', {
-      delivery_id: delivery.delivery_id,
-      po_id,
-      project_id: po.project_id,
-      vendor_id: po.vendor_id,
-      received_by: this.userId,
-      received_at: dto.delivered_at,
-      items_received: items.map((i) => ({
-        item_id: i.line_id,
-        quantity_received: i.quantity_received,
-      })),
-      partial: is_partial,
     });
 
     logger.info(
@@ -643,29 +666,38 @@ export class ProcurementService {
     const po_id = dto.po_id;
     const po = await this.assertPoStatus(po_id, 'FULLY_DELIVERED');
 
-    const invoice = await this.repo.createInvoice({
-      po_id,
-      vendor_id: po.vendor_id,
-      invoice_number: dto.invoice_number,
-      amount: dto.amount,
-      currency_code: dto.currency_code,
-      invoice_date: dto.invoice_date,
-      due_date: dto.due_date,
-      file_id: dto.file_id,
-    });
+    // Outbox (§35.13 ESC-13) — written in the INSERT's transaction, from the inserted row.
+    const invoice = await this.repo.createInvoice(
+      {
+        po_id,
+        vendor_id: po.vendor_id,
+        invoice_number: dto.invoice_number,
+        amount: dto.amount,
+        currency_code: dto.currency_code,
+        invoice_date: dto.invoice_date,
+        due_date: dto.due_date,
+        file_id: dto.file_id,
+      },
+      (row) =>
+        buildOutboxEvent({
+          eventType: 'procurement.invoice.received.v1',
+          tenantId: this.tenantId,
+          actorId: this.userId,
+          correlationId: this.correlationId,
+          payload: {
+            invoice_id: row.invoice_id,
+            po_id,
+            project_id: po.project_id,
+            vendor_id: po.vendor_id,
+            amount: { amount: row.amount, currency_code: row.currency_code },
+            invoice_date: dto.invoice_date,
+            due_date: dto.due_date,
+          },
+        }),
+    );
 
     const handle = await this.getPoWorkflowHandle(po);
     await handle.signal(receiveInvoiceSignal, { invoice_id: invoice.invoice_id });
-
-    await this.publishEvent('procurement.invoice.received.v1', {
-      invoice_id: invoice.invoice_id,
-      po_id,
-      project_id: po.project_id,
-      vendor_id: po.vendor_id,
-      amount: { amount: invoice.amount, currency_code: invoice.currency_code },
-      invoice_date: dto.invoice_date,
-      due_date: dto.due_date,
-    });
 
     logger.info(
       { invoice_id: invoice.invoice_id, po_id, tenant_id: this.tenantId },
@@ -686,23 +718,33 @@ export class ProcurementService {
       );
     }
 
-    await this.repo.updateInvoiceStatus(invoice_id, 'APPROVED');
-
+    // The PO is read BEFORE the status update so the event payload can be built for the same
+    // transaction (§35.13 ESC-13); it is a read, so the order change is safe.
     const po = await this.repo.findPoById(po_id);
 
-    await this.publishEvent('procurement.vendor_invoice.approved.v1', {
+    await this.repo.updateInvoiceStatus(
       invoice_id,
-      po_id,
-      project_id: po?.project_id ?? '',
-      vendor_id: invoice.vendor_id,
-      amount: { amount: invoice.amount, currency_code: invoice.currency_code },
-      approved_by: this.userId,
-      approved_at: new Date().toISOString(),
-      payment_due:
-        invoice.due_date instanceof Date
-          ? invoice.due_date.toISOString().slice(0, 10)
-          : invoice.due_date,
-    });
+      'APPROVED',
+      buildOutboxEvent({
+        eventType: 'procurement.vendor_invoice.approved.v1',
+        tenantId: this.tenantId,
+        actorId: this.userId,
+        correlationId: this.correlationId,
+        payload: {
+          invoice_id,
+          po_id,
+          project_id: po?.project_id ?? '',
+          vendor_id: invoice.vendor_id,
+          amount: { amount: invoice.amount, currency_code: invoice.currency_code },
+          approved_by: this.userId,
+          approved_at: new Date().toISOString(),
+          payment_due:
+            invoice.due_date instanceof Date
+              ? invoice.due_date.toISOString().slice(0, 10)
+              : invoice.due_date,
+        },
+      }),
+    );
 
     logger.info({ invoice_id, po_id, actor_id: this.userId }, 'invoice.approved');
     return { ...invoice, status: 'APPROVED' };
@@ -860,18 +902,5 @@ export class ProcurementService {
     }
     const client = await this.getTemporalClient();
     return client.workflow.getHandle(po.temporal_workflow_id);
-  }
-
-  /** Queue a domain event. Durable and off the request path — see EventOutboxService. */
-  private async publishEvent<T>(eventType: string, payload: T): Promise<void> {
-    await this.outbox.publish({
-      event_type: eventType,
-      event_version: '1.0',
-      tenant_id: this.tenantId,
-      actor_id: this.userId,
-      occurred_at: new Date().toISOString(),
-      correlation_id: this.correlationId,
-      payload,
-    });
   }
 }

@@ -1,7 +1,8 @@
 // SiteOps Service — Phase 6
 // Business logic: site reports, offline sync, issue tracking, inspections, conflict resolution.
 // Conflict strategies per spec §Phase 6 (QM-9): LAST_WRITE_WINS, FIELD_LEVEL_MERGE, SERVER_WINS.
-// Emits typed Kafka events via @cos/shared KafkaProducer.
+// Emits typed events through the Phase 8 OUTBOX (§35.13 ESC-13) — written inside the business
+// transaction by the repository, relayed to Kafka by OutboxPollerService.
 
 import {
   Injectable,
@@ -17,6 +18,7 @@ import { randomUUID } from 'crypto';
 import { Client as OpenSearchClient } from '@opensearch-project/opensearch';
 import { EventOutboxService } from '../../shared/events/event-outbox.service';
 import { createLogger } from '@cos/logger';
+import { buildOutboxEvent } from '../../shared/outbox/outbox.types';
 import { SiteOpsRepository } from './site-ops.repository';
 import type {
   IssueRow,
@@ -25,13 +27,14 @@ import type {
   MaterialConsumptionRow,
 } from './site-ops.repository';
 import { UUID_PATTERN } from '../../shared/prisma/assert-safe-tenant-id';
-import { resolveReportConflict, resolveIssueConflict } from './conflict-handler';
-import type { ConflictStatus } from './conflict-handler';
+import { resolveReportConflict, resolveIssueConflict } from '../../shared/sync/conflict-handler';
+import type { ConflictStatus } from '../../shared/sync/conflict-handler';
 import type { CreateSiteReportDto } from './dto/create-site-report.dto';
 import type { SyncSiteReportsDto } from './dto/sync-site-reports.dto';
 import type { CreateIssueDto } from './dto/create-issue.dto';
 import type { UpdateIssueDto } from './dto/update-issue.dto';
-import type { SubmitInspectionDto } from './dto/submit-inspection.dto';
+import type { ChangeIssueStatusDto } from './dto/change-issue-status.dto';
+import type { SubmitInspectionDto } from './public/submit-inspection.dto';
 import type { UpdateInspectionDto } from './dto/update-inspection.dto';
 import type { CreateMaterialConsumptionDto } from './dto/create-material-consumption.dto';
 
@@ -75,23 +78,61 @@ export class SiteOpsService {
 
   // ── Site Reports ──────────────────────────────────────────────────────────
 
+  /**
+   * Refuse a write whose project does not exist in this tenant, before it reaches the FOREIGN KEY.
+   *
+   * site_reports, issues and inspections all reference projects.projects. Letting an unknown
+   * project_id through produced SQLSTATE 23503, which nothing maps, so the client received a bare
+   * 500 for a request error. buildings.service already answers 404 with a COS-* code for the same
+   * mistake (COS-BLDG-002); this is that rule, applied where the other half of the codebase needed it.
+   *
+   * Tenant-scoped on purpose: a project in ANOTHER tenant must read as "not found", not as a
+   * permission error, so the check cannot be used to probe for foreign project ids.
+   */
+  private async assertProjectExists(projectId: string): Promise<void> {
+    if (!(await this.repo.projectExists(projectId))) {
+      throw new NotFoundException({
+        error: {
+          code: 'COS-SITE-004',
+          message: 'Project not found',
+          messageKey: 'siteops.error.projectNotFound',
+          traceId: this.correlationId,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+  }
+
   async createSiteReport(dto: CreateSiteReportDto) {
+    await this.assertProjectExists(dto.project_id);
     const reportId = randomUUID();
-    const report = await this.repo.createSiteReport({
-      report_id: reportId,
-      project_id: dto.project_id,
-      submitted_by: this.userId,
-      report_date: dto.report_date,
-      summary: dto.summary ?? null,
-      blockers: dto.blockers ?? null,
-      blocker_category: dto.blocker_category ?? null,
-      weather: dto.weather ?? null,
-      manpower_count: dto.manpower_count ?? null,
-      shift: dto.shift ?? null,
-      client_submitted_at: dto.client_submitted_at ?? null,
-      latitude: dto.latitude ?? null,
-      longitude: dto.longitude ?? null,
-    });
+    const report = await this.repo.createSiteReport(
+      {
+        report_id: reportId,
+        project_id: dto.project_id,
+        submitted_by: this.userId,
+        report_date: dto.report_date,
+        summary: dto.summary ?? null,
+        blockers: dto.blockers ?? null,
+        blocker_category: dto.blocker_category ?? null,
+        weather: dto.weather ?? null,
+        manpower_count: dto.manpower_count ?? null,
+        shift: dto.shift ?? null,
+        client_submitted_at: dto.client_submitted_at ?? null,
+        latitude: dto.latitude ?? null,
+        longitude: dto.longitude ?? null,
+      },
+      // site.report.created.v1 rides the INSERT (§35.13 ESC-13), so it is not published again below.
+      this.outboxEvent('site.report.created.v1', {
+        report_id: reportId,
+        project_id: dto.project_id,
+        report_date: dto.report_date,
+        submitted_by: this.userId,
+        summary: dto.summary ?? '',
+        issue_count: 0,
+        photo_count: 0,
+      }),
+    );
 
     // Per-trade breakdown → site_ops.manpower_logs. Written against the row's OWN report_id, not
     // `reportId`: createSiteReport upserts on (project_id, report_date, submitted_by), so resubmitting
@@ -109,16 +150,6 @@ export class SiteOpsService {
         })),
       );
     }
-
-    await this.emitEvent('site.report.created.v1', {
-      report_id: report.report_id,
-      project_id: report.project_id,
-      report_date: dto.report_date,
-      submitted_by: this.userId,
-      summary: dto.summary ?? '',
-      issue_count: 0,
-      photo_count: 0,
-    });
 
     logger.info({
       event: 'site-report.created',
@@ -188,26 +219,27 @@ export class SiteOpsService {
 
       if (!existing) {
         // New report — accept directly
-        const report = await this.repo.createSiteReport({
-          report_id: item.client_id,
-          project_id: item.project_id,
-          submitted_by: this.userId,
-          report_date: item.report_date,
-          summary: item.summary ?? null,
-          blockers: item.blockers ?? null,
-          weather: item.weather ?? null,
-          manpower_count: item.manpower_count ?? null,
-          client_submitted_at: item.client_submitted_at ?? null,
-          latitude: item.latitude ?? null,
-          longitude: item.longitude ?? null,
-        });
-
-        await this.emitEvent('site.report.submitted.v1', {
-          report_id: report.report_id,
-          project_id: report.project_id,
-          report_date: item.report_date,
-          submitted_by: this.userId,
-        });
+        const report = await this.repo.createSiteReport(
+          {
+            report_id: item.client_id,
+            project_id: item.project_id,
+            submitted_by: this.userId,
+            report_date: item.report_date,
+            summary: item.summary ?? null,
+            blockers: item.blockers ?? null,
+            weather: item.weather ?? null,
+            manpower_count: item.manpower_count ?? null,
+            client_submitted_at: item.client_submitted_at ?? null,
+            latitude: item.latitude ?? null,
+            longitude: item.longitude ?? null,
+          },
+          this.outboxEvent('site.report.submitted.v1', {
+            report_id: item.client_id,
+            project_id: item.project_id,
+            report_date: item.report_date,
+            submitted_by: this.userId,
+          }),
+        );
 
         results.push({
           client_id: item.client_id,
@@ -277,20 +309,22 @@ export class SiteOpsService {
 
       if (resolution.conflict_status === 'CONFLICT_FLAGGED') {
         const conflictId = randomUUID();
-        await this.repo.createConflictRecord({
-          conflict_id: conflictId,
-          entity_type: 'site_reports',
-          entity_id: existing.report_id,
-          client_payload: clientPayload,
-          server_payload: serverRow,
-          conflict_type: 'FIELD_CONFLICT',
-        });
-        await this.emitEvent('site.conflict.flagged.v1', {
-          conflict_id: conflictId,
-          entity_type: 'site_reports',
-          entity_id: existing.report_id,
-          conflict_type: 'FIELD_CONFLICT',
-        });
+        await this.repo.createConflictRecord(
+          {
+            conflict_id: conflictId,
+            entity_type: 'site_reports',
+            entity_id: existing.report_id,
+            client_payload: clientPayload,
+            server_payload: serverRow,
+            conflict_type: 'FIELD_CONFLICT',
+          },
+          this.outboxEvent('site.conflict.flagged.v1', {
+            conflict_id: conflictId,
+            entity_type: 'site_reports',
+            entity_id: existing.report_id,
+            conflict_type: 'FIELD_CONFLICT',
+          }),
+        );
       }
 
       results.push({
@@ -319,6 +353,7 @@ export class SiteOpsService {
    * the insert at all; the ON CONFLICT in the repository still covers two replays racing each other.
    */
   async createIssue(dto: CreateIssueDto) {
+    await this.assertProjectExists(dto.project_id);
     // Use the client-provided id when present (offline create → photo linkage, G-M11); else generate.
     const issueId = dto.client_id ?? randomUUID();
 
@@ -338,23 +373,35 @@ export class SiteOpsService {
     // Server assigns the human-readable number (ADR-069) — not the offline client, which cannot know
     // the tenant's next ISS-<year>-<seq>.
     const issueNumber = await this.repo.nextIssueNumber(new Date().getFullYear());
-    const created = await this.repo.createIssue({
-      issue_id: issueId,
-      issue_number: issueNumber,
-      project_id: dto.project_id,
-      report_id: dto.report_id ?? null,
-      title: dto.title,
-      description: dto.description ?? null,
-      severity: dto.severity,
-      issue_type: dto.issue_type ?? null, // null → the column DEFAULT 'GENERAL' (see repository)
-      assigned_to: dto.assigned_to ?? null,
-      // The same value the event below carries — now persisted on the row too, so a PDPA export can
-      // find it. The event stream is a publish queue, not a queryable record of who raised what.
-      created_by: this.userId,
-      client_submitted_at: dto.client_submitted_at ?? null,
-      latitude: dto.latitude ?? null,
-      longitude: dto.longitude ?? null,
-    });
+    const created = await this.repo.createIssue(
+      {
+        issue_id: issueId,
+        issue_number: issueNumber,
+        project_id: dto.project_id,
+        report_id: dto.report_id ?? null,
+        title: dto.title,
+        description: dto.description ?? null,
+        severity: dto.severity,
+        issue_type: dto.issue_type ?? null, // null → the column DEFAULT 'GENERAL' (see repository)
+        assigned_to: dto.assigned_to ?? null,
+        // The same value the event carries — now persisted on the row too, so a PDPA export can find
+        // it. The event stream is a publish queue, not a queryable record of who raised what.
+        created_by: this.userId,
+        client_submitted_at: dto.client_submitted_at ?? null,
+        latitude: dto.latitude ?? null,
+        longitude: dto.longitude ?? null,
+      },
+      // Written inside the INSERT's transaction (§35.13 ESC-13). On a replayed create the INSERT
+      // does nothing and returns no row, so no second event is written either.
+      this.outboxEvent('site.issue.created.v1', {
+        issue_id: issueId,
+        project_id: dto.project_id,
+        report_id: dto.report_id ?? null,
+        title: dto.title,
+        severity: dto.severity,
+        created_by: this.userId,
+      }),
+    );
 
     // Nothing returned means a concurrent replay inserted it between the check above and the INSERT.
     if (!created) {
@@ -371,15 +418,6 @@ export class SiteOpsService {
       });
     }
     const issue = created;
-
-    await this.emitEvent('site.issue.created.v1', {
-      issue_id: issue.issue_id,
-      project_id: issue.project_id,
-      report_id: issue.report_id,
-      title: issue.title,
-      severity: issue.severity,
-      created_by: this.userId,
-    });
 
     logger.info({
       event: 'issue.created',
@@ -399,13 +437,17 @@ export class SiteOpsService {
     if (!issue) {
       throw new NotFoundException({ error: { code: 'COS-SITE-002', message: 'Issue not found' } });
     }
-    await this.emitEvent('site.issue.escalated.v1', {
-      issue_id: issue.issue_id,
-      project_id: issue.project_id,
-      title: issue.title,
-      severity: issue.severity,
-      escalated_by: this.userId,
-    });
+    // Non-destructive by design: no issue field changes, so there is no row to be atomic *with*.
+    // The outbox is still used, as the durable at-least-once relay the direct publish was not.
+    await this.repo.writeOutboxEvent(
+      this.outboxEvent('site.issue.escalated.v1', {
+        issue_id: issue.issue_id,
+        project_id: issue.project_id,
+        title: issue.title,
+        severity: issue.severity,
+        escalated_by: this.userId,
+      }),
+    );
     logger.info({
       event: 'issue.escalated',
       issue_id: issue.issue_id,
@@ -414,6 +456,59 @@ export class SiteOpsService {
       trace_id: this.correlationId,
     });
     return { issue_id: issue.issue_id, status: 'ESCALATED' as const };
+  }
+
+  /**
+   * Direct status transition — `PATCH /api/v1/site/issues/:issueId/status` (§35.13 ESC-21).
+   *
+   * `updateIssue` carries offline-sync semantics: FIELD_LEVEL_MERGE makes the server's status
+   * authoritative, so a status sent there is discarded by design. That left `issues.status` with
+   * no writer at all — every issue stayed OPEN for its whole life and
+   * `site.issue.status_changed.v1`, which the master spec lists as a required Phase 6 producer,
+   * could never be emitted. This endpoint is that writer.
+   */
+  async changeIssueStatus(issueId: string, dto: ChangeIssueStatusDto): Promise<IssueRow> {
+    const existing = await this.repo.findIssueById(issueId);
+    if (!existing) {
+      throw new NotFoundException({ code: 'COS-SITE-002', message: 'Issue not found' });
+    }
+
+    const fromStatus = existing.status;
+    const toStatus = dto.status;
+
+    // A no-op transition still persists resolution_note, but emits nothing — the event contract is
+    // "status changed", and re-announcing an unchanged status would be a false transition.
+    const updated = await this.repo.updateIssueStatus(
+      issueId,
+      toStatus,
+      dto.resolution_note ?? null,
+      fromStatus === toStatus
+        ? undefined
+        : (row) =>
+            this.outboxEvent('site.issue.status_changed.v1', {
+              issue_id: issueId,
+              project_id: row.project_id,
+              from_status: fromStatus,
+              to_status: toStatus,
+            }),
+    );
+
+    /* istanbul ignore next -- the row was read above in the same request; a concurrent hard delete
+       is the only way to miss it, and site_ops.issues has no delete path. */
+    if (!updated) {
+      throw new NotFoundException({ code: 'COS-SITE-002', message: 'Issue not found' });
+    }
+
+    logger.info({
+      event: 'issue.status_changed',
+      issue_id: issueId,
+      from_status: fromStatus,
+      to_status: toStatus,
+      tenant_id: this.tenantId,
+      trace_id: this.correlationId,
+    });
+
+    return updated;
   }
 
   async updateIssue(issueId: string, dto: UpdateIssueDto) {
@@ -446,38 +541,59 @@ export class SiteOpsService {
     }
 
     const resolved = resolution.resolved_payload;
+
+    // A status event IS emitted below when the status actually moves. FIELD_LEVEL_MERGE makes the
+    // server authoritative only in a genuine conflict; with none, the resolver applies the client's
+    // status (`clientStatus ?? serverRow.status`), so `resolved.status` can differ from
+    // `existing.status`. changeIssueStatus() below remains the explicit route (§35.13 ESC-21).
     const updated = await this.repo.updateIssue(issueId, {
       description: resolved['description'] as string | null,
-      severity: resolved['severity'] as string,
+      // severity is NOT one of the fields master:2583-2589 merges, so nothing makes the server
+      // authoritative over it. Taking it off `resolved` — which is built from the server row —
+      // fed the stored value straight back, and the repository's COALESCE turned every severity
+      // change into a no-op. It comes from the client, like any ordinary update field.
+      severity: dto.severity,
       status: resolved['status'] as string,
-      assigned_to: dto.assigned_to ?? null,
+      // Passed through UNTOUCHED. The repository distinguishes "not mentioned" (keep) from an
+      // explicit value via `patch.assigned_to !== undefined`, and `?? null` here made that test
+      // permanently true — so any edit that did not name an assignee silently un-assigned the
+      // issue, with nobody told the work now had no owner.
+      assigned_to: dto.assigned_to,
       resolution_note: resolved['resolution_note'] as string | null,
       client_submitted_at: dto.client_submitted_at ?? null,
     });
 
     if (resolution.conflict_status === 'CONFLICT_FLAGGED') {
       const conflictId = randomUUID();
-      await this.repo.createConflictRecord({
-        conflict_id: conflictId,
-        entity_type: 'issues',
-        entity_id: issueId,
-        client_payload: clientPayload,
-        server_payload: serverRow,
-        conflict_type: 'STATUS_CONFLICT',
-      });
-      await this.emitEvent('site.conflict.flagged.v1', {
-        conflict_id: conflictId,
-        entity_type: 'issues',
-        entity_id: issueId,
-        conflict_type: 'STATUS_CONFLICT',
-      });
+      await this.repo.createConflictRecord(
+        {
+          conflict_id: conflictId,
+          entity_type: 'issues',
+          entity_id: issueId,
+          client_payload: clientPayload,
+          server_payload: serverRow,
+          conflict_type: 'STATUS_CONFLICT',
+        },
+        this.outboxEvent('site.conflict.flagged.v1', {
+          conflict_id: conflictId,
+          entity_type: 'issues',
+          entity_id: issueId,
+          conflict_type: 'STATUS_CONFLICT',
+        }),
+      );
     }
 
+    // Both branches are reachable now that a client may actually move an issue's status. They were
+    // marked `istanbul ignore next` while resolveIssueConflict wrote the server's own status back on
+    // every request, which made `fromStatus !== toStatus` permanently false — the ignore silenced the
+    // coverage gate that would otherwise have reported this event as dead code.
     const fromStatus = existing.status;
-    /* istanbul ignore next */
-    const toStatus = (resolved['status'] as IssueRow['status']) ?? existing.status;
-    /* istanbul ignore next */
+    // resolveIssueConflict always sets `status` on the payload it returns — either the server's or
+    // the client's — so there is no absent case left to fall back from.
+    const toStatus = resolved['status'] as IssueRow['status'];
     if (fromStatus !== toStatus) {
+      // The update above has already committed, so this cannot ride its transaction: emitEvent is
+      // the durable publisher (EventOutboxService), not a direct Kafka write.
       await this.emitEvent('site.issue.status_changed.v1', {
         issue_id: issueId,
         project_id: existing.project_id,
@@ -508,6 +624,7 @@ export class SiteOpsService {
   // ── Inspections ───────────────────────────────────────────────────────────
 
   async submitInspection(dto: SubmitInspectionDto) {
+    await this.assertProjectExists(dto.project_id);
     const checklist = await this.repo.findChecklistById(dto.checklist_id);
     if (!checklist) {
       throw new NotFoundException({
@@ -516,26 +633,14 @@ export class SiteOpsService {
     }
 
     const inspectionId = randomUUID();
-    const inspection = await this.repo.createInspection({
-      inspection_id: inspectionId,
-      project_id: dto.project_id,
-      checklist_id: dto.checklist_id,
-      status: dto.status,
-      inspected_by: this.userId,
-      inspected_at: dto.inspected_at,
-      notes: dto.notes ?? null,
-      issue_severity: dto.issue_severity ?? null, // spec 11 §517 — set on FAILED/conditional
-      // Drawn attestation mark (migration 20260808000002). Absent → NULL, i.e. "not signed"; the
-      // authoritative attribution stays `inspected_by` + `inspected_at`, which are always set.
-      signature: dto.signature ?? null,
-      latitude: dto.latitude ?? null,
-      longitude: dto.longitude ?? null,
-    });
 
+    // The outcome event is decided from the DTO, so it rides the INSERT (§35.13 ESC-13):
+    // a rolled-back inspection can never report a PASSED/FAILED result.
+    let outcome: ReturnType<typeof this.outboxEvent> | undefined;
     if (dto.status === 'PASSED') {
-      await this.emitEvent('site.inspection.passed.v1', {
-        inspection_id: inspection.inspection_id,
-        project_id: inspection.project_id,
+      outcome = this.outboxEvent('site.inspection.passed.v1', {
+        inspection_id: inspectionId,
+        project_id: dto.project_id,
         inspected_by: this.userId,
       });
     } else if (dto.status === 'FAILED') {
@@ -548,9 +653,9 @@ export class SiteOpsService {
         }>
       ).filter((i) => i.is_required);
 
-      await this.emitEvent('site.inspection.failed.v1', {
-        inspection_id: inspection.inspection_id,
-        project_id: inspection.project_id,
+      outcome = this.outboxEvent('site.inspection.failed.v1', {
+        inspection_id: inspectionId,
+        project_id: dto.project_id,
         checklist_id: dto.checklist_id,
         failed_items: checklistItems.map((i) => ({
           item_id: i.item_id,
@@ -561,7 +666,7 @@ export class SiteOpsService {
       });
 
       // A failed required item on a safety checklist IS a safety violation (§20.2 "Violation
-      // alerts"; TDD OQ-35). `19-notification-architecture` §19.6 names SafetyViolationDetected as
+      // alerts"; TDD OQ-35). `19-notification-architecture` §19.6 names the un-disableable safety notification as
       // one of two notifications a user may not disable, and until 2026-08-22 nothing produced it —
       // the name appeared in §19.6 and §16 and nowhere else, so the un-disableable set had an
       // unknown size.
@@ -573,18 +678,37 @@ export class SiteOpsService {
       //
       // Deliberately SEPARATE from site.inspection.failed.v1 rather than folded into it. They route
       // differently and must: inspection.failed alerts SITE_ENGINEER + PROJECT_MANAGER and is
-      // ordinarily disableable, while a violation is in §19.6's critical set and is not. Merging
+      // ordinarily disableable, while a compliance failure is in §19.6's critical set and is not. Merging
       // them would make one of those two properties wrong.
-      await this.emitEvent('safety.violation.detected.v1', {
-        violation_type: 'CHECKLIST_ITEM_FAILED',
-        project_id: inspection.project_id,
-        inspection_id: inspection.inspection_id,
+      await this.emitEvent('safety.compliance.failed.v1', {
+        failure_type: 'CHECKLIST_ITEM_FAILED',
+        project_id: dto.project_id,
+        inspection_id: inspectionId,
         checklist_id: dto.checklist_id,
         failed_item_count: checklistItems.length,
         detected_by: 'CHECKLIST_SUBMISSION',
         detail: `Safety checklist failed with ${checklistItems.length} required item(s) outstanding`,
       });
     }
+
+    const inspection = await this.repo.createInspection(
+      {
+        inspection_id: inspectionId,
+        project_id: dto.project_id,
+        checklist_id: dto.checklist_id,
+        status: dto.status,
+        inspected_by: this.userId,
+        inspected_at: dto.inspected_at,
+        notes: dto.notes ?? null,
+        issue_severity: dto.issue_severity ?? null, // spec 11 §517 — set on FAILED/conditional
+        // Drawn attestation mark (migration 20260808000002). Absent → NULL, i.e. "not signed"; the
+        // authoritative attribution stays `inspected_by` + `inspected_at`, which are always set.
+        signature: dto.signature ?? null,
+        latitude: dto.latitude ?? null,
+        longitude: dto.longitude ?? null,
+      },
+      outcome,
+    );
 
     logger.info({
       event: 'inspection.submitted',
@@ -633,26 +757,30 @@ export class SiteOpsService {
       });
     }
 
-    const updated = await this.repo.updateInspectionStatus({
-      inspection_id: inspectionId,
-      status: dto.status,
-      notes: dto.notes ?? null,
-    });
-
-    if (dto.status === 'PASSED') {
-      await this.emitEvent('site.inspection.passed.v1', {
+    // Builder over the UPDATEd row — project_id and checklist_id come from the row (§35.13 ESC-13).
+    const updated = await this.repo.updateInspectionStatus(
+      {
         inspection_id: inspectionId,
-        project_id: updated.project_id,
-        inspected_by: this.userId,
-      });
-    } else if (dto.status === 'FAILED') {
-      await this.emitEvent('site.inspection.failed.v1', {
-        inspection_id: inspectionId,
-        project_id: updated.project_id,
-        checklist_id: updated.checklist_id,
-        inspected_by: this.userId,
-      });
-    }
+        status: dto.status,
+        notes: dto.notes ?? null,
+      },
+      dto.status === 'PASSED'
+        ? (row) =>
+            this.outboxEvent('site.inspection.passed.v1', {
+              inspection_id: inspectionId,
+              project_id: row.project_id,
+              inspected_by: this.userId,
+            })
+        : dto.status === 'FAILED'
+          ? (row) =>
+              this.outboxEvent('site.inspection.failed.v1', {
+                inspection_id: inspectionId,
+                project_id: row.project_id,
+                checklist_id: row.checklist_id,
+                inspected_by: this.userId,
+              })
+          : undefined,
+    );
 
     logger.info({
       event: 'inspection.updated',
@@ -690,28 +818,30 @@ export class SiteOpsService {
     // fall back to the historical random id and let the consumption through unchanged.
     const masterMaterialId = await this.repo.findMaterialIdByName(dto.material_name);
     const materialId = masterMaterialId ?? randomUUID();
-    const row = await this.repo.insertMaterialConsumption({
-      consumption_id: consumptionId,
-      project_id: report.project_id,
-      report_id: reportId,
-      material_name: dto.material_name,
-      material_id: materialId,
-      task_id: dto.task_id ?? null,
-      quantity: dto.quantity,
-      unit: dto.unit,
-      consumed_by: this.userId,
-      consumed_at: dto.consumed_at,
-    });
-    await this.emitEvent('site.material.consumed.v1', {
-      consumption_id: row.consumption_id,
-      project_id: row.project_id,
-      task_id: row.task_id ?? '',
-      material_id: row.material_id,
-      quantity: row.quantity,
-      unit: row.unit,
-      consumed_by: row.consumed_by,
-      consumed_at: new Date(row.consumed_at).toISOString(),
-    });
+    const row = await this.repo.insertMaterialConsumption(
+      {
+        consumption_id: consumptionId,
+        project_id: report.project_id,
+        report_id: reportId,
+        material_name: dto.material_name,
+        material_id: materialId,
+        task_id: dto.task_id ?? null,
+        quantity: dto.quantity,
+        unit: dto.unit,
+        consumed_by: this.userId,
+        consumed_at: dto.consumed_at,
+      },
+      this.outboxEvent('site.material.consumed.v1', {
+        consumption_id: consumptionId,
+        project_id: report.project_id,
+        task_id: dto.task_id ?? '',
+        material_id: materialId,
+        quantity: dto.quantity,
+        unit: dto.unit,
+        consumed_by: this.userId,
+        consumed_at: new Date(dto.consumed_at).toISOString(),
+      }),
+    );
     logger.info({
       event: 'material.consumed',
       consumption_id: consumptionId,
@@ -803,7 +933,27 @@ export class SiteOpsService {
 
   // ── Private helpers ───────────────────────────────────────────────────────
 
-  /** Queue a domain event. Durable and off the request path — see EventOutboxService. */
+  /**
+   * Builds the outbox envelope handed to the repository write that anchors it (§35.13 ESC-13).
+   * Replaces the previous `emitEvent`, which published directly to Kafka and logged failures as
+   * `kafka.publish.failed` — so every site event was silently lost during a broker outage, and
+   * offline-sync clients had no way to tell.
+   */
+  private outboxEvent(eventType: string, payload: Record<string, unknown>) {
+    return buildOutboxEvent({
+      eventType,
+      tenantId: this.tenantId,
+      actorId: this.userId,
+      correlationId: this.correlationId,
+      payload,
+    });
+  }
+
+  /**
+   * Queue a domain event with no row of its own to anchor to. Durable and off the request path
+   * (EventOutboxService), but not transactional: prefer outboxEvent() above whenever the event
+   * accompanies a write this service controls.
+   */
   private async emitEvent(eventType: string, payload: Record<string, unknown>): Promise<void> {
     await this.outbox.publish({
       event_type: eventType,
@@ -834,11 +984,14 @@ export class SiteOpsService {
     params: { project_id?: string; minimal?: boolean },
   ): Promise<SiteReportRow[]> {
     try {
+      // §35.13 ESC-32: .keyword, not the bare field — dynamic mapping stores these strings as
+      // analyzed `text` with a `.keyword` sub-field, and a `term` on the analyzed field never
+      // matches a UUID. See the fuller note in project.service.ts.
       const must: Record<string, unknown>[] = [
         { multi_match: { query: q, fields: ['summary', 'weather'] } },
-        { term: { tenant_id: this.tenantId } },
+        { term: { 'tenant_id.keyword': this.tenantId } },
       ];
-      if (params.project_id) must.push({ term: { project_id: params.project_id } });
+      if (params.project_id) must.push({ term: { 'project_id.keyword': params.project_id } });
 
       const response = await this.openSearch.search({
         index: OS_REPORTS_INDEX,
@@ -858,7 +1011,11 @@ export class SiteOpsService {
     } catch (err) {
       logger.warn({ q, err }, 'opensearch.search.failed — falling back to DB list');
       const { rows } = await this.repo.listSiteReports({ ...params, page: 1, limit: 50 });
-      return rows;
+      // `minimal` is the CALLER's contract (master:2797), not a property of the search backend. A
+      // client asks for the reduced payload because of the link it is on; handing it the full one
+      // because a server-side dependency was unavailable is the opposite of what it asked for, at
+      // the moment it can least afford it. The two branches above already apply it.
+      return params.minimal ? (rows.map(this.toMinimalReport) as unknown as SiteReportRow[]) : rows;
     }
   }
 
@@ -869,9 +1026,9 @@ export class SiteOpsService {
     try {
       const must: Record<string, unknown>[] = [
         { multi_match: { query: q, fields: ['title', 'description'] } },
-        { term: { tenant_id: this.tenantId } },
+        { term: { 'tenant_id.keyword': this.tenantId } },
       ];
-      if (params.project_id) must.push({ term: { project_id: params.project_id } });
+      if (params.project_id) must.push({ term: { 'project_id.keyword': params.project_id } });
 
       const response = await this.openSearch.search({
         index: OS_ISSUES_INDEX,

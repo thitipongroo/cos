@@ -4,7 +4,7 @@
 
 import { Controller, Get, Req, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { OptionalJwtAuthGuard } from '../../modules/identity/guards/optional-jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../guards/optional-jwt-auth.guard';
 import { FeatureFlagService } from './feature-flag.service';
 
 interface FlagRequest {

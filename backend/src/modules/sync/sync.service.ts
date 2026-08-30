@@ -25,9 +25,11 @@ import { SafetyService } from '../safety/safety.service';
 import { WorkforceService } from '../workforce/workforce.service';
 import { AnnotationService } from '../files/annotation.service';
 import { ProcurementService } from '../procurement/procurement.service';
+import { EquipmentService } from '../equipment/equipment.service';
+import { RecordUtilizationDto } from '../equipment/dto/record-utilization.dto';
 import type { CreateIssueDto } from '../site-ops/dto/create-issue.dto';
 import type { CreateMaterialConsumptionDto } from '../site-ops/dto/create-material-consumption.dto';
-import type { SubmitInspectionDto } from '../site-ops/dto/submit-inspection.dto';
+import type { SubmitInspectionDto } from '../site-ops/public/submit-inspection.dto';
 import type { SyncSiteReportsDto } from '../site-ops/dto/sync-site-reports.dto';
 import type { RecordAttendanceDto } from '../workforce/dto/attendance.dto';
 import type { RecordDeliveryDto } from '../procurement/dto/record-delivery.dto';
@@ -110,6 +112,9 @@ const ENTITY_REGISTRY: Record<string, EntityRegistryEntry> = {
   attendance: { table: 'workforce_telemetry.attendance_logs', deltaColumn: 'recorded_at' },
   safety: { table: 'site_ops.incidents', deltaColumn: 'modified_at' },
   material: { table: 'site_ops.material_consumptions', deltaColumn: 'created_at' },
+  // Equipment usage logs (§17.4 offline read/write, master:3578). Shaped like attendance: a
+  // telemetry hypertable whose delta column is the partition key it is already ordered by.
+  equipment: { table: 'equipment_telemetry.equipment_utilization', deltaColumn: 'recorded_at' },
 };
 
 @Injectable({ scope: Scope.REQUEST })
@@ -121,6 +126,7 @@ export class SyncService {
     private readonly workforce: WorkforceService,
     private readonly annotations: AnnotationService,
     private readonly procurement: ProcurementService,
+    private readonly equipment: EquipmentService,
     private readonly outbox: EventOutboxService,
     // Same pattern as SiteOpsService: the service is already REQUEST-scoped, and the correlation id
     // is what ties the exhaustion report to the outbox row and the eventual notification.
@@ -315,6 +321,17 @@ export class SyncService {
           client_id: dto.entity_id,
         });
         return { status: 'ACCEPTED', server_payload: row };
+      }
+
+      case 'equipment': {
+        // entity_id is the equipment_id — a utilization row has no id of its own, its identity is
+        // the equipment plus the instant. The repository INSERT is ON CONFLICT DO NOTHING against
+        // that natural key, so the retries §17.2 guarantees cannot inflate summed hours or fuel.
+        await this.equipment.recordUtilization(
+          dto.entity_id,
+          dto.payload as unknown as RecordUtilizationDto,
+        );
+        return { status: 'ACCEPTED', server_payload: dto.payload };
       }
 
       case 'photo_annotation': {

@@ -1,7 +1,7 @@
 // Canonical event: site.report.created.v1
 // Source: context/00_master_construction_os.md §6 Event #5
 
-import { BaseEventEnvelope } from '@cos/types';
+import type { BaseEventEnvelope } from '@cos/types';
 
 export interface SiteReportCreatedPayload {
   report_id: string; // UUID

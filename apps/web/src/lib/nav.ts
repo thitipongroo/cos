@@ -90,7 +90,10 @@ export const NAV_BY_ROLE: Record<string, NavItem[]> = {
 };
 
 export function navForRole(role: string | undefined | null): NavItem[] {
-  if (role && role in NAV_BY_ROLE) {
+  // Object.hasOwn, not the `in` operator — see the note in auth/roles.ts (§35.13 ESC-26): `in` walks the
+  // prototype chain, so 'toString' would have returned a Function here and blown up the .map() in
+  // the sidebar.
+  if (role && Object.hasOwn(NAV_BY_ROLE, role)) {
     return NAV_BY_ROLE[role];
   }
   return [];

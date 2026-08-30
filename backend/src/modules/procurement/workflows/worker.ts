@@ -6,7 +6,7 @@
 import { Worker } from '@temporalio/worker';
 import * as rfqActivities from './rfq.activities';
 import * as poActivities from './po.activities';
-import { disconnectActivityClients } from './activity-helpers';
+import { disconnectActivityClients } from '../../../shared/workflows/activity-helpers';
 import { createLogger } from '@cos/logger';
 
 const logger = createLogger('procurement-worker');

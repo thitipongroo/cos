@@ -24,7 +24,10 @@ export const ROLE_LANDING: Record<string, string> = {
 
 /** Resolve the landing route for a role claim; unknown/missing → `/pending`. */
 export function landingFor(role: string | undefined | null): string {
-  if (role && role in ROLE_LANDING) {
+  // Object.hasOwn, not the `in` operator — `in` walks the prototype chain, so a role claim of 'toString' or
+  // 'constructor' resolved to an inherited Object member and this returned a Function instead of a
+  // route (§35.13 ESC-26). The role comes from a JWT claim, so it is untrusted input.
+  if (role && Object.hasOwn(ROLE_LANDING, role)) {
     return ROLE_LANDING[role];
   }
   return '/pending';

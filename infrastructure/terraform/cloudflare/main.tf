@@ -22,9 +22,9 @@ resource "cloudflare_record" "api" {
   zone_id = var.cloudflare_zone_id
   name    = "api"
   type    = "CNAME"
-  value   = "alb.${var.environment}.construction-os.io"  # AWS ALB DNS name
-  proxied = true  # Traffic through Cloudflare WAF
-  ttl     = 1     # Automatic TTL when proxied
+  value   = "alb.${var.environment}.construction-os.io" # AWS ALB DNS name
+  proxied = true                                        # Traffic through Cloudflare WAF
+  ttl     = 1                                           # Automatic TTL when proxied
 }
 
 resource "cloudflare_record" "app" {

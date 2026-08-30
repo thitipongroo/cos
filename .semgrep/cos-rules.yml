@@ -27,10 +27,21 @@ rules:
         - '**/providers/llm_provider.py'
         - '**/providers/alternative_llm_provider.py'
         - '**/providers/embedding_provider.py'
+        # The ONE implementation of EmbeddingProvider lives here since ADR-021 — each service's
+        # providers/embedding_provider.py now just re-exports it, so the exclusion above stopped
+        # covering the file it was written for. Surfaced only when the rule started parsing again:
+        # while cos-no-direct-openai-sdk was a parse error the whole scan aborted, so this had never
+        # been evaluated.
+        - '**/libs/python/cosembedding/**'
         - '**/tests/**'
         - '**/test_*.py'
+    # `from openai import ...` was rejected outright by semgrep-core from some version before
+    # 1.175.0: "Invalid pattern for Python: Stdlib.Parsing.Parse_error". An ellipsis is not valid in
+    # an import list; `$X` is the metavariable form and matches every imported name. The rule had not
+    # changed since 2026-07-23 — the workflow runs `image: semgrep/semgrep` with no tag, so a new
+    # release turned a working rule into a hard failure, and the whole scan aborted with it.
     pattern-either:
-      - pattern: from openai import ...
+      - pattern: from openai import $X
       - pattern: import openai
 
   # ── Financial precision ────────────────────────────────────────────────────
@@ -67,6 +78,11 @@ rules:
         - '**/scripts/**'
         - '**/*.config.ts'
         - '**/*.config.js'
+        # Same suffix idiom as *.config.ts above. A `*.script.ts` is a CLI entry point run by hand
+        # (`pnpm --filter backend run reconcile:contracts`); its console output IS the deliverable,
+        # and structured JSON logging would make a dry-run report unreadable to the operator who
+        # asked for it. `**/scripts/**` below only covers the directory, not the suffix.
+        - '**/*.script.ts'
         # Standalone operational scripts (e.g. the tenant-isolation probe CronJob) print to stdout
         # by design — that IS their output contract, and @cos/logger is not available to them.
         - 'infrastructure/**'
@@ -154,8 +170,14 @@ rules:
       WatermelonDB was removed — the offline DB is Drizzle ORM on expo-sqlite (spec 17 §17.10 /
       ADR-048). context.md §Never forbids reintroducing it or its native wiring; it cost a
       seven-layer native integration fix (R-01) before being replaced.
+    # Same parse failure as cos-no-direct-openai-sdk above, same cause. `import ... from` does not
+    # parse; each import FORM needs its own pattern. All four verified against real samples — named
+    # `{ Database }`, default, namespace `* as`, and require() — because dropping one would leave the
+    # ban enforceable only against the spelling nobody uses.
     pattern-either:
-      - pattern: import ... from '@nozbe/watermelondb'
+      - pattern: import { ... } from '@nozbe/watermelondb'
+      - pattern: import $X from '@nozbe/watermelondb'
+      - pattern: import * as $X from '@nozbe/watermelondb'
       - pattern: require('@nozbe/watermelondb')
 
   - id: cos-no-indexeddb-in-react-native

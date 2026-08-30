@@ -72,7 +72,7 @@ Stack :
   of the key because several event types are subscribed by two or three different groups; a key
   without it lets whichever group claims first suppress the event for all the others, which is
   dropping rather than de-duplication (TDD OQ-49). Both the TypeScript consumer
-  (`@cos/shared/src/kafka/consumer.ts`) and the Go one (`libs/go/coskafka`) build the same key.
+  (`@cos/kafka/src/consumer.ts`) and the Go one (`libs/go/coskafka`) build the same key.
 
 ---
 
@@ -198,7 +198,7 @@ Event Naming Convention :
 - Example: procurement.po.status_changed.v1
 - Example: finance.budget.exceeded.v1
 - The trailing `.vN` increments on a breaking schema change (e.g. `...v1` → `...v2`). The
-  authoritative event registry is the Avro schema set (`packages/@cos/shared/src/avro`, §15.6) —
+  authoritative event registry is the Avro schema set (`packages/@cos/kafka/src/avro`, §15.6) —
   the examples above are real emitted events, not a placeholder catalogue.
 
 Note — Kafka topic naming vs CloudEvents type field :
@@ -247,7 +247,7 @@ Versioning Rules :
   `POST /platform/webhooks/enterprise-contract-signed`. Nothing subscribes an external party to an
   event stream, and nothing deserialises Avro for one
 
-**Schema location:** `packages/@cos/shared/src/avro/{domain}.{entity}.{action}.{version}.avsc`
+**Schema location:** `packages/@cos/kafka/src/avro/{domain}.{entity}.{action}.{version}.avsc`
 
 **Industry precedent (2026):** Confluent + Avro + AsyncAPI is the standard adopted by
 Autodesk Platform Services, Procore Event API, and SAP Event Mesh.
@@ -277,7 +277,7 @@ Emitted when an Enterprise tenant's contract is marked as signed, triggering the
 | `tenant_id`          | UUID   | Yes      | Tenant being provisioned                |
 | `contract_reference` | string | No       | External contract ID from CRM or system |
 
-**Avro schema:** `packages/@cos/shared/src/avro/platform.enterprise.contract_signed.v1.avsc`
+**Avro schema:** `packages/@cos/kafka/src/avro/platform.enterprise.contract_signed.v1.avsc`
 **TypeScript interface:** `packages/@cos/shared/src/events/platform.enterprise.contract_signed.v1.ts`
 
 ---
@@ -294,7 +294,7 @@ Emitted when `EnterpriseProvisioningWorkflow` completes successfully (after Acti
 | `tenant_id`    | UUID   | Yes      | Tenant whose dedicated DB is now live          |
 | `rds_endpoint` | string | Yes      | RDS hostname (e.g. `cos-tenant-acme-prod.xxx`) |
 
-**Avro schema:** `packages/@cos/shared/src/avro/platform.enterprise.db_provisioned.v1.avsc`
+**Avro schema:** `packages/@cos/kafka/src/avro/platform.enterprise.db_provisioned.v1.avsc`
 **TypeScript interface:** `packages/@cos/shared/src/events/platform.enterprise.db_provisioned.v1.ts`
 
 ---

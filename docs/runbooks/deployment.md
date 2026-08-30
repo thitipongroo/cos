@@ -16,12 +16,12 @@ Service deployment and rolling rollout for the Construction OS monolith and supp
 GitOps via ArgoCD. **GitHub Actions never runs `kubectl apply` or `helm upgrade`** — a Phase 19
 readiness check greps `.github/workflows/` for exactly that and expects zero hits (ADR-012).
 
-| Layer               | Where                                                        |
-| ------------------- | ------------------------------------------------------------ |
-| ArgoCD `AppProject` | `construction-os` (namespace `argocd`)                       |
+| Layer               | Where                                                                                                         |
+| ------------------- | ------------------------------------------------------------------------------------------------------------- |
+| ArgoCD `AppProject` | `construction-os` (namespace `argocd`)                                                                        |
 | ArgoCD Applications | **21** objects, all in namespace `argocd`: 11 production → `cos` (+ `monitoring`), 10 staging → `cos-staging` |
-| Helm charts         | `infrastructure/helm/cos-*` — one per deployable             |
-| Manifest            | `infrastructure/kubernetes/argocd/argocd-apps.yaml`          |
+| Helm charts         | `infrastructure/helm/cos-*` — one per deployable                                                              |
+| Manifest            | `infrastructure/kubernetes/argocd/argocd-apps.yaml`                                                           |
 
 Production Applications (11): `cos-backend`, `cos-web`, `cos-file-service`,
 `cos-credential-service`, `cos-ai-gateway`, `cos-ai-embedding-worker`, `cos-ai-ocr-pipeline`,
@@ -46,10 +46,10 @@ Phase 19 check looks for `cos-staging`, which does not exist)" and concluded "a 
 therefore syncs production automatically". **That gap has been closed and the warning was stale.**
 Measured against the committed manifests:
 
-| Set                          | Sync                                          | Values                 | Destination   |
-| ---------------------------- | --------------------------------------------- | ---------------------- | ------------- |
-| 11 production Applications   | **manual** — no `automated` block at all      | `values-prod.yaml`     | `cos`         |
-| 10 `-staging` Applications   | `automated`, `prune: true`, `selfHeal: true`  | `values-staging.yaml`  | `cos-staging` |
+| Set                        | Sync                                         | Values                | Destination   |
+| -------------------------- | -------------------------------------------- | --------------------- | ------------- |
+| 11 production Applications | **manual** — no `automated` block at all     | `values-prod.yaml`    | `cos`         |
+| 10 `-staging` Applications | `automated`, `prune: true`, `selfHeal: true` | `values-staging.yaml` | `cos-staging` |
 
 Both sets track `targetRevision: main`, which is the intended shape: staging follows `main`
 continuously, and production is promoted by a human clicking Sync. That satisfies QM-16 and the
@@ -71,13 +71,13 @@ overlays only, and everything else in that tree was applied by hand. Of its 15 m
 applied. Five of them are now Applications, because other things in the repository already depend on
 them existing:
 
-| Application           | Path                                       | Depended on by                                            |
-| --------------------- | ------------------------------------------ | --------------------------------------------------------- |
-| `cos-pgbouncer`       | `infrastructure/kubernetes/pgbouncer`      | QM-18; `db-failover.md` restarts it after a failover      |
-| `cos-isolation-probe` | `infrastructure/monitoring/isolation-probe` | `TenantIsolationBreach` (P0); readiness AUTO-29           |
-| `cos-keycloak-backup` | `infrastructure/kubernetes/keycloak`       | `keycloak-realm-recovery.md` Scenario A reads its output  |
-| `cos-kafka`           | `infrastructure/kubernetes/kafka`          | every domain event                                        |
-| `cos-mlflow`          | `infrastructure/kubernetes/mlflow`         | Phase 23                                                   |
+| Application           | Path                                        | Depended on by                                           |
+| --------------------- | ------------------------------------------- | -------------------------------------------------------- |
+| `cos-pgbouncer`       | `infrastructure/kubernetes/pgbouncer`       | QM-18; `db-failover.md` restarts it after a failover     |
+| `cos-isolation-probe` | `infrastructure/monitoring/isolation-probe` | `TenantIsolationBreach` (P0); readiness AUTO-29          |
+| `cos-keycloak-backup` | `infrastructure/kubernetes/keycloak`        | `keycloak-realm-recovery.md` Scenario A reads its output |
+| `cos-kafka`           | `infrastructure/kubernetes/kafka`           | every domain event                                       |
+| `cos-mlflow`          | `infrastructure/kubernetes/mlflow`          | Phase 23                                                 |
 
 All five are **manual-sync**, like the rest of production, and
 `scripts/ci/check-argocd-sync-policy.mjs` fails the build if one grows an `automated` block.

@@ -14,12 +14,18 @@ resource "aws_security_group" "rds" {
     security_groups = [var.eks_security_group]
   }
 
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  # No egress rule at all — deliberate, 2026-08-29.
+  #
+  # This was `0.0.0.0/0` on every protocol, which Trivy flags as AWS-0104 and which nothing had ever
+  # run to notice: CI gained a Terraform step and IaC misconfiguration scanning on the same day.
+  #
+  # A managed PostgreSQL endpoint is a destination, not a client. It accepts connections from the EKS
+  # nodes on the ingress rule above and initiates none of its own — no image pulls, no API calls, no
+  # package installs. An AWS security group denies all egress when no egress block is present, so
+  # removing the rule IS the restriction; there is nothing to replace it with.
+  #
+  # If a future feature needs this service to reach out — cross-region replication, an external
+  # audit sink — add a rule for that destination and port. Do not restore the blanket allow.
 
   tags = merge(var.tags, { Name = "cos-rds-sg-${var.environment}" })
 }
@@ -55,8 +61,8 @@ resource "aws_db_parameter_group" "main" {
 }
 
 resource "aws_db_instance" "main" {
-  identifier             = "cos-postgres-${var.environment}"
-  engine                 = "postgres"
+  identifier = "cos-postgres-${var.environment}"
+  engine     = "postgres"
   # PostgreSQL 18 per context/00_master_construction_os.md § infrastructure stack. Raised from 16.2
   # on 2026-08-07 (product-owner decision) to close a real dev/prod parity gap: docker-compose.yml
   # already runs timescale/timescaledb:latest-pg18, so local development and production were two
@@ -72,14 +78,14 @@ resource "aws_db_instance" "main" {
   #      broken deployment, not an upgrade.
   # An already-provisioned instance additionally needs a planned major-version upgrade; changing this
   # value alone does not migrate it.
-  engine_version         = "18"
-  instance_class         = var.instance_class
-  allocated_storage      = var.allocated_storage
-  max_allocated_storage  = var.allocated_storage * 3
-  storage_type           = "gp3"
-  storage_encrypted      = true
+  engine_version        = "18"
+  instance_class        = var.instance_class
+  allocated_storage     = var.allocated_storage
+  max_allocated_storage = var.allocated_storage * 3
+  storage_type          = "gp3"
+  storage_encrypted     = true
   # Customer-managed CMK (QM-4) — without this, RDS falls back to the AWS-managed aws/rds key.
-  kms_key_id             = var.kms_key_id
+  kms_key_id = var.kms_key_id
 
   db_name  = "cos"
   username = "cos_admin"
@@ -91,12 +97,12 @@ resource "aws_db_instance" "main" {
   vpc_security_group_ids = [aws_security_group.rds.id]
   parameter_group_name   = aws_db_parameter_group.main.name
 
-  backup_retention_period    = var.environment == "production" ? 30 : 7
-  backup_window              = "02:00-03:00"
-  maintenance_window         = "sun:04:00-sun:05:00"
-  deletion_protection        = var.environment == "production"
-  skip_final_snapshot        = var.environment != "production"
-  final_snapshot_identifier  = "cos-postgres-final-${var.environment}"
+  backup_retention_period   = var.environment == "production" ? 30 : 7
+  backup_window             = "02:00-03:00"
+  maintenance_window        = "sun:04:00-sun:05:00"
+  deletion_protection       = var.environment == "production"
+  skip_final_snapshot       = var.environment != "production"
+  final_snapshot_identifier = "cos-postgres-final-${var.environment}"
 
   performance_insights_enabled          = true
   performance_insights_retention_period = 7

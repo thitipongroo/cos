@@ -11,7 +11,7 @@ set -euo pipefail
 # increment, so the first `((PASS++))` on a zero counter returns 0 — a non-zero exit status — and
 # `set -e` killed the script there. Every readiness script in this directory had it, so each one
 # stopped at whichever counter first moved off zero: this one reported ONE spec and exited 1, and
-# verify-production-readiness.sh ran ONE of its 39 checks. That reads like a failing gate rather
+# verify-production-readiness.sh ran ONE of its 31 checks. That reads like a failing gate rather
 # than a gate that never ran. `VAR=$((VAR + 1))` is an assignment and always exits 0.
 #
 # MODULE_MAP KEYS ARE SPEC NAMES, VALUES ARE DIRECTORY NAMES, and the two differ for exactly one

@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
+import { Decimal } from '@cos/financial';
 import { createLogger } from '@cos/logger';
 import { TasksRepository } from './tasks.repository';
 import type { ProgressSums, SchedulableTaskRow, TaskRow } from './tasks.repository';
@@ -214,13 +215,24 @@ export class TasksService {
       // Warnings 8–9: budget vs actual. ≥100% is a hard block unless acknowledged.
       const budget = await this.repo.getTaskBudgetRatio(taskId);
       if (budget) {
-        const allocated = Number(budget.allocated);
-        const ratio = allocated > 0 ? Number(budget.actual) / allocated : 0;
-        if (ratio >= 1) {
-          warnings.push('budget_overrun');
-          if (!dto.acknowledge_budget_overrun) blocking.push('budget_overrun');
-        } else if (ratio >= 0.85) {
-          warnings.push('budget_warning');
+        // master:991 forbids JavaScript Number for monetary calculations, and a ratio of two money
+        // columns is one. The thresholds are compared by CROSS-MULTIPLYING instead of dividing, so
+        // no quotient is formed and nothing is rounded: `actual/allocated >= 0.85` becomes
+        // `actual * 100 >= allocated * 85`, which is exact in decimal arithmetic.
+        //
+        // The float version was demonstrably wrong at the boundary — allocated 5.40 with actual 4.59
+        // is exactly 85%, but the double quotient lands just below it and the ORANGE warning never
+        // fired. Only at small amounts, but a threshold that is right for most inputs is not a
+        // threshold.
+        const allocated = new Decimal(budget.allocated);
+        const actual = new Decimal(budget.actual);
+        if (allocated.gt(0)) {
+          if (actual.gte(allocated)) {
+            warnings.push('budget_overrun');
+            if (!dto.acknowledge_budget_overrun) blocking.push('budget_overrun');
+          } else if (actual.times(100).gte(allocated.times(85))) {
+            warnings.push('budget_warning');
+          }
         }
       }
 

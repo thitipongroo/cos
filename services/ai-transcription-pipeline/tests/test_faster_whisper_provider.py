@@ -1,11 +1,12 @@
-"""Unit tests for FasterWhisperProvider — no model weights, no `faster-whisper` install.
+"""Unit tests for FasterWhisperProvider — spec 22-ai-architecture §22.2.
 
-`faster-whisper` is a prod/deploy-image dependency that the base service deliberately does not
-install (see the provider docstring), so the real `WhisperModel` is never constructed here. The lazy
-`from faster_whisper import WhisperModel` inside `_load()` is satisfied by injecting a fake module
-into `sys.modules`, which is what makes the transcribe path testable at all: the import only happens
-on first use, so a test can substitute it before the first call.
+§35.13 ESC-24: 13 statements in providers/transcription_provider.py were uncovered — the whole
+FasterWhisperProvider. `faster-whisper` is a prod-image dependency that is deliberately NOT
+installed for unit tests (hence the lazy import inside _load), so these tests inject a fake module
+into sys.modules. That exercises the real lazy-import path rather than skipping it.
 """
+
+import io
 import sys
 import types
 from pathlib import Path
@@ -15,9 +16,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import pytest
 from providers.transcription_provider import (
     FasterWhisperProvider,
-    TranscriptionProvider,
     TranscriptionResult,
 )
+
 
 
 class _FakeSegment:
@@ -26,114 +27,109 @@ class _FakeSegment:
 
 
 class _FakeInfo:
-    def __init__(self, language: str = "th", duration: float = 3.5):
+    def __init__(self, language: str = "th", duration: float = 8.0):
         self.language = language
         self.duration = duration
 
 
 class _FakeWhisperModel:
-    """Records how it was constructed so the env-driven config can be asserted."""
+    """Records how it was constructed so the env-var wiring can be asserted."""
 
-    constructed_with: dict = {}
+    constructed: list[dict] = []
 
     def __init__(self, model_size, device=None, compute_type=None):
-        type(self).constructed_with = {
-            "model_size": model_size,
-            "device": device,
-            "compute_type": compute_type,
-        }
-        self.transcribe_calls: list = []
+        type(self).constructed.append(
+            {"model_size": model_size, "device": device, "compute_type": compute_type}
+        )
+        self.transcribe_calls: list[tuple[object, str | None]] = []
 
-    def transcribe(self, audio_stream, language=None):
-        self.transcribe_calls.append((audio_stream, language))
-        # Deliberately padded — transcribe() must strip each segment and join with single spaces.
-        return [_FakeSegment("  สวัสดี  "), _FakeSegment(" ครับ ")], _FakeInfo()
+    def transcribe(self, audio, language=None):
+        self.transcribe_calls.append((audio, language))
+        return [_FakeSegment("  เท "), _FakeSegment("คอนกรีต  ")], _FakeInfo()
 
 
 @pytest.fixture
 def fake_faster_whisper(monkeypatch):
+    """Installs a stand-in `faster_whisper` module for the duration of one test."""
+    _FakeWhisperModel.constructed = []
     module = types.ModuleType("faster_whisper")
     module.WhisperModel = _FakeWhisperModel
     monkeypatch.setitem(sys.modules, "faster_whisper", module)
-    _FakeWhisperModel.constructed_with = {}
     return module
 
 
-class TestConstructorConfig:
-    def test_is_transcription_provider_subclass(self):
-        assert isinstance(FasterWhisperProvider(), TranscriptionProvider)
+class TestConstruction:
+    def test_uses_the_documented_defaults_when_env_is_unset(self, monkeypatch):
+        for key in ("WHISPER_MODEL_SIZE", "WHISPER_DEVICE", "WHISPER_COMPUTE_TYPE"):
+            monkeypatch.delenv(key, raising=False)
+        p = FasterWhisperProvider()
+        assert p._model_size == "small"
+        assert p._device == "cpu"
+        assert p._compute_type == "int8"
+        assert p._model is None  # nothing is loaded until the first transcribe
 
-    def test_defaults_come_from_environment(self, monkeypatch):
+    def test_reads_the_env_overrides(self, monkeypatch):
         monkeypatch.setenv("WHISPER_MODEL_SIZE", "large-v3")
         monkeypatch.setenv("WHISPER_DEVICE", "cuda")
         monkeypatch.setenv("WHISPER_COMPUTE_TYPE", "float16")
-        provider = FasterWhisperProvider()
-        assert provider.model_name == "faster-whisper:large-v3"
-        assert provider._device == "cuda"
-        assert provider._compute_type == "float16"
+        p = FasterWhisperProvider()
+        assert (p._model_size, p._device, p._compute_type) == ("large-v3", "cuda", "float16")
 
-    def test_falls_back_to_documented_defaults_when_env_absent(self, monkeypatch):
-        for var in ("WHISPER_MODEL_SIZE", "WHISPER_DEVICE", "WHISPER_COMPUTE_TYPE"):
-            monkeypatch.delenv(var, raising=False)
-        provider = FasterWhisperProvider()
-        assert provider.model_name == "faster-whisper:small"
-        assert provider._device == "cpu"
-        assert provider._compute_type == "int8"
-
-    def test_explicit_arguments_win_over_environment(self, monkeypatch):
+    def test_explicit_arguments_win_over_env(self, monkeypatch):
         monkeypatch.setenv("WHISPER_MODEL_SIZE", "large-v3")
-        provider = FasterWhisperProvider(model_size="tiny", device="cpu", compute_type="int8")
-        assert provider.model_name == "faster-whisper:tiny"
+        p = FasterWhisperProvider(model_size="medium", device="cuda", compute_type="float32")
+        assert (p._model_size, p._device, p._compute_type) == ("medium", "cuda", "float32")
 
 
-class TestModelLoading:
-    def test_load_constructs_model_with_configured_values(self, fake_faster_whisper):
-        provider = FasterWhisperProvider(model_size="tiny", device="cpu", compute_type="int8")
-        provider._load()
-        assert _FakeWhisperModel.constructed_with == {
-            "model_size": "tiny",
-            "device": "cpu",
-            "compute_type": "int8",
-        }
+class TestModelName:
+    def test_reports_the_configured_size(self, monkeypatch):
+        monkeypatch.delenv("WHISPER_MODEL_SIZE", raising=False)
+        assert FasterWhisperProvider().model_name == "faster-whisper:small"
+        assert FasterWhisperProvider(model_size="medium").model_name == "faster-whisper:medium"
 
-    def test_model_is_loaded_once_and_reused(self, fake_faster_whisper):
-        # The weights are hundreds of MB; reloading per request would be a latency bug.
-        provider = FasterWhisperProvider(model_size="tiny")
-        assert provider._load() is provider._load()
 
-    def test_injected_model_is_not_reloaded(self, fake_faster_whisper):
-        provider = FasterWhisperProvider()
-        sentinel = _FakeWhisperModel("preloaded")
-        provider._model = sentinel
-        assert provider._load() is sentinel
+class TestLoad:
+    def test_constructs_the_model_with_the_configured_settings(self, fake_faster_whisper):
+        p = FasterWhisperProvider(model_size="medium", device="cuda", compute_type="float16")
+        model = p._load()
+        assert isinstance(model, _FakeWhisperModel)
+        assert _FakeWhisperModel.constructed == [
+            {"model_size": "medium", "device": "cuda", "compute_type": "float16"}
+        ]
+
+    def test_is_memoised_so_the_weights_load_once(self, fake_faster_whisper):
+        p = FasterWhisperProvider()
+        first = p._load()
+        second = p._load()
+        assert first is second
+        assert len(_FakeWhisperModel.constructed) == 1
 
 
 class TestTranscribe:
     @pytest.mark.asyncio
-    async def test_joins_stripped_segments_and_reports_language_and_duration(
-        self, fake_faster_whisper
-    ):
-        provider = FasterWhisperProvider(model_size="tiny")
-        result = await provider.transcribe(b"audio-bytes", language="th")
+    async def test_joins_and_strips_segments(self, fake_faster_whisper):
+        p = FasterWhisperProvider()
+        result = await p.transcribe(b"AUDIO", language="th")
 
         assert isinstance(result, TranscriptionResult)
-        assert result.transcript == "สวัสดี ครับ"
+        # each segment is stripped, then joined with a single space
+        assert result.transcript == "เท คอนกรีต"
         assert result.language == "th"
-        assert result.duration_seconds == 3.5
-        assert isinstance(result.duration_seconds, float)
+        assert result.duration_seconds == 8.0
 
     @pytest.mark.asyncio
-    async def test_passes_language_through_and_wraps_audio_in_a_stream(self, fake_faster_whisper):
-        provider = FasterWhisperProvider(model_size="tiny")
-        await provider.transcribe(b"audio-bytes", language="en")
+    async def test_wraps_the_audio_bytes_and_forwards_the_language(self, fake_faster_whisper):
+        p = FasterWhisperProvider()
+        await p.transcribe(b"AUDIO", language="en")
 
-        audio_stream, language = provider._model.transcribe_calls[0]
-        assert language == "en"
-        # faster-whisper takes a file-like object, not raw bytes.
-        assert audio_stream.read() == b"audio-bytes"
+        model = p._model
+        audio_arg, language_arg = model.transcribe_calls[0]
+        assert isinstance(audio_arg, io.BytesIO)
+        assert audio_arg.getvalue() == b"AUDIO"
+        assert language_arg == "en"
 
     @pytest.mark.asyncio
-    async def test_language_defaults_to_none_for_autodetect(self, fake_faster_whisper):
-        provider = FasterWhisperProvider(model_size="tiny")
-        await provider.transcribe(b"audio-bytes")
-        assert provider._model.transcribe_calls[0][1] is None
+    async def test_language_may_be_omitted(self, fake_faster_whisper):
+        p = FasterWhisperProvider()
+        await p.transcribe(b"AUDIO")
+        assert p._model.transcribe_calls[0][1] is None

@@ -20,6 +20,7 @@ const mockSvc = {
   listInspections: jest.fn(),
   getInspection: jest.fn(),
   updateInspectionStatus: jest.fn(),
+  changeIssueStatus: jest.fn(),
   listChecklists: jest.fn(),
   listConflictRecords: jest.fn(),
   resolveConflict: jest.fn(),
@@ -104,6 +105,13 @@ describe('SiteOpsController', () => {
     const dto = { description: 'Updated' };
     ctrl.updateIssue('i-001', dto as never);
     expect(mockSvc.updateIssue).toHaveBeenCalledWith('i-001', dto);
+  });
+
+  // §35.13 ESC-21 — the direct status transition, separate from the offline-sync PATCH above.
+  it('changeIssueStatus delegates to svc.changeIssueStatus', () => {
+    const dto = { status: 'RESOLVED', resolution_note: 'fixed' };
+    ctrl.changeIssueStatus('i-001', dto as never);
+    expect(mockSvc.changeIssueStatus).toHaveBeenCalledWith('i-001', dto);
   });
 
   it('escalateIssue delegates to svc.escalateIssue', () => {

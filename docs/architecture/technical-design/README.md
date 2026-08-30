@@ -40,7 +40,7 @@ authoritative behind it says so — it is never filled with inference.
 | 3   | Architecture                   | `architecture/README.md` C4 views + `03-system-design` §3.2 + `architecture/service-interaction.md` |
 | 4   | Data model                     | phase command entities + `11-database-schema` + `backend/prisma/`                                   |
 | 5   | API contract                   | phase command APIs + `14-api-architecture` + `docs/api/*.openapi.yaml`                              |
-| 6   | Events                         | `32-implementation-specifications` §32.4 + `packages/@cos/shared/src/avro/`                         |
+| 6   | Events                         | `32-implementation-specifications` §32.4 + `packages/@cos/kafka/src/avro/`                          |
 | 7   | Sequence / flows               | flows the specs describe end to end — anything partial is marked, not completed by inference        |
 | 8   | Failure modes & rollback       | QM-9 / QM-12 / QM-16 / QM-17 + the phase's own retry, DLQ and compensation mechanisms               |
 | 9   | Security                       | `05-security-compliance` + `06-rbac-permission-matrix` + `07-multi-tenant-architecture` §7.7        |

@@ -112,8 +112,10 @@ for script in scripts/readiness/*.sh; do
   bash "$script" || echo "FAILED: $script"
 done
 
-# Staging load test baseline
-k6 run scripts/loadtest/api-baseline.js \
+# Staging load test baseline — the QM-6 gate: 100 VU x 5 min mixed read/write,
+# p95 read < 300 ms, p95 write < 500 ms, error rate < 0.1%.
+# (tests/load/api-baseline.js is a DIFFERENT script — Phase 18, 200 VU over 10 min, reads only.)
+k6 run tests/load/qm6-baseline.js \
   -e BASE_URL=https://api-staging.construction-os.io \
   -e TENANT_ID=staging-tenant
 ```

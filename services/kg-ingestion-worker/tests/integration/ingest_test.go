@@ -5,6 +5,8 @@ package integration_test
 import (
 	"context"
 	"encoding/json"
+	"os"
+	"sync"
 	"testing"
 
 	"github.com/construction-os/kg-ingestion-worker/internal/graph"
@@ -16,29 +18,68 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/neo4j"
 )
 
+// One Neo4j for the whole package.
+//
+// Each test used to start its own container. That was fine at five tests and stopped being fine at
+// twenty-five: the package hit Go's 10-minute default timeout and the run FAILED after 600s, which
+// reads in CI as a broken suite rather than a slow one. Container startup dominates — the queries
+// themselves take milliseconds.
+//
+// Isolation is preserved by wiping the graph between tests rather than by rebuilding the server.
+// Every case seeds exactly what it asserts on, so a clean graph is the same starting point a fresh
+// container gave, at a fraction of the cost.
+var (
+	sharedDriver neo4jgo.DriverWithContext
+	sharedOnce   sync.Once
+	sharedStop   func()
+)
+
+func TestMain(m *testing.M) {
+	code := m.Run()
+	if sharedStop != nil {
+		sharedStop()
+	}
+	os.Exit(code)
+}
+
 func setupNeo4j(t *testing.T) (neo4jgo.DriverWithContext, func()) {
 	t.Helper()
 	ctx := context.Background()
 
-	container, err := neo4j.Run(ctx,
-		"neo4j:5",
-		neo4j.WithoutAuthentication(),
-	)
-	require.NoError(t, err, "failed to start Neo4j testcontainer")
+	sharedOnce.Do(func() {
+		container, err := neo4j.Run(ctx, "neo4j:5", neo4j.WithoutAuthentication())
+		if err != nil {
+			panic("failed to start Neo4j testcontainer: " + err.Error())
+		}
+		boltURI, err := container.BoltUrl(ctx)
+		if err != nil {
+			panic("bolt url: " + err.Error())
+		}
+		driver, err := neo4jgo.NewDriverWithContext(boltURI, neo4jgo.NoAuth())
+		if err != nil {
+			panic("neo4j driver: " + err.Error())
+		}
+		if err := graph.ApplyConstraints(ctx, driver); err != nil {
+			panic("apply constraints: " + err.Error())
+		}
+		sharedDriver = driver
+		sharedStop = func() {
+			_ = driver.Close(ctx)
+			_ = container.Terminate(ctx)
+		}
+	})
 
-	boltURI, err := container.BoltUrl(ctx)
-	require.NoError(t, err)
-
-	driver, err := neo4jgo.NewDriverWithContext(boltURI, neo4jgo.NoAuth())
-	require.NoError(t, err)
-
-	require.NoError(t, graph.ApplyConstraints(ctx, driver))
-
-	cleanup := func() {
-		driver.Close(ctx)
-		container.Terminate(ctx)
+	wipe := func() {
+		session := sharedDriver.NewSession(ctx, neo4jgo.SessionConfig{AccessMode: neo4jgo.AccessModeWrite})
+		defer session.Close(ctx)
+		_, err := session.ExecuteWrite(ctx, func(tx neo4jgo.ManagedTransaction) (any, error) {
+			return tx.Run(ctx, "MATCH (n) DETACH DELETE n", nil)
+		})
+		require.NoError(t, err)
 	}
-	return driver, cleanup
+	wipe() // start from a clean graph regardless of what ran before
+
+	return sharedDriver, wipe
 }
 
 func envelope(eventType, eventID, tenantID string, payload any) *model.EventEnvelope {

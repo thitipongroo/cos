@@ -22,7 +22,7 @@ const (
 // tenants, and a DLQ per domain multiplied the per-tenant topic count by ten for a separation the
 // spec never asked for. The originating domain stays recoverable from the dlq.original_topic
 // header. Platform events share platform.dlq because they were never tenant-scoped to begin with.
-// Mirrors dlqTopicFor in @cos/shared/src/kafka/topic-catalog.ts.
+// Mirrors dlqTopicFor in @cos/kafka/src/topic-catalog.ts.
 func DLQTopicFor(originalTopic string) string {
 	if originalTopic == PlatformEventsTopic || strings.HasPrefix(originalTopic, "platform.") {
 		return PlatformDLQTopic

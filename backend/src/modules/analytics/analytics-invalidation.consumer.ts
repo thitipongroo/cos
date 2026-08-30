@@ -31,7 +31,7 @@
 // table. Nothing here resolves a tenant from ambient context, so there is no context to enter.
 
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
-import { KafkaConsumer } from '@cos/shared';
+import { KafkaConsumer } from '@cos/kafka';
 import { createLogger } from '@cos/logger';
 import type { BaseEventEnvelope } from '@cos/types';
 import { AnalyticsService } from './analytics.service';

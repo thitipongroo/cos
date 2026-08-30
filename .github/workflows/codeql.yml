@@ -27,6 +27,12 @@ on:
     # Monday 06:00 UTC, after mutation tests (05:00) so the runner load does not overlap.
     - cron: '0 6 * * 1'
 
+# Supersede an in-flight scan when the same ref is pushed again — a queued duplicate adds
+# nothing and CodeQL runs are long (60-minute timeout below).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   analyze:
     name: Analyze — ${{ matrix.language }}

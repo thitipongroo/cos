@@ -5,7 +5,7 @@ import { Controller, Get, Patch, Body, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { Roles } from '@cos/rbac';
 import { CosRole } from '@cos/types';
-import { JwtAuthGuard } from '../identity/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
 import { TenantSettingsService } from './settings.service';
 import { UpdateTenantSettingsDto } from './dto/update-tenant-settings.dto';

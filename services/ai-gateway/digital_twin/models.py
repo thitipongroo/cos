@@ -48,6 +48,10 @@ class TwinEntity(BaseModel):
 
 class TwinState(BaseModel):
     entity_id: UUID
+    # The entity's project. Carried here because twin.state.updated.v1 requires project_id and the
+    # emitter has nothing else to get it from: it previously sent the ENTITY id in that field, so
+    # every consumer filtering by project — analytics, and now the SSE stream — matched nothing.
+    project_id: UUID
     tenant_id: UUID
     recorded_at: datetime
     attributes: dict[str, Any]
@@ -71,10 +75,31 @@ class Divergence(BaseModel):
     severity: SeverityLevel
 
 
+class UnassessedEntity(BaseModel):
+    """An entity whose plan is unknown, so no divergence can be computed for it.
+
+    §Phase 24 lists BIM Integration (IFC.js per spec §13.4) as a PREREQUISITE, and it is not built:
+    planned_state is empty for every entity today. Comparing a real reading against an empty plan
+    produced gap = 1.0 and severity HIGH for everything with any attribute at all, so the report
+    flagged the entire site at every run — an alert that fires always is one people learn to close.
+
+    "We do not know the plan" is a different statement from "the site has diverged from the plan",
+    and it belongs in a different list. Product-owner decision 2026-08-25.
+    """
+
+    entity_id: UUID
+    entity_type: EntityType
+    actual_state: dict[str, Any]
+    reason: str = "NO_PLANNED_STATE"
+
+
 class DivergenceReport(BaseModel):
     project_id: UUID
     generated_at: datetime
     divergences: list[Divergence]
+    # Entities that could not be assessed. Empty once BIM integration lands; until then this is
+    # where every entity goes, which is the honest shape of what the system currently knows.
+    unassessed: list[UnassessedEntity] = Field(default_factory=list)
     risk_level: str  # LOW / MEDIUM / HIGH / CRITICAL
 
 

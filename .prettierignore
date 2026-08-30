@@ -9,6 +9,15 @@ coverage
 pnpm-lock.yaml
 # Helm templates contain Go template syntax ({{ }}) — not valid YAML
 infrastructure/helm/**/templates/**
+# Large legacy reference docs — same exclusion as .markdownlintignore, kept in step with it.
+# These carry a pre-existing formatting backlog measured on 2026-08-24 (38 files under
+# docs/specifications/, 13 under context/, plus context.md). They were excluded from the
+# markdownlint gate for that reason but not from the Prettier gate, so format:check and
+# markdownlint disagreed about what counts as legacy. See §35.13 ESC-37 in docs/architecture/test-design/escalation-register.md.
+docs/specifications/
+context/
+context.md
+
 # Local Claude Code session state — never committed (globally gitignored), not format-gated
 .claude/
 # Design-tool export (DESIGN.md + code.html + screen.png per screen) — reference for implementation

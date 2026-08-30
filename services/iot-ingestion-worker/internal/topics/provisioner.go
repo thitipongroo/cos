@@ -4,7 +4,7 @@
 // auto-topic-creation disabled (context.md "Provision Kafka topics explicitly"; Phase 8 exit
 // criteria "allowAutoTopicCreation:false"). Kafka will therefore never materialise a topic for us,
 // so whoever publishes first has to create it. On the TypeScript side that is
-// KafkaProducer.ensureTopic (packages/@cos/shared/src/kafka/producer.ts); this is the Go port of the
+// KafkaProducer.ensureTopic (packages/@cos/kafka/src/producer.ts); this is the Go port of the
 // same contract, because a Go worker does not go through the TS SDK.
 //
 // It is deliberately NOT eager provisioning of the whole per-tenant catalogue: that made the topic

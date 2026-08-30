@@ -11,16 +11,18 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from tests.fake_pool import TenantScopedPoolMixin  # noqa: E402
+
 import pytest
 from middleware.token_logger import TokenLoggerMiddleware, UsageRecord, log_usage
 
 
-class _FakePool:
+class _FakePool(TenantScopedPoolMixin):
     def __init__(self, raises: Exception | None = None):
         self.calls: list = []
         self._raises = raises
 
-    async def execute(self, query, *params):
+    async def _on_execute(self, query, *params):
         self.calls.append((query, params))
         if self._raises is not None:
             raise self._raises

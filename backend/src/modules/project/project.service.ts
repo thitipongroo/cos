@@ -1,9 +1,13 @@
 // Project Service — Phase 3
 // Business logic: create, read, update, status transitions, membership, documents.
-// Emits typed Kafka events via @cos/shared KafkaProducer (QM-8, WORKFLOW ENGINE SPEC).
+// Emits typed Kafka events through the Phase 8 OUTBOX (QM-8, WORKFLOW ENGINE SPEC): every event is
+// written to platform.outbox_events inside the same transaction as its business row and relayed by
+// OutboxPollerService. This service never publishes to Kafka directly (§35.13 ESC-13).
+//
 // OpenSearch is READ-ONLY here: full-text project search (QM-6). Index WRITES moved to
 // SearchIndexerConsumer, which consumes the same construction.project.* events this service
-// publishes — see modules/search/search-indexer.consumer.ts (TDD OQ-22).
+// outboxes — see modules/search/search-indexer.consumer.ts (TDD OQ-22). Calling indexProject here
+// as well would write the same document twice per request.
 
 import {
   Injectable,
@@ -16,7 +20,8 @@ import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
 import { randomUUID } from 'crypto';
 import { Client as OpenSearchClient } from '@opensearch-project/opensearch';
-import { EventOutboxService } from '../../shared/events/event-outbox.service';
+import { buildOutboxEvent } from '../../shared/outbox/outbox.types';
+import type { OutboxEventInput } from '../../shared/outbox/outbox.types';
 import { createLogger } from '@cos/logger';
 import type { CosRole } from '@cos/types';
 import { ProjectRepository } from './project.repository';
@@ -52,7 +57,6 @@ export class ProjectService {
       tenantId?: string;
       user?: { user_id?: string; role?: string };
     },
-    private readonly outbox: EventOutboxService,
   ) {
     this.userRole = request.user?.role ?? '';
     this.correlationId = randomUUID();
@@ -71,22 +75,33 @@ export class ProjectService {
       'project.create',
     );
 
-    const project = await this.repo.create(dto, this.userId);
-
-    await this.publishEvent('construction.project.created.v1', {
-      project_id: project.project_id,
-      project_code: project.project_code,
-      project_name: project.project_name,
-      project_type: project.project_type as
-        'RESIDENTIAL' | 'COMMERCIAL' | 'INFRASTRUCTURE' | 'INDUSTRIAL',
-      budget: {
-        amount: project.budget_amount ?? '0.0000',
-        currency_code: project.budget_currency ?? 'THB',
-      },
-      start_date: project.start_date ?? '',
-      end_date: project.end_date ?? '',
-      created_by: project.created_by,
-    });
+    // Phase 8 Outbox Pattern: the event is written in the SAME transaction as the project row, so a
+    // rollback emits nothing and a committed write can never lose its event. The OutboxPoller
+    // (shared/outbox/outbox-poller.service.ts) relays it to Kafka. Replaces the previous
+    // fire-and-forget publish, which was neither atomic nor retried (§35.13 ESC-13).
+    // The builder receives the INSERTed row, so the payload carries the real generated ids.
+    const project = await this.repo.create(dto, this.userId, (row) =>
+      buildOutboxEvent({
+        eventType: 'construction.project.created.v1',
+        tenantId: this.tenantId,
+        actorId: this.userId,
+        correlationId: this.correlationId,
+        payload: {
+          project_id: row.project_id,
+          project_code: row.project_code,
+          project_name: row.project_name,
+          project_type: row.project_type as
+            'RESIDENTIAL' | 'COMMERCIAL' | 'INFRASTRUCTURE' | 'INDUSTRIAL',
+          budget: {
+            amount: row.budget_amount ?? '0.0000',
+            currency_code: row.budget_currency ?? 'THB',
+          },
+          start_date: row.start_date ?? '',
+          end_date: row.end_date ?? '',
+          created_by: row.created_by,
+        },
+      }),
+    );
 
     return project;
   }
@@ -154,13 +169,20 @@ export class ProjectService {
       if (dto[key] !== undefined) changedFields[key] = dto[key];
     }
 
-    const updated = await this.repo.update(projectId, dto);
-
-    await this.publishEvent('construction.project.updated.v1', {
-      project_id: updated.project_id,
-      changed_fields: changedFields,
-      updated_by: this.userId,
-    });
+    // Outbox (§35.13 ESC-13) — written in the same transaction as the UPDATE.
+    const updated = await this.repo.update(projectId, dto, (row) =>
+      buildOutboxEvent({
+        eventType: 'construction.project.updated.v1',
+        tenantId: this.tenantId,
+        actorId: this.userId,
+        correlationId: this.correlationId,
+        payload: {
+          project_id: row.project_id,
+          changed_fields: changedFields,
+          updated_by: this.userId,
+        },
+      }),
+    );
 
     return updated;
   }
@@ -206,21 +228,42 @@ export class ProjectService {
       meta.cancelled_at = now;
     }
 
-    const updated = await this.repo.updateStatus(projectId, dto.to as ProjectStatus, meta);
-
-    await this.publishEvent('construction.project.status_changed.v1', {
-      project_id: updated.project_id,
-      from_status: existing.status,
-      to_status: dto.to as ProjectStatus,
-      reason: dto.reason ?? null,
-    });
-
-    // COMPLETED projects are considered archived for downstream consumers
-    if (dto.to === 'COMPLETED') {
-      await this.publishEvent('construction.project.archived.v1', {
-        project_id: updated.project_id,
-      });
-    }
+    // Outbox (§35.13 ESC-13): both events for this transition are written in the SAME transaction
+    // as the status update, so a rollback emits neither and a commit loses neither.
+    const updated = await this.repo.updateStatus(
+      projectId,
+      dto.to as ProjectStatus,
+      meta,
+      (row) => {
+        const events: OutboxEventInput[] = [
+          buildOutboxEvent({
+            eventType: 'construction.project.status_changed.v1',
+            tenantId: this.tenantId,
+            actorId: this.userId,
+            correlationId: this.correlationId,
+            payload: {
+              project_id: row.project_id,
+              from_status: existing.status,
+              to_status: dto.to as ProjectStatus,
+              reason: dto.reason ?? null,
+            },
+          }),
+        ];
+        // COMPLETED projects are considered archived for downstream consumers
+        if (dto.to === 'COMPLETED') {
+          events.push(
+            buildOutboxEvent({
+              eventType: 'construction.project.archived.v1',
+              tenantId: this.tenantId,
+              actorId: this.userId,
+              correlationId: this.correlationId,
+              payload: { project_id: row.project_id },
+            }),
+          );
+        }
+        return events;
+      },
+    );
 
     logger.info(
       {
@@ -275,7 +318,12 @@ export class ProjectService {
   ): Promise<{ items: ProjectRow[]; nextCursor: string | null }> {
     try {
       const must: unknown[] = [
-        { term: { tenant_id: this.tenantId } },
+        // §35.13 ESC-32: .keyword, not the bare field. Nothing in the repo creates an index
+        // mapping, so OpenSearch maps these strings dynamically as analyzed `text` with a
+        // `.keyword` sub-field. A `term` query on the analyzed field never matches a UUID or an
+        // enum value, which made every search silently return nothing. All values here are far
+        // below the 256-char `ignore_above`, so `.keyword` is always populated.
+        { term: { 'tenant_id.keyword': this.tenantId } },
         {
           multi_match: {
             query: q,
@@ -284,8 +332,8 @@ export class ProjectService {
           },
         },
       ];
-      if (dto.status) must.push({ term: { status: dto.status } });
-      if (dto.type) must.push({ term: { project_type: dto.type } });
+      if (dto.status) must.push({ term: { 'status.keyword': dto.status } });
+      if (dto.type) must.push({ term: { 'project_type.keyword': dto.type } });
 
       const response = await this.openSearch.search({
         index: OS_INDEX,
@@ -309,24 +357,5 @@ export class ProjectService {
       logger.warn({ q, err }, 'opensearch.search.failed — falling back to DB list');
       return this.repo.list({ status: dto.status, type: dto.type, cursor: dto.cursor, limit });
     }
-  }
-
-  /**
-   * Queue a domain event.
-   *
-   * This is the method whose old comment promised "outbox pattern picks up failures (Phase 8)" while
-   * publishing inline and swallowing the error — there was no outbox, so a broker hiccup dropped the
-   * event for good. Now there is one, and this writes to it.
-   */
-  private async publishEvent<T>(eventType: string, payload: T): Promise<void> {
-    await this.outbox.publish<T>({
-      event_type: eventType,
-      event_version: '1.0',
-      tenant_id: this.tenantId,
-      actor_id: this.userId,
-      occurred_at: new Date().toISOString(),
-      correlation_id: this.correlationId,
-      payload,
-    });
   }
 }

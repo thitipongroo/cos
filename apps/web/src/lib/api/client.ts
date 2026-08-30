@@ -10,6 +10,8 @@
  */
 import { useSession } from 'next-auth/react';
 import { useCallback } from 'react';
+import { isSyncPushable } from '@cos/types';
+import { enqueueMutation } from '../pwa/sync-service';
 
 export const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/api/v1';
 
@@ -71,6 +73,62 @@ export function useUpload(): <T>(path: string, form: FormData) => Promise<T> {
       const res = await fetch(`${API_BASE}${path}`, { method: 'POST', headers, body: form });
       if (!res.ok) throw new ApiError(res.status, `Upload failed: ${res.status}`);
       return (await res.json()) as T;
+    },
+    [token],
+  );
+}
+
+/** What a mutation returns when the network was gone and it was stored for replay instead. */
+export interface QueuedResult {
+  queued: true;
+}
+
+export function isQueued(value: unknown): value is QueuedResult {
+  return typeof value === 'object' && value !== null && 'queued' in value;
+}
+
+/**
+ * A mutation that survives being offline (spec 17 §17.4; master:3620).
+ *
+ * On a NETWORK failure the mutation is written to the IndexedDB queue and `{ queued: true }` comes
+ * back, so the caller can tell the user their work is saved rather than showing an error for
+ * something that will be sent. A failure the SERVER produced is NOT queued — a 400 or a 403 will
+ * fail again identically on replay, and burying it in the queue turns an error the user could have
+ * fixed into five silent retries and a FAILED row.
+ *
+ * `entityType` is checked against SYNC_PUSHABLE_ENTITY_TYPES — the single declaration in @cos/types
+ * that the backend's switch and the mobile client are also held to — so this cannot become a way to
+ * queue something /sync/push has no case for.
+ */
+export function useOfflineApi(): <T>(
+  path: string,
+  init: RequestInit,
+  entity: { type: string; id: string },
+) => Promise<T | QueuedResult> {
+  const { data } = useSession();
+  const token = data?.accessToken;
+  return useCallback(
+    async <T>(
+      path: string,
+      init: RequestInit,
+      entity: { type: string; id: string },
+    ): Promise<T | QueuedResult> => {
+      try {
+        return await apiFetch<T>(path, token, init);
+      } catch (error) {
+        // ApiError means the server answered. Only a transport failure gets queued.
+        if (error instanceof ApiError) throw error;
+        if (!isSyncPushable(entity.type)) throw error;
+
+        const method = (init.method ?? 'POST').toUpperCase();
+        await enqueueMutation(
+          entity.type,
+          entity.id,
+          method === 'POST' ? 'CREATE' : 'UPDATE',
+          init.body ? JSON.parse(String(init.body)) : {},
+        );
+        return { queued: true };
+      }
     },
     [token],
   );

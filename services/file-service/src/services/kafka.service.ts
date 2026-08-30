@@ -1,9 +1,9 @@
-// KafkaService — publishes file domain events via @cos/shared KafkaProducer.
+// KafkaService — publishes file domain events via the @cos/kafka KafkaProducer.
 // Canonical event names per spec §32.4 migration table:
 //   file.document.uploaded.v1    (was: file.uploaded)
 //   file.document.quarantined.v1 (was: file.quarantined)
 
-import { KafkaProducer } from '@cos/shared';
+import { KafkaProducer } from '@cos/kafka';
 import type { FileDocumentUploadedPayload, FileDocumentQuarantinedPayload } from '@cos/shared';
 
 export class KafkaService {

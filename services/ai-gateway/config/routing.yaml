@@ -11,6 +11,8 @@
 
 tiers:
   POWERFUL:
+    # The default is written INTO the reference, not left in a comment: neither variable is set
+    # anywhere in this repo, so a bare ${VAR} would resolve to an empty model name.
     model: '${OPENAI_POWERFUL_MODEL:-gpt-4o}'
     model_hints:
       - report-generation

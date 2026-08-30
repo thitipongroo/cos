@@ -302,14 +302,14 @@ Verified on **2026-08-21** against this working tree (Rule 36).
 | -------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------ |
 | Docker Compose: Kafka + Registry | ✅ present  | `docker-compose.yml` → `kafka` (`confluentinc/cp-kafka:8.3.0`, KRaft), `schema-registry`               |
 | Kubernetes manifests             | ✅ present  | `infrastructure/kubernetes/kafka/kafka-statefulset.yaml`, `schema-registry-deployment.yaml`            |
-| `KafkaProducer`                  | ✅ present  | `packages/@cos/shared/src/kafka/producer.ts`                                                           |
+| `KafkaProducer`                  | ✅ present  | `packages/@cos/kafka/src/producer.ts`                                                                  |
 | `KafkaConsumer` + idempotency    | ✅ present  | `kafka/consumer.ts`; `__tests__/consumer.idempotency.spec.ts`                                          |
 | Outbox publisher / poller        | ✅ present  | `kafka/outbox.ts`; `backend/src/shared/events/event-outbox.service.ts`, `outbox-poller.service.ts`     |
 | DLQ + retry                      | ✅ present  | `kafka/dlq.ts` + `__tests__/dlq.spec.ts`                                                               |
 | Schema Registry client           | ✅ present  | `kafka/schema-registry.client.ts` + spec                                                               |
 | Topic catalogue / provisioner    | ✅ present  | `kafka/topic-catalog.ts`, `kafka/topic-provisioner.ts` + specs — header cites §7.3, §15.6/§15.7, §32.4 |
 | Prometheus metrics               | ✅ present  | `kafka/metrics.ts` + spec                                                                              |
-| Avro schemas                     | ✅ present  | `packages/@cos/shared/src/avro/` → 61 files: 60 canonical `*.v1.avsc` + `base-event-envelope.avsc`     |
+| Avro schemas                     | ✅ present  | `packages/@cos/kafka/src/avro/` → 61 files: 60 canonical `*.v1.avsc` + `base-event-envelope.avsc`      |
 | Integration tests                | ✅ present  | `packages/@cos/shared/test/kafka/`                                                                     |
 | Unit tests across the SDK        | ✅ present  | `src/kafka/__tests__/` → 8 spec files                                                                  |
 | §32.4 canonical schema migration | ✅ complete | no legacy-named `.avsc` remains, and every event named in the §32.4 payload table has one (OQ-6)       |

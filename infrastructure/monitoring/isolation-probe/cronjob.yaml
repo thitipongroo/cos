@@ -27,8 +27,19 @@ spec:
         spec:
           restartPolicy: Never
           serviceAccountName: tenant-isolation-probe
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65532
+            fsGroup: 65532
+            seccompProfile:
+              type: RuntimeDefault
           containers:
             - name: probe
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ['ALL']
               image: node:24-alpine
               command: [node, /scripts/isolation-probe.js]
               env:

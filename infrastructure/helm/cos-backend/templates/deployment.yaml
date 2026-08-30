@@ -5,6 +5,19 @@ metadata:
   labels: {{ include "cos-backend.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  # Rolling deployment with NO capacity loss — master §Phase 17 Deployment Strategy:
+  # "Max surge: 1 pod / Max unavailable: 0 pods (zero-downtime rolling)".
+  #
+  # Added 2026-08-24. Without a strategy block Kubernetes applies its own defaults, maxSurge 25% and
+  # maxUnavailable 25%, so every rollout could take a quarter of the pods down at once. Nothing
+  # reports that: the deploy succeeds, capacity just dips and some requests are refused while it
+  # does. The PodDisruptionBudget does not cover it either — a PDB constrains voluntary DRAINS, not
+  # a Deployment's own rollout.
+  strategy:
+    type: {{ .Values.strategy.type }}
+    rollingUpdate:
+      maxSurge: {{ .Values.strategy.maxSurge }}
+      maxUnavailable: {{ .Values.strategy.maxUnavailable }}
   selector:
     matchLabels: {{ include "cos-backend.selectorLabels" . | nindent 6 }}
   template:

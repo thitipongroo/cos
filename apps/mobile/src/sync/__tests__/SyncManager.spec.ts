@@ -222,9 +222,7 @@ describe('SyncManager', () => {
     });
 
     it('retry_count + 1 >= MAX_RETRIES: triggers exhaustion, increments exhausted count', async () => {
-      mockFetchPending.mockReturnValueOnce([
-        makeItem({ entity_type: 'safety_incidents', retry_count: 4 }),
-      ]);
+      mockFetchPending.mockReturnValueOnce([makeItem({ entity_type: 'safety', retry_count: 4 })]);
       const http: HttpClient = { post: jest.fn().mockRejectedValue(new Error('timeout')) };
       const onExhausted = jest.fn().mockResolvedValue(undefined);
       const manager = makeManager(http, 'tok', { onExhausted });
@@ -234,7 +232,7 @@ describe('SyncManager', () => {
       // review queue stores the payload so an admin can review and manually import it.
       expect(onExhausted).toHaveBeenCalledWith(
         expect.objectContaining({
-          entity_type: 'safety_incidents',
+          entity_type: 'safety',
           entity_id: 'entity-1',
           operation: 'CREATE',
           payload: expect.any(String),
@@ -252,12 +250,12 @@ describe('SyncManager', () => {
 
     it('safety_incidents → calls onExhausted', async () => {
       const onExhausted = jest.fn().mockResolvedValue(undefined);
-      await exhausted('safety_incidents', { onExhausted });
+      await exhausted('safety', { onExhausted });
       // Widened 2026-08-22 (OQ-38): the callback receives the WHOLE queue item, because the §17.2
       // review queue stores the payload so an admin can review and manually import it.
       expect(onExhausted).toHaveBeenCalledWith(
         expect.objectContaining({
-          entity_type: 'safety_incidents',
+          entity_type: 'safety',
           entity_id: 'entity-1',
           operation: 'CREATE',
           payload: expect.any(String),
@@ -267,46 +265,46 @@ describe('SyncManager', () => {
 
     it('workforce_attendance → calls onExhausted', async () => {
       const onExhausted = jest.fn().mockResolvedValue(undefined);
-      await exhausted('workforce_attendance', { onExhausted });
+      await exhausted('attendance', { onExhausted });
       expect(onExhausted).toHaveBeenCalled();
     });
 
     it('inspection_results → calls onExhausted', async () => {
       const onExhausted = jest.fn().mockResolvedValue(undefined);
-      await exhausted('inspection_results', { onExhausted });
+      await exhausted('inspection', { onExhausted });
       expect(onExhausted).toHaveBeenCalled();
     });
 
     it('material_consumption → calls onExhausted', async () => {
       const onExhausted = jest.fn().mockResolvedValue(undefined);
-      await exhausted('material_consumption', { onExhausted });
+      await exhausted('material', { onExhausted });
       expect(onExhausted).toHaveBeenCalled();
     });
 
     it('exhausted_notify without onExhausted callback: no error', async () => {
-      await expect(exhausted('safety_incidents', {})).resolves.toMatchObject({ exhausted: 1 });
+      await expect(exhausted('safety', {})).resolves.toMatchObject({ exhausted: 1 });
     });
 
     it('task_progress_updates → calls onUserNotify with message', async () => {
       const onUserNotify = jest.fn();
-      await exhausted('task_progress_updates', { onUserNotify });
+      await exhausted('task', { onUserNotify });
       expect(onUserNotify).toHaveBeenCalledWith('sync.exhausted.discarded');
     });
 
     it('site_report_drafts → calls onUserNotify', async () => {
       const onUserNotify = jest.fn();
-      await exhausted('site_report_drafts', { onUserNotify });
+      await exhausted('site_report', { onUserNotify });
       expect(onUserNotify).toHaveBeenCalled();
     });
 
     it('discard_notify without onUserNotify callback: no error', async () => {
-      await expect(exhausted('task_progress_updates', {})).resolves.toMatchObject({ exhausted: 1 });
+      await expect(exhausted('task', {})).resolves.toMatchObject({ exhausted: 1 });
     });
 
     it('equipment_usage_logs → silent discard, no callbacks called', async () => {
       const onExhausted = jest.fn().mockResolvedValue(undefined);
       const onUserNotify = jest.fn();
-      await exhausted('equipment_usage_logs', { onExhausted, onUserNotify });
+      await exhausted('equipment', { onExhausted, onUserNotify });
       expect(onExhausted).not.toHaveBeenCalled();
       expect(onUserNotify).not.toHaveBeenCalled();
     });
@@ -381,7 +379,7 @@ describe('SyncManager', () => {
       // /sync/push answers 400 for an entity_type it has no case for. Five identical rejections
       // spread over five cycles reach the same discard, hours later.
       mockFetchPending.mockReturnValueOnce([
-        makeItem({ id: 7, entity_type: 'safety_incidents', retry_count: 0 }),
+        makeItem({ id: 7, entity_type: 'safety', retry_count: 0 }),
       ]);
       const onExhausted = jest.fn().mockResolvedValue(undefined);
       const http: HttpClient = { post: jest.fn().mockRejectedValue(httpError(400)) };
@@ -394,7 +392,7 @@ describe('SyncManager', () => {
       // review queue stores the payload so an admin can review and manually import it.
       expect(onExhausted).toHaveBeenCalledWith(
         expect.objectContaining({
-          entity_type: 'safety_incidents',
+          entity_type: 'safety',
           entity_id: 'entity-1',
           operation: 'CREATE',
           payload: expect.any(String),

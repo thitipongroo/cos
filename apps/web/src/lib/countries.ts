@@ -36,10 +36,11 @@ export function findCountry(iso2: string): Country {
  */
 export function countryFromLocale(locale: string | undefined): string {
   if (!locale) return DEFAULT_COUNTRY_ISO2;
-  const parts = locale.split('-');
-  const region = parts[1]?.toLowerCase();
+  // Lowercase once, then destructure. `String.split` always yields at least one element, so the
+  // previous `parts[0]?.` optional chain guarded a case that cannot occur — an unreachable branch
+  // that no test could ever cover (§35.13 ESC-25). Behaviour is unchanged.
+  const [lang, region] = locale.toLowerCase().split('-');
   if (region && COUNTRIES.some((c) => c.iso2 === region)) return region;
-  const lang = parts[0]?.toLowerCase();
   if (lang === 'th') return 'th';
   return DEFAULT_COUNTRY_ISO2;
 }

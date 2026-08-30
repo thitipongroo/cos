@@ -8,7 +8,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// IdempotencyTTL matches IDEMPOTENCY_TTL_SECONDS in @cos/shared/src/kafka/consumer.ts. Kafka
+// IdempotencyTTL matches IDEMPOTENCY_TTL_SECONDS in @cos/kafka/src/consumer.ts. Kafka
 // retention for the shared tier is 7 days (§7.3), so 24h covers redelivery without holding keys
 // for the whole retention window.
 const IdempotencyTTL = 24 * time.Hour
@@ -54,7 +54,7 @@ func (i *Idempotency) Release(ctx context.Context, group, eventID string) error 
 	return nil
 }
 
-// idempotencyKey uses the same layout as the TypeScript consumer (@cos/shared/src/kafka/consumer.ts)
+// idempotencyKey uses the same layout as the TypeScript consumer (@cos/kafka/src/consumer.ts)
 // so a group behaves identically whichever language implements it.
 //
 // The group is IN the key. Before 2026-08-23 it was not, and this comment claimed the resulting

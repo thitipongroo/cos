@@ -5,7 +5,8 @@ NestJS module for Bill of Quantities (BOQ) management.
 ## Purpose
 
 Manages BOQ versions, categories, and line items for construction projects (Phase 4).
-Enforces financial precision rules: all monetary values stored as `DECIMAL(19,4)`, calculated with `decimal.js` (never native JS float).
+Enforces financial precision rules: all monetary values stored as `DECIMAL(19,4)`, calculated
+with `decimal.js` (never native JS float).
 Supports versioning with copy-on-approve semantics.
 
 **Status:** Module scaffolded. Full implementation in Phase 4.
@@ -29,7 +30,7 @@ GET    /api/v1/boq/versions/:versionId/export                     — export JSO
 ```text
 estimated_total = ROUND(quantity × unit_cost, 4)  — HALF_UP
 category.subtotal = SUM(item.estimated_total)
-version.total = SUM(category.subtotal)
+version.total = SUM(category.subtotal) over EVERY category, at every depth (OQ-23)
 ```
 
 ## Dependencies
@@ -37,7 +38,8 @@ version.total = SUM(category.subtotal)
 - `@cos/database` — `TenantPrismaService`
 - `@cos/financial` — `calculateLineTotal`, `Decimal` — never native float
 - `@cos/rbac` — `PROJECT_MANAGER`, `TENANT_ADMIN` guards
-- `@cos/shared` — Kafka event contracts
+- `@cos/kafka` — KafkaProducer (SDK)
+- `@cos/shared` — typed event payload contracts
 
 ## Configuration
 

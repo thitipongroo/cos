@@ -36,8 +36,8 @@ const AT_RISK = {
 };
 
 const EXEC_ROWS = [
-  { projectId: 'proj-1', utilizationPct: 62, atRisk: false },
-  { projectId: 'proj-2', utilizationPct: 118, atRisk: true },
+  { projectId: 'proj-1', utilizationPct: 62, atRisk: 0 },
+  { projectId: 'proj-2', utilizationPct: 118, atRisk: 1 },
 ];
 
 function renderScreen() {

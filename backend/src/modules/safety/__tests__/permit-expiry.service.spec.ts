@@ -7,7 +7,7 @@
 //    `expired_permits` count and task completion gate #4 (`countBlockingPermits`). A permit past its
 //    `valid_until` stayed ACTIVE forever, so the count was always 0 and the gate never blocked.
 //
-// 2. `safety.violation.detected.v1` had no producer at all (OQ-35).
+// 2. `safety.compliance.failed.v1` had no producer at all (OQ-35).
 //
 // The sweep fixes both in one statement, which is the property the first test pins: the transition
 // and the event describe the same rows, so an event can never claim an expiry the table does not
@@ -70,19 +70,19 @@ describe('PermitExpiryService', () => {
     expect(sql).not.toContain('valid_until <= CURRENT_DATE');
   });
 
-  it('emits safety.violation.detected.v1 with violation_type PERMIT_EXPIRED', async () => {
+  it('emits safety.compliance.failed.v1 with failure_type PERMIT_EXPIRED', async () => {
     mockQueryRaw.mockResolvedValue([permit]);
 
     await svc.sweep();
 
     expect(outbox.publish).toHaveBeenCalledWith(
       expect.objectContaining({
-        event_type: 'safety.violation.detected.v1',
+        event_type: 'safety.compliance.failed.v1',
         tenant_id: 't-1',
         // No human triggered a lapse on a clock.
         actor_id: 'system',
         payload: expect.objectContaining({
-          violation_type: 'PERMIT_EXPIRED',
+          failure_type: 'PERMIT_EXPIRED',
           project_id: 'proj-1',
           permit_id: 'p-1',
           permit_number: 'WP-0001',

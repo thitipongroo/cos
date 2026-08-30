@@ -10,7 +10,6 @@ DIFFERENT from a POWERFUL hint. Under the old code both returned "gpt-4o" and it
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
 import pytest

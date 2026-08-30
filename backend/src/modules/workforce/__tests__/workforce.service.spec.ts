@@ -1,12 +1,8 @@
 // Workforce Service unit tests — Phase 22
 // Tests: attendance calculation, timesheet aggregation, check-in/out cycle
 
-jest.mock('@cos/shared', () => ({
-  KafkaProducer: jest.fn().mockImplementation(() => ({
-    connect: jest.fn().mockResolvedValue(undefined),
-    publish: jest.fn().mockResolvedValue(undefined),
-  })),
-}));
+// §35.13 ESC-13: the service no longer holds a KafkaProducer — it hands an outbox envelope to
+// the repository write that anchors it, so these tests assert on the repository call itself.
 
 jest.mock('@cos/logger', () => ({
   createLogger: () => ({ info: jest.fn(), error: jest.fn(), warn: jest.fn() }),
@@ -14,7 +10,7 @@ jest.mock('@cos/logger', () => ({
 
 import type { WorkforceRepository } from '../workforce.repository';
 
-type MockRequest = { tenantId: string; user: { sub: string } };
+type MockRequest = { tenantId: string; userId: string };
 
 const makeRepo = () => ({
   createWorker: jest.fn(),
@@ -31,14 +27,16 @@ const makeRepo = () => ({
   getManpowerSummary: jest.fn(),
 });
 
+// req.userId — the PLATFORM user UUID. The mock used to supply `user: { sub }`, which is the
+// KEYCLOAK id and, under the Fastify adapter, does not reliably reach a Scope.REQUEST provider at
+// all — so the service read undefined and attributed every event to the literal 'system'.
 const makeReq = (userId = 'user-1', tenantId = 'tenant-1'): MockRequest => ({
   tenantId,
-  user: { sub: userId },
+  userId,
 });
 
 import { NotFoundException } from '@nestjs/common';
 import { WorkforceService } from '../workforce.service';
-import { makeOutboxDouble } from '../../../shared/events/__tests__/outbox-double';
 
 describe('WorkforceService', () => {
   let service: WorkforceService;
@@ -50,7 +48,6 @@ describe('WorkforceService', () => {
     service = new WorkforceService(
       req as unknown as ConstructorParameters<typeof WorkforceService>[0],
       repo as unknown as WorkforceRepository,
-      makeOutboxDouble().service,
     );
   });
 
@@ -86,13 +83,11 @@ describe('WorkforceService', () => {
       expect(callArg.hours_worked).toBe(7.5);
     });
 
-    it('emits checkin event when only check_in_at is set', async () => {
-      const outboxMock = makeOutboxDouble();
+    it('writes the checkin event to the outbox when only check_in_at is set', async () => {
       repo = makeRepo();
       service = new WorkforceService(
         req as unknown as ConstructorParameters<typeof WorkforceService>[0],
         repo as unknown as WorkforceRepository,
-        outboxMock.service,
       );
 
       repo.findWorkerById.mockResolvedValue({ worker_id: 'w1' });
@@ -103,9 +98,33 @@ describe('WorkforceService', () => {
         check_in_at: '2026-06-08T08:00:00Z',
       });
 
-      expect(outboxMock.publish).toHaveBeenCalledWith(
-        expect.objectContaining({ event_type: 'workforce.checkin.created.v1' }),
-      );
+      // The payload is §32.4 row 9, NOT the master:5338 shorthand ({ worker_id, project_id,
+      // checked_in_at }): workforce.checkin.created.v1.avsc requires checkin_id, checkin_at and
+      // method with no default, so the shorthand could not encode and every check-in died at the
+      // outbox poller.
+      const [params, event] = repo.recordAttendance.mock.calls[0] as [
+        { worker_id: string; log_id: string },
+        {
+          event_type: string;
+          tenant_id: string;
+          actor_id: string;
+          payload: Record<string, unknown>;
+        },
+      ];
+      expect(params.worker_id).toBe('w1');
+      expect(event.event_type).toBe('workforce.checkin.created.v1');
+      expect(event.tenant_id).toBe('tenant-1');
+      expect(event.actor_id).toBe('user-1');
+      expect(event.payload).toEqual({
+        checkin_id: params.log_id,
+        worker_id: 'w1',
+        project_id: 'proj-1',
+        checkin_at: '2026-06-08T08:00:00Z',
+        // This caller asserted no method, so the field says so. `MANUAL` is a claim — "a person
+        // typed this in" — and a consumer has to be able to tell it apart from silence.
+        method: null,
+        location: null,
+      });
     });
 
     // TDD OQ-36. The payload was `{ worker_id, project_id, checked_in_at }` against a schema
@@ -114,12 +133,10 @@ describe('WorkforceService', () => {
     // the row, so NOT ONE check-in event had ever reached Kafka. Asserting the event "was emitted"
     // is what let that hide: it was emitted into the outbox and died there.
     it('emits a checkin payload that satisfies every REQUIRED field of the schema', async () => {
-      const outboxMock = makeOutboxDouble();
       repo = makeRepo();
       service = new WorkforceService(
         req as unknown as ConstructorParameters<typeof WorkforceService>[0],
         repo as unknown as WorkforceRepository,
-        outboxMock.service,
       );
       repo.findWorkerById.mockResolvedValue({ worker_id: 'w1' });
       repo.recordAttendance.mockResolvedValue({ log_id: 'log-42' });
@@ -131,10 +148,15 @@ describe('WorkforceService', () => {
         longitude: 100.5018,
       });
 
-      const published = outboxMock.publish.mock.calls[0][0] as { payload: Record<string, unknown> };
+      // The event rides the INSERT now (§35.13 ESC-13), so it arrives as recordAttendance's second
+      // argument rather than through the outbox service. A rolled-back check-in emits nothing.
+      const [params, published] = repo.recordAttendance.mock.calls[0] as [
+        { log_id: string },
+        { payload: Record<string, unknown> },
+      ];
       expect(published.payload).toEqual({
         // checkin_id is the attendance log's own id — available all along, never sent.
-        checkin_id: 'log-42',
+        checkin_id: params.log_id,
         worker_id: 'w1',
         project_id: 'proj-1',
         // `checkin_at`, not `checked_in_at`: the schema's name, not the service's.
@@ -151,12 +173,10 @@ describe('WorkforceService', () => {
     // ClickHouse has carried a column for it all along; until this, every event sent null because
     // there was nowhere to read a value from.
     it('carries the method the client asserted, and stores it on the row', async () => {
-      const outboxMock = makeOutboxDouble();
       repo = makeRepo();
       service = new WorkforceService(
         req as unknown as ConstructorParameters<typeof WorkforceService>[0],
         repo as unknown as WorkforceRepository,
-        outboxMock.service,
       );
       repo.findWorkerById.mockResolvedValue({ worker_id: 'w1' });
       repo.recordAttendance.mockResolvedValue({ log_id: 'log-44' });
@@ -168,22 +188,25 @@ describe('WorkforceService', () => {
       });
 
       // On the wire...
-      const published = outboxMock.publish.mock.calls[0][0] as { payload: Record<string, unknown> };
+      // The event rides the INSERT now (§35.13 ESC-13), so it arrives as recordAttendance's second
+      // argument rather than through the outbox service. A rolled-back check-in emits nothing.
+      const [, published] = repo.recordAttendance.mock.calls[0] as [
+        { log_id: string },
+        { payload: Record<string, unknown> },
+      ];
       expect(published.payload).toMatchObject({ method: 'QR_CODE' });
 
       // ...and on the row, so a later read does not have to replay Kafka to learn it.
-      expect(repo.recordAttendance).toHaveBeenCalledWith(
+      expect(repo.recordAttendance.mock.calls[0][0]).toEqual(
         expect.objectContaining({ method: 'QR_CODE' }),
       );
     });
 
     it('sends location null when the check-in carried no coordinates', async () => {
-      const outboxMock = makeOutboxDouble();
       repo = makeRepo();
       service = new WorkforceService(
         req as unknown as ConstructorParameters<typeof WorkforceService>[0],
         repo as unknown as WorkforceRepository,
-        outboxMock.service,
       );
       repo.findWorkerById.mockResolvedValue({ worker_id: 'w1' });
       repo.recordAttendance.mockResolvedValue({ log_id: 'log-43' });
@@ -193,8 +216,13 @@ describe('WorkforceService', () => {
         check_in_at: '2026-06-08T08:00:00Z',
       });
 
-      const published = outboxMock.publish.mock.calls[0][0] as { payload: Record<string, unknown> };
-      expect(published.payload).toMatchObject({ checkin_id: 'log-43', location: null });
+      // The event rides the INSERT now (§35.13 ESC-13), so it arrives as recordAttendance's second
+      // argument rather than through the outbox service. A rolled-back check-in emits nothing.
+      const [params, published] = repo.recordAttendance.mock.calls[0] as [
+        { log_id: string },
+        { payload: Record<string, unknown> },
+      ];
+      expect(published.payload).toMatchObject({ checkin_id: params.log_id, location: null });
     });
 
     it('throws if worker not found', async () => {
@@ -205,14 +233,123 @@ describe('WorkforceService', () => {
     });
   });
 
-  describe('timesheet aggregation', () => {
-    it('approves timesheet and emits event with total_hours', async () => {
-      const outboxMock = makeOutboxDouble();
+  // ── check-in event payload (§32.4 row 9) ─────────────────────────────────
+  //
+  // checkin_id, checkin_at and method are REQUIRED with no default in
+  // workforce.checkin.created.v1.avsc. The master:5338 shorthand omitted all three, so the event
+  // could not Avro-encode and every check-in died at the outbox poller — silently, because nothing
+  // downstream complained. analytics-worker builds site_activity_daily.manpower_total from this
+  // event, so the PM dashboard's manpower read zero.
+
+  describe('check-in event payload', () => {
+    // The envelope now rides the INSERT, so it is the SECOND argument to repo.recordAttendance
+    // rather than a publish on an injected outbox service (§35.13 ESC-13).
+    const eventOf = (): { event_type: string; payload: Record<string, unknown> } => {
+      const [, event] = repo.recordAttendance.mock.calls[0] as [
+        Record<string, unknown>,
+        { event_type: string; payload: Record<string, unknown> },
+      ];
+      return event;
+    };
+    const paramsOf = (): Record<string, unknown> =>
+      (repo.recordAttendance.mock.calls[0] as [Record<string, unknown>])[0];
+
+    beforeEach(() => {
       repo = makeRepo();
       service = new WorkforceService(
         req as unknown as ConstructorParameters<typeof WorkforceService>[0],
         repo as unknown as WorkforceRepository,
-        outboxMock.service,
+      );
+      repo.findWorkerById.mockResolvedValue({ worker_id: 'w1' });
+      repo.recordAttendance.mockResolvedValue({ log_id: 'log-1' });
+    });
+
+    it('carries the three fields the Avro schema requires with no default', async () => {
+      await service.recordAttendance('w1', {
+        project_id: 'proj-1',
+        check_in_at: '2026-06-08T08:00:00Z',
+        method: 'BIOMETRIC',
+        latitude: 13.75,
+        longitude: 100.5,
+      } as never);
+
+      // checkin_id is the attendance row's own id. The event is built before the INSERT returns, so
+      // the service generates it once and uses it for both — asserting they match is what proves the
+      // event points at the row it was written with.
+      expect(eventOf().payload).toEqual(
+        expect.objectContaining({
+          checkin_id: paramsOf().log_id,
+          checkin_at: '2026-06-08T08:00:00Z',
+          method: 'BIOMETRIC',
+        }),
+      );
+      expect(paramsOf().log_id).toEqual(expect.any(String));
+    });
+
+    it('sends method null when the client asserts none — NOT MANUAL', async () => {
+      // The premise this test was written on — "`method` has no Avro default, so the service must
+      // supply one" — does not hold against the schema: `["null", CheckinMethod]`, default null.
+      // `MANUAL` is a claim that a person typed the check-in in; silence is not that claim, and a
+      // consumer has to be able to tell the two apart. PO decision 2026-08-23, §32.4 row 9.
+      await service.recordAttendance('w1', {
+        project_id: 'proj-1',
+        check_in_at: '2026-06-08T08:00:00Z',
+      });
+
+      expect(eventOf().payload).toEqual(expect.objectContaining({ method: null }));
+    });
+
+    it('sends the location only when BOTH coordinates are present', async () => {
+      await service.recordAttendance('w1', {
+        project_id: 'proj-1',
+        check_in_at: '2026-06-08T08:00:00Z',
+        latitude: 13.75,
+        longitude: 100.5,
+      } as never);
+
+      expect(eventOf().payload).toEqual(
+        expect.objectContaining({ location: { lat: 13.75, lng: 100.5 } }),
+      );
+    });
+
+    it.each([
+      ['only a latitude', { latitude: 13.75 }],
+      ['only a longitude', { longitude: 100.5 }],
+      ['neither coordinate', {}],
+    ])('sends a null location for %s', async (_label, coords) => {
+      // Half a coordinate pair is not a location. Emitting { lat, lng: undefined } would either fail
+      // the encode or place the check-in on the equator.
+      await service.recordAttendance('w1', {
+        project_id: 'proj-1',
+        check_in_at: '2026-06-08T08:00:00Z',
+        ...coords,
+      } as never);
+
+      expect(eventOf().payload).toEqual(expect.objectContaining({ location: null }));
+    });
+
+    it('does not put the check-in shape on a check-OUT event', async () => {
+      // check-out is a different schema: hours_worked, no checkin_id. Sending the check-in payload
+      // under the check-out type would fail the encode the same way.
+      await service.recordAttendance('w1', {
+        project_id: 'proj-1',
+        check_in_at: '2026-06-08T08:00:00Z',
+        check_out_at: '2026-06-08T17:00:00Z',
+      });
+
+      const event = eventOf();
+      expect(event.event_type).toBe('workforce.checkout.created.v1');
+      expect(event.payload).not.toHaveProperty('checkin_id');
+      expect(event.payload).toHaveProperty('hours_worked');
+    });
+  });
+
+  describe('timesheet aggregation', () => {
+    it('approves timesheet and builds the outbox event from the UPDATEd row', async () => {
+      repo = makeRepo();
+      service = new WorkforceService(
+        req as unknown as ConstructorParameters<typeof WorkforceService>[0],
+        repo as unknown as WorkforceRepository,
       );
 
       const ts = {
@@ -224,14 +361,26 @@ describe('WorkforceService', () => {
         overtime_hours: '8',
         status: 'APPROVED',
       };
-      repo.approveTimesheet.mockResolvedValue(ts);
+      // Stand in for the real repository, which invokes the builder with the UPDATEd row —
+      // the builder must actually run for its Decimal arithmetic to be exercised (QM-1).
+      let built: { event_type: string; payload: Record<string, unknown> } | undefined;
+      repo.approveTimesheet.mockImplementation(
+        async (_id: string, build?: (row: typeof ts) => typeof built) => {
+          built = build?.(ts);
+          return ts;
+        },
+      );
 
       const result = await service.approveTimesheet('ts-1');
       expect(result.status).toBe('APPROVED');
-      expect(outboxMock.publish).toHaveBeenCalledWith(
+      expect(built).toEqual(
         expect.objectContaining({
           event_type: 'workforce.timesheet.approved.v1',
-          payload: expect.objectContaining({ total_hours: 168 }),
+          payload: expect.objectContaining({
+            worker_id: 'w1',
+            project_id: 'proj-1',
+            total_hours: 168,
+          }),
         }),
       );
     });
@@ -362,15 +511,36 @@ describe('WorkforceService', () => {
     });
   });
 
-  describe('userId fallback to system', () => {
-    it('uses "system" as actor_id when req.user is undefined', async () => {
-      const outboxMock = makeOutboxDouble();
+  // §35.13 ESC-13: the previous `emitEvent` swallowed Kafka failures, so a broker outage silently
+  // dropped the event. Under the outbox the write shares the transaction — a failure there must
+  // propagate and roll the attendance log back rather than be logged and ignored.
+  describe('outbox write failure', () => {
+    it('propagates the failure instead of silently dropping the event', async () => {
+      repo.findWorkerById.mockResolvedValue({ worker_id: 'w1' });
+      repo.recordAttendance.mockRejectedValue(new Error('outbox insert failed'));
+
+      await expect(
+        service.recordAttendance('w1', {
+          project_id: 'proj-1',
+          check_in_at: '2026-06-08T08:00:00Z',
+        }),
+      ).rejects.toThrow('outbox insert failed');
+    });
+  });
+
+  // ADR-031 / §35.13 ESC-16: the service previously read `req.user?.sub`, which nothing sets, so it
+  // always produced the literal 'system'. It now reads `req.userId` with a CLS fallback.
+  describe('actor attribution when the request carries no user id', () => {
+    it('records the CLS user rather than the literal "system"', async () => {
+      // This used to assert actor_id: 'system'. Every workforce event was then attributed to nobody
+      // — an audit trail that answers "who checked this worker in?" with a placeholder. It did not
+      // crash, unlike the equipment module's version of the same getter, because actor_id lands in
+      // the outbox payload JSON rather than in a UUID column. That is exactly why it survived.
       const noUserReq = { tenantId: 'tenant-1' };
       repo = makeRepo();
       service = new WorkforceService(
         noUserReq as unknown as ConstructorParameters<typeof WorkforceService>[0],
         repo as unknown as WorkforceRepository,
-        outboxMock.service,
       );
       repo.findWorkerById.mockResolvedValue({ worker_id: 'w1' });
       repo.recordAttendance.mockResolvedValue({ log_id: 'log-1' });
@@ -380,9 +550,24 @@ describe('WorkforceService', () => {
         check_in_at: '2026-06-08T08:00:00Z',
       });
 
-      expect(outboxMock.publish).toHaveBeenCalledWith(
-        expect.objectContaining({ actor_id: 'system' }),
+      // No CLS context in a bare unit test, so clsUserId() returns '' — the point is that the
+      // fabricated 'system' identity is gone, not that a specific id appears here.
+      expect(repo.recordAttendance).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ actor_id: '' }),
       );
+    });
+
+    it('tenantId also falls back to CLS on an empty request', () => {
+      // Invoking the getter is required — constructing the service does not exercise the
+      // `?? clsTenantId()` branch (context.md QM-1; ADR-031).
+      const emptyReq = {};
+      const svc = new WorkforceService(
+        emptyReq as unknown as ConstructorParameters<typeof WorkforceService>[0],
+        makeRepo() as unknown as WorkforceRepository,
+      );
+      expect((svc as unknown as { tenantId: string }).tenantId).toBe('');
+      expect((svc as unknown as { userId: string }).userId).toBe('');
     });
   });
 

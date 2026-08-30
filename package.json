@@ -16,16 +16,20 @@
     "test:cov": "turbo run test:cov",
     "test:integration": "turbo run test:integration",
     "test:contract": "jest --config jest.contract.config.js",
+    "test:conformance": "jest --config jest.conformance.config.js",
     "lint": "turbo run lint",
     "lint:fix": "turbo run lint:fix",
-    "type-check": "turbo run type-check",
+    "type-check": "turbo run type-check && pnpm run type-check:tests",
+    "_comment_type_check_tests": "tests/ is NOT a pnpm workspace member (pnpm-workspace.yaml lists apps/*, backend, packages/@cos/*, services/*), so `turbo run type-check` never reaches tests/contract or tests/conformance. Their type errors used to surface only when the corresponding jest job compiled them, one CI step later than every other package.",
+    "type-check:tests": "tsc --noEmit -p tests/contract/tsconfig.json && tsc --noEmit -p tests/conformance/tsconfig.json",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yaml,yml}\" --ignore-path .prettierignore",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yaml,yml}\" --ignore-path .prettierignore",
     "lint:openapi": "bash ./scripts/ci/check-openapi-valid.sh",
     "clean": "turbo run clean && rm -rf node_modules",
     "migrate": "turbo run migrate",
     "seed": "turbo run seed",
-    "prepare": "husky"
+    "prepare": "husky",
+    "test:architecture": "jest --config jest.architecture.config.js"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.12.1",
@@ -48,7 +52,8 @@
     "ts-jest": "^29.4.11",
     "ts-node": "^10.9.2",
     "turbo": "^2.10.5",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "yaml": "^2.9.0"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [

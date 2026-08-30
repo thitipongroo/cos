@@ -21,7 +21,7 @@
 // say whether that means "quiet" or "never built". A reader has no way to tell a live event from a
 // design sketch, because they look identical everywhere except the one place nobody looks.
 //
-// WHAT THIS CHECKS. For every `.avsc` in `packages/@cos/shared/src/avro`, the canonical event type
+// WHAT THIS CHECKS. For every `.avsc` in `packages/@cos/kafka/src/avro`, the canonical event type
 // must appear somewhere in application source — or be listed in DECLARED_ONLY below with a reason.
 //
 // WHAT THIS DOES NOT DO. It does not prove the reference is a PUBLISH rather than a consumer
@@ -36,7 +36,7 @@ import { dirname, join, resolve, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
-const AVRO_DIR = join(REPO_ROOT, 'packages', '@cos', 'shared', 'src', 'avro');
+const AVRO_DIR = join(REPO_ROOT, 'packages', '@cos', 'kafka', 'src', 'avro');
 
 /**
  * Trees that count as application source. Build output and tests deliberately excluded.

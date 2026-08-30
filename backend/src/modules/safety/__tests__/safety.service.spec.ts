@@ -2,7 +2,7 @@
 jest.mock('@cos/logger', () => ({
   createLogger: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }),
 }));
-jest.mock('@cos/shared', () => ({
+jest.mock('@cos/kafka', () => ({
   KafkaProducer: jest.fn().mockImplementation(() => ({
     connect: jest.fn().mockResolvedValue(undefined),
     publish: jest.fn().mockResolvedValue(undefined),
@@ -58,10 +58,11 @@ it('constructor tolerates missing request context; userId falls back to empty', 
       { provide: REQUEST, useValue: {} },
     ],
   }).compile();
-  const s = await m.resolve<SafetyService>(SafetyService);
-  expect(s).toBeDefined();
-  // exercise the userId getter's `|| clsUserId()` fallback branch (no request.userId, no CLS → '')
-  expect((s as unknown as { userId: string }).userId).toBe('');
+  const svc = await m.resolve<SafetyService>(SafetyService);
+  expect(svc).toBeDefined();
+  // Invoke the lazy getter — constructing the service alone does NOT exercise the
+  // `|| clsUserId()` fallback branch (context.md QM-1; ADR-031).
+  expect((svc as unknown as { userId: string }).userId).toBe('');
 });
 
 describe('incidents', () => {

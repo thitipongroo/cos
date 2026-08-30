@@ -5,7 +5,8 @@ NestJS module for construction equipment management and utilization tracking.
 ## Purpose
 
 Tracks equipment inventory, project assignments, maintenance schedules, and daily utilization (Phase 21).
-Time-series telemetry (utilization, fuel consumption) stored in TimescaleDB hypertables. IoT telemetry pipeline available via EP-DOMAIN-003.
+Time-series telemetry (utilization, fuel consumption) stored in TimescaleDB hypertables. IoT telemetry
+pipeline available via EP-DOMAIN-003.
 
 **Status:** Module scaffolded. Full implementation in Phase 21.
 
@@ -31,8 +32,12 @@ GET    /api/v1/projects/:projectId/equipment               — equipment on proj
 ## Dependencies
 
 - `@cos/database` — `TenantPrismaService` (PostgreSQL for equipment entities)
-- `@cos/financial` — `Decimal` for cost fields (`purchase_cost`, maintenance `cost`)
-- `@cos/rbac` — role guards
+- `@cos/validation` — `IsDecimalString` for the cost fields (`purchase_cost`, maintenance `cost`).
+  They are decimal STRINGS end to end, straight into `DECIMAL(19,4)`; no arithmetic happens in this
+  module, so `@cos/financial`'s `Decimal` is not needed here. (This line used to name
+  `@cos/financial` while the DTOs actually took `@IsNumber()` — a JS float, which master:990
+  forbids for money.)
+- `@cos/rbac` — `Roles`, paired with `RolesGuard` on both controllers
 - `@cos/shared` — Kafka event contracts
 - TimescaleDB — hypertable for `equipment_utilization` time-series data
 
@@ -52,7 +57,8 @@ POST /api/v1/equipment/uuid/utilization
   "operator_id": "uuid" }
 ```
 
-Kafka events emitted: `equipment.unit.assigned.v1`, `equipment.unit.returned.v1`, `equipment.unit.maintenance_scheduled.v1`
+Kafka events emitted: `equipment.unit.assigned.v1`, `equipment.unit.returned.v1`,
+`equipment.unit.maintenance_scheduled.v1`
 
 ## Notes
 

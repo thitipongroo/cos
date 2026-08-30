@@ -4,7 +4,6 @@
 -r requirements.txt
 pytest==9.1.1
 pytest-asyncio==1.3.0
-# pytest.ini enforces the QM-1 99% line-coverage gate via addopts, so pytest-cov is required to run
-# the suite at all. This service is the first to reach the gate; the other Python services stay
-# ungated until their coverage is raised (see .github/workflows/ci.yml python-tests).
+# pytest.ini enforces the QM-1 99% line-coverage gate via addopts, so pytest-cov is required to
+# run the suite at all. All four AI services carry the same gate — see their pytest.ini files.
 pytest-cov==7.1.0

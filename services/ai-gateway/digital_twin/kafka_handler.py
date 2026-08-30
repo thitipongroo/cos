@@ -22,13 +22,27 @@ from typing import Callable
 
 from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
 
+from . import state_stream
 from .models import TwinDivergenceEvent
 from .sync_service import handle_iot_telemetry_event
 
 logger = logging.getLogger("digital-twin.kafka")
 
 _KAFKA_BROKERS = os.environ.get("KAFKA_BROKERS", "localhost:9092")
-_TELEMETRY_TOPIC_PATTERN = r"^equipment\.telemetry\."
+# Anchored on the TENANT-PREFIXED topic, because that is the only kind that exists.
+#
+# This read `^equipment\.telemetry\.` — anchored at the start of the string with no tenant segment —
+# while the IoT ingestion worker publishes to `{tenant_id}.equipment.telemetry.location.v1`
+# (services/iot-ingestion-worker/internal/ingest/transform.go, KafkaTopicFor, pinned by its own Go
+# test). The two can never meet: the Digital Twin received no telemetry at all, and state
+# synchronisation — capability 1 of this phase — had never run. Nothing failed loudly; the consumer
+# connected, the subscription was valid, and no message ever arrived, which reads as "no telemetry
+# yet" rather than "not connected". The same shape as the Phase 14 ClickHouse Kafka-engine tables,
+# which subscribed to bare event names for the same reason.
+#
+# `[^.]+` for the tenant and both ends anchored, matching coskafka's TopicRegex convention: an
+# unanchored tail would also swallow a `.v2` topic whose payload has a different shape.
+_TELEMETRY_TOPIC_PATTERN = r"^[^.]+\.equipment\.telemetry\.[^.]+\.v1$"
 _TWIN_STATE_EVENT = "twin.state.updated.v1"
 _TWIN_DIVERGENCE_EVENT = "twin.divergence.detected.v1"
 
@@ -115,13 +129,23 @@ async def start_telemetry_consumer(*, db_pool, redis_client, encode: EncodeFn = 
                     # a data carrier. project_id resolves via the entity lookup in sync_service.
                     payload = {
                         "entity_id": str(twin_state.entity_id),
-                        "project_id": str(twin_state.entity_id),
+                        # The ENTITY's project. This read `str(twin_state.entity_id)` — the entity id
+                        # in the project_id field — so twin.state.updated.v1 carried a project that
+                        # does not exist and any consumer filtering by project matched nothing. The
+                        # comment above already said project_id "resolves via the entity lookup in
+                        # sync_service"; it just was not being carried out of that lookup.
+                        "project_id": str(twin_state.project_id),
                         "tenant_id": str(twin_state.tenant_id),
                         "recorded_at": twin_state.recorded_at.isoformat(),
                         "source": twin_state.source.value,
                         "confidence": twin_state.confidence,
                     }
                     envelope = _envelope(_TWIN_STATE_EVENT, twin_state.tenant_id, payload)
+                    # Local SSE subscribers (master:5610). Fed from the ONE consumer that already
+                    # reads this topic — a consumer per HTTP connection would rebalance the topic on
+                    # every page load. Kafka remains the durable path for services; this is the live
+                    # nudge for a client that is watching right now.
+                    state_stream.publish(str(twin_state.tenant_id), str(twin_state.project_id), payload)
                     await producer.send_and_wait(
                         _topic(str(twin_state.tenant_id), _TWIN_STATE_EVENT),
                         value=encode(_TWIN_STATE_EVENT, envelope),

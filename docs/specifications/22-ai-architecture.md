@@ -584,6 +584,7 @@ before executing; throws `GovernanceViolationError` for disallowed actions.
 | GraphMLModel       | Supply chain risk          | XGBoost on graph-derived node features (PageRank, centrality) from Neo4j | vendor relationship graph features                                                                    |
 | RiskClassifier     | Project risk score         | XGBoost multi-class (LOW/MEDIUM/HIGH/CRITICAL)                           | budget variance, schedule delay, procurement status, safety incidents                                 |
 | DeviceTrustModel   | Device trust score         | XGBoost binary classifier; calibrated probability rendered 0–100         | attestation verdict, enrolment age, `last_seen_at` recency, revocation history, ingress ASN stability |
+| CostAnomalyModel   | Cost anomaly detection — flags unusual cost entries and procurement patterns | **UNSPECIFIED** — algorithm to be decided when Layer B enters an active development sprint (owner: AI/Platform Lead) | **UNSPECIFIED** — candidate sources: `finance.cost_transactions`, `finance.project_budgets`, ClickHouse `project_cost_daily` |
 
 All models trained on Phase 23 MLOps pipeline (MLflow + Feast). Minimum data thresholds before training:
 
@@ -591,6 +592,14 @@ All models trained on Phase 23 MLOps pipeline (MLflow + Feast). Minimum data thr
 - SafetyVisionModel: 10,000+ labeled site photos
 - GraphMLModel: 6+ months Neo4j relationship data
 - RiskClassifier: 50+ projects with full lifecycle
+- CostAnomalyModel: **UNSPECIFIED** — minimum data threshold to be set with its algorithm
+
+> **Added 2026-08-22 (product owner).** `CostAnomalyModel` had an evaluation threshold in
+> `30-testing-strategy` §30.11 (Precision ≥ 0.85, secondary Recall) but was absent from this model
+> table and from `00_master` Phase 23. It is a missing model, not a stale name: its use case and
+> evaluation metric are recorded now; algorithm, input features and minimum training data stay
+> `UNSPECIFIED` and must not be inferred. See docs/architecture/test-design/escalation-register.md §35.13 ESC-03.
+
 - DeviceTrustModel: **no count threshold** — promotion is gated on beating the rule-based baseline on
   a held-out set, measured by **PR-AUC** (ADR-081). A count trigger is the wrong gate here: the
   positive class ("device later revoked as compromised") is rare by design, so a calendar- or

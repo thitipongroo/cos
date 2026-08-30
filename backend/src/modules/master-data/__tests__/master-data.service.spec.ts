@@ -87,7 +87,33 @@ const mockRepo = {
 const mockRequest = { userId: 'user-uuid-001' };
 const mockRequestNoUser = {};
 
-function uniqueError(): Error & { code: string } {
+/**
+ * The error a duplicate ACTUALLY produces on this path.
+ *
+ * Every write in master-data.repository goes through `tx.$queryRaw`, and Prisma 7 on a driver
+ * adapter wraps a failed raw query as P2010 with the driver's SQLSTATE nested underneath. The old
+ * factory set `err.code = '23505'` at the top level — a shape this path never yields — so the tests
+ * below passed against a service whose catch sites could not fire in production. Copied from a real
+ * failure captured in the equipment integration suite.
+ */
+function uniqueError(): Error & { code: string; meta: unknown } {
+  const err = new Error('unique constraint') as Error & { code: string; meta: unknown };
+  err.code = 'P2010';
+  err.meta = {
+    driverAdapterError: {
+      name: 'DriverAdapterError',
+      cause: {
+        kind: 'UniqueConstraintViolation',
+        originalCode: '23505',
+        originalMessage: 'duplicate key value violates unique constraint',
+      },
+    },
+  };
+  return err;
+}
+
+/** The plain driver shape, for a caller that is not on the Prisma raw path. */
+function plainUniqueError(): Error & { code: string } {
   const err = new Error('unique constraint') as Error & { code: string };
   err.code = '23505';
   return err;
@@ -145,6 +171,38 @@ describe('MasterDataService', () => {
           unit: MaterialUnit.KG,
         }),
       ).rejects.toBeInstanceOf(ConflictException);
+    });
+
+    it('recognises the plain driver shape too, not only the Prisma wrapper', async () => {
+      // A caller off the Prisma raw path reports SQLSTATE at the top level. Both shapes must map to
+      // 409 — narrowing the check to whichever one the tests happened to fabricate is how this went
+      // wrong the first time.
+      mockRepo.createMaterial.mockRejectedValue(plainUniqueError());
+      await expect(
+        svc.createMaterial({
+          name: 'Dup',
+          category: MaterialCategory.STEEL,
+          unit: MaterialUnit.KG,
+        }),
+      ).rejects.toBeInstanceOf(ConflictException);
+    });
+
+    it.each([
+      ['a string', 'boom'],
+      ['null', null],
+      ['undefined', undefined],
+    ])('re-throws a %s rejection instead of reading properties off it', async (_label, thrown) => {
+      // The classifier reaches into err.meta.driverAdapterError.cause. A rejection that is not an
+      // object would throw a TypeError inside the CATCH block, replacing the real failure with a
+      // confusing one — so the guard must return false before any property access.
+      mockRepo.createMaterial.mockRejectedValue(thrown);
+      await expect(
+        svc.createMaterial({
+          name: 'X',
+          category: MaterialCategory.STEEL,
+          unit: MaterialUnit.KG,
+        }),
+      ).rejects.toBe(thrown);
     });
 
     it('re-throws non-unique errors', async () => {
@@ -287,6 +345,8 @@ describe('MasterDataService', () => {
       mockRepo.listMaterials.mockResolvedValue([]);
       // Service constructs with userId = '' — no error thrown
       await expect(noUserSvc.listMaterials()).resolves.toEqual([]);
+      // Invoke the lazy getter — constructing the service (or calling a method that does not
+      // read it) does NOT exercise the `|| clsUserId()` fallback branch (context.md QM-1; ADR-031).
       // exercise the userId getter's `|| clsUserId()` fallback branch (no request.userId, no CLS → '')
       expect((noUserSvc as unknown as { userId: string }).userId).toBe('');
     });

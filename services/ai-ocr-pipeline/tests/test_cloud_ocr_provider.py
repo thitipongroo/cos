@@ -1,11 +1,12 @@
-"""Unit tests for the cloud OCR provider seam (spec §22.7 OCR Provider — AWS Textract).
+"""Unit tests for the cloud OCR provider interface — Phase 11.
 
-The provider is deliberately NOT activated in Phase 11: the concrete Textract adapter arrives when
-the invoice-photo pipeline is switched on. What is worth pinning down now is the seam itself — that
-the stub is a real `CloudOCRProvider`, that it fails loudly rather than returning an empty result
-(spec §32.9 Type A integration stubs: log + fail-fast, never silent defaults), and that the
-`OCRResult` contract callers will code against is stable.
+§35.13 ESC-24: providers/cloud_ocr_provider.py had no test, so its 11 statements counted against
+the QM-1 gate. The module is deliberately inert (AWS Textract is RESOLVED but NOT activated —
+docs/specifications/22-ai-architecture.md §22.7), so these tests pin the contract that keeps it
+inert: the stub must refuse loudly rather than return an empty result that reads as a successful
+extraction with no text.
 """
+
 import sys
 from pathlib import Path
 
@@ -17,34 +18,36 @@ from providers.cloud_ocr_provider import CloudOCRProvider, OCRResult, StubCloudO
 
 class TestOCRResult:
     def test_carries_text_fields_and_confidence(self):
-        result = OCRResult(
-            text="INVOICE 2026-07",
-            fields={"invoice_no": "INV-001", "total": "15000.00"},
-            confidence=0.87,
-        )
-        assert result.text == "INVOICE 2026-07"
-        assert result.fields["invoice_no"] == "INV-001"
-        assert result.confidence == 0.87
+        result = OCRResult(text="INVOICE", fields={"total": "1500.00"}, confidence=0.91)
+        assert result.text == "INVOICE"
+        assert result.fields == {"total": "1500.00"}
+        assert result.confidence == 0.91
 
-    def test_fields_is_a_mapping_for_the_textract_forms_feature(self):
-        # Textract AnalyzeDocument FORMS returns key/value pairs — the contract must keep them keyed.
-        result = OCRResult(text="", fields={}, confidence=0.0)
-        assert result.fields == {}
+    def test_is_a_value_object(self):
+        a = OCRResult(text="x", fields={}, confidence=0.5)
+        b = OCRResult(text="x", fields={}, confidence=0.5)
+        assert a == b
+
+
+class TestCloudOCRProvider:
+    def test_cannot_be_instantiated_directly(self):
+        with pytest.raises(TypeError):
+            CloudOCRProvider()  # type: ignore[abstract]
+
+    def test_a_subclass_must_implement_extract(self):
+        class Incomplete(CloudOCRProvider):
+            pass
+
+        with pytest.raises(TypeError):
+            Incomplete()  # type: ignore[abstract]
 
 
 class TestStubCloudOCRProvider:
-    def test_is_a_cloud_ocr_provider(self):
+    def test_is_constructible(self):
         assert isinstance(StubCloudOCRProvider(), CloudOCRProvider)
 
     @pytest.mark.asyncio
-    async def test_extract_fails_fast_instead_of_returning_empty_text(self):
-        # Type A stub (§32.9): raise, never hand back a plausible-looking empty OCRResult.
-        with pytest.raises(NotImplementedError) as exc:
-            await StubCloudOCRProvider().extract("https://storage.example/invoice.jpg")
-
-        assert "Textract" in str(exc.value)
-
-    def test_abstract_base_cannot_be_instantiated(self):
-        # Keeps `extract` abstract so a future adapter cannot silently skip implementing it.
-        with pytest.raises(TypeError):
-            CloudOCRProvider()
+    async def test_extract_refuses_rather_than_returning_an_empty_result(self):
+        provider = StubCloudOCRProvider()
+        with pytest.raises(NotImplementedError, match="Textract not yet activated"):
+            await provider.extract("https://s3.example/invoice.jpg")

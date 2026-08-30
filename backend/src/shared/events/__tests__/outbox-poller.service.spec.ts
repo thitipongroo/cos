@@ -19,7 +19,7 @@ const producerMock = {
   publish: jest.fn().mockResolvedValue(undefined),
   disconnect: jest.fn().mockResolvedValue(undefined),
 };
-jest.mock('@cos/shared', () => ({
+jest.mock('@cos/kafka', () => ({
   KafkaProducer: jest.fn().mockImplementation(() => producerMock),
 }));
 
@@ -244,6 +244,13 @@ describe('OutboxPollerService.poll — delivery', () => {
 });
 
 describe('OutboxPollerService.poll — pacing', () => {
+  // Every other case in this describe compares poll()'s return to the IMPORTED IDLE_INTERVAL_MS,
+  // which is the constant measured against itself: set it to 5000 and they all stay green while the
+  // poller silently drops from 2 Hz to 0.2 Hz. master:3158 states the number, so pin the number.
+  it('idles for the 500ms master:3158 states, not merely "whatever the constant says"', () => {
+    expect(IDLE_INTERVAL_MS).toBe(500);
+  });
+
   it('idles when there was nothing to do', async () => {
     const { svc } = make();
     await expect(svc.poll()).resolves.toBe(IDLE_INTERVAL_MS);
@@ -373,5 +380,48 @@ describe('OutboxPollerService lifecycle', () => {
     await svc.onModuleDestroy();
 
     expect(producerMock.disconnect).not.toHaveBeenCalled();
+  });
+
+  // The three paths below all end in the same place: SIGTERM must not leave the process alive
+  // waiting on a rejected promise. Kubernetes escalates to SIGKILL when it does, and a hard kill
+  // during a poll abandons claimed rows for the full reservation window.
+
+  it('still releases the database when the in-flight poll rejected', async () => {
+    // The poll chain is awaited during shutdown. An unhandled rejection there would skip
+    // $disconnect entirely and take the shutdown down with it.
+    const { svc, db } = make();
+    svc.onApplicationBootstrap();
+    (svc as unknown as { inFlight: Promise<void> }).inFlight = Promise.reject(
+      new Error('poll blew up'),
+    );
+
+    await expect(svc.onModuleDestroy()).resolves.toBeUndefined();
+
+    expect(db.$disconnect).toHaveBeenCalledTimes(1);
+  });
+
+  it('still releases the database when the producer refuses to disconnect', async () => {
+    // A broker that has already gone away rejects the disconnect. That is the NORMAL case during a
+    // cluster-wide restart, not an exceptional one.
+    const { svc, db } = make();
+    svc.onApplicationBootstrap();
+    await svc.poll(); // establishes the Kafka connection
+    producerMock.disconnect.mockRejectedValueOnce(new Error('broker gone'));
+
+    await expect(svc.onModuleDestroy()).resolves.toBeUndefined();
+
+    expect(db.$disconnect).toHaveBeenCalledTimes(1);
+  });
+
+  it('is safe to call twice', async () => {
+    // Nest can invoke the hook again on a second shutdown signal. The second pass finds no timer to
+    // clear, and clearing a null one would throw.
+    const { svc, db } = make();
+    svc.onApplicationBootstrap();
+
+    await svc.onModuleDestroy();
+    await expect(svc.onModuleDestroy()).resolves.toBeUndefined();
+
+    expect(db.$disconnect).toHaveBeenCalledTimes(2);
   });
 });

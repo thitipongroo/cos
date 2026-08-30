@@ -22,6 +22,8 @@ function harness() {
   const annotations = { applyPush: jest.fn() };
   // Delivery + purchase-request push handlers (§17.4 amendment 2026-08-19).
   const procurement = { recordDelivery: jest.fn(), createPurchaseRequest: jest.fn() };
+  // Equipment usage push (Phase 21; §17.4 offline read/write).
+  const equipment = { recordUtilization: jest.fn() };
   // §17.2 exhaustion reporting publishes through the outbox and stamps the request's correlation id.
   const outbox = { publish: jest.fn().mockResolvedValue('evt-1') };
   const request = { correlationId: 'corr-1' };
@@ -32,6 +34,7 @@ function harness() {
     workforce as never,
     annotations as never,
     procurement as never,
+    equipment as never,
     outbox as never,
     request as never,
   );

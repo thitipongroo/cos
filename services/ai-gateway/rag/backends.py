@@ -22,6 +22,8 @@ from typing import Protocol
 
 from .retrieval import RetrievedChunk
 
+from db import tenant_scoped
+
 
 class EmbeddingProvider(Protocol):
     """Query embedding provider (OpenAI text-embedding-3-small in production)."""
@@ -138,11 +140,9 @@ class PgVectorBackend:
             f"LIMIT $2"
         )
 
-        async with self._pool.acquire() as conn:
-            async with conn.transaction():
-                # is_local=true → scoped to this transaction; RLS reads it via current_setting().
-                await conn.execute("SELECT set_config('app.current_tenant_id', $1, true)", tenant_id)
-                rows = await conn.fetch(sql, *args)
+        # Shared helper — the GUC contract lives in one place (db/tenant_scope.py).
+        async with tenant_scoped(self._pool, tenant_id) as conn:
+            rows = await conn.fetch(sql, *args)
 
         chunks: list[RetrievedChunk] = []
         for row in rows:

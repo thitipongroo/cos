@@ -4,7 +4,29 @@ import { KafkaContainer, StartedKafkaContainer } from '@testcontainers/kafka';
 import { Neo4jContainer, StartedNeo4jContainer } from '@testcontainers/neo4j';
 import { MinioContainer, StartedMinioContainer } from '@testcontainers/minio';
 import { ClickHouseContainer, StartedClickHouseContainer } from '@testcontainers/clickhouse';
-import { GenericContainer, Network, StartedNetwork, StartedTestContainer } from 'testcontainers';
+import {
+  GenericContainer,
+  Network,
+  StartedNetwork,
+  StartedTestContainer,
+  Wait,
+} from 'testcontainers';
+
+/**
+ * The PostgreSQL image every caller gets.
+ *
+ * TimescaleDB, not plain postgres, because three migrations call `create_hypertable`
+ * (ADR-032; master §Phase 18 testcontainers setup states it outright: "backend uses the
+ * timescale/timescaledb image"). The image is a superset of stock PostgreSQL, so a service that
+ * needs no hypertable is unaffected.
+ *
+ * This used to be `postgres:16-alpine`. Nothing had noticed because `startContainers` has no caller
+ * outside this package's own unit test — but the first suite to run the backend's migrations
+ * through it would have failed at migrate time, before reaching a single assertion, with an error
+ * about an unknown function rather than about the image. `backend/test/helpers/integration-infra.ts`
+ * already uses the right one; these two must not disagree.
+ */
+export const POSTGRES_IMAGE = 'timescale/timescaledb:latest-pg16';
 
 export interface TestContainers {
   postgres?: StartedPostgreSqlContainer;
@@ -37,7 +59,7 @@ export async function startContainers(opts: TestContainersOptions = {}): Promise
 
   if (opts.postgres) {
     independentPromises.push(
-      new PostgreSqlContainer('postgres:16-alpine')
+      new PostgreSqlContainer(POSTGRES_IMAGE)
         .withDatabase('cos_test')
         .withUsername('cos_test')
         .withPassword('cos_test')
@@ -101,8 +123,15 @@ export async function startContainers(opts: TestContainersOptions = {}): Promise
 
   await Promise.all(independentPromises);
 
-  // Schema Registry requires Kafka on a shared Docker network so it can reach
-  // Kafka's broker listener via the 'kafka' network alias at port 9093.
+  // Schema Registry requires Kafka on a shared Docker network so it can reach the broker by its
+  // 'kafka' network alias.
+  //
+  // The port is 9092, NOT 9093. cp-kafka 7.6.0 under @testcontainers/kafka advertises
+  // `BROKER://kafka:9092` for in-network clients and keeps PLAINTEXT on 9093 for the host, where it
+  // is advertised as localhost:<mappedPort>. Pointed at 9093, Schema Registry bootstraps, is told to
+  // talk to localhost:<mappedPort>, and cannot resolve that from inside its own container — so it
+  // never finishes booting and dies on the kafkastore init timeout. Verified by inspecting the
+  // container's KAFKA_ADVERTISED_LISTENERS rather than by reading the image docs.
   if (opts.schemaRegistry) {
     const network = await new Network().start();
     started._kafkaNetwork = network;
@@ -113,13 +142,20 @@ export async function startContainers(opts: TestContainersOptions = {}): Promise
       .withKraft()
       .start();
 
+    // Waits on the REST API answering, not merely on port 8081 being bound. Schema Registry blocks
+    // on its Kafka store during boot and exits if it cannot reach it within kafkastore.init.timeout
+    // — a port-only wait reports success and the next call then fails with "container is not
+    // running", which is what this path did the first time anything actually started it (the
+    // package's own spec mocks testcontainers, so no container had ever run here).
     started.schemaRegistry = await new GenericContainer('confluentinc/cp-schema-registry:7.6.0')
       .withNetwork(network)
       .withExposedPorts(8081)
       .withEnvironment({
         SCHEMA_REGISTRY_HOST_NAME: 'schema-registry',
-        SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'kafka:9093',
+        SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'PLAINTEXT://kafka:9092',
       })
+      .withWaitStrategy(Wait.forHttp('/subjects', 8081).withStartupTimeout(180_000))
+      .withStartupTimeout(180_000)
       .start();
   }
 

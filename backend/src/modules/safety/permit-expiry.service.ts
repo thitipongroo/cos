@@ -1,4 +1,4 @@
-// Detects expired permits and raises safety.violation.detected.v1 (§17.2-adjacent; §20.2, TDD OQ-35).
+// Detects expired permits and raises safety.compliance.failed.v1 (§17.2-adjacent; §20.2, TDD OQ-35).
 //
 // TWO PROBLEMS, ONE SWEEP
 // -----------------------
@@ -11,7 +11,7 @@
 //    expired permit, and `/safety/compliance` reported `expired_permits: 0` regardless. Found
 //    2026-08-22 while building the violation producer.
 //
-// 2. `SafetyViolationDetected` was named in `19-notification-architecture` §19.6 as one of two
+// 2. `SafetyComplianceFailed` was named in `19-notification-architecture` §19.6 as one of two
 //    notifications that "cannot be disabled", and in `16-enterprise-event-flow` §16 under Safety —
 //    and existed nowhere else. No producer, no consumer, no entry in §32.4's catalogue. So §19.6's
 //    critical set had an unknown size (TDD OQ-35).
@@ -98,7 +98,7 @@ export class PermitExpiryService {
 
     for (const permit of expired) {
       await this.outbox.publish({
-        event_type: 'safety.violation.detected.v1',
+        event_type: 'safety.compliance.failed.v1',
         event_version: '1.0',
         tenant_id: permit.tenant_id,
         // No human triggered this — the permit lapsed on a clock. 'system' matches what the
@@ -107,7 +107,7 @@ export class PermitExpiryService {
         occurred_at: new Date().toISOString(),
         correlation_id: `permit-expiry-${permit.permit_id}`,
         payload: {
-          violation_type: 'PERMIT_EXPIRED',
+          failure_type: 'PERMIT_EXPIRED',
           project_id: permit.project_id,
           permit_id: permit.permit_id,
           permit_number: permit.permit_number,

@@ -7,7 +7,9 @@
 import { Injectable, Scope, Inject } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
+import { OutboxPublisher } from '@cos/kafka';
 import { TenantPrismaService } from '../tenant/prisma/tenant-prisma.service';
+import type { OutboxEventInput } from '../../shared/outbox/outbox.types';
 import { clsTenantId } from '../../shared/context/cls-context';
 import type { CreateProjectDto } from './dto/create-project.dto';
 import type { UpdateProjectDto } from './dto/update-project.dto';
@@ -96,10 +98,22 @@ export class ProjectRepository {
     @Inject(REQUEST) private readonly request: Request & { tenantId?: string },
   ) {}
 
-  async create(dto: CreateProjectDto, createdBy: string): Promise<ProjectRow> {
-    const rows = await this.tenantPrisma.run(
-      async (tx) =>
-        await tx.$queryRaw<ProjectRow[]>`
+  /**
+   * Insert a project. When `buildOutboxEvent` is supplied the outbox row is written inside the SAME
+   * transaction as the business row (Phase 8 Outbox Pattern) — a rollback therefore emits no event.
+   * `TenantPrismaService.run` already wraps the callback in `prisma.$transaction`.
+   *
+   * The parameter is a **builder**, not a pre-built envelope: `project_id`, `created_at` and the
+   * other server-generated columns only exist after the INSERT returns, so the event payload must
+   * be derived from the inserted row — otherwise the relayed event would carry ids that match no row.
+   */
+  async create(
+    dto: CreateProjectDto,
+    createdBy: string,
+    buildOutboxEvent?: (row: ProjectRow) => OutboxEventInput,
+  ): Promise<ProjectRow> {
+    const rows = await this.tenantPrisma.run(async (tx) => {
+      const inserted = await tx.$queryRaw<ProjectRow[]>`
         INSERT INTO projects.projects (
           tenant_id, project_code, project_name, project_type,
           budget_amount, budget_currency, start_date, end_date,
@@ -116,8 +130,12 @@ export class ProjectRepository {
           ${createdBy}::uuid
         )
         RETURNING *
-      `,
-    );
+      `;
+      if (buildOutboxEvent && inserted[0]) {
+        await OutboxPublisher.write(tx, buildOutboxEvent(inserted[0]));
+      }
+      return inserted;
+    });
     return rows[0]!;
   }
 
@@ -312,10 +330,14 @@ export class ProjectRepository {
     );
   }
 
-  async update(projectId: string, dto: UpdateProjectDto): Promise<ProjectRow> {
-    const rows = await this.tenantPrisma.run(
-      async (tx) =>
-        await tx.$queryRaw<ProjectRow[]>`
+  /** Outbox-aware — see `create()` for why the parameter is a builder over the returned row. */
+  async update(
+    projectId: string,
+    dto: UpdateProjectDto,
+    buildOutboxEvent?: (row: ProjectRow) => OutboxEventInput,
+  ): Promise<ProjectRow> {
+    const rows = await this.tenantPrisma.run(async (tx) => {
+      const updated = await tx.$queryRaw<ProjectRow[]>`
         UPDATE projects.projects SET
           project_name    = COALESCE(${dto.project_name ?? null}, project_name),
           budget_amount   = COALESCE(${dto.budget_amount ?? null}::decimal, budget_amount),
@@ -330,8 +352,12 @@ export class ProjectRepository {
         WHERE project_id = ${projectId}::uuid
           AND tenant_id  = ${this.tenantId}::uuid
         RETURNING *
-      `,
-    );
+      `;
+      if (buildOutboxEvent && updated[0]) {
+        await OutboxPublisher.write(tx, buildOutboxEvent(updated[0]));
+      }
+      return updated;
+    });
     return rows[0]!;
   }
 
@@ -344,10 +370,10 @@ export class ProjectRepository {
       cancellation_reason?: string;
       cancelled_at?: string;
     },
+    buildOutboxEvents?: (row: ProjectRow) => OutboxEventInput[],
   ): Promise<ProjectRow> {
-    const rows = await this.tenantPrisma.run(
-      async (tx) =>
-        await tx.$queryRaw<ProjectRow[]>`
+    const rows = await this.tenantPrisma.run(async (tx) => {
+      const updated = await tx.$queryRaw<ProjectRow[]>`
         UPDATE projects.projects SET
           status              = ${toStatus}::"ProjectStatus",
           on_hold_reason      = COALESCE(${meta.on_hold_reason ?? null}, on_hold_reason),
@@ -358,8 +384,16 @@ export class ProjectRepository {
         WHERE project_id = ${projectId}::uuid
           AND tenant_id  = ${this.tenantId}::uuid
         RETURNING *
-      `,
-    );
+      `;
+      // A transition can emit TWO events (status_changed, and archived when moving to COMPLETED),
+      // so this builder returns an array — all of them share the one transaction.
+      if (buildOutboxEvents && updated[0]) {
+        for (const evt of buildOutboxEvents(updated[0])) {
+          await OutboxPublisher.write(tx, evt);
+        }
+      }
+      return updated;
+    });
     return rows[0]!;
   }
 

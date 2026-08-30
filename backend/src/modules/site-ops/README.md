@@ -71,16 +71,17 @@ conflict_status ∈ { ACCEPTED | CONFLICT_FLAGGED | CONFLICT_REJECTED }
 ## Dependencies
 
 - `TenantModule` — `TenantPrismaService` for tenant-isolated DB access (ADR-008: tenant_id + RLS)
-- `@cos/shared` — `KafkaProducer`, typed event interfaces
+- `@cos/kafka` — `KafkaProducer` (SDK)
+- `@cos/shared` — typed event payload contracts
 - `@cos/logger` — structured logging
 - `@cos/rbac` — `@Roles` decorator, `RolesGuard`
 
 ## Configuration
 
-| Variable           | Description                                          |
-| ------------------ | ---------------------------------------------------- |
-| `DATABASE_URL`     | PostgreSQL connection string (via PgBouncer — QM-18) |
-| `KAFKA_BROKERS`    | Comma-separated broker list                          |
+| Variable        | Description                                          |
+| --------------- | ---------------------------------------------------- |
+| `DATABASE_URL`  | PostgreSQL connection string (via PgBouncer — QM-18) |
+| `KAFKA_BROKERS` | Comma-separated broker list                          |
 
 ## Extension Points
 

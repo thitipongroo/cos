@@ -16,7 +16,8 @@ interface ExecutiveDashboardRow {
   totalActual: string;
   totalBudget: string;
   utilizationPct: number;
-  atRisk: boolean;
+  /** 0 | 1, not boolean — ClickHouse `if()` returns UInt8. See §35.13 ESC-34. */
+  atRisk: 0 | 1;
   overdueInvoiceCount: number;
 }
 
@@ -49,7 +50,9 @@ const AlertItem = memo(function AlertItem({
   t: TranslateFn;
 }) {
   return (
-    <View testID="alert-item" style={[styles.card, alert.atRisk && styles.cardRisk]}>
+    // === 1, not truthiness: atRisk is 0 | 1 (§35.13 ESC-34), and a 0 in a style array relies on
+    // StyleSheet.flatten skipping falsy entries rather than saying what it means (ESC-36).
+    <View testID="alert-item" style={[styles.card, alert.atRisk === 1 ? styles.cardRisk : null]}>
       <View style={styles.row}>
         <Text style={styles.project}>{alert.projectId.slice(0, 8)}</Text>
         <Text

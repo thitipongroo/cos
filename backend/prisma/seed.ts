@@ -15,7 +15,7 @@ import './load-root-env';
 import { PrismaClient } from '@prisma/client';
 import { createPrismaClient } from '../src/shared/prisma/create-prisma-client';
 import { createLogger } from '@cos/logger';
-import { KafkaTopicProvisioner } from '@cos/shared';
+import { KafkaTopicProvisioner } from '@cos/kafka';
 
 const logger = createLogger('seed');
 

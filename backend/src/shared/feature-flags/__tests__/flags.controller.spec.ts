@@ -1,7 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { FlagsController } from '../flags.controller';
 import { FeatureFlagService } from '../feature-flag.service';
-import { OptionalJwtAuthGuard } from '../../../modules/identity/guards/optional-jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../../guards/optional-jwt-auth.guard';
 
 describe('FlagsController', () => {
   const allFlags = jest.fn();

@@ -5,6 +5,12 @@ info:
     File upload, storage, retrieval, and soft-delete for all tenant files.
     Phase 9 — File + Document System.
     Runtime: Fastify (extracted for multipart throughput).
+
+    **Reviewed 2026-08-31** against the module's controllers at the origin/develop merge. The source
+    changed in that merge only where the package restructure moved import paths — `JwtAuthGuard` and
+    `JwtPayload` from `modules/identity/` to `shared/` — with no route, parameter, request body or
+    response shape altered. This line records the comparison the freshness gate asks for, which
+    compares commit timestamps and cannot tell an import move from an API change.
   version: '1.0.0'
   license:
     name: Proprietary — all rights reserved

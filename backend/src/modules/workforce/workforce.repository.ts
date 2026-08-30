@@ -2,7 +2,9 @@
 // All DB access via TenantPrismaService (ADR-008).
 
 import { Injectable, Scope } from '@nestjs/common';
+import { OutboxPublisher } from '@cos/kafka';
 import { TenantPrismaService } from '../tenant/prisma/tenant-prisma.service';
+import type { OutboxEventInput } from '../../shared/outbox/outbox.types';
 import { applyCap, capLimit } from '../../shared/pagination/list-cap';
 
 export interface WorkerRow {
@@ -214,21 +216,25 @@ export class WorkforceRepository {
     );
   }
 
-  async recordAttendance(params: {
-    log_id: string;
-    recorded_at: string;
-    worker_id: string;
-    project_id: string;
-    tenant_id: string;
-    check_in_at: string | null;
-    check_out_at: string | null;
-    hours_worked: number | null;
-    latitude?: number | null;
-    longitude?: number | null;
-    method?: string | null;
-  }): Promise<AttendanceRow> {
-    const rows = await this.db.run(
-      (tx) => tx.$queryRaw<AttendanceRow[]>`
+  async recordAttendance(
+    params: {
+      log_id: string;
+      recorded_at: string;
+      worker_id: string;
+      project_id: string;
+      tenant_id: string;
+      check_in_at: string | null;
+      check_out_at: string | null;
+      hours_worked: number | null;
+      latitude?: number | null;
+      longitude?: number | null;
+      /** How the check-in was captured, or null when the client did not say. */
+      method?: string | null;
+    },
+    outboxEvent?: OutboxEventInput,
+  ): Promise<AttendanceRow> {
+    const rows = await this.db.run(async (tx) => {
+      const inserted = await tx.$queryRaw<AttendanceRow[]>`
       INSERT INTO workforce_telemetry.attendance_logs (
         log_id, recorded_at, worker_id, project_id, tenant_id,
         check_in_at, check_out_at, hours_worked, latitude, longitude, method
@@ -242,8 +248,10 @@ export class WorkforceRepository {
         ${params.method ?? null}
       )
       RETURNING *
-    `,
-    );
+    `;
+      if (outboxEvent) await OutboxPublisher.write(tx, outboxEvent);
+      return inserted;
+    });
     return rows[0];
   }
 
@@ -285,15 +293,27 @@ export class WorkforceRepository {
     return rows[0];
   }
 
-  async approveTimesheet(timesheetId: string): Promise<TimesheetRow> {
-    const rows = await this.db.run(
-      (tx) => tx.$queryRaw<TimesheetRow[]>`
+  /**
+   * @param buildOutboxEvent Builder over the UPDATEd row (§35.13 ESC-13) — the approved
+   *   timesheet's hours are only known from the row, and the builder is skipped when the
+   *   UPDATE matched nothing, so a missing timesheet emits no event.
+   */
+  async approveTimesheet(
+    timesheetId: string,
+    buildOutboxEvent?: (row: TimesheetRow) => OutboxEventInput,
+  ): Promise<TimesheetRow> {
+    const rows = await this.db.run(async (tx) => {
+      const updated = await tx.$queryRaw<TimesheetRow[]>`
       UPDATE workforce_telemetry.timesheets
       SET status = 'APPROVED'::workforce_telemetry.timesheet_status_enum
       WHERE timesheet_id = ${timesheetId}::uuid
       RETURNING *
-    `,
-    );
+    `;
+      if (buildOutboxEvent && updated[0]) {
+        await OutboxPublisher.write(tx, buildOutboxEvent(updated[0]));
+      }
+      return updated;
+    });
     return rows[0];
   }
 

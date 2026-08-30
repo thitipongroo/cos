@@ -3,7 +3,7 @@
 // Subscribes to 8 event topics and routes to NotificationService.
 
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
-import { KafkaConsumer } from '@cos/shared';
+import { KafkaConsumer } from '@cos/kafka';
 import { createLogger } from '@cos/logger';
 import { NotificationService } from './notification.service';
 import type { BaseEventEnvelope } from '@cos/types';
@@ -25,16 +25,22 @@ export const SUBSCRIBED_EVENT_TYPES = [
   'procurement.po.status_changed.v1',
   'procurement.po.approval_requested.v1',
   'finance.variance.alert.v1',
+  // §17.2 — a queued offline mutation that exhausted its 5 retries (TDD OQ-38)
+  'platform.sync.exhausted.v1',
   'site.report.created.v1',
   'procurement.invoice.received.v1',
   'file.document.quarantined.v1',
   // §19.3/§19.4 — consumed so they are notified AND armed for escalation (safety 30m, AI-risk 24h)
   'safety.incident.created.v1',
-  'ai.risk_prediction.generated.v1',
-  // §17.2 — a queued offline mutation that exhausted its 5 retries (TDD OQ-38)
-  'platform.sync.exhausted.v1',
-  // §19.6/§20.2 — the second of §19.6's two un-disableable safety notifications (TDD OQ-35)
   'safety.violation.detected.v1',
+  'ai.risk_prediction.generated.v1',
+  // §19.6/§20.2 — the second of §19.6's two un-disableable safety notifications (TDD OQ-35)
+  'safety.compliance.failed.v1',
+  // §19.8 — platform-level events on the shared platform.events topic, routed to every active
+  // SYSTEM_ADMIN. They were present in EVENT_ROLE_MAP but absent here, so the routing entry decided
+  // an audience for a message the consumer never asked for.
+  'platform.enterprise.contract_signed.v1',
+  'platform.enterprise.db_provisioned.v1',
 ];
 
 @Injectable()

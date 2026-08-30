@@ -2,9 +2,10 @@ import { IsUUID, IsDateString, IsOptional, IsNumber, IsIn, Min, Max } from 'clas
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
- * How the check-in was captured. Matches the `CheckinMethod` enum in
- * `workforce.checkin.created.v1` exactly — the wire schema owns this set, and a value here that the
- * schema does not know would fail Avro encoding in the outbox poller rather than at the API edge.
+ * §32.4 row 9 `CheckinMethod` — the symbols the event schema accepts, nothing more.
+ *
+ * The wire schema owns this set: a value here that the schema does not know would fail Avro
+ * encoding in the outbox poller rather than at the API edge.
  *
  * Absent means NOT RECORDED, which is different from `MANUAL` ("a person typed this in"). Deriving
  * GPS from the presence of coordinates was considered and rejected: it would produce a value a

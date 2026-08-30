@@ -24,7 +24,7 @@
 // so there is no document to remove.
 
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
-import { KafkaConsumer } from '@cos/shared';
+import { KafkaConsumer } from '@cos/kafka';
 import { createLogger } from '@cos/logger';
 import type { BaseEventEnvelope } from '@cos/types';
 import { runInTenantContext } from '../../shared/context/run-in-tenant-context';

@@ -55,7 +55,9 @@ export default function PortfolioPage() {
         return (
           <span className={row.atRisk ? 'font-semibold text-red-600' : 'text-gray-700'}>
             {label}
-            {row.atRisk && (
+            {/* === 1, not truthiness: atRisk is 0 | 1, and `{0 && <span/>}` renders the literal
+                0 into the table cell. See §35.13 ESC-36. */}
+            {row.atRisk === 1 && (
               <span className="ml-2 rounded-full bg-red-100 px-2 py-0.5 text-xs text-red-700">
                 {t('exec.atRisk')}
               </span>

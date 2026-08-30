@@ -15,7 +15,7 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { SyncService } from './sync.service';
 import { PushItemDto, ReportExhaustionDto, ResolveExhaustionDto } from './dto/sync.dto';
-import { JwtAuthGuard } from '../identity/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { SyncAuthGuard } from './sync-auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
 import { Roles } from '@cos/rbac';

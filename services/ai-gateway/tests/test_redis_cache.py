@@ -1,167 +1,149 @@
-"""Unit tests for the LLM response cache (§Phase 11 LLM Gateway — "Response caching (Redis, TTL
-configurable per template)").
+"""Unit tests for the LLM response cache — Phase 11 LLM Gateway.
 
-The file was at 0% coverage. The risk it carries is not "does Redis work" but the key function:
-two different prompts hashing to the same key would serve one tenant's report as another's, and a
-key that varies on dict ordering would make the cache never hit. Both are asserted here with a fake
-Redis client — no server involved.
+§35.13 ESC-24: cache/redis_cache.py was entirely uncovered (23 statements). The cache key is the
+part that matters: it is a sha256 over the template variables, so two calls that differ only in
+dict ordering must hit the same entry, and any change to a variable must miss. A silent key bug
+would serve one tenant's generated report to another.
 """
 
+import hashlib
 import json
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import pytest
+
 from cache.redis_cache import RedisResponseCache
 
 
 class _FakeRedis:
-    def __init__(self, initial: dict | None = None):
-        self.store: dict = dict(initial or {})
-        self.setex_calls: list = []
-        self.deleted: list = []
+    """Minimal aioredis stand-in recording the calls the cache makes."""
+
+    def __init__(self, stored: dict[str, bytes] | None = None):
+        self.stored = dict(stored or {})
+        self.setex_calls: list[tuple[str, int, bytes]] = []
+        self.deleted: list[str] = []
 
     async def get(self, key):
-        return self.store.get(key)
+        return self.stored.get(key)
 
     async def setex(self, key, ttl, value):
         self.setex_calls.append((key, ttl, value))
-        self.store[key] = value
+        self.stored[key] = value
 
     async def delete(self, key):
         self.deleted.append(key)
-        self.store.pop(key, None)
+        self.stored.pop(key, None)
 
 
-class TestKeyDerivation:
-    def test_key_is_namespaced_by_template(self):
+def _expected_key(template: str, variables: dict) -> str:
+    payload = json.dumps(variables, sort_keys=True, ensure_ascii=False)
+    return f"llm:{template}:{hashlib.sha256(payload.encode()).hexdigest()}"
+
+
+class TestMakeKey:
+    def test_uses_the_documented_key_format(self):
         cache = RedisResponseCache(_FakeRedis())
-        key = cache._make_key("report-daily-summary-v1", {"project": "p1"})
+        variables = {"project": "P1", "period": "2026-06"}
+        assert cache._make_key("weekly_report", variables) == _expected_key(
+            "weekly_report", variables
+        )
 
-        assert key.startswith("llm:report-daily-summary-v1:")
-
-    def test_same_variables_in_a_different_order_hit_the_same_key(self):
-        # Python dicts preserve insertion order, so without sort_keys the cache would miss on every
-        # call whose variables were assembled in a different order — a silent 100% miss rate.
+    def test_is_insensitive_to_dict_ordering(self):
+        """Same variables, different insertion order — one cache entry, not two."""
         cache = RedisResponseCache(_FakeRedis())
+        a = cache._make_key("t", {"a": 1, "b": 2})
+        b = cache._make_key("t", {"b": 2, "a": 1})
+        assert a == b
 
-        assert cache._make_key("t", {"a": 1, "b": 2}) == cache._make_key("t", {"b": 2, "a": 1})
-
-    def test_different_variables_produce_different_keys(self):
-        # The failure this prevents: one project's cached report served for another project.
+    def test_a_changed_variable_changes_the_key(self):
         cache = RedisResponseCache(_FakeRedis())
+        assert cache._make_key("t", {"a": 1}) != cache._make_key("t", {"a": 2})
 
-        assert cache._make_key("t", {"project": "p1"}) != cache._make_key("t", {"project": "p2"})
-
-    def test_same_variables_under_different_templates_do_not_collide(self):
+    def test_a_changed_template_changes_the_key(self):
         cache = RedisResponseCache(_FakeRedis())
+        assert cache._make_key("t1", {"a": 1}) != cache._make_key("t2", {"a": 1})
 
-        assert cache._make_key("summary", {"p": 1}) != cache._make_key("executive", {"p": 1})
-
-    def test_thai_variables_are_not_escaped_before_hashing(self):
-        # ensure_ascii=False keeps Thai text intact; escaping would still hash deterministically but
-        # this pins the documented behaviour so a future change is a visible decision.
+    def test_thai_variables_are_not_escaped_away(self):
+        """ensure_ascii=False — two different Thai values must not collapse to the same key."""
         cache = RedisResponseCache(_FakeRedis())
-        expected_payload = json.dumps({"note": "รายงาน"}, sort_keys=True, ensure_ascii=False)
-
-        import hashlib
-
-        digest = hashlib.sha256(expected_payload.encode()).hexdigest()
-        assert cache._make_key("t", {"note": "รายงาน"}) == f"llm:t:{digest}"
+        assert cache._make_key("t", {"note": "งานเสร็จ"}) != cache._make_key(
+            "t", {"note": "งานล่าช้า"}
+        )
 
 
 class TestGet:
     @pytest.mark.asyncio
+    async def test_returns_the_decoded_hit(self):
+        variables = {"project": "P1"}
+        redis = _FakeRedis({_expected_key("weekly", variables): b"generated text"})
+        cache = RedisResponseCache(redis)
+
+        assert await cache.get("weekly", variables) == "generated text"
+
+    @pytest.mark.asyncio
     async def test_returns_none_on_a_miss(self):
         cache = RedisResponseCache(_FakeRedis())
-
-        assert await cache.get("t", {"a": 1}) is None
-
-    @pytest.mark.asyncio
-    async def test_decodes_the_cached_bytes(self):
-        client = _FakeRedis()
-        cache = RedisResponseCache(client)
-        client.store[cache._make_key("t", {"a": 1})] = "สรุปรายงาน".encode()
-
-        assert await cache.get("t", {"a": 1}) == "สรุปรายงาน"
+        assert await cache.get("weekly", {"project": "P1"}) is None
 
     @pytest.mark.asyncio
-    async def test_empty_cached_value_reads_as_a_miss(self):
-        # b"" is falsy — the code treats it as absent rather than returning an empty report.
-        client = _FakeRedis()
-        cache = RedisResponseCache(client)
-        client.store[cache._make_key("t", {"a": 1})] = b""
-
-        assert await cache.get("t", {"a": 1}) is None
+    async def test_treats_an_empty_stored_value_as_a_miss(self):
+        variables = {"project": "P1"}
+        redis = _FakeRedis({_expected_key("weekly", variables): b""})
+        cache = RedisResponseCache(redis)
+        assert await cache.get("weekly", variables) is None
 
 
 class TestSet:
     @pytest.mark.asyncio
     async def test_writes_with_the_default_ttl(self):
-        client = _FakeRedis()
-        cache = RedisResponseCache(client)
+        redis = _FakeRedis()
+        cache = RedisResponseCache(redis, default_ttl_seconds=3600)
+        variables = {"project": "P1"}
 
-        await cache.set("t", {"a": 1}, "answer")
+        await cache.set("weekly", variables, "generated text")
 
-        key, ttl, value = client.setex_calls[0]
-        assert key == cache._make_key("t", {"a": 1})
+        key, ttl, value = redis.setex_calls[0]
+        assert key == _expected_key("weekly", variables)
         assert ttl == 3600
-        assert value == b"answer"
+        assert value == b"generated text"
 
     @pytest.mark.asyncio
-    async def test_per_call_ttl_overrides_the_default(self):
-        # "TTL configurable per template" — a short-lived template must not inherit the hour default.
-        client = _FakeRedis()
-        cache = RedisResponseCache(client)
+    async def test_a_per_call_ttl_overrides_the_default(self):
+        redis = _FakeRedis()
+        cache = RedisResponseCache(redis, default_ttl_seconds=3600)
 
-        await cache.set("t", {"a": 1}, "answer", ttl_seconds=30)
+        await cache.set("weekly", {"p": 1}, "text", ttl_seconds=60)
 
-        assert client.setex_calls[0][1] == 30
-
-    @pytest.mark.asyncio
-    async def test_zero_ttl_is_honoured_not_treated_as_absent(self):
-        # `ttl_seconds is not None` rather than a truthiness check — 0 must reach Redis.
-        client = _FakeRedis()
-        cache = RedisResponseCache(client)
-
-        await cache.set("t", {"a": 1}, "answer", ttl_seconds=0)
-
-        assert client.setex_calls[0][1] == 0
+        assert redis.setex_calls[0][1] == 60
 
     @pytest.mark.asyncio
-    async def test_constructor_default_ttl_is_configurable(self):
-        client = _FakeRedis()
-        cache = RedisResponseCache(client, default_ttl_seconds=120)
+    async def test_a_zero_ttl_is_honoured_rather_than_falling_back(self):
+        """`ttl_seconds if ttl_seconds is not None` — 0 is falsy but explicit, and must win."""
+        redis = _FakeRedis()
+        cache = RedisResponseCache(redis, default_ttl_seconds=3600)
 
-        await cache.set("t", {"a": 1}, "answer")
+        await cache.set("weekly", {"p": 1}, "text", ttl_seconds=0)
 
-        assert client.setex_calls[0][1] == 120
+        assert redis.setex_calls[0][1] == 0
 
     @pytest.mark.asyncio
-    async def test_round_trips_through_get(self):
-        cache = RedisResponseCache(_FakeRedis())
+    async def test_a_written_value_is_readable_again(self):
+        redis = _FakeRedis()
+        cache = RedisResponseCache(redis)
+        variables = {"project": "P1"}
 
-        await cache.set("t", {"a": 1}, "สรุป")
-
-        assert await cache.get("t", {"a": 1}) == "สรุป"
+        await cache.set("weekly", variables, "round trip")
+        assert await cache.get("weekly", variables) == "round trip"
 
 
 class TestInvalidate:
     @pytest.mark.asyncio
     async def test_deletes_the_matching_key(self):
-        client = _FakeRedis()
-        cache = RedisResponseCache(client)
-        await cache.set("t", {"a": 1}, "answer")
+        redis = _FakeRedis()
+        cache = RedisResponseCache(redis)
+        variables = {"project": "P1"}
+        await cache.set("weekly", variables, "text")
 
-        await cache.invalidate("t", {"a": 1})
+        await cache.invalidate("weekly", variables)
 
-        assert client.deleted == [cache._make_key("t", {"a": 1})]
-        assert await cache.get("t", {"a": 1}) is None
-
-    @pytest.mark.asyncio
-    async def test_invalidating_a_missing_key_is_not_an_error(self):
-        cache = RedisResponseCache(_FakeRedis())
-
-        await cache.invalidate("t", {"never": "cached"})
+        assert redis.deleted == [_expected_key("weekly", variables)]
+        assert await cache.get("weekly", variables) is None

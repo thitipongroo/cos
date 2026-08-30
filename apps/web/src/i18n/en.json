@@ -665,5 +665,9 @@
       "body": "Data is stored in the home region assigned to your organisation: Thailand (ap-southeast-7) for Thai organisations, Ireland (eu-west-1) for EU organisations, and Singapore (ap-southeast-1) otherwise, with Singapore as the disaster-recovery region for Thai data. The one routine cross-border transfer is SMS sign-in code delivery."
     },
     "footer": "Questions about this page, or a request to exercise your data rights, go to our Data Protection Office — the address is published in the Privacy Policy in the app."
+  },
+  "sync": {
+    "savedOffline": "Saved on this device — it will sync when you are back online.",
+    "photoNotQueued": "The photo was not saved: it needs a connection and was not attached."
   }
 }

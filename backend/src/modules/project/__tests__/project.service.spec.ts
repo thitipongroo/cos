@@ -18,7 +18,7 @@ jest.mock('@opensearch-project/opensearch', () => ({
   })),
 }));
 
-jest.mock('@cos/shared', () => ({
+jest.mock('@cos/kafka', () => ({
   KafkaProducer: jest.fn().mockImplementation(() => ({
     connect: jest.fn().mockResolvedValue(undefined),
     publish: jest.fn().mockResolvedValue(undefined),
@@ -132,6 +132,69 @@ describe('ProjectService', () => {
       expect(result.project_code).toBe('PROJ-001');
       expect(repo.create).toHaveBeenCalledTimes(1);
     });
+
+    // Phase 8 Outbox Pattern (§35.13 ESC-13): create() no longer publishes to Kafka directly — it
+    // hands the repository a builder so the event is written in the same transaction as the row.
+    it('passes an outbox builder that derives the envelope from the inserted row', async () => {
+      const repo = makeRepo();
+      const service = await buildService(repo);
+      await service.create({
+        project_code: 'PROJ-001',
+        project_name: 'Test Project',
+        project_type: 'COMMERCIAL' as never,
+        budget_amount: '1000000.0000',
+        budget_currency: 'THB',
+        start_date: '2026-06-01',
+        end_date: '2027-12-31',
+      });
+
+      const createMock = repo.create as unknown as jest.Mock;
+      const builder = createMock.mock.calls[0][2] as (row: typeof baseProject) => {
+        event_type: string;
+        tenant_id: string;
+        payload: Record<string, unknown>;
+      };
+      expect(typeof builder).toBe('function');
+
+      const envelope = builder(baseProject);
+      expect(envelope.event_type).toBe('construction.project.created.v1');
+      expect(envelope.payload).toMatchObject({
+        project_id: baseProject.project_id,
+        project_code: baseProject.project_code,
+        budget: { amount: '1000000.0000', currency_code: 'THB' },
+        created_by: baseProject.created_by,
+      });
+    });
+
+    it('outbox payload falls back when the row has null budget and dates', async () => {
+      const repo = makeRepo();
+      const service = await buildService(repo);
+      await service.create({
+        project_code: 'P-NULL',
+        project_name: 'Null Budget',
+        project_type: 'COMMERCIAL' as never,
+      });
+
+      const createMock = repo.create as unknown as jest.Mock;
+      const builder = createMock.mock.calls[0][2] as (row: unknown) => {
+        payload: {
+          budget: { amount: string; currency_code: string };
+          start_date: string;
+          end_date: string;
+        };
+      };
+      const envelope = builder({
+        ...baseProject,
+        budget_amount: null,
+        budget_currency: null,
+        start_date: null,
+        end_date: null,
+      });
+
+      expect(envelope.payload.budget).toEqual({ amount: '0.0000', currency_code: 'THB' });
+      expect(envelope.payload.start_date).toBe('');
+      expect(envelope.payload.end_date).toBe('');
+    });
   });
 
   describe('findById()', () => {
@@ -153,7 +216,12 @@ describe('ProjectService', () => {
       const repo = makeRepo();
       const service = await buildService(repo);
       await service.update('proj-uuid-001', { project_name: 'Updated' });
-      expect(repo.update).toHaveBeenCalledWith('proj-uuid-001', { project_name: 'Updated' });
+      // 3rd arg is the outbox builder (§35.13 ESC-13)
+      expect(repo.update).toHaveBeenCalledWith(
+        'proj-uuid-001',
+        { project_name: 'Updated' },
+        expect.any(Function),
+      );
     });
 
     it('skips fields explicitly set to undefined when building changedFields', async () => {
@@ -162,7 +230,11 @@ describe('ProjectService', () => {
       const repo = makeRepo();
       const service = await buildService(repo);
       await service.update('proj-uuid-001', { project_name: undefined });
-      expect(repo.update).toHaveBeenCalledWith('proj-uuid-001', { project_name: undefined });
+      expect(repo.update).toHaveBeenCalledWith(
+        'proj-uuid-001',
+        { project_name: undefined },
+        expect.any(Function),
+      );
     });
 
     it('throws 422 when project is CANCELLED', async () => {
@@ -542,6 +614,75 @@ describe('ProjectService', () => {
       } as never);
 
       expect(index).not.toHaveBeenCalled();
+    });
+  });
+
+  // §35.13 ESC-13: every project event now goes through the outbox. The service holds no
+  // KafkaProducer at all, so there is no direct-publish error path left to test — instead the
+  // builders handed to the repository are exercised below.
+  describe('outbox builders — update() and transition()', () => {
+    it('update() hands the repository a builder producing project.updated.v1', async () => {
+      const repo = makeRepo();
+      const service = await buildService(repo);
+      await service.update('proj-uuid-001', { project_name: 'Renamed' });
+
+      const updateMock = repo.update as unknown as jest.Mock;
+      const builder = updateMock.mock.calls[0][2] as (row: typeof baseProject) => {
+        event_type: string;
+        payload: {
+          project_id: string;
+          changed_fields: Record<string, unknown>;
+          updated_by: string;
+        };
+      };
+      const envelope = builder(baseProject);
+
+      expect(envelope.event_type).toBe('construction.project.updated.v1');
+      expect(envelope.payload.project_id).toBe(baseProject.project_id);
+      expect(envelope.payload.changed_fields).toEqual({ project_name: 'Renamed' });
+    });
+
+    it('transition() emits only status_changed for a non-COMPLETED target', async () => {
+      const repo = makeRepo();
+      const service = await buildService(repo);
+      await service.transition('proj-uuid-001', { to: 'ACTIVE' } as never);
+
+      const statusMock = repo.updateStatus as unknown as jest.Mock;
+      const builder = statusMock.mock.calls[0][3] as (
+        row: typeof baseProject,
+      ) => { event_type: string; payload: Record<string, unknown> }[];
+      const events = builder(baseProject);
+
+      expect(events).toHaveLength(1);
+      expect(events[0]!.event_type).toBe('construction.project.status_changed.v1');
+      expect(events[0]!.payload).toMatchObject({
+        from_status: 'DRAFT',
+        to_status: 'ACTIVE',
+        reason: null,
+      });
+    });
+
+    it('transition() to COMPLETED emits status_changed AND archived in one transaction', async () => {
+      const activeRow = { ...baseProject, status: 'ACTIVE' as const, end_date: '2020-01-01' };
+      const repo = makeRepo({
+        findById: jest.fn().mockResolvedValue(activeRow),
+        updateStatus: jest.fn().mockResolvedValue({ ...activeRow, status: 'COMPLETED' }),
+      });
+      const service = await buildService(repo, {
+        user: { user_id: 'user-uuid-001', role: 'TENANT_ADMIN' },
+      });
+      await service.transition('proj-uuid-001', { to: 'COMPLETED' } as never);
+
+      const statusMock = repo.updateStatus as unknown as jest.Mock;
+      const builder = statusMock.mock.calls[0][3] as (
+        row: typeof baseProject,
+      ) => { event_type: string }[];
+      const events = builder(activeRow);
+
+      expect(events.map((e) => e.event_type)).toEqual([
+        'construction.project.status_changed.v1',
+        'construction.project.archived.v1',
+      ]);
     });
   });
 

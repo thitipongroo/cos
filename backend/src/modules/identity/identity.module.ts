@@ -49,10 +49,14 @@ import { ConsentService } from './consent/consent.service';
 import { GeoIpService } from './network-origin/geoip.service';
 import { NetworkOriginService } from './network-origin/network-origin.service';
 import { KeycloakJwtStrategy } from './strategies/keycloak-jwt.strategy';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 
 @Module({
-  // NotificationModule is imported for its SendGridAdapter alone (ADR-078 step-up email channel).
+  // NotificationModule: NotificationService for step-up challenges (routed through the service per
+  // master:5041 since 2026-08-26 — it used to reach for SendGridAdapter and left no row in
+  // notifications.notifications), and SendGridAdapter for ONE remaining caller, subject-request.
+  // That one cannot use the service: its recipient is a crm.contacts row matched by email, not a
+  // platform user, and notifications.recipient_id is a NOT NULL UUID naming a platform user.
   // No cycle: NotificationModule declares no `imports`, and app.module already instantiates it, so
   // this adds a DI edge rather than a second instance. Cross-module DI is the sanctioned direction
   // here (master §Architecture: "Module-to-module: Direct NestJS module dependency injection"),

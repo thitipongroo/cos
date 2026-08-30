@@ -4,7 +4,8 @@ NestJS module for procurement workflows.
 
 ## Purpose
 
-Manages the full procurement lifecycle: Purchase Requests → RFQ → Quotations → Purchase Orders → Deliveries → Invoices (Phase 5).
+Manages the full procurement lifecycle: Purchase Requests → RFQ → Quotations → Purchase Orders → Deliveries →
+Invoices (Phase 5).
 Uses Temporal for long-running RFQ and PO workflows with threshold-based approval chains.
 
 **Status:** Phase 5 complete.
@@ -46,7 +47,8 @@ Vendor invoices: POST/GET  /api/v1/procurement/vendor-invoices        (po_id in 
 - `@cos/database` — `TenantPrismaService`
 - `@cos/financial` — `calculateLineTotal` for line item totals
 - `@cos/rbac` — `PROCUREMENT_OFFICER`, `PROC_MANAGER` guards
-- `@cos/shared` — Kafka event contracts
+- `@cos/kafka` — KafkaProducer (SDK)
+- `@cos/shared` — typed event payload contracts
 - `@temporalio/client`, `@temporalio/worker` — Temporal RFQ + PO workflows
 
 ## Configuration

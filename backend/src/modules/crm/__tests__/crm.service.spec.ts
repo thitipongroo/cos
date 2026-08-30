@@ -46,10 +46,11 @@ it('constructor tolerates missing request context; userId falls back to empty', 
       { provide: REQUEST, useValue: {} },
     ],
   }).compile();
-  const s = await m.resolve<CrmService>(CrmService);
-  expect(s).toBeDefined();
-  // exercise the userId getter's `|| clsUserId()` fallback branch (no request.userId, no CLS → '')
-  expect((s as unknown as { userId: string }).userId).toBe('');
+  const svc = await m.resolve<CrmService>(CrmService);
+  expect(svc).toBeDefined();
+  // Invoke the lazy getter — constructing the service alone does NOT exercise the
+  // `|| clsUserId()` fallback branch (context.md QM-1; ADR-031).
+  expect((svc as unknown as { userId: string }).userId).toBe('');
 });
 
 it('createLead sets created_by (all fields); listLeads delegates', async () => {

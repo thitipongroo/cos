@@ -1,12 +1,8 @@
-variable "cluster_name"        { type = string }
-variable "cluster_version"     { type = string }
-variable "environment"         { type = string }
-variable "vpc_id"              { type = string }
-variable "private_subnet_ids"  { type = list(string) }
-variable "node_instance_types" { type = list(string) }
-variable "node_desired_size"   { type = number }
-variable "node_min_size"       { type = number }
-variable "node_max_size"       { type = number }
+variable "cluster_name" { type = string }
+variable "cluster_version" { type = string }
+variable "environment" { type = string }
+variable "vpc_id" { type = string }
+variable "private_subnet_ids" { type = list(string) }
 variable "public_access_cidrs" {
   type        = list(string)
   default     = []
@@ -16,4 +12,12 @@ variable "secrets_kms_key_arn" {
   type        = string
   description = "Customer-managed KMS CMK ARN for etcd Kubernetes Secrets envelope encryption (CIS EKS 3.1)"
 }
-variable "tags"                { type = map(string) }
+variable "tags" { type = map(string) }
+variable "vpc_cidr" {
+  type        = string
+  description = "VPC CIDR — the node egress rules scope AWS-API and DNS traffic to it"
+}
+variable "s3_prefix_list_id" {
+  type        = string
+  description = "AWS-managed prefix list for S3 in this region, for the gateway-endpoint egress rule"
+}

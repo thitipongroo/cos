@@ -76,7 +76,7 @@ func Start(ctx context.Context, cfg Config, driver neo4j.DriverWithContext, rese
 		}
 	}
 
-	handler := newGraphHandler(driver, logger)
+	handler := NewGraphHandler(driver, logger)
 	consumer := coskafka.NewConsumer(
 		coskafka.NewDecoder(cfg.RegistryURL),
 		dlq,
@@ -88,13 +88,13 @@ func Start(ctx context.Context, cfg Config, driver neo4j.DriverWithContext, rese
 	return consumer.Run(ctx, cfg.Brokers, group, TopicRegex)
 }
 
-// newGraphHandler bridges a decoded envelope into the Neo4j mapper + writer.
+// NewGraphHandler bridges a decoded envelope into the Neo4j mapper + writer.
 //
 // Returning nil for unmappable or unhandled events (rather than an error) keeps them out of the DLQ:
 // the kg worker deliberately consumes a broad regex and ignores event types it has no graph mapping
 // for — that is not a failure. A genuine write error IS returned, so the coskafka retry/DLQ path
 // handles a Neo4j outage.
-func newGraphHandler(driver neo4j.DriverWithContext, logger *slog.Logger) coskafka.Handler {
+func NewGraphHandler(driver neo4j.DriverWithContext, logger *slog.Logger) coskafka.Handler {
 	return func(ctx context.Context, envelope *coskafka.EventEnvelope) error {
 		env := model.EventEnvelope{
 			EventID:       envelope.EventID,

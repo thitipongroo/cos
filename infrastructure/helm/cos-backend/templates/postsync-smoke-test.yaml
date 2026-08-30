@@ -42,8 +42,21 @@ spec:
         app.kubernetes.io/component: smoke-test
     spec:
       restartPolicy: Never
+      # Hardened on the ArgoCD manifest by origin/develop while this Job was being moved into the
+      # chart; carried across in the merge rather than lost with the file it was written on.
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: smoke-test
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
           image: curlimages/curl:8.7.1
           command: ['/bin/sh', '-c']
           args:

@@ -11,7 +11,7 @@ jest.mock('@cos/logger', () => ({
 
 import { UnauthorizedException } from '@nestjs/common';
 import { KeycloakJwtStrategy, realmFromIssuer } from '../strategies/keycloak-jwt.strategy';
-import type { JwtPayload } from '../jwt.payload';
+import type { JwtPayload } from '../../../shared/context/jwt-payload';
 
 describe('KeycloakJwtStrategy', () => {
   let strategy: KeycloakJwtStrategy;

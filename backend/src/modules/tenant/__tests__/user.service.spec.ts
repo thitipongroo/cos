@@ -9,18 +9,17 @@ jest.mock('@prisma/client', () => ({
   })),
 }));
 
-jest.mock('@cos/shared', () => ({
-  KafkaProducer: jest.fn().mockImplementation(() => ({
-    connect: jest.fn().mockResolvedValue(undefined),
-    publish: jest.fn().mockResolvedValue(undefined),
-    disconnect: jest.fn().mockResolvedValue(undefined),
-  })),
+jest.mock('@cos/kafka', () => ({
+  // §35.13 ESC-13: events are written to the outbox inside the business transaction —
+  // UserService no longer holds a KafkaProducer at all.
+  OutboxPublisher: { write: jest.fn().mockResolvedValue(undefined) },
 }));
 
 jest.mock('@cos/logger', () => ({
   createLogger: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }),
 }));
 
+import { OutboxPublisher } from '@cos/kafka';
 import { UserService } from '../user.service';
 import { makeOutboxDouble } from '../../../shared/events/__tests__/outbox-double';
 import { KeycloakAdminService } from '../../identity/keycloak-admin.service';
@@ -511,6 +510,85 @@ describe('UserService', () => {
     });
   });
 
+  // ─── outbox semantics (§35.13 ESC-13) ────────────────────────────────────
+
+  describe('outbox writes', () => {
+    it('writes identity.user.created.v1 inside the user + membership transaction', async () => {
+      (prismaMock.$queryRaw as jest.Mock)
+        .mockResolvedValueOnce([]) // conflict guard
+        .mockResolvedValueOnce([{ keycloak_realm: REALM }]); // tenant lookup
+      const tx = {
+        $queryRaw: jest.fn().mockResolvedValueOnce([mockUserRow]).mockResolvedValueOnce([{}]),
+      };
+      (prismaMock.$transaction as jest.Mock).mockImplementation(
+        async (fn: (t: unknown) => Promise<unknown>) => fn(tx),
+      );
+
+      await service.createUser(
+        { display_name: 'สมชาย', phone_number: '+66812345678', role: CosRole.SITE_ENGINEER },
+        TENANT_ID,
+        ACTOR_ID,
+      );
+
+      // Same `tx` handle as the INSERTs ⇒ the event cannot survive a rollback.
+      expect(OutboxPublisher.write).toHaveBeenCalledWith(
+        tx,
+        expect.objectContaining({
+          event_type: 'identity.user.created.v1',
+          tenant_id: TENANT_ID,
+          actor_id: ACTOR_ID,
+          payload: {
+            tenant_id: TENANT_ID,
+            user_id: USER_ID,
+            email: '',
+            role: CosRole.SITE_ENGINEER,
+          },
+        }),
+      );
+    });
+
+    it('rolls the Keycloak user back and emits nothing when the transaction fails', async () => {
+      (prismaMock.$queryRaw as jest.Mock)
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([{ keycloak_realm: REALM }]);
+      (prismaMock.$transaction as jest.Mock).mockRejectedValue(new Error('duplicate key'));
+
+      await expect(
+        service.createUser(
+          { display_name: 'สมชาย', phone_number: '+66812345678', role: CosRole.SITE_ENGINEER },
+          TENANT_ID,
+          ACTOR_ID,
+        ),
+      ).rejects.toThrow('duplicate key');
+
+      expect(keycloakAdmin.deleteUser).toHaveBeenCalledWith(KC_USER_ID, REALM);
+      expect(OutboxPublisher.write).not.toHaveBeenCalled();
+    });
+
+    it('writes identity.user.role_changed.v1 inside the role UPDATE transaction', async () => {
+      (prismaMock.$queryRaw as jest.Mock).mockResolvedValueOnce([{ role: CosRole.SITE_ENGINEER }]);
+      const tx = { $queryRaw: jest.fn().mockResolvedValue([]) };
+      (prismaMock.$transaction as jest.Mock).mockImplementation(
+        async (fn: (t: unknown) => Promise<unknown>) => fn(tx),
+      );
+
+      await service.changeRole(USER_ID, { role: CosRole.PROJECT_MANAGER }, TENANT_ID, ACTOR_ID);
+
+      expect(tx.$queryRaw).toHaveBeenCalled();
+      expect(OutboxPublisher.write).toHaveBeenCalledWith(
+        tx,
+        expect.objectContaining({
+          event_type: 'identity.user.role_changed.v1',
+          payload: {
+            tenant_id: TENANT_ID,
+            user_id: USER_ID,
+            old_role: CosRole.SITE_ENGINEER,
+            new_role: CosRole.PROJECT_MANAGER,
+          },
+        }),
+      );
+    });
+  });
   // ─── publishEvent error handling ─────────────────────────────────────────
 });
 

@@ -15,7 +15,10 @@
     "rootDir": "../..",
     "allowJs": true,
     "noEmit": true,
-    "isolatedModules": true
+    "isolatedModules": true,
+    // Includes the jest globals so `tsc --noEmit` type-checks src/**/__tests__ alongside the app,
+    // matching apps/mobile/tsconfig.json (§35.13 ESC-25).
+    "types": ["node", "jest"]
   },
   // next-env.d.ts is required here by Next.js ("The file must be in your tsconfig.json include
   // array" — https://nextjs.org/docs/app/api-reference/config/typescript). It is git-ignored, not

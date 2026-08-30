@@ -27,6 +27,7 @@ module.exports = {
     },
   },
   moduleNameMapper: {
+    '^@cos/kafka$': '<rootDir>/../../packages/@cos/kafka/src/index.ts',
     '^@cos/shared$': '<rootDir>/../../packages/@cos/shared/src/index.ts',
     '^@cos/logger$': '<rootDir>/../../packages/@cos/logger/src/index.ts',
     '^@cos/types$': '<rootDir>/../../packages/@cos/types/src/index.ts',

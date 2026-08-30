@@ -15,7 +15,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../identity/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
 import { PolicyGuard } from '../../shared/guards/policy.guard';
 import { Roles } from '@cos/rbac';
@@ -28,7 +28,7 @@ import {
   ApprovePermitDto,
   RejectPermitDto,
 } from './dto/safety.dto';
-import { SubmitInspectionDto } from '../site-ops/dto/submit-inspection.dto';
+import { SubmitInspectionDto } from '../site-ops/public/submit-inspection.dto';
 
 const SAFETY_READ_ROLES = [
   CosRole.EXECUTIVE,

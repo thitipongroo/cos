@@ -6,7 +6,7 @@ import { Controller } from 'react-hook-form';
 import { NativeSelectField } from '../../../../../components/form/NativeSelectField';
 import { TextInputField } from '../../../../../components/form/TextInputField';
 import { useI18n } from '../../../../../i18n';
-import { useUpload } from '../../../../../lib/api/client';
+import { useUpload, isQueued } from '../../../../../lib/api/client';
 import { useCreateIssue, useProjects } from '../../../../../lib/api/queries';
 import type { IssueSeverity, UploadedFileResult } from '../../../../../lib/api/types';
 import { useValidatedForm } from '../../../../../lib/forms';
@@ -23,6 +23,8 @@ export default function NewIssuePage() {
   // in a second request, against the id the first one returns.
   const [photo, setPhoto] = useState<File | null>(null);
   const [done, setDone] = useState(false);
+  // True when the create went to the offline queue instead of the server.
+  const [queued, setQueued] = useState(false);
 
   const {
     control,
@@ -39,7 +41,17 @@ export default function NewIssuePage() {
 
   const submit = handleSubmit(async (values) => {
     setDone(false);
+    setQueued(false);
     const issue = await create.mutateAsync(values);
+    // Offline: the issue is in the replay queue and has no server id yet, so there is nothing to
+    // attach a photo to. The web client has no photo queue of its own — that is the React Native
+    // client's local_photos (master:3571) — so rather than drop the image silently, the form says
+    // the report was saved without it and keeps the user's selection on screen.
+    if (isQueued(issue)) {
+      setQueued(true);
+      setDone(true);
+      return;
+    }
     if (photo) {
       const form = new FormData();
       form.append('file', photo);
@@ -48,6 +60,7 @@ export default function NewIssuePage() {
         form,
       );
     }
+    setQueued(false);
     setDone(true);
   });
 
@@ -61,7 +74,15 @@ export default function NewIssuePage() {
           nothing (checklist item C8). */}
       {done && (
         <p role="status" className="mb-3 text-sm text-green-700">
-          {t('site.submitted')}
+          {/* Two different truths. "Submitted" would be a lie for a queued report — and if the user
+              attached a photo, that photo is NOT in the queue, so saying so is the difference
+              between them re-attaching it later and never knowing it was dropped. */}
+          {queued ? t('sync.savedOffline') : t('site.submitted')}
+        </p>
+      )}
+      {queued && photo && (
+        <p role="status" className="mb-3 text-sm text-amber-700">
+          {t('sync.photoNotQueued')}
         </p>
       )}
       {/* noValidate hands validation to the schema: the browser's own bubbles are unstyleable,

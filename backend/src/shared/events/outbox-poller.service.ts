@@ -12,7 +12,7 @@
 // the envelope keeps ONE event_id for its whole life and KafkaConsumer dedupes on it.
 
 import { Injectable, OnApplicationBootstrap, OnModuleDestroy } from '@nestjs/common';
-import { KafkaProducer } from '@cos/shared';
+import { KafkaProducer } from '@cos/kafka';
 import { createLogger } from '@cos/logger';
 import type { BaseEventEnvelope } from '@cos/types';
 import { createPrismaClient } from '../prisma/create-prisma-client';

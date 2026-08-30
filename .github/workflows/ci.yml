@@ -56,6 +56,28 @@ jobs:
       # air-gapped target (ADR-039).
       - name: ruff (Python lint)
         run: ruff check services mlops
+      # Terraform. Nothing checked it before 2026-08-29 — 26 .tf files across three root modules had
+      # never been through `fmt` or `validate` in CI, and a node-pool rewrite landed unvalidated.
+      # `validate` is what catches a bad reference or a wrong type; `fmt -check` keeps the diff clean.
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.9.8'
+          terraform_wrapper: false
+      - name: terraform fmt
+        run: terraform fmt -check -recursive infrastructure/terraform
+      # -backend=false because infrastructure/terraform/cloudflare declares a `backend "s3"`: without
+      # it, init tries to reach a real bucket and CI needs credentials it must not have. Validate
+      # still downloads providers, which is what makes it check types and references rather than
+      # syntax alone. Each root module separately — a module is only validated as part of a root.
+      - name: terraform validate
+        run: |
+          set -e
+          for dir in infrastructure/terraform/aws infrastructure/terraform/cloudflare; do
+            echo "── $dir"
+            terraform -chdir="$dir" init -backend=false -input=false -no-color
+            terraform -chdir="$dir" validate -no-color
+          done
       # Copy-paste detection — the duplication half of the QM-4 quality gate (ADR-011). Threshold
       # and measured baseline live in .jscpd.json; it is a ratchet against regression, not 0%.
       - name: jscpd (duplication)
@@ -165,14 +187,6 @@ jobs:
       # — the directory held 89 of each while one pair was broken.
       - name: Every migration has a rollback script
         run: node ./scripts/ci/check-migration-rollbacks.mjs
-
-      # The three ClickHouse tables the executive and PM dashboards read had been empty since they
-      # were created (TDD OQ-47). One cause was a payload Tuple that declared 2 of 8 fields: the
-      # AvroConfluent reader does not project a partial Tuple, it mis-reads the record — and
-      # kafka_skip_broken_messages then discards it with no exception and no metric. This gate pairs
-      # each table against the .avsc it reads so the next schema change cannot repeat it silently.
-      - name: ClickHouse Kafka tables match their Avro schemas
-        run: node ./scripts/ci/check-clickhouse-avro-columns.mjs
 
       # An event schema with no producer still gets a topic, a generated type and a slot in the
       # Schema Registry readiness gate — so it is indistinguishable from a live event everywhere
@@ -329,8 +343,11 @@ jobs:
       - name: Temporal workflow tests (serial) — backend
         working-directory: backend
         run: pnpm run test:workflows
-      - name: Unit tests + coverage — @cos/shared
-        working-directory: packages/@cos/shared
+      # @cos/shared is type-only since the 2026-08-22 split (ADR-055) — Rule 35 exempts packages
+      # with no executable logic, so it has no jest config and no coverage step. The Kafka SDK it
+      # used to hold now lives in @cos/kafka, tested below.
+      - name: Unit tests + coverage — @cos/kafka
+        working-directory: packages/@cos/kafka
         run: pnpm run test:cov
       - name: Unit tests + coverage — @cos/database
         working-directory: packages/@cos/database
@@ -385,6 +402,7 @@ jobs:
       - name: Schema/API contract parity — @cos/schemas
         run: scripts/readiness/check-schema-contract.sh
       # Both Fastify services enforce the same 100% lines/branches gate in their own jest.config.js.
+      # file-service was built and scanned by CI but never tested until 2026-08-22 (§35.13 ESC-05).
       # Neither run needs Docker: file-service's `integration` specs are mock-based, and
       # credential-service's Testcontainers suites live in the separate integration job below.
       - name: Unit tests + coverage — file-service
@@ -394,6 +412,13 @@ jobs:
       - name: Unit tests + coverage — credential-service (QM-1 crypto/DID-VC)
         working-directory: services/credential-service
         run: pnpm run test:cov
+      # apps/web shipped with no test script and zero test files; CI ran only lint, type-check,
+      # build and Lighthouse, so none of its business logic was covered by QM-1. Wired 2026-08-23
+      # (§35.13 ESC-25). jest.config.ts scopes the 100% gate to unit-testable logic and documents
+      # every exclusion — App Router pages and React components stay with the Playwright suite.
+      - name: Unit tests + coverage — apps/web
+        working-directory: apps/web
+        run: pnpm run test:cov
       - name: Upload coverage reports
         uses: actions/upload-artifact@v4
         if: always()
@@ -401,7 +426,7 @@ jobs:
           name: coverage
           path: |
             backend/coverage/
-            packages/@cos/shared/coverage/
+            packages/@cos/kafka/coverage/
             packages/@cos/database/coverage/
             packages/@cos/financial/coverage/
             packages/@cos/rbac/coverage/
@@ -410,6 +435,7 @@ jobs:
             packages/@cos/tracing/coverage/
             packages/@cos/config/coverage/
             services/file-service/coverage/
+            apps/web/coverage/
             services/credential-service/coverage/
 
   # ─── Step 3b: Mobile Tests (apps/mobile — standalone Expo/RN workspace) ──────
@@ -468,6 +494,49 @@ jobs:
   # These suites existed but nothing ran them: CI's only `pytest`/`go test` invocation was
   # `pytest mlops/tests/`, so 13 Go test files across three workers were never executed on any PR.
   # (`govulncheck` below is a vulnerability scan, not a test run.) QM-1 requires them in CI.
+  #
+  # COVERAGE (§35.13 ESC-23, product-owner decision 2026-08-23): QM-1 fixes a threshold for Jest
+  # (100/100) and pytest (--cov-fail-under=99) but names no figure for Go, so the gate starts at
+  # each module's MEASURED baseline and ratchets up — it blocks regressions today without turning
+  # CI red for coverage that was never written. Modules with no measured baseline run the same
+  # gofmt/vet/test steps with no floor.
+  #
+  #   -coverpkg=./... is required, not cosmetic: the gated modules keep their tests in a separate
+  #   tests/ package, and `go test` measures each package against its OWN tests only. Without it
+  #   they report 0.0% however much the tests actually exercise.
+  #
+  #   Baselines RE-MEASURED 2026-08-24 after the merge, with the integration suites running against
+  #   a real Docker socket (go 1.26, -coverpkg=./..., CGO_ENABLED=1 for -race):
+  #     analytics-worker     96.2%   (93.1% before the merge; 46.8% immediately after it)
+  #     kg-ingestion-worker  93.8%   (86.0% before the merge; 23.7% immediately after it)
+  #
+  #   Both fell when the merge replaced or added code the tests did not reach, and both are now above
+  #   their pre-merge figures. internal/carbon was rewritten from a sarama ConsumerGroup
+  #   (Consumer/ConsumeClaim/process) to a coskafka Writer/Handle/Start, so the suite covering the old
+  #   shape could not be carried over and was rewritten against the new one. kg-ingestion-worker
+  #   gained a whole graph read path plus admin/rebuild wiring that arrived with no tests.
+  #
+  #   Writing the kg tests found a startup defect: main() bound the Prometheus port twice — once via
+  #   cosOtel.Start and again through a second server of its own — and the losing bind called
+  #   log.Fatalf, so the worker died on startup every time (§35.13 ESC-46). No test had ever run
+  #   main(); the first one to do so failed immediately.
+  #
+  #   THE SAME THING HAPPENED AGAIN on 2026-08-29, and the floors held it. That merge added
+  #   analytics-worker's internal/metrics — the Phase 14 dashboard ingestion that replaces the
+  #   ClickHouse Kafka engine tables (§35.13 ESC-38/39) — with its pure helpers covered and all
+  #   thirteen functions that reach ClickHouse at 0%. 123 of the module's 265 statements, taking it
+  #   to 46.8% again. internal/metrics/writer_test.go covers them against a fake database/sql
+  #   driver, the shape internal/carbon/writer_test.go already used, and the package is now at 100%.
+  #   Measured on Windows (where cmd's //go:build unix main() test cannot run) the module reads
+  #   78.5%; the only functions under 100% are main() and openClickHouse's success path, both of
+  #   which the Linux run covers and both of which the 96.2% figure above already accounted for.
+  #
+  #   The merge also dropped the call that starts that consumer while keeping its import — go vet
+  #   caught it as an unused import, which is the whole argument for the vet step above. Restored as
+  #   startMetrics() beside startCarbon(), covered by cmd/analytics-worker/carbon_wiring_test.go.
+  #
+  #   Raise coverage_min whenever the printed total exceeds it. Never lower it without recording a
+  #   measurement here, as this entry does.
   go-tests:
     name: Go Tests — ${{ matrix.service }}
     runs-on: ubuntu-latest
@@ -475,13 +544,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service:
-          - services/analytics-worker
-          - services/kg-ingestion-worker
-          - services/iot-ingestion-worker
+        include:
+          - service: services/analytics-worker
+            coverage_min: '96.0'
+          - service: services/kg-ingestion-worker
+            coverage_min: '93.0'
+          - service: services/iot-ingestion-worker
+            coverage_min: ''
           # coslib — its own go.mod, so it needs its own matrix entry or its tests
           # (the decoder / DLQ / idempotency suites) run nowhere. ADR-021.
-          - libs/go
+          - service: libs/go
+            coverage_min: ''
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -506,7 +579,16 @@ jobs:
         run: go vet ./...
       - name: go test
         working-directory: ${{ matrix.service }}
-        run: go test ./... -race
+        run: go test ./... -race -coverpkg=./... -coverprofile=coverage.out
+      - name: Coverage gate — floor ${{ matrix.coverage_min }}%
+        if: matrix.coverage_min != ''
+        working-directory: ${{ matrix.service }}
+        run: |
+          go tool cover -func=coverage.out | tail -20
+          TOTAL=$(go tool cover -func=coverage.out | awk '/^total:/ {print $NF}' | tr -d '%')
+          MIN='${{ matrix.coverage_min }}'
+          echo "coverage: ${TOTAL}%  (floor ${MIN}%)"
+          awk -v t="$TOTAL" -v m="$MIN" 'BEGIN { if (t + 0 < m + 0) { printf "FAIL: coverage %.1f%% is below the %.1f%% floor\n", t, m; exit 1 } }'
 
   # ─── Step 3d: Python Service Tests ──────────────────────────────────────────
   # Same gap as go-tests: 24 pytest files across five services never ran in CI.
@@ -581,6 +663,12 @@ jobs:
       - name: Run integration tests
         working-directory: backend
         run: pnpm run test:integration
+      # services/file-service owns object-storage tenant isolation (TC-P09-ISO-001): a presigned
+      # URL must be bound to one tenant bucket + key. Only a real MinIO can show that — a mocked
+      # client returns whatever it is told. Wired 2026-08-23 (§35.13 ESC-30).
+      - name: Run integration tests — services/file-service (MinIO)
+        working-directory: services/file-service
+        run: pnpm run test:integration
       # Testcontainers Postgres + the credentials migration: RLS isolation, did:web verification and
       # the Status List revocation loop (ADR-019 CS-9/CS-6).
       - name: Run integration tests — credential-service
@@ -630,6 +718,42 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Run contract tests
         run: pnpm run test:contract
+      # Repo-wide architecture invariants (§35.13 ESC-27) — rules that span workspaces:
+      # no console.log in app code, no direct LLM SDK outside ai-gateway, no GL logic in finance,
+      # the two clients keep their own storage engines, AI output triggers nothing autonomously.
+      - name: Architecture invariants
+        run: pnpm run test:architecture
+
+  # ─── Step 4d: Conformance Tests ─────────────────────────────────────────────
+  # Static checks over the repo's own source: agreements between artifacts that nothing loads in the
+  # same process (a Python consumer's topic pattern vs the Go producer that builds the name; an Avro
+  # schema, the topic catalogue and the publisher; an OpenAPI document vs the routes it describes),
+  # and rules of the form "this must NOT exist" — which a passing runtime test can never establish.
+  #
+  # No database, no containers, no build: the whole suite is ~3s. It boots nothing, so it is the one
+  # test job that does not need `build` or Docker.
+  conformance-tests:
+    name: Conformance Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [lint, type-check]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      # phase-17-devops/02-rendered-manifests runs `helm template` over every chart in every
+      # environment and asserts on the Kubernetes objects that come out — the spec's own 2026-07-20
+      # POC note says "only a real deploy catches this, lint and dry-run do not". The suite asserts
+      # helm is PRESENT rather than skipping when it is missing, so without this step 10 of its 11
+      # cases fail. Installed explicitly rather than relying on whatever the runner image happens to
+      # ship, so a runner-image change cannot silently turn this job red.
+      - uses: azure/setup-helm@v4
+      - run: pnpm install --frozen-lockfile
+      - name: Run conformance tests
+        run: pnpm run test:conformance
 
   # ─── Step 4: Build Docker Images ────────────────────────────────────────────
   build-docker:
@@ -645,6 +769,7 @@ jobs:
         integration-tests,
         isolation-tests,
         contract-tests,
+        conformance-tests,
         go-tests,
         python-tests,
       ]
@@ -864,9 +989,22 @@ jobs:
         with:
           scan-type: 'fs'
           scan-ref: '.'
+          # `misconfig` is NOT in the fs subcommand's default scanner set — the default is
+          # vuln,secret — so until 2026-08-29 the IaC in this repository was never scanned at all,
+          # by this step or any other. Naming all three makes that explicit rather than inherited.
+          scanners: 'vuln,secret,misconfig'
           severity: 'CRITICAL,HIGH'
           exit-code: '1'
           ignore-unfixed: true
+          # Turning misconfig on surfaced 28 pre-existing CRITICAL/HIGH findings; 23 were fixed and
+          # 5 remain, each scoped to the one file it applies to and each carrying its reason.
+          # The YAML form is required for that scoping: plain .trivyignore takes bare rule IDs, so
+          # one entry disables the rule repository-wide. That file may only shrink — see the
+          # conformance test. New findings fail this step immediately.
+          trivyignores: '.trivyignore.yaml'
+          # **/.terraform holds provider binaries that `terraform init` downloads — 764 MB of
+          # third-party code that is not ours to fix and that CI re-downloads every run.
+          skip-dirs: 'node_modules,**/node_modules,**/.venv,**/.terraform,dist,build'
       - name: Run Trivy — container image scan
         uses: aquasecurity/trivy-action@master
         with:

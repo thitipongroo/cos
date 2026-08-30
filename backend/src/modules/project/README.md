@@ -34,7 +34,8 @@ ANY    → CANCELLED  (TENANT_ADMIN only; terminal state)
 
 - `@cos/database` — `TenantPrismaService`, pagination utilities
 - `@cos/rbac` — `PROJECT_MANAGER`, `TENANT_ADMIN` role guards
-- `@cos/shared` — Kafka event types and `KafkaProducer`
+- `@cos/kafka` — `KafkaProducer` (SDK)
+- `@cos/shared` — typed event payload contracts
 - `@cos/logger`, `@cos/tracing` — observability
 - OpenSearch — full-text search on `project_name`, `project_code`. READ only: this module queries
   the index, it no longer writes to it. `SearchIndexerConsumer` (`modules/search`) keeps

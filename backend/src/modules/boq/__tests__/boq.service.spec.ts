@@ -16,7 +16,7 @@ import { BoqRepository } from '../boq.repository';
 import type { BoqVersionRow, BoqCategoryRow, BoqItemRow } from '../boq.repository';
 
 // ── Mocks ─────────────────────────────────────────────────────────────────
-jest.mock('@cos/shared', () => ({
+jest.mock('@cos/kafka', () => ({
   KafkaProducer: jest.fn().mockImplementation(() => ({
     connect: jest.fn().mockResolvedValue(undefined),
     publish: jest.fn().mockResolvedValue(undefined),
@@ -240,9 +240,11 @@ describe('BoqService', () => {
 
       const result = await service.createVersion('project-uuid-001', { currency_code: 'THB' });
       expect(result.version_number).toBe(1);
-      // version_number is now allocated inside the transaction (COALESCE(MAX)+1), not passed in.
+      // version_number is now allocated inside the transaction (COALESCE(MAX)+1), not passed in,
+      // and the outbox builder rides along so the events commit with the row (§35.13 ESC-13).
       expect(mockRepo.claimNextVersion).toHaveBeenCalledWith(
         expect.objectContaining({ project_id: 'project-uuid-001', currency_code: 'THB' }),
+        expect.any(Function),
       );
     });
 
@@ -274,18 +276,19 @@ describe('BoqService', () => {
       mockRepo.claimNextVersion.mockResolvedValue({ version: draftVersion, version_number: 1 });
       mockRepo.findLatestApprovedVersion.mockResolvedValue(null);
 
-      const outboxMock = (
-        service as unknown as {
-          outbox: { publish: jest.Mock };
-        }
-      ).outbox;
-
       await service.createVersion('project-uuid-001', { currency_code: 'THB' });
 
-      const eventTypes = outboxMock.publish.mock.calls.map(
-        (c: [{ event_type: string }]) => c[0].event_type,
-      );
-      expect(eventTypes).toContain('construction.boq.created.v1');
+      // Events now go to the outbox: assert on the builder handed to the repository.
+      // The builder now rides claimNextVersion — that is the call that does the INSERT, so it is
+      // the transaction the events have to join.
+      const builder = mockRepo.claimNextVersion.mock.calls[0][1] as (
+        row: BoqVersionRow,
+      ) => { event_type: string }[];
+      const eventTypes = builder(draftVersion).map((e) => e.event_type);
+      expect(eventTypes).toEqual([
+        'construction.boq.version_created.v1',
+        'construction.boq.created.v1',
+      ]);
     });
 
     it('does NOT publish boq.created.v1 on subsequent versions (version_number > 1 branch)', async () => {
@@ -301,19 +304,16 @@ describe('BoqService', () => {
       mockRepo.updateCategorySubtotals.mockResolvedValue(undefined);
       mockRepo.updateVersionTotal.mockResolvedValue(undefined);
 
-      const outboxMock = (
-        service as unknown as {
-          outbox: { publish: jest.Mock };
-        }
-      ).outbox;
-
       const result = await service.createVersion('project-uuid-001', { currency_code: 'THB' });
       expect(result.version_number).toBe(2);
       expect(mockRepo.copyVersionContents).toHaveBeenCalled();
 
-      const eventTypes = outboxMock.publish.mock.calls.map(
-        (c: [{ event_type: string }]) => c[0].event_type,
-      );
+      // The builder now rides claimNextVersion — that is the call that does the INSERT, so it is
+      // the transaction the events have to join.
+      const builder = mockRepo.claimNextVersion.mock.calls[0][1] as (
+        row: BoqVersionRow,
+      ) => { event_type: string }[];
+      const eventTypes = builder({ ...draftVersion, version_number: 2 }).map((e) => e.event_type);
       expect(eventTypes).not.toContain('construction.boq.created.v1');
     });
 
@@ -330,6 +330,18 @@ describe('BoqService', () => {
       expect(mockRepo.copyVersionContents).not.toHaveBeenCalled();
     });
   });
+
+  // ── Category hierarchy and the version total ──────────────────────────────────────────────
+  //
+  // The suite that stood here asserted `version.total_estimated = SUM(category.subtotal) for all
+  // ROOT categories`, master's literal wording, on the reasoning that summing every category would
+  // double-count a child's items. It would not: `boq_items.category_id` is a single FK, so an item
+  // belongs to exactly one category and lands in exactly one subtotal, and category subtotals are
+  // each their OWN items — nothing rolls a child up into its parent. What the root filter actually
+  // did was drop every item in a sub-category from the total the BOQ reports.
+  //
+  // Closed as OQ-23 by product-owner decision 2026-08-22; master's Calculation Rules were corrected
+  // to match. The suite that replaces it is "Version total spans the whole category tree" below.
 
   // ── Immutability ─────────────────────────────────────────────────────────
   describe('Immutability — APPROVED/SUPERSEDED versions cannot be modified', () => {
@@ -367,6 +379,60 @@ describe('BoqService', () => {
         UnprocessableEntityException,
       );
     });
+
+    // The block above is titled APPROVED/SUPERSEDED and every case in it used an APPROVED version.
+    // master:2301 names both, and SUPERSEDED is the one that matters more: it is the historical
+    // record a later version was costed against. Narrowing the guard to
+    // `if (version.status === 'APPROVED')` left every case here green while superseded versions
+    // became writable — rewriting a cost history nobody would think to check.
+    const supersededVersion: BoqVersionRow = {
+      ...approvedVersion,
+      status: 'SUPERSEDED',
+    };
+
+    it('addItem throws ForbiddenException on a SUPERSEDED version (master:2301)', async () => {
+      mockRepo.findVersionById.mockResolvedValue({ ...supersededVersion });
+      await expect(
+        service.addItem('version-uuid-000', {
+          category_id: 'cat-uuid-001',
+          description: 'Test',
+          unit: 'm3',
+          quantity: '1.0000',
+          unit_cost: '100.0000',
+          currency_code: 'THB',
+        }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('updateItem throws ForbiddenException on a SUPERSEDED version', async () => {
+      mockRepo.findItemById.mockResolvedValue({ ...item, version_id: 'version-uuid-000' });
+      mockRepo.findVersionById.mockResolvedValue({ ...supersededVersion });
+      await expect(service.updateItem('item-uuid-001', { description: 'Changed' })).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('deleteItem throws ForbiddenException on a SUPERSEDED version', async () => {
+      mockRepo.findItemById.mockResolvedValue({ ...item, version_id: 'version-uuid-000' });
+      mockRepo.findVersionById.mockResolvedValue({ ...supersededVersion });
+      await expect(service.deleteItem('item-uuid-001')).rejects.toThrow(ForbiddenException);
+    });
+
+    it('names the status in the refusal, so DRAFT-only is not read as "not found"', async () => {
+      // The two failures a caller can hit here are "this version is closed" and "no such version",
+      // and they lead somewhere different. The message carries the status for that reason.
+      mockRepo.findVersionById.mockResolvedValue({ ...supersededVersion });
+      await expect(
+        service.addItem('version-uuid-000', {
+          category_id: 'cat-uuid-001',
+          description: 'Test',
+          unit: 'm3',
+          quantity: '1.0000',
+          unit_cost: '100.0000',
+          currency_code: 'THB',
+        }),
+      ).rejects.toThrow(/SUPERSEDED/);
+    });
   });
 
   // ── Approval flow ─────────────────────────────────────────────────────────
@@ -397,6 +463,7 @@ describe('BoqService', () => {
       expect(result.status).toBe('APPROVED');
       expect(mockRepo.approveVersion).toHaveBeenCalledWith(
         expect.objectContaining({ version_id: 'version-uuid-002', approved_by: 'user-uuid-001' }),
+        expect.objectContaining({ event_type: 'construction.boq.version_approved.v1' }),
       );
 
       // ADR-058 CT-2c-2: approval also publishes the full itemized line set for downstream materialization.
@@ -588,6 +655,65 @@ describe('BoqService', () => {
   });
 
   // ── Kafka error handling ───────────────────────────────────────────────────
+  // §35.13 ESC-13: the service no longer holds a KafkaProducer, so there is no direct-publish
+  // catch branch left. Item mutations instead write construction.boq.updated.v1 to the outbox in
+  // the same transaction as the closing version-total UPDATE.
+  describe('boq.updated.v1 outbox write on item mutation', () => {
+    it('writes the event with the version total UPDATE and sources project_id from the version row', async () => {
+      mockRepo.findVersionById.mockResolvedValue(draftVersion);
+      mockRepo.addItem.mockResolvedValue(item);
+      mockRepo.findItemsByVersion.mockResolvedValue([item]);
+      mockRepo.findCategoriesByVersion.mockResolvedValue([category]);
+      mockRepo.updateCategorySubtotal.mockResolvedValue(undefined);
+      mockRepo.updateVersionTotal.mockResolvedValue(undefined);
+
+      await service.addItem('version-uuid-001', {
+        category_id: 'category-uuid-001',
+        description: 'Concrete',
+        unit: 'M3',
+        quantity: '10',
+        unit_cost: '100',
+        currency_code: 'THB',
+      } as never);
+
+      const call = mockRepo.updateVersionTotal.mock.calls.at(-1) as [
+        string,
+        string,
+        { event_type: string; payload: { project_id: string; version_id: string } },
+      ];
+      expect(call[2].event_type).toBe('construction.boq.updated.v1');
+      // ESC-18: project_id must be the PROJECT id from the version row, not the version id.
+      expect(call[2].payload.project_id).toBe(draftVersion.project_id);
+      expect(call[2].payload.version_id).toBe('version-uuid-001');
+    });
+
+    it('falls back to an empty project_id and THB when the version row is missing', async () => {
+      mockRepo.findVersionById.mockResolvedValueOnce(draftVersion).mockResolvedValue(null);
+      mockRepo.addItem.mockResolvedValue(item);
+      mockRepo.findItemsByVersion.mockResolvedValue([item]);
+      mockRepo.findCategoriesByVersion.mockResolvedValue([category]);
+      mockRepo.updateCategorySubtotal.mockResolvedValue(undefined);
+      mockRepo.updateVersionTotal.mockResolvedValue(undefined);
+
+      await service.addItem('version-uuid-001', {
+        category_id: 'category-uuid-001',
+        description: 'Concrete',
+        unit: 'M3',
+        quantity: '10',
+        unit_cost: '100',
+        currency_code: 'THB',
+      } as never);
+
+      const call = mockRepo.updateVersionTotal.mock.calls.at(-1) as [
+        string,
+        string,
+        { payload: { project_id: string; new_total_estimated_currency: string } },
+      ];
+      expect(call[2].payload.project_id).toBe('');
+      expect(call[2].payload.new_total_estimated_currency).toBe('THB');
+    });
+  });
+
   // ── Category and item listing ─────────────────────────────────────────────
   describe('getVersionDetail', () => {
     it('returns version, categories, items', async () => {
@@ -654,7 +780,11 @@ describe('BoqService', () => {
         currency_code: 'THB',
       });
 
-      expect(mockRepo.updateVersionTotal).toHaveBeenCalledWith('version-uuid-001', '5000000.0000');
+      expect(mockRepo.updateVersionTotal).toHaveBeenCalledWith(
+        'version-uuid-001',
+        '5000000.0000',
+        expect.objectContaining({ event_type: 'construction.boq.updated.v1' }),
+      );
     });
 
     it('adds root and child values together without double-counting', async () => {
@@ -673,7 +803,11 @@ describe('BoqService', () => {
       });
 
       // Each item belongs to exactly one category, so it lands in exactly one subtotal.
-      expect(mockRepo.updateVersionTotal).toHaveBeenCalledWith('version-uuid-001', '1250000.5000');
+      expect(mockRepo.updateVersionTotal).toHaveBeenCalledWith(
+        'version-uuid-001',
+        '1250000.5000',
+        expect.objectContaining({ event_type: 'construction.boq.updated.v1' }),
+      );
     });
 
     it('leaves each category subtotal as its OWN items — no roll-up into the parent', async () => {

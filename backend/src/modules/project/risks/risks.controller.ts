@@ -19,7 +19,7 @@ import { CreateRiskDto } from './dto/create-risk.dto';
 import { UpdateRiskDto } from './dto/update-risk.dto';
 import { RiskStatusDto } from './dto/risk-status.dto';
 import { ListRisksDto } from './dto/list-risks.dto';
-import { JwtAuthGuard } from '../../identity/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../../shared/guards/jwt-auth.guard';
 import { Roles } from '@cos/rbac';
 import { CosRole } from '@cos/types';
 

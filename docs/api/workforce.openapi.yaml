@@ -28,23 +28,6 @@ tags:
     description: Timesheet submission and approval
 
 paths:
-  # ── Self check-in (written 2026-08-24) ────────────────────────────────────
-  /workers/me:
-    get:
-      summary: Resolve the worker record linked to the signed-in user
-      description: |
-        The bridge between an account and a worker row, so a field worker can check themselves in
-        without knowing their own `worker_id`. Scoped by the JWT — there is no parameter, so it
-        cannot be pointed at anyone else.
-      operationId: getMyWorker
-      tags: [workers]
-      responses:
-        '200':
-          description: The caller's worker record
-        '401':
-          description: Unauthenticated
-        '404':
-          description: No worker row is linked to this user
   # ─── Workers ─────────────────────────────────────────────────────────────────
 
   /workers:
@@ -87,6 +70,31 @@ paths:
                   $ref: '#/components/schemas/Worker'
         '401':
           $ref: '#/components/responses/Unauthorized'
+
+  # Declared BEFORE /workers/{workerId} for the same reason the controller declares it first: 'me'
+  # must not be read as a worker id. The route existed in workforce.controller.ts but was absent
+  # here, so a client generated from this document could not see the endpoint mobile self-check-in
+  # depends on.
+  /workers/me:
+    get:
+      tags: [Workers]
+      operationId: getMyWorker
+      summary: Resolve the worker linked to the current user (self check-in)
+      description: |
+        The bridge between an account and a worker row, so a field worker can check themselves in
+        without knowing their own `worker_id`. Scoped by the JWT — there is no parameter, so it
+        cannot be pointed at anyone else.
+      responses:
+        '200':
+          description: Worker detail for the authenticated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Worker'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   /workers/{workerId}:
     parameters:

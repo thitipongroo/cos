@@ -65,7 +65,7 @@ echo "── Check 3: Critical v1 schema subjects registered ──"
 # Subject naming (§32.4 RecordNameStrategy): the Schema Registry subject is the canonical
 # event_type verbatim — one schema per event, shared across tenants. This is exactly what
 # the producer registers (subjectForEvent(eventType) === eventType; see
-# @cos/shared/src/kafka/topic-catalog.ts). NOT the Confluent default {topic}-value
+# @cos/kafka/src/topic-catalog.ts). NOT the Confluent default {topic}-value
 # (TopicNameStrategy) — topics are per-tenant, subjects are not.
 # Critical subset of EVENT_AVSC_MAP (23) verified at this gate — later-phase events whose
 # producers may not yet be live in staging (twin.*, carbon.*, platform.enterprise.*, file.*)

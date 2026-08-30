@@ -10,7 +10,7 @@ import "github.com/prometheus/client_golang/prometheus"
 // worker's internal/metrics re-exports and registers these into its own registry and serves them on
 // :9464 — coskafka defines and increments; it never registers or exposes.
 //
-// Metric names, help text and label sets match packages/@cos/shared/src/kafka/metrics.ts exactly,
+// Metric names, help text and label sets match packages/@cos/kafka/src/metrics.ts exactly,
 // so one Grafana panel and the existing alert rules cover the TypeScript and Go consumers alike.
 //
 // DELIBERATELY NOT DEFINED HERE:

@@ -29,7 +29,11 @@ export interface ExecutiveDashboardRow {
   totalActual: string;
   totalBudget: string;
   utilizationPct: number;
-  atRisk: boolean;
+  // §35.13 ESC-34: 0 | 1, not boolean. This comes from a ClickHouse `if(...)`, which returns
+  // UInt8 — the value on the wire is 0 or 1 and never false or true. Declaring it `boolean` was
+  // a lie the compiler could not catch, and it hid a rendering bug in the web portfolio table
+  // (ESC-36). Every client interface below mirrors this type deliberately.
+  atRisk: 0 | 1;
   overdueInvoiceCount: number;
 }
 
@@ -137,6 +141,16 @@ export class AnalyticsService {
             if(cost.budget > 0,
                round(toFloat64(cost.actual) / toFloat64(cost.budget) * 100, 2),
                0)                                      AS utilizationPct,
+            -- NO toBool. The column comes back as UInt8 1/0 and every consumer is written for
+            -- that: ExecutiveDashboardRow above, apps/web/src/lib/api/types.ts and the two mobile
+            -- screens all declare 0 | 1, and both render guards compare against 1. That is
+            -- §35.13 ESC-34, where the product owner chose (b) fix the type over (a) coerce the
+            -- value, on 2026-08-24. Wrapping this in toBool reverses the decision and breaks the
+            -- guards silently: false === 1 is false, so the at-risk badge would never render
+            -- again — which is ESC-36, the defect that fix was written to close.
+            --
+            -- (No backticks in this comment: it sits inside a template literal, so one would end
+            -- the string and take the rest of the query with it.)
             if(cost.budget > 0,
                abs(toFloat64(cost.actual) - toFloat64(cost.budget))
                / toFloat64(cost.budget) * 100 > {riskThreshold:Float64},
