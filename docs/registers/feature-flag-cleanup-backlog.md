@@ -19,8 +19,8 @@ When a flag reaches 100% rollout:
 3. After code removal, moves the flag to the **Removed** table
 
 **CI check — NOT IMPLEMENTED.** This file previously described
-`scripts/ci/check-feature-flag-staleness.sh` as if it existed; it does not, and `scripts/ci/`
-is empty. Nothing in `.github/workflows/ci.yml` references flag staleness. Until it is written,
+`scripts/ci/check-feature-flag-staleness.sh` as if it existed; it does not — `scripts/ci/` holds twelve other
+gates, but none of them is this one. Nothing in `.github/workflows/ci.yml` references flag staleness. Until it is written,
 the 30-day removal deadline is enforced only by the weekly manual review below. Intended
 behaviour when built: scan source for flag keys, cross-reference this file, warn (not fail) when
 a flag is still in source past its deadline.

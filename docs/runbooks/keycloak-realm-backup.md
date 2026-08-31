@@ -118,5 +118,8 @@ print('Roles:', len(data.get('roles', {}).get('realm', [])))
 
 ## Alerting
 
-Alertmanager rule: `KCBackupMissing` — fires if no successful backup within 25 hours.
-Alert config: `infrastructure/monitoring/alertmanager/rules/keycloak.yaml`
+Alertmanager rule: `KCBackupMissing` — **NOT CONFIGURED.** It would fire if no successful
+backup completed within 25 hours, and nothing raises it: this repository has no
+`alertmanager/` directory, and `infrastructure/monitoring/prometheus/rules/cos-alerts.yml`
+carries seventeen rules, none of them this one. Until it is written, a missed backup is
+caught only by the manual check in this runbook.

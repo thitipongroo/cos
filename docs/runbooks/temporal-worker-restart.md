@@ -136,4 +136,6 @@ tctl cluster health
 ## Alerting
 
 Alertmanager rule: `TemporalWorkflowStuck` — fires if any workflow in Running state > 2 hours.  
-Alert config: `infrastructure/monitoring/alertmanager/rules/temporal.yaml`
+Alert config: **NOT CONFIGURED.** There is no `alertmanager/` directory in this repository,
+and `infrastructure/monitoring/prometheus/rules/cos-alerts.yml` carries no Temporal rule.
+Nothing pages on this condition today.

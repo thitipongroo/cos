@@ -5,9 +5,12 @@
 >
 > Implemented in:
 >
-> - NestJS: `backend/src/main.ts` → `app.enableCors(corsOptions)` where `corsOptions` is loaded
->   from environment-specific config (`@cos/config`)
-> - Fastify file-service: `services/file-service/src/app.ts` → `fastify.register(cors, corsOptions)`
+> - NestJS API: `backend/src/main.ts` → `app.enableCors({ ... })`, written inline. The allowed
+>   origins come from the `CORS_ORIGINS` environment variable, split on commas, defaulting to
+>   `http://localhost:3001` when it is unset.
+> - Fastify file-service: `services/file-service/src/main.ts` → `fastify.register(cors, { origin: false })`.
+>   Cross-origin requests are REFUSED outright: the browser never talks to this service directly,
+>   it goes through the API, so the service has no origin to allow.
 
 ---
 
@@ -116,55 +119,41 @@ Rate limit headers exposed so web/mobile clients can implement backoff (QM-7).
 
 ## Configuration implementation
 
-`backend/src/config/cors.config.ts`:
+The NestJS API configures CORS inline, in `backend/src/main.ts`:
 
 ```typescript
-import { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface';
-
-const ALLOWED_ORIGINS: Record<string, string[]> = {
-  production: ['https://app.construction-os.app', 'https://admin.construction-os.app'],
-  staging: ['https://staging.construction-os.app', 'https://staging-admin.construction-os.app'],
-  development: ['http://localhost:3000', 'http://localhost:3001'],
-};
-
-export function getCorsOptions(env: string): CorsOptions {
-  const origins = ALLOWED_ORIGINS[env] ?? [];
-  return {
-    origin: (origin, callback) => {
-      if (!origin || origins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error(`Origin ${origin} not allowed by CORS policy`));
-      }
-    },
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: [
-      'Content-Type',
-      'Authorization',
-      'X-Tenant-ID',
-      'X-Request-ID',
-      'traceparent',
-      'tracestate',
-    ],
-    exposedHeaders: [
-      'X-RateLimit-Limit',
-      'X-RateLimit-Remaining',
-      'X-RateLimit-Reset',
-      'X-Request-ID',
-      'Retry-After',
-    ],
-    credentials: true,
-    maxAge: 600,
-  };
-}
+app.enableCors({
+  origin: process.env['CORS_ORIGINS']?.split(',') ?? ['http://localhost:3001'],
+  methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['authorization', 'content-type'],
+  credentials: true,
+});
 ```
+
+`methods` is listed explicitly for a reason worth keeping: without it the preflight advertises only
+`GET,HEAD,POST`, and the browser blocks every cross-origin `PATCH`/`PUT`/`DELETE` — incident
+acknowledge, permit approve — with `net::ERR_FAILED`.
+
+**Where the code and this policy differ.** Recorded here rather than reconciled, because closing
+either gap is a change to the service, not to a document:
+
+| This policy says                                                          | `main.ts` does                                                  |
+| ------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `Access-Control-Max-Age: 600`                                             | Not set — the browser applies its own default                   |
+| Requests carry `X-Tenant-ID`, `X-Request-ID`, `traceparent`, `tracestate` | `allowedHeaders` admits `authorization` and `content-type` only |
+| Rate-limit and `Retry-After` headers are readable cross-origin            | No `exposedHeaders`, so a browser cannot read them              |
+| Origins are chosen per environment                                        | One `CORS_ORIGINS` variable, whatever the deployment sets       |
 
 ---
 
 ## Adding a new origin
 
 1. Confirm the origin is under Construction OS control (no third-party origins allowed)
-2. Add origin string to the appropriate environment in `cors.config.ts`
+2. Add the origin to the API's `CORS_ORIGINS` environment variable for that deployment. There is
+   no per-environment origin list in this repository, and nothing sets the variable today —
+   `docker-compose.yml` sets only `TEMPORAL_CORS_ORIGINS`, which is Temporal's own UI, and the
+   `cos-backend` chart does not set it at all. Every environment therefore falls back to the
+   `http://localhost:3001` default in `main.ts` until someone supplies it.
 3. Update this document with the origin and justification
 4. PR review by engineering lead before merge
 

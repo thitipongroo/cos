@@ -79,8 +79,9 @@ in Promtail pipeline and routed to the compliance retention bucket (`cos-logs-co
 | `cos.audit.*`                    | **90 days** | Compliance event replay         |
 | `cos.dlq.*` (dead-letter)        | **30 days** | Investigation window            |
 
-Topic retention is set via Kafka broker config (`retention.ms`) in
-`infrastructure/kubernetes/kafka/kafka-topic-configs.yaml`.
+Topic retention is set per topic in `infrastructure/kafka/topics.yaml` (`retention_ms`), which
+is the file the topic provisioning reads. `infrastructure/kubernetes/kafka/` holds the broker
+StatefulSet and the Schema Registry deployment, not per-topic configuration.
 
 ### Infrastructure / system logs
 
@@ -108,8 +109,11 @@ Topic retention is set via Kafka broker config (`retention.ms`) in
 | GPS coordinates     | Project / zone ID only |
 | JWT payload content | `token_id` claim only  |
 
-Violations detected by log scanning job in CI (`scripts/ci/scan-log-pii.sh`) — build fails if
-raw PII pattern detected in log output during integration tests.
+**CI check — NOT IMPLEMENTED.** This section previously described a log-scanning job
+(`scripts/ci/scan-log-pii.sh`) that fails the build on a raw PII pattern. Neither the script nor
+the job exists — nothing in `.github/workflows/` scans log output. The redaction rules above are
+enforced only by review. Intended behaviour when built: run the integration suite, scan its
+captured log output for the patterns in the table, fail on a match.
 
 ---
 
@@ -175,7 +179,7 @@ Before Stage 1 → Stage 2 gate:
 - [ ] Loki retention config deployed and tested (verify old logs are purged after 30 days in staging)
 - [ ] S3 lifecycle rules applied to `cos-logs-{env}` and `cos-logs-compliance-{env}`
 - [ ] Compliance log routing pipeline (Promtail labels) verified end-to-end
-- [ ] PII scan CI job (`scan-log-pii.sh`) passing
+- [ ] PII scan CI job (`scan-log-pii.sh`) written, wired into `ci.yml`, and passing — none of the three yet
 
 ---
 

@@ -167,8 +167,14 @@ Aggregate counts, financial totals, and non-PII fields are retained.
 
 ## Automation
 
-S3 lifecycle rules are defined in `infrastructure/terraform/aws/s3.tf` — `lifecycle_rule` blocks.
-PostgreSQL scheduled deletion runs via `scripts/maintenance/data-retention-cleanup.sh` (cron, daily at 02:00 UTC).
+S3 lifecycle rules are defined in `infrastructure/terraform/aws/modules/s3/main.tf` —
+`lifecycle_rule` blocks.
+
+**PostgreSQL deletion — NOT IMPLEMENTED.** This line previously said it ran via
+`scripts/maintenance/data-retention-cleanup.sh` on a daily 02:00 UTC cron. Neither the script nor
+a CronJob exists, so nothing deletes expired rows on a schedule: the periods in the table above
+are met for object storage and not for the database. Intended behaviour when built: delete per
+that table, in batches, with a dry-run mode and a row count in the log.
 
 ---
 

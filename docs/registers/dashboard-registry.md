@@ -83,7 +83,8 @@ annotations:
 All dashboards must be provisioned as code via Grafana dashboard provisioning
 (`infrastructure/monitoring/grafana/dashboards/*.json`), not created manually in the UI.
 
-Grafana provisioning config: `infrastructure/monitoring/grafana/provisioning/dashboards/cos-dashboards.yaml`.
+The committed JSON above IS the provisioning source. There is no provisioning YAML in this
+repository — whatever mounts these files into Grafana lives in the deployment, not here.
 
 Before Stage 1 → Stage 2:
 
