@@ -128,7 +128,7 @@ generating on-device would add a dependency and a second lockfile change (Rule 2
 leave `apps/web` without a PDF, since the policy prose has no copy there either.
 
 **The cost, and what pays it.** The prose now exists twice: `apps/mobile/src/i18n/{en,th}.json` for
-the screen, `backend/.../privacy-policy/policy-document.ts` for the PDF. That is exactly the drift
+the screen, `backend/src/modules/identity/privacy-policy/policy-document.ts` for the PDF. That is exactly the drift
 `<PrivacyPolicyDocument />` was extracted to prevent, and it is only acceptable because
 `scripts/ci/check-legal-parity.mjs` (named `check-policy-parity.mjs`
 until ADR-092 gave the Terms of Use a PDF of its own) runs in the CI lint job and fails the build when the two
@@ -138,7 +138,7 @@ it was wired in. Without that script this decision should be reversed, not merel
 **The digest is a real check, not decoration.** The bytes are deterministic — one static document,
 built once, with the PDF's CreationDate/ModDate pinned to the effective date so pdf-lib's default
 clock stamp cannot move them. The server publishes the digest before the transfer and
-`apps/mobile/src/lib/policyDownload.ts` recomputes it over the bytes that reached the device, so
+`apps/mobile/src/lib/legalDownload.ts` recomputes it over the bytes that reached the device, so
 "verified" answers a question a reader can act on. This is the opposite call from the SHA-256 the
 drawing puts on the inquiry receipt (`07`), which was dropped: hashing a message the sender still
 holds proves nothing about what the server stored.

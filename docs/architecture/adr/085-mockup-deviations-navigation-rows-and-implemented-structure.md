@@ -40,7 +40,7 @@ The accordion's contents are the reason it exists, and none of those contents ar
 | `Sync Frequency — Real-time`          | Writes queue offline and flush on reconnect                      |
 
 **On the 100m radius**, because "no geofencing" on its own is too broad a statement and invites the
-obvious challenge. `STATIONARY_RADIUS_METRES = 100` exists (`backend/.../network-origin/stationary.ts`,
+obvious challenge. `STATIONARY_RADIUS_METRES = 100` exists (`backend/src/modules/identity/network-origin/stationary.ts`,
 ADR-080). It is not a geofence:
 
 |                  | The 100m the platform has                       | The 500m the mockup draws   |

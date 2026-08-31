@@ -26,7 +26,7 @@ under `Home/`. Each menu subfolder is numbered from its own start — `03-site-e
 at `00` (a loading state precedes the dashboard), the `04-tenant-admin/` subfolders at `01`.
 **Every committed screen is ONE full-page
 image** — where a screen is taller than the phone it is stitched from scrolling viewports
-(`scripts/stitch-fullpage.py`) — except where a screen has a genuinely distinct alternate state, which
+(`apps/mobile/scripts/stitch-fullpage.py`) — except where a screen has a genuinely distinct alternate state, which
 gets its own full-page file (the Invite-user `email` method, the Alerts `diff`-expanded view).
 
 > **The tree was restructured on 2026-08-11**, content unchanged — git recorded every move as `R100`.
@@ -843,7 +843,7 @@ The FAB's full-screen **Quick Commands** overlay
 bar (brand + SYNCED pill + close), **five action cards** (Invite · New System Integration · Apps &
 Services · Generate Usage Report · Force System Sync), and a small stats bento. Left-accent colour
 follows the action. With the fifth card the overlay now scrolls, so `02` is captured as **one full-page
-stitch** (`scripts/stitch-fullpage.py`).
+stitch** (`apps/mobile/scripts/stitch-fullpage.py`).
 
 > **The overlay now opens straight onto its cards — it has no heading line of any kind** (PO decision
 > 2026-08-11). The "Quick Commands" title went on 2026-07-31 because the wordmark above already
@@ -982,7 +982,7 @@ The connector picker opened from Quick Commands → **New System Integration**
   (`assets/tenant-admin/server_room.jpg`, provided by the PO) under an SVG scrim that keeps the caption
   legible (no external image). The global TopBar shows the screen title + a Back arrow.
 - **`07` is one full-page image** (PO decision 2026-07-29 — "one page, not split"): the capture shoots
-  several scrolling viewports and stitches them with `scripts/stitch-fullpage.py`. Also visible here: the
+  several scrolling viewports and stitches them with `apps/mobile/scripts/stitch-fullpage.py`. Also visible here: the
   **brand icon in the TopBar is now a rounded-square tile** (`brandIcon` `borderRadius`, Linear/Palantir
   aesthetic) — a global TopBar change, so every screen's header picks it up.
 
@@ -1910,7 +1910,7 @@ from the Home FAB's quick-action menu, the drawer from the avatar — and assert
 saving: both Home stat tiles, at least one task card, at least one crew card, at least one checklist
 item. An empty state cannot be committed as though it were the feature. Quick actions is a single
 viewport — it is an overlay, so it never scrolls — and the rest are full-page stitches
-(`scripts/stitch-fullpage.py`).
+(`apps/mobile/scripts/stitch-fullpage.py`).
 
 **`--only <substring>` narrows a run to the screens whose name matches**, repeatable, so a one-screen
 change costs one screen's worth of time rather than eight (product-owner request 2026-08-09):

@@ -117,7 +117,7 @@ raw PII pattern detected in log output during integration tests.
 
 ### Loki retention configuration
 
-`infrastructure/monitoring/loki/loki-config.yaml`:
+`infrastructure/monitoring/loki/loki-config.yml`:
 
 ```yaml
 limits_config:

@@ -3544,7 +3544,7 @@ Generate:
 - MinIO client integration (minio npm package)
 - File validation middleware (size, MIME type, extension check)
 - Antivirus hook (ClamAV integration) — IN SCOPE and BUILT. `clamscan` is a dependency of
-  `services/file-service`, `src/services/antivirus.service.ts` and `src/services/scan-runner.ts`
+  `services/file-service`, `src/services/file-service/src/services/antivirus.service.ts` and `src/services/scan-runner.ts`
   implement the scan, and quarantine has its own bucket, event and SYSTEM_ADMIN recovery route:
   scan every upload before marking CLEAN, QUARANTINE on threat detected, move infected objects to
   `cos-quarantine/{tenant_id}/` (30-day retention), emit `file.document.quarantined.v1`, notify

@@ -65,7 +65,7 @@ services/kg-ingestion-worker/           (Go)
   cmd/kg-ingestion-worker/main.go       — consumer + Neo4j writer + POST /admin/rebuild
   internal/consumer/kafka_consumer.go   — franz-go, ConsumerGroupID = "kg-ingestion-worker.shared"
   internal/graph/constraints.go         — composite uniqueness for all 8 labels
-  tests/integration/ingest_test.go      — Neo4j test container
+  services/kg-ingestion-worker/tests/integration/ingest_test.go      — Neo4j test container
 
 backend/src/modules/graph/              (NestJS, thin)
   graph.{controller,service,module}.ts  graph.tokens.ts
@@ -231,7 +231,7 @@ Verified on **2026-08-22** against this working tree (Rule 36 — commands run, 
 | Neo4j constraints on `{label}.{id}` + tenant   | ✅ present | `internal/graph/constraints.go` — composite uniqueness × 8        |
 | Full rebuild admin endpoint                    | ✅ present | `POST /admin/rebuild` on the worker                               |
 | Unit tests — event → Cypher                    | ✅ present | Go tests                                                          |
-| Integration tests — Neo4j test container       | ✅ present | `tests/integration/ingest_test.go`                                |
+| Integration tests — Neo4j test container       | ✅ present | `services/kg-ingestion-worker/tests/integration/ingest_test.go`   |
 | `docs/api/graph.openapi.yaml`                  | ✅ present | —                                                                 |
 | Building/Floor/Room/Structure absent           | ✅ correct | intentional, per the command's PO decision 2026-07-05             |
 

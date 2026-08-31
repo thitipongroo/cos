@@ -249,22 +249,22 @@ integration tests on the full upload → MinIO → metadata → signed URL flow.
 
 Verified on **2026-08-22** against this working tree (Rule 36 — commands run, output summarised).
 
-| Generate item                            | Status     | Evidence                                                                                |
-| ---------------------------------------- | ---------- | --------------------------------------------------------------------------------------- |
-| Fastify app with multipart plugin        | ✅ present | `fastify 5.9.0`, `@fastify/multipart ^10.0.0`                                           |
-| MinIO client integration                 | ✅ present | `minio ^7.1.0`; `services/minio.service.ts`                                             |
-| File validation middleware               | ✅ present | `middleware/validation.ts` — size, MIME, extension                                      |
-| Antivirus hook (ClamAV)                  | ✅ present | `clamscan ^2.1.3`; `services/antivirus.service.ts` + `scan-runner.ts`                   |
-| Signed URL generation                    | ✅ present | `presignedGetObject`, TTL 3600 s configurable                                           |
-| OpenSearch indexing on upload            | ✅ present | index `files-{tenantId}`                                                                |
-| PostgreSQL migrations                    | ✅ present | 4 migrations; `files.files`, `file_metadata`, `photo_annotations`, `retention_policies` |
-| OpenAPI 3.1                              | ✅ present | `plugins/swagger.ts`                                                                    |
-| Unit + integration tests                 | ✅ present | 19 test files                                                                           |
-| `file.document.uploaded.v1`              | ✅ present | —                                                                                       |
-| `file.document.quarantined.v1`           | ✅ present | —                                                                                       |
-| Bucket / key layout                      | ✅ present | `cos-{tenant_id}` + `{year}/{month}/{file_id}/{filename}`                               |
-| ZIP sandboxed extraction workflow        | ✅ present | workflow + activities + worker, launched by `worker-deployment.yaml` (OQ-32)            |
-| Retention / hard-delete cleanup workflow | ✅ present | same Deployment, second task queue (OQ-32)                                              |
+| Generate item                            | Status     | Evidence                                                                                        |
+| ---------------------------------------- | ---------- | ----------------------------------------------------------------------------------------------- |
+| Fastify app with multipart plugin        | ✅ present | `fastify 5.9.0`, `@fastify/multipart ^10.0.0`                                                   |
+| MinIO client integration                 | ✅ present | `minio ^7.1.0`; `services/file-service/src/services/minio.service.ts`                           |
+| File validation middleware               | ✅ present | `middleware/validation.ts` — size, MIME, extension                                              |
+| Antivirus hook (ClamAV)                  | ✅ present | `clamscan ^2.1.3`; `services/file-service/src/services/antivirus.service.ts` + `scan-runner.ts` |
+| Signed URL generation                    | ✅ present | `presignedGetObject`, TTL 3600 s configurable                                                   |
+| OpenSearch indexing on upload            | ✅ present | index `files-{tenantId}`                                                                        |
+| PostgreSQL migrations                    | ✅ present | 4 migrations; `files.files`, `file_metadata`, `photo_annotations`, `retention_policies`         |
+| OpenAPI 3.1                              | ✅ present | `plugins/swagger.ts`                                                                            |
+| Unit + integration tests                 | ✅ present | 19 test files                                                                                   |
+| `file.document.uploaded.v1`              | ✅ present | —                                                                                               |
+| `file.document.quarantined.v1`           | ✅ present | —                                                                                               |
+| Bucket / key layout                      | ✅ present | `cos-{tenant_id}` + `{year}/{month}/{file_id}/{filename}`                                       |
+| ZIP sandboxed extraction workflow        | ✅ present | workflow + activities + worker, launched by `worker-deployment.yaml` (OQ-32)                    |
+| Retention / hard-delete cleanup workflow | ✅ present | same Deployment, second task queue (OQ-32)                                                      |
 
 **On the antivirus deferral.** The command says "ClamAV integration — deferred to Phase 9 spec; do not
 implement until spec defines it". It is implemented: the dependency is installed, the service and

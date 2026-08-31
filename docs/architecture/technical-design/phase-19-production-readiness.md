@@ -224,7 +224,7 @@ Verified on **2026-08-22** against this working tree (Rule 36 — commands run, 
 | CI contains no `kubectl apply` / `helm upgrade` | ✅ verified | grep over `.github/workflows/` returns **0** matches                                             |
 
 **One path in the command is stale.** The Section A legend points at
-`scripts/verify-production-readiness.sh`, and the `cos-audit/` item at `run-all-checks.sh`; both live
+`scripts/readiness/verify-production-readiness.sh`, and the `cos-audit/` item at `run-all-checks.sh`; both live
 under `scripts/readiness/`. The scripts exist — only the reference is off by a directory.
 
 ---

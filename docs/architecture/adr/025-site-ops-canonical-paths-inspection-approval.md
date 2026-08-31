@@ -50,7 +50,7 @@ PM/SITE-ENGINEER/SAFETY_OFFICER/TENANT-ADMIN (§06 "Inspections / QC" RW).
 
 - One canonical convention for site-ops paths; §14 is now complete for the module.
 - Breaking path change is contained: controller, `site-ops.integration.spec.ts`, and
-  `apps/web/.../queries.ts` are migrated together; no external consumers exist yet (pre-release).
+  `apps/web/src/lib/api/queries.ts` are migrated together; no external consumers exist yet (pre-release).
 - The inspection approval graph is a documented design choice, not a spec mandate; if the product
   owner later defines a stricter QC workflow (e.g. a distinct APPROVED state or approver ≠
   submitter rule), it supersedes this ADR.

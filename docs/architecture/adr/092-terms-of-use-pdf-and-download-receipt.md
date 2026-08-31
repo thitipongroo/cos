@@ -26,7 +26,7 @@ That reasoning was sound while it held and stopped holding the moment the same p
 next door. **ADR-091 gave the Privacy Policy a real PDF** (2026-08-17): `policy-document.ts` holds
 the prose, `PrivacyPolicyService` builds a byte-stable PDF with pdf-lib, two public routes serve it
 and its digest, `lib/policyDownload.ts` verifies the bytes that land, and
-`scripts/ci/check-policy-parity.mjs` fails the build if the screen and the PDF ever disagree. Every
+`scripts/ci/check-legal-parity.mjs` fails the build if the screen and the PDF ever disagree. Every
 piece the terms needed already existed as a working, tested pattern.
 
 The product owner asked for both drawings to be implemented (2026-08-18).
