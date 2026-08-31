@@ -12,11 +12,11 @@
 // §35.13 ESC-13 / ESC-17 / ESC-22.
 
 import { OutboxPublisher } from '@cos/kafka';
-import { OutboxPollerService } from '../src/shared/events/outbox-poller.service';
+import { OutboxPollerService } from '../../src/shared/events/outbox-poller.service';
 import type { PrismaClient } from '@prisma/client';
-import { buildOutboxEvent } from '../src/shared/outbox/outbox.types';
-import { startIntegrationInfra, stopIntegrationInfra } from './helpers/integration-infra';
-import type { IntegrationInfra } from './helpers/integration-infra';
+import { buildOutboxEvent } from '../../src/shared/outbox/outbox.types';
+import { startIntegrationInfra, stopIntegrationInfra } from '../helpers/integration-infra';
+import type { IntegrationInfra } from '../helpers/integration-infra';
 
 const TENANT_ID = 'ffffffff-0001-4000-8000-000000000001';
 const ACTOR_ID = 'ffffffff-0002-4000-8000-000000000001';

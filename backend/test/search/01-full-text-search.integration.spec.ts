@@ -18,18 +18,18 @@ jest.unmock('@opensearch-project/opensearch');
 
 import { GenericContainer, type StartedTestContainer, Wait } from 'testcontainers';
 
-import { ProjectService } from '../src/modules/project/project.service';
-import type { ProjectRepository, ProjectRow } from '../src/modules/project/project.repository';
-import { SiteOpsService } from '../src/modules/site-ops/site-ops.service';
+import { ProjectService } from '../../src/modules/project/project.service';
+import type { ProjectRepository, ProjectRow } from '../../src/modules/project/project.repository';
+import { SiteOpsService } from '../../src/modules/site-ops/site-ops.service';
 // The writer half of search since TDD OQ-22: indexing moved off the request path onto the
 // outbox, and SearchIndexerConsumer drives this service. The services below still own the READ
 // half, which is what these tests query.
-import { SearchIndexerService } from '../src/modules/search/search-indexer.service';
+import { SearchIndexerService } from '../../src/modules/search/search-indexer.service';
 import type {
   SiteOpsRepository,
   SiteReportRow,
   IssueRow,
-} from '../src/modules/site-ops/site-ops.repository';
+} from '../../src/modules/site-ops/site-ops.repository';
 
 const TENANT_A = 'aaaaaaaa-0001-4000-8000-000000000001';
 const TENANT_B = 'bbbbbbbb-0001-4000-8000-000000000001';

@@ -10,9 +10,9 @@
 // `app_user` role the application actually uses, because that role is what the RLS policies name.
 
 import { PrismaClient } from '@prisma/client';
-import { createPrismaClient } from '../src/shared/prisma/create-prisma-client';
-import { startIntegrationInfra, stopIntegrationInfra } from './helpers/integration-infra';
-import type { IntegrationInfra } from './helpers/integration-infra';
+import { createPrismaClient } from '../../src/shared/prisma/create-prisma-client';
+import { startIntegrationInfra, stopIntegrationInfra } from '../helpers/integration-infra';
+import type { IntegrationInfra } from '../helpers/integration-infra';
 
 const TENANT_A = 'aaaaaaaa-0001-4000-8000-000000000001';
 const TENANT_B = 'bbbbbbbb-0001-4000-8000-000000000001';
