@@ -82,11 +82,32 @@ function toIso(value: unknown): string | null {
  * Keys are the CLIENT's vocabulary, matching SyncManager.EXHAUSTED_NOTIFY_TYPES. They are not the
  * push `entity_type` values — different set, different purpose (see ReportExhaustionDto).
  */
+// Keyed on THE VALUE THE WIRE ACTUALLY CARRIES, not on §17.2's table names.
+//
+// These keys were `safety_incidents`, `workforce_attendance`, `inspection_results` and
+// `material_consumption` until 2026-08-31, and nothing has ever sent one: `sync_queue` stores the
+// PUSHABLE type (`enqueue('safety', …)`), SyncManager reads that value, and runPushSync posts it
+// verbatim. Every real report was answered 400 and the §17.2 review queue could receive nothing.
+// The mobile side hit the identical fault in its own sets and its comment records why it survived:
+// the tests fed the category names in by hand. So did these.
+//
+// The role check depended on it too, in the dangerous direction. SyncAuthGuard.authorizePush looks
+// the type up in PUSH_ROLES and returns true when it is absent — an unknown type is nobody's
+// business to authorize — and PUSH_ROLES is keyed by push types. A report naming a §17.2 table
+// therefore passed the guard with NO role check at all, while the guard's contract is that
+// reporting an exhausted safety incident needs the roles that pushing one needs.
+//
+// 1:1 with §17.2's list; only the vocabulary changed:
+//   safety_incidents → safety · workforce_attendance → attendance
+//   inspection_results → inspection · material_consumption → material
+//
+// `material` keeps an EMPTY alert list: §17.2 puts it in the queue with no push. That is different
+// from being absent — an absent type is rejected outright.
 export const EXHAUSTION_ALERT_ROLES: Record<string, string[]> = {
-  safety_incidents: ['PROJECT_MANAGER', 'SAFETY_OFFICER'],
-  workforce_attendance: ['PROJECT_MANAGER'],
-  inspection_results: ['PROJECT_MANAGER'],
-  material_consumption: [],
+  safety: ['PROJECT_MANAGER', 'SAFETY_OFFICER'],
+  attendance: ['PROJECT_MANAGER'],
+  inspection: ['PROJECT_MANAGER'],
+  material: [],
 };
 
 const ENTITY_REGISTRY: Record<string, EntityRegistryEntry> = {

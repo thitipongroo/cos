@@ -3929,6 +3929,12 @@ Sync Engine Architecture:
     - markSynced(id): updates status to SYNCED
     - markFailed(id, error): increments retry_count; after 5 retries → calls handleExhaustion(item)
     - handleExhaustion(item): entity-specific behavior per spec §17.2 —
+        The categories below are the SPEC's names. On the wire each is the pushable type the queue
+        actually holds, 1:1: safety_incidents→safety · workforce_attendance→attendance ·
+        inspection_results→inspection · material_consumption→material · task_progress_updates→task ·
+        site_report_drafts→site_report · equipment_usage_logs→equipment. Both the client sets and
+        the server's EXHAUSTION_ALERT_ROLES were keyed on the category names at first, which nothing
+        produces — so §17.2 was dead on both sides until 2026-08-24 (client) and 2026-08-31 (server).
         safety_incidents:      publish to platform.sync.exhausted → tenant admin review queue;
                                push alert to PM and Safety Officer; preserve on device
         workforce_attendance:  publish to platform.sync.exhausted → tenant admin review queue;

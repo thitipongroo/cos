@@ -256,7 +256,7 @@ describe('runPushSync', () => {
 
     const item = {
       id: 7,
-      entity_type: 'safety_incidents',
+      entity_type: 'safety',
       entity_id: 'inc-1',
       operation: 'CREATE' as const,
       payload: JSON.stringify({ title: 'Scaffold collapse', severity: 'CRITICAL' }),
@@ -277,7 +277,7 @@ describe('runPushSync', () => {
       await onExhausted()(item);
 
       expect(mockApiPost).toHaveBeenCalledWith('/sync/exhausted', {
-        entity_type: 'safety_incidents',
+        entity_type: 'safety',
         entity_id: 'inc-1',
         operation: 'CREATE',
         // Parsed, not the raw JSON string: sync_queue stores text, the server column is jsonb.

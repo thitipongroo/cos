@@ -592,7 +592,7 @@ describe('SyncService', () => {
     };
 
     const dto = {
-      entity_type: 'safety_incidents',
+      entity_type: 'safety',
       entity_id: '33333333-3333-3333-3333-333333333333',
       operation: 'CREATE' as const,
       payload: { title: 'Scaffold collapse' },
@@ -616,7 +616,7 @@ describe('SyncService', () => {
           actor_id: USER,
           payload: expect.objectContaining({
             exhaustion_id: 'ex-1',
-            entity_type: 'safety_incidents',
+            entity_type: 'safety',
             retry_count: 5,
           }),
         }),
@@ -683,9 +683,9 @@ describe('SyncService', () => {
       await withCls(async () => {
         // "discard the sync attempt, preserve on device" — handled entirely on the client. A server
         // row would be a queue entry the admin must triage for a record §17.2 says needs no triage.
-        await expect(
-          svc.reportExhaustion({ ...dto, entity_type: 'task_progress_updates' }),
-        ).rejects.toBeInstanceOf(BadRequestException);
+        await expect(svc.reportExhaustion({ ...dto, entity_type: 'task' })).rejects.toBeInstanceOf(
+          BadRequestException,
+        );
       });
       expect(outbox.publish).not.toHaveBeenCalled();
     });
@@ -695,9 +695,10 @@ describe('SyncService', () => {
       const { svc, tx } = harness();
       tx.$queryRaw.mockResolvedValue([{ exhaustion_id: 'ex-2', inserted: true }]);
       await withCls(async () => {
-        await expect(
-          svc.reportExhaustion({ ...dto, entity_type: 'material_consumption' }),
-        ).resolves.toEqual({ exhaustion_id: 'ex-2', created: true });
+        await expect(svc.reportExhaustion({ ...dto, entity_type: 'material' })).resolves.toEqual({
+          exhaustion_id: 'ex-2',
+          created: true,
+        });
       });
     });
 

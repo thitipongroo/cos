@@ -75,12 +75,16 @@ components:
     ExhaustionEntityType:
       type: string
       description: |
-        The CLIENT's vocabulary for a mutation that exhausted its five retries, matching
-        `SyncManager.EXHAUSTED_NOTIFY_TYPES`. Deliberately a different set from `PushEntityType`:
-        these name a row in §17.2's table, and each maps to the roles that get the push alert
-        (`material_consumption` alerts nobody and is queue-only, which is different from being
-        absent — an absent type is rejected).
-      enum: [safety_incidents, workforce_attendance, inspection_results, material_consumption]
+        The four §17.2 rows that go to the tenant-admin review queue, named the way the wire names
+        them — the same values as `PushEntityType`, because a report is about a mutation that was
+        pushed. Each maps to the roles that get the push alert (`material` alerts nobody and is
+        queue-only, which is different from being absent — an absent type is rejected).
+
+        This list said `safety_incidents` / `workforce_attendance` / `inspection_results` /
+        `material_consumption` until 2026-08-31, while claiming in the same breath to match
+        `SyncManager.EXHAUSTED_NOTIFY_TYPES`, which has always held the values below. No client ever
+        sent the old names and the server answered 400 to the ones they did send.
+      enum: [safety, attendance, inspection, material]
 
     ServerSyncStatus:
       type: string
