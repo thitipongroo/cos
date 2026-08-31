@@ -94,7 +94,7 @@ None. The data-relevant checks are backup and durability posture:
 The two derived stores get shorter retention **because they are derived** — the same reasoning
 [Phase 13](phase-13-knowledge-graph.md) applies to the graph being non-authoritative. That is only
 true while the events they rebuild from are still in Kafka, which
-[Phase 14 § 8](phase-14-analytics-dashboard.md) notes is bounded by the retention window until the
+[Phase 14 § 8](phase-14-analytics-and-dashboard.md) notes is bounded by the retention window until the
 Iceberg lake lands.
 
 DR targets: **RTO 30 minutes, RPO 15 minutes**, achieved by automated failover — RDS Multi-AZ (~60 s),

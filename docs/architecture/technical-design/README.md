@@ -62,55 +62,55 @@ places for it to go stale.
 Stage mapping is from `32-implementation-specifications` §32.1 (SaaS Maturity Model). Build order is
 from `00_master` § FINAL EXECUTION ORDER, which is why the numbering below is not sequential.
 
-| Phase | Page                                                           | Stage | Page status |
-| ----- | -------------------------------------------------------------- | ----- | ----------- |
-| 1     | [Foundation Repository](phase-01-foundation-repository.md)     | 1     | Drafted     |
-| 2     | [Auth + Tenant System](phase-02-auth-tenant-system.md)         | 1     | Drafted     |
-| 3     | [Project Service](phase-03-project-service.md)                 | 2     | Drafted     |
-| 4     | [BOQ Service](phase-04-boq-service.md)                         | 2     | Drafted     |
-| 5     | [Procurement Service](phase-05-procurement-service.md)         | 2     | Drafted     |
-| 6     | [Site Operations](phase-06-site-operations.md)                 | 2     | Drafted     |
-| 7     | [Finance Service](phase-07-finance-service.md)                 | 2     | Drafted     |
-| 8     | [Event Infrastructure](phase-08-event-infrastructure.md)       | 3\*   | Drafted     |
-| 9     | [File + Document System](phase-09-file-document-system.md)     | 3     | Drafted     |
-| 10    | [Mobile Offline Engine](phase-10-mobile-offline-engine.md)     | 3     | Drafted     |
-| 11    | [AI Foundation](phase-11-ai-foundation.md)                     | 3     | Drafted     |
-| 12    | [AI Report Assistant](phase-12-ai-report-assistant.md)         | 3     | Drafted     |
-| 13    | [Knowledge Graph](phase-13-knowledge-graph.md)                 | 3     | Drafted     |
-| 14    | [Analytics + Dashboard](phase-14-analytics-dashboard.md)       | 3     | Drafted     |
-| 15    | [Observability](phase-15-observability.md)                     | —     | Drafted     |
-| 16    | [Security](phase-16-security.md)                               | —     | Drafted     |
-| 17    | [DevOps + Deployment](phase-17-devops-deployment.md)           | 4     | Drafted     |
-| 18    | [Testing](phase-18-testing.md)                                 | —     | Drafted     |
-| 19    | [Final Production Readiness](phase-19-production-readiness.md) | —     | Drafted     |
-| 20    | [Notification Service](phase-20-notification-service.md)       | —     | Drafted     |
-| 21    | [Equipment Service](phase-21-equipment-service.md)             | —     | Drafted     |
-| 22    | [Workforce Service](phase-22-workforce-service.md)             | —     | Drafted     |
-| 23    | [MLOps Pipeline](phase-23-mlops-pipeline.md)                   | 5     | Drafted     |
-| 24    | [Digital Twin](phase-24-digital-twin.md)                       | 5     | Drafted     |
-| 25    | [Enterprise Provisioning](phase-25-enterprise-provisioning.md) | 3     | Drafted     |
-| 3     | Project Service                                                | 2     | Not written |
-| 4     | BOQ Service                                                    | 2     | Not written |
-| 5     | Procurement Service                                            | 2     | Not written |
-| 6     | Site Operations                                                | 2     | Not written |
-| 7     | Finance Service                                                | 2     | Not written |
-| 9     | File + Document System                                         | 3     | Not written |
-| 20    | Notification Service                                           | 3     | Not written |
-| 21    | Equipment Service                                              | 3     | Not written |
-| 22    | Workforce Service                                              | 3     | Not written |
-| 25    | Enterprise Provisioning                                        | 3     | Not written |
-| 10    | Mobile Offline Engine                                          | 3     | Not written |
-| 11    | AI Foundation                                                  | 3     | Not written |
-| 12    | AI Report Assistant                                            | 3     | Not written |
-| 13    | Knowledge Graph                                                | 3     | Not written |
-| 14    | Analytics + Dashboard                                          | 3     | Not written |
-| 15    | Observability                                                  | —     | Not written |
-| 16    | Security                                                       | —     | Not written |
-| 17    | DevOps + Deployment                                            | 4     | Not written |
-| 18    | Testing                                                        | —     | Not written |
-| 19    | Final Production Readiness                                     | —     | Not written |
-| 23    | MLOps Pipeline                                                 | 5     | Not written |
-| 24    | Digital Twin                                                   | 5     | Not written |
+| Phase | Page                                                                 | Stage | Page status |
+| ----- | -------------------------------------------------------------------- | ----- | ----------- |
+| 1     | [Foundation Repository](phase-01-foundation-repository.md)           | 1     | Drafted     |
+| 2     | [Auth + Tenant System](phase-02-authentication-and-tenant-system.md) | 1     | Drafted     |
+| 3     | [Project Service](phase-03-project-service.md)                       | 2     | Drafted     |
+| 4     | [BOQ Service](phase-04-boq-service.md)                               | 2     | Drafted     |
+| 5     | [Procurement Service](phase-05-procurement-service.md)               | 2     | Drafted     |
+| 6     | [Site Operations](phase-06-site-operations.md)                       | 2     | Drafted     |
+| 7     | [Finance Service](phase-07-finance-service.md)                       | 2     | Drafted     |
+| 8     | [Event Infrastructure](phase-08-event-driven-infrastructure.md)      | 3\*   | Drafted     |
+| 9     | [File + Document System](phase-09-file-and-document-system.md)       | 3     | Drafted     |
+| 10    | [Mobile Offline Engine](phase-10-mobile-offline-engine.md)           | 3     | Drafted     |
+| 11    | [AI Foundation](phase-11-ai-foundation.md)                           | 3     | Drafted     |
+| 12    | [AI Report Assistant](phase-12-ai-report-assistant.md)               | 3     | Drafted     |
+| 13    | [Knowledge Graph](phase-13-knowledge-graph.md)                       | 3     | Drafted     |
+| 14    | [Analytics + Dashboard](phase-14-analytics-and-dashboard.md)         | 3     | Drafted     |
+| 15    | [Observability](phase-15-observability.md)                           | —     | Drafted     |
+| 16    | [Security](phase-16-security.md)                                     | —     | Drafted     |
+| 17    | [DevOps + Deployment](phase-17-devops-and-deployment.md)             | 4     | Drafted     |
+| 18    | [Testing](phase-18-testing.md)                                       | —     | Drafted     |
+| 19    | [Final Production Readiness](phase-19-final-production-readiness.md) | —     | Drafted     |
+| 20    | [Notification Service](phase-20-notification-service.md)             | —     | Drafted     |
+| 21    | [Equipment Service](phase-21-equipment-service.md)                   | —     | Drafted     |
+| 22    | [Workforce Service](phase-22-workforce-service.md)                   | —     | Drafted     |
+| 23    | [MLOps Pipeline](phase-23-mlops-pipeline.md)                         | 5     | Drafted     |
+| 24    | [Digital Twin](phase-24-digital-twin.md)                             | 5     | Drafted     |
+| 25    | [Enterprise Provisioning](phase-25-enterprise-provisioning.md)       | 3     | Drafted     |
+| 3     | Project Service                                                      | 2     | Not written |
+| 4     | BOQ Service                                                          | 2     | Not written |
+| 5     | Procurement Service                                                  | 2     | Not written |
+| 6     | Site Operations                                                      | 2     | Not written |
+| 7     | Finance Service                                                      | 2     | Not written |
+| 9     | File + Document System                                               | 3     | Not written |
+| 20    | Notification Service                                                 | 3     | Not written |
+| 21    | Equipment Service                                                    | 3     | Not written |
+| 22    | Workforce Service                                                    | 3     | Not written |
+| 25    | Enterprise Provisioning                                              | 3     | Not written |
+| 10    | Mobile Offline Engine                                                | 3     | Not written |
+| 11    | AI Foundation                                                        | 3     | Not written |
+| 12    | AI Report Assistant                                                  | 3     | Not written |
+| 13    | Knowledge Graph                                                      | 3     | Not written |
+| 14    | Analytics + Dashboard                                                | 3     | Not written |
+| 15    | Observability                                                        | —     | Not written |
+| 16    | Security                                                             | —     | Not written |
+| 17    | DevOps + Deployment                                                  | 4     | Not written |
+| 18    | Testing                                                              | —     | Not written |
+| 19    | Final Production Readiness                                           | —     | Not written |
+| 23    | MLOps Pipeline                                                       | 5     | Not written |
+| 24    | Digital Twin                                                         | 5     | Not written |
 
 **—** = the phase is not mapped to a Stage. `00_master` § Stage map covers Phases 1–2, 3–7,
 8–14 + 25, 17 and 23–24 only — Phases 15, 16, 18–22 appear in no Stage.

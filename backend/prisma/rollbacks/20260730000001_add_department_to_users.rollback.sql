@@ -10,7 +10,7 @@
 -- NOTE: `platform.users.department` is not in `11-database-schema` §11.1, which gives the table ten
 -- columns and none of them this. The only `department` in the specification set is on the Employee
 -- entity (§11.2, workforce master) — a different entity. Recorded as OQ-8 in
--- `docs/architecture/technical-design/phase-02-auth-tenant-system.md`; this rollback reverses the migration as
+-- `docs/architecture/technical-design/phase-02-authentication-and-tenant-system.md`; this rollback reverses the migration as
 -- committed and takes no position on whether the column should exist.
 
 ALTER TABLE platform.users

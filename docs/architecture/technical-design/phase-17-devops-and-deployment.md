@@ -50,7 +50,7 @@ ArgoCD is CD, syncing from a GitOps repo.
 
 - `apps/mobile` — Expo EAS Build; a Dockerfile is "not required **or permitted**"
 - The S3 + Iceberg cold-storage path (Path 2) — architected here, deferred per §9.4, which is the
-  same deferral [Phase 14 § 8](phase-14-analytics-dashboard.md) inherits
+  same deferral [Phase 14 § 8](phase-14-analytics-and-dashboard.md) inherits
 
 ---
 

@@ -94,7 +94,7 @@ Three Feast feature views: `project_features` (budget variance, days to deadline
 (7-day manpower average, inspection failure rate, report submission rate).
 
 The data-lake bucket is **per tenant**, which is the same isolation model
-[Phase 9](phase-09-file-document-system.md) uses for files — bucket-level rather than row-level,
+[Phase 9](phase-09-file-and-document-system.md) uses for files — bucket-level rather than row-level,
 because there are no rows to apply RLS to.
 
 ---
@@ -153,7 +153,7 @@ design, so a count or calendar trigger "would promote an untrained model, and ac
 both stay flattering under that imbalance". Day one is a deterministic rule-based scorer serving
 behind the same interface, and it **is** the baseline the model must beat. While it serves, "the
 surface must NOT be described as AI-derived" — which is exactly the caveat
-[Phase 2](phase-02-auth-tenant-system.md) and the SMS OTP risk assessment both repeat about ADR-081.
+[Phase 2](phase-02-authentication-and-tenant-system.md) and the SMS OTP risk assessment both repeat about ADR-081.
 
 ---
 

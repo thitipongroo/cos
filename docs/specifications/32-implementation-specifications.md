@@ -613,7 +613,7 @@ renaming it is a breaking change by this section's own Event Versioning rules, w
 major version plus a migration consumer bridge — not an edit to a filename. Whether §32.4 #16 changes
 to match the implementation, or the implementation migrates to `.v2` under the spec name, is a
 product-owner decision. Recorded as OQ-16 in
-`docs/architecture/technical-design/phase-08-event-infrastructure.md`.
+`docs/architecture/technical-design/phase-08-event-driven-infrastructure.md`.
 
 > **`finance.variance.alert.v1` — corrected 2026-08-22.** This row used to require a rename to
 > `finance.budget.variance_detected.v1` ("Name clarified"), and row 16 of the payload table above

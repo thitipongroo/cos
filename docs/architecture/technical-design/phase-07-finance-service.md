@@ -277,7 +277,7 @@ WORM audit store (`09-data-architecture` §9), so a signature cannot be altered 
 
 `FINANCE` is one of the two privileged roles that MFA is mandatory for and that are refused on the SMS
 OTP path entirely — see `05-security-compliance` §5.4.4 and
-[phase-02 § 9](phase-02-auth-tenant-system.md).
+[phase-02 § 9](phase-02-authentication-and-tenant-system.md).
 
 ---
 

@@ -253,7 +253,7 @@ from search results permanently, with nothing but a `warn` line to say so. Index
 three times and then dead-lettered, and a topic replay rebuilds the index. See § 14 OQ-22.
 
 **The outbox is durable, not atomic.** This is not specific to Phase 3 — it is the cross-cutting
-property recorded in [phase-08 § 4](phase-08-event-infrastructure.md) and
+property recorded in [phase-08 § 4](phase-08-event-driven-infrastructure.md) and
 [OQ-18](README.md#open-questions-register), which is now closed by amending the two specification
 sentences that claimed otherwise. Phase 3 is simply the phase where it is most visible,
 because a lost `status_changed` leaves Finance and Analytics reading a stale status with no signal
