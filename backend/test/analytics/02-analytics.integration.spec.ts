@@ -178,12 +178,29 @@ describe('Analytics API Integration (Phase 14)', () => {
     chReturns([]);
   });
 
+  /**
+   * A raw query string, not supertest's object form.
+   *
+   * `@nestjs/platform-express@11` ships Express 5, whose default query parser is `simple` — Node's
+   * `querystring`, which does not read bracket notation at all. `projectIds[]=A` arrives under the
+   * literal key `projectIds[]`, so `@Query('projectIds')` sees nothing and the handler proceeds with
+   * an empty list. supertest's `.query({ … })` cannot express the repeated-key form either: it
+   * serialises through `qs`, which brackets every array it is given.
+   *
+   * This is what the old version of this file sent, and why its executive case could pass while the
+   * endpoint received no projects at all — `expect(Array.isArray(res.body))` is true of the empty
+   * answer that produces.
+   */
   const executive = (projectIds: string[], role?: string) => {
     const req = request(app.getHttpServer())
       .get('/api/v1/analytics/executive')
       .set('Authorization', AUTH);
     if (role) req.set(ROLE_HEADER, role);
-    return req.query({ 'projectIds[]': projectIds, dateRange: DATE_RANGE });
+    const qs = [
+      ...projectIds.map((id) => `projectIds=${encodeURIComponent(id)}`),
+      `dateRange=${encodeURIComponent(DATE_RANGE)}`,
+    ].join('&');
+    return req.query(qs);
   };
 
   // ── RBAC — §5.4.1, the decorator on the route ──────────────────────────────────────────────────
