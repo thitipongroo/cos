@@ -206,7 +206,7 @@ synthetic probe CronJob, and `SafetyNotificationFailed`. See
 
 ## 11. Testing & acceptance
 
-`backend/test/tenant-isolation.integration.spec.ts` is the cross-tenant leak test the command
+`backend/test/security/` (01 for the database layer, 03 for the API layer) is the cross-tenant leak test the command
 requires ("integration tests: cross-tenant isolation — must not leak data"), and the isolation-probe
 CronJob is its continuous counterpart in production.
 
@@ -235,7 +235,7 @@ Verified on **2026-08-22** against this working tree (Rule 36 — commands run, 
 | Trivy in GitHub Actions                           | ✅ present | `ci.yml` step 5c                                                                         |
 | OWASP dependency check in CI                      | ✅ present | `ci.yml` step 5a                                                                         |
 | `ComplianceAuditWorkflow` stub (Type A fail-fast) | ✅ present | `modules/compliance/workflows/compliance-audit.workflow.ts` + a dedicated exception type |
-| Integration test — cross-tenant isolation         | ✅ present | `backend/test/tenant-isolation.integration.spec.ts`                                      |
+| Integration test — cross-tenant isolation         | ✅ present | `backend/test/security/` (01 for the database layer, 03 for the API layer)               |
 | `docs/registers/soc2-controls.md`                 | ✅ present | plus ISO 27001 and PDPA control docs                                                     |
 | `docs/registers/data-flow-map.md`                 | ✅ present | —                                                                                        |
 | `docs/policies/data-retention-policy.md`          | ✅ present | —                                                                                        |

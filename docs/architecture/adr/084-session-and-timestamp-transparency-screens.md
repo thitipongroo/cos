@@ -140,7 +140,7 @@ decision that deserves its own ADR rather than being forced by a mockup).
 - `docs/specifications/20-ux-flow.md` §20.6 (session), `11-database-schema.md` §11.4 (no `DELETE`
   grant), `31-monitoring-observability.md` §31.2 / §31.4 (retention, WORM), `19` §19.2 / §19.4 / §19.6
   (channels, event catalog, critical events)
-- `backend/src/modules/identity/jwt.payload.ts` (`jti`; no session id)
+- `backend/src/shared/context/jwt-payload.ts` (`jti`; no session id)
 - `apps/mobile/src/app/(app)/notification-preferences.tsx` (the shipped preferences screen)
 - ADR-035 (AES-256-GCM at rest, issuer keys), ADR-080, ADR-081, ADR-083 (the same correction on the
   other transparency screens)
