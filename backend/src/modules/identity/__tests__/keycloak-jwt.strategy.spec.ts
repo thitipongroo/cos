@@ -1,7 +1,11 @@
 // Unit tests for KeycloakJwtStrategy.validate()
 // Constructor calls passportJwtSecret (network) — tested via validate() only.
 
+const getSigningKey = jest.fn();
+const jwksClientFactory = jest.fn(() => ({ getSigningKey }));
 jest.mock('jwks-rsa', () => ({
+  __esModule: true,
+  default: (...args: unknown[]) => jwksClientFactory(...(args as [])),
   passportJwtSecret: jest.fn().mockReturnValue(jest.fn()),
 }));
 
@@ -348,5 +352,98 @@ describe('KeycloakJwtStrategy — trusted-issuer allowlist', () => {
     const sql = String((prisma.$queryRaw.mock.calls[0] as unknown[])[0]).replace(/\s+/g, ' ');
     expect(sql).toContain('SELECT keycloak_realm FROM platform.tenants');
     expect(sql).toContain('is_active = true');
+  });
+
+  it('refuses a token whose issuer is not a realm issuer at all', async () => {
+    const s = strategyWithRealms(['construction-os']);
+    const b64 = (o: unknown) => Buffer.from(JSON.stringify(o)).toString('base64url');
+    const token = `${b64({ alg: 'RS256' })}.${b64({ iss: 'https://example.com/oauth2' })}.sig`;
+    await expect(resolve(s, token)).rejects.toThrow('Token issuer is not a Keycloak realm issuer');
+  });
+
+  it('an unparseable segment routes nowhere rather than throwing out of the decoder', async () => {
+    // decodeForRouting runs on an UNVERIFIED token, so it is handed whatever a caller sent. A
+    // JSON.parse that threw here would surface as a 500 on a malformed bearer instead of a 401.
+    const s = strategyWithRealms(['construction-os']);
+    await expect(resolve(s, 'not.a.jwt')).rejects.toThrow(
+      'Token issuer is not a Keycloak realm issuer',
+    );
+  });
+
+  it('fetches the signing key from KEYCLOAK_URL, never from the host in `iss`', async () => {
+    // Split horizon: JWKS is fetched over the address the backend can reach, while `iss` carries
+    // the public URL a browser saw. Taking the host from `iss` would also let a token point the
+    // backend at a server the attacker chose.
+    process.env['KEYCLOAK_URL'] = 'http://keycloak-internal:8080';
+    jwksClientFactory.mockClear();
+    getSigningKey.mockResolvedValue({ getPublicKey: () => 'PEM-KEY' });
+
+    const s = strategyWithRealms(['cos-acme']);
+    await expect(resolve(s, tokenFor('https://login.acme.example/realms/cos-acme'))).resolves.toBe(
+      'PEM-KEY',
+    );
+
+    expect(jwksClientFactory).toHaveBeenCalledWith(
+      expect.objectContaining({
+        jwksUri: 'http://keycloak-internal:8080/realms/cos-acme/protocol/openid-connect/certs',
+      }),
+    );
+    expect(getSigningKey).toHaveBeenCalledWith('k1');
+    delete process.env['KEYCLOAK_URL'];
+  });
+
+  it('asks for any key when the header carries no kid', async () => {
+    // `kid` is optional in the JOSE header. Passing `null` through would ask jwks-rsa for a key
+    // literally named "null" rather than letting it fall back to the realm's single signing key.
+    jwksClientFactory.mockClear();
+    getSigningKey.mockResolvedValue({ getPublicKey: () => 'PEM-KEY' });
+    const b64 = (o: unknown) => Buffer.from(JSON.stringify(o)).toString('base64url');
+    const noKid = `${b64({ alg: 'RS256' })}.${b64({ iss: 'https://kc/realms/cos-acme' })}.sig`;
+
+    const s = strategyWithRealms(['cos-acme']);
+    await expect(resolve(s, noKid)).resolves.toBe('PEM-KEY');
+    expect(getSigningKey).toHaveBeenCalledWith(undefined);
+  });
+
+  it('keeps one JWKS client per realm rather than one per request', async () => {
+    // Constructed per request, the cache and rate limit the client is configured with would reset
+    // every time, and every request would fetch the realm's certs again.
+    jwksClientFactory.mockClear();
+    getSigningKey.mockResolvedValue({ getPublicKey: () => 'PEM-KEY' });
+    const s = strategyWithRealms(['cos-acme']);
+
+    await resolve(s, tokenFor('https://kc/realms/cos-acme'));
+    await resolve(s, tokenFor('https://kc/realms/cos-acme'));
+
+    expect(jwksClientFactory).toHaveBeenCalledTimes(1);
+  });
+
+  it('the secretOrKeyProvider hands passport the key, and the error when there is none', async () => {
+    // passport-jwt's callback contract: this closure is the only path from the strategy's key
+    // resolution into verification, so a resolution that rejected silently would leave passport
+    // waiting rather than answering 401.
+    const s = strategyWithRealms(['cos-acme']);
+    const provider = (
+      s as unknown as {
+        _secretOrKeyProvider: (
+          req: unknown,
+          token: string,
+          done: (err: Error | null, key?: string) => void,
+        ) => void;
+      }
+    )._secretOrKeyProvider;
+
+    getSigningKey.mockResolvedValue({ getPublicKey: () => 'PEM-KEY' });
+    const ok = await new Promise((done) =>
+      provider.call(s, null, tokenFor('https://kc/realms/cos-acme'), (err, key) =>
+        done(err ?? key),
+      ),
+    );
+    expect(ok).toBe('PEM-KEY');
+
+    const failed = await new Promise((done) =>
+      provider.call(s, null, tokenFor('https://kc/realms/unknown'), (err, key) => done(err ?? key)),
+    );
+    expect(failed).toBeInstanceOf(Error);
   });
 });

@@ -18,7 +18,8 @@ info:
     changed in that merge only where the package restructure moved import paths — `JwtAuthGuard` and
     `JwtPayload` from `modules/identity/` to `shared/` — with no route, parameter, request body or
     response shape altered. This line records the comparison the freshness gate asks for, which
-    compares commit timestamps and cannot tell an import move from an API change.
+    compares commit timestamps and cannot tell an import move from an API change. Re-checked the same day after the CI follow-up,
+    which touched only `__tests__/` files in the module.
 servers:
   - url: /api/v1
     description: Current version — relative, so the document works behind whatever host serves it

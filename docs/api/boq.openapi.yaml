@@ -10,6 +10,12 @@ info:
     Financial precision: all monetary fields are DECIMAL(19,4) returned as string.
     All calculations use decimal.js ROUND_HALF_UP.
 
+    **Reviewed 2026-08-31** against `backend/src/modules/boq/` at the origin/develop merge. The
+    controller changed only where the package restructure moved `JwtAuthGuard` to `shared/`; no DTO
+    changed. The service-side change is the OQ-23 version total — it now sums every category at
+    every depth rather than root categories only — which alters the NUMBER a version reports, not
+    the shape of any request or response. This line records the comparison the freshness gate asks
+    for, which compares commit timestamps and cannot tell an import move from an API change.
 servers:
   - url: /api/v1
     description: Production

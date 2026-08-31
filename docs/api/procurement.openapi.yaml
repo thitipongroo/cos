@@ -573,6 +573,13 @@ paths:
         FINANCE or TENANT_ADMIN. Moves the invoice to DISPUTED, which stops it being paid while the
         disagreement is open — a dispute is a hold, not a rejection, and the invoice stays on the
         ledger.
+
+        **The server currently ignores the request body.** `disputeVendorInvoice` takes the invoice
+        id and nothing else, so a `reason` sent here is accepted and discarded — no error, no
+        record. The sibling `POST /procurement/purchase-orders/{poId}/dispute` does take one
+        (`DisputeInvoiceDto`, max 2000 characters). Whether this endpoint should record a reason
+        too, or the body should be dropped from this contract, is a product-owner decision;
+        documented here rather than silently resolved in either direction. Noted 2026-08-31.
       operationId: disputeVendorInvoice
       tags: [vendor-invoices]
       parameters:
@@ -965,6 +972,8 @@ paths:
       responses:
         '200':
           description: RFQ awarded
+        '400':
+          description: Body failed validation — ValidationPipe rejects it before the handler runs
         '404':
           description: Quotation not found in RFQ
   /procurement/rfqs/{rfqId}/quotations:
@@ -1186,6 +1195,8 @@ paths:
       responses:
         '200':
           description: Approval signal sent
+        '400':
+          description: Body failed validation — ValidationPipe rejects it before the handler runs
         '401':
           description: Unauthenticated — missing or invalid bearer token
           content:
@@ -1216,9 +1227,12 @@ paths:
               properties:
                 reason:
                   type: string
+                  maxLength: 2000
       responses:
         '200':
           description: Rejection signal sent
+        '400':
+          description: Body failed validation — ValidationPipe rejects it before the handler runs
         '401':
           description: Unauthenticated — missing or invalid bearer token
           content:
@@ -1293,9 +1307,12 @@ paths:
               properties:
                 reason:
                   type: string
+                  maxLength: 2000
       responses:
         '200':
           description: Signal sent
+        '400':
+          description: Body failed validation — ValidationPipe rejects it before the handler runs
         '401':
           description: Unauthenticated — missing or invalid bearer token
           content:

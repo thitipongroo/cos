@@ -221,4 +221,44 @@ describe('AiProxyController', () => {
       expect(res.statusCode).toBe(200);
     });
   });
+
+  describe('header copying', () => {
+    it('copies only string-valued headers, skipping an array-valued one', async () => {
+      // Node keeps `set-cookie` as an array, and a raw HTTP/2 request can deliver others the same
+      // way. Assigning one into a Record<string, string> would put `[object Object]` or a
+      // comma-joined value on the wire. Driven through the controller directly: Fastify's inject
+      // joins repeated headers into a string before the handler sees them, so the array shape only
+      // reaches this code from a real socket.
+      gatewayReplies(200, {});
+      await new AiProxyController().ai({
+        url: '/api/v1/ai/completions',
+        method: 'POST',
+        headers: {
+          authorization: 'Bearer t',
+          'set-cookie': ['a=1', 'b=2'],
+        },
+        body: undefined,
+      } as never);
+
+      expect(lastCall().headers['authorization']).toBe('Bearer t');
+      expect(lastCall().headers['set-cookie']).toBeUndefined();
+    });
+  });
+
+  describe('the gateway address', () => {
+    it('falls back to the in-cluster service when AI_GATEWAY_URL is unset', async () => {
+      // The default is the Kubernetes service name, so a deployment that forgets the variable still
+      // reaches the gateway rather than proxying to localhost and answering 502 for every AI call.
+      const original = process.env['AI_GATEWAY_URL'];
+      delete process.env['AI_GATEWAY_URL'];
+      try {
+        expect((new AiProxyController() as unknown as { baseUrl: string }).baseUrl).toBe(
+          'http://cos-ai-gateway.cos.svc.cluster.local:8000',
+        );
+      } finally {
+        if (original === undefined) delete process.env['AI_GATEWAY_URL'];
+        else process.env['AI_GATEWAY_URL'] = original;
+      }
+    });
+  });
 });

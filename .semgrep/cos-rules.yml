@@ -160,7 +160,12 @@ rules:
       # in tasks.repository.ts, every one a CTE name (`FROM scoped`, `FROM dated`); a regex cannot
       # tell a CTE from a table, while a DML target is never one. The cost is real and accepted: an
       # unqualified table read by a plain SELECT is not caught.
-      - pattern-regex: '\b(?:INSERT\s+INTO|UPDATE|DELETE\s+FROM)\s+(?!(?i:SET|SELECT|ONLY)\b)[a-zA-Z_][a-zA-Z0-9_]*[\s\n(),;]'
+      # Anchored per LINE, with a prefix that cannot cross a `--`: the bound text is the whole
+      # template, so without this a SQL COMMENT is scanned as SQL. `-- Every UPDATE here must
+      # set this` in tasks.repository.ts was reported as an unqualified table on a statement
+      # whose target is `projects.tasks`. `\K` drops the prefix so the finding still points at
+      # the statement.
+      - pattern-regex: '(?m)^(?:[^\n-]|-(?!-))*\K\b(?:INSERT\s+INTO|UPDATE|DELETE\s+FROM)\s+(?!(?i:SET|SELECT|ONLY)\b)[a-zA-Z_][a-zA-Z0-9_]*[\s\n(),;]'
 
   # ── Deprecated / removed technology ────────────────────────────────────────
   - id: cos-no-watermelondb

@@ -19,6 +19,12 @@ info:
     kind, while the mobile client depended on all of them; §14.3 listed no `sync` domain and no
     other document carried the paths.
 
+    **Reviewed 2026-08-31** against `backend/src/modules/sync/` at the origin/develop merge and the
+    CI follow-up. `POST /sync/push` gained a case for `equipment` — already declared in
+    `SYNC_PUSHABLE_ENTITY_TYPES` and documented here as pushable, so the contract is unchanged and
+    the switch caught up to it. Everything else in that commit was `__tests__/` files. This line
+    records the comparison the freshness gate asks for, which compares commit timestamps and cannot
+    tell a test from a route.
 servers:
   - url: /api/v1
     description: Current version

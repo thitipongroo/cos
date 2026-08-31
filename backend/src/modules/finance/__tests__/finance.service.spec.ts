@@ -1475,6 +1475,60 @@ describe('finance.budget.exceeded.v1', () => {
     );
   });
 
+  it('falls back to 10% when the project has no budget row to read a threshold from', async () => {
+    // A cost line can exist before anyone sets a project budget. The alert must still work — the
+    // alternative is `new Decimal(undefined)`, which throws inside a Kafka handler and dead-letters
+    // an event whose database write already happened.
+    mockRepo.findBudgetByProject.mockResolvedValue(null);
+    mockRepo.getBudgetLineTotals.mockResolvedValue(budgetLine('100000.0000', '120000.0000'));
+
+    await service.handlePoCreated(PO);
+
+    const outbox = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
+    expect(outbox.publish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event_type: 'finance.budget.exceeded.v1',
+        payload: expect.objectContaining({ overage_percent: '20.00' }),
+      }),
+    );
+  });
+
+  it('names the category by its uuid when the line carries no code', async () => {
+    // §32.4 row 12 wants a category a person can read, and the code is that. When there is none,
+    // the uuid at least identifies the line — an empty string or a dropped field would leave the
+    // alert saying an overspend happened somewhere.
+    mockRepo.getBudgetLineTotals.mockResolvedValue({
+      ...budgetLine('100000.0000', '120000.0000'),
+      category_code: null,
+    });
+
+    await service.handlePoCreated(PO);
+
+    const outbox = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
+    expect(outbox.publish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payload: expect.objectContaining({ cost_category: 'cat-1' }),
+      }),
+    );
+  });
+
+  it('says UNCATEGORISED when the line has neither a code nor a category', async () => {
+    mockRepo.getBudgetLineTotals.mockResolvedValue({
+      ...budgetLine('100000.0000', '120000.0000'),
+      category_code: null,
+      boq_category_id: null,
+    });
+
+    await service.handlePoCreated(PO);
+
+    const outbox = (service as unknown as { outbox: { publish: jest.Mock } }).outbox;
+    expect(outbox.publish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payload: expect.objectContaining({ cost_category: 'UNCATEGORISED' }),
+      }),
+    );
+  });
+
   it('does NOT emit while the category is within the threshold', async () => {
     // 105,000 against 100,000 = 5% over, under the 10% threshold.
     mockRepo.getBudgetLineTotals.mockResolvedValue(budgetLine('100000.0000', '105000.0000'));

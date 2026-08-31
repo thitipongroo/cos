@@ -38,7 +38,19 @@ function harness() {
     outbox as never,
     request as never,
   );
-  return { svc, tx, db, siteOps, safety, workforce, annotations, procurement, outbox };
+  return {
+    svc,
+    tx,
+    db,
+    siteOps,
+    safety,
+    workforce,
+    annotations,
+    procurement,
+    equipment,
+    outbox,
+    request,
+  };
 }
 
 const push = (over: Partial<PushItemDto>): PushItemDto => ({
@@ -114,6 +126,18 @@ describe('SyncService', () => {
       siteOps.syncSiteReports.mockResolvedValue([]);
       const res = await svc.push(push({ entity_type: 'site_report', entity_id: 'r1' }));
       expect(res.status).toBe('ACCEPTED');
+    });
+
+    it('equipment delegates to recordUtilization, keyed by the equipment id', async () => {
+      // A utilization row has no id of its own — its identity is the equipment plus the instant —
+      // so entity_id IS the equipment_id, not a row id the device made up. The repository INSERT is
+      // ON CONFLICT DO NOTHING against that natural key, which is what makes the retries §17.2
+      // guarantees safe: a replayed usage log cannot inflate summed hours or fuel.
+      const { svc, equipment } = harness();
+      const payload = { recorded_at: '2026-06-08T08:00:00Z', hours_used: '7.5' };
+      const res = await svc.push(push({ entity_type: 'equipment', entity_id: 'eq-1', payload }));
+      expect(equipment.recordUtilization).toHaveBeenCalledWith('eq-1', payload);
+      expect(res).toEqual({ status: 'ACCEPTED', server_payload: payload });
     });
 
     it('issue delegates to createIssue', async () => {
@@ -599,6 +623,48 @@ describe('SyncService', () => {
       );
     });
 
+    it('accepts a report that carries neither a client timestamp nor an error text', async () => {
+      // Both are optional on the wire and a device that crashed mid-retry may have neither. They
+      // must land as SQL NULL rather than the string "undefined" — the column is timestamptz, and a
+      // literal would fail the insert and lose the only record that the mutation was abandoned.
+      const { svc, tx, outbox } = harness();
+      tx.$queryRaw.mockResolvedValue([{ exhaustion_id: 'ex-3', inserted: true }]);
+      const { client_submitted_at: _ts, last_error: _err, ...bare } = dto;
+
+      await withCls(async () => {
+        await expect(svc.reportExhaustion(bare as never)).resolves.toEqual({
+          exhaustion_id: 'ex-3',
+          created: true,
+        });
+      });
+
+      const [, ...params] = tx.$queryRaw.mock.calls[0] as [string[], ...unknown[]];
+      expect(params).toContain(null);
+      expect(outbox.publish).toHaveBeenCalledWith(
+        expect.objectContaining({
+          payload: expect.objectContaining({ last_error: null }),
+        }),
+      );
+    });
+
+    it('mints a correlation id when the request arrived without one', async () => {
+      // The correlation id ties this report to its outbox row and to the notification that follows.
+      // A request with no header still needs one, or that chain has a gap exactly where someone is
+      // asking why a record was abandoned.
+      const { svc, tx, outbox, request } = harness();
+      delete (request as { correlationId?: string }).correlationId;
+      tx.$queryRaw.mockResolvedValue([{ exhaustion_id: 'ex-4', inserted: true }]);
+
+      await withCls(async () => {
+        await svc.reportExhaustion(dto);
+      });
+
+      const published = outbox.publish.mock.calls[0]![0] as { correlation_id: string };
+      expect(published.correlation_id).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+      );
+    });
+
     it('a repeat report does NOT re-emit — one failed record must not become a stream of pages', async () => {
       const { svc, tx, outbox } = harness();
       // ON CONFLICT DO NOTHING returned no row, then the follow-up SELECT finds the existing one.
@@ -633,6 +699,30 @@ describe('SyncService', () => {
           svc.reportExhaustion({ ...dto, entity_type: 'material_consumption' }),
         ).resolves.toEqual({ exhaustion_id: 'ex-2', created: true });
       });
+    });
+
+    it('the admin queue lists PENDING rows for this tenant only', async () => {
+      // The default the controller passes. A resolved row is history, not work — and the tenant
+      // predicate is in the SQL rather than left to RLS alone, so a missing GUC cannot widen it.
+      const { svc, tx } = harness();
+      const row = { exhaustion_id: 'ex-9', entity_type: 'safety', status: 'PENDING' };
+      tx.$queryRaw.mockResolvedValue([row]);
+      await withCls(async () => {
+        await expect(svc.listExhaustions()).resolves.toEqual([row]);
+      });
+      const [sql, ...params] = tx.$queryRaw.mock.calls[0] as [string[], ...unknown[]];
+      expect(sql.join('?')).toContain('FROM platform.sync_exhaustions');
+      expect(params).toContain('PENDING');
+    });
+
+    it('the queue can be asked for the resolved rows instead', async () => {
+      const { svc, tx } = harness();
+      tx.$queryRaw.mockResolvedValue([]);
+      await withCls(async () => {
+        await expect(svc.listExhaustions('RESOLVED')).resolves.toEqual([]);
+      });
+      const [, ...params] = tx.$queryRaw.mock.calls[0] as [string[], ...unknown[]];
+      expect(params).toContain('RESOLVED');
     });
 
     it('resolving a row that is not PENDING is rejected, not silently re-resolved', async () => {

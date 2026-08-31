@@ -30,8 +30,8 @@ VERIFIED_TENANT = "tenant-abc"
 PROJECT_ID = "22222222-2222-4000-8000-000000000002"
 
 # Inside the guard's 50-500 word band (master:3945) and carrying NO figures at all. That matters:
-# the site-summary endpoint sends an empty context today, so every number in a summary is by
-# definition absent from the context and check 5 would flag it as a POTENTIAL_HALLUCINATION. Keeping
+# the context now carries real figures, so any number the summary states that the context does
+# not would be flagged by check 5 as a POTENTIAL_HALLUCINATION. Keeping
 # the fixture number-free isolates the checks under test from that one.
 _SUMMARY = " ".join(
     [
@@ -45,6 +45,12 @@ _SUMMARY = " ".join(
 )
 
 
+# Verbatim from the context build_site_context() renders for the rows _FakePool returns above. The
+# guard's source-attribution check (TDD OQ-41) looks each cited snippet up IN the context, so a
+# citation invented to satisfy the check fails it — which is the point of citing at all.
+_CITED = "Site reports: 4 submitted in the last 7 days (1 still in draft)."
+
+
 def _output(**overrides) -> dict:
     body = {
         "summary": _SUMMARY,
@@ -53,6 +59,7 @@ def _output(**overrides) -> dict:
         "confidence": 0.91,
         "data_points_used": 12,
         "data_gaps": [],
+        "sources": [_CITED],
     }
     body.update(overrides)
     return body
@@ -95,6 +102,20 @@ class _FakePool(TenantScopedPoolMixin):
         return []
 
     async def fetchrow(self, query, *args):
+        """The three site-context aggregates (reports/context/site.py).
+
+        Returning None here was right while site-summary sent an empty context. It is not any more:
+        the assembler this branch merged with reads these rows, and a None would raise inside it,
+        be swallowed as best-effort, and hand the pipeline an empty context — which is a different
+        code path from the one these tests are named after. Aggregates always return a row against
+        a real database, so None was never a shape the assembler could meet in production either.
+        """
+        if "FROM site_ops.site_reports" in query:
+            return {"submitted": 4, "draft": 1}
+        if "FROM site_ops.issues" in query:
+            return {"open_count": 2, "high_count": 1}
+        if "FROM site_ops.manpower_logs" in query:
+            return {"worker_days": 36, "hours": 288, "trades": 3}
         return None
 
 

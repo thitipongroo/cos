@@ -371,6 +371,40 @@ describe('syncSiteReports', () => {
     expect(results[0]?.report_id).toBe('new-id');
   });
 
+  it('logs a warning when the device clock was ahead, and still accepts the edit', async () => {
+    // OQ-28. A clamped timestamp is NOT a conflict — the merge resolved — but the device that
+    // produced it will keep producing them and the fix is on the device. Without this log the only
+    // trace is a merge outcome that quietly went the other way.
+    const existing = makeReport({ report_id: 'existing-id' });
+    mockRepo.findReportsByIds.mockResolvedValue(new Map([['existing-id', existing]]));
+    mockRepo.updateSiteReport.mockResolvedValue(existing);
+    const warn = jest.requireMock('@cos/logger').createLogger().warn as jest.Mock;
+    warn.mockClear();
+
+    const results = await service.syncSiteReports({
+      items: [
+        {
+          client_id: 'existing-id',
+          project_id: 'project-1',
+          report_date: '2026-06-04',
+          summary: 'edited offline',
+          // Two days ahead of the server clock — well past the five-minute tolerance.
+          client_submitted_at: new Date(Date.now() + 2 * 24 * 3600 * 1000).toISOString(),
+        },
+      ],
+    });
+
+    expect(results[0]?.conflict_status).not.toBe('CONFLICT_REJECTED');
+    expect(warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'sync.clock_skew_clamped',
+        entity_type: 'site_reports',
+        entity_id: 'existing-id',
+      }),
+      expect.stringContaining('ahead of the server clock'),
+    );
+  });
+
   it('still syncs when the batch pre-fetch fails — every item takes the create path', async () => {
     // The pre-fetch is one set-based lookup replacing a per-item read. If it rejects (a malformed id
     // slipping past the UUID filter would break the ::uuid[] cast for the WHOLE batch), the catch
@@ -782,6 +816,24 @@ describe('updateIssue', () => {
     expect(mockRepo.updateIssue).toHaveBeenCalledWith(
       'issue-1',
       expect.objectContaining({ status: 'IN_PROGRESS' }),
+    );
+  });
+
+  it('logs the same clock-skew warning on the issue path', async () => {
+    const serverIssue = makeIssue({ status: 'OPEN' });
+    mockRepo.findIssueById.mockResolvedValue(serverIssue);
+    mockRepo.updateIssue.mockResolvedValue({ ...serverIssue, description: 'edited' });
+    const warn = jest.requireMock('@cos/logger').createLogger().warn as jest.Mock;
+    warn.mockClear();
+
+    await service.updateIssue('issue-1', {
+      description: 'edited',
+      client_submitted_at: new Date(Date.now() + 2 * 24 * 3600 * 1000).toISOString(),
+    });
+
+    expect(warn).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'sync.clock_skew_clamped', entity_type: 'issues' }),
+      expect.stringContaining('ahead of the server clock'),
     );
   });
 

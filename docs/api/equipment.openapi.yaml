@@ -54,7 +54,9 @@ components:
             enum: [CRANE, EXCAVATOR, CONCRETE_MIXER, GENERATOR, SCAFFOLD, VEHICLE, OTHER],
           }
         purchase_date: { type: string, format: date }
-        purchase_cost: { type: number }
+        # DECIMAL(19,4) as a string — never a JS number (master:990). The response schema above
+        # has always said so; the request schema is what disagreed.
+        purchase_cost: { type: string }
         currency_code: { type: string }
 
     AssignEquipmentRequest:
@@ -70,7 +72,8 @@ components:
       properties:
         maintenance_type: { type: string, enum: [SCHEDULED, UNSCHEDULED, REPAIR] }
         scheduled_at: { type: string, format: date-time }
-        cost: { type: number }
+        # DECIMAL string, as purchase_cost above.
+        cost: { type: string }
         currency_code: { type: string }
         performed_by: { type: string }
         notes: { type: string }
@@ -104,6 +107,8 @@ paths:
               schema: { $ref: '#/components/schemas/Equipment' }
         '401':
           description: Unauthenticated — missing or invalid bearer token
+        '403':
+          description: Insufficient role — see 06-rbac-permission-matrix, Equipment row
     get:
       operationId: listEquipment
       summary: List equipment
@@ -121,6 +126,8 @@ paths:
                 items: { $ref: '#/components/schemas/Equipment' }
         '401':
           description: Unauthenticated — missing or invalid bearer token
+        '403':
+          description: Insufficient role — see 06-rbac-permission-matrix, Equipment row
 
   /equipment/{id}:
     get:
@@ -137,6 +144,8 @@ paths:
               schema: { $ref: '#/components/schemas/Equipment' }
         '401':
           description: Unauthenticated — missing or invalid bearer token
+        '403':
+          description: Insufficient role — see 06-rbac-permission-matrix, Equipment row
 
   /equipment/{id}/status:
     patch:
@@ -162,6 +171,8 @@ paths:
               schema: { $ref: '#/components/schemas/Equipment' }
         '401':
           description: Unauthenticated — missing or invalid bearer token
+        '403':
+          description: Insufficient role — see 06-rbac-permission-matrix, Equipment row
 
   /equipment/{id}/assignments:
     post:
@@ -180,6 +191,8 @@ paths:
           description: Assignment created
         '401':
           description: Unauthenticated — missing or invalid bearer token
+        '403':
+          description: Insufficient role — see 06-rbac-permission-matrix, Equipment row
 
   /equipment/{id}/assignments/{aid}/return:
     patch:
@@ -207,6 +220,8 @@ paths:
           description: Equipment returned
         '401':
           description: Unauthenticated — missing or invalid bearer token
+        '403':
+          description: Insufficient role — see 06-rbac-permission-matrix, Equipment row
 
   /equipment/{id}/maintenance:
     post:
@@ -225,6 +240,8 @@ paths:
           description: Maintenance logged
         '401':
           description: Unauthenticated — missing or invalid bearer token
+        '403':
+          description: Insufficient role — see 06-rbac-permission-matrix, Equipment row
 
   /equipment/{id}/utilization:
     post:
@@ -243,6 +260,8 @@ paths:
           description: Utilization recorded
         '401':
           description: Unauthenticated — missing or invalid bearer token
+        '403':
+          description: Insufficient role — see 06-rbac-permission-matrix, Equipment row
 
   /projects/{projectId}/equipment:
     get:
@@ -261,3 +280,5 @@ paths:
                 items: { $ref: '#/components/schemas/Equipment' }
         '401':
           description: Unauthenticated — missing or invalid bearer token
+        '403':
+          description: Insufficient role — see 06-rbac-permission-matrix, Equipment row

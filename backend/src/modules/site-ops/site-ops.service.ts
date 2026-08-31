@@ -270,7 +270,9 @@ export class SiteOpsService {
             event: 'sync.clock_skew_clamped',
             entity_type: 'site_reports',
             entity_id: existing.report_id,
-            client_submitted_at: item.client_submitted_at ?? null,
+            // Always present here: the clamp can only flag a timestamp the item supplied — an
+            // absent one is replaced with now() above, which is never ahead or unparseable.
+            client_submitted_at: item.client_submitted_at,
             tenant_id: this.tenantId,
           },
           'client_submitted_at was ahead of the server clock or unparseable — capped for ordering',
@@ -533,7 +535,8 @@ export class SiteOpsService {
           event: 'sync.clock_skew_clamped',
           entity_type: 'issues',
           entity_id: issueId,
-          client_submitted_at: dto.client_submitted_at ?? null,
+          // Always present here, for the same reason as the site-report path above.
+          client_submitted_at: dto.client_submitted_at,
           tenant_id: this.tenantId,
         },
         'client_submitted_at was ahead of the server clock or unparseable — capped for ordering',

@@ -5,11 +5,17 @@ info:
   license:
     name: Proprietary — all rights reserved
     identifier: LicenseRef-Proprietary
-  description: 'Phase 7 — Project cost tracking service.
+  description: |
+    Phase 7 — Project cost tracking service.
 
     Tracks budget vs actual vs committed. Does NOT implement accounting or ERP posting.
 
-    '
+    **Reviewed 2026-08-31** against `backend/src/modules/finance/` at the origin/develop merge. The
+    controller changed only where the package restructure moved `JwtAuthGuard` to `shared/`; no DTO
+    changed. Service and consumer changes are internal — the transactional outbox and the CLS tenant
+    context the consumer now enters. No route, parameter, request body or response shape moved. This
+    line records the comparison the freshness gate asks for, which compares commit timestamps and
+    cannot tell an import move from an API change.
 servers:
   - url: /api/v1
 

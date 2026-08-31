@@ -9,6 +9,13 @@ info:
     Phase 20 — Multi-channel notification service.
     Channels: IN_APP (SSE), EMAIL (SendGrid), LINE (Messaging API), Expo Push.
     All endpoints require a valid JWT. tenant_id is resolved from the token.
+
+    **Reviewed 2026-08-31** against `backend/src/modules/notification/` at the origin/develop merge.
+    The module changed only where the package restructure moved `JwtAuthGuard` from
+    `modules/identity/` to `shared/`, plus consumer-side routing for the new
+    `safety.compliance.failed.v1`. No route, parameter, request body or response shape moved. This
+    line records the comparison the freshness gate asks for, which compares commit timestamps and
+    cannot tell an import move from an API change.
 servers:
   - url: /api/v1
 tags:

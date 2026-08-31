@@ -984,6 +984,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Project'
+        '403':
+          description: Insufficient role
         '422':
           description: Not editable (COS-PROJ-002)
           content:
@@ -1024,6 +1026,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Project'
+        '403':
+          description: Insufficient role
         '422':
           description: Transition not allowed (COS-PROJ-003)
           content:
@@ -1056,6 +1060,8 @@ paths:
           description: Member added or role updated
         '400':
           description: Validation error
+        '403':
+          description: Insufficient role
         '404':
           description: Project not found
 
@@ -1101,6 +1107,8 @@ paths:
       responses:
         '204':
           description: Member removed
+        '403':
+          description: Insufficient role
         '404':
           description: Project not found
 
@@ -1329,6 +1337,8 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Building' }
+        '403':
+          description: Insufficient role
         '404':
           description: Parent project not found (COS-BLDG-002)
           content:
@@ -1381,6 +1391,8 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Building' }
+        '403':
+          description: Insufficient role
         '404':
           description: Not found (COS-BLDG-001)
     delete:
@@ -1389,6 +1401,8 @@ paths:
       responses:
         '204':
           description: Building deleted
+        '403':
+          description: Insufficient role
         '404':
           description: Not found (COS-BLDG-001)
 
@@ -1409,6 +1423,8 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Floor' }
+        '403':
+          description: Insufficient role
         '404':
           description: Parent building not found (COS-FLOR-002)
     get:
@@ -1458,6 +1474,8 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Floor' }
         '404': { description: Not found (COS-FLOR-001) }
+        '403':
+          description: Insufficient role
     delete:
       summary: Delete a floor
       operationId: deleteFloor
@@ -1465,6 +1483,8 @@ paths:
         '204': { description: Floor deleted }
         '404': { description: Not found (COS-FLOR-001) }
 
+        '403':
+          description: Insufficient role
   /floors/{floorId}/rooms:
     parameters:
       - { in: path, name: floorId, required: true, schema: { type: string, format: uuid } }
@@ -1701,6 +1721,8 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Asset' }
+        '403':
+          description: Insufficient role
         '404':
           description: Parent project not found (COS-ASST-002)
     get:
@@ -1750,9 +1772,14 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Asset' }
         '404': { description: Not found (COS-ASST-001) }
+        '403':
+          description: Insufficient role
     delete:
       summary: Delete an asset
       operationId: deleteAsset
       responses:
         '204': { description: Asset deleted }
         '404': { description: Not found (COS-ASST-001) }
+
+        '403':
+          description: Insufficient role

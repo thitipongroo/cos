@@ -203,5 +203,41 @@ describe('SearchIndexerConsumer', () => {
         expect.objectContaining({ groupId: 'search-indexer.shared' }),
       );
     });
+
+    it('each registered callback routes to the handler for its event', async () => {
+      // `on` is given a closure per event type, and a closure wired to the wrong handler subscribes
+      // correctly and then indexes the wrong document — the subscription assertion above cannot see
+      // that. So each closure is invoked and followed to the repository call it should make.
+      const { consumer, repo } = build();
+      await consumer.onModuleInit();
+      const kafka = (consumer as unknown as { kafka: { on: jest.Mock } }).kafka;
+      const routed = Object.fromEntries(
+        kafka.on.mock.calls.map((c) => [c[0] as string, c[1] as (e: unknown) => Promise<void>]),
+      );
+
+      await routed['construction.project.created.v1']!(event({ payload: { project_id: 'p-1' } }));
+      expect(repo.findProject).toHaveBeenCalledWith('p-1');
+
+      await routed['site.report.created.v1']!(event({ payload: { report_id: 'r-1' } }));
+      expect(repo.findSiteReport).toHaveBeenCalledWith('r-1');
+
+      await routed['site.issue.created.v1']!(event({ payload: { issue_id: 'i-1' } }));
+      expect(repo.findIssue).toHaveBeenCalledWith('i-1');
+    });
+
+    it('disconnects on shutdown, and a failing disconnect does not throw out of it', async () => {
+      // onModuleDestroy runs while Nest is tearing the app down. Throwing here aborts the rest of
+      // the shutdown — other modules' destroy hooks never run — to report a broker we are leaving
+      // anyway.
+      const { consumer } = build();
+      await consumer.onModuleInit();
+      const kafka = (consumer as unknown as { kafka: { disconnect: jest.Mock } }).kafka;
+
+      await expect(consumer.onModuleDestroy()).resolves.toBeUndefined();
+      expect(kafka.disconnect).toHaveBeenCalled();
+
+      kafka.disconnect.mockRejectedValueOnce(new Error('broker already gone'));
+      await expect(consumer.onModuleDestroy()).resolves.toBeUndefined();
+    });
   });
 });

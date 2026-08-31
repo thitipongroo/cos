@@ -69,6 +69,33 @@ describe('AnalyticsInvalidationConsumer', () => {
   // daily tables the dashboards read. If someone adds a ninth Kafka-engine table and forgets this
   // consumer, that dashboard goes stale for the whole TTL with nothing to say so. This test is what
   // says so.
+  it('the registered callback is the one that invalidates', async () => {
+    // `on` is handed a closure per event type. Asserting only the NAMES it subscribed to cannot see
+    // a closure wired to nothing — the subscription would look right and no cache would ever be
+    // dropped, which is exactly the shape of the fault this consumer exists to fix.
+    const { consumer, invalidate } = build();
+    await consumer.onModuleInit();
+    const kafka = (consumer as unknown as { kafka: { on: jest.Mock } }).kafka;
+    const [, callback] = kafka.on.mock.calls[0] as [string, (e: unknown) => Promise<void>];
+
+    await callback(event());
+    expect(invalidate).toHaveBeenCalledWith('tenant-1', 'proj-1');
+  });
+
+  it('disconnects on shutdown, and a failing disconnect does not throw out of it', async () => {
+    // onModuleDestroy runs while Nest tears the app down. Throwing here aborts the rest of the
+    // shutdown — other modules' destroy hooks never run — to report a broker we are leaving anyway.
+    const { consumer } = build();
+    await consumer.onModuleInit();
+    const kafka = (consumer as unknown as { kafka: { disconnect: jest.Mock } }).kafka;
+
+    await expect(consumer.onModuleDestroy()).resolves.toBeUndefined();
+    expect(kafka.disconnect).toHaveBeenCalled();
+
+    kafka.disconnect.mockRejectedValueOnce(new Error('broker already gone'));
+    await expect(consumer.onModuleDestroy()).resolves.toBeUndefined();
+  });
+
   it('covers exactly the events feeding the analytics warehouse', () => {
     // Read from the Go worker's dispatch, not from 02-kafka-tables.sql: the Kafka engine tables that
     // file used to hold were deleted when ingestion moved to services/analytics-worker (2026-08-23),

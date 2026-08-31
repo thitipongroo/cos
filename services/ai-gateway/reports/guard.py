@@ -32,13 +32,14 @@ class HallucinationGuard:
     actually IN the context. That is what makes it un-fakeable: a plausible-looking citation the
     model invented does not appear in the context and fails.
 
-    A CONSEQUENCE WORTH KNOWING. `main.py` passes `context_data=""` for SITE_SUMMARY,
-    PROCUREMENT_SUMMARY and EXECUTIVE_SUMMARY — only delay-risk assembles real context, and only
-    when the DB pool is wired. A report generated from no project data cannot cite any, so those
-    three now fail check 2 and the caller returns `LowConfidenceResponse` instead of a summary.
-    That is the check working: a narrative written from an empty context is fabrication by
-    construction, and `raw_data_available: True` tells the client to show the underlying data
-    instead. They start returning summaries again when their context assembly is built.
+    A CONSEQUENCE WORTH KNOWING. This check was written while `main.py` passed `context_data=""`
+    for SITE_SUMMARY, PROCUREMENT_SUMMARY and EXECUTIVE_SUMMARY — only delay-risk assembled real
+    context — so all three failed check 2 and returned `LowConfidenceResponse` instead of a summary.
+    That was the check working: a narrative written from an empty context is fabrication by
+    construction. Those three assemblers were built on origin/develop and merged here
+    (`reports/context/`), so the three now cite real rows and pass. The behaviour still holds
+    wherever context assembly degrades — no DB pool, or a failed query — and `raw_data_available:
+    True` tells the client to show the underlying data instead.
     """
 
     def validate(self, output: dict, context: str) -> GuardResult:

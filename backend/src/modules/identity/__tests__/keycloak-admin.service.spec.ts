@@ -423,4 +423,69 @@ describe('KeycloakAdminService', () => {
       expect(executeActionsEmail).toHaveBeenCalledWith(expect.objectContaining({ lifespan: 600 }));
     });
   });
+
+  // GDPR/PDPA erasure of the identity side. The database rows are anonymised by
+  // SubjectRequestService; this is the Keycloak half, and it is irreversible by design.
+  it('ignores an OAuth error body whose `error` is not a string', async () => {
+    // The body is whatever the token endpoint sent. A non-string `error` — a nested object, a
+    // number — must read as "no code" rather than travelling with the exception, because the caller
+    // branches on that code to tell a REFUSAL from an OUTAGE.
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 400,
+      text: jest.fn().mockResolvedValue(JSON.stringify({ error: { code: 42 } })),
+      json: jest.fn().mockResolvedValue({}),
+    } as unknown as Response);
+
+    const err = await service
+      .exchangeOtpForTokens('kc-1', '0812345678', 'tenant-acme', 'otp-cred')
+      .catch((e: unknown) => e);
+    expect((err as { oauthError?: string | null }).oauthError ?? null).toBeNull();
+  });
+
+  describe('eraseUser', () => {
+    it('disables and logs the user out BEFORE scrubbing their fields', async () => {
+      // The scrub is several round-trips. A live refresh token would keep minting access tokens
+      // through the middle of it, so the account is closed first and emptied second.
+      const order: string[] = [];
+      mockKcInstance.users.update.mockImplementation(async (_where, payload) => {
+        order.push('enabled' in (payload as object) ? 'disable' : 'scrub');
+      });
+      mockKcInstance.users.logout.mockImplementation(async () => {
+        order.push('logout');
+      });
+
+      await service.eraseUser('kc-1', 'tenant-acme', 'u-1');
+
+      expect(order).toEqual(['disable', 'logout', 'scrub']);
+    });
+
+    it('replaces every identifying field with a value derived from the cos user id', async () => {
+      await service.eraseUser('kc-1', 'tenant-acme', 'u-1');
+
+      expect(mockKcInstance.users.update).toHaveBeenNthCalledWith(
+        1,
+        { id: 'kc-1' },
+        { enabled: false },
+      );
+      expect(mockKcInstance.users.update).toHaveBeenNthCalledWith(
+        2,
+        { id: 'kc-1' },
+        {
+          username: 'erased-u-1',
+          // .invalid is reserved by RFC 2606 and can never be delivered to, so the row keeps a
+          // unique, well-formed email without it addressing anyone.
+          email: 'erased-u-1@erased.invalid',
+          firstName: 'ERASED',
+          lastName: 'ERASED',
+          emailVerified: false,
+        },
+      );
+    });
+
+    it('authenticates against the tenant realm it was given', async () => {
+      await service.eraseUser('kc-1', 'tenant-acme', 'u-1');
+      expect(mockKcInstance.auth).toHaveBeenCalled();
+    });
+  });
 });

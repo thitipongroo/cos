@@ -100,6 +100,9 @@ export async function runAllBackendWorkers(): Promise<void> {
   logger.info({ queues: QUEUES }, 'temporal_worker.stopped');
 }
 
+/* istanbul ignore next -- the self-start guard. Same convention as the three worker files this
+   composes and as reconcile-contracts.script.ts: everything above is unit-tested, and what remains
+   is `node dist/workers/main.js` deciding to run it. */
 if (require.main === module) {
   runAllBackendWorkers().catch((err) => {
     logger.error({ err }, 'temporal_worker.fatal');

@@ -293,4 +293,46 @@ describe('SubjectRequestRepository', () => {
     mockPrisma.$executeRaw.mockResolvedValueOnce(0);
     await expect(repo.markVerifiedByTokenHash('hash')).resolves.toBe(false);
   });
+
+  it('anonymise reports erased vendors too, not only the four tables that usually match', async () => {
+    // The vendor statement is the one that returns nothing in the common case — a data subject is
+    // rarely also a supplier — so its result mapping is the easiest to leave unexercised while the
+    // suite still looks complete.
+    mockPrisma.$queryRaw
+      .mockResolvedValueOnce([]) // crm.contacts
+      .mockResolvedValueOnce([]) // crm.leads
+      .mockResolvedValueOnce([{ vendor_id: 'v1' }, { vendor_id: 'v2' }]) // procurement.vendors
+      .mockResolvedValueOnce([]) // workforce.workers
+      .mockResolvedValueOnce([]); // platform.users
+
+    await expect(repo.anonymise('a@b.test', null)).resolves.toEqual({
+      contacts: [],
+      leads: [],
+      vendors: ['v1', 'v2'],
+      workers: [],
+      users: [],
+    });
+  });
+
+  describe('findTenantRealm', () => {
+    it('reads the realm through the TENANT-scoped connection', async () => {
+      // Not the privileged one: rls_tenants_read (migration 20260804000001) confines app_user to
+      // its own tenant's row precisely so a request-scoped path cannot reach another tenant's realm
+      // — or its dedicated_db_url, which is why that policy was tightened. Only keycloak_realm is
+      // selected.
+      mockPrisma.$queryRaw.mockResolvedValueOnce([{ keycloak_realm: 'cos-acme' }]);
+      await expect(repo.findTenantRealm()).resolves.toBe('cos-acme');
+
+      const sql = String((mockPrisma.$queryRaw.mock.calls[0] as unknown[])[0]).replace(/\s+/g, ' ');
+      expect(sql).toContain('SELECT keycloak_realm FROM platform.tenants');
+      expect(sql).toContain('tenant_id');
+      expect(mockTenantPrisma.run).toHaveBeenCalled();
+    });
+
+    it('returns null when no row comes back rather than undefined', async () => {
+      // The caller branches on null to decide whether there is a Keycloak account to erase at all.
+      mockPrisma.$queryRaw.mockResolvedValueOnce([]);
+      await expect(repo.findTenantRealm()).resolves.toBeNull();
+    });
+  });
 });

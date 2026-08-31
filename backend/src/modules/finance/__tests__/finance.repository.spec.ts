@@ -676,4 +676,70 @@ describe('FinanceRepository', () => {
       expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
     });
   });
+
+  // Budget-line attribution — what decides whether finance.budget.exceeded.v1 can fire for an
+  // order at all. The rule is deliberately all-or-nothing: a PO is attributed to ONE budget line or
+  // to none, because the ledger has no way to hold a split and half an order charged to a line is a
+  // number nobody can reconcile.
+  describe('resolveBudgetLine', () => {
+    it('returns null for an order with no BOQ items, without querying', async () => {
+      await expect(repo.resolveBudgetLine('proj-uuid-001', [])).resolves.toBeNull();
+      expect(mockPrisma.$queryRaw).not.toHaveBeenCalled();
+    });
+
+    it('returns the line when it accounts for every item on the order', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([{ line_id: 'line-1', matched: 2n }]);
+      await expect(repo.resolveBudgetLine('proj-uuid-001', ['item-1', 'item-2'])).resolves.toBe(
+        'line-1',
+      );
+    });
+
+    it('returns null when the order spans two budget lines', async () => {
+      // The split case. Attributing the whole order to whichever line came back first would
+      // overstate that line and understate the other, and the alert would name the wrong trade.
+      mockPrisma.$queryRaw.mockResolvedValue([
+        { line_id: 'line-1', matched: 1n },
+        { line_id: 'line-2', matched: 1n },
+      ]);
+      await expect(
+        repo.resolveBudgetLine('proj-uuid-001', ['item-1', 'item-2']),
+      ).resolves.toBeNull();
+    });
+
+    it('returns null when one line matched only SOME of the items', async () => {
+      // The rest of the order belongs to categories with no budget line at all, so charging the
+      // whole thing here would attribute spending the line never allocated for.
+      mockPrisma.$queryRaw.mockResolvedValue([{ line_id: 'line-1', matched: 1n }]);
+      await expect(
+        repo.resolveBudgetLine('proj-uuid-001', ['item-1', 'item-2']),
+      ).resolves.toBeNull();
+    });
+
+    it('returns null when no line matched', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([]);
+      await expect(repo.resolveBudgetLine('proj-uuid-001', ['item-1'])).resolves.toBeNull();
+    });
+  });
+
+  describe('getBudgetLineTotals', () => {
+    it('returns the line with its allocation and everything charged to it', async () => {
+      // Committed and actual are summed together: a PO raised but not yet invoiced has already
+      // consumed the budget as far as anyone planning against it is concerned.
+      const row = {
+        line_id: 'line-1',
+        boq_category_id: 'cat-1',
+        category_code: 'CONCRETE',
+        allocated_amount: '100000.0000',
+        charged_amount: '120000.0000',
+        currency_code: 'THB',
+      };
+      mockPrisma.$queryRaw.mockResolvedValue([row]);
+      await expect(repo.getBudgetLineTotals('line-1')).resolves.toEqual(row);
+    });
+
+    it('returns null for a line in another tenant', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([]);
+      await expect(repo.getBudgetLineTotals('line-other')).resolves.toBeNull();
+    });
+  });
 });

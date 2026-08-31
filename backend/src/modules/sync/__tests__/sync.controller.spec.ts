@@ -1,4 +1,4 @@
-import { SyncController } from '../sync.controller';
+import { SyncController, SyncExhaustionController } from '../sync.controller';
 import { PushItemDto } from '../dto/sync.dto';
 
 function ctrl() {
@@ -61,5 +61,46 @@ describe('SyncController', () => {
     });
     expect(service.reportExhaustion).toHaveBeenCalledWith(report);
     expect(service.push).not.toHaveBeenCalled();
+  });
+});
+
+// The §17.2 admin review queue. Two routes, both thin — but "thin" is what let the mobile client
+// and the server switch drift apart for months, so the delegation is asserted rather than assumed.
+describe('SyncExhaustionController', () => {
+  function adminCtrl() {
+    const service = {
+      listExhaustions: jest.fn().mockResolvedValue([]),
+      resolveExhaustion: jest.fn().mockResolvedValue({ resolved: true }),
+    };
+    return { controller: new SyncExhaustionController(service as never), service };
+  }
+
+  it('list defaults to PENDING — a resolved row is history, not work', async () => {
+    const { controller, service } = adminCtrl();
+    await controller.list();
+    expect(service.listExhaustions).toHaveBeenCalledWith('PENDING');
+  });
+
+  it('list passes RESOLVED through', async () => {
+    const { controller, service } = adminCtrl();
+    await controller.list('RESOLVED');
+    expect(service.listExhaustions).toHaveBeenCalledWith('RESOLVED');
+  });
+
+  it('any other status value reads as PENDING, not as an error', async () => {
+    // The query string is free text. Anything that is not the one alternative means "the default",
+    // which keeps a typo showing the admin their queue instead of an empty list or a 500.
+    const { controller, service } = adminCtrl();
+    await controller.list('anything-else');
+    expect(service.listExhaustions).toHaveBeenCalledWith('PENDING');
+  });
+
+  it('resolve passes the id and the body straight through', async () => {
+    const { controller, service } = adminCtrl();
+    const dto = { resolution: 'IMPORTED', resolution_note: 'entered by hand' };
+    await expect(controller.resolveExhaustion('exh-1', dto as never)).resolves.toEqual({
+      resolved: true,
+    });
+    expect(service.resolveExhaustion).toHaveBeenCalledWith('exh-1', dto);
   });
 });

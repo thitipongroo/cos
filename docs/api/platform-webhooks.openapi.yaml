@@ -13,6 +13,10 @@ info:
     All endpoints are unauthenticated at the JWT level — callers present an HMAC-SHA256
     signature in the `X-Webhook-Signature` header instead.
 
+    **Reviewed 2026-08-31** against `backend/src/modules/platform-webhook/` at the origin/develop
+    merge. Nothing in that module changed since this document was last written except an added
+    README — no controller, no DTO, no service. This line records the comparison the freshness gate
+    asks for, which compares commit timestamps and so counted the README as a source change.
 servers:
   - url: /api/v1
     description: Current version — relative, so the document works behind whatever host serves it

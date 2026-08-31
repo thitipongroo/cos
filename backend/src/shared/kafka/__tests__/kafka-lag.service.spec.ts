@@ -184,4 +184,51 @@ describe('KafkaLagService', () => {
 
     expect(mockAdmin.connect).toHaveBeenCalledTimes(1);
   });
+
+  it('caches the CONSUMER LAG sweep too, and re-reads once the TTL passes', async () => {
+    // The expensive one: a fetchOffsets plus a fetchTopicOffsets per topic per group, on every
+    // scrape. Prometheus scrapes far more often than the lag meaningfully changes.
+    mockAdmin.listGroups.mockResolvedValue({ groups: [{ groupId: 'g1' }] });
+    mockAdmin.fetchOffsets.mockResolvedValue([
+      { topic: 't1', partitions: [{ partition: 0, offset: '5' }] },
+    ]);
+    mockAdmin.fetchTopicOffsets.mockResolvedValue([{ partition: 0, high: '9', low: '0' }]);
+
+    await expect(lagFetcher()()).resolves.toEqual([{ topic: 't1', group: 'g1', lag: 4 }]);
+    await expect(lagFetcher()()).resolves.toEqual([{ topic: 't1', group: 'g1', lag: 4 }]);
+    expect(mockAdmin.listGroups).toHaveBeenCalledTimes(1);
+
+    jest.setSystemTime(new Date('2026-08-22T00:00:31Z')); // past the 10s TTL
+    await lagFetcher()();
+    expect(mockAdmin.listGroups).toHaveBeenCalledTimes(2);
+  });
+
+  it('treats a partition with no high-water mark as caught up, not as unbounded lag', async () => {
+    // fetchTopicOffsets can come back without a partition the group has committed against — a
+    // partition removed, or a racing metadata read. Falling back to the committed offset reports
+    // zero for it; treating the missing value as 0 would report the whole offset as lag and page.
+    mockAdmin.listGroups.mockResolvedValue({ groups: [{ groupId: 'g1' }] });
+    mockAdmin.fetchOffsets.mockResolvedValue([
+      { topic: 't1', partitions: [{ partition: 7, offset: '5' }] },
+    ]);
+    mockAdmin.fetchTopicOffsets.mockResolvedValue([{ partition: 0, high: '9', low: '0' }]);
+
+    await expect(lagFetcher()()).resolves.toEqual([{ topic: 't1', group: 'g1', lag: 0 }]);
+  });
+
+  it('disconnects the admin client on shutdown, swallowing a failure', async () => {
+    // Nest is tearing the app down. Throwing here aborts the rest of the shutdown to report a
+    // broker connection we are dropping anyway.
+    mockAdmin.listTopics.mockResolvedValue([]);
+    await dlqFetcher()(); // opens the connection
+
+    mockAdmin.disconnect.mockRejectedValueOnce(new Error('already closed'));
+    await expect(svc.onModuleDestroy()).resolves.toBeUndefined();
+    expect(mockAdmin.disconnect).toHaveBeenCalled();
+
+    // Idempotent: a second shutdown has nothing to close and must not try.
+    mockAdmin.disconnect.mockClear();
+    await expect(svc.onModuleDestroy()).resolves.toBeUndefined();
+    expect(mockAdmin.disconnect).not.toHaveBeenCalled();
+  });
 });
