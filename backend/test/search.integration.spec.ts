@@ -21,6 +21,10 @@ import { GenericContainer, type StartedTestContainer, Wait } from 'testcontainer
 import { ProjectService } from '../src/modules/project/project.service';
 import type { ProjectRepository, ProjectRow } from '../src/modules/project/project.repository';
 import { SiteOpsService } from '../src/modules/site-ops/site-ops.service';
+// The writer half of search since TDD OQ-22: indexing moved off the request path onto the
+// outbox, and SearchIndexerConsumer drives this service. The services below still own the READ
+// half, which is what these tests query.
+import { SearchIndexerService } from '../src/modules/search/search-indexer.service';
 import type {
   SiteOpsRepository,
   SiteReportRow,
@@ -144,14 +148,14 @@ describe('Full-text search (Testcontainers — OpenSearch)', () => {
         } as never,
       );
 
-      // Index through the service's own private path — the whole point is that the document the
-      // service writes is the document its query later has to match.
-      const indexProject = (
-        service as unknown as { indexProject(p: ProjectRow): Promise<void> }
-      ).indexProject.bind(service);
-      await indexProject(rows['p1']!);
-      await indexProject(rows['p2']!);
-      await indexProject(otherTenant as ProjectRow);
+      // Index through the writer the consumer actually uses — the whole point is that the document
+      // written is the document the query below has to match. Until OQ-22 the writer was a private
+      // method on ProjectService and this reached in for it; the method is gone, and reaching for
+      // it returned undefined rather than failing anywhere useful.
+      const indexer = new SearchIndexerService();
+      await indexer.indexProject(rows['p1']! as never);
+      await indexer.indexProject(rows['p2']! as never);
+      await indexer.indexProject(otherTenant as never);
       await refresh('cos_projects', node);
       await assertIndexed('cos_projects', node, 3);
     }, 120_000);
@@ -282,12 +286,11 @@ describe('Full-text search (Testcontainers — OpenSearch)', () => {
         } as never,
       );
 
-      const s = service as unknown as {
-        indexSiteReport(r: SiteReportRow): Promise<void>;
-        indexIssue(i: IssueRow): Promise<void>;
-      };
-      for (const r of reports) await s.indexSiteReport(r);
-      for (const i of issues) await s.indexIssue(i);
+      // Same move as the projects block above: SiteOpsService no longer indexes, SearchIndexerService
+      // does, and SiteOpsService keeps the searches these tests run.
+      const indexer = new SearchIndexerService();
+      for (const r of reports) await indexer.indexSiteReport(r as never);
+      for (const i of issues) await indexer.indexIssue(i as never);
       await refresh('site-reports', node);
       await refresh('site-issues', node);
       await assertIndexed('site-reports', node, 2);

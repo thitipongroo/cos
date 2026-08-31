@@ -186,104 +186,94 @@ describe('Phase 10 · the sync server surface (real database)', () => {
     const report = (body: Record<string, unknown>, role = 'SITE_ENGINEER') =>
       http().post('/api/v1/sync/exhausted').set('x-test-role', role).send(body);
 
-    const queueRows = (clientId: string) =>
+    // The kept design (PO decision 2026-08-31): platform.sync_exhaustions, keyed by
+    // (tenant_id, entity_type, entity_id) and carrying the payload an admin needs to import by
+    // hand. The other branch's platform.sync_exhausted_items — keyed by a device-chosen client_id
+    // and holding no payload — went with its duplicate migration.
+    const queueRows = (entityId: string) =>
       infra.prisma.$queryRawUnsafe<
         Array<{
-          item_id: string;
+          exhaustion_id: string;
           entity_type: string;
           retry_count: number;
+          status: string;
+          resolution: string | null;
           resolved_at: Date | null;
+          payload: Record<string, unknown>;
         }>
       >(
-        `SELECT item_id, entity_type, retry_count, resolved_at
-           FROM platform.sync_exhausted_items WHERE client_id = $1`,
-        clientId,
+        `SELECT exhaustion_id, entity_type, retry_count, status, resolution, resolved_at, payload
+           FROM platform.sync_exhaustions WHERE entity_id = $1::uuid`,
+        entityId,
       );
 
+    const exhaustionEvents = (entityId: string) =>
+      infra.prisma.$queryRawUnsafe<Array<{ payload: Record<string, unknown> }>>(
+        `SELECT payload->'payload' AS payload FROM platform.outbox_events
+          WHERE event_type = 'platform.sync.exhausted.v1'
+            AND payload->'payload'->>'entity_id' = $1`,
+        entityId,
+      );
+
+    /** A report of a mutation the device stopped retrying. `payload` is what makes it reviewable. */
+    const exhausted = (entityId: string) => ({
+      entity_type: 'safety',
+      entity_id: entityId,
+      operation: 'CREATE' as const,
+      payload: { title: 'Scaffold collapse', severity: 'HIGH' },
+      last_error: 'Network request failed',
+    });
+
     it('files an exhausted safety incident on the queue', async () => {
-      const clientId = randomUUID();
-      const res = await report({
-        entity_type: 'safety',
-        entity_id: clientId,
-        operation: 'CREATE',
-        client_id: clientId,
-        retry_count: 5,
-      });
+      const entityId = randomUUID();
+      const res = await report(exhausted(entityId));
 
       expect(res.status).toBe(200);
-      const rows = await queueRows(clientId);
+      const rows = await queueRows(entityId);
       expect(rows).toHaveLength(1);
       expect(rows[0].entity_type).toBe('safety');
       expect(Number(rows[0].retry_count)).toBe(5);
+      // The payload is the point of the queue: §17.2 says the record is "reviewed and manually
+      // imported", and an admin cannot import what the row does not carry.
+      expect(rows[0].payload).toMatchObject({ title: 'Scaffold collapse' });
       // Unresolved until an administrator acts on it — that is what makes it a queue.
+      expect(rows[0].status).toBe('PENDING');
+      expect(rows[0].resolution).toBeNull();
       expect(rows[0].resolved_at).toBeNull();
     });
 
     it('emits platform.sync.exhausted so the alert routing can fire', async () => {
-      const clientId = randomUUID();
-      await report({
-        entity_type: 'safety',
-        entity_id: clientId,
-        operation: 'CREATE',
-        client_id: clientId,
-        retry_count: 5,
-      });
+      const entityId = randomUUID();
+      await report(exhausted(entityId));
 
-      const events = await infra.prisma.$queryRawUnsafe<
-        Array<{ payload: Record<string, unknown> }>
-      >(
-        `SELECT payload->'payload' AS payload FROM platform.outbox_events
-          WHERE event_type = 'platform.sync.exhausted.v1'
-            AND payload->'payload'->>'client_id' = $1`,
-        clientId,
-      );
+      const events = await exhaustionEvents(entityId);
       expect(events).toHaveLength(1);
-      expect(events[0].payload).toMatchObject({ entity_type: 'safety', client_id: clientId });
+      expect(events[0].payload).toMatchObject({ entity_type: 'safety', entity_id: entityId });
     });
 
     it('a device re-reporting the same item files no duplicate', async () => {
       // The device keeps the row until an admin resolves it (master:3698), so it will report again
-      // on a later cycle. One lost record must be one queue entry.
-      const clientId = randomUUID();
-      const body = {
-        entity_type: 'safety',
-        entity_id: clientId,
-        operation: 'CREATE',
-        client_id: clientId,
-        retry_count: 5,
-      };
-      await report(body);
-      const second = await report(body);
+      // on a later cycle. One lost record must be one queue entry — enforced by the
+      // (tenant_id, entity_type, entity_id) unique constraint and ON CONFLICT DO NOTHING.
+      const entityId = randomUUID();
+      await report(exhausted(entityId));
+      const second = await report(exhausted(entityId));
 
       expect(second.status).toBe(200);
-      expect(await queueRows(clientId)).toHaveLength(1);
+      expect(await queueRows(entityId)).toHaveLength(1);
 
-      const events = await infra.prisma.$queryRawUnsafe<Array<{ id: string }>>(
-        `SELECT id FROM platform.outbox_events
-          WHERE event_type = 'platform.sync.exhausted.v1'
-            AND payload->'payload'->>'client_id' = $1`,
-        clientId,
-      );
       // And no second alert: the PM is told once that this incident was lost, not once per retry.
-      expect(events).toHaveLength(1);
+      expect(await exhaustionEvents(entityId)).toHaveLength(1);
     });
 
     it('is refused to a role that could not have pushed the entity in the first place', async () => {
       // SyncAuthGuard reads entity_type off the body, so reporting an exhausted safety incident
       // requires the same roles as pushing one. SITE_WORKER is absent from SAFETY_WRITE_ROLES.
-      const clientId = randomUUID();
-      const res = await report(
-        {
-          entity_type: 'safety',
-          entity_id: clientId,
-          operation: 'CREATE',
-          client_id: clientId,
-          retry_count: 5,
-        },
-        'SITE_WORKER',
-      );
+      const entityId = randomUUID();
+      const res = await report(exhausted(entityId), 'SITE_WORKER');
+
       expect(res.status).toBe(403);
-      expect(await queueRows(clientId)).toHaveLength(0);
+      expect(await queueRows(entityId)).toHaveLength(0);
     });
 
     it('is tenant-isolated in the canonical form (ADR-031)', async () => {
@@ -293,7 +283,7 @@ describe('Phase 10 · the sync server surface (real database)', () => {
         `SELECT policyname, permissive, array_to_string(roles, ',') AS roles,
                 COALESCE(qual,'') AS qual, COALESCE(with_check,'') AS wc
            FROM pg_policies
-          WHERE schemaname = 'platform' AND tablename = 'sync_exhausted_items'`,
+          WHERE schemaname = 'platform' AND tablename = 'sync_exhaustions'`,
       );
       expect(rows).toHaveLength(1);
       expect(rows[0].policyname).toBe('rls_tenant_isolation');

@@ -281,7 +281,11 @@ describe('Phase 22 · workforce over HTTP', () => {
       expect(Object.keys(p).sort()).toEqual(
         ['checkin_at', 'checkin_id', 'location', 'method', 'project_id', 'worker_id'].sort(),
       );
-      expect(p['method']).toBe('MANUAL');
+      // Null, not 'MANUAL'. This caller asserted no method, and the merged schema is
+      // `["null", CheckinMethod]` with `default: null` (§32.4 row 9, PO decision 2026-08-23).
+      // 'MANUAL' is a claim — "a person typed this in" — and a consumer has to be able to tell it
+      // apart from a client that said nothing, which is exactly what a default would erase.
+      expect(p['method']).toBeNull();
       expect(p['location']).toEqual({ lat: 13.7563, lng: 100.5018 });
     });
 
