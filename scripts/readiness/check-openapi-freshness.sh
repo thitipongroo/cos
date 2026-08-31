@@ -61,7 +61,22 @@ for spec_name in "${!MODULE_MAP[@]}"; do
   fi
 
   spec_ts=$(git -C "$ROOT" log -1 --format="%ct" -- "$spec_file" 2>/dev/null || echo "0")
-  src_ts=$(git -C "$ROOT" log -1 --format="%ct" -- "$module_dir" 2>/dev/null || echo "0")
+
+  # SOURCE means the code the document describes — not everything that happens to sit beside it.
+  #
+  # This used to be the whole module directory, so a `__tests__/` edit, a README or a fixture made
+  # every document for that module stale, and the only way to clear it was to edit a document
+  # nobody had a reason to change. It fired three times in a row on 2026-08-31, most clearly on
+  # procurement for a change to approval-thresholds.workflow.spec.ts and nothing else.
+  #
+  # Excluding them cannot hide an API change: a new route means a controller edit, and a changed
+  # payload means a DTO edit. Both are still in scope.
+  src_ts=$(git -C "$ROOT" log -1 --format="%ct" -- \
+    "$module_dir" \
+    ":(exclude)$module_dir/**/__tests__/**" \
+    ":(exclude)$module_dir/**/*.spec.ts" \
+    ":(exclude)$module_dir/**/*.md" \
+    2>/dev/null || echo "0")
 
   if [[ "$spec_ts" == "0" && "$src_ts" == "0" ]]; then
     echo "  - $spec_name — no git history found (skipping)"
