@@ -15,6 +15,23 @@ jest.unstable_mockModule('@digitalbazaar/http-client', () => ({
   httpClient: { get: async () => ({ data: didDocumentToServe }) },
 }));
 
+// The identity the next request presents. `registerAuth` requires a VERIFIED bearer token since
+// TDD OQ-46 — it used to accept `x-tenant-id` / `x-user-role` on their own, which is the hole that
+// closed — so the headers this suite sent are no longer enough on their own.
+//
+// verifyBearer is stubbed rather than a real token minted: verifying one needs a JWKS endpoint and
+// an issuer, and neither is what this suite is about. Postgres and RLS are real, which is the claim
+// in its name. Same seam the unit specs stub.
+let identity: unknown = null;
+
+jest.unstable_mockModule('../../plugins/jwt-verify.js', () => ({
+  verifyBearer: async (authHeader: unknown) =>
+    typeof authHeader === 'string' && authHeader.toLowerCase().startsWith('bearer ')
+      ? identity
+      : null,
+  InvalidTokenError: class InvalidTokenError extends Error {},
+}));
+
 // Import AFTER the mock so did-method-web picks up the stubbed transport.
 const { credentialRoutes } = await import('../../routes/credentials.routes.js');
 const { registerTrace } = await import('../../plugins/trace.js');
@@ -26,7 +43,19 @@ const { isRevoked, statusListUrl } = await import('../../status-list.js');
 const TENANT = 'dddddddd-0001-4000-8000-000000000001';
 const OTHER_TENANT = 'dddddddd-0002-4000-8000-000000000002';
 const BASE_DOMAIN = 'cos.dev';
-const ADMIN = { 'x-tenant-id': TENANT, 'x-user-id': 'u1', 'x-user-role': 'TENANT_ADMIN' };
+// The headers stay: they are what a caller sends, and the point of OQ-46 is that they may only
+// AGREE with the claims, never replace them. `identity` below is what the token says.
+const ADMIN = {
+  authorization: 'Bearer test-token',
+  'x-tenant-id': TENANT,
+  'x-user-id': 'u1',
+  'x-user-role': 'TENANT_ADMIN',
+};
+
+/** Point the stubbed verifier at a tenant, as a signed user token would. */
+function actAs(tenantId: string): void {
+  identity = { kind: 'user', tenantId, userId: 'u1', role: 'TENANT_ADMIN' };
+}
 
 describe('Status List 2021 (integration — real Postgres + RLS)', () => {
   let infra: Infra;
@@ -36,6 +65,9 @@ describe('Status List 2021 (integration — real Postgres + RLS)', () => {
   let statusListId: string;
 
   beforeAll(async () => {
+    // Every authenticated case in this suite acts as the same tenant admin — the identity the
+    // headers used to assert on their own, before OQ-46 required it to come from a token.
+    actAs(TENANT);
     delete process.env.APP_SECRET_ENCRYPTION_KEY; // deterministic dev key
     infra = await startInfra();
     app = Fastify();
