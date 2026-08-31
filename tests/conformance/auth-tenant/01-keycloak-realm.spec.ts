@@ -140,8 +140,16 @@ describe('Phase 2 · shared realm name (master:1932; context.md:214)', () => {
    * no override gets.
    */
   it('the code default for a shared-realm tenant is construction-os', () => {
-    const strategy = read('backend/src/modules/identity/strategies/keycloak-jwt.strategy.ts');
-    expect(strategy).toMatch(/KEYCLOAK_REALM'?\]?\s*\?\?\s*'construction-os'/);
+    // Read from TenantService, not from the JWT strategy. Until TDD OQ-51 the strategy built ONE
+    // issuer from a single KEYCLOAK_REALM env var, so its `?? 'construction-os'` was where the
+    // shared-realm name lived — and that same single value is why a dedicated-realm token could
+    // never validate. Validation now resolves the realm from the token's `iss` and checks it
+    // against platform.tenants.keycloak_realm, so the strategy has no realm default left to hold.
+    //
+    // The obligation did not disappear with it: something still has to decide which realm a
+    // shared-plan tenant is registered to, and that is the row TenantService writes.
+    const tenants = read('backend/src/modules/tenant/tenant.service.ts');
+    expect(tenants).toMatch(/'ENTERPRISE'\s*\?[^:]*:\s*'construction-os'/);
   });
 
   it('the realm is environment-driven, never hardcoded to the dev name', () => {

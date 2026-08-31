@@ -271,8 +271,8 @@ describe('Phase 15 · dashboards (master:4409-4421)', () => {
   });
 
   it('the registry records dashboard IDs and SLO targets', () => {
-    expect(exists('docs/slo/dashboard-registry.md')).toBe(true);
-    const registry = read('docs/slo/dashboard-registry.md');
+    expect(exists('docs/registers/dashboard-registry.md')).toBe(true);
+    const registry = read('docs/registers/dashboard-registry.md');
     expect(registry).toMatch(/slo/i);
   });
 });
@@ -297,7 +297,7 @@ describe('Phase 15 · collection and retention (master:4426-4439)', () => {
 
   it('the log retention policy states the application-log tiers', () => {
     // Application logs: 30-day hot, 1-year cold (master:4436, spec §31.4).
-    const policy = read('docs/compliance/log-retention-policy.md');
+    const policy = read('docs/policies/log-retention-policy.md');
     expect(policy).toMatch(/30[- ]day/i);
     expect(policy).toMatch(/1 year/i);
   });
@@ -306,7 +306,7 @@ describe('Phase 15 · collection and retention (master:4426-4439)', () => {
     // Settled 2026-08-23. §31.4's prose said "never deleted" while the schedule IT NAMES as
     // authoritative expires them on day 2557 — as does data-retention-policy.md, both citing SOC 2
     // and the PDPA audit trail. The operational schedule won; §31.4 was corrected.
-    const policy = read('docs/compliance/log-retention-policy.md');
+    const policy = read('docs/policies/log-retention-policy.md');
     expect(policy).toMatch(/7[- ]year/i);
     // The immutability guarantee was missing from the authoritative file entirely: a lifecycle rule
     // written from it without Object Lock would meet the retention period and lose the control.
@@ -331,8 +331,8 @@ describe('Phase 15 · collection and retention (master:4426-4439)', () => {
     // They are read by different audiences — one by whoever configures Loki and S3, the other by
     // the PDPA control register — and a disagreement between them is invisible from either side.
     for (const doc of [
-      'docs/compliance/log-retention-policy.md',
-      'docs/compliance/data-retention-policy.md',
+      'docs/policies/log-retention-policy.md',
+      'docs/policies/data-retention-policy.md',
     ]) {
       expect(read(doc)).toMatch(/7[- ]year/i);
     }

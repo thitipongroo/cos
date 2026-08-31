@@ -19,6 +19,14 @@ import { REPO_ROOT, TS, grepTracked, isTest, report } from './scan';
 // ─── TC-P07-INT-002 ──────────────────────────────────────────────────────────
 
 describe('TC-P07-INT-002 — finance reads procurement through events, not tables', () => {
+  // The one file `00_master` § PHASE 7 (line 3216) exempts, decided 2026-08-23 as TDD OQ-31: the
+  // hourly reconciliation sweep. A ledger built from a stream cannot detect its own gaps — the
+  // outbox is durable, not transactional (ADR-094), so a dropped procurement.po.created.v1 leaves
+  // the budget silently under-committed with nothing in the system disagreeing with anything else.
+  // The exemption is narrow by design; tests/conformance/finance/05-constraints.spec.ts holds it to
+  // the three limits master states (read-only, never writes a cost transaction, not request-facing).
+  const RECONCILIATION_SWEEP = 'ledger-reconciliation.service.ts';
+
   it('issues no SQL against a procurement.* table', () => {
     // Finance learns about POs and invoices from procurement.* EVENTS (finance.consumer.ts). A
     // direct cross-schema query would couple the two services and bypass the event contract that
@@ -27,9 +35,17 @@ describe('TC-P07-INT-002 — finance reads procurement through events, not table
       /(FROM|JOIN|INTO|UPDATE)\s+procurement\./i,
       ['backend/src/modules/finance/'],
       TS,
-      isTest,
+      (file) => isTest(file) || file.endsWith(RECONCILIATION_SWEEP),
     );
     expect(report(hits)).toBe('');
+  });
+
+  it('the exempted sweep is still there — a rename must not widen the exemption', () => {
+    // Exempting by filename means a rename turns the filter into one that matches nothing, and the
+    // exemption would then quietly cover every file instead of one.
+    expect(
+      fs.existsSync(path.join(REPO_ROOT, 'backend/src/modules/finance', RECONCILIATION_SWEEP)),
+    ).toBe(true);
   });
 
   it('still consumes the procurement events it depends on', () => {

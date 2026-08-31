@@ -7,7 +7,7 @@
  *   item 07 "Full-text search via OpenSearch (project_name, project_code)"
  *   D1      CRMIntegration — interface + Salesforce/HubSpot/Pipedrive sub-stubs
  *   D2      BIMIntegration — importProjectStructure interface
- *   C2      docs/i18n/localization-gaps.md must exist by Phase 3 completion
+ *   C2      docs/registers/localization-gaps.md must exist by Phase 3 completion
  */
 import * as fs from 'fs';
 import * as path from 'path';
@@ -114,7 +114,7 @@ describe('Phase 3 · D1 CRMIntegration stub (master:2201-2208)', () => {
 });
 
 describe('Phase 3 · C2 localization gaps documented (master:2220-2222)', () => {
-  it('docs/i18n/localization-gaps.md exists', () => {
-    expect(exists('docs/i18n/localization-gaps.md')).toBe(true);
+  it('docs/registers/localization-gaps.md exists', () => {
+    expect(exists('docs/registers/localization-gaps.md')).toBe(true);
   });
 });

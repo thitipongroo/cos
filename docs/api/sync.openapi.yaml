@@ -24,7 +24,10 @@ info:
     `SYNC_PUSHABLE_ENTITY_TYPES` and documented here as pushable, so the contract is unchanged and
     the switch caught up to it. Everything else in that commit was `__tests__/` files. This line
     records the comparison the freshness gate asks for, which compares commit timestamps and cannot
-    tell a test from a route.
+    tell a test from a route. Re-checked after the conformance follow-up, which replaced eight
+    cross-module DTO imports in `sync.service.ts` with types derived from the injected services'
+    method signatures (master:1608). The bodies those casts describe are unchanged — the types are
+    now read from the method rather than from an import that could go stale against it.
 servers:
   - url: /api/v1
     description: Current version

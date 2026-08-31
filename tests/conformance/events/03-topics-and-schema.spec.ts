@@ -96,6 +96,10 @@ const ENUM_SYMBOL_ORDER: Record<string, readonly string[]> = {
   ProjectType: ['RESIDENTIAL', 'COMMERCIAL', 'INFRASTRUCTURE', 'INDUSTRIAL'],
   RfqStatus: ['DRAFT', 'PUBLISHED', 'CLOSED', 'EVALUATED', 'AWARDED', 'CANCELLED'],
   RiskLevel: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'],
+  // The platform's own rules finding a safety requirement unmet. Named SafetyViolationType
+  // until the merge of 2026-08-31 gave `safety.violation.detected.v1` to SafetyVisionModel;
+  // this enum moved with the event to `safety.compliance.failed.v1` (§32.4 row 23).
+  SafetyComplianceFailureType: ['PERMIT_EXPIRED', 'CHECKLIST_ITEM_FAILED'],
   SeverityLevel: ['LOW', 'MEDIUM', 'HIGH'],
   StateSource: ['IOT', 'MANUAL', 'AI_INFERRED'],
   ViolationSeverity: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'],

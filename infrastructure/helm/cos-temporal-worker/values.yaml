@@ -64,7 +64,29 @@ serviceAccount:
   create: true
   name: 'cos-temporal-worker'
 
+# master:4633-4635. Without this block Kubernetes uses its own defaults — maxSurge 25%,
+# maxUnavailable 25% — so a rollout can take a quarter of the workers down at once. The
+# PodDisruptionBudget above does not cover it: a PDB constrains voluntary DRAINS, not a
+# Deployment's own rollout. Surge one, take none away: the queues stay served through a deploy.
+strategy:
+  type: RollingUpdate
+  maxSurge: 1
+  maxUnavailable: 0
+
 affinity:
+  # master:4650-4654 — schedule onto the pool this workload is sized for. Terraform labels the
+  # managed node group `workload=<pool>`.
+  #
+  # REQUIRED, not preferred, for the reason the sibling charts record: a preferred rule falls back
+  # to any node the moment the pool is full or missing, and the pod then runs on the wrong hardware
+  # reporting nothing. `app`, not `ai` — this is the cos-backend image running backend activities.
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: workload
+              operator: In
+              values: ['app']
   podAntiAffinity:
     preferredDuringSchedulingIgnoredDuringExecution:
       - weight: 100

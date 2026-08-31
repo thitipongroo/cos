@@ -190,8 +190,8 @@ describe('Phase 19 · runbooks and records (master:5009-5021)', () => {
     expect(read('.gitignore')).toMatch(/cos-audit\//);
   });
 
-  it('docs/slo/monthly-reviews/ is committed the same way', () => {
-    expect(exists('docs/slo/monthly-reviews/.gitkeep')).toBe(true);
+  it('docs/evidence/slo-monthly-reviews/ is committed the same way', () => {
+    expect(exists('docs/evidence/slo-monthly-reviews/.gitkeep')).toBe(true);
   });
 
   const adoptionDashboard = (): { panels?: Array<{ title?: string }> } =>

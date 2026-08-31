@@ -524,8 +524,8 @@ export class FinanceRepository {
 
     const rows = await this.db.run(
       (tx) =>
-        tx.$queryRaw<{ line_id: string; matched: bigint }[]>`
-        SELECT bl.line_id::text, count(DISTINCT bi.item_id) AS matched
+        tx.$queryRaw<{ line_id: string; matched_count: bigint }[]>`
+        SELECT bl.line_id::text, count(DISTINCT bi.item_id) AS matched_count
           FROM boq.boq_items bi
           JOIN finance.budget_lines bl
             ON bl.boq_category_id = bi.category_id
@@ -539,7 +539,7 @@ export class FinanceRepository {
 
     // Exactly one budget line, and it accounts for every item on the order.
     if (rows.length !== 1) return null;
-    return Number(rows[0]!.matched) === boqItemIds.length ? rows[0]!.line_id : null;
+    return Number(rows[0]!.matched_count) === boqItemIds.length ? rows[0]!.line_id : null;
   }
 
   /**

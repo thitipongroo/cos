@@ -61,8 +61,24 @@ describe('Phase 6 · module and offline sync controller (master:2792)', () => {
 
 describe('Phase 6 · photos go through the File Service API, not storage directly (master:2795)', () => {
   /** "Photo upload integration via File Service API (not direct — API call)". */
-  it('site-ops has a File Service seam', () => {
-    expect(exists('backend/src/modules/site-ops/ep/file-service.stub.ts')).toBe(true);
+  it('the File Service seam is a real client, not the Phase 6 stub', () => {
+    // `site-ops/ep/file-service.stub.ts` was the Phase 6 placeholder and its own header said
+    // "Implemented in Phase 9 when File Service is built". Phase 9 built it, so the stub was
+    // removed rather than left beside the real thing — two clients for one service is how a caller
+    // ends up wired to the one that throws NotImplementedException.
+    expect(exists('backend/src/modules/files/file-service-client.service.ts')).toBe(true);
+    expect(read('backend/src/modules/files/file-service-client.service.ts')).toMatch(
+      /export class FileServiceClient/,
+    );
+  });
+
+  it('the mobile photo queue posts to the File Service API, not to a bucket', () => {
+    // The upload path the requirement is actually about: a device with photos taken offline. It
+    // uploads through the API so the file is scanned, quarantined on a hit and given a file_id the
+    // report can reference — none of which happens on a direct presigned PUT to storage.
+    const queue = read('apps/mobile/src/sync/PhotoUploadQueue.ts');
+    expect(queue).toMatch(/['"]\/api\/v1\/files\/upload['"]/);
+    expect(queue).not.toMatch(/s3\.|amazonaws|minio/i);
   });
 
   it.each([

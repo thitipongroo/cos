@@ -15,7 +15,12 @@ describe('Phase 7 · producers (master:2987-2989)', () => {
   ])('%s is emitted carrying the fields master names', (event, fields) => {
     // The payload contract matters as much as the topic: a consumer written against the spec reads
     // these keys, and an event missing one is a subscriber that silently does nothing.
-    const idx = service.indexOf(`${event}.v1`);
+    //
+    // Anchored on the CALL, not on the first mention of the name. A `service.indexOf(name)` finds
+    // whichever comes first in the file, and prose mentions one: the budget.exceeded block explains
+    // how it differs from `finance.variance.alert.v1`, six hundred characters from any payload. The
+    // suite then read a comment and reported a missing field.
+    const idx = service.indexOf(`outboxEvent('${event}.v1'`);
     expect(idx).toBeGreaterThan(-1);
     const emission = service.slice(idx, idx + 600);
     for (const f of fields) expect(emission).toContain(f);

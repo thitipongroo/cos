@@ -688,7 +688,7 @@ describe('FinanceRepository', () => {
     });
 
     it('returns the line when it accounts for every item on the order', async () => {
-      mockPrisma.$queryRaw.mockResolvedValue([{ line_id: 'line-1', matched: 2n }]);
+      mockPrisma.$queryRaw.mockResolvedValue([{ line_id: 'line-1', matched_count: 2n }]);
       await expect(repo.resolveBudgetLine('proj-uuid-001', ['item-1', 'item-2'])).resolves.toBe(
         'line-1',
       );
@@ -698,8 +698,8 @@ describe('FinanceRepository', () => {
       // The split case. Attributing the whole order to whichever line came back first would
       // overstate that line and understate the other, and the alert would name the wrong trade.
       mockPrisma.$queryRaw.mockResolvedValue([
-        { line_id: 'line-1', matched: 1n },
-        { line_id: 'line-2', matched: 1n },
+        { line_id: 'line-1', matched_count: 1n },
+        { line_id: 'line-2', matched_count: 1n },
       ]);
       await expect(
         repo.resolveBudgetLine('proj-uuid-001', ['item-1', 'item-2']),
@@ -709,7 +709,7 @@ describe('FinanceRepository', () => {
     it('returns null when one line matched only SOME of the items', async () => {
       // The rest of the order belongs to categories with no budget line at all, so charging the
       // whole thing here would attribute spending the line never allocated for.
-      mockPrisma.$queryRaw.mockResolvedValue([{ line_id: 'line-1', matched: 1n }]);
+      mockPrisma.$queryRaw.mockResolvedValue([{ line_id: 'line-1', matched_count: 1n }]);
       await expect(
         repo.resolveBudgetLine('proj-uuid-001', ['item-1', 'item-2']),
       ).resolves.toBeNull();

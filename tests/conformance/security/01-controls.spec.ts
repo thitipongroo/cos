@@ -149,7 +149,7 @@ describe('Phase 16 · secure headers (master:4535-4541)', () => {
 
   it('the CSP policy forbids unsafe-inline and unsafe-eval (master:4540)', () => {
     // Those two directives re-open exactly the XSS class the header exists to close.
-    const policy = codeOnly(read('docs/security/csp-policy.md'));
+    const policy = codeOnly(read('docs/policies/csp-policy.md'));
     expect(headers).not.toMatch(/unsafe-inline|unsafe-eval/);
     expect(policy).toMatch(/report[- ]only/i);
   });
@@ -220,12 +220,12 @@ describe('Phase 16 · CI security scanning (master:4560-4561)', () => {
 
 describe('Phase 16 · compliance and policy documents (master:4467-4471, 4564-4567)', () => {
   it.each([
-    'docs/compliance/soc2-controls.md',
-    'docs/compliance/data-flow-map.md',
-    'docs/compliance/data-retention-policy.md',
-    'docs/security/csp-policy.md',
-    'docs/security/cors-policy.md',
-    'docs/security/pentest-findings.md',
+    'docs/registers/soc2-controls.md',
+    'docs/registers/data-flow-map.md',
+    'docs/policies/data-retention-policy.md',
+    'docs/policies/csp-policy.md',
+    'docs/policies/cors-policy.md',
+    'docs/registers/pentest-findings.md',
   ])('%s exists', (file) => {
     expect(exists(file)).toBe(true);
   });
@@ -233,7 +233,7 @@ describe('Phase 16 · compliance and policy documents (master:4467-4471, 4564-45
   it('the CORS policy forbids a wildcard origin in production', () => {
     // `*` with credentials is rejected by browsers anyway; the danger is a wildcard on a
     // credential-less endpoint that later gains authentication.
-    const cors = read('docs/security/cors-policy.md');
+    const cors = read('docs/policies/cors-policy.md');
     expect(cors).toMatch(/\*.*forbidden|forbidden.*\*/i);
     expect(cors).toMatch(/production/i);
   });
@@ -242,7 +242,7 @@ describe('Phase 16 · compliance and policy documents (master:4467-4471, 4564-45
     // master:4565 caps it at 86400s. The policy chooses 600 — well inside, and deliberately so: a
     // long preflight cache means a revoked origin keeps working in a browser that already cached
     // the allow.
-    const cors = read('docs/security/cors-policy.md');
+    const cors = read('docs/policies/cors-policy.md');
     const maxAge = /Access-Control-Max-Age:\s*(\d+)/.exec(cors);
     expect(maxAge).not.toBeNull();
     expect(Number(maxAge![1])).toBeLessThanOrEqual(86400);

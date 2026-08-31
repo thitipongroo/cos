@@ -29,6 +29,14 @@ const sources = ((): Array<[string, string]> => {
 
 const allSrc = sources.map(([, b]) => b).join('\n');
 
+// The one file master grants an exception (§ PHASE 7 line 3216, decided 2026-08-23, TDD OQ-31).
+// A ledger built from a stream cannot detect its own gaps: the outbox is durable, not transactional
+// (ADR-094), so a dropped procurement.po.created.v1 leaves the budget silently under-committed and
+// nothing in the system disagrees with anything else. The sweep compares finance.cost_transactions
+// against the source tables hourly and reports drift. Exempted here, and held to the exception's
+// stated limits by the suite that follows.
+const RECONCILIATION_SWEEP = 'ledger-reconciliation.service.ts';
+
 describe('Phase 7 · this is cost tracking, not accounting (master:2851-2856, 2995-2996)', () => {
   it.each([
     ['double-entry bookkeeping', /journal_entr|double.entry|\bdebit\b|\bcredit_account\b/i],
@@ -50,6 +58,7 @@ describe('Phase 7 · cross-service data arrives only via Kafka (master:3010)', (
     // deployable only together. ADR-024 §2 restates it for the cash-flow outflow specifically.
     const offenders: string[] = [];
     for (const [file, body] of sources) {
+      if (file.endsWith(RECONCILIATION_SWEEP)) continue;
       // Match a schema-qualified table reference, not the event topic names, which legitimately
       // begin "procurement." and are strings in the consumer.
       const hits = [...body.matchAll(/\bprocurement\.[a-z_]+/g)]
@@ -154,5 +163,43 @@ describe('finance stays a cost tracker, not an accounting system (master:2866-28
       )
       .map(([f]) => path.relative(repoRoot, f));
     expect(vendorSdk).toEqual([]);
+  });
+});
+
+describe('Phase 7 · the reconciliation exception stays narrow (master:3216-3232; TDD OQ-31)', () => {
+  const sweep = sources.find(([file]) => file.endsWith(RECONCILIATION_SWEEP));
+
+  it('the exempted file exists — a rename must not silently widen the exemption', () => {
+    // Without this, renaming the service turns the exemption into a filter that matches nothing:
+    // the file would then be checked like any other and the suite below would test an empty string.
+    expect(sweep).toBeDefined();
+  });
+
+  it('reads Procurement, and only reads it', () => {
+    // "READ ONLY — identity + amount columns only." An INSERT, UPDATE or DELETE against a
+    // procurement table would make Finance a second writer of another service's data.
+    const body = sweep![1];
+    const writes = [
+      ...body.matchAll(/\b(INSERT\s+INTO|UPDATE|DELETE\s+FROM)\s+procurement\.[a-z_]+/gi),
+    ];
+    expect(writes.map((m) => m[0])).toEqual([]);
+  });
+
+  it('never writes a cost transaction', () => {
+    // "Repair is re-publishing the missing event, so FinanceConsumer stays the single writer and
+    // the ledger stays replayable." A job that inserted the row directly would be a second writer
+    // with no event behind it — and cost_transactions has no unique key on
+    // (tenant_id, source_type, source_id), so the first redelivery of the real event would then
+    // double-count it.
+    const body = sweep![1];
+    expect(body).not.toMatch(/INSERT\s+INTO\s+finance\.cost_transactions/i);
+    expect(body).not.toMatch(/createTransaction\s*\(/);
+  });
+
+  it('is not reachable from a request — its output is a log line and a gauge', () => {
+    // "Never feeds a request, an API response, or a business decision." A controller decorator here
+    // would turn the exemption into a Procurement read path that answers callers.
+    const body = sweep![1];
+    expect(body).not.toMatch(/@(Controller|Get|Post|Patch|Put|Delete)\s*\(/);
   });
 });

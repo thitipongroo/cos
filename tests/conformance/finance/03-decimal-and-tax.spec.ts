@@ -49,7 +49,9 @@ const codeOnly = (body: string): string =>
     .replace(/`[^`]*`/g, '``');
 
 /** Identifiers that are counts, page sizes or indexes — never money. */
-const NON_MONETARY = /^(count|total|page|limit|offset|index|length|size|weeks?|days?)$/i;
+// The `_count` suffix is admitted as well as the bare words: it names what the value counts, so
+// unlike `total` it cannot quietly become an amount.
+const NON_MONETARY = /^(count|total|page|limit|offset|index|length|size|weeks?|days?)$|_count$/i;
 
 describe('Phase 7 · Decimal for money (master:2975, 991)', () => {
   it('the service computes with Decimal', () => {
