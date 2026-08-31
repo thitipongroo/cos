@@ -12,7 +12,14 @@
 REVOKE EXECUTE ON FUNCTION public.pgbouncer_get_auth(TEXT) FROM pgbouncer_auth;
 DROP FUNCTION IF EXISTS public.pgbouncer_get_auth(TEXT);
 
-REVOKE CONNECT ON DATABASE construction_os FROM pgbouncer_auth;
+-- Whichever database this is being rolled back in — the forward migration granted it the same
+-- way. A literal name here would fail with SQLSTATE 3D000 in every database but one, and a
+-- rollback that errors is worse than one that does nothing: it stops before the statements
+-- below it.
+DO $$
+BEGIN
+  EXECUTE format('REVOKE CONNECT ON DATABASE %I FROM pgbouncer_auth', current_database());
+END $$;
 
 -- Left in place deliberately: a role can own objects or appear in another database's grants, and
 -- DROP ROLE fails on either. Drop it by hand once you have confirmed it holds nothing:

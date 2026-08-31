@@ -54,4 +54,17 @@ REVOKE ALL ON FUNCTION public.pgbouncer_get_auth(TEXT) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.pgbouncer_get_auth(TEXT) TO pgbouncer_auth;
 
 -- CONNECT is required as well: auth_query runs on a real connection to this database.
-GRANT CONNECT ON DATABASE construction_os TO pgbouncer_auth;
+--
+-- `current_database()`, not a literal name. This line read `GRANT CONNECT ON DATABASE
+-- construction_os` until 2026-08-31 and so applied to exactly one database: anywhere else it failed
+-- with SQLSTATE 3D000 and took every later migration down with it (Prisma P3018). Two places that is
+-- true and matter: the Testcontainers integration suite, whose database is named `test`, and the
+-- DEDICATED database §7.6 gives each ENTERPRISE tenant — which is precisely where auth_query has to
+-- work, since those are the extra roles auth_query exists to avoid redeploying for.
+--
+-- Quoted with %I rather than interpolated, so a database name that needs quoting cannot break the
+-- statement.
+DO $$
+BEGIN
+  EXECUTE format('GRANT CONNECT ON DATABASE %I TO pgbouncer_auth', current_database());
+END $$;
