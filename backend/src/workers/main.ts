@@ -33,6 +33,7 @@
 // different image and get their own Deployment in the cos-file-service chart.
 
 import { createServer } from 'http';
+import type { AddressInfo } from 'net';
 import { createLogger } from '@cos/logger';
 import { runProcurementWorker } from '../modules/procurement/workflows/worker';
 import { runEnterpriseProvisioningWorker } from '../modules/tenant/workflows/enterprise-provisioning.worker';
@@ -42,8 +43,6 @@ const logger = createLogger('temporal-worker');
 
 /** Queues this process serves. Kept as data so the health payload and the log agree by construction. */
 const QUEUES = ['procurement', 'enterprise-provisioning', 'data-export'] as const;
-
-const HEALTH_PORT = Number(process.env['WORKER_HEALTH_PORT'] ?? 8090);
 
 /**
  * Minimal health server, matching what the Go workers already expose on 8090 (`/health/live`).
@@ -71,8 +70,20 @@ function startHealthServer(): ReturnType<typeof createServer> {
   // means a stuck kubelet connection can accumulate until the process runs out of handles.
   server.headersTimeout = 10_000;
   server.requestTimeout = 15_000;
-  server.listen(HEALTH_PORT, () => {
-    logger.info({ port: HEALTH_PORT }, 'temporal_worker.health.listening');
+  // Read here rather than at module load. The worker process starts this once, so the timing makes
+  // no difference to it — but a const evaluated at import fixes the value before anything can set
+  // the variable, which is exactly what a test cannot work around.
+  const port = Number(process.env['WORKER_HEALTH_PORT'] ?? 8090);
+  server.listen(port, () => {
+    // The ASSIGNED port, not the requested one. They differ whenever the request was 0 — an
+    // operator reading `port: 0` learns nothing about where the probe should point.
+    //
+    // Cast rather than narrowed: `address()` is typed `AddressInfo | string | null` because the
+    // same method serves pipes and reports null before listening. This callback runs only after a
+    // successful TCP listen, so neither of the other two is reachable here — and a `typeof` guard
+    // would add a branch no input can take.
+    const { port: assigned } = server.address() as AddressInfo;
+    logger.info({ port: assigned }, 'temporal_worker.health.listening');
   });
   return server;
 }
