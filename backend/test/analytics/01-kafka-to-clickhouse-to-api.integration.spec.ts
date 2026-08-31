@@ -2,7 +2,7 @@
  * Phase 14 — the Kafka → ClickHouse → API flow master:4330 asks for, executed end to end.
  *
  * WHY THIS EXISTS. Every other test of this phase inspects declarations or mocks the store: the
- * pre-existing backend/test/analytics.integration.spec.ts overrides CLICKHOUSE_CLIENT with a stub,
+ * 02-analytics.integration.spec.ts beside this one overrides CLICKHOUSE_CLIENT with a stub,
  * and the offline suite reads DDL and source text. Nothing anywhere ran a query against a real
  * ClickHouse, and nothing ran the ingester at all.
  *

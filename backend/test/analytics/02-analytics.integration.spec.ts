@@ -1,6 +1,25 @@
-// Integration tests: Analytics API — Phase 14
-// Verifies HTTP contract for all 5 analytics endpoints.
-// ClickHouse and Redis are mocked via module overrides (real containers in Phase 18 stack).
+// Integration tests: Analytics API — the HTTP layer, Phase 14
+//
+// SCOPE, stated plainly, because three specs cover this phase and each owns a different half:
+//
+//   01-kafka-to-clickhouse-to-api   ingestion, end to end — real Kafka, real Go worker, real ClickHouse
+//   03-clickhouse-query-layer       the SQL — real ClickHouse, real DDL, no HTTP
+//   THIS FILE                       everything between the socket and the service
+//
+// So ClickHouse is mocked here on purpose: what is under test is the wiring the other two never
+// touch — that the routes are mounted, that RolesGuard actually refuses a role the decorator does
+// not list, that ABAC §6.5 narrows the projects a PROJECT_MANAGER may ask about, and that a
+// ServiceUnavailableException leaves as an HTTP 503 rather than as a 500 or an empty array.
+//
+// WHAT THIS FILE USED TO ASSERT, and why it no longer does. Four of its six cases were
+// `expect(Array.isArray(res.body)).toBe(true)`, which passes for an endpoint that returns [] every
+// time, and one asserted a cache hit — all of which analytics.service.spec.ts covers directly and
+// without two containers. Worse, it overrode JwtAuthGuard with a hand-rolled stub that set
+// `req.user` but never CLS, and CLS is where the real guard puts the role (jwt-auth.guard.ts:50).
+// AnalyticsProjectScopeService reads `clsUserRole()`, saw '', concluded the caller was not
+// project-scoped and returned every requested id unfiltered — so the ABAC query never ran, in the
+// only analytics spec that has a real Postgres to run it against. `clsAuthGuard` is the shared
+// helper that does this correctly.
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
@@ -8,6 +27,7 @@ import request from 'supertest';
 import {
   startIntegrationInfra,
   stopIntegrationInfra,
+  clsAuthGuard,
   type IntegrationInfra,
 } from '../helpers/integration-infra';
 import { AppModule } from '../../src/app.module';
@@ -15,29 +35,23 @@ import { JwtAuthGuard } from '../../src/shared/guards/jwt-auth.guard';
 import { CLICKHOUSE_CLIENT } from '../../src/modules/analytics/analytics.module';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 
-// ── Fixtures ─────────────────────────────────────────────────────────────────
+// ── Fixtures ─────────────────────────────────────────────────────────────────────────────────────
 
-const TENANT = 'aaaaaaaa-0000-0000-0000-000000000001';
-const PROJECT = 'bbbbbbbb-0000-0000-0000-000000000002';
+const TENANT = 'aaaaaaaa-0000-4000-8000-000000000001';
+const PM_USER = 'aaaaaaaa-0000-4000-8000-000000000010';
+// Real UUIDs, not 'user-1'. RolesGuard's additional-roles fallback casts user_id ::uuid, so a
+// non-UUID turns a 403 into a 500 the moment a case exercises the denial path.
+const MEMBER_PROJECT = 'bbbbbbbb-0000-4000-8000-000000000001';
+const OTHER_PROJECT = 'bbbbbbbb-0000-4000-8000-000000000002';
 const DATE_RANGE = '2026-01-01,2026-06-30';
 const AUTH = 'Bearer test-token';
 
-const COST_ROWS = [{ eventDate: '2026-01-01', committed: '100000', actual: '85000' }];
-const PROCUREMENT_ROWS = [
-  { eventDate: '2026-01-01', poCount: 3, rfqCount: 1, invoiceCount: 2, overdueInvoiceCount: 0 },
-];
-const SITE_ROWS = [
-  {
-    eventDate: '2026-01-01',
-    reportCount: 4,
-    issueOpenCount: 1,
-    inspectionFailCount: 0,
-    manpowerTotal: 50,
-  },
-];
+/** The role the next request presents. `x-test-role` picks it; the guard below reads the header. */
+const ROLE_HEADER = 'x-test-role';
+
 const EXECUTIVE_ROWS = [
   {
-    projectId: PROJECT,
+    projectId: MEMBER_PROJECT,
     totalCommitted: '100000',
     totalActual: '85000',
     totalBudget: '200000',
@@ -46,17 +60,6 @@ const EXECUTIVE_ROWS = [
     overdueInvoiceCount: 0,
   },
 ];
-const PM_ROWS = [
-  {
-    eventDate: '2026-01-01',
-    manpowerTotal: 50,
-    issueOpenCount: 1,
-    inspectionFailCount: 0,
-    reportCount: 4,
-  },
-];
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
 
 // ONE ClickHouse mock and ONE cache mock, shared by the single application below and reprogrammed
 // per test. They are not rebuilt, because rebuilding the application is what hung this suite.
@@ -88,7 +91,13 @@ function chReturns(rows: unknown[]): void {
   chMock.query.mockResolvedValue({ json: jest.fn().mockResolvedValue(rows) });
 }
 
-// ── Suite ─────────────────────────────────────────────────────────────────────
+/** The `projectIds` the service actually asked ClickHouse for — what ABAC left of the request. */
+function queriedProjectIds(): string[] {
+  const [args] = chMock.query.mock.calls[0] as [{ query_params: { projectIds: string[] } }];
+  return args.query_params.projectIds;
+}
+
+// ── Suite ────────────────────────────────────────────────────────────────────────────────────────
 
 describe('Analytics API Integration (Phase 14)', () => {
   let infra: IntegrationInfra;
@@ -98,29 +107,52 @@ describe('Analytics API Integration (Phase 14)', () => {
     // AppModule's ThrottlerModule needs REDIS_URL + a reachable Redis at init.
     infra = await startIntegrationInfra();
 
+    // Real rows, because the assertions below are about a real query. PM_USER is a member of
+    // MEMBER_PROJECT and not of OTHER_PROJECT — that difference is the whole of the ABAC case.
+    await infra.prisma.$executeRaw`
+      INSERT INTO platform.tenants (tenant_id, tenant_code, tenant_name, keycloak_realm, plan_type, is_active)
+      VALUES (${TENANT}::uuid, 'analytics-int', 'Analytics Integration Tenant', 'analytics-realm',
+              'STARTER'::platform."PlanType", true)
+    `;
+    await infra.prisma.$executeRaw`
+      INSERT INTO platform.users (user_id, tenant_id, keycloak_user_id, email, display_name)
+      VALUES (${PM_USER}::uuid, ${TENANT}::uuid, 'kc-analytics-pm', 'pm@analytics-int.test', 'PM User')
+    `;
+    for (const [id, code] of [
+      [MEMBER_PROJECT, 'AN-MEMBER'],
+      [OTHER_PROJECT, 'AN-OTHER'],
+    ] as const) {
+      await infra.prisma.$executeRaw`
+        INSERT INTO projects.projects (project_id, tenant_id, project_code, project_name, project_type,
+                                       status, created_by)
+        VALUES (${id}::uuid, ${TENANT}::uuid, ${code}, ${code}, 'RESIDENTIAL'::"ProjectType",
+                'ACTIVE'::"ProjectStatus", ${PM_USER}::uuid)
+      `;
+    }
+    await infra.prisma.$executeRaw`
+      INSERT INTO projects.project_members (project_id, tenant_id, user_id, role, assigned_by)
+      VALUES (${MEMBER_PROJECT}::uuid, ${TENANT}::uuid, ${PM_USER}::uuid,
+              'PROJECT_MANAGER'::"ProjectMemberRole", ${PM_USER}::uuid)
+    `;
+
     // The ONLY application in this file. Tests reprogram chMock / cacheMock instead of rebuilding
     // it — see the note above the mocks for what rebuilding cost.
+    //
+    // clsAuthGuard, not a hand-rolled stub: it publishes the identity into CLS the way the real
+    // guard does, which is what AnalyticsProjectScopeService reads. The role comes from a header so
+    // one application can serve both the permitted and the refused case.
     const module: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
       .overrideGuard(JwtAuthGuard)
-      .useValue({
-        canActivate: (ctx: unknown) => {
-          const req = (ctx as { switchToHttp: () => { getRequest: () => Record<string, unknown> } })
-            .switchToHttp()
-            .getRequest();
-          req.tenantId = TENANT;
-          req.tenantCode = 'test_tenant';
-          // Must be the JwtPayload shape: RolesGuard reads `user.role` and throws
-          // ForbiddenException('Missing role claim in JWT') when it is absent. This mock used to set
-          // `cos_role` / `cos_user_id`, which exist on no payload in this codebase, so every request
-          // through an @Roles()-guarded route came back 403 — the /analytics/executive tests failed
-          // for that reason alone, not for anything they assert. Every other integration spec
-          // already uses { tenant_id, user_id, role }.
-          req.user = { tenant_id: TENANT, user_id: 'user-1', role: 'PROJECT_MANAGER' };
-          return true;
-        },
-      })
+      .useValue(
+        clsAuthGuard((req) => ({
+          tenant_id: TENANT,
+          user_id: PM_USER,
+          role: (req['headers'] as Record<string, string>)[ROLE_HEADER] ?? 'PROJECT_MANAGER',
+          tenantCode: 'analytics-int',
+        })),
+      )
       .overrideProvider(CLICKHOUSE_CLIENT)
       .useValue(chMock)
       .overrideProvider(CACHE_MANAGER)
@@ -137,6 +169,7 @@ describe('Analytics API Integration (Phase 14)', () => {
     await app?.close();
     await stopIntegrationInfra(infra);
   });
+
   beforeEach(() => {
     // clearAllMocks wipes call history but keeps implementations, so the defaults are re-applied
     // explicitly: cache misses, ClickHouse returns nothing. Each test overrides what it needs.
@@ -145,108 +178,71 @@ describe('Analytics API Integration (Phase 14)', () => {
     chReturns([]);
   });
 
-  // ── Executive dashboard ───────────────────────────────────────────────────
+  const executive = (projectIds: string[], role?: string) => {
+    const req = request(app.getHttpServer())
+      .get('/api/v1/analytics/executive')
+      .set('Authorization', AUTH);
+    if (role) req.set(ROLE_HEADER, role);
+    return req.query({ 'projectIds[]': projectIds, dateRange: DATE_RANGE });
+  };
 
-  describe('GET /api/v1/analytics/executive', () => {
-    it('returns 200 with project rows when ClickHouse responds', async () => {
-      chReturns(EXECUTIVE_ROWS);
-      const res = await request(app.getHttpServer())
-        .get('/api/v1/analytics/executive')
-        .set('Authorization', AUTH)
-        .query({ tenantId: TENANT, 'projectIds[]': PROJECT, dateRange: DATE_RANGE })
-        .expect(200);
+  // ── RBAC — §5.4.1, the decorator on the route ──────────────────────────────────────────────────
 
-      expect(Array.isArray(res.body)).toBe(true);
+  describe('who may open the executive dashboard', () => {
+    it('refuses a role the route does not list', async () => {
+      // @Roles(EXECUTIVE, PROJECT_MANAGER, FINANCE, TENANT_ADMIN). SITE_WORKER holds none of them
+      // and no additional roles either, so RolesGuard's union lookup finds nothing.
+      await executive([MEMBER_PROJECT], 'SITE_WORKER').expect(403);
+      expect(chMock.query).not.toHaveBeenCalled();
     });
 
-    it('returns 503 when ClickHouse is unavailable', async () => {
+    it('admits a role it does list', async () => {
+      chReturns(EXECUTIVE_ROWS);
+      await executive([MEMBER_PROJECT], 'FINANCE').expect(200);
+    });
+  });
+
+  // ── ABAC — §6.5, which projects the caller may see INSIDE the dashboard ────────────────────────
+
+  describe('which projects a PROJECT_MANAGER sees', () => {
+    it('drops a project the caller is not assigned to', async () => {
+      // The FILTER is already covered by analytics-project-scope.service.spec.ts, which stubs the
+      // database and even asserts the SQL text. What it cannot cover is the SQL RUNNING: that
+      // projects.project_members has these columns, that `= ANY(…::uuid[])` accepts the ids, that
+      // the tenant GUC predicate matches what TenantPrismaService sets, and that RLS lets the row
+      // through. This spec is the only analytics test with a real Postgres, so it is the only place
+      // any of that is executed.
+      //
+      // Asserted on what reached ClickHouse, because a filtered id is invisible in a response whose
+      // rows the mock supplies.
+      chReturns(EXECUTIVE_ROWS);
+      await executive([MEMBER_PROJECT, OTHER_PROJECT], 'PROJECT_MANAGER').expect(200);
+
+      expect(queriedProjectIds()).toEqual([MEMBER_PROJECT]);
+    });
+
+    it('leaves a tenant-wide role unfiltered', async () => {
+      // §6.5 scopes PROJECT_MANAGER only. An EXECUTIVE's grant is tenant-wide, so both ids stand —
+      // the control that keeps the case above from passing because the filter drops everything.
+      // The rule itself is unit-tested; what this adds is that the controller reaches the scope
+      // service at all, which a spec with a mocked scope cannot show.
+      chReturns(EXECUTIVE_ROWS);
+      await executive([MEMBER_PROJECT, OTHER_PROJECT], 'EXECUTIVE').expect(200);
+
+      expect(queriedProjectIds().sort()).toEqual([MEMBER_PROJECT, OTHER_PROJECT].sort());
+    });
+  });
+
+  // ── Failure — the one thing only an HTTP test can see ─────────────────────────────────────────
+
+  describe('when ClickHouse is unavailable', () => {
+    it('answers 503 rather than 500 or an empty dashboard', async () => {
+      // analytics.service.spec.ts proves the service throws ServiceUnavailableException. That it
+      // leaves the process as a 503 is a property of the filter chain, and this is the only test
+      // in the repository that looks at the status code on the wire.
       chMock.query.mockRejectedValue(new Error('connection refused'));
 
-      await request(app.getHttpServer())
-        .get('/api/v1/analytics/executive')
-        .set('Authorization', AUTH)
-        .query({ tenantId: TENANT, 'projectIds[]': PROJECT, dateRange: DATE_RANGE })
-        .expect(503);
-    });
-  });
-
-  // ── PM dashboard ─────────────────────────────────────────────────────────
-
-  describe('GET /api/v1/analytics/pm/:projectId', () => {
-    it('returns 200 with site activity rows', async () => {
-      chReturns(PM_ROWS);
-
-      const res = await request(app.getHttpServer())
-        .get(`/api/v1/analytics/pm/${PROJECT}`)
-        .set('Authorization', AUTH)
-        .query({ tenantId: TENANT, dateRange: DATE_RANGE })
-        .expect(200);
-
-      expect(Array.isArray(res.body)).toBe(true);
-    });
-  });
-
-  // ── Trend endpoints ──────────────────────────────────────────────────────
-
-  describe('GET /api/v1/analytics/projects/:projectId/cost-trend', () => {
-    it('returns 200 with cost trend rows', async () => {
-      chReturns(COST_ROWS);
-
-      const res = await request(app.getHttpServer())
-        .get(`/api/v1/analytics/projects/${PROJECT}/cost-trend`)
-        .set('Authorization', AUTH)
-        .query({ tenantId: TENANT, dateRange: DATE_RANGE })
-        .expect(200);
-
-      expect(Array.isArray(res.body)).toBe(true);
-    });
-  });
-
-  describe('GET /api/v1/analytics/projects/:projectId/procurement-trend', () => {
-    it('returns 200 with procurement trend rows', async () => {
-      chReturns(PROCUREMENT_ROWS);
-
-      const res = await request(app.getHttpServer())
-        .get(`/api/v1/analytics/projects/${PROJECT}/procurement-trend`)
-        .set('Authorization', AUTH)
-        .query({ tenantId: TENANT, dateRange: DATE_RANGE })
-        .expect(200);
-
-      expect(Array.isArray(res.body)).toBe(true);
-    });
-  });
-
-  describe('GET /api/v1/analytics/projects/:projectId/site-trend', () => {
-    it('returns 200 with site trend rows', async () => {
-      chReturns(SITE_ROWS);
-
-      const res = await request(app.getHttpServer())
-        .get(`/api/v1/analytics/projects/${PROJECT}/site-trend`)
-        .set('Authorization', AUTH)
-        .query({ tenantId: TENANT, dateRange: DATE_RANGE })
-        .expect(200);
-
-      expect(Array.isArray(res.body)).toBe(true);
-    });
-  });
-
-  // ── Cache-hit path: no ClickHouse call ───────────────────────────────────
-
-  describe('Cache hit — ClickHouse is not called', () => {
-    it('returns cached data without hitting ClickHouse for cost-trend', async () => {
-      const cachedRows = [{ eventDate: '2026-01-01', committed: '999', actual: '888' }];
-      cacheMock.get.mockResolvedValue(cachedRows);
-
-      const res = await request(app.getHttpServer())
-        .get(`/api/v1/analytics/projects/${PROJECT}/cost-trend`)
-        .set('Authorization', AUTH)
-        .query({ tenantId: TENANT, dateRange: DATE_RANGE })
-        .expect(200);
-
-      expect(res.body).toEqual(cachedRows);
-      // beforeEach cleared the call history, so this asserts the cache short-circuit for THIS
-      // request — the same guarantee the throwaway application used to provide.
-      expect(chMock.query).not.toHaveBeenCalled();
+      await executive([MEMBER_PROJECT], 'EXECUTIVE').expect(503);
     });
   });
 });

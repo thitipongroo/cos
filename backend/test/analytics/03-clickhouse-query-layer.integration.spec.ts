@@ -16,7 +16,7 @@ import { GenericContainer, type StartedTestContainer, Wait } from 'testcontainer
 import * as fs from 'fs';
 import * as path from 'path';
 
-import { AnalyticsService } from '../src/modules/analytics/analytics.service';
+import { AnalyticsService } from '../../src/modules/analytics/analytics.service';
 
 const TENANT_A = 'aaaaaaaa-0001-4000-8000-000000000001';
 const TENANT_B = 'bbbbbbbb-0001-4000-8000-000000000001';
@@ -71,7 +71,7 @@ describe('Analytics query layer (Testcontainers — ClickHouse)', () => {
     // Load the committed DDL — the same files docker-compose mounts into initdb.d. Only the
     // database and the aggregation targets: the Kafka engine tables and the materialized views
     // that feed them need a broker, which this spec deliberately does not start.
-    const ddlDir = path.resolve(__dirname, '../../infrastructure/clickhouse/initdb.d');
+    const ddlDir = path.resolve(__dirname, '../../../infrastructure/clickhouse/initdb.d');
     for (const file of ['01-database.sql', '03-aggregation-tables.sql']) {
       const sql = fs.readFileSync(path.join(ddlDir, file), 'utf8');
       // Strip whole-line -- comments BEFORE splitting on ';'. The DDL documents each table in a
