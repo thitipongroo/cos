@@ -104,8 +104,32 @@ describe('Phase 5 · PO approval threshold boundaries (master:1513-1518)', () =>
         workflowId,
         args: [paramsFor(totalThb)],
       });
+      /**
+       * Advance workflow time until the PO reaches a status we can act on, or fail saying which
+       * status it was stuck in. Never falls through silently: a barrier that gives up quietly is
+       * how the assertions below end up reading a chain that is still running.
+       */
+      const settle = async (label: string, done: (s: string) => boolean): Promise<void> => {
+        let status = await handle.query(poStatusQuery);
+        for (let i = 0; i < 100 && !done(status); i += 1) {
+          await testEnv!.sleep('100ms');
+          status = await handle.query(poStatusQuery);
+        }
+        if (!done(status)) throw new Error(`${workflowId}: ${label}; status is still ${status}`);
+      };
+
       await handle.signal(submitPoSignal, { actor_id: 'user-001' });
-      await testEnv!.sleep('100ms');
+
+      // BEFORE approving, wait for the PO to be approvable. `po.workflow.ts` drops an approval
+      // arriving in any other status — `if (status !== 'PENDING_APPROVAL') return;` — which is
+      // right: approving a DRAFT order should do nothing. Getting there costs a signal, a
+      // condition() and an updatePoStatus ACTIVITY round trip, and this test used to wait 100ms of
+      // workflow time and start approving. On a loaded runner the PO was still DRAFT and every
+      // approval went on the floor; the chain then sat waiting for the PM approval it had already
+      // discarded, and the case read back ['PM']. CI hit exactly that on 2026-08-29 (50000.0001)
+      // and again on 2026-08-31 (500001.0000).
+      await settle('never became approvable', (s) => s === 'PENDING_APPROVAL');
+
       for (const [approver, tier] of [
         ['pm-uuid-001', 'PM'],
         ['finance-uuid-001', 'FINANCE'],
@@ -115,22 +139,14 @@ describe('Phase 5 · PO approval threshold boundaries (master:1513-1518)', () =>
         await testEnv!.sleep('100ms');
       }
 
-      // Wait for the chain to be OVER before reading the notifications it made.
-      //
-      // The sleeps above advance WORKFLOW time; they say nothing about whether the worker has
-      // finished processing the resulting tasks. On a loaded runner the loop can end with a tier
-      // still in flight — which is what CI hit on 2026-08-29: 50000.0001 THB read back as ['PM']
-      // with FINANCE not yet notified, on a commit that had passed the run before.
+      // AFTER approving, wait for the chain to be over before reading the notifications it made.
       //
       // `handle.result()` is NOT the barrier: this workflow does not end at approval, it continues
       // to delivery, invoice and payment, so waiting for the result times out — verified, all six
       // cases failed with "Workflow execution timed out". The chain is done when the PO LEAVES
       // PENDING_APPROVAL: the tier loop exits, status becomes APPROVED and auto-transitions to SENT,
       // and every notifyApprover call it will ever make has already been made.
-      for (let i = 0; i < 100; i += 1) {
-        if ((await handle.query(poStatusQuery)) !== 'PENDING_APPROVAL') break;
-        await testEnv!.sleep('100ms');
-      }
+      await settle('approval chain never finished', (s) => s !== 'PENDING_APPROVAL');
     });
     const seen: string[] = [];
     for (const call of mockNotifyApprover.mock.calls) {
