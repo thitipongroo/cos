@@ -41,3 +41,12 @@ matters more than any individual call.
   is known
 - **Never close as "works on my machine".** Record the environment difference;
   that difference is the defect
+
+## This project decides it
+
+The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins — read it before applying anything here.
+
+- `context.md` QM-17 — Incident Management
+- QM-10 — Error Taxonomy
+
+QM-17 sets the severity ladder and the response time for each — P0 within 15 minutes, P1 within 30. QM-10 fixes the error code format a report should quote.

@@ -62,3 +62,9 @@ and say which you used. Do not merge two methods into one improvised pass.
 ## Closing note
 
 Documentation that describes last release is worse than none - it teaches the wrong thing confidently. Verify against the running code, not against the ticket.
+
+## In this repository
+
+QM-11 sets the documentation standards here — a README per module, an ADR in `docs/architecture/adr/` for every architectural decision, one OpenAPI document per service kept in sync by CI, and a `BREAKING CHANGE:` entry in `CHANGELOG.md`.
+
+Rule 29 blocks a write that cites an ADR number with no matching file. Rule 37 applies whenever you touch `docs/specifications/`: grep `context.md` and `context/00_master_construction_os.md` for the changed term and fix both in the same commit.

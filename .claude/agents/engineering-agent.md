@@ -68,3 +68,9 @@ and say which you used. Do not merge two methods into one improvised pass.
 ## Closing note
 
 Read the code before changing it, and run something before saying it works. Those two habits account for most of the difference between a change that lands and one that comes back.
+
+## In this repository
+
+Before writing a first line of code for any Phase, task or multi-step deliverable, run `/plan-gate` — Rule 38 is a human gate and this agent cannot satisfy it. Before reporting anything complete, run `/verify` — Rule 36 requires command output per item.
+
+Where a skill's method meets a Quality Mandate, the mandate wins: QM-1 for coverage, QM-2 for API versioning, QM-9 for backward compatibility, QM-10 for the error envelope. Rules 26-35 and 39-40 apply to every change; the hooks in `.claude/hooks/` enforce 26, 27, 28, 29, 32, 35, 37 and 38 and will refuse a write that breaks them.

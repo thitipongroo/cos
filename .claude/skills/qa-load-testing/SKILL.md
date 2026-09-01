@@ -44,3 +44,12 @@ not merely at the end.
 - Never load-test production without agreement and a window
 - Compare against the previous run on the same profile, or the number has no
   meaning
+
+## This project decides it
+
+The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins — read it before applying anything here.
+
+- `context.md` QM-6 — Performance Budgets
+- PHASE 19 check #7
+
+The load profile is fixed: `tests/load/qm6-baseline.js`, 100 VU for 5 minutes. `tests/load/api-baseline.js` is a different scenario (200 VU, reads only) and asserts none of the QM-6 budgets — the two were confused for each other once, recorded as §35.13 ESC-12.

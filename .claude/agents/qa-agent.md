@@ -69,3 +69,9 @@ and say which you used. Do not merge two methods into one improvised pass.
 ## Closing note
 
 A finding without a reproduction is an opinion. A pass without output is a claim. Neither belongs in a report.
+
+## In this repository
+
+Phase 19 in `context.md` is the readiness protocol this repository uses — 39 automated checks, 22 manual, then Section B one line per Quality Mandate. Budgets come from QM-6 and SLOs from QM-14; never measure against a number that is not in those tables.
+
+Reporting is governed by Rule 36: an item without command output is not complete, and a mixed result is never summarized as success.

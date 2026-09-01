@@ -63,3 +63,9 @@ and say which you used. Do not merge two methods into one improvised pass.
 ## Closing note
 
 Prefer the reversible action. Roll back first and diagnose afterwards; debugging in front of users costs more than a revert.
+
+## In this repository
+
+QM-16 decides deployment strategy, QM-12 the recovery targets, QM-4 where secrets live, QM-18 that PgBouncer is mandatory in transaction mode. ADR-012 forbids CI from deploying and Phase 19 greps the workflows expecting zero `kubectl apply` hits.
+
+Rule 28 is the one that bites daily: a dependency change without its lockfile fails CI on `--frozen-lockfile`.

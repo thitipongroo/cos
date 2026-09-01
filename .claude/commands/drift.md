@@ -11,7 +11,17 @@ allowed-tools:
 
 # Drift Check
 
-Target: `$ARGUMENTS` (defaults to `README.md` and any top-level `docs/`)
+Target: `$ARGUMENTS` (defaults to `README.md`, `docs/`, and `agent-team/`)
+
+Authority order in this repository: `docs/specifications/` first, then
+`context/00_master_construction_os.md` as the compiled execution view of it, then
+`context.md`. A disagreement between those three is a finding in its own right —
+Rule 37 exists because that drift has happened twice, and
+`rule-37-check-spec-drift.sh` only fires on writes to `docs/specifications/`, so a
+drift nobody wrote into is invisible to it.
+
+Do not report `docs/specifications/` as wrong because `context.md` disagrees. The
+specification wins; the context file is what needs updating.
 
 Read-then-report. This command finds what has gone stale and stops; the repair is
 a separate, approved step.

@@ -41,3 +41,13 @@ comes back, and what to do when it fails.
 
 Run each example. Check every field in the response example exists in a real
 response. List which endpoints are undocumented rather than leaving the gap silent.
+
+## This project decides it
+
+The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins — read it before applying anything here.
+
+- `context.md` QM-2 — API Versioning
+- QM-11 — Documentation Standards
+- spec §14.3
+
+QM-2 fixes the file convention — one OpenAPI document per service at `docs/api/{service}.openapi.yaml`, generated rather than written, with CI failing when it is stale. QM-11 requires the error codes registry to be updated alongside.

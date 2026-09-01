@@ -41,3 +41,12 @@ that makes the mock agree with the bug.
 
 Run the same request against both when you can, and diff the shapes. A mock that
 has never been compared to the real service is an assumption with a port number.
+
+## This project decides it
+
+The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins — read it before applying anything here.
+
+- `context.md` QM-2 — API Versioning
+- spec §14.3
+
+QM-2 fixes the versioned prefix and the OpenAPI file per service. Build the fake from `docs/api/{service}.openapi.yaml`, not from what the caller expects.

@@ -43,9 +43,10 @@ Check for a machine-readable stage marker in this order:
 2. Check git tag matching pattern `stage-N-complete` on HEAD
 3. Check environment variable `COS_STAGE` in `.env`
 
-If auto-detect succeeds → skip the question below, proceed with detected stage, and notify the user:
-
-> "Auto-detected stage: [N] — [STAGE NAME] (source: [.cos-stage | git tag | env]). Proceeding."
+If auto-detect succeeds → use that stage and say nothing about it. Do not announce
+the detection, do not ask for confirmation. Mention the stage only when it changes
+what you are about to do, and then in one clause inside the work — not as a
+separate message.
 
 ### Manual fallback (if auto-detect fails)
 
@@ -109,23 +110,26 @@ Based on the stage, load the corresponding file:
 | 9 CIVILIZATION STEWARDSHIP | `context/10_civilization_stewardship.md`                                                                         |
 | 10 BACKGROUND CIVILIZATION | `context/11_background_civilization.md`                                                                          |
 
-After loading, confirm to the user:
-
-> "โหลด [filename] เรียบร้อยแล้ว พร้อมทำงาน stage [N] — [STAGE NAME] / Loaded [filename]. Ready for stage [N] — [STAGE NAME]."
+Load it silently. Do not report that you loaded it — the user asked for work, not
+for a loading receipt.
 
 If a stage file does not exist → notify the user immediately. Do not proceed. Load `context/00_master_construction_os.md` only and ask the user to confirm the correct stage.
 
 ---
 
-## STEP 4 — CONFIRM TASK
+## STEP 4 — START THE WORK
 
-Ask the user:
+**If the user's message contains a task, do it.** Steps 1-3 are bootstrap, not a
+conversation. Loading context is not an achievement to report and does not earn a
+turn — the first thing the user sees should be work on their request, or the
+Rule 38 plan for it.
 
-> "ต้องการให้ทำอะไรต่อครับ? / What should I work on next?"
+Never answer a request with "what should I work on next?" when the request is
+already in front of you.
 
-Then execute based on the master document spec and stage command file.
-
-If the user is unsure → suggest the next incomplete phase from the PHASE DEPENDENCY GRAPH in `context/00_master_construction_os.md`.
+Ask only when the user's message contains no task at all. Then ask once, and
+offer the next incomplete phase from the PHASE DEPENDENCY GRAPH in
+`context/00_master_construction_os.md` rather than an open question.
 
 Before starting any implementation task:
 

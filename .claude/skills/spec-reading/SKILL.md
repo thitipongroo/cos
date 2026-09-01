@@ -64,3 +64,12 @@ cat <path>             # it says what it must say
 Paste the actual output. No output = not complete. Verifying part of a list is
 not verifying the list — "I checked X" and "everything is done" are different
 claims, and only the second one closes the task.
+
+## This project decides it
+
+The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins — read it before applying anything here.
+
+- `CLAUDE.md` Rule 38 and Rule 36
+- `context.md` GLOBAL EXECUTION RULES
+
+In this repository the tags are `READY` and `NEEDS_ESCALATION`, and an escalation must meet one of two definitions: `UNSPECIFIED` (absent from all spec and context files) or `AWAITING_DECISION` (a pending decision marker in context files 05-11). Credentials, resolved technologies, and anything the spec marks RESOLVED do not qualify. Rule 38 also forbids delegating the reading to a subagent.

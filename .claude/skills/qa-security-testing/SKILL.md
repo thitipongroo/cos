@@ -41,3 +41,13 @@ starting, and stay inside it.
 - Report through the agreed channel only. A vulnerability in a public ticket is a
   disclosure
 - Say plainly when you found nothing. An empty result is a valid outcome
+
+## This project decides it
+
+The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins — read it before applying anything here.
+
+- `context.md` QM-4 — Security
+- QM-5 — Data Privacy & Compliance
+- spec §5.9
+
+QM-4 lists what must be hardened and the scanners that gate merge (CodeQL, Semgrep CE, ruff, jscpd). §5.9 holds the STRIDE threat model per external surface. Pentest findings go to `docs/registers/pentest-findings.md`.

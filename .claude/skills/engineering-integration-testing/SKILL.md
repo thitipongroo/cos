@@ -46,3 +46,13 @@ retry.
 
 Paste the run, including timing. Integration suites that quietly grow slower stop
 being run.
+
+## This project decides it
+
+The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins — read it before applying anything here.
+
+- `context.md` QM-1 — Test Coverage
+- spec §30.4
+- Rule 39
+
+QM-1 names the integration runner and the Testcontainers setup. Rule 39 is the reason a suite hangs after the specs pass: close every long-lived handle, and never use `forceExit` to mask a leak.

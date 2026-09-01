@@ -65,6 +65,28 @@ Items that do NOT qualify as NEEDS_ESCALATION:
 
 ---
 
+## When to invoke what — not a suggestion
+
+Skill and agent auto-discovery is the model reading a `description` and deciding.
+It is a convenience, not a guarantee, and nothing enforces it. These triggers are
+written here so the decision is not left to judgement.
+
+| When | Invoke | Not optional because |
+|---|---|---|
+| Before writing the first line of code for any Phase, task or multi-step deliverable | `/plan-gate` | Rule 38. `rule-38-check-approval.sh` blocks `.ts/.tsx/.sql` writes once a plan is pending and unapproved |
+| Before reporting anything complete or done | `/verify` | Rule 36. An item without command output is not complete |
+| **Before every `git push`** | `bash scripts/ci/verify-before-push.sh` | It runs the CI jobs that can run here. Saying "verified" without it means a subset was checked and called a whole |
+| Writing or changing a test | `engineering-unit-testing` · `engineering-integration-testing` · `qa-test-design` | QM-1 is 100% lines and branches; the traps are recorded there, not discoverable from the code |
+| Reviewing a diff before merge | `engineering-code-reviewer` | Nothing else in this repository covers code review |
+| Touching CI, deployment, infrastructure or secrets | `devops-agent` | QM-4, QM-16, QM-18 and ADR-012 all constrain this and are easy to breach by habit |
+| Writing or fixing documentation | `doc-agent` | QM-11, Rule 29 and Rule 37 all apply and each has caught a real mistake |
+| A defect with a stack trace or a failing test | `engineering-debugging` | Fixing the symptom is the default failure mode |
+
+**A `/verify` or a push-check that was not run is not a check.** Report what you
+actually ran, with its output — never "looks good", never "should pass".
+
+---
+
 ## All other rules
 
 Rules 1–40 are defined in:

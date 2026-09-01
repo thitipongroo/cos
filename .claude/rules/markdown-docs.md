@@ -27,3 +27,23 @@ paths:
   should not reveal where one author stopped and another started
 - When a section is replaced, delete what it replaced. A stale paragraph left
   below a new one is worse than no documentation, because it reads as current
+
+## In this repository
+
+- Documentation lives under `docs/` — `api` `architecture` `assessments` `evidence`
+  `manual` `policies` `registers` `research` `runbooks` `screens` `specifications`.
+  Documentation about the agent configuration lives in `agent-team/`
+- `docs/specifications/` is the source of truth for architecture.
+  `context/00_master_construction_os.md` is the compiled execution view of it, and
+  `context.md` the agent-facing form. When they disagree, the specification wins
+- **Rule 37** — after modifying anything under `docs/specifications/`, grep
+  `context.md` and `context/00_master_construction_os.md` for the changed section
+  number, technology name or concept, and update them in the same commit.
+  `rule-37-check-spec-drift.sh` injects the grep result on write; acting on it is
+  still yours
+- **Rule 29** — before writing `(see ADR-NNN)`, confirm `docs/architecture/adr/NNN-*.md`
+  exists. `rule-29-check-adrs.sh` blocks the write if it does not
+- **QM-11** — every module carries a README with purpose, public API, dependencies,
+  configuration and a usage example; every architectural decision becomes an ADR in
+  `docs/architecture/adr/`
+- Commit one file per commit, per `CLAUDE.md`

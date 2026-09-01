@@ -46,3 +46,15 @@ waiting, it has stopped being a gate.
 Keep build and deploy separate: build an artefact once, promote the same artefact
 through environments. Rebuilding per environment means you never shipped what you
 tested.
+
+## This project decides it
+
+The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins — read it before applying anything here.
+
+- `context.md` QM-4 — Security
+- ADR-011
+- ADR-012
+- ADR-033
+- Rule 28
+
+ADR-012 forbids CI from deploying — Phase 19 greps the workflows for `kubectl apply` and `helm upgrade` expecting zero hits. ADR-011 fixes the scanner set. ADR-033 makes `turbo run build` the gate, because `tsc --noEmit` is not a build. Rule 28 is why a lockfile must be committed with a dependency change.

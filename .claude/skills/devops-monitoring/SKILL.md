@@ -46,3 +46,12 @@ incident.
 
 - An unmonitored service is not in production, whatever the deploy log says
 - Record what each alert means and what to do, next to the alert itself
+
+## This project decides it
+
+The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins — read it before applying anything here.
+
+- `context.md` QM-8 — Observability Standards
+- QM-14 — SLI / SLO / Error Budget
+
+QM-8 fixes the required metrics per component and the minimum alerts. QM-14 holds the SLO table and the error-budget policy — under 50% freezes non-critical work, under 10% freezes all feature work. Alertmanager is the alerting system; CloudWatch alarms were removed.

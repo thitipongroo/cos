@@ -39,3 +39,13 @@ The goal is the cause, not a change that makes the symptom go away.
 
 State the cause in one sentence, the fix, and the output of the run that proves
 it. If anything remains unexplained, say what.
+
+## This project decides it
+
+The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins — read it before applying anything here.
+
+- `context.md` QM-10 — Error Taxonomy
+- QM-8 — Observability Standards
+- Rule 36
+
+QM-10 fixes the error envelope, so the `traceId` in a report is the thread to pull. QM-8 says every log line and every error response carries it. Rule 36 is the standard for the fix: the cause is proved with command output, not asserted.

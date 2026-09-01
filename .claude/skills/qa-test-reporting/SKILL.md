@@ -38,3 +38,12 @@ decision needs the risk. Write for the one asking.
 If a blocker exists, the verdict is not ready - even under schedule pressure. The
 report states the risk; the decision to ship anyway belongs to someone else, on
 the record.
+
+## This project decides it
+
+The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins — read it before applying anything here.
+
+- `context.md` PHASE 19 VERIFICATION PROTOCOL
+- Rule 36
+
+Phase 19 defines the report format this project uses — Section A auto and manual counts, Section B one line per Quality Mandate, Section C the adoption gates. Rule 36 is the standard every claim in it has to meet.

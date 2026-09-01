@@ -42,3 +42,9 @@ at a higher one.
 
 - Never stress-test shared or production infrastructure without agreement
 - Record what you had to restart afterwards. That is part of the result
+
+## This project has not decided it
+
+No Quality Mandate and no Rule in `context.md` covers stress testing and capacity limits — checked against `context.md` and `context/00_master_construction_os.md`. The method above is the only written guidance in this repository.
+
+Two consequences. Follow it rather than improvising, since nothing else is written down. And if you settle a number, a threshold or a procedure while doing the work, record it in `context.md` under a Quality Mandate or a Rule — not here. A decision left in a skill file is invisible to Phase 19, to the hooks, and to anyone reading the mandates.

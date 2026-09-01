@@ -74,3 +74,7 @@ Every finding carries the command output that produced it. A finding without
 evidence is a guess, and a guess costs the caller more than a missed item.
 Report zero findings plainly when there are none — do not manufacture drift to
 look thorough.
+
+## In this repository
+
+The authoritative sources here are `docs/specifications/` first, then `context/00_master_construction_os.md` as the compiled execution view, then `context.md`. When they disagree, the specification wins and the disagreement is itself a finding — that is what Rule 37 exists to catch.

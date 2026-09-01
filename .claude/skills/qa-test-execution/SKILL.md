@@ -45,3 +45,13 @@ that points into project code rather than into the framework.
   it stopped
 - Do not edit a test to make a run green. That is a separate decision, with a
   separate justification
+
+## This project decides it
+
+The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins — read it before applying anything here.
+
+- `context.md` QM-1 — Test Coverage
+- PHASE 19 VERIFICATION PROTOCOL
+- Rule 36
+
+QM-1 names the runners and which suites run serially. Phase 19 fixes the coverage command and threshold used as a gate. Rule 36 governs how a run is reported — actual output, or it did not happen.
