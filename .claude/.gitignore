@@ -1,0 +1,3 @@
+# Hooks — personal overrides and runtime logs
+hooks/config/hooks-config.local.json
+hooks/logs/
