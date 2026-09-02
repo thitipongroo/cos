@@ -36,6 +36,7 @@ run "Lint — jscpd duplication"     pnpm exec jscpd backend/src packages apps/w
 run "Lint — service runtimes"      bash ./scripts/readiness/check-service-runtimes.sh
 run "Lint — openapi freshness"     bash ./scripts/readiness/check-openapi-freshness.sh
 run "Lint — openapi rules"         pnpm run lint:openapi
+run "Lint — openapi route coverage" pnpm run lint:routes
 run "Lint — unit test env"         bash ./scripts/ci/check-unit-test-env.sh
 run "Lint — loading state"         bash ./scripts/ci/check-loading-state.sh
 

@@ -49,7 +49,7 @@ file, and a nested `.claude/` is not a reliable way to keep one quiet either
 (pattern 9). So patterns 1–7, which are about building `.claude/`, sit in
 `patterns/` rather than inside it.
 
-```
+```text
 agent-team/
 ├── PATTERNS.md          this index
 ├── patterns/            1–7  · about building .claude/

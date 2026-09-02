@@ -9,6 +9,15 @@ info:
     Safety Officer operations (§20.7.7): incidents, work-permit approval (§15.5), safety
     checklists, and a deterministic compliance view (ADR-027). Canonical prefix /api/v1/safety/*.
     All endpoints require Bearer JWT (Keycloak RS256). RBAC enforced per role.
+
+    **Reviewed 2026-09-03** against `backend/src/modules/safety/` at 4bb1cdee. The only change to the
+    controller or its DTOs since this document was last written is `JwtAuthGuard` moving from
+    `../identity/guards/` to `../../shared/guards/` — an import path, not a route, a payload or a
+    status code. `SubmitInspectionDto` also moved from `../site-ops/dto/` to `../site-ops/public/`;
+    the two files differ by one import line and nothing else. `permit-expiry.service.ts` gained a
+    Kafka emission (`safety.compliance.failed.v1`), which is an event contract, not an HTTP one. This
+    line records the comparison the freshness gate asks for, which compares commit timestamps and so
+    counted the refactor as a source change.
 servers:
   - url: /api/v1
     description: Current version

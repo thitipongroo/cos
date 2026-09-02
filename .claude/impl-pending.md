@@ -1,110 +1,281 @@
-# Rule 38 — Implementation plan: split the context corpus
+# Rule 38 — Implementation plan: close the OpenAPI documentation gaps
 
-**Requested:** `context.md` and `context/00_master_construction_os.md` are too big
-to read, so nobody reads them whole. Make them small.
+**Requested:** 2026-09-03 — product owner selected, in this order: item 2 (extend the
+OpenAPI freshness gate), item 1 (document the 7 undocumented routes), item 3 (resolve
+the credential-service gap). Standing instruction: "ถ้าไม่รู้ ห้ามเดา."
 
-**Spec read line by line:** `context.md` · `context/00_master_construction_os.md` ·
-`context/01_build_priority_execution.md` · `context/02_build_deep_systems.md` — all
-four read in full in this session before any file was touched, per Rule 38(a) and
-without delegation.
+**Replaces:** the previous `.claude/impl-pending.md` ("split the context corpus"),
+whose work landed in `f55dee77` / `e45bdb34`. That file was tracked and committed;
+it is recoverable with `git show f55dee77:.claude/impl-pending.md`. Per the hook's
+own flow (step 4, "after phase complete, delete both files"), it should have been
+removed when that work finished.
 
-**Status:** IN PROGRESS. The first attempt (2026-09-02, morning) changed only what
-loaded and left both files at their original size. The product owner rejected that
-outcome. This is the second attempt, which moves the content.
+**Spec read line by line, in this session, by the agent, without delegation:**
 
-## What changed vs the first attempt
+| Source | Range read |
+| ------ | ---------- |
+| `.claude/rules/qm-02-api-versioning.md` | whole file (14 lines) |
+| `.claude/rules/qm-11-documentation.md` | whole file (12 lines) |
+| `scripts/readiness/check-openapi-freshness.sh` | whole file (105 lines) |
+| `scripts/ci/check-openapi-valid.sh` | lines 1–60 |
+| `.github/workflows/ci.yml` | lines 125–150 |
+| `docs/api/README.md` | whole file |
+| `docs/specifications/14-api-architecture.md` | §14.3 heading map; §14.3 lines 83–122 (envelope + catalogue table); §14.3 `#### AI APIs` lines 712–760; §14.5 lines 1082–1095 |
+| `docs/specifications/05-security-compliance.md` | §5.9.8 lines 695–715 |
+| `docs/architecture/adr/052-mobile-voice-note-transcription.md` | grep hits, lines 13–68 |
+| `docs/architecture/adr/049-unleash-feature-flags.md` | line 27 |
+| `docs/architecture/adr/073-voice-command-intents.md` | lines 17–36 |
+| `services/credential-service/README.md` | lines 1–30 |
+| `context.md` | whole file (524 lines, session bootstrap) |
+| `.claude/skills/phase-index/SKILL.md` | whole file |
 
-The first plan refused to move anything because `docs/` cited
-`context/00_master_construction_os.md` 105 times and `context.md` 69 times. That
-treated a fixable problem as a blocker. The references are now repointed — 27 files,
-zero dangling paths — and the content has moved.
+**Status:** all escalations answered by the product owner on 2026-09-03 (see the
+decision table below). One escalation — the duplicated `/ai/transcribe` — was
+**withdrawn as a wrong escalation**: the two services are two tiers, not two
+implementations (`services/ai-gateway/main.py:341` proxies to the pipeline), which
+ADR-052 line 68 already recorded. Implementation may proceed.
 
-## Result
+---
 
-| File | Before | After |
-|---|---:|---:|
-| `context.md` | 1,149 lines · 27,143 tok | **524 lines · 11,132 tok** |
-| `context/00_master_construction_os.md` | 6,407 lines · 98,545 tok | **1,099 lines · 20,596 tok** |
-| Bootstrap per session | 145,530 tok | **47,374 tok** |
+## Decisions taken by the product owner
 
-Nothing was deleted. 4,529 lines went to `context/phases/`, the Quality Mandates and
-path-triggered Rules to `.claude/rules/`, the Phase 19 protocol to
-`.claude/commands/phase-19.md`.
+| # | Decision |
+| - | -------- |
+| 1 | Order of work: item 2 → item 1 → item 3 |
+| 2 | Do not guess; escalate rather than assume |
+| 3 | **1.4** — Clear the 7 false-positive stale documents with a dated `Reviewed` line in `info.description`, following the pattern `platform-webhooks.openapi.yaml` already uses. Not a bare re-commit, not a baseline exemption file |
+| 4 | **1.2 / 1.3** — `MODULE_MAP` values become a space-separated path list so a document can be gated against `services/` as well as `backend/src/modules/`. `file` gains `services/file-service/src`; `ai` gains the three Python services |
+| 5 | **1.6** — The route-coverage gate is in scope for this round, covering every runtime: NestJS, Fastify and FastAPI |
+| 6 | **2.7** — `/api/v1/flags` and `/api/v1/health/{live,ready}` get a new `platform.openapi.yaml` plus a §14.3 section, following the `platform-webhooks` precedent |
+| 7 | **3.1** — credential-service gets `docs/api/credential.openapi.yaml` covering all 6 routes, plus a §14.3 row recording which are mesh-only, which are edge, and that there is no `/api/v1` prefix |
 
-## PART 1 — Retire "read in full"
+## Correction to the analysis this plan rests on
 
-- [ ] **1.1** `CLAUDE.md` MANDATORY FIRST ACTION rewritten
-- [ ] **1.2** `context.md` STEP 1 → read the phase index, then only what the task needs
-- [ ] **1.3** `context.md` STEP 3 → file 02 on demand, with the three things it alone settles named
+The audit summary claimed extending `MODULE_MAP` "would have caught findings 1 and 2
+itself." That is wrong and it changes what item 2 buys. `check-openapi-freshness.sh`
+compares git commit timestamps; it cannot detect a route that appears in no document.
+None of the 7 undocumented routes would be caught by it — `/api/v1/flags` is not even
+under `backend/src/modules/`, and three of the seven are served by Python services the
+script never looks at. Route coverage is a different check, and no script in the
+repository performs it (see PART 1 item 1.6).
 
-## PART 2 — Phase index
+## Measured baseline (all figures measured in this session with a command)
 
-- [ ] **2.1** `.claude/skills/phase-index/SKILL.md` — 25 phase files, dependencies, stage, plus where every spec and rule now lives
+| Fact | Value | Command |
+| ---- | ----- | ------- |
+| OpenAPI documents committed | 22 | `ls docs/api/*.openapi.yaml \| wc -l` |
+| `MODULE_MAP` entries in the freshness gate | 12 | `sed -n '31,44p' … \| grep -c '^  \['` |
+| Freshness gate result today | 12 passed, 0 failed, 0 skipped | `bash scripts/readiness/check-openapi-freshness.sh` |
+| Backend modules under `backend/src/modules/` | 25 | `ls backend/src/modules \| wc -l` |
+| Controller routes extracted from `backend/src` | 282 | scratchpad `route-audit.mjs` |
+| Distinct paths across the 22 documents | 226 | scratchpad `route-audit.mjs` |
+| Live routes carried by no document | 7 | scratchpad `route-audit.mjs`, hand-verified |
+| Candidate new `MODULE_MAP` entries | 9 | per-spec check against `backend/src/modules/` |
+| Of those 9, STALE the moment they are added | 7 | per-pair `git log -1 --format=%ct` comparison |
+| Of those 7, stale from a guard import move only | 2 (`geo`, `vendor`) | `git diff <base> HEAD -- <controller>` |
+| credential-service HTTP routes | 5 + `/health` | `grep -cE "app\.(get\|post\|put\|delete\|patch)\("` |
+| credential-service OpenAPI documents | 0 | `ls docs/api/credential*` → no such file |
 
-## PART 3 — The 25 Phase commands move out
+Measured staleness, if the 9 entries are added unchanged:
 
-- [ ] **3.1** `context/phases/phase-01..25-*.md` — 25 files, 4,529 lines, verbatim
-- [ ] **3.2** `00_master` §PHASE COMMANDS 1–25 — index table replacing them
-- [ ] **3.3** `00_master` TABLE OF CONTENTS rewritten (37 dead anchors removed)
+```text
+STALE  ai          spec=2026-08-24 src=2026-08-31
+fresh  analytics   spec=2026-08-31 src=2026-08-31
+STALE  crm         spec=2026-08-24 src=2026-08-30
+STALE  geo         spec=2026-08-24 src=2026-08-30
+STALE  graph       spec=2026-08-24 src=2026-08-30
+STALE  master-data spec=2026-08-24 src=2026-08-30
+STALE  safety      spec=2026-08-24 src=2026-08-31
+fresh  sync        spec=2026-08-31 src=2026-08-31
+STALE  vendor      spec=2026-08-24 src=2026-08-30
+```
 
-## PART 4 — The four cross-cutting specs move out
+---
 
-- [ ] **4.1** CROSS-SERVICE EVENT CONTRACT SPEC → `.claude/rules/event-contract.md`
-- [ ] **4.2** FINANCIAL PRECISION SPEC → `.claude/rules/financial-precision.md`
-- [ ] **4.3** DESIGN TOKEN SPECIFICATION → `.claude/rules/design-tokens.md`
-- [ ] **4.4** WORKFLOW ENGINE SPEC → `.claude/rules/workflow-engine.md`
-- [ ] **4.5** `00_master` §CROSS-CUTTING SPECIFICATIONS — index table replacing them
+## PART 1 — Item 2: extend the freshness gate
 
-## PART 5 — QM-1..18 move out of `context.md`
+- [ ] **1.1** `READY` — Add the 8 spec→module pairs that map cleanly to a backend
+      module: `analytics`, `crm`, `geo`, `graph`, `master-data`, `safety`, `sync`,
+      `vendor`→`vendor-portal`. Each module directory and its controller were
+      confirmed present.
+- [ ] **1.2** `NEEDS_ESCALATION: UNSPECIFIED` — `ai.openapi.yaml` has no single
+      source directory. It documents 9 paths served across three Python services
+      (`services/ai-gateway`, `services/ai-ocr-pipeline`, `services/ai-embedding-worker`
+      — §14.3 AI APIs, lines 714–717) while `backend/src/modules/ai-proxy/` only
+      forwards `ai/*` and `rag/*`. `MODULE_MAP` maps one spec to one directory under
+      `backend/src/modules` (`BACKEND_DIR`, line 24) and nothing in the spec says which
+      directory owns this document. **Decision needed:** map `ai` to `ai-proxy` (weak —
+      the proxy is not the source of the contract), extend the script to accept a list
+      of source paths including `services/`, or leave `ai` ungated with the reason
+      recorded.
+- [ ] **1.3** `NEEDS_ESCALATION: UNSPECIFIED` — `file.openapi.yaml` is already gated
+      against `backend/src/modules/files/`, but that directory holds only annotations,
+      legal-hold and a client; the 10 `/files/*` routes it documents are served by
+      `services/file-service/src/routes/files.routes.ts`. The existing mapping compares
+      the document against code that does not implement it. Same decision as 1.2.
+- [ ] **1.4** `NEEDS_ESCALATION: UNSPECIFIED` — Clearing the 7 documents that go STALE
+      the moment they are gated. Two (`geo`, `vendor`) are stale only because
+      `JwtAuthGuard` moved from `../identity/guards/` to `../../shared/guards/` — no
+      contract change. **Decision needed:** whether a document whose contract is
+      verified unchanged may be re-committed to clear the timestamp, or whether the
+      gate's source-exclusion list should grow instead. Re-committing an unchanged
+      document to satisfy a timestamp gate is gaming the gate; the plan will not do it
+      unilaterally.
+- [ ] **1.5** `READY` — Verify the contract of `crm`, `master-data`, `safety` and `graph`
+      against their post-2026-08-24 controller/service/repository diffs before deciding
+      whether their documents need content changes. Not yet done; the diffs touch
+      services and repositories, not only imports, so payloads may have changed.
+- [ ] **1.6** `NEEDS_ESCALATION: UNSPECIFIED` — `.github/workflows/ci.yml` line 132
+      states "Every controller route must appear in an OpenAPI document." No script
+      enforces that half; `check-openapi-freshness.sh` only compares timestamps. This is
+      the check that would have caught PART 2 and PART 3. **Decision needed:** whether a
+      route-coverage gate is in scope for this work or is separate. The scratchpad
+      `route-audit.mjs` written this session is a working prototype, not a committed
+      script.
+- [ ] **1.7** `READY` — Re-run `bash scripts/readiness/check-openapi-freshness.sh` and
+      `bash scripts/ci/verify-before-push.sh` and paste the output (Rule 36).
 
-- [ ] **5.1** 18 files `.claude/rules/qm-NN-*.md`, full text, each with `paths:`
-- [ ] **5.2** `context.md` §QUALITY MANDATES — 18-row index table replacing them
+## PART 2 — Item 1: document the 7 undocumented routes
 
-## PART 6 — Rules move out of `context.md`
+- [ ] **2.1** `READY` — `POST /api/v1/ai/intent` → `ai.openapi.yaml`. Source:
+      `services/ai-gateway/main.py:220`, `IntentResponse`; ADR-073 line 36 names it as a
+      new AI-gateway endpoint.
+- [ ] **2.2** `READY` — `GET /api/v1/ai/usage` → `ai.openapi.yaml`. Source:
+      `services/ai-gateway/main.py:252`, `UsageResponse`, `services/ai-gateway/usage.py`.
+- [ ] **2.3** `READY` — `POST /api/v1/ai/transcribe` → `ai.openapi.yaml`. Contract in
+      ADR-052 line 16: `{ file_id, tenant_id, language }`.
+- [ ] **2.4** `READY` — Rule 37 drift fix: §14.3 AI APIs (lines 731–733) states voice
+      transcription "is not yet exposed as a REST endpoint." It is —
+      `services/ai-gateway/main.py:335` and `services/ai-transcription-pipeline/main.py:68`.
+      Add the three rows to the §14.3 AI table and delete the stale note.
+- [ ] **2.5** `READY` — **Escalation withdrawn; it was wrong.** `/api/v1/ai/transcribe`
+      is not duplicated: `services/ai-gateway/main.py:341` receives it at the edge and
+      proxies to `{_transcription_url}/api/v1/ai/transcribe` on the pipeline, adding
+      tenant verification and per-minute usage metering. ADR-052 line 68 named both
+      files for this reason. `ai.openapi.yaml` documents the gateway's edge contract.
+- [ ] **2.6** `READY` — `POST /api/v1/files/admin/{fileId}/recover` →
+      `file.openapi.yaml`. Source: `services/file-service/src/routes/files.routes.ts:259`.
+- [ ] **2.7** `NEEDS_ESCALATION: UNSPECIFIED` — `GET /api/v1/flags` (ADR-049 line 27)
+      and `GET /api/v1/health/live` + `/health/ready` (§08 line 203, Phase 19 checks)
+      are real and specified, but no document owns them. They belong to no domain in
+      the §14.3 catalogue, which `docs/api/README.md` calls "the authoritative catalogue
+      of which services get a spec." `platform-webhooks.openapi.yaml` is precedent for a
+      document outside §14.3. **Decision needed:** a new `platform.openapi.yaml` plus a
+      §14.3 row, adding them to an existing document, or an explicit exclusion recorded
+      in `docs/api/README.md`.
+- [ ] **2.8** `READY` — Any new error code introduced goes in `docs/api/error-codes.md`
+      (QM-10, QM-11).
+- [ ] **2.9** `READY` — `pnpm run lint:openapi` passes (redocly `recommended-strict`;
+      warnings are failures per the 2026-08-24 product-owner decision).
 
-- [ ] **6.1** Rules 26–30, 32–35, 37, 39, 40 → 9 files in `.claude/rules/`, full text
-- [ ] **6.2** Rules 31, 36, 38 stay in `context.md` — they govern how work is done, not which file is touched, so no path can trigger them
-- [ ] **6.3** `context.md` §GLOBAL EXECUTION RULES — index table for the 12 that moved
-- [ ] **6.4** PHASE 19 VERIFICATION PROTOCOL → `.claude/commands/phase-19.md` (`/phase-19`)
+## PART 3 — Item 3: credential-service
 
-## PART 7 — Keep the split honest
+- [ ] **3.1** `NEEDS_ESCALATION: UNSPECIFIED` — Whether credential-service gets
+      `docs/api/credential.openapi.yaml`. The two sources conflict and neither resolves it:
+      QM-2 says "OpenAPI 3.1 spec must be generated per service under
+      `docs/api/{service}.openapi.yaml` — one file per service" with no exemption clause;
+      `docs/api/README.md` says §14.3 is "the authoritative catalogue of which services
+      get a spec" and §14.3 omits credential-service. §14.3 is titled "Public APIs", and
+      §5.9.8 plus §14.5 line 1090 establish that `issue`/`verify`/`revoke` are
+      **mesh-only, not edge-routed at all**, while `GET /tenants/:id/did.json` and
+      `GET /tenants/:id/status-lists/:statusListId` are public and unauthenticated on a
+      separate host (`credentials.construction-os.io`). **Decision needed:** document all
+      six routes, document only the two public ones, or record an exemption in §14.3 and
+      `docs/api/README.md`.
+- [ ] **3.2** `READY` (after 3.1) — If a document is created: it must reflect that the
+      routes carry **no `/api/v1` prefix** — `services/credential-service/src/main.ts:26`
+      registers at root, and the service README states Kong owns external routing. This
+      is a standing exception to QM-2's version-prefix rule and must be written down
+      wherever the document lands, not silently rendered as if the prefix existed.
+- [ ] **3.3** `READY` (after 3.1) — Update `docs/api/README.md`: the spec count, the
+      table, and the "two notes" paragraph that currently explains why `digital-twin` and
+      `platform-webhooks` differ from §14.3.
+- [ ] **3.4** `READY` (after 3.1) — Rule 37: if §14.3 gains a row, verify no other
+      document contradicts it (`.claude/rules/rule-37-spec-drift.md`).
 
-- [ ] **7.1** `scripts/ci/check-claude-rules-mirror.sh` — every rule file is reachable from its index, and every phase file is listed in the phase index
-- [ ] **7.2** `.claude/hooks/rule-37-check-spec-drift.sh` — greps `context.md`, all of `context/`, and `.claude/rules/`
-- [ ] **7.3** Rule 37 text updated in `.claude/rules/rule-37-spec-drift.md` and `00_master`
-- [ ] **7.4** `.husky/pre-push` — runs the index check and `verify-before-push.sh`
-- [ ] **7.5** `scripts/readiness/check-service-runtimes.sh` still passes (it reads `00_master` as a verified mirror)
+## Counts
 
-## PART 8 — Repoint everything that pointed at the old locations
+**13 READY · 7 NEEDS_ESCALATION** — 20 items. The escalations are 1.2, 1.3, 1.4, 1.6, 2.5, 2.7 and 3.1; 3.2/3.3/3.4
+are blocked behind 3.1 rather than escalations of their own).
 
-- [ ] **8.1** 27 files under `docs/` — `00_master …§Phase N` → the phase file; `` `context.md` QM-N `` → the rule file
-- [ ] **8.2** `context/README.md` — lifecycle map and agent instructions
-- [ ] **8.3** `.claude/agents/doc-agent.md`, `.claude/agents/doc-drift-researcher.md`, `.claude/commands/drift.md`, `.claude/rules/markdown-docs.md`
+Every escalation above is `UNSPECIFIED` — the fact the work depends on is absent from
+all spec and context files. None is a credential, a resolved technology, or something
+marked RESOLVED. Each was searched for across `docs/specifications/`,
+`docs/architecture/adr/` and `context/` before being tagged.
 
-## Deviations from the plan as announced
+## Approval
 
-Both were found by the product owner, not reported by the agent. Recorded here so
-the next reader sees them without having to ask.
+```bash
+touch .claude/impl-approved
+```
 
-1. **Phase destination.** The plan said `.claude/skills/phase-NN-*/SKILL.md` × 25.
-   The files were written to `context/phases/` instead, to avoid adding 25 entries
-   to the `/` menu. The change was made mid-work and never announced.
-   **Product-owner decision: keep `context/phases/`.**
-2. **Invented summaries.** The agent wrote its own paraphrase of each mandate,
-   rule and specification and left it sitting above the source text. Nothing in the
-   plan called for it, nothing depended on it, it made the files larger rather than
-   smaller, and it put unverified numbers where an agent reads them first.
-   **Removed on the product owner's instruction** — 68 lines of paraphrase from the
-   four specification files, then the 124-line provenance paragraph from all 31.
-   What remains that is not source text: `paths:` frontmatter (the load mechanism),
-   the `# Title` line, and `Indexed in:` (which the checker reads).
+The agent must not create this file.
 
-## Not done, and why
+---
 
-- `.github/workflows/ci.yml` does not run `check-claude-rules-mirror.sh`. It runs
-  from `.husky/pre-push` only. Adding it to `verify-before-push.sh` would break that
-  script's stated contract — every command in it is copied from `ci.yml`. Wiring it
-  into the CI lint job is a one-line change awaiting a decision.
-- `.claude/settings.local.json` holds permission entries naming line ranges inside
-  the old `00_master`. They are stale allow-list entries, harmless, and rewriting a
-  local settings file was not asked for.
+## Implementation record — 2026-09-03
+
+Boxes above are left unticked deliberately: Rule 38(e) makes filesystem evidence the condition,
+and the product owner ticks them after reading it. The evidence is below, and every line of it is
+command output from this session.
+
+### Gates, run after the change
+
+```text
+$ node scripts/ci/check-route-coverage.mjs
+  routes found:      324  (NestJS + Fastify + FastAPI)
+  documents read:    24
+  documented paths:  239
+  excluded by rule:  7
+  ✓ every route found is carried by an OpenAPI document          exit=0
+
+$ pnpm run lint:openapi
+  ✓ 24 documents valid, warnings included
+
+$ npx markdownlint-cli2 docs/api/README.md docs/specifications/14-api-architecture.md .claude/impl-pending.md
+  Summary: 0 issues in 0 files
+
+$ python -m yamllint -c .yamllint docs/api/ .github/workflows/ci.yml
+  exit=0
+
+$ npx prettier --check docs/api/*.openapi.yaml docs/api/README.md package.json scripts/ci/check-route-coverage.mjs
+  All matched files use Prettier code style!
+```
+
+### The route-coverage gate was negative-tested before being believed
+
+Its first version passed while `/ai/usage` was deleted from `ai.openapi.yaml`: the backend proxy's
+`@All('ai/*')` was being treated as covering every concrete path beneath it, so the whole AI Gateway
+surface was unverifiable. Removing that shortcut, the gate fails as it should — proven on all three
+runtimes, each removal restored afterwards:
+
+```text
+FastAPI   ✗ GET  /api/v1/ai/usage                  — path appears in no document
+Fastify   ✗ POST /api/v1/files/admin/{}/recover    — path appears in no document
+root-svc  ✗ POST /credentials/verify               — path appears in no document
+==> Result: N route(s) carried by no OpenAPI document          exit=1
+```
+
+### Freshness is still red, and that is expected
+
+`check-openapi-freshness.sh` compares **git commit timestamps**, not mtimes — `docs/api/README.md`
+states this and it is the reason a fresh clone gives the same answer as a working tree. The seven
+`Reviewed` lines and the two new documents exist in the working tree but not yet in a commit, so the
+gate still reports `14 passed, 9 failed`. It goes green on the commit, deterministically: each
+document's commit time becomes 2026-09-03, and every mapped source path last changed on or before
+2026-08-31.
+
+### Out of scope, found while working, NOT fixed
+
+- **credential-service registers no HTTP rate limiter at all** (`services/credential-service/src/`),
+  unlike file-service which registers `@fastify/rate-limit`. It holds every tenant's encrypted issuer
+  key material. Recorded in `scripts/ci/check-openapi-valid.sh` beside the lint exception it forced;
+  fixing it is a code change, and this was a documentation change.
+- `agent-team/PATTERNS.md` shows a one-line MD040 fix (```` ``` ```` → ```` ```text ````) that this
+  work did not make — most likely a markdown hook. Correct, but not part of this change.
+
+### Escalation 2.5 was withdrawn as wrong
+
+`/api/v1/ai/transcribe` is not served twice. `services/ai-gateway/main.py:341` proxies to the
+pipeline's own copy of the path; ADR-052 line 68 named both files when it shipped. Searching before
+escalating is what turned this from a reported defect into a documented tier boundary.

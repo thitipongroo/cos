@@ -16,6 +16,12 @@ info:
 
     Written 2026-08-24; the route had run with no OpenAPI document and no §14 row.
 
+    **Reviewed 2026-09-03** against `backend/src/modules/geo/` at 7291fc97. The only change to the
+    controller or its DTOs since this document was last written is `JwtAuthGuard` moving from
+    `../identity/guards/` to `../../shared/guards/` — an import path, not a route, a payload or a
+    status code. This line records the comparison the freshness gate asks for, which compares commit
+    timestamps and so counted the refactor as a source change.
+
 servers:
   - url: /api/v1
     description: Current version

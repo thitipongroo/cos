@@ -7,13 +7,21 @@ info:
     identifier: LicenseRef-Proprietary
   description: |
     AI / ML API surface — Phase 11 (AI Foundation), Phase 12 (Report Assistant), Phase 13 (RAG/embeddings).
-    Backed by three FastAPI services:
-      - AI Gateway       — `/ai/completions`, `/ai/reports/*`, `/rag/query`
-      - OCR Pipeline     — `/ocr/process`
-      - Embedding Worker — `/embeddings/generate`
+    Backed by four FastAPI services:
+      - AI Gateway              — `/ai/completions`, `/ai/reports/*`, `/rag/query`, `/ai/transcribe`,
+                                  `/ai/intent`, `/ai/usage`
+      - OCR Pipeline            — `/ocr/process`
+      - Embedding Worker        — `/embeddings/generate`
+      - Transcription Pipeline  — no edge route; the Gateway forwards `/ai/transcribe` to it
     All endpoints require Bearer JWT (Keycloak RS256), enforced at the Kong Gateway.
     `tenant_id` is passed explicitly in the request body for these internal AI services.
     Errors follow the FastAPI shape `{ "detail": ... }`.
+
+    **`/ai/transcribe`, `/ai/intent` and `/ai/usage` were added to this document on 2026-09-03.**
+    All three had run since their ADRs shipped (ADR-052, ADR-073, and the §26 metering work) named
+    in no §14.3 table and carried by no OpenAPI document. §14.3 additionally stated that voice
+    transcription "is not yet exposed as a REST endpoint"; it had been for some time. Both were
+    corrected in the same change.
 servers:
   - url: /api/v1
     description: Current version
@@ -32,6 +40,10 @@ tags:
     description: Optical character recognition pipeline
   - name: Embeddings
     description: Vector embedding generation
+  - name: Voice
+    description: Audio transcription and voice-command intent classification (ADR-052, ADR-073)
+  - name: Metering
+    description: AI token usage against the tenant's plan quota (§26)
 
 paths:
   # ─── Completions (AI Gateway) ────────────────────────────────────────────────
@@ -288,6 +300,137 @@ paths:
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
 
+  # ─── Voice (AI Gateway) ──────────────────────────────────────────────────────
+
+  /ai/transcribe:
+    post:
+      tags: [Voice]
+      operationId: transcribeAudio
+      summary: Transcribe a recorded audio file to text
+      description: |
+        The edge contract for voice notes and voice commands (ADR-052). The Gateway takes the tenant
+        from the verified token — never from `tenant_id` in the body — and forwards to the
+        transcription pipeline's own `/api/v1/ai/transcribe`, which is mesh-internal and not routed
+        at the edge. The two are tiers of one endpoint, not two implementations.
+
+        Metered per minute at the tenant level (§26 §57): `billed_minutes` rounds up, with a
+        minimum of 1 for any non-empty audio and 0 for empty.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TranscribeRequest'
+      responses:
+        '200':
+          description: Transcript with its billed duration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TranscribeResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '502':
+          description: |
+            The transcription pipeline is unreachable, or answered with a status this Gateway does
+            not translate. Retry; if it persists the pipeline deployment is the fault, not the caller.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: |
+            The transcription provider is not configured. Callers degrade to a text field rather
+            than retrying — no provider key will appear because a request was repeated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /ai/intent:
+    post:
+      tags: [Voice]
+      operationId: classifyVoiceIntent
+      summary: Classify a transcribed voice command into an intent
+      description: |
+        Backs the Site Engineer voice FAB (ADR-073): record → transcribe → classify → act. An LLM
+        completion, so it sits under the same `ai_completions` kill-switch as `/ai/completions`.
+
+        Any malformed model output, non-object JSON or unrecognised label collapses to `UNKNOWN`
+        rather than a guess — a wrong classification would fire a wrong action. `text` falls back to
+        the transcript when the model returns none, so it is never null in practice for a
+        successfully classified command.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IntentRequest'
+      responses:
+        '200':
+          description: The classified intent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntentResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: The `voice-intent-v1` prompt template is missing from the registry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '503':
+          description: |
+            Either the `ai_completions` flag is off — `detail` is
+            `COS-FLAG-001: AI completions are temporarily disabled` — or no LLM provider is
+            configured. Both are operator state, not caller error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ─── Metering (AI Gateway) ───────────────────────────────────────────────────
+
+  /ai/usage:
+    get:
+      tags: [Metering]
+      operationId: getAiUsage
+      summary: This month's AI token usage against the tenant's plan quota
+      description: |
+        Reads `ai.ai_usage_logs` — the table the metering middleware writes on every LLM call — for
+        the current UTC calendar month, scoped to the tenant in the verified token. A tenant that
+        has made no calls reads `0`, never a placeholder.
+
+        Quotas are the §26 plan tiers: STARTER 500,000 and PROFESSIONAL 5,000,000 tokens.
+        ENTERPRISE is contract-custom and therefore uncapped in-app, which is why `quota` and
+        `percentUsed` are nullable — they are null for ENTERPRISE and for any unrecognised plan.
+
+        Response fields are camelCase, unlike the rest of this document. That is the committed
+        mobile contract (`apps/mobile/src/api/ai.ts`), not an inconsistency to correct here.
+      responses:
+        '200':
+          description: Usage summary for the caller's tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '503':
+          description: |
+            Usage metering is not configured (no database pool). The client renders an em dash
+            rather than a fabricated number.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -478,6 +621,105 @@ components:
         status:
           type: string
           example: stored
+
+    TranscribeRequest:
+      type: object
+      required: [file_id, tenant_id]
+      properties:
+        file_id:
+          type: string
+          description: |
+            The audio already uploaded through the File Service. The endpoint takes a reference, never
+            base64 audio in the request body (ADR-052).
+        tenant_id:
+          type: string
+          description: |
+            Present for parity with the other AI request bodies and **ignored**. The Gateway scopes
+            both the downstream call and the usage meter by the tenant in the verified token, so a
+            client cannot transcribe or bill as another tenant by changing this field.
+        language:
+          type: [string, 'null']
+          default: th
+          description: BCP-47-ish language hint passed to the provider; the app's default locale is Thai.
+
+    TranscribeResponse:
+      type: object
+      required: [file_id, transcript, language, duration_seconds, billed_minutes]
+      properties:
+        file_id:
+          type: string
+        transcript:
+          type: string
+        language:
+          type: string
+          description: The language the provider actually detected or used, which may differ from the hint.
+        duration_seconds:
+          type: number
+          format: double
+        billed_minutes:
+          type: integer
+          description: |
+            Rounded up from `duration_seconds`, minimum 1 for any non-empty audio and 0 for empty
+            (§26 §57).
+
+    IntentRequest:
+      type: object
+      required: [transcript]
+      properties:
+        transcript:
+          type: string
+          description: The transcribed command text, normally the `transcript` from `/ai/transcribe`.
+
+    IntentResponse:
+      type: object
+      required: [intent]
+      properties:
+        intent:
+          type: string
+          enum: [DAILY_REPORT, LOG_ISSUE, NAVIGATE, SEARCH, UNKNOWN]
+          description: |
+            `UNKNOWN` is returned for anything the classifier did not recognise, and also whenever the
+            model's output was malformed. Callers must treat it as "ask the user", never as a default
+            action.
+        target:
+          type: [string, 'null']
+          description: The entity or screen the command names, when the intent carries one.
+        text:
+          type: [string, 'null']
+          description: |
+            The content to act on. Falls back to the original transcript when the model returns none,
+            so a successful classification carries text even if the model omitted it.
+        confidence:
+          type: [number, 'null']
+          format: double
+
+    UsageResponse:
+      type: object
+      required: [tokensUsed, quota, percentUsed, periodMonth, alertLevel]
+      properties:
+        tokensUsed:
+          type: integer
+          description: Tokens consumed by this tenant in the current UTC calendar month. `0` when none.
+        quota:
+          type: [integer, 'null']
+          description: |
+            The plan's included monthly quota — STARTER 500000, PROFESSIONAL 5000000. `null` for
+            ENTERPRISE (contract-custom, uncapped in-app) and for an unrecognised plan.
+          examples: [500000]
+        percentUsed:
+          type: [integer, 'null']
+          description: '`tokensUsed / quota` as a rounded percentage. `null` whenever `quota` is null.'
+        periodMonth:
+          type: string
+          pattern: '^\d{4}-\d{2}$'
+          description: The UTC billing month this summary covers.
+          examples: ['2026-09']
+        alertLevel:
+          type: string
+          enum: [none, warning, critical]
+          description: |
+            `warning` at ≥ 80 % (§31.3 "AI token budget near limit"), `critical` at ≥ 100 %
+            (§22.10 COST-001 hard cap). Always `none` when the plan is uncapped.
 
     ErrorResponse:
       type: object

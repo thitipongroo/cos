@@ -10,6 +10,12 @@ info:
     `convert` wins an opportunity and creates a finance.customers row (the canonical Customer
     store, ADR-024). All endpoints require Bearer JWT (Keycloak RS256).
     RBAC: read = EXECUTIVE + CRM_SALES_MANAGER; write = CRM_SALES_MANAGER.
+
+    **Reviewed 2026-09-03** against `backend/src/modules/crm/` at 7291fc97. The only change to the
+    controller or its DTOs since this document was last written is `JwtAuthGuard` moving from
+    `../identity/guards/` to `../../shared/guards/` — an import path, not a route, a payload or a
+    status code. This line records the comparison the freshness gate asks for, which compares commit
+    timestamps and so counted the refactor as a source change.
 servers:
   - url: /api/v1
     description: Current version

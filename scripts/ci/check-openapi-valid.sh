@@ -43,23 +43,50 @@ if [[ ${#ALL[@]} -eq 0 ]]; then
   exit 1
 fi
 
+# PER-FILE EXCEPTIONS. Each entry is one document and the one rule it is excused from, with the
+# reason recorded beside it. Nothing else is skipped, and the list is deliberately awkward to grow.
+#
+#   digital-twin  no-unused-components
+#     `StateSource` is unused in that document and real everywhere else — see the header above.
+#
+#   credential    operation-4xx-response
+#     `GET /health` on credential-service genuinely returns no 4xx: the service registers no rate
+#     limiter (unlike file-service, which registers @fastify/rate-limit), and `isPublicPath` exempts
+#     exactly this route from auth, so no 401 is reachable either. The only ways to satisfy the rule
+#     are to invent a status the service never sends or to delete a route that exists. redocly.yaml
+#     states the principle: a gate that is passed by inventing is worse than no gate.
+#     NOTE, recorded 2026-09-03 and not fixed here because this was a documentation change: a
+#     service holding every tenant's encrypted issuer key material has no HTTP rate limit at all.
+declare -A SKIP_RULE=(
+  [digital-twin]="no-unused-components"
+  [credential]="operation-4xx-response"
+)
+
 STRICT=()
 for f in "${ALL[@]}"; do
-  [[ "$f" == *digital-twin.openapi.yaml ]] || STRICT+=("$f")
+  base="$(basename "$f" .openapi.yaml)"
+  [[ -v "SKIP_RULE[$base]" ]] || STRICT+=("$f")
 done
 
 FAILED=0
 
-# Everything except the one excepted file, with no rule skipped.
+# Everything except the excepted files, with no rule skipped.
 if ! npx --no-install redocly lint "${STRICT[@]}"; then
   FAILED=1
 fi
 
-# digital-twin, with the single documented exception.
-if ! npx --no-install redocly lint docs/api/digital-twin.openapi.yaml \
-  --skip-rule no-unused-components; then
-  FAILED=1
-fi
+# Each excepted file on its own, with its single documented skip.
+for base in "${!SKIP_RULE[@]}"; do
+  doc="docs/api/${base}.openapi.yaml"
+  if [[ ! -f "$doc" ]]; then
+    echo "  ✗ $doc is excused from ${SKIP_RULE[$base]} but does not exist — stale exception"
+    FAILED=1
+    continue
+  fi
+  if ! npx --no-install redocly lint "$doc" --skip-rule "${SKIP_RULE[$base]}"; then
+    FAILED=1
+  fi
+done
 
 if [[ $FAILED -ne 0 ]]; then
   echo ""

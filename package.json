@@ -25,6 +25,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yaml,yml}\" --ignore-path .prettierignore",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yaml,yml}\" --ignore-path .prettierignore",
     "lint:openapi": "bash ./scripts/ci/check-openapi-valid.sh",
+    "lint:routes": "node ./scripts/ci/check-route-coverage.mjs",
     "clean": "turbo run clean && rm -rf node_modules",
     "migrate": "turbo run migrate",
     "seed": "turbo run seed",

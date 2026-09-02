@@ -375,6 +375,50 @@ paths:
         '401':
           description: Unauthenticated — missing or invalid bearer token
 
+  /files/admin/{fileId}/recover:
+    post:
+      operationId: recoverQuarantinedFile
+      summary: Release a quarantined file back to CLEAN (SYSTEM_ADMIN)
+      description: |
+        The manual override for a ClamAV quarantine. Moves the object out of the quarantine bucket
+        and flips `file_status` to `CLEAN`, so the file becomes downloadable again.
+
+        Cross-tenant by design — the lookup is `findFileByIdAdmin`, which does not scope by tenant,
+        because a platform operator clearing a false positive is acting outside any one tenant. That
+        is why the role gate is `SYSTEM_ADMIN` and not `TENANT_ADMIN`.
+
+        Documented 2026-09-03; the route had run since Phase 9 carried by no OpenAPI document.
+      tags: [Files]
+      parameters:
+        - $ref: '#/components/parameters/XTenantId'
+        - $ref: '#/components/parameters/XUserId'
+        - $ref: '#/components/parameters/XUserRole'
+        - in: path
+          name: fileId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: File released from quarantine
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [file_id, file_status]
+                properties:
+                  file_id: { type: string, format: uuid }
+                  file_status: { type: string, enum: [CLEAN] }
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
+        '403':
+          description: 'Forbidden — SYSTEM_ADMIN only (`COS-FILE-011`)'
+        '404':
+          description: 'File not found (`COS-FILE-005`)'
+        '422':
+          description: |
+            The file is not in `QUARANTINED` status (`COS-FILE-010`). Recovering a file that was
+            never quarantined would be a status change with no antivirus decision behind it.
+
   /files/retention-policies:
     get:
       parameters:

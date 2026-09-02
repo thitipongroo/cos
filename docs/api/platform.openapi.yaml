@@ -1,0 +1,197 @@
+openapi: 3.1.0
+info:
+  title: Construction OS — Platform API
+  version: '1.0.0'
+  license:
+    name: Proprietary — all rights reserved
+    identifier: LicenseRef-Proprietary
+  description: |
+    The cross-cutting routes the monolith serves that belong to no business domain: the container
+    health probes and the client feature-flag evaluation.
+
+    **Why this document exists.** Both routes had run since Phase 1 and Phase 3 respectively,
+    carried by no OpenAPI document, because §14.3 catalogues APIs by domain and neither is one.
+    A route-coverage audit on 2026-09-03 found them along with five others; `platform-webhooks`
+    is the precedent for a document that sits outside the §14.3 domain table.
+
+    Served by the NestJS monolith under its global `api/v1` prefix
+    (`backend/src/main.ts` `setGlobalPrefix('api/v1')`, with no route excluded from it). That is
+    worth stating because the standalone services answer their probes at bare `/health/live` with
+    no prefix — the paths are not interchangeable, and a Helm chart that probes the wrong one
+    CrashLoops in production rather than failing at lint (Phase 17, Linux POC 2026-07-20).
+servers:
+  - url: /api/v1
+    description: Current version — relative, so the document works behind whatever host serves it
+
+tags:
+  - name: Health
+    description: Liveness and readiness probes (§08 §8.x, Phase 19 automated check)
+  - name: Feature Flags
+    description: Server-evaluated flags for web and mobile clients (ADR-049)
+
+paths:
+  /health/live:
+    get:
+      operationId: livenessProbe
+      summary: Liveness probe — the process is up
+      description: |
+        Unauthenticated and unconditional: it reports that the process is running and answering, and
+        deliberately checks nothing else. A liveness probe that consulted the database would restart
+        a healthy container during a database blip.
+
+        Rate-limited at 60 req/min per IP at the edge (§5, `/health` row).
+      tags: [Health]
+      security: []
+      responses:
+        '200':
+          description: The process is answering
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, version, timestamp]
+                properties:
+                  status:
+                    type: string
+                    enum: [ok]
+                  version:
+                    type: string
+                    description: |
+                      `npm_package_version` when the process was started by npm/pnpm, otherwise the
+                      literal fallback `0.1.0`. It identifies the build, and it is a fallback rather
+                      than a guarantee — read it as advisory.
+                    examples: ['0.1.0']
+                  timestamp:
+                    type: string
+                    format: date-time
+        '429':
+          description: |
+            Rate limit exceeded. The global NestJS throttler applies to every route in the monolith —
+            100 requests per 60 s, keyed per caller, Redis-backed and shared across replicas
+            (`backend/src/app.module.ts`). Neither of these routes opts out with `@SkipThrottle`.
+            The edge additionally caps `/health` at 60 req/min per IP (§5).
+
+  /health/ready:
+    get:
+      operationId: readinessProbe
+      summary: Readiness probe — the process may receive traffic
+      description: |
+        Runs the Terminus health-check aggregate. The indicator list is currently empty, so a ready
+        response means "the process is up and the check pipeline ran", not "every dependency was
+        reached". Do not read a `200` here as proof that PostgreSQL, Redis or Kafka are healthy.
+
+        The response shape is Terminus's own, unchanged.
+      tags: [Health]
+      security: []
+      responses:
+        '200':
+          description: Ready to receive traffic
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheckResult'
+        '503':
+          description: |
+            At least one indicator reported `down`. With no indicators registered this status is
+            currently unreachable; it is documented because registering one is a configuration
+            change, not an API change, and clients must already handle it.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheckResult'
+        '429':
+          description: |
+            Rate limit exceeded. The global NestJS throttler applies to every route in the monolith —
+            100 requests per 60 s, keyed per caller, Redis-backed and shared across replicas
+            (`backend/src/app.module.ts`). Neither of these routes opts out with `@SkipThrottle`.
+            The edge additionally caps `/health` at 60 req/min per IP (§5).
+
+  /flags:
+    get:
+      operationId: getFeatureFlags
+      summary: Server-evaluated feature flags for the caller
+      description: |
+        Clients poll this endpoint and may cache the result for offline use. They never talk to
+        Unleash directly and hold no flag-provider credentials (ADR-049).
+
+        **Authentication is optional, and that is deliberate.** The login screen reads
+        `s1.identity.sms-otp-login` before any token exists, so the endpoint cannot require one.
+        With a valid bearer token the response is evaluated against the caller's user and tenant;
+        without one it is the default-context evaluation. The two can legitimately differ for the
+        same flag.
+
+        The key set is the built-in defaults plus whatever the Unleash client currently knows about,
+        so it varies with provider state and is not a fixed enumeration.
+      tags: [Feature Flags]
+      security:
+        - bearerAuth: []
+        - {}
+      responses:
+        '200':
+          description: Map of flag name to its evaluated state for this caller
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [flags]
+                properties:
+                  flags:
+                    type: object
+                    description: Flag name → enabled. Keys vary; treat an absent key as disabled.
+                    additionalProperties:
+                      type: boolean
+                    examples:
+                      - s1.identity.sms-otp-login: true
+                        ai_completions: false
+        '429':
+          description: |
+            Rate limit exceeded. The global NestJS throttler applies to every route in the monolith —
+            100 requests per 60 s, keyed per caller, Redis-backed and shared across replicas
+            (`backend/src/app.module.ts`); this route does not opt out with `@SkipThrottle`.
+
+            Worth knowing for a polling client: the kill-switch budget is a 15 s backend poll of
+            Unleash plus a 30 s client refetch of this endpoint — 45 s worst case, inside the QM-15
+            60 s bound (ADR-076). A client that polls faster to shorten that window spends its rate
+            budget without moving the bound, which the backend poll sets.
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Keycloak-issued RS256 access token.
+
+  schemas:
+    HealthCheckResult:
+      type: object
+      description: '@nestjs/terminus aggregate result, passed through unchanged.'
+      required: [status, details]
+      properties:
+        status:
+          type: string
+          enum: [ok, error, shutting_down]
+        info:
+          type: [object, 'null']
+          description: Indicators reporting `up`.
+          additionalProperties:
+            $ref: '#/components/schemas/HealthIndicator'
+        error:
+          type: [object, 'null']
+          description: Indicators reporting `down`.
+          additionalProperties:
+            $ref: '#/components/schemas/HealthIndicator'
+        details:
+          type: object
+          description: Every indicator, whatever its state. Empty while no indicator is registered.
+          additionalProperties:
+            $ref: '#/components/schemas/HealthIndicator'
+
+    HealthIndicator:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [up, down]
+      additionalProperties: true

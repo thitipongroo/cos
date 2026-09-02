@@ -13,6 +13,13 @@ info:
         header selects the buyer relationship; used to track PO status and submit invoices.
     Vendors are network identities (platform.vendor_identities), not tenant Keycloak users; the
     principal is VENDOR_PORTAL (§06 §6.8b), scoped by the trading relationship — not tenant RLS.
+
+    **Reviewed 2026-09-03** against `backend/src/modules/vendor-portal/` at 7291fc97. The only change
+    to the controller or its DTOs since this document was last written is `JwtAuthGuard` moving from
+    `../identity/guards/` to `../../shared/guards/` — an import path, not a route, a payload or a
+    status code. `vendor-identity.repository.ts` also changed, below the controller and behind no new
+    field. This line records the comparison the freshness gate asks for, which compares commit
+    timestamps and so counted the refactor as a source change.
 servers:
   - url: /api/v1
     description: Current version

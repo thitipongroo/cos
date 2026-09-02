@@ -23,6 +23,14 @@ info:
     Written 2026-08-24. These eleven routes had run with no OpenAPI document; §14.3 listed no
     master-data domain.
 
+    **Reviewed 2026-09-03** against `backend/src/modules/master-data/` at 7291fc97. The only change to
+    the controller or its DTOs since this document was last written is `JwtAuthGuard` moving from
+    `../identity/guards/` to `../../shared/guards/` — an import path, not a route, a payload or a
+    status code. The service and repository also changed, but only in how a Prisma driver error is
+    typed internally — no request field, response field or status code moved. This line records the
+    comparison the freshness gate asks for, which compares commit timestamps and so counted the
+    refactor as a source change.
+
 servers:
   - url: /api/v1
     description: Current version

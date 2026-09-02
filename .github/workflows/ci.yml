@@ -127,16 +127,30 @@ jobs:
       - name: Service runtime declarations match the repository
         run: bash ./scripts/readiness/check-service-runtimes.sh
 
-      # Every controller route must appear in an OpenAPI document, and each document must be no
-      # older than the module it describes (git COMMIT timestamps, not mtimes — a clone has no
-      # meaningful mtimes). Wired 2026-08-24, once the last of 62 undocumented routes was written.
+      # Each document must be no older than the code it describes (git COMMIT timestamps, not
+      # mtimes — a clone has no meaningful mtimes). Wired 2026-08-24, once the last of 62
+      # undocumented routes was written.
       #
       # Before that day this script existed, worked, and ran nowhere, while docs/api/README told
       # readers "CI fails if the spec is stale". It reported 12 of 12 documents stale and 62 of 276
       # routes carried by no file at all — /sync/* entirely, so the contract the mobile client
       # depends on was prose in §17.9 and nothing else.
+      #
+      # This step's comment used to open "Every controller route must appear in an OpenAPI
+      # document", which no script here enforced — freshness compares timestamps and cannot see a
+      # route that is in no document. The claim now belongs to the step below, which checks it.
+      # Until 2026-09-03 the map also covered only 12 of the 22 documents; it now covers 21, and a
+      # mapping may name several source paths so a document can be gated against `services/` too.
       - name: OpenAPI documents are no older than the code they describe
         run: bash ./scripts/readiness/check-openapi-freshness.sh
+
+      # Every route this repository serves must appear in an OpenAPI document — NestJS controllers,
+      # Fastify services and FastAPI services alike. Added 2026-09-03, after a second route-level
+      # audit found seven undocumented routes and one service (credential-service) with no document
+      # at all, four months after the first audit found 62. The rule had been asserted in a comment
+      # and enforced by nothing in between.
+      - name: Every served route appears in an OpenAPI document
+        run: pnpm run lint:routes
 
       # Freshness answers "was this touched after its code". It says nothing about whether the file
       # means what it appears to mean — on 2026-08-24 it reported every document fresh while 155

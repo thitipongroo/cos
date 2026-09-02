@@ -1,6 +1,6 @@
 ---
 title: Construction OS — API Contracts
-last_updated: 2026-08-07
+last_updated: 2026-09-03
 ---
 
 # Construction OS — API Contracts
@@ -10,7 +10,8 @@ change touches. This is an **index of what is committed here** — the authorita
 services get a spec is [`specifications/14-api-architecture.md` §14.3](../specifications/14-api-architecture.md).
 
 **Convention (QM-2):** `docs/api/{service}.openapi.yaml` — one file per service, never one combined
-file. Every endpoint carries the `/api/v1/` prefix (NestJS `setGlobalPrefix('api/v1')`, `backend/src/main.ts`).
+file. Every endpoint carries the `/api/v1/` prefix (NestJS `setGlobalPrefix('api/v1')`, `backend/src/main.ts`)
+**except credential-service**, which mounts at the root — see the third note below.
 A breaking change (removing/renaming a field, changing a field's type, changing a URL, changing the
 auth mechanism) requires a new version; old versions stay functional for ≥ 12 months.
 
@@ -39,10 +40,12 @@ auth mechanism) requires a new version; old versions stay functional for ≥ 12 
 | Offline Sync       | [sync.openapi.yaml](sync.openapi.yaml)                           | Construction OS — Offline Sync API        | `v1`           |
 | Master Data        | [master-data.openapi.yaml](master-data.openapi.yaml)             | Construction OS — Master Data API         | `v1`           |
 | Geo                | [geo.openapi.yaml](geo.openapi.yaml)                             | Construction OS — Geo API                 | `v1`           |
+| Platform           | [platform.openapi.yaml](platform.openapi.yaml)                   | Construction OS — Platform API            | `1.0.0`        |
+| Credentials        | [credential.openapi.yaml](credential.openapi.yaml)               | Construction OS — Credential Service API  | `1.0.0`        |
 | — (see below)      | [platform-webhooks.openapi.yaml](platform-webhooks.openapi.yaml) | Construction OS — Platform Webhooks API   | `1.0.0`        |
 
-22 specs. Two notes on the last two rows, both differences between this folder and §14.3 rather than
-errors in either — recorded here so nobody has to re-derive them:
+24 specs. Three notes, all differences between this folder and §14.3 rather than errors in either —
+recorded here so nobody has to re-derive them:
 
 - **`digital-twin`** is marked in §14.3 as _"Post-MVP — Phase 24 … (not created before Phase 24
   begins)"_, yet the file is committed. Treat §14.3 as the authority on when the endpoints are
@@ -51,6 +54,10 @@ errors in either — recorded here so nobody has to re-derive them:
   [`34-enterprise-tenant-provisioning.md`](../specifications/34-enterprise-tenant-provisioning.md)
   (§ "CRM webhook: `docs/api/platform-webhooks.openapi.yaml`"), with the HMAC-SHA256 signature
   requirement in [`05-security-compliance.md` §5.9.3](../specifications/05-security-compliance.md).
+- **`credential`** carries **no `/api/v1` prefix**. The service mounts its routes at the root
+  (`services/credential-service/src/main.ts`) because Kong owns external routing, so the document's
+  `servers.url` is `/`. It is the one standing exception to QM-2's version-prefix rule; §14.3 now
+  carries the row and §5.9.8 is authoritative on which of its routes are edge-reachable.
 
 `info.version` is spelled two ways across the set (`1.0.0` and `v1`). The values above are read from
 the files as committed; the URL version that actually governs compatibility is the `/api/v1/` path
@@ -76,9 +83,20 @@ prefix, not this field.
    endpoint the mobile client depends on, `/geo/reverse`, all of `/materials`, seven contract
    endpoints. All 62 were written that day and the gate turned on behind them.
 
-2. New error code → add it to [error-codes.md](error-codes.md).
-3. Breaking change → new version, plus a `BREAKING CHANGE:` entry in the root `CHANGELOG.md`.
-4. Sunsetting a version → record the date in [deprecation-schedule.md](deprecation-schedule.md).
+2. Add the route to the document in the same PR — **CI fails if a route this repository serves
+   appears in no OpenAPI document** (`scripts/ci/check-route-coverage.mjs`, `pnpm run lint:routes`,
+   wired into the `lint` job on 2026-09-03). It reads NestJS controllers, Fastify services and
+   FastAPI services alike.
+
+   The `lint` step above claimed this rule in its comment from 2026-08-24 and no script enforced it:
+   freshness compares timestamps and cannot see a route that is in no document. A second audit on
+   2026-09-03 found seven such routes and one service — credential-service — with no document at
+   all, four months after the first audit found 62. Two harvests, and nothing enforcing the rule in
+   between.
+
+3. New error code → add it to [error-codes.md](error-codes.md).
+4. Breaking change → new version, plus a `BREAKING CHANGE:` entry in the root `CHANGELOG.md`.
+5. Sunsetting a version → record the date in [deprecation-schedule.md](deprecation-schedule.md).
 
 > 📎 [`specifications/14-api-architecture.md`](../specifications/14-api-architecture.md) — API
 > architecture, the canonical service→spec table (§14.3), and the versioning policy (§14.4).

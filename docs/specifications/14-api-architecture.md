@@ -146,6 +146,8 @@ The patterns below define the shape for each API category. OpenAPI specs are mai
 | Offline Sync       | [sync](../api/sync.openapi.yaml)                 | MVP (Phase 10) — the device↔server transport, not a domain. Added to this table 2026-08-24.                            |
 | Master Data        | [master-data](../api/master-data.openapi.yaml)   | MVP — tenant-controlled vocabularies (materials, work/issue/cost categories). Added 2026-08-24.                        |
 | Geo                | [geo](../api/geo.openapi.yaml)                   | MVP — reverse geocoding against the in-cluster Nominatim. Added 2026-08-24.                                            |
+| Platform           | [platform](../api/platform.openapi.yaml)         | MVP — the monolith's cross-cutting routes: `/api/v1/health/{live,ready}` and `/api/v1/flags` (ADR-049). They belong to no business domain, which is why they carried no document until 2026-09-03. |
+| Credentials        | [credential](../api/credential.openapi.yaml)     | MVP — CredentialService (W3C DID/VC, ADR-019/ADR-058). **Served at the root path with no `/api/v1` prefix** (Kong owns external routing) — the one standing exception to §14.4. Two public unauthenticated GETs on `credentials.construction-os.io`; `issue`/`verify`/`revoke` are mesh-only with no Kong route at all (§5.9.8). Added 2026-09-03. |
 
 The endpoint patterns below serve as the canonical reference;
 OpenAPI files are the machine-readable contracts derived from these patterns.
@@ -711,9 +713,10 @@ Three properties of this surface are easy to get wrong and are settled here:
 
 #### AI APIs
 
-AI / ML capabilities are served by three Python services — the AI Gateway
-(`/api/v1/ai/*`, `/api/v1/rag/*`), the OCR pipeline (`/api/v1/ocr/*`), and the
-embedding worker (`/api/v1/embeddings/*`) — each with separate token-rate limiting
+AI / ML capabilities are served by four Python services — the AI Gateway
+(`/api/v1/ai/*`, `/api/v1/rag/*`), the OCR pipeline (`/api/v1/ocr/*`), the
+embedding worker (`/api/v1/embeddings/*`), and the transcription pipeline (no edge
+route of its own; the Gateway forwards to it) — each with separate token-rate limiting
 (see section 14.2 and `26-pricing-model` section 26.1).
 
 | Method | Path                                     | Description                                      | Auth                |
@@ -728,9 +731,23 @@ embedding worker (`/api/v1/embeddings/*`) — each with separate token-rate limi
 | `POST` | `/api/v1/ocr/process`                    | Extract text from an image or PDF (OCR pipeline) | Any role            |
 | `POST` | `/api/v1/embeddings/generate`            | Generate vector embeddings (internal/RAG)        | Any role            |
 
-> Voice transcription (`21-mvp-scope` section 21.4) is a planned MVP AI feature; it is
-> not yet exposed as a REST endpoint and will be added when the transcription provider
-> is integrated.
+Three further routes on the AI Gateway, tabled 2026-09-03. Like the five auth routes
+above, they had run since their ADRs shipped, named in no §14 table and carried by no
+OpenAPI document:
+
+| Method | Path                     | Description                                                          | Auth     |
+| ------ | ------------------------ | -------------------------------------------------------------------- | -------- |
+| `POST` | `/api/v1/ai/transcribe`  | Transcribe a recorded audio file to text — ADR-052; metered per minute | Any role |
+| `POST` | `/api/v1/ai/intent`      | Classify a transcribed voice command into an intent — ADR-073        | Any role |
+| `GET`  | `/api/v1/ai/usage`       | This month's AI token usage against the tenant's plan quota (§26)     | Any role |
+
+> **Voice transcription is exposed and has been for some time.** This section previously
+> stated that it "is not yet exposed as a REST endpoint and will be added when the
+> transcription provider is integrated" — corrected 2026-09-03. `POST /api/v1/ai/transcribe`
+> is served by `services/ai-gateway/main.py`, which forwards to
+> `services/ai-transcription-pipeline`. The two are tiers of one endpoint, not two
+> implementations: the Gateway verifies the tenant, meters the minutes, and proxies; the
+> pipeline is mesh-internal with no edge route. ADR-052 recorded both files when it shipped.
 
 Example — generate a site-summary report:
 
@@ -1034,6 +1051,52 @@ tenant-scoped (excluded from the tenant middleware). Contract: `tenant.openapi.y
 | `PATCH` | `/api/v1/admin/tenants/{tenant_id}/dedicated-db`    | Assign a dedicated DB URL (§20.4.3)         | System Admin |
 | `PATCH` | `/api/v1/admin/tenants/{tenant_id}/mark-contracted` | Mark Enterprise tenant contracted (§20.4.4) | System Admin |
 | `PATCH` | `/api/v1/admin/tenants/{tenant_id}/deactivate`      | Deactivate a tenant (§20.4.5)               | System Admin |
+
+---
+
+#### Platform APIs (cross-cutting)
+
+The monolith's own routes that belong to no business domain. Contract:
+`platform.openapi.yaml`. Both had run since Phase 1 and Phase 3 respectively, named in no
+§14 table and carried by no OpenAPI document until 2026-09-03.
+
+| Method | Path                    | Description                                          | Auth                  |
+| ------ | ----------------------- | ---------------------------------------------------- | --------------------- |
+| `GET`  | `/api/v1/health/live`   | Liveness — the process is up; checks nothing else    | Public                |
+| `GET`  | `/api/v1/health/ready`  | Readiness — runs the Terminus check aggregate        | Public                |
+| `GET`  | `/api/v1/flags`         | Server-evaluated feature flags (ADR-049)             | Optional bearer token |
+
+`/api/v1/flags` takes an **optional** token by design: the login screen reads
+`s1.identity.sms-otp-login` before a token exists, so it cannot fail closed. With a token the
+flags are evaluated against the caller's user and tenant; without one, against the default
+context. It never returns 401 — a missing, malformed, expired or MFA-blocked token yields an
+anonymous evaluation.
+
+The standalone services answer their probes at bare `/health/live` with **no** `/api/v1`
+prefix. The paths are not interchangeable: four Helm charts probed the wrong one and would
+have CrashLooped in production, which only a real deploy caught (Phase 17, Linux POC
+2026-07-20).
+
+#### Credential APIs (W3C DID/VC)
+
+Contract: `credential.openapi.yaml`. **These paths carry no `/api/v1` prefix** — the service
+mounts at the root and Kong owns external routing. That is the one standing exception to
+§14.4 in this repository, and §5.9.8 is authoritative on which routes are reachable from
+where.
+
+| Method | Path                                            | Description                                     | Auth                     |
+| ------ | ----------------------------------------------- | ----------------------------------------------- | ------------------------ |
+| `GET`  | `/health`                                       | Liveness                                        | Public                   |
+| `GET`  | `/tenants/{tenantId}/did.json`                  | Resolve a tenant's `did:web` DID document       | Public (unauthenticated) |
+| `GET`  | `/tenants/{tenantId}/status-lists/{listId}`     | Status List 2021 revocation bitstring           | Public (unauthenticated) |
+| `POST` | `/credentials/issue`                            | Issue a VC — revocable types are TENANT_ADMIN   | Mesh-only, bearer        |
+| `POST` | `/credentials/verify`                           | Verify a VC (proof **and** revocation bit)      | Mesh-only, bearer        |
+| `POST` | `/credentials/{vcId}/revoke`                    | Revoke a VC (TENANT_ADMIN)                      | Mesh-only, bearer        |
+
+The two public GETs are served on the dedicated host `credentials.construction-os.io`, which
+carries no `jwt` plugin: a third-party verifier resolving a credential holds no platform
+identity (BG-001, ADR-019). `issue`, `verify` and `revoke` have **no Kong route at all** and
+are reachable only from the backend over the mesh.
 
 ---
 
