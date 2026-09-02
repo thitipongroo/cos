@@ -82,6 +82,23 @@ run "Lint — openapi route coverage" pnpm run lint:routes
 run "Lint — unit test env"         bash ./scripts/ci/check-unit-test-env.sh
 run "Lint — loading state"         bash ./scripts/ci/check-loading-state.sh
 
+# ── Dependency Audit job ────────────────────────────────────────────────────
+# Added 2026-09-03, after this job turned a push red on its own. Nothing in the repository had
+# changed: `fast-uri`, `browserslist` and `mysql2` sat at the versions they had held for weeks and
+# seven advisories were published against them overnight. That is the failure mode this job has —
+# it can go red with no commit behind it — which is exactly why running it before the push is worth
+# the seconds it costs, and why leaving it in the "not covered" list was the wrong call.
+run "Audit — pnpm (Node deps)"     bash ./scripts/pnpm-audit.sh
+run_if govulncheck "Audit — govulncheck kg-ingestion-worker" \
+  bash -c 'cd services/kg-ingestion-worker && govulncheck ./...'
+run_if govulncheck "Audit — govulncheck analytics-worker" \
+  bash -c 'cd services/analytics-worker && govulncheck ./...'
+run_if pip-audit "Audit — pip-audit (Python services)" \
+  bash -c 'status=0; for req in services/*/requirements.txt; do
+             svc="$(dirname "$req")"; echo "── $svc"
+             ( cd "$svc" && pip-audit -r requirements.txt ) || status=1
+           done; exit $status'
+
 # ── Type check job ──────────────────────────────────────────────────────────
 run_in backend "Type check — prisma generate" pnpm exec prisma generate
 run "Type check"                   pnpm run type-check
@@ -125,7 +142,7 @@ printf '\n  %d passed · %d failed · %d skipped\n' "${#PASS[@]}" "${#FAIL[@]}" 
 cat <<'NOTE'
 
   Not covered here — these run in CI and nowhere else:
-    mobile-tests · go-tests · mlops-tests · build-docker · dependency-audit
+    mobile-tests · go-tests · mlops-tests · build-docker
     secret-scan · security-scan · e2e-tests · mobile-e2e-tests
     CodeQL · Semgrep · Lighthouse · mutation-tests · load-tests
   A green run below is not a promise that CI is green. It is a promise that the
