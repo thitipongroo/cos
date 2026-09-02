@@ -37,5 +37,5 @@ reaches git turns into everyone's file.
 `ask` entry is a command that hurts to undo — `rm`, `chmod`, `docker`, `kubectl`,
 `kill`. `deny` stays empty until something genuinely must never run.
 
-*Prevents:* a settings file that cannot be shared because it contains one
+_Prevents:_ a settings file that cannot be shared because it contains one
 person's paths.

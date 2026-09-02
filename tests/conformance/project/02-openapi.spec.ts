@@ -26,9 +26,20 @@ const prefixOf = (d: OpenApiDoc): string => {
   return m ? m[1] : '';
 };
 
+/**
+ * The one document mounted outside `/api/v1`, with the reason recorded where it is used rather than
+ * hidden in a filter. credential-service registers its routes at the root because Kong owns external
+ * routing, and its two public GETs are served on a separate host rather than under `api.*` — §5.9.8
+ * and §14.5 are authoritative, and §14.3 carries the row. Two assertions at the bottom of this file
+ * keep the exception honest: one fails if a SECOND document starts skipping the prefix, one fails if
+ * credential-service ever gains one and this exception goes stale.
+ */
+const ROOT_MOUNTED = ['docs/api/credential.openapi.yaml'];
+
 /** All (method, full path) pairs across every document, with {param} names normalised. */
 const operations = new Set<string>();
-for (const { doc } of docs) {
+for (const { file, doc } of docs) {
+  if (ROOT_MOUNTED.includes(file)) continue;
   const prefix = prefixOf(doc);
   for (const [p, ops] of Object.entries(doc.paths ?? {})) {
     const full = (p.startsWith('/api/') ? p : `${prefix}${p}`).replace(/\{[^}]+\}/g, '{}');
@@ -92,5 +103,28 @@ describe('Phase 3 · OpenAPI hygiene (QM-2, master:754)', () => {
   it('no documented operation escapes the /api/v1 prefix', () => {
     const bad = [...operations].filter((op) => !op.split(' ')[1].startsWith('/api/v1/'));
     expect(bad).toEqual([]);
+  });
+
+  it('credential-service is the only document mounted outside /api/v1', () => {
+    const rootMounted = docs
+      .filter(({ doc }) => prefixOf(doc) === '' && Object.keys(doc.paths ?? {}).length > 0)
+      .filter(({ doc }) => !Object.keys(doc.paths ?? {}).every((p) => p.startsWith('/api/')))
+      .map(({ file }) => file);
+    expect(rootMounted.sort()).toEqual(ROOT_MOUNTED);
+  });
+
+  it('the root-mounted exception still serves the routes §14.3 says it does', () => {
+    // If credential-service ever moves under /api/v1, this fails and the exception above must go.
+    const doc = docs.find(({ file }) => file === ROOT_MOUNTED[0])!.doc;
+    expect(Object.keys(doc.paths ?? {})).toEqual(
+      expect.arrayContaining([
+        '/health',
+        '/tenants/{tenantId}/did.json',
+        '/tenants/{tenantId}/status-lists/{statusListId}',
+        '/credentials/issue',
+        '/credentials/verify',
+        '/credentials/{vcId}/revoke',
+      ]),
+    );
   });
 });

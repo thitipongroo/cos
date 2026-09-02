@@ -57,4 +57,4 @@ about them is observable either way. The eleventh is the one that shows it:
 left out on purpose and a paragraph in the file explaining why. It was listed as
 holding every tool. No restriction, and no error to notice.
 
-*Prevents:* a capable agent taking a faster path than the one that was designed.
+_Prevents:_ a capable agent taking a faster path than the one that was designed.

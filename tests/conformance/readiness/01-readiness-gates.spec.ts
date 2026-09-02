@@ -16,13 +16,20 @@ const readinessDir = 'scripts/readiness';
 const verifyScript = `${readinessDir}/verify-production-readiness.sh`;
 const verify = read(verifyScript);
 
-/** Every [AUTO] checklist line in master's Phase 19 Section A — the legend line is not one. */
+/**
+ * Every [AUTO] checklist line in Phase 19 Section A — the legend line is not one.
+ *
+ * Read from `context/phases/phase-19-final-production-readiness.md`. It used to slice the master
+ * between `## PHASE 19` and `## PHASE 20`; the 25 Phase blocks moved to `context/phases/` on
+ * 2026-09-02 (f55dee77) and neither heading exists there any more, so the slice returned an empty
+ * string and this list was silently EMPTY. That did not fail loudly — `implemented.size` was
+ * compared against 0, and the guard below (`toBeGreaterThan(25)`) is the only reason it was caught
+ * at all. A conformance list that can quietly become empty asserts nothing, so the guard stays.
+ *
+ * One file, no slicing: the phase file holds Phase 19 and nothing else.
+ */
 const specAutoItems = ((): string[] => {
-  const master = read('context/00_master_construction_os.md');
-  const start = master.indexOf('## PHASE 19');
-  const end = master.indexOf('## PHASE 20');
-  return master
-    .slice(start, end)
+  return read('context/phases/phase-19-final-production-readiness.md')
     .split('\n')
     .filter((l) => /\[AUTO\]\s+\[ \]/.test(l))
     .map((l) => l.replace(/.*\[AUTO\]\s+\[ \]\s*/, '').trim());
@@ -34,7 +41,7 @@ describe('Phase 19 · the verification script (master:4877)', () => {
     // always lived beside the check-*.sh files it calls. A path nobody can follow is a gate nobody
     // runs.
     expect(exists(verifyScript)).toBe(true);
-    expect(read('context/00_master_construction_os.md')).toContain(
+    expect(read('context/phases/phase-19-final-production-readiness.md')).toContain(
       'scripts/readiness/verify-production-readiness.sh',
     );
   });

@@ -24,6 +24,18 @@ run() {
   if "$@"; then PASS+=("$label"); else FAIL+=("$label"); fi
 }
 
+# A CI step's `working-directory:` is part of the command, not decoration around it. Running the
+# same command from the repo root is a DIFFERENT command, and it silently was for `prisma generate`:
+# ci.yml runs it with `working-directory: backend`, this script ran it from the root, and prisma is
+# installed in backend/node_modules/.bin only — so the step failed here on every run while passing in
+# CI. A gate that fails for a reason CI does not have gets read as noise, and then so does the rest
+# of its output. Use this for any step ci.yml gives a working-directory.
+run_in() {
+  local dir="$1" label="$2"; shift 2
+  printf '\n\033[1m▶ %s\033[0m\n    $ (cd %s && %s)\n' "$label" "$dir" "$*"
+  if (cd "$dir" && "$@"); then PASS+=("$label"); else FAIL+=("$label"); fi
+}
+
 need_docker() {
   if docker info >/dev/null 2>&1; then return 0; fi
   return 1
@@ -41,7 +53,7 @@ run "Lint — unit test env"         bash ./scripts/ci/check-unit-test-env.sh
 run "Lint — loading state"         bash ./scripts/ci/check-loading-state.sh
 
 # ── Type check job ──────────────────────────────────────────────────────────
-run "Type check — prisma generate" pnpm exec prisma generate
+run_in backend "Type check — prisma generate" pnpm exec prisma generate
 run "Type check"                   pnpm run type-check
 
 # ── Build job (ADR-033: tsc --noEmit is not a build) ────────────────────────

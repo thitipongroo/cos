@@ -15,28 +15,28 @@ this kit. Both have a `.claude/` and a `CLAUDE.md`, so a bare path like
 
 ## Building `.claude/`
 
-| # | Pattern | Creates | Prevents |
-|---|---------|---------|----------|
-| 1 | [Command → Agent → Skill](patterns/01-creating-command-agent-skill.md) | `commands/` `agents/` `skills/` | one file that asks, decides, executes and reports |
-| 2 | [Execution contract](patterns/02-creating-execution-contract.md) | a section in every command and agent | a capable agent taking a faster path than the one designed |
-| 3 | [Configuration hierarchy](patterns/03-creating-settings-json.md) | `settings.json` · `settings.local.json` · `.gitignore` | a settings file that cannot be shared |
-| 4 | [One handler, many events](patterns/04-creating-hooks.md) | `hooks/` and the `hooks` block | thirty scripts that drift apart |
-| 5 | [Rules that load when relevant](patterns/05-creating-rules.md) | `rules/*.md` with `paths:` | a context file that buries its own important lines |
-| 6 | [Progressive disclosure](patterns/06-creating-skills.md) | `skills/<name>/` | a skill whose steps are lost inside its reference material |
-| 7 | [Read-then-report](patterns/07-creating-research-workflow.md) | a coordinator command + a read-only agent | an agent editing files on its own unverified conclusion |
+| #   | Pattern                                                                | Creates                                                | Prevents                                                   |
+| --- | ---------------------------------------------------------------------- | ------------------------------------------------------ | ---------------------------------------------------------- |
+| 1   | [Command → Agent → Skill](patterns/01-creating-command-agent-skill.md) | `commands/` `agents/` `skills/`                        | one file that asks, decides, executes and reports          |
+| 2   | [Execution contract](patterns/02-creating-execution-contract.md)       | a section in every command and agent                   | a capable agent taking a faster path than the one designed |
+| 3   | [Configuration hierarchy](patterns/03-creating-settings-json.md)       | `settings.json` · `settings.local.json` · `.gitignore` | a settings file that cannot be shared                      |
+| 4   | [One handler, many events](patterns/04-creating-hooks.md)              | `hooks/` and the `hooks` block                         | thirty scripts that drift apart                            |
+| 5   | [Rules that load when relevant](patterns/05-creating-rules.md)         | `rules/*.md` with `paths:`                             | a context file that buries its own important lines         |
+| 6   | [Progressive disclosure](patterns/06-creating-skills.md)               | `skills/<name>/`                                       | a skill whose steps are lost inside its reference material |
+| 7   | [Read-then-report](patterns/07-creating-research-workflow.md)          | a coordinator command + a read-only agent              | an agent editing files on its own unverified conclusion    |
 
 ## Keeping a check honest
 
-| # | Pattern | Creates | Prevents |
-|---|---------|---------|----------|
-| 8 | [Verification has a declared depth](changelog/08-verification-depth.md) | the `Depth` column in a checklist | a check that passes because it was run shallowly |
-| 10 | [Changelog + verification checklist](changelog/10-changelog-and-checklist.md) | `changelog/<topic>/` — two files | a check that gets shallower every run, and a history that records only the interesting ones |
+| #   | Pattern                                                                       | Creates                           | Prevents                                                                                    |
+| --- | ----------------------------------------------------------------------------- | --------------------------------- | ------------------------------------------------------------------------------------------- |
+| 8   | [Verification has a declared depth](changelog/08-verification-depth.md)       | the `Depth` column in a checklist | a check that passes because it was run shallowly                                            |
+| 10  | [Changelog + verification checklist](changelog/10-changelog-and-checklist.md) | `changelog/<topic>/` — two files  | a check that gets shallower every run, and a history that records only the interesting ones |
 
 ## Packaging a workflow
 
-| # | Pattern | Creates | Prevents |
-|---|---------|---------|----------|
-| 9 | [Packaging a workflow in its own folder](workflows/09-scoped-configuration.md) | a subfolder with its own `.claude/` + the doc that explains it | a workflow only its author can install |
+| #   | Pattern                                                                        | Creates                                                        | Prevents                               |
+| --- | ------------------------------------------------------------------------------ | -------------------------------------------------------------- | -------------------------------------- |
+| 9   | [Packaging a workflow in its own folder](workflows/09-scoped-configuration.md) | a subfolder with its own `.claude/` + the doc that explains it | a workflow only its author can install |
 
 ---
 

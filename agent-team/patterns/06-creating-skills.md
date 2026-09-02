@@ -23,21 +23,21 @@ skills/<name>/
 
 ## What goes where
 
-| File | Holds | Read |
-|---|---|---|
-| `SKILL.md` | numbered steps, hard rules, output paths | every invocation |
+| File           | Holds                                                      | Read                      |
+| -------------- | ---------------------------------------------------------- | ------------------------- |
+| `SKILL.md`     | numbered steps, hard rules, output paths                   | every invocation          |
 | `reference.md` | anything long — templates, schemas, tables of placeholders | at the step that needs it |
-| `examples.md` | worked pairs, including the case that must fail closed | when checking output |
+| `examples.md`  | worked pairs, including the case that must fail closed     | when checking output      |
 
 If a step in `SKILL.md` needs thirty lines of template, the step becomes "use the
 template from `reference.md`" and the template moves.
 
 ## Frontmatter that decides reach
 
-| Field | Effect |
-|---|---|
-| `description` | how the model decides to invoke it — write it as *when*, not *what* |
+| Field                   | Effect                                                                                  |
+| ----------------------- | --------------------------------------------------------------------------------------- |
+| `description`           | how the model decides to invoke it — write it as _when_, not _what_                     |
 | `user-invocable: false` | hidden from the `/` menu; still reachable by the Skill tool and by `skills:` preloading |
-| `allowed-tools` | what runs without a permission prompt while the skill is active |
+| `allowed-tools`         | what runs without a permission prompt while the skill is active                         |
 
-*Prevents:* a skill so long that the steps are lost inside the reference material.
+_Prevents:_ a skill so long that the steps are lost inside the reference material.

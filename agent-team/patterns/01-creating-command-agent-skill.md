@@ -18,10 +18,10 @@ Three layers, one job each.
 The source calls these "two distinct skill patterns", and the difference decides
 when the content enters context.
 
-| | How | When |
-|---|---|---|
+|               | How                                                                             | When                                                |
+| ------------- | ------------------------------------------------------------------------------- | --------------------------------------------------- |
 | **Preloaded** | `skills:` in the agent's frontmatter — the whole file enters context at startup | Knowledge the agent needs before its first decision |
-| **Invoked** | the `Skill` tool, at the moment it is needed | A step that runs once, partway through |
+| **Invoked**   | the `Skill` tool, at the moment it is needed                                    | A step that runs once, partway through              |
 
 ```yaml
 # .claude/agents/<name>.md — preloaded
@@ -45,5 +45,5 @@ it from the model.
 3. Write the command last — it asks the user, calls the agent, calls the skill,
    and reports
 
-*Prevents:* one file that asks, decides, executes and reports — untestable, and
+_Prevents:_ one file that asks, decides, executes and reports — untestable, and
 impossible to constrain.

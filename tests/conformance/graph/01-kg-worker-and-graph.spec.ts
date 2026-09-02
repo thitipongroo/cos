@@ -192,13 +192,20 @@ describe('Phase 13 · the Delay node (master:4126-4136)', () => {
   });
 
   it('the severity bands agree across every source that states them', () => {
-    // master:4133 (this phase), master:3991 (Phase 12 delay-risk), §32:452 (the Event Contract), and
-    // the delay-risk prompt. Four statements of one rule is four chances for them to drift.
-    const master = read('context/00_master_construction_os.md');
+    // Phase 13 (this phase), Phase 12 (delay-risk), §32:452 (the Event Contract), and the delay-risk
+    // prompt. Four statements of one rule is four chances for them to drift — which is the point of
+    // reading all four here rather than trusting one.
+    //
+    // The first two used to be read from `context/00_master_construction_os.md`. The 25 Phase blocks
+    // moved to `context/phases/` on 2026-09-02 (f55dee77), so both assertions were running against a
+    // file that no longer held either sentence. Reading the phase files also states which phase owns
+    // which wording, which the master never did.
+    const phase13 = read('context/phases/phase-13-knowledge-graph.md');
+    const phase12 = read('context/phases/phase-12-ai-report-assistant.md');
     const spec32 = read('docs/specifications/32-implementation-specifications.md');
     const prompt = read('ai/prompts/report-delay-risk-v1.j2');
-    expect(master).toMatch(/LOW=1-2d, MEDIUM=3-6d, HIGH=7-13d, CRITICAL=14\+d/);
-    expect(master).toMatch(/LOW=1-2, MEDIUM=3-6, HIGH=7-13, CRITICAL=14\+/);
+    expect(phase13).toMatch(/LOW=1-2d, MEDIUM=3-6d, HIGH=7-13d, CRITICAL=14\+d/);
+    expect(phase12).toMatch(/LOW=1-2, MEDIUM=3-6, HIGH=7-13, CRITICAL=14\+/);
     expect(spec32).toMatch(/LOW=1-2 days, MEDIUM=3-6, HIGH=7-13, CRITICAL=14\+/);
     expect(prompt).toMatch(/LOW\s*=\s*1[–-]2 days/);
     expect(prompt).toMatch(/CRITICAL\s*=\s*14\+ days/);
@@ -339,13 +346,15 @@ describe('Phase 13 · the Delay node has no source yet — deferred to Phase 23'
     expect(read('backend/src/modules/tasks/tasks.module.ts')).toContain('TasksDelayConsumer');
   });
 
-  it('master describes it as built, with the scope of the transition', () => {
-    const master = read('context/00_master_construction_os.md');
-    expect(master).toMatch(/The AUTOMATIC path IS built/);
+  it('the phase file describes it as built, with the scope of the transition', () => {
+    // Phase 6 owns the gate this describes, and its command file is where both sentences live since
+    // the Phase blocks moved out of the master on 2026-09-02 (f55dee77).
+    const phase06 = read('context/phases/phase-06-site-operations.md');
+    expect(phase06).toMatch(/The AUTOMATIC path IS built/);
     // The literal reading of "auto-sets task.status = BLOCKED" would let a late or replayed forecast
     // un-finish completed work, so the consumer narrows it — and the spec now says so rather than
     // leaving the code quietly stricter than the sentence it implements.
-    expect(master).toMatch(/SCOPE OF THE AUTOMATIC TRANSITION/);
+    expect(phase06).toMatch(/SCOPE OF THE AUTOMATIC TRANSITION/);
   });
 
   it('the task-completion gate still works without it', () => {

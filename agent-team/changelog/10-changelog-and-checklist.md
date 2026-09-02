@@ -12,26 +12,26 @@ records what must be checked. They grow from each other.
 
 Opens with a status legend, identical across all 9 files in the source:
 
-| Status | Meaning |
-|--------|---------|
-| ✅ `COMPLETE (reason)` | Action was taken and resolved successfully |
-| ❌ `INVALID (reason)` | Finding was incorrect, not applicable, or intentional |
-| ✋ `ON HOLD (reason)` | Action deferred — waiting on external dependency or user decision |
+| Status                 | Meaning                                                           |
+| ---------------------- | ----------------------------------------------------------------- |
+| ✅ `COMPLETE (reason)` | Action was taken and resolved successfully                        |
+| ❌ `INVALID (reason)`  | Finding was incorrect, not applicable, or intentional             |
+| ✋ `ON HOLD (reason)`  | Action deferred — waiting on external dependency or user decision |
 
 One section per run, `## [<date time>] <what was checked>`, then a table:
 
 ```markdown
-| # | Priority | Type | Action | Status |
-|---|----------|------|--------|--------|
-| 1 | MED | Extra Bundled Skill | `keybindings-help` is in the report but absent upstream — remove or keep | ✅ COMPLETE (removed — it is a local custom skill, not a bundled one) |
+| #   | Priority | Type                | Action                                                                   | Status                                                                |
+| --- | -------- | ------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------- |
+| 1   | MED      | Extra Bundled Skill | `keybindings-help` is in the report but absent upstream — remove or keep | ✅ COMPLETE (removed — it is a local custom skill, not a bundled one) |
 ```
 
 Four rules hold this together:
 
 - **Record every run, including the empty ones.** A quiet run is written as one
   line with the numbers that prove the check happened:
-  *"No drift detected — frontmatter fields (10) and bundled skills (5) are fully
-  synchronized with official docs."* Of 800 recorded runs in the source, most are
+  _"No drift detected — frontmatter fields (10) and bundled skills (5) are fully
+  synchronized with official docs."_ Of 800 recorded runs in the source, most are
   exactly this
 - **Every status carries its reason in parentheses.** A bare ✅ records that
   someone typed a tick, not what they decided
@@ -69,5 +69,5 @@ about what might go wrong — leave it out until it does.
 The two files feed each other: a run writes to the changelog, and a run that
 missed something writes a rule into the checklist.
 
-*Prevents:* a recurring check that gets shallower every time it is run, and a
+_Prevents:_ a recurring check that gets shallower every time it is run, and a
 history that only records the interesting runs.

@@ -32,11 +32,11 @@ works on exactly one machine.
 
 Enabling and disabling never touches `settings.json`:
 
-| To do this | Change this |
-|---|---|
-| Silence one event | `disable<Event>Hook: true` in `hooks-config.json` |
-| Silence it for yourself only | the same key in `hooks-config.local.json` |
-| Stop every hook | `disableAllHooks: true` in `.claude/settings.local.json` |
+| To do this                   | Change this                                              |
+| ---------------------------- | -------------------------------------------------------- |
+| Silence one event            | `disable<Event>Hook: true` in `hooks-config.json`        |
+| Silence it for yourself only | the same key in `hooks-config.local.json`                |
+| Stop every hook              | `disableAllHooks: true` in `.claude/settings.local.json` |
 
 Prefer a switch over deleting wiring — a deleted event is one nobody remembers to
 restore.
@@ -54,4 +54,4 @@ main session.
 - stdout belongs to the hook protocol; diagnostics go to stderr
 - Truncate what you log — a single `tool_input` can be megabytes
 
-*Prevents:* thirty scripts that drift apart, and wiring nobody dares to edit.
+_Prevents:_ thirty scripts that drift apart, and wiring nobody dares to edit.

@@ -45,4 +45,4 @@ Findings arrive as claims. Re-run the command behind each one before it reaches
 the user. A finding that does not reproduce is dropped, not softened — that step
 is cheaper than sending someone to fix a file that was already correct.
 
-*Prevents:* an agent editing files based on its own unverified conclusion.
+_Prevents:_ an agent editing files based on its own unverified conclusion.

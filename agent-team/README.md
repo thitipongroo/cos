@@ -10,31 +10,31 @@ the kit; where the two differ, the difference is recorded below.
 
 ## What runs
 
-| | | Where |
-|---|---|---|
-| `/plan-gate` | command | Rule 38 gate — extracts the spec line by line into `.claude/impl-pending.md`, then stops for product owner approval |
-| `/verify` | command | Rule 36 gate — one filesystem check per obligation, reporting `PASS` / `FAIL` / `UNVERIFIED` with real output |
-| `/drift` | command | Sends a read-only researcher at the docs, re-confirms every finding, reports the gaps, changes nothing |
-| `engineering-agent` | agent | Routes to the 11 engineering skills |
-| `qa-agent` | agent | Routes to the 12 QA skills |
-| `doc-agent` | agent | Routes to the 6 documentation skills |
-| `devops-agent` | agent | Routes to the 6 DevOps skills |
-| `doc-drift-researcher` | agent | Read-only. Powers `/drift` |
-| 35 domain skills | skills | `engineering-*` 11 · `qa-*` 12 · `doc-*` 6 · `devops-*` 6 |
-| `spec-reading` | skill | The discipline both gates depend on. Not in the `/` menu |
-| `markdown-docs` | rule | Loads only when a `.md` file is touched (`paths:` frontmatter) |
+|                        |         | Where                                                                                                               |
+| ---------------------- | ------- | ------------------------------------------------------------------------------------------------------------------- |
+| `/plan-gate`           | command | Rule 38 gate — extracts the spec line by line into `.claude/impl-pending.md`, then stops for product owner approval |
+| `/verify`              | command | Rule 36 gate — one filesystem check per obligation, reporting `PASS` / `FAIL` / `UNVERIFIED` with real output       |
+| `/drift`               | command | Sends a read-only researcher at the docs, re-confirms every finding, reports the gaps, changes nothing              |
+| `engineering-agent`    | agent   | Routes to the 11 engineering skills                                                                                 |
+| `qa-agent`             | agent   | Routes to the 12 QA skills                                                                                          |
+| `doc-agent`            | agent   | Routes to the 6 documentation skills                                                                                |
+| `devops-agent`         | agent   | Routes to the 6 DevOps skills                                                                                       |
+| `doc-drift-researcher` | agent   | Read-only. Powers `/drift`                                                                                          |
+| 35 domain skills       | skills  | `engineering-*` 11 · `qa-*` 12 · `doc-*` 6 · `devops-*` 6                                                           |
+| `spec-reading`         | skill   | The discipline both gates depend on. Not in the `/` menu                                                            |
+| `markdown-docs`        | rule    | Loads only when a `.md` file is touched (`paths:` frontmatter)                                                      |
 
 Full inventory with what each one is for: **[CATALOG.md](CATALOG.md)**.
 
 ## What was deliberately left out
 
-| Not installed | Why |
-|---|---|
-| `settings.json` from the kit | This repository wires `PreToolUse` / `PostToolUse` / `Stop` to `rule-26` … `rule-38` shell scripts. The kit wires 30 events to a Python handler this repository does not have. Overwriting would disable every Rule 26–38 gate |
-| The kit's `hooks/` | Different architecture — several scripts per event here, one handler there |
-| The kit's `CLAUDE.md` | This repository has its own, holding the Rule 36 and Rule 38 gates |
-| `marketing-*` `social-media-*` `sales-*` `motion-*` skills (37) | No matching surface here — none of the 25 backend modules and no file under `docs/specifications/` covers those domains |
-| `operations-*` `product-*` `management-*` `research-*` skills (27) | Product owner decision: engineering disciplines only for this round |
+| Not installed                                                      | Why                                                                                                                                                                                                                            |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `settings.json` from the kit                                       | This repository wires `PreToolUse` / `PostToolUse` / `Stop` to `rule-26` … `rule-38` shell scripts. The kit wires 30 events to a Python handler this repository does not have. Overwriting would disable every Rule 26–38 gate |
+| The kit's `hooks/`                                                 | Different architecture — several scripts per event here, one handler there                                                                                                                                                     |
+| The kit's `CLAUDE.md`                                              | This repository has its own, holding the Rule 36 and Rule 38 gates                                                                                                                                                             |
+| `marketing-*` `social-media-*` `sales-*` `motion-*` skills (37)    | No matching surface here — none of the 25 backend modules and no file under `docs/specifications/` covers those domains                                                                                                        |
+| `operations-*` `product-*` `management-*` `research-*` skills (27) | Product owner decision: engineering disciplines only for this round                                                                                                                                                            |
 
 ## What was changed for this repository
 

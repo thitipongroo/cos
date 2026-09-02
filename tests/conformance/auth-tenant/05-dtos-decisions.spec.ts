@@ -98,8 +98,13 @@ describe('Phase 2 · D4 BiometricCheckIn — decided, implementation deferred (m
   });
 
   it('Phase 22 still records the deferral, so no phase silently picks it up', () => {
-    const master = read('context/00_master_construction_os.md');
-    expect(master).toMatch(/Biometric check-in \(deferred/);
+    // Read from Phase 22's own command file, not the master. The 25 Phase blocks moved to
+    // `context/phases/` on 2026-09-02 (f55dee77) and the master kept an index table in their place,
+    // so this line — and the six other master-anchored assertions in this suite — had been asserting
+    // against a file that no longer contains what they name. The deferral itself never moved.
+    expect(read('context/phases/phase-22-workforce-service.md')).toMatch(
+      /Biometric check-in \(deferred/,
+    );
   });
 });
 

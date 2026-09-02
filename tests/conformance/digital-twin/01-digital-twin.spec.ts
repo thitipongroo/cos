@@ -311,7 +311,11 @@ describe('Phase 24 · synchronisation is untiered, and the spec cannot say other
     };
     for (const root of ['docs/specifications', 'context']) walk(root);
     const mentions = specs.filter(([, body]) => /critical\s+asset/i.test(body)).map(([f]) => f);
-    expect(mentions).toEqual(['context/00_master_construction_os.md']);
+    // The single mention moved with Phase 24's command block when the Phase blocks left the master
+    // on 2026-09-02 (f55dee77). Still exactly one file, still no definition in it — which is what
+    // this control asserts. The walk covers `context/` recursively, so it finds the new location on
+    // its own; only the expected path had to change.
+    expect(mentions).toEqual(['context/phases/phase-24-digital-twin.md']);
   });
 });
 

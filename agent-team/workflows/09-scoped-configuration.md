@@ -24,11 +24,11 @@ project/
 
 Do not assume a nested `.claude/` is inert. Observed in a single session:
 
-| Observation | Result |
-|---|---|
-| Two nested `.claude/` present at session start (`agent-teams/`, `development-workflows/rpi/`) | none of their agents or skills appeared in the session's listings |
-| A skill created mid-session under a third nested `.claude/`, then worked on | **appeared** as an available skill — and it existed nowhere else on the machine |
-| The agent and three commands in that same nested `.claude/` | no corresponding announcement |
+| Observation                                                                                   | Result                                                                          |
+| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Two nested `.claude/` present at session start (`agent-teams/`, `development-workflows/rpi/`) | none of their agents or skills appeared in the session's listings               |
+| A skill created mid-session under a third nested `.claude/`, then worked on                   | **appeared** as an available skill — and it existed nowhere else on the machine |
+| The agent and three commands in that same nested `.claude/`                                   | no corresponding announcement                                                   |
 
 So skills under a nested `.claude/` **can** become available. Whether that is
 because discovery runs lazily when you work in the directory, or re-runs when
@@ -82,11 +82,11 @@ else owns.
 
 ### 3. Which command uses which agent
 
-| Command | Agents used |
-|---------|-------------|
-| `/rpi:research` | requirement-parser, product-manager, Explore, senior-software-engineer, technical-cto-advisor, documentation-analyst-writer |
-| `/rpi:plan` | senior-software-engineer, product-manager, ux-designer, documentation-analyst-writer |
-| `/rpi:implement` | Explore, senior-software-engineer, code-reviewer |
+| Command          | Agents used                                                                                                                 |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `/rpi:research`  | requirement-parser, product-manager, Explore, senior-software-engineer, technical-cto-advisor, documentation-analyst-writer |
+| `/rpi:plan`      | senior-software-engineer, product-manager, ux-designer, documentation-analyst-writer                                        |
+| `/rpi:implement` | Explore, senior-software-engineer, code-reviewer                                                                            |
 
 This table is what tells a reader which of the eight agent files are actually
 reachable, and it drifts the moment a command changes without it.
@@ -103,5 +103,5 @@ Everything the workflow needs lives beside it, and the project's own `/` menu
 stays readable. The cost is a copy step and three things to document — and the
 knowledge that a nested `.claude/` may still surface some of its contents.
 
-*Prevents:* a workflow that cannot be installed because only its author knew what
+_Prevents:_ a workflow that cannot be installed because only its author knew what
 to copy, where its output lands, and which agents it really calls.
