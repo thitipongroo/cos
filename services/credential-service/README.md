@@ -39,8 +39,25 @@ ingress; this service _also_ verifies the bearer itself and derives `tenant_id` 
 than trusting a header (`src/plugins/auth.ts`, spec §5.9.4). It holds tenant issuer keys, so a
 spoofed header must not be sufficient.
 
+**Rate limit: 100 req/min, keyed per user and falling back to IP** (`@fastify/rate-limit`, the §5.5
+general limit). It is registered after `registerAuth` so `request.userId` is set when the key is
+computed, and after `/health` so a liveness probe is never throttled — the ordering is the mechanism,
+and both halves are asserted in `src/__tests__/rate-limit.spec.ts`.
+
+Added 2026-09-03. Until then this service had no rate limit of any kind, while file-service — which
+holds uploaded documents rather than every tenant's encrypted issuer private key — had one from the
+start. §5.9.8 recorded the mitigation for the two unauthenticated public GETs as "IP-rate-limited",
+which was true only of the Kong route; Kong is deployed nowhere, the same fact that made the auth
+plugin stop trusting gateway headers. A 429 carries `Retry-After` plus the three `X-RateLimit-*`
+headers (QM-7), and its body is the limiter's own `{ statusCode, error, message }` — **not** this
+service's `buildError` envelope, because the limiter answers from a hook before any handler runs.
+
+The OpenAPI contract is [`docs/api/credential.openapi.yaml`](../../docs/api/credential.openapi.yaml),
+added the same day; the table above is the summary, that document is the contract.
+
 ## Dependencies
 
+- **HTTP:** `fastify`, `@fastify/helmet`, `@fastify/cors`, `@fastify/rate-limit`
 - **VC/DID stack:** `@digitalbazaar/vc`, `ed25519-signature-2020`, `ed25519-verification-key-2020`,
   `did-method-key`, `did-method-web`, `did-io`, `vc-status-list`, `security-document-loader`, `jsonld`
 - **HTTP:** `fastify`, `@fastify/helmet`, `@fastify/cors`

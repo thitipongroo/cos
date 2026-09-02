@@ -871,6 +871,9 @@ importers:
       '@fastify/helmet':
         specifier: ^13.0.2
         version: 13.0.2
+      '@fastify/rate-limit':
+        specifier: ^10.2.1
+        version: 10.3.0
       dotenv:
         specifier: ^16.4.7
         version: 16.4.7

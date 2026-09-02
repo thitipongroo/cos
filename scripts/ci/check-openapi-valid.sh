@@ -50,13 +50,13 @@ fi
 #     `StateSource` is unused in that document and real everywhere else — see the header above.
 #
 #   credential    operation-4xx-response
-#     `GET /health` on credential-service genuinely returns no 4xx: the service registers no rate
-#     limiter (unlike file-service, which registers @fastify/rate-limit), and `isPublicPath` exempts
-#     exactly this route from auth, so no 401 is reachable either. The only ways to satisfy the rule
-#     are to invent a status the service never sends or to delete a route that exists. redocly.yaml
-#     states the principle: a gate that is passed by inventing is worse than no gate.
-#     NOTE, recorded 2026-09-03 and not fixed here because this was a documentation change: a
-#     service holding every tenant's encrypted issuer key material has no HTTP rate limit at all.
+#     `GET /health` on credential-service genuinely returns no 4xx. `isPublicPath` exempts exactly
+#     this route from auth, so no 401 is reachable, and it is registered BEFORE the rate limiter so
+#     no 429 is either — deliberately, because a throttled liveness probe fails a healthy container
+#     under exactly the load that makes it matter. Every other route in that document carries a 429.
+#     The only ways to satisfy the rule here are to invent a status the service never sends or to
+#     delete a route that exists; redocly.yaml states the principle: a gate that is passed by
+#     inventing is worse than no gate.
 declare -A SKIP_RULE=(
   [digital-twin]="no-unused-components"
   [credential]="operation-4xx-response"
