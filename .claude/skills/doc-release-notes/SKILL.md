@@ -15,7 +15,7 @@ Written for the person deciding whether to upgrade, and what it will cost them.
 
 ## Structure
 
-```
+```markdown
 ## <version> - <date>
 
 ### Breaking changes
@@ -55,9 +55,11 @@ build.
 
 ## This project decides it
 
-The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins — read it before applying anything here.
+The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins
+— read it before applying anything here.
 
 - `context.md` QM-11 — Documentation Standards
 - QM-9 — Backward Compatibility
 
-QM-11 makes `CHANGELOG.md` the place a breaking change is announced, with a `BREAKING CHANGE:` entry required for every break to a public API or Kafka schema. QM-9 defines what counts as breaking.
+QM-11 makes `CHANGELOG.md` the place a breaking change is announced, with a `BREAKING CHANGE:` entry required for every
+break to a public API or Kafka schema. QM-9 defines what counts as breaking.

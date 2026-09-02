@@ -47,11 +47,15 @@ is not a test yet.
 
 ## This project decides it
 
-The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins — read it before applying anything here.
+The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins
+— read it before applying anything here.
 
 - `context.md` QM-1 — Test Coverage
 - Rule 30
 - Rule 32
 - Rule 35
 
-QM-1 sets the coverage threshold (100% lines and branches), names which suites run serially and why, and records the two recurring traps: request-scoped services read `req.userId` / `req.tenantId` with a CLS fallback, and the `?? ''` getter is only covered by invoking it. Rule 30 governs fake timers, Rule 32 the jest config, Rule 35 what every `@cos/*` package must carry.
+QM-1 sets the coverage threshold (100% lines and branches), names which suites run serially and why, and records the two
+recurring traps: request-scoped services read `req.userId` / `req.tenantId` with a CLS fallback, and the `?? ''` getter
+is only covered by invoking it. Rule 30 governs fake timers, Rule 32 the jest config, Rule 35 what every `@cos/*`
+package must carry.

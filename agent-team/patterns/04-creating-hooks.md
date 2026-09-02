@@ -1,7 +1,9 @@
 # 4. One handler, many events
 
 **Creates**: `.claude/hooks/scripts/` · `.claude/hooks/config/` · the `hooks` block in `.claude/settings.json`
-**Extracted from** — paths below are in the source repository, not in this kit: `.claude/settings.json` (30 events, counted) · `.claude/hooks/config/hooks-config.json` (31 keys, counted) · `.claude/hooks/scripts/hooks.py` docstring — "Supports all 30 Claude Code hooks" · `.claude/agents/weather-agent.md` (per-agent `hooks:` with `--agent=`)
+**Extracted from** — paths below are in the source repository, not in this kit: `.claude/settings.json` (30 events,
+counted) · `.claude/hooks/config/hooks-config.json` (31 keys, counted) · `.claude/hooks/scripts/hooks.py` docstring —
+"Supports all 30 Claude Code hooks" · `.claude/agents/weather-agent.md` (per-agent `hooks:` with `--agent=`)
 
 ---
 

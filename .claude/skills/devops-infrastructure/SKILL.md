@@ -47,10 +47,13 @@ anything. Know how to restore what you are about to change.
 
 ## This project decides it
 
-The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins — read it before applying anything here.
+The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins
+— read it before applying anything here.
 
 - `context.md` QM-13 — Multi-Region Architecture
 - QM-18 — Connection Pool Management
 - spec §8.8
 
-QM-18 makes PgBouncer mandatory in transaction mode and prohibits session and statement mode, with the baseline pool numbers. QM-13 sets the region rules — primary `ap-southeast-7`, DR `ap-southeast-1`, and no region hardcoded in business logic.
+QM-18 makes PgBouncer mandatory in transaction mode and prohibits session and statement mode, with the baseline pool
+numbers. QM-13 sets the region rules — primary `ap-southeast-7`, DR `ap-southeast-1`, and no region hardcoded in
+business logic.

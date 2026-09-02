@@ -49,9 +49,11 @@ distributed system produces a pile of lines nobody can assemble into a story.
 
 ## This project decides it
 
-The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins — read it before applying anything here.
+The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins
+— read it before applying anything here.
 
 - `context.md` QM-8 — Observability Standards
 - QM-5 — Data Privacy & Compliance
 
-QM-8 fixes the JSON log shape field by field and forbids `console.log` — use `@cos/logger`. Loki is the log store, with 30 days hot and a 7-year compliance archive. QM-5 is why no PII may appear in a log line.
+QM-8 fixes the JSON log shape field by field and forbids `console.log` — use `@cos/logger`. Loki is the log store, with
+30 days hot and a 7-year compliance archive. QM-5 is why no PII may appear in a log line.

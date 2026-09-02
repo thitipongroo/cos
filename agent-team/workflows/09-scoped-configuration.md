@@ -1,7 +1,9 @@
 # 9. Packaging a workflow in its own folder
 
 **Creates**: a subfolder holding its own `.claude/` plus the doc that explains it
-**Extracted from** — paths below are in the source repository, not in this kit: `development-workflows/rpi/` (`rpi-workflow.md`, `.claude/agents/` ×8, `.claude/commands/rpi/` ×3) · `agent-teams/.claude/` · registration behaviour observed live in one session
+**Extracted from** — paths below are in the source repository, not in this kit: `development-workflows/rpi/`
+(`rpi-workflow.md`, `.claude/agents/` ×8, `.claude/commands/rpi/` ×3) · `agent-teams/.claude/` · registration behaviour
+observed live in one session
 
 ---
 
@@ -9,7 +11,7 @@ A workflow can ship as a folder that carries everything it needs — its own
 `agents/`, `commands/` and `skills/` under a nested `.claude/`, beside the
 document that explains it.
 
-```
+```text
 project/
 ├── .claude/                    the project's own configuration
 └── some-workflow/
@@ -67,7 +69,7 @@ which reads as a broken workflow rather than a missing step.
 Declare the output tree up front, so a reader knows what the workflow will
 produce before running it:
 
-```
+```text
 rpi/{feature-slug}/
 ├── REQUEST.md              # Step 1: initial description
 ├── research/RESEARCH.md    # Step 2: GO/NO-GO analysis

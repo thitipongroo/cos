@@ -41,9 +41,11 @@ the page was last verified against the running product.
 
 ## This project decides it
 
-The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins — read it before applying anything here.
+The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins
+— read it before applying anything here.
 
 - `context.md` QM-3 — Internationalization
 - QM-11 — Documentation Standards
 
-QM-11 sets what a module README must contain. QM-3 applies to anything user-facing: no hardcoded strings, dates through `Intl.DateTimeFormat`, and Buddhist Era display for `th-TH`.
+QM-11 sets what a module README must contain. QM-3 applies to anything user-facing: no hardcoded strings, dates through
+`Intl.DateTimeFormat`, and Buddhist Era display for `th-TH`.

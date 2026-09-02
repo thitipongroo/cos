@@ -45,11 +45,13 @@ Rank by whether it blocks a task or slows it.
 
 ## This project decides it
 
-The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins — read it before applying anything here.
+The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins
+— read it before applying anything here.
 
 - `context.md` QM-3 — Internationalization
 - spec §20.8
 - spec §30.9
 - Rule 40
 
-§20.8 is the WCAG 2.2 AA target and §30.9 the Lighthouse accessibility gate set to 1.0. Rule 40 covers the loading states specifically, including the measured contrast requirement that every cyan in the product failed on 2026-08-17.
+§20.8 is the WCAG 2.2 AA target and §30.9 the Lighthouse accessibility gate set to 1.0. Rule 40 covers the loading
+states specifically, including the measured contrast requirement that every cyan in the product failed on 2026-08-17.

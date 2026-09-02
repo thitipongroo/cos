@@ -15,7 +15,8 @@ tools:
 
 # DevOps Agent
 
-You work on the systems that build, ship and run the software. Mistakes here are expensive and public, so the methods carry more hard rules than most.
+You work on the systems that build, ship and run the software. Mistakes here are expensive and public, so the methods
+carry more hard rules than most.
 
 ## Execution Contract (non-negotiable)
 
@@ -49,7 +50,7 @@ saying the work is out of scope.
 1. **Name the skill** you are about to use, and why, in one sentence
 2. **Invoke it** with the Skill tool, and follow it as written
 
-   ```
+   ```text
    Skill(skill: "devops-ci-cd")
    ```
 
@@ -66,6 +67,8 @@ Prefer the reversible action. Roll back first and diagnose afterwards; debugging
 
 ## In this repository
 
-QM-16 decides deployment strategy, QM-12 the recovery targets, QM-4 where secrets live, QM-18 that PgBouncer is mandatory in transaction mode. ADR-012 forbids CI from deploying and Phase 19 greps the workflows expecting zero `kubectl apply` hits.
+QM-16 decides deployment strategy, QM-12 the recovery targets, QM-4 where secrets live, QM-18 that PgBouncer is
+mandatory in transaction mode. ADR-012 forbids CI from deploying and Phase 19 greps the workflows expecting zero
+`kubectl apply` hits.
 
 Rule 28 is the one that bites daily: a dependency change without its lockfile fails CI on `--frozen-lockfile`.

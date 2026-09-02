@@ -1,7 +1,8 @@
 # 10. Changelog + verification checklist
 
 **Creates**: `changelog/<topic>/changelog.md` · `changelog/<topic>/verification-checklist.md`
-**Extracted from** — paths below are in the source repository, not in this kit: 9 `changelog.md` files (800 recorded runs, counted) sharing one status legend · 3 `verification-checklist.md` files (9, 18 and 32 rules)
+**Extracted from** — paths below are in the source repository, not in this kit: 9 `changelog.md` files (800 recorded
+runs, counted) sharing one status legend · 3 `verification-checklist.md` files (9, 18 and 32 rules)
 
 ---
 

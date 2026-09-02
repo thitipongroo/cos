@@ -3,6 +3,16 @@
 # to fail first. Every command here is copied from .github/workflows/ci.yml; when
 # a job changes there, change it here in the same commit or this gate starts lying.
 #
+# It did lie, and this is what it cost. On 2026-09-03 the Lint job here reported PASS on nine steps
+# while CI's Lint job has fifteen: markdownlint, yamllint, sqlfluff, ruff, terraform fmt and
+# terraform validate had no local counterpart at all, and `prisma generate` ran from the repo root
+# while ci.yml runs it with `working-directory: backend`. The push went out green and CI came back
+# red with 241 markdownlint errors across 74 files. All seven are mirrored now.
+#
+# The rule that keeps this honest: a step CI runs is either mirrored here, or named in the
+# "not covered" list printed at the end. There is no third category, and "it would probably pass"
+# is not one either.
+#
 # Usage:
 #   bash scripts/ci/verify-before-push.sh            # everything that needs no Docker
 #   bash scripts/ci/verify-before-push.sh --full     # plus the Docker-backed suites
@@ -41,9 +51,29 @@ need_docker() {
   return 1
 }
 
+# A step only counts if the tool is here. Skipping loudly is honest; silently passing because a
+# binary is missing is the failure this whole script exists to prevent.
+have() { command -v "$1" >/dev/null 2>&1; }
+run_if() {
+  local tool="$1" label="$2"; shift 2
+  if have "$tool"; then run "$label" "$@"; else SKIP+=("$label — $tool not installed"); fi
+}
+
 # ── Lint job ────────────────────────────────────────────────────────────────
 run "Lint — eslint"                pnpm run lint
 run "Lint — prettier"              pnpm run format:check
+run "Lint — markdownlint"          bash ./scripts/ci/check-markdown-changed.sh
+run_if yamllint  "Lint — yamllint"  yamllint .
+run_if sqlfluff  "Lint — sqlfluff"  sqlfluff lint .
+run_if ruff      "Lint — ruff"      ruff check services mlops
+run_if terraform "Lint — terraform fmt" terraform fmt -check -recursive infrastructure/terraform
+run_if terraform "Lint — terraform validate" bash -c '
+  set -e
+  for dir in infrastructure/terraform/aws infrastructure/terraform/cloudflare; do
+    echo "── $dir"
+    terraform -chdir="$dir" init -backend=false -input=false -no-color
+    terraform -chdir="$dir" validate -no-color
+  done'
 run "Lint — jscpd duplication"     pnpm exec jscpd backend/src packages apps/web/src services libs apps/mobile/src
 run "Lint — service runtimes"      bash ./scripts/readiness/check-service-runtimes.sh
 run "Lint — openapi freshness"     bash ./scripts/readiness/check-openapi-freshness.sh

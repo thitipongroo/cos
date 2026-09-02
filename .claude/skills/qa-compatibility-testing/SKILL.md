@@ -45,9 +45,11 @@ symptom and a screenshot.
 
 ## This project decides it
 
-The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins — read it before applying anything here.
+The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins
+— read it before applying anything here.
 
 - `context.md` QM-3 — Internationalization
 - QM-9 — Backward Compatibility
 
-QM-9 fixes the support window: the backend supports the previous two major mobile versions. QM-3 adds the locale dimension — RTL, Buddhist Era display, and the `ar-SA` check every new UI component must pass.
+QM-9 fixes the support window: the backend supports the previous two major mobile versions. QM-3 adds the locale
+dimension — RTL, Buddhist Era display, and the `ar-SA` check every new UI component must pass.

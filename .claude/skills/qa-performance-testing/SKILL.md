@@ -44,9 +44,12 @@ identified it - not a guess about where the time went.
 
 ## This project decides it
 
-The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins — read it before applying anything here.
+The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins
+— read it before applying anything here.
 
 - `context.md` QM-6 — Performance Budgets
 - QM-14 — SLI / SLO / Error Budget
 
-QM-6 is the budget table: p95 read under 300ms, p95 write under 500ms, dashboard under 1s, AI report under 5s, plus the Web Vitals thresholds and which of them is a lab gate rather than the SLO. Do not measure against a number that is not in that table.
+QM-6 is the budget table: p95 read under 300ms, p95 write under 500ms, dashboard under 1s, AI report under 5s, plus the
+Web Vitals thresholds and which of them is a lab gate rather than the SLO. Do not measure against a number that is not
+in that table.

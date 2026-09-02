@@ -44,9 +44,11 @@ matter.
 
 ## This project decides it
 
-The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins — read it before applying anything here.
+The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins
+— read it before applying anything here.
 
 - `context.md` QM-11 — Documentation Standards
 - QM-3 — Internationalization
 
-QM-11 requires a README per module carrying a usage example. QM-3 applies to anything user-facing in that example — no hardcoded strings, i18n keys in the `{domain}.{screen}.{element}` form.
+QM-11 requires a README per module carrying a usage example. QM-3 applies to anything user-facing in that example — no
+hardcoded strings, i18n keys in the `{domain}.{screen}.{element}` form.

@@ -50,10 +50,13 @@ changed, admin surfaces not publicly reachable, TLS enforced end to end.
 
 ## This project decides it
 
-The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins — read it before applying anything here.
+The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins
+— read it before applying anything here.
 
 - `context.md` QM-4 — Security
 - ADR-013
 - spec §5.2
 
-QM-4 decides where secrets live by deployment type — AWS Secrets Manager for cloud, HashiCorp Vault on premise, SealedSecret for anything that must sit in git. It also fixes TLS 1.3 as the ingress minimum and AES-256 as the at-rest minimum.
+QM-4 decides where secrets live by deployment type — AWS Secrets Manager for cloud, HashiCorp Vault on premise,
+SealedSecret for anything that must sit in git. It also fixes TLS 1.3 as the ingress minimum and AES-256 as the at-rest
+minimum.

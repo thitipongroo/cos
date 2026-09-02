@@ -10,7 +10,8 @@ paths:
 Indexed in: `context.md` §QUALITY MANDATES
 
 These are enforced targets. If an implementation does not meet them, do not ship — optimize or escalate.
-Source: spec §31.6 (targets corrected to match spec SLO definitions; Web Vitals per §31.6 Frontend Web Vitals SLO + §30.9 Lighthouse CI gate)
+Source: spec §31.6 (targets corrected to match spec SLO definitions; Web Vitals per §31.6 Frontend Web Vitals SLO +
+§30.9 Lighthouse CI gate)
 
 | Metric                                       | Target                                         | Measurement                                                                                                                                                                                                                                                                   |
 | -------------------------------------------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -28,4 +29,6 @@ Source: spec §31.6 (targets corrected to match spec SLO definitions; Web Vitals
 | Background job (Temporal workflow)           | SLA defined per workflow type in workflow spec | Temporal dashboard                                                                                                                                                                                                                                                            |
 | k6 sustained load (100 VU × 5 min)           | 0 errors, p95 within budget                    | Weekly scheduled — `tests/load/qm6-baseline.js` (staging); Phase 19 one-time gate. `tests/load/api-baseline.js` is the separate Phase 18 scenario — 200 VU over 10 min, reads only, p95 < 1 s                                                                                                                                                                                       |
 
-The k6 load test runs on a **weekly schedule against staging** — not per-PR (source: spec §30.9). Results are advisory: alert Engineering Lead if p95 latency increases > 20% vs. previous week. Load tests do not block PR merge. Note: Phase 19 automated check #7 runs a one-time load test gate before production go-live.
+The k6 load test runs on a **weekly schedule against staging** — not per-PR (source: spec §30.9). Results are advisory:
+alert Engineering Lead if p95 latency increases > 20% vs. previous week. Load tests do not block PR merge. Note: Phase
+19 automated check #7 runs a one-time load test gate before production go-live.

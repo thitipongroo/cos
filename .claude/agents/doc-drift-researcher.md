@@ -54,7 +54,7 @@ and only then call it absent. Say which patterns you tried.
 
 ## Return format
 
-```
+```text
 SUMMARY
   documents read: <n>   claims checked: <n>   drift found: <n>
 
@@ -77,4 +77,7 @@ look thorough.
 
 ## In this repository
 
-The authoritative sources here are `docs/specifications/` first, then `context/` as the compiled execution view — `00_master_construction_os.md` plus the 25 Phase files in `context/phases/` — then `context.md` and the mandates and rules in `.claude/rules/`. When they disagree, the specification wins and the disagreement is itself a finding — that is what Rule 37 exists to catch.
+The authoritative sources here are `docs/specifications/` first, then `context/` as the compiled execution view —
+`00_master_construction_os.md` plus the 25 Phase files in `context/phases/` — then `context.md` and the mandates and
+rules in `.claude/rules/`. When they disagree, the specification wins and the disagreement is itself a finding — that is
+what Rule 37 exists to catch.

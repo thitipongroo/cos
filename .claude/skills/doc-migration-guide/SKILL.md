@@ -46,9 +46,12 @@ Where to get help, and how to report a case the guide does not cover.
 
 ## This project decides it
 
-The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins — read it before applying anything here.
+The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins
+— read it before applying anything here.
 
 - `context.md` QM-2 — API Versioning
 - QM-9 — Backward Compatibility
 
-QM-2 fixes the deprecation terms: an old version stays functional for at least 12 months, tenants are told by email and in-app banner at least 90 days before sunset, and the sunset date is recorded in `docs/api/deprecation-schedule.md`. QM-9 holds the three-step column rename and the rollback script requirement.
+QM-2 fixes the deprecation terms: an old version stays functional for at least 12 months, tenants are told by email and
+in-app banner at least 90 days before sunset, and the sunset date is recorded in `docs/api/deprecation-schedule.md`.
+QM-9 holds the three-step column rename and the rollback script requirement.

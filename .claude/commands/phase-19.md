@@ -22,7 +22,7 @@ Triggered in two ways — either is valid:
 - **Auto:** agent completes Phase 18 implementation → run verification immediately
 - **Manual:** product owner says "verify production readiness" or "รัน production readiness check"
 
-### Step 0 — CI/CD pre-check
+## Step 0 — CI/CD pre-check
 
 Before running local scripts, confirm CI is green:
 
@@ -32,7 +32,7 @@ gh run list --branch main --limit 5 --json status,conclusion,name
 
 If the latest CI run is FAILED → do not proceed. Fix CI first.
 
-### Step 1 — Run automated checks (30 items via script + 9 global-scale additions = 39 total)
+## Step 1 — Run automated checks (30 items via script + 9 global-scale additions = 39 total)
 
 ```bash
 ./scripts/readiness/verify-production-readiness.sh --env staging
@@ -84,7 +84,7 @@ k6 run --vus 100 --duration 300s ./tests/load/qm6-baseline.js
 ./scripts/readiness/check-schema-registry.sh
 ```
 
-### Step 2 — Run manual checks interactively (14 items via script + 8 global-scale additions = 22 total)
+## Step 2 — Run manual checks interactively (14 items via script + 8 global-scale additions = 22 total)
 
 ```bash
 REVIEWER="<product owner name>" ./scripts/readiness/run-all-checks.sh
@@ -103,9 +103,10 @@ Save audit log to `cos-audit/audit-<timestamp>.log`
 - [ ] Feature flags verified: all mandatory flags present and togglable to OFF in < 60 seconds
 - [ ] SLO dashboard live in Grafana with correct thresholds per QM-14
 - [ ] On-call rotation and PagerDuty escalation policy configured and tested (paging drill completed)
-- [ ] Secrets rotation schedule defined in `docs/policies/secrets-rotation-policy.md`; first rotation executed and verified in staging
+- [ ] Secrets rotation schedule defined in `docs/policies/secrets-rotation-policy.md`; first rotation executed and
+  verified in staging
 
-### Step 3 — Report final status
+## Step 3 — Report final status
 
 ```text
 SECTION A — PRE-LAUNCH CHECKLIST

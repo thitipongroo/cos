@@ -43,10 +43,12 @@ Paste the run and the duration. Name any test you had to retry, and why.
 
 ## This project decides it
 
-The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins — read it before applying anything here.
+The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins
+— read it before applying anything here.
 
 - `context.md` QM-1 — Test Coverage
 - spec §30.5
 - spec §30.7
 
-QM-1 lists the ten web scenarios and three mobile scenarios that must exist, by name. §30.7 records what does not work for offline simulation in Detox and what to use instead.
+QM-1 lists the ten web scenarios and three mobile scenarios that must exist, by name. §30.7 records what does not work
+for offline simulation in Detox and what to use instead.

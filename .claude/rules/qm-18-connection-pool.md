@@ -20,18 +20,27 @@ Isolation model:
 Direct application-to-PostgreSQL connections do not scale: each pod holds a connection pool, and with
 many tenants and replicas, PostgreSQL `max_connections` is exhausted. A connection pooler is mandatory.
 
-- **PgBouncer is the required connection pooler** for all environments (staging + production); deployed as a Kubernetes `Deployment` (not a sidecar) with a `PodDisruptionBudget` of `minAvailable: 1`; configuration committed to `infrastructure/kubernetes/pgbouncer/` (Phase 17)
-- **Transaction mode is required** — `SET LOCAL app.current_tenant_id` is transaction-scoped and reverts on `COMMIT`/`ROLLBACK`, making transaction pooling safe; do NOT use session mode or statement mode
+- **PgBouncer is the required connection pooler** for all environments (staging + production); deployed as a Kubernetes
+  `Deployment` (not a sidecar) with a `PodDisruptionBudget` of `minAvailable: 1`; configuration committed to
+  `infrastructure/kubernetes/pgbouncer/` (Phase 17)
+- **Transaction mode is required** — `SET LOCAL app.current_tenant_id` is transaction-scoped and reverts on
+  `COMMIT`/`ROLLBACK`, making transaction pooling safe; do NOT use session mode or statement mode
 - **Session mode is prohibited** — incompatible with horizontal pod autoscaling (connections are pinned to a pod)
 - **Statement mode is prohibited** — incompatible with multi-statement transactions
-- Application layer must connect to PgBouncer address — never directly to PostgreSQL port `5432`; integration test must assert connection string resolves to PgBouncer, not the database host
+- Application layer must connect to PgBouncer address — never directly to PostgreSQL port `5432`; integration test must
+  assert connection string resolves to PgBouncer, not the database host
 - **Baseline configuration** (tune before Stage 2 go-live based on Grafana observations):
   - `default_pool_size = 25` per database
   - `max_client_conn = 1000`
   - `server_idle_timeout = 600` seconds
-- **Grafana must expose** `pgbouncer_pools_client_active`, `pgbouncer_pools_server_active`, `pgbouncer_pools_client_waiting`, `pgbouncer_databases_pool_size`; alert policy: fire P2 incident when `client_waiting > 10` sustained for > 30 seconds
-- **Tenant scale limit documentation** — before Stage 2 go-live, load-test the PgBouncer + PostgreSQL stack and record the maximum concurrent tenants at acceptable latency in `docs/architecture/tenant-scale-limits.md`; this threshold determines when DatabaseSharding evaluation must begin
-- Local development (Docker Compose): PgBouncer container required in `docker-compose.yml`; dev mode Vault and PgBouncer must start together with the application
+- **Grafana must expose** `pgbouncer_pools_client_active`, `pgbouncer_pools_server_active`,
+  `pgbouncer_pools_client_waiting`, `pgbouncer_databases_pool_size`; alert policy: fire P2 incident when `client_waiting
+  > 10` sustained for > 30 seconds
+- **Tenant scale limit documentation** — before Stage 2 go-live, load-test the PgBouncer + PostgreSQL stack and record
+  the maximum concurrent tenants at acceptable latency in `docs/architecture/tenant-scale-limits.md`; this threshold
+  determines when DatabaseSharding evaluation must begin
+- Local development (Docker Compose): PgBouncer container required in `docker-compose.yml`; dev mode Vault and PgBouncer
+  must start together with the application
 
 **Graceful shutdown — close every long-lived handle (ADR-034):**
 

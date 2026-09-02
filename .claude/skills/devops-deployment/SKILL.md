@@ -54,10 +54,13 @@ or queue to turn over before calling it done.
 
 ## This project decides it
 
-The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins — read it before applying anything here.
+The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins
+— read it before applying anything here.
 
 - `context.md` QM-16 — Deployment Safety
 - QM-9 — Backward Compatibility
 - QM-12 — Disaster Recovery
 
-QM-16 decides the strategy: rolling by default, blue-green for auth changes and migrations that cannot be made backward-compatible in one step, canary for endpoint changes. It also records that the Argo Rollouts controller is not installed yet, so the automated health gate does not evaluate anything. QM-9 governs the migration half.
+QM-16 decides the strategy: rolling by default, blue-green for auth changes and migrations that cannot be made
+backward-compatible in one step, canary for endpoint changes. It also records that the Argo Rollouts controller is not
+installed yet, so the automated health gate does not evaluate anything. QM-9 governs the migration half.

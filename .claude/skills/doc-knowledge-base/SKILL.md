@@ -47,9 +47,11 @@ exists. Findability is the whole job.
 
 ## This project decides it
 
-The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins — read it before applying anything here.
+The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins
+— read it before applying anything here.
 
 - `context.md` QM-11 — Documentation Standards
 - QM-17 — Incident Management
 
-Runbooks are the knowledge base here, and QM-11 requires each to be executed end to end in staging within 30 days before its Stage transition. QM-17 fixes the postmortem template and the five-business-day deadline.
+Runbooks are the knowledge base here, and QM-11 requires each to be executed end to end in staging within 30 days before
+its Stage transition. QM-17 fixes the postmortem template and the five-business-day deadline.

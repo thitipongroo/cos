@@ -1,11 +1,12 @@
 # 6. Progressive disclosure inside a skill
 
 **Creates**: `.claude/skills/<name>/`
-**Extracted from** — paths below are in the source repository, not in this kit: `.claude/skills/weather-svg-creator/` (SKILL.md + reference.md + examples.md) · its `## Additional resources` section
+**Extracted from** — paths below are in the source repository, not in this kit: `.claude/skills/weather-svg-creator/`
+(SKILL.md + reference.md + examples.md) · its `## Additional resources` section
 
 ---
 
-```
+```text
 skills/<name>/
 ├── SKILL.md      steps and rules — short, always read
 ├── reference.md  templates, schemas, specs — read when needed

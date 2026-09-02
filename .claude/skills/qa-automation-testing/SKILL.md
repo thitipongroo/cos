@@ -48,11 +48,14 @@ stopped working, whatever the pass rate says.
 
 ## This project decides it
 
-The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins — read it before applying anything here.
+The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins
+— read it before applying anything here.
 
 - `context.md` QM-1 — Test Coverage
 - Rule 27
 - Rule 32
 - Rule 35
 
-QM-1 sets what must be automated and at which level. Rule 27 requires a matching `turbo.json` task for every new script, Rule 32 keeps `jest.config.js` the single source of truth, Rule 35 lists what a package with executable logic must carry.
+QM-1 sets what must be automated and at which level. Rule 27 requires a matching `turbo.json` task for every new script,
+Rule 32 keeps `jest.config.js` the single source of truth, Rule 35 lists what a package with executable logic must
+carry.

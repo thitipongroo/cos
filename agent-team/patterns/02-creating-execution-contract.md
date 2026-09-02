@@ -1,7 +1,9 @@
 # 2. Execution contract
 
 **Creates**: a section inside every `.claude/commands/*.md` and `.claude/agents/*.md`
-**Extracted from** — paths below are in the source repository, not in this kit: `.claude/commands/weather-orchestrator.md` · `.claude/agents/weather-agent.md` — the only two files in the source carrying `## Execution Contract (non-negotiable)` and `**Fail-closed guardrail**`
+**Extracted from** — paths below are in the source repository, not in this kit:
+`.claude/commands/weather-orchestrator.md` · `.claude/agents/weather-agent.md` — the only two files in the source
+carrying `## Execution Contract (non-negotiable)` and `**Fail-closed guardrail**`
 
 ---
 

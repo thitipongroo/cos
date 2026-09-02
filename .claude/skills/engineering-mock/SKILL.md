@@ -47,8 +47,10 @@ test does and does not prove.
 
 ## This project decides it
 
-The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins — read it before applying anything here.
+The method above is general. Where this repository has already fixed a number, a tool or a procedure, that decision wins
+— read it before applying anything here.
 
 - `context.md` QM-1 — Test Coverage
 
-QM-1 records which collaborators the unit tests mock and the shape those mocks must have — in particular that a mock setting only `req.user.user_id` will not exercise the code path that runs in production.
+QM-1 records which collaborators the unit tests mock and the shape those mocks must have — in particular that a mock
+setting only `req.user.user_id` will not exercise the code path that runs in production.

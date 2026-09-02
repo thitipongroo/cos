@@ -1,7 +1,9 @@
 # 8. Verification has a depth, and it is declared
 
 **Creates**: the `Depth` column in `changelog/<topic>/verification-checklist.md`
-**Extracted from** — paths below are in the source repository, not in this kit: `changelog/best-practice/claude-settings/verification-checklist.md` · `changelog/best-practice/claude-subagents/verification-checklist.md` — both open with the same Depth Levels table
+**Extracted from** — paths below are in the source repository, not in this kit:
+`changelog/best-practice/claude-settings/verification-checklist.md` ·
+`changelog/best-practice/claude-subagents/verification-checklist.md` — both open with the same Depth Levels table
 
 ---
 

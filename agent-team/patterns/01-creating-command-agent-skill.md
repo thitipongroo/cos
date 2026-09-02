@@ -1,13 +1,15 @@
 # 1. Command → Agent → Skill
 
 **Creates**: `.claude/commands/` · `.claude/agents/` · `.claude/skills/`
-**Extracted from** — paths below are in the source repository, not in this kit: `CLAUDE.md` §Weather System · `orchestration-workflow/orchestration-workflow.md` §Architecture Patterns · `.claude/commands/weather-orchestrator.md` · `.claude/agents/weather-agent.md`
+**Extracted from** — paths below are in the source repository, not in this kit: `CLAUDE.md` §Weather System ·
+`orchestration-workflow/orchestration-workflow.md` §Architecture Patterns · `.claude/commands/weather-orchestrator.md` ·
+`.claude/agents/weather-agent.md`
 
 ---
 
 Three layers, one job each.
 
-```
+```text
 /command          orchestrates: asks for input, calls things in order, reports
    └─ agent       decides: works inside a tool allowlist that makes wrong moves impossible
         └─ skill  executes: one procedure, no orchestration
@@ -29,7 +31,7 @@ skills:
   - <skill-name>
 ```
 
-```
+```text
 # from a command or agent body — invoked
 Skill(skill: "<skill-name>")
 ```

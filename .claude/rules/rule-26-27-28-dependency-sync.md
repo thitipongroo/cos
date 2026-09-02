@@ -10,9 +10,11 @@ paths:
 
 Indexed in: `context.md` §GLOBAL EXECUTION RULES
 
-- Rule 26 — Before adding `import { X } from 'pkg'` to any source file, verify 'pkg' is in that package's own `package.json` (not root or another package). Add it if missing. (prevents missing runtime deps)
+- Rule 26 — Before adding `import { X } from 'pkg'` to any source file, verify 'pkg' is in that package's own
+  `package.json` (not root or another package). Add it if missing. (prevents missing runtime deps)
 
-- Rule 27 — When adding any new script to any `package.json`, add the corresponding task to root `turbo.json` in the same commit. (prevents missing turbo tasks)
+- Rule 27 — When adding any new script to any `package.json`, add the corresponding task to root `turbo.json` in the
+  same commit. (prevents missing turbo tasks)
 
 - Rule 28 — After changing anything that moves dependency resolution — `package.json`
   `dependencies`/`devDependencies`/`peerDependencies`/`optionalDependencies`/`resolutions`/`pnpm`, or

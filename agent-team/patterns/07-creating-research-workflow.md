@@ -1,13 +1,16 @@
 # 7. Read-then-report
 
 **Creates**: `.claude/commands/workflows/*.md` (coordinator) + `.claude/agents/*.md` (read-only researcher)
-**Extracted from** — paths below are in the source repository, not in this kit: `.claude/commands/workflows/best-practice/*.md` — 5 files carrying "read-then-report" · `.claude/agents/workflows/best-practice/*.md` — 5 files carrying "Do NOT modify any files" · "Never guess" appears in 13 files across both
+**Extracted from** — paths below are in the source repository, not in this kit:
+`.claude/commands/workflows/best-practice/*.md` — 5 files carrying "read-then-report" ·
+`.claude/agents/workflows/best-practice/*.md` — 5 files carrying "Do NOT modify any files" · "Never guess" appears in 13
+files across both
 
 ---
 
 Split "find out" from "change it":
 
-```
+```text
 /command                 coordinator
    └─ research agent     read-only — no Write, no Edit
         └─ findings

@@ -1,7 +1,9 @@
 # 5. Rules that load only when relevant
 
 **Creates**: `.claude/rules/*.md`
-**Extracted from** — paths below are in the source repository, not in this kit: `CLAUDE.md` — the only line in the source containing "lazy-loaded" · `.claude/rules/markdown-docs.md` (`**/*.md`) · `.claude/rules/presentation.md` (`presentation/**`)
+**Extracted from** — paths below are in the source repository, not in this kit: `CLAUDE.md` — the only line in the
+source containing "lazy-loaded" · `.claude/rules/markdown-docs.md` (`**/*.md`) · `.claude/rules/presentation.md`
+(`presentation/**`)
 
 ---
 
