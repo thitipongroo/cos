@@ -243,7 +243,7 @@ spec'd-as-future.
 
 ## 5. Sources
 
-- `context/00_master_construction_os.md:2597` — Phase 7 Finance scope exclusion (no GL/CoA/GL-posting/ERP)
+- `context/phases/phase-07-finance-service.md` — Finance scope exclusion (no GL/CoA/GL-posting/ERP)
 - `docs/specifications/13-product-architecture.md:153` — WHT rules (calc) · §13.3 — ERP adapter Strategy pattern
 - `docs/specifications/21-mvp-scope.md:52,69` — Workforce (attendance/timesheet) in MVP
 - `context/01_build_priority_execution.md:847` — Payroll deferred; labor cost = manual entry

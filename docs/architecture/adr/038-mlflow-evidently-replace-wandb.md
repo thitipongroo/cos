@@ -67,4 +67,4 @@ tracking instead of W&B.
 - spec `04-tech-stack` §4.6 (AI / MLOps)
 - spec `22-ai-architecture` §22.6 (Experiment Monitoring)
 - spec `24-ai-training-pipeline` §24.4 (MLOps Stack) + Path-A pipeline
-- `context/00_master_construction_os.md` §Phase 23 (MLOps)
+- `context/phases/phase-23-mlops-pipeline.md` (MLOps)

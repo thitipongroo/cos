@@ -9,7 +9,7 @@
 
 ## Context
 
-The Phase 1 spec (`context/00_master_construction_os.md` §Phase 1 → Generate → "Docker Compose")
+The Phase 1 spec (`context/phases/phase-01-foundation-repository.md` → Generate → "Docker Compose")
 enumerates **only infrastructure** services for local dev (PostgreSQL/TimescaleDB, PgBouncer, Redis,
 Kafka, Schema Registry, OpenSearch, Neo4j, ClickHouse, MinIO, Vault). The Phase 1 **Constraint** list,
 however, states: _"all services must start with Docker Compose from day one."_
@@ -105,7 +105,7 @@ pattern). Evaluate at Stage 4+.
 
 ## References
 
-- `context/00_master_construction_os.md` §Phase 1 — Foundation Repository Command (Generate / Constraints)
+- `context/phases/phase-01-foundation-repository.md` — Foundation Repository Command (Generate / Constraints)
 - QM-18 (PgBouncer / connection pooling — app connects to `pgbouncer`, never `5432`)
 - [Docker Compose profiles](https://docs.docker.com/compose/how-tos/profiles/)
 - [Docker Compose Watch](https://docs.docker.com/compose/how-tos/file-watch/)

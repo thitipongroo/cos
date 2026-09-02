@@ -67,4 +67,4 @@ Documentation that describes last release is worse than none - it teaches the wr
 
 QM-11 sets the documentation standards here — a README per module, an ADR in `docs/architecture/adr/` for every architectural decision, one OpenAPI document per service kept in sync by CI, and a `BREAKING CHANGE:` entry in `CHANGELOG.md`.
 
-Rule 29 blocks a write that cites an ADR number with no matching file. Rule 37 applies whenever you touch `docs/specifications/`: grep `context.md` and `context/00_master_construction_os.md` for the changed term and fix both in the same commit.
+Rule 29 blocks a write that cites an ADR number with no matching file. Rule 37 applies whenever you touch `docs/specifications/`: grep `context.md`, the whole of `context/` (the 25 Phase files live in `context/phases/`) and `.claude/rules/` for the changed term, and fix every match in the same commit.

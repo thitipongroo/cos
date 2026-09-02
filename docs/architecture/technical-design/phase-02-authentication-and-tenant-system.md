@@ -331,7 +331,7 @@ column and endpoints are retained to avoid test churn, not because they are the 
 - Isolation: a cross-tenant query must return zero rows (`30-testing-strategy` §30.6)
 - Mutation testing is required for permission-check logic, score ≥ 70% (QM-1)
 
-Two recurring unit-test traps in this area are documented in `context.md` QM-1: request-scoped
+Two recurring unit-test traps in this area are documented in `.claude/rules/qm-01-test-coverage.md`: request-scoped
 services read `req.userId` / `req.tenantId` with a CLS fallback, so mocks must set those and not only
 `req.user.user_id`; and the `?? ''` fallback in each lazy getter is only covered by **invoking** the
 getter on an empty-`REQUEST` instance.

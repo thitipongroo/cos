@@ -93,7 +93,7 @@ restricted.**
 
 ### 3.3 QM-7's account lockout — where it applies, and where it does not
 
-QM-7 (`context.md` § QM-7) requires of authentication endpoints: "10 req/min per IP (brute force
+QM-7 (`.claude/rules/qm-07-rate-limiting.md`) requires of authentication endpoints: "10 req/min per IP (brute force
 protection); account lockout after 5 consecutive failures for 15 minutes."
 
 **On Path B the lockout exists**, in the place that owns the credential.

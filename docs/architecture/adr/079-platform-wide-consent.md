@@ -109,7 +109,7 @@ other retention rules require).
 ## References
 
 - `docs/registers/pdpa-controls.md` §19 (PDPA-20/21/22) · `docs/registers/data-flow-map.md`
-- `docs/specifications/05-security-compliance.md` §5.3 · `context.md` QM-5
+- `docs/specifications/05-security-compliance.md` §5.3 · `.claude/rules/qm-05-data-privacy.md`
 - `backend/prisma/migrations/20260803000001_tag_pii_columns/` (the five categories)
 - `backend/prisma/migrations/20260608000004_rls_policies/` · ADR-031 (RLS policy shape)
 - ADR-080 (geo-IP enrichment + Behavioral Context — the trigger), ADR-078 (export)

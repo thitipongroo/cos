@@ -7,7 +7,7 @@
   `backend/src/modules/sync/sync-authz.ts` (partially — see Decision)
 - **Related:** `docs/specifications/06-rbac-permission-matrix.md` §6.8,
   `docs/specifications/14-api-architecture.md` §Safety APIs,
-  `context/00_master_construction_os.md` §Phase 10 (SITE_WORKER workflows),
+  `context/phases/phase-10-mobile-offline-engine.md` (SITE_WORKER workflows),
   `mockup/mobile/05_site_worker/03_safety/01_sw_checklist`
 
 ## Context

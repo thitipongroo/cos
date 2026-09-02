@@ -151,7 +151,7 @@ Thai face, which is a font-licensing decision nobody has taken. The metadata end
 
 - `docs/specifications/05-security-compliance.md` §5.3 (PDPA hard requirements), §5.9 (STRIDE)
 - `docs/specifications/07-multi-tenant-architecture.md` §7.7 (RLS as the isolation mechanism)
-- `context/00_master_construction_os.md` §Phase 2 — "platform tables exempt", "cross-tenant, no RLS needed"
+- `context/phases/phase-02-authentication-tenant-system.md` — "platform tables exempt", "cross-tenant, no RLS needed"
 - ADR-090 — external data subjects, processor role and tenant tooling (`platform.subject_requests`)
 - ADR-078 — account-holder data export (`platform.export_requests`)
 - ADR-030 / ADR-058 — magic-link surfaces authenticated by token rather than session

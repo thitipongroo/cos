@@ -5,6 +5,19 @@
 Read `context.md` in full before doing anything else.
 Do not answer questions, do not write code, do not run commands until `context.md` is loaded.
 
+`context.md` is the entry point, not the corpus. Everything under `context/` loads
+on demand from there — `context/00_master_construction_os.md` alone is 6,399 lines
+and reading it whole costs ~98,500 tokens, of which two thirds is Phase blocks that
+do not apply to the task in hand. Use `.claude/skills/phase-index/SKILL.md` to find
+the phase, then read that range.
+
+**This is a change of mechanism, not of obligation.** Every Quality Mandate, every
+numbered Rule and every Phase block still binds in full. What changed on 2026-09-02
+is that they arrive when the work reaches them instead of all at once: the files in
+`.claude/rules/` carry `paths:` frontmatter and load automatically when a matching
+file is edited. Not having read a section is not a defence for breaching it — if
+the task touches something and the rule did not fire, go and read the section.
+
 ---
 
 ## Two gates that can never be skipped

@@ -128,7 +128,7 @@ conflict resolution (Max-wins). Two traps:
   `cos://e2e/network?online=0|1`.
 - **There is no boolean `element().isVisible()`.** Use `await waitFor(el).toBeVisible().withTimeout()`.
 
-> 📎 `context/00_master_construction_os.md` § Phase 10 (the authoritative offline engine spec and the
+> 📎 `context/phases/phase-10-mobile-offline-engine.md` (the authoritative offline engine spec and the
 > per-role screen inventory) ·
 > [`specifications/17-offline-mobile-sync.md`](../specifications/17-offline-mobile-sync.md) §17.4–§17.10 ·
 > [`specifications/32-implementation-specifications.md`](../specifications/32-implementation-specifications.md)

@@ -177,6 +177,6 @@ explicitly. An empty `sampling_percentage` is a config error the `validate` gate
 ## References
 
 - `docs/specifications/31-monitoring-observability.md` §31.5 — Sampling Strategy
-- `context.md` QM-8 — Observability Standards (tail-based sampling; sampling config path)
+- `.claude/rules/qm-08-observability.md` — Observability Standards (tail-based sampling; sampling config path)
 - `infrastructure/monitoring/otel-collector/otel-collector-config.yml` — `tail_sampling` policies
 - ADR-021 — extraction of the shared Go `cosotel` package

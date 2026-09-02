@@ -61,6 +61,6 @@ feature/* → develop (integration; every-PR gates)
 ## Updated artifacts
 
 - `docs/specifications/30-testing-strategy.md` §30.5 Environment + §30.12 gate table
-- `context/00_master_construction_os.md` Phase 18 (Playwright/Detox trigger lines)
+- `context/phases/phase-18-testing.md` (Playwright/Detox trigger lines)
 - `.github/workflows/ci.yml` `e2e-tests.if`
 - `staging` branch created from `develop`

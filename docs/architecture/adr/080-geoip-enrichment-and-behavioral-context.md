@@ -115,7 +115,7 @@ worker — a category error dressed as behaviour).
 - `backend/prisma/migrations/20260705000001_geo_coordinates/` (the five nullable lat/lng tables)
 - `apps/mobile/src/app/(app)/transparency-location.tsx` (no geofencing), `transparency-logs.tsx`
   (real retention tiers)
-- `docs/specifications/31-monitoring-observability.md` §31.2, §31.4 · `context.md` QM-5, QM-8
+- `docs/specifications/31-monitoring-observability.md` §31.2, §31.4 · `.claude/rules/qm-05-data-privacy.md`, QM-8
 - ADR-079 (consent purposes this depends on), ADR-054 (`/auth/otp/attest`, reused by `03_02`)
 - `mockup/mobile/01_authen/05_privacy_policy/01_data_collection/03_01_ip_address_details`,
   `03_02_network_refresh_success`

@@ -82,7 +82,7 @@ Rules that bite:
 - **Rule 26 / 27 / 28** — add the dep to _that package's_ `package.json`; add any new script to
   `turbo.json`; re-run `pnpm install` and commit `pnpm-lock.yaml` in the same PR.
 
-> Three of those post-date `00_master_construction_os.md` § Phase 1's package list (which names
+> Three of those post-date `context/phases/phase-01-foundation-repository.md`'s package list (which names
 > nine), and each has its own decision record: `@cos/schemas`
 > ([ADR-076](../architecture/adr/076-client-side-form-validation.md), zod/mini + react-hook-form),
 > `@cos/ui-logic` ([ADR-068](../architecture/adr/068-cross-platform-ui-logic-package.md)) and

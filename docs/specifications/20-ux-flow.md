@@ -351,7 +351,7 @@ TH-specific logic is not silently applied to non-TH tenants.
 > **both** paths — Path A (phone + OTP) and Path B (email/password via Keycloak OIDC) — on the
 > smartphone. Who may use which is §5.4.4, not the platform: both are open to all roles except
 > `TENANT_ADMIN` and `FINANCE`, which are Path B only. Same §5.4 mechanism, no new auth. See
-> `context/00_master_construction_os.md` §Phase 10 Auth.
+> `context/phases/phase-10-mobile-offline-engine.md` Auth.
 
 ### 20.6.1 Login
 

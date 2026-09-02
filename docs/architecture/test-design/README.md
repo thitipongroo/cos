@@ -120,7 +120,7 @@ The **test basis** (the sources a test case may be derived from) is restricted t
 | Priority | Source                                                                                | Use                                                                    |
 | -------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
 | 1        | `docs/specifications/` §00–§34                                                        | Authoritative for all behaviour, thresholds, and acceptance criteria   |
-| 2        | `context/00_master_construction_os.md` Phase 1–25 `Generate:` / `Constraints:` blocks | The per-phase obligation list that determines _which_ tests must exist |
+| 2        | `context/phases/phase-01-foundation-repository.md`–25 `Generate:` / `Constraints:` blocks | The per-phase obligation list that determines _which_ tests must exist |
 | 3        | `context.md` QUALITY MANDATES (QM-1 … QM-18)                                          | Cross-cutting gates every phase inherits                               |
 
 Nothing else is a valid test basis. In particular, **implementation source code is not a test

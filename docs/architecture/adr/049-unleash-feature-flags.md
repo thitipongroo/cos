@@ -61,7 +61,7 @@ the kill-switch retrofit, which degrades safely to defaults).
 
 ## Updated artifacts
 
-- `context.md` QM-15 (provider, delivery, retrofit scope)
+- `.claude/rules/qm-15-feature-flags.md` (provider, delivery, retrofit scope)
 - `backend/src/shared/feature-flags/` (service, guard, decorator, controller, module, tests)
 - `.env.example` (`UNLEASH_*` replaces `APPCONFIG_*`)
 - `docs/registers/feature-flag-registry.md`, `docs/api/error-codes.md` (COS-FLAG-001)

@@ -201,7 +201,7 @@ in-app download page already gives without weakening the 1-hour signed-URL invar
 
 - `docs/registers/pdpa-controls.md` §30–§34 (PDPA-10/11 rows), § Known corrections
 - `docs/specifications/05-security-compliance.md` §5.3.1 · `docs/specifications/09-data-architecture.md`
-- `context/00_master_construction_os.md` §Phase 9 (signed-URL TTL, bucket naming), §Phase 2 (OTP rules)
+- `context/phases/phase-09-file-document-system.md` (signed-URL TTL, bucket naming), §Phase 2 (OTP rules)
 - `backend/prisma/migrations/20260803000001_tag_pii_columns/` (the five `@pdpa` categories)
 - `backend/src/modules/notification/adapters/sendgrid.adapter.ts`
 - ADR-030 (magic-link tokens), ADR-035 (AES-256-GCM field encryption)

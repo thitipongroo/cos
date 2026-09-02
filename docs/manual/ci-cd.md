@@ -95,6 +95,6 @@ pnpm exec mmdc -i <file.md> -o /tmp/check.md       # renders every ```mermaid bl
 `mmdc` (`@mermaid-js/mermaid-cli`) is deliberately a local authoring tool only — it pulls puppeteer's
 Chromium, which would cost every CI run for a check that only matters when a diagram changes.
 
-> 📎 `context/00_master_construction_os.md` § Phase 17 (CI/CD + deployment) and § Phase 18 (testing) ·
+> 📎 `context/phases/phase-17-devops-deployment.md` (CI/CD + deployment) and § Phase 18 (testing) ·
 > [`specifications/30-testing-strategy.md`](../specifications/30-testing-strategy.md) §30.9/§30.12 ·
 > QM-15 / QM-16 in [`context.md`](../../context.md) · [Runbooks](../runbooks/README.md).

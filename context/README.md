@@ -19,7 +19,8 @@
 
 ```text
 [MASTER]
-  00_master_construction_os.md      ← Read first, always
+  00_master_construction_os.md      ← Index + cross-phase decisions (1,109 lines)
+  phases/phase-01..25-*.md          ← The 25 Phase commands, one file each
          │
          ▼
 [STAGE 1 — BUILD] (both files run in parallel)
@@ -69,7 +70,8 @@
 
 | File                                                                             | Lifecycle Stage          | Description                                        | Status                         |
 | -------------------------------------------------------------------------------- | ------------------------ | -------------------------------------------------- | ------------------------------ |
-| [00_master_construction_os.md](00_master_construction_os.md)                     | MASTER                   | All decisions, architecture, RBAC, event contracts | Always current                 |
+| [00_master_construction_os.md](00_master_construction_os.md)                     | MASTER                   | Cross-phase decisions, governance, execution rules | Always current                 |
+| [phases/](phases/)                                                               | MASTER                   | The 25 Phase command files, one per phase          | Always current                 |
 | [01_build_priority_execution.md](01_build_priority_execution.md)                 | BUILD — Priority         | Priority 0–5: what to build and in what order      | Active                         |
 | [02_build_deep_systems.md](02_build_deep_systems.md)                             | BUILD — Deep Systems     | 9-phase deep engineering commands                  | Active (parallel with 01)      |
 | [03_operationalize_execution.md](03_operationalize_execution.md)                 | OPERATIONALIZE           | 10-phase production adoption and reliability       | After BUILD complete           |
@@ -88,7 +90,9 @@
 
 ### For an AI Agent
 
-1. **Always read `00_master_construction_os.md` first** — it defines all authoritative decisions.
+1. **Read `.claude/skills/phase-index/SKILL.md` first** — it maps this directory and tells you which
+   files a task needs. `00_master_construction_os.md` holds the cross-phase decisions; the 25 Phase
+   commands moved to `phases/` on 2026-09-02, verbatim, because at most one applies to any one task.
 2. **Identify the current lifecycle stage** of the project.
 3. **Load the corresponding stage file** (01–11) for execution commands.
 4. **If the stage file has AWAITING_DECISION items**, generate stubs with `AWAITING_DECISION` tags and ask the product

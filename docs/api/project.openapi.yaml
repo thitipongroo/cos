@@ -997,7 +997,7 @@ paths:
     post:
       summary: Trigger a status transition
       description: |
-        Valid transitions (source: context/00_master_construction_os.md §Phase 3):
+        Valid transitions (source: context/phases/phase-03-project-service.md):
         - DRAFT → ACTIVE | CANCELLED
         - ACTIVE → ON_HOLD | COMPLETED | CANCELLED
         - ON_HOLD → ACTIVE | CANCELLED

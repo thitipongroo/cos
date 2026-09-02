@@ -151,5 +151,5 @@ without touching Keycloak.
 
 ## References
 
-- `context/00_master_construction_os.md` §Phase 2 — Authentication + Tenant System
+- `context/phases/phase-02-authentication-tenant-system.md` — Authentication + Tenant System
 - `docs/specifications/05-security-compliance.md` §5.2

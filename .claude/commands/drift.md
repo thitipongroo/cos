@@ -14,7 +14,8 @@ allowed-tools:
 Target: `$ARGUMENTS` (defaults to `README.md`, `docs/`, and `agent-team/`)
 
 Authority order in this repository: `docs/specifications/` first, then
-`context/00_master_construction_os.md` as the compiled execution view of it, then
+`context/` as the compiled execution view of it (`00_master_construction_os.md` plus
+`context/phases/`), then
 `context.md`. A disagreement between those three is a finding in its own right —
 Rule 37 exists because that drift has happened twice, and
 `rule-37-check-spec-drift.sh` only fires on writes to `docs/specifications/`, so a

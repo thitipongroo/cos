@@ -9,7 +9,7 @@
 
 ## Context
 
-The platform decision in `context/00_master_construction_os.md` §Phase 10 states that **all roles use the
+The platform decision in `context/phases/phase-10-mobile-offline-engine.md` states that **all roles use the
 React Native app on a smartphone** (Web App is tablet/laptop only). Authentication (spec §5.4, §20.6.1)
 defines **two paths**:
 
@@ -76,7 +76,7 @@ Alternatives considered:
 ## References
 
 - Spec §20.6.1 (Web Authentication — two paths); §5.4 (authoritative auth spec, Keycloak OIDC / Direct Grant)
-- `context/00_master_construction_os.md` §Phase 10 (mobile Auth Generate item)
+- `context/phases/phase-10-mobile-offline-engine.md` (mobile Auth Generate item)
 - QM-4 (Security — Path B uses Keycloak OIDC; custom email/password prohibited)
 - ADR-046 (Expo 56 mobile), ADR-013 (secrets)
 - Gap G-M6 (functional audit 2026-07-07)

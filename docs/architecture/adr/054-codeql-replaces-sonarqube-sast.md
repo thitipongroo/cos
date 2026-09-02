@@ -9,7 +9,7 @@
 
 ## Context
 
-`30-testing-strategy` §30.10 and `context.md` QM-4 both name **SonarQube** (Community Edition,
+`30-testing-strategy` §30.10 and `.claude/rules/qm-04-security.md` both name **SonarQube** (Community Edition,
 self-hosted on EKS) as the mandatory SAST gate, with a quality gate of 0 new bugs, 0 new
 vulnerabilities, 100% line coverage, 100% branch coverage and 0% duplication on new code.
 
@@ -85,6 +85,6 @@ Replace SonarQube with **GitHub CodeQL** as the SAST gate.
 ## References
 
 - `docs/specifications/30-testing-strategy.md` §30.10 (Security Testing), §30.12 (CI/CD Test Gates)
-- `context.md` QM-4 (Security)
+- `.claude/rules/qm-04-security.md` (Security)
 - `docs/architecture/test-design/README.md` §35.13 ESC-11, `TC-P16-SEC-005`, `TC-P19-MAN-006`
-- `context/00_master_construction_os.md` §Phase 16, §Phase 19 automated check #4
+- `context/phases/phase-16-security.md`, §Phase 19 automated check #4

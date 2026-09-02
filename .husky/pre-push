@@ -1,0 +1,30 @@
+# Run the CI jobs that can run here, before the push rather than after it.
+#
+# Why this exists: CI went red on push repeatedly while the work had been reported
+# as verified. Nothing ran the CI commands locally — .husky/ held pre-commit only —
+# so "verified" meant a subset was checked and called a whole.
+#
+# This gate is honest about its own limits: verify-before-push.sh prints the jobs it
+# does NOT cover (mobile, go, mlops, docker, audits, e2e, CodeQL, Semgrep,
+# Lighthouse, mutation, load) and reports SKIP separately from PASS. A green run
+# here is not a promise that CI is green.
+#
+# Escape hatch for a push that genuinely cannot wait — a docs-only branch, a
+# revert, an outage:  SKIP_PREPUSH=1 git push
+# Use it deliberately. It is not the way past a failing test.
+
+if [ "${SKIP_PREPUSH:-0}" = "1" ]; then
+  echo "pre-push: skipped via SKIP_PREPUSH=1"
+  exit 0
+fi
+
+# Governance check — .claude/rules/ mirrors the Quality Mandates and the master's
+# cross-cutting specs so they load by path. This proves each mirror still points at
+# a heading that exists. It is NOT part of CI, which is why it is invoked here and
+# not inside verify-before-push.sh: that script mirrors ci.yml command for command,
+# and adding a non-CI check to it would make it lie about what CI runs.
+bash scripts/ci/check-claude-rules-mirror.sh || exit 1
+
+# Pass --full to add the Docker-backed suites (integration, tenant isolation,
+# ai-gateway pytest). Without it they are reported as SKIP, not as PASS.
+bash scripts/ci/verify-before-push.sh || exit 1

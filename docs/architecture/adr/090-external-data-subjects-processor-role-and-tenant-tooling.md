@@ -225,7 +225,7 @@ Three behaviours are easy to reverse by accident, so they are stated here as wel
 
 ## References
 
-- `context.md` QM-5 (PDPA/GDPR, erasure strategy, `@pdpa` tagging obligation)
+- `.claude/rules/qm-05-data-privacy.md` (PDPA/GDPR, erasure strategy, `@pdpa` tagging obligation)
 - `docs/registers/pdpa-controls.md` PDPA-40 · `docs/registers/data-flow-map.md` §9, §10,
   § Controller and processor roles · `docs/policies/data-retention-policy.md` § CRM data
 - Migrations `20260816000001_add_vendor_type_to_vendors`, `20260816000002_tag_external_party_pii`;

@@ -15,15 +15,29 @@ KEYWORDS=$(echo "$FILENAME" | tr '-' '\n' | grep -vE '^[0-9]+$' | head -5 | tr '
 [[ -z "$KEYWORDS" ]] && exit 0
 
 CONTEXT_MD="$(pwd)/context.md"
-MASTER_MD="$(pwd)/context/00_master_construction_os.md"
+# The whole of context/, not just 00_master: on 2026-09-02 the 25 Phase command
+# blocks moved to context/phases/, so a hook that greps only 00_master would be
+# blind to 83% of what it used to cover.
+CONTEXT_DIR="$(pwd)/context"
+# .claude/rules/ holds the Quality Mandates, the path-triggered Rules and the
+# master's four cross-cutting specifications, moved there the same day. Those files
+# are what the agent actually sees during work, so a spec change that updates
+# context.md and leaves a rule file behind makes the stale copy authoritative in
+# practice.
+RULES_DIR="$(pwd)/.claude/rules"
 
 FINDINGS=""
-for f in "$CONTEXT_MD" "$MASTER_MD"; do
-  [[ -f "$f" ]] || continue
-  MATCHES=$(grep -inE "$KEYWORDS" "$f" 2>/dev/null | head -5)
-  if [[ -n "$MATCHES" ]]; then
-    FINDINGS="${FINDINGS}$(basename "$f"):\n${MATCHES}\n"
-  fi
+
+if [[ -f "$CONTEXT_MD" ]]; then
+  MATCHES=$(grep -inE "$KEYWORDS" "$CONTEXT_MD" 2>/dev/null | head -5)
+  [[ -n "$MATCHES" ]] && FINDINGS="${FINDINGS}context.md:\n${MATCHES}\n"
+fi
+
+for d in "$CONTEXT_DIR" "$RULES_DIR"; do
+  [[ -d "$d" ]] || continue
+  label="${d#"$(pwd)/"}/"
+  MATCHES=$(grep -rinE "$KEYWORDS" "$d" 2>/dev/null | head -5)
+  [[ -n "$MATCHES" ]] && FINDINGS="${FINDINGS}${label}\n${MATCHES}\n"
 done
 
 if [[ -n "$FINDINGS" ]]; then

@@ -86,7 +86,7 @@ Split the package in two along the mobile-safety boundary:
 
 ## References
 
-- `context.md` Rule 34, Rule 35, Rule 33
-- `context/00_master_construction_os.md` §Phase 1 (shared package boundaries), §Phase 8
+- Rule 33, Rule 34 — `.claude/rules/rule-33-34-package-boundaries.md`; Rule 35 — `.claude/rules/rule-35-package-test-infra.md` (moved out of `context.md` 2026-09-02; long form in `context/00_master_construction_os.md` §ROOT CAUSE PREVENTION RULES)
+- `context/phases/phase-01-foundation-repository.md` (shared package boundaries), §Phase 8
 - `docs/architecture/test-design/README.md` §35.13 ESC-08, `TC-P08-UNIT-016`
 - `docs/specifications/32-implementation-specifications.md` §32.4 (event contracts)

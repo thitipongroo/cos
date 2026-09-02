@@ -34,10 +34,12 @@ paths:
   `manual` `policies` `registers` `research` `runbooks` `screens` `specifications`.
   Documentation about the agent configuration lives in `agent-team/`
 - `docs/specifications/` is the source of truth for architecture.
-  `context/00_master_construction_os.md` is the compiled execution view of it, and
-  `context.md` the agent-facing form. When they disagree, the specification wins
+  `context/` is the compiled execution view of it — `00_master_construction_os.md`
+  plus the 25 Phase commands in `context/phases/` — and `context.md` the agent-facing
+  form, with its mandates and rules in `.claude/rules/`. When they disagree, the
+  specification wins
 - **Rule 37** — after modifying anything under `docs/specifications/`, grep
-  `context.md` and `context/00_master_construction_os.md` for the changed section
+  `context.md`, the whole of `context/` and `.claude/rules/` for the changed section
   number, technology name or concept, and update them in the same commit.
   `rule-37-check-spec-drift.sh` injects the grep result on write; acting on it is
   still yours

@@ -121,6 +121,6 @@ the provisioning process (spec §6.7) ensures `SYSTEM_ADMIN` is never granted to
 - [docs/specifications/06-rbac-permission-matrix §6.2](../../specifications/06-rbac-permission-matrix.md)
 - [docs/specifications/06-rbac-permission-matrix §6.7](../../specifications/06-rbac-permission-matrix.md)
 - [docs/specifications/06-rbac-permission-matrix §6.8](../../specifications/06-rbac-permission-matrix.md)
-- [context/00_master_construction_os.md §Phase 2 RBAC Role Definitions](../../../context/00_master_construction_os.md)
+- [context/phases/phase-02-authentication-tenant-system.md RBAC Role Definitions](../../../context/00_master_construction_os.md)
 - [packages/@cos/types/src/roles.ts](../../../packages/@cos/types/src/roles.ts)
 - [packages/@cos/rbac/src/permissions.ts](../../../packages/@cos/rbac/src/permissions.ts)
