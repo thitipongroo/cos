@@ -123,16 +123,27 @@ for spec_name in "${!MODULE_MAP[@]}"; do
     # against one and git rejects nothing, but skipping them keeps the pathspec honest.
     if [[ -d "$ROOT/$sp" ]]; then
       pathspec+=(
+        # BOTH forms for every one of these, and the reason is not obvious: a pathspec's `**/` needs
+        # a literal slash on each side, so `<dir>/**/x` matches `<dir>/sub/x` and NOT `<dir>/x`.
+        # The paired-form note below was written for pytest.ini and friends but the same trap sat
+        # unfixed on the six entries here until 2026-09-04, when rewrapping README lines turned the
+        # gate red on `auth` and `ai`. Counted that day, the `**/`-only forms were missing:
+        # 23 root-level *.md (every backend module and all four AI services), 24 root-level
+        # __tests__/ and 4 root-level tests/. So a test edit or a README edit counted as a contract
+        # change in almost every module. Real code at a module root was never excluded and still
+        # is not — only these five kinds of file are.
         ":(exclude)$sp/**/__tests__/**"
+        ":(exclude)$sp/__tests__/**"
         ":(exclude)$sp/**/*.spec.ts"
+        ":(exclude)$sp/*.spec.ts"
         ":(exclude)$sp/**/*.md"
+        ":(exclude)$sp/*.md"
         ":(exclude)$sp/**/tests/**"
+        ":(exclude)$sp/tests/**"
         ":(exclude)$sp/**/test_*.py"
+        ":(exclude)$sp/test_*.py"
         ":(exclude)$sp/**/__pycache__/**"
-        # BOTH forms, and the reason is not obvious: a pathspec's `**/` needs a literal slash on
-        # each side, so `<dir>/**/pytest.ini` matches `<dir>/sub/pytest.ini` and NOT
-        # `<dir>/pytest.ini`. Every one of these files lives at the service root, so the `**/` form
-        # alone excluded nothing — the gate stayed red after the first attempt at this fix.
+        ":(exclude)$sp/__pycache__/**"
         ":(exclude)$sp/pytest.ini"
         ":(exclude)$sp/**/pytest.ini"
         ":(exclude)$sp/conftest.py"
