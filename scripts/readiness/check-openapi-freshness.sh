@@ -109,6 +109,13 @@ for spec_name in "${!MODULE_MAP[@]}"; do
   # The Python services carry their tests as `tests/` and `test_*.py` rather than `__tests__/` and
   # `*.spec.ts`, so the exclusion list names both conventions. `.venv/` needs no exclusion — it is
   # untracked, and git log only ever sees what is committed.
+  #
+  # TEST CONFIGURATION counts as test, not source. `pytest.ini`, `.coveragerc` and `conftest.py`
+  # decide how a suite runs; none of them can change a route or a payload. This was missed when the
+  # Python services were added to MODULE_MAP on 2026-09-03, and it fired the same day: adding one
+  # `filterwarnings` line to four `pytest.ini` files — a fix for an anyio deprecation that had
+  # nothing to do with the API — marked `ai.openapi.yaml` stale and blocked the push. Exactly the
+  # failure the `*.spec.ts` exclusion above was written for, one language later.
   pathspec=()
   for sp in "${source_paths[@]}"; do
     pathspec+=("$sp")
@@ -122,6 +129,19 @@ for spec_name in "${!MODULE_MAP[@]}"; do
         ":(exclude)$sp/**/tests/**"
         ":(exclude)$sp/**/test_*.py"
         ":(exclude)$sp/**/__pycache__/**"
+        # BOTH forms, and the reason is not obvious: a pathspec's `**/` needs a literal slash on
+        # each side, so `<dir>/**/pytest.ini` matches `<dir>/sub/pytest.ini` and NOT
+        # `<dir>/pytest.ini`. Every one of these files lives at the service root, so the `**/` form
+        # alone excluded nothing — the gate stayed red after the first attempt at this fix.
+        ":(exclude)$sp/pytest.ini"
+        ":(exclude)$sp/**/pytest.ini"
+        ":(exclude)$sp/conftest.py"
+        ":(exclude)$sp/**/conftest.py"
+        ":(exclude)$sp/.coveragerc"
+        ":(exclude)$sp/**/.coveragerc"
+        ":(exclude)$sp/jest.config.js"
+        ":(exclude)$sp/jest.integration.config.js"
+        ":(exclude)$sp/jest.workflows.config.js"
       )
     fi
   done
