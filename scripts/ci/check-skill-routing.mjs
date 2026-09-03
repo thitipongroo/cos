@@ -243,6 +243,89 @@ for (const c of cases.skills) {
 }
 console.log('');
 
+// --- 2b. index integrity ----------------------------------------------------
+// A skill is reached through an index, never by browsing the directory: agent-team/CATALOG.md
+// lists every one, the routing tables in .claude/agents/ dispatch to them, and
+// .claude/skills/workflow-sequence/SKILL.md records the handoffs between them. A rename that
+// updates the directory and not the index leaves a reader pointed at nothing — the same failure
+// scripts/ci/check-claude-rules-mirror.sh exists to prevent for .claude/rules/.
+console.log('  index integrity');
+
+const CATALOG = join(ROOT, 'agent-team', 'CATALOG.md');
+if (existsSync(CATALOG)) {
+  const catalog = readFileSync(CATALOG, 'utf8');
+  const absent = skills.map((s) => s.name).filter((n) => !catalog.includes('`' + n + '`'));
+  if (absent.length === 0) {
+    console.log(`    PASS  all ${skills.length} skills are named in agent-team/CATALOG.md`);
+  } else {
+    for (const n of absent)
+      console.error(
+        `    FAIL  ${n} is in .claude/skills/ but named nowhere in agent-team/CATALOG.md`,
+      );
+    fail += absent.length;
+  }
+} else {
+  console.error(
+    '    FAIL  agent-team/CATALOG.md is missing — the catalogue is the index of what exists',
+  );
+  fail++;
+}
+
+// Domain-prefixed names are distinctive enough to be checked by shape: a backticked
+// `engineering-*`, `qa-*`, `doc-*` or `devops-*` token is a skill reference or a typo, nothing
+// else. Cross-domain names (spec-reading, phase-index, …) have no such shape and are covered by
+// the CATALOG check above instead.
+const refSources = [];
+for (const dir of readdirSync(SKILLS, { withFileTypes: true })) {
+  if (!dir.isDirectory()) continue;
+  const f = join(SKILLS, dir.name, 'SKILL.md');
+  if (existsSync(f))
+    refSources.push([`.claude/skills/${dir.name}/SKILL.md`, readFileSync(f, 'utf8')]);
+}
+const AGENTS = join(ROOT, '.claude', 'agents');
+if (existsSync(AGENTS)) {
+  for (const f of readdirSync(AGENTS)) {
+    if (f.endsWith('.md'))
+      refSources.push([`.claude/agents/${f}`, readFileSync(join(AGENTS, f), 'utf8')]);
+  }
+}
+const knownSkills = new Set(skills.map((s) => s.name));
+let dangling = 0;
+for (const [where, text] of refSources) {
+  for (const m of text.matchAll(/`((?:engineering|qa|doc|devops)-[a-z0-9-]+)`/g)) {
+    if (!knownSkills.has(m[1])) {
+      console.error(`    FAIL  ${where} names \`${m[1]}\`, which is not a skill`);
+      dangling++;
+      fail++;
+    }
+  }
+}
+if (dangling === 0) console.log('    PASS  every domain-prefixed skill reference resolves');
+
+// Commands are reported, not gated. A skill may legitimately name a command this repository does
+// not define — workspace-isolation describes a `/worktree` the *harness* might provide, not one of
+// ours — so an unknown name here is information, not a defect.
+const CMDS = join(ROOT, '.claude', 'commands');
+if (existsSync(CMDS)) {
+  const haveCmds = new Set(
+    readdirSync(CMDS)
+      .filter((f) => f.endsWith('.md'))
+      .map((f) => f.slice(0, -3)),
+  );
+  const unknownCmds = new Set();
+  for (const [, text] of refSources) {
+    for (const m of text.matchAll(/`\/([a-z][a-z0-9-]*)`/g))
+      if (!haveCmds.has(m[1])) unknownCmds.add(m[1]);
+  }
+  if (unknownCmds.size === 0)
+    console.log(`    PASS  every /command reference names one of the ${haveCmds.size} commands`);
+  else
+    console.log(
+      `    note  referenced but not a command here (not a failure): ${[...unknownCmds].map((c) => '/' + c).join(', ')}`,
+    );
+}
+console.log('');
+
 // --- 3. coverage (reported, not enforced) ----------------------------------
 const uncovered = skills.map((s) => s.name).filter((n) => !withCases.has(n));
 if (uncovered.length > 0) {

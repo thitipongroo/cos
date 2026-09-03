@@ -42,6 +42,17 @@ Turn an AWAITING_DECISION or UNSPECIFIED item into an answered one — ask the p
 your own guess attached, then restate the decision for an explicit yes. Use when Rule 38 has blocked on an escalation
 and the work cannot proceed until someone decides.
 
+### workflow-sequence
+
+`workflow-sequence` · skill
+
+The order work moves through this repository — which command comes before which, where the three gates sit,
+and which skill hands off to which. Use when you know what to do but not what comes next, when picking up
+work someone else started, or to check the order and see which gates a change must not skip.
+
+Every row in it is transcribed from `CLAUDE.md`, `context.md` or a skill file, with the source quoted. Where the
+repository records no order, it says so instead of supplying one.
+
 ### workspace-isolation
 
 `workspace-isolation` · skill

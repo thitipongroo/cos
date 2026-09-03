@@ -15,14 +15,20 @@
           "prompt": "I am about to commit this migration and I am not certain it is reversible",
           "top_k": 3
         },
-        { "prompt": "cross-examine this decision before it stands", "top_k": 3 },
+        {
+          "prompt": "cross-examine this decision before it stands",
+          "top_k": 3
+        },
         {
           "prompt": "have a fresh reviewer try to disprove that this retry path is idempotent",
           "top_k": 3
         }
       ],
       "negative": [
-        { "prompt": "review this diff before I merge it", "owner": "engineering-code-reviewer" },
+        {
+          "prompt": "review this diff before I merge it",
+          "owner": "engineering-code-reviewer"
+        },
         {
           "prompt": "the suite is red after my change, find out why",
           "owner": "engineering-debugging"
@@ -36,7 +42,10 @@
           "prompt": "check the official Next.js docs for the version we pin before writing this hook",
           "top_k": 3
         },
-        { "prompt": "is this the current Expo pattern or an old one", "top_k": 3 },
+        {
+          "prompt": "is this the current Expo pattern or an old one",
+          "top_k": 3
+        },
         {
           "prompt": "confirm this library call against its documentation for our pinned version",
           "top_k": 3
@@ -47,7 +56,10 @@
           "prompt": "write the API reference page for this endpoint",
           "owner": "doc-api-documentation"
         },
-        { "prompt": "write a guide for moving from v1 to v2", "owner": "doc-migration-guide" }
+        {
+          "prompt": "write a guide for moving from v1 to v2",
+          "owner": "doc-migration-guide"
+        }
       ]
     },
     {
@@ -61,19 +73,64 @@
           "prompt": "ask the product owner what they actually want here, one question at a time",
           "top_k": 3
         },
-        { "prompt": "this item is tagged NEEDS_ESCALATION and nobody has decided it", "top_k": 3 }
+        {
+          "prompt": "this item is tagged NEEDS_ESCALATION and nobody has decided it",
+          "top_k": 3
+        }
       ],
       "negative": [
-        { "prompt": "turn this Phase spec into an exhaustive task list", "owner": "spec-reading" },
-        { "prompt": "which Phase file covers the equipment service", "owner": "phase-index" }
+        {
+          "prompt": "turn this Phase spec into an exhaustive task list",
+          "owner": "spec-reading"
+        },
+        {
+          "prompt": "which Phase file covers the equipment service",
+          "owner": "phase-index"
+        }
+      ]
+    },
+    {
+      "skill": "workflow-sequence",
+      "positive": [
+        {
+          "prompt": "what step comes after the plan gate",
+          "top_k": 3
+        },
+        {
+          "prompt": "I am picking up work someone else started, what order does this repo do things in",
+          "top_k": 3
+        },
+        {
+          "prompt": "did we skip a gate somewhere",
+          "top_k": 3
+        }
+      ],
+      "negative": [
+        {
+          "prompt": "which Phase file covers the equipment service",
+          "owner": "phase-index"
+        },
+        {
+          "prompt": "turn this requirement into an exhaustive task list",
+          "owner": "spec-reading"
+        }
       ]
     },
     {
       "skill": "qa-performance-verification",
       "positive": [
-        { "prompt": "I made this faster, should we keep the change", "top_k": 3 },
-        { "prompt": "re-measure against the baseline and decide whether to revert", "top_k": 3 },
-        { "prompt": "the optimisation barely moved the number, does it stay", "top_k": 3 }
+        {
+          "prompt": "I made this faster, should we keep the change",
+          "top_k": 3
+        },
+        {
+          "prompt": "re-measure against the baseline and decide whether to revert",
+          "top_k": 3
+        },
+        {
+          "prompt": "the optimisation barely moved the number, does it stay",
+          "top_k": 3
+        }
       ],
       "negative": [
         {
@@ -93,7 +150,10 @@
           "prompt": "turn the Generate section of this Phase into a verifiable task list",
           "top_k": 3
         },
-        { "prompt": "extract every obligation from this requirement line by line", "top_k": 3 }
+        {
+          "prompt": "extract every obligation from this requirement line by line",
+          "top_k": 3
+        }
       ],
       "negative": [
         {
@@ -105,7 +165,10 @@
     {
       "skill": "workspace-isolation",
       "positive": [
-        { "prompt": "which branch or worktree should this multi-step change go in", "top_k": 3 },
+        {
+          "prompt": "which branch or worktree should this multi-step change go in",
+          "top_k": 3
+        },
         {
           "prompt": "set up an isolated workspace with a clean baseline before I start",
           "top_k": 3
@@ -121,8 +184,14 @@
     {
       "skill": "branch-completion",
       "positive": [
-        { "prompt": "implementation is done, do we merge this or open a pull request", "top_k": 3 },
-        { "prompt": "prove the suite is green then clean up the branch", "top_k": 3 }
+        {
+          "prompt": "implementation is done, do we merge this or open a pull request",
+          "top_k": 3
+        },
+        {
+          "prompt": "prove the suite is green then clean up the branch",
+          "top_k": 3
+        }
       ],
       "negative": [
         {
@@ -134,8 +203,14 @@
     {
       "skill": "engineering-debugging",
       "positive": [
-        { "prompt": "this test fails with a stack trace and I cannot see why", "top_k": 3 },
-        { "prompt": "behaviour diverges from what the spec says, find the cause", "top_k": 3 }
+        {
+          "prompt": "this test fails with a stack trace and I cannot see why",
+          "top_k": 3
+        },
+        {
+          "prompt": "behaviour diverges from what the spec says, find the cause",
+          "top_k": 3
+        }
       ],
       "negative": [
         {
@@ -162,7 +237,10 @@
     {
       "skill": "engineering-code-reviewer",
       "positive": [
-        { "prompt": "is this change safe to merge", "top_k": 3 },
+        {
+          "prompt": "is this change safe to merge",
+          "top_k": 3
+        },
         {
           "prompt": "look for edge cases and concurrency errors the tests would survive",
           "top_k": 3

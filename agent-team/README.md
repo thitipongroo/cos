@@ -30,6 +30,7 @@ the kit; where the two differ, the difference is recorded below.
 | 38 domain skills        | skills  | `engineering-*` 13 · `qa-*` 13 · `doc-*` 6 · `devops-*` 6                                                           |
 | `doubt-review`          | skill   | The method behind `/doubt`. In no agent's routing table, and must not be added to one                               |
 | `decision-elicitation`  | skill   | How a `NEEDS_ESCALATION` item becomes an answered one. Not in the `/` menu                                          |
+| `workflow-sequence`     | skill   | What comes next: the command spine, the three gates, and the handoffs the skills record. Not in the `/` menu        |
 | `spec-reading`          | skill   | The discipline both gates depend on. Not in the `/` menu                                                            |
 | `phase-index`           | skill   | The map from a Phase number to the one file in `context/phases/` to read                                            |
 | `markdown-docs`         | rule    | Loads only when a `.md` file is touched (`paths:` frontmatter)                                                      |
