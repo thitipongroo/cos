@@ -18,6 +18,14 @@ Read-only researcher that compares what the documentation claims against what th
 returns the differences as findings. Use PROACTIVELY when checking whether docs, READMEs, or configuration references
 have gone stale.
 
+### phase-index
+
+`phase-index` · skill
+
+Use when a task names a Phase, or when you need to find which of the 25 Phase command files to read — maps each Phase
+to its file, its dependencies and its SaaS Maturity Stage, and says where every cross-cutting specification and
+numbered Rule now lives. Read only the files the task needs.
+
 ### spec-reading
 
 `spec-reading` · skill

@@ -1,6 +1,6 @@
 ---
 name: phase-index
-description: Map of the Construction OS execution corpus — which of the 25 Phase command files to read, what each depends on, its SaaS Maturity Stage, and where every cross-cutting specification and numbered Rule now lives. Read this first; read only the files the task needs.
+description: Use when a task names a Phase, or when you need to find which of the 25 Phase command files to read — maps each Phase to its file, its dependencies and its SaaS Maturity Stage, and says where every cross-cutting specification and numbered Rule now lives. Read only the files the task needs.
 allowed-tools:
   - "Read"
   - "Glob"

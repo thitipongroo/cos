@@ -14,6 +14,8 @@ the kit; where the two differ, the difference is recorded below.
 | ----------------------- | ------- | ------------------------------------------------------------------------------------------------------------------- |
 | `/plan-gate`            | command | Rule 38 gate — extracts the spec line by line into `.claude/impl-pending.md`, then stops for product owner approval |
 | `/verify`               | command | Rule 36 gate — one filesystem check per obligation, reporting `PASS` / `FAIL` / `UNVERIFIED` with real output       |
+| `/workspace`            | command | Wraps `workspace-isolation` — where a multi-step change gets built, decided before the first edit                   |
+| `/finish`               | command | Wraps `branch-completion` — green suite, the product owner's choice, then cleanup                                   |
 | `/drift`                | command | Sends a read-only researcher at the docs, re-confirms every finding, reports the gaps, changes nothing              |
 | `/engineering`          | command | Dispatches `engineering-agent`, whose fail-closed contract stops when no skill covers the request                   |
 | `/qa`                   | command | Dispatches `qa-agent` with the QM-6 budgets, QM-14 SLOs and Phase 19 named, so nothing is measured against a guess  |
@@ -26,8 +28,7 @@ the kit; where the two differ, the difference is recorded below.
 | `doc-drift-researcher`  | agent   | Read-only. Powers `/drift`                                                                                          |
 | 36 domain skills        | skills  | `engineering-*` 12 · `qa-*` 12 · `doc-*` 6 · `devops-*` 6                                                           |
 | `spec-reading`          | skill   | The discipline both gates depend on. Not in the `/` menu                                                            |
-| `workspace-isolation`   | skill   | Where a multi-step change gets implemented — chosen before the first edit, with a proven baseline                   |
-| `branch-completion`     | skill   | How that work leaves the branch — green suite, the product owner's choice, then cleanup                             |
+| `phase-index`           | skill   | The map from a Phase number to the one file in `context/phases/` to read                                            |
 | `markdown-docs`         | rule    | Loads only when a `.md` file is touched (`paths:` frontmatter)                                                      |
 | `rationalization-guard` | rule    | No `paths:` — loads every session. The sentences that precede a skipped Rule 36 or Rule 38                          |
 
@@ -69,6 +70,15 @@ are reliable:
 | A command naming `subagent_type`               | the command | Yes — `/engineering` `/qa` `/devops` `/docs` `/drift` |
 | A person invoking the agent by name            | the person  | Yes                                                   |
 | Auto-delegation from the agent's `description` | the model   | No — nothing enforces it                              |
+
+The same holds one level down, for skills. Every skill here is reachable three
+ways — through the agent that routes it, by a person naming it, or by
+auto-discovery — and only the first two are reliable. That is why the four
+cross-domain skills each have a command (`/plan-gate` and `/verify` reach
+`spec-reading`; `/workspace` and `/finish` reach the other two), and why
+`CLAUDE.md` names a command rather than a skill in every row of its table:
+naming the skill invites the work to happen without the agent, and the agent is
+what carries the fail-closed contract.
 
 No hook can close this gap: hooks fire on tool calls, and the choice to dispatch
 happens before any tool call. That is why each routing agent has a command, why
