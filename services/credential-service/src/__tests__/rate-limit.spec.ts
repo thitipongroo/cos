@@ -2,7 +2,7 @@
 //
 // This service had no rate limit of any kind while holding every tenant's encrypted issuer private
 // keys, and two of its routes are unauthenticated by design — reachable by anyone who knows a tenant
-// id, each costing a tenant-scoped database round trip. §5.9.8 recorded the mitigation as
+// id, each costing a tenant-scoped database round trip. §14.5 recorded the mitigation as
 // "IP-rate-limited", which was true only of the Kong route, and Kong is deployed nowhere.
 //
 // `src/main.ts` is excluded from `collectCoverageFrom`, so nothing here is chasing a coverage number.

@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   to source IP (`@fastify/rate-limit`, the §5.5 general limit). It previously had no rate limit of
   any kind while holding every tenant's AES-256-GCM encrypted issuer private keys, and two of its
   routes — `GET /tenants/:tenantId/did.json` and `GET /tenants/:tenantId/status-lists/:statusListId`
-  — are unauthenticated by design. §5.9.8 recorded the mitigation as "IP-rate-limited", which was
+  — are unauthenticated by design. §14.5 recorded the mitigation as "IP-rate-limited", which was
   true only of the Kong route, and Kong is deployed nowhere.
 
   **Not labelled BREAKING**, but read this if you call those two GETs: a third-party verifier or an

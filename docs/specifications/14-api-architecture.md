@@ -82,7 +82,10 @@ Rate Limiting Defaults (Kong Gateway, configurable per tenant tier) :
 
 ## 14.3 Public APIs
 
-All endpoints follow the pattern: `GET|POST|PUT|PATCH|DELETE /api/v1/{resource}`
+All endpoints follow the pattern: `GET|POST|PUT|PATCH|DELETE /api/v1/{resource}` —
+**with one recorded exception: CredentialService serves at the root path with no prefix.**
+See its row in the catalogue below and §5.9.8; it is the only one, and a second would need a
+decision, not a row.
 
 Auth header required on all endpoints: `Authorization: Bearer <JWT>`
 JWT must contain `tenant_id` claim — Kong Gateway rejects requests without it.
@@ -1105,7 +1108,10 @@ are reachable only from the backend over the mesh.
 Strategy :
 
 - URL path versioning — /api/v1/, /api/v2/
-- Version is mandatory in all public API paths
+- Version is mandatory in all public API paths — except CredentialService, whose routes are
+  mounted at the root because Kong owns its external routing and its two public GETs are served
+  on a separate host rather than under `api.*` (§5.9.8, §14.5). Recorded 2026-09-03 when the
+  service gained its OpenAPI document; the exception predates it.
 
 Lifecycle :
 

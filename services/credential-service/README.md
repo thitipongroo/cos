@@ -46,7 +46,7 @@ and both halves are asserted in `src/__tests__/rate-limit.spec.ts`.
 
 Added 2026-09-03. Until then this service had no rate limit of any kind, while file-service — which
 holds uploaded documents rather than every tenant's encrypted issuer private key — had one from the
-start. §5.9.8 recorded the mitigation for the two unauthenticated public GETs as "IP-rate-limited",
+start. §14.5 recorded the mitigation for the two unauthenticated public GETs as "IP-rate-limited",
 which was true only of the Kong route; Kong is deployed nowhere, the same fact that made the auth
 plugin stop trusting gateway headers. A 429 carries `Retry-After` plus the three `X-RateLimit-*`
 headers (QM-7), and its body is the limiter's own `{ statusCode, error, message }` — **not** this
@@ -57,10 +57,9 @@ added the same day; the table above is the summary, that document is the contrac
 
 ## Dependencies
 
-- **HTTP:** `fastify`, `@fastify/helmet`, `@fastify/cors`, `@fastify/rate-limit`
 - **VC/DID stack:** `@digitalbazaar/vc`, `ed25519-signature-2020`, `ed25519-verification-key-2020`,
   `did-method-key`, `did-method-web`, `did-io`, `vc-status-list`, `security-document-loader`, `jsonld`
-- **HTTP:** `fastify`, `@fastify/helmet`, `@fastify/cors`
+- **HTTP:** `fastify`, `@fastify/helmet`, `@fastify/cors`, `@fastify/rate-limit`
 - **Identity:** `jsonwebtoken`, `jwks-rsa` (Keycloak JWKS)
 - **Storage:** `pg` (PostgreSQL; tenant-scoped via `withTenant`)
 - **Logging:** `pino`

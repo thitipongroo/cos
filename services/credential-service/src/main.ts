@@ -38,7 +38,7 @@ export async function buildApp(
   //
   // The gap mattered most on the two public GETs. `did.json` and the Status List are fetched by
   // third-party verifiers with no platform identity, so they are reachable by anyone who knows a
-  // tenant id, and each one costs a tenant-scoped database round trip. §5.9.8 records the mitigation
+  // tenant id, and each one costs a tenant-scoped database round trip. §14.5 recorded the mitigation
   // as "IP-rate-limited", which was true only of the Kong route — and Kong is deployed nowhere
   // (`plugins/jwt-verify.ts` says so, and it is the same reason the auth hook stopped trusting
   // gateway headers). Nothing between a caller and the database was counting.

@@ -4,14 +4,21 @@
 # a job changes there, change it here in the same commit or this gate starts lying.
 #
 # It did lie, and this is what it cost. On 2026-09-03 the Lint job here reported PASS on nine steps
-# while CI's Lint job has fifteen: markdownlint, yamllint, sqlfluff, ruff, terraform fmt and
-# terraform validate had no local counterpart at all, and `prisma generate` ran from the repo root
-# while ci.yml runs it with `working-directory: backend`. The push went out green and CI came back
-# red with 241 markdownlint errors across 74 files. All seven are mirrored now.
+# while CI's Lint job runs twenty-two: markdownlint, yamllint, sqlfluff, ruff, terraform fmt,
+# terraform validate and seven `scripts/ci/check-*.mjs` fitness functions had no local counterpart at
+# all, and `prisma generate` ran from the repo root while ci.yml runs it with
+# `working-directory: backend`. The push went out green and CI came back red.
+#
+# The first fix was itself incomplete, and a doc-drift check caught it: the header then claimed
+# "fifteen" steps and "no third category" while nine were still in neither — the seven fitness
+# functions plus `test:workflows` and `check-schema-contract` from the unit-tests job. Counting the
+# steps of a job you are mirroring is the whole task; guessing the number is how the gate ends up
+# lying in a new way. All of them are mirrored below.
 #
 # The rule that keeps this honest: a step CI runs is either mirrored here, or named in the
 # "not covered" list printed at the end. There is no third category, and "it would probably pass"
-# is not one either.
+# is not one either. When ci.yml gains a step, add it here in the same commit — and count, do not
+# estimate.
 #
 # Usage:
 #   bash scripts/ci/verify-before-push.sh            # everything that needs no Docker
@@ -81,6 +88,15 @@ run "Lint — openapi rules"         pnpm run lint:openapi
 run "Lint — openapi route coverage" pnpm run lint:routes
 run "Lint — unit test env"         bash ./scripts/ci/check-unit-test-env.sh
 run "Lint — loading state"         bash ./scripts/ci/check-loading-state.sh
+# Architectural fitness functions. Seven ci.yml lint steps that had no counterpart here until
+# 2026-09-03 — each one guards a class of mistake that no type checker or test will catch.
+run "Lint — legal parity"          node ./scripts/ci/check-legal-parity.mjs
+run "Lint — keycloak MFA config"   node ./scripts/ci/check-keycloak-mfa-config.mjs
+run "Lint — migration rollbacks"   node ./scripts/ci/check-migration-rollbacks.mjs
+run "Lint — event producers"       node ./scripts/ci/check-event-producers.mjs
+run "Lint — argocd sync policy"    node ./scripts/ci/check-argocd-sync-policy.mjs
+run "Lint — isolation probe cm"    node ./scripts/ci/check-isolation-probe-configmap.mjs
+run "Lint — modified_at writes"    node ./scripts/ci/check-modified-at-writes.mjs
 
 # ── Dependency Audit job ────────────────────────────────────────────────────
 # Added 2026-09-03, after this job turned a push red on its own. Nothing in the repository had
@@ -108,9 +124,15 @@ run "Build"                        pnpm run build
 
 # ── Test jobs that need no Docker ───────────────────────────────────────────
 run "Unit tests (100/100)"         pnpm run test:cov
+# Temporal workflow specs are EXCLUDED from test:cov and run serially in their own jest config —
+# parallel TestWorkflowEnvironment servers starve each other (QM-1 records the flake). ci.yml runs
+# them as a separate step in the same job; skipping them here meant `pnpm run test:cov` passing was
+# read as "the unit-tests job passed" when a third of a suite had not run.
+run_in backend "Unit tests — Temporal workflows (serial)" pnpm run test:workflows
 run "Contract tests (Pact)"        pnpm run test:contract
 run "Architecture tests"           pnpm run test:architecture
 run "Conformance tests"            pnpm run test:conformance
+run "Schema/API contract parity"   bash ./scripts/readiness/check-schema-contract.sh
 
 # ── Docker-backed jobs ──────────────────────────────────────────────────────
 if [[ $FULL -eq 1 ]]; then
@@ -119,16 +141,20 @@ if [[ $FULL -eq 1 ]]; then
     # CI runs this one with working-directory: backend — the config lives there,
     # and the base jest.config ignores test/, so it must go through this config.
     run "Multi-tenant isolation"       bash -c "cd backend && pnpm exec jest --config jest.integration.config.js --testPathPatterns='tenant-isolation' --runInBand"
-    run "Python — ai-gateway"          bash -c "cd services/ai-gateway && python -m pytest -q"
+    # ci.yml's python-tests job is a five-way matrix, not one service. Running ai-gateway alone and
+    # calling the job mirrored is how four suites went unrun here while CI ran all five.
+    for svc in ai-gateway ai-embedding-worker ai-ocr-pipeline ai-transcription-pipeline bim-import-worker; do
+      run "Python — $svc" bash -c "cd services/$svc && python -m pytest -q"
+    done
   else
     SKIP+=("Integration (Testcontainers) — Docker not running")
     SKIP+=("Multi-tenant isolation — Docker not running")
-    SKIP+=("Python — ai-gateway — Docker not running")
+    SKIP+=("Python tests (5 services) — Docker not running")
   fi
 else
   SKIP+=("Integration (Testcontainers) — pass --full")
   SKIP+=("Multi-tenant isolation — pass --full")
-  SKIP+=("Python — ai-gateway — pass --full")
+  SKIP+=("Python tests (5 services) — pass --full")
 fi
 
 # ── Report ──────────────────────────────────────────────────────────────────
