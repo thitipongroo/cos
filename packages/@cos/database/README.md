@@ -4,7 +4,9 @@ Prisma pagination utilities, UUID generation, and database retry helpers.
 
 ## Purpose
 
-Shared database utilities used by all Node.js backend services. Implements cursor-based pagination, `cuid2`-based ID generation, and the `withRetry` helper for Prisma transient errors (connection drops, serialisation failures). See ADR-015 for the retry pattern design.
+Shared database utilities used by all Node.js backend services. Implements cursor-based pagination,
+`cuid2`-based ID generation, and the `withRetry` helper for Prisma transient errors (connection drops,
+serialisation failures). See ADR-015 for the retry pattern design.
 
 ## Public API
 
@@ -24,7 +26,8 @@ Returns a `cuid2` string suitable for use as a primary key.
 
 ### `withRetry(fn, options?)`
 
-Wraps a Prisma operation with exponential backoff. Retries on `P1001` (connection refused), `P1002` (timeout), `P2034` (transaction conflict). Default: 3 attempts, 50ms initial delay, factor 2.
+Wraps a Prisma operation with exponential backoff. Retries on `P1001` (connection refused), `P1002` (timeout),
+`P2034` (transaction conflict). Default: 3 attempts, 50ms initial delay, factor 2.
 
 ## Dependencies
 
@@ -57,6 +60,7 @@ const project = await withRetry(() =>
 
 ## Notes
 
-- ADR-015: retry helpers exist because PgBouncer transaction mode can cause transient `ECONNRESET` on pool exhaustion — callers should not handle retry logic themselves
+- ADR-015: retry helpers exist because PgBouncer transaction mode can cause transient `ECONNRESET` on pool
+  exhaustion — callers should not handle retry logic themselves
 - Use `jest.useFakeTimers()` + `await jest.runAllTimersAsync()` in tests for retry chains (Rule 30)
 - `import type { PrismaClient }` in test helpers — prevents mobile bundle failure (Rule 33)

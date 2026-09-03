@@ -6,7 +6,8 @@
 ## Purpose
 
 Single deployable NestJS application containing all domain modules.
-Implements the modular monolith pattern — do not split into microservices without satisfying both extraction conditions (team boundary + independent scaling evidence).
+Implements the modular monolith pattern — do not split into microservices without satisfying both extraction
+conditions (team boundary + independent scaling evidence).
 
 ## Modules
 

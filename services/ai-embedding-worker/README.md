@@ -6,7 +6,8 @@
 
 ## Purpose
 
-Generates and stores vector embeddings for all text content in the platform. Enables semantic search and RAG retrieval across site reports, issues, procurement records, and documents.
+Generates and stores vector embeddings for all text content in the platform. Enables semantic search and RAG
+retrieval across site reports, issues, procurement records, and documents.
 
 Responsibilities:
 

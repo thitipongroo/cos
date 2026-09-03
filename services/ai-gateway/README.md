@@ -6,7 +6,8 @@
 
 ## Purpose
 
-Single entrypoint for all LLM calls from every service. No service calls OpenAI SDK directly — all LLM traffic routes through this gateway via the `LLMProvider` interface (EP-AI-001).
+Single entrypoint for all LLM calls from every service. No service calls OpenAI SDK directly — all LLM traffic
+routes through this gateway via the `LLMProvider` interface (EP-AI-001).
 
 Responsibilities:
 

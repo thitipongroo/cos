@@ -42,7 +42,8 @@
 
 ## Root Cause
 
-> Describe the technical root cause. Be specific — include service names, error messages, query patterns, or config values that caused the failure.
+> Describe the technical root cause. Be specific — include service names, error messages, query patterns, or
+> config values that caused the failure.
 
 (fill in)
 
@@ -50,7 +51,8 @@
 
 ## Contributing Factors
 
-> What conditions allowed this to happen? Include: missing alerts, inadequate monitoring, gaps in runbooks, test coverage gaps, deployment process issues.
+> What conditions allowed this to happen? Include: missing alerts, inadequate monitoring, gaps in runbooks,
+> test coverage gaps, deployment process issues.
 
 - (fill in)
 

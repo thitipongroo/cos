@@ -157,10 +157,15 @@ auditConfig records these as intentionally locked. Resolve the lock reason, writ
 
 ## Wave E — Mobile native stack, spec-locked (product-owner + ADR required)
 
-Spec pins Expo SDK 51 + `@skam22/watermelondb-expo-plugin@^51`. Update the spec first.
+**Partly done since this plan was written (audit date 2026-06-30).** ADR-046 moved the app to Expo
+SDK 56, and ADR-048 then removed WatermelonDB entirely in favour of Drizzle on `expo-sqlite`, so the
+plugin/simdjson half of this wave no longer has a subject. `apps/mobile/package.json` now holds
+`expo ~56.0.13`, `expo-router ~56.2.12` and `react-native 0.85.3`.
 
-- Expo 51→56, react-native 0.74→0.86, expo-router 3.5→56, WatermelonDB plugin/simdjson/
-  build-properties matched to SDK 56
+- ~~Expo 51→56, expo-router 3.5→56~~ — done (ADR-046)
+- ~~WatermelonDB plugin/simdjson/build-properties matched to SDK 56~~ — no longer applicable; the
+  library, both config plugins, the simdjson pin and the CMake patch were removed (ADR-048)
+- react-native 0.74→0.86 — **outstanding**, currently 0.85.3
 - Rebuild custom dev-client; re-run Detox e2e; update the SDK-51-specific "Never" rules in
   `context.md`
 

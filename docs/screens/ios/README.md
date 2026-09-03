@@ -53,7 +53,8 @@ reached by a real login (Path A phone + OTP) and live API/analytics calls — no
 | 19  | Conflict Review | `conflict-review` | Offline sync conflict review — no conflicts 🎉                                                          |
 | 20  | Profile         | `profile`         | User ID · role PROJECT_MANAGER · Log out                                                                |
 
-Screens that read from the offline WatermelonDB cache (dashboard, budget, incidents, report)
+Screens that read from the offline `local_*` cache — Drizzle on expo-sqlite since ADR-048 —
+(dashboard, budget, incidents, report)
 gate their data behind selecting a project — the capture taps the **DEMO-001** chip before
 shooting. Empty states ("No alerts", "No incidents yet", "No conflicts") are genuine — that
 data was not seeded.

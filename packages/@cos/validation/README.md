@@ -4,7 +4,9 @@ Shared `class-validator` decorators for API input validation.
 
 ## Purpose
 
-Provides reusable validation decorators for DTOs across all NestJS services. All API inputs must be validated using `class-validator` + `class-transformer` (QM-4) — never hand-written `if` checks alone. Shared decorators live here to prevent duplication.
+Provides reusable validation decorators for DTOs across all NestJS services. All API inputs must be validated
+using `class-validator` + `class-transformer` (QM-4) — never hand-written `if` checks alone. Shared decorators
+live here to prevent duplication.
 
 ## Public API
 
@@ -24,7 +26,8 @@ Validates ISO 4217 currency codes (e.g. `THB`, `USD`). 3-letter uppercase string
 
 ### `@IsDecimalString(options?)`
 
-Validates decimal number strings with configurable precision (e.g. `"2850.0000"`). Rejects native JS numbers at DTO boundary — enforces `@cos/financial` usage downstream.
+Validates decimal number strings with configurable precision (e.g. `"2850.0000"`). Rejects native JS numbers
+at DTO boundary — enforces `@cos/financial` usage downstream.
 
 ### `@IsUUIDParam()`
 

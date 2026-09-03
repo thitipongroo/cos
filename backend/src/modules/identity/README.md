@@ -9,7 +9,8 @@ Handles both authentication paths defined in Phase 2:
 - **Path A — SMS OTP** (SITE_WORKER, SITE_ENGINEER): custom lightweight NestJS module using AWS SNS. Not via Keycloak extension.
 - **Path B — Email/password** (PM, Finance, Admin, Executive): Keycloak OIDC with RS256-signed JWT.
 
-Manages OTP generation, token issuance, JWT validation, refresh token rotation, and MFA (TOTP) for TENANT_ADMIN and FINANCE roles.
+Manages OTP generation, token issuance, JWT validation, refresh token rotation, and MFA (TOTP) for
+TENANT_ADMIN and FINANCE roles.
 
 ## Public API
 

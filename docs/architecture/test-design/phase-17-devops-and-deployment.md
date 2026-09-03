@@ -1,8 +1,8 @@
 ---
-title: "Test Design — Phase 17: DevOps + Deployment"
-version: "1.0.0"
+title: 'Test Design — Phase 17: DevOps + Deployment'
+version: '1.0.0'
 status: Active
-last_updated: "2026-08-25"
+last_updated: '2026-08-25'
 authors:
   - thitipongroo
 related_docs:

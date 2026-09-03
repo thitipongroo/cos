@@ -6,7 +6,9 @@
 
 ## Purpose
 
-Consumes Kafka domain events and writes nodes and relationships to Neo4j, building the Construction Knowledge Graph. The graph is eventually consistent with PostgreSQL — Neo4j is for traversal queries only, not the source of truth.
+Consumes Kafka domain events and writes nodes and relationships to Neo4j, building the Construction Knowledge
+Graph. The graph is eventually consistent with PostgreSQL — Neo4j is for traversal queries only, not the
+source of truth.
 
 Responsibilities:
 
@@ -58,4 +60,5 @@ go build -o kg-ingestion-worker .
 
 ## Consistency model
 
-Eventually consistent — graph may lag PostgreSQL by seconds to minutes. On worker restart: replay from last committed Kafka offset. Full rebuild: `POST /admin/kg/rebuild` (needed after schema migration or bug fix).
+Eventually consistent — graph may lag PostgreSQL by seconds to minutes. On worker restart: replay from last
+committed Kafka offset. Full rebuild: `POST /admin/kg/rebuild` (needed after schema migration or bug fix).

@@ -76,7 +76,11 @@ Expected response:
 { "message": "Dedicated DB assigned" }
 ```
 
-From this point, all new requests for the tenant are routed to the dedicated instance: `KeycloakJwtStrategy.validate()` resolves the tenant's `dedicated_db_url`, `JwtAuthGuard` publishes it into CLS, and `TenantPrismaService` connects there (see ADR-031 — there is no pre-auth `TenantMiddleware`; it is retained only as a type holder). Non-HTTP paths (Temporal activities, Kafka consumers) resolve the URL via `getDbUrlForTenant()`.
+From this point, all new requests for the tenant are routed to the dedicated instance:
+`KeycloakJwtStrategy.validate()` resolves the tenant's `dedicated_db_url`, `JwtAuthGuard` publishes
+it into CLS, and `TenantPrismaService` connects there (see ADR-031 — there is no pre-auth
+`TenantMiddleware`; it is retained only as a type holder). Non-HTTP paths (Temporal activities,
+Kafka consumers) resolve the URL via `getDbUrlForTenant()`.
 
 ---
 
@@ -93,26 +97,34 @@ Check application logs for the tenant — DB connections should reference the de
 If the tenant has existing data on the shared DB that must be moved to the dedicated instance:
 
 1. Export from shared DB:
+
    ```bash
    pg_dump "postgresql://SHARED_URL/DBNAME" \
      --schema=public \
      --where="tenant_id = 'TENANT_UUID'" \
      -f /tmp/tenant_export.sql
    ```
+
 2. Import to dedicated DB:
+
    ```bash
    psql "postgresql://USER:PASS@HOST:5432/DBNAME" -f /tmp/tenant_export.sql
    ```
-3. Verify row counts match before and after.
-4. Delete tenant rows from shared DB after confirming the dedicated DB is live (coordinate with tenant during maintenance window).
 
-> **Platform schema tables (`platform.*`) are never migrated.** `platform.tenants`, `platform.users`, and `platform.tenant_memberships` always remain on the shared DB regardless of tier. Do not attempt to copy or move these.
+3. Verify row counts match before and after.
+4. Delete tenant rows from shared DB after confirming the dedicated DB is live (coordinate with the
+   tenant during a maintenance window).
+
+> **Platform schema tables (`platform.*`) are never migrated.** `platform.tenants`,
+> `platform.users`, and `platform.tenant_memberships` always remain on the shared DB regardless of
+> tier. Do not attempt to copy or move these.
 
 ---
 
 ## Rollback
 
-To revert the tenant to the shared DB, set `dedicated_db_url` to NULL via direct SQL (no API endpoint — intentional; this is an irreversible-by-default operation):
+To revert the tenant to the shared DB, set `dedicated_db_url` to NULL via direct SQL (no API
+endpoint — intentional; this is an irreversible-by-default operation):
 
 ```sql
 UPDATE platform.tenants

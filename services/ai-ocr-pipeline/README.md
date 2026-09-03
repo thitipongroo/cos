@@ -6,11 +6,12 @@
 
 ## Purpose
 
-Extracts structured text from uploaded PDF and image files (scanned invoices, delivery notes, site documents). Feeds extracted text into the embedding worker for semantic search.
+Extracts structured text from uploaded PDF and image files (scanned invoices, delivery notes, site documents).
+Feeds extracted text into the embedding worker for semantic search.
 
 Processing pipeline:
 
-```
+```text
 file.uploaded (Kafka) → fetch from File Service → pdf2image → pytesseract → extracted text → Embedding Worker
 ```
 

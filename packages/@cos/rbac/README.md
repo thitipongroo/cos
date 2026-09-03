@@ -4,7 +4,9 @@ RBAC role definitions, permission maps, and NestJS guard utilities.
 
 ## Purpose
 
-Single source of truth for all role identifiers, permission mappings, and NestJS guards. All services enforce RBAC using this package — never define roles or permissions in individual services. Role identifiers are aligned to spec §6.2 (ADR-014).
+Single source of truth for all role identifiers, permission mappings, and NestJS guards. All services enforce
+RBAC using this package — never define roles or permissions in individual services. Role identifiers are
+aligned to spec §6.2 (ADR-014).
 
 ## Public API
 
@@ -66,6 +68,7 @@ if (!hasPermission(user.role, 'finance:write')) {
 
 ## Notes
 
-- ABAC (project_membership, tenant_match, resource_ownership) enforced via `PolicyGuard` in `backend/src/` — this package covers RBAC only
+- ABAC (project_membership, tenant_match, resource_ownership) enforced via `PolicyGuard` in `backend/src/` —
+  this package covers RBAC only
 - Advanced configurable ABAC policies: EP-AUTH-001 stub — Post-MVP
 - Mobile: import `CosRole` type-only where possible to avoid bundling guard code (Rule 33)

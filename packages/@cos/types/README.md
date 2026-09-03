@@ -4,7 +4,9 @@ Shared TypeScript types, enums, and interfaces used across all platforms.
 
 ## Purpose
 
-Single source of truth for domain enums and shared type definitions that are used across Node.js services, mobile (React Native), and PWA. Contains no executable logic — only TypeScript type declarations and plain enum objects. No runtime dependencies.
+Single source of truth for domain enums and shared type definitions that are used across Node.js services,
+mobile (React Native), and PWA. Contains no executable logic — only TypeScript type declarations and plain
+enum objects. No runtime dependencies.
 
 Exempt from jest coverage requirement (Rule 35 — no executable logic).
 

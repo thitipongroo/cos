@@ -6,13 +6,21 @@
 
 ## Purpose
 
-Smartphone-only native application for all roles. Offline-first: all actions queue locally and sync when connectivity returns. Do NOT use on tablet — tablet users should use the web app (online) or PWA (offline).
+Smartphone-only native application for all roles. Offline-first: all actions queue locally and sync when
+connectivity returns. Do NOT use on tablet — tablet users should use the web app (online) or PWA (offline).
 
 ## Local storage
 
-- **WatermelonDB 0.28.x** with `ExpoSQLiteAdapter` — ALL main business entities (site_reports, issues, local_photos, PRs, POs, etc.)
-- **expo-sqlite directly** — ONLY for the `sync_queue` infrastructure table
+- **Drizzle ORM on `expo-sqlite`** (`cos_offline_v2.db`) — ALL `local_*` business tables
+  (site_reports, tasks, issues, photos, photo_annotations, attendance, incidents,
+  safety_checklists, material_consumptions, projects). Reactive reads via `useLiveQuery`; schema by
+  versioned runtime DDL (`PRAGMA user_version`). See ADR-048 — it replaced WatermelonDB on
+  2026-07-04, and reintroducing WatermelonDB is prohibited (`context.md` §Never)
+- **expo-sqlite directly** — ONLY for the `sync_queue` infrastructure table, which keeps its own
+  handle (`cos_sync_queue.db`)
 - **Never** IndexedDB in React Native (browser API — unavailable in RN)
+
+Purchase orders are **not** stored here: §17.4 keeps them online-required, read-cache only.
 
 ## Offline sync
 
@@ -36,12 +44,12 @@ This app is a standalone deployable — not a library. The building blocks below
 
 **Hooks** (`src/hooks/`):
 
-| Hook                 | Returns         | Description                                   |
-| -------------------- | --------------- | --------------------------------------------- |
-| `useNetworkStatus()` | `NetworkStatus` | Current network reachability state            |
-| `usePendingCount()`  | `number`        | Count of records pending sync upload          |
-| `useSyncStatus()`    | `SyncStatus`    | Current sync engine state                     |
-| `useConflicts()`     | `Conflict[]`    | Unresolved conflict records from WatermelonDB |
+| Hook                 | Returns         | Description                                        |
+| -------------------- | --------------- | -------------------------------------------------- |
+| `useNetworkStatus()` | `NetworkStatus` | Current network reachability state                 |
+| `usePendingCount()`  | `number`        | Count of records pending sync upload               |
+| `useSyncStatus()`    | `SyncStatus`    | Current sync engine state                          |
+| `useConflicts()`     | `Conflict[]`    | Unresolved conflict records from the offline store |
 
 **Sync infrastructure** (`src/sync/`):
 

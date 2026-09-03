@@ -64,7 +64,7 @@ module "rds_tenant_acme" {
 
 All resources created by this module follow:
 
-```
+```text
 cos-tenant-{tenant_code}-{environment}
 ```
 

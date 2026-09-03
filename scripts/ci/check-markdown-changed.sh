@@ -67,4 +67,20 @@ if [[ ${#changed[@]} -eq 0 ]]; then
 fi
 
 echo "  ${#changed[@]} changed Markdown file(s)"
-pnpm exec markdownlint-cli2 "${changed[@]}"
+
+# WHY THIS IS BATCHED. Passing every path in one invocation dies on Windows with "The command line
+# is too long." before markdownlint reads a single file, and the gate reports that crash as a plain
+# FAIL — indistinguishable from a lint failure, which is how a real 53-error backlog sat behind a
+# crash message. Measured on this repository, with `pnpm exec` in front:
+#
+#     150 paths / 5,710 bytes  -> ran
+#     200 paths / 8,390 bytes  -> "The command line is too long."
+#     398 paths / 18,044 bytes -> "The command line is too long."
+#
+# The budget is bytes, not a file count: path lengths vary, so a count that is safe today stops
+# being safe when a longer path appears. -s counts the command and its initial arguments too, and
+# 4000 leaves room under the measured boundary. -0 so a path containing a space could never split.
+#
+# xargs exits 123 when any invocation fails, so a lint error in any batch still fails this script —
+# a repair that turned the crash into a silent pass would be worse than the crash.
+printf '%s\0' "${changed[@]}" | xargs -0 -s 4000 pnpm exec markdownlint-cli2

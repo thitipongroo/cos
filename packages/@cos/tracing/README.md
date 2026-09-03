@@ -4,7 +4,9 @@ OpenTelemetry setup and trace utilities for W3C Trace Context propagation.
 
 ## Purpose
 
-Initialises the OpenTelemetry SDK for all Node.js services and provides helpers to propagate `traceparent` headers across HTTP and Kafka calls (QM-8). All HTTP requests must propagate `traceparent`; all Kafka events must carry `trace_id` and `span_id` in headers.
+Initialises the OpenTelemetry SDK for all Node.js services and provides helpers to propagate `traceparent`
+headers across HTTP and Kafka calls (QM-8). All HTTP requests must propagate `traceparent`; all Kafka events
+must carry `trace_id` and `span_id` in headers.
 
 Full OTel collector configuration is a Phase 15 deliverable (`infrastructure/monitoring/otel-collector-config.yaml`).
 

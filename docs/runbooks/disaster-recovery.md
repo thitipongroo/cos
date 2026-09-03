@@ -63,7 +63,7 @@ Restore in this order (highest business impact first):
 
 ### Tenant notification (within 30 min of P0/P1 declaration)
 
-```
+```text
 [Construction OS Status] Service disruption — [DATE TIME ICT]
 
 We are currently experiencing [brief description].
@@ -76,7 +76,7 @@ Updates every 30 minutes at: https://status.<domain>
 
 ### All-clear notification
 
-```
+```text
 [Construction OS Status] Service restored — [DATE TIME ICT]
 
 All services have been restored as of [TIME] ICT.

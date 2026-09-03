@@ -35,11 +35,13 @@
    - Replacement = the new endpoint or schema version
 3. Send tenant notification (see format below)
 4. Add `Deprecation` and `Sunset` HTTP response headers to the endpoint:
-   ```
+
+   ```http
    Deprecation: Sat, 01 Jan 2027 00:00:00 GMT
    Sunset: Mon, 01 Apr 2027 00:00:00 GMT
    Link: <https://docs.construction-os.app/api/v2/procurement>; rel="successor-version"
    ```
+
 5. Add `BREAKING CHANGE:` entry to `CHANGELOG.md` if the endpoint is removed (not just deprecated)
 
 ### Step 2 — Remind tenants (Day 60)
@@ -68,7 +70,7 @@ Notifications are sent via:
 - In-platform notification (SSE push to all ADMIN users of affected tenants)
 - Email to the tenant's registered admin email
 
-```
+```text
 Subject: [Action Required] API Endpoint Deprecation — {endpoint} — Sunset {date}
 
 Dear {tenant_name} Administrator,

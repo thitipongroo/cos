@@ -53,7 +53,7 @@ Before going on-call, the engineer must have **live access** to all of the follo
 
 ## PagerDuty Escalation Policy
 
-```
+```text
 Layer 1: Primary on-call — page immediately on P0/P1 alert
          Timeout: 10 minutes → escalate to Layer 2
 

@@ -4,7 +4,8 @@ Decimal.js monetary calculation utilities enforcing the Construction OS Financia
 
 ## Purpose
 
-All monetary calculations platform-wide must use this package. Never use native JavaScript `number` or `float` for money. The spec requires `DECIMAL(19,4)` storage with `HALF_UP` rounding throughout.
+All monetary calculations platform-wide must use this package. Never use native JavaScript `number` or `float`
+for money. The spec requires `DECIMAL(19,4)` storage with `HALF_UP` rounding throughout.
 
 Mutation testing required for all exported functions (QM-1): `stryker` mutation score ≥ 70%.
 

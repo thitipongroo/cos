@@ -1,14 +1,17 @@
 # @cos/test-utils
 
-Shared test utilities for Construction OS integration and unit tests. Provides testcontainers setup, database reset helpers, and test data factories used across all `services/` and `backend/` packages.
+Shared test utilities for Construction OS integration and unit tests. Provides testcontainers setup, database
+reset helpers, and test data factories used across all `services/` and `backend/` packages.
 
 Introduced in Phase 18. Required per QM-11 — see spec §30.13.
 
 ## Purpose
 
-- **Testcontainers** — start/stop real infrastructure containers (PostgreSQL, Redis, Kafka, Neo4j, MinIO, ClickHouse, Schema Registry) in integration test suites
+- **Testcontainers** — start/stop real infrastructure containers (PostgreSQL, Redis, Kafka, Neo4j, MinIO,
+  ClickHouse, Schema Registry) in integration test suites
 - **DB reset** — truncate all domain schemas and optionally reseed between tests
-- **Factories** — produce minimal valid payloads (seed data + request DTOs) using the factory_bot pattern; spread overrides to customise any field
+- **Factories** — produce minimal valid payloads (seed data + request DTOs) using the factory_bot pattern;
+  spread overrides to customise any field
 
 ## Public API
 
@@ -46,7 +49,9 @@ truncateAllTables(client: Client): Promise<void>
 resetAndSeed(client: Client, seed: (client: Client) => Promise<void>): Promise<void>
 ```
 
-Truncates all tables in these PostgreSQL schemas: `platform`, `projects`, `finance`, `procurement`, `workforce`, `equipment`, `documents`, `safety`, `analytics`. Disables foreign-key constraints during truncation.
+Truncates all tables in these PostgreSQL schemas: `platform`, `projects`, `finance`, `procurement`,
+`workforce`, `equipment`, `documents`, `safety`, `analytics`. Disables foreign-key constraints during
+truncation.
 
 ### factories.ts
 
@@ -74,7 +79,8 @@ buildCreateSiteReportDto(projectId, overrides?): CreateSiteReportDto
 buildCreateWorkerDto(overrides?): CreateWorkerDto
 ```
 
-All factories produce minimal required fields only. Pass overrides to customise specific fields without rebuilding the entire object.
+All factories produce minimal required fields only. Pass overrides to customise specific fields without
+rebuilding the entire object.
 
 ## Dependencies
 
@@ -93,7 +99,8 @@ All factories produce minimal required fields only. Pass overrides to customise 
 
 No environment variables required. Docker must be running on the host machine before calling `startContainers`.
 
-Container images are pulled on first use. For CI environments, pre-pull images in the CI image or cache layer to avoid cold-start timeouts.
+Container images are pulled on first use. For CI environments, pre-pull images in the CI image or cache layer
+to avoid cold-start timeouts.
 
 ## Usage example
 

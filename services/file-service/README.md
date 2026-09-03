@@ -6,7 +6,9 @@
 
 ## Purpose
 
-Handles all file upload and download operations. Streams multipart uploads directly to MinIO (S3-compatible object storage) without buffering in memory. Validates MIME type, file size, and extension server-side. Triggers async antivirus scan after upload.
+Handles all file upload and download operations. Streams multipart uploads directly to MinIO (S3-compatible
+object storage) without buffering in memory. Validates MIME type, file size, and extension server-side.
+Triggers async antivirus scan after upload.
 
 ## Public API
 

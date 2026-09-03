@@ -6,7 +6,9 @@
 
 ## Purpose
 
-Consumes Kafka domain events and writes aggregated metrics to ClickHouse for dashboard queries. Uses ClickHouse Kafka engine tables and materialized views to pre-aggregate at ingestion time (not at query time — required to meet p95 < 3s SLA).
+Consumes Kafka domain events and writes aggregated metrics to ClickHouse for dashboard queries. Uses
+ClickHouse Kafka engine tables and materialized views to pre-aggregate at ingestion time (not at query time —
+required to meet p95 < 3s SLA).
 
 Responsibilities:
 
@@ -74,4 +76,5 @@ go build -o analytics-worker .
 ## Performance target
 
 - Ingestion latency: < 5 minutes from Kafka event to ClickHouse (QM-6)
-- Dashboard query SLA: p95 < 3s (Executive), p95 < 2s (PM) — enforced via materialized views + Redis cache in NestJS Analytics Service
+- Dashboard query SLA: p95 < 3s (Executive), p95 < 2s (PM) — enforced via materialized views + Redis cache in
+  NestJS Analytics Service

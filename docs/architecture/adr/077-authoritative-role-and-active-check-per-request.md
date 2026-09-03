@@ -2,7 +2,9 @@
 
 - **Status:** Accepted
 - **Date:** 2026-08-04
-- **Supersedes (in part):** the "stateless auth, do not re-check the user" tradeoff documented inline in `backend/src/modules/identity/strategies/keycloak-jwt.strategy.ts` (ADR-031 request-context model)
+- **Supersedes (in part):** the "stateless auth, do not re-check the user" tradeoff documented
+  inline in `backend/src/modules/identity/strategies/keycloak-jwt.strategy.ts` (ADR-031
+  request-context model)
 - **Context:** security review findings F1 / F1b / F2 / F2b
 
 ## Context
@@ -54,13 +56,13 @@ the platform no longer grants is a correctness problem regardless of who reads i
 
 ## Consequences
 
-**Positive**
+### Positive
 
 - Deactivation and demotion take effect on the next request, with no re-login and no token expiry wait.
 - Defence in depth: if the Keycloak write in decision 2 fails, decision 1 still denies access.
 - Keycloak's own view of a user stays correct for tokens minted later.
 
-**Negative / accepted**
+### Negative / accepted
 
 - Authentication is no longer purely stateless. The cost is measured, not theoretical: the strategy
   **already** queried `platform.tenants` on every request, so this is the same round trip with two joins
