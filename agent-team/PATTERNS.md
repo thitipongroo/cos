@@ -1,6 +1,6 @@
 # Patterns
 
-Ten structures worth reusing in any project. Each one is here because it prevents
+Eleven structures worth reusing in any project. Each one is here because it prevents
 a specific failure, and each lives in one file next to the folder it came from.
 
 Every pattern file opens with two lines: **Creates** — what you end up writing —
@@ -24,6 +24,7 @@ this kit. Both have a `.claude/` and a `CLAUDE.md`, so a bare path like
 | 5   | [Rules that load when relevant](patterns/05-creating-rules.md)         | `rules/*.md` with `paths:`                             | a context file that buries its own important lines         |
 | 6   | [Progressive disclosure](patterns/06-creating-skills.md)               | `skills/<name>/`                                       | a skill whose steps are lost inside its reference material |
 | 7   | [Read-then-report](patterns/07-creating-research-workflow.md)          | a coordinator command + a read-only agent              | an agent editing files on its own unverified conclusion    |
+| 11  | [Testing a skill](patterns/11-testing-a-skill.md)                      | a baseline run, a pressure scenario, an excuse table   | a skill that reads well and is never followed              |
 
 ## Keeping a check honest
 
@@ -46,13 +47,13 @@ Pattern files live beside the folder they were extracted from, except where that
 would make them run. A file inside `.claude/commands/` or `.claude/agents/` is a
 real command or agent — a subfolder only adds a namespace, it does not exempt the
 file, and a nested `.claude/` is not a reliable way to keep one quiet either
-(pattern 9). So patterns 1–7, which are about building `.claude/`, sit in
+(pattern 9). So patterns 1–7 and 11, which are about building `.claude/`, sit in
 `patterns/` rather than inside it.
 
 ```text
 agent-team/
 ├── PATTERNS.md          this index
-├── patterns/            1–7  · about building .claude/
+├── patterns/            1–7, 11 · about building .claude/
 ├── changelog/           8, 10 · about keeping a recurring check honest
 ├── workflows/           9    · about packaging a workflow as a folder
 ├── README.md            what was installed here, and what was not

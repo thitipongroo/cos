@@ -10,19 +10,22 @@ the kit; where the two differ, the difference is recorded below.
 
 ## What runs
 
-|                        |         | Where                                                                                                               |
-| ---------------------- | ------- | ------------------------------------------------------------------------------------------------------------------- |
-| `/plan-gate`           | command | Rule 38 gate — extracts the spec line by line into `.claude/impl-pending.md`, then stops for product owner approval |
-| `/verify`              | command | Rule 36 gate — one filesystem check per obligation, reporting `PASS` / `FAIL` / `UNVERIFIED` with real output       |
-| `/drift`               | command | Sends a read-only researcher at the docs, re-confirms every finding, reports the gaps, changes nothing              |
-| `engineering-agent`    | agent   | Routes to the 11 engineering skills                                                                                 |
-| `qa-agent`             | agent   | Routes to the 12 QA skills                                                                                          |
-| `doc-agent`            | agent   | Routes to the 6 documentation skills                                                                                |
-| `devops-agent`         | agent   | Routes to the 6 DevOps skills                                                                                       |
-| `doc-drift-researcher` | agent   | Read-only. Powers `/drift`                                                                                          |
-| 35 domain skills       | skills  | `engineering-*` 11 · `qa-*` 12 · `doc-*` 6 · `devops-*` 6                                                           |
-| `spec-reading`         | skill   | The discipline both gates depend on. Not in the `/` menu                                                            |
-| `markdown-docs`        | rule    | Loads only when a `.md` file is touched (`paths:` frontmatter)                                                      |
+|                         |         | Where                                                                                                               |
+| ----------------------- | ------- | ------------------------------------------------------------------------------------------------------------------- |
+| `/plan-gate`            | command | Rule 38 gate — extracts the spec line by line into `.claude/impl-pending.md`, then stops for product owner approval |
+| `/verify`               | command | Rule 36 gate — one filesystem check per obligation, reporting `PASS` / `FAIL` / `UNVERIFIED` with real output       |
+| `/drift`                | command | Sends a read-only researcher at the docs, re-confirms every finding, reports the gaps, changes nothing              |
+| `engineering-agent`     | agent   | Routes to the 12 engineering skills                                                                                 |
+| `qa-agent`              | agent   | Routes to the 12 QA skills                                                                                          |
+| `doc-agent`             | agent   | Routes to the 6 documentation skills                                                                                |
+| `devops-agent`          | agent   | Routes to the 6 DevOps skills                                                                                       |
+| `doc-drift-researcher`  | agent   | Read-only. Powers `/drift`                                                                                          |
+| 36 domain skills        | skills  | `engineering-*` 12 · `qa-*` 12 · `doc-*` 6 · `devops-*` 6                                                           |
+| `spec-reading`          | skill   | The discipline both gates depend on. Not in the `/` menu                                                            |
+| `workspace-isolation`   | skill   | Where a multi-step change gets implemented — chosen before the first edit, with a proven baseline                   |
+| `branch-completion`     | skill   | How that work leaves the branch — green suite, the product owner's choice, then cleanup                             |
+| `markdown-docs`         | rule    | Loads only when a `.md` file is touched (`paths:` frontmatter)                                                      |
+| `rationalization-guard` | rule    | No `paths:` — loads every session. The sentences that precede a skipped Rule 36 or Rule 38                          |
 
 Full inventory with what each one is for: **[CATALOG.md](CATALOG.md)**.
 
@@ -35,6 +38,7 @@ Full inventory with what each one is for: **[CATALOG.md](CATALOG.md)**.
 | The kit's `CLAUDE.md`                                              | This repository has its own, holding the Rule 36 and Rule 38 gates                                                                                                                                                             |
 | `marketing-*` `social-media-*` `sales-*` `motion-*` skills (37)    | No matching surface here — none of the 25 backend modules and no file under `docs/specifications/` covers those domains                                                                                                        |
 | `operations-*` `product-*` `management-*` `research-*` skills (27) | Product owner decision: engineering disciplines only for this round                                                                                                                                                            |
+| The `superpowers` plugin                                           | Four of its skills were adapted by hand instead — see [Borrowed from Superpowers](#borrowed-from-superpowers). Installed whole, its session-start bootstrap and its subagent execution model both collide with rules here      |
 
 ## What was changed for this repository
 
@@ -74,6 +78,22 @@ the workflow.
 The skills carry method only — no tool names, no thresholds. Anything specific to
 this repository (coverage gates, deploy windows, the Quality Mandates) belongs in
 `.claude/rules/` or in `CLAUDE.md`, not inside a skill.
+
+## Borrowed from Superpowers
+
+Four pieces here are adapted from [obra/superpowers](https://github.com/obra/superpowers) (MIT), which is a plugin for
+the same problem this folder solves. The plugin itself is **not installed** — its session-start hook injects a bootstrap
+that requires a skill be invoked before any response, which collides with this repository's own first instruction to
+read `context.md`, and its subagent-driven execution model collides with Rule 38's ban on delegating the spec reading.
+
+| Here                           | Adapted from                               | Why this one                                                                 |
+| ------------------------------ | ------------------------------------------ | ---------------------------------------------------------------------------- |
+| `engineering-receiving-review` | `receiving-code-review`                    | Nothing here covered the receiving side of a review                          |
+| `workspace-isolation`          | `using-git-worktrees`                      | Rewritten for a pnpm + turbo monorepo, where a worktree costs a full install |
+| `branch-completion`            | `finishing-a-development-branch`           | Wired to `verify-before-push.sh` and Rule 36                                 |
+| `rationalization-guard`        | the Red Flags table in `using-superpowers` | The rows are rewritten against Rules 36 and 38                               |
+
+Pattern [11](patterns/11-testing-a-skill.md) records the method those files were tested with.
 
 ## Design reference
 

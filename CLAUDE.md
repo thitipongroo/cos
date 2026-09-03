@@ -109,5 +109,9 @@ Rules 1–40 are defined in:
 - `context/00_master_construction_os.md` — Rules 1–40 (authoritative)
 - `context.md` — Rules 26–40 (agent-optimized form)
 
+`.claude/rules/rationalization-guard.md` is not one of them. It is not a rule to obey; it lists the sentences that
+precede a skipped Rule 36 or Rule 38, so that meeting one in your own reasoning is recognisable as the signal to run the
+gate. It loads in every session for that reason.
+
 All rules apply to every task. Rules 36 and 38 are repeated here because they are
 the two gates most likely to be skipped under time pressure.

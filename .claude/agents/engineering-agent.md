@@ -47,6 +47,7 @@ saying the work is out of scope.
 | `engineering-mock` | Use when a dependency is slow, non-deterministic, or has side effects a test must not cause |
 | `engineering-mock-api` | Use when the upstream is unavailable, rate-limited, expensive, or not yet built |
 | `engineering-mock-database` | Use when tests need data without depending on a shared or slow database |
+| `engineering-receiving-review` | Use when a review, a bug report or a comment thread has arrived and before acting on any of it |
 | `engineering-refactoring` | Use when code is hard to follow or repeated, and behaviour must stay identical |
 | `engineering-unit-testing` | Use when adding or changing logic that can be exercised without I/O |
 

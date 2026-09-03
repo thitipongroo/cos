@@ -26,11 +26,25 @@ How to turn a written requirement into an exhaustive, verifiable task list — r
 the reading, tag each item, and prove completion with filesystem evidence. Load before planning any multi-step
 deliverable.
 
+### workspace-isolation
+
+`workspace-isolation` · skill
+
+Establish an isolated workspace before starting feature work — detect the isolation you already have, choose a branch or
+a worktree deliberately, then prove the baseline is clean. Use before the first commit of any multi-step change.
+
+### branch-completion
+
+`branch-completion` · skill
+
+Decide how finished work gets integrated — prove the suite is green, present the options, execute the one chosen, then
+clean up. Use when implementation is complete and the branch needs to become a merge, a pull request, or nothing yet.
+
 ---
 
 ## 1. Engineering Agent
 
-`engineering-agent` · routes 11 skills
+`engineering-agent` · routes 12 skills
 
 Routes engineering work to the right method - writing code, reviewing it, refactoring, debugging, and every level of
 testing. Use when the task is to change or verify a codebase.
@@ -98,6 +112,13 @@ unavailable, rate-limited, expensive, or not yet built.
 
 Substitute the database in tests — with a fake repository, an in-memory engine, or a disposable real instance. Use when
 tests need data without depending on a shared or slow database.
+
+### Receiving Review Skill
+
+`engineering-receiving-review`
+
+Respond to review feedback — understand it, check it against this codebase, implement what holds and push back on what
+does not. Use when a review, a bug report or a comment thread has arrived and before acting on any of it.
 
 ### Refactoring Skill
 
