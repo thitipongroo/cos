@@ -1,6 +1,6 @@
 ---
 name: qa-performance-verification
-description: Decide whether a performance change is worth keeping — re-measure it the way the baseline was measured, compare the number against run-to-run variance, and revert anything that did not beat it. Use after a change made to run faster, when an optimisation barely moved the number, or when deciding whether a speed change stays or is reverted.
+description: Decide whether a performance change is kept or reverted, once the numbers already exist. Use after a change made to run faster, when an optimisation barely moved the number, or when a change must earn its place before it stays. Produces no measurements of its own — qa-performance-testing supplies the figures this skill judges.
 allowed-tools:
   - "Read"
   - "Glob"
@@ -28,31 +28,27 @@ was already written — and the codebase accretes optimisations that never bough
 **Not for:** finding the bottleneck (`qa-performance-testing`, `qa-load-testing`), or a change made
 for correctness that happens to be faster.
 
-## 1. Re-measure the way the baseline was measured
+## 1. Get the numbers from qa-performance-testing
 
-Same command, same conditions, same fixed budget of requests or iterations. A baseline on a cold
-cache against a result on a warm one measures the cache.
+This skill does not measure anything. `qa-performance-testing` owns that and says how: the budget,
+the percentiles, the warm-up, three runs, a fixed environment, and one change between runs. Run it,
+or read the run someone else already did, and come back with three things.
 
-```bash
-pnpm --filter @cos/web build          # bundle
-npx lhci autorun                      # LCP / INP / CLS, per QM-6
-k6 run tests/load/<scenario>.k6.js    # p95, per QM-14
-```
+| What you need | Why the decision below cannot be made without it            |
+| ------------- | ------------------------------------------------------------ |
+| the baseline  | "faster" means nothing without the number it beat            |
+| the result    | produced the same way, or it is a different experiment       |
+| the variance  | a delta inside the noise is a different sample, not a gain   |
 
-Whatever produced the baseline number produces the comparison number. If you cannot reproduce the
-baseline conditions, you do not have a baseline — take one first and say so.
+If any of the three is missing, stop and go get it rather than deciding around it. A verdict from one
+run either side is a preference wearing a number.
 
-## 2. Change one thing
+The reason this boundary is drawn and not blurred: a behavioural routing eval on 2026-09-03 found
+that when this skill also explained how to measure, requests belonging to `qa-performance-testing`
+and `qa-test-execution` landed here instead — five times across three repeats. Keeping the method in
+one place is what stops that.
 
-Three optimisations measured together produce one number and no attribution. If they must ship
-together, measure each alone first.
-
-## 3. Beat the noise, not the mean
-
-Repeat the measurement. Compare the delta against run-to-run variance, not against a single prior
-run. A 3% gain inside ±5% variance is a different sample, not a gain.
-
-## 4. Decide — and "neutral" is a revert
+## 2. Decide — and "neutral" is a revert
 
 | Result versus baseline                       | Decision                                                    |
 | -------------------------------------------- | ----------------------------------------------------------- |
@@ -66,7 +62,7 @@ and so it lands unmeasured. Code that is kept is maintained forever; make it pay
 100% lines and branches here, so an optimisation that needed a test skipped, deleted or loosened has
 failed a mandate as well as this step.
 
-## 5. Log the attempt — kept and reverted alike
+## 3. Log the attempt — kept and reverted alike
 
 A revert leaves no trace in git history, which is exactly why the same dead idea is tried again next
 quarter. Add one row to `docs/registers/performance-attempts.md` for every attempt, including the

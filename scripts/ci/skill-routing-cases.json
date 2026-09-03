@@ -140,6 +140,14 @@
         {
           "prompt": "push the system past capacity and find where it breaks",
           "owner": "qa-stress-testing"
+        },
+        {
+          "prompt": "how many runs and how much warm-up before these numbers mean anything",
+          "owner": "qa-performance-testing"
+        },
+        {
+          "prompt": "I want a run I can compare against last week's, what has to be recorded",
+          "owner": "qa-test-execution"
         }
       ]
     },

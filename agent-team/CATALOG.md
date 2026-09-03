@@ -229,16 +229,17 @@ event with a known traffic increase.
 
 `qa-performance-testing`
 
-Measure latency and throughput against a stated budget under expected conditions. Use when a budget exists and you need
-to know whether the system meets it, or which part does not.
+Measure latency and throughput against a stated budget, and set the conditions that make the figures trustworthy —
+warm-up, repeated runs, variance, percentiles, a fixed environment. Use when a budget exists and you need to know
+whether the system meets it, which part does not, or how a run must be conducted before its numbers count.
 
 ### Performance Verification Skill
 
 `qa-performance-verification`
 
-Decide whether a performance change is worth keeping — re-measure it the way the baseline was measured, compare the
-number against run-to-run variance, and revert anything that did not beat it. Use after a change made to run faster,
-when an optimisation barely moved the number, or when deciding whether a speed change stays or is reverted.
+Decide whether a performance change is kept or reverted, once the numbers already exist. Use after a change made to
+run faster, when an optimisation barely moved the number, or when a change must earn its place before it stays.
+Produces no measurements of its own — qa-performance-testing supplies the figures this skill judges.
 
 ### Regression Testing Skill
 

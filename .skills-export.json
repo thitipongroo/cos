@@ -1,0 +1,182 @@
+[
+  {
+    "name": "branch-completion",
+    "description": "Decide how finished work gets integrated — prove the suite is green, present the options, execute the one chosen, then clean up. Use when implementation is complete and the branch needs to become a merge, a pull request, or nothing yet."
+  },
+  {
+    "name": "decision-elicitation",
+    "description": "Turn an AWAITING_DECISION or UNSPECIFIED item into an answered one — ask the product owner one question at a time with your own guess attached, then restate the decision for an explicit yes. Use when Rule 38 has blocked on an escalation and the work cannot proceed until someone decides."
+  },
+  {
+    "name": "devops-ci-cd",
+    "description": "Design and maintain the pipeline that builds, tests and delivers every change - stages, gates, caching and speed. Use when setting up CI, or when a pipeline is slow, flaky, or being routinely bypassed."
+  },
+  {
+    "name": "devops-deployment",
+    "description": "Get a built artefact into an environment safely - strategy, health checks, rollback and verification. Use when shipping to production, or when a deployment process has caused an outage."
+  },
+  {
+    "name": "devops-infrastructure",
+    "description": "Define and change infrastructure as code - networks, compute, storage, and the state that describes them. Use when provisioning an environment, or when changes are being made by hand."
+  },
+  {
+    "name": "devops-logging",
+    "description": "Decide what to log, in what shape, and for how long - so an incident can be reconstructed without guessing. Use when adding a service, or when logs exist but never answer the question."
+  },
+  {
+    "name": "devops-monitoring",
+    "description": "Define what to measure and what to alert on so failures are noticed before users report them. Use when standing up a service, or when incidents are being found by customers."
+  },
+  {
+    "name": "devops-security",
+    "description": "Harden the running system and its supply chain - secrets, access, dependencies, network and configuration. Use when setting up infrastructure, before a security review, or after an exposure."
+  },
+  {
+    "name": "doc-api-documentation",
+    "description": "Document an HTTP or library API so a caller can use it without reading the source - endpoints, parameters, responses, errors and auth. Use when shipping an API surface or when integrators keep asking the same questions."
+  },
+  {
+    "name": "doc-code-example",
+    "description": "Write runnable examples that show how to use an API, library or pattern correctly. Use alongside reference documentation, or when adoption is slow because nobody can see how the pieces fit."
+  },
+  {
+    "name": "doc-knowledge-base",
+    "description": "Build and maintain a searchable body of answers - troubleshooting, how-tos, decisions and their reasons. Use when the same questions keep being answered in chat and the answers are lost."
+  },
+  {
+    "name": "doc-migration-guide",
+    "description": "Write instructions for moving from one version, system or approach to another - the steps, the order, and the way back. Use for a breaking change, a platform move, or a deprecation with a deadline."
+  },
+  {
+    "name": "doc-release-notes",
+    "description": "Write release notes that tell users what changed and what they must do about it. Use at every release, and always when something breaks compatibility."
+  },
+  {
+    "name": "doc-user-guide",
+    "description": "Write task-based documentation for people using the product - how to accomplish something, start to finish. Use when a feature ships, or when support answers the same question repeatedly."
+  },
+  {
+    "name": "doubt-review",
+    "description": "Cross-examine a non-trivial decision with a fresh-context reviewer prompted to disprove it, before it stands or is committed. Use when you feel confident but are not certain — a migration that must be reversible, a Kafka contract, a permission check, a retry path — or when the claim asserts that something is idempotent, correctly ordered, or holds an invariant no type can check."
+  },
+  {
+    "name": "engineering-code-generator",
+    "description": "Write new code from a stated requirement — read the surrounding code first, match its conventions, and produce something that compiles and is covered by tests. Use when asked to add a function, module, endpoint or component that does not exist yet."
+  },
+  {
+    "name": "engineering-code-reviewer",
+    "description": "Review a diff or file for defects that would survive the test suite — wrong behaviour, unhandled edge cases, security and concurrency errors. Use before merging, or when asked whether a change is safe."
+  },
+  {
+    "name": "engineering-component-testing",
+    "description": "Test a UI component in isolation — its rendering, its states, and its behaviour under interaction. Use when adding or changing a component, before wiring it into a screen."
+  },
+  {
+    "name": "engineering-debugging",
+    "description": "Find the cause of a defect — reproduce it, narrow it, prove the cause, then fix. Use with an error message, a stack trace, a failing test, or behaviour that diverges from what is expected."
+  },
+  {
+    "name": "engineering-e2e-testing",
+    "description": "Test a complete user journey through the running system, driving the real interface. Use for the few flows whose failure would be unacceptable, not for broad coverage."
+  },
+  {
+    "name": "engineering-integration-testing",
+    "description": "Test units against their real collaborators — a real database, queue, cache or HTTP boundary. Use when the risk is in the seams rather than in the logic."
+  },
+  {
+    "name": "engineering-mock-api",
+    "description": "Stand up a fake HTTP service so callers can be developed and tested without the real one. Use when the upstream is unavailable, rate-limited, expensive, or not yet built."
+  },
+  {
+    "name": "engineering-mock-database",
+    "description": "Substitute the database in tests — with a fake repository, an in-memory engine, or a disposable real instance. Use when tests need data without depending on a shared or slow database."
+  },
+  {
+    "name": "engineering-mock",
+    "description": "Replace a collaborator with a controlled stand-in so a unit can be tested in isolation. Use when a dependency is slow, non-deterministic, or has side effects a test must not cause."
+  },
+  {
+    "name": "engineering-receiving-review",
+    "description": "Respond to review feedback — understand it, check it against this codebase, implement what holds and push back on what does not. Use when a review, a bug report or a comment thread has arrived and before acting on any of it."
+  },
+  {
+    "name": "engineering-refactoring",
+    "description": "Restructure existing code without changing what it does — extract, rename, deduplicate, simplify. Use when code is hard to follow or repeated, and behaviour must stay identical."
+  },
+  {
+    "name": "engineering-source-verification",
+    "description": "Verify a framework or library pattern against its official documentation for the version this repository pins, before writing code that depends on it. Use when the correct call, hook, config or lifecycle differs between versions and getting it wrong compiles anyway."
+  },
+  {
+    "name": "engineering-unit-testing",
+    "description": "Write tests for a single unit in isolation — one function, class or module, with its collaborators replaced. Use when adding or changing logic that can be exercised without I/O."
+  },
+  {
+    "name": "phase-index",
+    "description": "Use when a task names a Phase, or when you need to find which of the 25 Phase command files to read — maps each Phase to its file, its dependencies and its SaaS Maturity Stage, and says where every cross-cutting specification and numbered Rule now lives. Read only the files the task needs."
+  },
+  {
+    "name": "qa-accessibility-testing",
+    "description": "Test whether people using assistive technology can complete the same tasks as everyone else - keyboard, screen reader, contrast, motion and focus. Use before shipping any user-facing surface."
+  },
+  {
+    "name": "qa-automation-testing",
+    "description": "Build and maintain automated test suites that run unattended in CI - selection, structure, stability and speed. Use when deciding what to automate, or when an existing suite is slow, flaky or ignored."
+  },
+  {
+    "name": "qa-bug-triage",
+    "description": "Assess incoming defect reports - reproduce, classify, prioritise and route. Use when a backlog of reports has built up, or a new report needs a severity before anyone commits time to it."
+  },
+  {
+    "name": "qa-compatibility-testing",
+    "description": "Verify the product works across the browsers, devices, operating systems and versions it claims to support. Use before a release, or when adopting a feature with uneven platform support."
+  },
+  {
+    "name": "qa-load-testing",
+    "description": "Measure how the system behaves at expected and peak volume, sustained over time. Use before a launch, a campaign, or any event with a known traffic increase."
+  },
+  {
+    "name": "qa-performance-testing",
+    "description": "Measure latency and throughput against a stated budget, and set the conditions that make the figures trustworthy — warm-up, repeated runs, variance, percentiles, a fixed environment. Use when a budget exists and you need to know whether the system meets it, which part does not, or how a run must be conducted before its numbers count."
+  },
+  {
+    "name": "qa-performance-verification",
+    "description": "Decide whether a performance change is kept or reverted, once the numbers already exist. Use after a change made to run faster, when an optimisation barely moved the number, or when a change must earn its place before it stays. Produces no measurements of its own — qa-performance-testing supplies the figures this skill judges."
+  },
+  {
+    "name": "qa-regression-testing",
+    "description": "Verify that what worked before still works after a change. Use before a release, after a merge, and whenever a fixed defect needs to stay fixed."
+  },
+  {
+    "name": "qa-security-testing",
+    "description": "Probe an application for exploitable weaknesses - injection, broken access control, exposure of secrets and data. Use before a release, after an auth change, or when a security review is required."
+  },
+  {
+    "name": "qa-stress-testing",
+    "description": "Push the system past its expected capacity to find where it breaks and how it behaves when it does. Use to establish real limits, and to check that failure is graceful rather than catastrophic."
+  },
+  {
+    "name": "qa-test-design",
+    "description": "Decide what to test and at which level before any test is written - the cases, the boundaries, and what is deliberately left uncovered. Use at the start of a feature, or when a suite is large but keeps missing defects."
+  },
+  {
+    "name": "qa-test-execution",
+    "description": "Run a test suite and report what actually happened - passes, failures, skips, flakes and environment. Use when validating a change, a release candidate, or a suite whose results are being questioned."
+  },
+  {
+    "name": "qa-test-reporting",
+    "description": "Turn raw test results into something a team can act on - trends, blockers, risk areas, and what to do next. Use for release readiness, sprint reporting, or when leadership asks whether quality is improving."
+  },
+  {
+    "name": "spec-reading",
+    "description": "How to turn a written requirement into an exhaustive, verifiable task list — read line by line yourself, never delegate the reading, tag each item, and prove completion with filesystem evidence. Load before planning any multi-step deliverable."
+  },
+  {
+    "name": "workflow-sequence",
+    "description": "The order work moves through this repository — which command comes before which, where the three gates sit, and which skill hands off to which. Use when you know what to do but not what comes next, when picking up work someone else started, or to check the order and see which gates a change must not skip."
+  },
+  {
+    "name": "workspace-isolation",
+    "description": "Establish an isolated workspace before starting feature work — detect the isolation you already have, choose a branch or a worktree deliberately, then prove the baseline is clean. Use before the first commit of any multi-step change."
+  }
+]

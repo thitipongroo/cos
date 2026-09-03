@@ -1,6 +1,6 @@
 ---
 name: qa-performance-testing
-description: Measure latency and throughput against a stated budget under expected conditions. Use when a budget exists and you need to know whether the system meets it, or which part does not.
+description: Measure latency and throughput against a stated budget, and set the conditions that make the figures trustworthy — warm-up, repeated runs, variance, percentiles, a fixed environment. Use when a budget exists and you need to know whether the system meets it, which part does not, or how a run must be conducted before its numbers count.
 allowed-tools:
   - "Read"
   - "Glob"

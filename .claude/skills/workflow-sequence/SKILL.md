@@ -66,7 +66,7 @@ Transcribed verbatim from the skill files. These are the only skill-level edges 
 | `engineering-receiving-review` | `engineering-code-reviewer`     | "When the review is a diff review you are performing rather than receiving"           |
 | `branch-completion`            | `verify-before-push.sh`         | "**Before any push**, run `bash scripts/ci/verify-before-push.sh` and report its output" |
 | `branch-completion`            | `/verify`                       | "completion is a claim about the filesystem, so run `/verify`"                        |
-| `qa-performance-verification`  | `qa-performance-testing` · `qa-load-testing` | a boundary, not an order: those find the bottleneck, this decides whether the fix earns keeping |
+| `qa-performance-verification`  | `qa-performance-testing`        | "This skill does not measure anything. qa-performance-testing owns that and says how" — get the baseline, result and variance from there first |
 
 `scripts/ci/check-skill-routing.mjs` proves every skill named above still exists. A rename that
 leaves this table pointing at nothing fails the Lint job.
