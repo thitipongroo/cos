@@ -1,6 +1,6 @@
 ---
 name: doc-agent
-description: Routes documentation work to the right method - API reference, user guides, code examples, release notes, migration guides and knowledge base articles. Use when the task is to write or fix documentation.
+description: Routes documentation work to the right method - API reference, user guides, code examples, release notes, migration guides and knowledge base articles. Use PROACTIVELY when the task is to write or fix documentation.
 model: inherit
 color: cyan
 tools:

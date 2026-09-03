@@ -1,6 +1,6 @@
 ---
 name: doc-drift-researcher
-description: Read-only researcher that compares what the documentation claims against what the repository actually contains, and returns the differences as findings. Use when checking whether docs, READMEs, or configuration references have gone stale.
+description: Read-only researcher that compares what the documentation claims against what the repository actually contains, and returns the differences as findings. Use PROACTIVELY when checking whether docs, READMEs, or configuration references have gone stale.
 model: inherit
 color: magenta
 tools:

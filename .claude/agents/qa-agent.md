@@ -1,6 +1,6 @@
 ---
 name: qa-agent
-description: Routes quality work to the right method - test design and execution, bug triage, and performance, security, accessibility, compatibility and load testing. Use when the task is to find defects or judge readiness.
+description: Routes quality work to the right method - test design and execution, bug triage, and performance, security, accessibility, compatibility and load testing. Use PROACTIVELY when the task is to find defects or judge readiness.
 model: inherit
 color: yellow
 tools:

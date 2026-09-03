@@ -1,6 +1,6 @@
 ---
 name: engineering-agent
-description: Routes engineering work to the right method - writing code, reviewing it, refactoring, debugging, and every level of testing. Use when the task is to change or verify a codebase.
+description: Routes engineering work to the right method - writing code, reviewing it, refactoring, debugging, and every level of testing. Use PROACTIVELY when the task is to change or verify a codebase.
 model: inherit
 color: blue
 tools:

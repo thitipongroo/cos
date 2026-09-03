@@ -15,6 +15,10 @@ the kit; where the two differ, the difference is recorded below.
 | `/plan-gate`            | command | Rule 38 gate — extracts the spec line by line into `.claude/impl-pending.md`, then stops for product owner approval |
 | `/verify`               | command | Rule 36 gate — one filesystem check per obligation, reporting `PASS` / `FAIL` / `UNVERIFIED` with real output       |
 | `/drift`                | command | Sends a read-only researcher at the docs, re-confirms every finding, reports the gaps, changes nothing              |
+| `/engineering`          | command | Dispatches `engineering-agent`, whose fail-closed contract stops when no skill covers the request                   |
+| `/qa`                   | command | Dispatches `qa-agent` with the QM-6 budgets, QM-14 SLOs and Phase 19 named, so nothing is measured against a guess  |
+| `/devops`               | command | Dispatches `devops-agent` with QM-16, QM-12, QM-4, QM-18, ADR-012 and Rule 28 named                                 |
+| `/docs`                 | command | Dispatches `doc-agent` with QM-11, Rule 29, Rule 37 and the specification-first authority order named               |
 | `engineering-agent`     | agent   | Routes to the 12 engineering skills                                                                                 |
 | `qa-agent`              | agent   | Routes to the 12 QA skills                                                                                          |
 | `doc-agent`             | agent   | Routes to the 6 documentation skills                                                                                |
@@ -54,6 +58,28 @@ real one.
 step 2, and writes every checkbox unticked. `/verify` ticks them — but only after a
 person confirms the reported evidence, and never for an item that came back `FAIL`
 or `UNVERIFIED`. Silence is not confirmation.
+
+## How an agent gets reached
+
+Nothing forces an agent to be used. There are three ways in, and only two of them
+are reliable:
+
+| Way in                                         | Who decides | Reliable                                              |
+| ---------------------------------------------- | ----------- | ----------------------------------------------------- |
+| A command naming `subagent_type`               | the command | Yes — `/engineering` `/qa` `/devops` `/docs` `/drift` |
+| A person invoking the agent by name            | the person  | Yes                                                   |
+| Auto-delegation from the agent's `description` | the model   | No — nothing enforces it                              |
+
+No hook can close this gap: hooks fire on tool calls, and the choice to dispatch
+happens before any tool call. That is why each routing agent has a command, why
+every `description` here says `PROACTIVELY`, and why `CLAUDE.md` names the command
+in its "When to invoke what" table. Three overlapping paths, none of them
+sufficient alone.
+
+Dispatching moves work, not gates. Rule 38's approval must exist before a
+subagent writes source, and the spec reading behind it is never delegated. Rule 36
+applies to what you report after the agent returns — its report is a claim, and a
+claim is what Rule 36 exists to test.
 
 ## The two gates
 

@@ -15,8 +15,8 @@ catalogue and the running configuration cannot drift apart without one of them f
 `doc-drift-researcher` · agent
 
 Read-only researcher that compares what the documentation claims against what the repository actually contains, and
-returns the differences as findings. Use when checking whether docs, READMEs, or configuration references have gone
-stale.
+returns the differences as findings. Use PROACTIVELY when checking whether docs, READMEs, or configuration references
+have gone stale.
 
 ### spec-reading
 
@@ -47,7 +47,7 @@ clean up. Use when implementation is complete and the branch needs to become a m
 `engineering-agent` · routes 12 skills
 
 Routes engineering work to the right method - writing code, reviewing it, refactoring, debugging, and every level of
-testing. Use when the task is to change or verify a codebase.
+testing. Use PROACTIVELY when the task is to change or verify a codebase.
 
 ### Code Generator Skill
 
@@ -141,7 +141,7 @@ adding or changing logic that can be exercised without I/O.
 `qa-agent` · routes 12 skills
 
 Routes quality work to the right method - test design and execution, bug triage, and performance, security,
-accessibility, compatibility and load testing. Use when the task is to find defects or judge readiness.
+accessibility, compatibility and load testing. Use PROACTIVELY when the task is to find defects or judge readiness.
 
 ### Accessibility Testing Skill
 
@@ -234,7 +234,7 @@ release readiness, sprint reporting, or when leadership asks whether quality is 
 `doc-agent` · routes 6 skills
 
 Routes documentation work to the right method - API reference, user guides, code examples, release notes, migration
-guides and knowledge base articles. Use when the task is to write or fix documentation.
+guides and knowledge base articles. Use PROACTIVELY when the task is to write or fix documentation.
 
 ### API Documentation Skill
 
@@ -284,8 +284,8 @@ feature ships, or when support answers the same question repeatedly.
 
 `devops-agent` · routes 6 skills
 
-Routes operational engineering to the right method - pipelines, deployment, monitoring, logging, infrastructure as code
-and operational security. Use when the task concerns how software is built, shipped or run.
+Routes operational engineering to the right method - pipelines, deployment, monitoring, logging, infrastructure as
+code and operational security. Use PROACTIVELY when the task concerns how software is built, shipped or run.
 
 ### CI CD Skill
 

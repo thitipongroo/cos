@@ -1,6 +1,6 @@
 ---
 name: devops-agent
-description: Routes operational engineering to the right method - pipelines, deployment, monitoring, logging, infrastructure as code and operational security. Use when the task concerns how software is built, shipped or run.
+description: Routes operational engineering to the right method - pipelines, deployment, monitoring, logging, infrastructure as code and operational security. Use PROACTIVELY when the task concerns how software is built, shipped or run.
 model: inherit
 color: red
 tools:
