@@ -3,9 +3,11 @@
 # Fires on PreToolUse Write|Edit for .ts/.tsx files.
 # Blocks if any non-relative import is missing from the nearest package.json.
 
-INPUT=$(cat)
-FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
-CONTENT=$(echo "$INPUT" | jq -r '.tool_input.content // .tool_input.new_string // empty')
+source "$(dirname "${BASH_SOURCE[0]}")/lib/hook-input.sh"
+hook_init PreToolUse deny
+hook_read_input
+FILE_PATH="$HOOK_FILE_PATH"
+CONTENT="$HOOK_CONTENT"
 
 # Only .ts/.tsx — skip tests, declarations, node_modules
 [[ "$FILE_PATH" =~ \.(ts|tsx)$ ]]         || exit 0
@@ -52,12 +54,14 @@ while IFS= read -r pkg; do
   fi
   # Bare builtin (`fs`, `path`, `fs/promises`) — also allowed.
   [[ "$BUILTINS" == *" $NAME "* ]] && continue
-  # Check all dep fields
-  if ! jq -e --arg n "$NAME" \
-    '.dependencies[$n] // .devDependencies[$n] // .peerDependencies[$n] // .optionalDependencies[$n]' \
-    "$PKG_JSON" >/dev/null 2>&1; then
-    MISSING+=("$NAME")
-  fi
+  # Check all dep fields. Exit 1 is the answer "not declared"; anything else means the
+  # package.json could not be read, which must not be reported as a missing dependency.
+  node "$HOOK_PARSER" has-dep "$PKG_JSON" "$NAME" >/dev/null 2>&1
+  case $? in
+    0) ;;
+    1) MISSING+=("$NAME") ;;
+    *) hook_fail "the nearest package.json could not be read" ;;
+  esac
 done < <(
   printf '%s' "$CONTENT" \
     | grep -oE "from ['\"][^./][^'\"]+['\"]" \

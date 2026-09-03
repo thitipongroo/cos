@@ -3,8 +3,10 @@
 # Fires on PreToolUse Write|Edit for any file.
 # Blocks if any referenced ADR-NNN does not have a matching file in docs/architecture/adr/.
 
-INPUT=$(cat)
-CONTENT=$(echo "$INPUT" | jq -r '.tool_input.content // .tool_input.new_string // empty')
+source "$(dirname "${BASH_SOURCE[0]}")/lib/hook-input.sh"
+hook_init PreToolUse deny
+hook_read_input
+CONTENT="$HOOK_CONTENT"
 
 [[ -z "$CONTENT" ]] && exit 0
 

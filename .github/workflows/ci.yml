@@ -127,6 +127,17 @@ jobs:
       - name: Service runtime declarations match the repository
         run: bash ./scripts/readiness/check-service-runtimes.sh
 
+      # The .claude/hooks/ gates enforce Rules 26, 27, 28, 29, 32, 35, 37 and 38 on agent edits.
+      # They parsed their payload with `jq` until 2026-09-03. `jq` is not a prerequisite of this
+      # repository, so on a machine without it every hook read an empty value, took its "nothing
+      # to check here" branch and exited 0 — output identical to a clean pass. All eight were
+      # disabled from at least 2026-07-24 and nothing anywhere said so; 305 commits touching
+      # .ts/.tsx/.sql went through gates that were not running. The parser is Node now, which the
+      # repository already requires, and this step proves each hook still fires, still stays quiet
+      # when it should, and now speaks up instead of passing silently when its parser is gone.
+      - name: Agent rule hooks still fire
+        run: bash ./scripts/ci/check-hooks-fire.sh
+
       # Each document must be no older than the code it describes (git COMMIT timestamps, not
       # mtimes — a clone has no meaningful mtimes). Wired 2026-08-24, once the last of 62
       # undocumented routes was written.

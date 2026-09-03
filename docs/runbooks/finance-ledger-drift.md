@@ -37,7 +37,7 @@ sample of up to 50 rows per kind naming `tenant_id`, `source_id` and the amount.
 
 ```bash
 kubectl logs -n cos deploy/cos-backend --since=2h \
-  | grep '"event":"finance.ledger.drift"' | tail -1 | jq .
+  | grep '"event":"finance.ledger.drift"' | tail -1 | node scripts/readiness/jsonpick.mjs 'd'
 ```
 
 The **count** is exact and unbounded. The **sample** is capped — do not read a 50-row sample as

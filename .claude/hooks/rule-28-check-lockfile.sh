@@ -3,8 +3,10 @@
 # Fires on PostToolUse Write|Edit for package.json files.
 # Blocks if pnpm-lock.yaml is missing or older than any package.json.
 
-INPUT=$(cat)
-FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+source "$(dirname "${BASH_SOURCE[0]}")/lib/hook-input.sh"
+hook_init PostToolUse block
+hook_read_input
+FILE_PATH="$HOOK_FILE_PATH"
 
 [[ "$FILE_PATH" == *"package.json" ]] || exit 0
 [[ "$FILE_PATH" == *"node_modules"* ]] && exit 0

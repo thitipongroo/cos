@@ -3,8 +3,10 @@
 # Fires on PostToolUse Write|Edit for docs/specifications/** files.
 # Injects grep results as additionalContext — agent must verify consistency before proceeding.
 
-INPUT=$(cat)
-FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+source "$(dirname "${BASH_SOURCE[0]}")/lib/hook-input.sh"
+hook_init PostToolUse warn
+hook_read_input
+FILE_PATH="$HOOK_FILE_PATH"
 
 [[ "$FILE_PATH" == *"docs/specifications/"* ]] || exit 0
 

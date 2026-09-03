@@ -103,6 +103,7 @@ run "Lint — openapi rules"         pnpm run lint:openapi
 run "Lint — openapi route coverage" pnpm run lint:routes
 run "Lint — unit test env"         bash ./scripts/ci/check-unit-test-env.sh
 run "Lint — loading state"         bash ./scripts/ci/check-loading-state.sh
+run "Lint — hooks still fire"      bash ./scripts/ci/check-hooks-fire.sh
 # Architectural fitness functions. Seven ci.yml lint steps that had no counterpart here until
 # 2026-09-03 — each one guards a class of mistake that no type checker or test will catch.
 run "Lint — legal parity"          node ./scripts/ci/check-legal-parity.mjs

@@ -3,8 +3,10 @@
 # Fires on PostToolUse Write|Edit for files inside packages/@cos/*/src/.
 # Blocks if the package is missing jest.config.js or has no test files.
 
-INPUT=$(cat)
-FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+source "$(dirname "${BASH_SOURCE[0]}")/lib/hook-input.sh"
+hook_init PostToolUse block
+hook_read_input
+FILE_PATH="$HOOK_FILE_PATH"
 
 # Only care about packages/@cos/*/src/ files
 [[ "$FILE_PATH" == *"packages/@cos/"* ]] || exit 0

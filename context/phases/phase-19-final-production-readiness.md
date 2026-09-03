@@ -23,7 +23,7 @@ Architecture:
   [AUTO]   [ ] All services have health check endpoints (/health/live, /health/ready)
                → curl http://<service>/health/live for each service in cluster
   [AUTO]   [ ] All services have Kubernetes liveness + readiness probes configured
-               → kubectl get deployment -o json | jq '.spec.template.spec.containers[].livenessProbe'
+               → kubectl get deployment -o json | node scripts/readiness/jsonpick.mjs 'd.items.map(x => [x.metadata.name, x.spec.template.spec.containers.map(c => c.livenessProbe)])'
   [MANUAL] [ ] No direct DB cross-service queries (only via Kafka or API)
   [MANUAL] [ ] Outbox pattern implemented in all services that emit Kafka events
   [AUTO]   [ ] Schema Registry enforcing BACKWARD_TRANSITIVE compatibility on all topics
@@ -37,7 +37,7 @@ Security:
                → nmap --script ssl-enum-ciphers -p 443 <ingress-host>
   [MANUAL] [ ] PostgreSQL RLS enabled on all tenant-scoped tables
   [AUTO]   [ ] All secrets managed via sealed-secrets (no plaintext)
-               → kubectl get secrets -A -o json | jq '[.items[] | select(.type != "kubernetes.io/service-account-token") | select(.metadata.annotations["sealedsecrets.bitnami.com/cluster-wide"] == null)] | length'
+               → kubectl get secrets -A -o json | node scripts/readiness/jsonpick.mjs 'd.items.filter(s => s.type !== "kubernetes.io/service-account-token" && !(s.metadata.annotations || {})["sealedsecrets.bitnami.com/cluster-wide"]).length'
   [AUTO]   [ ] Trivy scan passes with no CRITICAL vulnerabilities
                → GitHub Actions: trivy image --exit-code 1 --severity CRITICAL <image>
   [AUTO]   [ ] OWASP ZAP scan passes on staging
@@ -47,13 +47,13 @@ Security:
 
 Observability:
   [AUTO]   [ ] All services emit metrics to Prometheus
-               → curl http://prometheus:9090/api/v1/targets | jq '[.data.activeTargets[] | select(.health == "up")] | length'
+               → curl http://prometheus:9090/api/v1/targets | node scripts/readiness/jsonpick.mjs 'd.data.activeTargets.filter(t => t.health === "up").length'
   [AUTO]   [ ] All services emit structured JSON logs to Loki
                → curl -G http://loki:3100/loki/api/v1/query --data-urlencode 'query={job=~".+"}'
   [AUTO]   [ ] All services emit traces to Jaeger via OpenTelemetry
-               → curl http://jaeger:16686/api/services | jq '.data | length'
+               → curl http://jaeger:16686/api/services | node scripts/readiness/jsonpick.mjs 'd.data.length'
   [AUTO]   [ ] All alerting rules configured in Grafana
-               → curl -H "Authorization: Bearer $GRAFANA_TOKEN" http://grafana:3000/api/ruler/grafana/api/v1/rules | jq 'keys | length'
+               → curl -H "Authorization: Bearer $GRAFANA_TOKEN" http://grafana:3000/api/ruler/grafana/api/v1/rules | node scripts/readiness/jsonpick.mjs 'Object.keys(d).length'
   [AUTO]   [ ] All Grafana dashboards accessible and populated
                → curl -H "Authorization: Bearer $GRAFANA_TOKEN" http://grafana:3000/api/dashboards/home
   [AUTO]   [ ] DLQ depth alert verified (trigger test message to DLQ)
@@ -101,7 +101,7 @@ CI/CD (ArgoCD GitOps):
   [AUTO]   [ ] GitHub Actions CI pipeline does NOT contain kubectl or helm upgrade commands
                → grep -r "kubectl apply\|helm upgrade" .github/workflows/ | wc -l  (expect: 0)
   [AUTO]   [ ] Staging auto-syncs on image tag update (ArgoCD syncPolicy.automated enabled)
-               → argocd app get cos-staging -o json | jq '.spec.syncPolicy.automated'
+               → argocd app get cos-staging -o json | node scripts/readiness/jsonpick.mjs 'd.spec.syncPolicy.automated'
   [MANUAL] [ ] Production promotion requires manual sync gate in ArgoCD UI — tested
   [MANUAL] [ ] Rollback procedure: argocd app rollback — documented and tested in staging
 

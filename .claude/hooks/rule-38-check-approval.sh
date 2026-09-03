@@ -10,8 +10,10 @@
 # IMPORTANT: Only the product owner should create .claude/impl-approved.
 # The agent must NOT create this file — doing so defeats the human gate.
 
-INPUT=$(cat)
-FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+source "$(dirname "${BASH_SOURCE[0]}")/lib/hook-input.sh"
+hook_init PreToolUse deny
+hook_read_input
+FILE_PATH="$HOOK_FILE_PATH"
 
 # Only block source file writes (.ts, .tsx, .sql)
 [[ "$FILE_PATH" =~ \.(ts|tsx|sql)$ ]] || exit 0

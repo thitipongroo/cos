@@ -80,4 +80,7 @@ output per item.
 
 Where a skill's method meets a Quality Mandate, the mandate wins: QM-1 for coverage, QM-2 for API versioning, QM-9 for
 backward compatibility, QM-10 for the error envelope. Rules 26-35 and 39-40 apply to every change; the hooks in
-`.claude/hooks/` enforce 26, 27, 28, 29, 32, 35, 37 and 38 and will refuse a write that breaks them.
+`.claude/hooks/` enforce 26, 27, 28, 29, 32, 35 and 38 and will refuse a write that breaks them. Rule 37 is the one
+exception — its hook injects the drift grep as context rather than refusing anything, so acting on it is still yours.
+`scripts/ci/check-hooks-fire.sh` proves all nine hooks — those eight plus the Rule 36/38 Stop reminder — still fire
+and still emit parseable JSON; run it if a gate ever seems too quiet.
