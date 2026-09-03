@@ -83,7 +83,9 @@ expect_silent() { # description, hook, file_path, content
 # ---------------------------------------------------------------- the fake project
 
 WORK="$(mktemp -d)"
-trap 'rm -rf "$WORK"' EXIT
+# Populated far below, under "a PATH without node". Declared here so one trap owns both.
+NO_NODE_BIN="$(mktemp -d)"
+trap 'rm -rf "$WORK" "$NO_NODE_BIN"' EXIT
 cd "$WORK" || exit 1
 
 # CLAUDE_PROJECT_DIR would send the hooks back to the real repository.
@@ -200,8 +202,35 @@ NODE_BIN="$(command -v node)"
 if [[ -z "$NODE_BIN" ]]; then
   fail "node is required to run this check" ''
 else
-  NODE_DIR="$(dirname "$NODE_BIN")"
-  PATH_NO_NODE="$(printf '%s' "$PATH" | tr ':' '\n' | grep -vxF "$NODE_DIR" | paste -sd: -)"
+  # A PATH without node, built by shadowing rather than by subtraction.
+  #
+  # This used to drop dirname(node) from PATH. That works only where node has a directory of
+  # its own. On a Debian-family image node is /usr/bin/node and /bin is a symlink to /usr/bin,
+  # so removing /usr/bin leaves /bin behind and node is still reachable as /bin/node. The
+  # self-check below then fired and all thirteen parser-failure assertions were skipped: the
+  # section reported one failure of its own instead of proving the 2026-07-24 defect stays
+  # fixed. A check that cannot run is not a check that passed, but it is easy to read as one.
+  #
+  # Removing every directory that can serve node is not the fix either. On that same image it
+  # removes /usr/bin, and with it bash, git, sed, grep and mktemp. Each hook would then fail
+  # for want of coreutils and still print something, so every assertion below would pass for
+  # the wrong reason — which is the outcome this self-check exists to prevent.
+  #
+  # So: link every executable on PATH into one directory, except node, and use only that
+  # directory. It is spelling-independent, so a second install (nvm, /usr/local/bin) is covered
+  # as well, and everything else the hooks need is still there. First match wins, as PATH order
+  # would decide it.
+  while IFS= read -r dir; do
+    [[ -n "$dir" && -d "$dir" ]] || continue
+    for exe in "$dir"/*; do
+      [[ -f "$exe" && -x "$exe" ]] || continue
+      base="${exe##*/}"
+      if [[ "$base" == node || "$base" == node.exe ]]; then continue; fi
+      if [[ -e "$NO_NODE_BIN/$base" ]]; then continue; fi
+      ln -s "$exe" "$NO_NODE_BIN/$base" 2>/dev/null
+    done
+  done < <(printf '%s' "$PATH" | tr ':' '\n')
+  PATH_NO_NODE="$NO_NODE_BIN"
 
   # Self-check: if node is still reachable the assertions below would pass for the wrong reason.
   if PATH="$PATH_NO_NODE" command -v node >/dev/null 2>&1; then
@@ -213,7 +242,11 @@ else
       # stdout is the hook protocol, so with no node it has no valid payload it could emit. It
       # reports on stderr instead, which the harness captures. Checked separately below.
       [[ "$name" == "rule-36-38-stop-reminder.sh" ]] && continue
-      out="$(payload "src/probe.ts" "x" | PATH="$PATH_NO_NODE" bash "$hook" 2>/dev/null)"
+      # payload() writes with node on the OUTER PATH. The hook has no node, so it calls
+      # hook_fail and exits without draining stdin, and that writer takes an EPIPE and
+      # prints a stack trace. Harmless — the assertion is on the hook's stdout — but a
+      # stack trace inside a passing gate is how people learn to stop reading its output.
+      out="$(payload "src/probe.ts" "x" 2>/dev/null | PATH="$PATH_NO_NODE" bash "$hook" 2>/dev/null)"
       if [[ -n "$out" ]]; then
         pass "$name  reports its parser is unusable"
       else
