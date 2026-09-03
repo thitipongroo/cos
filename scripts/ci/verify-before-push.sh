@@ -66,6 +66,21 @@ run_if() {
   if have "$tool"; then run "$label" "$@"; else SKIP+=("$label — $tool not installed"); fi
 }
 
+# `command -v python` is not the question for a pytest suite — the interpreter can be on PATH with
+# none of the service's dependencies installed, and then every suite "fails" for a reason CI does
+# not have. Ask whether pytest can actually run instead, and say how to make it runnable rather than
+# reporting a red that means nothing.
+PYTEST_OK=0
+if python -m pytest --version >/dev/null 2>&1; then PYTEST_OK=1; fi
+run_py() {
+  local svc="$1" label="Python — $1"
+  if [[ $PYTEST_OK -eq 1 ]]; then
+    run "$label" bash -c "cd services/$svc && python -m pytest -q"
+  else
+    SKIP+=("$label — pytest not importable (pip install -r services/$svc/requirements.txt)")
+  fi
+}
+
 # ── Lint job ────────────────────────────────────────────────────────────────
 run "Lint — eslint"                pnpm run lint
 run "Lint — prettier"              pnpm run format:check
@@ -134,6 +149,18 @@ run "Architecture tests"           pnpm run test:architecture
 run "Conformance tests"            pnpm run test:conformance
 run "Schema/API contract parity"   bash ./scripts/readiness/check-schema-contract.sh
 
+# ── Python tests job ────────────────────────────────────────────────────────
+# NOT Docker-backed, and not `--full`. ci.yml's python-tests job is `pip install` then `pytest -q`
+# with no `services:` block and no container — it was sitting behind BOTH gates here, so it ran on
+# almost no push. That is how anyio 4.15.0 took out four of these five suites in CI on 2026-09-03
+# while this script reported a clean run: `filterwarnings = error` plus a deprecation warning
+# starlette's TestClient triggers at import time is a collection error, and nothing local looked.
+#
+# Skips loudly when python is absent rather than passing silently.
+for svc in ai-gateway ai-embedding-worker ai-ocr-pipeline ai-transcription-pipeline bim-import-worker; do
+  run_py "$svc"
+done
+
 # ── Docker-backed jobs ──────────────────────────────────────────────────────
 if [[ $FULL -eq 1 ]]; then
   if need_docker; then
@@ -141,20 +168,13 @@ if [[ $FULL -eq 1 ]]; then
     # CI runs this one with working-directory: backend — the config lives there,
     # and the base jest.config ignores test/, so it must go through this config.
     run "Multi-tenant isolation"       bash -c "cd backend && pnpm exec jest --config jest.integration.config.js --testPathPatterns='tenant-isolation' --runInBand"
-    # ci.yml's python-tests job is a five-way matrix, not one service. Running ai-gateway alone and
-    # calling the job mirrored is how four suites went unrun here while CI ran all five.
-    for svc in ai-gateway ai-embedding-worker ai-ocr-pipeline ai-transcription-pipeline bim-import-worker; do
-      run "Python — $svc" bash -c "cd services/$svc && python -m pytest -q"
-    done
   else
     SKIP+=("Integration (Testcontainers) — Docker not running")
     SKIP+=("Multi-tenant isolation — Docker not running")
-    SKIP+=("Python tests (5 services) — Docker not running")
   fi
 else
   SKIP+=("Integration (Testcontainers) — pass --full")
   SKIP+=("Multi-tenant isolation — pass --full")
-  SKIP+=("Python tests (5 services) — pass --full")
 fi
 
 # ── Report ──────────────────────────────────────────────────────────────────
