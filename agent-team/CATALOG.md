@@ -34,6 +34,14 @@ How to turn a written requirement into an exhaustive, verifiable task list — r
 the reading, tag each item, and prove completion with filesystem evidence. Load before planning any multi-step
 deliverable.
 
+### decision-elicitation
+
+`decision-elicitation` · skill
+
+Turn an AWAITING_DECISION or UNSPECIFIED item into an answered one — ask the product owner one question at a time with
+your own guess attached, then restate the decision for an explicit yes. Use when Rule 38 has blocked on an escalation
+and the work cannot proceed until someone decides.
+
 ### workspace-isolation
 
 `workspace-isolation` · skill
@@ -47,6 +55,18 @@ a worktree deliberately, then prove the baseline is clean. Use before the first 
 
 Decide how finished work gets integrated — prove the suite is green, present the options, execute the one chosen, then
 clean up. Use when implementation is complete and the branch needs to become a merge, a pull request, or nothing yet.
+
+### doubt-review
+
+`doubt-review` · skill
+
+Cross-examine a non-trivial decision with a fresh-context reviewer prompted to disprove it, before it stands or is
+committed. Use when you feel confident but are not certain — a migration that must be reversible, a Kafka contract, a
+permission check, a retry path — or when the claim asserts that something is idempotent, correctly ordered, or holds an
+invariant no type can check.
+
+Runs from the main session, behind `/doubt` and Rule 41. It is in no agent's routing table and must not be added to one:
+a persona that followed its third step would spawn a second persona.
 
 ---
 
@@ -135,6 +155,14 @@ does not. Use when a review, a bug report or a comment thread has arrived and be
 Restructure existing code without changing what it does — extract, rename, deduplicate, simplify. Use when code is hard
 to follow or repeated, and behaviour must stay identical.
 
+### Source Verification Skill
+
+`engineering-source-verification`
+
+Verify a framework or library pattern against its official documentation for the version this repository pins, before
+writing code that depends on it. Use when the correct call, hook, config or lifecycle differs between versions and
+getting it wrong compiles anyway.
+
 ### Unit Testing Skill
 
 `engineering-unit-testing`
@@ -192,6 +220,14 @@ event with a known traffic increase.
 
 Measure latency and throughput against a stated budget under expected conditions. Use when a budget exists and you need
 to know whether the system meets it, or which part does not.
+
+### Performance Verification Skill
+
+`qa-performance-verification`
+
+Decide whether a performance change is worth keeping — re-measure it the way the baseline was measured, compare the
+number against run-to-run variance, and revert anything that did not beat it. Use after a change made to run faster,
+when an optimisation barely moved the number, or when deciding whether a speed change stays or is reverted.
 
 ### Regression Testing Skill
 

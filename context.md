@@ -266,11 +266,14 @@ verify production readiness.
   model/output evaluation + drift) for Phase 23+ MLOps; no external SaaS/API key. W&B removed —
   RESOLVED (source: spec §22-ai-architecture §22.6; ADR-038)
 
-**ROOT CAUSE PREVENTION RULES — applied on every implementation task (Rules 26–40):**
+**ROOT CAUSE PREVENTION RULES — applied on every implementation task (Rules 26–41):**
 
 Rules 26–30, 32–35, 37, 39 and 40 moved to `.claude/rules/` on 2026-09-02 and load by
 path. Rules 31, 36 and 38 stay below: they govern how work is done rather than which
 file is touched, so no path can trigger them.
+
+Rule 41 was **written in `.claude/rules/` on 2026-09-03**, not moved there, so it has no
+longer form in `context/00_master_construction_os.md`. Its file is the authority.
 
 | Rule | Subject | Loads when you touch | File |
 |---|---|---|---|
@@ -283,6 +286,7 @@ file is touched, so no path can trigger them.
 | 37 | spec / context drift | `docs/specifications/` | `.claude/rules/rule-37-spec-drift.md` |
 | 39 | close long-lived handles | services, modules, `main.ts` | `.claude/rules/rule-39-shutdown-handles.md` |
 | 40 | loading state | `apps/mobile/`, `apps/web/` | `.claude/rules/rule-40-loading-state.md` |
+| 41 | adversarial review of a non-trivial decision | migrations, guards, middleware, Kafka contracts, identity, finance, sync | `.claude/rules/rule-41-doubt-driven.md` |
 
 The longer form of every one of these, with the failure that produced it, is in
 `context/00_master_construction_os.md` §ROOT CAUSE PREVENTION RULES.

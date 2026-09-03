@@ -113,6 +113,7 @@ run "Lint — event producers"       node ./scripts/ci/check-event-producers.mjs
 run "Lint — argocd sync policy"    node ./scripts/ci/check-argocd-sync-policy.mjs
 run "Lint — isolation probe cm"    node ./scripts/ci/check-isolation-probe-configmap.mjs
 run "Lint — modified_at writes"    node ./scripts/ci/check-modified-at-writes.mjs
+run "Lint — skill routing"         node ./scripts/ci/check-skill-routing.mjs
 
 # ── Dependency Audit job ────────────────────────────────────────────────────
 # Added 2026-09-03, after this job turned a push red on its own. Nothing in the repository had

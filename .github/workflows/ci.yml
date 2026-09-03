@@ -138,6 +138,22 @@ jobs:
       - name: Agent rule hooks still fire
         run: bash ./scripts/ci/check-hooks-fire.sh
 
+      # A skill is reached by the model reading its `description` and deciding — CLAUDE.md says so
+      # in as many words: "a convenience, not a guarantee, and nothing enforces it". The §When to
+      # invoke what table closes that for the ten commands; it does not reach the skills sitting
+      # under the four routing agents, and there are dozens of them. A description missing the
+      # words a real request uses fails silently, and the wrong method gets followed.
+      #
+      # This is a lexical approximation of routing (stemmed TF-IDF over the descriptions), not a
+      # judgement of meaning. It catches the two failures that actually happen: a realistic prompt
+      # that cannot rank its own skill, and two descriptions so alike that neither wins its own
+      # prompts. A failure here is nearly always a description to widen, not a case to relax.
+      #
+      # Cases: scripts/ci/skill-routing-cases.json. A skill with no case is reported, not failed —
+      # coverage grows as each skill is next touched.
+      - name: Skill descriptions still route
+        run: node ./scripts/ci/check-skill-routing.mjs
+
       # Each document must be no older than the code it describes (git COMMIT timestamps, not
       # mtimes — a clone has no meaningful mtimes). Wired 2026-08-24, once the last of 62
       # undocumented routes was written.

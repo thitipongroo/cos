@@ -49,6 +49,7 @@ saying the work is out of scope.
 | `engineering-mock-database` | Use when tests need data without depending on a shared or slow database |
 | `engineering-receiving-review` | Use when a review, a bug report or a comment thread has arrived and before acting on any of it |
 | `engineering-refactoring` | Use when code is hard to follow or repeated, and behaviour must stay identical |
+| `engineering-source-verification` | Use before writing a framework call from memory, when the version decides which pattern is correct |
 | `engineering-unit-testing` | Use when adding or changing logic that can be exercised without I/O |
 
 ## Workflow

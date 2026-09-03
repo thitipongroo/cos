@@ -14,6 +14,7 @@ the kit; where the two differ, the difference is recorded below.
 | ----------------------- | ------- | ------------------------------------------------------------------------------------------------------------------- |
 | `/plan-gate`            | command | Rule 38 gate — extracts the spec line by line into `.claude/impl-pending.md`, then stops for product owner approval |
 | `/verify`               | command | Rule 36 gate — one filesystem check per obligation, reporting `PASS` / `FAIL` / `UNVERIFIED` with real output       |
+| `/doubt`                | command | Rule 41 gate — one adversarial fresh-context review of a non-trivial decision, in flight. Writes nothing            |
 | `/workspace`            | command | Wraps `workspace-isolation` — where a multi-step change gets built, decided before the first edit                   |
 | `/finish`               | command | Wraps `branch-completion` — green suite, the product owner's choice, then cleanup                                   |
 | `/drift`                | command | Sends a read-only researcher at the docs, re-confirms every finding, reports the gaps, changes nothing              |
@@ -26,7 +27,9 @@ the kit; where the two differ, the difference is recorded below.
 | `doc-agent`             | agent   | Routes to the 6 documentation skills                                                                                |
 | `devops-agent`          | agent   | Routes to the 6 DevOps skills                                                                                       |
 | `doc-drift-researcher`  | agent   | Read-only. Powers `/drift`                                                                                          |
-| 36 domain skills        | skills  | `engineering-*` 12 · `qa-*` 12 · `doc-*` 6 · `devops-*` 6                                                           |
+| 38 domain skills        | skills  | `engineering-*` 13 · `qa-*` 13 · `doc-*` 6 · `devops-*` 6                                                           |
+| `doubt-review`          | skill   | The method behind `/doubt`. In no agent's routing table, and must not be added to one                               |
+| `decision-elicitation`  | skill   | How a `NEEDS_ESCALATION` item becomes an answered one. Not in the `/` menu                                          |
 | `spec-reading`          | skill   | The discipline both gates depend on. Not in the `/` menu                                                            |
 | `phase-index`           | skill   | The map from a Phase number to the one file in `context/phases/` to read                                            |
 | `markdown-docs`         | rule    | Loads only when a `.md` file is touched (`paths:` frontmatter)                                                      |
@@ -44,6 +47,34 @@ Full inventory with what each one is for: **[CATALOG.md](CATALOG.md)**.
 | `marketing-*` `social-media-*` `sales-*` `motion-*` skills (37)    | No matching surface here — none of the 25 backend modules and no file under `docs/specifications/` covers those domains                                                                                                        |
 | `operations-*` `product-*` `management-*` `research-*` skills (27) | Product owner decision: engineering disciplines only for this round                                                                                                                                                            |
 | The `superpowers` plugin                                           | Four of its skills were adapted by hand instead — see [Borrowed from Superpowers](#borrowed-from-superpowers). Installed whole, its session-start bootstrap and its subagent execution model both collide with rules here      |
+
+## What was added on 2026-09-03
+
+Six gaps were found by comparing this configuration against
+[`addyosmani/agent-skills`](https://github.com/addyosmani/agent-skills), a lifecycle-organised skill
+pack. Most of what that pack covers already exists here under a Quality Mandate or a Rule; these are
+the parts that did not.
+
+| Added                                 | Where                                                    | The gap it closes                                                                                 |
+| ------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Rule 41 · `/doubt` · `doubt-review`   | `.claude/rules/`, `.claude/commands/`, `.claude/skills/` | Rule 38 gates the plan and Rule 36 gates the claim. Nothing gated the decision in between         |
+| `engineering-source-verification`     | `.claude/skills/`                                        | Every entry in `context.md` §Never was found by writing a framework call from memory first        |
+| `decision-elicitation`                | `.claude/skills/`                                        | AWAITING_DECISION blocks well and says nothing about how the answer is obtained                   |
+| `qa-performance-verification`         | `.claude/skills/`                                        | QM-6 and QM-14 guard the budget; nothing decided whether a given change earned keeping            |
+| `docs/registers/quality-baselines.md` | `docs/registers/`                                        | No record of measured-but-not-enforced numbers, and no exception list with an owner and an expiry |
+| `check-skill-routing.mjs`             | `scripts/ci/`                                            | 44 skills reached by auto-discovery, with nothing testing that a real request ranks the right one |
+
+ADR-096 (Proposed) covers the seventh: Rule 38's one-task-per-spec-line list is horizontal by
+construction, and vertical slices are how work becomes provable early. It proposes a presentation
+step in `/plan-gate` rather than a change to Rule 38, and is waiting on the product owner.
+
+`check-skill-routing.mjs` runs in the ci.yml `lint` job and is mirrored in
+`scripts/ci/verify-before-push.sh`, per that script's rule that a CI step is either mirrored there or
+named in its not-covered list. It found three of its own subjects on the first run: two descriptions
+written that day could not rank their own prompts, and both were widened rather than the prompts
+softened.
+
+---
 
 ## What was changed for this repository
 

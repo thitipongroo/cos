@@ -44,6 +44,7 @@ saying the work is out of scope.
 | `qa-compatibility-testing` | Use before a release, or when adopting a feature with uneven platform support |
 | `qa-load-testing` | Use before a launch, a campaign, or any event with a known traffic increase |
 | `qa-performance-testing` | Use when a budget exists and you need to know whether the system meets it, or which part does not |
+| `qa-performance-verification` | Use after a change made to run faster, to decide whether the measurement earns keeping it |
 | `qa-regression-testing` | Use before a release, after a merge, and whenever a fixed defect needs to stay fixed |
 | `qa-security-testing` | Use before a release, after an auth change, or when a security review is required |
 | `qa-stress-testing` | Use to establish real limits, and to check that failure is graceful rather than catastrophic |
