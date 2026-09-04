@@ -133,3 +133,14 @@ cos-audit/*
 crash.log
 override.tf
 override_*.tf
+
+# Rule 38 local gate state. `.claude/` is otherwise COMMITTED in this repository — rules, hooks,
+# skills, agents and commands all live there and are tracked — so these two are named explicitly
+# rather than covered by a directory rule.
+#   impl-approved  is the product owner's approval marker, and it is exactly what
+#                  .claude/hooks/rule-38-check-approval.sh reads before allowing a .ts/.tsx/.sql
+#                  write. Committing one would arrive pre-approved in every clone and every CI
+#                  checkout, disarming the only human gate in the workflow for everybody, silently.
+#   impl-pending.md is one session's working plan, superseded by the next.
+.claude/impl-approved
+.claude/impl-pending.md

@@ -46,3 +46,15 @@ apps/mobile/android/**/.cxx/
 pacts/
 # Next.js writes this on build and its own header says not to edit it.
 apps/web/next-env.d.ts
+# CocoaPods output from `pod install` in apps/mobile/ios. Eighty-eight of the ninety-four files
+# this command reported on 2026-09-04 were here: every `.xcframework` ships a `.swiftmodule` JSON
+# and a dSYM Relocations `.yml`, and `Local Podspecs/` is one JSON per pod. All of it is written
+# by CocoaPods and gitignored at apps/mobile/ios/.gitignore:30.
+apps/mobile/ios/Pods/
+# Provider binaries and module cache downloaded by `terraform init` (2 of the 94; gitignored,
+# .gitignore:130). CI's lint job runs format:check BEFORE its terraform init step, so this tree
+# only ever exists locally — but locally is where the command has to stay usable.
+**/.terraform/
+# Playwright's per-run output — error-context.md and .last-run.json (4 of the 94; gitignored,
+# .gitignore:108).
+test-results/

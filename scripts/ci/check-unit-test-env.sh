@@ -21,10 +21,48 @@ set -euo pipefail
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo .)"
 WORKFLOW="$ROOT/.github/workflows/ci.yml"
 
-# Multiline-safe: -z reads the file as one record so the pattern can span newlines. This is exactly
-# what the hand-written version got wrong.
-KEYS="$(grep -rzoP "getOrThrow(<[^>]*>)?\(\s*'[A-Z0-9_]+'" "$ROOT/backend/src" --include=*.ts 2>/dev/null |
-  tr '\0' '\n' | grep -oE "'[A-Z0-9_]+'" | tr -d "'" | sort -u)"
+# Multiline-safe: `perl -0777` slurps each file whole so the pattern can span newlines. This is
+# exactly what the hand-written version got wrong.
+#
+# WHY PERL AND NOT `grep -rzoP`. `-P` is a GNU grep extension. On macOS `grep` is BSD grep 2.6.0
+# and rejects it outright ("invalid option -- P", exit 2), so under `set -e` this script died on
+# this line and printed NOTHING before doing so — a FAIL with no message, on every local run of
+# `verify-before-push.sh`. Perl is present on macOS (5.34.1) and on ubuntu-latest, ships the same
+# PCRE syntax, and needs no `tr`/`grep -oE` post-processing because it can capture the key
+# directly. `\x27` is the single quote: writing it that way keeps the program single-quotable in
+# shell, with no nested-quote escaping to get wrong.
+#
+# It still fails loudly if perl is absent: `set -o pipefail` propagates xargs' 127 into the
+# assignment and `set -e` stops there, rather than leaving KEYS empty and passing vacuously.
+KEYS="$(find "$ROOT/backend/src" -name '*.ts' -print0 |
+  xargs -0 perl -0777 -ne 'while (/getOrThrow(?:<[^>]*>)?\(\s*\x27([A-Z0-9_]+)\x27/g) { print "$1\n" }' |
+  sort -u)"
+
+# VACUOUS PASS GUARD. An extractor that silently matches nothing yields an empty KEYS, and the loop
+# below then prints "PASSED — all 0 getOrThrow key(s) are supplied" and exits 0. That is the same
+# SHAPE of failure as the hand-written grep this check replaced: it looked complete precisely
+# because it found nothing to complain about. It is not hypothetical for this file either — the
+# `grep -rzoP` that stood here until 2026-09-04 was one `set -e` away from it on any machine
+# without GNU grep.
+#
+# The guard deliberately hardcodes NO expected count: a number would go stale the next time a
+# module gains or loses a call, and a stale gate gets relaxed rather than fixed. It asks the one
+# question that stays true — does anything call getOrThrow at all? If something does and the
+# extractor returned nothing, the extractor is broken, not the tree. If genuinely nothing calls it,
+# an empty set is the correct answer and this stays quiet.
+#
+# `|| true` because `grep -rl` exits 1 on no match and `set -o pipefail` would otherwise turn the
+# legitimate zero-caller case into a crash.
+CALLERS="$( { grep -rl 'getOrThrow' "$ROOT/backend/src" --include=*.ts 2>/dev/null || true; } | wc -l | tr -d ' ')"
+if [[ -z "$KEYS" && "$CALLERS" != "0" ]]; then
+  echo "==> Unit Tests env covers every getOrThrow key"
+  echo ""
+  echo "  ✗ $CALLERS file(s) under backend/src call getOrThrow, but the extractor returned no key."
+  echo "    A broken extractor, not a clean tree. Left alone this check would report"
+  echo "    'PASSED — all 0 getOrThrow key(s) are supplied' and gate nothing at all."
+  echo "    Fix the perl pattern above before trusting any result from this script."
+  exit 1
+fi
 
 # The unit-tests job's env block: from `unit-tests:` to the first `steps:` after it.
 ENV_BLOCK="$(awk '/^  unit-tests:/{f=1} f&&/^    steps:/{exit} f' "$WORKFLOW")"
@@ -33,8 +71,17 @@ ENV_BLOCK="$(awk '/^  unit-tests:/{f=1} f&&/^    steps:/{exit} f' "$WORKFLOW")"
 # as `process.env['X'] ?? 'default'` it is the ONLY correct place: istanbul counts `a ?? b` per
 # operand, so setting such a key job-wide short-circuits the fallback and drops branch coverage
 # below the QM-1 100% gate. REDIS_URL is set in app.module.spec.ts for exactly this reason.
-SPEC_SET="$(grep -rhoE "process\.env\['[A-Z0-9_]+'\]\s*=" "$ROOT/backend/src" --include=*.spec.ts 2>/dev/null |
-  grep -oE "'[A-Z0-9_]+'" | tr -d "'" | sort -u)"
+#
+# `|| true` on the first grep, and it is not cosmetic. `grep` exits 1 when it matches nothing, and
+# with `set -o pipefail` that status reaches the assignment, where `set -e` kills the script — with
+# NO output, because nothing has been printed yet. So the day the last `process.env['X'] =` line
+# leaves the spec files, this gate stops reporting "REDIS_URL is set nowhere" and starts exiting 1
+# in silence instead: a real finding replaced by an unexplained crash, in the one check written to
+# stop exactly that. An empty SPEC_SET is the correct value for "no spec sets any key" and the loop
+# below already handles it. Found 2026-09-04 while testing the vacuous-pass guard above against a
+# tree with no spec files.
+SPEC_SET="$( { grep -rhoE "process\.env\['[A-Z0-9_]+'\]\s*=" "$ROOT/backend/src" --include=*.spec.ts 2>/dev/null || true; } |
+  grep -oE "'[A-Z0-9_]+'" | tr -d "'" | sort -u || true)"
 
 MISSING=()
 CHECKED=0

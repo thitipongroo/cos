@@ -20,7 +20,24 @@
 # is not one either. When ci.yml gains a step, add it here in the same commit — and count, do not
 # estimate.
 #
+# That rule was audited on 2026-09-04 by listing every job in ci.yml against these two categories.
+# Eighteen of twenty were accounted for; `push-ecr` and `update-gitops` were in neither. Both are
+# gated `if: github.ref == 'refs/heads/main' || 'refs/heads/staging'` and so cannot run on the
+# branch anyone pushes from here — which is a good reason for them to be UNRUN, and no reason at
+# all for them to be UNLISTED. An unlisted job is the exact shape of the 2026-09-03 failure: the
+# reader takes the printed list as the whole of CI. They are named below now.
+#
+# MIRRORING A STEP IS NOT ONLY MIRRORING ITS COMMAND. Its interpreter, its working directory and
+# its `env:` block are part of it. `run_in` was added for working-directory; `run_py` was rewritten
+# on 2026-09-04 for the other two, after the python-tests job was found running against whatever
+# `python` was on PATH — a Python 3.14 with starlette 1.0.1 where requirements.txt pins 1.3.1 —
+# and reporting four red suites the repository had no defect behind. Those five suites now run in
+# services/<svc>/.venv, built by scripts/ci/setup-python-envs.sh from the same requirements and the
+# same Python 3.12 that job installs. They stay in the mirrored category; a missing venv is a loud
+# SKIP naming that script, never a fall back to the machine's interpreter.
+#
 # Usage:
+#   bash scripts/ci/setup-python-envs.sh             # once, and after a requirements change
 #   bash scripts/ci/verify-before-push.sh            # everything that needs no Docker
 #   bash scripts/ci/verify-before-push.sh --full     # plus the Docker-backed suites
 #
@@ -66,18 +83,27 @@ run_if() {
   if have "$tool"; then run "$label" "$@"; else SKIP+=("$label — $tool not installed"); fi
 }
 
-# `command -v python` is not the question for a pytest suite — the interpreter can be on PATH with
-# none of the service's dependencies installed, and then every suite "fails" for a reason CI does
-# not have. Ask whether pytest can actually run instead, and say how to make it runnable rather than
-# reporting a red that means nothing.
-PYTEST_OK=0
-if python -m pytest --version >/dev/null 2>&1; then PYTEST_OK=1; fi
+# WHICH INTERPRETER is the whole question for a pytest suite, and `python` on PATH is the wrong
+# answer. It can be importable with none of the service's PINNED dependencies installed, and then
+# every suite fails for a reason CI does not have. That is not hypothetical: on 2026-09-04 the
+# machine's Python 3.14 carried starlette 1.0.1 while every services/*/requirements.txt pins 1.3.1,
+# and four of these five suites died at collection on a `filterwarnings` entry that is correct for
+# the pinned version. Nothing in the repository was wrong. Asking `python -m pytest --version`, as
+# this used to, cannot tell the two situations apart — pytest imports fine either way.
+#
+# So the interpreter is services/<svc>/.venv/bin/python, built by scripts/ci/setup-python-envs.sh
+# from the same requirements files, on the same Python 3.12, that ci.yml § python-tests installs.
+# No venv means SKIP, loudly, naming the command that fixes it — never a fall back to whatever is
+# on PATH, because that is the divergence this closes.
+#
+# OTEL_SDK_DISABLED mirrors the `env:` block on that job's pytest step. An unmirrored env var is an
+# unmirrored step: without it the exporter spends the run retrying a collector that is not running.
 run_py() {
   local svc="$1" label="Python — $1"
-  if [[ $PYTEST_OK -eq 1 ]]; then
-    run "$label" bash -c "cd services/$svc && python -m pytest -q"
+  if [[ -x "services/$svc/.venv/bin/python" ]]; then
+    run "$label" env OTEL_SDK_DISABLED=true bash -c "cd services/$svc && .venv/bin/python -m pytest -q"
   else
-    SKIP+=("$label — pytest not importable (pip install -r services/$svc/requirements.txt)")
+    SKIP+=("$label — no venv at services/$svc/.venv (build: bash scripts/ci/setup-python-envs.sh)")
   fi
 }
 
@@ -158,7 +184,8 @@ run "Schema/API contract parity"   bash ./scripts/readiness/check-schema-contrac
 # while this script reported a clean run: `filterwarnings = error` plus a deprecation warning
 # starlette's TestClient triggers at import time is a collection error, and nothing local looked.
 #
-# Skips loudly when python is absent rather than passing silently.
+# Skips loudly when the service venv is absent rather than passing silently, or — worse — running
+# against an interpreter that is not the one CI uses. See run_py above.
 for svc in ai-gateway ai-embedding-worker ai-ocr-pipeline ai-transcription-pipeline bim-import-worker; do
   run_py "$svc"
 done
@@ -192,6 +219,10 @@ cat <<'NOTE'
   Not covered here — these run in CI and nowhere else:
     mobile-tests · go-tests · mlops-tests · build-docker
     secret-scan · security-scan · e2e-tests · mobile-e2e-tests
+    push-ecr · update-gitops   (deploy jobs; `if: ref == main || staging`, so they never
+                                run on a feature branch — but "never runs here" is not the
+                                same claim as "is not in either category", and the rule in
+                                this file's header admits no third category)
     CodeQL · Semgrep · Lighthouse · mutation-tests · load-tests
   A green run below is not a promise that CI is green. It is a promise that the
   jobs listed above were actually executed and passed on this working tree.

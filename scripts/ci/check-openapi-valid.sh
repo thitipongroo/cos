@@ -37,7 +37,14 @@ cd "$ROOT"
 
 echo "==> OpenAPI document validity (redocly, recommended-strict)"
 
-mapfile -t ALL < <(ls docs/api/*.openapi.yaml)
+# NO `mapfile` AND NO `declare -A` IN THIS FILE. Both are bash 4; `#!/usr/bin/env bash` resolves
+# to /bin/bash 3.2.57 on macOS, which is where `verify-before-push.sh` runs this. The gate died on
+# line 1 of its own work there — "mapfile: command not found" — so it reported FAIL on every local
+# push while passing in CI. A pre-push gate that cannot run before a push is not a gate.
+ALL=()
+while IFS= read -r f; do
+  [[ -n "$f" ]] && ALL+=("$f")
+done < <(ls docs/api/*.openapi.yaml)
 if [[ ${#ALL[@]} -eq 0 ]]; then
   echo "  ✗ no OpenAPI documents found under docs/api/ — the glob is wrong, not the repository"
   exit 1
@@ -57,15 +64,32 @@ fi
 #     The only ways to satisfy the rule here are to invent a status the service never sends or to
 #     delete a route that exists; redocly.yaml states the principle: a gate that is passed by
 #     inventing is worse than no gate.
-declare -A SKIP_RULE=(
-  [digital-twin]="no-unused-components"
-  [credential]="operation-4xx-response"
+#
+# One entry per line, "<document base name> <the single rule it is excused from>". This was an
+# associative array until 2026-09-04; the list and its meaning are unchanged, only the container.
+# A plain array iterates in source order, so the output is now deterministic as well as portable —
+# `${!SKIP_RULE[@]}` had no defined order.
+SKIP_RULE_ENTRIES=(
+  "digital-twin no-unused-components"
+  "credential operation-4xx-response"
 )
+
+# Prints the rule this document is excused from and returns 0, or returns 1 if it is not excepted.
+skip_rule_for() {
+  local entry
+  for entry in "${SKIP_RULE_ENTRIES[@]}"; do
+    if [[ "${entry%% *}" == "$1" ]]; then
+      printf '%s' "${entry#* }"
+      return 0
+    fi
+  done
+  return 1
+}
 
 STRICT=()
 for f in "${ALL[@]}"; do
   base="$(basename "$f" .openapi.yaml)"
-  [[ -v "SKIP_RULE[$base]" ]] || STRICT+=("$f")
+  skip_rule_for "$base" >/dev/null || STRICT+=("$f")
 done
 
 FAILED=0
@@ -76,14 +100,16 @@ if ! npx --no-install redocly lint "${STRICT[@]}"; then
 fi
 
 # Each excepted file on its own, with its single documented skip.
-for base in "${!SKIP_RULE[@]}"; do
+for entry in "${SKIP_RULE_ENTRIES[@]}"; do
+  base="${entry%% *}"
+  rule="${entry#* }"
   doc="docs/api/${base}.openapi.yaml"
   if [[ ! -f "$doc" ]]; then
-    echo "  ✗ $doc is excused from ${SKIP_RULE[$base]} but does not exist — stale exception"
+    echo "  ✗ $doc is excused from $rule but does not exist — stale exception"
     FAILED=1
     continue
   fi
-  if ! npx --no-install redocly lint "$doc" --skip-rule "${SKIP_RULE[$base]}"; then
+  if ! npx --no-install redocly lint "$doc" --skip-rule "$rule"; then
     FAILED=1
   fi
 done

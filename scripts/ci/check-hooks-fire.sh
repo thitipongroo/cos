@@ -207,7 +207,7 @@ else
   # This used to drop dirname(node) from PATH. That works only where node has a directory of
   # its own. On a Debian-family image node is /usr/bin/node and /bin is a symlink to /usr/bin,
   # so removing /usr/bin leaves /bin behind and node is still reachable as /bin/node. The
-  # self-check below then fired and all thirteen parser-failure assertions were skipped: the
+  # self-check below then fired and all nine parser-failure assertions were skipped: the
   # section reported one failure of its own instead of proving the 2026-07-24 defect stays
   # fixed. A check that cannot run is not a check that passed, but it is easy to read as one.
   #
@@ -233,7 +233,22 @@ else
   PATH_NO_NODE="$NO_NODE_BIN"
 
   # Self-check: if node is still reachable the assertions below would pass for the wrong reason.
-  if PATH="$PATH_NO_NODE" command -v node >/dev/null 2>&1; then
+  #
+  # THE PROBE RUNS IN A CHILD SHELL, and it has to. `command -v` consults this shell's HASH TABLE
+  # before it consults PATH, and bash does not flush that table for a one-command `PATH=…` prefix.
+  # `valid_json()` above runs `node`, which hashes it — so `PATH="$PATH_NO_NODE" command -v node`
+  # answered from the hash and found node no matter what PATH said. The self-check then fired on
+  # every run and all nine parser-failure assertions below were skipped, which is precisely the
+  # outcome the self-check exists to prevent: reported as one loud failure rather than a silent
+  # pass, but the assertions still did not run. Measured on bash 3.2.57 (macOS, 2026-09-04):
+  #
+  #     $ bash -c 'node -v >/dev/null; PATH=/nonexistent command -v node'
+  #     /opt/homebrew/opt/node@24/bin/node
+  #
+  # A child bash starts with an empty hash table, so it can only answer from PATH. That is true on
+  # every bash version, which also means this fix does not depend on knowing whether bash 5 flushes
+  # the table — it is correct either way.
+  if PATH="$PATH_NO_NODE" bash -c 'command -v node' >/dev/null 2>&1; then
     fail "could not construct a PATH without node — the parser-failure checks are not valid" ''
   else
     for hook in "$HOOKS_DIR"/rule-*.sh; do

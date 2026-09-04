@@ -45,21 +45,32 @@ else
   echo "  base: $base (merge-base with the default branch — this branch has no upstream yet)"
 fi
 
-mapfile -t changed < <(
-  git diff --name-only --diff-filter=ACMR "$base" HEAD -- '*.md' \
-    ':(exclude)context.md' ':(exclude)context/**' ':(exclude)docs/specifications/**' \
-    ':(exclude)mockup/**' 2>/dev/null
+# NO `mapfile` HERE, AND THAT IS DELIBERATE. `mapfile` is a bash 4 builtin, and
+# `#!/usr/bin/env bash` resolves to /bin/bash 3.2.57 on macOS — which is where a pre-push gate is
+# actually run. The three `mapfile` calls this replaced died with "command not found", and then
+# `set -u` turned every later reference into "changed: unbound variable", so the whole gate
+# reported FAIL for a reason CI does not have. A gate that fails on the developer's own machine
+# gets read as noise, and then so does the rest of its output — the same failure this script's
+# header was written about, one shell version down. `while IFS= read -r` behaves identically on
+# bash 3.2 and bash 5.
+#
+# The two diffs are unioned in a single pipeline instead of two appends: `sort -u` then sees both
+# at once, which is what the third `mapfile` was doing separately.
+changed=()
+while IFS= read -r line; do
+  [[ -n "$line" ]] && changed+=("$line")
+done < <(
+  {
+    git diff --name-only --diff-filter=ACMR "$base" HEAD -- '*.md' \
+      ':(exclude)context.md' ':(exclude)context/**' ':(exclude)docs/specifications/**' \
+      ':(exclude)mockup/**' 2>/dev/null
+    # Uncommitted work is what a pre-push check is usually asked about, and a file edited but not
+    # yet committed is still going to reach CI on the next commit. Include it.
+    git diff --name-only --diff-filter=ACMR HEAD -- '*.md' \
+      ':(exclude)context.md' ':(exclude)context/**' ':(exclude)docs/specifications/**' \
+      ':(exclude)mockup/**' 2>/dev/null
+  } | sort -u
 )
-
-# Uncommitted work is what a pre-push check is usually asked about, and a file edited but not yet
-# committed is still going to reach CI on the next commit. Include it.
-mapfile -t -O "${#changed[@]}" changed < <(
-  git diff --name-only --diff-filter=ACMR HEAD -- '*.md' \
-    ':(exclude)context.md' ':(exclude)context/**' ':(exclude)docs/specifications/**' \
-    ':(exclude)mockup/**' 2>/dev/null
-)
-
-mapfile -t changed < <(printf '%s\n' "${changed[@]}" | sort -u | grep -v '^$' || true)
 
 if [[ ${#changed[@]} -eq 0 ]]; then
   echo "  - no changed (non-legacy) Markdown files — nothing to lint"

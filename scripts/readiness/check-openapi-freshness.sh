@@ -40,30 +40,40 @@ SKIP=0
 
 echo "==> OpenAPI spec freshness checks"
 
-declare -A MODULE_MAP=(
-  [analytics]="backend/src/modules/analytics"
-  [auth]="backend/src/modules/identity"
-  [boq]="backend/src/modules/boq"
-  [credential]="services/credential-service/src"
-  [crm]="backend/src/modules/crm"
-  [equipment]="backend/src/modules/equipment"
-  [finance]="backend/src/modules/finance"
-  [geo]="backend/src/modules/geo"
-  [graph]="backend/src/modules/graph"
-  [master-data]="backend/src/modules/master-data"
-  [notification]="backend/src/modules/notification"
-  [platform]="backend/src/health.controller.ts backend/src/shared/feature-flags"
-  [platform-webhooks]="backend/src/modules/platform-webhook"
-  [procurement]="backend/src/modules/procurement"
-  [project]="backend/src/modules/project"
-  [safety]="backend/src/modules/safety"
-  [site-ops]="backend/src/modules/site-ops"
-  [sync]="backend/src/modules/sync"
-  [tenant]="backend/src/modules/tenant"
-  [vendor]="backend/src/modules/vendor-portal"
-  [workforce]="backend/src/modules/workforce"
-  [file]="backend/src/modules/files services/file-service/src"
-  [ai]="backend/src/modules/ai-proxy services/ai-gateway services/ai-ocr-pipeline services/ai-embedding-worker services/ai-transcription-pipeline"
+# NOT AN ASSOCIATIVE ARRAY, and that is the point. `declare -A` is bash 4; `#!/usr/bin/env bash`
+# resolves to /bin/bash 3.2.57 on macOS, where `verify-before-push.sh` runs this before a push.
+# The gate died on this very line there — "analytics: unbound variable" — so it reported FAIL on
+# every local push while passing in CI, which is the "gate that lies" failure one shell down.
+#
+# FORMAT: one entry per line, "<spec name> <space-separated repo-relative source paths>". The name
+# is everything up to the FIRST space; the alignment padding that follows is absorbed by `read -ra`
+# word splitting, so it costs nothing. Twenty-three entries — the same twenty-three, unchanged, as
+# the associative array this replaced on 2026-09-04. Iteration is now in source order rather than
+# `${!MODULE_MAP[@]}`'s undefined order, so the output is stable run to run.
+MODULE_MAP_ENTRIES=(
+  "analytics         backend/src/modules/analytics"
+  "auth              backend/src/modules/identity"
+  "boq               backend/src/modules/boq"
+  "credential        services/credential-service/src"
+  "crm               backend/src/modules/crm"
+  "equipment         backend/src/modules/equipment"
+  "finance           backend/src/modules/finance"
+  "geo               backend/src/modules/geo"
+  "graph             backend/src/modules/graph"
+  "master-data       backend/src/modules/master-data"
+  "notification      backend/src/modules/notification"
+  "platform          backend/src/health.controller.ts backend/src/shared/feature-flags"
+  "platform-webhooks backend/src/modules/platform-webhook"
+  "procurement       backend/src/modules/procurement"
+  "project           backend/src/modules/project"
+  "safety            backend/src/modules/safety"
+  "site-ops          backend/src/modules/site-ops"
+  "sync              backend/src/modules/sync"
+  "tenant            backend/src/modules/tenant"
+  "vendor            backend/src/modules/vendor-portal"
+  "workforce         backend/src/modules/workforce"
+  "file              backend/src/modules/files services/file-service/src"
+  "ai                backend/src/modules/ai-proxy services/ai-gateway services/ai-ocr-pipeline services/ai-embedding-worker services/ai-transcription-pipeline"
 )
 
 # digital-twin is deliberately NOT mapped. Its code exists (services/ai-gateway/digital_twin/), but
@@ -71,8 +81,9 @@ declare -A MODULE_MAP=(
 # committed file is a contract ahead of its phase rather than a description of shipped behaviour.
 # Gating it would assert the opposite. Revisit when Phase 24 starts.
 
-for spec_name in "${!MODULE_MAP[@]}"; do
-  read -ra source_paths <<<"${MODULE_MAP[$spec_name]}"
+for entry in "${MODULE_MAP_ENTRIES[@]}"; do
+  spec_name="${entry%% *}"
+  read -ra source_paths <<<"${entry#* }"
   spec_file="$API_DIR/${spec_name}.openapi.yaml"
 
   if [[ ! -f "$spec_file" ]]; then

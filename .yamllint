@@ -16,6 +16,10 @@ ignore: |
   infrastructure/helm/**/templates/
   # Generated OpenAPI specs (QM-2) — format owned by the generator, not hand-edited
   docs/api/
+  # CocoaPods output from `pod install` (cf. .prettierignore). Every `.xcframework` dSYM ships a
+  # Relocations `.yml` that CocoaPods writes; on 2026-09-04 all 42 errors this gate reported came
+  # from that tree and none from anywhere else. Gitignored at apps/mobile/ios/.gitignore:30.
+  apps/mobile/ios/Pods/
 
 rules:
   line-length: disable # Prettier governs width (printWidth 100); repo does not enforce 80
