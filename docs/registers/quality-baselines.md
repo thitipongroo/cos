@@ -34,7 +34,7 @@ in the Measured table instead.
 | Core Web Vitals       | per QM-6                          | `.github/workflows/lighthouse.yml`                                | CI             | QM-6        |
 | Load / p95            | per QM-6 and QM-14                | `.github/workflows/load-tests.yml`                                | CI             | QM-6, QM-14 |
 | Rules index integrity | every rule reachable from index   | `scripts/ci/check-claude-rules-mirror.sh`                         | CI             | —           |
-| Hooks still fire      | all nine emit parseable JSON      | `scripts/ci/check-hooks-fire.sh`                                  | on demand      | —           |
+| Hooks still fire      | all nine emit parseable JSON      | `scripts/ci/check-hooks-fire.sh`                                  | CI             | —           |
 | Skill routing         | positives rank, negatives lose    | `scripts/ci/check-skill-routing.mjs`                              | CI             | —           |
 
 ### How circular is each check

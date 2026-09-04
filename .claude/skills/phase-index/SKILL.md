@@ -104,9 +104,15 @@ The Phase 19 verification protocol is `/phase-19`
 ## Keeping this map honest
 
 `scripts/ci/check-claude-rules-mirror.sh` proves every `.claude/rules/` file still
-points at a heading that exists. Nothing yet proves this table matches
-`context/phases/` — when a phase file is added, renamed or removed, fix this table
-in the same commit.
+points at a heading that exists, and it checks this table too — every file in
+`context/phases/` must be named somewhere in it, or the run fails. It is a ci.yml
+lint step, so a phase file added without a row here turns the build red.
+
+It checks that in ONE DIRECTION only, and the gap is the one worth knowing: the
+loop walks the files that exist, so a row naming a phase file that has been
+deleted or renamed is not caught, and neither is a wrong `Depends on` or `Stage`
+column. Add a phase and the gate covers you; remove or rename one, or edit a
+column, and only this sentence does. Fix the table in the same commit.
 
 ```bash
 ls context/phases/

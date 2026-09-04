@@ -138,6 +138,21 @@ jobs:
       - name: Agent rule hooks still fire
         run: bash ./scripts/ci/check-hooks-fire.sh
 
+      # The other half of the 2026-09-02 move: the Quality Mandates, the path-triggered Rules and
+      # the master's cross-cutting specs now live in .claude/rules/ and load when a file they
+      # govern is edited. That only works while context.md still indexes them — an unreferenced
+      # rule file is invisible to anyone reading the index, and a dangling index row sends the
+      # reader to nothing. This proves every rule's "Indexed in:" line resolves, and that the
+      # phase index lists every file in context/phases/.
+      #
+      # WIRED HERE ON 2026-09-04, and this is the whole reason it had to be. Its only caller was
+      # .husky/pre-push, which the product owner removed that day; the check would then have run
+      # nowhere at all, while docs/registers/quality-baselines.md went on claiming it was enforced
+      # in CI. A governance check nobody runs is worse than one nobody wrote, because the register
+      # says it is covered. `bash ./` not `./` — same core.filemode reason as the step above.
+      - name: .claude/rules index has no dangling rows
+        run: bash ./scripts/ci/check-claude-rules-mirror.sh
+
       # A skill is reached by the model reading its `description` and deciding — CLAUDE.md says so
       # in as many words: "a convenience, not a guarantee, and nothing enforces it". The §When to
       # invoke what table closes that for the ten commands; it does not reach the skills sitting

@@ -130,6 +130,10 @@ run "Lint — openapi route coverage" pnpm run lint:routes
 run "Lint — unit test env"         bash ./scripts/ci/check-unit-test-env.sh
 run "Lint — loading state"         bash ./scripts/ci/check-loading-state.sh
 run "Lint — hooks still fire"      bash ./scripts/ci/check-hooks-fire.sh
+# Not mirrored here until 2026-09-04, and correctly so: it was not a ci.yml step, and putting a
+# non-CI check in this file would have made it lie about what CI runs. It became a ci.yml lint step
+# that day — when .husky/pre-push, its only caller, was removed — so it belongs here now.
+run "Lint — claude rules index"    bash ./scripts/ci/check-claude-rules-mirror.sh
 # Architectural fitness functions. Seven ci.yml lint steps that had no counterpart here until
 # 2026-09-03 — each one guards a class of mistake that no type checker or test will catch.
 run "Lint — legal parity"          node ./scripts/ci/check-legal-parity.mjs

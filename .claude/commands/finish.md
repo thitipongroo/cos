@@ -26,9 +26,11 @@ the cleanup rules. This command does not restate them.
 ## Step 2 — Two things this repository adds
 
 Before any push, run `bash scripts/ci/verify-before-push.sh` and report what it
-printed — including the jobs it says it did not cover. `.husky/pre-push` runs it
-too. `SKIP_PREPUSH=1` exists for a docs-only branch, a revert, or an outage; it is
-not the way past a failing test.
+printed — including the jobs it says it did not cover. Nothing runs it for you:
+`.husky/pre-push` was removed on 2026-09-04 by product-owner decision, so this
+line is now the only thing standing between an unverified tree and the remote.
+There is no `SKIP_PREPUSH` to reach for and nothing to override — which also means
+there is no hook to blame when a push goes out unverified.
 
 Before a local merge, check `bash scripts/ci/check-branch-has-ci-run.sh` — a
 branch can reach a merge without CI having run on it at all.

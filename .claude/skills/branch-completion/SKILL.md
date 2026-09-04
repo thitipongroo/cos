@@ -98,10 +98,11 @@ it. Show the list and ask whether to commit them, move them, or delete them.
 
 The base is `develop` unless the task says otherwise; `main` is the released branch.
 
-**Before any push**, run `bash scripts/ci/verify-before-push.sh` and report its output. `.husky/pre-push` runs it too,
-and `SKIP_PREPUSH=1` exists for a docs-only branch, a revert or an outage — it is not the way past a failing test. The
-script is honest about its own coverage: it prints the jobs it does not run and reports `SKIP` separately from `PASS`, so
-a green run here is not a claim that CI is green. Report what it actually printed.
+**Before any push**, run `bash scripts/ci/verify-before-push.sh` and report its output. Nothing runs it for you —
+`.husky/pre-push` was removed on 2026-09-04 by product-owner decision, so there is no automatic gate and no
+`SKIP_PREPUSH` escape hatch either; running it is a step someone has to take. The script is honest about its own
+coverage: it prints the jobs it does not run and reports `SKIP` separately from `PASS`, so a green run here is not a
+claim that CI is green. Report what it actually printed.
 
 The suite in Step 1 is `pnpm test`; `pnpm type-check` and `pnpm lint` are part of what `verify-before-push.sh` covers.
 
