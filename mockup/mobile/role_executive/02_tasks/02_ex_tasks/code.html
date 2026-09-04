@@ -119,9 +119,7 @@
 <!-- TopAppBar -->
 <header class="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-edge-mobile h-[68px] pt-safe bg-surface-dim dark:bg-surface-container-lowest shadow-sm md:hidden">
 <div class="flex items-center gap-space-3">
-<button class="w-touch-target h-touch-target flex items-center justify-center text-primary dark:text-primary-fixed-dim hover:bg-surface-bright/10 rounded-full transition-colors active:scale-95">
-<span class="material-symbols-outlined" data-icon="menu">menu</span>
-</button>
+
 <div class="flex items-center gap-space-2">
 <img alt="Construction OS Logo" class="w-8 h-8 object-contain rounded" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAqimCVMfCI-YuJdKYxhNGXlpNYlDi2mJUuHgRK1ERbbFmk9qpgEMwLW86hRYR9gZZXrfmAedfHo2qwAKFq5X9c06aoi2FwB_eDX_CHid-9HRzuf_ZOVYiYsl9sWdKn-q3fvSeSJ1xVT12lMFR3tlcPFe0yekMZPaqNxMn6CcKGHpeK892Tb561QJ35cx96qeNtGIxYsEEhbSx7ca7cFcbDWsfhJgUcFPfgISVLJsmLRdHg2_qH-_vKZYY8iNIh6A4pIA">
 <h1 class="font-display-web text-[20px] font-bold text-primary tracking-tight">Construct...</h1>
@@ -130,7 +128,7 @@
 <div class="flex items-center gap-space-2">
 <div class="flex items-center gap-1 bg-surface-container-high px-2 py-1 rounded-full">
 <div class="w-2 h-2 rounded-full bg-mobile-success animate-pulse"></div>
-<span class="text-[10px] uppercase font-bold text-on-surface-variant tracking-wider">ซิงค์แล้ว</span>
+<span class="text-[10px] uppercase font-bold text-on-surface-variant tracking-wider">SYNCED</span>
 </div>
 <button class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center overflow-hidden border border-outline-variant/30">
 <span class="material-symbols-outlined text-on-surface-variant" data-icon="person">person</span>
@@ -141,7 +139,7 @@
 <main class="px-edge-mobile flex flex-col gap-space-4 md:hidden">
 <!-- Header Section -->
 <div class="mt-space-2 mb-space-2">
-<h2 class="font-hero-mobile text-hero-mobile text-on-surface">พอร์ตโฟลิโอภาพรวม <span class="text-on-surface-variant text-body-mobile font-normal block mt-1">Executive Portfolio Summary</span></h2>
+
 </div>
 <!-- Section 1: KPI Tiles (Bento Grid) -->
 <section class="grid grid-cols-2 gap-space-2">
@@ -149,11 +147,11 @@
 <div class="bg-surface-container rounded-xl p-space-3 flex flex-col justify-between border-l-4 border-mobile-danger shadow-md h-32 relative overflow-hidden group active:scale-[0.98] transition-transform">
 <div class="flex justify-between items-start">
 <span class="material-symbols-outlined text-mobile-danger" data-icon="warning">warning</span>
-<span class="font-tiny-web text-tiny-web text-on-surface-variant">ค้างชำระ / OVERDUE</span>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant">OVERDUE</span>
 </div>
 <div>
 <div class="font-display-web text-3xl font-bold text-on-surface">12</div>
-<div class="font-label-mobile text-label-mobile text-on-surface-variant line-clamp-1">งานวิกฤต (Critical)</div>
+<div class="font-label-mobile text-label-mobile text-on-surface-variant line-clamp-1">Critical</div>
 </div>
 <div class="absolute inset-0 bg-gradient-to-tr from-mobile-danger/5 to-transparent pointer-events-none"></div>
 </div>
@@ -161,11 +159,11 @@
 <div class="bg-surface-container rounded-xl p-space-3 flex flex-col justify-between border-l-4 border-sync-active shadow-md h-32 active:scale-[0.98] transition-transform">
 <div class="flex justify-between items-start">
 <span class="material-symbols-outlined text-sync-active" data-icon="event_upcoming">event_upcoming</span>
-<span class="font-tiny-web text-tiny-web text-on-surface-variant">สัปดาห์นี้ / THIS WEEK</span>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant">THIS WEEK</span>
 </div>
 <div>
 <div class="font-display-web text-3xl font-bold text-on-surface">45</div>
-<div class="font-label-mobile text-label-mobile text-on-surface-variant line-clamp-1">กำหนดส่ง (Due)</div>
+<div class="font-label-mobile text-label-mobile text-on-surface-variant line-clamp-1">Due</div>
 </div>
 </div>
 <!-- Total Blocked (Full Width) -->
@@ -176,8 +174,8 @@
 <span class="material-symbols-outlined text-mobile-warning" data-icon="block">block</span>
 </div>
 <div>
-<div class="font-label-mobile text-label-mobile text-on-surface-variant uppercase">ติดขัดรวม / TOTAL BLOCKED</div>
-<div class="font-display-web text-2xl font-bold text-on-surface flex items-baseline gap-2">8 <span class="font-body-mobile text-sm text-on-surface-variant font-normal">งาน (Tasks)</span></div>
+<div class="font-label-mobile text-label-mobile text-on-surface-variant uppercase">TOTAL BLOCKED</div>
+<div class="font-display-web text-2xl font-bold text-on-surface flex items-baseline gap-2">8 <span class="font-body-mobile text-sm text-on-surface-variant font-normal">Tasks</span></div>
 </div>
 </div>
 <button class="text-primary font-label-mobile text-label-mobile hover:underline">ดูรายละเอียด</button>
@@ -284,10 +282,7 @@
 <span class="font-label-mobile text-[10px] mt-1">Tasks</span>
 </button>
 <!-- Tab 2: BIM -->
-<button class="flex flex-col items-center justify-center text-on-surface-variant min-w-[64px] hover:bg-surface-bright/20 rounded-lg py-2 transition-colors">
-<span class="material-symbols-outlined" data-icon="view_in_ar">view_in_ar</span>
-<span class="font-label-mobile text-[10px] mt-1">BIM</span>
-</button>
+
 <!-- Tab 3: Home -->
 <button class="flex flex-col items-center justify-center text-on-surface-variant min-w-[64px] hover:bg-surface-bright/20 rounded-lg py-2 transition-colors">
 <span class="material-symbols-outlined" data-icon="home">home</span>
@@ -304,6 +299,10 @@
 <span class="font-label-mobile text-[10px] mt-1">อื่นๆ</span>
 </button>
 </nav>
+
+
+
+
 
 
 </body></html>
