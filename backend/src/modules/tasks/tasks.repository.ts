@@ -28,6 +28,39 @@ export interface TaskRow {
   created_at: Date;
 }
 
+/** `projects.task_dependencies` as the schedule queries return it (ADR-097). */
+export interface DependencyRow {
+  dependency_id: string;
+  tenant_id: string;
+  project_id: string;
+  predecessor_task_id: string;
+  successor_task_id: string;
+  dependency_type: 'FS' | 'SS' | 'FF' | 'SF';
+  /** Signed — a negative value is a lead. */
+  lag_days: number;
+  created_at: Date;
+  modified_at: Date;
+}
+
+/** The columns the CPM network needs from a task, plus the ones the screen prints beside it. */
+export interface CpmTaskRow {
+  task_id: string;
+  task_name: string;
+  status: TaskStatus;
+  work_type: string;
+  planned_start: Date | null;
+  planned_end: Date | null;
+}
+
+/** Tenant-wide task counts behind the EXECUTIVE Tasks screen. Every field is a plain count. */
+export interface PortfolioTaskSummaryRow {
+  overdue_count: number;
+  due_this_week_count: number;
+  blocked_count: number;
+  open_count: number;
+  project_count: number;
+}
+
 /** Raw shape of the §32.12 aggregate query. */
 interface ProgressSumsRow {
   weight_total: number;
@@ -400,5 +433,137 @@ export class TasksRepository {
       `,
     );
     return rows[0] ?? null;
+  }
+
+  // ── Schedule network — projects.task_dependencies (ADR-097) ─────────────────
+  //
+  // NONE OF THIS TOUCHES COMPLETION GATE 3. `countIncompletePredecessors` above keeps the ADR-026
+  // BOQ-category derivation, unchanged and unread by anything here (product-owner decision
+  // 2026-09-04). The two mechanisms are deliberately separate: that one gates completion, these
+  // describe the schedule.
+
+  /** Every task of a project as the CPM network needs it — id and the two planned dates. */
+  async findScheduleTasks(projectId: string): Promise<CpmTaskRow[]> {
+    return this.db.run(
+      (tx) =>
+        tx.$queryRaw<CpmTaskRow[]>`
+        SELECT task_id, task_name, status, work_type, planned_start, planned_end
+        FROM projects.tasks
+        WHERE tenant_id = ${this.tenantId}::uuid
+          AND project_id = ${projectId}::uuid
+          AND status <> 'CANCELLED'
+      `,
+    );
+  }
+
+  /** Every dependency edge of a project. */
+  async findDependencies(projectId: string): Promise<DependencyRow[]> {
+    return this.db.run(
+      (tx) =>
+        tx.$queryRaw<DependencyRow[]>`
+        SELECT dependency_id, tenant_id, project_id, predecessor_task_id, successor_task_id,
+               dependency_type, lag_days, created_at, modified_at
+        FROM projects.task_dependencies
+        WHERE tenant_id = ${this.tenantId}::uuid
+          AND project_id = ${projectId}::uuid
+        ORDER BY created_at
+      `,
+    );
+  }
+
+  /**
+   * Both tasks of a candidate edge, for the checks the service runs before inserting.
+   *
+   * Returns only the rows that exist in this tenant, so a caller comparing `rows.length` against 2
+   * catches "task not found" and "task belongs to another tenant" with the same test — RLS makes
+   * the second indistinguishable from the first, which is the point of it.
+   */
+  async findTaskProjects(taskIds: string[]): Promise<{ task_id: string; project_id: string }[]> {
+    return this.db.run(
+      (tx) =>
+        tx.$queryRaw<{ task_id: string; project_id: string }[]>`
+        SELECT task_id, project_id FROM projects.tasks
+        WHERE tenant_id = ${this.tenantId}::uuid
+          AND task_id = ANY(${taskIds}::uuid[])
+      `,
+    );
+  }
+
+  async createDependency(params: {
+    project_id: string;
+    predecessor_task_id: string;
+    successor_task_id: string;
+    dependency_type: string;
+    lag_days: number;
+  }): Promise<DependencyRow> {
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<DependencyRow[]>`
+        INSERT INTO projects.task_dependencies
+          (tenant_id, project_id, predecessor_task_id, successor_task_id, dependency_type, lag_days)
+        VALUES
+          (${this.tenantId}::uuid, ${params.project_id}::uuid,
+           ${params.predecessor_task_id}::uuid, ${params.successor_task_id}::uuid,
+           ${params.dependency_type}, ${params.lag_days})
+        RETURNING *
+      `,
+    );
+    return rows[0]!;
+  }
+
+  /** Deletes one edge. Returns false when the id matches nothing in this tenant. */
+  async deleteDependency(dependencyId: string): Promise<boolean> {
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<{ dependency_id: string }[]>`
+        DELETE FROM projects.task_dependencies
+        WHERE tenant_id = ${this.tenantId}::uuid
+          AND dependency_id = ${dependencyId}::uuid
+        RETURNING dependency_id
+      `,
+    );
+    return rows.length > 0;
+  }
+
+  /**
+   * Tenant-wide task counts for the EXECUTIVE portfolio screen (product-owner decision 2026-09-04).
+   *
+   * ONE QUERY, NOT ONE PER PROJECT. The alternative considered was a client-side fan-out over
+   * `GET /projects/{id}/tasks`, which costs one request per project on a screen whose whole purpose
+   * is the portfolio — and the executive of a real tenant has dozens.
+   *
+   * The three counts are exactly what the columns support, and no more (ADR-085). `projects.tasks`
+   * has no priority or severity column, so "overdue" here means late, not important:
+   *   overdue        planned_end already past, and the task is neither COMPLETED nor CANCELLED
+   *   due this week  planned_end within the next 7 days inclusive of today
+   *   blocked        status = BLOCKED, which is a real column value
+   * A task with no planned_end counts in neither date bucket — it is not late, it is unscheduled.
+   *
+   * `CURRENT_DATE` is the database's date. Every project in a tenant shares one clock here, which
+   * is right for a portfolio roll-up and would not be for a per-site view.
+   */
+  async portfolioTaskSummary(): Promise<PortfolioTaskSummaryRow> {
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<[PortfolioTaskSummaryRow]>`
+        SELECT
+          COUNT(*) FILTER (
+            WHERE planned_end IS NOT NULL
+              AND planned_end < CURRENT_DATE
+              AND status NOT IN ('COMPLETED', 'CANCELLED')
+          )::int AS overdue_count,
+          COUNT(*) FILTER (
+            WHERE planned_end IS NOT NULL
+              AND planned_end BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '7 days'
+              AND status NOT IN ('COMPLETED', 'CANCELLED')
+          )::int AS due_this_week_count,
+          COUNT(*) FILTER (WHERE status = 'BLOCKED')::int AS blocked_count,
+          COUNT(*) FILTER (WHERE status NOT IN ('COMPLETED', 'CANCELLED'))::int AS open_count,
+          COUNT(DISTINCT project_id)::int AS project_count
+        FROM projects.tasks
+        WHERE tenant_id = ${this.tenantId}::uuid
+      `,
+    );
+    return rows[0];
   }
 }

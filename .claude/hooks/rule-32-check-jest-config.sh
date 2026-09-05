@@ -11,7 +11,10 @@ FILE_PATH="$HOOK_FILE_PATH"
 [[ "$FILE_PATH" == *"package.json" ]] || exit 0
 [[ "$FILE_PATH" == *"node_modules"* ]] && exit 0
 
-[[ "$FILE_PATH" != /* ]] && ABS="$(pwd)/$FILE_PATH" || ABS="$FILE_PATH"
+# hook_abs_path, not `!= /*`: a Windows path (`D:/workspace/…`) does not start with a slash, so that
+# test called it relative and prepended the working directory to a path that was already absolute.
+# See the longer note in rule-26-check-imports.sh — this is the same bug in the same idiom.
+ABS="$(hook_abs_path "$FILE_PATH")"
 [[ -f "$ABS" ]] || exit 0
 
 PKG_DIR=$(dirname "$ABS")

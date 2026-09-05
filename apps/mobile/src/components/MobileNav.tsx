@@ -23,7 +23,19 @@
 //     screens draw this bar. Inspections is not gone: it returns to the role's drawer as the
 //     derived "Inspections / QC" row, which had been suppressed only because it was a tab.
 //   PROJECT_MANAGER:        Home | Projects | Procurement | Dashboard
-//   EXECUTIVE:              Home | Portfolio | Alerts | Reports
+//   EXECUTIVE:              Home | Tasks | Safety | More  (PO decision 2026-09-04, ADR-098)
+//     THIS LINE USED TO READ `Home | Portfolio | Alerts | Reports`, and unlike the Safety Officer
+//     entry below it was TRUE — it matched the tab table, spec §20.7.1 and master §Phase 10, all
+//     three. The change is therefore a spec change, not a correction: `mockup/mobile/08_executive/`
+//     draws Home | Tasks | Safety | More on all four of its bars, and this is the one role whose
+//     mobile nav the specification actually enumerated, so following the drawings meant amending
+//     §20.7.1, §32.7's per-role table and the Phase 10 EXEC block in the same commit (Rule 37).
+//     `safety` is a NEW route — the portfolio safety overview, which is not `safety-checklist`
+//     (fill one in), not `inspections` (list them) and not `incidents` (one site's feed).
+//     `tasks` and `more` branch on role inside the screen, the way `reports` already did.
+//     Portfolio, Alerts and Reports each kept an entry point: all three are More tiles, and all
+//     three are drawer rows (the first two derived, `alerts` added to NOT_DERIVED because §6.4
+//     governs no module for a risk feed).
 //   FINANCE:                Home | Payments | Budget | Invoices
 //   PROCUREMENT_OFFICER/PROC_MANAGER: Home | RFQs | Orders | Deliveries
 //   SAFETY_OFFICER:         Home | Incidents | Checklists | Permits  (PO decision 2026-08-13)
@@ -174,6 +186,13 @@ export function MobileNav() {
           now the pushed child behind More's vendor tile (mockup 06_project_manager/04_more_option).
           Without this line expo-router would auto-register it as a visible tab for every role. */}
       <Tabs.Screen name="vendors" options={{ href: null }} />
+      {/* The EXECUTIVE's former second and third tabs (ADR-098, 2026-09-05). Both left ALL_TABS with
+          that role's bar change and are now a tab for NOBODY — which is the exact condition under
+          which expo-router auto-registers a route as a VISIBLE tab on every bar. `dashboard` above
+          is the note about what happens when this line is forgotten. Both keep a breadcrumb and a
+          drawer row, so leaving the bar cost them no entry point. */}
+      <Tabs.Screen name="portfolio" options={{ href: null }} />
+      <Tabs.Screen name="alerts" options={{ href: null }} />
       {/* Which site am I on today — the Site Worker's first screen (mockup
           05_site_worker/01_home/00_sw_project_selection). Pushed from the project context bar and
           entered automatically when no project has been chosen; never a tab. */}

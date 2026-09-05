@@ -26,3 +26,13 @@ platforms; only Android has been fully recaptured since.
 - Each platform folder documents how its shots were captured (simulator/emulator/browser + tooling).
 - **A platform README may describe screens that are not committed.** Trust the table above for what
   actually exists; treat a platform README's per-screen index as the target set, not an inventory.
+- **Not every figure in a capture came from the backend, and the exception is named.** Captures are
+  made against a live local backend with seeded data, so a number on screen is a number the system
+  produced — with one documented exception. The EXECUTIVE screens
+  (`android/08-executive/`) print several values this platform cannot compute: a compliance
+  percentage and its grade, safe man-hours, a six-month trend, a per-project safety score, and a
+  few smaller ones. Those come from the mockups by product-owner decision, are held in one module
+  (`apps/mobile/src/lib/mockupFigures.ts`), and are listed in
+  [ADR-099](../architecture/adr/099-mockup-figures-without-a-data-source.md). The role's own README
+  section marks them panel by panel. Everywhere else, and everywhere in the other role folders, a
+  figure is live data or it says it is unavailable.

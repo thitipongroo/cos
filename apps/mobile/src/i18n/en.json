@@ -1235,6 +1235,91 @@
       "lowConfidence": "Low confidence — insufficient data",
       "error": "Could not generate report",
       "empty": "Select a project and generate a report"
+    },
+    "safety": {
+      "intelligence": "Safety Intelligence",
+      "compliance": "Compliance",
+      "complianceDelta": "{value} vs last month",
+      "activeIncidents": "Active incidents",
+      "severitySplit": "{low} low, {raised} raised",
+      "safeManHours": "Safe man-hours",
+      "ytd": "YTD accumulation",
+      "trend": "6-month trend",
+      "rankings": "Project rankings",
+      "incidentCount": "{count} incidents",
+      "secure": "SECURE",
+      "monitor": "MONITOR",
+      "viewAll": "View all projects"
+    },
+    "tasks": {
+      "overdue": "Overdue",
+      "overdueNote": "Past planned finish",
+      "thisWeek": "This week",
+      "dueNote": "Due within 7 days",
+      "blocked": "Total blocked",
+      "acrossProjects": "across {count} projects",
+      "riskAlerts": "Risk alerts",
+      "criticalPath": "Critical path",
+      "criticalPathEmpty": "No dependencies recorded for this project yet, so no critical path can be computed.",
+      "window": "{start} → {finish}",
+      "float": "{days}d float",
+      "days": "{days} days",
+      "calendarNote": "Durations count calendar days — this platform has no working-day calendar.",
+      "excludedNote": "{count} tasks left out: no planned start and finish."
+    },
+    "more": {
+      "intelligence": "OS Intelligence",
+      "portfolioReport": {
+        "title": "Portfolio report",
+        "body": "Every project at a glance"
+      },
+      "financialForecast": {
+        "title": "Financial forecast",
+        "body": "Budget and cash flow"
+      },
+      "riskCentre": {
+        "title": "Risk centre",
+        "body": "Analysis and mitigation"
+      },
+      "vendorDirectory": {
+        "title": "Vendor directory",
+        "body": "The supplier network"
+      },
+      "strategicBim": {
+        "title": "Strategic BIM",
+        "body": "Enterprise structural models"
+      },
+      "carbon": {
+        "title": "Carbon accounting",
+        "body": "Sustainability figures"
+      },
+      "globalMap": {
+        "title": "Global site map",
+        "body": "Where the projects are"
+      }
+    },
+    "home": {
+      "intelligence": "AI Executive Intelligence",
+      "mitigation": "Mitigation",
+      "dismiss": "Dismiss",
+      "activeProjects": "Active projects",
+      "thisMonth": "{value} this month",
+      "riskAlerts": "Risk alerts",
+      "riskSplit": "{critical} critical • {warning} warning",
+      "portfolioBudget": "Portfolio budget",
+      "actual": "Actual: {value}",
+      "remaining": "Remaining: {value}%",
+      "remainingUnknown": "Remaining: —",
+      "projectList": "Project list",
+      "filter": "Filter",
+      "noProjects": "No projects yet",
+      "progress": "{value}% complete",
+      "progressUnknown": "Progress not computable",
+      "variance": "Variance",
+      "onTrack": "On track",
+      "atRisk": "At risk",
+      "overBudget": "Over budget",
+      "activeRegion": "Active region"
     }
   },
   "finance": {

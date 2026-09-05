@@ -66,7 +66,18 @@ const SETTLED_BARS: Array<[string, string[], string]> = [
     ['home', 'procurement', 'finance', 'more'],
     'master:3457 + mockups 2026-08-10',
   ],
-  ['EXECUTIVE', ['home', 'portfolio', 'alerts', 'reports'], 'master:3462'],
+  // CHANGED 2026-09-05 (ADR-098). It read ['home','portfolio','alerts','reports'] citing
+  // `master:3462` — and BOTH halves were out of date. The bar became Home | Tasks | Safety | More
+  // when the product owner chose `mockup/mobile/08_executive/` over the enumerated navigation, and
+  // the citation pointed into `context/00_master_construction_os.md`, which has held no Phase block
+  // since the 25 of them moved to `context/phases/` on 2026-09-02 (the file is now 1,099 lines and a
+  // search for the EXEC nav in it returns nothing). The three places that DO state this bar are
+  // named below, and all three were amended in the same commit as the code.
+  [
+    'EXECUTIVE',
+    ['home', 'tasks', 'safety', 'more'],
+    '§20.7.1 + §32.7:1673 + phase-10-mobile-offline-engine.md',
+  ],
 ];
 
 describe('Phase 10 · per-role bottom nav', () => {

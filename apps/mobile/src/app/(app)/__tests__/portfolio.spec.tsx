@@ -84,10 +84,33 @@ describe('PortfolioScreen', () => {
   });
 
   it('still lists the projects when the health request fails offline', async () => {
-    client.get.mockRejectedValue(new Error('offline'));
+    client.get.mockImplementation(() => Promise.reject(new Error('offline')));
 
     const { getAllByTestId } = await renderScreen();
 
     await waitFor(() => expect(getAllByTestId('portfolio-item')).toHaveLength(2));
+  });
+
+  it('asks analytics for the CACHED project ids, or it gets nothing back', async () => {
+    // THE DEFECT THIS GUARDS. Until 2026-09-05 this screen called `/analytics/executive` with no
+    // parameters; the controller turns that into an empty array and the ClickHouse `project_id IN ()`
+    // matches no row, so every health badge was missing against a working backend. The ids come from
+    // the cached list this screen already renders — no second network call, and it works offline.
+    await renderScreen();
+
+    await waitFor(() => expect(client.get).toHaveBeenCalled());
+    const url = String(client.get.mock.calls[0]![0]);
+    expect(url).toContain('/analytics/executive?');
+    expect(url).toContain('projectIds=proj-1');
+    expect(url).toContain('projectIds=proj-2');
+  });
+
+  it('does not call analytics while the cached list is still empty', async () => {
+    useCollection.mockReturnValue([]);
+
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('portfolio-screen')).toBeTruthy());
+    expect(client.get).not.toHaveBeenCalled();
   });
 });

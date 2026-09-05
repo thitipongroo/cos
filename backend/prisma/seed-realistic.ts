@@ -1169,6 +1169,37 @@ async function seedProject(tx: Tx, p: SeedProject): Promise<void> {
       ON CONFLICT (task_id) DO UPDATE SET boq_item_id = EXCLUDED.boq_item_id, planned_start = EXCLUDED.planned_start, planned_end = EXCLUDED.planned_end, planned_start_time = EXCLUDED.planned_start_time, planned_end_time = EXCLUDED.planned_end_time`;
   }
 
+  /**
+   * The schedule network for those five tasks (ADR-097) — what makes a critical path computable.
+   *
+   * Without rows here `GET /projects/{id}/critical-path` answers correctly and uselessly: every task
+   * is its own island, nothing constrains anything, and the screen shows five parallel bars. These
+   * edges are the construction order the task names already imply:
+   *
+   *   0 เสาเข็ม ──▶ 1 ฐานราก ──┬──▶ 2 เสาคอนกรีต
+   *                            └──▶ 3 งานกันซึม   (+3 days — the pile caps must cure first)
+   *   4 ไฟฟ้าชั่วคราว stands alone: temporary site power runs beside everything and waits for nothing.
+   *
+   * THE LAG IS WHAT MAKES THE FLOAT VISIBLE. Every seeded task spans the same 21 days, so two
+   * parallel branches of equal length would both come back critical and the screen could not show
+   * the difference between a critical task and a slack one. The 3-day cure on the waterproofing
+   * branch makes it the longer path: task 3 carries zero float, task 2 carries three days.
+   *
+   * `dependency_id` is derived from `uid()` like every other seeded key, so a re-run updates its own
+   * rows instead of accumulating duplicates.
+   */
+  const dependencyDefs = [
+    [0, 1, 'FS', 0],
+    [1, 2, 'FS', 0],
+    [1, 3, 'FS', 3],
+  ] as const;
+  for (let di = 0; di < dependencyDefs.length; di++) {
+    const [pred, succ, type, lag] = dependencyDefs[di];
+    await tx.$executeRaw`INSERT INTO projects.task_dependencies (dependency_id, tenant_id, project_id, predecessor_task_id, successor_task_id, dependency_type, lag_days)
+      VALUES (${uid(`taskdep/${p.key}/${di}`)}::uuid, ${TENANT_ID}::uuid, ${pid}::uuid, ${uid(`task/${p.key}/${pred}`)}::uuid, ${uid(`task/${p.key}/${succ}`)}::uuid, ${type}, ${lag})
+      ON CONFLICT (tenant_id, predecessor_task_id, successor_task_id) DO UPDATE SET dependency_type = EXCLUDED.dependency_type, lag_days = EXCLUDED.lag_days, modified_at = now()`;
+  }
+
   // Project phases (ADR-070) — the construction execution stages the SITE_ENGINEER dashboard's phase
   // card reads. phase.status is PM-set here (phases are not linked to tasks in this increment, so it is
   // not rolled up) but is kept coherent with the seeded tasks: the foundation tasks are still in
@@ -1559,6 +1590,10 @@ async function wipeTenant(tx: Tx): Promise<void> {
     'site_ops.material_consumptions',
     'site_ops.permits',
     'site_ops.site_reports',
+    // Before projects.tasks: both ends are FK-referenced with ON DELETE CASCADE, so the order does
+    // not strictly matter, but every other child in this list precedes its parent and a reader
+    // should not have to know about the cascade to trust the order.
+    'projects.task_dependencies',
     'projects.tasks',
     'workforce_telemetry.attendance_logs',
     'workforce_telemetry.timesheets',

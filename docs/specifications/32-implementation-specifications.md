@@ -1757,7 +1757,29 @@ one, and that is the correct answer for it rather than an outstanding gap:
 | `CRM_SALES_MANAGER` | Home · Leads · Opportunities · Customers | Built 2026-08-04 — exactly the three pages §20.7.10 defines                                                               |
 | `VIEWER`            | Home · Projects · Procurement · Budget   | See the read-only constraint below                                                                                        |
 | `SAFETY_OFFICER`    | Home · Incidents · Checklists · Permits  | Settled 2026-08-13 — see below; "Checklists" is the `/inspections` route relabelled                                       |
+| `EXECUTIVE`         | Home · Tasks · Safety · More             | Changed 2026-09-05 — see below; this is the one role whose nav §20.7.1 had enumerated                                     |
 | `SYSTEM_ADMIN`      | Home                                     | **Not a gap.** §20.7.11 puts its work in the `/admin` panel (§20.4), a web route explicitly "not visible to tenant users" |
+
+**`EXECUTIVE`'s bar changed on 2026-09-05, and unlike the Safety Officer row below it was not a
+correction.** From Phase 10 the role rendered `Home | Portfolio | Alerts | Reports`, and that was
+right by every source there was: it matched the tab table in code, §20.7.1's page inventory and
+master §Phase 10's EXEC block, all three in agreement.
+
+`mockup/mobile/08_executive/` then drew `Home | Tasks | Safety | More` on all four of its bars. The
+two previous mockup-led nav changes (`PROJECT_MANAGER` 2026-08-10, `SAFETY_OFFICER` 2026-08-13) were
+in roles the specification enumerated NO navigation for, so following the drawings contradicted
+nothing. Here it contradicted an enumerated one, and `context.md` §On ambiguity says the
+specification wins — so the change was escalated and decided by the product owner (ADR-098), and
+§20.7.1, this table and the Phase 10 EXEC block were amended in the same commit rather than deviated
+from.
+
+Nothing lost an entry point, which was the condition: `/portfolio` and `/reports` return as drawer
+rows (both were already `DERIVED` and suppressed only because they were tabs), `/alerts` gained a
+`NOT_DERIVED` row in the same change because §6.4 governs no module for a risk feed, and `/portfolio`
+and `/alerts` are also tiles on the More screen. `safety` is a NEW route — the portfolio safety
+overview, which is not `safety-checklist` (fill one in), not `inspections` (list them) and not
+`incidents` (one site's feed). `tasks` and `more` branch on role inside the screen, as `reports`
+already did.
 
 **`SAFETY_OFFICER`'s bar was never actually decided until 2026-08-13, and this table is where that
 is now recorded.** From 2026-08-04 the role rendered `Home | Inspections | Reports | Incidents` — not

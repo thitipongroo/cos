@@ -15,9 +15,18 @@ import type { Request } from 'express';
 import { Decimal } from '@cos/financial';
 import { createLogger } from '@cos/logger';
 import { TasksRepository } from './tasks.repository';
-import type { ProgressSums, SchedulableTaskRow, TaskRow } from './tasks.repository';
+import type {
+  DependencyRow,
+  PortfolioTaskSummaryRow,
+  ProgressSums,
+  SchedulableTaskRow,
+  TaskRow,
+  TaskStatus,
+} from './tasks.repository';
+import { computeCriticalPath, offsetToDate, wouldCreateCycle } from './cpm';
 import type { CreateTaskDto } from './dto/create-task.dto';
 import type { UpdateTaskDto } from './dto/update-task.dto';
+import type { CreateDependencyDto } from './dto/create-dependency.dto';
 
 const logger = createLogger('tasks-service');
 
@@ -40,6 +49,44 @@ export interface ScheduleFigures {
 export interface ProjectProgress extends ScheduleFigures {
   /** Earned Schedule day-variance (§32.12): + behind, − ahead. Null when no schedulable task. */
   scheduleDaysBehind: number | null;
+}
+
+/** One scheduled task in the critical-path response. Dates are `YYYY-MM-DD`. */
+export interface CriticalPathTask {
+  task_id: string;
+  task_name: string;
+  status: TaskStatus;
+  work_type: string;
+  duration_days: number;
+  earliest_start: string;
+  earliest_finish: string;
+  latest_start: string;
+  latest_finish: string;
+  total_float_days: number;
+  is_critical: boolean;
+}
+
+export interface CriticalPathResponse {
+  project_id: string;
+  /** Null when the project has no schedulable task at all. */
+  project_start: string | null;
+  project_finish: string | null;
+  duration_days: number;
+  /**
+   * Always false today, and reported rather than assumed: the durations count calendar days.
+   * A working-day pass needs a per-project calendar (weekends, Thai public holidays, site
+   * shutdowns) and no such table exists — see `cpm.ts`.
+   */
+  working_day_calendar: boolean;
+  tasks: CriticalPathTask[];
+  critical_task_ids: string[];
+  /** Tasks left out of the network for want of both planned dates. */
+  excluded_task_count: number;
+}
+
+/** `YYYY-MM-DD` from a UTC-midnight date, the form every other date in this service uses. */
+function isoDate(d: Date): string {
+  return d.toISOString().slice(0, 10);
 }
 
 /**
@@ -280,5 +327,192 @@ export class TasksService {
     if (undelivered > 0) blocking.push('material');
     if (task.status === 'BLOCKED') blocking.push('delay');
     return blocking;
+  }
+
+  // ── Schedule network and critical path (ADR-097) ────────────────────────────
+  //
+  // `evaluateCompletionGates` above is UNTOUCHED by everything below. Its `dependencies` gate still
+  // counts ADR-026 BOQ-category predecessors and never reads `projects.task_dependencies`
+  // (product-owner decision 2026-09-04). Do not "unify" the two without reading ADR-097 §Rationale:
+  // switching the gate to the explicit table silently stops gating every task with no edge.
+
+  /** Tenant-wide task counts for the EXECUTIVE portfolio screen. */
+  async getPortfolioTaskSummary(): Promise<PortfolioTaskSummaryRow> {
+    return this.repo.portfolioTaskSummary();
+  }
+
+  /**
+   * The project's critical path.
+   *
+   * Offsets from `computeCriticalPath` are turned back into calendar dates here rather than in the
+   * pure module, so the algorithm stays free of formatting and the API returns `YYYY-MM-DD` like
+   * every other date this service emits.
+   */
+  async getCriticalPath(projectId: string): Promise<CriticalPathResponse> {
+    const [taskRows, dependencyRows] = await Promise.all([
+      this.repo.findScheduleTasks(projectId),
+      this.repo.findDependencies(projectId),
+    ]);
+
+    const computed = computeCriticalPath(
+      taskRows.map((t) => ({
+        taskId: t.task_id,
+        plannedStart: t.planned_start,
+        plannedEnd: t.planned_end,
+      })),
+      dependencyRows.map((d) => ({
+        predecessorTaskId: d.predecessor_task_id,
+        successorTaskId: d.successor_task_id,
+        dependencyType: d.dependency_type,
+        lagDays: d.lag_days,
+      })),
+    );
+
+    if (computed.tasks.length === 0) {
+      return {
+        project_id: projectId,
+        project_start: null,
+        project_finish: null,
+        duration_days: 0,
+        working_day_calendar: false,
+        tasks: [],
+        critical_task_ids: [],
+        excluded_task_count: computed.excludedTaskCount,
+      };
+    }
+
+    // The same origin `computeCriticalPath` used: the earliest planned start among schedulable
+    // tasks. Recomputed rather than returned by the module, which deals only in offsets.
+    let origin: Date | null = null;
+    for (const t of taskRows) {
+      if (t.planned_start === null || t.planned_end === null) continue;
+      if (origin === null || t.planned_start < origin) origin = t.planned_start;
+    }
+
+    const meta = new Map(taskRows.map((t) => [t.task_id, t]));
+    const tasks = computed.tasks.map((s) => {
+      const row = meta.get(s.taskId)!;
+      return {
+        task_id: s.taskId,
+        task_name: row.task_name,
+        status: row.status,
+        work_type: row.work_type,
+        duration_days: s.durationDays,
+        earliest_start: isoDate(offsetToDate(origin!, s.earliestStartOffset)),
+        earliest_finish: isoDate(offsetToDate(origin!, s.earliestFinishOffset)),
+        latest_start: isoDate(offsetToDate(origin!, s.latestStartOffset)),
+        latest_finish: isoDate(offsetToDate(origin!, s.latestFinishOffset)),
+        total_float_days: s.totalFloatDays,
+        is_critical: s.isCritical,
+      };
+    });
+
+    const earliest = Math.min(...computed.tasks.map((t) => t.earliestStartOffset));
+    const latest = Math.max(...computed.tasks.map((t) => t.earliestFinishOffset));
+    return {
+      project_id: projectId,
+      project_start: isoDate(offsetToDate(origin!, earliest)),
+      project_finish: isoDate(offsetToDate(origin!, latest)),
+      duration_days: computed.durationDays,
+      // Stated in the payload, not only in a comment: the caller is entitled to know that these
+      // durations count weekends and holidays, because no calendar exists to exclude them.
+      working_day_calendar: false,
+      tasks,
+      critical_task_ids: computed.criticalTaskIds,
+      excluded_task_count: computed.excludedTaskCount,
+    };
+  }
+
+  async listDependencies(projectId: string): Promise<DependencyRow[]> {
+    return this.repo.findDependencies(projectId);
+  }
+
+  /**
+   * Add one edge, after the three checks that keep the network well-formed.
+   *
+   * Order matters: existence first (so a typo reports "not found" rather than "cycle"), then the
+   * same-project rule, then reachability. The cycle check runs against the edges ALREADY stored,
+   * which is why it is here and not in a database constraint — a CHECK cannot see a graph, and a
+   * trigger doing a recursive walk would be the first in this schema (ADR-097).
+   */
+  async addDependency(projectId: string, dto: CreateDependencyDto): Promise<DependencyRow> {
+    const { predecessor_task_id, successor_task_id } = dto;
+
+    const found = await this.repo.findTaskProjects([predecessor_task_id, successor_task_id]);
+    const byTask = new Map(found.map((r) => [r.task_id, r.project_id]));
+    for (const id of [predecessor_task_id, successor_task_id]) {
+      if (!byTask.has(id)) {
+        throw new NotFoundException({
+          error: { code: 'COS-TASK-002', message: `Task not found: ${id}` },
+        });
+      }
+    }
+    // Both ends must sit in the project the edge is being added to. A cross-project dependency is
+    // not a relationship this product models, and allowing one would make the per-project CPM read
+    // a network it cannot see all of.
+    for (const id of [predecessor_task_id, successor_task_id]) {
+      if (byTask.get(id) !== projectId) {
+        throw new UnprocessableEntityException({
+          error: {
+            code: 'COS-TASK-004',
+            message: 'Both tasks of a dependency must belong to the same project',
+            task_id: id,
+          },
+        });
+      }
+    }
+
+    const existing = await this.repo.findDependencies(projectId);
+    if (
+      wouldCreateCycle(
+        existing.map((d) => ({
+          predecessorTaskId: d.predecessor_task_id,
+          successorTaskId: d.successor_task_id,
+          dependencyType: d.dependency_type,
+          lagDays: d.lag_days,
+        })),
+        predecessor_task_id,
+        successor_task_id,
+      )
+    ) {
+      throw new UnprocessableEntityException({
+        error: {
+          code: 'COS-TASK-003',
+          message: 'Dependency rejected: it would create a cycle',
+          predecessor_task_id,
+          successor_task_id,
+        },
+      });
+    }
+
+    const created = await this.repo.createDependency({
+      project_id: projectId,
+      predecessor_task_id,
+      successor_task_id,
+      dependency_type: dto.dependency_type ?? 'FS',
+      lag_days: dto.lag_days ?? 0,
+    });
+    logger.info(
+      {
+        dependency_id: created.dependency_id,
+        project_id: projectId,
+        tenant_id: this.tenantId,
+      },
+      'task.dependency.created',
+    );
+    return created;
+  }
+
+  async removeDependency(dependencyId: string): Promise<void> {
+    const deleted = await this.repo.deleteDependency(dependencyId);
+    if (!deleted) {
+      throw new NotFoundException({
+        error: { code: 'COS-TASK-005', message: 'Dependency not found' },
+      });
+    }
+    logger.info(
+      { dependency_id: dependencyId, tenant_id: this.tenantId },
+      'task.dependency.deleted',
+    );
   }
 }

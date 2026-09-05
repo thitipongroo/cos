@@ -32,6 +32,8 @@ import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Avatar } from '../../components/Avatar';
 import { PortfolioInsight } from '../../components/PortfolioInsight';
+import { ExecMore } from '../../components/ExecMore';
+import { CosRole } from '@cos/types';
 import { getMyProjects } from '../../api/projects';
 import { useAuthStore } from '../../store/authStore';
 import { formatRole } from '../../lib/formatRole';
@@ -63,7 +65,19 @@ const TILES: readonly {
   { id: 'siteMap', icon: 'map', route: null },
 ];
 
+/**
+ * The route entry point, branching on role (2026-09-05, ADR-098).
+ *
+ * `more` became EXECUTIVE's fourth tab with that role's bar change, and its drawing carries a
+ * different set of tiles — seven, three of which reach nothing. Two screens, one route, the way
+ * `tasks` and `reports` already do it. Everything below is the manager's screen, unchanged.
+ */
 export default function MoreScreen(): React.JSX.Element {
+  const roleForBranch = useAuthStore((s) => s.role);
+  return roleForBranch === CosRole.EXECUTIVE ? <ExecMore /> : <ManagerMore />;
+}
+
+function ManagerMore(): React.JSX.Element {
   const t = useT();
   const p = usePalette();
   const styles = useMemo(() => makeStyles(p), [p]);

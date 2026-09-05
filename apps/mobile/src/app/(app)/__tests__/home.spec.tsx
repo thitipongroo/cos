@@ -45,7 +45,12 @@ const client = require('../../../api/client') as { get: jest.Mock; mutate: jest.
 /** Every endpoint any role home reaches answers with an empty, well-shaped payload by default. */
 function emptyEndpoints() {
   client.get.mockImplementation((path: string) => {
-    if (path.startsWith('/analytics/executive')) return Promise.resolve({ items: [] });
+    // A BARE ARRAY, which is what the endpoint really answers (`ExecutiveDashboardRow[]` — see
+    // analytics.executive.controller.ts). This stub said `{ items: [] }` until 2026-09-05 and no
+    // test noticed, because the old ExecHome mapped the body inside a promise chain whose offline
+    // `.catch` swallowed the resulting TypeError. The rewrite maps during render, where the same
+    // wrong shape takes the screen down — so the stub now has to be right.
+    if (path.startsWith('/analytics/executive')) return Promise.resolve([]);
     if (path.startsWith('/site/issues')) return Promise.resolve({ items: [] });
     if (path.startsWith('/finance/payments')) return Promise.resolve({ items: [] });
     // A REAL budget shape, not {}: portfolioFinance reads `currency` off every row and calls
@@ -97,18 +102,33 @@ describe('HomeScreen role dispatch', () => {
     expect(getByTestId('home-quick-action-fab')).toBeTruthy();
   });
 
-  it('gives EXECUTIVE the portfolio KPIs, from analytics and open issues', async () => {
+  // REWRITTEN 2026-09-05 with the screen (ADR-098 / ADR-099). It asserted `kpi-actual` and
+  // `kpi-open-critical`, which were the four-tile version's markers; the drawing this screen now
+  // implements has two tiles, a budget hero with a spend bar, the project list and the locations
+  // panel. `/site/issues` left with the open-critical tile — risk is derived from the analytics rows
+  // themselves, by the mapping alerts.tsx documents, so the screen makes one fewer request.
+  it('gives EXECUTIVE the portfolio dashboard its mockup draws', async () => {
     const { getByTestId } = await renderHome(CosRole.EXECUTIVE);
 
     await waitFor(() => expect(getByTestId('kpi-active-projects')).toBeTruthy());
+    expect(getByTestId('kpi-risk-alerts')).toBeTruthy();
     expect(getByTestId('kpi-budget')).toBeTruthy();
-    expect(getByTestId('kpi-actual')).toBeTruthy();
-    expect(getByTestId('kpi-open-critical')).toBeTruthy();
+    expect(getByTestId('kpi-budget-bar')).toBeTruthy();
+    expect(getByTestId('exec-home-locations')).toBeTruthy();
 
     await waitFor(() =>
       expect(pathsCalled().some((p) => p.startsWith('/analytics/executive'))).toBe(true),
     );
-    expect(pathsCalled().some((p) => p.startsWith('/site/issues'))).toBe(true);
+  });
+
+  it('draws the two AI-panel actions and says neither works yet', async () => {
+    // Master §Phase 10 makes this role read-only on mobile and neither button has an endpoint, so
+    // they are drawn with the `more.tsx` "soon" treatment rather than omitted (PO 2026-09-04).
+    // Asserting they EXIST is what stops a later tidy-up from silently deleting the drawing.
+    const { getByTestId } = await renderHome(CosRole.EXECUTIVE);
+
+    await waitFor(() => expect(getByTestId('exec-home-mitigation')).toBeTruthy());
+    expect(getByTestId('exec-home-dismiss')).toBeTruthy();
   });
 
   it('gives FINANCE the payment and invoice KPIs', async () => {

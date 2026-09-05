@@ -90,6 +90,26 @@ the difference between "still running", "it broke", and "the window closed" is t
 
 ---
 
+## COS-TASK — Tasks, completion gates and the schedule network (Phase 6; ADR-026, ADR-097)
+
+`-001` and `-002` have been thrown since Phase 6 and were never registered here — added 2026-09-05
+alongside the three new codes, because a registry that omits the codes a service already returns is
+worse than no registry: a caller who looks one up and finds nothing concludes the code is not ours.
+
+`-003` and `-004` are `422`, not `400`: the request is well-formed and the caller is authorised, and
+what fails is a rule about the rest of the graph (QM-10). Neither can be expressed as a database
+constraint — a CHECK cannot see a graph — so both are enforced in `TasksService.addDependency`.
+
+| Code         | HTTP | Message                                                    | Trigger                                                                                                                                                                 |
+| ------------ | ---- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| COS-TASK-001 | 422  | Task completion blocked by hard-block gates                | `PATCH /tasks/{taskId}` to `COMPLETED` while any master Phase 6 gate fails. The response carries `blocking_gates` — the gate NAMES, so the caller learns which to clear |
+| COS-TASK-002 | 404  | Task not found                                             | No task with that id in the calling tenant. RLS makes "another tenant's task" indistinguishable from "no such task", which is intended                                  |
+| COS-TASK-003 | 422  | Dependency rejected: it would create a cycle               | `POST /projects/{projectId}/task-dependencies` where the predecessor is already reachable from the successor. A cyclic network has no critical path at all (ADR-097)    |
+| COS-TASK-004 | 422  | Both tasks of a dependency must belong to the same project | Either end of the edge sits in a different project. A per-project critical path cannot see across that boundary, so the edge is refused rather than half-honoured       |
+| COS-TASK-005 | 404  | Dependency not found                                       | `DELETE /task-dependencies/{dependencyId}` for an id that matches no row in the calling tenant                                                                          |
+
+---
+
 ## COS-BLDG / FLOR / ROOM / STRC / UNIT / ASST — Project spatial hierarchy + assets (Phase 3, 2026-07-05)
 
 Full-CRUD backing entities under the project domain (§10.2 / §11.2). `-001` = entity not found;

@@ -156,6 +156,11 @@ const PORTFOLIO: DrawerLink = {
   labelKey: 'nav.tabs.portfolio',
   icon: 'pie-chart',
 };
+const ALERTS: DrawerLink = {
+  route: '/alerts',
+  labelKey: 'nav.tabs.alerts',
+  icon: 'notification-important',
+};
 const LEADS: DrawerLink = { route: '/leads', labelKey: 'nav.tabs.leads', icon: 'person-add' };
 const OPPORTUNITIES: DrawerLink = {
   route: '/opportunities',
@@ -409,6 +414,16 @@ const NOT_DERIVED: readonly { link: DrawerLink; roles: readonly CosRole[] }[] = 
   { link: DASHBOARD, roles: [PROJECT_MANAGER] },
   { link: ISSUES, roles: [PROJECT_MANAGER] },
   { link: DIRECTORY, roles: [SITE_ENGINEER, SAFETY_OFFICER, PROJECT_MANAGER] },
+  // The executive risk feed, added 2026-09-05 when `/alerts` stopped being that role's tab
+  // (ADR-098). NOT_DERIVED rather than DERIVED because §6.4 governs no module for it: the screen is
+  // computed from `/analytics/executive` rows rather than read from an "Alerts" permission, and
+  // inventing a module row would put the spec's authority behind a guess — the rule stated at the
+  // top of this file.
+  //
+  // WITHOUT THIS ROW THE ROLE WOULD HAVE LOST THE SCREEN. `/portfolio` and `/reports` come back on
+  // their own (both are DERIVED and were suppressed only because they were tabs); `/alerts` was in
+  // neither table, so removing the tab would have left it reachable from nowhere.
+  { link: ALERTS, roles: [EXECUTIVE] },
 ];
 
 /**

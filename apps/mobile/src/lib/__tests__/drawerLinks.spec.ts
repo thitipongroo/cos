@@ -164,13 +164,40 @@ describe('the bar is four wide, and the fifth entry goes to the drawer', () => {
       visibleTabsFor(CosRole.SAFETY_OFFICER).find((tab) => tab.name === 'inspections')?.titleKey,
     ).toBe('nav.tabs.checklists');
     // Moving the row must not have disturbed the two roles that share the ones around it.
-    // EXECUTIVE's order changed on 2026-08-23, by product-owner decision, and this expectation moved
-    // with it: `reports` was relocated after `alerts` so the bar matches master:3462 — the only
-    // source that states an order for this role — which reads Home | Portfolio | Alerts | Reports.
+  });
+
+  it('gives EXECUTIVE the bar its mockups draw, in that order', () => {
+    // CHANGED 2026-09-05 (ADR-098). This expectation read Home | Portfolio | Alerts | Reports until
+    // then, and it was RIGHT — it matched the tab table, spec §20.7.1 and master §Phase 10, all
+    // three. `mockup/mobile/08_executive/` draws Home | Tasks | Safety | More on all four of its
+    // bars, and the product owner chose the drawings over the enumerated spec, which is why that
+    // change amended §20.7.1, §32.7 and the Phase 10 EXEC block rather than deviating from them.
     expect(visibleTabsFor(CosRole.EXECUTIVE).map((tab) => tab.name)).toEqual([
       'home',
-      'portfolio',
-      'alerts',
+      'tasks',
+      'safety',
+      'more',
+    ]);
+  });
+
+  it('leaves the executive a route to every screen that left its bar', () => {
+    // THE CONDITION OF THE SWAP, asserted rather than trusted. `/portfolio` and `/reports` come back
+    // on their own because both are DERIVED and were suppressed only while they were tabs;
+    // `/alerts` was in NEITHER drawer table, so without the NOT_DERIVED row added in the same change
+    // the role would have lost the screen outright. That is the failure this asserts against.
+    const routes = drawerLinksFor(CosRole.EXECUTIVE).map((link) => link.route);
+    expect(routes).toContain('/portfolio');
+    expect(routes).toContain('/alerts');
+    expect(routes).toContain('/reports');
+  });
+
+  it('keeps `reports` a SITE_ENGINEER tab after EXECUTIVE left that row', () => {
+    // The row was shortened, not deleted. A `roles` edit that took the whole entry with it would
+    // have moved a second role's bar silently.
+    expect(visibleTabsFor(CosRole.SITE_ENGINEER).map((tab) => tab.name)).toEqual([
+      'home',
+      'issues',
+      'tasks',
       'reports',
     ]);
   });

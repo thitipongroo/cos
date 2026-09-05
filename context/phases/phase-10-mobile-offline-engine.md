@@ -130,19 +130,40 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
       Workflows:  project status, procurement status, budget variance (read),
                   site report summary, issue triage
 
-    EXEC role (source §4.2):
-      Bottom nav: Home | Portfolio | Alerts | Reports | Profile
+    EXEC role (source §4.2; bar amended 2026-09-05 — ADR-098):
+      Bottom nav: Home | Tasks | Safety | More
+                  WAS Home | Portfolio | Alerts | Reports | Profile, and that WAS correct — it agreed
+                  with the tab table in code and with spec §20.7.1, which is the only role whose
+                  mobile nav the specification enumerated. mockup/mobile/08_executive/ draws the four
+                  above on all of its bars; the product owner chose the drawings, so §20.7.1, §32.7's
+                  per-role table and this block were amended together rather than deviated from.
+                  Profile left every role's bar on 2026-08-09 — the navigation drawer is the profile.
       Screens:
-        Home:      KPI summary — active projects count, total budget vs actual,
-                   open critical issues count (read-only, offline-capable)
-        Portfolio: project list with status chips + budget variance badge
-                   tap project → project health card (cost, schedule, issues)
-        Alerts:    risk alerts feed — delay risk, budget overrun, critical issues
-                   sorted by severity (CRITICAL → HIGH → MEDIUM)
-        Reports:   AI-generated executive summaries per project (offline: last cached)
-        Profile:   account settings, notification preferences
+        Home:      AI executive summary, active projects, risk alerts, portfolio budget vs actual
+                   with a spend bar, and the project list (read-only, offline-capable)
+        Tasks:     overdue / due-this-week / blocked ACROSS THE TENANT via
+                   GET /tasks/portfolio-summary — one query, never one request per project — plus
+                   the critical path from GET /projects/{id}/critical-path (ADR-097, built for this
+                   screen: projects.task_dependencies did not exist before it)
+        Safety:    portfolio safety — incidents by severity tenant-wide, and a per-project ranking
+        More:      seven tiles; four reach a screen (portfolio, financial forecast, risk centre,
+                   vendor directory) and three say before the tap that they do not
+        Portfolio: project list with status chips + budget variance badge — now a drawer row and a
+                   More tile; tap project → project health card (cost, schedule, issues)
+        Alerts:    risk alerts feed — delay risk, budget overrun, critical issues sorted by severity
+                   (CRITICAL → HIGH → MEDIUM). Drawer row + More tile
+        Reports:   AI-generated executive summaries per project (offline: last cached). Drawer row
       Offline:    cached last-known data with "last updated X mins ago" timestamp
-                  no write operations — EXEC is read-only on mobile
+                  no write operations — EXEC is read-only on mobile. The drawing's Mitigation,
+                  Dismiss and "ปรับแผนด่วน" buttons ARE drawn and say they are not usable yet
+                  (PO 2026-09-04) rather than being wired to a write this role may not make
+      NOT COMPUTABLE, AND DRAWN ANYWAY (ADR-099, PO decision 2026-09-04): a compliance percentage and
+                  its letter grade, safe man-hours, a six-month compliance trend, a per-project
+                  safety score, the "+2 this month" project delta, a per-project sync chip, the
+                  project-locations map and three More tiles. GET /safety/compliance returns FOUR
+                  COUNTS and no percentage; projects carry no coordinates. These print the mockup's
+                  own figures from one module (apps/mobile/src/lib/mockupFigures.ts) — which is the
+                  opposite of the 2026-08-13 Safety Officer ruling below, and deliberately so
 
     FINANCE role (source §4.2):
       Bottom nav: Home | Payments | Budget | Invoices | Profile
@@ -273,8 +294,9 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
           safe-hours-since-last-LTI, an AI risk score per incident, and a weather-sourced hazard
           alert. Each is DRAWN and states that it is not available yet; none is given a number.
         * PROJECT_MANAGER: home (triage) · projects · procurement (status) · dashboard · profile
-        * EXECUTIVE: home (KPI) · portfolio (health cards) · alerts (risk feed) · reports
-          (AI summary) — read-only/offline-cached · profile
+        * EXECUTIVE: home (KPI + project list) · tasks (portfolio roll-up + critical path) ·
+          safety (portfolio safety) · more (tile hub) — read-only/offline-cached (bar changed
+          2026-09-05, ADR-098; portfolio, alerts and reports moved to the drawer and More tiles)
         * FINANCE: home · payments (approve PENDING→PROCESSED via PATCH /finance/payments/:id/approve,
           queued offline) · budget (allocated/committed/actual/variance from GET /finance/budget/:id) · invoices · profile
         * PROCUREMENT_OFFICER/PROC_MANAGER: home · rfqs · orders · deliveries (record via

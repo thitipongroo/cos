@@ -1,0 +1,27 @@
+-- Rollback: 20260905000001_task_dependencies
+--
+-- Drops the explicit Task → Task schedule edge (ADR-097). DROP TABLE takes its policy, its indexes
+-- and its two constraints with it, so nothing is left behind to clean up separately.
+--
+-- WHAT BREAKS, AND WHAT DOES NOT.
+--
+-- Completion gate 3 is UNAFFECTED. `tasks.repository.ts::countIncompletePredecessors` reads the BOQ
+-- category hierarchy and never read this table (ADR-026, and the decision recorded in ADR-097 to
+-- leave it alone). Task completion behaves identically before and after this rollback — which is the
+-- practical benefit of having kept the two mechanisms apart.
+--
+-- The critical path stops being computable. `GET /api/v1/projects/{projectId}/critical-path` reads
+-- this table and nothing else, so it fails once the table is gone; the EXECUTIVE Tasks screen loses
+-- its Critical Path section. The portfolio task summary is NOT affected — it counts
+-- `projects.tasks` by planned_end and status, with no dependency involved.
+--
+-- THE ROWS ARE REAL DATA. Unlike a cache or a lease table, an authored dependency network cannot be
+-- rebuilt by the system: someone decided that task B follows task A. Export before dropping if the
+-- edges matter:
+--
+--   \copy (SELECT * FROM projects.task_dependencies) TO 'task_dependencies.csv' CSV HEADER
+--
+-- The ON DELETE CASCADE on both task references means the rows disappear with their tasks anyway;
+-- this drop is the only other way they are lost.
+
+DROP TABLE IF EXISTS projects.task_dependencies;

@@ -3,12 +3,12 @@
 // Projects are the offline-cached list (local_projects); health metrics come online from
 // GET /analytics/executive (one row per project). Offline: shows the cached list without badges.
 
-import { memo, useCallback, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
 import type { Project } from '../../db/database';
 import { useCollection } from '../../hooks/useCollection';
 import { refreshProjectsCache } from '../../api/projects';
-import { get } from '../../api/client';
+import { getExecutiveDashboard } from '../../api/analytics';
 import { StatusChip } from '../../components/StatusChip';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { useT } from '../../i18n';
@@ -82,18 +82,41 @@ export default function PortfolioScreen() {
     [execById, t],
   );
 
+  // THE IDS COME FROM THE CACHED LIST, and passing them is what makes this screen show anything at
+  // all. `/analytics/executive` filters `project_id IN ({projectIds})` and the controller turns a
+  // missing parameter into an empty array, so the call this screen made until 2026-09-05 always came
+  // back `[]` — no badge on any row, indistinguishable from being offline.
+  //
+  // `local_projects` is the right source here rather than a second `GET /projects/mine`: this screen
+  // already renders from that cache, so the ids are on hand, they are available offline, and the
+  // health metrics are then joined to exactly the rows being drawn.
+  const projectIds = useMemo(() => projects.map((project) => project.projectId), [projects]);
+
   useEffect(() => {
     refreshProjectsCache().catch(() => {
       /* offline — show cached */
     });
+  }, []);
+
+  useEffect(() => {
+    // Re-runs when the cached list arrives or changes — on first paint it is often still empty, and
+    // `getExecutiveDashboard` answers [] for an empty id list without calling the API.
+    let cancelled = false;
     // Only the remote health metrics load — the project list is local and renders instantly (no loader).
-    get<ExecRow[]>('/analytics/executive')
-      .then((rows) => setExecById(Object.fromEntries(rows.map((r) => [r.projectId, r]))))
+    getExecutiveDashboard(projectIds)
+      .then((rows) => {
+        if (!cancelled) setExecById(Object.fromEntries(rows.map((r) => [r.projectId, r])));
+      })
       .catch(() => {
         /* offline — no badges */
       })
-      .finally(() => setHealthLoading(false));
-  }, []);
+      .finally(() => {
+        if (!cancelled) setHealthLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [projectIds]);
 
   if (selected) {
     const h = execById[selected.projectId];

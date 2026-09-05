@@ -14,18 +14,31 @@ CONTENT="$HOOK_CONTENT"
 [[ "$FILE_PATH" =~ (node_modules|\.d\.ts) ]] && exit 0
 [[ -z "$CONTENT" ]]                          && exit 0
 
-# Resolve relative path to absolute
-[[ "$FILE_PATH" != /* ]] && FILE_PATH="$(pwd)/$FILE_PATH"
+# Resolve relative path to absolute.
+#
+# USE hook_abs_path, NOT `[[ "$FILE_PATH" != /* ]]`. That test asks "does this start with a slash",
+# which a Windows path (`D:/workspace/…`) does not, so the line that used to be here prepended the
+# working directory to a path that was ALREADY absolute and produced `/d/workspace/cos/d:/workspace/
+# cos/…`. Nothing on that path exists, the walk-up below found no package.json, and the fallback
+# handed the ROOT package.json to a check about a file in `backend/` — so every dependency declared
+# in a workspace package was reported missing, and every .ts write carrying a non-relative import
+# was denied. hook_abs_path (lib/hook-input.sh) already recognises the `X:` form; it was written for
+# this and simply was not called here.
+FILE_PATH="$(hook_abs_path "$FILE_PATH")"
 
-# Walk up to find nearest package.json
+# Walk up to find nearest package.json.
 PKG_JSON=""
 DIR=$(dirname "$FILE_PATH")
-while [[ "$DIR" != "/" && "$DIR" != "$(pwd)" ]]; do
+while [[ -n "$DIR" && "$DIR" != "/" && "$DIR" != "." && "$DIR" != "$(pwd)" ]]; do
   if [[ -f "$DIR/package.json" ]]; then
     PKG_JSON="$DIR/package.json"
     break
   fi
-  DIR=$(dirname "$DIR")
+  # A drive root (`d:/`) is its own dirname, so the `!= "/"` test never fires for it and the loop
+  # would spin forever. Stop as soon as the path stops getting shorter.
+  NEXT=$(dirname "$DIR")
+  [[ "$NEXT" == "$DIR" ]] && break
+  DIR="$NEXT"
 done
 # Fallback: root package.json
 [[ -z "$PKG_JSON" && -f "package.json" ]] && PKG_JSON="package.json"

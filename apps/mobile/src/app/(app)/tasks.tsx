@@ -55,6 +55,9 @@ import { useCollection } from '../../hooks/useCollection';
 import { TaskCard } from '../../components/TaskCard';
 import { ProjectContextBar } from '../../components/ProjectContextBar';
 import { ScheduleInsight } from '../../components/ScheduleInsight';
+import { ExecTasks } from '../../components/ExecTasks';
+import { CosRole } from '@cos/types';
+import { useAuthStore } from '../../store/authStore';
 import { useProjectStore } from '../../store/projectStore';
 import { getProjectPhases } from '../../api/projects';
 import { currentPhase, type ProjectPhase } from '../../lib/siteEngineerHome';
@@ -122,7 +125,22 @@ const TaskRow = memo(function TaskRow({
   );
 });
 
+/**
+ * The route entry point, branching on role (2026-09-05, ADR-098).
+ *
+ * `tasks` became EXECUTIVE's second tab with that role's bar change, and the drawing behind it is a
+ * PORTFOLIO roll-up — overdue/due/blocked across every project, plus the critical path — not this
+ * screen's day list for one site. Two screens, one route, exactly as `reports.tsx` has done since
+ * the executive gained an AI summary: the alternative was a second route showing the same noun.
+ *
+ * Everything below this function is unchanged and still serves SITE_WORKER and SITE_ENGINEER.
+ */
 export default function TasksScreen() {
+  const role = useAuthStore((s) => s.role);
+  return role === CosRole.EXECUTIVE ? <ExecTasks /> : <FieldTasks />;
+}
+
+function FieldTasks() {
   const tasks = useCollection<Task>('local_tasks');
   // The same site the bar above the list names — read from the store rather than a second chooser,
   // so the Insight card can never report on a different project than the screen says it is on.

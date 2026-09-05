@@ -46,8 +46,17 @@ export const TAB_ROUTES = [
   // SITE_WORKER's fourth tab (PO 2026-08-08, mockup 05_site_worker/03_safety/01_sw_checklist). A tab, not a pushed
   // child: the daily safety verification is one of the four things that role opens the app to do.
   'safety-checklist',
+  // EXECUTIVE's third tab (2026-09-05, ADR-098). A new route: the portfolio safety overview, which
+  // is none of `safety-checklist` (fill one in), `inspections` (list them) or `incidents` (one
+  // site's feed).
+  'safety',
   'sync-queue',
-  'alerts',
+  // `alerts` IS NO LONGER HERE (2026-09-05). It was EXECUTIVE's alone and left ALL_TABS with that
+  // role's bar change, so it is a tab for nobody — which is precisely the condition under which
+  // expo-router auto-registers it as a VISIBLE tab for every role unless MobileNav says `href: null`.
+  // It has that declaration and a breadcrumb, and it gained a NOT_DERIVED drawer row so the role can
+  // still reach it. `dashboard` is the cautionary note at the top of this list; this is the same
+  // move done with all three steps.
   'incidents',
   'deliveries',
   'orders',
@@ -59,7 +68,10 @@ export const TAB_ROUTES = [
   // The Project Manager's third and fourth tabs (corrected mockup set, 2026-08-10).
   'finance',
   'more',
-  'portfolio',
+  // `portfolio` LEFT THIS LIST on 2026-09-05, with `alerts` and for the same reason (ADR-098). It is
+  // DERIVED "Executive dashboard" in drawerLinks.ts, so it returns as a drawer row the moment it
+  // stops being a tab — but it still needs its own `href: null` and breadcrumb, which the derivation
+  // does not provide.
   'customers',
   'leads',
   'opportunities',

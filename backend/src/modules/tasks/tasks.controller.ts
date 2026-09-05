@@ -4,7 +4,9 @@
 
 import {
   Controller,
+  Delete,
   Get,
+  HttpCode,
   Post,
   Patch,
   Param,
@@ -22,6 +24,7 @@ import { CosRole } from '@cos/types';
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
+import { CreateDependencyDto } from './dto/create-dependency.dto';
 
 const TASK_READ_ROLES = [
   CosRole.EXECUTIVE,
@@ -100,5 +103,81 @@ export class TasksController {
   @ApiParam({ name: 'taskId', type: 'string', format: 'uuid' })
   updateTask(@Param('taskId', ParseUUIDPipe) taskId: string, @Body() dto: UpdateTaskDto) {
     return this.svc.updateTask(taskId, dto);
+  }
+
+  // ── Schedule network and critical path (ADR-097) ────────────────────────────
+
+  // GET /api/v1/tasks/portfolio-summary
+  //
+  // DECLARED BEFORE `tasks/:taskId`-shaped routes would matter, and on its own literal segment, so
+  // there is no chance of `portfolio-summary` being parsed as a task id. It is also the reason this
+  // is a GET on `tasks/` rather than `projects/:projectId/…`: the whole point is that it spans the
+  // tenant's projects rather than one of them.
+  @Get('tasks/portfolio-summary')
+  @Roles(...TASK_READ_ROLES)
+  @ApiOperation({
+    summary: 'Tenant-wide task counts — overdue, due this week, blocked',
+    description:
+      'Counts every non-cancelled task in the tenant. "Overdue" means planned_end has passed and ' +
+      'the task is not finished — it is NOT a priority or severity, because projects.tasks has no ' +
+      'such column (ADR-085). A task with no planned_end falls in neither date bucket.',
+  })
+  portfolioTaskSummary() {
+    return this.svc.getPortfolioTaskSummary();
+  }
+
+  // GET /api/v1/projects/:projectId/critical-path
+  @Get('projects/:projectId/critical-path')
+  @Roles(...TASK_READ_ROLES)
+  @ApiOperation({
+    summary: 'Critical path — forward/backward pass over the project schedule network',
+    description:
+      'Earliest/latest start and finish and total float per task; the critical path is the ' +
+      'zero-float set. Durations are CALENDAR days: no working-day calendar exists in this ' +
+      'platform, and the response says so in `working_day_calendar`. Tasks without both planned ' +
+      'dates are excluded and counted in `excluded_task_count` (ADR-097).',
+  })
+  @ApiParam({ name: 'projectId', type: 'string', format: 'uuid' })
+  getCriticalPath(@Param('projectId', ParseUUIDPipe) projectId: string) {
+    return this.svc.getCriticalPath(projectId);
+  }
+
+  // GET /api/v1/projects/:projectId/task-dependencies
+  @Get('projects/:projectId/task-dependencies')
+  @Roles(...TASK_READ_ROLES)
+  @ApiOperation({ summary: 'List the project schedule network edges' })
+  @ApiParam({ name: 'projectId', type: 'string', format: 'uuid' })
+  listDependencies(@Param('projectId', ParseUUIDPipe) projectId: string) {
+    return this.svc.listDependencies(projectId);
+  }
+
+  // POST /api/v1/projects/:projectId/task-dependencies
+  //
+  // EXECUTIVE IS ABSENT FROM THE WRITE ROLES ON PURPOSE. Phase 10 says the role is read-only on
+  // mobile, and the dependency network is authored by the people who own the schedule.
+  @Post('projects/:projectId/task-dependencies')
+  @Roles(CosRole.PROJECT_MANAGER, CosRole.SITE_ENGINEER, CosRole.TENANT_ADMIN)
+  @ApiOperation({
+    summary: 'Add one dependency edge',
+    description:
+      'Rejects an edge that would create a cycle (COS-TASK-003), one whose tasks are not both in ' +
+      'this project (COS-TASK-004), and one naming a task that does not exist (COS-TASK-002).',
+  })
+  @ApiParam({ name: 'projectId', type: 'string', format: 'uuid' })
+  addDependency(
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+    @Body() dto: CreateDependencyDto,
+  ) {
+    return this.svc.addDependency(projectId, dto);
+  }
+
+  // DELETE /api/v1/task-dependencies/:dependencyId
+  @Delete('task-dependencies/:dependencyId')
+  @HttpCode(204)
+  @Roles(CosRole.PROJECT_MANAGER, CosRole.SITE_ENGINEER, CosRole.TENANT_ADMIN)
+  @ApiOperation({ summary: 'Remove one dependency edge' })
+  @ApiParam({ name: 'dependencyId', type: 'string', format: 'uuid' })
+  async removeDependency(@Param('dependencyId', ParseUUIDPipe) dependencyId: string) {
+    await this.svc.removeDependency(dependencyId);
   }
 }

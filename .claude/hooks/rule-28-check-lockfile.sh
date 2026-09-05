@@ -18,7 +18,10 @@ if [[ ! -f "$LOCKFILE" ]]; then
   exit 0
 fi
 
-[[ "$FILE_PATH" != /* ]] && ABS_PKG="$(pwd)/$FILE_PATH" || ABS_PKG="$FILE_PATH"
+# hook_abs_path, not `!= /*`: a Windows path (`D:/workspace/…`) does not start with a slash, so that
+# test called it relative and prepended the working directory to a path that was already absolute.
+# See the longer note in rule-26-check-imports.sh — this is the same bug in the same idiom.
+ABS_PKG="$(hook_abs_path "$FILE_PATH")"
 
 # Block if lockfile is older than the modified package.json
 if [[ "$ABS_PKG" -nt "$LOCKFILE" ]]; then

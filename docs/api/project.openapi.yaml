@@ -27,6 +27,28 @@ components:
       bearerFormat: JWT
 
   schemas:
+    TaskDependency:
+      type: object
+      description: |
+        One Task → Task edge of the project schedule network (ADR-097). This is NOT what completion
+        gate 3 reads — that keeps the ADR-026 BOQ-category derivation.
+      properties:
+        dependency_id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        project_id: { type: string, format: uuid }
+        predecessor_task_id: { type: string, format: uuid }
+        successor_task_id: { type: string, format: uuid }
+        dependency_type:
+          type: string
+          enum: [FS, SS, FF, SF]
+          description: >-
+            FS finish-to-start, SS start-to-start, FF finish-to-finish, SF start-to-finish
+        lag_days:
+          type: integer
+          description: Signed — a negative value is a lead
+        created_at: { type: string, format: date-time }
+        modified_at: { type: string, format: date-time }
+
     ProjectType:
       type: string
       enum: [RESIDENTIAL, COMMERCIAL, INFRASTRUCTURE, INDUSTRIAL]
@@ -1317,6 +1339,188 @@ paths:
           description: Task updated
         '422':
           description: Completion blocked by hard-block gates (COS-TASK-001)
+
+  # ── Schedule network + critical path (ADR-097, 2026-09-05) ──
+  # These do NOT feed completion gate 3. That gate keeps the ADR-026 BOQ-category derivation; the
+  # edges below describe the schedule and nothing else. RBAC: read = TASK_READ_ROLES (EXECUTIVE
+  # included); write = PROJECT_MANAGER / SITE_ENGINEER / TENANT_ADMIN.
+  /tasks/portfolio-summary:
+    get:
+      summary: Tenant-wide task counts — overdue, due this week, blocked
+      description: |
+        Counts every non-cancelled task in the calling tenant, across all its projects, in one
+        query. Answers the EXECUTIVE Tasks screen, which is a portfolio view and would otherwise
+        need one request per project.
+
+        "Overdue" means planned_end has passed and the task is not finished. It is NOT a priority
+        or a severity: projects.tasks has no such column, so no count here can claim one (ADR-085).
+        A task with no planned_end falls into neither date bucket — it is unscheduled, not late.
+      operationId: portfolioTaskSummary
+      responses:
+        '200':
+          description: Tenant-wide counts
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  [overdue_count, due_this_week_count, blocked_count, open_count, project_count]
+                properties:
+                  overdue_count:
+                    type: integer
+                    description: planned_end < today, status not COMPLETED/CANCELLED
+                  due_this_week_count:
+                    type: integer
+                    description: planned_end within the next 7 days inclusive of today
+                  blocked_count:
+                    type: integer
+                    description: status = BLOCKED
+                  open_count:
+                    type: integer
+                    description: status not COMPLETED/CANCELLED
+                  project_count:
+                    type: integer
+                    description: distinct projects the counted tasks belong to
+        '403':
+          description: The caller's role is not in TASK_READ_ROLES
+
+  /projects/{projectId}/critical-path:
+    get:
+      summary: Critical path — forward/backward pass over the project schedule network
+      description: |
+        Earliest and latest start/finish and total float per task; the critical path is the
+        zero-float set (`critical_task_ids`).
+
+        Durations are CALENDAR days. A working-day pass needs a per-project calendar — weekends,
+        Thai public holidays, site shutdowns — and no such table exists in this platform, so the
+        response reports `working_day_calendar: false` rather than leaving the caller to assume.
+
+        A task without BOTH planned dates cannot be scheduled and is left out of the network,
+        counted in `excluded_task_count`. A project with no schedulable task returns null dates and
+        an empty list, not an error.
+      operationId: getCriticalPath
+      parameters:
+        - in: path
+          name: projectId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The computed schedule
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  project_id: { type: string, format: uuid }
+                  project_start: { type: [string, 'null'], format: date }
+                  project_finish: { type: [string, 'null'], format: date }
+                  duration_days: { type: integer }
+                  working_day_calendar:
+                    type: boolean
+                    description: Always false today — see the description above
+                  critical_task_ids:
+                    type: array
+                    items: { type: string, format: uuid }
+                  excluded_task_count:
+                    type: integer
+                    description: Tasks left out for want of both planned dates
+                  tasks:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        task_id: { type: string, format: uuid }
+                        task_name: { type: string }
+                        status:
+                          type: string
+                          enum: [NOT_STARTED, IN_PROGRESS, COMPLETED, BLOCKED, CANCELLED]
+                        work_type: { type: string }
+                        duration_days: { type: integer }
+                        earliest_start: { type: string, format: date }
+                        earliest_finish: { type: string, format: date }
+                        latest_start: { type: string, format: date }
+                        latest_finish: { type: string, format: date }
+                        total_float_days: { type: integer }
+                        is_critical: { type: boolean }
+        '403':
+          description: The caller's role is not in TASK_READ_ROLES
+
+  /projects/{projectId}/task-dependencies:
+    parameters:
+      - { in: path, name: projectId, required: true, schema: { type: string, format: uuid } }
+    get:
+      summary: List the project schedule network edges
+      operationId: listTaskDependencies
+      responses:
+        '200':
+          description: Dependency edges
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/TaskDependency' }
+        '403':
+          description: The caller's role is not in TASK_READ_ROLES
+    post:
+      summary: Add one dependency edge
+      description: |
+        Rejected with 422 when the edge would create a cycle (COS-TASK-003) or when its two tasks
+        are not both in this project (COS-TASK-004), and with 404 when either task does not exist
+        in the calling tenant (COS-TASK-002).
+
+        Neither rule can be a database constraint — a CHECK cannot see a graph — so both are
+        enforced in the service before the row is written.
+      operationId: addTaskDependency
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [predecessor_task_id, successor_task_id]
+              properties:
+                predecessor_task_id: { type: string, format: uuid }
+                successor_task_id: { type: string, format: uuid }
+                dependency_type:
+                  type: string
+                  enum: [FS, SS, FF, SF]
+                  default: FS
+                lag_days:
+                  type: integer
+                  default: 0
+                  minimum: -3650
+                  maximum: 3650
+                  description: Signed — a negative value is a lead
+      responses:
+        '201':
+          description: Edge created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TaskDependency' }
+        '404':
+          description: A named task does not exist in this tenant (COS-TASK-002)
+        '422':
+          description: Cycle (COS-TASK-003) or cross-project edge (COS-TASK-004)
+
+  /task-dependencies/{dependencyId}:
+    delete:
+      summary: Remove one dependency edge
+      operationId: removeTaskDependency
+      parameters:
+        - in: path
+          name: dependencyId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Edge removed
+        '404':
+          description: No such edge in this tenant (COS-TASK-005)
 
   # ── Spatial hierarchy + asset/unit CRUD (Phase 3, 2026-07-05) ──
   # RBAC: read = any authenticated tenant user; write = PROJECT_MANAGER / TENANT_ADMIN. No Kafka events.

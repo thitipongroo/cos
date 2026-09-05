@@ -176,3 +176,21 @@ export const CROSSFADE_MS = 260;
 export function completionHoldMs(progress?: number): number {
   return isDeterminate(progress) ? FILL_DURATION_MS : 0;
 }
+
+/**
+ * Count a promise as one settled load step, whether it succeeds or fails.
+ *
+ * WHY THIS IS NOT `void promise.finally(bump)`. `.finally()` returns a NEW promise that adopts the
+ * original's rejection, and `void` discards it without attaching a handler — so a fetch that fails
+ * produces an UNHANDLED REJECTION even though the screen's own `.catch` handled the original. It is
+ * invisible in the app and fatal in a test, which is how it surfaced: every "shows an em dash when
+ * the API fails" case died on the rejection rather than on the assertion.
+ *
+ * `.then(onFulfilled, onRejected)` handles both outcomes, so the derived promise settles cleanly and
+ * nothing is left floating in a rejected state. The ORIGINAL promise is returned untouched, so the
+ * caller still attaches its own `.catch` and decides what a failure means on screen.
+ */
+export function countSettled<T>(promise: Promise<T>, onSettled: () => void): Promise<T> {
+  promise.then(onSettled, onSettled);
+  return promise;
+}

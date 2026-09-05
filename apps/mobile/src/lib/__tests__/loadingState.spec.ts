@@ -1,18 +1,19 @@
 import {
-  resolvePalette,
-  clampProgress,
-  isDeterminate,
-  formatPercent,
-  progressWidth,
-  aiMotifEnabled,
-  listRowWidths,
-  accessibilityLabel,
-  completionHoldMs,
-  loadProgress,
-  resolveMicroInk,
-  LIST_SKELETON_ROWS,
-  FILL_DURATION_MS,
   CROSSFADE_MS,
+  FILL_DURATION_MS,
+  LIST_SKELETON_ROWS,
+  accessibilityLabel,
+  aiMotifEnabled,
+  clampProgress,
+  completionHoldMs,
+  countSettled,
+  formatPercent,
+  isDeterminate,
+  listRowWidths,
+  loadProgress,
+  progressWidth,
+  resolveMicroInk,
+  resolvePalette,
 } from '../loadingState';
 import { colors, darkColors } from '../../theme/tokens';
 
@@ -253,5 +254,46 @@ describe('loadProgress', () => {
     expect(loadProgress(NaN, 4)).toBe(0);
     expect(loadProgress(2, NaN)).toBeNull();
     expect(loadProgress(2, Infinity)).toBeNull();
+  });
+});
+
+describe('countSettled', () => {
+  it('counts a success and returns the ORIGINAL promise, not a derived one', async () => {
+    const bump = jest.fn();
+    const source = Promise.resolve('value');
+
+    const returned = countSettled(source, bump);
+
+    expect(returned).toBe(source);
+    await expect(returned).resolves.toBe('value');
+    expect(bump).toHaveBeenCalledTimes(1);
+  });
+
+  it('counts a failure WITHOUT leaving an unhandled rejection behind', async () => {
+    // THE DEFECT THIS FUNCTION EXISTS FOR. The screens used to write `void promise.finally(bump)`,
+    // and `.finally()` returns a NEW promise that adopts the rejection — discarded by `void`, so a
+    // failed fetch produced an unhandled rejection even though the caller's own `.catch` handled the
+    // original. Invisible in the app; fatal in a test. Every "shows an em dash when the API fails"
+    // case died on it.
+    const bump = jest.fn();
+    const source = Promise.reject(new Error('offline'));
+
+    const returned = countSettled(source, bump);
+
+    await expect(returned).rejects.toThrow('offline');
+    expect(bump).toHaveBeenCalledTimes(1);
+  });
+
+  it('counts each promise once, so a bar of N steps reaches exactly N', async () => {
+    let settled = 0;
+    const bump = () => {
+      settled += 1;
+    };
+    await Promise.allSettled([
+      countSettled(Promise.resolve(1), bump),
+      countSettled(Promise.reject(new Error('offline')), bump).catch(() => undefined),
+      countSettled(Promise.resolve(3), bump),
+    ]);
+    expect(settled).toBe(3);
   });
 });

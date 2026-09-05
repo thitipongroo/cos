@@ -423,10 +423,32 @@ Source: §20.2 Executive; master Phase 10 EXEC nav; Analytics (Phase 14) + AI re
 
 | Route        | Page              | Purpose                                                                         | Source                                                          |
 | ------------ | ----------------- | ------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| `/`          | Portfolio home    | KPI summary: active projects, total budget vs actual, open critical issues      | `GET /api/v1/analytics/executive`                               |
+| `/`          | Portfolio home    | KPI summary: active projects, total budget vs actual, risk alerts               | `GET /api/v1/analytics/executive`                               |
+| `/tasks`     | Portfolio tasks   | Overdue / due-this-week / blocked across the tenant, plus the critical path     | `GET /api/v1/tasks/portfolio-summary`, `GET /api/v1/projects/{id}/critical-path` |
+| `/safety`    | Portfolio safety  | Compliance and incidents across every project, with a per-project ranking       | `GET /api/v1/safety/compliance`, `GET /api/v1/safety/incidents` |
+| `/more`      | More              | Tile hub — portfolio, financial forecast, risk centre, vendor directory         | Navigation only                                                 |
 | `/portfolio` | Portfolio         | Project list with status chips + budget-variance badge; drill to project health | Analytics + Project APIs                                        |
 | `/alerts`    | Risk alerts       | Delay risk, budget overrun, critical issues sorted by severity                  | `finance.variance.alert`, `construction.delay.detected`, issues |
 | `/reports`   | Executive reports | AI executive summaries per project                                              | `POST /api/v1/ai/reports/executive-summary`                     |
+
+**Mobile bottom navigation (2026-09-05, ADR-098): `Home · Tasks · Safety · More`.**
+
+The first four rows are the role's four mobile tabs; the last three are reached from the navigation
+drawer and from tiles on the More screen. Until 2026-09-05 the tabs were
+`Home · Portfolio · Alerts · Reports` — this table, master §Phase 10 and the tab table in code all
+agreed on that, and all three were amended together when the product owner chose the drawings in
+`mockup/mobile/08_executive/` over the enumerated navigation. This is the only role whose mobile nav
+this specification had enumerated, so it is a specification change rather than a deviation.
+
+`/safety` is a NEW page, not `/safety/checklists` or `/safety/permits` under another name: it asks a
+portfolio question — how safety stands across every project — which none of the site-scoped safety
+pages answers. `/tasks` and `/more` are shared routes whose screen branches on role.
+
+**Figures without a source.** Several panels on the mobile Tasks and Safety screens print values this
+platform cannot compute — a compliance percentage, safe man-hours, a per-project safety score, a
+six-month trend. `GET /safety/compliance` returns four counts and no percentage. Those values come
+from the drawings and are registered in one module, per ADR-099; they are not API contracts and no
+endpoint above supplies them.
 
 ### 20.7.2 Project Manager (`PROJECT_MANAGER`)
 

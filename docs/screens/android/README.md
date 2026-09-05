@@ -10,6 +10,19 @@ last_updated: 2026-08-17
 Screenshots of the Construction OS mobile app (Expo / React Native, Android), captured against the
 **local backend with seeded demo data** — real logins and live API calls, not mockups.
 
+> **One folder is a documented exception, and the sentence above would otherwise be false of it.**
+> The EXECUTIVE screens in [`08-executive/`](08-executive/) print a handful of figures this platform
+> cannot compute — a compliance percentage and its letter grade, safe man-hours, a six-month
+> compliance trend, a per-project safety score, a project-count delta, a per-project sync chip and a
+> locations panel. `GET /safety/compliance` returns four counts and no percentage; projects carry no
+> coordinates. Those values come from `mockup/mobile/08_executive/` by product-owner decision of
+> 2026-09-04, are held in one module (`apps/mobile/src/lib/mockupFigures.ts`) so the set can be
+> counted and removed together, and are recorded in
+> [ADR-099](../../architecture/adr/099-mockup-figures-without-a-data-source.md). The role's own
+> section below marks each panel. **Everything else in that folder — the portfolio budget and
+> variance, the task counts, the critical path, the incident counts and every AI panel — is live
+> data, and every other role folder is live data throughout.**
+
 | Device  | `Medium_Phone` AVD — Android 37 (`google_apis_playstore`), x86_64, 1080×2400     |
 | ------- | -------------------------------------------------------------------------------- |
 | App     | Debug build (`android/app/build/outputs/apk/debug/app-debug.apk`) + Metro        |
@@ -1932,3 +1945,113 @@ a full refresh wants.
 > polyfills in dependency order (getCanonicalLocales → Locale → PluralRules — PluralRules resolves its
 > locale through a matcher that constructs `new Intl.Locale`, so adding it alone only moved the throw),
 > and `i18n/__tests__/pluralPolyfill.spec.ts` reads the source to keep them imported and ordered.
+
+## Executive — four tabs, four screens — [`08-executive/`](08-executive/)
+
+Captured 2026-09-05 against the seeded `EKACHAI` tenant through a real Path A (SMS OTP) login as
+`+66811000001`, Wichai Ekachai. The role's bar changed the day before these were taken: it reads
+**Home | Tasks | Safety | More** (ADR-098), where until 2026-09-04 it read
+Home | Portfolio | Alerts | Reports. Those three screens did not go away — they are drawer rows, and
+two of them are also tiles on More.
+
+> **Some figures in this folder did not come from the backend, and this is the only folder where
+> that is true.** The compliance percentage and its grade, safe man-hours, the six-month trend, the
+> per-project safety score, the "+2 this month" project delta and the Active Region caption are the
+> mockup's own numbers, printed by product-owner decision of 2026-09-04 and held in one module
+> (`apps/mobile/src/lib/mockupFigures.ts`), because this platform computes none of them —
+> `GET /safety/compliance` returns four counts and no percentage, and a project carries no
+> coordinates. The full list and the reasoning are
+> [ADR-099](../../architecture/adr/099-mockup-figures-without-a-data-source.md). **Everything else
+> below is live**, and each screen says which is which.
+
+### Home — [`01-Home/01-ex-home-dashboard.png`](08-executive/01-Home/01-ex-home-dashboard.png)
+
+Every money figure is real and reconciles against Postgres:
+
+| On screen                                 | Where it comes from                                                                                                      |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `PORTFOLIO BUDGET ฿1,213,000,000.00`      | Σ `projects.budget_amount` over the executive's five projects (145 + 88 + 210 + 320 + 450M)                              |
+| `ACTUAL ฿929,263,377.00`                  | Σ `finance.cost_transactions.amount` over the same five — to the baht                                                    |
+| `REMAINING 23.4%`                         | derived from the two above, in `decimal.js`                                                                              |
+| `RISK ALERTS 05 · 2 critical · 3 warning` | `/analytics/executive` rows: two over 100% utilisation, three flagged at-risk                                            |
+| `ACTIVE PROJECTS 5`                       | `local_projects` where status = ACTIVE, the offline cache                                                                |
+| per-project `VARIANCE` and its badge      | actual − budget per row. Ladprao `+฿1,624,218` and Bangna `+฿28,682,356` are genuine overruns the seed writes on purpose |
+
+`+2 this month` and `ACTIVE REGION / Southeast Asia Sector` are mockup figures. `MITIGATION` and
+`DISMISS` are drawn with a **COMING SOON** chip: neither has an endpoint, and master §Phase 10 makes
+this role read-only on mobile, so they must not write.
+
+> **The first capture of this screen was BLANK where the money is**, and the cause is worth
+> recording. `GET /analytics/executive` filters `project_id IN ({projectIds})`, and the controller
+> turns a missing `projectIds` query parameter into an EMPTY array — so the endpoint answers `200`
+> with `[]` and every figure renders as an em dash, which looks exactly like being offline. The
+> screen now fetches the executive's own projects first and passes their ids. `alerts.tsx` and
+> `portfolio.tsx` still call it without them.
+
+### Tasks — [`02-Tasks/01-ex-tasks.png`](08-executive/02-Tasks/01-ex-tasks.png)
+
+`OVERDUE 8 · THIS WEEK 4 · TOTAL BLOCKED 0 across 5 projects` come from
+`GET /api/v1/tasks/portfolio-summary` — one tenant-wide query, built for this screen precisely so a
+portfolio view does not make one request per project. The tile reads **OVERDUE**, not the drawing's
+"Overdue Critical": `projects.tasks` has no priority or severity column, so no count here can claim
+one (the same substitution the Site Worker card makes for its badge).
+
+**CRITICAL PATH is computed, not drawn.** `GET /projects/{id}/critical-path` runs a forward and
+backward pass over `projects.task_dependencies`, a table that did not exist before 2026-09-05
+(ADR-097). The three rows in the capture are the seeded chain, and the dates show it working:
+
+```text
+งานเสาเข็ม โซน A     2026-07-21 → 2026-08-11    0d float
+ฐานรากและคานคอดิน    2026-08-11 → 2026-09-01    0d float
+งานกันซึมชั้นใต้ดิน    2026-09-04 → 2026-09-25    0d float
+```
+
+The gap between `09-01` and `09-04` is the three-day `lag_days` the seed puts on that edge — the
+pile caps cure before the waterproofing starts. The footnote states that durations count calendar
+days, because the API reports `working_day_calendar: false` and this platform has no working-day
+calendar to offer.
+
+### Safety — [`03-Safety/01-ex-safety.png`](08-executive/03-Safety/01-ex-safety.png)
+
+`ACTIVE INCIDENTS` and the `N low, M raised` split under it are real, counted from
+`GET /safety/incidents` tenant-wide, as are the per-project incident counts in the ranking. The
+compliance percentage, the grade ring, `+2.4% vs last month`, `SAFE MAN-HOURS 1.2M`, the six-month
+trend bars and the `96/100`-style scores with their SECURE / MONITOR badges are mockup figures.
+
+> **The first capture read `00 ACTIVE INCIDENTS` over a tenant holding five.** The screen asked the
+> API for `status: 'OPEN'` alone, and every seeded incident is `IN_PROGRESS`. "Active" means an
+> incident still being dealt with — OPEN _and_ IN_PROGRESS — and it now counts both.
+
+### More — [`04-More/01-ex-more.png`](08-executive/04-More/01-ex-more.png)
+
+The identity block reads the signed-in session, not the drawing. `OS INTELLIGENCE` is the real
+`executive-summary` endpoint and says plainly that no report has been generated for the project yet
+rather than inventing one.
+
+Four of the seven tiles reach a screen — Portfolio report → `/portfolio`, Financial forecast →
+`/budget`, Risk centre → `/alerts`, Vendor directory → `/vendors`. The other three carry a
+**COMING SOON** chip before the tap, not after it: BIM is a Type A stub (§32.9), carbon has a
+ClickHouse table but its calculation engine throws `NotImplementedException` and no controller
+exposes it, and the map needs project coordinates the schema does not have.
+
+### Reproducing this set
+
+`node scripts/capture-android-executive.mjs` from `apps/mobile`, with a screen name to re-shoot one
+(`… executive.mjs safety`). The script's own header carries the six prerequisites in order; three of
+them were learned the hard way while taking this set and none is optional:
+
+- **`node prisma/seed-analytics-clickhouse.mjs`** after seeding Postgres. The analytics tables are
+  written in production by `services/analytics-worker` consuming Kafka, which fills them FORWARD
+  from events and has nothing to say about rows inserted straight into Postgres. Without it the OLAP
+  store is empty and the Home screen photographs em dashes.
+- **`npx ts-node prisma/provision-keycloak-demo.ts`.** `seed-realistic.ts` writes Postgres only, and
+  Path A's verify step exchanges the OTP for a session through the identity provider — so without it
+  the backend answers `COS-AUTH-503` and the app shows "Invalid or expired OTP", which points at the
+  wrong thing entirely.
+- **Keycloak running on `:8090`.** Note that `backend/src/workers/__tests__/main.spec.ts` binds that
+  port itself, so the unit suite fails while Keycloak holds it: run the tests with Keycloak stopped
+  and the capture with it started.
+
+The script also sets the device animation scales to 0 and restores them afterwards. With the AVD
+default of 1.0 every `uiautomator dump` fails with "could not get idle state", which surfaces minutes
+later as "… never appeared" and reads like a missing testID.

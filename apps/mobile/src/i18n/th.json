@@ -1235,6 +1235,91 @@
       "lowConfidence": "ความเชื่อมั่นต่ำ — ข้อมูลไม่พอ",
       "error": "สร้างรายงานไม่ได้",
       "empty": "เลือกโครงการแล้วกดสร้างรายงาน"
+    },
+    "safety": {
+      "intelligence": "ข้อมูลเชิงลึกด้านความปลอดภัย",
+      "compliance": "การปฏิบัติตามข้อกำหนด",
+      "complianceDelta": "{value} เทียบเดือนก่อน",
+      "activeIncidents": "อุบัติการณ์ที่เปิดอยู่",
+      "severitySplit": "ต่ำ {low} รายการ · ยกระดับ {raised} รายการ",
+      "safeManHours": "ชั่วโมงทำงานปลอดภัย",
+      "ytd": "สะสมตั้งแต่ต้นปี",
+      "trend": "แนวโน้ม 6 เดือน",
+      "rankings": "อันดับโครงการ",
+      "incidentCount": "อุบัติการณ์ {count} รายการ",
+      "secure": "ปลอดภัย",
+      "monitor": "เฝ้าระวัง",
+      "viewAll": "ดูโครงการทั้งหมด"
+    },
+    "tasks": {
+      "overdue": "เลยกำหนด",
+      "overdueNote": "เลยวันสิ้นสุดตามแผน",
+      "thisWeek": "สัปดาห์นี้",
+      "dueNote": "ครบกำหนดใน 7 วัน",
+      "blocked": "ติดขัดทั้งหมด",
+      "acrossProjects": "จาก {count} โครงการ",
+      "riskAlerts": "แจ้งเตือนความเสี่ยง",
+      "criticalPath": "เส้นทางวิกฤต",
+      "criticalPathEmpty": "โครงการนี้ยังไม่มีการบันทึกลำดับก่อนหลังของงาน จึงคำนวณเส้นทางวิกฤตไม่ได้",
+      "window": "{start} → {finish}",
+      "float": "ยืดหยุ่น {days} วัน",
+      "days": "{days} วัน",
+      "calendarNote": "ระยะเวลานับเป็นวันตามปฏิทิน ระบบยังไม่มีปฏิทินวันทำงาน",
+      "excludedNote": "งาน {count} รายการไม่ถูกนำมาคิด เพราะไม่มีวันเริ่มและวันสิ้นสุดตามแผน"
+    },
+    "more": {
+      "intelligence": "ข้อมูลเชิงลึกของระบบ",
+      "portfolioReport": {
+        "title": "รายงานพอร์ตโฟลิโอ",
+        "body": "ภาพรวมโครงการทั้งหมด"
+      },
+      "financialForecast": {
+        "title": "การคาดการณ์ทางการเงิน",
+        "body": "งบประมาณและกระแสเงินสด"
+      },
+      "riskCentre": {
+        "title": "ศูนย์บริหารความเสี่ยง",
+        "body": "วิเคราะห์และการลดความเสี่ยง"
+      },
+      "vendorDirectory": {
+        "title": "รายชื่อผู้จัดจำหน่าย",
+        "body": "เครือข่ายซัพพลายเออร์"
+      },
+      "strategicBim": {
+        "title": "มุมมอง BIM เชิงกลยุทธ์",
+        "body": "แบบจำลองโครงสร้างองค์กร"
+      },
+      "carbon": {
+        "title": "บัญชีคาร์บอน",
+        "body": "ข้อมูลความยั่งยืน"
+      },
+      "globalMap": {
+        "title": "แผนที่ไซต์ทั่วโลก",
+        "body": "พิกัดทางภูมิศาสตร์ของโครงการ"
+      }
+    },
+    "home": {
+      "intelligence": "ข้อมูลเชิงลึกสำหรับผู้บริหาร",
+      "mitigation": "แผนลดผลกระทบ",
+      "dismiss": "ปิดการแจ้งเตือน",
+      "activeProjects": "โครงการที่ดำเนินการ",
+      "thisMonth": "{value} เดือนนี้",
+      "riskAlerts": "แจ้งเตือนความเสี่ยง",
+      "riskSplit": "วิกฤต {critical} • เฝ้าระวัง {warning}",
+      "portfolioBudget": "งบประมาณรวมพอร์ตโฟลิโอ",
+      "actual": "ใช้จริง: {value}",
+      "remaining": "คงเหลือ: {value}%",
+      "remainingUnknown": "คงเหลือ: —",
+      "projectList": "รายการโครงการ",
+      "filter": "ตัวกรอง",
+      "noProjects": "ยังไม่มีโครงการ",
+      "progress": "คืบหน้า {value}%",
+      "progressUnknown": "คำนวณความคืบหน้าไม่ได้",
+      "variance": "ผลต่าง",
+      "onTrack": "ตามแผน",
+      "atRisk": "มีความเสี่ยง",
+      "overBudget": "เกินงบประมาณ",
+      "activeRegion": "ภูมิภาคที่ดำเนินการ"
     }
   },
   "finance": {

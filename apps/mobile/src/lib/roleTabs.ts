@@ -104,11 +104,15 @@ export const ALL_TABS: TabConfig[] = [
   // Home | Tasks | Issues | Reports, which is not what the role's mockups draw. Moving it costs
   // SITE_WORKER nothing: that role matches neither `issues` nor anything else between here and
   // `safety-checklist`, so its bar is still Home | Tasks | Safety | Directory.
+  // EXECUTIVE JOINED THIS ROW ON 2026-09-05 and the screen behind it branches on role, exactly as
+  // `reports` already does: `tasks.tsx` renders the Site Worker's day list for the two field roles
+  // and the portfolio roll-up (`GET /tasks/portfolio-summary` + the critical path) for the
+  // executive. One route, two drawings, because they are the same noun at two altitudes.
   {
     name: 'tasks',
     titleKey: 'nav.tabs.tasks',
     icon: 'assignment',
-    roles: [CosRole.SITE_WORKER, CosRole.SITE_ENGINEER],
+    roles: [CosRole.SITE_WORKER, CosRole.SITE_ENGINEER, CosRole.EXECUTIVE],
   },
   // `report` (the singular daily-entry FORM) is now a tab for NO role. It is declared `href: null`
   // in MobileNav and pushed from the quick-action menu, like any other child screen. The
@@ -118,6 +122,22 @@ export const ALL_TABS: TabConfig[] = [
     titleKey: 'nav.tabs.safety',
     icon: 'health-and-safety',
     roles: [CosRole.SITE_WORKER],
+  },
+  // EXECUTIVE's third tab (2026-09-05, mockup 08_executive/03_safety). A NEW ROUTE, not one of the
+  // three safety screens that already exist, because none of them is this screen:
+  //   `safety-checklist` fills in one checklist  ·  `inspections` lists them
+  //   `incidents` is the Safety Officer's feed for one site
+  // The drawing is a PORTFOLIO view — compliance across every project, incidents by severity, a
+  // ranking of sites — which is a different question from all three. Re-pointing the tab at one of
+  // them would have put the executive on a site-scoped screen and called it a portfolio.
+  //
+  // POSITION IS BEHAVIOUR: it sits after `tasks` and before `more`, which is what makes the bar read
+  // Home | Tasks | Safety | More. No other role matches it, so no other bar moves.
+  {
+    name: 'safety',
+    titleKey: 'nav.tabs.safety',
+    icon: 'health-and-safety',
+    roles: [CosRole.EXECUTIVE],
   },
   // Team directory — a tab for SITE_WORKER only (PO 2026-08-09). Every other role that can read it
   // still reaches it from the navigation drawer, which is why NavigationDrawer keeps its link for
@@ -205,7 +225,16 @@ export const ALL_TABS: TabConfig[] = [
     icon: 'payments',
     roles: [CosRole.PROJECT_MANAGER],
   },
-  { name: 'more', titleKey: 'nav.tabs.more', icon: 'more-horiz', roles: [CosRole.PROJECT_MANAGER] },
+  // EXECUTIVE joined `more` on 2026-09-05 (mockup 08_executive/04_more). The screen branches on role
+  // like `tasks` and `reports`: the manager gets its six tiles, the executive the seven its own
+  // drawing carries — and three of those seven are where /portfolio, /alerts and /reports go now
+  // that they are off the bar.
+  {
+    name: 'more',
+    titleKey: 'nav.tabs.more',
+    icon: 'more-horiz',
+    roles: [CosRole.PROJECT_MANAGER, CosRole.EXECUTIVE],
+  },
   // `dashboard` is now a tab for NO role, like `report`: its content IS the Home screen for these two
   // roles (mockup 06_project_manager/01_home draws the dashboard as the first tab), so a second tab
   // showing it would be the same page twice. Declared `href: null` in MobileNav, still pushable.
@@ -217,18 +246,23 @@ export const ALL_TABS: TabConfig[] = [
   // directory is now the pushed child behind More's "สรุปผลผู้รับเหมา" tile. Leaving this table means
   // `vendors` needs an explicit `href: null` in MobileNav and a breadcrumb — see routeRegistry.ts for
   // what happened the last time a route left ALL_TABS without both.
-  {
-    name: 'portfolio',
-    titleKey: 'nav.tabs.portfolio',
-    icon: 'pie-chart',
-    roles: [CosRole.EXECUTIVE],
-  },
-  {
-    name: 'alerts',
-    titleKey: 'nav.tabs.alerts',
-    icon: 'notification-important',
-    roles: [CosRole.EXECUTIVE],
-  },
+  // `portfolio` AND `alerts` LEFT THIS TABLE on 2026-09-05, and both were EXECUTIVE's alone, so both
+  // entries are gone rather than shortened. The bar became Home | Tasks | Safety | More
+  // (product-owner decision, ADR-098) and §20.7.1 + master §Phase 10 were amended in the same commit
+  // — this is the one role whose nav the spec DID enumerate, so the change is a spec change.
+  //
+  // NEITHER SCREEN IS LOST, and that is the whole condition of the swap:
+  //   /portfolio  DERIVED "Executive dashboard" in drawerLinks.ts — it was suppressed only BECAUSE
+  //               it was a tab, so it reappears in the drawer the moment it stops being one
+  //   /reports    DERIVED "Site reports", the same mechanism (EXECUTIVE left its `roles` below)
+  //   /alerts     was in NEITHER drawer table, so removing the tab would have left the role with no
+  //               route to it at all. It gained a NOT_DERIVED row in the same change — §6.4 governs
+  //               no module for a risk feed, so it cannot be derived honestly.
+  // All three are also tiles on the More screen, which is what the mockup draws.
+  //
+  // Anything that leaves ALL_TABS must ALSO leave TAB_ROUTES in routeRegistry.ts and gain an
+  // explicit `href: null` plus a breadcrumb — that is exactly what `dashboard` failed to do in
+  // 2026-08, and how a fifth tab shipped.
   // EXECUTIVE's bar is Home | Portfolio | Alerts | Reports, so `reports` sits after `alerts` here.
   // It used to sit six rows earlier, which made the role's bar read Home | Reports | Portfolio |
   // Alerts — the right four screens in the wrong order, disagreeing with master:3462, the only place
@@ -250,11 +284,15 @@ export const ALL_TABS: TabConfig[] = [
   // role — it was matched only because this table listed it — and Permits took the slot. The screen
   // is not lost: §6.4 grants the role R on "Site reports", so drawerLinks.ts derives /reports into
   // its drawer the moment it stops being a tab, exactly as /inspections does for SITE_ENGINEER.
+  // EXECUTIVE LEFT THIS ROW on 2026-09-05 (ADR-098) — the role's bar no longer carries Reports. The
+  // screen is not lost: `reports.tsx` still branches on role and renders <ExecReports /> for it,
+  // reached from the drawer (DERIVED "Site reports") and from a More tile. SITE_ENGINEER is
+  // unaffected, so `reports` stays in TAB_ROUTES and keeps its tab declaration.
   {
     name: 'reports',
     titleKey: 'nav.tabs.reports',
     icon: 'description',
-    roles: [CosRole.SITE_ENGINEER, CosRole.EXECUTIVE],
+    roles: [CosRole.SITE_ENGINEER],
   },
   { name: 'payments', titleKey: 'nav.tabs.payments', icon: 'payments', roles: [CosRole.FINANCE] },
   {

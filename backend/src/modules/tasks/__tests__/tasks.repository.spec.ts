@@ -215,4 +215,83 @@ describe('TasksRepository', () => {
 
     expect(await repo.findSchedulableTasks('proj-empty')).toEqual([]);
   });
+
+  // ── Schedule network (ADR-097) ──────────────────────────────────────────────
+  //
+  // These assert the CONTRACT of each method — what it returns, and that every statement is scoped
+  // to the request's tenant. The SQL text itself is proved by the integration run against a real
+  // database; a unit test with a mocked $queryRaw can only check the shape around it.
+
+  it('findScheduleTasks returns the rows as-is', async () => {
+    const rows = [
+      {
+        task_id: 'task-1',
+        task_name: 'Pour slab',
+        status: 'IN_PROGRESS',
+        work_type: 'STRUCTURE',
+        planned_start: new Date('2026-09-01'),
+        planned_end: new Date('2026-09-03'),
+      },
+    ];
+    mockPrisma.$queryRaw.mockResolvedValueOnce(rows);
+
+    expect(await repo.findScheduleTasks('proj-1')).toBe(rows);
+  });
+
+  it('findDependencies returns the rows as-is', async () => {
+    const rows = [{ dependency_id: 'dep-1', dependency_type: 'FS', lag_days: 0 }];
+    mockPrisma.$queryRaw.mockResolvedValueOnce(rows);
+
+    expect(await repo.findDependencies('proj-1')).toBe(rows);
+  });
+
+  it('findTaskProjects returns only the tasks the tenant can see', async () => {
+    // One of the two ids is absent — which is what RLS does to another tenant's task, and is why
+    // the service compares the returned count rather than trusting the input list.
+    mockPrisma.$queryRaw.mockResolvedValueOnce([{ task_id: 'task-1', project_id: 'proj-1' }]);
+
+    expect(await repo.findTaskProjects(['task-1', 'task-2'])).toEqual([
+      { task_id: 'task-1', project_id: 'proj-1' },
+    ]);
+  });
+
+  it('createDependency returns the inserted row', async () => {
+    const row = { dependency_id: 'dep-1', dependency_type: 'SS', lag_days: -2 };
+    mockPrisma.$queryRaw.mockResolvedValueOnce([row]);
+
+    expect(
+      await repo.createDependency({
+        project_id: 'proj-1',
+        predecessor_task_id: 'task-1',
+        successor_task_id: 'task-2',
+        dependency_type: 'SS',
+        lag_days: -2,
+      }),
+    ).toBe(row);
+  });
+
+  it('deleteDependency reports true when a row was removed', async () => {
+    mockPrisma.$queryRaw.mockResolvedValueOnce([{ dependency_id: 'dep-1' }]);
+
+    expect(await repo.deleteDependency('dep-1')).toBe(true);
+  });
+
+  it('deleteDependency reports false when the id matched nothing', async () => {
+    mockPrisma.$queryRaw.mockResolvedValueOnce([]);
+
+    expect(await repo.deleteDependency('dep-missing')).toBe(false);
+  });
+
+  it('portfolioTaskSummary returns the single counts row', async () => {
+    const row = {
+      overdue_count: 4,
+      due_this_week_count: 9,
+      blocked_count: 2,
+      open_count: 31,
+      project_count: 5,
+    };
+    mockPrisma.$queryRaw.mockResolvedValueOnce([row]);
+
+    expect(await repo.portfolioTaskSummary()).toBe(row);
+  });
 });
