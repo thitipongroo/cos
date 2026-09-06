@@ -142,5 +142,13 @@ override_*.tf
 #                  write. Committing one would arrive pre-approved in every clone and every CI
 #                  checkout, disarming the only human gate in the workflow for everybody, silently.
 #   impl-pending.md is one session's working plan, superseded by the next.
+#   impl-completed-*.md is the SAME artefact after the fact. One was committed on 2026-09-06 — a
+#                  verbatim copy of a pending plan, made to preserve the previous round's record
+#                  before the file was overwritten — and it turned CI's Lint job red with 20
+#                  MD013 line-length errors, because a session plan is written to be read in a
+#                  terminal, not to pass a document linter. The record it holds is not lost:
+#                  the decisions it lists are also in the ADRs, the screens README and the code
+#                  comments that cite them.
 .claude/impl-approved
 .claude/impl-pending.md
+.claude/impl-completed-*.md

@@ -149,7 +149,13 @@ async function main() {
     );
   }
 
-  console.log(`\nMirrored ${String(costs.length)} project cost rows into ClickHouse.`);
+  // `process.stdout.write`, like every other line this script prints. `console.log` is blocked
+  // by semgrep's `cos-no-console-log` (context.md §Never, QM-8), and the rule's exclusions cover
+  // the CLI idioms this script IS one of — `**/scripts/**`, `*.script.ts`, `*.config.*` — but not
+  // `prisma/*.mjs`. Writing to the stream directly is what the progress lines above already do,
+  // so this is the file agreeing with itself rather than an exception carved for it.
+  process.stdout.write(`\nMirrored ${String(costs.length)} project cost rows into ClickHouse.
+`);
   await pgClient.end();
   await ch.close();
 }

@@ -69,6 +69,15 @@ done < <(
     git diff --name-only --diff-filter=ACMR HEAD -- '*.md' \
       ':(exclude)context.md' ':(exclude)context/**' ':(exclude)docs/specifications/**' \
       ':(exclude)mockup/**' 2>/dev/null
+    # UNTRACKED FILES TOO, and this is why the gate exists at all. Neither `git diff` above
+    # reports a file git has never seen, so a BRAND NEW Markdown document was invisible here and
+    # was linted for the first time in CI — where it is already committed. That happened on
+    # 2026-09-06: a new file left this gate green and turned CI's Lint job red with 20 MD013
+    # errors. A new document is the likeliest one to be unlinted, so it is the one the local
+    # mirror must not skip. `--exclude-standard` honours .gitignore, so ignored plans stay out.
+    git ls-files --others --exclude-standard -- '*.md' \
+      ':(exclude)context.md' ':(exclude)context/**' ':(exclude)docs/specifications/**' \
+      ':(exclude)mockup/**' 2>/dev/null
   } | sort -u
 )
 
