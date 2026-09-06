@@ -1,0 +1,343 @@
+<!DOCTYPE html><html class="dark" lang="th" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+<title>Executive AI Reports - Construction OS</title>
+<!-- Tailwind CSS v3 with plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts: Inter Tight & Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;family=Noto+Sans+Thai:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<!-- Tailwind Configuration -->
+<script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Inter Tight"', '"Noto Sans Thai"', 'sans-serif'],
+          },
+          colors: {
+            infra: {
+              base: '#031427',
+              darker: '#020B16',
+              card: '#0b1c30',
+              cardHover: '#10243d',
+              border: '#1f344d',
+              borderMuted: '#16283d',
+            },
+            ai: {
+              cyan: '#06B6D4',
+              cyanLight: '#22D3EE',
+              cyanGlow: 'rgba(6, 182, 212, 0.15)',
+            },
+            status: {
+              secure: '#00C853',
+              monitor: '#F59E0B',
+              critical: '#EF4444',
+            }
+          }
+        }
+      }
+    }
+  </script>
+<!-- Component & Typography Styles -->
+<style data-purpose="typography">
+    body {
+      font-family: 'Inter Tight', 'Noto Sans Thai', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      background-color: #031427;
+      color: #F8FAFC;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .material-symbols-outlined.fill {
+      font-variation-settings: 'FILL' 1;
+    }
+  </style>
+<style data-purpose="custom-layout">
+    /* Custom scrollbars & subtle glowing effects */
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1f344d;
+      border-radius: 4px;
+    }
+    .ai-glow-card {
+      position: relative;
+      background: linear-gradient(180deg, rgba(6, 182, 212, 0.08) 0%, rgba(11, 28, 48, 0.95) 30%);
+      border-left: 3px solid #06B6D4;
+    }
+    .active-nav-indicator {
+      box-shadow: 0 0 16px rgba(6, 182, 212, 0.6);
+    }
+  </style>
+</head>
+<body class="bg-infra-base text-slate-100 flex justify-center selection:bg-cyan-500 selection:text-white">
+<!-- Mobile Viewport Shell (390px simulated standard iPhone canvas) -->
+<div class="w-full max-w-[390px] min-h-screen bg-[#031427] border-x border-[#16283d] flex flex-col relative pb-28 shadow-2xl">
+<!-- BEGIN: TopBar -->
+<header class="sticky top-0 z-30 bg-[#031427]/95 backdrop-blur-md px-4 py-3 border-b border-[#16283d] flex items-center justify-between">
+<!-- Left side: Back Button, Brand Icon & Name -->
+<div class="flex items-center gap-2.5">
+<button aria-label="Go Back" class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-300 hover:text-white active:bg-white/10 transition-colors" type="button">
+<span class="material-symbols-outlined text-[20px]">arrow_back</span>
+</button>
+<div class="flex items-center gap-2">
+<img alt="Construction OS Logo" class="w-6 h-6 object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1WpCU0vjtPZa-fAk-iB7r9LO1-40MZQNHKDMe9y3D6aOWq583of4ac-kMpLo9wm8QyLgqXcjkzYJXC8dDWsgfMCTpxjpp7kdnrXBbL1jjBhGYVKfKBhbMkcwzYlTYP8jX2Vllf5i5UXEFuj6LD9iqeb6UuuGmDUtv26ieOz9SR4QJazrhoTzYzIsqpNwTTYFoo3NSrf8rQqToK44tFPOOOhFc0Znvmhl2fC578QfMPnaQS85lBV_xxGqLFkc2FMQ5qmXCOYdspavA">
+<span class="font-bold tracking-wider text-sm text-slate-100 uppercase">CONSTRUCTION OS</span>
+</div>
+</div>
+<!-- Right side: Status and Profile Badge -->
+<div class="flex items-center gap-2">
+<div class="flex items-center gap-1.5 bg-[#081b2e] border border-[#1e344e] px-2.5 py-1 rounded-full shadow-inner">
+<span class="w-2 h-2 rounded-full bg-[#00C853] animate-pulse"></span>
+<span class="text-[11px] font-semibold tracking-wider text-slate-200">SYNCED</span>
+</div>
+<div class="w-7 h-7 rounded-full bg-[#10243d] border border-[#233d5b] flex items-center justify-center text-[11px] font-bold text-cyan-300 tracking-tight">
+          EX
+        </div>
+</div>
+</header>
+<!-- END: TopBar -->
+<!-- Main Scrollable Content Area -->
+<main class="flex-1 px-4 pt-3.5 space-y-4">
+<!-- BEGIN: ScreenHeading -->
+<section class="space-y-1" data-purpose="screen-title">
+<div class="flex items-center justify-between">
+<h1 class="text-[19px] font-bold text-white tracking-tight leading-tight">Executive Reports</h1>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-800/50 text-cyan-300 text-[10px] font-semibold tracking-wide">
+<span class="material-symbols-outlined text-[12px]">auto_awesome</span> W47-LIVE
+          </span>
+</div>
+<p class="text-xs text-slate-400 leading-relaxed">สรุปภาพรวมโครงการเชิงกลยุทธ์ ประจำสัปดาห์
+        </p>
+</section>
+<!-- END: ScreenHeading -->
+<!-- BEGIN: ControlBar -->
+<section class="flex items-center justify-between gap-2 pt-1" data-purpose="controls-bar">
+<!-- Filter Tabs -->
+<div class="inline-flex p-0.5 bg-[#08182b] border border-[#182c44] rounded-lg text-xs" role="tablist">
+<button class="px-3 py-1.5 font-medium rounded-md bg-cyan-600 text-white shadow-sm transition-all" type="button">ทั้งหมด</button>
+<button class="px-3 py-1.5 font-medium text-slate-400 hover:text-slate-200 transition-all" type="button">วิกฤต (1)</button>
+<button class="px-3 py-1.5 font-medium text-slate-400 hover:text-slate-200 transition-all" type="button">ตามแผน</button>
+</div>
+<!-- Re-analyze Action Button -->
+<button class="h-9 px-3 rounded-lg bg-[#0d2238] border border-cyan-500/30 hover:border-cyan-400 text-cyan-300 hover:text-cyan-200 text-xs font-medium flex items-center gap-1.5 shadow-[0_0_12px_rgba(6,182,212,0.12)] active:scale-95 transition-all" type="button">
+<span class="material-symbols-outlined text-sm text-cyan-400 animate-spin-reverse">sync</span>
+<span class="">วิเคราะห์ใหม่</span>
+</button>
+</section>
+<!-- END: ControlBar -->
+<!-- BEGIN: TopAIBriefCard -->
+<section class="ai-glow-card rounded-xl p-4 border border-[#1f3854] shadow-lg space-y-3.5" data-purpose="ai-intelligence-brief">
+<!-- Card Header with Hexagon Watermark Aesthetic -->
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-md bg-cyan-950/80 border border-cyan-500/40 flex items-center justify-center text-cyan-400">
+<span class="material-symbols-outlined text-[16px]">psychology</span>
+</div>
+<div>
+<span class="text-[11px] font-semibold uppercase tracking-wider text-cyan-400 block">AI Strategic Brief</span>
+<h2 class="text-[14px] font-semibold text-slate-100 leading-snug">สรุปสถานะภาพรวม</h2>
+</div>
+</div>
+<span class="text-[11px] font-mono text-cyan-300/80">7d Summary</span>
+</div>
+<!-- Synthesized Insight Body -->
+<p class="text-xs text-slate-300 leading-relaxed">
+          ภาพรวมโครงการทั้งหมด 14 โครงการ อยู่ในเกณฑ์ปกติ <strong class="text-white font-semibold">11 โครงการ</strong>, มีความเสี่ยงด้านเวลา <strong class="text-amber-300 font-semibold">2 โครงการ</strong> และงบประมาณบานปลาย <strong class="text-rose-400 font-semibold">1 โครงการ</strong>
+</p>
+<!-- Key Strategic Metrics Pill Grid -->
+<div class="grid grid-cols-3 gap-2 pt-1 border-t border-[#182c44]">
+<div class="bg-[#071729]/80 p-2 rounded-lg border border-[#162b42]">
+<span class="text-[10px] text-slate-400 block leading-tight">ประหยัดต้นทุนสะสม</span>
+<span class="text-sm font-bold text-cyan-400 tracking-tight">฿14.2M</span>
+</div>
+<div class="bg-[#071729]/80 p-2 rounded-lg border border-[#162b42]">
+<span class="text-[10px] text-slate-400 block leading-tight">คาดการณ์ส่งมอบ</span>
+<span class="text-sm font-bold text-emerald-400 tracking-tight">96.4%</span>
+</div>
+<div class="bg-[#071729]/80 p-2 rounded-lg border border-[#162b42]">
+<span class="text-[10px] text-slate-400 block leading-tight">ดัชนีความปลอดภัย</span>
+<span class="text-sm font-bold text-slate-100 tracking-tight">98%</span>
+</div>
+</div>
+<!-- AI Transparency & Source Metadata -->
+<div class="flex flex-wrap items-center gap-1.5 text-[10px] font-mono text-cyan-300/90 pt-1">
+<span class="inline-flex items-center gap-1 bg-[#062035] px-2 py-0.5 rounded border border-cyan-700/40">
+<span class="material-symbols-outlined text-[11px] text-cyan-400">verified</span>
+            CONF: 98%
+          </span>
+<span class="inline-flex items-center gap-1 bg-[#062035] px-2 py-0.5 rounded border border-cyan-700/40">
+<span class="material-symbols-outlined text-[11px] text-cyan-400">database</span>
+            SOURCES: 14/14 SITES
+          </span>
+<span class="inline-flex items-center gap-1 bg-[#062035] px-2 py-0.5 rounded border border-cyan-700/40">
+<span class="material-symbols-outlined text-[11px] text-cyan-400">layers</span>
+            MODEL: LAYER-A/B
+          </span>
+</div>
+<!-- Primary CTA: Export Portfolio PDF (Height 52px, prominent touch target) -->
+<button class="w-full h-[52px] rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-medium text-sm flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(6,182,212,0.25)] active:scale-[0.98] transition-all" type="button">
+<span class="material-symbols-outlined text-[20px]">picture_as_pdf</span>
+<span class="">Export Portfolio PDF</span>
+</button>
+</section>
+<!-- END: TopAIBriefCard -->
+<!-- BEGIN: ProjectSummariesSection -->
+<section class="space-y-3 pt-2" data-purpose="project-summaries-list">
+<div class="flex items-center justify-between px-0.5">
+<h3 class="text-xs font-bold tracking-wider text-slate-300 uppercase">PROJECT SUMMARIES</h3>
+<span class="text-[11px] text-slate-400">เรียงตามระดับความเสี่ยง</span>
+</div>
+<!-- Project 1: Skyline Tower A (Green / SECURE) -->
+<article class="bg-[#0b1c30] rounded-xl p-3.5 border border-[#1c334d] border-l-4 border-l-[#00C853] space-y-2.5 shadow-sm hover:border-[#274466] transition-colors">
+<div class="flex items-center justify-between">
+<div>
+<h4 class="text-sm font-semibold text-white leading-snug">Skyline Tower A (Mixed-Use)</h4>
+<p class="text-[11px] text-slate-400">Contract #CT-8832 • Bangkok CBD</p>
+</div>
+<span class="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider bg-emerald-950/80 text-[#00C853] border border-emerald-600/40">
+              SECURE
+            </span>
+</div>
+<p class="text-xs text-slate-300 leading-relaxed">
+            ความคืบหน้าโครงสร้างชั้น 24 เป็นไปตามกำหนดเวลา การเบิกจ่ายสอดคล้องกับ BOQ ไม่มีอุบัติเหตุระดับวิกฤต
+          </p>
+<div class="flex items-center justify-between pt-2 border-t border-[#162b42] text-[11px]">
+<div class="flex items-center gap-3 text-slate-300">
+<span class="text-emerald-400 font-medium">+1.2% Ahead</span>
+<span class="text-slate-500">•</span>
+<span class="">Budget: <strong class="text-white font-semibold">92% Utilized</strong></span>
+</div>
+<a class="inline-flex items-center gap-0.5 text-cyan-400 font-medium hover:underline text-xs" href="#report-skyline">
+              ดูรายงานฉบับเต็ม <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+</a>
+</div>
+</article>
+<!-- Project 2: Metro Expressway Ext. Phase 2 (Amber / MONITOR) -->
+<article class="bg-[#0b1c30] rounded-xl p-3.5 border border-[#1c334d] border-l-4 border-l-[#F59E0B] space-y-2.5 shadow-sm hover:border-[#274466] transition-colors">
+<div class="flex items-center justify-between">
+<div>
+<h4 class="text-sm font-semibold text-white leading-snug">Metro Expressway Ext. Phase 2</h4>
+<p class="text-[11px] text-slate-400">Contract #EX-4019 • Section West</p>
+</div>
+<span class="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider bg-amber-950/80 text-[#F59E0B] border border-amber-600/40">
+              MONITOR
+            </span>
+</div>
+<p class="text-xs text-slate-300 leading-relaxed">
+            พบความเสี่ยงงานคานสะพาน P-14 ล่าช้า 3 วันเนื่องจากสภาพอากาศ AI แนะนำปรับกำลังพลกะกลางคืนเพื่อชดเชย
+          </p>
+<div class="flex items-center justify-between pt-2 border-t border-[#162b42] text-[11px]">
+<div class="flex items-center gap-3 text-slate-300">
+<span class="text-amber-400 font-medium">-2.8% Delay Risk</span>
+<span class="text-slate-500">•</span>
+<span class="text-cyan-300">Conf: 94%</span>
+</div>
+<a class="inline-flex items-center gap-0.5 text-cyan-400 font-medium hover:underline text-xs" href="#report-metro">
+              ดูรายงานฉบับเต็ม <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+</a>
+</div>
+</article>
+<!-- Project 3: Oceanfront Commercial Complex (Red / CRITICAL) -->
+<article class="bg-[#0b1c30] rounded-xl p-3.5 border border-[#1c334d] border-l-4 border-l-[#EF4444] space-y-2.5 shadow-sm hover:border-[#274466] transition-colors">
+<div class="flex items-center justify-between">
+<div>
+<h4 class="text-sm font-semibold text-white leading-snug">Oceanfront Commercial Complex</h4>
+<p class="text-[11px] text-slate-400">Contract #OF-1102 • Eastern Hub</p>
+</div>
+<span class="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider bg-rose-950/80 text-[#EF4444] border border-rose-600/40">
+              CRITICAL
+            </span>
+</div>
+<p class="text-xs text-slate-300 leading-relaxed">
+            การเบิกงวดงานเหล็กเสริมเกินงบประมาณย่อย 8.4% มีข้อพิพาทใบวางบิล #INV-9921 กำลังอยู่ระหว่างตรวจสอบ
+          </p>
+<div class="bg-rose-950/30 border border-rose-900/50 rounded-lg p-2 flex items-start gap-1.5">
+<span class="material-symbols-outlined text-rose-400 text-[14px] shrink-0 mt-0.5">warning</span>
+<span class="text-[11px] text-rose-200">
+<strong>AI Flag:</strong> แนะนำชะลอการอนุมัติเบิกจ่ายงวดถัดไป (Recommends hold on disbursement)
+            </span>
+</div>
+<div class="flex items-center justify-between pt-1 border-t border-[#162b42] text-[11px]">
+<div class="flex items-center gap-3 text-slate-300">
+<span class="text-rose-400 font-medium">+8.4% Budget Gap</span>
+</div>
+<a class="inline-flex items-center gap-0.5 text-cyan-400 font-medium hover:underline text-xs" href="#report-oceanfront">
+              ดูรายงานฉบับเต็ม <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+</a>
+</div>
+</article>
+</section>
+<!-- END: ProjectSummariesSection -->
+<!-- BEGIN: StrategicRecommendationsCard -->
+<section class="bg-[#091a2d] rounded-xl p-4 border border-cyan-500/40 space-y-3.5 shadow-md relative overflow-hidden" data-purpose="ai-strategic-forecast">
+<!-- Subtle Glow backdrop -->
+<div class="absolute -right-8 -top-8 w-24 h-24 bg-cyan-500/10 rounded-full blur-xl pointer-events-none"></div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-cyan-400 text-lg">campaign</span>
+<h3 class="text-sm font-semibold text-white">Strategic Recommendations</h3>
+</div>
+<ul class="space-y-2.5 text-xs text-slate-200">
+<li class="flex items-start gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0 mt-1.5"></span>
+<span class="">อนุมัติการเร่งงาน Metro Expressway ภายใน 48 ชม. เพื่อป้องกันการชะลอตัวช่วงฤดูมรสุม</span>
+</li>
+<li class="flex items-start gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0 mt-1.5"></span>
+<span class="">ตรวจสอบ BOQ โครงการ Oceanfront ร่วมกับ Procurement Manager ก่อนลงนามงวดงาน #12</span>
+</li>
+</ul>
+<!-- Human-in-the-loop acknowledgement CTA -->
+<div class="pt-1">
+<button class="w-full h-11 rounded-lg bg-[#0e2742] hover:bg-[#133152] border border-cyan-500/50 text-cyan-300 font-medium text-xs flex items-center justify-center gap-2 transition-all active:scale-[0.98]" type="button">
+<span class="material-symbols-outlined text-sm">fact_check</span>
+<span class="">Acknowledge &amp; Direct</span>
+</button>
+</div>
+</section>
+<!-- END: StrategicRecommendationsCard -->
+</main>
+<!-- BEGIN: BottomNavigation -->
+<!-- Executive Navigation Bar strictly matched with SCREEN_26 aesthetic -->
+<nav class="fixed bottom-0 max-w-[390px] w-full bg-[#031427]/95 backdrop-blur-md border-t border-[#182a3f] px-3 py-2 z-40 flex items-center justify-around shadow-2xl">
+<!-- Nav Item: Tasks -->
+<a class="flex flex-col items-center justify-center w-14 py-1 text-slate-400 hover:text-slate-200 transition-colors" href="#tasks">
+<span class="material-symbols-outlined text-[20px]">assignment</span>
+<span class="text-[10px] font-medium mt-0.5">Tasks</span>
+</a>
+<!-- Nav Item: Home -->
+<a class="flex flex-col items-center justify-center w-14 py-1 text-slate-400 hover:text-slate-200 transition-colors" href="#home">
+<span class="material-symbols-outlined text-[20px]">home</span>
+<span class="text-[10px] font-medium mt-0.5">Home</span>
+</a>
+<!-- Nav Item: Safety -->
+<a class="flex flex-col items-center justify-center w-14 py-1 text-slate-400 hover:text-slate-200 transition-colors" href="#safety">
+<span class="material-symbols-outlined text-[20px]">health_and_safety</span>
+<span class="text-[10px] font-medium mt-0.5">Portfolio</span>
+</a>
+<!-- Nav Item: Reports (ACTIVE with bright cyan pill highlight matching Screen 26 style) -->
+<a class="flex flex-col items-center justify-center px-4 py-1.5 rounded-xl bg-cyan-500 text-[#02101e] font-semibold active-nav-indicator transition-all" href="#reports">
+<span class="material-symbols-outlined text-[20px] fill text-[#02101e]">summarize</span>
+<span class="text-[10px] font-bold mt-0.5">Reports</span>
+</a>
+<!-- Nav Item: More -->
+
+</nav>
+<!-- END: BottomNavigation -->
+</div>
+
+
+
+
+</body></html>
