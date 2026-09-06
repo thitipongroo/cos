@@ -32,7 +32,8 @@ import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { PortfolioInsight } from '../../components/PortfolioInsight';
 import { getCompliance, listIncidents, type IncidentRow } from '../../api/safety';
 import { getMyProjects } from '../../api/projects';
-import { useT } from '../../i18n';
+import { useI18n, useT } from '../../i18n';
+import { shortMonthLabels } from '../../i18n/translate';
 import { countSettled, loadProgress } from '../../lib/loadingState';
 import {
   COMPLIANCE,
@@ -57,9 +58,15 @@ const MONITOR_AT_OR_BELOW = 90;
 
 export default function SafetyScreen(): React.JSX.Element {
   const t = useT();
+  const { locale } = useI18n();
   const p = usePalette();
   const styles = useMemo(() => makeStyles(p), [p]);
   const router = useRouter();
+  // One clock per render, so the six labels cannot straddle a month boundary mid-paint.
+  const monthLabels = useMemo(
+    () => shortMonthLabels(new Date(), COMPLIANCE_TREND.value.length, locale),
+    [locale],
+  );
   // The loader's own palette must follow the user's theme, or a light skeleton flashes on a dark
   // page before the real content arrives.
   const loaderTheme = useIsDark() ? 'dark' : 'light';
@@ -67,6 +74,10 @@ export default function SafetyScreen(): React.JSX.Element {
   const [incidents, setIncidents] = useState<IncidentRow[]>([]);
   const [openIncidents, setOpenIncidents] = useState<number | null>(null);
   const [ranked, setRanked] = useState<RankedProject[]>([]);
+  // How many projects the executive actually has. NOT `ranked.length`: the ranking is capped at the
+  // number of drawn scores (PROJECT_SAFETY_SCORES), so it under-reports a portfolio. The drawing's
+  // "View All 14 Projects" means the whole list, and this is the real figure behind that word.
+  const [projectCount, setProjectCount] = useState<number | null>(null);
   const [insightProject, setInsightProject] = useState('');
   const [insightProjectName, setInsightProjectName] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(true);
@@ -110,6 +121,7 @@ export default function SafetyScreen(): React.JSX.Element {
         if (cancelled) return;
         setInsightProject(mine[0]?.project_id ?? '');
         setInsightProjectName(mine[0]?.project_name);
+        setProjectCount(mine.length);
         setRanked(
           mine.slice(0, PROJECT_SAFETY_SCORES.value.length).map((project, i) => ({
             projectId: project.project_id,
@@ -171,6 +183,8 @@ export default function SafetyScreen(): React.JSX.Element {
         projectId={insightProject}
         projectLabel={insightProjectName}
         titleKey="exec.safety.intelligence"
+        icon="psychology"
+        autoRun
       />
 
       <LoadingBoundary
@@ -181,7 +195,10 @@ export default function SafetyScreen(): React.JSX.Element {
       >
         <View style={styles.stack}>
           {/* Compliance headline — a mockup figure (ADR-099), labelled as one. */}
-          <View testID="safety-compliance" style={[styles.card, styles.complianceCard]}>
+          <View
+            testID="safety-compliance"
+            style={[styles.card, styles.complianceCard, styles.complianceStrip]}
+          >
             <View style={styles.complianceText}>
               <Text style={styles.eyebrow}>{t('exec.safety.compliance')}</Text>
               <Text style={styles.hero}>{`${COMPLIANCE.value.percent}%`}</Text>
@@ -192,20 +209,49 @@ export default function SafetyScreen(): React.JSX.Element {
                 </Text>
               </View>
             </View>
-            <ComplianceRing
-              palette={p}
-              percent={COMPLIANCE.value.percent}
-              grade={COMPLIANCE.value.grade}
-            />
+            <View style={styles.complianceRight}>
+              <ComplianceRing
+                palette={p}
+                percent={COMPLIANCE.value.percent}
+                grade={COMPLIANCE.value.grade}
+              />
+              {/* The drawing's trailing chevron. DECORATIVE — it names no destination and this app
+                  has no per-portfolio compliance screen to open, so it is not a control and it is
+                  kept out of the accessibility tree rather than announced as one. Same treatment the
+                  Home KPI tiles took, so the role's screens agree with each other. */}
+              <MaterialIcons
+                name="chevron-right"
+                size={20}
+                color={p.muted}
+                accessibilityElementsHidden
+                importantForAccessibility="no"
+              />
+            </View>
           </View>
 
           <View style={styles.tileRow}>
             {/* Incidents — REAL. */}
             <View testID="safety-incidents" style={[styles.card, styles.tile, styles.tileWarning]}>
-              <MaterialIcons name="warning" size={20} color={p.warning} />
-              <Text style={styles.tileValue}>
-                {incidentCount === null ? '—' : String(incidentCount).padStart(2, '0')}
-              </Text>
+              {/* THE FIGURE SITS BESIDE ITS GLYPH (PO 2026-09-07), both at the leading edge, with
+                  only the chevron held against the trailing one — the two tiles then read as a
+                  subject and its number rather than as a number floating opposite an icon.
+                  A PLAIN COUNT: no `padStart(2, '0')`. "05" was the drawing's typography and reads
+                  as a code or a rank; the em dash stays, because "we could not ask" is not zero. */}
+              <View style={styles.tileHead}>
+                <View style={styles.tileHeadValue}>
+                  <MaterialIcons name="warning" size={20} color={p.warning} />
+                  <Text style={styles.tileValue}>
+                    {incidentCount === null ? '—' : String(incidentCount)}
+                  </Text>
+                </View>
+                <MaterialIcons
+                  name="chevron-right"
+                  size={18}
+                  color={p.muted}
+                  accessibilityElementsHidden
+                  importantForAccessibility="no"
+                />
+              </View>
               <Text style={styles.eyebrow}>{t('exec.safety.activeIncidents')}</Text>
               <Text style={styles.tileNote}>
                 {t('exec.safety.severitySplit', {
@@ -217,8 +263,19 @@ export default function SafetyScreen(): React.JSX.Element {
 
             {/* Safe man-hours — a mockup figure. */}
             <View testID="safety-man-hours" style={[styles.card, styles.tile, styles.tilePrimary]}>
-              <MaterialIcons name="timer" size={20} color={p.primary} />
-              <Text style={styles.tileValue}>{SAFE_MAN_HOURS.value}</Text>
+              <View style={styles.tileHead}>
+                <View style={styles.tileHeadValue}>
+                  <MaterialIcons name="timer" size={20} color={p.primary} />
+                  <Text style={styles.tileValue}>{SAFE_MAN_HOURS.value}</Text>
+                </View>
+                <MaterialIcons
+                  name="chevron-right"
+                  size={18}
+                  color={p.muted}
+                  accessibilityElementsHidden
+                  importantForAccessibility="no"
+                />
+              </View>
               <Text style={styles.eyebrow}>{t('exec.safety.safeManHours')}</Text>
               <Text style={styles.tileNoteSuccess}>{t('exec.safety.ytd')}</Text>
             </View>
@@ -227,22 +284,64 @@ export default function SafetyScreen(): React.JSX.Element {
           {/* Six-month trend — mockup figures, drawn with react-native-svg's sibling primitives
               (plain Views here: six bars need no SVG, and §32.7 asks for simplified charts). */}
           <View testID="safety-trend" style={styles.card}>
-            <Text style={styles.sectionLabel}>{t('exec.safety.trend')}</Text>
-            <View style={styles.chart}>
-              {COMPLIANCE_TREND.value.map((height, i) => {
-                const isLatest = i === COMPLIANCE_TREND.value.length - 1;
-                return (
-                  <View
-                    key={`bar-${String(i)}`}
-                    testID={`safety-trend-bar-${String(i)}`}
-                    style={[
-                      styles.bar,
-                      { height: `${height}%` },
-                      isLatest ? styles.barLatest : null,
-                    ]}
-                  />
-                );
-              })}
+            <View style={styles.trendHead}>
+              <Text style={styles.sectionLabelFlat}>{t('exec.safety.trend')}</Text>
+              {/* The drawing's overflow glyph. Decorative: it opens no menu, and this screen has no
+                  chart options to offer. */}
+              <MaterialIcons
+                name="more-vert"
+                size={18}
+                color={p.muted}
+                accessibilityElementsHidden
+                importantForAccessibility="no"
+              />
+            </View>
+            <View style={styles.chartFrame}>
+              {/* The drawing's three faint rules behind the bars. */}
+              <View style={styles.gridLines} pointerEvents="none">
+                {[0, 1, 2].map((line) => (
+                  <View key={`grid-${String(line)}`} style={styles.gridLine} />
+                ))}
+              </View>
+              <View style={styles.chart}>
+                {COMPLIANCE_TREND.value.map((height, i) => {
+                  const isLatest = i === COMPLIANCE_TREND.value.length - 1;
+                  return (
+                    <View key={`bar-${String(i)}`} style={styles.barColumn}>
+                      {/* The drawing labels the newest bar with its own value. */}
+                      {isLatest ? (
+                        <Text testID="safety-trend-latest" style={styles.barValue}>
+                          {`${height}%`}
+                        </Text>
+                      ) : null}
+                      <View
+                        testID={`safety-trend-bar-${String(i)}`}
+                        style={[
+                          styles.bar,
+                          { height: `${height}%` },
+                          isLatest ? styles.barLatest : null,
+                        ]}
+                      />
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+            {/* The month axis is REAL while the bars above it are not — see lib/mockupFigures.ts.
+                Computed from today through `Intl`, so it stays correct as months pass and reads in
+                the user's own locale (QM-3). */}
+            <View testID="safety-trend-axis" style={styles.axis}>
+              {monthLabels.map((label, i) => (
+                <Text
+                  key={`month-${String(i)}`}
+                  style={[
+                    styles.axisLabel,
+                    i === monthLabels.length - 1 ? styles.axisLabelLatest : null,
+                  ]}
+                >
+                  {label}
+                </Text>
+              ))}
             </View>
           </View>
 
@@ -269,11 +368,30 @@ export default function SafetyScreen(): React.JSX.Element {
                     </Text>
                   </View>
                 </View>
-                <Text
-                  style={[styles.rankBadge, secure ? styles.rankBadgeOk : styles.rankBadgeWatch]}
-                >
-                  {t(secure ? 'exec.safety.secure' : 'exec.safety.monitor')}
-                </Text>
+                <View style={styles.rankRight}>
+                  {/* The drawing's bordered pill — a 1px edge and a 10% fill in the status colour,
+                      rather than coloured text on its own. Radius stays radius.xl: every badge in
+                      this app takes it (.claude/rules/design-tokens.md). */}
+                  <View
+                    style={[styles.rankBadge, secure ? styles.rankBadgeOk : styles.rankBadgeWatch]}
+                  >
+                    <Text
+                      style={[
+                        styles.rankBadgeText,
+                        secure ? styles.rankBadgeTextOk : styles.rankBadgeTextWatch,
+                      ]}
+                    >
+                      {t(secure ? 'exec.safety.secure' : 'exec.safety.monitor')}
+                    </Text>
+                  </View>
+                  <MaterialIcons
+                    name="chevron-right"
+                    size={20}
+                    color={p.muted}
+                    accessibilityElementsHidden
+                    importantForAccessibility="no"
+                  />
+                </View>
               </View>
             );
           })}
@@ -285,7 +403,11 @@ export default function SafetyScreen(): React.JSX.Element {
             onPress={() => router.push('/portfolio')}
             style={styles.viewAll}
           >
-            <Text style={styles.viewAllText}>{t('exec.safety.viewAll')}</Text>
+            <Text style={styles.viewAllText}>
+              {projectCount === null
+                ? t('exec.safety.viewAll')
+                : t('exec.safety.viewAllCount', { count: projectCount })}
+            </Text>
           </Pressable>
         </View>
       </LoadingBoundary>
@@ -369,6 +491,9 @@ const makeStyles = (p: Palette) =>
     },
 
     complianceCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    // The drawing's 4px success rule down the leading edge of the headline card.
+    complianceStrip: { borderLeftWidth: 4, borderLeftColor: p.success },
+    complianceRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
     complianceText: { gap: spacing.xs / 2 },
     hero: {
       fontSize: typography.hero.fontSize,
@@ -400,6 +525,15 @@ const makeStyles = (p: Palette) =>
 
     tileRow: { flexDirection: 'row', gap: spacing.sm },
     tile: { flex: 1, gap: spacing.xs / 2 },
+    tileHead: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: spacing.xs / 2,
+    },
+    // Glyph then figure, sharing the leading edge; the row's `space-between` puts the chevron alone
+    // on the trailing one.
+    tileHeadValue: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flex: 1 },
     tileWarning: { borderLeftWidth: 4, borderLeftColor: p.warning },
     tilePrimary: { borderLeftWidth: 4, borderLeftColor: p.primary },
     tileValue: {
@@ -418,15 +552,55 @@ const makeStyles = (p: Palette) =>
       color: p.success,
     },
 
+    trendHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    // The section label inside a card heads that card, so it takes no extra top margin here — the
+    // shared `sectionLabel` carries one for the labels that head a run of cards.
+    sectionLabelFlat: {
+      fontSize: typography.label.fontSize,
+      fontFamily: fontFamily.semibold,
+      color: p.text,
+      textTransform: 'uppercase',
+      letterSpacing: 0.8,
+    },
+    chartFrame: { height: 116, marginTop: spacing.sm },
+    gridLines: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      justifyContent: 'space-between',
+    },
+    gridLine: { height: 1, backgroundColor: p.border, opacity: 0.4 },
     chart: {
+      flex: 1,
       flexDirection: 'row',
       alignItems: 'flex-end',
       gap: spacing.xs,
-      height: 96,
-      marginTop: spacing.sm,
     },
-    bar: { flex: 1, backgroundColor: p.border, borderTopLeftRadius: 2, borderTopRightRadius: 2 },
+    barColumn: { flex: 1, alignItems: 'center', justifyContent: 'flex-end' },
+    barValue: {
+      fontSize: 10,
+      fontFamily: fontFamily.semibold,
+      color: p.accent,
+      marginBottom: 2,
+    },
+    bar: {
+      alignSelf: 'stretch',
+      backgroundColor: p.border,
+      borderTopLeftRadius: 2,
+      borderTopRightRadius: 2,
+    },
     barLatest: { backgroundColor: p.accent },
+    axis: { flexDirection: 'row', gap: spacing.xs, marginTop: spacing.xs },
+    axisLabel: {
+      flex: 1,
+      textAlign: 'center',
+      fontSize: 10,
+      fontFamily: fontFamily.regular,
+      color: p.muted,
+    },
+    axisLabelLatest: { color: p.accent, fontFamily: fontFamily.semibold },
 
     rankRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     rankOk: { borderLeftWidth: 4, borderLeftColor: p.success },
@@ -444,16 +618,22 @@ const makeStyles = (p: Palette) =>
       color: p.muted,
       marginRight: spacing.xs,
     },
+    rankRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
     rankBadge: {
-      fontSize: typography.label.fontSize,
-      fontFamily: fontFamily.semibold,
       paddingHorizontal: spacing.xs,
       paddingVertical: 2,
       borderRadius: radius.xl,
-      overflow: 'hidden',
+      borderWidth: 1,
     },
-    rankBadgeOk: { color: p.success },
-    rankBadgeWatch: { color: p.warning },
+    rankBadgeOk: { borderColor: `${p.success}33`, backgroundColor: `${p.success}1A` },
+    rankBadgeWatch: { borderColor: `${p.warning}33`, backgroundColor: `${p.warning}1A` },
+    rankBadgeText: {
+      fontSize: typography.label.fontSize,
+      fontFamily: fontFamily.semibold,
+      letterSpacing: 0.6,
+    },
+    rankBadgeTextOk: { color: p.success },
+    rankBadgeTextWatch: { color: p.warning },
 
     viewAll: {
       minHeight: touchTarget.secondaryButton,

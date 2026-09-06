@@ -71,13 +71,29 @@ export const COMPLIANCE = figure(
   'a compliance score. `ComplianceSummary` is four counts; no formula for a percentage is specified',
 );
 
-/** "Safe Man-Hours 1.2M", YTD. */
+/**
+ * "Safe Man-Hours 1.2 M", YTD.
+ *
+ * SPACED, where the drawing writes `1.2M` closed up. That is the project's own standard for a figure
+ * beside its magnitude letter — `฿ 805 M`, not `฿805M` (PO decision 2026-08-10, recorded on
+ * `lib/compactMoney.ts`): digits and a magnitude letter jammed together read as one token, and
+ * spaced the eye takes the amount in one jump. Applied here on 2026-09-07 so the two magnitudes on
+ * this role's screens are written the same way.
+ */
 export const SAFE_MAN_HOURS = figure(
-  '1.2M',
+  '1.2 M',
   'hours since the last lost-time injury — attendance has hours_worked, but no column marks an LTI',
 );
 
-/** The six-month compliance trend, as bar heights in percent. Follows the missing score above. */
+/**
+ * The six-month compliance trend, as bar heights in percent. Follows the missing score above.
+ *
+ * ONLY THE HEIGHTS ARE DRAWN. The month axis beneath them on the Safety screen is computed from the
+ * current date through `Intl` (`i18n/translate.ts` `shortMonthLabels`), because the drawing's own
+ * labels read Jun–Nov and would be visibly wrong beside any other clock. That split is deliberate
+ * and is stated on the screen's own comment too: a fabricated axis is harder to spot than a
+ * fabricated bar, because it looks like a date.
+ */
 export const COMPLIANCE_TREND = figure(
   [85, 70, 65, 80, 88, 92],
   'the compliance score above, kept as a monthly series',

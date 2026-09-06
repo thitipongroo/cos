@@ -25,7 +25,13 @@ jest.mock('../../../api/projects', () => ({
   refreshProjectsCache: jest.fn(async () => undefined),
   getMyProjects: jest.fn(),
 }));
-jest.mock('../../PortfolioInsight', () => ({ PortfolioInsight: () => null }));
+// The panel itself has its own spec; here it is stubbed down to the ONE thing this screen puts
+// inside it — the `footer` slot, which carries the drawing's Mitigation and Dismiss buttons. A stub
+// returning null would have hidden them, and did, until the buttons moved into the card on
+// 2026-09-05.
+jest.mock('../../PortfolioInsight', () => ({
+  PortfolioInsight: ({ footer }: { footer?: React.ReactNode }) => footer ?? null,
+}));
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 const client = require('../../../api/client') as { get: jest.Mock };
@@ -131,15 +137,58 @@ describe('ExecHome', () => {
   it('sums the portfolio budget and spend from the analytics rows', async () => {
     const { getByTestId } = await renderScreen();
     // 1000 + 1000 + 1000 budget against 400 + 900 + 1200 actual → 2500 spent of 3000, 16.7% left.
+    // These totals are UNDER a million, which is the un-abbreviated half of the product owner's
+    // rule: below ฿1,000,000 the hero prints the full grouped amount, cents and all.
     await waitFor(() => expect(getByTestId('kpi-budget')).toHaveTextContent(/3,000/));
     expect(getByTestId('kpi-budget')).toHaveTextContent(/2,500/);
     expect(getByTestId('kpi-budget')).toHaveTextContent(/16\.7/);
   });
 
+  it('shortens the hero figures once the portfolio passes a million', async () => {
+    // The other half of the same rule. ฿1,213,000,000 against ฿929,263,377 — the seeded tenant's
+    // real totals — must read as a magnitude, not as fifteen digits in a 28px tile.
+    //
+    // BOTH IN MILLIONS (PO 2026-09-07). The budget would otherwise promote to `฿ 1.21 B` beside an
+    // actual in `M`, and two units in one card cannot be compared at a glance.
+    client.get.mockResolvedValue([execRow('p-1', '1213000000.0000', '929263377.0000', 76, 0)]);
+    const { getByTestId } = await renderScreen();
+    await waitFor(() => expect(getByTestId('kpi-budget')).toHaveTextContent(/1,213 M/));
+    expect(getByTestId('kpi-budget')).toHaveTextContent(/929\.26 M/);
+    // Neither the full grouped form nor a billion — a card showing both would show two figures.
+    expect(getByTestId('kpi-budget')).not.toHaveTextContent(/1,213,000,000/);
+    expect(getByTestId('kpi-budget')).not.toHaveTextContent(/B/);
+  });
+
+  it('keeps the exact amount at one million minus a satang', async () => {
+    // The boundary the product owner set, asserted on the side that must NOT abbreviate.
+    client.get.mockResolvedValue([execRow('p-1', '999999.9900', '100000.0000', 10, 0)]);
+    const { getByTestId } = await renderScreen();
+    await waitFor(() => expect(getByTestId('kpi-budget')).toHaveTextContent(/999,999\.99/));
+  });
+
+  it('marks both KPI tiles and every project card as leading somewhere', async () => {
+    // The drawing puts a trailing mark on the two KPI tiles and a chevron on each project card.
+    // Asserted through the icon stubs' testIDs, because a glyph has no text to match on.
+    const { getByTestId, getAllByTestId } = await renderScreen();
+    await waitFor(() => expect(getByTestId('kpi-active-projects')).toBeTruthy());
+    expect(getAllByTestId('icon-chevron-right').length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('draws the project status as a pill rather than as coloured text', async () => {
+    // The drawing gives the status a border and a tinted fill. The colour stays the status colour,
+    // which is what the next assertion in this file relies on.
+    const { getByTestId } = await renderScreen();
+    await waitFor(() => expect(getByTestId('exec-home-project-p-3')).toHaveTextContent(/over/i));
+  });
+
   it('splits risk into critical and warning by the rule alerts.tsx already documents', async () => {
     const { getByTestId } = await renderScreen();
     // p-3 is over 100% utilisation (critical); p-2 is flagged at-risk (warning); p-1 is neither.
-    await waitFor(() => expect(getByTestId('kpi-risk-alerts')).toHaveTextContent(/02/));
+    // A PLAIN COUNT since 2026-09-07, and no unit beside it: the heading names what is counted, so
+    // the tile reads "RISKS / 2" rather than "05" or "2 Alerts".
+    await waitFor(() => expect(getByTestId('kpi-risk-alerts')).toHaveTextContent(/2/));
+    expect(getByTestId('kpi-risk-alerts')).not.toHaveTextContent(/02/);
+    expect(getByTestId('kpi-risk-alerts')).not.toHaveTextContent(/Alerts/);
     expect(getByTestId('kpi-risk-alerts')).toHaveTextContent(/1/);
   });
 

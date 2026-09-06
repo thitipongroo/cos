@@ -12,6 +12,7 @@ import {
   InterTight_600SemiBold,
   InterTight_700Bold,
 } from '@expo-google-fonts/inter-tight';
+import { MaterialSymbolsOutlined_400Regular } from '@expo-google-fonts/material-symbols-outlined';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useAuthStore } from '../store/authStore';
@@ -72,11 +73,19 @@ function AuthGate() {
 
 export default function RootLayout() {
   // Brand font: Inter Tight (§32.7) — weights 400 body / 500 labels / 600 headings / 700 wordmark.
+  //
+  // MATERIAL SYMBOLS IS A SECOND ICON FONT, and it is loaded for a narrow reason. Every icon in this
+  // app comes from `@expo/vector-icons`' MaterialIcons — the older set — and a mockup asked for a
+  // glyph that set does not contain (`temp_preferences_custom`, the executive Tasks screen's risk
+  // heading). Product-owner decision 2026-09-07: ship the font rather than substitute the mark.
+  // It is NOT a licence to draw the rest of the app in a different icon style — see
+  // components/MaterialSymbol.tsx, which exists so every use of it is countable.
   const [fontsLoaded, fontError] = useFonts({
     InterTight_400Regular,
     InterTight_500Medium,
     InterTight_600SemiBold,
     InterTight_700Bold,
+    MaterialSymbolsOutlined_400Regular,
   });
 
   // Gate the first render until the persisted session is restored, so AuthGate makes its

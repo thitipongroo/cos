@@ -26,6 +26,9 @@ importers:
       '@expo-google-fonts/inter-tight':
         specifier: ^0.4.2
         version: 0.4.2
+      '@expo-google-fonts/material-symbols-outlined':
+        specifier: ^0.4.57
+        version: 0.4.57
       '@expo/app-integrity':
         specifier: ~56.0.3
         version: 56.0.3(expo@56.0.13)(react-native@0.85.3(patch_hash=e5cd5e539043730f8be38dd20185cd3c184e422e9f4987588999c6f2ad252ee3)(@babel/core@7.29.7)(@react-native/jest-preset@0.85.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
@@ -713,6 +716,9 @@ packages:
 
   '@expo-google-fonts/inter-tight@0.4.2':
     resolution: {integrity: sha512-/b4YLh8v145nMfrtw0FF2EB8eRhw/SVt/LdhzN1+Faz/uSFvZkF7EtxfipV8iacDSb1PUqyssHd0tZjlzhhf2g==}
+
+  '@expo-google-fonts/material-symbols-outlined@0.4.57':
+    resolution: {integrity: sha512-Zb4TqFvutvDq4VtIxXie/xECEAQDEOeJqVdDBgkQDOmomOS8zbHaoEHvobHmMybimKEWWq7mEJQvYwuugsb0HQ==}
 
   '@expo-google-fonts/material-symbols@0.4.38':
     resolution: {integrity: sha512-IJkBtN1o8u9BW5fvSii1MyHPQ7Q0HxbWcVBvOrOzgMLpVtZw7R2w94wBTVR7kZwv3w1JNTESMmLA5Sqn1+Z36A==}
@@ -5621,6 +5627,8 @@ snapshots:
     optional: true
 
   '@expo-google-fonts/inter-tight@0.4.2': {}
+
+  '@expo-google-fonts/material-symbols-outlined@0.4.57': {}
 
   '@expo-google-fonts/material-symbols@0.4.38': {}
 

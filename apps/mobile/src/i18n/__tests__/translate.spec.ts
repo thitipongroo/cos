@@ -4,6 +4,7 @@ import {
   formatDate,
   formatTime,
   lookup,
+  shortMonthLabels,
   statusLabel,
   translate,
 } from '../translate';
@@ -138,5 +139,42 @@ describe('key parity th ↔ en', () => {
 
   it('en.json and th.json contain exactly the same keys', () => {
     expect(flatten(th).sort()).toEqual(flatten(en).sort());
+  });
+});
+
+describe('shortMonthLabels', () => {
+  // The axis under the executive Safety screen's six-month trend. Its bars are mockup figures; the
+  // months must not be, which is the whole reason this is computed rather than written down.
+  it('returns the months ending at the given one, oldest first', () => {
+    expect(shortMonthLabels(new Date(2026, 8, 6), 6, 'en')).toEqual([
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+    ]);
+  });
+
+  it('rolls back across a year boundary', () => {
+    expect(shortMonthLabels(new Date(2026, 1, 15), 4, 'en')).toEqual(['Nov', 'Dec', 'Jan', 'Feb']);
+  });
+
+  it('never rolls a month-end date into the next month', () => {
+    // 31 March minus one month is 31 February, which JS resolves as 3 March — the axis would then
+    // read "Mar Mar". Anchoring on day 1 is what prevents it.
+    expect(shortMonthLabels(new Date(2026, 2, 31), 2, 'en')).toEqual(['Feb', 'Mar']);
+  });
+
+  it('answers in the user locale, never a hardcoded English table (QM-3)', () => {
+    const thai = shortMonthLabels(new Date(2026, 8, 6), 1, 'th');
+    expect(thai).toHaveLength(1);
+    expect(thai[0]).not.toBe('Sep');
+  });
+
+  it('returns nothing for a non-positive count or an invalid date', () => {
+    expect(shortMonthLabels(new Date(2026, 8, 6), 0, 'en')).toEqual([]);
+    expect(shortMonthLabels(new Date(2026, 8, 6), -3, 'en')).toEqual([]);
+    expect(shortMonthLabels(new Date('nonsense'), 6, 'en')).toEqual([]);
   });
 });

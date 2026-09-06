@@ -1249,7 +1249,8 @@
       "incidentCount": "อุบัติการณ์ {count} รายการ",
       "secure": "ปลอดภัย",
       "monitor": "เฝ้าระวัง",
-      "viewAll": "ดูโครงการทั้งหมด"
+      "viewAll": "ดูโครงการทั้งหมด",
+      "viewAllCount": "ดูทั้งหมด {count} โครงการ"
     },
     "tasks": {
       "overdue": "เลยกำหนด",
@@ -1257,7 +1258,6 @@
       "thisWeek": "สัปดาห์นี้",
       "dueNote": "ครบกำหนดใน 7 วัน",
       "blocked": "ติดขัดทั้งหมด",
-      "acrossProjects": "จาก {count} โครงการ",
       "riskAlerts": "แจ้งเตือนความเสี่ยง",
       "criticalPath": "เส้นทางวิกฤต",
       "criticalPathEmpty": "โครงการนี้ยังไม่มีการบันทึกลำดับก่อนหลังของงาน จึงคำนวณเส้นทางวิกฤตไม่ได้",
@@ -1265,7 +1265,20 @@
       "float": "ยืดหยุ่น {days} วัน",
       "days": "{days} วัน",
       "calendarNote": "ระยะเวลานับเป็นวันตามปฏิทิน ระบบยังไม่มีปฏิทินวันทำงาน",
-      "excludedNote": "งาน {count} รายการไม่ถูกนำมาคิด เพราะไม่มีวันเริ่มและวันสิ้นสุดตามแผน"
+      "excludedNote": "งาน {count} รายการไม่ถูกนำมาคิด เพราะไม่มีวันเริ่มและวันสิ้นสุดตามแผน",
+      "viewDetail": "ดูรายละเอียด",
+      "viewAll": "ดูทั้งหมด",
+      "conf": "ความเชื่อมั่น {value}%",
+      "riskNone": "รายงานไม่ได้ระบุปัจจัยเสี่ยงของโครงการนี้",
+      "riskLevelNote": "ระดับความเสี่ยงหนึ่งค่าใช้กับทั้งรายงาน โมเดลไม่ได้ให้ระดับแยกรายปัจจัย",
+      "status": "สถานะ:",
+      "status_NOT_STARTED": "ยังไม่เริ่ม",
+      "status_IN_PROGRESS": "กำลังดำเนินการ",
+      "status_COMPLETED": "เสร็จแล้ว",
+      "status_BLOCKED": "ติดขัด",
+      "status_CANCELLED": "ยกเลิก",
+      "taskId": "ID: {id}",
+      "blockedUnit": "งาน"
     },
     "more": {
       "intelligence": "ข้อมูลเชิงลึกของระบบ",
@@ -1302,9 +1315,9 @@
       "intelligence": "ข้อมูลเชิงลึกสำหรับผู้บริหาร",
       "mitigation": "แผนลดผลกระทบ",
       "dismiss": "ปิดการแจ้งเตือน",
-      "activeProjects": "โครงการที่ดำเนินการ",
+      "activeProjects": "กำลังดำเนินการ",
       "thisMonth": "{value} เดือนนี้",
-      "riskAlerts": "แจ้งเตือนความเสี่ยง",
+      "riskAlerts": "ความเสี่ยง",
       "riskSplit": "วิกฤต {critical} • เฝ้าระวัง {warning}",
       "portfolioBudget": "งบประมาณรวมพอร์ตโฟลิโอ",
       "actual": "ใช้จริง: {value}",

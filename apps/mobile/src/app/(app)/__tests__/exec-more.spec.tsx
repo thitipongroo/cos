@@ -10,13 +10,12 @@
 // this preset. A file-level `beforeEach` plus an explicit `cleanup()` produced empty trees from the
 // third render onward; the sibling specs' shape does not.
 
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { render, fireEvent, waitFor, within } from '@testing-library/react-native';
 import { Alert } from 'react-native';
 import { CosRole } from '@cos/types';
 import { I18nProvider } from '../../../i18n';
 import { useAuthStore } from '../../../store/authStore';
 import MoreScreen from '../more';
-import { ExecMore } from '../../../components/ExecMore';
 
 const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
@@ -69,11 +68,12 @@ describe('MoreScreen — the EXECUTIVE tile set', () => {
     await waitFor(() => expect(getByTestId('exec-more-screen')).toBeTruthy());
   });
 
-  it('reads the signed-in identity from the session rather than the drawing', async () => {
-    const { getByTestId } = await renderScreen();
-    await waitFor(() =>
-      expect(getByTestId('exec-more-profile')).toHaveTextContent(/Wichai Ekachai/),
-    );
+  it('has no identity block — the drawing has none', async () => {
+    // Removed on 2026-09-07 (PO). The drawer is where this app shows who is signed in, and it was
+    // showing it twice on the one screen that also opens the drawer.
+    const { queryByTestId } = await renderScreen();
+    await waitFor(() => expect(queryByTestId('exec-more-portfolioReport')).toBeTruthy());
+    expect(queryByTestId('exec-more-profile')).toBeNull();
   });
 
   it('sends the four built tiles to the screens that exist', async () => {
@@ -107,13 +107,15 @@ describe('MoreScreen — the EXECUTIVE tile set', () => {
     expect(mockPush).toHaveBeenCalledWith('/portfolio');
   });
 
-  it('marks the three unbuilt tiles BEFORE the tap', async () => {
-    // Said where the eye already is, not only on tap — the treatment more.tsx settled on for the
-    // manager's four unbuilt tiles (PO 2026-08-10).
-    const { getByTestId } = await renderScreen();
-    await waitFor(() => expect(getByTestId('exec-more-strategicBim-soon')).toBeTruthy());
-    expect(getByTestId('exec-more-carbon-soon')).toBeTruthy();
-    expect(getByTestId('exec-more-globalMap-soon')).toBeTruthy();
+  it('carries no COMING SOON chip on the unbuilt tiles', async () => {
+    // The chips came off on 2026-09-07 (PO), reversing the 2026-08-10 treatment for this screen.
+    // The tiles still lead nowhere and still say so on tap — see the next test — but the drawing's
+    // seven tiles now read alike.
+    const { queryByTestId } = await renderScreen();
+    await waitFor(() => expect(queryByTestId('exec-more-strategicBim')).toBeTruthy());
+    expect(queryByTestId('exec-more-strategicBim-soon')).toBeNull();
+    expect(queryByTestId('exec-more-carbon-soon')).toBeNull();
+    expect(queryByTestId('exec-more-globalMap-soon')).toBeNull();
   });
 
   it('navigates nowhere when an unbuilt tile is tapped', async () => {
@@ -153,17 +155,18 @@ describe('MoreScreen — the EXECUTIVE tile set', () => {
     expect(mockPush).toHaveBeenCalledWith('/portfolio');
   });
 
-  it('draws an em dash for the role when the session carries none', async () => {
-    // ExecMore is rendered DIRECTLY here, not through MoreScreen: the route branches on role, so a
-    // null role would send MoreScreen to the manager's screen and this component would never mount.
-    // The fallback is still worth having — a session whose role the client could not read must not
-    // render the word "null" — and this is the only way to reach it.
-    useAuthStore.setState({ displayName: null, role: null } as never);
-    const { getByTestId } = await render(
-      <I18nProvider>
-        <ExecMore />
-      </I18nProvider>,
-    );
-    await waitFor(() => expect(getByTestId('exec-more-profile')).toHaveTextContent(/—/));
+  it('draws each tile with the drawing glyph, its title and its body', async () => {
+    // The tile was restructured on 2026-09-06 so the plate sits on the TITLE'S line with the body
+    // beneath, as the drawing has it. Structure is not assertable here, but the three pieces are —
+    // a restructure that dropped one of them would otherwise pass unnoticed.
+    const { getByTestId } = await renderScreen();
+    await waitFor(() => expect(getByTestId('exec-more-portfolioReport')).toBeTruthy());
+
+    const tile = getByTestId('exec-more-portfolioReport');
+    expect(tile).toHaveTextContent(/Portfolio report/i);
+    expect(tile).toHaveTextContent(/Every project at a glance/i);
+    // `insights`, not the drawing's `monitoring`: that glyph is Material Symbols and this app's
+    // icon set does not carry it (checked against the installed MaterialIcons glyph map).
+    expect(within(tile).getByTestId('icon-insights')).toBeTruthy();
   });
 });

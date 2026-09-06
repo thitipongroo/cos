@@ -1445,6 +1445,71 @@ paths:
                         latest_finish: { type: string, format: date }
                         total_float_days: { type: integer }
                         is_critical: { type: boolean }
+                        assigned_to:
+                          type: [string, 'null']
+                          format: uuid
+                          description: |
+                            Who the task is assigned to, or null. The id only — this endpoint
+                            never joins a name or a photograph, because a schedule answer has no
+                            need of a person's identity.
+        '403':
+          description: The caller's role is not in TASK_READ_ROLES
+
+  /tasks/portfolio-critical-path:
+    get:
+      summary: Critical tasks across every project in the tenant
+      description: |
+        Runs the same forward/backward pass as `/projects/{projectId}/critical-path`, once per
+        project that has at least one non-cancelled task, and returns the zero-float tasks of all
+        of them — earliest start first, each row naming the project it belongs to.
+
+        THERE IS NO SINGLE CRITICAL PATH ACROSS PROJECTS. Each network has its own origin and its
+        own dependencies, so one pass over all of them would invent relationships nobody declared.
+        This concatenates real per-project results, which is what a portfolio screen can honestly
+        show: the tasks that cannot slip, in every project. `project_count` says how many networks
+        that covers.
+
+        Durations are CALENDAR days, for the reason given on the per-project route.
+      operationId: portfolioCriticalPath
+      responses:
+        '200':
+          description: Every project's critical tasks
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [tasks, project_count, working_day_calendar, excluded_task_count]
+                properties:
+                  project_count:
+                    type: integer
+                    description: Projects with at least one non-cancelled task
+                  working_day_calendar:
+                    type: boolean
+                    description: Always false today — see the description above
+                  excluded_task_count:
+                    type: integer
+                    description: Summed across projects; tasks without both planned dates
+                  tasks:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        project_id: { type: string, format: uuid }
+                        project_name: { type: string }
+                        task_id: { type: string, format: uuid }
+                        task_name: { type: string }
+                        status:
+                          type: string
+                          enum: [NOT_STARTED, IN_PROGRESS, COMPLETED, BLOCKED, CANCELLED]
+                        work_type: { type: string }
+                        duration_days: { type: integer }
+                        earliest_start: { type: string, format: date }
+                        earliest_finish: { type: string, format: date }
+                        latest_start: { type: string, format: date }
+                        latest_finish: { type: string, format: date }
+                        total_float_days: { type: integer }
+                        is_critical: { type: boolean }
+                        assigned_to: { type: [string, 'null'], format: uuid }
         '403':
           description: The caller's role is not in TASK_READ_ROLES
 

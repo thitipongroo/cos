@@ -7,6 +7,7 @@ const mockSvc = {
   updateTask: jest.fn(),
   getProjectProgress: jest.fn(),
   getPortfolioTaskSummary: jest.fn(),
+  getPortfolioCriticalPath: jest.fn(),
   getCriticalPath: jest.fn(),
   listDependencies: jest.fn(),
   addDependency: jest.fn(),
@@ -82,6 +83,22 @@ describe('TasksController', () => {
 
     expect(ctrl.portfolioTaskSummary()).toBe(counts);
     expect(mockSvc.getPortfolioTaskSummary).toHaveBeenCalledWith();
+  });
+
+  it('portfolioCriticalPath takes no parameter either — it spans the tenant', () => {
+    // The reason the route exists: the EXECUTIVE Tasks screen asked ONE project for its critical
+    // path while its heading named that project, which read as a portfolio list of one project's
+    // work. A parameter here would put that back.
+    const path = {
+      tasks: [],
+      project_count: 3,
+      working_day_calendar: false,
+      excluded_task_count: 0,
+    };
+    mockSvc.getPortfolioCriticalPath.mockReturnValue(path);
+
+    expect(ctrl.portfolioCriticalPath()).toBe(path);
+    expect(mockSvc.getPortfolioCriticalPath).toHaveBeenCalledWith();
   });
 
   it('getCriticalPath delegates to svc.getCriticalPath', () => {

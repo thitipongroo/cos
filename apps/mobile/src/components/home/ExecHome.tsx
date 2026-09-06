@@ -57,6 +57,7 @@ import { PortfolioInsight } from '../PortfolioInsight';
 import { useT } from '../../i18n';
 import type { TranslateFn } from '../../i18n';
 import { Decimal, formatMoney, sumDecimals, toDecimal } from '@cos/financial';
+import { compactMoneyLabel } from '../../lib/compactMoney';
 import { countSettled } from '../../lib/loadingState';
 import { ACTIVE_PROJECTS_DELTA, ACTIVE_REGION } from '../../lib/mockupFigures';
 import { fontFamily, plateRadius, radius, spacing, typography } from '../../theme/tokens';
@@ -149,64 +150,123 @@ export default function ExecHome() {
     return { critical, warning, total: critical + warning };
   }, [rows]);
 
-  const money = (value: Decimal | null): string => (value === null ? '—' : formatMoney(value));
+  /**
+   * The budget hero's two figures, shortened — the drawing writes `฿ 4.82B` and `Actual: ฿ 2.15B`,
+   * not the full grouped amounts.
+   *
+   * `compactMoney` already draws the line the product owner asked for: BELOW a million it returns
+   * `formatMoney`'s exact output, cents and all, and only at or above one does it scale. So
+   * "abbreviate once the amount passes ฿1,000,000" is the helper's existing behaviour rather than a
+   * threshold added here — and the suffix is an i18n key ("M"/"B" in English, ล้าน/พันล้าน in Thai),
+   * which is why this goes through `compactMoneyLabel` and not through a hardcoded letter.
+   *
+   * THE CURRENCY IS ASSUMED THB, exactly as the project cards' `formatMoney` assumes it and for the
+   * same reason: `/analytics/executive` returns no currency field. See the header.
+   */
+  const compact = (value: Decimal | null): string =>
+    // `maxScale: 'million'` so the hero and its ACTUAL line share one unit — a budget in B beside an
+    // actual in M is two units in one card, and the eye cannot compare them (PO 2026-09-07).
+    value === null ? '—' : compactMoneyLabel(value, 'THB', t, { maxScale: 'million' });
   const byId = useMemo(() => new Map(rows.map((r) => [r.projectId, r])), [rows]);
 
   return (
     <Screen testID="home-screen" scroll>
-      {/* The drawing's "AI Executive Intelligence" panel — the real endpoint. */}
+      {/* The drawing's "AI Executive Intelligence" panel — the real endpoint, in the drawing's own
+          card: `variant="executive"` gives it the cyan border and the 3px edge, and the two buttons
+          go INSIDE it through the footer slot, where the drawing puts them. */}
       <PortfolioInsight
         projectId={mine[0]?.project_id ?? ''}
         projectLabel={mine[0]?.project_name}
         titleKey="exec.home.intelligence"
+        icon="bolt"
+        variant="executive"
+        autoRun
+        footer={
+          // Drawn, and they say they do not work — see the header.
+          <View style={styles.actionRow}>
+            {(['mitigation', 'dismiss'] as const).map((action) => (
+              <Pressable
+                key={action}
+                testID={`exec-home-${action}`}
+                accessibilityRole="button"
+                accessibilityLabel={t(`exec.home.${action}`)}
+                onPress={() => Alert.alert(t(`exec.home.${action}`), t('more.comingSoon'))}
+                style={[styles.actionButton, action === 'mitigation' ? styles.actionPrimary : null]}
+              >
+                <Text
+                  style={[
+                    styles.actionText,
+                    action === 'mitigation' ? styles.actionTextPrimary : null,
+                  ]}
+                >
+                  {t(`exec.home.${action}`)}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        }
       />
-
-      {/* Drawn, and they say they do not work — see the header. */}
-      <View style={styles.actionRow}>
-        {(['mitigation', 'dismiss'] as const).map((action) => (
-          <Pressable
-            key={action}
-            testID={`exec-home-${action}`}
-            accessibilityRole="button"
-            accessibilityLabel={t(`exec.home.${action}`)}
-            onPress={() => Alert.alert(t(`exec.home.${action}`), t('more.comingSoon'))}
-            style={[styles.actionButton, action === 'mitigation' ? styles.actionPrimary : null]}
-          >
-            <Text style={styles.actionText}>{t(`exec.home.${action}`)}</Text>
-            <View style={styles.soonChip}>
-              <Text style={styles.soonText}>{t('more.soon')}</Text>
-            </View>
-          </Pressable>
-        ))}
-      </View>
 
       <KpiRegion loading={loading} settled={settled} steps={LOAD_STEPS}>
         <View style={styles.tileRow}>
+          {/* THE CHEVRON SITS ON THE CARD, NOT IN THE HEADER ROW (PO 2026-09-07): vertically centred
+              against the whole tile at its trailing edge, so the two tiles' marks line up with each
+              other rather than with their own eyebrows. Decorative, as before — it names no
+              destination — so it stays out of the accessibility tree. */}
           <View testID="kpi-active-projects" style={[styles.card, styles.tile]}>
-            <View style={styles.tileHead}>
-              <Text style={styles.eyebrow}>{t('exec.home.activeProjects')}</Text>
-              <MaterialIcons name="precision-manufacturing" size={18} color={p.accent} />
+            <View style={styles.tileBody}>
+              {/* GLYPH FIRST, then the label — the shape every other KPI tile in this role already
+                  uses (`ExecTasks`' OVERDUE / THIS WEEK, `safety.tsx`'s two tiles): a 20px mark, one
+                  `spacing.xs` gap, then the word. It read the other way round here alone, which is
+                  what made these two cards look like a different component (PO 2026-09-07). */}
+              <View style={styles.tileHead}>
+                <MaterialIcons name="precision-manufacturing" size={20} color={p.accent} />
+                <Text style={[styles.eyebrow, styles.tileHeadLabel]} numberOfLines={1}>
+                  {t('exec.home.activeProjects')}
+                </Text>
+              </View>
+              <Text style={styles.tileValue}>{String(activeCount)}</Text>
+              <View style={styles.deltaRow}>
+                <MaterialIcons name="arrow-upward" size={14} color={p.success} />
+                <Text style={styles.delta}>
+                  {t('exec.home.thisMonth', { value: ACTIVE_PROJECTS_DELTA.value })}
+                </Text>
+              </View>
             </View>
-            <Text style={styles.tileValue}>{String(activeCount)}</Text>
-            <View style={styles.deltaRow}>
-              <MaterialIcons name="arrow-upward" size={14} color={p.success} />
-              <Text style={styles.delta}>
-                {t('exec.home.thisMonth', { value: ACTIVE_PROJECTS_DELTA.value })}
-              </Text>
-            </View>
+            <MaterialIcons
+              name="chevron-right"
+              size={18}
+              color={p.muted}
+              accessibilityElementsHidden
+              importantForAccessibility="no"
+            />
           </View>
 
           <View testID="kpi-risk-alerts" style={[styles.card, styles.tile]}>
-            <View style={styles.tileHead}>
-              <Text style={styles.eyebrow}>{t('exec.home.riskAlerts')}</Text>
-              <MaterialIcons name="warning" size={18} color={p.danger} />
+            <View style={styles.tileBody}>
+              <View style={styles.tileHead}>
+                <MaterialIcons name="warning" size={20} color={p.danger} />
+                <Text style={[styles.eyebrow, styles.tileHeadLabel]} numberOfLines={1}>
+                  {t('exec.home.riskAlerts')}
+                </Text>
+              </View>
+              {/* A PLAIN COUNT — no `padStart(2, '0')` (PO 2026-09-07). The zero-padded "05" was the
+                  drawing's own typography, and it reads as a code or a rank rather than as a number
+                  of things. The em dash stays: it is "we could not ask", which is not zero.
+                  NO UNIT EITHER (PO 2026-09-07): the heading above the figure already names what is
+                  counted, and "5 Alerts" under "RISKS" said it twice. */}
+              <Text style={styles.tileValue}>{rows.length === 0 ? '—' : String(risk.total)}</Text>
+              <Text style={styles.tileNote}>
+                {t('exec.home.riskSplit', { critical: risk.critical, warning: risk.warning })}
+              </Text>
             </View>
-            <Text style={styles.tileValue}>
-              {rows.length === 0 ? '—' : String(risk.total).padStart(2, '0')}
-            </Text>
-            <Text style={styles.tileNote}>
-              {t('exec.home.riskSplit', { critical: risk.critical, warning: risk.warning })}
-            </Text>
+            <MaterialIcons
+              name="chevron-right"
+              size={18}
+              color={p.muted}
+              accessibilityElementsHidden
+              importantForAccessibility="no"
+            />
           </View>
         </View>
 
@@ -215,14 +275,14 @@ export default function ExecHome() {
           <View style={styles.heroHead}>
             <View>
               <Text style={styles.eyebrow}>{t('exec.home.portfolioBudget')}</Text>
-              <Text style={styles.heroValue}>{money(budget)}</Text>
+              <Text style={styles.heroValue}>{compact(budget)}</Text>
             </View>
             <View style={styles.heroPlate}>
               <MaterialIcons name="account-balance-wallet" size={20} color={p.accent} />
             </View>
           </View>
           <View style={styles.heroLabels}>
-            <Text style={styles.eyebrow}>{t('exec.home.actual', { value: money(actual) })}</Text>
+            <Text style={styles.eyebrow}>{t('exec.home.actual', { value: compact(actual) })}</Text>
             <Text style={styles.eyebrow}>
               {remainingPct === null
                 ? t('exec.home.remainingUnknown')
@@ -297,6 +357,7 @@ function ProjectCard({
   t: TranslateFn;
   onPress: () => void;
 }): React.JSX.Element {
+  const p = palette;
   const over = row !== undefined && Number(row.utilizationPct) > 100;
   const atRisk = row?.atRisk === 1;
   const stripe = over ? palette.danger : atRisk ? palette.warning : palette.success;
@@ -325,7 +386,24 @@ function ProjectCard({
               : t('exec.home.progress', { value: Math.round(project.progress_percent) })}
           </Text>
         </View>
-        <Text style={[styles.badge, { color: stripe }]}>{t(`exec.home.${statusKey}`)}</Text>
+        {/* The drawing's bordered status pill: a 1px edge and a 10% fill in the status colour, so
+            the word reads as a chip rather than as coloured text. Radius stays radius.xl — every
+            badge in this app takes it, a platform ruling that deliberately overrides the drawing's
+            `rounded-sm` (.claude/rules/design-tokens.md). */}
+        <View
+          style={[styles.badgePill, { borderColor: `${stripe}33`, backgroundColor: `${stripe}1A` }]}
+        >
+          <Text style={[styles.badge, { color: stripe }]}>{t(`exec.home.${statusKey}`)}</Text>
+        </View>
+        {/* The drawing's trailing chevron. Decorative: the whole card is already the target, and a
+            second focusable element for the same action is one more stop for a screen reader. */}
+        <MaterialIcons
+          name="chevron-right"
+          size={20}
+          color={p.muted}
+          accessibilityElementsHidden
+          importantForAccessibility="no"
+        />
       </View>
       <View style={styles.projectFoot}>
         <Text style={styles.eyebrow}>{t('exec.home.variance')}</Text>
@@ -364,7 +442,7 @@ const makeStyles = (p: Palette) =>
       justifyContent: 'center',
       gap: 2,
     },
-    actionPrimary: { borderColor: p.accent },
+    actionPrimary: { borderColor: `${p.accent}66`, backgroundColor: `${p.accent}1A` },
     actionText: {
       fontSize: typography.label.fontSize,
       fontFamily: fontFamily.semibold,
@@ -372,10 +450,22 @@ const makeStyles = (p: Palette) =>
       textTransform: 'uppercase',
       letterSpacing: 0.8,
     },
+    // The drawing's Mitigation button is cyan on a cyan tint; Dismiss stays the ordinary ink.
+    actionTextPrimary: { color: p.accent },
 
     tileRow: { flexDirection: 'row', gap: spacing.sm },
-    tile: { flex: 1, gap: spacing.xs / 2 },
-    tileHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    // The card is now a ROW — its content, then the chevron centred against the full height.
+    tile: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.xs / 2 },
+    tileBody: { flex: 1, gap: spacing.xs / 2 },
+    // The eyebrow takes the row's spare width so the header glyph is pushed to the tile's trailing
+    // edge (PO 2026-09-07). `justifyContent: 'space-between'` alone left the glyph sitting against
+    // the end of a short label rather than against the card, so the two tiles' glyphs did not line
+    // up with each other.
+    // `gap: spacing.xs` — the same one `ExecTasks` and `safety.tsx` put between a tile's glyph and
+    // its label. The earlier no-gap version was for the reversed order, where the label's `flex: 1`
+    // did the separating; with the glyph in front the gap is what separates them.
+    tileHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+    tileHeadLabel: { flex: 1 },
     tileValue: {
       fontSize: typography.hero.fontSize,
       fontFamily: fontFamily.bold,
@@ -444,7 +534,15 @@ const makeStyles = (p: Palette) =>
     },
 
     project: { borderLeftWidth: 4, gap: spacing.sm },
-    projectHead: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm },
+    // `alignItems: 'center'`, not the default stretch: a flex child with no explicit height fills the
+    // row, so the status pill grew to the full height of the two-line title block and drew a tall
+    // rounded box around one word. The drawing hugs the text.
+    projectHead: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.sm,
+    },
     projectText: { flex: 1, gap: 2 },
     projectName: {
       fontSize: typography.body.fontSize,
@@ -455,6 +553,12 @@ const makeStyles = (p: Palette) =>
       fontSize: typography.label.fontSize,
       fontFamily: fontFamily.regular,
       color: p.muted,
+    },
+    badgePill: {
+      paddingHorizontal: spacing.xs,
+      paddingVertical: 2,
+      borderRadius: radius.xl,
+      borderWidth: 1,
     },
     badge: {
       fontSize: typography.label.fontSize,

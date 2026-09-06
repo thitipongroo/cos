@@ -50,6 +50,15 @@ export interface CpmTaskRow {
   work_type: string;
   planned_start: Date | null;
   planned_end: Date | null;
+  /**
+   * WHO the task is assigned to, or null. The id only — no name and no photo.
+   *
+   * The EXECUTIVE Tasks card draws an assignee mark where its mockup draws avatar photographs. This
+   * column is what makes "someone is on this" a fact rather than decoration; joining `iam.users` for
+   * a name would put a person's identity on a portfolio dashboard that has no need of it, and the
+   * mockup's photographs have no source in this platform at all.
+   */
+  assigned_to: string | null;
 }
 
 /** Tenant-wide task counts behind the EXECUTIVE Tasks screen. Every field is a plain count. */
@@ -447,7 +456,7 @@ export class TasksRepository {
     return this.db.run(
       (tx) =>
         tx.$queryRaw<CpmTaskRow[]>`
-        SELECT task_id, task_name, status, work_type, planned_start, planned_end
+        SELECT task_id, task_name, status, work_type, planned_start, planned_end, assigned_to
         FROM projects.tasks
         WHERE tenant_id = ${this.tenantId}::uuid
           AND project_id = ${projectId}::uuid
@@ -485,6 +494,28 @@ export class TasksRepository {
         SELECT task_id, project_id FROM projects.tasks
         WHERE tenant_id = ${this.tenantId}::uuid
           AND task_id = ANY(${taskIds}::uuid[])
+      `,
+    );
+  }
+
+  /**
+   * Every project in the tenant that HAS a schedulable task, id and name, in name order.
+   *
+   * Scoped to projects with tasks so the portfolio critical path does not run a forward and backward
+   * pass over an empty network once per empty project. `DISTINCT` on the join rather than a
+   * `projects` scan for the same reason.
+   */
+  async findProjectsWithTasks(): Promise<{ project_id: string; project_name: string }[]> {
+    return this.db.run(
+      (tx) =>
+        tx.$queryRaw<{ project_id: string; project_name: string }[]>`
+        SELECT DISTINCT p.project_id, p.project_name
+        FROM projects.projects p
+        JOIN projects.tasks t
+          ON t.project_id = p.project_id AND t.tenant_id = p.tenant_id
+        WHERE p.tenant_id = ${this.tenantId}::uuid
+          AND t.status <> 'CANCELLED'
+        ORDER BY p.project_name
       `,
     );
   }

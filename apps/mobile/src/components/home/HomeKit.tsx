@@ -18,18 +18,6 @@ import { usePalette, useIsDark, type Palette } from '../../theme/usePalette';
 import { screenChrome } from '../../theme/screenStyles';
 
 /** The palette-resolved stylesheet. One hook so every home variant reads the same set. */
-/**
- * `GET /analytics/executive` — the row shape both the Executive and the Finance Home read.
- * It lived in the Executive block while the file was one; Finance reads the same endpoint, so the
- * split made it shared rather than duplicated.
- */
-export interface ExecutiveDashboardRow {
-  /** DECIMAL strings, exactly as the API returned them — never parsed to a JS number. */
-  totalActual: string;
-  totalBudget: string;
-  overdueInvoiceCount: number;
-}
-
 export function useHomeStyles() {
   const p = usePalette();
   return useMemo(() => makeStyles(p), [p]);

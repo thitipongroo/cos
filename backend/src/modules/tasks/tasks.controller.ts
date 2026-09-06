@@ -126,6 +126,25 @@ export class TasksController {
     return this.svc.getPortfolioTaskSummary();
   }
 
+  // GET /api/v1/tasks/portfolio-critical-path
+  //
+  // A literal segment under `tasks/`, exactly like `portfolio-summary` above and for the same two
+  // reasons: it spans the tenant rather than one project, and it can never be parsed as a task id.
+  @Get('tasks/portfolio-critical-path')
+  @Roles(...TASK_READ_ROLES)
+  @ApiOperation({
+    summary: 'Critical tasks across every project in the tenant',
+    description:
+      'Runs the per-project forward/backward pass once per project that has tasks and returns the ' +
+      'zero-float tasks of all of them, earliest first, each naming its project. There is no ' +
+      'single critical path across projects — each network has its own origin — so this ' +
+      'concatenates real per-project results rather than inventing one pass over all of them. ' +
+      'Durations are CALENDAR days (ADR-097).',
+  })
+  portfolioCriticalPath() {
+    return this.svc.getPortfolioCriticalPath();
+  }
+
   // GET /api/v1/projects/:projectId/critical-path
   @Get('projects/:projectId/critical-path')
   @Roles(...TASK_READ_ROLES)

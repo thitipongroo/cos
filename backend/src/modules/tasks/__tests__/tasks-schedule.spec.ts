@@ -20,6 +20,7 @@ const mockRepo = {
   createDependency: jest.fn(),
   deleteDependency: jest.fn(),
   portfolioTaskSummary: jest.fn(),
+  findProjectsWithTasks: jest.fn(),
   // Gate-3 counter — present so the "left alone" assertion can prove it is never called.
   countIncompletePredecessors: jest.fn(),
 };
@@ -37,6 +38,7 @@ function scheduleTask(task_id: string, start: string | null, end: string | null)
     work_type: 'STRUCTURE',
     planned_start: start === null ? null : new Date(`${start}T00:00:00.000Z`),
     planned_end: end === null ? null : new Date(`${end}T00:00:00.000Z`),
+    assigned_to: null,
   };
 }
 
@@ -267,5 +269,118 @@ describe('listDependencies and getPortfolioTaskSummary', () => {
     };
     mockRepo.portfolioTaskSummary.mockResolvedValue(counts);
     await expect(service.getPortfolioTaskSummary()).resolves.toEqual(counts);
+  });
+});
+
+describe('getPortfolioCriticalPath', () => {
+  const OTHER = '22222222-2222-4222-8222-222222222222';
+
+  it('runs one pass per project and returns every project critical tasks', async () => {
+    mockRepo.findProjectsWithTasks.mockResolvedValue([
+      { project_id: PROJECT, project_name: 'Sukhumvit 45' },
+      { project_id: OTHER, project_name: 'Rama IX Tower' },
+    ]);
+    mockRepo.findScheduleTasks.mockImplementation((id: string) =>
+      Promise.resolve(
+        id === PROJECT
+          ? [scheduleTask(A, '2026-09-01', '2026-09-10')]
+          : [scheduleTask(B, '2026-09-05', '2026-09-20')],
+      ),
+    );
+    mockRepo.findDependencies.mockResolvedValue([]);
+
+    const result = await service.getPortfolioCriticalPath();
+
+    expect(result.project_count).toBe(2);
+    expect(mockRepo.findScheduleTasks).toHaveBeenCalledTimes(2);
+    expect(result.tasks.map((t) => t.task_id)).toEqual([A, B]);
+    expect(result.tasks[0]!.project_name).toBe('Sukhumvit 45');
+    expect(result.tasks[1]!.project_name).toBe('Rama IX Tower');
+  });
+
+  it('orders by earliest start across projects, not by project', async () => {
+    // A portfolio reader meets the schedule in the order it happens; project-name order says
+    // nothing about which task cannot slip first.
+    mockRepo.findProjectsWithTasks.mockResolvedValue([
+      { project_id: PROJECT, project_name: 'Aaa first by name' },
+      { project_id: OTHER, project_name: 'Zzz last by name' },
+    ]);
+    mockRepo.findScheduleTasks.mockImplementation((id: string) =>
+      Promise.resolve(
+        id === PROJECT
+          ? [scheduleTask(A, '2026-10-01', '2026-10-10')]
+          : [scheduleTask(B, '2026-09-01', '2026-09-10')],
+      ),
+    );
+    mockRepo.findDependencies.mockResolvedValue([]);
+
+    const result = await service.getPortfolioCriticalPath();
+    expect(result.tasks.map((t) => t.task_id)).toEqual([B, A]);
+  });
+
+  it('keeps only the zero-float tasks', async () => {
+    // A → C with B parallel and slack: B is on the schedule and not on the path.
+    mockRepo.findProjectsWithTasks.mockResolvedValue([
+      { project_id: PROJECT, project_name: 'Sukhumvit 45' },
+    ]);
+    mockRepo.findScheduleTasks.mockResolvedValue([
+      scheduleTask(A, '2026-09-01', '2026-09-10'),
+      scheduleTask(B, '2026-09-01', '2026-09-02'),
+      scheduleTask(C, '2026-09-11', '2026-09-20'),
+    ]);
+    mockRepo.findDependencies.mockResolvedValue([dependency(A, C), dependency(B, C)]);
+
+    const result = await service.getPortfolioCriticalPath();
+    expect(result.tasks.every((t) => t.is_critical)).toBe(true);
+    expect(result.tasks.map((t) => t.task_id)).not.toContain(B);
+  });
+
+  it('sums the excluded counts of every project', async () => {
+    mockRepo.findProjectsWithTasks.mockResolvedValue([
+      { project_id: PROJECT, project_name: 'One' },
+      { project_id: OTHER, project_name: 'Two' },
+    ]);
+    // One schedulable task each, plus one undated task each that the pass cannot place.
+    mockRepo.findScheduleTasks.mockImplementation((id: string) =>
+      Promise.resolve([
+        scheduleTask(id === PROJECT ? A : B, '2026-09-01', '2026-09-10'),
+        scheduleTask(C, null, null),
+      ]),
+    );
+    mockRepo.findDependencies.mockResolvedValue([]);
+
+    expect((await service.getPortfolioCriticalPath()).excluded_task_count).toBe(2);
+  });
+
+  it('answers empty for a tenant with no projects, without running a pass', async () => {
+    mockRepo.findProjectsWithTasks.mockResolvedValue([]);
+    const result = await service.getPortfolioCriticalPath();
+    expect(result).toEqual({
+      tasks: [],
+      project_count: 0,
+      working_day_calendar: false,
+      excluded_task_count: 0,
+    });
+    expect(mockRepo.findScheduleTasks).not.toHaveBeenCalled();
+  });
+
+  it('reports calendar days, exactly as the per-project answer does', async () => {
+    mockRepo.findProjectsWithTasks.mockResolvedValue([
+      { project_id: PROJECT, project_name: 'Sukhumvit 45' },
+    ]);
+    mockRepo.findScheduleTasks.mockResolvedValue([scheduleTask(A, '2026-09-01', '2026-09-01')]);
+    mockRepo.findDependencies.mockResolvedValue([]);
+    expect((await service.getPortfolioCriticalPath()).working_day_calendar).toBe(false);
+  });
+
+  it('carries the assignee id through, and null when nobody is assigned', async () => {
+    mockRepo.findProjectsWithTasks.mockResolvedValue([
+      { project_id: PROJECT, project_name: 'Sukhumvit 45' },
+    ]);
+    mockRepo.findScheduleTasks.mockResolvedValue([
+      { ...scheduleTask(A, '2026-09-01', '2026-09-10'), assigned_to: 'user-9' },
+    ]);
+    mockRepo.findDependencies.mockResolvedValue([]);
+    expect((await service.getPortfolioCriticalPath()).tasks[0]!.assigned_to).toBe('user-9');
   });
 });

@@ -45,6 +45,28 @@ export interface CriticalPathTask {
   /** Zero on the critical path; larger is slack. */
   total_float_days: number;
   is_critical: boolean;
+  /**
+   * Whether anyone is assigned, as the raw user id or null — never a name.
+   *
+   * The drawing's assignee AVATARS have no source: this platform stores `assigned_to` on the task
+   * and nothing else, and putting a person's name and face on a portfolio dashboard is a different
+   * decision from showing that the work is owned. The card draws a mark when this is non-null.
+   */
+  assigned_to: string | null;
+}
+
+/** A critical task with the project it belongs to — the portfolio roll-up's row. */
+export interface PortfolioCriticalTask extends CriticalPathTask {
+  project_id: string;
+  project_name: string;
+}
+
+/** Every project's critical tasks in one answer. See `getPortfolioCriticalPath`. */
+export interface PortfolioCriticalPath {
+  tasks: PortfolioCriticalTask[];
+  project_count: number;
+  working_day_calendar: boolean;
+  excluded_task_count: number;
 }
 
 export interface CriticalPath {
@@ -72,4 +94,15 @@ export async function getPortfolioTaskSummary(): Promise<PortfolioTaskSummary> {
 
 export async function getCriticalPath(projectId: string): Promise<CriticalPath> {
   return get<CriticalPath>(`/projects/${projectId}/critical-path`);
+}
+
+/**
+ * The critical tasks of every project in the tenant, earliest first.
+ *
+ * The EXECUTIVE Tasks screen is a portfolio view, so this is the call it makes. `getCriticalPath`
+ * above stays for the per-project screens: the two answer different questions and the server runs
+ * the same pass for both.
+ */
+export async function getPortfolioCriticalPath(): Promise<PortfolioCriticalPath> {
+  return get<PortfolioCriticalPath>('/tasks/portfolio-critical-path');
 }

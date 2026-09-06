@@ -1970,41 +1970,86 @@ Every money figure is real and reconciles against Postgres:
 
 | On screen                                 | Where it comes from                                                                                                      |
 | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `PORTFOLIO BUDGET ฿1,213,000,000.00`      | Σ `projects.budget_amount` over the executive's five projects (145 + 88 + 210 + 320 + 450M)                              |
-| `ACTUAL ฿929,263,377.00`                  | Σ `finance.cost_transactions.amount` over the same five — to the baht                                                    |
+| `PORTFOLIO BUDGET ฿ 1.21 B`               | Σ `projects.budget_amount` over the executive's five projects — ฿1,213,000,000 (145 + 88 + 210 + 320 + 450M)             |
+| `ACTUAL ฿ 929.26 M`                       | Σ `finance.cost_transactions.amount` over the same five — ฿929,263,377, to the baht                                      |
 | `REMAINING 23.4%`                         | derived from the two above, in `decimal.js`                                                                              |
 | `RISK ALERTS 05 · 2 critical · 3 warning` | `/analytics/executive` rows: two over 100% utilisation, three flagged at-risk                                            |
 | `ACTIVE PROJECTS 5`                       | `local_projects` where status = ACTIVE, the offline cache                                                                |
 | per-project `VARIANCE` and its badge      | actual − budget per row. Ladprao `+฿1,624,218` and Bangna `+฿28,682,356` are genuine overruns the seed writes on purpose |
 
+**The two hero figures are shortened, and the rule has a threshold.** `lib/compactMoney.ts` returns
+`formatMoney`'s exact output BELOW ฿1,000,000 — cents and all — and scales only at or above it, so
+"abbreviate once the amount passes a million" is the helper's own boundary rather than a rule this
+screen added (product-owner decision 2026-09-05). The magnitude word is an i18n key, not a letter:
+`M` / `B` in English, ล้าน / พันล้าน in Thai. The per-project `VARIANCE` figures are deliberately
+NOT shortened — an amount beside a project name is read, not glanced at.
+
 `+2 this month` and `ACTIVE REGION / Southeast Asia Sector` are mockup figures. `MITIGATION` and
-`DISMISS` are drawn with a **COMING SOON** chip: neither has an endpoint, and master §Phase 10 makes
-this role read-only on mobile, so they must not write.
+`DISMISS` sit INSIDE the AI card, where the drawing puts them, and are drawn with a **COMING SOON**
+chip: neither has an endpoint, and master §Phase 10 makes this role read-only on mobile, so they must
+not write. The card itself takes the drawing's cyan border and 3px cyan edge (`variant="executive"`
+on the shared `<InsightPanel />`, so no other screen's panel changed); its confidence chip, its
+`Source:` line and its `GENERATE REPORT` button STAY — the drawing shows a card already full of
+prose, and this product has no way to fill one without asking (ADR-085: a drawing does not remove
+reviewed working capability).
+
+The drawing's cyan blur behind the card's top-right corner is **not** reproduced:
+`.claude/rules/design-tokens.md` prohibits glow wherever the signed-in app shows project data and
+names the only two exceptions, neither of which is a dashboard of budgets. The `.ai-glow` class the
+drawing puts on that card is unaffected — `box-shadow: -3px 0 0 0` has no blur radius, so it is an
+edge, and the 3px strip draws exactly that.
 
 > **The first capture of this screen was BLANK where the money is**, and the cause is worth
 > recording. `GET /analytics/executive` filters `project_id IN ({projectIds})`, and the controller
 > turns a missing `projectIds` query parameter into an EMPTY array — so the endpoint answers `200`
-> with `[]` and every figure renders as an em dash, which looks exactly like being offline. The
-> screen now fetches the executive's own projects first and passes their ids. `alerts.tsx` and
-> `portfolio.tsx` still call it without them.
+> with `[]` and every figure renders as an em dash, which looks exactly like being offline. Every
+> caller now passes the ids, and the rule lives once in `api/analytics.ts`, which has no
+> parameterless form to call — `alerts.tsx` and `portfolio.tsx` were fixed on 2026-09-05, and
+> `components/home/FinanceHome.tsx` on 2026-09-06. That last one had printed a confident `0` on the
+> FINANCE role's overdue-invoice tile for every tenant.
 
 ### Tasks — [`02-Tasks/01-ex-tasks.png`](08-executive/02-Tasks/01-ex-tasks.png)
 
-`OVERDUE 8 · THIS WEEK 4 · TOTAL BLOCKED 0 across 5 projects` come from
-`GET /api/v1/tasks/portfolio-summary` — one tenant-wide query, built for this screen precisely so a
-portfolio view does not make one request per project. The tile reads **OVERDUE**, not the drawing's
-"Overdue Critical": `projects.tasks` has no priority or severity column, so no count here can claim
-one (the same substitution the Site Worker card makes for its badge).
+`OVERDUE 9 · THIS WEEK 5 · TOTAL BLOCKED 0` come from `GET /api/v1/tasks/portfolio-summary` — one
+tenant-wide query, built for this screen precisely so a portfolio view does not make one request per
+project. (The overdue and due-this-week counts move with the clock; they were 8 and 4 when this
+screen was first captured on 2026-09-05.) The tile reads **OVERDUE**, not the drawing's "Overdue
+Critical": `projects.tasks` has no priority or severity column, so no count here can claim one (the
+same substitution the Site Worker card makes for its badge).
+
+The blocked card's **View detail** replaced the "across N projects" line on 2026-09-05, following the
+drawing. It is drawn and goes nowhere — there is no blocked-task list for a role master §Phase 10
+makes read-only on mobile — so it carries the "coming soon" note `more.tsx` established, and it is
+DISABLED whenever there is nothing to detail: zero blocked, or a roll-up that could not be fetched at
+all. The critical path's **View all ›** is the same control for the same reason.
+
+**RISK ALERTS is a feed of cards, not a panel** (`components/ExecRiskAlerts.tsx`). It calls the same
+`POST /ai/reports/delay-risk` the field roles' `<ScheduleInsight />` calls and draws one card per
+`risk_factors` entry. Three things the drawing shows that the endpoint cannot fill, each left out
+rather than invented: a per-card severity (the report returns ONE `delay_risk_level` for the whole
+report, so every card carries it and a note says so), the "BIM + Site Logs" source chip (BIM is a
+Type A stub, spec §32.9, and `sources` carries retrieval snippets rather than system names), and the
+two action buttons (no endpoint, and the drawing's own second card has none). The section glyph is
+`tune`: the drawing's `temp_preferences_custom` is a Material Symbols icon and all 84 icon imports in
+this app come from MaterialIcons, which does not carry it.
 
 **CRITICAL PATH is computed, not drawn.** `GET /projects/{id}/critical-path` runs a forward and
 backward pass over `projects.task_dependencies`, a table that did not exist before 2026-09-05
 (ADR-097). The three rows in the capture are the seeded chain, and the dates show it working:
 
 ```text
-งานเสาเข็ม โซน A     2026-07-21 → 2026-08-11    0d float
-ฐานรากและคานคอดิน    2026-08-11 → 2026-09-01    0d float
-งานกันซึมชั้นใต้ดิน    2026-09-04 → 2026-09-25    0d float
+FOUNDATION  งานเสาเข็ม โซน A      Completed     2026-07-21 → 2026-08-11   0d float · 21 days   ID: FB73E3EC
+FOUNDATION  ฐานรากและคานคอดิน     In progress   2026-08-11 → 2026-09-01   0d float · 21 days   ID: 81AA56F4
+STRUCTURE   งานกันซึมชั้นใต้ดิน      Not started   2026-09-04 → 2026-09-25   0d float · 21 days   ID: CB239896
 ```
+
+The card follows the drawing's shape — eyebrow, name, round glyph plate, divider, status line, id
+chip — with two substitutions. The eyebrow is `work_type`, the trade, where the drawing writes
+"Project Alpha - Zone B": `projects.tasks` has no zone column and the section header already names
+the project. The chip shows the first block of the row's own `task_id`, the way a short SHA
+identifies a commit, because the drawing's "ID: TSK-0942" has no equivalent — the table is keyed by
+UUID and carries no human-readable code. The drawing's assignee avatars are absent for the same kind
+of reason: `GET /projects/{id}/critical-path` returns no assignee.
 
 The gap between `09-01` and `09-04` is the three-day `lag_days` the seed puts on that edge — the
 pile caps cure before the waterproofing starts. The footnote states that durations count calendar
@@ -2014,9 +2059,22 @@ calendar to offer.
 ### Safety — [`03-Safety/01-ex-safety.png`](08-executive/03-Safety/01-ex-safety.png)
 
 `ACTIVE INCIDENTS` and the `N low, M raised` split under it are real, counted from
-`GET /safety/incidents` tenant-wide, as are the per-project incident counts in the ranking. The
-compliance percentage, the grade ring, `+2.4% vs last month`, `SAFE MAN-HOURS 1.2M`, the six-month
-trend bars and the `96/100`-style scores with their SECURE / MONITOR badges are mockup figures.
+`GET /safety/incidents` tenant-wide, as are the per-project incident counts in the ranking and the
+`VIEW ALL 5 PROJECTS` count on the button at the foot. The compliance percentage, the grade ring,
+`+2.4% vs last month`, `SAFE MAN-HOURS 1.2M`, the six-month trend bars and the `96/100`-style scores
+with their SECURE / MONITOR badges are mockup figures.
+
+**The trend's MONTH AXIS is real while its BARS are not**, and that split is deliberate. The
+drawing's own labels read Jun–Nov, which would be visibly wrong beside any other clock, so the six
+labels are computed from today through `Intl.DateTimeFormat` and render in the user's locale (QM-3,
+`i18n/translate.ts` `shortMonthLabels`). A fabricated axis is harder to spot than a fabricated bar,
+because it looks like a date — `lib/mockupFigures.ts` records the split on the `COMPLIANCE_TREND`
+entry itself.
+
+The chevrons on the compliance card, on the two KPI tiles and on each ranking row are **decorative**:
+the drawing marks those surfaces tappable but names no destination, and this app has no per-project
+safety screen to open. They are hidden from the accessibility tree rather than announced as controls
+— the same treatment the Home KPI tiles take, so the role's four screens agree with each other.
 
 > **The first capture read `00 ACTIVE INCIDENTS` over a tenant holding five.** The screen asked the
 > API for `status: 'OPEN'` alone, and every seeded incident is `IN_PROGRESS`. "Active" means an
@@ -2034,11 +2092,44 @@ Four of the seven tiles reach a screen — Portfolio report → `/portfolio`, Fi
 ClickHouse table but its calculation engine throws `NotImplementedException` and no controller
 exposes it, and the map needs project coordinates the schema does not have.
 
+The tile follows the drawing's shape as of 2026-09-06: the glyph plate sits on the TITLE'S line and
+the body runs the full width beneath both, rather than the plate standing beside a two-line block.
+Two deviations, both measured rather than assumed:
+
+- the plate glyph is `insights` where the drawing asks for `monitoring` — that name is Material
+  Symbols and this app's icon set does not carry it, and all 84 icon imports in `apps/mobile/src`
+  are `MaterialIcons`, so a second family for one glyph would leave the app drawing two icon styles
+- the plate is **outlined** rather than filled with the drawing's lighter `surface-bright`. This
+  palette has no "brighter than the card" token — `elevated` (#111827) is a shade DARKER than
+  `surface` (#0F172A) — so a filled plate carrying the drawing's neutral glyph reads as nothing at
+  all. The same outline was given to the Tasks critical-path plate in the same change, for the same
+  reason. The identity block at the top has no counterpart in the drawing and stays: ADR-085 keeps
+  reviewed capability that a drawing happens to omit.
+
+### Navigation drawer — [`05-Drawer/01-ex-navigation-drawer.png`](08-executive/05-Drawer/01-ex-navigation-drawer.png)
+
+**Not a fifth tab.** ADR-098 settled the bottom bar at four, and `mockup/mobile/08_executive/05_profile/`
+draws the OVERLAY every role opens from the TopBar — the same `<NavigationDrawer />` the whole app
+shares. It is captured here because the executive's rows are its own, not because the role has a
+fifth destination.
+
+Everything in the frame is real. The name, role and user id come from the signed-in session; the
+`Online & synced` pill is the shared sync state; and the rows come from `drawerSectionFor(EXECUTIVE)`
+in `apps/mobile/src/lib/drawerLinks.ts`, which derives them from the §6.4 permission matrix — six
+shown, fourteen behind **More (14)**, then Settings, Privacy policy and Log out. Nothing on this
+screen is a mockup figure.
+
+The capture passes its own stitch band (`{ top: 96, bottom: 2400 }`) instead of the page band the four
+tabs use: the overlay covers the TopBar and the bottom nav, so cropping to the page band would cut off
+its own header and its logout row. Only the status bar stays excluded, because its clock changes
+between shots and would defeat the stitcher's overlap search.
+
 ### Reproducing this set
 
 `node scripts/capture-android-executive.mjs` from `apps/mobile`, with a screen name to re-shoot one
-(`… executive.mjs safety`). The script's own header carries the six prerequisites in order; three of
-them were learned the hard way while taking this set and none is optional:
+(`… executive.mjs safety`; the five keys are `home`, `tasks`, `safety`, `more`, `drawer`). The
+script's own header carries the six prerequisites in order; three of them were learned the hard way
+while taking this set and none is optional:
 
 - **`node prisma/seed-analytics-clickhouse.mjs`** after seeding Postgres. The analytics tables are
   written in production by `services/analytics-worker` consuming Kafka, which fills them FORWARD

@@ -182,7 +182,9 @@ describe('SafetyScreen — the EXECUTIVE portfolio safety overview', () => {
     });
     const { getByTestId } = await renderSafety();
     await waitFor(() => expect(getByTestId('safety-incidents')).toBeTruthy());
-    expect(getByTestId('safety-incidents')).toHaveTextContent(/03/);
+    // A plain count since 2026-09-07: three, not "03".
+    expect(getByTestId('safety-incidents')).toHaveTextContent(/3/);
+    expect(getByTestId('safety-incidents')).not.toHaveTextContent(/03/);
   });
 
   it('falls back to the API tally when no incident rows came back', async () => {
@@ -194,7 +196,7 @@ describe('SafetyScreen — the EXECUTIVE portfolio safety overview', () => {
       revoked_permits: 0,
     });
     const { getByTestId } = await renderSafety();
-    await waitFor(() => expect(getByTestId('safety-incidents')).toHaveTextContent(/07/));
+    await waitFor(() => expect(getByTestId('safety-incidents')).toHaveTextContent(/7/));
   });
 
   it('splits the severity from the rows it actually received', async () => {
@@ -268,7 +270,49 @@ describe('SafetyScreen — the EXECUTIVE portfolio safety overview', () => {
     // count that came back fine.
     projectsApi.getMyProjects.mockImplementation(() => Promise.reject(new Error('offline')));
     const { getByTestId, queryByTestId } = await renderSafety();
-    await waitFor(() => expect(getByTestId('safety-incidents')).toHaveTextContent(/03/));
+    await waitFor(() => expect(getByTestId('safety-incidents')).toHaveTextContent(/3/));
     expect(queryByTestId('safety-rank-p-1')).toBeNull();
+  });
+
+  // ── The drawing's trend axis and its view-all count (2026-09-06) ───────────
+
+  it('labels the trend with real months under drawn bars', async () => {
+    // The BARS are mockup figures and the AXIS is not — the split ADR-099 records for this chart.
+    // Asserted as "six labels, none of them the drawing's own", because the real ones move with the
+    // clock and pinning today's would make this test expire.
+    const { getByTestId } = await renderSafety();
+    await waitFor(() => expect(getByTestId('safety-trend-axis')).toBeTruthy());
+
+    const expected = new Intl.DateTimeFormat('en-US', { month: 'short' }).format(new Date());
+    expect(getByTestId('safety-trend-axis')).toHaveTextContent(new RegExp(expected));
+  });
+
+  it('labels the newest bar with its own value', async () => {
+    const { getByTestId } = await renderSafety();
+    await waitFor(() => expect(getByTestId('safety-trend-latest')).toHaveTextContent(/92%/));
+  });
+
+  it('counts the executive projects on the view-all control', async () => {
+    const { getByTestId } = await renderSafety();
+    await waitFor(() => expect(getByTestId('safety-view-all')).toHaveTextContent(/3/));
+  });
+
+  it('counts ALL of them, not just the ranked ones', async () => {
+    // The ranking is capped at the number of drawn scores, so `ranked.length` would under-report a
+    // portfolio. Four projects against three drawn scores: the control must say four.
+    projectsApi.getMyProjects.mockResolvedValue([
+      ...PROJECTS,
+      { project_id: 'p-4', project_code: 'X4', project_name: 'Fourth site', progress_percent: 5 },
+    ]);
+    const { getByTestId } = await renderSafety();
+    await waitFor(() => expect(getByTestId('safety-view-all')).toHaveTextContent(/4/));
+  });
+
+  it('says "view all projects" with no number before the list has answered', async () => {
+    // A zero here would claim the executive has no projects. The count is absent, not zero.
+    projectsApi.getMyProjects.mockImplementation(() => Promise.reject(new Error('offline')));
+    const { getByTestId } = await renderSafety();
+    await waitFor(() => expect(getByTestId('safety-view-all')).toBeTruthy());
+    expect(getByTestId('safety-view-all')).not.toHaveTextContent(/[0-9]/);
   });
 });

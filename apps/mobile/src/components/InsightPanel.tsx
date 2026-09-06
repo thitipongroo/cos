@@ -28,7 +28,7 @@
 // project and the panel names it — product-owner decision 2026-08-10, taken over the alternative of
 // choosing a project silently and letting one project's findings read as a tenant-wide statement.
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { LoadingState } from './LoadingState';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -83,12 +83,21 @@ export interface InsightPanelProps {
   /**
    * Which drawing this panel is following.
    *
-   * The two mockups do not agree, so neither does this. `plain` is the procurement dashboard's
+   * The three mockups do not agree, so neither does this. `plain` is the procurement dashboard's
    * panel — the ordinary card surface with a faint accent wash. `washed` is the finance dashboard's
    * — a teal field, a filled confidence pill and a button that sits at its own width rather than
-   * spanning the card. Both keep the left accent strip; the finance one draws it at 4px.
+   * spanning the card. `executive` is mockup 08_executive/01_home/01_ex_dashboard: an accent-tinted
+   * BORDER, a 3px strip and no wash at all. All three keep the left accent strip; finance draws it
+   * at 4px and the executive card at 3.
+   *
+   * The executive drawing also carries a blurred cyan blob behind its top-right corner. That is NOT
+   * reproduced and the omission is deliberate: `.claude/rules/design-tokens.md` prohibits glow
+   * wherever the signed-in app shows project data, and names the only two exceptions (pre-auth entry
+   * screens, and `<LoadingState />`'s `ai` variant). A dashboard of budgets is neither. The drawing's
+   * `.ai-glow` class is not affected by that rule — `box-shadow: -3px 0 0 0` has zero blur radius, so
+   * it is an EDGE, and that is exactly what the 3px strip draws.
    */
-  variant?: 'plain' | 'washed';
+  variant?: 'plain' | 'washed' | 'executive';
   /**
    * The drawing's follow-up button ("Review Adjustments ›" on the Finance panel). Optional: the
    * panels whose mockup has no such button do not grow one.
@@ -119,6 +128,30 @@ export interface InsightPanelProps {
    * panel does not say the same thing twice — `insightAdvice` reads `risk_factors` too.
    */
   showAdvice?: boolean;
+  /**
+   * Extra controls rendered INSIDE the card, after everything else.
+   *
+   * The executive drawing puts its "Mitigation" and "Dismiss" buttons inside the AI card rather than
+   * under it, which is where `ExecHome` had them. A slot rather than two more props: they belong to
+   * the host screen — they are that screen's actions, not the panel's — and the panel has no
+   * business knowing what they do.
+   */
+  footer?: React.ReactNode;
+  /**
+   * Generate on mount instead of on a button press, and draw no button.
+   *
+   * THIS SPENDS AI QUOTA ON EVERY SCREEN OPEN. The button existed precisely to stop that:
+   * `POST /ai/reports/*` is the only way to obtain a report's text, §26 meters AI per tenant against
+   * a monthly quota, and §31.3 alerts at 80% of it — so a panel that reports on load bills the
+   * tenant every time someone taps the tab (PO decision 2026-08-11, which this reverses for the
+   * screens that pass it). Product-owner decision 2026-09-07: the EXECUTIVE screens show the
+   * narrative their drawings show, and a card that must be pressed before it says anything is not
+   * that.
+   *
+   * It runs ONCE per mounted panel and only once a project id has arrived — never on every render,
+   * and never while `projectId` is still the empty string the host starts with.
+   */
+  autoRun?: boolean;
 }
 
 export function InsightPanel({
@@ -133,12 +166,15 @@ export function InsightPanel({
   bodyFrom,
   levelFrom,
   showAdvice = true,
+  footer,
+  autoRun = false,
 }: InsightPanelProps): React.JSX.Element {
   const t = useT();
   const p = usePalette();
   const isDark = useIsDark();
   const styles = useMemo(() => makeStyles(p), [p]);
   const washed = variant === 'washed';
+  const executive = variant === 'executive';
   const token = useAuthStore((s) => s.accessToken);
 
   const [report, setReport] = useState<AiReport | null>(null);
@@ -162,6 +198,15 @@ export function InsightPanel({
     }
   }, [projectId, token, generate]);
 
+  // One generation per mounted panel. The ref, not a piece of state: re-running on a re-render would
+  // bill the tenant again, and `report !== null` is not a guard — a failed call leaves it null.
+  const started = useRef(false);
+  useEffect(() => {
+    if (!autoRun || started.current || projectId === '') return;
+    started.current = true;
+    void run();
+  }, [autoRun, projectId, run]);
+
   const band = report === null ? null : confidenceBand(report.confidence, report.low_confidence);
   const percent = report === null ? null : confidencePercent(report.confidence);
   const text = report === null ? null : (bodyFrom ?? summaryText)(report.content);
@@ -169,12 +214,22 @@ export function InsightPanel({
   const advice = report === null || !showAdvice ? null : insightAdvice(report.content);
 
   return (
-    <View testID={testID} style={styles.panel}>
+    <View testID={testID} style={[styles.panel, executive && styles.panelExecutive]}>
       {/* The drawing's card shape: the ordinary card border, a 6px accent strip down the left edge
           and a 5%-accent wash over the surface — not an accent-coloured border on all four sides,
-          which is what this was and which made the panel shout louder than the money beside it. */}
-      <View style={[styles.accentStrip, washed && styles.accentStripWashed]} />
-      <View style={[styles.tint, washed && styles.tintWashed]} pointerEvents="none" />
+          which is what this was and which made the panel shout louder than the money beside it.
+          The executive drawing is the one place that DOES take an accent border, and it drops the
+          wash in exchange, so the two never shout together. */}
+      <View
+        style={[
+          styles.accentStrip,
+          washed && styles.accentStripWashed,
+          executive && styles.accentStripExecutive,
+        ]}
+      />
+      {executive ? null : (
+        <View style={[styles.tint, washed && styles.tintWashed]} pointerEvents="none" />
+      )}
       <View style={styles.head}>
         <View style={styles.eyebrowRow}>
           <MaterialIcons name={icon} size={18} color={p.accent} />
@@ -244,22 +299,25 @@ export function InsightPanel({
         {t('insight.source', { project: projectLabel ?? projectId })}
       </Text>
 
-      <Pressable
-        testID="insight-run"
-        accessibilityRole="button"
-        accessibilityLabel={t('insight.action')}
-        accessibilityState={{ disabled: loading || projectId === '' }}
-        disabled={loading || projectId === ''}
-        onPress={() => void run()}
-        style={[
-          styles.action,
-          washed && styles.actionWashed,
-          (loading || projectId === '') && styles.actionDisabled,
-        ]}
-      >
-        <Text style={styles.actionText}>{t('insight.action')}</Text>
-        <MaterialIcons name="chevron-right" size={18} color={p.primary} />
-      </Pressable>
+      {/* No button when the panel generates for itself — there is nothing left for it to ask. */}
+      {autoRun ? null : (
+        <Pressable
+          testID="insight-run"
+          accessibilityRole="button"
+          accessibilityLabel={t('insight.action')}
+          accessibilityState={{ disabled: loading || projectId === '' }}
+          disabled={loading || projectId === ''}
+          onPress={() => void run()}
+          style={[
+            styles.action,
+            washed && styles.actionWashed,
+            (loading || projectId === '') && styles.actionDisabled,
+          ]}
+        >
+          <Text style={styles.actionText}>{t('insight.action')}</Text>
+          <MaterialIcons name="chevron-right" size={18} color={p.primary} />
+        </Pressable>
+      )}
 
       {followUp !== undefined ? (
         <Pressable
@@ -273,6 +331,9 @@ export function InsightPanel({
           <MaterialIcons name="chevron-right" size={18} color={p.text} />
         </Pressable>
       ) : null}
+
+      {/* The host's own controls, inside the card — see `footer`. */}
+      {footer}
     </View>
   );
 }
@@ -289,7 +350,12 @@ const makeStyles = (p: Palette) =>
       gap: spacing.sm,
       overflow: 'hidden',
     },
+    // The executive drawing's card: `border border-cos-cyan/30` — 30% of the accent, which is 4D in
+    // the alpha byte — and the left padding closes up to match the narrower strip.
+    panelExecutive: { borderColor: `${p.accent}4D`, paddingLeft: spacing.md + 3 },
     accentStripWashed: { width: 4 },
+    // `box-shadow: -3px 0 0 0 #06B6D4` in the drawing's `.ai-glow`.
+    accentStripExecutive: { width: 3 },
     // The drawing's teal field: the accent laid over the card rather than beside it.
     tintWashed: { backgroundColor: `${p.accent}1F` },
     bandChipWashed: { backgroundColor: `${p.accent}33`, borderColor: 'transparent' },

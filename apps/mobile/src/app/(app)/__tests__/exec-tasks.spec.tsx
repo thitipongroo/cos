@@ -27,7 +27,7 @@ jest.mock('../../../api/safety', () => ({
 }));
 jest.mock('../../../api/schedule', () => ({
   getPortfolioTaskSummary: jest.fn(),
-  getCriticalPath: jest.fn(),
+  getPortfolioCriticalPath: jest.fn(),
 }));
 jest.mock('../../../api/projects', () => ({
   ...jest.requireActual('../../../api/projects'),
@@ -40,7 +40,7 @@ jest.mock('../../../api/users', () => ({
 // The AI panels call their own endpoints and print the model's own confidence. They are covered by
 // their own specs; what matters here is that these screens never route a mockup figure through one.
 jest.mock('../../../components/PortfolioInsight', () => ({ PortfolioInsight: () => null }));
-jest.mock('../../../components/ScheduleInsight', () => ({ ScheduleInsight: () => null }));
+jest.mock('../../../components/ExecRiskAlerts', () => ({ ExecRiskAlerts: () => null }));
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 const safetyApi = require('../../../api/safety') as {
@@ -49,7 +49,7 @@ const safetyApi = require('../../../api/safety') as {
 };
 const scheduleApi = require('../../../api/schedule') as {
   getPortfolioTaskSummary: jest.Mock;
-  getCriticalPath: jest.Mock;
+  getPortfolioCriticalPath: jest.Mock;
 };
 const projectsApi = require('../../../api/projects') as { getMyProjects: jest.Mock };
 /* eslint-enable @typescript-eslint/no-require-imports */
@@ -119,13 +119,9 @@ beforeEach(() => {
     open_count: 90,
     project_count: 5,
   });
-  scheduleApi.getCriticalPath.mockResolvedValue({
-    project_id: 'p-1',
-    project_start: '2026-09-01',
-    project_finish: '2026-09-20',
-    duration_days: 19,
+  scheduleApi.getPortfolioCriticalPath.mockResolvedValue({
+    project_count: 2,
     working_day_calendar: false,
-    critical_task_ids: ['t-1'],
     excluded_task_count: 2,
     tasks: [
       {
@@ -140,19 +136,25 @@ beforeEach(() => {
         latest_finish: '2026-09-22',
         total_float_days: 0,
         is_critical: true,
+        assigned_to: 'u-9',
+        project_id: 'p-1',
+        project_name: 'Sukhumvit 45',
       },
       {
-        task_id: 't-2',
-        task_name: 'Waterproofing',
+        task_id: 't-9',
+        task_name: 'Roof steel',
         status: 'NOT_STARTED',
         work_type: 'STRUCTURE',
-        duration_days: 21,
-        earliest_start: '2026-09-04',
-        earliest_finish: '2026-09-25',
-        latest_start: '2026-09-07',
-        latest_finish: '2026-09-28',
-        total_float_days: 3,
-        is_critical: false,
+        duration_days: 14,
+        earliest_start: '2026-09-10',
+        earliest_finish: '2026-09-24',
+        latest_start: '2026-09-10',
+        latest_finish: '2026-09-24',
+        total_float_days: 0,
+        is_critical: true,
+        assigned_to: null,
+        project_id: 'p-2',
+        project_name: 'Rama IX Tower',
       },
     ],
   });
@@ -177,33 +179,28 @@ describe('TasksScreen — the EXECUTIVE roll-up', () => {
     await waitFor(() => expect(scheduleApi.getPortfolioTaskSummary).toHaveBeenCalledTimes(1));
   });
 
-  it('lists only the zero-float tasks under Critical path', async () => {
-    const { getByTestId, queryByTestId } = await renderTasks();
-    await waitFor(() => expect(getByTestId('tasks-critical-t-1')).toBeTruthy());
-    // t-2 has three days of float, so it is on the schedule but not on the critical path.
-    expect(queryByTestId('tasks-critical-t-2')).toBeNull();
-  });
-
-  it('says the durations are calendar days, because the server said so', async () => {
+  it('lists the critical tasks of EVERY project, each naming its own', async () => {
+    // The section spans the tenant since 2026-09-07 — one server-side pass per project — so the
+    // heading names no project and each row carries the one it belongs to.
     const { getByTestId } = await renderTasks();
-    await waitFor(() => expect(getByTestId('tasks-calendar-note')).toBeTruthy());
+    await waitFor(() => expect(getByTestId('tasks-critical-t-1')).toBeTruthy());
+    expect(getByTestId('tasks-critical-t-1')).toHaveTextContent(/Sukhumvit 45/);
+    expect(getByTestId('tasks-critical-t-9')).toHaveTextContent(/Rama IX Tower/);
   });
 
-  it('hides the calendar note when a working-day calendar is in use', async () => {
-    scheduleApi.getCriticalPath.mockResolvedValue({
-      project_id: 'p-1',
-      project_start: '2026-09-01',
-      project_finish: '2026-09-20',
-      duration_days: 19,
-      working_day_calendar: true,
-      critical_task_ids: [],
-      excluded_task_count: 0,
-      tasks: [],
-    });
-    const { queryByTestId } = await renderTasks();
-    await waitFor(() => expect(queryByTestId('tasks-critical-empty')).toBeTruthy());
-    expect(queryByTestId('tasks-calendar-note')).toBeNull();
-    expect(queryByTestId('tasks-excluded-note')).toBeNull();
+  it('asks the tenant-wide endpoint once, never one request per project', async () => {
+    // The fan-out this endpoint exists to prevent — five projects would otherwise be five requests
+    // from the first screen the role sees.
+    await renderTasks();
+    await waitFor(() => expect(scheduleApi.getPortfolioCriticalPath).toHaveBeenCalledTimes(1));
+  });
+
+  it('marks a task that has an owner, and leaves an unowned one unmarked', async () => {
+    // `assigned_to` is the only assignee fact this platform holds — no name, no photograph. An
+    // unassigned critical task must stay visibly unassigned rather than take a generic head.
+    const { getByTestId, queryByTestId } = await renderTasks();
+    await waitFor(() => expect(getByTestId('tasks-critical-t-1-assignee')).toBeTruthy());
+    expect(queryByTestId('tasks-critical-t-9-assignee')).toBeNull();
   });
 
   it('names how many tasks it could not schedule instead of dropping them silently', async () => {
@@ -212,7 +209,7 @@ describe('TasksScreen — the EXECUTIVE roll-up', () => {
   });
 
   it('says so when the project has no dependency network yet', async () => {
-    scheduleApi.getCriticalPath.mockResolvedValue({
+    scheduleApi.getPortfolioCriticalPath.mockResolvedValue({
       project_id: 'p-1',
       project_start: null,
       project_finish: null,
@@ -235,11 +232,13 @@ describe('TasksScreen — the EXECUTIVE roll-up', () => {
     await waitFor(() => expect(getByTestId('tasks-kpi-overdue')).toHaveTextContent(/—/));
   });
 
-  it('does not ask for a critical path when the executive has no projects', async () => {
+  it('still shows the critical path when the executive project list is empty', async () => {
+    // The roll-up is tenant-wide and no longer hangs off the list — that dependency is exactly what
+    // made the section report on ONE project while its heading named that project.
     projectsApi.getMyProjects.mockResolvedValue([]);
     const { getByTestId } = await renderTasks();
-    await waitFor(() => expect(getByTestId('tasks-critical-empty')).toBeTruthy());
-    expect(scheduleApi.getCriticalPath).not.toHaveBeenCalled();
+    await waitFor(() => expect(getByTestId('tasks-critical-t-1')).toBeTruthy());
+    expect(scheduleApi.getPortfolioCriticalPath).toHaveBeenCalledTimes(1);
   });
 
   it('writes no state after the screen is unmounted mid-flight', async () => {
@@ -266,13 +265,98 @@ describe('TasksScreen — the EXECUTIVE roll-up', () => {
     projectsApi.getMyProjects.mockImplementation(() => Promise.reject(new Error('offline')));
     const { getByTestId } = await renderTasks();
     await waitFor(() => expect(getByTestId('tasks-kpi-overdue')).toHaveTextContent(/12/));
-    expect(getByTestId('tasks-critical-empty')).toBeTruthy();
+    // And the critical path with them: neither call needs the list any more.
+    expect(getByTestId('tasks-critical-t-1')).toBeTruthy();
   });
 
   it('survives a critical-path call that fails on its own', async () => {
-    scheduleApi.getCriticalPath.mockImplementation(() => Promise.reject(new Error('offline')));
+    scheduleApi.getPortfolioCriticalPath.mockImplementation(() =>
+      Promise.reject(new Error('offline')),
+    );
     const { getByTestId } = await renderTasks();
     await waitFor(() => expect(getByTestId('tasks-critical-empty')).toBeTruthy());
     expect(getByTestId('tasks-kpi-blocked')).toHaveTextContent(/8/);
+  });
+
+  // ── The drawing's two controls (2026-09-05) ────────────────────────────────
+  //
+  // Both are drawn and neither has anywhere to go — there is no blocked-task list and no full
+  // critical-path screen for this role. What IS testable, and what these assert, is that each one
+  // goes dead exactly when its subject is empty: a live control that leads nowhere is a worse lie
+  // than a greyed one.
+
+  it('pairs the blocked figure with its unit', async () => {
+    // "8" alone on a dashboard reads as a percentage or a currency at a glance; the drawing writes
+    // "8 Tasks" (PO 2026-09-07).
+    const { getByTestId } = await renderTasks();
+    await waitFor(() => expect(getByTestId('tasks-kpi-blocked')).toHaveTextContent(/8/));
+    expect(getByTestId('tasks-kpi-blocked')).toHaveTextContent(/Tasks/i);
+  });
+
+  it('offers the blocked card its detail control once something is blocked', async () => {
+    const { getByTestId } = await renderTasks();
+    await waitFor(() => expect(getByTestId('tasks-kpi-blocked')).toHaveTextContent(/8/));
+    expect(getByTestId('tasks-blocked-detail').props.accessibilityState.disabled).toBe(false);
+  });
+
+  it('disables the detail control when nothing is blocked', async () => {
+    scheduleApi.getPortfolioTaskSummary.mockResolvedValue({
+      overdue_count: 4,
+      due_this_week_count: 9,
+      blocked_count: 0,
+      open_count: 30,
+      project_count: 5,
+    });
+    const { getByTestId } = await renderTasks();
+    await waitFor(() => expect(getByTestId('tasks-kpi-blocked')).toHaveTextContent(/0/));
+    expect(getByTestId('tasks-blocked-detail').props.accessibilityState.disabled).toBe(true);
+  });
+
+  it('disables the detail control when the roll-up could not be fetched at all', async () => {
+    // Distinct from zero: this is "we could not ask", and the control must not imply a list exists.
+    scheduleApi.getPortfolioTaskSummary.mockImplementation(() =>
+      Promise.reject(new Error('offline')),
+    );
+    const { getByTestId } = await renderTasks();
+    await waitFor(() => expect(getByTestId('tasks-kpi-overdue')).toHaveTextContent(/—/));
+    expect(getByTestId('tasks-blocked-detail').props.accessibilityState.disabled).toBe(true);
+  });
+
+  it('enables the critical path view-all control only when there is a path', async () => {
+    const { getByTestId } = await renderTasks();
+    await waitFor(() => expect(getByTestId('tasks-critical-t-1')).toBeTruthy());
+    expect(getByTestId('tasks-critical-all').props.accessibilityState.disabled).toBe(false);
+  });
+
+  it('disables the view-all control when the project has no critical path', async () => {
+    scheduleApi.getPortfolioCriticalPath.mockResolvedValue({
+      project_id: 'p-1',
+      project_start: null,
+      project_finish: null,
+      duration_days: 0,
+      working_day_calendar: false,
+      critical_task_ids: [],
+      excluded_task_count: 0,
+      tasks: [],
+    });
+    const { getByTestId } = await renderTasks();
+    await waitFor(() => expect(getByTestId('tasks-critical-empty')).toBeTruthy());
+    expect(getByTestId('tasks-critical-all').props.accessibilityState.disabled).toBe(true);
+  });
+
+  // ── The critical-path card's own fields ────────────────────────────────────
+
+  it('draws the card from the real columns, and its id from the real key', async () => {
+    // The drawing's "ID: TSK-0942" has no equivalent column — `projects.tasks` is keyed by UUID —
+    // so the chip shows the first block of the actual id. This asserts it is the ID and not a
+    // number this screen made up.
+    const { getByTestId } = await renderTasks();
+    await waitFor(() => expect(getByTestId('tasks-critical-t-1')).toBeTruthy());
+    const card = getByTestId('tasks-critical-t-1');
+    expect(card).toHaveTextContent(/FOUNDATION/);
+    expect(card).toHaveTextContent(/Pile caps/);
+    expect(card).toHaveTextContent(/ID: T-1/);
+    // The status word is the row's own status, translated — not a severity this screen assigned.
+    expect(card).toHaveTextContent(/In progress/i);
   });
 });

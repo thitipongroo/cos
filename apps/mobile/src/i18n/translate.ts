@@ -118,3 +118,26 @@ export function formatTime(date: Date | string, locale: Locale): string {
     minute: '2-digit',
   }).format(value);
 }
+
+/**
+ * Short month names for the `count` months ending at — and including — `endingAt`, oldest first.
+ *
+ * The executive Safety screen's six-month trend needs an axis. Its BAR HEIGHTS are mockup figures
+ * (ADR-099) but the months they sit under must not be: the drawing's own labels read Jun–Nov, which
+ * would be visibly wrong beside any other clock, and a fabricated axis is harder to spot than a
+ * fabricated bar because it looks like a date.
+ *
+ * Locale-aware through `Intl.DateTimeFormat`, per QM-3 — never a hardcoded English month table. The
+ * Buddhist-era tag is deliberately NOT used here: BE changes the year, and this returns no year.
+ */
+export function shortMonthLabels(endingAt: Date, count: number, locale: Locale): string[] {
+  if (count <= 0 || Number.isNaN(endingAt.getTime())) return [];
+  const format = new Intl.DateTimeFormat(LOCALE_TAGS[locale], { month: 'short' });
+  const labels: string[] = [];
+  for (let back = count - 1; back >= 0; back--) {
+    // Day 1 of the month, so a 31st never rolls into the next month on the way back. Negative month
+    // indices are legal and roll the year, which is what carries this across a January boundary.
+    labels.push(format.format(new Date(endingAt.getFullYear(), endingAt.getMonth() - back, 1)));
+  }
+  return labels;
+}

@@ -38,7 +38,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { get } from '../../api/client';
 import { getMyProjects } from '../../api/projects';
-import { compactMoney, type MoneyScale } from '../../lib/compactMoney';
+import { compactMoneyLabel } from '../../lib/compactMoney';
 import { budgetHealth, budgetFraction, type BudgetHealth } from '../../lib/budgetHealth';
 import {
   portfolioTotals,
@@ -52,13 +52,6 @@ import { useT } from '../../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
 import { usePalette, type Palette, useIsDark } from '../../theme/usePalette';
 import { screenChrome } from '../../theme/screenStyles';
-
-/** i18n key for the magnitude `compactMoney` scaled to — "M"/"B" in English, ล้าน/พันล้าน in Thai. */
-const SCALE_KEY: Record<MoneyScale, string | null> = {
-  none: null,
-  million: 'pm.finance.scaleMillion',
-  billion: 'pm.finance.scaleBillion',
-};
 
 const HEALTH_KEY: Record<BudgetHealth, string> = {
   HEALTHY: 'pm.finance.healthy',
@@ -153,18 +146,16 @@ export default function FinanceScreen(): React.JSX.Element {
   const totals = useMemo(() => portfolioTotals(rows), [rows]);
   const currency = totals.currency ?? 'THB';
 
-  /** A money figure at tile size: compact text plus its localised magnitude suffix. */
+  /**
+   * A money figure at tile size: compact text plus its localised magnitude suffix.
+   *
+   * The assembly moved into `lib/compactMoney.ts` on 2026-09-05, when the Executive Home's
+   * portfolio budget became the second screen to need it. This is the same output it always
+   * produced — `฿ 805 M` — from one implementation instead of two.
+   */
   const money = useCallback(
-    (amount: Parameters<typeof compactMoney>[0]): string => {
-      const { text, scale } = compactMoney(amount, currency);
-      const key = SCALE_KEY[scale];
-      // `฿ 805` + a gap + the localised magnitude — `฿ 805 M`, the project standard (PO
-      // 2026-08-10). Thai's suffixes already carry their own leading space in the message file, so
-      // the gap is added only where the key has none.
-      if (key === null) return text;
-      const suffix = t(key);
-      return `${text}${suffix.startsWith(' ') ? '' : ' '}${suffix}`;
-    },
+    (amount: Parameters<typeof compactMoneyLabel>[0]): string =>
+      compactMoneyLabel(amount, currency, t),
     [currency, t],
   );
 

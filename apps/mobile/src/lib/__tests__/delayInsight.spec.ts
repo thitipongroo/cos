@@ -1,4 +1,4 @@
-import { delayFactors, delayLevel } from '../delayInsight';
+import { delayFactorList, delayFactors, delayLevel } from '../delayInsight';
 
 describe('delayLevel', () => {
   it('returns the level word the report carried', () => {
@@ -63,5 +63,38 @@ describe('delayFactors', () => {
     expect(
       delayFactors({ disclaimer: 'AI-generated estimate — verify with project schedule' }),
     ).toBeNull();
+  });
+});
+
+describe('delayFactorList', () => {
+  // The executive Tasks screen draws one CARD per factor, so it needs the items rather than the
+  // paragraph `delayFactors` joins for the shared panel. Same filtering, different shape.
+  it('returns the factors in order, trimmed', () => {
+    expect(delayFactorList({ risk_factors: ['  Rain  ', 'Rebar late'] })).toEqual([
+      'Rain',
+      'Rebar late',
+    ]);
+  });
+
+  it('drops blanks and non-strings rather than rendering empty cards', () => {
+    expect(delayFactorList({ risk_factors: ['Real', '   ', 7, null, undefined, {}] })).toEqual([
+      'Real',
+    ]);
+  });
+
+  it('returns an empty list when the report carried no factors', () => {
+    expect(delayFactorList({ risk_factors: [] })).toEqual([]);
+    expect(delayFactorList({})).toEqual([]);
+    expect(delayFactorList({ risk_factors: 'HIGH' })).toEqual([]);
+  });
+
+  it('agrees with delayFactors about which items survive', () => {
+    // Two readers over one field: if they ever disagreed, the panel and the feed would show the
+    // same report differently.
+    const content = { risk_factors: ['One', '  ', 'Two'] };
+    const joined = delayFactorList(content)
+      .map((f) => `• ${f}`)
+      .join('\n');
+    expect(joined).toBe(delayFactors(content));
   });
 });

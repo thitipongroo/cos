@@ -64,6 +64,8 @@ export interface CriticalPathTask {
   latest_finish: string;
   total_float_days: number;
   is_critical: boolean;
+  /** Whether anyone is assigned. The id itself, or null — never a name (see `CpmTaskRow`). */
+  assigned_to: string | null;
 }
 
 export interface CriticalPathResponse {
@@ -81,6 +83,28 @@ export interface CriticalPathResponse {
   tasks: CriticalPathTask[];
   critical_task_ids: string[];
   /** Tasks left out of the network for want of both planned dates. */
+  excluded_task_count: number;
+}
+
+/** A critical task with the project it belongs to, for the tenant-wide roll-up. */
+export interface PortfolioCriticalTask extends CriticalPathTask {
+  project_id: string;
+  project_name: string;
+}
+
+/**
+ * The critical path of EVERY project in the tenant, merged.
+ *
+ * There is no such thing as one critical path across projects — each has its own network and its own
+ * origin, so a single forward pass over all of them would invent dependencies nobody declared. This
+ * runs the real per-project pass and CONCATENATES the zero-float tasks, which is what a portfolio
+ * screen can honestly show: "the tasks that cannot slip, in every project". `project_count` says how
+ * many networks that covers.
+ */
+export interface PortfolioCriticalPathResponse {
+  tasks: PortfolioCriticalTask[];
+  project_count: number;
+  working_day_calendar: boolean;
   excluded_task_count: number;
 }
 
@@ -404,6 +428,7 @@ export class TasksService {
         latest_finish: isoDate(offsetToDate(origin!, s.latestFinishOffset)),
         total_float_days: s.totalFloatDays,
         is_critical: s.isCritical,
+        assigned_to: row.assigned_to,
       };
     });
 
@@ -420,6 +445,45 @@ export class TasksService {
       tasks,
       critical_task_ids: computed.criticalTaskIds,
       excluded_task_count: computed.excludedTaskCount,
+    };
+  }
+
+  /**
+   * The critical tasks of every project in the tenant.
+   *
+   * ONE REQUEST, N PASSES. The EXECUTIVE Tasks screen is a portfolio view and asked one project for
+   * its critical path until 2026-09-07, while its heading named that project — which read as a
+   * tenant-wide list of one project's work. Removing the heading alone would have made that reading
+   * silent instead of wrong, so the roll-up is real: the same per-project pass `getCriticalPath`
+   * runs, once per project that HAS tasks, with the results concatenated.
+   *
+   * The passes run SEQUENTIALLY rather than through `Promise.all`. Each is two more queries against
+   * the same pool, and a tenant with forty projects would otherwise open eighty at once — the
+   * fan-out `portfolioTaskSummary` was built to avoid, moved from the client into the server rather
+   * than removed.
+   */
+  async getPortfolioCriticalPath(): Promise<PortfolioCriticalPathResponse> {
+    const projects = await this.repo.findProjectsWithTasks();
+    const tasks: PortfolioCriticalTask[] = [];
+    let excluded = 0;
+
+    for (const project of projects) {
+      const path = await this.getCriticalPath(project.project_id);
+      excluded += path.excluded_task_count;
+      for (const task of path.tasks) {
+        if (!task.is_critical) continue;
+        tasks.push({ ...task, project_id: project.project_id, project_name: project.project_name });
+      }
+    }
+
+    // Earliest first, so the reader meets the portfolio's schedule in the order it happens rather
+    // than in project-name order, which means nothing to someone reading a list of risks.
+    tasks.sort((a, b) => a.earliest_start.localeCompare(b.earliest_start));
+    return {
+      tasks,
+      project_count: projects.length,
+      working_day_calendar: false,
+      excluded_task_count: excluded,
     };
   }
 

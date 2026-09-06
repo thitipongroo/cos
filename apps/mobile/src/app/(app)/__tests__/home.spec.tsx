@@ -142,6 +142,33 @@ describe('HomeScreen role dispatch', () => {
     );
   });
 
+  it('asks the analytics endpoint for FINANCE by project id, never bare', async () => {
+    // The whole defect this screen carried until 2026-09-06: `GET /analytics/executive` with no
+    // `projectIds` answers 200 with [], so the overdue-invoice tile printed a confident 0. Asserted
+    // on the URL rather than on the tile, because the tile reads 0 in both the broken and the
+    // "genuinely nothing overdue" case — only the request tells them apart.
+    await renderHome(CosRole.FINANCE);
+
+    await waitFor(() =>
+      expect(pathsCalled().some((p) => p.startsWith('/analytics/executive'))).toBe(true),
+    );
+    const call = pathsCalled().find((p) => p.startsWith('/analytics/executive')) ?? '';
+    expect(call).toContain('projectIds=proj-1');
+  });
+
+  it('shows an em dash for FINANCE rather than a zero it could not verify', async () => {
+    // A zero here would read as "nothing is overdue" on a finance dashboard. Losing the project list
+    // must produce the placeholder, not a number.
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const projectsApi = require('../../../api/projects') as { getMyProjects: jest.Mock };
+    /* eslint-enable @typescript-eslint/no-require-imports */
+    projectsApi.getMyProjects.mockImplementationOnce(() => Promise.reject(new Error('offline')));
+
+    const { getByTestId } = await renderHome(CosRole.FINANCE);
+    await waitFor(() => expect(getByTestId('kpi-overdue-invoices')).toHaveTextContent(/—/));
+    expect(pathsCalled().some((p) => p.startsWith('/analytics/executive'))).toBe(false);
+  });
+
   it('gives PROCUREMENT_OFFICER the RFQ, order and delivery KPIs', async () => {
     const { getByTestId } = await renderHome(CosRole.PROCUREMENT_OFFICER);
 

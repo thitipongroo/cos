@@ -815,6 +815,7 @@ throughout; only its use as a _brand_ colour is prohibited.
 | `--cos-dark-bg`                | `#020617` |
 | `--cos-dark-surface`           | `#0F172A` |
 | `--cos-dark-elevated`          | `#111827` |
+| `--cos-dark-surface-bright`    | `#2A3A4F` |
 | `--cos-dark-text`              | `#F8FAFC` |
 | `--cos-dark-muted`             | `#94A3B8` |
 | `--cos-dark-blue`              | `#2563EB` |
@@ -825,6 +826,24 @@ throughout; only its use as a _brand_ colour is prohibited.
 | `--cos-dark-outline`           | `#46464C` |
 | `--cos-dark-accent`            | `#4CD7F6` |
 | `--cos-dark-surface-container` | `#102034` |
+
+> `--cos-dark-surface-bright` added 2026-09-07 (product-owner decision). It exists because
+> `--cos-dark-elevated` cannot do this job and was being asked to: `#111827` is a shade **darker**
+> than the `#0F172A` card it would sit on, so a chip, tag or glyph plate filled with it reads as
+> nothing at all on a dark screen. `--cos-dark-elevated` is correct for what this table names it —
+> a modal or dropdown over a dimmed page — and wrong for anything raised **on** a card. Three
+> surfaces hit that in one week before the set gained a token for it: the executive More tile's glyph
+> plate, the critical-path card's plate, and that card's task-id chip.
+>
+> The value is the mockups' own, counted rather than chosen: of the 194 `mockup/mobile/**/code.html`
+> files that declare `surface-bright`, **190 declare `#2a3a4f`** (two `#1e293b`, one `#1E293B`, one
+> `#1b2b3f`).
+>
+> **Light mode has no counterpart and needs none.** Nothing is brighter than a white card, so a
+> raised chip there is the grey page colour — which is what `elevated` already resolves to in light.
+> The two coincide in light and separate in dark, the same shape as `primary` / `accent` below.
+
+<!-- Two blockquotes, two tokens — the blank line between them is a separator, not a gap. -->
 
 > `--cos-dark-accent` added 2026-08-06 (product-owner decision), and it exists for an accessibility
 > reason rather than a stylistic one. Dark screens previously drew their accent — icons, eyebrows,

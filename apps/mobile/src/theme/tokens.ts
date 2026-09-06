@@ -37,6 +37,14 @@ export const darkColors = {
   bg: '#020617', // --cos-dark-bg
   surface: '#0F172A', // --cos-dark-surface — card surface
   elevated: '#111827', // --cos-dark-elevated — inputs, inner panels, logo plate
+  // --cos-dark-surface-bright. ADDED 2026-09-07, and it exists because `elevated` above cannot do
+  // this job: #111827 is DARKER than the #0F172A card it would sit on, so a chip or a glyph plate
+  // filled with it reads as nothing at all on a dark screen. `elevated` is right for what §32.7
+  // names it — a modal over a dimmed page — and wrong for anything raised ON a card.
+  //
+  // The value is the mockups' own, counted rather than chosen: of the 194 mockup/mobile/**/code.html
+  // files that declare `surface-bright`, 190 declare #2a3a4f (two #1e293b, one #1E293B, one #1b2b3f).
+  surfaceBright: '#2A3A4F',
   // --cos-dark-surface-container. SPECIFIED 2026-08-06 (PO decision) for the BOTTOM NAV, and only
   // for it. The mockups draw the two pieces of chrome differently and deliberately: the header is
   // `bg-surface dark:bg-dark-bg`, so on `<html class="dark">` with `darkMode: "class"` the dark:

@@ -39,6 +39,9 @@ jest.mock('@expo-google-fonts/inter-tight', () => ({
   InterTight_600SemiBold: 'InterTight_600SemiBold',
   InterTight_700Bold: 'InterTight_700Bold',
 }));
+jest.mock('@expo-google-fonts/material-symbols-outlined', () => ({
+  MaterialSymbolsOutlined_400Regular: 'MaterialSymbolsOutlined_400Regular',
+}));
 jest.mock('react-native-safe-area-context', () => {
   const actual = jest.requireActual('react-native-safe-area-context') as Record<string, unknown>;
   return {

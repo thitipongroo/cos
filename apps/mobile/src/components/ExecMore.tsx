@@ -35,14 +35,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet, Alert } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Avatar } from './Avatar';
 import { PortfolioInsight } from './PortfolioInsight';
 import { getMyProjects } from '../api/projects';
-import { useAuthStore } from '../store/authStore';
-import { formatRole } from '../lib/formatRole';
 import { useT } from '../i18n';
 import { fontFamily, plateRadius, radius, spacing, typography } from '../theme/tokens';
-import { usePalette, useIsDark, type Palette } from '../theme/usePalette';
+import { usePalette, type Palette } from '../theme/usePalette';
 
 type IconName = keyof typeof MaterialIcons.glyphMap;
 
@@ -62,9 +59,6 @@ export function ExecMore(): React.JSX.Element {
   const p = usePalette();
   const styles = useMemo(() => makeStyles(p), [p]);
   const router = useRouter();
-  const isDark = useIsDark();
-  const displayName = useAuthStore((s) => s.displayName);
-  const role = useAuthStore((s) => s.role);
 
   const [insightProject, setInsightProject] = useState('');
   const [insightProjectName, setInsightProjectName] = useState<string | undefined>(undefined);
@@ -91,22 +85,12 @@ export function ExecMore(): React.JSX.Element {
       style={{ backgroundColor: p.bg }}
       contentContainerStyle={styles.page}
     >
-      <View testID="exec-more-profile" style={styles.profile}>
-        <Avatar variant={isDark ? 'dark' : 'light'} />
-        <View style={styles.profileText}>
-          <Text style={styles.name} numberOfLines={1}>
-            {displayName ?? '—'}
-          </Text>
-          <Text style={styles.role} numberOfLines={1}>
-            {role === null ? '—' : formatRole(role)}
-          </Text>
-        </View>
-      </View>
-
       <PortfolioInsight
         projectId={insightProject}
         projectLabel={insightProjectName}
         titleKey="exec.more.intelligence"
+        icon="auto-awesome"
+        autoRun
       />
 
       {TILES.map((tile) => (
@@ -122,17 +106,19 @@ export function ExecMore(): React.JSX.Element {
           }
           style={styles.tile}
         >
-          <View style={styles.tilePlate}>
-            <MaterialIcons name={tile.icon} size={24} color={p.accent} />
-          </View>
+          {/* The drawing's shape: the plate sits ON THE TITLE'S LINE and the body runs the full
+              width beneath both, rather than the plate standing beside a two-line block. */}
           <View style={styles.tileText}>
             <View style={styles.tileTitleRow}>
-              <Text style={styles.tileTitle}>{t(`exec.more.${tile.id}.title`)}</Text>
-              {tile.route === null ? (
-                <View testID={`exec-more-${tile.id}-soon`} style={styles.soonChip}>
-                  <Text style={styles.soonText}>{t('more.soon')}</Text>
-                </View>
-              ) : null}
+              <View style={styles.tilePlate}>
+                {/* THE ACCENT, not the drawing's `text-on-surface` (PO 2026-09-07, reversing the
+                    2026-09-06 change): every other glyph plate in this app is cyan, and a screen of
+                    seven monochrome plates read as disabled rows beside them. */}
+                <MaterialIcons name={tile.icon} size={18} color={p.accent} />
+              </View>
+              <Text style={styles.tileTitle} numberOfLines={1}>
+                {t(`exec.more.${tile.id}.title`)}
+              </Text>
             </View>
             <Text style={styles.tileBody}>{t(`exec.more.${tile.id}.body`)}</Text>
           </View>
@@ -151,28 +137,6 @@ const makeStyles = (p: Palette) =>
   StyleSheet.create({
     page: { padding: spacing.md, gap: spacing.sm },
 
-    profile: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.sm,
-      backgroundColor: p.surface,
-      borderRadius: radius.lg,
-      borderWidth: 1,
-      borderColor: p.border,
-      padding: spacing.md,
-    },
-    profileText: { flex: 1, gap: 2 },
-    name: {
-      fontSize: typography.body.fontSize,
-      fontFamily: fontFamily.semibold,
-      color: p.text,
-    },
-    role: {
-      fontSize: typography.label.fontSize,
-      fontFamily: fontFamily.regular,
-      color: p.muted,
-    },
-
     tile: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -185,15 +149,24 @@ const makeStyles = (p: Palette) =>
       minHeight: 72,
     },
     tilePlate: {
-      width: 40,
-      height: 40,
+      width: 32,
+      height: 32,
       // A square glyph plate scales its corner with its side (§32.7) — never a literal.
-      borderRadius: plateRadius(40),
+      borderRadius: plateRadius(32),
       backgroundColor: p.elevated,
+      // AN EDGE, BECAUSE THE FILL ALONE IS INVISIBLE. The drawing's plate is `bg-surface-bright`,
+      // which is LIGHTER than its card; this palette's `elevated` (#111827) is a shade DARKER than
+      // `surface` (#0F172A), so a filled plate on a dark card reads as nothing at all. That did not
+      // show while the glyph was accent-coloured and carried the tile on its own — it appeared the
+      // moment the glyph took the drawing's neutral ink. Rather than invent a "brighter than the
+      // card" token the set does not have, the plate is outlined: it reads as a plate, the glyph
+      // stays the ink the drawing asks for, and no token changes meaning.
+      borderWidth: 1,
+      borderColor: p.border,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    tileText: { flex: 1, gap: 2 },
+    tileText: { flex: 1, gap: spacing.xs / 2 },
     tileTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
     tileTitle: {
       fontSize: typography.body.fontSize,
@@ -204,20 +177,5 @@ const makeStyles = (p: Palette) =>
       fontSize: typography.label.fontSize,
       fontFamily: fontFamily.regular,
       color: p.muted,
-    },
-    soonChip: {
-      paddingHorizontal: spacing.xs,
-      paddingVertical: 1,
-      borderRadius: radius.xl,
-      backgroundColor: p.elevated,
-      borderWidth: 1,
-      borderColor: p.border,
-    },
-    soonText: {
-      fontSize: typography.label.fontSize,
-      fontFamily: fontFamily.semibold,
-      color: p.muted,
-      textTransform: 'uppercase',
-      letterSpacing: 0.6,
     },
   });

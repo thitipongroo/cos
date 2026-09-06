@@ -21,6 +21,19 @@ export interface Palette {
   surface: string;
   /** Inner panel raised above `surface` (code blocks, quote blocks, chips). */
   elevated: string;
+  /**
+   * A surface that must READ as raised above `surface` — a chip, a glyph plate, a tag.
+   *
+   * Distinct from `elevated`, which §32.7 defines as the modal/dropdown surface: in DARK mode
+   * `--cos-dark-elevated` (#111827) is a shade darker than the #0F172A card, which is correct over a
+   * dimmed page and invisible on a card. Three surfaces hit that in one week — the More tile's glyph
+   * plate, the critical-path plate and the task ID chip — before the set gained a token for it.
+   *
+   * In LIGHT mode there is nothing brighter than a white card, so the raised surface is the grey
+   * page colour, which is what `elevated` already resolves to there. The two coincide in light and
+   * separate in dark, the same shape as `primary`/`accent` above.
+   */
+  surfaceBright: string;
   /** Primary body text. */
   text: string;
   /** Secondary / caption text. */
@@ -50,6 +63,8 @@ const LIGHT: Palette = {
   bg: colors.surface, // page = the grey field surface, so white cards read as raised
   surface: colors.bg, // cards
   elevated: colors.surface,
+  // White cards have nothing above them; a raised chip in light mode is the grey page colour.
+  surfaceBright: colors.surface,
   text: colors.textPrimary,
   muted: colors.textSecondary,
   primary: colors.primary,
@@ -66,6 +81,7 @@ const DARK: Palette = {
   bg: darkColors.bg,
   surface: darkColors.surface,
   elevated: darkColors.elevated,
+  surfaceBright: darkColors.surfaceBright,
   text: darkColors.text,
   muted: darkColors.muted,
   primary: darkColors.primary,

@@ -1,5 +1,5 @@
 import { toDecimal } from '@cos/financial';
-import { compactMoney } from '../compactMoney';
+import { compactMoney, compactMoneyLabel, MONEY_SCALE_KEY } from '../compactMoney';
 
 describe('compactMoney', () => {
   it('leaves an amount that fits exactly as the invoice formatter writes it', () => {
@@ -44,5 +44,49 @@ describe('compactMoney', () => {
 
   it('accepts a Decimal as well as a string', () => {
     expect(compactMoney(toDecimal('12000000')).text).toBe('฿ 12');
+  });
+});
+
+describe('compactMoneyLabel', () => {
+  // The suffix is an i18n KEY, not a letter — "M"/"B" in English, ล้าน/พันล้าน in Thai — so this
+  // stands in for the app's translate function and asserts which key each magnitude asks for.
+  const t = (key: string): string =>
+    ({ 'pm.finance.scaleMillion': 'M', 'pm.finance.scaleBillion': 'B' })[key] ?? key;
+
+  it('appends the magnitude the amount was scaled to', () => {
+    expect(compactMoneyLabel('450000000', 'THB', t)).toBe('฿ 450 M');
+    expect(compactMoneyLabel('1240000000', 'THB', t)).toBe('฿ 1.24 B');
+  });
+
+  it('appends nothing below a million, where the figure was never scaled', () => {
+    // The product owner's threshold: abbreviate only ABOVE ฿1,000,000. `compactMoney` already draws
+    // that line, so a plain amount must come back with no suffix at all — not "฿85,000.00 M".
+    expect(compactMoneyLabel('85000', 'THB', t)).toBe('฿85,000.00');
+    expect(compactMoneyLabel('999999.99', 'THB', t)).toBe('฿999,999.99');
+  });
+
+  it('takes one million itself as the first scaled amount', () => {
+    expect(compactMoneyLabel('1000000', 'THB', t)).toBe('฿ 1 M');
+  });
+
+  it('adds no second space when the locale suffix already carries one', () => {
+    // Thai's suffixes lead with a space in the message file; two gaps would render "฿ 450  ล้าน".
+    const thai = (key: string): string =>
+      ({ 'pm.finance.scaleMillion': ' ล้าน', 'pm.finance.scaleBillion': ' พันล้าน' })[key] ?? key;
+    expect(compactMoneyLabel('450000000', 'THB', thai)).toBe('฿ 450 ล้าน');
+  });
+
+  it('keeps a negative amount negative', () => {
+    expect(compactMoneyLabel('-28900000', 'THB', t)).toBe('-฿ 28.9 M');
+  });
+});
+
+describe('MONEY_SCALE_KEY', () => {
+  it('has an entry for every scale compactMoney can return', () => {
+    // A missing entry would be an undefined lookup and a crash at render, on a screen whose whole
+    // subject is a number.
+    expect(MONEY_SCALE_KEY.none).toBeNull();
+    expect(MONEY_SCALE_KEY.million).toBe('pm.finance.scaleMillion');
+    expect(MONEY_SCALE_KEY.billion).toBe('pm.finance.scaleBillion');
   });
 });

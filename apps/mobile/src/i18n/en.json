@@ -1249,7 +1249,8 @@
       "incidentCount": "{count} incidents",
       "secure": "SECURE",
       "monitor": "MONITOR",
-      "viewAll": "View all projects"
+      "viewAll": "View all projects",
+      "viewAllCount": "View all {count} projects"
     },
     "tasks": {
       "overdue": "Overdue",
@@ -1257,7 +1258,6 @@
       "thisWeek": "This week",
       "dueNote": "Due within 7 days",
       "blocked": "Total blocked",
-      "acrossProjects": "across {count} projects",
       "riskAlerts": "Risk alerts",
       "criticalPath": "Critical path",
       "criticalPathEmpty": "No dependencies recorded for this project yet, so no critical path can be computed.",
@@ -1265,7 +1265,20 @@
       "float": "{days}d float",
       "days": "{days} days",
       "calendarNote": "Durations count calendar days — this platform has no working-day calendar.",
-      "excludedNote": "{count} tasks left out: no planned start and finish."
+      "excludedNote": "{count} tasks left out: no planned start and finish.",
+      "viewDetail": "View detail",
+      "viewAll": "View all",
+      "conf": "Conf: {value}%",
+      "riskNone": "The report named no risk factors for this project.",
+      "riskLevelNote": "One risk level covers the whole report — the model does not rate each factor separately.",
+      "status": "Status:",
+      "status_NOT_STARTED": "Not started",
+      "status_IN_PROGRESS": "In progress",
+      "status_COMPLETED": "Completed",
+      "status_BLOCKED": "Blocked",
+      "status_CANCELLED": "Cancelled",
+      "taskId": "ID: {id}",
+      "blockedUnit": "Tasks"
     },
     "more": {
       "intelligence": "OS Intelligence",
@@ -1302,9 +1315,9 @@
       "intelligence": "AI Executive Intelligence",
       "mitigation": "Mitigation",
       "dismiss": "Dismiss",
-      "activeProjects": "Active projects",
+      "activeProjects": "Active",
       "thisMonth": "{value} this month",
-      "riskAlerts": "Risk alerts",
+      "riskAlerts": "Risks",
       "riskSplit": "{critical} critical • {warning} warning",
       "portfolioBudget": "Portfolio budget",
       "actual": "Actual: {value}",

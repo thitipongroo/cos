@@ -99,7 +99,22 @@ Dark theme tokens (source: brand_palette §6):
                                     #0F172A, and four are one-offs (#12182b, #141d2b, #1a2238,
                                     #1e293b). Previous figures (217 / 5) were counted on 2026-08-06
                                     against 226 files and went stale as the mockup set grew.
-  --cos-dark-elevated:    #111827   Elevated modal / dropdown surface
+  --cos-dark-elevated:    #111827   Elevated modal / dropdown surface — over a DIMMED PAGE, never on
+                                    a card: it is darker than --cos-dark-surface, so anything filled
+                                    with it on a card is invisible. Use --cos-dark-surface-bright.
+  --cos-dark-surface-bright:
+                          #2A3A4F   A surface that must READ AS RAISED on a card — chips, tags, glyph
+                                    plates (added 2026-09-07, PO decision). Added because `elevated`
+                                    was being used for this and cannot: #111827 sits BELOW the
+                                    #0F172A card. Three surfaces hit it in one week — the executive
+                                    More tile's plate, the critical-path plate and the task-id chip.
+                                    Value counted, not chosen: of the 194 mockup/mobile/**/code.html
+                                    that declare surface-bright, 190 declare #2a3a4f (2 #1e293b, 1
+                                    #1E293B, 1 #1b2b3f). LIGHT MODE HAS NO COUNTERPART and needs
+                                    none — nothing is brighter than a white card, so a raised chip
+                                    there is the grey page colour, which is what `elevated` already
+                                    resolves to in light. The two coincide in light, separate in dark
+                                    — the same shape as primary/accent.
   --cos-dark-text:        #F8FAFC   Primary text
   --cos-dark-muted:       #94A3B8   Secondary text / inactive
   --cos-dark-blue:        #2563EB   Accent blue (same as light)

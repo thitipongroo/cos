@@ -21,6 +21,8 @@ export function PortfolioInsight({
   icon,
   variant,
   followUp,
+  footer,
+  autoRun,
 }: {
   projectId: string;
   /** What to call the project on the "Source:" line; defaults to the id. */
@@ -30,6 +32,10 @@ export function PortfolioInsight({
   /** The More screen's drawing calls the same panel "Intelligence"; Finance calls it what it is. */
   titleKey?: string;
   followUp?: InsightPanelProps['followUp'];
+  /** Host controls drawn inside the card — the executive drawing's Mitigation / Dismiss pair. */
+  footer?: InsightPanelProps['footer'];
+  /** Generate on mount and draw no button — see `InsightPanelProps.autoRun` for what it costs. */
+  autoRun?: InsightPanelProps['autoRun'];
 }): React.JSX.Element {
   return (
     <InsightPanel
@@ -41,6 +47,8 @@ export function PortfolioInsight({
       icon={icon}
       variant={variant}
       followUp={followUp}
+      footer={footer}
+      autoRun={autoRun}
     />
   );
 }

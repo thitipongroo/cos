@@ -7,7 +7,10 @@
 //                                    the critical path
 //   03-Safety/01-ex-safety          compliance · active incidents · six-month trend ·
 //                                    the project ranking
-//   04-More/01-ex-more              the seven tiles, three of them marked as unbuilt
+//   04-More/01-ex-more              the seven tiles, three of them unbuilt
+//   05-Drawer/01-ex-navigation-drawer
+//                                   the role's drawer — an OVERLAY opened from the TopBar, not a
+//                                   fifth tab; its rows come from the §6.4 matrix via drawerLinks.ts
 //
 // THE BAR IS Home | Tasks | Safety | More as the product owner settled it on 2026-09-04 (ADR-098),
 // which is a CHANGE from Home | Portfolio | Alerts | Reports — the bar that agreed with spec
@@ -192,7 +195,15 @@ function grab(path) {
 }
 
 /** Rewind, shoot descending viewports, stitch ONE full-page PNG (docs/screens/android/README.md). */
-async function stitchFull(name) {
+/**
+ * @param name  output path under OUT, without the extension
+ * @param band  the rows to stitch. Defaults to the page band — below the TopBar, above the bottom
+ *              nav — which is right for a TAB. The navigation drawer is an overlay covering both,
+ *              so it passes its own: the status bar stays excluded (its clock changes between shots
+ *              and would defeat the stitcher's overlap search) but everything under it is the
+ *              drawer's own surface.
+ */
+async function stitchFull(name, band = { top: TOP, bottom: BOT }) {
   const dest = join(OUT, `${name}.png`);
   mkdirSync(dirname(dest), { recursive: true });
   for (let i = 0; i < 6; i++) {
@@ -213,7 +224,7 @@ async function stitchFull(name) {
   // No `--fab` argument anywhere in this role: EXECUTIVE is read-only on mobile (master §Phase 10),
   // so none of its four screens pins a floating action button inside the scrolling band.
   process.stdout.write(
-    execFileSync('python', [STITCH, dest, String(TOP), String(BOT), ...shots], {
+    execFileSync('python', [STITCH, dest, String(band.top), String(band.bottom), ...shots], {
       encoding: 'utf-8',
     }),
   );
@@ -329,6 +340,28 @@ async function main() {
     await find(byId('home-screen'), 'executive Home', 20);
     await delay(4000);
     await stitchFull('01-Home/01-ex-home-dashboard');
+  }
+
+  // THE DRAWER IS NOT A TAB. `05_profile/01_ex_navigation_drawer` is the overlay every role opens
+  // from the TopBar, not a fifth destination in the bottom bar — ADR-098 settled that bar at four.
+  // It is shot last of all, and after Home, because it is opened FROM a tab and closing it returns
+  // to whatever was underneath.
+  //
+  // Its rows are the role's own: `drawerSectionFor(EXECUTIVE)` derives them from the §6.4 permission
+  // matrix, so this frame is the picture of that derivation.
+  if (wanted('drawer')) {
+    console.log('· Navigation drawer (overlay, opened from the TopBar)');
+    await tap(byId('home-tab'), 'Home tab');
+    await find(byId('home-screen'), 'executive Home', 20);
+    await tap(byId('drawer-menu-button'), 'drawer menu button');
+    await find(byId('navigation-drawer'), 'navigation drawer', 20);
+    await delay(1500);
+    // The overlay covers the TopBar and the bottom nav, so the page band would crop its own header
+    // and its logout row. 96 clears the status bar; 2400 is the foot of the screen.
+    await stitchFull('05-Drawer/01-ex-navigation-drawer', { top: 96, bottom: 2400 });
+    // Leave it closed, so a re-run that starts on Home is not looking at yesterday's overlay.
+    adb('shell', 'input', 'keyevent', 'KEYCODE_BACK');
+    await delay(1200);
   }
 
   // Put the device back the way it was found. A developer who runs this and then uses the emulator

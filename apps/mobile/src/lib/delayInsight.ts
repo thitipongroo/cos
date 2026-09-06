@@ -39,3 +39,22 @@ export function delayFactors(content: Record<string, unknown>): string | null {
     .map((item) => `• ${item.trim()}`);
   return lines.length === 0 ? null : lines.join('\n');
 }
+
+/**
+ * The risk factors as a LIST rather than one bulleted block.
+ *
+ * `delayFactors` above joins them for `<InsightPanel />`, which renders a single paragraph. The
+ * executive Tasks screen draws mockup 08_executive/02_tasks/02_ex_tasks, whose risk alerts are one
+ * CARD per finding — so it needs the items, not the paragraph. Both readers exist because the two
+ * screens genuinely present the same report two ways; neither is the other's fallback.
+ *
+ * Same filtering as `delayFactors`: non-strings and blank entries are dropped rather than rendered
+ * as empty cards, and an absent or non-array `risk_factors` yields `[]`.
+ */
+export function delayFactorList(content: Record<string, unknown>): string[] {
+  const factors = content['risk_factors'];
+  if (!Array.isArray(factors)) return [];
+  return factors
+    .filter((item): item is string => typeof item === 'string' && item.trim() !== '')
+    .map((item) => item.trim());
+}

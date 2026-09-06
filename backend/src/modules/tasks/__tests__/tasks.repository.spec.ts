@@ -294,4 +294,19 @@ describe('TasksRepository', () => {
 
     expect(await repo.portfolioTaskSummary()).toBe(row);
   });
+
+  it('findProjectsWithTasks returns the tenant projects that have a schedulable task', async () => {
+    // Scoped to projects WITH tasks so the portfolio critical path does not run a forward and
+    // backward pass over an empty network once per empty project.
+    mockPrisma.$queryRaw.mockResolvedValue([
+      { project_id: 'proj-1', project_name: 'Sukhumvit 45' },
+      { project_id: 'proj-2', project_name: 'Rama IX Tower' },
+    ]);
+
+    const rows = await repo.findProjectsWithTasks();
+
+    expect(rows).toHaveLength(2);
+    expect(rows[0]!.project_name).toBe('Sukhumvit 45');
+    expect(mockPrisma.$queryRaw).toHaveBeenCalled();
+  });
 });

@@ -54,6 +54,9 @@ jest.mock('@expo-google-fonts/inter-tight', () => ({
   InterTight_600SemiBold: 'InterTight_600SemiBold',
   InterTight_700Bold: 'InterTight_700Bold',
 }));
+jest.mock('@expo-google-fonts/material-symbols-outlined', () => ({
+  MaterialSymbolsOutlined_400Regular: 'MaterialSymbolsOutlined_400Regular',
+}));
 // The real provider renders nothing until an onLayout gives it insets, which never fires here — so
 // the whole app tree below it would be invisible to the test for a reason that has nothing to do
 // with the gate. The shim hands the children straight through with fixed metrics.
