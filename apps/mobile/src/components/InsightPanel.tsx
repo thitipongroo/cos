@@ -359,14 +359,6 @@ export function InsightPanel({
         </View>
       ) : null}
 
-      {/* The mockup's "Source:" line. It names the project the figures came from, which is the whole
-          reason the host screen asks for one — and on the `executive` variant it also IS the
-          drawing's SOURCES footer: a divider, then the same line in caps. See the header for why it
-          names the project rather than the drawing's "BIM & ERP DATA". */}
-      <Text style={[styles.source, executive && styles.sourceExecutive]}>
-        {t('insight.source', { project: projectLabel ?? projectId })}
-      </Text>
-
       {/* No button when the panel generates for itself — there is nothing left for it to ask. */}
       {autoRun ? null : (
         <Pressable
@@ -402,6 +394,26 @@ export function InsightPanel({
 
       {/* The host's own controls, inside the card — see `footer`. */}
       {footer}
+
+      {/* The mockup's "Source:" line. It names the project the figures came from, which is the whole
+          reason the host screen asks for one — and on the `executive` variant it also IS the
+          drawing's SOURCES footer. See the header for why it names the project rather than the
+          drawing's "BIM & ERP DATA".
+          IT IS LAST ON EVERY VARIANT since 2026-09-07 (PO), which is where the drawing puts it: a
+          divider under the card's controls, then the line beneath. It used to sit ABOVE the button,
+          which put a provenance note in the middle of the card and left the buttons hanging off the
+          bottom edge.
+          ONE LINE, THEN AN ELLIPSIS, on the executive variant only (PO 2026-09-07): a long project
+          name wrapped this footer onto two rows and pushed the card taller than the drawing's. The
+          other variants keep wrapping — their source line is body-sized rather than a caps footer,
+          and truncating a name a manager is reading to identify a project is a worse trade there. */}
+      <Text
+        style={[styles.source, executive && styles.sourceExecutive]}
+        numberOfLines={executive ? 1 : undefined}
+        ellipsizeMode="tail"
+      >
+        {t('insight.source', { project: projectLabel ?? projectId })}
+      </Text>
     </View>
   );
 }

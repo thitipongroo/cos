@@ -63,6 +63,18 @@ const NOT_BADGES: Readonly<Record<string, number>> = {
   // rather than `Chip` so it cannot be confused with the reports screen's `statusChip`, which is a
   // real status pill and stays at radius.xl.
   statusTag: radius.sm,
+  // The EXECUTIVE Home project card's ON TRACK / AT RISK / OVER BUDGET tag — squared because the
+  // drawing squares it and the product owner chose the drawing (PO decision 2026-09-07).
+  // `mockup/mobile/08_executive/01_home/01_ex_dashboard` writes `rounded`, and its own Tailwind
+  // config maps the DEFAULT to 0.25rem = 4px = radius.md — read off that file's config block, not
+  // assumed from Tailwind's stock scale, which is 0.25rem there too but for a different reason.
+  // Listed here rather than exempted in code, so the platform ruling still binds every badge it was
+  // not overruled for; components/home/ExecHome.tsx carries the reasoning at the element.
+  projectStatusTag: radius.md,
+  // The EXECUTIVE Report screen's CRITICAL / MONITOR / SECURE tag on each project summary — squared
+  // for the same reason and by the same decision as the row above (PO 2026-09-07); its drawing,
+  // `08_executive/04_report/01_ex_report`, also writes `rounded`.
+  rowStatusTag: radius.md,
 };
 
 function tsxFiles(dir: string): string[] {

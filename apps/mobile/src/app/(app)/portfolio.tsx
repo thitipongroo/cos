@@ -53,7 +53,7 @@
 // indistinguishable from being offline.
 
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, FlatList, Pressable, TextInput, StyleSheet } from 'react-native';
+import { View, Text, FlatList, ScrollView, Pressable, TextInput, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import type { Project } from '../../db/database';
 import { useCollection } from '../../hooks/useCollection';
@@ -107,6 +107,24 @@ function bandOf(row: ExecutiveDashboardRow | undefined): Band | null {
   return 'onTrack';
 }
 
+/**
+ * Which of the three reasons put this project in its band.
+ *
+ * Read in the SAME order as `executiveSeverityOf`, because that is the order that decided the band:
+ * over-utilisation first, then the at-risk flag, then overdue invoices. A note that named a
+ * different cause from the one that set the colour would be worse than no note.
+ *
+ * `health` is never undefined at the call site — the strip only renders for a card that HAS a band,
+ * and a card without a row has none — but the parameter is typed for it and the fallback names the
+ * flag, which is the middle case and the one that survives when a row arrives without figures.
+ */
+function adviceKey(health: ExecutiveDashboardRow | undefined): 'overBudget' | 'atRisk' | 'overdue' {
+  if (health !== undefined && Number(health.utilizationPct) > 100) return 'overBudget';
+  if (health !== undefined && health.overdueInvoiceCount > 0 && health.atRisk !== 1)
+    return 'overdue';
+  return 'atRisk';
+}
+
 function bandTone(band: Band | null, p: Palette): string {
   if (band === 'critical') return p.danger;
   if (band === 'atRisk') return p.warning;
@@ -149,6 +167,9 @@ const PortfolioCard = memo(function PortfolioCard({
 }) {
   const { project, health, progress, band, drawn } = row;
   const tone = bandTone(band, p);
+  // The advice strip's own tone — see the strip for why it is not always the band's. `p.accent` is
+  // the palette's `cos-cyan`, which is the token the drawing's `bg-cos-cyan/10` names.
+  const adviceTone = band === 'critical' ? p.danger : p.accent;
 
   // actual − budget. Positive is an overrun; the drawing colours that red and an underrun green.
   const variance =
@@ -174,24 +195,17 @@ const PortfolioCard = memo(function PortfolioCard({
       onPress={() => onOpen(project)}
       style={[styles.card, { borderLeftColor: tone }]}
     >
+      {/* ONE ROW: name, status tag, chevron (PO 2026-09-07). The tag used to sit INSIDE the text
+          block on a wrapping row, so a long project name pushed it onto a second line and the card
+          grew a row that carried nothing. The name now truncates instead — it is the string a reader
+          scans, and the first words of it identify the project — and the tag keeps its place hard
+          against the chevron, where the drawing has it and where the eye can compare it down the
+          list without hunting. */}
       <View style={styles.cardHead}>
         <View style={styles.cardHeadText}>
-          <View style={styles.titleRow}>
-            <Text style={styles.cardTitle} numberOfLines={2}>
-              {project.projectName}
-            </Text>
-            {band === null ? null : (
-              <View style={[styles.bandPill, { borderColor: `${tone}66` }]}>
-                <Text style={[styles.bandPillText, { color: tone }]}>
-                  {t(`exec.portfolio.band.${band}`)}
-                </Text>
-              </View>
-            )}
-            {/* The LIFECYCLE status, and only when it is not the ordinary one. The band above says
-                how a running project is doing; it says nothing about a project that is on hold or
-                still a draft, and that is a difference the reader must not have to infer. */}
-            {project.status === 'ACTIVE' ? null : <StatusChip label={project.status} />}
-          </View>
+          <Text style={styles.cardTitle} numberOfLines={1} ellipsizeMode="tail">
+            {project.projectName}
+          </Text>
           <Text style={styles.cardMeta} numberOfLines={1}>
             <Text style={styles.cardMetaAccent}>
               {t('exec.portfolio.contract', { code: contract })}
@@ -199,6 +213,17 @@ const PortfolioCard = memo(function PortfolioCard({
             {`  •  ${location}`}
           </Text>
         </View>
+        {band === null ? null : (
+          <View style={[styles.bandPill, { borderColor: `${tone}66` }]}>
+            <Text style={[styles.bandPillText, { color: tone }]}>
+              {t(`exec.portfolio.band.${band}`)}
+            </Text>
+          </View>
+        )}
+        {/* The LIFECYCLE status, and only when it is not the ordinary one. The band beside it says
+            how a running project is doing; it says nothing about a project that is on hold or still
+            a draft, and that is a difference the reader must not have to infer. */}
+        {project.status === 'ACTIVE' ? null : <StatusChip label={project.status} />}
         <MaterialIcons
           name="chevron-right"
           size={20}
@@ -295,6 +320,54 @@ const PortfolioCard = memo(function PortfolioCard({
           value={t('exec.portfolio.qualityPass', { value: quality })}
         />
       </View>
+
+      {/* THE DRAWING'S ADVICE STRIP, on the cards that are not on track (PO 2026-09-07; the drawing
+          puts it on its CRITICAL card and the instruction extends it to the amber ones too).
+          WHAT IT SAYS IS DERIVED, NOT INVENTED, and that is the one place this departs from the
+          drawing. The drawing writes a sentence of specific advice — "ชะลอการเบิกงวดถัดไป และเจรจา
+          เคลม VO เหล็กเสริม" — under a `smart_toy` robot glyph, i.e. advice attributed to a model.
+          There is no model on this screen: it makes no AI call at all, and
+          `lib/mockupFigures.ts` forbids presenting any drawn value as a model output, because a
+          fabricated finding standing beside real figures is the case spec §22.3 is most explicit
+          about. So the strip carries the REASON THE CARD IS IN ITS BAND — the same
+          `executiveSeverityOf` rule the chips and the sort read — and takes a `warning` glyph
+          rather than the robot.
+          TWO TONES, READ OFF THE DRAWING (PO 2026-09-07): its CRITICAL card's strip is
+          `bg-mobile-danger/10 border-mobile-danger/30`, and its at-risk card's is
+          `bg-cos-cyan/10 border-cos-cyan/30` with a `bolt` glyph — measured, not inferred from the
+          card's own colour. So an over-budget project's note is red like its band, and an at-risk
+          project's is the accent cyan, which is why `adviceTone` is not simply `tone`.
+          THE GLYPH IS NOT THE DRAWING'S `smart_toy` on the red card. That robot marks the line as a
+          model's advice, and there is no model here; `warning` says the same urgency without the
+          claim. `bolt` on the cyan card carries no such claim and is kept.
+          IT SITS BELOW THE FOUR-CELL MATRIX, where the drawing puts it: the matrix is what the
+          reader checks, the note is what to do about it, and the note read first was an instruction
+          before its evidence.
+          COMING SOON is the honest label for the drawing's own version: an advice engine per
+          project. Nothing in this platform produces one. */}
+      {band === 'onTrack' || band === null ? null : (
+        <View
+          testID="portfolio-advice"
+          style={[
+            styles.advice,
+            { borderColor: `${adviceTone}4D`, backgroundColor: `${adviceTone}14` },
+          ]}
+        >
+          <MaterialIcons
+            name={band === 'critical' ? 'warning' : 'bolt'}
+            size={16}
+            color={adviceTone}
+            accessibilityElementsHidden
+            importantForAccessibility="no"
+          />
+          <Text style={styles.adviceText}>
+            <Text style={[styles.adviceLead, { color: adviceTone }]}>
+              {t('exec.portfolio.adviceLead')}
+            </Text>
+            {t(`exec.portfolio.advice.${adviceKey(health)}`)}
+          </Text>
+        </View>
+      )}
 
       <View style={styles.cardFoot}>
         <Text style={styles.footText}>{t('exec.portfolio.index', { value: index })}</Text>
@@ -552,7 +625,17 @@ export default function PortfolioScreen(): React.JSX.Element {
               />
             </View>
 
-            <View style={styles.chipRow}>
+            {/* ONE ROW THAT SCROLLS, not a wrapping block (PO 2026-09-07, and the drawing's own
+                `overflow-x-auto no-scrollbar`). `horizontal` on a ScrollView scrolls ONLY this row —
+                the page keeps its own vertical scroll, which is what the instruction asked for.
+                `alwaysBounceHorizontal={false}` so a row that already fits does not rubber-band and
+                make the page look like it moved. */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              alwaysBounceHorizontal={false}
+              contentContainerStyle={styles.chipRow}
+            >
               {FILTERS.map((key) => {
                 const active = filter === key;
                 const tone = key === 'all' ? p.primary : bandTone(key, p);
@@ -579,7 +662,7 @@ export default function PortfolioScreen(): React.JSX.Element {
                   </Pressable>
                 );
               })}
-            </View>
+            </ScrollView>
 
             <View style={styles.sortRow}>
               <Pressable
@@ -673,7 +756,9 @@ const makeStyles = (p: Palette) =>
       paddingVertical: 0,
     },
 
-    chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+    // `flexWrap` is gone with the wrapping block: inside a horizontal ScrollView the row must be
+    // allowed to run past the viewport, which is the whole point of scrolling it.
+    chipRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
     chip: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -748,9 +833,10 @@ const makeStyles = (p: Palette) =>
       padding: spacing.md,
       gap: spacing.sm,
     },
-    cardHead: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xs },
+    // `center`, not `flex-start`: the tag and the chevron now share this row with a two-line text
+    // block, and top-aligning them would leave both floating above the meta line.
+    cardHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
     cardHeadText: { flex: 1, gap: spacing.xs / 2 },
-    titleRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.xs },
     cardTitle: {
       color: p.text,
       fontFamily: fontFamily.semibold,
@@ -794,6 +880,23 @@ const makeStyles = (p: Palette) =>
     varianceText: { fontFamily: fontFamily.semibold, fontSize: 10 },
     track: { height: 6, borderRadius: radius.sm, backgroundColor: p.elevated, overflow: 'hidden' },
     fill: { height: '100%' },
+
+    advice: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: spacing.xs,
+      padding: spacing.xs,
+      borderRadius: radius.md,
+      borderWidth: 1,
+    },
+    adviceText: {
+      flex: 1,
+      color: p.text,
+      fontFamily: fontFamily.regular,
+      fontSize: typography.label.fontSize,
+      lineHeight: typography.caption.lineHeight,
+    },
+    adviceLead: { fontFamily: fontFamily.semibold },
 
     matrix: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
     matrixTile: {

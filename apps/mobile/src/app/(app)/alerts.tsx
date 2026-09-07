@@ -1,159 +1,41 @@
-// Alerts screen — EXECUTIVE risk feed. Source: GET /analytics/executive → ExecutiveDashboardRow[]
-// (one row per project). At-risk projects are surfaced first with utilization + overdue invoices.
+// Alerts screen — the EXECUTIVE portfolio task roll-up.
+// Implements mockup/mobile/08_executive/02_alerts/02_ex_alerts.
 //
-// THIS SCREEN SHOWED NOTHING AGAINST A REAL BACKEND UNTIL 2026-09-05. It called the endpoint with no
-// `projectIds`, and the controller turns that into an empty array, so the ClickHouse `project_id IN
-// ()` matched no row and the API answered 200 with `[]` — an empty feed, identical on screen to
-// "there are no alerts". The ids now come from `GET /projects/mine` first, which is why the two
-// calls are sequential rather than parallel. The rule and the query-building live once, in
-// `api/analytics.ts`.
+// THIS SCREEN WAS REPLACED ON 2026-09-07, and the replacement is a product-owner decision that
+// deliberately reverses one made the same morning. It is worth stating plainly, because what was
+// here before was working code with real data behind it.
 //
-// The severity mapping moved there too, for the same reason: the Home risk tile derives the same
-// three bands from the same three columns, and two copies of one rule drift.
+// WHAT WAS HERE: a risk feed. One card per project from `GET /analytics/executive`, banded
+// CRITICAL → HIGH → MEDIUM by `executiveSeverityOf`, sorted worst-first — which is exactly what
+// spec §20.7.1 defines at `/alerts` ("Delay risk, budget overrun, critical issues sorted by
+// severity"). That is why the morning's escalation resolved the name clash in its favour.
+//
+// WHAT THE DRAWING ACTUALLY SAYS. `02_alerts/02_ex_alerts` is the previous `02_tasks/02_ex_tasks`
+// file with FOUR LINES CHANGED — the four labels in its `<nav>`. Measured, not assumed: diff the
+// two blobs either side of commit a23b385b and the body is byte-identical. So the drawing behind
+// the tab named "Alerts" draws the TASK ROLL-UP: overdue / due-this-week / blocked, the AI risk
+// alert feed, and the critical path.
+//
+// THE PRODUCT OWNER CHOSE THE DRAWING (2026-09-07): make this screen the task roll-up, delete the
+// risk feed, and amend the specification rather than deviate from it. §20.7.1 and ADR-098 were
+// amended in the same commit (Rule 37).
+//
+// WHAT THAT COST, recorded rather than glossed. The per-project risk LIST is gone from the product.
+// Nothing else lists projects by severity: Home's RISKS tile counts them from the same derivation
+// and the Portfolio screen bands its cards, but neither is the feed. If it is wanted back it is a
+// new screen, not a revert — this file no longer holds it.
+//
+// ONE SCREEN, ONE ROUTE. `<ExecTasks />` is the same component `/tasks` renders for this role, and
+// this route now carries it. It is NOT offered twice: `/tasks` lost its EXECUTIVE drawer row in the
+// same change (drawerLinks.ts), because a screen reachable under two names is the mistake
+// `dashboard` and `home` made. The field roles keep `/tasks` untouched.
+//
+// EXECUTIVE-ONLY, which is why nothing here branches on role. `/alerts` is this role's tab and no
+// other role's route — TENANT_ADMIN's bar carries a tab LABELLED "Alerts", but that is `sync-queue`,
+// the conflict-review queue, a different screen at a different path.
 
-import { memo, useCallback, useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
-import {
-  EXECUTIVE_SEVERITY_RANK,
-  executiveSeverityOf,
-  getExecutiveDashboard,
-  type ExecutiveDashboardRow,
-} from '../../api/analytics';
-import { getMyProjects } from '../../api/projects';
-import { LoadingBoundary } from '../../components/LoadingBoundary';
-import { useT } from '../../i18n';
-import type { TranslateFn } from '../../i18n';
-import { colors, fontFamily, radius, spacing, typography } from '../../theme/tokens';
-import { screen } from '../../theme/screenStyles';
+import { ExecTasks } from '../../components/ExecTasks';
 
-// The row shape and the severity mapping are both in `api/analytics.ts` now. Sorting the feed by
-// that rank satisfies master 3097-3098 (CRITICAL → HIGH → MEDIUM) without fabricating data — it is a
-// documented derivation over utilizationPct / atRisk / overdueInvoiceCount, and the endpoint returns
-// no severity field of its own.
-
-/**
- * One project's risk card, memoized.
- *
- * Severity is derived from this row's own metrics, so it belongs with the row rather than being
- * computed in a shared renderer — and memo then lets the feed skip every card whose figures have
- * not moved.
- */
-const AlertItem = memo(function AlertItem({
-  alert,
-  t,
-}: {
-  alert: ExecutiveDashboardRow;
-  t: TranslateFn;
-}) {
-  return (
-    // === 1, not truthiness: atRisk is 0 | 1 (§35.13 ESC-34), and a 0 in a style array relies on
-    // StyleSheet.flatten skipping falsy entries rather than saying what it means (ESC-36).
-    <View testID="alert-item" style={[styles.card, alert.atRisk === 1 ? styles.cardRisk : null]}>
-      <View style={styles.row}>
-        <Text style={styles.project}>{alert.projectId.slice(0, 8)}</Text>
-        <Text
-          style={[
-            styles.badge,
-            executiveSeverityOf(alert) === 'LOW' ? styles.badgeOk : styles.badgeRisk,
-          ]}
-        >
-          {t(`status.${executiveSeverityOf(alert)}`)}
-        </Text>
-      </View>
-      <Text style={styles.metric}>
-        {t('exec.alerts.utilization', { value: alert.utilizationPct })}
-      </Text>
-      <Text style={styles.metric}>
-        {t('exec.alerts.budgetLine', {
-          budget: alert.totalBudget,
-          committed: alert.totalCommitted,
-          actual: alert.totalActual,
-        })}
-      </Text>
-      <Text style={styles.metric}>
-        {t('exec.alerts.overdueInvoices', { count: alert.overdueInvoiceCount })}
-      </Text>
-    </View>
-  );
-});
-
-export default function AlertsScreen() {
-  const [rows, setRows] = useState<ExecutiveDashboardRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const t = useT();
-
-  const renderAlert = useCallback(
-    ({ item }: { item: ExecutiveDashboardRow }) => <AlertItem alert={item} t={t} />,
-    [t],
-  );
-
-  useEffect(() => {
-    // rows is [] both before the fetch and when genuinely empty, so a dedicated flag drives the loader.
-    let cancelled = false;
-    getMyProjects()
-      .then(async (mine) => {
-        const data = await getExecutiveDashboard(mine.map((project) => project.project_id));
-        if (cancelled) return;
-        setRows(
-          [...data].sort(
-            (a, b) =>
-              EXECUTIVE_SEVERITY_RANK[executiveSeverityOf(b)] -
-              EXECUTIVE_SEVERITY_RANK[executiveSeverityOf(a)],
-          ),
-        );
-      })
-      .catch(() => {
-        /* offline — keep last */
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  return (
-    <View testID="alerts-screen" style={screen.container}>
-      <LoadingBoundary loading={loading} variant="widget" theme="light" style={styles.boundary}>
-        <FlatList
-          testID="alerts-list"
-          data={rows}
-          keyExtractor={(r, i) => r.projectId || String(i)}
-          ListEmptyComponent={<Text style={screen.empty}>{t('exec.alerts.empty')}</Text>}
-          renderItem={renderAlert}
-        />
-      </LoadingBoundary>
-    </View>
-  );
+export default function AlertsScreen(): React.JSX.Element {
+  return <ExecTasks />;
 }
-
-const styles = StyleSheet.create({
-  boundary: { flex: 1 },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
-    gap: spacing.xs,
-  },
-  cardRisk: { borderLeftWidth: 3, borderLeftColor: colors.danger },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  project: {
-    fontSize: typography.body.fontSize,
-    fontFamily: fontFamily.semibold,
-    color: colors.textPrimary,
-  },
-  badge: {
-    fontSize: typography.caption.fontSize,
-    fontFamily: fontFamily.semibold,
-    overflow: 'hidden',
-  },
-  badgeRisk: { color: colors.danger },
-  badgeOk: { color: colors.success },
-  metric: {
-    fontSize: typography.caption.fontSize,
-    fontFamily: fontFamily.regular,
-    color: colors.textSecondary,
-  },
-});

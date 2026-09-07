@@ -4,8 +4,11 @@
 //   01-Home/01-ex-home-dashboard    AI brief with its CONF chip and SOURCES footer · the ACTIVE and
 //                                    RISKS tiles · the portfolio budget with its two-segment bar ·
 //                                    the project list · the locations panel
-//   02-Alerts/01-ex-alerts          the risk feed — delay risk, budget overrun and critical issues,
-//                                    sorted CRITICAL then HIGH then MEDIUM
+//   02-Alerts/01-ex-alerts          the portfolio task roll-up — overdue / due-this-week / blocked,
+//                                    the AI delay-risk feed, and the critical path. NOT the risk
+//                                    feed: that screen was deleted on 2026-09-07 (PO), because the
+//                                    drawing behind this tab is the previous Tasks drawing with
+//                                    four <nav> labels changed and a byte-identical body
 //   03-Portfolio/01-ex-portfolio    search · four filter chips with real counts · the risk sort ·
 //                                    the summary strip · project cards with the health matrix
 //   04-Report/01-ex-report          the AI strategic brief · the three drawn metrics · project
@@ -13,20 +16,24 @@
 //   05-Drawer/01-ex-navigation-drawer
 //                                   the role's drawer — an OVERLAY opened from the TopBar, not a
 //                                   fifth tab; its rows come from the §6.4 matrix via drawerLinks.ts
-//   06-Off-bar/01-ex-tasks          the portfolio task roll-up and the critical path
-//   06-Off-bar/02-ex-safety         compliance · active incidents · six-month trend · the ranking
-//   06-Off-bar/03-ex-more           the seven tiles, three of them unbuilt
+//   06-Off-bar/01-ex-safety         compliance · active incidents · six-month trend · the ranking
+//   06-Off-bar/02-ex-more           the seven tiles, three of them unbuilt
+//
+// `/tasks` IS NOT SHOT ANY MORE, and its absence is the point rather than an omission: the screen
+// it holds for this role is the Alerts tab above, and the role left the DERIVED "Tasks" drawer row
+// so one screen is not offered under two names. Photographing it here would put the same frame in
+// the folder twice under two file names.
 //
 // THE BAR IS Home | Alerts | Portfolio | Reports since 2026-09-07 (PO decision, ADR-098 as
 // amended). It has changed twice: it was Home | Portfolio | Alerts | Reports until 2026-09-05, then
 // Home | Tasks | Safety | More until the product owner replaced `mockup/mobile/08_executive/`
 // wholesale. It is NOT the first bar restored — Alerts and Portfolio have swapped places.
 //
-// TASKS, SAFETY AND MORE ARE STILL SHOT, and that is the reason the sixth directory exists. All
-// three left the bar in the same change and the product owner kept them, reached from the drawer,
-// so they are photographed the way a user now gets to them — TopBar menu, then the row — under
-// `06-Off-bar/` rather than under a tab number they no longer own. A screen that stopped being
-// captured because it stopped being a tab is a screen nobody looks at again.
+// SAFETY AND MORE ARE STILL SHOT, and that is the reason the sixth directory exists. Both left the
+// bar in the same change and the product owner kept them, reached from the drawer, so they are
+// photographed the way a user now gets to them — TopBar menu, then the row — under `06-Off-bar/`
+// rather than under a tab number they no longer own. A screen that stopped being captured because
+// it stopped being a tab is a screen nobody looks at again.
 //
 // LOGS IN AS THE SEEDED EXECUTIVE — `+66811000001`, Wichai Ekachai (backend/prisma/
 // seed-realistic.ts). Path A (phone + OTP), like every other capture script here.
@@ -76,7 +83,7 @@
 //   6. Metro started with EXPO_PUBLIC_CAPTURE=1 (mutes the dev LogBox toast, freezes animation loops)
 // Run: node scripts/capture-android-executive.mjs
 //      node scripts/capture-android-executive.mjs portfolio   ← re-shoot one screen only
-// Targets: home · alerts · portfolio · reports · drawer · tasks · safety · more
+// Targets: home · alerts · portfolio · reports · drawer · safety · more
 
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -340,13 +347,15 @@ async function main() {
   await find(byId('home-screen'), 'executive Home', 40);
 
   if (wanted('alerts')) {
-    console.log('· Alerts tab');
+    console.log('· Alerts tab (the portfolio task roll-up)');
     await tap(byId('alerts-tab'), 'Alerts tab');
-    await find(byId('alerts-screen'), 'alerts-screen', 20);
-    // Two requests settle here and the second waits on the first: the project list, then the
-    // analytics rows the feed is derived from. Photographing before that is an empty feed,
-    // which is what "no alerts" also looks like.
-    await delay(3500);
+    // `exec-tasks-screen`, not `alerts-screen`: this route renders <ExecTasks /> since 2026-09-07.
+    await find(byId('exec-tasks-screen'), 'exec-tasks-screen', 20);
+    // Three requests settle here — the roll-up, the project list, then the critical path, which
+    // cannot start until the list answers — plus a metered AI call for the risk feed. Waiting for
+    // the slowest keeps an empty Critical Path section out of the frame when it is merely late
+    // rather than absent.
+    await delay(6000);
     await stitchFull('02-Alerts/01-ex-alerts');
   }
 
@@ -375,8 +384,8 @@ async function main() {
   // ── OFF THE BAR SINCE 2026-09-07, and reached the way a user now reaches them ────────────
   //
   // Opening the drawer and tapping the row is not a convenience here — it IS the entry point the
-  // product owner kept these three screens for, so a run that failed to find the row would be
-  // telling us the drawer derivation broke, which no other frame in this script would catch.
+  // product owner kept these two screens for, so a run that failed to find the row would be telling
+  // us the drawer derivation broke, which no other frame in this script would catch.
   const fromDrawer = async (route, screenId, label) => {
     await tap(byId('drawer-menu-button'), 'drawer menu button');
     await find(byId('navigation-drawer'), 'navigation drawer', 20);
@@ -426,28 +435,18 @@ async function main() {
     await find(byId(screenId), screenId, 20);
   };
 
-  if (wanted('tasks')) {
-    console.log('· Tasks (drawer row)');
-    await fromDrawer('/tasks', 'exec-tasks-screen', 'Tasks');
-    // Three requests settle here — the roll-up, the project list, then the critical path, which
-    // cannot start until the list answers. Waiting for the slowest keeps an empty Critical Path
-    // section out of the frame when it is merely late rather than absent.
-    await delay(4000);
-    await stitchFull('06-Off-bar/01-ex-tasks');
-  }
-
   if (wanted('safety')) {
     console.log('· Safety (drawer row)');
     await fromDrawer('/safety', 'safety-screen', 'Safety');
     await delay(3000);
-    await stitchFull('06-Off-bar/02-ex-safety');
+    await stitchFull('06-Off-bar/01-ex-safety');
   }
 
   if (wanted('more')) {
     console.log('· More (drawer row)');
     await fromDrawer('/more', 'exec-more-screen', 'More');
     await delay(2500);
-    await stitchFull('06-Off-bar/03-ex-more');
+    await stitchFull('06-Off-bar/02-ex-more');
   }
 
   // HOME IS SHOT LAST, for the reason the project-manager and safety-officer scripts document: a

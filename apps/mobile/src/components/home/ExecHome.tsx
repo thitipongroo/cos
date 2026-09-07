@@ -56,8 +56,8 @@ import {
 import { PortfolioInsight } from '../PortfolioInsight';
 import { useT } from '../../i18n';
 import type { TranslateFn } from '../../i18n';
-import { Decimal, formatMoney, sumDecimals, toDecimal } from '@cos/financial';
-import { compactMoneyLabel } from '../../lib/compactMoney';
+import { Decimal, sumDecimals, toDecimal } from '@cos/financial';
+import { compactMoneyLabel, spacedMoney } from '../../lib/compactMoney';
 import { countSettled } from '../../lib/loadingState';
 import { ACTIVE_PROJECTS_DELTA, ACTIVE_REGION } from '../../lib/mockupFigures';
 import { fontFamily, plateRadius, radius, spacing, typography } from '../../theme/tokens';
@@ -405,15 +405,10 @@ function ProjectCard({
               : t('exec.home.progress', { value: Math.round(project.progress_percent) })}
           </Text>
         </View>
-        {/* The drawing's bordered status pill: a 1px edge and a 10% fill in the status colour, so
-            the word reads as a chip rather than as coloured text. Radius stays radius.xl — every
-            badge in this app takes it, a platform ruling that deliberately overrides the drawing's
-            `rounded-sm` (.claude/rules/design-tokens.md). */}
-        <View
-          style={[styles.badgePill, { borderColor: `${stripe}33`, backgroundColor: `${stripe}1A` }]}
-        >
-          <Text style={[styles.badge, { color: stripe }]}>{t(`exec.home.${statusKey}`)}</Text>
-        </View>
+        {/* THE STATUS PILL IS NOT HERE ANY MORE (PO 2026-09-07). It moved to the card's foot, on
+            the VARIANCE row and hard against the trailing edge — see there. On this row it sat
+            between the project name and the chevron and squeezed the name, which is the longest
+            string on the card and the one a reader is scanning for. */}
         {/* The drawing's trailing chevron. Decorative: the whole card is already the target, and a
             second focusable element for the same action is one more stop for a screen reader. */}
         <MaterialIcons
@@ -426,14 +421,36 @@ function ProjectCard({
       </View>
       <View style={styles.projectFoot}>
         <Text style={styles.eyebrow}>{t('exec.home.variance')}</Text>
+        {/* SPACED between the symbol and the figure — `฿ 47,758,122.00` (PO 2026-09-07). The card
+            sits under a hero that has been spaced since 2026-08-10 and the two disagreed.
+            `formatMoney` itself is untouched: it is behind every money figure in the product. */}
         <Text
           style={[
             styles.varianceValue,
             { color: variance?.gt(0) ? palette.danger : palette.success },
           ]}
         >
-          {variance === null ? '—' : formatMoney(variance)}
+          {variance === null ? '—' : spacedMoney(variance)}
         </Text>
+        {/* The drawing's bordered status pill: a 1px edge and a 10% fill in the status colour, so
+            the word reads as a chip rather than as coloured text.
+            SQUARED, and that is a deliberate exception (PO 2026-09-07). §32.7's platform ruling
+            gives every status pill radius.xl and `theme/__tests__/badgeRadius.spec.ts` holds it;
+            this drawing writes `rounded`, which its own Tailwind config maps to 0.25rem = 4px, and
+            the product owner chose the drawing. Recorded in that test's NOT_BADGES table the way
+            the two project-picker tags were on 2026-08-12, so the ruling still stands everywhere it
+            was not overruled.
+            `marginLeft: 'auto'` rather than `justifyContent: 'space-between'` on the row: the
+            eyebrow and the figure stay together on the left as one group, and only the pill goes to
+            the trailing edge. */}
+        <View
+          style={[
+            styles.projectStatusTag,
+            { borderColor: `${stripe}33`, backgroundColor: `${stripe}1A` },
+          ]}
+        >
+          <Text style={[styles.badge, { color: stripe }]}>{t(`exec.home.${statusKey}`)}</Text>
+        </View>
       </View>
     </Pressable>
   );
@@ -583,10 +600,14 @@ const makeStyles = (p: Palette) =>
       fontFamily: fontFamily.regular,
       color: p.muted,
     },
-    badgePill: {
+    // Named `Tag`, not `Pill`: the badge-radius guard reads style NAMES, and a squared badge that
+    // still called itself a pill would have to be excused twice — once here and once in that table.
+    // Same naming the project picker's `statusTag` took for the same reason (PO 2026-08-12).
+    projectStatusTag: {
+      marginLeft: 'auto',
       paddingHorizontal: spacing.xs,
       paddingVertical: 2,
-      borderRadius: radius.xl,
+      borderRadius: radius.md,
       borderWidth: 1,
     },
     badge: {

@@ -1,119 +1,49 @@
-// Behaviour of the executive risk feed, pinned before its row is memoized.
+// What `/alerts` is, and what it stopped being.
 //
-// /analytics/executive groups by project and carries no LIMIT, so this is one row per project in
-// the tenant. Severity is DERIVED here rather than sent by the endpoint — over 100% utilisation is
-// CRITICAL, the at-risk flag is HIGH, an overdue invoice is MEDIUM — and the feed is sorted by it
-// (master 3097-3098). Both the mapping and the ordering are what a memoized row can silently
-// detach from the project it describes.
+// REWRITTEN 2026-09-07 with the screen. This file used to pin the risk feed — one card per project
+// from `GET /analytics/executive`, banded by `executiveSeverityOf`, sorted worst-first. That screen
+// was DELETED by product-owner decision: `mockup/mobile/08_executive/02_alerts/02_ex_alerts` is the
+// previous `02_tasks` drawing with four `<nav>` labels changed and a byte-identical body, so the
+// drawing behind the tab named "Alerts" draws the TASK ROLL-UP, and the product owner chose the
+// drawing over §20.7.1's own definition of the page.
+//
+// The behaviour of the roll-up itself is covered by `components/__tests__/exec-tasks.spec.tsx`,
+// which is unchanged and did not have to move. What is asserted HERE is the thing that change could
+// silently undo: that this route renders that screen, and that the screen is not now reachable
+// twice under two names.
 
-import { render, waitFor, within } from '@testing-library/react-native';
+import { render } from '@testing-library/react-native';
+import { CosRole } from '@cos/types';
 import { I18nProvider } from '../../../i18n';
+import { drawerLinksFor } from '../../../lib/drawerLinks';
 import AlertsScreen from '../alerts';
 
-jest.mock('../../../api/client', () => ({ get: jest.fn() }));
-// The screen now asks WHICH projects before it asks for their figures: `/analytics/executive`
-// returns nothing without `projectIds` (see api/analytics.ts), so the ids have to come from
-// somewhere first and this is the call that supplies them.
-jest.mock('../../../api/projects', () => ({
-  ...jest.requireActual('../../../api/projects'),
-  getMyProjects: jest.fn(),
+jest.mock('../../../api/client', () => ({ get: jest.fn(async () => ({ items: [] })) }));
+jest.mock('../../../api/projects', () => ({ getMyProjects: jest.fn(async () => []) }));
+jest.mock('../../../api/schedule', () => ({
+  getPortfolioTaskSummary: jest.fn(async () => ({
+    overdue_count: 0,
+    due_this_week_count: 0,
+    blocked_count: 0,
+  })),
+  getPortfolioCriticalPath: jest.fn(async () => ({ projects: [], tasks: [] })),
 }));
-
-/* eslint-disable @typescript-eslint/no-require-imports */
-const client = require('../../../api/client') as { get: jest.Mock };
-const projectsApi = require('../../../api/projects') as { getMyProjects: jest.Mock };
-/* eslint-enable @typescript-eslint/no-require-imports */
-
-/** The four projects the rows below belong to, in the shape `GET /projects/mine` answers. */
-const MINE = ['proj-crit-1111', 'proj-high-2222', 'proj-med-3333', 'proj-low-4444'].map((id) => ({
-  project_id: id,
-  project_code: id.slice(0, 8),
-  project_name: id,
-}));
-
-function row(over: Partial<Record<string, unknown>> = {}) {
-  return {
-    projectId: 'proj-1111-aaaa',
-    totalCommitted: '400000.0000',
-    totalActual: '350000.0000',
-    totalBudget: '1000000.0000',
-    utilizationPct: 35,
-    atRisk: 0,
-    overdueInvoiceCount: 0,
-    ...over,
-  };
-}
-
-const OVERRUN = row({ projectId: 'proj-crit-1111', utilizationPct: 118 });
-const FLAGGED = row({ projectId: 'proj-high-2222', atRisk: 1 });
-const OVERDUE = row({ projectId: 'proj-med-3333', overdueInvoiceCount: 2 });
-const CALM = row({ projectId: 'proj-low-4444' });
-
-function renderScreen() {
-  return render(
-    <I18nProvider>
-      <AlertsScreen />
-    </I18nProvider>,
-  );
-}
 
 describe('AlertsScreen', () => {
-  beforeEach(() => {
-    client.get.mockReset();
-    projectsApi.getMyProjects.mockReset();
-    projectsApi.getMyProjects.mockResolvedValue(MINE);
+  it('renders the portfolio task roll-up, which is what its drawing draws', async () => {
+    const { getByTestId } = await render(
+      <I18nProvider>
+        <AlertsScreen />
+      </I18nProvider>,
+    );
+
+    expect(getByTestId('exec-tasks-screen')).toBeTruthy();
   });
 
-  it('asks for the executive OWN projects by id, or the endpoint answers nothing', async () => {
-    // THE DEFECT THIS GUARDS. Until 2026-09-05 this screen called `/analytics/executive` with no
-    // parameters; the controller turns that into an empty array, the ClickHouse `project_id IN ()`
-    // matches no row, and the feed came back empty against a working backend.
-    client.get.mockResolvedValue([OVERRUN]);
-
-    await renderScreen();
-
-    await waitFor(() => expect(client.get).toHaveBeenCalled());
-    const url = String(client.get.mock.calls[0]![0]);
-    expect(url).toContain('/analytics/executive?');
-    for (const project of MINE) expect(url).toContain(`projectIds=${project.project_id}`);
-  });
-
-  it('does not call analytics at all when the executive has no projects', async () => {
-    projectsApi.getMyProjects.mockResolvedValue([]);
-
-    const { getByTestId } = await renderScreen();
-
-    await waitFor(() => expect(getByTestId('alerts-screen')).toBeTruthy());
-    expect(client.get).not.toHaveBeenCalled();
-  });
-
-  it('renders one card per project the analytics endpoint returns', async () => {
-    client.get.mockResolvedValue([OVERRUN, FLAGGED, OVERDUE, CALM]);
-
-    const { getAllByTestId } = await renderScreen();
-
-    await waitFor(() => expect(getAllByTestId('alert-item')).toHaveLength(4));
-  });
-
-  it('orders the feed by derived severity, worst first', async () => {
-    // Deliberately supplied in the wrong order — the screen is what sorts them.
-    client.get.mockResolvedValue([CALM, OVERDUE, OVERRUN, FLAGGED]);
-
-    const { getAllByTestId } = await renderScreen();
-
-    await waitFor(() => expect(getAllByTestId('alert-item')).toHaveLength(4));
-    // The row prints the first 8 characters of its project id, which is what identifies it here.
-    const cards = getAllByTestId('alert-item');
-    const order = ['proj-cri', 'proj-hig', 'proj-med', 'proj-low'];
-    order.forEach((prefix, i) => expect(within(cards[i]).getByText(prefix)).toBeTruthy());
-  });
-
-  it('keeps the screen usable when the request fails offline', async () => {
-    client.get.mockImplementation(() => Promise.reject(new Error('offline')));
-
-    const { getByTestId, queryAllByTestId } = await renderScreen();
-
-    await waitFor(() => expect(getByTestId('alerts-screen')).toBeTruthy());
-    expect(queryAllByTestId('alert-item')).toHaveLength(0);
+  it('leaves the executive no second route to the same screen', async () => {
+    // `/tasks` renders the same component for this role. Offering it in the drawer as well would be
+    // one screen under two names — the `dashboard` mistake, which shipped a fifth tab.
+    expect(drawerLinksFor(CosRole.EXECUTIVE).map((link) => link.route)).not.toContain('/tasks');
+    expect(drawerLinksFor(CosRole.EXECUTIVE).map((link) => link.route)).not.toContain('/alerts');
   });
 });

@@ -1946,10 +1946,18 @@ a full refresh wants.
 > locale through a matcher that constructs `new Intl.Locale`, so adding it alone only moved the throw),
 > and `i18n/__tests__/pluralPolyfill.spec.ts` reads the source to keep them imported and ordered.
 
-## Executive — four tabs, eight screens — [`08-executive/`](08-executive/)
+## Executive — four tabs, seven screens — [`08-executive/`](08-executive/)
 
 Captured 2026-09-07 against the seeded `EKACHAI` tenant through a real Path A (SMS OTP) login as
 `+66811000001`, Wichai Ekachai.
+
+**Every element these drawings carry is now on the screens** (standing instruction, 2026-09-07):
+where this codebase has no process behind one, the code says COMING SOON in a comment — never on
+the screen — and an ACTION with nothing behind it shows a "coming soon" dialog when it is pressed.
+One category is still left out, and it is the same one ADR-099 carves out: a claim about WHICH
+SYSTEMS produced a report. `SOURCES: BIM & ERP DATA` and the risk card's `BIM + Site Logs` chip name
+integrations that do not exist, and a false provenance line changes how much of a screen a reader
+believes rather than being wrong about one quantity.
 
 **The bar has changed twice in three days**, both times because the product owner replaced the
 drawings the role is built from, and the folder is laid out to match the latest one:
@@ -1958,10 +1966,12 @@ drawings the role is built from, and the folder is laid out to match the latest 
 | ------------------------------------- | ------------------------------ | ------------------------------------- |
 | `Home · Portfolio · Alerts · Reports` | `Home · Tasks · Safety · More` | `Home · Alerts · Portfolio · Reports` |
 
-It is **not** the first bar restored — Alerts and Portfolio have swapped places. Tasks, Safety and
-More kept their screens and are reached from the navigation drawer (product-owner decision), which is
-why they are photographed under [`06-Off-bar/`](08-executive/06-Off-bar/) rather than under a tab
-number they no longer own.
+It is **not** the first bar restored — Alerts and Portfolio have swapped places. Safety and More kept
+their screens and are reached from the navigation drawer (product-owner decision), which is why they
+are photographed under [`06-Off-bar/`](08-executive/06-Off-bar/) rather than under a tab number they
+no longer own. **`/tasks` is no longer an EXECUTIVE page at all**: its screen is the Alerts tab now
+(see below), and the role left the derived Tasks drawer row so one screen is not offered under two
+names.
 
 > **Some figures in this folder did not come from the backend, and this is the only folder where
 > that is true.** Nineteen of them, listed in
@@ -1995,6 +2005,26 @@ track is now split — accent for what is spent, a dimmed blue remainder — and
 exactly. When there is no budget to divide by the track stays **empty**: both readings of a drawn bar
 would be a claim the data does not support.
 
+**The AI card's footer is at the FOOT of the card** (PO 2026-09-07). It used to sit above the two
+buttons, which put a provenance note in the middle of the card and left the controls hanging off the
+bottom edge; the drawing has it last, under a divider. It is clamped to **one line with an ellipsis**
+on this variant only — a long project name wrapped it onto two rows and pushed the card taller than
+the drawing's. The other AI panels keep wrapping: their source line is body-sized rather than a caps
+footer, and truncating a name a manager is reading to identify a project is a worse trade there.
+
+**The project cards moved their status tag to the VARIANCE row** (PO 2026-09-07), hard against the
+trailing edge, and **squared its corners**. On the title row the tag sat between the project name and
+the chevron and squeezed the name, which is the longest string on the card and the one a reader is
+scanning for. The squared corner is a deliberate exception to §32.7's "every status pill takes
+radius.xl" — the drawing writes `rounded`, which its own Tailwind config maps to 4px, and the
+exception is recorded in `theme/__tests__/badgeRadius.spec.ts`'s `NOT_BADGES` table rather than
+waved through in code, so the platform ruling still binds every badge it was not overruled for.
+
+**VARIANCE is spaced between the symbol and the figure** — `-฿ 47,758,122.00` (PO 2026-09-07). The
+card sits under a hero that has been spaced since 2026-08-10 and the two disagreed. `formatMoney`
+itself is untouched: it is behind every money figure in the product, and widening it there would
+move all of them; `lib/compactMoney.ts` gained `spacedMoney()` for the surfaces that ask.
+
 **The AI card gained a `SOURCES:` footer, and it does not say what the drawing says.** The drawing
 writes `SOURCES: BIM & ERP DATA`. BIM is a Type A stub (§32.9) and there is no ERP integration, so
 that line would tell an executive the report above it is grounded in two enterprise systems that are
@@ -2022,22 +2052,66 @@ the plain counts, and the `M` cap that keeps the hero and its ACTUAL line in one
 
 ### Alerts — [`02-Alerts/01-ex-alerts.png`](08-executive/02-Alerts/01-ex-alerts.png)
 
-**The tab is the existing risk feed, and that was the decision.** Two screens wanted the name
-"Alerts": this feed, which §20.7.1 defines at `/alerts` as "delay risk, budget overrun, critical
-issues sorted by severity", and the replacement mockup's `02_alerts` drawing — which is the previous
-`02_tasks` drawing with its `<nav>` relabelled and its BODY unchanged (measured: 19 diff lines, all
-inside `<nav>`). The body describes the task roll-up, which keeps its own screen. The product owner
-chose the feed the specification names.
+**This tab is the portfolio TASK ROLL-UP, and that is a reversal.** Earlier the same day the tab
+pointed at the risk feed, because §20.7.1 defines `/alerts` in exactly those words — "delay risk,
+budget overrun, critical issues sorted by severity" — and an escalation resolved the name clash in
+the specification's favour.
 
-Everything in the frame is live: five rows from `/analytics/executive`, banded CRITICAL → HIGH →
-MEDIUM by the mapping `api/analytics.ts` holds once and three screens read.
+Then the drawing was measured. `02_alerts/02_ex_alerts/code.html` is the previous
+`02_tasks/02_ex_tasks/code.html` with **four lines changed** — the four labels in its `<nav>` — and a
+byte-identical body. Diff the two blobs either side of commit `a23b385b` and that is the whole
+difference. So the drawing behind the tab named "Alerts" draws overdue / due-this-week / blocked, the
+AI delay-risk feed, and the critical path. The product owner chose the drawing, directed that the
+risk feed be deleted, and §20.7.1, §32.7, the Phase 10 EXEC block and ADR-098 were amended in the
+same commit.
 
-> **This screen is the one that did not get drawn, and it shows.** It is the last executive surface
-> still on the STATIC LIGHT palette — white cards in a dark app — and it titles each row with the
-> first block of a project UUID rather than the project's name, with raw unformatted amounts beneath.
-> That was true while it was a drawer row; it is now the role's SECOND TAB. Restyling it was outside
-> the plan approved for this change (which says `/alerts` is pointed at, unchanged), so it is
-> recorded here rather than done quietly.
+**The risk feed is gone from the product**, and that is worth stating plainly rather than leaving to
+be discovered: nothing else lists projects by severity. Home's RISKS tile counts them and the
+Portfolio screen bands its cards by the same rule, but neither is the list. Bringing it back is a new
+page, not a revert — no file still holds it.
+
+Everything in the frame is live: `OVERDUE 11` and `THIS WEEK 3` from `GET /tasks/portfolio-summary`,
+one tenant-wide query; the critical path from `GET /tasks/portfolio-critical-path`, a forward and
+backward pass over `projects.task_dependencies` (ADR-097 built the table for this screen). The risk
+section calls the real `POST /ai/reports/delay-risk` and says so when it gets nothing back — which is
+what this machine produces, for the reason at the foot of this section.
+
+**The risk cards are the drawing's card in full since 2026-09-07** — severity chip, category chip,
+per-card confidence, and the finding as the drawing's bold title. Three notes on what each is:
+
+- **The confidence is the report's own, and it is the SAME number on every card**, because
+  `DelayRiskOutput` carries one for the whole report. It moved here from the section header, where
+  the drawing has no such chip; printed in both places it read as two different measurements. The
+  footnote under the feed now says the level _and_ the number are shared.
+- **The category chip is drawn** (`RISK_ALERT_CATEGORIES`, ADR-099's third amendment). `risk_factors`
+  is a list of bare strings with no field to carry a category, and classifying the text here would be
+  this screen labelling a finding the model did not label. It is the first drawn value in this
+  product to sit INSIDE a card of real model output, so the carve-out is written narrowly: a drawn
+  LABEL, never a drawn confidence and never a drawn finding.
+- **It is not the drawing's "BIM + Site Logs".** That names SYSTEMS, and a claim about which systems
+  produced a report is the one category these screens keep out. The drawing's own second card carries
+  a subject instead — "Supply Chain" — and that is the shape used.
+
+**The drawing's second body line is not drawn at all.** `risk_factors` gives one string per card, and
+writing the second would be composing the model's finding for it.
+
+**The feed is never empty.** It used to render one line — "the report was not produced" — wherever
+the gateway said nothing, and the drawing shows a section already full of findings. Where there is no
+report, the DRAWING'S OWN two cards stand instead (`RISK_ALERT_FALLBACK`), each with the level and
+confidence the drawing gives it. That is what this frame shows: this machine has no LLM key, so the
+gateway answers 503 and the drawn cards are what a reader sees.
+
+**They are findings, and that is the furthest this register has gone** — see ADR-099's third
+amendment for why it is survivable. It is a FALLBACK, not a source: the moment a real report arrives
+every card comes from the model and none of the register is read, and
+`components/__tests__/ExecRiskAlerts.spec.tsx` asserts exactly that.
+
+**The risk cards carry the drawing's two action buttons since 2026-09-07.** "View BIM data" has no
+system behind it — BIM is a Type A stub (§32.9) — and "Replan urgently" has no endpoint and could not
+gain one, since master §Phase 10 makes this role read-only on mobile. Both are drawn and both say so
+on tap. They are on EVERY card, where the drawing puts them on the first only: the drawing's second
+card is a different severity, not a different card type, and giving one finding buttons and the next
+none would read as a claim about which finding is actionable that no field of the report supports.
 
 ### Portfolio — [`03-Portfolio/01-ex-portfolio.png`](08-executive/03-Portfolio/01-ex-portfolio.png)
 
@@ -2048,6 +2122,31 @@ Real: the search box (name and project code), the four filter chips and their co
 `Over budget (2)`, `At risk (4)`, `On track (0)` — the risk sort, `Showing 6 of 6`, `TOTAL VALUE
 ฿ 1,378 M`, `NEEDS ATTENTION 6 · 2 over budget • 4 at risk`, and on every card the name, the status
 band, the §32.12 progress, the variance and the budget pillar's utilisation.
+
+**The chips are one row that scrolls**, not a wrapping block (PO 2026-09-07, and the drawing's own
+`overflow-x-auto`). Only that row moves — the page keeps its own vertical scroll.
+
+**The status tag shares the title's row**, hard against the chevron, and the project name truncates
+rather than letting the tag wrap (PO 2026-09-07). Inside the text block on a wrapping row, a long
+name pushed the tag onto a second line and the card grew a row carrying nothing; the first words of a
+name identify the project, so truncating it costs less than the row did.
+
+**The cards that are not on track carry an advice strip** (PO 2026-09-07; the drawing puts one on its
+CRITICAL card and the instruction extends it to the amber ones). It sits **below the four-cell
+matrix**, where the drawing has it: the matrix is what the reader checks, the note is what to do
+about it, and the note read first is an instruction before its evidence. Its shape, lead word and
+**two tones** follow the drawing — measured off it, not inferred from the card's own colour: the
+CRITICAL strip is `bg-mobile-danger/10 border-mobile-danger/30`, and the at-risk one is
+`bg-cos-cyan/10 border-cos-cyan/30` with a `bolt` glyph. The red card's glyph is `warning`, not the
+drawing's `smart_toy`: that robot marks the line as a model's advice, and there is no model here.
+
+**What it SAYS is derived, not copied**, and that is the one place this departs: the
+drawing writes a specific sentence of advice under a `smart_toy` robot glyph, and this screen makes
+no AI call at all, so printing one would attribute advice to a model that never ran — which
+`lib/mockupFigures.ts` forbids in as many words. The strip names the reason the card is in its band,
+read from `executiveSeverityOf` in the same order that rule reads it: over budget, then flagged at
+risk, then invoices overdue. An advice engine per project is COMING SOON, recorded in the code at the
+element.
 
 **The counts are over EVERY project, never over the filtered list.** A count that changed when you
 pressed it would be describing your own filter rather than the portfolio, which is the one thing a
@@ -2093,11 +2192,27 @@ Drawn: the three strategic metrics (`฿ 14.2 M` cumulative saving, `96.4%` deli
 safety index) and `Export portfolio PDF`, which says so on tap — `lib/dataExport.ts` offers JSON and
 CSV for the PDPA subject-access export and nothing renders a portfolio document.
 
-Left out, each with its reason: a prose summary per row (one metered LLM call per project — the
-fan-out `GET /tasks/portfolio-summary` exists to avoid), `ดูรายงานฉบับเต็ม ›` (there is no
-full-report screen; `/ai/reports/history` returns metadata only, which is also why the panels
-regenerate rather than fetch), the `W47-LIVE` chip (a week number is computable, "LIVE" is a claim
-about a feed that does not exist), and any write behind `Acknowledge & direct`.
+**Four changes on 2026-09-07, all product-owner instructions.** The screen heading and its subtitle
+are gone — on a TAB they repeat the label the bar already shows, and the reader arrived here by
+pressing the word. The brief card no longer says "AI" in its eyebrow and has lost its second title
+line, which said what the eyebrow said in other words; the confidence chip, the source line and the
+prose all say what produced this without the word. Each project summary gained the drawing's **Full
+report** link — since later the same day a **chevron alone**, because the words wrapped the row onto a
+second line and the mark carries the same affordance in the space that was left; its
+`accessibilityLabel` still reads "Full report", so a screen reader loses nothing. The status tags are
+**squared**, recorded in `NOT_BADGES` like the Home card's.
+
+**`Acknowledge & direct` is disabled until there is a recommendation to acknowledge.** It is a
+human-in-the-loop control over the list above it; with none on screen it would offer to acknowledge
+nothing. In this frame the AI gateway produced no report, so it is dimmed.
+
+Still left out, each with its reason: a prose summary per row (one metered LLM call per project — the
+fan-out `GET /tasks/portfolio-summary` exists to avoid) and the `W47-LIVE` chip (a week number is
+computable, "LIVE" is a claim about a feed that does not exist, and half a chip is worse than none).
+The **Full report** link and `Acknowledge & direct` are now drawn and say so on tap: there is no
+full-report page to open — `/ai/reports/history` returns metadata only, which is also why the panels
+regenerate rather than fetch — and no acknowledgement endpoint, nor may there be one while §Phase 10
+makes this role read-only.
 
 **One nuance was lost and is recorded rather than hidden.** The screen this replaced told a `503` —
 the Phase 11 LLM stub, i.e. "not yet" — apart from a real failure, in different words. This one
@@ -2121,24 +2236,24 @@ configuration reading as a live decision.
 
 ### Off the bar — [`06-Off-bar/`](08-executive/06-Off-bar/)
 
-Three screens that left the bar on 2026-09-07 and kept their entry point. Each frame was taken the
-way a user now reaches it: TopBar menu → expand → scroll → the row.
+Two screens that left the bar on 2026-09-07 and kept their entry point. Each frame was taken the way
+a user now reaches it: TopBar menu → expand → scroll → the row.
 
-- [`01-ex-tasks.png`](08-executive/06-Off-bar/01-ex-tasks.png) — the portfolio task roll-up
-  (`GET /tasks/portfolio-summary`, one tenant-wide query) and the critical path
-  (`GET /projects/{id}/critical-path`, a forward and backward pass over
-  `projects.task_dependencies` — ADR-097 built the table for this screen)
-- [`02-ex-safety.png`](08-executive/06-Off-bar/02-ex-safety.png) — active incidents and the
+- [`01-ex-safety.png`](08-executive/06-Off-bar/01-ex-safety.png) — active incidents and the
   per-project ranking are real; the compliance percentage, the grade, safe man-hours and the trend
   bars are mockup figures, though the trend's MONTH AXIS is computed from today through `Intl`
-- [`03-ex-more.png`](08-executive/06-Off-bar/03-ex-more.png) — the seven tiles, three of which carry
-  a **COMING SOON** chip before the tap rather than after it
+- [`02-ex-more.png`](08-executive/06-Off-bar/02-ex-more.png) — the seven tiles, three of which have
+  no screen behind them and say so on tap
+
+**`/tasks` is not photographed here**, and its absence is the point rather than an omission: the
+screen it held for this role is the Alerts tab, and the role left the derived Tasks drawer row in the
+same change. A frame here would be the same picture under a second file name.
 
 ### Reproducing this set
 
 `node scripts/capture-android-executive.mjs` from `apps/mobile`, with a screen name to re-shoot one
-(`… executive.mjs portfolio`). The eight keys are `home`, `alerts`, `portfolio`, `reports`, `drawer`,
-`tasks`, `safety` and `more`. The script's own header carries the prerequisites in order; the ones
+(`… executive.mjs portfolio`). The seven keys are `home`, `alerts`, `portfolio`, `reports`,
+`drawer`, `safety` and `more`. The script's own header carries the prerequisites in order; the ones
 below were each learned by a failed run and none is optional:
 
 - **`node prisma/seed-analytics-clickhouse.mjs`** after seeding Postgres. The analytics tables are
@@ -2158,8 +2273,20 @@ below were each learned by a failed run and none is optional:
   gateway was up but refused the token the backend forwarded, so `POST /ai/reports/executive-summary`
   answered `401`; the mobile client treats a 401 as an expired session, and the executive was signed
   out three seconds after landing on Home, every run. The AI cards in this set therefore read "The
-  report was not produced" — the honest state of a machine with no LLM key — and that is a property
-  of this environment, not of the screens.
+  report was not produced", and that is a property of this environment, not of the screens.
+
+  **FIXED on 2026-09-07.** `services/ai-gateway/auth.py` verifies the bearer token against
+  `KEYCLOAK_URL`, and the `ai-gateway` service inherited that from `.env`, where it is
+  `http://127.0.0.1:8090` — correct for the backend, which runs on the host, and self-referential
+  inside a container, so the JWKS fetch failed and every token was rejected. That service's
+  `environment:` block already overrode Kafka, Redis and Postgres to their in-network names;
+  Keycloak had been missed. It now sets `KEYCLOAK_URL: http://keycloak:8080`, and deliberately does
+  NOT override `KEYCLOAK_ISSUER`: the token's `iss` is Keycloak's public URL and must keep matching
+  it — only the URL the keys are fetched from changes.
+
+  With that fixed the gateway accepts the token and answers **503** instead of 401, because this
+  machine's `OPENAI_API_KEY` is `REPLACE_ME`. A 503 does not sign anyone out, and the risk feed falls
+  back to the drawing's cards, which is what the Alerts frame shows.
 
 The script sets the device animation scales to 0 and restores them afterwards. With the AVD default
 of 1.0 every `uiautomator dump` fails with "could not get idle state", which surfaces minutes later

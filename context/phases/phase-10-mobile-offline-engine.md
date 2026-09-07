@@ -165,14 +165,17 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
                    2026-09-07 (NOT_DERIVED — a hub over other screens is not a module)
         Portfolio: project list with status chips + budget variance badge; tap project → project
                    health card (cost, schedule, issues). A TAB again since 2026-09-07
-        Alerts:    risk alerts feed — delay risk, budget overrun, critical issues sorted by severity
-                   (CRITICAL → HIGH → MEDIUM). A TAB again since 2026-09-07, and its NOT_DERIVED
-                   drawer row was removed with the change: a row whose route is on the bar is
-                   suppressed, so keeping it would be dead configuration reading as a live decision
+        Alerts:    THE PORTFOLIO TASK ROLL-UP since 2026-09-07 (PO decision), not the risk feed it
+                   was. The drawing behind this tab is the previous Tasks drawing with four <nav>
+                   labels changed and a byte-identical body; the product owner chose the drawing,
+                   the risk feed was DELETED, and spec §20.7.1 was amended. Nothing else in the
+                   product lists projects by severity — Home counts them and Portfolio bands its
+                   cards — so restoring the feed is a new page, not a revert
         Reports:   AI-generated executive summaries per project (offline: last cached). A TAB again
                    since 2026-09-07 — the screen mockup 04_report/01_ex_report draws
-        Tasks:     stays reachable as a drawer row (DERIVED from §6.4 "Tasks", suppressed only while
-                   it was a tab, so it returned on its own)
+        Tasks:     NOT AN EXECUTIVE PAGE any more (2026-09-07). Its screen is the Alerts tab above;
+                   the role left the DERIVED "Tasks" drawer row so one screen is not offered under
+                   two names. The route, the tab and the row are unchanged for the field roles
       Offline:    cached last-known data with "last updated X mins ago" timestamp
                   no write operations — EXEC is read-only on mobile. The drawing's Mitigation,
                   Dismiss and "ปรับแผนด่วน" buttons ARE drawn and say they are not usable yet

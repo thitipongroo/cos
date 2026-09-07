@@ -1266,7 +1266,13 @@
       "qualityPass": "{value}% pass rate",
       "index": "Index: {value}/100",
       "openHealth": "Project health →",
-      "noMatch": "No project matches this search"
+      "noMatch": "No project matches this search",
+      "adviceLead": "Recommended: ",
+      "advice": {
+        "overBudget": "spend has passed the budget — review the next disbursement before it is approved",
+        "atRisk": "flagged at risk by the portfolio analytics — review with the project manager",
+        "overdue": "invoices are overdue on this project — check them with finance"
+      }
     },
     "alerts": {
       "title": "Alerts",
@@ -1285,16 +1291,13 @@
       "lowConfidence": "Low confidence — insufficient data",
       "error": "Could not generate report",
       "empty": "Select a project and generate a report",
-      "heading": "Executive reports",
-      "subtitle": "Strategic portfolio summary",
       "filter": {
         "all": "All",
         "attention": "Needs attention",
         "onTrack": "On track"
       },
       "reanalyse": "Re-analyse",
-      "brief": "AI strategic brief",
-      "briefSubtitle": "Portfolio status",
+      "brief": "Strategic brief",
       "metricSaving": "Cumulative saving",
       "metricDelivery": "Delivery forecast",
       "metricSafety": "Safety index",
@@ -1313,7 +1316,8 @@
       "recommendations": "Strategic recommendations",
       "noRecommendations": "The report offered no recommendations.",
       "acknowledge": "Acknowledge & direct",
-      "noProjects": "No projects to report on"
+      "noProjects": "No projects to report on",
+      "fullReport": "Full report"
     },
     "safety": {
       "intelligence": "Safety Intelligence",
@@ -1357,7 +1361,21 @@
       "status_BLOCKED": "Blocked",
       "status_CANCELLED": "Cancelled",
       "taskId": "ID: {id}",
-      "blockedUnit": "Tasks"
+      "blockedUnit": "Tasks",
+      "riskAction": {
+        "bim": "View BIM data",
+        "replan": "Replan urgently"
+      },
+      "riskFallback": {
+        "concretePour": {
+          "title": "Foundation concrete pour T-3 is running late",
+          "body": "Severe storms are forecast within 48 hours; the foundation pour may slip by 5-7 days."
+        },
+        "rebarSupply": {
+          "title": "Rebar supply is trending short",
+          "body": "Recent purchase orders suggest the main supplier may deliver late, affecting the fifth floor structure."
+        }
+      }
     },
     "more": {
       "intelligence": "OS Intelligence",

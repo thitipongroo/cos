@@ -132,6 +132,26 @@ export const MONEY_SCALE_KEY: Record<MoneyScale, string | null> = {
  * suite, which runs these files under a CommonJS jest with no JSX transform. Same reason
  * `lib/delayInsight.ts` keeps its reading of the report out of the panel that uses it.
  */
+/**
+ * A full money amount with a gap between the symbol and the figure — `฿ 47,758,122.00`.
+ *
+ * `formatMoney` closes the two up (`฿47,758,122.00`) and MUST KEEP DOING SO: it is the shared
+ * package function behind every money figure in the product, and widening it here would move all of
+ * them. This adds the gap for the surfaces that ask for it — the same gap `compactMoney` above
+ * already puts in, for the reason recorded there (PO decision 2026-08-10): digits jammed against a
+ * symbol read as one token, spaced the eye takes the amount in one jump. Applied to the executive
+ * Home project cards on 2026-09-07 (PO), which sit beside the spaced hero figure and disagreed
+ * with it.
+ *
+ * An unrecognised code already ends in a space — `formatMoney` prints "XAF 1,234.50" — so it is
+ * returned untouched rather than given two.
+ */
+export function spacedMoney(amount: Decimal | string | number, currency = 'THB'): string {
+  const text = formatMoney(amount, currency);
+  const symbol = currencySymbol(currency);
+  return symbol.endsWith(' ') ? text : text.replace(symbol, `${symbol} `);
+}
+
 export function compactMoneyLabel(
   amount: Decimal | string | number,
   currency: string,

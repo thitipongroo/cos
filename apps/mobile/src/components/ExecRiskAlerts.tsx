@@ -14,36 +14,55 @@
 //                     endpoint returns one level for the whole report, not one per factor. Saying so
 //                     is the point of the section note: a per-card level would be this screen
 //                     inventing a severity the model never assigned.
-//   CONF: NN%         the report's own `confidence`, through `confidencePercent` — one report, one
-//                     number, so it is drawn once on the section header rather than repeated on
-//                     every card as the drawing does
-//   Card title        one `risk_factors` entry. `DelayRiskOutput` gives a single string per factor,
-//                     so the drawing's title + body pair becomes one line of text — inventing a
-//                     second line would mean writing the model's finding for it
-//   Source chip       NOT DRAWN. The drawing's "BIM + Site Logs" names systems this platform does
-//                     not read: BIM is a Type A stub (spec §32.9). `DelayRiskOutput.sources` does
-//                     exist, but it carries verbatim snippets of retrieval context, not system
-//                     names, so it cannot fill that chip either
-//   Action buttons    NOT DRAWN. "ดูข้อมูล BIM" has no system behind it and "ปรับแผนด่วน" has no
-//                     endpoint; master §Phase 10 also makes this role READ-ONLY on mobile. The
-//                     drawing's own second card carries no buttons, so a card without them is a
-//                     shape the drawing already contains
+//   CONF: NN%         the report's own `confidence`, through `confidencePercent`. ON EVERY CARD
+//                     since 2026-09-07 (PO), where the drawing puts it — and it is the SAME number
+//                     on each, because there is one. Nothing is fabricated to fill the row; the
+//                     section note that already explains the shared level covers the shared number
+//                     too. It left the section header in the same change: printed in both places it
+//                     read as two different measurements.
+//   Card title        one `risk_factors` entry, set as the drawing's bold `<h4>`. `DelayRiskOutput`
+//                     gives a single string per factor, so the drawing's title + body pair stays one
+//                     line: writing the second would mean composing the model's finding for it, and
+//                     a fabricated FINDING is the core of what ADR-099 forbids — the carve-out that
+//                     record gained on 2026-09-07 covers a drawn label, not this
+//   Category chip     DRAWN (PO decision 2026-09-07), from `RISK_ALERT_CATEGORIES` in
+//                     lib/mockupFigures.ts. `risk_factors` is a list of bare strings with no field
+//                     to carry a category, and classifying the text here would be this screen
+//                     labelling a finding the model did not label. It is the first drawn value in
+//                     this product to sit inside a card of real model output — see ADR-099's second
+//                     amendment for the carve-out and its limits.
+//                     NOT the drawing's "BIM + Site Logs": that names SYSTEMS, and a claim about
+//                     which systems produced a report is the one category ADR-098's second
+//                     amendment keeps off these screens. The drawing's own second card carries a
+//                     subject instead — "Supply Chain" — and that is the shape used.
+//   Action buttons    DRAWN, and they say so on tap — the standing instruction of 2026-09-07:
+//                     build what the drawing draws, and where this codebase has no process behind
+//                     it, mark it COMING SOON rather than leave it out. They were omitted until
+//                     then. "ดูข้อมูล BIM" has no system behind it (BIM is a Type A stub, §32.9)
+//                     and "ปรับแผนด่วน" has no endpoint — and could not gain one here anyway, since
+//                     master §Phase 10 makes this role READ-ONLY on mobile. Both carry the
+//                     `more.tsx` "coming soon" note.
+//                     THEY ARE ON EVERY CARD, where the drawing puts them on the first only. The
+//                     drawing's own second card is a different SEVERITY, not a card type; giving
+//                     one finding buttons and the next none would read as a claim about which
+//                     finding is actionable, which no field of the report supports.
 //
 // THE GENERATE BUTTON STAYS, for the reason recorded in `<InsightPanel />` (PO decision 2026-08-11):
 // `POST /ai/reports/*` is the only way to obtain a report's text, and §26 meters AI per tenant, so a
 // section that generated on every screen open would spend the tenant's allowance on every tab press.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Alert } from 'react-native';
 import { LoadingState } from './LoadingState';
 import { MaterialSymbol } from './MaterialSymbol';
+import { RISK_ALERT_CATEGORIES, RISK_ALERT_FALLBACK } from '../lib/mockupFigures';
 import { generateDelayRisk, type AiReport } from '../api/ai';
 import { confidenceBand, confidencePercent, type ConfidenceBand } from '../lib/aiConfidence';
 import { delayFactorList, delayLevel } from '../lib/delayInsight';
 import { decodeJwtPayload } from '../lib/jwt';
 import { useAuthStore } from '../store/authStore';
 import { useT } from '../i18n';
-import { fontFamily, radius, spacing, typography } from '../theme/tokens';
+import { fontFamily, radius, spacing, touchTarget, typography } from '../theme/tokens';
 import { usePalette, useIsDark, type Palette } from '../theme/usePalette';
 
 /** Same map `<InsightPanel />` keeps, so one band word never reads two ways in one product. */
@@ -97,7 +116,10 @@ export function ExecRiskAlerts({
 
   const [report, setReport] = useState<AiReport | null>(null);
   const [loading, setLoading] = useState(false);
-  const [failed, setFailed] = useState(false);
+  // NO `failed` FLAG ANY MORE (2026-09-07). It existed to choose between two messages —
+  // "not generated yet" and "not produced" — and neither is shown now: a gateway that says nothing,
+  // for whatever reason, falls back to the drawing's own cards. The distinction had no surface left
+  // to appear on, and a state nothing reads is a state that drifts.
 
   const run = useCallback(async () => {
     // The tenant the gateway trusts comes from the token it verifies; this claim only fills the
@@ -105,12 +127,10 @@ export function ExecRiskAlerts({
     const tenantId = String(decodeJwtPayload(token ?? '')['tenant_id'] ?? '');
     if (projectId === '' || tenantId === '') return;
     setLoading(true);
-    setFailed(false);
     try {
       setReport(await generateDelayRisk({ projectId, tenantId }));
     } catch {
       setReport(null);
-      setFailed(true);
     } finally {
       setLoading(false);
     }
@@ -131,7 +151,44 @@ export function ExecRiskAlerts({
   const factors = report === null ? [] : delayFactorList(report.content);
   const band = report === null ? null : confidenceBand(report.confidence, report.low_confidence);
   const percent = report === null ? null : confidencePercent(report.confidence);
-  const accent = levelColour(level, p);
+
+  /**
+   * The cards to draw, from whichever of the two sources is live.
+   *
+   * THE FEED IS NEVER EMPTY (PO decision 2026-09-07). It used to render one line — "the report was
+   * not produced" — wherever the gateway said nothing, and the drawing shows a section already full
+   * of findings. So when there is no report the DRAWING'S OWN cards are shown instead, from
+   * `RISK_ALERT_FALLBACK`. See that entry: they are findings, which is the thing ADR-099 is most
+   * careful about, and they are drawn on the product owner's instruction with COMING SOON recorded
+   * against them.
+   *
+   * The two paths are exclusive and each card knows which it came from, because they do not agree
+   * about what a card can carry: a real report has ONE level and ONE confidence for all of its
+   * findings, and the drawing gives each card its own. `drawn` is what the section note below reads
+   * to decide whether the "one level for the whole report" caveat applies at all.
+   */
+  const drawn = !loading && report === null;
+  const cards = drawn
+    ? RISK_ALERT_FALLBACK.value.map((card, index) => ({
+        key: `drawn-${card.key}`,
+        title: t(`exec.tasks.riskFallback.${card.key}.title`),
+        body: t(`exec.tasks.riskFallback.${card.key}.body`),
+        level: card.level as string,
+        percent: card.confidence as number | null,
+        band: 'HIGH' as ConfidenceBand,
+        category: RISK_ALERT_CATEGORIES.value[index % RISK_ALERT_CATEGORIES.value.length] ?? '',
+      }))
+    : factors.map((factor, index) => ({
+        key: `${index}-${factor.slice(0, 24)}`,
+        title: factor,
+        // No body on the real path: `risk_factors` gives ONE string per finding, and writing the
+        // second line would be composing the model's output for it.
+        body: null,
+        level,
+        percent,
+        band,
+        category: RISK_ALERT_CATEGORIES.value[index % RISK_ALERT_CATEGORIES.value.length] ?? '',
+      }));
 
   return (
     <View testID="exec-risk-alerts" style={styles.section}>
@@ -150,25 +207,18 @@ export function ExecRiskAlerts({
             {t('exec.tasks.riskAlerts')}
           </Text>
         </View>
-        {band !== null ? (
-          <View testID="exec-risk-confidence" style={styles.confChip}>
-            <Text style={styles.confText}>
-              {percent === null ? t(BAND_LABEL[band]) : t('exec.tasks.conf', { value: percent })}
-            </Text>
-          </View>
-        ) : null}
+        {/* THE CONFIDENCE IS NOT HERE ANY MORE (PO 2026-09-07). It is on each card, where the
+            drawing puts it. Printed in both places it read as two different measurements of two
+            different things. */}
       </View>
 
       {loading ? (
         <LoadingState testID="exec-risk-loading" variant="ai" theme={isDark ? 'dark' : 'light'} />
       ) : null}
 
-      {!loading && report === null ? (
-        <View style={styles.card}>
-          <Text style={styles.body}>{t(failed ? 'insight.failed' : 'insight.idle')}</Text>
-        </View>
-      ) : null}
-
+      {/* THE "not produced" LINE IS GONE. Where it stood, the drawing's own cards now stand — see
+          `cards` above. A report that came back with no findings at all still says so: that is the
+          model reporting nothing to report, which is an answer rather than an absence. */}
       {!loading && report !== null && factors.length === 0 ? (
         <View testID="exec-risk-empty" style={styles.card}>
           <Text style={styles.body}>{t('exec.tasks.riskNone')}</Text>
@@ -176,26 +226,77 @@ export function ExecRiskAlerts({
       ) : null}
 
       {!loading
-        ? factors.map((factor, index) => (
-            <View
-              key={`${index}-${factor.slice(0, 24)}`}
-              testID={`exec-risk-${index}`}
-              style={[styles.card, styles.alert, { borderLeftColor: accent }]}
-            >
-              <View style={styles.alertHead}>
-                {level === null ? null : (
-                  <View style={[styles.levelChip, { borderColor: `${accent}66` }]}>
-                    <Text style={[styles.levelText, { color: accent }]}>{level}</Text>
+        ? cards.map((card, index) => {
+            const accent = levelColour(card.level, p);
+            return (
+              <View
+                key={card.key}
+                testID={`exec-risk-${index}`}
+                style={[styles.card, styles.alert, { borderLeftColor: accent }]}
+              >
+                <View style={styles.alertHead}>
+                  <View style={styles.alertHeadLeft}>
+                    {card.level === null ? null : (
+                      <View style={[styles.levelChip, { borderColor: `${accent}66` }]}>
+                        <Text style={[styles.levelText, { color: accent }]}>{card.level}</Text>
+                      </View>
+                    )}
+                    {/* The drawing's category chip — DRAWN on both paths. See the header and ADR-099. */}
+                    <View style={styles.categoryChip}>
+                      <MaterialSymbol name="inventory_2" size={13} color={p.muted} />
+                      <Text style={styles.categoryText}>{card.category}</Text>
+                    </View>
                   </View>
-                )}
+                  {/* On the real path this is the report's own confidence — the SAME number on every
+                    card, because the report carries one, which is what the footnote explains. On the
+                    drawn path each card has the drawing's own. */}
+                  {card.band === null ? null : (
+                    <Text testID={`exec-risk-${index}-confidence`} style={styles.confText}>
+                      {card.percent === null
+                        ? t(BAND_LABEL[card.band])
+                        : t('exec.tasks.conf', { value: card.percent })}
+                    </Text>
+                  )}
+                </View>
+                <Text style={styles.alertTitle}>{card.title}</Text>
+                {card.body === null ? null : <Text style={styles.alertText}>{card.body}</Text>}
+                {/* COMING SOON — see the header. Neither button may ever write: §Phase 10 makes this
+                  role read-only on mobile. */}
+                <View style={styles.alertActions}>
+                  {(['bim', 'replan'] as const).map((action) => (
+                    <Pressable
+                      key={action}
+                      testID={`exec-risk-${index}-${action}`}
+                      accessibilityRole="button"
+                      accessibilityLabel={t(`exec.tasks.riskAction.${action}`)}
+                      onPress={() =>
+                        Alert.alert(t(`exec.tasks.riskAction.${action}`), t('more.comingSoon'))
+                      }
+                      style={[
+                        styles.alertAction,
+                        action === 'replan' ? { borderColor: `${accent}66` } : null,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.alertActionText,
+                          action === 'replan' ? { color: accent } : null,
+                        ]}
+                      >
+                        {t(`exec.tasks.riskAction.${action}`)}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
               </View>
-              <Text style={styles.alertText}>{factor}</Text>
-            </View>
-          ))
+            );
+          })
         : null}
 
-      {/* One level for the whole report, so the cards say so rather than implying otherwise. */}
-      {!loading && factors.length > 1 && level !== null ? (
+      {/* ONE LEVEL AND ONE CONFIDENCE for the whole report, so the cards say so rather than
+          implying otherwise. The note earns its place the moment a second card appears: two cards
+          carrying identical figures look like two measurements that happened to agree. */}
+      {!loading && !drawn && factors.length > 1 && level !== null ? (
         <Text testID="exec-risk-level-note" style={styles.footnote}>
           {t('exec.tasks.riskLevelNote')}
         </Text>
@@ -213,14 +314,6 @@ const makeStyles = (p: Palette) =>
       fontSize: typography.body.fontSize,
       fontFamily: fontFamily.semibold,
       color: p.text,
-    },
-    confChip: {
-      paddingHorizontal: spacing.xs,
-      paddingVertical: 2,
-      borderRadius: radius.xl,
-      borderWidth: 1,
-      borderColor: p.accent,
-      backgroundColor: p.bg,
     },
     confText: {
       color: p.accent,
@@ -240,7 +333,26 @@ const makeStyles = (p: Palette) =>
     // are prohibited wherever the signed-in app shows project data (.claude/rules/design-tokens.md),
     // and the two named exceptions are pre-auth screens and <LoadingState />'s `ai` variant.
     alert: { borderLeftWidth: 4, gap: spacing.xs },
-    alertHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+    alertHead: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.xs,
+    },
+    alertHeadLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexShrink: 1 },
+    categoryChip: { flexDirection: 'row', alignItems: 'center', gap: 2, flexShrink: 1 },
+    categoryText: {
+      color: p.muted,
+      fontFamily: fontFamily.regular,
+      fontSize: 10,
+    },
+    // The drawing's bold `<h4>` over the muted body. Only the title has a source — see the header.
+    alertTitle: {
+      color: p.text,
+      fontFamily: fontFamily.semibold,
+      fontSize: typography.caption.fontSize,
+      lineHeight: typography.caption.lineHeight,
+    },
     levelChip: {
       paddingHorizontal: spacing.xs,
       paddingVertical: 2,
@@ -252,6 +364,22 @@ const makeStyles = (p: Palette) =>
       fontSize: 10,
       letterSpacing: 0.8,
       textTransform: 'uppercase',
+    },
+    alertActions: { flexDirection: 'row', gap: spacing.xs, marginTop: spacing.xs / 2 },
+    alertAction: {
+      flex: 1,
+      minHeight: touchTarget.secondaryButton,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: p.border,
+      backgroundColor: p.surfaceBright,
+    },
+    alertActionText: {
+      color: p.text,
+      fontFamily: fontFamily.medium,
+      fontSize: typography.label.fontSize,
     },
     alertText: {
       color: p.text,

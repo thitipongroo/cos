@@ -428,13 +428,29 @@ Source: §20.2 Executive; master Phase 10 EXEC nav; Analytics (Phase 14) + AI re
 | `/safety`    | Portfolio safety  | Compliance and incidents across every project, with a per-project ranking       | `GET /api/v1/safety/compliance`, `GET /api/v1/safety/incidents` |
 | `/more`      | More              | Tile hub — portfolio, financial forecast, risk centre, vendor directory         | Navigation only                                                 |
 | `/portfolio` | Portfolio         | Project list with status chips + budget-variance badge; drill to project health | Analytics + Project APIs                                        |
-| `/alerts`    | Risk alerts       | Delay risk, budget overrun, critical issues sorted by severity                  | `finance.variance.alert`, `construction.delay.detected`, issues |
+| `/alerts`    | Portfolio tasks   | Overdue / due-this-week / blocked across the tenant, the AI delay-risk feed and the critical path | `GET /api/v1/tasks/portfolio-summary`, `GET /api/v1/tasks/portfolio-critical-path`, `POST /api/v1/ai/reports/delay-risk` |
 | `/reports`   | Executive reports | AI executive summaries per project                                              | `POST /api/v1/ai/reports/executive-summary`                     |
 
 **Mobile bottom navigation (2026-09-07, ADR-098 amended): `Home · Alerts · Portfolio · Reports`.**
 
-`/home`, `/alerts`, `/portfolio` and `/reports` are the role's four mobile tabs; `/tasks`, `/safety`
-and `/more` are reached from the navigation drawer.
+`/home`, `/alerts`, `/portfolio` and `/reports` are the role's four mobile tabs; `/safety` and
+`/more` are reached from the navigation drawer.
+
+**`/alerts` IS THE PORTFOLIO TASK ROLL-UP, and that is a change to this table rather than a reading
+of it.** This page was the risk feed — "delay risk, budget overrun, critical issues sorted by
+severity" — and the implementation matched. The drawing behind the tab named "Alerts",
+`mockup/mobile/08_executive/02_alerts/02_ex_alerts`, is the previous `02_tasks` file with FOUR LINES
+changed (the four labels in its `<nav>`; the body is byte-identical), so it draws the task roll-up.
+The product owner chose the drawing on 2026-09-07 and directed that the risk feed be removed and
+this specification amended.
+
+**The risk feed is gone from the product.** Nothing else lists projects by severity: the Home screen
+counts them and the Portfolio screen bands its cards, but neither is the list. Restoring it is a new
+page, not a revert.
+
+**`/tasks` is no longer an EXECUTIVE page.** The screen it carried for this role now answers at
+`/alerts`, and the same screen under two routes is what §32.7 records as the `dashboard` mistake. The
+route and its drawer row remain for the field roles, unchanged.
 
 This bar has changed twice, both times because the product owner replaced the drawings the role is
 built from, and the order is not a restoration of either earlier bar:
@@ -464,10 +480,11 @@ label "Reports", which is what that drawing's own active tab reads.
 portfolio question — how safety stands across every project — which none of the site-scoped safety
 pages answers. `/tasks` and `/more` are shared routes whose screen branches on role.
 
-All three stay reachable after leaving the bar on 2026-09-07 (PO decision — keep all three, reach
-them from the drawer). `/tasks` returns to the drawer on its own, being derived from §6.4's "Tasks"
-row and suppressed only while it was a tab; `/safety` and `/more` are governed by no §6.4 module and
-are listed explicitly instead.
+`/safety` and `/more` stay reachable after leaving the bar on 2026-09-07 (PO decision — keep them,
+reach them from the drawer). Neither is governed by a §6.4 module, so both are listed explicitly in
+`drawerLinks.ts` rather than derived. `/tasks` would have returned to the drawer on its own, being
+derived from §6.4's "Tasks" row — it is removed from that row FOR THIS ROLE ONLY, because its screen
+is now the `/alerts` tab and offering it a second time under a second name is the case above.
 
 **Figures without a source.** Several panels on the mobile Tasks and Safety screens print values this
 platform cannot compute — a compliance percentage, safe man-hours, a per-project safety score, a

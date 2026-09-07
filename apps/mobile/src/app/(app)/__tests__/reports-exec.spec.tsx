@@ -273,6 +273,35 @@ describe('ReportsScreen (EXECUTIVE)', () => {
     await waitFor(() => expect(client.post).toHaveBeenCalledTimes(2));
   });
 
+  it('offers a full-report link on every summary, and it writes nothing', async () => {
+    // COMING SOON: `/ai/reports/history` returns metadata only, so no past report's TEXT can be
+    // re-displayed and there is no page to open. Drawn because the drawing draws it (PO 2026-09-07).
+    const { getAllByTestId, getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getAllByTestId(/^exec-reports-full-/)).toHaveLength(2));
+    await fireEvent.press(getByTestId('exec-reports-full-proj-1'));
+
+    expect(client.post).toHaveBeenCalledTimes(1); // the report on mount, and nothing else
+  });
+
+  it('disables Acknowledge until there is a recommendation to acknowledge', async () => {
+    client.post.mockResolvedValue(report({ content: { executive_summary: 'Fine.' } }));
+
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() =>
+      expect(getByTestId('exec-reports-acknowledge').props.accessibilityState.disabled).toBe(true),
+    );
+  });
+
+  it('enables Acknowledge once the model has advised something', async () => {
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() =>
+      expect(getByTestId('exec-reports-acknowledge').props.accessibilityState.disabled).toBe(false),
+    );
+  });
+
   it('draws the export and acknowledge controls, and neither writes anything', async () => {
     // Asserting they EXIST is what stops a later tidy-up from silently deleting the drawing; master
     // §Phase 10 makes this role READ-ONLY on mobile, so neither may ever gain a write.

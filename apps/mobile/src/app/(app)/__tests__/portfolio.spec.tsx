@@ -241,6 +241,41 @@ describe('PortfolioScreen', () => {
     expect(getByTestId('portfolio-filter-onTrack')).toHaveTextContent(/\(1\)/);
   });
 
+  it('puts an advice strip on the cards that are not on track, and on no others', async () => {
+    // The drawing puts it on its CRITICAL card and the product owner extended it to the amber ones
+    // (2026-09-07). A card that is ON TRACK has nothing to advise, and an UNMEASURED one — no
+    // analytics row — has no band at all, so neither gets a strip.
+    const { getAllByTestId, queryAllByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getAllByTestId('portfolio-item')).toHaveLength(2));
+    // proj-2 is over 100% utilisation; proj-1 is on track.
+    expect(queryAllByTestId('portfolio-advice')).toHaveLength(1);
+  });
+
+  it('names the REASON the card is in its band, never a recommendation no model made', async () => {
+    // This screen makes no AI call at all. The drawing writes a specific sentence under a robot
+    // glyph; printing one here would attribute advice to a model that never ran, which is what
+    // lib/mockupFigures.ts forbids. The strip carries the `executiveSeverityOf` reason instead.
+    const { getAllByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getAllByTestId('portfolio-advice')).toHaveLength(1));
+    expect(getAllByTestId('portfolio-advice')[0]).toHaveTextContent(/passed the budget/i);
+  });
+
+  it('names the OVERDUE reason when that is what set the band, not the budget one', async () => {
+    // Read in the same order `executiveSeverityOf` reads: utilisation, then the flag, then overdue
+    // invoices. A note naming a different cause from the one that set the colour would be worse
+    // than no note.
+    client.get.mockResolvedValue([
+      { ...execRow('proj-1', 62, 0), overdueInvoiceCount: 3 },
+      execRow('proj-2', 62, 0),
+    ]);
+    const { getAllByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getAllByTestId('portfolio-advice')).toHaveLength(1));
+    expect(getAllByTestId('portfolio-advice')[0]).toHaveTextContent(/overdue/i);
+  });
+
   it('prints the drawn figures unchanged, whatever the API returns', async () => {
     // THE ADR-099 GUARD, the same one exec-home.spec.tsx carries. If any of these ever starts
     // tracking an endpoint, this fails and the decision gets revisited rather than drifting.

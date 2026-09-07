@@ -11,6 +11,7 @@ import { render, waitFor, cleanup } from '@testing-library/react-native';
 import { I18nProvider } from '../../i18n';
 import { useAuthStore } from '../../store/authStore';
 import { ExecRiskAlerts } from '../ExecRiskAlerts';
+import { RISK_ALERT_CATEGORIES } from '../../lib/mockupFigures';
 
 jest.mock('../../api/ai', () => ({ generateDelayRisk: jest.fn() }));
 
@@ -89,16 +90,38 @@ describe('ExecRiskAlerts', () => {
     expect(queryByTestId('exec-risk-level-note')).toBeNull();
   });
 
-  it('shows the report own confidence, never a number of its own', async () => {
-    const { getByTestId } = await renderAlerts();
-    await waitFor(() => expect(getByTestId('exec-risk-confidence')).toHaveTextContent(/94/));
+  it('shows the report own confidence on EVERY card, and it is the same number', async () => {
+    // MOVED OFF THE SECTION HEADER on 2026-09-07 (PO), to where the drawing puts it. The report
+    // carries ONE confidence, so every card prints it — and that identical figure repeated is
+    // exactly why the level note below the feed had to start covering the number too.
+    const { getByTestId, queryByTestId } = await renderAlerts();
+    await waitFor(() => expect(getByTestId('exec-risk-0-confidence')).toHaveTextContent(/94/));
+    expect(getByTestId('exec-risk-1-confidence')).toHaveTextContent(/94/);
+    expect(queryByTestId('exec-risk-confidence')).toBeNull();
   });
 
   it('falls back to the confidence BAND when the gateway reported no number', async () => {
     ai.generateDelayRisk.mockResolvedValue(report({ confidence: null, low_confidence: true }));
     const { getByTestId } = await renderAlerts();
-    await waitFor(() => expect(getByTestId('exec-risk-confidence')).toBeTruthy());
-    expect(getByTestId('exec-risk-confidence')).not.toHaveTextContent(/%/);
+    await waitFor(() => expect(getByTestId('exec-risk-0-confidence')).toBeTruthy());
+    expect(getByTestId('exec-risk-0-confidence')).not.toHaveTextContent(/%/);
+  });
+
+  it('draws the category chip from the register, never from the finding text', async () => {
+    // THE ONE DRAWN VALUE INSIDE A CARD OF REAL MODEL OUTPUT (PO 2026-09-07, ADR-099 second
+    // amendment). `risk_factors` is a list of bare strings with no field to carry a category, and
+    // classifying the text here would be this screen labelling a finding the model did not label.
+    // Pinned to the register so it cannot quietly start tracking an endpoint.
+    const { getByTestId } = await renderAlerts();
+    await waitFor(() => expect(getByTestId('exec-risk-0')).toBeTruthy());
+    // A REGEX, not the bare string: this matcher treats a string argument as an EXACT match of the
+    // node's whole text, so the assertion would be about the entire card rather than the chip.
+    expect(getByTestId('exec-risk-0')).toHaveTextContent(
+      new RegExp(RISK_ALERT_CATEGORIES.value[0]),
+    );
+    expect(getByTestId('exec-risk-1')).toHaveTextContent(
+      new RegExp(RISK_ALERT_CATEGORIES.value[1]),
+    );
   });
 
   it('says the report named no factors rather than rendering an empty feed', async () => {
@@ -120,11 +143,43 @@ describe('ExecRiskAlerts', () => {
     expect(queryByTestId('exec-risk-1')).toBeNull();
   });
 
-  it('reports a failed generation instead of leaving the last state on screen', async () => {
+  it('falls back to the drawing own cards when the gateway produced nothing', async () => {
+    // CHANGED 2026-09-07 (PO). It used to assert the opposite — no cards, and a line saying the
+    // report was not produced. The drawing shows a section already full of findings, so where the
+    // gateway says nothing the DRAWING'S cards stand instead. They are findings, which is what
+    // ADR-099 is most careful about; the register entry carries the COMING SOON note and the
+    // condition for deleting it.
+    ai.generateDelayRisk.mockRejectedValue(new Error('gateway down'));
+    const { getByTestId } = await renderAlerts();
+
+    await waitFor(() => expect(getByTestId('exec-risk-0')).toBeTruthy());
+    expect(getByTestId('exec-risk-1')).toBeTruthy();
+    expect(getByTestId('exec-risk-alerts')).not.toHaveTextContent(/not produced/i);
+  });
+
+  it('gives each DRAWN card its own level and confidence, unlike a real report', async () => {
+    // The asymmetry is the point: a report carries ONE level and ONE confidence for all of its
+    // findings, and the drawing gives every card its own. Asserting both halves is what stops the
+    // fallback quietly becoming the shape the real path is held to.
     ai.generateDelayRisk.mockRejectedValue(new Error('gateway down'));
     const { getByTestId, queryByTestId } = await renderAlerts();
-    await waitFor(() => expect(queryByTestId('exec-risk-0')).toBeNull());
-    expect(getByTestId('exec-risk-alerts')).toHaveTextContent(/not produced/i);
+
+    await waitFor(() => expect(getByTestId('exec-risk-0')).toHaveTextContent(/CRITICAL/));
+    expect(getByTestId('exec-risk-1')).toHaveTextContent(/MEDIUM/);
+    expect(getByTestId('exec-risk-0-confidence')).toHaveTextContent(/94/);
+    expect(getByTestId('exec-risk-1-confidence')).toHaveTextContent(/82/);
+    // …and the "one level for the whole report" caveat does NOT apply to them.
+    expect(queryByTestId('exec-risk-level-note')).toBeNull();
+  });
+
+  it('drops the drawn cards the moment a real report arrives', async () => {
+    // The two paths are exclusive. A fallback that survived alongside real findings would put the
+    // drawing's inventions in the same list as the model's output with nothing to tell them apart.
+    const { getByTestId } = await renderAlerts();
+
+    await waitFor(() => expect(getByTestId('exec-risk-0')).toBeTruthy());
+    expect(getByTestId('exec-risk-alerts')).not.toHaveTextContent(/T-3/);
+    expect(getByTestId('exec-risk-0')).toHaveTextContent(/Rain forecast/);
   });
 
   it('does not generate without a project', async () => {
@@ -142,6 +197,20 @@ describe('ExecRiskAlerts', () => {
     await renderAlerts();
     await waitFor(() => expect(true).toBe(true));
     expect(ai.generateDelayRisk).not.toHaveBeenCalled();
+  });
+
+  it('draws both action buttons on EVERY card, and neither writes anything', async () => {
+    // COMING SOON (PO 2026-09-07): "View BIM data" has no system behind it — BIM is a Type A stub —
+    // and "Replan urgently" has no endpoint and could not gain one, since master Phase 10 makes this
+    // role read-only on mobile. They are on every card rather than on the first, as the drawing has
+    // them: the drawing's second card is a different SEVERITY, not a different card type, and giving
+    // one finding buttons and the next none would be a claim about which finding is actionable.
+    const { getByTestId } = await renderAlerts();
+
+    await waitFor(() => expect(getByTestId('exec-risk-0-bim')).toBeTruthy());
+    expect(getByTestId('exec-risk-0-replan')).toBeTruthy();
+    expect(getByTestId('exec-risk-1-bim')).toBeTruthy();
+    expect(getByTestId('exec-risk-1-replan')).toBeTruthy();
   });
 
   it('no longer names the project — the source line was removed on 2026-09-07', async () => {

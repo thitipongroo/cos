@@ -185,15 +185,22 @@ describe('the bar is four wide, and the fifth entry goes to the drawer', () => {
   });
 
   it('leaves the executive a route to every screen that left its bar', () => {
-    // THE CONDITION OF THE SWAP, asserted rather than trusted — and the swap ran the other way on
-    // 2026-09-07, so the three routes are different ones. `/tasks` comes back on its own (DERIVED,
-    // module "Tasks", suppressed only while it was a tab); `/safety` and `/more` are in NO §6.4 row,
-    // so without the two NOT_DERIVED entries added in the same change the role would have lost both
+    // THE CONDITION OF THE SWAP, asserted rather than trusted. `/safety` and `/more` are in NO §6.4
+    // row, so without the two NOT_DERIVED entries added on 2026-09-07 the role would have lost both
     // screens outright — which the product owner's "เก็บทั้งสาม เข้าผ่าน drawer" forbids.
     const routes = drawerLinksFor(CosRole.EXECUTIVE).map((link) => link.route);
-    expect(routes).toContain('/tasks');
     expect(routes).toContain('/safety');
     expect(routes).toContain('/more');
+  });
+
+  it('does NOT offer the executive its task screen twice', () => {
+    // `/alerts` became this role's task roll-up later the same day and renders the very same
+    // component `/tasks` does. A drawer row onto `/tasks` would therefore be a second name for a
+    // screen already on the bar — the `dashboard` mistake, which shipped a fifth tab. The row is
+    // removed at the DERIVED entry rather than filtered here, so the reason lives with the data.
+    expect(drawerLinksFor(CosRole.EXECUTIVE).map((link) => link.route)).not.toContain('/tasks');
+    // …and no other role lost it.
+    expect(drawerLinksFor(CosRole.PROJECT_MANAGER).map((link) => link.route)).toContain('/tasks');
   });
 
   it('keeps the four bar routes OUT of the executive drawer', () => {

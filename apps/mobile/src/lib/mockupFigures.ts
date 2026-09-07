@@ -7,7 +7,7 @@
 // on 2026-09-04, on the condition that they live in ONE module.
 //
 // EXTENDED 2026-09-07 (PO decision, "ขยาย ADR-099 วาดทั้งหมด") to the two screens the replacement
-// mockup set added — Portfolio and Report. The register grew from ten entries to nineteen. The
+// mockup set added — Portfolio and Report. The register grew from ten entries to twenty-one. The
 // condition is unchanged and is the reason the count is worth stating: every one of them is here,
 // and the register is the only place a reader has to look.
 //
@@ -211,6 +211,60 @@ export const REPORT_PDF_EXPORT = figure(
   true,
   'a report renderer. `lib/dataExport.ts` offers JSON and CSV for the PDPA subject-access export ' +
     'and nothing renders a portfolio document at all',
+);
+
+// ── Alerts (02_alerts/02_ex_alerts) ──────────────────────────────────────────
+
+/**
+ * The CATEGORY chip on each risk-alert card — the drawing's "BIM + Site Logs" and "Supply Chain".
+ *
+ * READ THE AMENDMENT TO ADR-099 BEFORE TOUCHING THIS. It is the FIRST entry in this file that sits
+ * inside a card whose other text is a real model output, which the header above forbids in as many
+ * words. The product owner decided it on 2026-09-07 with that conflict named; the carve-out is
+ * narrow and it is written down: a drawn LABEL beside a model's finding, never a drawn CONFIDENCE
+ * and never a drawn FINDING. The confidence on those cards is the report's own number.
+ *
+ * The drawing's first value names systems rather than a category — "BIM + Site Logs" — and it is not
+ * used: a claim about WHICH SYSTEMS produced a report is the one thing ADR-098's second amendment
+ * keeps off these screens, because it changes how much of the card a reader believes. These are
+ * subject labels, taken from the drawing's second card, which is a category.
+ */
+export const RISK_ALERT_CATEGORIES = figure(
+  ['Supply Chain', 'Weather', 'Manpower', 'Logistics'] as const,
+  'a category on a risk factor. `DelayRiskOutput.risk_factors` is a list of bare strings — there ' +
+    'is no field to carry one, and inferring it from the text would be this screen classifying a ' +
+    'finding the model did not classify',
+);
+
+/**
+ * THE DRAWING'S OWN TWO RISK CARDS, shown when the gateway returns no report.
+ *
+ * COMING SOON, and this is the entry that most needs the label: these are FINDINGS, and a finding is
+ * the thing the amendment above says may not be drawn. The product owner directed it anyway on
+ * 2026-09-07, after seeing the screen render an empty state where the drawing shows a full feed:
+ * "draw the cards always; use the mockup content when there is no report."
+ *
+ * IT IS A FALLBACK, NOT A SOURCE. The moment `POST /ai/reports/delay-risk` answers, every card comes
+ * from the model and none of this is read — the two paths are exclusive and the component says which
+ * one it is on. What the gateway needs before this can be deleted is nothing at all: it is already
+ * built. It needs to be REACHABLE, which on a developer machine means the ai-gateway container
+ * resolving Keycloak by its in-network name.
+ *
+ * `level` and `confidence` are the drawing's per-card values. They exist here and NOT on the real
+ * path, where the report carries one level and one confidence for the whole thing — which is the
+ * asymmetry the section note explains whenever a real report produces more than one card.
+ *
+ * The text lives in `i18n` (QM-3), not here: the drawing writes it in Thai, and a hardcoded Thai
+ * sentence would print unchanged on an English device. This holds the shape; the words are keyed.
+ */
+export const RISK_ALERT_FALLBACK = figure(
+  [
+    { key: 'concretePour', level: 'CRITICAL', confidence: 94 },
+    { key: 'rebarSupply', level: 'MEDIUM', confidence: 82 },
+  ] as const,
+  'nothing to build — `POST /ai/reports/delay-risk` already produces these cards. It has to be ' +
+    'REACHABLE: the ai-gateway container verifies bearer tokens against KEYCLOAK_URL, and a ' +
+    'developer machine that leaves it at the host value rejects every one of them',
 );
 
 // ── Shared ───────────────────────────────────────────────────────────────────

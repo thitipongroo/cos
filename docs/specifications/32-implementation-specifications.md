@@ -1820,10 +1820,16 @@ already renders for this role, in a styled form, and the tab keeps the label "Re
 what that drawing's own active tab reads.
 
 The same condition held in reverse, by product-owner decision ("keep all three, reach them from the
-drawer"): `/tasks` returns to the drawer on its own, being `DERIVED` from §6.4's "Tasks" row and
-suppressed only while it was a tab; `/safety` and `/more` are governed by no §6.4 module and gained
-`NOT_DERIVED` rows. `/alerts` lost the `NOT_DERIVED` row it gained on 2026-09-05, because a row whose
-route is on the bar is suppressed and would be dead configuration reading as a live decision.
+drawer"): `/safety` and `/more` are governed by no §6.4 module and gained `NOT_DERIVED` rows.
+`/alerts` lost the `NOT_DERIVED` row it gained on 2026-09-05, because a row whose route is on the bar
+is suppressed and would be dead configuration reading as a live decision.
+
+**Later the same day the Alerts tab changed what it shows**, and `/tasks` went with it. The drawing
+behind that tab is the previous Tasks drawing with four `<nav>` labels changed and a byte-identical
+body, so it draws the portfolio task roll-up; the product owner chose the drawing, the risk feed was
+deleted, and §20.7.1 was amended. `/tasks` then left this role's `DERIVED` row — its screen answers
+at `/alerts` now, and the same screen under two names is the `dashboard` mistake recorded at the top
+of `routeRegistry.ts`. The field roles keep the route, the tab and the row.
 
 `safety` remains a route of its own — the portfolio safety overview, which is not `safety-checklist`
 (fill one in), not `inspections` (list them) and not `incidents` (one site's feed). `tasks` and `more`

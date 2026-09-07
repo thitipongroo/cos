@@ -270,8 +270,13 @@ const DERIVED: readonly { link: DrawerLink; module: string; roles: readonly CosR
   {
     link: TASKS,
     module: 'Tasks',
+    // EXECUTIVE LEFT THIS ROW ON 2026-09-07, and it is the one place in this table where a role
+    // holding the module is deliberately not offered the row. `/alerts` became that role's task
+    // roll-up on the same day (PO decision), and `/tasks` renders the SAME `<ExecTasks />` for it —
+    // so leaving the row would put one screen in the drawer under a second name while it is already
+    // on the bar. That is the `dashboard` mistake, which shipped a fifth tab. The field roles are
+    // unaffected: `/tasks` is their own screen and their own tab.
     roles: [
-      EXECUTIVE,
       PROJECT_MANAGER,
       SITE_ENGINEER,
       PROCUREMENT_OFFICER,

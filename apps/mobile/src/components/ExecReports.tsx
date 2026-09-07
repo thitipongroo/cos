@@ -266,13 +266,11 @@ export function ExecReports(): React.JSX.Element {
       style={{ backgroundColor: p.bg }}
       contentContainerStyle={styles.page}
     >
-      <View>
-        <Text style={styles.heading} accessibilityRole="header">
-          {t('exec.reports.heading')}
-        </Text>
-        <Text style={styles.subtitle}>{t('exec.reports.subtitle')}</Text>
-      </View>
-
+      {/* NO SCREEN HEADING (PO 2026-09-07). "Executive reports" and its subtitle were the
+          drawing's own ScreenHeading block, and on a TAB they repeat the label the bar already
+          shows - the reader arrived here by pressing the word. The drawing's W47-LIVE chip lived on
+          that row and goes with it: a week number is computable, "LIVE" is a claim about a data
+          feed this platform does not have, and half a chip is worse than none. COMING SOON. */}
       {/* Control bar — the tabs and the one control that does what it says. */}
       <View style={styles.controls}>
         <View style={styles.tabs}>
@@ -318,9 +316,12 @@ export function ExecReports(): React.JSX.Element {
             <View style={styles.plate}>
               <MaterialIcons name="psychology" size={16} color={p.accent} />
             </View>
+            {/* ONE LINE, and it no longer says "AI" (PO 2026-09-07). The card's second line - the
+                drawing's own portfolio-status caption - said what the eyebrow above it already
+                said, and the eyebrow's "AI" was doing no work: the confidence chip beside it, the
+                source line at the foot and the prose itself all say what produced this. */}
             <View style={styles.briefTitles}>
               <Text style={styles.eyebrow}>{t('exec.reports.brief')}</Text>
-              <Text style={styles.briefTitle}>{t('exec.reports.briefSubtitle')}</Text>
             </View>
           </View>
           {band === null ? null : (
@@ -436,7 +437,12 @@ export function ExecReports(): React.JSX.Element {
                         }`}
                       </Text>
                     </View>
-                    <View style={[styles.rowPill, { borderColor: `${tone}66` }]}>
+                    {/* SQUARED, like the Home project card's tag and for the same reason: the
+                        drawing writes `rounded`, which its own Tailwind config maps to 0.25rem =
+                        4px, and the product owner chose the drawing (2026-09-07). Recorded in
+                        theme/__tests__/badgeRadius.spec.ts's NOT_BADGES table, so the section 32.7
+                        capsule ruling still binds every badge it was not overruled for. */}
+                    <View style={[styles.rowStatusTag, { borderColor: `${tone}66` }]}>
                       <Text style={[styles.rowPillText, { color: tone }]}>
                         {t(`exec.reports.band.${band2}`)}
                       </Text>
@@ -478,6 +484,26 @@ export function ExecReports(): React.JSX.Element {
                           {t('insight.conf', { value: percent })}
                         </Text>
                       ) : null}
+                      {/* COMING SOON (PO 2026-09-07). The drawing's full-report link opens a
+                          per-project report page, and there is nothing to open: the gateway produces
+                          a report for ONE project per call, and /ai/reports/history returns METADATA
+                          only - report_id, confidence, created_at - so no past report's TEXT can be
+                          re-displayed. That is the same limit that makes InsightPanel regenerate
+                          rather than fetch. Drawn, and it says so on tap.
+                          A CHEVRON ALONE, no words (PO 2026-09-07). The words wrapped this footer
+                          onto a second line on every card; the mark carries the same affordance in
+                          the space that was left. It keeps the LABEL for a screen reader, which is
+                          the half a bare glyph usually loses — `accessibilityLabel` still reads
+                          "Full report", so nothing was traded away except the pixels. */}
+                      <Pressable
+                        testID={`exec-reports-full-${row.projectId}`}
+                        accessibilityRole="button"
+                        accessibilityLabel={t('exec.reports.fullReport')}
+                        onPress={() => soon('exec.reports.fullReport')}
+                        style={styles.rowLink}
+                      >
+                        <MaterialIcons name="chevron-right" size={18} color={p.accent} />
+                      </Pressable>
                     </View>
                   </View>
                 </View>
@@ -508,12 +534,19 @@ export function ExecReports(): React.JSX.Element {
           ))
         )}
         {/* Drawn, and it must never write — master §Phase 10 makes this role read-only on mobile. */}
+        {/* DISABLED UNTIL THERE IS SOMETHING TO ACKNOWLEDGE (PO 2026-09-07). It is a
+            human-in-the-loop control over the recommendations above it; with none on screen it
+            would offer to acknowledge nothing. Same treatment the Tasks screen's detail control
+            takes when nothing is blocked. COMING SOON either way - master Phase 10 makes this role
+            read-only on mobile and there is no acknowledgement endpoint. */}
         <Pressable
           testID="exec-reports-acknowledge"
           accessibilityRole="button"
           accessibilityLabel={t('exec.reports.acknowledge')}
+          accessibilityState={{ disabled: recommendations.length === 0 }}
+          disabled={recommendations.length === 0}
           onPress={() => soon('exec.reports.acknowledge')}
-          style={styles.acknowledge}
+          style={[styles.acknowledge, recommendations.length === 0 && styles.disabled]}
         >
           <MaterialIcons name="fact-check" size={16} color={p.accent} />
           <Text style={styles.acknowledgeText}>{t('exec.reports.acknowledge')}</Text>
@@ -563,18 +596,6 @@ const makeStyles = (p: Palette) =>
   StyleSheet.create({
     page: { padding: spacing.md, gap: spacing.sm },
     stack: { gap: spacing.sm },
-
-    heading: {
-      color: p.text,
-      fontFamily: fontFamily.bold,
-      fontSize: typography.title.fontSize,
-    },
-    subtitle: {
-      color: p.muted,
-      fontFamily: fontFamily.regular,
-      fontSize: typography.label.fontSize,
-      marginTop: 2,
-    },
 
     controls: {
       flexDirection: 'row',
@@ -650,11 +671,6 @@ const makeStyles = (p: Palette) =>
       backgroundColor: p.surfaceBright,
     },
     briefTitles: { flex: 1 },
-    briefTitle: {
-      color: p.text,
-      fontFamily: fontFamily.semibold,
-      fontSize: typography.caption.fontSize,
-    },
     confChip: {
       paddingHorizontal: spacing.xs,
       paddingVertical: 2,
@@ -731,10 +747,12 @@ const makeStyles = (p: Palette) =>
       fontFamily: fontFamily.regular,
       fontSize: typography.label.fontSize,
     },
-    rowPill: {
+    // Named Tag, not Pill - the badge-radius guard reads style NAMES, and the squared corner is
+    // excused once, in that guard's NOT_BADGES table.
+    rowStatusTag: {
       paddingHorizontal: spacing.xs,
       paddingVertical: 2,
-      borderRadius: radius.xl,
+      borderRadius: radius.md,
       borderWidth: 1,
     },
     rowPillText: {
@@ -749,6 +767,15 @@ const makeStyles = (p: Palette) =>
       borderTopColor: p.border,
     },
     rowFigures: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexWrap: 'wrap' },
+    // `marginLeft: 'auto'` puts it at the trailing edge of the figures row; the 44pt box is the
+    // WCAG AAA icon-button target (§32.7), which a bare 18px glyph would otherwise miss.
+    rowLink: {
+      marginLeft: 'auto',
+      minWidth: touchTarget.iconButton,
+      minHeight: touchTarget.iconButton,
+      alignItems: 'flex-end',
+      justifyContent: 'center',
+    },
     rowFigure: { fontFamily: fontFamily.medium, fontSize: typography.label.fontSize },
     rowFigureMuted: {
       color: p.muted,

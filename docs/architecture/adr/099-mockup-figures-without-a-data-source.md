@@ -161,3 +161,104 @@ treatment and names the source the panel CAN name — the project the report was
 One module, no value presented as an AI output, and the two capture READMEs kept honest. The module
 header now states the count so a reader can tell at a glance whether the register has grown without
 a decision behind it.
+
+---
+
+## Amendment — 2026-09-07 (second): drawn ADVICE, and the line it does not cross
+
+**Decided by:** Product Owner, 2026-09-07 — "build what the drawing draws; where there is no process
+behind it, mark it COMING SOON in a comment."
+
+The Portfolio drawing puts an **advice strip** on its CRITICAL card: a tinted band under a
+`smart_toy` robot glyph reading "AI recommends: hold the next disbursement and negotiate the rebar VO
+claim." The instruction extends it to the amber cards as well.
+
+**It is drawn, and its TEXT is derived rather than copied.** The strip's shape, tone, glyph position
+and lead word all follow the drawing. What it says is the reason the card is in its band — over
+budget, flagged at risk, or invoices overdue — read from `executiveSeverityOf`, the same rule the
+filter chips and the sort already use.
+
+**Why not the drawing's own sentence.** Obligation 2 of this record says no value here may be
+presented as a model output, because a fabricated finding standing beside real figures is the case
+spec §22.3 is most explicit about. This screen makes **no AI call at all**: printing a specific
+recommendation under a robot glyph would attribute advice to a model that never ran, on a screen
+with no model on it. That is a different thing from a drawn NUMBER, and obligation 2 still stands.
+
+**COMING SOON is the honest label for the drawing's version**, and it is recorded in the code at the
+element: an advice engine per project. Nothing in this platform produces one.
+
+### The register did not grow
+
+No new entry. The strip prints derived text, not a figure, so there is nothing here to delete when
+the engine arrives — the strip simply starts saying something better. The register stays at
+nineteen.
+
+---
+
+## Amendment — 2026-09-07 (third): a drawn LABEL inside a card of real model output
+
+**Decided by:** Product Owner, 2026-09-07, with the conflict named before the decision.
+
+The risk-alert cards on the Alerts screen carry four things in their drawing: a severity chip, a
+CATEGORY chip ("BIM + Site Logs", "Supply Chain"), a per-card confidence, and a title over a body.
+`DelayRiskOutput` — read from `services/ai-gateway/reports/models.py`, not assumed — is:
+
+```python
+delay_risk_level: Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]   # ONE, for the whole report
+risk_factors: list[str]                                          # one bare string per card
+confidence: float                                                # ONE, for the whole report
+data_points_used: int
+disclaimer: str
+sources: list[str]
+```
+
+So the card has no category, no per-card confidence, and no second line.
+
+**The decision: draw the card in full, use the real values where they exist, and register the
+category chip.** `RISK_ALERT_CATEGORIES` is the twentieth entry in `mockupFigures.ts`.
+
+### This is the first entry that sits inside a card of real model output
+
+Obligation 2 of this record says no value here may be presented as a model output. Every entry until
+now sat on a KPI card, a summary strip or a project row — beside real figures, never inside one of
+the model's own findings. This one does, and the carve-out is therefore written narrowly:
+
+| Drawn inside a model's card                     | Allowed?                                                                                                                                                                                      |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A category LABEL                                | Yes, by this decision                                                                                                                                                                         |
+| A CONFIDENCE                                    | **No.** It is the case spec §22.3 is most explicit about, and the cards print the report's own number instead — the same one on each, because the report carries one                          |
+| A FINDING, or a second line of one              | **No.** Writing it would be composing the model's output for it                                                                                                                               |
+| A claim about which SYSTEMS produced the report | **No.** ADR-098's second amendment keeps that off these screens; the drawing's "BIM + Site Logs" is not used, and the register carries the drawing's own second card's SUBJECT labels instead |
+
+### What it costs
+
+A reader cannot tell the drawn label from the real finding beside it. Nothing on the card marks the
+difference, and nothing can without saying "this label is invented", which is worse than the label.
+The mitigation is the one this record has always relied on: the value lives in the register, `grep
+mockupFigures` finds every use, and deleting the module is how the decision is reversed.
+
+### And then the FINDINGS were drawn too
+
+Same day, after the screen was photographed and the feed came out empty where the drawing shows it
+full: **draw the cards always, and use the mockup's content when there is no report.**
+`RISK_ALERT_FALLBACK` is the twenty-first entry.
+
+**This crosses the line the table above draws**, and the table is not being quietly rewritten: a
+drawn FINDING is still the thing this record is most careful about, and it is drawn here because the
+product owner directed it with that stated. What makes it survivable is that it is a FALLBACK and not
+a source — the moment `POST /ai/reports/delay-risk` answers, every card comes from the model and none
+of the register is read. The two paths are exclusive, they differ in shape (a report carries one
+level and one confidence for all its findings; the drawing gives each card its own), and
+`ExecRiskAlerts.spec.tsx` asserts that a real report displaces the drawn cards entirely.
+
+**What it needs before deletion is nothing.** The endpoint is built. It needs to be REACHABLE: the
+`ai-gateway` container verifies bearer tokens against `KEYCLOAK_URL`, and a machine that leaves that
+at the host value rejects every one of them. That was fixed in `docker-compose.yml` in the same
+commit — the service already overrode Kafka, Redis and Postgres to their in-network names, and
+Keycloak had been missed.
+
+### The register is at twenty-one
+
+`RISK_ALERT_CATEGORIES` and `RISK_ALERT_FALLBACK`. The per-card confidence on the REAL path is the
+report's own field and is not registered; the drawing's second body line appears on the drawn cards
+only, never beside a model's finding.

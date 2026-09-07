@@ -752,6 +752,18 @@ services:
       DATABASE_URL: postgresql://app_user:app_user_dev_password@pgbouncer:5432/${POSTGRES_DB:-construction_os}
       # OpenWeather key for the delay-risk weather input (degrades to no weather when unset).
       WEATHER_API_KEY: ${WEATHER_API_KEY:-}
+      # Keycloak, reachable FROM THIS CONTAINER. `auth.py` builds the JWKS URL from KEYCLOAK_URL and
+      # verifies every bearer token against it; `.env` sets that to http://127.0.0.1:8090, which is
+      # right for the backend on the host and is this container talking to itself. The fetch failed,
+      # so the gateway answered 401 to every proxied call — and the mobile client reads a 401 as an
+      # expired session, so an executive was signed out three seconds after landing on Home.
+      # Kafka, Redis and Postgres above were already overridden to their in-network names; this was
+      # the one that was missed.
+      # KEYCLOAK_ISSUER is deliberately NOT overridden: the token's `iss` is Keycloak's PUBLIC URL
+      # and must keep matching it. Only the URL the keys are fetched from changes — the split-horizon
+      # case auth.py documents at _ISSUER.
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-construction-os-dev}
       # Internal transcription pipeline the gateway delegates /api/v1/ai/transcribe to.
       TRANSCRIPTION_SERVICE_URL: http://ai-transcription-pipeline:8000
       # Prompt templates live at repo-root ai/prompts (not inside the service build context),

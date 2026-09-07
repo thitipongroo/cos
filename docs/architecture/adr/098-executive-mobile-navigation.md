@@ -195,3 +195,52 @@ has been driven by a replaced drawing rather than by a defect in the previous ba
 an amendment to §20.7.1, §32.7, the Phase 10 EXEC block, the conformance test and the captures. The
 role's navigation is being set by the most recent artefact rather than by a settled view of what the
 executive opens the app to do.
+
+---
+
+## Second amendment — 2026-09-07, later the same day: what the Alerts tab SHOWS
+
+**Decided by:** Product Owner, 2026-09-07
+
+The amendment above settled which four routes the bar carries. This settles what one of them
+renders, and it reverses a decision taken that morning.
+
+**The morning's decision.** Two screens wanted the name "Alerts": the risk feed at `/alerts`, which
+§20.7.1 defines in those words ("delay risk, budget overrun, critical issues sorted by severity"),
+and the replacement mockup's `02_alerts` drawing. The escalation resolved it in the specification's
+favour — the tab pointed at the existing feed, unchanged.
+
+**What the drawing actually is.** Measured after the fact, by diffing the two blobs either side of
+commit `a23b385b`: `02_alerts/02_ex_alerts/code.html` is the previous `02_tasks/02_ex_tasks/code.html`
+with **four lines changed** — the four labels in its `<nav>`. The body is byte-identical. So the
+drawing behind the tab named "Alerts" draws the portfolio TASK ROLL-UP: overdue / due-this-week /
+blocked, the AI delay-risk feed, and the critical path.
+
+**The decision.** `/alerts` renders the task roll-up. The risk feed is **deleted**. §20.7.1, §32.7
+and the Phase 10 EXEC block are amended rather than deviated from.
+
+### What it costs, stated rather than glossed
+
+- **The per-project risk LIST is gone from the product.** Home's RISKS tile counts the same
+  severities and the Portfolio screen bands its cards by them, but neither is the list. Bringing it
+  back is a new page, not a revert: no file still holds it.
+- **A specification page changed meaning.** §20.7.1's `/alerts` row named a different screen for the
+  whole life of the project until today.
+- **`/tasks` stopped being an EXECUTIVE page**, and that is a consequence rather than a separate
+  choice: `<ExecTasks />` now answers at `/alerts`, so leaving the `DERIVED` drawer row would put one
+  screen behind two names — the `dashboard` mistake, which shipped a fifth tab. The route, the tab
+  and the drawer row are untouched for the field roles.
+
+### The standing instruction this arrived with
+
+The same message set a rule for every screen in this role and not only for this one: **build what
+the drawing draws; where this codebase has no process behind an element, say COMING SOON in a code
+comment — not on the screen — and, if the element is an ACTION, show a "coming soon" dialog when it
+is pressed.** Applied in the same commit to the risk cards' two action buttons, the Report screen's
+full-report link and its Acknowledge control, and the Portfolio cards' advice strip.
+
+**One category is still not drawn, and it is the same one ADR-099's amendment carved out**: a claim
+about WHICH SYSTEMS produced a report. `SOURCES: BIM & ERP DATA` and the risk card's
+`BIM + Site Logs` chip name integrations that do not exist, and a false provenance line changes how
+much of the screen a reader believes rather than being wrong about one quantity. Everything else the
+drawings ask for is now on the screens.
