@@ -1,0 +1,197 @@
+<!DOCTYPE html><html class="dark" lang="th" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+<title>Navigation Drawer - Finance (Mobile)</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "surface": "#031427",
+            "surface-dim": "#031427",
+            "surface-bright": "#2a3a4f",
+            "surface-container-lowest": "#000f21",
+            "surface-container-low": "#0b1c30",
+            "surface-container": "#102034",
+            "surface-container-high": "#1b2b3f",
+            "surface-container-highest": "#26364a",
+            "cos-blue": "#2563EB",
+            "cos-navy": "#0B1020",
+            "cos-cyan": "#06B6D4",
+            "cos-white": "#F8FAFC",
+            "mobile-primary": "#0066FF",
+            "mobile-success": "#00C853",
+            "mobile-warning": "#FF9500",
+            "mobile-danger": "#FF3B30",
+            "outline-variant": "#434655",
+            "on-surface": "#d3e4fe",
+            "on-surface-variant": "#c3c6d7",
+          },
+          fontFamily: {
+            sans: ['Inter Tight', 'sans-serif'],
+          }
+        }
+      }
+    };
+</script>
+<style>
+  body {
+    font-family: 'Inter Tight', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: #000f21;
+  }
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
+  .material-symbols-outlined.filled {
+    font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
+</style>
+</head>
+<body class="bg-surface-container-low text-on-surface min-h-screen w-full flex flex-col justify-start items-stretch">
+<!-- Background Dim Overlay behind drawer -->
+<!-- Mobile Drawer Container (Width 390px, standard mobile frame) -->
+<aside class="relative w-full max-w-[390px] mx-auto min-h-screen bg-surface-container-low flex flex-col justify-between overflow-y-auto">
+<!-- Top Section: Brand Header & Profile Zone -->
+<div class="flex flex-col">
+<!-- Drawer Header with Brand and Close Button -->
+<div class="flex items-center justify-between px-5 pt-6 pb-4 border-b border-outline-variant/20 bg-surface">
+<div class="flex items-center gap-2.5">
+<img alt="COS Brand Icon" class="w-7 h-7 object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1VryBK4spxPsI1y0c7KsZTZ6Jt9zSXtYud1Zj1V36h5aSjqs_liMm8RYIGfiMb2e-2N3ZFrpP6P1ZL8oyHZX1uW9urDWFCqHv4d29XHGpzQOQksyrQ6E97R49KouMe6Md8djUBqTyLvP0ig9mo3tNG0q6HndUoQVcRIQ9AZTUyuzJNufJz_XDruFz_dp6l--Cs6mGw_6RIjcPKlCxcNUCHk90fUdCqbYqoq5f78UFooP-lMSkj8n9XrfMQADAaNoyPzQ75MNFBTpA">
+<span class="font-bold text-[15px] tracking-tight text-white uppercase">CONSTRUCTION OS</span>
+</div>
+<button aria-label="ปิดเมนู" class="w-9 h-9 rounded-lg bg-surface-container-high/60 border border-outline-variant/30 flex items-center justify-center text-on-surface-variant active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<!-- Profile Zone (Interactive / Affordance for Edit Profile) -->
+<div class="p-4 bg-surface-container/60 border-b border-outline-variant/20">
+<div class="flex items-center justify-between p-3 rounded-xl bg-surface-container-high/70 border border-outline-variant/40 active:scale-[0.98] transition-all cursor-pointer group shadow-sm">
+<div class="flex items-center gap-3">
+<div class="relative w-12 h-12 rounded-full overflow-hidden border-2 border-cos-blue shrink-0">
+<img alt="Somsak P. Profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBcskfmXarcFaMQ8cRhrs_QKcs7nSu8TT5FD4cpiLXa0VI1pqZVG0tiGiEAjOfOCf2yPu_wRT_vEpSAyotMVBX8pUMFSxbDnB9wiu2KyRXs3H4U5c3KvydWLVlZSZ6IMNCie7gM_5dt1HvtV_0ufkStyfu_0ahvYcgi_VygW8sbFb3lQ_0a5AaoXwKWLGWADFJN0mnCB5fv3Jl6RkwQigp-yQ4rmkNKGi5U-Gf6Ofv9I6LlzmOy6Opf">
+<div class="absolute bottom-0 right-0 w-3 h-3 bg-mobile-success rounded-full border-2 border-surface"></div>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="font-semibold text-white text-[15px] leading-tight">Somsak P.</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-cos-cyan/15 text-cos-cyan border border-cos-cyan/30">FINANCE</span>
+</div>
+<span class="text-[12px] text-on-surface-variant font-mono mt-0.5">ID: FI-04281 • Lead Controller</span>
+<div class="flex items-center gap-1 mt-1 text-[11px] text-mobile-success font-medium">
+<span class="material-symbols-outlined text-[13px] filled text-mobile-success">check_circle</span>
+<span class="">MFA Verified • Online</span>
+</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-white transition-colors text-[20px]">chevron_right</span>
+</div>
+</div>
+<!-- Navigation Section -->
+<div class="px-3 pt-3 pb-2">
+<div class="px-3 pb-1 text-[11px] font-semibold text-on-surface-variant/70 uppercase tracking-wider">FINANCE &amp; TREASURY</div>
+<nav class="space-y-1">
+<!-- Item 1: Finance Overview / Dashboard -->
+<a class="flex items-center justify-between px-3 py-2.5 rounded-lg text-on-surface-variant hover:text-white hover:bg-surface-container-high transition-all active:scale-[0.99] border border-transparent hover:border-outline-variant/30" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[20px] text-cos-blue">dashboard</span>
+<span class="text-[14px] font-medium">Dashboard</span>
+</div>
+<span class="material-symbols-outlined text-[18px] text-outline-variant">chevron_right</span>
+</a>
+<!-- Item 2: Payment Approvals (Active State with Badge) -->
+<a class="flex items-center justify-between px-3 py-2.5 rounded-lg bg-cos-blue/15 text-white border-l-4 border-cos-blue pl-2.5 transition-all active:scale-[0.99]" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[20px] text-cos-blue filled">verified_user</span>
+<div class="flex flex-col">
+<span class="text-[14px] font-semibold text-white">Approvals</span>
+<span class="text-[10px] text-on-surface-variant">คิวรออนุมัติและการตรวจสอบ MFA</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-mobile-warning text-black">4 รายการ</span>
+</a>
+<!-- Item 3: Budget Variance Tracking -->
+<a class="flex items-center justify-between px-3 py-2.5 rounded-lg text-on-surface-variant hover:text-white hover:bg-surface-container-high transition-all active:scale-[0.99] border border-transparent hover:border-outline-variant/30" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[20px] text-cos-cyan">monitoring</span>
+<span class="text-[14px] font-medium">Budget Variance</span>
+</div>
+<span class="material-symbols-outlined text-[18px] text-outline-variant">chevron_right</span>
+</a>
+<!-- Item 4: Invoice Dispute & OCR Verification -->
+<a class="flex items-center justify-between px-3 py-2.5 rounded-lg text-on-surface-variant hover:text-white hover:bg-surface-container-high transition-all active:scale-[0.99] border border-transparent hover:border-outline-variant/30" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[20px] text-mobile-warning">receipt_long</span>
+<span class="text-[14px] font-medium">Invoices</span>
+</div>
+<span class="material-symbols-outlined text-[18px] text-outline-variant">chevron_right</span>
+</a>
+<!-- Item 5: BIM Progress Verification for Payouts -->
+<a class="flex items-center justify-between px-3 py-2.5 rounded-lg text-on-surface-variant hover:text-white hover:bg-surface-container-high transition-all active:scale-[0.99] border border-transparent hover:border-outline-variant/30" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[20px] text-cos-cyan">view_in_ar</span>
+<span class="text-[14px] font-medium">BIM Audit</span>
+</div>
+<span class="material-symbols-outlined text-[18px] text-outline-variant">chevron_right</span>
+</a>
+<!-- Item 6: Contracts & Billing Milestones -->
+<a class="flex items-center justify-between px-3 py-2.5 rounded-lg text-on-surface-variant hover:text-white hover:bg-surface-container-high transition-all active:scale-[0.99] border border-transparent hover:border-outline-variant/30" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[20px] text-on-surface-variant">description</span>
+<span class="text-[14px] font-medium">Contracts</span>
+</div>
+<span class="material-symbols-outlined text-[18px] text-outline-variant">chevron_right</span>
+</a>
+</nav>
+</div>
+</div>
+<!-- Bottom Section: Common System Navigation (Settings, Privacy, Logout) -->
+<div class="flex flex-col border-t border-outline-variant/20 bg-surface/50 p-3">
+
+<nav class="space-y-1">
+<!-- Settings (Account & Security) -->
+<a class="flex items-center justify-between px-3 py-2.5 rounded-lg text-on-surface-variant hover:text-white hover:bg-surface-container-high transition-all active:scale-[0.99]" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+<span class="text-[14px] font-medium">Settings</span>
+</div>
+
+</a>
+<!-- Privacy Policy (Mandatory as required by standard) -->
+
+<!-- Support Center -->
+<a class="flex items-center justify-between px-3 py-2.5 rounded-lg text-on-surface-variant hover:text-white hover:bg-surface-container-high transition-all active:scale-[0.99]" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[20px]">contact_support</span>
+<span class="text-[14px] font-medium">Privacy &amp; Policy</span>
+</div>
+<span class="material-symbols-outlined text-[16px] text-outline-variant">chevron_right</span>
+</a>
+<!-- Sign Out (Red accent) -->
+<button class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-mobile-danger bg-mobile-danger/10 border border-mobile-danger/20 hover:bg-mobile-danger/20 transition-all active:scale-[0.99] mt-2">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[20px]">logout</span>
+<span class="text-[14px] font-bold">Sign Out</span>
+</div>
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</nav>
+<!-- App Build Meta Footer -->
+<div class="flex items-center justify-between px-3 pt-3 text-[10px] text-on-surface-variant/50 font-mono">
+
+
+</div>
+</div>
+</aside>
+
+
+
+
+
+
+</body></html>

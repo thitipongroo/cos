@@ -1,13 +1,11 @@
-<!DOCTYPE html>
-
-<html class="dark" lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
 <title>Account Settings - Finance</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
 <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
@@ -121,7 +119,12 @@
         /* Mobile specific adjustments to ensure content isn't hidden behind bottom nav */
         body { padding-bottom: calc(72px + env(safe-area-inset-bottom)); }
     </style>
-</head>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
 <body class="bg-background text-on-surface antialiased font-body-mobile text-body-mobile min-h-screen flex flex-col md:hidden">
 <!-- Top App Bar -->
 <header class="bg-surface w-full top-0 sticky flex items-center justify-between px-web-space-4 h-14 w-full bg-surface-container-low flat no shadows z-40" data-component="TopAppBar">
@@ -143,7 +146,7 @@
 <section class="flex flex-col items-center bg-surface-container rounded-xl p-6 relative overflow-hidden border border-outline-variant/30">
 <div class="absolute top-0 left-0 w-2 h-full bg-primary-container"></div>
 <div class="w-24 h-24 rounded-full overflow-hidden mb-4 border-2 border-primary-container relative">
-<img class="w-full h-full object-cover" data-alt="A professional headshot of an Asian male in his late 30s, wearing industrial smart-casual attire. He looks directly at the camera with a confident, competent expression. The background is a slightly blurred, modern construction office environment with cool, high-key lighting emphasizing a precise, systematic corporate modern aesthetic. Deep blacks and slate blues dominate." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBCBX_Qvf6F9YWz7TI3jkIGKEvw0VBdz85rF-Ev9GhtdtLsQOdEbBKYyS0Iu4dg0__GD0qHEjpqxpjMLj_UIjAi_Nciys0GIGNmb7KN5wTWICsPp2cEhuqpfKx4WOSz8khbVTzZhMOoU3skm8Gt-E_7JBbgEU-qnuJyfDez-yt2nzC_l6B38MNjxQqEcdGYCLfNnroxKMv15Sv5Gih6yJX-osvdPAOSRXwct1aqHzuWl32ki0ALIfdI"/>
+<img class="w-full h-full object-cover" data-alt="A professional headshot of an Asian male in his late 30s, wearing industrial smart-casual attire. He looks directly at the camera with a confident, competent expression. The background is a slightly blurred, modern construction office environment with cool, high-key lighting emphasizing a precise, systematic corporate modern aesthetic. Deep blacks and slate blues dominate." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBCBX_Qvf6F9YWz7TI3jkIGKEvw0VBdz85rF-Ev9GhtdtLsQOdEbBKYyS0Iu4dg0__GD0qHEjpqxpjMLj_UIjAi_Nciys0GIGNmb7KN5wTWICsPp2cEhuqpfKx4WOSz8khbVTzZhMOoU3skm8Gt-E_7JBbgEU-qnuJyfDez-yt2nzC_l6B38MNjxQqEcdGYCLfNnroxKMv15Sv5Gih6yJX-osvdPAOSRXwct1aqHzuWl32ki0ALIfdI">
 </div>
 <h1 class="font-hero-mobile text-hero-mobile text-on-surface mb-1 text-center">Somsak P.</h1>
 <p class="font-label-mobile text-label-mobile text-on-surface-variant text-center mb-2">ID: FI-04281</p>
@@ -173,7 +176,7 @@
 <span class="font-body-mobile text-body-mobile text-on-surface">Biometric Login</span>
 </div>
 <div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
-<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 border-surface-container appearance-none cursor-pointer z-10 transition-transform duration-200 ease-in-out translate-x-6" id="biometric-toggle" name="toggle" type="checkbox"/>
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 border-surface-container appearance-none cursor-pointer z-10 transition-transform duration-200 ease-in-out translate-x-6" id="biometric-toggle" name="toggle" type="checkbox">
 <label class="toggle-label block overflow-hidden h-6 rounded-full bg-mobile-primary cursor-pointer transition-colors duration-200 ease-in-out" for="biometric-toggle"></label>
 </div>
 </div>
@@ -209,7 +212,7 @@
 <span class="font-body-mobile text-body-mobile text-on-surface">Push Alerts</span>
 </div>
 <div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
-<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 border-surface-container appearance-none cursor-pointer z-10 transition-transform duration-200 ease-in-out translate-x-6" id="alerts-toggle" name="toggle" type="checkbox"/>
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 border-surface-container appearance-none cursor-pointer z-10 transition-transform duration-200 ease-in-out translate-x-6" id="alerts-toggle" name="toggle" type="checkbox">
 <label class="toggle-label block overflow-hidden h-6 rounded-full bg-mobile-primary cursor-pointer transition-colors duration-200 ease-in-out" for="alerts-toggle"></label>
 </div>
 </div>
@@ -220,7 +223,7 @@
 <span class="font-body-mobile text-body-mobile text-on-surface">Dark Mode</span>
 </div>
 <div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
-<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 border-surface-container appearance-none cursor-pointer z-10 transition-transform duration-200 ease-in-out translate-x-6" disabled="" id="dark-toggle" name="toggle" type="checkbox"/>
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 border-surface-container appearance-none cursor-pointer z-10 transition-transform duration-200 ease-in-out translate-x-6" disabled="" id="dark-toggle" name="toggle" type="checkbox">
 <label class="toggle-label block overflow-hidden h-6 rounded-full bg-mobile-primary cursor-pointer transition-colors duration-200 ease-in-out opacity-80" for="dark-toggle"></label>
 </div>
 </div>
@@ -241,35 +244,18 @@
 <span class="material-symbols-outlined text-on-surface-variant">info</span>
 <span class="font-body-mobile text-body-mobile text-on-surface">App Version</span>
 </div>
-<span class="font-label-mobile text-label-mobile text-on-surface-variant">v3.14.0 (Prod)</span>
+<span class="font-label-mobile text-label-mobile text-on-surface-variant">v3.14.0&nbsp;</span>
 </div>
 </div>
 </section>
 <!-- Logout Action -->
 <button class="w-full h-touch-target mt-6 bg-transparent border border-mobile-danger/50 text-mobile-danger font-label-mobile text-label-mobile uppercase tracking-[0.05em] rounded-xl flex items-center justify-center gap-2 hover:bg-mobile-danger/10 active:bg-mobile-danger/20 transition-colors">
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">logout</span>
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 0;">logout</span>
             Sign Out
         </button>
 </main>
 <!-- Bottom Nav Bar -->
-<nav class="bg-surface-container-lowest fixed bottom-0 w-full z-50 rounded-t-xl border-t border-outline-variant flex justify-around items-center h-mobile-touch-target px-mobile-edge w-full pb-safe" data-component="BottomNavBar">
-<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-all active:scale-90 duration-200 w-16 pt-2 pb-1">
-<span class="material-symbols-outlined mb-1 text-[24px]" data-icon="foundation">foundation</span>
-<span class="font-label-mobile text-label-mobile text-[10px]">Projects</span>
-</button>
-<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-all active:scale-90 duration-200 w-16 pt-2 pb-1">
-<span class="material-symbols-outlined mb-1 text-[24px]" data-icon="rule_folder">rule_folder</span>
-<span class="font-label-mobile text-label-mobile text-[10px]">Approvals</span>
-</button>
-<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-all active:scale-90 duration-200 w-16 pt-2 pb-1">
-<span class="material-symbols-outlined mb-1 text-[24px]" data-icon="monitoring">monitoring</span>
-<span class="font-label-mobile text-label-mobile text-[10px]">Analytics</span>
-</button>
-<button class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-4 py-1 hover:text-primary transition-all active:scale-90 duration-200 w-16 pt-2 pb-1">
-<span class="material-symbols-outlined mb-1 text-[24px]" data-icon="settings">settings</span>
-<span class="font-label-mobile text-label-mobile text-[10px]">Settings</span>
-</button>
-</nav>
+
 <script>
         // Simple script to handle visual toggle states
         const toggles = document.querySelectorAll('.toggle-checkbox:not([disabled])');
@@ -285,4 +271,8 @@
             });
         });
     </script>
+
+
+
+
 </body></html>
