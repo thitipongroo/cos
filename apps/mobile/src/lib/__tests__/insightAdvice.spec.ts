@@ -1,4 +1,4 @@
-import { insightAdvice } from '../insightAdvice';
+import { insightAdvice, recommendationList } from '../insightAdvice';
 
 describe('insightAdvice', () => {
   it('reads the executive summary’s recommendations as advice', () => {
@@ -52,5 +52,38 @@ describe('insightAdvice', () => {
     // The body is free-form per report type; a template change must not crash the panel.
     expect(insightAdvice({ recommendations: 'not an array' })).toBeNull();
     expect(insightAdvice({ recommendations: [42, null] })).toBeNull();
+  });
+
+  // ── recommendationList ────────────────────────────────────────────────────────────────────
+  //
+  // SEPARATE FROM `insightAdvice` on purpose, and the difference is the whole reason both exist.
+  // That function returns ONE line because it feeds a dashboard panel, where a model returning six
+  // recommendations has not thereby earned six lines of a manager's attention. The Report screen IS
+  // the report: truncating there would hide advice the reader came to read.
+
+  it('returns every recommendation the report carried, in order', () => {
+    expect(
+      recommendationList({ recommendations: ['Approve the night shift', 'Review the BOQ'] }),
+    ).toEqual(['Approve the night shift', 'Review the BOQ']);
+  });
+
+  it('drops blanks and non-strings instead of rendering empty bullets', () => {
+    expect(recommendationList({ recommendations: ['Real advice', '   ', 42, null] })).toEqual([
+      'Real advice',
+    ]);
+  });
+
+  it('trims, so a model that indented its list does not indent the screen', () => {
+    expect(recommendationList({ recommendations: ['  Hold the disbursement  '] })).toEqual([
+      'Hold the disbursement',
+    ]);
+  });
+
+  it('is empty for every report type that carries no recommendations', () => {
+    // Binding this to the wrong report renders an empty section rather than a list of RISK items
+    // relabelled as advice — which is the failure `insightAdvice`'s own header is about.
+    expect(recommendationList({ risk_items: ['Three vendors are late'] })).toEqual([]);
+    expect(recommendationList({ recommendations: 'not an array' })).toEqual([]);
+    expect(recommendationList({})).toEqual([]);
   });
 });

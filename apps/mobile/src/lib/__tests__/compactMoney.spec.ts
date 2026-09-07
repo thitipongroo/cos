@@ -1,5 +1,5 @@
 import { toDecimal } from '@cos/financial';
-import { compactMoney, compactMoneyLabel, MONEY_SCALE_KEY } from '../compactMoney';
+import { compactMoney, compactMoneyLabel, MONEY_SCALE_KEY, spacedMoney } from '../compactMoney';
 
 describe('compactMoney', () => {
   it('leaves an amount that fits exactly as the invoice formatter writes it', () => {
@@ -88,5 +88,29 @@ describe('MONEY_SCALE_KEY', () => {
     expect(MONEY_SCALE_KEY.none).toBeNull();
     expect(MONEY_SCALE_KEY.million).toBe('pm.finance.scaleMillion');
     expect(MONEY_SCALE_KEY.billion).toBe('pm.finance.scaleBillion');
+  });
+
+  // ── spacedMoney ───────────────────────────────────────────────────────────────────────────
+  //
+  // The FULL amount with a gap after the symbol, for the surfaces that print an exact figure beside
+  // a compacted one. `formatMoney` itself must keep closing the two up: it is the shared package
+  // function behind every money figure in the product, and widening it there would move all of them.
+
+  it('puts a gap between the symbol and the figure', () => {
+    expect(spacedMoney('1624218')).toBe('฿ 1,624,218.00');
+  });
+
+  it('keeps the sign in front of the symbol, where formatMoney puts it', () => {
+    // A credit reads that way in accounting, and the two functions must not disagree about it.
+    expect(spacedMoney('-47758122')).toBe('-฿ 47,758,122.00');
+  });
+
+  it('leaves an unrecognised code alone rather than giving it two spaces', () => {
+    // `formatMoney` prints "XAF 1,234.50" — the code already ends in a space.
+    expect(spacedMoney('1234.5', 'XAF')).toBe('XAF 1,234.50');
+  });
+
+  it('takes a Decimal as readily as a string', () => {
+    expect(spacedMoney(toDecimal('0.5'))).toBe('฿ 0.50');
   });
 });
