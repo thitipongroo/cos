@@ -34,12 +34,18 @@ const BREADCRUMB_MAP: Record<string, Crumb[]> = {
   // The vendor directory swapped places with it in the same change — it left the tab bar and is now
   // pushed from More's vendor tile, so More is its parent crumb.
   '/vendors': [{ key: 'nav.tabs.more', href: '/more' }, { key: 'nav.tabs.vendors' }],
-  // The EXECUTIVE's former second and third tabs (ADR-098, 2026-09-05). They took the same route
-  // `/vendors` did: off the bar, onto a More tile, so More is the parent crumb. Both are also drawer
-  // rows — a drawer row's parent is the screen it was opened over, which no static map can name, so
-  // the crumb follows the tile that always leads here.
-  '/portfolio': [{ key: 'nav.tabs.more', href: '/more' }, { key: 'nav.tabs.portfolio' }],
-  '/alerts': [{ key: 'nav.tabs.more', href: '/more' }, { key: 'nav.tabs.alerts' }],
+  // `/portfolio` and `/alerts` HAVE NO ENTRY (2026-09-07). Both are EXECUTIVE tabs again under the
+  // replacement mockup set, and this map is what gives a route a TopBar Back control (`isChildRoute`
+  // reads it) — a tab with a Back button offers to leave a screen the user selected rather than
+  // arrived at. Same reason `/more` and `/tasks` have never had one.
+  //
+  // `/safety` DOES have one, and took their place: the executive portfolio safety overview left the
+  // bar in the same change and is now reached from a drawer row. A drawer row's real parent is
+  // whatever screen it was opened over, which no static map can name, so the crumb follows More —
+  // the hub that also lists this role's off-bar screens. `/tasks` and `/more` get no crumb even
+  // though EXECUTIVE now reaches them the same way: this map is keyed by ROUTE, not by role, and
+  // both are still tabs for other roles who must not gain a Back control.
+  '/safety': [{ key: 'nav.tabs.more', href: '/more' }, { key: 'nav.tabs.safety' }],
   // `/select-project` has NO entry: it stopped being a route on 2026-08-11 and became an overlay
   // (<SelectProjectSheet />). A breadcrumb would also give it a TopBar Back control, and the case
   // that matters most — no site chosen yet — must not be escapable.

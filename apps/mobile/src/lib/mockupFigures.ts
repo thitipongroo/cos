@@ -6,6 +6,11 @@
 // available, never print an invented number — and the product owner decided otherwise for these ten
 // on 2026-09-04, on the condition that they live in ONE module.
 //
+// EXTENDED 2026-09-07 (PO decision, "ขยาย ADR-099 วาดทั้งหมด") to the two screens the replacement
+// mockup set added — Portfolio and Report. The register grew from ten entries to nineteen. The
+// condition is unchanged and is the reason the count is worth stating: every one of them is here,
+// and the register is the only place a reader has to look.
+//
 // That condition is the point of this file:
 //   · grep `mockupFigures` and you have the complete set, with nothing scattered across screens
 //   · deleting this module and fixing the type errors is how the decision is reversed
@@ -103,6 +108,109 @@ export const COMPLIANCE_TREND = figure(
 export const PROJECT_SAFETY_SCORES = figure(
   [96, 94, 78],
   'a per-project safety score — the same missing formula as COMPLIANCE, at project scope',
+);
+
+// ── Portfolio (03_portfolio/01_ex_portfolio) ─────────────────────────────────
+//
+// ADDED 2026-09-07 with the screen. Everything on that drawing that IS computable stayed out of this
+// file and is listed on the screen's own header: the portfolio value and every project's budget
+// utilisation and variance (`GET /analytics/executive`), the four filter counts and the risk sort
+// (derived from those rows by `executiveSeverityOf`, the mapping `alerts.tsx` documents), the
+// project names and their progress (`GET /projects/mine`, §32.12).
+
+/** "สุขภาพพอร์ต 91.4% · Stable" in the summary strip. */
+export const PORTFOLIO_HEALTH = figure(
+  91.4,
+  'a portfolio health score. Nothing in this product defines one — `/analytics/executive` returns ' +
+    'budget, utilisation and an at-risk flag per project, and no formula combines them into a grade',
+);
+
+/**
+ * "Contract #CT-8832" on each project card.
+ *
+ * A CONTRACT NUMBER IS NOT A SAFETY-CRITICAL FIGURE, BUT IT IS THE MOST QUOTABLE THING ON THIS
+ * SCREEN — someone reads it into an email. It is drawn under the same product-owner decision as
+ * every other entry here (2026-09-07: extend ADR-099, draw them all) and is flagged in the ADR as
+ * the entry most worth removing first.
+ */
+export const PROJECT_CONTRACT_CODES = figure(
+  ['CT-8832', 'OF-1102', 'EX-4019', 'SB-2041'],
+  '`finance.contracts` has no contract-number column, and no mobile endpoint reads that table at all',
+);
+
+/** "Bangkok CBD" beside the contract number. */
+export const PROJECT_LOCATIONS = figure(
+  ['Bangkok CBD', 'Eastern Hub', 'Section West', 'Chonburi'],
+  'a location on a project — `projects.projects` has no address and no coordinates (see ACTIVE_REGION)',
+);
+
+/**
+ * The SCHEDULE pillar of each card's four-tile health matrix — one of three drawn pillars.
+ *
+ * The fourth, BUDGET, is REAL and is deliberately not here: it is `utilizationPct` off the analytics
+ * row, printed as the drawing prints it.
+ *
+ * Structured rather than copied as a string, because the drawing writes these in Thai and one
+ * hardcoded Thai sentence would print unchanged on an English device (QM-3). `state` selects the
+ * i18n key, `days` fills it.
+ */
+export const PROJECT_SCHEDULE_PILLAR = figure(
+  [
+    { state: 'onTime', days: 2 },
+    { state: 'late', days: 8 },
+    { state: 'atRisk', days: 3 },
+    { state: 'ahead', days: 4 },
+  ] as const,
+  'schedule variance per project. ADR-097 built a critical path per project, which gives float on ' +
+    'the path but not a project-level days-ahead/days-behind figure',
+);
+
+/** The SAFETY pillar — incidents, and the window they are counted over where the drawing gives one. */
+export const PROJECT_SAFETY_INCIDENTS = figure(
+  [
+    { incidents: 0, days: 120 },
+    { incidents: 1, days: null },
+    { incidents: 0, days: null },
+    { incidents: 0, days: null },
+  ] as const,
+  '`GET /safety/incidents` is per project and this list is a portfolio — a count per card is one ' +
+    'request per project, the fan-out `GET /tasks/portfolio-summary` exists to avoid',
+);
+
+/** The QUALITY pillar — "99.1% ผ่านเกณฑ์". */
+export const PROJECT_QUALITY_PASS = figure(
+  [99.1, 88.4, 94.2, 98.6],
+  'a QC pass rate. Inspections record PASS/FAIL per item; no endpoint aggregates them per project',
+);
+
+/** "Index: 96/100" in each card footer. */
+export const PROJECT_HEALTH_INDEX = figure(
+  [96, 58, 74, 94],
+  'the same missing score as PORTFOLIO_HEALTH, at project scope',
+);
+
+// ── Report (04_report/01_ex_report) ──────────────────────────────────────────
+//
+// This screen came out with FEWER drawn figures than the plan expected, because two of the things
+// the drawing invents turned out to be real fields on the report it already calls:
+//   · "Strategic Recommendations" is `recommendations` on EXECUTIVE_SUMMARY — the model's own advice
+//   · the CRITICAL row's "AI Flag" is `risk_flags` on the same report
+// Both are rendered from the report and are NOT here. They appear only on the project the report was
+// generated for, because that is the only project they are about.
+
+/** The three tiles under the AI Strategic Brief — cumulative saving, delivery forecast, safety index. */
+export const REPORT_STRATEGIC_METRICS = figure(
+  { saving: '฿ 14.2 M', deliveryForecast: 96.4, safetyIndex: 98 },
+  'a cost-saving ledger, a delivery-date forecast and a safety index — this product records none ' +
+    'of the three. Budgets are a snapshot, not a saving; §32.12 progress is completion, not a ' +
+    'forecast; and the safety index is the same missing score as COMPLIANCE',
+);
+
+/** "Export Portfolio PDF". Drawn, and says so on tap. */
+export const REPORT_PDF_EXPORT = figure(
+  true,
+  'a report renderer. `lib/dataExport.ts` offers JSON and CSV for the PDPA subject-access export ' +
+    'and nothing renders a portfolio document at all',
 );
 
 // ── Shared ───────────────────────────────────────────────────────────────────

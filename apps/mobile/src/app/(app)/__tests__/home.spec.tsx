@@ -113,7 +113,10 @@ describe('HomeScreen role dispatch', () => {
     await waitFor(() => expect(getByTestId('kpi-active-projects')).toBeTruthy());
     expect(getByTestId('kpi-risk-alerts')).toBeTruthy();
     expect(getByTestId('kpi-budget')).toBeTruthy();
-    expect(getByTestId('kpi-budget-bar')).toBeTruthy();
+    // NOT `kpi-budget-bar`, since 2026-09-07. This stub answers `/analytics/executive` with `[]`, so
+    // there is no budget to divide by and the track is deliberately EMPTY — drawing a segment there
+    // would be a claim about a portfolio the screen has no figures for. The bar's own two segments
+    // are asserted in exec-home.spec.tsx, which has rows to compute them from.
     expect(getByTestId('exec-home-locations')).toBeTruthy();
 
     await waitFor(() =>

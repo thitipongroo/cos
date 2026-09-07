@@ -1,6 +1,7 @@
 # ADR-099: The EXECUTIVE screens print the mockup's own figures where the platform has no source
 
 **Date:** 2026-09-05
+**Amended:** 2026-09-07 — extended to the two screens the replaced mockup set added
 **Status:** Accepted
 **Deciders:** Product Owner
 **Tags:** mobile | data
@@ -99,3 +100,64 @@ be findable.
 - `docs/specifications/22-ai-architecture.md` §22.3 — what may be presented as model output
 - `apps/mobile/src/api/safety.ts` — `ComplianceSummary`, four counts and no percentage
 - `backend/src/modules/site-ops/ep/carbon-calculation.stub.ts` — Type A stub, no route
+
+---
+
+## Amendment — 2026-09-07: the register grows from ten entries to nineteen
+
+**Decided by:** Product Owner, 2026-09-07 ("ขยาย ADR-099 วาดทั้งหมด" — extend it, draw them all)
+
+`mockup/mobile/08_executive/` was replaced in commit `a23b385b` (ADR-098's own amendment records the
+navigation half of that change). Two screens are new — `03_portfolio/01_ex_portfolio` and
+`04_report/01_ex_report` — and both carry figures with no source. The question was put with the same
+conflict named as in 2026-09-05, and the decision went the same way.
+
+**Two of the drawings' inventions turned out to be real and are NOT in the register.** They were
+checked before being registered, which is the point of checking:
+
+| Drawn as invented                     | Actually                                                                                |
+| ------------------------------------- | --------------------------------------------------------------------------------------- |
+| "Strategic Recommendations" (Report)  | `recommendations` on `EXECUTIVE_SUMMARY` — the model's own advice                       |
+| The CRITICAL row's "AI Flag"          | `risk_flags` on the same report                                                         |
+| Each card's budget pillar (Portfolio) | `utilizationPct` on `GET /analytics/executive`                                          |
+| The four filter counts and the sort   | `executiveSeverityOf` over those same rows — the mapping `alerts.tsx` already documents |
+
+### What was added
+
+| Figure                                   | Why it cannot be computed                                                                                                                                                                     |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `สุขภาพพอร์ต 91.4%` (portfolio health)   | No health score is defined anywhere in the product. The analytics row is budget, utilisation and an at-risk flag; nothing combines them into a grade.                                         |
+| `Contract #CT-8832` on each project card | `finance.contracts` has no contract-number column, and no mobile endpoint reads that table at all.                                                                                            |
+| `Bangkok CBD` beside it                  | `projects.projects` has no address and no coordinates — the same gap as the Locations map above.                                                                                              |
+| Schedule pillar (`ตรงเวลา (+2 วัน)`)     | ADR-097 gives float on a project's critical path, not a project-level days-ahead/days-behind figure.                                                                                          |
+| Safety pillar (`0 อุบัติเหตุ (120 วัน)`) | `GET /safety/incidents` is per project; a count per card is one request per project — the fan-out `GET /tasks/portfolio-summary` exists to avoid.                                             |
+| Quality pillar (`99.1% ผ่านเกณฑ์`)       | Inspections record PASS/FAIL per item; nothing aggregates them into a per-project pass rate.                                                                                                  |
+| `Index: 96/100` per card                 | The same missing health score, at project scope.                                                                                                                                              |
+| The Report brief's three metrics         | A cost-saving ledger, a delivery-date forecast and a safety index. Budgets are a snapshot, not a saving; §32.12 progress is completion, not a forecast; the index is the missing score again. |
+| `Export Portfolio PDF`                   | Nothing renders a portfolio document. `lib/dataExport.ts` offers JSON and CSV for the PDPA subject-access export.                                                                             |
+
+### One entry is flagged, and this is where
+
+**`PROJECT_CONTRACT_CODES` is the entry to remove first.** Every other figure here is a NUMBER, and a
+wrong number is read as a number. A contract identifier is the most quotable string on the screen —
+someone reads it into an email, or into a phone call with a vendor — and it sits beside a real
+project name, which is exactly what makes it look authoritative. It is drawn under the decision
+above, and it is named here so the removal has an obvious first candidate rather than requiring the
+whole register to be reviewed at once.
+
+### One boundary this amendment draws
+
+**A false PROVENANCE claim is not an ADR-099 figure**, and the Home drawing's `SOURCES: BIM & ERP
+DATA` footer is the case that established it. BIM is a Type A stub (§32.9) and there is no ERP
+integration, so the line would tell an executive that the report above it is grounded in two
+enterprise systems that are not connected. A wrong number is wrong about one quantity; a false
+source is wrong about how much of the screen to believe. The footer is drawn in the drawing's own
+treatment and names the source the panel CAN name — the project the report was produced for.
+`<ExecRiskAlerts />` reached the same conclusion on 2026-09-05 about the same drawing's
+"BIM + Site Logs" chip, before this amendment made it a rule.
+
+### The three obligations are unchanged
+
+One module, no value presented as an AI output, and the two capture READMEs kept honest. The module
+header now states the count so a reader can tell at a glance whether the register has grown without
+a decision behind it.

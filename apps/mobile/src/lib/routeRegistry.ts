@@ -46,17 +46,18 @@ export const TAB_ROUTES = [
   // SITE_WORKER's fourth tab (PO 2026-08-08, mockup 05_site_worker/03_safety/01_sw_checklist). A tab, not a pushed
   // child: the daily safety verification is one of the four things that role opens the app to do.
   'safety-checklist',
-  // EXECUTIVE's third tab (2026-09-05, ADR-098). A new route: the portfolio safety overview, which
-  // is none of `safety-checklist` (fill one in), `inspections` (list them) or `incidents` (one
-  // site's feed).
-  'safety',
+  // `safety` IS NO LONGER HERE (2026-09-07). It was EXECUTIVE's third tab from 2026-09-05 and that
+  // role's alone; the replacement mockup set made the bar Home | Alerts | Portfolio | Reports, so
+  // the route is a tab for NOBODY — precisely the condition under which expo-router auto-registers
+  // it as a VISIBLE tab on every role's bar unless MobileNav says `href: null`. It has that
+  // declaration, a breadcrumb and a NOT_DERIVED drawer row, so the screen kept its entry point.
+  // `dashboard` at the top of this list is what happens when one of those three is skipped.
   'sync-queue',
-  // `alerts` IS NO LONGER HERE (2026-09-05). It was EXECUTIVE's alone and left ALL_TABS with that
-  // role's bar change, so it is a tab for nobody — which is precisely the condition under which
-  // expo-router auto-registers it as a VISIBLE tab for every role unless MobileNav says `href: null`.
-  // It has that declaration and a breadcrumb, and it gained a NOT_DERIVED drawer row so the role can
-  // still reach it. `dashboard` is the cautionary note at the top of this list; this is the same
-  // move done with all three steps.
+  // `alerts` IS BACK (2026-09-07) — EXECUTIVE's second tab under the replacement mockup set. Its
+  // `href: null` in MobileNav and its `/alerts` breadcrumb both go, for the same reason `/more` has
+  // never had one: a breadcrumb gives the TopBar a Back control, and a tab is a screen the user
+  // selected rather than arrived at.
+  'alerts',
   'incidents',
   'deliveries',
   'orders',
@@ -68,10 +69,10 @@ export const TAB_ROUTES = [
   // The Project Manager's third and fourth tabs (corrected mockup set, 2026-08-10).
   'finance',
   'more',
-  // `portfolio` LEFT THIS LIST on 2026-09-05, with `alerts` and for the same reason (ADR-098). It is
-  // DERIVED "Executive dashboard" in drawerLinks.ts, so it returns as a drawer row the moment it
-  // stops being a tab — but it still needs its own `href: null` and breadcrumb, which the derivation
-  // does not provide.
+  // `portfolio` IS BACK (2026-09-07) — EXECUTIVE's third tab, returning with `alerts` and for the
+  // same reason. It stays DERIVED "Executive dashboard" in drawerLinks.ts; that row is simply
+  // suppressed again while the route is on the bar.
+  'portfolio',
   'customers',
   'leads',
   'opportunities',

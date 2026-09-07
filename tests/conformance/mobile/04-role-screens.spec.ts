@@ -66,16 +66,26 @@ const SETTLED_BARS: Array<[string, string[], string]> = [
     ['home', 'procurement', 'finance', 'more'],
     'master:3457 + mockups 2026-08-10',
   ],
-  // CHANGED 2026-09-05 (ADR-098). It read ['home','portfolio','alerts','reports'] citing
-  // `master:3462` — and BOTH halves were out of date. The bar became Home | Tasks | Safety | More
-  // when the product owner chose `mockup/mobile/08_executive/` over the enumerated navigation, and
-  // the citation pointed into `context/00_master_construction_os.md`, which has held no Phase block
-  // since the 25 of them moved to `context/phases/` on 2026-09-02 (the file is now 1,099 lines and a
-  // search for the EXEC nav in it returns nothing). The three places that DO state this bar are
-  // named below, and all three were amended in the same commit as the code.
+  // CHANGED TWICE, both times because the product owner replaced the drawings this role is built
+  // from. 2026-09-05 (ADR-098) took it from ['home','portfolio','alerts','reports'] to
+  // ['home','tasks','safety','more'] when `mockup/mobile/08_executive/` drew that bar on all four
+  // screens. 2026-09-07 replaced that set outright — 02_tasks became 02_alerts, 03_safety and
+  // 04_more were deleted, 03_portfolio and 04_report are new — and the bar is now
+  // Home | Alerts | Portfolio | Reports (PO decision).
+  //
+  // IT IS NOT THE PRE-09-05 BAR RESTORED. That one was Home | Portfolio | Alerts | Reports; Alerts
+  // and Portfolio are the other way round now, which is the kind of difference only an ordered
+  // assertion catches.
+  //
+  // The order was NOT read off the four drawings, and this is where that is recorded. Their `<nav>`
+  // blocks contradict each other and themselves: `assignment` is labelled "Alerts" on three screens
+  // and "Tasks" on the fourth, `health_and_safety` carries three different labels across three
+  // screens, and `analytics` is drawn ACTIVE on both 01_home and 03_portfolio. The labels were
+  // changed over an older bar without the icons being moved. The product owner settled the order
+  // directly, and the three places that state it were amended in the same commit as the code.
   [
     'EXECUTIVE',
-    ['home', 'tasks', 'safety', 'more'],
+    ['home', 'alerts', 'portfolio', 'reports'],
     '§20.7.1 + §32.7:1673 + phase-10-mobile-offline-engine.md',
   ],
 ];

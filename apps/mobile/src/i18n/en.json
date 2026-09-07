@@ -613,6 +613,7 @@
     "failed": "The report was not produced. Nothing was recorded.",
     "noSummary": "The report came back without a readable summary.",
     "source": "Source: project {project}",
+    "conf": "CONF: {value}%",
     "action": "Generate report",
     "bandHigh": "High confidence",
     "bandMedium": "Medium confidence",
@@ -1216,7 +1217,56 @@
       "utilization": "Utilization",
       "overdue": "Overdue invoices",
       "atRisk": "At risk",
-      "noHealth": "No project health data (offline?)"
+      "noHealth": "No project health data (offline?)",
+      "band": {
+        "critical": "Over budget",
+        "atRisk": "At risk",
+        "onTrack": "On track"
+      },
+      "filter": {
+        "all": "All",
+        "critical": "Over budget",
+        "atRisk": "At risk",
+        "onTrack": "On track"
+      },
+      "sort": {
+        "risk": "Risk level",
+        "name": "Name"
+      },
+      "pillar": {
+        "schedule": "Schedule",
+        "budget": "Budget",
+        "safety": "Safety",
+        "quality": "Quality"
+      },
+      "schedule": {
+        "onTime": "On time (+{days}d)",
+        "late": "{days} days late",
+        "atRisk": "Delay risk ({days}d)",
+        "ahead": "{days}d ahead"
+      },
+      "searchPlaceholder": "Search projects",
+      "sortAction": "Change sort order",
+      "sortBy": "Sort by: {value}",
+      "showing": "Showing {shown} of {total}",
+      "totalValue": "Total value",
+      "projectCount": "Projects: {count}",
+      "health": "Portfolio health",
+      "healthStable": "Stable",
+      "percent": "{value}%",
+      "urgent": "Needs attention",
+      "urgentSplit": "{critical} over budget • {atRisk} at risk",
+      "contract": "Contract #{code}",
+      "progress": "Progress: {value}%",
+      "progressUnknown": "Progress not computable",
+      "utilizationValue": "{value}% of budget used",
+      "utilizationUnknown": "Utilisation unknown",
+      "incidents": "Incidents: {count}",
+      "incidentsWindow": "Incidents: {count} ({days} days)",
+      "qualityPass": "{value}% pass rate",
+      "index": "Index: {value}/100",
+      "openHealth": "Project health →",
+      "noMatch": "No project matches this search"
     },
     "alerts": {
       "title": "Alerts",
@@ -1234,7 +1284,36 @@
       "unavailable": "AI summary service is unavailable",
       "lowConfidence": "Low confidence — insufficient data",
       "error": "Could not generate report",
-      "empty": "Select a project and generate a report"
+      "empty": "Select a project and generate a report",
+      "heading": "Executive reports",
+      "subtitle": "Strategic portfolio summary",
+      "filter": {
+        "all": "All",
+        "attention": "Needs attention",
+        "onTrack": "On track"
+      },
+      "reanalyse": "Re-analyse",
+      "brief": "AI strategic brief",
+      "briefSubtitle": "Portfolio status",
+      "metricSaving": "Cumulative saving",
+      "metricDelivery": "Delivery forecast",
+      "metricSafety": "Safety index",
+      "exportPdf": "Export portfolio PDF",
+      "summaries": "Project summaries",
+      "sortedByRisk": "Sorted by risk",
+      "band": {
+        "critical": "Critical",
+        "monitor": "Monitor",
+        "secure": "Secure"
+      },
+      "aiFlag": "AI flag:",
+      "budgetGap": "+{value}% budget gap",
+      "budgetHeadroom": "{value}% under budget",
+      "utilized": "Budget: {value}% utilised",
+      "recommendations": "Strategic recommendations",
+      "noRecommendations": "The report offered no recommendations.",
+      "acknowledge": "Acknowledge & direct",
+      "noProjects": "No projects to report on"
     },
     "safety": {
       "intelligence": "Safety Intelligence",

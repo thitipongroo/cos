@@ -20,7 +20,13 @@
 //   - THE COUNT beside the heading is the response's real `total`, which also now decides whether
 //     "Load More History" appears. The previous full-page heuristic (and the note claiming no total
 //     existed) was wrong.
-// The EXECUTIVE half is untouched: it is a different role with a different drawing.
+// THE EXECUTIVE HALF MOVED OUT ON 2026-09-07, to components/ExecReports.tsx. It had never been
+// drawn — a project picker, a GENERATE button and a paragraph, in the static light palette — and the
+// replacement mockup set gave it `08_executive/04_report/01_ex_report` and made `/reports` that
+// role's fourth tab again (ADR-098 as amended). It is a file of its own for the reason `ExecTasks`
+// and `ExecMore` are: this module is already the Site Engineer's list, and a second full screen
+// inside it would put two unrelated drawings behind one stylesheet. The route still branches on role
+// at the foot of this file, which is the only thing that did not change.
 
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
@@ -33,24 +39,22 @@ import {
   RefreshControl,
   StyleSheet,
 } from 'react-native';
-import axios from 'axios';
 import { useRouter } from 'expo-router';
 import { CosRole } from '@cos/types';
 import type { TranslateFn } from '../../i18n';
-import { get, post } from '../../api/client';
+import { get } from '../../api/client';
 import { enqueue } from '../../db/sync-queue';
-import { decodeJwtPayload } from '../../lib/jwt';
 import { useAuthStore } from '../../store/authStore';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { ConflictBadge } from '../../components/ConflictBadge';
-import { ProjectPicker } from '../../components/ProjectPicker';
 import { ProjectContextBar } from '../../components/ProjectContextBar';
 import { SiteInsight } from '../../components/SiteInsight';
+import { ExecReports } from '../../components/ExecReports';
 import { useProjectStore } from '../../store/projectStore';
 import { useI18n } from '../../i18n';
 import { MaterialIcons } from '@expo/vector-icons';
-import { colors, fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
-import { makeScreenStyles, screen } from '../../theme/screenStyles';
+import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
+import { makeScreenStyles } from '../../theme/screenStyles';
 import { usePalette, type Palette } from '../../theme/usePalette';
 import { Fab } from '../../components/Fab';
 
@@ -523,82 +527,6 @@ function SiteEngineerReports() {
   );
 }
 
-// ── EXECUTIVE — AI executive summary ──────────────────────────────────────────
-interface ExecReportResponse {
-  content: { executive_summary?: unknown };
-  low_confidence: boolean;
-}
-
-type ExecState = 'idle' | 'loading' | 'unavailable' | 'error';
-
-function ExecReports() {
-  const { t } = useI18n();
-  const accessToken = useAuthStore((s) => s.accessToken);
-  const userId = useAuthStore((s) => s.userId);
-  const [projectId, setProjectId] = useState('');
-  const [summary, setSummary] = useState<string | null>(null);
-  const [lowConfidence, setLowConfidence] = useState(false);
-  const [state, setState] = useState<ExecState>('idle');
-
-  const generate = async (): Promise<void> => {
-    setState('loading');
-    setSummary(null);
-    setLowConfidence(false);
-    // tenant_id / generated_by come from the verified access-token claims (authStore has no tenantId).
-    const claims = decodeJwtPayload(accessToken ?? '');
-    const tenantId = typeof claims['tenant_id'] === 'string' ? (claims['tenant_id'] as string) : '';
-    try {
-      const res = await post<ExecReportResponse>('/ai/reports/executive-summary', {
-        project_id: projectId,
-        tenant_id: tenantId,
-        generated_by: userId ?? 'system',
-      });
-      setSummary(
-        typeof res.content?.executive_summary === 'string' ? res.content.executive_summary : null,
-      );
-      setLowConfidence(res.low_confidence);
-      setState('idle');
-    } catch (err) {
-      // 503 = LLM provider is the Phase 11 stub → honest "unavailable" (not an error dump).
-      setState(axios.isAxiosError(err) && err.response?.status === 503 ? 'unavailable' : 'error');
-    }
-  };
-
-  return (
-    <View testID="exec-reports-screen" style={screen.container}>
-      <ProjectPicker selectedId={projectId} onSelect={setProjectId} />
-      <TouchableOpacity
-        testID="generate-report-button"
-        style={[styles.button, (!projectId || state === 'loading') && screen.buttonDisabled]}
-        onPress={generate}
-        disabled={!projectId || state === 'loading'}
-      >
-        <Text style={screen.primaryButtonText}>
-          {state === 'loading' ? t('exec.reports.generating') : t('exec.reports.generate')}
-        </Text>
-      </TouchableOpacity>
-
-      {state === 'unavailable' ? (
-        <Text testID="report-unavailable" style={styles.notice}>
-          {t('exec.reports.unavailable')}
-        </Text>
-      ) : null}
-      {state === 'error' ? <Text style={styles.error}>{t('exec.reports.error')}</Text> : null}
-
-      {summary ? (
-        <View testID="report-summary" style={styles.summaryCard}>
-          {lowConfidence ? (
-            <Text style={styles.lowConf}>{t('exec.reports.lowConfidence')}</Text>
-          ) : null}
-          <Text style={styles.summaryText}>{summary}</Text>
-        </View>
-      ) : state === 'idle' ? (
-        <Text style={screen.empty}>{t('exec.reports.empty')}</Text>
-      ) : null}
-    </View>
-  );
-}
-
 export default function ReportsScreen() {
   const role = useAuthStore((s) => s.role);
   return role === CosRole.EXECUTIVE ? <ExecReports /> : <SiteEngineerReports />;
@@ -727,42 +655,8 @@ const styles = StyleSheet.create({
   },
   qtyRow: { flexDirection: 'row', gap: spacing.xs },
   qtyInput: { flex: 1 },
-  button: {
-    minHeight: 44,
-    backgroundColor: colors.primary,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   saved: {
     fontFamily: fontFamily.medium,
     fontSize: typography.caption.fontSize,
-  },
-  notice: {
-    color: colors.textSecondary,
-    fontFamily: fontFamily.regular,
-    fontSize: typography.caption.fontSize,
-  },
-  error: {
-    color: colors.danger,
-    fontFamily: fontFamily.regular,
-    fontSize: typography.caption.fontSize,
-  },
-  summaryCard: {
-    marginTop: spacing.sm,
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    gap: spacing.xs,
-  },
-  lowConf: {
-    color: colors.danger,
-    fontFamily: fontFamily.medium,
-    fontSize: typography.caption.fontSize,
-  },
-  summaryText: {
-    color: colors.textPrimary,
-    fontFamily: fontFamily.regular,
-    fontSize: typography.body.fontSize,
   },
 });

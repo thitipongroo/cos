@@ -1,7 +1,8 @@
 # ADR-098: The EXECUTIVE mobile bar follows its mockups, against an enumerated spec nav
 
 **Date:** 2026-09-05
-**Status:** Accepted
+**Amended:** 2026-09-07 — see "Amendment" at the foot of this record
+**Status:** Accepted, superseded in part by its own amendment
 **Deciders:** Product Owner
 **Tags:** mobile | architecture
 
@@ -112,3 +113,85 @@ What the three options actually cost:
 - `docs/architecture/adr/085-mockup-deviations-navigation-rows-and-implemented-structure.md` —
   how far mockup authority runs
 - `docs/architecture/adr/097-task-dependencies-and-critical-path.md` — what the Tasks tab needed built
+
+---
+
+## Amendment — 2026-09-07: the mockup set was replaced, and the bar with it
+
+**Decided by:** Product Owner, 2026-09-07
+
+`mockup/mobile/08_executive/` was replaced wholesale in commit `a23b385b`, four days after the
+drawings this record was written from:
+
+| Before                    | After                                   |
+| ------------------------- | --------------------------------------- |
+| `01_home/01_ex_dashboard` | rewritten — 485 lines, new `screen.png` |
+| `02_tasks/02_ex_tasks`    | renamed to `02_alerts/02_ex_alerts`     |
+| `03_safety/01_ex_safety`  | deleted                                 |
+| `04_more/01_ex_more`      | deleted                                 |
+| —                         | `03_portfolio/01_ex_portfolio` (new)    |
+| —                         | `04_report/01_ex_report` (new)          |
+
+**The bar becomes `Home · Alerts · Portfolio · Reports`.** It is not the pre-09-05 bar restored:
+that one was `Home · Portfolio · Alerts · Reports`, and the middle two have swapped.
+
+**The order was decided, not read, and that is the substantive change to this record's reasoning.**
+The original decision above rests on the four drawings agreeing with each other — "All four that
+carry a bottom navigation draw the same one". The replacement set does not have that property. Its
+four `<nav>` blocks give four different bars, and the glyph attached to each label contradicts itself
+across the set:
+
+| Glyph               | Labelled                                                     |
+| ------------------- | ------------------------------------------------------------ |
+| `assignment`        | "Alerts" on three screens, "Tasks" on the fourth             |
+| `health_and_safety` | "Report", "Home" and "Portfolio" on three different screens  |
+| `analytics`         | the ACTIVE tab on BOTH `01_home` ("Home") and `03_portfolio` |
+
+The labels were changed over an older bar without the icons being moved. ADR-085 makes a mockup
+authoritative for STYLE, which presumes a drawing that says one thing; a self-contradictory drawing
+settles nothing. So the order came from the product owner directly, and the three returning tabs keep
+the glyphs they shipped and were captured with before 2026-09-05 — `notification-important`,
+`pie-chart` and `description`.
+
+**`04_report` is not a new route.** The screen it draws is the AI executive summary `/reports`
+already renders for this role, in a styled form. Adding a route for it would have put one screen
+behind two paths, which is the mistake `dashboard` and `home` made. The tab keeps the label
+"Reports", which is what that drawing's own active tab reads.
+
+### Where the three departing screens went
+
+The same condition applied in reverse, and the product owner stated it in those terms — keep all
+three, reach them from the drawer:
+
+| Screen    | Where it went                                                                                       |
+| --------- | --------------------------------------------------------------------------------------------------- |
+| `/tasks`  | Drawer row, unaided — already `DERIVED` from §6.4's "Tasks" row, suppressed only while it was a tab |
+| `/safety` | A new `NOT_DERIVED` drawer row — §6.4 governs no module for a portfolio safety overview             |
+| `/more`   | A new `NOT_DERIVED` drawer row — a hub over other screens is not a module either                    |
+
+`/alerts` LOST the `NOT_DERIVED` row this record gave it. `drawerLinksFor` suppresses any row whose
+route is on the bar, so the entry could only ever be dead configuration reading as a live decision.
+The reason it existed still holds and is recorded in place: if `/alerts` leaves the bar again it
+returns to `NOT_DERIVED` and not to `DERIVED`.
+
+`/safety` also made the full three-step exit from `ALL_TABS` — out of `TAB_ROUTES`, an explicit
+`href: null` in `MobileNav`, and a breadcrumb — because it is now a tab for no role at all, which is
+precisely the condition under which expo-router auto-registers a route as a visible tab on every
+bar. `/tasks` and `/more` needed none of that: both are still tabs for other roles.
+
+### What this amendment does not change
+
+- The `safety` route is still a route of its own, for the reasons stated above; it changed its entry
+  point, not its justification.
+- `tasks` and `more` still branch on role inside the screen.
+- No other role's bar moved.
+- ADR-099's register still governs the figures these screens print, and grows to cover the two new
+  ones.
+
+### Negative consequence, stated plainly
+
+This is the second bar this role has had in three days, and the third since Phase 10. Every change
+has been driven by a replaced drawing rather than by a defect in the previous bar, and each one costs
+an amendment to §20.7.1, §32.7, the Phase 10 EXEC block, the conformance test and the captures. The
+role's navigation is being set by the most recent artefact rather than by a settled view of what the
+executive opens the app to do.

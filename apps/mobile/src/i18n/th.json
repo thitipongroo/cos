@@ -613,6 +613,7 @@
     "failed": "สร้างรายงานไม่สำเร็จ ระบบยังไม่ได้บันทึกอะไร",
     "noSummary": "รายงานกลับมาโดยไม่มีเนื้อความที่อ่านได้",
     "source": "ที่มา: โครงการ {project}",
+    "conf": "ความเชื่อมั่น {value}%",
     "action": "สร้างรายงาน",
     "bandHigh": "ความเชื่อมั่นสูง",
     "bandMedium": "ความเชื่อมั่นปานกลาง",
@@ -1216,7 +1217,56 @@
       "utilization": "การใช้งบ",
       "overdue": "ใบแจ้งหนี้เกินกำหนด",
       "atRisk": "เสี่ยง",
-      "noHealth": "ไม่มีข้อมูลสุขภาพโครงการ (ออฟไลน์?)"
+      "noHealth": "ไม่มีข้อมูลสุขภาพโครงการ (ออฟไลน์?)",
+      "band": {
+        "critical": "เกินงบ",
+        "atRisk": "เสี่ยง",
+        "onTrack": "ตามแผน"
+      },
+      "filter": {
+        "all": "ทั้งหมด",
+        "critical": "เกินงบ",
+        "atRisk": "เสี่ยง",
+        "onTrack": "ตามแผน"
+      },
+      "sort": {
+        "risk": "ระดับความเสี่ยง",
+        "name": "ชื่อโครงการ"
+      },
+      "pillar": {
+        "schedule": "กำหนดการ",
+        "budget": "งบประมาณ",
+        "safety": "ความปลอดภัย",
+        "quality": "คุณภาพ"
+      },
+      "schedule": {
+        "onTime": "ตรงเวลา (+{days} วัน)",
+        "late": "ล่าช้า {days} วัน",
+        "atRisk": "เสี่ยงล่าช้า {days} วัน",
+        "ahead": "เร็วกว่ากำหนด {days} วัน"
+      },
+      "searchPlaceholder": "ค้นหาโครงการ",
+      "sortAction": "เปลี่ยนการเรียงลำดับ",
+      "sortBy": "เรียงตาม: {value}",
+      "showing": "แสดง {shown} จาก {total}",
+      "totalValue": "มูลค่ารวม",
+      "projectCount": "โครงการ: {count}",
+      "health": "สุขภาพพอร์ต",
+      "healthStable": "คงที่",
+      "percent": "{value}%",
+      "urgent": "ต้องดูแลเร่งด่วน",
+      "urgentSplit": "เกินงบ {critical} • เสี่ยง {atRisk}",
+      "contract": "สัญญา #{code}",
+      "progress": "ความคืบหน้า: {value}%",
+      "progressUnknown": "คำนวณความคืบหน้าไม่ได้",
+      "utilizationValue": "ใช้ไป {value}% ของงบ",
+      "utilizationUnknown": "ไม่ทราบอัตราการใช้งบ",
+      "incidents": "อุบัติเหตุ: {count}",
+      "incidentsWindow": "อุบัติเหตุ: {count} ({days} วัน)",
+      "qualityPass": "ผ่านเกณฑ์ {value}%",
+      "index": "ดัชนี: {value}/100",
+      "openHealth": "ดูรายละเอียดสุขภาพโครงการ →",
+      "noMatch": "ไม่พบโครงการที่ตรงกับการค้นหา"
     },
     "alerts": {
       "title": "แจ้งเตือน",
@@ -1234,7 +1284,36 @@
       "unavailable": "บริการสรุป AI ยังไม่พร้อมใช้งาน",
       "lowConfidence": "ความเชื่อมั่นต่ำ — ข้อมูลไม่พอ",
       "error": "สร้างรายงานไม่ได้",
-      "empty": "เลือกโครงการแล้วกดสร้างรายงาน"
+      "empty": "เลือกโครงการแล้วกดสร้างรายงาน",
+      "heading": "รายงานผู้บริหาร",
+      "subtitle": "สรุปภาพรวมโครงการเชิงกลยุทธ์",
+      "filter": {
+        "all": "ทั้งหมด",
+        "attention": "ต้องดูแล",
+        "onTrack": "ตามแผน"
+      },
+      "reanalyse": "วิเคราะห์ใหม่",
+      "brief": "สรุปเชิงกลยุทธ์จาก AI",
+      "briefSubtitle": "สรุปสถานะภาพรวม",
+      "metricSaving": "ประหยัดต้นทุนสะสม",
+      "metricDelivery": "คาดการณ์ส่งมอบ",
+      "metricSafety": "ดัชนีความปลอดภัย",
+      "exportPdf": "ส่งออกรายงาน PDF",
+      "summaries": "สรุปรายโครงการ",
+      "sortedByRisk": "เรียงตามระดับความเสี่ยง",
+      "band": {
+        "critical": "วิกฤต",
+        "monitor": "เฝ้าระวัง",
+        "secure": "ปลอดภัย"
+      },
+      "aiFlag": "AI แจ้งเตือน:",
+      "budgetGap": "เกินงบ {value}%",
+      "budgetHeadroom": "ต่ำกว่างบ {value}%",
+      "utilized": "ใช้งบไป {value}%",
+      "recommendations": "ข้อเสนอแนะเชิงกลยุทธ์",
+      "noRecommendations": "รายงานฉบับนี้ไม่มีข้อเสนอแนะ",
+      "acknowledge": "รับทราบและสั่งการ",
+      "noProjects": "ไม่มีโครงการให้รายงาน"
     },
     "safety": {
       "intelligence": "ข้อมูลเชิงลึกด้านความปลอดภัย",

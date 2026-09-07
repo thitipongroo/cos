@@ -23,13 +23,35 @@ export interface InsightAdvice {
   text: string;
 }
 
+/** Every usable string in an array-valued field, in order. Empty when the field is absent or junk. */
+function stringsIn(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item): item is string => typeof item === 'string' && item.trim() !== '')
+    .map((item) => item.trim());
+}
+
 /** The first usable string in an array-valued field, or null. */
 function firstOf(value: unknown): string | null {
-  if (!Array.isArray(value)) return null;
-  for (const item of value) {
-    if (typeof item === 'string' && item.trim() !== '') return item.trim();
-  }
-  return null;
+  return stringsIn(value)[0] ?? null;
+}
+
+/**
+ * EVERY recommendation the report carried — the executive Report screen's "Strategic
+ * Recommendations" list (mockup 08_executive/04_report/01_ex_report, which draws two bullets).
+ *
+ * SEPARATE FROM `insightAdvice` ON PURPOSE, and the difference is the whole reason both exist. That
+ * function returns ONE line because it feeds a dashboard panel, where a model returning six
+ * recommendations has not earned six lines of a manager's attention. This screen IS the report: a
+ * page whose subject is what the model advised, where truncating to one would hide advice the reader
+ * came to read.
+ *
+ * `recommendations` is a real field on EXECUTIVE_SUMMARY (api/ai.ts) — nothing here is drawn.
+ * Returns [] for every other report type, so a caller that binds this to the wrong report renders an
+ * empty section rather than a list of risk items relabelled as advice.
+ */
+export function recommendationList(content: Record<string, unknown>): string[] {
+  return stringsIn(content['recommendations']);
 }
 
 /**

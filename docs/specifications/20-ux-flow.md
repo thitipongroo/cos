@@ -431,18 +431,43 @@ Source: §20.2 Executive; master Phase 10 EXEC nav; Analytics (Phase 14) + AI re
 | `/alerts`    | Risk alerts       | Delay risk, budget overrun, critical issues sorted by severity                  | `finance.variance.alert`, `construction.delay.detected`, issues |
 | `/reports`   | Executive reports | AI executive summaries per project                                              | `POST /api/v1/ai/reports/executive-summary`                     |
 
-**Mobile bottom navigation (2026-09-05, ADR-098): `Home · Tasks · Safety · More`.**
+**Mobile bottom navigation (2026-09-07, ADR-098 amended): `Home · Alerts · Portfolio · Reports`.**
 
-The first four rows are the role's four mobile tabs; the last three are reached from the navigation
-drawer and from tiles on the More screen. Until 2026-09-05 the tabs were
-`Home · Portfolio · Alerts · Reports` — this table, master §Phase 10 and the tab table in code all
-agreed on that, and all three were amended together when the product owner chose the drawings in
-`mockup/mobile/08_executive/` over the enumerated navigation. This is the only role whose mobile nav
-this specification had enumerated, so it is a specification change rather than a deviation.
+`/home`, `/alerts`, `/portfolio` and `/reports` are the role's four mobile tabs; `/tasks`, `/safety`
+and `/more` are reached from the navigation drawer.
+
+This bar has changed twice, both times because the product owner replaced the drawings the role is
+built from, and the order is not a restoration of either earlier bar:
+
+| Until 2026-09-05 | 2026-09-05 (ADR-098) | From 2026-09-07 |
+| ---------------- | -------------------- | --------------- |
+| `Home · Portfolio · Alerts · Reports` | `Home · Tasks · Safety · More` | `Home · Alerts · Portfolio · Reports` |
+
+Alerts and Portfolio are the other way round from the pre-09-05 bar. This table, the §32.7 per-role
+table and the tab table in code are amended together each time; this is the only role whose mobile
+nav this specification enumerates, so each change is a specification change rather than a deviation.
+
+**The order was not read off the drawings.** The four `code.html` files under
+`mockup/mobile/08_executive/` give four different bars and contradict themselves on which glyph
+belongs to which label — `assignment` is labelled "Alerts" on three screens and "Tasks" on the
+fourth, `health_and_safety` carries three different labels, and `analytics` is drawn as the ACTIVE
+tab on both `01_home` and `03_portfolio`. The labels were changed over an older bar without the
+icons being moved. ADR-085 makes a mockup authoritative for style, which presumes a drawing that
+says one thing; the product owner settled the order directly, and the tabs keep the reviewed glyphs
+the bar shipped with before 2026-09-05.
+
+**`/reports` is the drawings' `04_report`, not a new route.** The screen that drawing draws is the
+AI executive summary this table already lists at `/reports`, in a styled form. The tab keeps the
+label "Reports", which is what that drawing's own active tab reads.
 
 `/safety` is a NEW page, not `/safety/checklists` or `/safety/permits` under another name: it asks a
 portfolio question — how safety stands across every project — which none of the site-scoped safety
 pages answers. `/tasks` and `/more` are shared routes whose screen branches on role.
+
+All three stay reachable after leaving the bar on 2026-09-07 (PO decision — keep all three, reach
+them from the drawer). `/tasks` returns to the drawer on its own, being derived from §6.4's "Tasks"
+row and suppressed only while it was a tab; `/safety` and `/more` are governed by no §6.4 module and
+are listed explicitly instead.
 
 **Figures without a source.** Several panels on the mobile Tasks and Safety screens print values this
 platform cannot compute — a compliance percentage, safe man-hours, a per-project safety score, a

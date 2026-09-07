@@ -130,13 +130,26 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
       Workflows:  project status, procurement status, budget variance (read),
                   site report summary, issue triage
 
-    EXEC role (source §4.2; bar amended 2026-09-05 — ADR-098):
-      Bottom nav: Home | Tasks | Safety | More
-                  WAS Home | Portfolio | Alerts | Reports | Profile, and that WAS correct — it agreed
-                  with the tab table in code and with spec §20.7.1, which is the only role whose
-                  mobile nav the specification enumerated. mockup/mobile/08_executive/ draws the four
-                  above on all of its bars; the product owner chose the drawings, so §20.7.1, §32.7's
-                  per-role table and this block were amended together rather than deviated from.
+    EXEC role (source §4.2; bar amended 2026-09-05 and again 2026-09-07 — ADR-098):
+      Bottom nav: Home | Alerts | Portfolio | Reports
+                  THREE BARS, IN ORDER. Until 2026-09-05: Home | Portfolio | Alerts | Reports |
+                  Profile, which WAS correct — it agreed with the tab table in code and with spec
+                  §20.7.1, the only role whose mobile nav the specification enumerates.
+                  2026-09-05: Home | Tasks | Safety | More, because mockup/mobile/08_executive/ drew
+                  that on all four of its bars and the product owner chose the drawings (ADR-098).
+                  2026-09-07: the product owner REPLACED that mockup set — 02_tasks became 02_alerts,
+                  03_safety and 04_more were deleted, 03_portfolio and 04_report are new — and chose
+                  the bar above. It is NOT the pre-09-05 bar restored: Alerts and Portfolio are the
+                  other way round.
+                  THE ORDER WAS DECIDED, NOT READ. The replacement set's four <nav> blocks give four
+                  different bars and disagree on which glyph carries which label (assignment is
+                  "Alerts" on three screens and "Tasks" on the fourth; analytics is the ACTIVE tab on
+                  both 01_home and 03_portfolio) — labels changed over an older bar without the icons
+                  moving. The three returning tabs keep the glyphs they shipped with before 09-05.
+                  04_report is NOT a new route: it draws the AI executive summary /reports already
+                  renders for this role, in a styled form.
+                  §20.7.1, §32.7's per-role table and this block are amended together each time
+                  rather than deviated from.
                   Profile left every role's bar on 2026-08-09 — the navigation drawer is the profile.
       Screens:
         Home:      AI executive summary, active projects, risk alerts, portfolio budget vs actual
@@ -145,14 +158,21 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
                    GET /tasks/portfolio-summary — one query, never one request per project — plus
                    the critical path from GET /projects/{id}/critical-path (ADR-097, built for this
                    screen: projects.task_dependencies did not exist before it)
-        Safety:    portfolio safety — incidents by severity tenant-wide, and a per-project ranking
+        Safety:    portfolio safety — incidents by severity tenant-wide, and a per-project ranking.
+                   Drawer row since 2026-09-07 (NOT_DERIVED — §6.4 governs no module for it)
         More:      seven tiles; four reach a screen (portfolio, financial forecast, risk centre,
-                   vendor directory) and three say before the tap that they do not
-        Portfolio: project list with status chips + budget variance badge — now a drawer row and a
-                   More tile; tap project → project health card (cost, schedule, issues)
+                   vendor directory) and three say before the tap that they do not. Drawer row since
+                   2026-09-07 (NOT_DERIVED — a hub over other screens is not a module)
+        Portfolio: project list with status chips + budget variance badge; tap project → project
+                   health card (cost, schedule, issues). A TAB again since 2026-09-07
         Alerts:    risk alerts feed — delay risk, budget overrun, critical issues sorted by severity
-                   (CRITICAL → HIGH → MEDIUM). Drawer row + More tile
-        Reports:   AI-generated executive summaries per project (offline: last cached). Drawer row
+                   (CRITICAL → HIGH → MEDIUM). A TAB again since 2026-09-07, and its NOT_DERIVED
+                   drawer row was removed with the change: a row whose route is on the bar is
+                   suppressed, so keeping it would be dead configuration reading as a live decision
+        Reports:   AI-generated executive summaries per project (offline: last cached). A TAB again
+                   since 2026-09-07 — the screen mockup 04_report/01_ex_report draws
+        Tasks:     stays reachable as a drawer row (DERIVED from §6.4 "Tasks", suppressed only while
+                   it was a tab, so it returned on its own)
       Offline:    cached last-known data with "last updated X mins ago" timestamp
                   no write operations — EXEC is read-only on mobile. The drawing's Mitigation,
                   Dismiss and "ปรับแผนด่วน" buttons ARE drawn and say they are not usable yet

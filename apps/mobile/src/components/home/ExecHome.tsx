@@ -289,11 +289,30 @@ export default function ExecHome() {
                 : t('exec.home.remaining', { value: remainingPct.toFixed(1) })}
             </Text>
           </View>
+          {/* TWO SEGMENTS, not one (PO 2026-09-07, the replacement drawing). The bar was a single
+              accent fill sized to `remainingPct`, and that is ambiguous in the way that matters:
+              a filled bar reads as consumed, so a portfolio with 44.6% left LOOKED 44.6% spent —
+              the exact opposite of the truth, and the two figures above it are the only thing that
+              said otherwise. The drawing splits the track: accent for what is SPENT, then a dimmed
+              blue remainder, and the pair always fills the track exactly.
+              `flexDirection: 'row'` with two widths in percent, so the segments cannot drift apart
+              at any screen width; the track's `overflow: 'hidden'` keeps the ends inside the radius.
+              WHEN THERE IS NOTHING TO DIVIDE BY the track stays empty rather than drawing a full or
+              an empty bar — `remainingPct` is null when the portfolio has no budget, and both
+              readings of a bar would be a claim the data does not support. */}
           <View style={styles.track}>
-            <View
-              testID="kpi-budget-bar"
-              style={[styles.fill, { width: `${remainingPct ?? 0}%` }]}
-            />
+            {remainingPct === null ? null : (
+              <>
+                <View
+                  testID="kpi-budget-bar"
+                  style={[styles.fill, { width: `${100 - remainingPct}%` }]}
+                />
+                <View
+                  testID="kpi-budget-bar-remaining"
+                  style={[styles.fillRemaining, { width: `${remainingPct}%` }]}
+                />
+              </>
+            )}
           </View>
         </View>
 
@@ -502,8 +521,18 @@ const makeStyles = (p: Palette) =>
     // radius.sm, not the literal 3 a capsule would take: the ratchet in
     // theme/__tests__/radiusRatchet.spec.ts only ever tightens, and a 6px bar reads the same at
     // 2px corners as at 3. VerifyingOverlay's identical track predates the ratchet.
-    track: { height: 6, borderRadius: radius.sm, backgroundColor: p.elevated, overflow: 'hidden' },
+    track: {
+      height: 6,
+      borderRadius: radius.sm,
+      backgroundColor: p.elevated,
+      overflow: 'hidden',
+      flexDirection: 'row',
+    },
     fill: { height: '100%', backgroundColor: p.accent },
+    // The remainder. `primary` at 40% — the drawing's `bg-cos-blue/40` — so it reads as part of the
+    // same bar rather than as a second measurement; the track colour underneath is what would show
+    // if the two segments ever failed to fill it.
+    fillRemaining: { height: '100%', backgroundColor: `${p.primary}66` },
 
     sectionHead: {
       flexDirection: 'row',

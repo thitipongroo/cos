@@ -231,8 +231,28 @@ describe('ExecHome', () => {
 
   it('leaves the remaining share unknown rather than dividing by a zero budget', async () => {
     client.get.mockResolvedValue([execRow('p-1', '0.0000', '0.0000', 0, 0)]);
-    const { getByTestId } = await renderScreen();
+    const { getByTestId, queryByTestId } = await renderScreen();
     await waitFor(() => expect(getByTestId('kpi-budget')).toHaveTextContent(/—/));
+    // AND THE TRACK STAYS EMPTY. Both readings of a drawn bar would be a claim: full says every baht
+    // is spent, empty says none is, and neither is what "there is no budget" means.
+    expect(queryByTestId('kpi-budget-bar')).toBeNull();
+    expect(queryByTestId('kpi-budget-bar-remaining')).toBeNull();
+  });
+
+  it('splits the budget track into spent and remaining, and the two fill it exactly', async () => {
+    // ADDED 2026-09-07 with the two-segment bar. The single fill it replaced was sized to the
+    // REMAINING share, so a bar that looked mostly full meant mostly UNSPENT — the opposite of how a
+    // progress bar reads. Asserting the two widths together is what holds that: if the segments are
+    // ever swapped again the spent share stops matching the ACTUAL line above it.
+    client.get.mockResolvedValue([execRow('p-1', '1000.0000', '250.0000', 25, 0)]);
+    const { getByTestId } = await renderScreen();
+    await waitFor(() => expect(getByTestId('kpi-budget-bar')).toBeTruthy());
+    const width = (id: string): unknown => {
+      const style = getByTestId(id).props.style as Record<string, unknown>[];
+      return style.flat().find((entry) => entry?.['width'] !== undefined)?.['width'];
+    };
+    expect(width('kpi-budget-bar')).toBe('25%');
+    expect(width('kpi-budget-bar-remaining')).toBe('75%');
   });
 
   it('tolerates the wrapped {items} shape as well as the bare array', async () => {

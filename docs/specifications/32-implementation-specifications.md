@@ -1776,29 +1776,58 @@ one, and that is the correct answer for it rather than an outstanding gap:
 | `CRM_SALES_MANAGER` | Home · Leads · Opportunities · Customers | Built 2026-08-04 — exactly the three pages §20.7.10 defines                                                               |
 | `VIEWER`            | Home · Projects · Procurement · Budget   | See the read-only constraint below                                                                                        |
 | `SAFETY_OFFICER`    | Home · Incidents · Checklists · Permits  | Settled 2026-08-13 — see below; "Checklists" is the `/inspections` route relabelled                                       |
-| `EXECUTIVE`         | Home · Tasks · Safety · More             | Changed 2026-09-05 — see below; this is the one role whose nav §20.7.1 had enumerated                                     |
+| `EXECUTIVE`         | Home · Alerts · Portfolio · Reports      | Changed twice — 2026-09-05 and 2026-09-07, see below; the one role whose nav §20.7.1 enumerates                           |
 | `SYSTEM_ADMIN`      | Home                                     | **Not a gap.** §20.7.11 puts its work in the `/admin` panel (§20.4), a web route explicitly "not visible to tenant users" |
 
-**`EXECUTIVE`'s bar changed on 2026-09-05, and unlike the Safety Officer row below it was not a
+**`EXECUTIVE`'s bar has changed twice, and unlike the Safety Officer row below neither change was a
 correction.** From Phase 10 the role rendered `Home | Portfolio | Alerts | Reports`, and that was
 right by every source there was: it matched the tab table in code, §20.7.1's page inventory and
 master §Phase 10's EXEC block, all three in agreement.
 
-`mockup/mobile/08_executive/` then drew `Home | Tasks | Safety | More` on all four of its bars. The
-two previous mockup-led nav changes (`PROJECT_MANAGER` 2026-08-10, `SAFETY_OFFICER` 2026-08-13) were
-in roles the specification enumerated NO navigation for, so following the drawings contradicted
-nothing. Here it contradicted an enumerated one, and `context.md` §On ambiguity says the
+| Until 2026-09-05 | 2026-09-05 (ADR-098) | From 2026-09-07 |
+| ---------------- | -------------------- | --------------- |
+| `Home · Portfolio · Alerts · Reports` | `Home · Tasks · Safety · More` | `Home · Alerts · Portfolio · Reports` |
+
+**2026-09-05.** `mockup/mobile/08_executive/` drew `Home | Tasks | Safety | More` on all four of its
+bars. The two previous mockup-led nav changes (`PROJECT_MANAGER` 2026-08-10, `SAFETY_OFFICER`
+2026-08-13) were in roles the specification enumerated NO navigation for, so following the drawings
+contradicted nothing. Here it contradicted an enumerated one, and `context.md` §On ambiguity says the
 specification wins — so the change was escalated and decided by the product owner (ADR-098), and
 §20.7.1, this table and the Phase 10 EXEC block were amended in the same commit rather than deviated
 from.
 
-Nothing lost an entry point, which was the condition: `/portfolio` and `/reports` return as drawer
+Nothing lost an entry point, which was the condition: `/portfolio` and `/reports` returned as drawer
 rows (both were already `DERIVED` and suppressed only because they were tabs), `/alerts` gained a
-`NOT_DERIVED` row in the same change because §6.4 governs no module for a risk feed, and `/portfolio`
-and `/alerts` are also tiles on the More screen. `safety` is a NEW route — the portfolio safety
-overview, which is not `safety-checklist` (fill one in), not `inspections` (list them) and not
-`incidents` (one site's feed). `tasks` and `more` branch on role inside the screen, as `reports`
-already did.
+`NOT_DERIVED` row because §6.4 governs no module for a risk feed, and `/portfolio` and `/alerts` were
+also tiles on the More screen.
+
+**2026-09-07.** The product owner replaced `mockup/mobile/08_executive/` outright — `02_tasks` became
+`02_alerts`, `03_safety` and `04_more` were deleted, and `03_portfolio` and `04_report` are new — and
+chose `Home | Alerts | Portfolio | Reports` from the replacement set. It is NOT the pre-09-05 bar
+restored: Alerts and Portfolio are the other way round.
+
+The order was decided rather than read, because the drawings cannot be read. Their four `<nav>`
+blocks give four different bars and disagree on which glyph carries which label: `assignment` is
+labelled "Alerts" on three screens and "Tasks" on the fourth, `health_and_safety` carries three
+different labels across three screens, and `analytics` is drawn as the ACTIVE tab — the one item each
+drawing authored for the screen it sits on — on both `01_home` and `03_portfolio`. The labels were
+changed over an older bar without the icons being moved. ADR-085 makes a mockup authoritative for
+style, which presumes a drawing that says one thing, so the three returning tabs keep the reviewed
+glyphs they shipped with before 2026-09-05 (`notification-important`, `pie-chart`, `description`).
+
+`04_report` did NOT become a new route. The screen it draws is the AI executive summary `/reports`
+already renders for this role, in a styled form, and the tab keeps the label "Reports" — which is
+what that drawing's own active tab reads.
+
+The same condition held in reverse, by product-owner decision ("keep all three, reach them from the
+drawer"): `/tasks` returns to the drawer on its own, being `DERIVED` from §6.4's "Tasks" row and
+suppressed only while it was a tab; `/safety` and `/more` are governed by no §6.4 module and gained
+`NOT_DERIVED` rows. `/alerts` lost the `NOT_DERIVED` row it gained on 2026-09-05, because a row whose
+route is on the bar is suppressed and would be dead configuration reading as a live decision.
+
+`safety` remains a route of its own — the portfolio safety overview, which is not `safety-checklist`
+(fill one in), not `inspections` (list them) and not `incidents` (one site's feed). `tasks` and `more`
+branch on role inside the screen, as `reports` already did.
 
 **`SAFETY_OFFICER`'s bar was never actually decided until 2026-08-13, and this table is where that
 is now recorded.** From 2026-08-04 the role rendered `Home | Inspections | Reports | Incidents` — not

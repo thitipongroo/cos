@@ -24,6 +24,35 @@
 // THE CONFIDENCE IS SHOWN AS A BAND WITH THE NUMBER BESIDE IT, not as a bare percentage — see
 // lib/aiConfidence.ts for the guidance and for why the band edges are the platform's own.
 //
+// THE `executive` VARIANT IS THE ONE EXCEPTION TO THAT, and it is a narrow one (PO 2026-09-07,
+// mockup 08_executive/01_home/01_ex_dashboard). That drawing puts `✓ CONF: 94%` on the header row,
+// so on this variant the NUMBER leads and the band is carried by the chip's tone and its glyph:
+// success + `check-circle` for HIGH, warning + `error-outline` for MEDIUM, danger + `error-outline`
+// for LOW. The band WORD still prints whenever there is no number to print, which is the case
+// lib/aiConfidence.ts's guidance is really protecting — a reader who cannot be told how sure the
+// model is must not be shown a figure at all. The other five AI surfaces are untouched and still
+// lead with the word.
+//
+// WHAT THE DRAWING ASKS FOR THAT IS NOT DRAWN.
+//   Badge pills inside the prose   The drawing marks up words INSIDE the model's paragraph — a
+//                                  green STABLE and a red "ACTION REQUIRED:". The panel prints the
+//                                  string the gateway returned and nothing else; colouring words
+//                                  inside it means pattern-matching model output and assigning a
+//                                  severity the model never stated. Where a report DOES carry a
+//                                  level, this panel already shows it as its own chip (`level`),
+//                                  which is the same information without the invention.
+//                                  `executive-summary` returns no level, so no chip appears here.
+//   SOURCES: BIM & ERP DATA        The FOOTER is drawn; that TEXT is not. BIM is a Type A stub
+//                                  (spec §32.9) and there is no ERP integration, so the line would
+//                                  tell an executive the report is grounded in two enterprise
+//                                  systems that are not connected. That is not an ADR-099 figure —
+//                                  a wrong number is a wrong number, a false provenance claim
+//                                  changes how much the reader trusts everything above it. Same
+//                                  call `<ExecRiskAlerts />` made on 2026-09-05 about the same
+//                                  drawing's "BIM + Site Logs" chip. The footer therefore carries
+//                                  the source this panel CAN name — the project the report was
+//                                  produced for — in the drawing's own divider-and-caps treatment.
+//
 // PER PROJECT AND IT SAYS SO. Every report endpoint is project-scoped, so the host screen picks a
 // project and the panel names it — product-owner decision 2026-08-10, taken over the alternative of
 // choosing a project silently and letting one project's findings read as a tenant-wide statement.
@@ -209,6 +238,20 @@ export function InsightPanel({
 
   const band = report === null ? null : confidenceBand(report.confidence, report.low_confidence);
   const percent = report === null ? null : confidencePercent(report.confidence);
+  /**
+   * The colour the `executive` chip takes, which is how that variant carries the BAND once the
+   * number has taken the words (see the header). UNKNOWN never reaches the toned branch — the chip
+   * prints the band word instead when there is no percentage — but it is mapped rather than left to
+   * a default so the switch is total.
+   */
+  const bandTone =
+    band === 'HIGH'
+      ? p.success
+      : band === 'MEDIUM'
+        ? p.warning
+        : band === 'LOW'
+          ? p.danger
+          : p.muted;
   const text = report === null ? null : (bodyFrom ?? summaryText)(report.content);
   const level = report === null || levelFrom === undefined ? null : levelFrom(report.content);
   const advice = report === null || !showAdvice ? null : insightAdvice(report.content);
@@ -246,12 +289,35 @@ export function InsightPanel({
           {band !== null ? (
             <View
               testID="insight-confidence"
-              style={[styles.bandChip, washed && styles.bandChipWashed]}
+              style={[
+                styles.bandChip,
+                washed && styles.bandChipWashed,
+                executive && [styles.bandChipExecutive, { borderColor: `${bandTone}66` }],
+              ]}
             >
-              <Text style={[styles.bandText, washed && styles.bandTextWashed]}>
+              {/* The drawing's tick. It is NOT always a tick: a chip that says "MEDIUM confidence"
+                  under a green check mark reads as reassurance the band does not give. */}
+              {executive && percent !== null ? (
+                <MaterialIcons
+                  name={band === 'HIGH' ? 'check-circle' : 'error-outline'}
+                  size={13}
+                  color={bandTone}
+                  accessibilityElementsHidden
+                  importantForAccessibility="no"
+                />
+              ) : null}
+              <Text
+                style={[
+                  styles.bandText,
+                  washed && styles.bandTextWashed,
+                  executive && { color: bandTone },
+                ]}
+              >
                 {percent === null
                   ? t(BAND_LABEL[band])
-                  : `${t(BAND_LABEL[band])} · ${String(percent)}%`}
+                  : executive
+                    ? t('insight.conf', { value: percent })
+                    : `${t(BAND_LABEL[band])} · ${String(percent)}%`}
               </Text>
             </View>
           ) : null}
@@ -294,8 +360,10 @@ export function InsightPanel({
       ) : null}
 
       {/* The mockup's "Source:" line. It names the project the figures came from, which is the whole
-          reason the host screen asks for one. */}
-      <Text style={styles.source}>
+          reason the host screen asks for one — and on the `executive` variant it also IS the
+          drawing's SOURCES footer: a divider, then the same line in caps. See the header for why it
+          names the project rather than the drawing's "BIM & ERP DATA". */}
+      <Text style={[styles.source, executive && styles.sourceExecutive]}>
         {t('insight.source', { project: projectLabel ?? projectId })}
       </Text>
 
@@ -398,6 +466,15 @@ const makeStyles = (p: Palette) =>
       borderColor: p.accent,
       backgroundColor: p.bg,
     },
+    // The drawing's confidence read-out is a glyph beside the figure with no plate behind it, so the
+    // executive chip drops the fill and keeps a hairline in the band's own tone (set inline, since
+    // the tone is per report). `flexDirection` is what puts the tick on the same line as the number.
+    bandChipExecutive: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs / 2,
+      backgroundColor: 'transparent',
+    },
     bandText: {
       color: p.accent,
       fontFamily: fontFamily.medium,
@@ -415,6 +492,19 @@ const makeStyles = (p: Palette) =>
       color: p.muted,
       fontFamily: fontFamily.regular,
       fontSize: typography.label.fontSize,
+    },
+    // The drawing's SOURCES footer: a divider across the card, then the line in caps at the eyebrow
+    // size. Same text as every other variant's source line — see the header for why it names the
+    // project and not the drawing's two systems.
+    sourceExecutive: {
+      marginTop: spacing.xs,
+      paddingTop: spacing.sm,
+      borderTopWidth: 1,
+      borderTopColor: p.border,
+      fontFamily: fontFamily.medium,
+      fontSize: 10,
+      letterSpacing: 0.8,
+      textTransform: 'uppercase',
     },
     action: {
       flexDirection: 'row',

@@ -156,11 +156,6 @@ const PORTFOLIO: DrawerLink = {
   labelKey: 'nav.tabs.portfolio',
   icon: 'pie-chart',
 };
-const ALERTS: DrawerLink = {
-  route: '/alerts',
-  labelKey: 'nav.tabs.alerts',
-  icon: 'notification-important',
-};
 const LEADS: DrawerLink = { route: '/leads', labelKey: 'nav.tabs.leads', icon: 'person-add' };
 const OPPORTUNITIES: DrawerLink = {
   route: '/opportunities',
@@ -176,6 +171,15 @@ const USERS: DrawerLink = { route: '/users', labelKey: 'nav.tabs.users', icon: '
 
 // Not derived — §6.4 names no module that governs them.
 const DIRECTORY: DrawerLink = { route: '/directory', labelKey: 'directory.title', icon: 'groups' };
+// The EXECUTIVE portfolio safety overview and the EXECUTIVE "More" hub, both added 2026-09-07 when
+// the role's bar became Home | Alerts | Portfolio | Reports and neither screen was a tab any more.
+// Same glyph and label each carried on the bar, so the row is recognisably the screen it replaces.
+const SAFETY: DrawerLink = {
+  route: '/safety',
+  labelKey: 'nav.tabs.safety',
+  icon: 'health-and-safety',
+};
+const MORE: DrawerLink = { route: '/more', labelKey: 'nav.tabs.more', icon: 'more-horiz' };
 const DASHBOARD: DrawerLink = {
   route: '/dashboard',
   labelKey: 'nav.tabs.dashboard',
@@ -414,16 +418,21 @@ const NOT_DERIVED: readonly { link: DrawerLink; roles: readonly CosRole[] }[] = 
   { link: DASHBOARD, roles: [PROJECT_MANAGER] },
   { link: ISSUES, roles: [PROJECT_MANAGER] },
   { link: DIRECTORY, roles: [SITE_ENGINEER, SAFETY_OFFICER, PROJECT_MANAGER] },
-  // The executive risk feed, added 2026-09-05 when `/alerts` stopped being that role's tab
-  // (ADR-098). NOT_DERIVED rather than DERIVED because §6.4 governs no module for it: the screen is
-  // computed from `/analytics/executive` rows rather than read from an "Alerts" permission, and
-  // inventing a module row would put the spec's authority behind a guess — the rule stated at the
-  // top of this file.
+  // `/alerts` HAD A ROW HERE from 2026-09-05 and lost it on 2026-09-07: the executive risk feed is
+  // that role's SECOND TAB again (replacement mockup set, PO decision), and this file suppresses any
+  // row whose route is on the bar, so the entry could only ever have been dead weight. It is left
+  // recorded rather than silently dropped because the reason it existed still holds — §6.4 governs
+  // no module for a risk feed, so if `/alerts` ever leaves the bar again it comes back HERE and not
+  // to DERIVED.
   //
-  // WITHOUT THIS ROW THE ROLE WOULD HAVE LOST THE SCREEN. `/portfolio` and `/reports` come back on
-  // their own (both are DERIVED and were suppressed only because they were tabs); `/alerts` was in
-  // neither table, so removing the tab would have left it reachable from nowhere.
-  { link: ALERTS, roles: [EXECUTIVE] },
+  // THESE TWO REPLACED IT, for the exact same reason and by the same test. When the bar changed,
+  // `/tasks` and `/portfolio` and `/reports` all came back on their own — every one of them is
+  // DERIVED and was suppressed only BECAUSE it was a tab. `/safety` and `/more` are in no §6.4 row:
+  // the safety overview is computed across projects rather than read from a permission, and "More"
+  // is a hub over other screens rather than a module. Without these two rows the product owner's
+  // "เก็บทั้งสาม เข้าผ่าน drawer" would have kept only one of the three.
+  { link: SAFETY, roles: [EXECUTIVE] },
+  { link: MORE, roles: [EXECUTIVE] },
 ];
 
 /**

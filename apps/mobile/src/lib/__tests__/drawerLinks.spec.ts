@@ -167,28 +167,44 @@ describe('the bar is four wide, and the fifth entry goes to the drawer', () => {
   });
 
   it('gives EXECUTIVE the bar its mockups draw, in that order', () => {
-    // CHANGED 2026-09-05 (ADR-098). This expectation read Home | Portfolio | Alerts | Reports until
-    // then, and it was RIGHT — it matched the tab table, spec §20.7.1 and master §Phase 10, all
-    // three. `mockup/mobile/08_executive/` draws Home | Tasks | Safety | More on all four of its
-    // bars, and the product owner chose the drawings over the enumerated spec, which is why that
-    // change amended §20.7.1, §32.7 and the Phase 10 EXEC block rather than deviating from them.
+    // CHANGED TWICE. It read Home | Portfolio | Alerts | Reports until 2026-09-05, when ADR-098 took
+    // it to Home | Tasks | Safety | More because all four drawings under
+    // `mockup/mobile/08_executive/` drew that bar. The product owner then REPLACED that mockup set
+    // on 2026-09-07 — 02_tasks became 02_alerts, 03_safety and 04_more were deleted, 03_portfolio
+    // and 04_report are new — and chose Home | Alerts | Portfolio | Reports from it.
+    //
+    // ORDER IS THE ASSERTION, not the membership: `toEqual` on an array is what catches Alerts and
+    // Portfolio swapping places, which is the only difference between this bar and the pre-09-05 one
+    // and is invisible to a `toContain` check.
     expect(visibleTabsFor(CosRole.EXECUTIVE).map((tab) => tab.name)).toEqual([
       'home',
-      'tasks',
-      'safety',
-      'more',
+      'alerts',
+      'portfolio',
+      'reports',
     ]);
   });
 
   it('leaves the executive a route to every screen that left its bar', () => {
-    // THE CONDITION OF THE SWAP, asserted rather than trusted. `/portfolio` and `/reports` come back
-    // on their own because both are DERIVED and were suppressed only while they were tabs;
-    // `/alerts` was in NEITHER drawer table, so without the NOT_DERIVED row added in the same change
-    // the role would have lost the screen outright. That is the failure this asserts against.
+    // THE CONDITION OF THE SWAP, asserted rather than trusted — and the swap ran the other way on
+    // 2026-09-07, so the three routes are different ones. `/tasks` comes back on its own (DERIVED,
+    // module "Tasks", suppressed only while it was a tab); `/safety` and `/more` are in NO §6.4 row,
+    // so without the two NOT_DERIVED entries added in the same change the role would have lost both
+    // screens outright — which the product owner's "เก็บทั้งสาม เข้าผ่าน drawer" forbids.
     const routes = drawerLinksFor(CosRole.EXECUTIVE).map((link) => link.route);
-    expect(routes).toContain('/portfolio');
-    expect(routes).toContain('/alerts');
-    expect(routes).toContain('/reports');
+    expect(routes).toContain('/tasks');
+    expect(routes).toContain('/safety');
+    expect(routes).toContain('/more');
+  });
+
+  it('keeps the four bar routes OUT of the executive drawer', () => {
+    // The mirror of the test above, and the reason `/alerts` lost its NOT_DERIVED row rather than
+    // keeping it as a harmless leftover: `drawerLinksFor` drops any row whose route is on the bar,
+    // so a row for a tab is dead config that reads like a live decision.
+    const routes = drawerLinksFor(CosRole.EXECUTIVE).map((link) => link.route);
+    expect(routes).not.toContain('/home');
+    expect(routes).not.toContain('/alerts');
+    expect(routes).not.toContain('/portfolio');
+    expect(routes).not.toContain('/reports');
   });
 
   it('keeps `reports` a SITE_ENGINEER tab after EXECUTIVE left that row', () => {

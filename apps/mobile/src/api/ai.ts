@@ -88,10 +88,24 @@ export async function generateProcurementSummary(params: {
 export async function generateExecutiveSummary(params: {
   projectId: string;
   tenantId: string;
+  /**
+   * Who asked for it, stored on `ai_generated_reports.generated_by`.
+   *
+   * OPTIONAL because the gateway defaults it to the literal `"system"` (`main.py`, the four request
+   * models), and the two dashboard panels that call this through `<InsightPanel />` cannot supply it
+   * — the panel's `generate` prop takes the two ids and nothing else. It is passed by the Report
+   * screen, which is the one surface where the report IS the artefact and the audit row should say
+   * which executive asked for it rather than "system". Added 2026-09-07 when that screen was rebuilt
+   * and would otherwise have LOST the attribution its previous version sent.
+   */
+  generatedBy?: string;
 }): Promise<AiReport> {
   return post<AiReport>('/ai/reports/executive-summary', {
     project_id: params.projectId,
     tenant_id: params.tenantId,
+    // Omitted rather than sent empty: the gateway's own default is what should apply when the client
+    // has no user to name, and `generated_by: ''` would overwrite it with a blank.
+    ...(params.generatedBy === undefined ? {} : { generated_by: params.generatedBy }),
   });
 }
 

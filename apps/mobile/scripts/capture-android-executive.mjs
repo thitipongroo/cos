@@ -1,21 +1,32 @@
 // Android EXECUTIVE screenshot capture — adb/uiautomator only, like every sibling script.
 //
-// Writes the four screens of the role's bar into docs/screens/android/08-executive/:
-//   01-Home/01-ex-home-dashboard    AI panel · active-projects and risk tiles · portfolio budget
-//                                    with its spend bar · the project list · the locations panel
-//   02-Tasks/01-ex-tasks            overdue / due-this-week / blocked · AI risk alerts ·
-//                                    the critical path
-//   03-Safety/01-ex-safety          compliance · active incidents · six-month trend ·
-//                                    the project ranking
-//   04-More/01-ex-more              the seven tiles, three of them unbuilt
+// Writes the role's screens into docs/screens/android/08-executive/:
+//   01-Home/01-ex-home-dashboard    AI brief with its CONF chip and SOURCES footer · the ACTIVE and
+//                                    RISKS tiles · the portfolio budget with its two-segment bar ·
+//                                    the project list · the locations panel
+//   02-Alerts/01-ex-alerts          the risk feed — delay risk, budget overrun and critical issues,
+//                                    sorted CRITICAL then HIGH then MEDIUM
+//   03-Portfolio/01-ex-portfolio    search · four filter chips with real counts · the risk sort ·
+//                                    the summary strip · project cards with the health matrix
+//   04-Report/01-ex-report          the AI strategic brief · the three drawn metrics · project
+//                                    summaries · the model's own strategic recommendations
 //   05-Drawer/01-ex-navigation-drawer
 //                                   the role's drawer — an OVERLAY opened from the TopBar, not a
 //                                   fifth tab; its rows come from the §6.4 matrix via drawerLinks.ts
+//   06-Off-bar/01-ex-tasks          the portfolio task roll-up and the critical path
+//   06-Off-bar/02-ex-safety         compliance · active incidents · six-month trend · the ranking
+//   06-Off-bar/03-ex-more           the seven tiles, three of them unbuilt
 //
-// THE BAR IS Home | Tasks | Safety | More as the product owner settled it on 2026-09-04 (ADR-098),
-// which is a CHANGE from Home | Portfolio | Alerts | Reports — the bar that agreed with spec
-// §20.7.1 and master §Phase 10 until that day. `safety` is a new route, so its tab testID is
-// `safety-tab`; `tasks` and `more` are shared routes whose screen branches on role.
+// THE BAR IS Home | Alerts | Portfolio | Reports since 2026-09-07 (PO decision, ADR-098 as
+// amended). It has changed twice: it was Home | Portfolio | Alerts | Reports until 2026-09-05, then
+// Home | Tasks | Safety | More until the product owner replaced `mockup/mobile/08_executive/`
+// wholesale. It is NOT the first bar restored — Alerts and Portfolio have swapped places.
+//
+// TASKS, SAFETY AND MORE ARE STILL SHOT, and that is the reason the sixth directory exists. All
+// three left the bar in the same change and the product owner kept them, reached from the drawer,
+// so they are photographed the way a user now gets to them — TopBar menu, then the row — under
+// `06-Off-bar/` rather than under a tab number they no longer own. A screen that stopped being
+// captured because it stopped being a tab is a screen nobody looks at again.
 //
 // LOGS IN AS THE SEEDED EXECUTIVE — `+66811000001`, Wichai Ekachai (backend/prisma/
 // seed-realistic.ts). Path A (phone + OTP), like every other capture script here.
@@ -26,12 +37,17 @@
 // call, the critical path, reports on the executive's first project and names it on screen.
 //
 // SEVERAL FIGURES IN THESE FRAMES DID NOT COME FROM THE BACKEND, and that is a recorded decision
-// rather than a broken capture: the compliance percentage and its grade, safe man-hours, the
-// six-month trend, the per-project safety score, the "+2 this month" delta, the per-project sync
-// chip and the locations panel are the mockup's own numbers (ADR-099, product-owner decision
-// 2026-09-04). They live in apps/mobile/src/lib/mockupFigures.ts. Everything else in these frames —
-// the portfolio budget and variance, the task counts, the critical path, the incident counts and
-// every AI panel — is live data from the seeded tenant.
+// rather than a broken capture. Nineteen of them, listed in ADR-099 and living in one module,
+// apps/mobile/src/lib/mockupFigures.ts: the compliance percentage and its grade, safe man-hours,
+// the six-month trend, the per-project safety score, the "+2 this month" delta, the per-project
+// sync chip, the locations panel, the portfolio health score, each card's contract number and
+// location, three of the four health pillars, the per-card index, the Report brief's three metrics
+// and its PDF button.
+//
+// Everything else in these frames is live data from the seeded tenant — the portfolio budget and
+// variance, every filter count and sort order, the task counts, the critical path, the incident
+// counts, and every AI panel including the Report screen's recommendations and risk flags, which
+// are real fields on the report the gateway returned.
 //
 // Prerequisites, in order:
 //   1. `make docker-up-full` — ClickHouse is a `full`-profile service and the Home screen's budget,
@@ -59,7 +75,8 @@
 //   5. emulator booted with the debug APK installed
 //   6. Metro started with EXPO_PUBLIC_CAPTURE=1 (mutes the dev LogBox toast, freezes animation loops)
 // Run: node scripts/capture-android-executive.mjs
-//      node scripts/capture-android-executive.mjs safety   ← re-shoot one screen only
+//      node scripts/capture-android-executive.mjs portfolio   ← re-shoot one screen only
+// Targets: home · alerts · portfolio · reports · drawer · tasks · safety · more
 
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -112,6 +129,25 @@ async function dump() {
     await delay(1000);
   }
   throw new Error('capture: uiautomator never produced a dump');
+}
+
+/**
+ * Does this node have a real, upright box — or is it a row clipped at the edge of a scroll view?
+ *
+ * A PARTLY SCROLLED-OFF ROW REPORTS INVERTED BOUNDS on this device, and the failure that produces
+ * is silent and destructive. Measured on 2026-09-07 with the drawer scrolled to its foot:
+ *
+ *   drawer-link-/safety   bounds="[63,2254][751,2148]"   ← bottom ABOVE top
+ *   drawer-logout         bounds="[63,2148][751,2263]"
+ *
+ * `centreOf` averages those two y values into 2201, which is inside the LOGOUT row — so the script
+ * found the right node, computed a point that belongs to a different one, and signed the session
+ * out. The run then failed several steps later with "…-screen never appeared", pointing nowhere
+ * near the cause. Anything that scrolls to reach a target must check this before tapping.
+ */
+function hasRealBounds(node, minHeight = 40) {
+  const m = /bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/.exec(node);
+  return m !== null && +m[4] - +m[2] >= minHeight && +m[3] - +m[1] > 0;
 }
 
 function centreOf(node) {
@@ -303,52 +339,138 @@ async function main() {
   // photographed as if it were the dashboard.
   await find(byId('home-screen'), 'executive Home', 40);
 
+  if (wanted('alerts')) {
+    console.log('· Alerts tab');
+    await tap(byId('alerts-tab'), 'Alerts tab');
+    await find(byId('alerts-screen'), 'alerts-screen', 20);
+    // Two requests settle here and the second waits on the first: the project list, then the
+    // analytics rows the feed is derived from. Photographing before that is an empty feed,
+    // which is what "no alerts" also looks like.
+    await delay(3500);
+    await stitchFull('02-Alerts/01-ex-alerts');
+  }
+
+  if (wanted('portfolio')) {
+    console.log('· Portfolio tab');
+    await tap(byId('portfolio-tab'), 'Portfolio tab');
+    await find(byId('portfolio-screen'), 'portfolio-screen', 20);
+    // The list renders instantly from the offline cache; the chips' counts, the summary strip
+    // and every card's band wait on /analytics/executive, and the progress bars on
+    // /projects/mine.
+    await delay(3500);
+    await stitchFull('03-Portfolio/01-ex-portfolio');
+  }
+
+  if (wanted('reports')) {
+    console.log('· Reports tab (AI — the longest wait on this bar)');
+    await tap(byId('reports-tab'), 'Reports tab');
+    await find(byId('exec-reports-screen'), 'exec-reports-screen', 20);
+    // THREE things settle, and the third is an LLM call: the project list, the analytics rows,
+    // then POST /ai/reports/executive-summary, whose prose, confidence, recommendations and
+    // risk flags are four separate places on this screen. A short wait photographs the loader.
+    await delay(9000);
+    await stitchFull('04-Report/01-ex-report');
+  }
+
+  // ── OFF THE BAR SINCE 2026-09-07, and reached the way a user now reaches them ────────────
+  //
+  // Opening the drawer and tapping the row is not a convenience here — it IS the entry point the
+  // product owner kept these three screens for, so a run that failed to find the row would be
+  // telling us the drawer derivation broke, which no other frame in this script would catch.
+  const fromDrawer = async (route, screenId, label) => {
+    await tap(byId('drawer-menu-button'), 'drawer menu button');
+    await find(byId('navigation-drawer'), 'navigation drawer', 20);
+    // THE ROW TAKES TWO STEPS TO REACH, and both were learned here rather than assumed.
+    //
+    // 1. The drawer shows SIX rows and hides the rest behind its own "More (N)" expander (PO
+    //    decision 2026-08-10). This role derives TWENTY, so most of the list is behind it.
+    // 2. Expanded, the list is longer than the screen and scrolls. `/safety` and `/more` were
+    //    added to the foot of NOT_DERIVED on 2026-09-07, so they are the LAST two rows — past
+    //    the bottom even once the list is open.
+    //
+    // THE EXPANDER TOGGLES AND THE DRAWER REMEMBERS. `expanded` is state inside a component
+    // that stays mounted between opens, so the second visit finds it already open and a blind
+    // tap COLLAPSES it — which is how the first attempt at this hid the row it was looking for.
+    // Hence two sweeps: scroll looking for the row, toggle, scroll again. Whichever way round
+    // the expander started, one of the two passes has it open.
+    // `hasRealBounds` is what makes the sweep stop in the right place: a row that is HALF off
+    // the bottom is present in the dump and would satisfy a plain id match, but its centre lands
+    // on the row below it. See that helper for what that cost.
+    const rowPred = (n) => byId(`drawer-link-${route}`)(n) && hasRealBounds(n);
+    const rowVisible = async () => (await dump()).some(rowPred);
+    let reached = false;
+    for (let pass = 0; pass < 2 && !reached; pass++) {
+      for (let i = 0; i < 8; i++) {
+        if (await rowVisible()) {
+          reached = true;
+          break;
+        }
+        adb('shell', 'input', 'swipe', '300', '1900', '300', '1000', '400');
+        await delay(800);
+      }
+      if (reached) break;
+      await tap(byId('drawer-more'), 'drawer More expander');
+      // Back to the top, so the second sweep starts where the first one did.
+      for (let i = 0; i < 4; i++) {
+        adb('shell', 'input', 'swipe', '300', '1000', '300', '1900', '400');
+        await delay(400);
+      }
+    }
+    // LET THE LIST SETTLE BEFORE TAPPING. `tap()` finds the node's bounds and then sends the
+    // touch as two separate adb calls; while the drawer is still gliding under its own
+    // momentum those bounds go stale between the two, and the tap lands on whatever has
+    // slid into that row's place — which at the foot of this list is the LOGOUT row, so the
+    // run ends back on the login screen with no obvious cause.
+    await delay(1800);
+    await tap(rowPred, `${label} drawer row`);
+    await find(byId(screenId), screenId, 20);
+  };
+
   if (wanted('tasks')) {
-    console.log('· Tasks tab');
-    await tap(byId('tasks-tab'), 'Tasks tab');
-    await find(byId('exec-tasks-screen'), 'exec-tasks-screen', 20);
+    console.log('· Tasks (drawer row)');
+    await fromDrawer('/tasks', 'exec-tasks-screen', 'Tasks');
     // Three requests settle here — the roll-up, the project list, then the critical path, which
     // cannot start until the list answers. Waiting for the slowest keeps an empty Critical Path
     // section out of the frame when it is merely late rather than absent.
     await delay(4000);
-    await stitchFull('02-Tasks/01-ex-tasks');
+    await stitchFull('06-Off-bar/01-ex-tasks');
   }
 
   if (wanted('safety')) {
-    console.log('· Safety tab');
-    await tap(byId('safety-tab'), 'Safety tab');
-    await find(byId('safety-screen'), 'safety-screen', 20);
+    console.log('· Safety (drawer row)');
+    await fromDrawer('/safety', 'safety-screen', 'Safety');
     await delay(3000);
-    await stitchFull('03-Safety/01-ex-safety');
+    await stitchFull('06-Off-bar/02-ex-safety');
   }
 
   if (wanted('more')) {
-    console.log('· More tab');
-    await tap(byId('more-tab'), 'More tab');
-    await find(byId('exec-more-screen'), 'exec-more-screen', 20);
+    console.log('· More (drawer row)');
+    await fromDrawer('/more', 'exec-more-screen', 'More');
     await delay(2500);
-    await stitchFull('04-More/01-ex-more');
+    await stitchFull('06-Off-bar/03-ex-more');
   }
 
   // HOME IS SHOT LAST, for the reason the project-manager and safety-officer scripts document: a
   // dashboard photographed seconds after sign-in can catch its own load losing a race with the
-  // session. This screen refetches on focus, so returning to the tab at the end photographs settled
-  // data — and this one has the most to settle, with the analytics roll-up behind every figure.
+  // session. This screen refetches on focus, so returning to the tab at the end photographs
+  // settled data — and this one has the most to settle, with the analytics roll-up behind every
+  // figure and an AI brief that generates on mount.
   if (wanted('home')) {
     console.log('· Home tab (last — see the note above)');
     await tap(byId('home-tab'), 'Home tab');
     await find(byId('home-screen'), 'executive Home', 20);
-    await delay(4000);
+    await delay(8000);
     await stitchFull('01-Home/01-ex-home-dashboard');
   }
 
   // THE DRAWER IS NOT A TAB. `05_profile/01_ex_navigation_drawer` is the overlay every role opens
-  // from the TopBar, not a fifth destination in the bottom bar — ADR-098 settled that bar at four.
-  // It is shot last of all, and after Home, because it is opened FROM a tab and closing it returns
-  // to whatever was underneath.
+  // from the TopBar, not a fifth destination in the bottom bar — ADR-098 settled that bar at
+  // four. It is shot last of all, and after Home, because it is opened FROM a tab and closing it
+  // returns to whatever was underneath.
   //
-  // Its rows are the role's own: `drawerSectionFor(EXECUTIVE)` derives them from the §6.4 permission
-  // matrix, so this frame is the picture of that derivation.
+  // Its rows are the role's own: `drawerSectionFor(EXECUTIVE)` derives them from the §6.4
+  // permission matrix, so this frame is the picture of that derivation — and since 2026-09-07 it
+  // is also the picture of how Tasks, Safety and More are reached at all.
   if (wanted('drawer')) {
     console.log('· Navigation drawer (overlay, opened from the TopBar)');
     await tap(byId('home-tab'), 'Home tab');
@@ -356,8 +478,8 @@ async function main() {
     await tap(byId('drawer-menu-button'), 'drawer menu button');
     await find(byId('navigation-drawer'), 'navigation drawer', 20);
     await delay(1500);
-    // The overlay covers the TopBar and the bottom nav, so the page band would crop its own header
-    // and its logout row. 96 clears the status bar; 2400 is the foot of the screen.
+    // The overlay covers the TopBar and the bottom nav, so the page band would crop its own
+    // header and its logout row. 96 clears the status bar; 2400 is the foot of the screen.
     await stitchFull('05-Drawer/01-ex-navigation-drawer', { top: 96, bottom: 2400 });
     // Leave it closed, so a re-run that starts on Home is not looking at yesterday's overlay.
     adb('shell', 'input', 'keyevent', 'KEYCODE_BACK');

@@ -412,6 +412,60 @@ describe('InsightPanel', () => {
     expect(getByTestId('insight-run')).toBeTruthy();
   });
 
+  // ── THE `executive` DRAWING ──────────────────────────────────────────────────────────────────
+  //
+  // A third one since 2026-09-07 (mockup 08_executive/01_home/01_ex_dashboard). It is the one
+  // variant where the confidence NUMBER leads instead of the band word, so these tests are the
+  // record of that exception rather than a check that a style prop arrived.
+
+  it('leads the executive chip with the number, and the other variants with the band', async () => {
+    const exec = await renderPanel({ variant: 'executive', autoRun: true }).utils;
+    await waitFor(() => expect(exec.getByTestId('insight-confidence')).toBeTruthy());
+    expect(exec.getByTestId('insight-confidence')).toHaveTextContent(/92/);
+    // The band word is what must NOT be there — that is the whole difference from `plain`.
+    expect(exec.getByTestId('insight-confidence')).not.toHaveTextContent(/confidence/i);
+
+    const plain = await renderPanel({ autoRun: true }).utils;
+    await waitFor(() => expect(plain.getByTestId('insight-confidence')).toBeTruthy());
+    expect(plain.getByTestId('insight-confidence')).toHaveTextContent(/confidence/i);
+  });
+
+  it('keeps the band WORD on the executive chip when there is no number to lead with', async () => {
+    // The case lib/aiConfidence.ts's guidance is really protecting: a reader who cannot be told how
+    // sure the model is must not be shown a figure at all, so the exception above does not apply.
+    const generate = jest
+      .fn()
+      .mockResolvedValue(report({ confidence: null, low_confidence: true }));
+    const { getByTestId } = await render(
+      <I18nProvider>
+        <InsightPanel
+          testID="panel"
+          projectId="proj-1"
+          titleKey="insight.action"
+          variant="executive"
+          autoRun
+          generate={generate}
+        />
+      </I18nProvider>,
+    );
+    await waitFor(() => expect(getByTestId('insight-confidence')).toBeTruthy());
+    expect(getByTestId('insight-confidence')).toHaveTextContent(/confidence/i);
+    expect(getByTestId('insight-confidence')).not.toHaveTextContent(/%/);
+  });
+
+  it('names the PROJECT in the executive footer, never a system it does not read', async () => {
+    // The drawing's footer reads "SOURCES: BIM & ERP DATA". BIM is a Type A stub and there is no ERP
+    // integration, so printing it would tell an executive the report is grounded in two enterprise
+    // systems that are not connected — a false provenance claim, which is a different thing from an
+    // ADR-099 figure. Same call <ExecRiskAlerts /> made about the same drawing's source chip.
+    const { utils } = renderPanel({ variant: 'executive', projectLabel: 'Sukhumvit 45' });
+    const { getByTestId } = await utils;
+
+    expect(getByTestId('panel')).toHaveTextContent(/Sukhumvit 45/);
+    expect(getByTestId('panel')).not.toHaveTextContent(/BIM/i);
+    expect(getByTestId('panel')).not.toHaveTextContent(/ERP/i);
+  });
+
   // Optional: the panels whose mockup has no follow-up button do not grow one.
   it('offers the follow-up only where its host asked for one', async () => {
     const onPress = jest.fn();
