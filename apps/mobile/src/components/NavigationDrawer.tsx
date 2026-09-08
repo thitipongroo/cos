@@ -23,7 +23,6 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter, usePathname } from 'expo-router';
 import { drawerSectionFor, SHARED_LINKS, type DrawerLink } from '../lib/drawerLinks';
 import { getMe } from '../api/users';
-import { PROFILE_JOB_TITLE } from '../lib/mockupFigures';
 import { useUiStore } from '../store/uiStore';
 import { useAuthStore } from '../store/authStore';
 import { useI18n } from '../i18n';
@@ -72,7 +71,11 @@ export function NavigationDrawer(): React.JSX.Element | null {
    * A failure leaves both null and the zone falls back to the short UUID and no MFA line, which is
    * what it drew before this existed.
    */
-  const [me, setMe] = useState<{ employeeCode: string | null; mfaEnabled: boolean } | null>(null);
+  const [me, setMe] = useState<{
+    employeeCode: string | null;
+    mfaEnabled: boolean;
+    position: string | null;
+  } | null>(null);
 
   useEffect(() => {
     if (!open || me !== null) return;
@@ -80,7 +83,14 @@ export function NavigationDrawer(): React.JSX.Element | null {
     getMe()
       .then((row) => {
         if (!cancelled) {
-          setMe({ employeeCode: row.employee_code ?? null, mfaEnabled: row.mfa_enabled === true });
+          setMe({
+            employeeCode: row.employee_code ?? null,
+            mfaEnabled: row.mfa_enabled === true,
+            // `?? null` collapses BOTH absences into one: an older deployment omits the key, a
+            // current one returns null until someone sets a title. The block draws nothing for
+            // either, and the difference is not one a reader could act on.
+            position: row.position ?? null,
+          });
         }
       })
       .catch(() => {
@@ -205,13 +215,21 @@ export function NavigationDrawer(): React.JSX.Element | null {
               <Text style={styles.profileName} numberOfLines={1}>
                 {displayName ?? t('drawer.member')}
               </Text>
-              {/* DRAWN — no table carries a job title: `platform.users` has none and
-                  `workforce.workers` has `trade_type`, which is a site trade rather than a
-                  position. See the register. It sits directly under the name, where the position a
-                  reader needs to place someone belongs. */}
-              <Text testID="drawer-job-title" style={styles.profileTitle} numberOfLines={1}>
-                {PROFILE_JOB_TITLE.value}
-              </Text>
+              {/* REAL since 2026-09-08: `platform.users.position`, returned by `GET /users/me`
+                  (ADR-101). It was DRAWN until that migration — `PROFILE_JOB_TITLE`, one hardcoded
+                  "Lead Controller" shown to every role — and the register entry was deleted with
+                  this change rather than left pointing at a column that now exists.
+
+                  NOTHING IS DRAWN WHEN THERE IS NO POSITION, and that is the common case: no route
+                  sets one, so it arrives by seed or HR import, and an app running against a
+                  deployment older than the migration gets no key at all. A missing title is not a
+                  title worth inventing — the name above and the id below already identify the
+                  account, and a placeholder would be the drawn line coming back under a new name. */}
+              {me?.position == null || me.position === '' ? null : (
+                <Text testID="drawer-job-title" style={styles.profileTitle} numberOfLines={1}>
+                  {me.position}
+                </Text>
+              )}
               {/* `ID: <CODE>` in a monospaced face, as the mockup draws it — an id is read character
                   by character, and a proportional face makes 0/O and 1/l ambiguous exactly there.
                   THE CODE IS REAL WHERE THERE IS ONE: `workforce.workers.employee_code`, returned

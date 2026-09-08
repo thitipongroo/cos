@@ -146,8 +146,12 @@ export async function collectIdentity(
   const out: CollectedTable[] = [];
 
   // The account itself is never date-filtered: it is the subject's current record, not an event.
+  // `position` joined `department` here on 2026-09-08, with the column itself (ADR-101). Employment
+  // data the controller holds ABOUT THE SUBJECT is in scope for a PDPA §30 access request, and
+  // `department` was already here on exactly that reasoning — adding the column without adding it to
+  // this SELECT would have made every export from that day incomplete, silently.
   const users = await db.platform.$queryRaw<Record<string, unknown>[]>`
-    SELECT user_id, display_name, department, is_active, created_at, updated_at
+    SELECT user_id, display_name, department, position, is_active, created_at, updated_at
       FROM platform.users WHERE user_id = ${userId}::uuid`;
   out.push({ table: 'platform.users', attributedBy: 'user_id', rows: users });
 

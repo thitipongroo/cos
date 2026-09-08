@@ -95,6 +95,11 @@ model User {
   mfaEnabled     Boolean  @default(false) @map("mfa_enabled")
   // Org unit for HR (nullable — set by seed/HR, not required at account creation).
   department     String?  @map("department") @db.VarChar(255)
+  // Job title, free text, for display — the drawer profile block's POSITION line (spec §32.7).
+  // Shaped after `department` and for the same reason: an account is created before anyone knows the
+  // person's title, so NOT NULL would mean inventing one at signup. Not a role, not an
+  // authorisation input — `tenant_memberships.role` stays the only thing anything checks. ADR-101.
+  position       String?  @map("position") @db.VarChar(255)
   mfaTotpSecret  String?  @map("mfa_totp_secret") @db.VarChar(255)
   // Last authenticated request (throttled 15 min in JwtAuthGuard) — powers the Tenant Admin User Audit.
   lastSeenAt     DateTime @default(now()) @map("last_seen_at") @db.Timestamptz()

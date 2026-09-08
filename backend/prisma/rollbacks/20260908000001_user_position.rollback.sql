@@ -1,0 +1,26 @@
+-- Rollback: 20260908000001_user_position
+--
+-- Drops the job-title column from platform.users (ADR-101).
+--
+-- WHAT BREAKS, AND WHAT DOES NOT.
+--
+-- `GET /users/me` and `GET /users` both SELECT this column by name, so both fail outright once it is
+-- gone — this rollback requires the application to be rolled back with it. That is the ordinary
+-- shape of an expand/contract step run backwards, and it is stated here because the column looks
+-- optional and is not: the SELECT lists are explicit, not `SELECT *`.
+--
+-- The mobile drawer degrades rather than breaks IF the app is not rolled back: `Me.position` is
+-- declared OPTIONAL (QM-9), and `NavigationDrawer` renders nothing when it is absent. So a new app
+-- against a rolled-back database shows a profile block with no title line — which is exactly what it
+-- shows for an account whose position was never set. No blank space, no error.
+--
+-- THE PDPA EXPORT LOSES A FIELD. `data-export.collector.ts` selects `position` alongside
+-- `department` for the subject's own `platform.users` row. After this rollback the export is
+-- complete again with respect to the columns that exist, so nothing is owed — but an export taken
+-- BEFORE the rollback and one taken after are not the same document, which matters if a subject
+-- request is open across it.
+--
+-- DATA IS DESTROYED. Every title set by a seed or an HR import is gone; the column has no history
+-- table behind it. Re-running the migration gives back an empty column, not the values.
+ALTER TABLE platform.users
+  DROP COLUMN IF EXISTS position;

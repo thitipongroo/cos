@@ -293,12 +293,19 @@ paths:
       security:
         - bearerAuth: []
       summary: The signed-in user's own record
-      description: Any authenticated role. Scoped by the JWT, so there is nothing to authorise.
+      description: |
+        Any authenticated role. Scoped by the JWT, so there is nothing to authorise.
+
+        The row carries `department` and `position` — both free-text HR fields, both nullable, and
+        `position` NULL is the ordinary case: no route sets it, it arrives by seed or HR import
+        (ADR-101). It also carries `employee_code`, LEFT-joined from `workforce.workers` and NULL for
+        every account with no worker record, which is most office roles. Clients render nothing for a
+        null rather than a placeholder.
       operationId: getMe
       tags: [users]
       responses:
         '200':
-          description: The caller's user row, including roles
+          description: The caller's user row — roles, department, position, employee_code
         '401':
           description: Unauthenticated
 

@@ -1422,7 +1422,7 @@ Its order, top to bottom:
 | ------------ | ------------------------------------------------------- | -------------------------------------------------------- |
 | Avatar       | `platform.users.photo_url`, initials otherwise          | Leading, centred against the three text lines            |
 | **Name**     | `auth.displayName`, `drawer.member` otherwise           | Body size, semibold, one line                            |
-| **Position** | DRAWN — see ADR-099                                     | 11px, muted. No table carries a job title                |
+| **Position** | `platform.users.position`, **omitted entirely** if null | 11px, muted. ADR-101                                     |
 | **Id**       | `workforce.workers.employee_code`, short UUID otherwise | Caption size, **monospaced**, muted                      |
 | Status       | `platform.users.mfa_enabled` + the sync state           | Own inset row on `--cos-dark-bg`, cloud glyph, 11px      |
 
@@ -1437,9 +1437,16 @@ says what this person does in the words a person uses, and the enum said it a se
 words the system uses. The drawings show the chip (`09_finance/05_profile/01_fn_navigation_drawer`
 is the most explicit); this is a COMPOSITION ruling and ADR-085 gives it to the implementation.
 
-**The position line is drawn, and that is a known cost.** `PROFILE_JOB_TITLE` in the register is one
-string for the whole app, so every role's drawer reads the same position. Removing the role chip
-took away the only line that varied per role. Recorded rather than hidden — see ADR-099.
+**The position line is real, and the line it replaced is gone.** It was DRAWN until 2026-09-08 —
+`PROFILE_JOB_TITLE` in the register, one hardcoded string shown to every role — and removing the role
+chip left it as the only thing on the block claiming to describe the person. `platform.users.position`
+was added the same day (ADR-101), `GET /users/me` returns it, and the register entry was deleted
+rather than left pointing at a column that now exists.
+
+**A null position draws NOTHING — no placeholder, no dash, no role.** Null is the ordinary case: no
+route sets a position, so it arrives by seed or HR import, and an app running against a deployment
+older than migration `20260908000001` receives no such key at all. Both render the same way. A
+placeholder here would be the drawn line returning under another name, which is what ADR-101 ended.
 
 #### Photo Annotation (`<PhotoAnnotation />`)
 

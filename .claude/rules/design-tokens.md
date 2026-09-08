@@ -395,11 +395,15 @@ Core components (React Native — implement in apps/mobile/):
                         does, in the words a person uses. The drawings show the chip — 09_finance/
                         05_profile/01_fn_navigation_drawer most explicitly — and this is a
                         COMPOSITION ruling, which ADR-085 gives to the implementation.
-                        The position is DRAWN (PROFILE_JOB_TITLE, ADR-099) and is ONE STRING FOR THE
-                        WHOLE APP, so every role reads the same one; removing the chip took away the
-                        only line that varied per role. Full contract: spec §32.7 "Drawer Profile
-                        Block"; NavigationDrawer.spec.tsx pins the sequence, because a reordered
-                        block renders perfectly and nothing else would ever see it.
+                        The position is REAL since 2026-09-08: platform.users.position, returned by
+                        GET /users/me (ADR-101). It was DRAWN until that day — PROFILE_JOB_TITLE, one
+                        hardcoded string for every role — and the register entry was DELETED with the
+                        column, the first entry this project has lost to real data rather than to a
+                        cancelled screen. A NULL POSITION DRAWS NOTHING: no placeholder, no dash, no
+                        role. Null is the ordinary case (no route sets one) and an older deployment
+                        omits the key entirely; both render the same. Full contract: spec §32.7
+                        "Drawer Profile Block"; NavigationDrawer.spec.tsx pins the sequence, because
+                        a reordered block renders perfectly and nothing else would ever see it.
   <PhotoCapture />      Camera + gallery grid, inline annotation, offline queue
   <VoiceNoteButton />   Hold-to-record, waveform animation, auto-transcription
   <SyncPill />          Top-bar glyph carrying EVERY sync state, offline included.

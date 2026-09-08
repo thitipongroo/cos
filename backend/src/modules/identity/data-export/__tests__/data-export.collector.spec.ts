@@ -248,6 +248,12 @@ describe('collect — category selection', () => {
     const out = await collect(db, USER, ['identity'], {});
 
     expect(platformCalls.map((c) => c.sql.includes('platform.users'))).toEqual([true, false]);
+    // THE EMPLOYMENT FIELDS ARE NAMED, not left to `SELECT *` and not left to review. A PDPA §30
+    // access request must return the employment data the controller holds about the subject, and
+    // this SELECT is an explicit column list — a column added to `platform.users` and forgotten here
+    // makes every export from that day incomplete without failing anything (ADR-101, 2026-09-08).
+    expect(platformCalls[0]!.sql).toContain('department');
+    expect(platformCalls[0]!.sql).toContain('position');
     expect(platformCalls[1]!.sql).toContain('platform.trusted_devices');
     expect(tenantCalls.every((c) => c.sql.includes('workforce.workers'))).toBe(true);
     expect(out.identity!.map((t) => t.table)).toEqual([

@@ -974,7 +974,7 @@ which every screen needs. The rest are Tenant Admin.
 | Method  | Path                                           | Description                                             | Auth         |
 | ------- | ---------------------------------------------- | ------------------------------------------------------- | ------------ |
 | `GET`   | `/api/v1/tenant`                               | The caller's own tenant — name, code, plan              | Bearer token |
-| `GET`   | `/api/v1/users/me`                             | The caller's own user row, including roles              | Bearer token |
+| `GET`   | `/api/v1/users/me`                             | The caller's own user row — roles, department, position | Bearer token |
 | `PATCH` | `/api/v1/users/me/photo`                       | Set or clear own profile photo (a File Service URL)     | Bearer token |
 | `GET`   | `/api/v1/users/{user_id}/roles`                | A user's primary + additional roles                     | Tenant Admin |
 | `PUT`   | `/api/v1/users/{user_id}/roles`                | Replace that set; emits `identity.user.role_changed.v1` | Tenant Admin |

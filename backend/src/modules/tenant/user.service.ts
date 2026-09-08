@@ -73,6 +73,15 @@ export interface UserRow {
   photo_url: string | null;
   // Org unit for HR (nullable — set by seed/HR, not required at account creation).
   department: string | null;
+  /**
+   * `platform.users.position` — the person's job title, free text, for display (ADR-101).
+   *
+   * NULL UNTIL SOMEONE SETS IT, and no API sets it today: it arrives by seed or by an HR import.
+   * Callers render nothing rather than a placeholder — the drawer profile block drops the line
+   * entirely (spec §32.7). Not a role and not an authorisation input; that is
+   * `tenant_memberships.role`, which is already on this type.
+   */
+  position: string | null;
   is_active: boolean;
   mfa_enabled: boolean;
   // Last authenticated request (throttled) — drives the Tenant Admin User Audit (dormant users).
@@ -147,6 +156,7 @@ export class UserService implements OnModuleDestroy {
           u.display_name,
           u.photo_url,
           u.department,
+          u.position,
           u.is_active,
           u.mfa_enabled,
           u.last_seen_at,
@@ -199,7 +209,8 @@ export class UserService implements OnModuleDestroy {
     const rows = await this.prisma.$queryRaw<MeRow[]>`
       SELECT
         u.user_id, u.tenant_id, u.keycloak_user_id, u.email, u.phone_number, u.display_name,
-        u.photo_url, u.is_active, u.mfa_enabled, u.last_seen_at, u.created_at, u.updated_at, m.role,
+        u.photo_url, u.department, u.position, u.is_active, u.mfa_enabled, u.last_seen_at,
+        u.created_at, u.updated_at, m.role,
         w.employee_code
       FROM platform.users u
       JOIN platform.tenant_memberships m

@@ -192,6 +192,41 @@ function deptFor(role: string): string {
   }
 }
 
+// Demo job title per role (platform.users.position — the drawer profile block's POSITION line).
+//
+// SEED DATA, NOT A TAXONOMY. `position` is free text and this function is one plausible title per
+// demo role so the seeded tenant has something real on screen; it is not a dictionary the product
+// enforces, and nothing outside this file reads it. A tenant's own titles come from an HR import.
+//
+// It exists because a NULL position renders NOTHING (spec §32.7) — correct behaviour, and a demo
+// that shows it everywhere would look like the feature had not been built.
+function positionFor(role: string): string {
+  switch (role) {
+    case 'EXECUTIVE':
+      return 'Managing Director';
+    case 'TENANT_ADMIN':
+      return 'Systems Administrator';
+    case 'PROJECT_MANAGER':
+      return 'Senior Project Manager';
+    case 'PROCUREMENT_OFFICER':
+      return 'Procurement Officer';
+    case 'PROC_MANAGER':
+      return 'Procurement Manager';
+    case 'FINANCE':
+      return 'Lead Controller';
+    case 'SAFETY_OFFICER':
+      return 'Safety Officer';
+    case 'SITE_ENGINEER':
+      return 'Site Engineer';
+    case 'SITE_WORKER':
+      return 'Foreman';
+    case 'CRM_SALES_MANAGER':
+      return 'Sales Manager';
+    default:
+      return 'Staff';
+  }
+}
+
 // ─── Projects ────────────────────────────────────────────────────────────────
 type SeedProject = {
   key: string;
@@ -518,10 +553,10 @@ async function run(): Promise<void> {
     ON CONFLICT (tenant_id) DO NOTHING`;
   for (const u of USERS) {
     await prisma.$executeRaw`
-      INSERT INTO platform.users (user_id, tenant_id, keycloak_user_id, email, display_name, phone_number, is_active, mfa_enabled, department)
+      INSERT INTO platform.users (user_id, tenant_id, keycloak_user_id, email, display_name, phone_number, is_active, mfa_enabled, department, position)
       VALUES (${U(u.key)}::uuid, ${TENANT_ID}::uuid, ${uid(`kc/${u.key}`)}, ${u.email}, ${u.name}, ${u.phone ?? null}, true,
-              ${u.role === 'TENANT_ADMIN' || u.role === 'FINANCE'}, ${deptFor(u.role)})
-      ON CONFLICT (user_id) DO UPDATE SET department = EXCLUDED.department`;
+              ${u.role === 'TENANT_ADMIN' || u.role === 'FINANCE'}, ${deptFor(u.role)}, ${positionFor(u.role)})
+      ON CONFLICT (user_id) DO UPDATE SET department = EXCLUDED.department, position = EXCLUDED.position`;
     await prisma.$executeRaw`
       INSERT INTO platform.tenant_memberships (tenant_id, user_id, role)
       VALUES (${TENANT_ID}::uuid, ${U(u.key)}::uuid, ${u.role}::platform."CosRoleEnum")

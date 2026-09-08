@@ -29,6 +29,18 @@ export interface Me {
    * have no code. Callers fall back to a short form of the UUID rather than showing a gap.
    */
   employee_code?: string | null;
+  /**
+   * `platform.users.position` — the person's job title, free text (ADR-101, 2026-09-08).
+   *
+   * The drawer's position line used to be DRAWN: `PROFILE_JOB_TITLE`, one hardcoded string for the
+   * whole app. This column replaced it and the register entry was deleted.
+   *
+   * OPTIONAL FOR QM-9, and the optionality is doing real work here rather than being ceremony: an
+   * app shipped against a deployment that predates migration `20260908000001` gets no such key, and
+   * the drawer must draw nothing rather than a gap or a placeholder. NULL is also the ORDINARY case
+   * on a current deployment — no route sets a position; it arrives by seed or HR import.
+   */
+  position?: string | null;
 }
 
 export async function getMe(): Promise<Me> {

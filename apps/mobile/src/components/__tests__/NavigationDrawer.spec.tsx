@@ -67,6 +67,7 @@ describe('NavigationDrawer', () => {
       role: 'SITE_ENGINEER',
       mfa_enabled: true,
       employee_code: 'FI-04281',
+      position: 'Site Engineer',
     });
     mockPathname = '/home';
     closeDrawer = jest.fn();
@@ -240,18 +241,41 @@ describe('NavigationDrawer', () => {
     expect(getByTestId('drawer-profile-card')).not.toHaveTextContent(/MFA/i);
   });
 
-  it('prints the drawn job title, whatever the API returns', async () => {
-    // THE ADR-099 GUARD. No table carries a job title: `platform.users` has none and
-    // `workforce.workers` has trade_type, which is a site trade rather than a position.
-    //
-    // Asserted on the CARD, not on the id line. The two were one <Text> until a device capture
-    // showed the title clipped off the end of it — `numberOfLines={1}` and a UUID fallback longer
-    // than the drawing's short employee code — so the figure was registered, tested and invisible.
+  it('prints the position the API returns, not a drawn one', async () => {
+    // THE INVERSE OF THE TEST THAT USED TO BE HERE. It was the ADR-099 guard, and it asserted the
+    // drawer printed "Lead Controller" WHATEVER the API returned, because nothing in the schema
+    // carried a job title. `platform.users.position` does now (ADR-101), so the claim flips: the
+    // line follows the row, and a different account gets a different title.
     const { getByTestId } = await renderDrawer();
 
-    await waitFor(() =>
-      expect(getByTestId('drawer-profile-card')).toHaveTextContent(/Lead Controller/),
-    );
+    await waitFor(() => expect(getByTestId('drawer-job-title')).toHaveTextContent('Site Engineer'));
+    // The old hardcoded string is gone from the register and must not reappear from anywhere else.
+    expect(getByTestId('drawer-profile-card')).not.toHaveTextContent(/Lead Controller/);
+  });
+
+  it('draws no position line at all when the account has none', async () => {
+    // NULL IS THE ORDINARY CASE, twice over: no route sets a position, so it is null until a seed or
+    // an HR import writes one, and an app running against a deployment older than migration
+    // 20260908000001 gets no key at all. Both collapse to the same render — nothing.
+    //
+    // A placeholder here would be the drawn line returning under another name, which is the whole
+    // thing ADR-101 was written to end.
+    users.getMe.mockResolvedValue({
+      user_id: 'u-1111-aaaa',
+      email: 'w@example.com',
+      display_name: 'Waraporn Klinhom',
+      photo_url: null,
+      role: 'SITE_ENGINEER',
+      mfa_enabled: true,
+      employee_code: 'FI-04281',
+      position: null,
+    });
+    const { getByTestId, queryByTestId } = await renderDrawer();
+
+    await waitFor(() => expect(getByTestId('drawer-user-id')).toHaveTextContent(/FI-04281/));
+    expect(queryByTestId('drawer-job-title')).toBeNull();
+    // The block does not collapse — the name and the id still identify the account.
+    expect(getByTestId('drawer-profile-card')).toHaveTextContent(/Waraporn Klinhom/);
   });
 
   it('does not shout the role enum beside the name', async () => {
@@ -276,7 +300,7 @@ describe('NavigationDrawer', () => {
 
     await waitFor(() => expect(getByTestId('drawer-job-title')).toBeTruthy());
     expect(getByTestId('drawer-profile-card')).toHaveTextContent(
-      /Waraporn Klinhom[\s\S]*Lead Controller[\s\S]*FI-04281/,
+      /Waraporn Klinhom[\s\S]*Site Engineer[\s\S]*FI-04281/,
     );
   });
 });

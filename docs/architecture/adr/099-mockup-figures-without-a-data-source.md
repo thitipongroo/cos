@@ -456,3 +456,40 @@ recorded in the spec section, in the component's own comment and here.
 ### The register is unchanged at thirty
 
 No entry added. `PROFILE_JOB_TITLE` changed neither value nor shape — only what stands next to it.
+
+> **Answered the same day.** See the fifth amendment below: `platform.users.position` was added on
+> 2026-09-08 and this entry was deleted.
+
+## Amendment — 2026-09-08 (fifth): the first entry removed because the data arrived
+
+Amendment 4, above, closed with a section headed "What would end it": a `position` column on
+`platform.users`, surfaced by `GET /users/me`. The product owner asked for it the same day. It exists
+— migration `20260908000001_user_position`, ADR-101 — and **`PROFILE_JOB_TITLE` has been deleted**.
+
+### Why this one matters more than its size
+
+Entries have left this register before. Every one of them left because the SCREEN went: a feature
+was cut, a tile stopped being drawn, a card was replaced. That is attrition, not payment.
+
+This is the first entry removed because **the column arrived**. The register's premise is that a
+drawn figure is a debt with a named creditor — the missing table — and that writing the debt down
+makes it collectable. Amendment 4 named this creditor in one sentence and the sentence was acted on
+within the day. The mechanism worked exactly as designed, and that is worth recording, because a
+register nobody ever pays down is just a list of things wrong with the product.
+
+### What replaced it, precisely
+
+`NavigationDrawer` reads `me.position` from `GET /users/me`. **Where it is null it draws nothing** —
+no placeholder, no dash, no role in its place. That refusal is the entry's real legacy: a fallback
+string would be `PROFILE_JOB_TITLE` back under another name, and the test that used to assert the
+drawn title now asserts its absence.
+
+Null is the ordinary case and will be for a while. No route sets a position; it arrives by seed
+(`positionFor(role)` in `seed-realistic.ts`) or by an HR import. ADR-101 records that as a deliberate
+boundary rather than an oversight.
+
+### The register is at thirty
+
+Thirty-one before, thirty after — counted, not recalled:
+`grep -c "^export const [A-Z_]* = figure(" apps/mobile/src/lib/mockupFigures.ts`. The header comment
+in that file records the deletion beside the eight entries the FINANCE set added four days earlier.

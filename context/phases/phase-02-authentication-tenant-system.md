@@ -177,6 +177,7 @@ Entities (PostgreSQL — all in schema: platform):
     phone_number    VARCHAR(20) NULL  -- Path A identifier; UNIQUE only WHERE NOT NULL, so Path B users all leave it NULL
     display_name    VARCHAR(255) NOT NULL
     department      VARCHAR(255) NULL  -- free text for directory display; NOT a role and not an authorisation input
+    position        VARCHAR(255) NULL  -- job title, free text, for display (§32.7 drawer profile block); NOT a role and not an authorisation input
     photo_url       TEXT NULL  -- profile photo via the file service; NULL → clients show initials
     is_active       BOOLEAN DEFAULT true
     mfa_enabled     BOOLEAN DEFAULT false

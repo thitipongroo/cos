@@ -638,6 +638,20 @@ describe('UserService self-service', () => {
       expect(text).toContain('w.tenant_id = u.tenant_id');
     });
 
+    it('selects the employment columns the row type declares', async () => {
+      // `UserRow` declares `department` and `position`, and this SELECT is an explicit column list.
+      // getMe HAD ALREADY DRIFTED: it omitted `u.department` while the type promised it, so every
+      // caller's `me.department` was undefined and TypeScript could not say so — raw SQL is exactly
+      // where it cannot. Both are named here so the next column added does not repeat it (ADR-101).
+      (prismaMock.$queryRaw as jest.Mock).mockResolvedValueOnce([mockUserRow]);
+      await service.getMe(TENANT_ID, USER_ID);
+
+      const sql = (prismaMock.$queryRaw as jest.Mock).mock.calls[0]?.[0];
+      const text = Array.isArray(sql) ? sql.join('?') : String(sql);
+      expect(text).toContain('u.department');
+      expect(text).toContain('u.position');
+    });
+
     it('returns a null employee_code for an account with no worker record', async () => {
       // The common case: office roles have no row in workforce.workers. It must read as "no code
       // issued", never as a missing field the screen should hide.

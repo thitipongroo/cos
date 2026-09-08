@@ -16,7 +16,9 @@
 // comment and never on screen, and put a "coming soon" dialog behind an action that has no process.
 // Eight entries — APPROVALS_TREND, FINANCE_BURN_RATE, PAYMENT_DETAIL_EXTRAS, BUDGET_CATEGORY_CODE,
 // THREE_WAY_MATCH, DELIVERY_GRN, INVOICE_DISCREPANCY, PROFILE_JOB_TITLE — taking the register to
-// twenty-nine. The file is no longer executive-only; the heading above says EXECUTIVE because that
+// twenty-nine. PROFILE_JOB_TITLE was DELETED on 2026-09-08, four days later, when
+// `platform.users.position` was added and `GET /users/me` began returning it (ADR-101): the first
+// entry this register has lost to real data rather than to a cancelled screen. The file is no longer executive-only; the heading above says EXECUTIVE because that
 // is where it started.
 //
 // THE FINANCE SET PUT MORE BACK THAN IT ADDED. Four figures were about to be drawn and turned out
@@ -464,21 +466,16 @@ export const INVOICE_DISCREPANCY = figure(
 );
 
 // ── FINANCE profile (09_finance/05_profile/01_fn_navigation_drawer) ──────────
-
-/**
- * "Lead Controller" — the job title the drawer draws after the employee id.
- *
- * NOT the employee id itself, which turned out to be real: `workforce.workers.employee_code` comes
- * back on `GET /users/me` and the drawer prints it, falling back to a short form of the UUID for
- * the office roles that have no worker record. What has no column anywhere is a JOB TITLE.
- * `workers.trade_type` is the nearest thing and is a site trade — "Steel Fixer", "Electrician" —
- * not a position in a finance department, and a role (FINANCE) is not a title either.
- */
-export const PROFILE_JOB_TITLE = figure(
-  'Lead Controller',
-  'a job title on the user or the worker. `platform.users` has none and `workforce.workers` has ' +
-    'trade_type, which is a site trade rather than a position',
-);
+//
+// PROFILE_JOB_TITLE WAS HERE, AND IT WAS DELETED ON 2026-09-08 BECAUSE THE COLUMN ARRIVED. It held
+// "Lead Controller" and the drawer rendered it for every role, because nothing in the schema carried
+// a job title. `platform.users.position` now does (migration `20260908000001`, ADR-101), it comes
+// back on `GET /users/me`, and `NavigationDrawer` reads it — drawing nothing where it is null.
+//
+// This is the FIRST ENTRY THIS REGISTER HAS EVER LOST TO REAL DATA rather than to a cancelled
+// screen, and it is the outcome the register exists to reach: every entry is a debt, and this one
+// was paid. Left as a comment rather than removed silently so the next reader of ADR-099's amendment
+// 4 — which named this column as the thing that would end it — can see that it did.
 
 // ── Shared ───────────────────────────────────────────────────────────────────
 
